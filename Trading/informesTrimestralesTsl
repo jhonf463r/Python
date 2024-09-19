@@ -1,0 +1,112 @@
+import os
+import requests
+from bs4 import BeautifulSoup
+from transformers import pipeline
+import PyPDF2
+import csv
+from datetime import datetime
+
+# URL de Tesla para reportes trimestrales
+tesla_url = 'https://ir.tesla.com/#quarterly-disclosure'
+
+# Crear el directorio de descarga si no existe
+os.makedirs("financial_reportsTsl", exist_ok=True)
+
+def download_report(url):
+    print(f"Descargando reportes trimestrales de Tesla desde {url}")
+    
+    # Realizar la solicitud HTTP a la página web
+    response = requests.get(url)
+    
+    # Verificar si la solicitud fue exitosa
+    if response.status_code != 200:
+        print(f"Error al acceder a la URL: {url}")
+        return
+    
+    # Parsear el contenido HTML de la página
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    # Encontrar todos los enlaces de descarga
+    links = soup.find_all('a', href=True)
+    
+    # Filtrar los enlaces que contienen reportes trimestrales desde 2022
+    for link in links:
+        file_url = link['href']
+        
+        # Filtrar enlaces que tengan PDF en el nombre
+        if file_url.endswith('.pdf'):
+            # Añadir el dominio si es necesario
+            if not file_url.startswith('http'):
+                file_url = 'https://ir.tesla.com' + file_url
+            
+            # Descargar solo archivos que contengan "Q1", "Q2", "Q3" o "Q4" en el enlace
+            if any(term in file_url for term in ['Q1', 'Q2', 'Q3', 'Q4']):
+                # Extraer el nombre del archivo y guardarlo
+                file_name = file_url.split('/')[-1]
+                file_path = os.path.join("financial_reportsTsl", file_name)
+                
+                with open(file_path, 'wb') as file:
+                    file.write(requests.get(file_url).content)
+                print(f"Descargado: {file_path}")
+
+# Descargar reportes para Tesla
+download_report(tesla_url)
+
+# Función para extraer texto de PDFs, enfocándose en secciones clave
+def extract_text_from_pdf(file_path):
+    with open(file_path, 'rb') as file:
+        reader = PyPDF2.PdfReader(file)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text()
+        
+        # Extraer secciones clave como resumen ejecutivo, conclusiones financieras
+        keywords = ["Executive Summary", "Financial Summary", "Conclusion"]
+        extracted_text = ""
+        for keyword in keywords:
+            if keyword in text:
+                start_index = text.find(keyword)
+                end_index = start_index + 1024  # Extraer un segmento de 1024 caracteres
+                extracted_text += text[start_index:end_index].replace('\n', ' ') + " "
+        
+        # Si no se encontraron las secciones clave, usar el primer segmento del texto
+        if not extracted_text:
+            extracted_text = text[:1024].replace('\n', ' ')
+        
+        return extracted_text.strip()
+
+# Cargar el modelo de análisis de sentimiento
+sentiment_analysis = pipeline("sentiment-analysis")
+
+# Crear archivo CSV para guardar resultados
+csv_file = 'tesla_sentiment_analysis.csv'
+with open(csv_file, mode='w', newline='', encoding='utf-8') as file:
+    writer = csv.writer(file)
+    # Escribir encabezados
+    writer.writerow(['Fecha', 'Hora', 'Archivo', 'Sentimiento', 'Descripción'])
+
+    # Analizar sentimiento de cada reporte descargado
+    for file_name in os.listdir("financial_reportsTsl"):
+        file_path = os.path.join("financial_reportsTsl", file_name)
+        
+        # Extraer el texto del PDF
+        report_text = extract_text_from_pdf(file_path)
+        
+        # Realizar el análisis de sentimiento
+        sentiment = sentiment_analysis(report_text[:512])  # Limitar el texto a 512 caracteres para evitar problemas de rendimiento
+        
+        # Obtener fecha y hora actuales
+        now = datetime.now()
+        fecha = now.strftime("%Y-%m-%d")
+        hora = now.strftime("%H:%M:%S")
+        
+        # Obtener una descripción más representativa (primeros 100 caracteres del texto extraído)
+        descripcion = report_text[:100]
+        
+        # Escribir resultados en el archivo CSV
+        writer.writerow([fecha, hora, file_name, sentiment[0]['label'], descripcion])
+        
+        # Mostrar el resultado en la consola
+        print(f"Sentimiento para {file_name}: {sentiment[0]['label']} - {descripcion[:50]}...")
+
+print(f"Análisis de sentimiento completado. Resultados guardados en {csv_file}")

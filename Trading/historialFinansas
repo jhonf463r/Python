@@ -1,0 +1,27 @@
+import yfinance as yf
+import datetime
+
+# Definir el rango de fechas
+start_date = "2022-10-01"
+end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+
+# Lista de símbolos de las empresas
+companies = ['TSLA', 'AMZN', 'NVDA', 'BABA', 'GOOGL', 'MSFT', 'AAPL']
+
+# Intervalo de tiempo
+interval = '1h'  # Por hora
+
+for company in companies:
+    try:
+        # Descargar datos históricos por hora
+        data = yf.download(tickers=company, start=start_date, end=end_date, interval=interval)
+        
+        # Verificar si el DataFrame contiene datos
+        if data.empty:
+            print(f'No hay datos disponibles para {company} con el intervalo de {interval}.')
+        else:
+            # Guardar los datos en un archivo CSV
+            data.to_csv(f'{company}_hourly_data.csv')
+            print(f'Datos por hora de {company} descargados y guardados en {company}_hourly_data.csv')
+    except Exception as e:
+        print(f'Error al descargar datos para {company}: {e}')

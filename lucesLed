@@ -1,0 +1,72 @@
+from PIL import ImageGrab
+import numpy as np
+import requests
+import socket
+import time
+
+def get_dominant_color():
+    # Captura una imagen de la pantalla
+    screen = ImageGrab.grab()
+
+    # Convertir la imagen a un array numpy
+    img_np = np.array(screen)
+
+    # Calcular el color promedio
+    avg_color = img_np.mean(axis=(0, 1))
+
+    # Convertir el color a enteros
+    r, g, b = avg_color.astype(int)
+    
+    return r, g, b
+
+def send_color_command_http(ip, port, r, g, b):
+    url = f"http://{ip}:{port}/set_color"  # Cambia esta URL si es necesario
+    payload = {
+        "r": r,
+        "g": g,
+        "b": b
+    }
+    try:
+        response = requests.post(url, json=payload, timeout=2)  # Añadir un timeout para evitar bloqueos
+        print(f"Respuesta del dispositivo: {response.text}")
+    except requests.RequestException as e:
+        print(f"Error al enviar el comando HTTP: {e}")
+
+def send_color_command_tcp(ip, port, r, g, b):
+    # Comando binario para cambiar el color
+    command = bytearray([0x31, r, g, b, 0x00, 0x00, 0x0F])
+    checksum = sum(command) & 0xFF
+    command.append(checksum)
+    
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(2)  # Añadir un timeout para evitar bloqueos
+            s.connect((ip, port))
+            s.send(command)
+            response = s.recv(1024)  # Recibir respuesta (si es necesario)
+            print(f"Respuesta del dispositivo: {response}")
+    except socket.error as e:
+        print(f"Error al enviar el comando TCP: {e}")
+
+if __name__ == "__main__":
+    # Dirección IP de tu dispositivo y el puerto
+    IP = "192.168.1.19"  # Cambia esto por la IP de tu dispositivo
+    PORT = 5577          # El puerto detectado o el puerto para HTTP
+
+    # Intervalo en segundos para actualizar el color (ajustable según tus necesidades)
+    INTERVAL = 1  # Reducido para una actualización más rápida
+
+    while True:
+        # Obtener el color dominante de la pantalla
+        r, g, b = get_dominant_color()
+        
+        print(f"Color dominante detectado: R={r}, G={g}, B={b}")
+
+        # Enviar el comando de color al dispositivo
+        # Utiliza la función adecuada dependiendo del protocolo de tu dispositivo
+        send_color_command_tcp(IP, PORT, r, g, b)
+        # o
+        # send_color_command_http(IP, PORT, r, g, b)
+
+        # Esperar antes de actualizar el color de nuevo
+        time.sleep(INTERVAL)
