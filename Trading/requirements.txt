@@ -1,1 +1,4 @@
 python 3.9
+#comandos 
+PS C:\Users\faber\Documents\Python\myenv> Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+PS C:\Users\faber\Documents\Python\myenv> .\Scripts\activate

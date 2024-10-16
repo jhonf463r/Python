@@ -5,6 +5,7 @@ import numpy as np
 # Ejemplo de datos de entrenamiento
 conversations = [
     ("Hola, ¿cómo estás?", "¡Hola! Estoy bien, gracias por preguntar. ¿En qué puedo ayudarte hoy en nuestra tienda virtual?"),
+    ("Hola, ¿cómo estás?", "¡Hola! Estoy bien, gracias por preguntar. ¿En qué puedo ayudarte hoy en nuestra tienda virtual?"),
     ("¿Qué haces?", "¡Hola! Estoy aquí para asistirte con cualquier pregunta que tengas sobre nuestros productos. ¿Hay algo específico que buscas?"),
     ("¿Tienen promociones?", "¡Claro que sí! Tenemos varias promociones activas en este momento. Te invito a visitar nuestra sección de ofertas especiales en nuestra página web."),
     ("¿Cuánto cuesta el producto X?", "El producto X tiene un precio de $XX. Además, si compras hoy, puedes aprovechar un descuento del 10%. ¿Te gustaría más información?"),
@@ -53,28 +54,46 @@ tokenizer.fit_on_texts(input_texts + target_texts)
 input_sequences = tokenizer.texts_to_sequences(input_texts)
 target_sequences = tokenizer.texts_to_sequences(target_texts)
 
-# Padding
+# Padding para igualar la longitud de las secuencias
 input_data = keras.preprocessing.sequence.pad_sequences(input_sequences, padding='post')
 target_data = keras.preprocessing.sequence.pad_sequences(target_sequences, padding='post')
 
+# Ajustar la longitud de target_data para que coincida con input_data
+max_seq_length = input_data.shape[1]
+target_data = keras.preprocessing.sequence.pad_sequences(target_sequences, maxlen=max_seq_length, padding='post')
+
+# Convertir target_data a one-hot encoding
+vocab_size = len(tokenizer.word_index) + 1
+target_data_one_hot = np.zeros((target_data.shape[0], target_data.shape[1], vocab_size))
+for i, sequence in enumerate(target_data):
+    for t, word_id in enumerate(sequence):
+        if word_id > 0:  # Ignorar padding tokens
+            target_data_one_hot[i, t, word_id] = 1
+
 # Crear el modelo
 model = keras.Sequential([
-    keras.layers.Embedding(input_dim=len(tokenizer.word_index) + 1, output_dim=64, input_length=input_data.shape[1]),
+    keras.layers.Embedding(input_dim=vocab_size, output_dim=64, input_length=input_data.shape[1]),
     keras.layers.LSTM(64, return_sequences=True),
-    keras.layers.LSTM(64),
-    keras.layers.Dense(len(tokenizer.word_index) + 1, activation='softmax')
+    keras.layers.LSTM(64, return_sequences=True),  # Puedes probar return_sequences=False aquí
+    keras.layers.TimeDistributed(keras.layers.Dense(vocab_size, activation='softmax'))
 ])
 
-model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Entrenar el modelo
-model.fit(input_data, target_data, epochs=10)
+model.fit(input_data, target_data_one_hot, epochs=10)
 
 # Guardar el modelo
 model.save("chatbot_model.h5")
 
 # Convertir a TensorFlow Lite
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
+converter._experimental_lower_tensor_list_ops = False
+converter.experimental_enable_resource_variables = True
+converter.target_spec.supported_ops = [
+    tf.lite.OpsSet.TFLITE_BUILTINS,  # TensorFlow Lite ops.
+    tf.lite.OpsSet.SELECT_TF_OPS      # TensorFlow Flex ops.
+]
 tflite_model = converter.convert()
 with open("chatbot_model.tflite", "wb") as f:
     f.write(tflite_model)

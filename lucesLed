@@ -3,7 +3,7 @@ import numpy as np
 import requests
 import socket
 import time
-
+#
 def get_dominant_color():
     # Captura una imagen de la pantalla
     screen = ImageGrab.grab()
