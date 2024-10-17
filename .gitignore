@@ -17,6 +17,7 @@ myenv/
 venv/
 env/
 financial_reports/
+financial_reportsAMZ/
 financial_reportsTsl/
 # Archivos de configuración
 .vscode/

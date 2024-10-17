@@ -1,0 +1,98 @@
+import os
+import time
+import requests
+import csv
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from bs4 import BeautifulSoup
+from transformers import pipeline
+from PyPDF2 import PdfReader
+
+# Crear el directorio de descarga si no existe
+os.makedirs("financial_reportsAMZ", exist_ok=True)
+
+# Inicializar el navegador con Selenium
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+
+# URL de Amazon para reportes trimestrales
+amazon_url = "https://ir.aboutamazon.com/quarterly-results/default.aspx"
+driver.get(amazon_url)
+
+# Esperar que la página cargue completamente
+time.sleep(5)
+
+# Obtener el contenido de la página con BeautifulSoup
+soup = BeautifulSoup(driver.page_source, 'html.parser')
+
+# Cerrar el navegador después de obtener el HTML
+driver.quit()
+
+# Buscar enlaces de PDF que contienen "10-Q"
+links = soup.find_all('a', href=True)
+found_pdfs = []
+
+# Procesar cada enlace en la página
+for link in links:
+    file_url = link['href']
+    
+    # Verificar si el enlace es un PDF de un informe trimestral (10-Q)
+    if '10-Q' in link.get_text() and file_url.endswith('.pdf'):
+        # Filtrar el nombre del archivo y extraer el año del reporte
+        file_name = file_url.split('/')[-1]
+        
+        # Descargar solo si el reporte es de 2022 o posterior
+        if '2022' in file_url or '2023' in file_url or '2024' in file_url:
+            if not file_url.startswith('http'):
+                file_url = 'https://ir.aboutamazon.com' + file_url
+            
+            # Descargar el PDF
+            print(f"Descargando: {file_url}")
+            response = requests.get(file_url)
+            
+            # Guardar el archivo PDF en el directorio
+            file_path = os.path.join("financial_reportsAMZ", file_name)
+            with open(file_path, 'wb') as file:
+                file.write(response.content)
+            
+            found_pdfs.append(file_path)
+            print(f"Descargado: {file_path}")
+
+if not found_pdfs:
+    print("No se encontraron reportes trimestrales para descargar.")
+else:
+    print(f"Descargados {len(found_pdfs)} informes trimestrales: {', '.join(found_pdfs)}")
+
+# Inicializar el analizador de sentimiento
+sentiment_analyzer = pipeline("sentiment-analysis")
+
+# Crear un archivo CSV para los resultados
+csv_file_path = "sentiment_analysis_output.csv"
+with open(csv_file_path, mode='w', newline='', encoding='utf-8') as csv_file:
+    writer = csv.writer(csv_file)
+    # Escribir encabezados
+    writer.writerow(["Fecha", "Hora", "Archivo", "Sentimiento", "Descripción"])
+
+    # Analizar cada PDF descargado
+    for pdf_path in found_pdfs:
+        # Leer el contenido del PDF
+        with open(pdf_path, 'rb') as pdf_file:
+            reader = PdfReader(pdf_file)
+            pdf_text = ''
+            for page in reader.pages:
+                pdf_text += page.extract_text() + '\n'
+
+        # Obtener la fecha y hora actuales
+        current_time = time.localtime()
+        date_str = time.strftime("%Y-%m-%d", current_time)
+        time_str = time.strftime("%H:%M:%S", current_time)
+
+        # Realizar el análisis de sentimiento
+        sentiment_result = sentiment_analyzer(pdf_text[:512])  # Limitar a los primeros 512 caracteres
+        sentiment = sentiment_result[0]['label']
+        sentiment_description = sentiment_result[0]['score']
+
+        # Escribir los resultados en el CSV
+        writer.writerow([date_str, time_str, os.path.basename(pdf_path), sentiment, sentiment_description])
+
+print(f"Análisis de sentimientos completado. Resultados guardados en: {csv_file_path}")
