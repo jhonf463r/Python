@@ -8,25 +8,28 @@ from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 from transformers import pipeline
 from PyPDF2 import PdfReader
+import re
+import math
 
 # Crear el directorio de descarga si no existe
 os.makedirs("financial_reportsAMZ", exist_ok=True)
 
-# Inicializar el navegador con Selenium
+# Inicializar el navegador con Selenium para acceder a la página web de Amazon
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 
-# URL de Amazon para reportes trimestrales
-amazon_url = "https://ir.aboutamazon.com/quarterly-results/default.aspx"
-driver.get(amazon_url)
+try:
+    # URL de Amazon para reportes trimestrales
+    amazon_url = "https://ir.aboutamazon.com/quarterly-results/default.aspx"
+    driver.get(amazon_url)
 
-# Esperar que la página cargue completamente
-time.sleep(5)
+    # Esperar que la página cargue completamente
+    time.sleep(5)
 
-# Obtener el contenido de la página con BeautifulSoup
-soup = BeautifulSoup(driver.page_source, 'html.parser')
-
-# Cerrar el navegador después de obtener el HTML
-driver.quit()
+    # Obtener el contenido de la página con BeautifulSoup
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
+finally:
+    # Cerrar el navegador después de obtener el HTML
+    driver.quit()
 
 # Buscar enlaces de PDF que contienen "10-Q"
 links = soup.find_all('a', href=True)
@@ -35,64 +38,102 @@ found_pdfs = []
 # Procesar cada enlace en la página
 for link in links:
     file_url = link['href']
-    
-    # Verificar si el enlace es un PDF de un informe trimestral (10-Q)
     if '10-Q' in link.get_text() and file_url.endswith('.pdf'):
-        # Filtrar el nombre del archivo y extraer el año del reporte
         file_name = file_url.split('/')[-1]
-        
-        # Descargar solo si el reporte es de 2022 o posterior
         if '2022' in file_url or '2023' in file_url or '2024' in file_url:
             if not file_url.startswith('http'):
                 file_url = 'https://ir.aboutamazon.com' + file_url
-            
-            # Descargar el PDF
-            print(f"Descargando: {file_url}")
-            response = requests.get(file_url)
-            
-            # Guardar el archivo PDF en el directorio
-            file_path = os.path.join("financial_reportsAMZ", file_name)
-            with open(file_path, 'wb') as file:
-                file.write(response.content)
-            
-            found_pdfs.append(file_path)
-            print(f"Descargado: {file_path}")
+            try:
+                print(f"Descargando: {file_url}")
+                response = requests.get(file_url, timeout=10)
+                response.raise_for_status()  # Lanza una excepción si ocurre un error HTTP
+                file_path = os.path.join("financial_reportsAMZ", file_name)
+                with open(file_path, 'wb') as file:
+                    file.write(response.content)
+                found_pdfs.append(file_path)
+                print(f"Descargado: {file_path}")
+            except requests.RequestException as e:
+                print(f"Error descargando {file_url}: {e}")
 
 if not found_pdfs:
     print("No se encontraron reportes trimestrales para descargar.")
 else:
     print(f"Descargados {len(found_pdfs)} informes trimestrales: {', '.join(found_pdfs)}")
 
-# Inicializar el analizador de sentimiento
-sentiment_analyzer = pipeline("sentiment-analysis")
+# Inicializar el analizador de sentimiento con un modelo especializado en finanzas
+sentiment_analyzer = pipeline("sentiment-analysis", model="yiyanghkust/finbert-tone")
 
 # Crear un archivo CSV para los resultados
 csv_file_path = "sentiment_analysis_output.csv"
 with open(csv_file_path, mode='w', newline='', encoding='utf-8') as csv_file:
     writer = csv.writer(csv_file)
     # Escribir encabezados
-    writer.writerow(["Fecha", "Hora", "Archivo", "Sentimiento", "Descripción"])
+    writer.writerow(["Fecha", "Hora", "Archivo", "Trimestre", "Fecha del Reporte", "Sentimiento", "Confianza", "Extracto"])
+
+    # Función para dividir el texto en fragmentos de tamaño máximo de 512 tokens
+    def split_text_into_chunks(text, max_length=512):
+        words = text.split()
+        return [' '.join(words[i:i + max_length]) for i in range(0, len(words), max_length)]
+
+    # Función para extraer secciones financieras relevantes de un texto
+    def extract_financial_sections(text):
+        patterns = [
+            r"(?i)management['’]s discussion and analysis of financial condition and results of operations",
+            r"(?i)financial results",
+            r"(?i)revenue",
+            r"(?i)earnings per share",
+            r"(?i)operating income",
+        ]
+        sections = []
+        for pattern in patterns:
+            match = re.search(pattern, text)
+            if match:
+                start_idx = match.start()
+                sections.append(text[start_idx:start_idx + 3000])  # Extraer 3000 caracteres relevantes
+        return " ".join(sections) if sections else text[:3000]
 
     # Analizar cada PDF descargado
     for pdf_path in found_pdfs:
-        # Leer el contenido del PDF
-        with open(pdf_path, 'rb') as pdf_file:
-            reader = PdfReader(pdf_file)
-            pdf_text = ''
-            for page in reader.pages:
-                pdf_text += page.extract_text() + '\n'
+        try:
+            with open(pdf_path, 'rb') as pdf_file:
+                reader = PdfReader(pdf_file)
+                pdf_text = ''.join(page.extract_text() for page in reader.pages)
 
-        # Obtener la fecha y hora actuales
-        current_time = time.localtime()
-        date_str = time.strftime("%Y-%m-%d", current_time)
-        time_str = time.strftime("%H:%M:%S", current_time)
+            # Extraer secciones relevantes
+            relevant_text = extract_financial_sections(pdf_text)
 
-        # Realizar el análisis de sentimiento
-        sentiment_result = sentiment_analyzer(pdf_text[:512])  # Limitar a los primeros 512 caracteres
-        sentiment = sentiment_result[0]['label']
-        sentiment_description = sentiment_result[0]['score']
+            # Dividir el texto en fragmentos de máximo 512 tokens
+            text_chunks = split_text_into_chunks(relevant_text)
 
-        # Escribir los resultados en el CSV
-        writer.writerow([date_str, time_str, os.path.basename(pdf_path), sentiment, sentiment_description])
+            # Realizar análisis de sentimiento en cada fragmento y calcular promedio
+            sentiment_scores = []
+            for chunk in text_chunks:
+                sentiment_result = sentiment_analyzer(chunk[:512])  # Limitar cada fragmento a 512 tokens
+                sentiment_scores.append(sentiment_result[0])
+
+            # Calcular el sentimiento predominante
+            positive_count = sum(1 for s in sentiment_scores if s['label'] == 'positive')
+            negative_count = sum(1 for s in sentiment_scores if s['label'] == 'negative')
+            neutral_count = sum(1 for s in sentiment_scores if s['label'] == 'neutral')
+
+            if positive_count > negative_count and positive_count > neutral_count:
+                final_sentiment = 'Positive'
+            elif negative_count > positive_count and negative_count > neutral_count:
+                final_sentiment = 'Negative'
+            else:
+                final_sentiment = 'Neutral'
+
+            confidence_average = sum(s['score'] for s in sentiment_scores) / len(sentiment_scores)
+
+            # Obtener fecha actual
+            current_time = time.localtime()
+            date_str = time.strftime("%Y-%m-%d", current_time)
+            time_str = time.strftime("%H:%M:%S", current_time)
+
+            # Escribir resultados
+            writer.writerow([date_str, time_str, os.path.basename(pdf_path), "Trimestre Desconocido", "Fecha desconocida", final_sentiment, confidence_average, relevant_text[:512]])
+
+        except Exception as e:
+            print(f"Error procesando {pdf_path}: {e}")
 
 print(f"Análisis de sentimientos completado. Resultados guardados en: {csv_file_path}")

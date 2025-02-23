@@ -1,0 +1,85 @@
+import yfinance as yf
+import numpy as np
+import pandas as pd
+from datetime import datetime, timedelta
+
+# Función para obtener datos históricos por horas
+def get_historical_data_hourly(ticker, start_date, end_date):
+    print(f"Descargando datos por horas para {ticker} desde {start_date} hasta {end_date}...")
+    data = yf.download(ticker, start=start_date, end=end_date, interval='1h')
+    if data.empty:
+        raise ValueError(f"No se encontraron datos para {ticker}. Verifica el símbolo o las fechas.")
+    return data['Close'].to_numpy(), data['Volume'].to_numpy()
+
+# Cálculo de volatilidad
+def calculate_volatility(prices):
+    returns = np.log(prices[1:] / prices[:-1])  # Rendimientos horarios logarítmicos
+    volatility = np.std(returns)  # Desviación estándar
+    return float(volatility)  # Convertir a flotante para asegurar compatibilidad
+
+# Cálculo de liquidez
+def calculate_liquidity(last_volume, bid_price, ask_price):
+    spread = ask_price - bid_price
+    if spread == 0:
+        return 0.0
+    liquidity = last_volume / spread
+    return float(liquidity)  # Convertir a flotante para asegurar compatibilidad
+
+# Cálculo de promedio móvil (para identificar tendencias)
+def calculate_moving_average(prices, window=10):
+    moving_average = np.convolve(prices, np.ones(window)/window, mode='valid')
+    return moving_average
+
+# Cálculo de tendencia
+def determine_trend(prices, ma):
+    if prices[-1] > ma[-1]:
+        return "Alcista"
+    elif prices[-1] < ma[-1]:
+        return "Bajista"
+    else:
+        return "Lateral"
+
+# Parámetros del análisis
+ticker = "TSLA"  # Símbolo del activo (ejemplo: Tesla)
+end_date = datetime.now().strftime('%Y-%m-%d')
+start_date = (datetime.now() - timedelta(days=729)).strftime('%Y-%m-%d')  # Últimos 729 días (para asegurar 730 días máximo)
+bid_price = 200  # Precio ficticio de compra (puedes ajustar según API real)
+ask_price = 202  # Precio ficticio de venta (puedes ajustar según API real)
+
+# Ejecutar análisis
+try:
+    # Obtener precios y volúmenes históricos por horas
+    prices, volume = get_historical_data_hourly(ticker, start_date, end_date)
+
+    # Verificar que los arrays no estén vacíos y sean unidimensionales
+    prices = prices.flatten() if prices.ndim > 1 else prices
+    volume = volume.flatten() if volume.ndim > 1 else volume
+
+    # Volatilidad
+    volatility = calculate_volatility(prices)
+    print(f"Volatilidad: {volatility:.4f}")
+
+    # Liquidez (usando el último volumen)
+    last_volume = float(volume[-1])  # Extraer el último valor de volumen como escalar
+    liquidity = calculate_liquidity(last_volume, bid_price, ask_price)
+    print(f"Liquidez: {liquidity:.2f}")
+
+    # Tendencia
+    window = 10  # Ventana para el promedio móvil
+    ma = calculate_moving_average(prices, window)
+    trend = determine_trend(prices[-len(ma):], ma)
+    print(f"Tendencia: {trend}")
+
+    # Exportar resultados a CSV
+    results = {
+        "Date": pd.date_range(start=start_date, periods=len(prices), freq='H')[-len(ma):],
+        "Price": prices[-len(ma):],
+        "Moving Average": ma,
+        "Trend": [trend] * len(ma)
+    }
+    results_df = pd.DataFrame(results)
+    results_df.to_csv(f"{ticker}_hourly_analysis.csv", index=False)
+    print(f"Análisis guardado en {ticker}_hourly_analysis.csv")
+
+except Exception as e:
+    print(f"Error: {e}")

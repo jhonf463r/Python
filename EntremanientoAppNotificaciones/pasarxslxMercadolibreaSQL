@@ -1,0 +1,21 @@
+import pandas as pd
+
+# Carga el archivo Excel y selecciona la hoja "Publicaciones"
+archivo_excel = r"C:\Users\faber\Downloads\Publicaciones-2024_10_17-17_10.xlsx"
+df = pd.read_excel(archivo_excel, sheet_name='Publicaciones')
+
+# Eliminar filas completamente vacías
+df.dropna(how='all', inplace=True)
+
+# Eliminar columnas que están completamente vacías
+df.dropna(axis=1, how='all', inplace=True)
+
+# Ignorar las primeras filas innecesarias y establecer los encabezados en la fila correcta
+df.columns = df.iloc[1]  # La fila 1 contiene los encabezados correctos
+df = df.drop([0, 1, 2], axis=0)  # Eliminar las primeras filas que no contienen datos útiles
+
+# Verifica los primeros registros después de la limpieza
+print(df.head())
+
+# Guardar los datos limpios en un archivo CSV si lo necesitas
+df.to_csv('datos_limpios_tienda.csv', index=False)

@@ -2,7 +2,7 @@ import requests
 from textblob import TextBlob
 from datetime import datetime
 
-API_KEY = 'b63a6731a6d2c52ad2903540d4cc537a'
+API_KEY = 'c5e8a3ddc884a301689fac960289a0d0'
 companies = ['TSLA', 'AMZN', 'NVDA', 'BABA', 'GOOGL', 'MSFT', 'AAPL']
 url = 'https://gnews.io/api/v4/search'
 start_date = '2022-08-01'
