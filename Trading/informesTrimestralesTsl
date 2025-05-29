@@ -1,0 +1,108 @@
+import os
+import requests
+from bs4 import BeautifulSoup
+from transformers import pipeline
+import pdfplumber
+import csv
+
+# URL de Tesla para reportes trimestrales
+tesla_url = 'https://ir.tesla.com/#quarterly-disclosure'
+
+# Crear el directorio de descarga si no existe
+os.makedirs("financial_reportsTsl", exist_ok=True)
+
+def download_reports(url):
+    print(f"Descargando reportes trimestrales de Tesla desde {url}")
+    
+    # Realizar la solicitud HTTP a la página web
+    response = requests.get(url)
+    
+    # Verificar si la solicitud fue exitosa
+    if response.status_code != 200:
+        print(f"Error al acceder a la URL: {url}")
+        return
+    
+    # Parsear el contenido HTML de la página
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    # Encontrar todos los enlaces de descarga
+    links = soup.find_all('a', href=True)
+    
+    # Filtrar los enlaces que contienen reportes trimestrales desde 2022
+    for link in links:
+        file_url = link['href']
+        
+        # Filtrar enlaces que tengan PDF en el nombre
+        if file_url.endswith('.pdf'):
+            # Añadir el dominio si es necesario
+            if not file_url.startswith('http'):
+                file_url = 'https://ir.tesla.com' + file_url
+            
+            # Descargar solo archivos que contengan "Q1", "Q2", etc., desde 2022
+            if any(term in file_url for term in ['Q1', 'Q2', 'Q3', 'Q4']) and ('2022' in file_url or '2023' in file_url or '2024' in file_url):
+                # Extraer el nombre del archivo y guardarlo
+                file_name = file_url.split('/')[-1]
+                file_path = os.path.join("financial_reportsTsl", file_name)
+                
+                if not os.path.exists(file_path):  # Evitar descargas duplicadas
+                    with open(file_path, 'wb') as file:
+                        file.write(requests.get(file_url).content)
+                    print(f"Descargado: {file_path}")
+                else:
+                    print(f"Ya existe: {file_path}")
+
+# Descargar reportes para Tesla
+download_reports(tesla_url)
+
+# Función para extraer texto de PDFs, enfocándose en secciones clave
+def extract_text_from_pdf(file_path):
+    with pdfplumber.open(file_path) as pdf:
+        text = ""
+        for page in pdf.pages[:5]:  # Limitar a las primeras 5 páginas
+            text += page.extract_text()
+        return text.strip()
+
+# Cargar modelo FinBERT para análisis financiero
+model_name = "yiyanghkust/finbert-tone"
+finbert = pipeline("sentiment-analysis", model=model_name)
+
+# Crear archivo CSV para guardar resultados
+csv_file = 'tesla_sentiment_analysis.csv'
+with open(csv_file, mode='w', newline='', encoding='utf-8') as file:
+    writer = csv.writer(file)
+    # Escribir encabezados
+    writer.writerow(['Fecha', 'Hora', 'Archivo', 'Sentimiento', 'Confianza', 'Descripción'])
+    
+    # Mapear los trimestres a las fechas de presentación
+    trimestre_fechas = {
+        'Q4-2022': ('2022-10-19', '10:00:00'),
+        'Q1-2023': ('2023-04-19', '10:00:00'),
+        'Q2-2023': ('2023-07-19', '10:00:00'),
+        'Q3-2023': ('2023-10-18', '10:00:00'),
+        'Q4-2023': ('2024-01-24', '10:00:00'),
+        'Q1-2024': ('2024-04-24', '10:00:00'),
+        'Q2-2024': ('2024-07-24', '10:00:00'),
+    }
+
+    # Analizar sentimiento de cada reporte descargado
+    for file_name in os.listdir("financial_reportsTsl"):
+        file_path = os.path.join("financial_reportsTsl", file_name)
+        
+        # Extraer el texto del PDF
+        report_text = extract_text_from_pdf(file_path)
+        
+        # Realizar el análisis de sentimiento
+        sentiment = finbert(report_text[:512])  # Limitar el texto a 512 caracteres
+        
+        # Obtener la fecha y hora de presentación según el nombre del archivo
+        for trimestre, (fecha, hora) in trimestre_fechas.items():
+            if trimestre in file_name:
+                # Escribir resultados en el archivo CSV
+                descripcion = report_text[:100]  # Obtener una descripción breve del reporte
+                writer.writerow([fecha, hora, file_name, sentiment[0]['label'], sentiment[0]['score'], descripcion])
+                
+                # Mostrar el resultado en la consola
+                print(f"Sentimiento para {file_name}: {sentiment[0]['label']} (Confianza: {sentiment[0]['score']:.2f}) - {descripcion[:50]}...")
+                break
+
+print(f"Análisis de sentimiento completado. Resultados guardados en {csv_file}")

@@ -1,0 +1,94 @@
+import os
+import time
+import requests
+import csv
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from bs4 import BeautifulSoup
+from transformers import pipeline
+from PyPDF2 import PdfReader
+
+# URL de la página de Microsoft Investor Relations para los resultados trimestrales
+microsoft_url = "https://www.microsoft.com/en-us/Investor/earnings/FY-2024-Q3/press-release-webcast"
+
+# Crear el directorio de descarga si no existe
+os.makedirs("financial_reportsMSFT", exist_ok=True)
+
+# Inicializar el navegador con Selenium
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+
+try:
+    # Navegar a la página de Microsoft
+    driver.get(microsoft_url)
+    time.sleep(5)  # Esperar a que la página cargue
+
+    # Obtener el contenido de la página con BeautifulSoup
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
+finally:
+    # Cerrar el navegador después de obtener el HTML
+    driver.quit()
+
+# Buscar enlaces de archivos PDF en la página
+links = soup.find_all('a', href=True)
+found_pdfs = []
+
+# Procesar cada enlace para identificar PDFs relevantes (10-Q, Earnings Release)
+for link in links:
+    file_url = link['href']
+
+    # Filtrar enlaces que contienen '10-Q' o 'Earnings Release'
+    if file_url.endswith('.pdf') and ('10-Q' in file_url or 'Earnings' in file_url):
+        if not file_url.startswith('http'):
+            file_url = "https://www.microsoft.com" + file_url
+
+        file_name = file_url.split('/')[-1]
+        file_path = os.path.join("financial_reportsMSFT", file_name)
+
+        # Descargar el PDF
+        print(f"Descargando: {file_url}")
+        response = requests.get(file_url)
+        with open(file_path, 'wb') as file:
+            file.write(response.content)
+        found_pdfs.append(file_path)
+        print(f"Descargado: {file_path}")
+
+if not found_pdfs:
+    print("No se encontraron reportes financieros para descargar.")
+else:
+    print(f"Descargados {len(found_pdfs)} informes: {', '.join(found_pdfs)}")
+
+# Inicializar el analizador de sentimiento usando DistilBERT (puedes cambiarlo por FinBERT)
+sentiment_analyzer = pipeline("sentiment-analysis")
+
+# Crear un archivo CSV para almacenar los resultados del análisis de sentimiento
+csv_file_path = "microsoft_sentiment_analysis.csv"
+with open(csv_file_path, mode='w', newline='', encoding='utf-8') as csv_file:
+    writer = csv.writer(csv_file)
+    writer.writerow(["Fecha", "Hora", "Archivo", "Sentimiento", "Confianza", "Extracto"])
+
+    # Analizar cada archivo PDF descargado
+    for pdf_path in found_pdfs:
+        try:
+            # Leer el contenido del PDF
+            with open(pdf_path, 'rb') as pdf_file:
+                reader = PdfReader(pdf_file)
+                pdf_text = ''.join(page.extract_text() for page in reader.pages)
+
+            # Realizar el análisis de sentimiento (en segmentos de 512 caracteres)
+            sentiment_result = sentiment_analyzer(pdf_text[:512])  # Ajusta este límite si es necesario
+            sentiment = sentiment_result[0]['label']
+            confidence = sentiment_result[0]['score']
+
+            # Guardar los resultados en el archivo CSV
+            current_time = time.localtime()
+            date_str = time.strftime("%Y-%m-%d", current_time)
+            time_str = time.strftime("%H:%M:%S", current_time)
+            writer.writerow([date_str, time_str, os.path.basename(pdf_path), sentiment, confidence, pdf_text[:512]])
+
+            print(f"Análisis completado para {pdf_path}: Sentimiento {sentiment} con confianza {confidence}")
+
+        except Exception as e:
+            print(f"Error procesando {pdf_path}: {e}")
+
+print(f"Análisis completado. Resultados guardados en: {csv_file_path}")

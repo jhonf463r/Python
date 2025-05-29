@@ -1,0 +1,41 @@
+import requests
+from bs4 import BeautifulSoup
+
+def get_lyrics(song_title, artist_name):
+    # Reemplaza 'tu_token' con tu token de acceso de Genius
+    genius_token = 'tu_token'
+    headers = {'Authorization': 'Bearer ' + genius_token}
+    search_url = 'https://api.genius.com/search'
+    params = {'q': f"{song_title} {artist_name}"}
+    
+    response = requests.get(search_url, headers=headers, params=params)
+    json_response = response.json()
+    
+    # Comprobar si se encontraron resultados
+    if json_response['response']['hits']:
+        song_path = json_response['response']['hits'][0]['result']['path']
+        song_url = 'https://genius.com' + song_path
+        
+        # Obtener la letra
+        lyrics_page = requests.get(song_url)
+        soup = BeautifulSoup(lyrics_page.text, 'html.parser')
+        lyrics = soup.find('div', class_='lyrics').get_text()
+        
+        return lyrics
+    else:
+        return "No se encontró la letra."
+
+def main(audio_file_path):
+    # Aquí iría tu código de procesamiento de audio...
+    
+    # Suponiendo que ya tienes el título de la canción y el nombre del artista
+    song_title = "Título de la canción"
+    artist_name = "Nombre del artista"
+    
+    lyrics = get_lyrics(song_title, artist_name)
+    print("Letra de la canción:")
+    print(lyrics)
+
+if __name__ == "__main__":
+    audio_file_path = 'C:/Users/faber/Documents/Python/AnalisisDeAudio/new_aud.wav'  # Cambia a la ruta de tu archivo
+    main(audio_file_path)

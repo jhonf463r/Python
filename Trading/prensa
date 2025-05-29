@@ -1,0 +1,154 @@
+import os
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime
+import csv
+from transformers import pipeline
+
+# URLs de las páginas de comunicados de prensa
+press_release_urls = {
+    'TSLA': [
+        'https://ir.tesla.com/press',
+        'https://ir.tesla.com/press?page=1',
+        'https://ir.tesla.com/press?page=2',
+        'https://ir.tesla.com/press?page=3'
+    ],
+    'AMZN': ['https://press.aboutamazon.com/press-release-archive'],
+    'NVDA': ['https://nvidianews.nvidia.com/'],
+    'BABA': ['https://www.alibabagroup.com/en-US/news-and-resource'],
+    'GOOGL': ['https://abc.xyz/investor/news/2024/'],
+    'MSFT': ['https://www.microsoft.com/en-us/Investor/earnings/FY-2024-Q3/press-release-webcast'],
+    'AAPL': ['https://www.apple.com/newsroom/']
+}
+
+# Directorio para guardar los comunicados de prensa
+output_dir = 'press_releases'
+os.makedirs(output_dir, exist_ok=True)
+
+# Fecha de inicio
+start_date = datetime(2022, 8, 1)
+
+# Modelo de análisis de sentimiento financiero
+finbert = pipeline("sentiment-analysis", model="yiyanghkust/finbert-tone", tokenizer="yiyanghkust/finbert-tone")
+
+def download_press_releases(company, urls):
+    for url in urls:
+        print(f"Accediendo a {url} para {company}")
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        if company == 'TSLA':
+            articles = soup.find_all('div', class_='views-row')
+        elif company == 'AMZN':
+            articles = soup.find_all('div', class_='PromoCardSearchResults')
+        else:
+            articles = soup.find_all('article')
+        
+        for article in articles:
+            if company == 'AMZN':
+                a = article.find('a', class_='Link', href=True)
+                date_tag = article.find('span', {'data-date': True})
+                if a and date_tag:
+                    href = a['href']
+                    if href.startswith('/'):
+                        href = f"https://press.aboutamazon.com{href}"
+                    
+                    date_str = date_tag.text.strip()
+                    date = datetime.strptime(date_str, '%B %d, %Y')
+                    
+                    if date >= start_date:
+                        print(f"Descargando comunicado de prensa desde: {href}")
+                        html_response = requests.get(href)
+                        html_name = os.path.join(output_dir, f'{company}_press_{date.strftime("%Y-%m-%d")}.html')
+                        
+                        with open(html_name, 'w', encoding='utf-8') as f:
+                            f.write(html_response.text)
+                        
+                        print(f'Descargado: {html_name}')
+                        analyze_press_release(html_name, company, date)
+            else:
+                a = article.find('a', href=True)
+                time_tag = article.find('time')
+                
+                if a and time_tag:
+                    href = a['href']
+                    if href.startswith('/'):
+                        href = f"https://ir.tesla.com{href}" if company == 'TSLA' else f"https://{url}{href}"
+                    
+                    date_str = time_tag['datetime'].split('T')[0]
+                    date = datetime.strptime(date_str, '%Y-%m-%d')
+                    
+                    if date >= start_date:
+                        print(f"Descargando comunicado de prensa desde: {href}")
+                        html_response = requests.get(href)
+                        html_name = os.path.join(output_dir, f'{company}_press_{date.strftime("%Y-%m-%d")}.html')
+                        
+                        with open(html_name, 'w', encoding='utf-8') as f:
+                            f.write(html_response.text)
+                        
+                        print(f'Descargado: {html_name}')
+                        analyze_press_release(html_name, company, date)
+
+def extract_text_from_html(html_content):
+    soup = BeautifulSoup(html_content, 'html.parser')
+    paragraphs = soup.find_all('p')  # Extrae solo los párrafos, que suelen contener el texto relevante
+    text = ' '.join(p.get_text() for p in paragraphs)
+    return text
+
+def analyze_text(text):
+    if not text:
+        return 0
+    
+    # Configura el tamaño máximo del fragmento (ej. 512 tokens)
+    max_length = 512
+
+    # Tokeniza el texto
+    tokenizer = finbert.tokenizer
+    tokens = tokenizer.encode(text, add_special_tokens=True, truncation=True, max_length=max_length)
+
+    # Divide el texto en fragmentos más pequeños si es necesario
+    sentiments = []
+    for i in range(0, len(tokens), max_length):
+        chunk = tokens[i:i + max_length]
+        chunk_text = tokenizer.decode(chunk, skip_special_tokens=True)
+        results = finbert(chunk_text)
+        sentiments.extend(results)
+    
+    # Calcula el puntaje de sentimiento
+    sentiment_score = 0
+    for result in sentiments:
+        label = result['label']
+        score = result['score']
+        if label == 'positive':
+            sentiment_score += score * 10
+        elif label == 'negative':
+            sentiment_score -= score * 10
+    
+    return round(sentiment_score, 2)
+
+def analyze_press_release(html_path, company, date):
+    with open(html_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    
+    text = extract_text_from_html(html_content)
+    print(f"Texto extraído de {html_path}: {text[:500]}")  # Imprime solo los primeros 500 caracteres para depuración
+    sentiment_score = analyze_text(text)
+
+    with open('press_releases_analysis.csv', 'a', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([date.strftime('%Y-%m-%d'), company, sentiment_score])
+    print(f'Análisis de {html_path} completado.')
+
+def main():
+    # Crear archivo CSV para resultados
+    with open('press_releases_analysis.csv', 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['Date', 'Company', 'Sentiment'])
+    
+    for company, urls in press_release_urls.items():
+        print(f'Descargando comunicados de prensa para {company} desde {urls}')
+        download_press_releases(company, urls)
+        print(f'Comunicados de prensa de {company} descargados y analizados.')
+
+if __name__ == '__main__':
+    main()

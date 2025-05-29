@@ -1,0 +1,102 @@
+import speech_recognition as sr
+import librosa
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Procesar el audio y extraer características
+def process_audio(audio_file_path):
+    y, sample_rate = librosa.load(audio_file_path)
+    print(f"Procesando el archivo: {audio_file_path}")
+    return y, sample_rate
+
+# Analizar BPM (tempo) para capturar el ritmo
+def analyze_bpm(y, sample_rate):
+    tempo, _ = librosa.beat.beat_track(y=y, sr=sample_rate)
+    print(f"Ritmo detectado (BPM): {tempo}")
+    return tempo
+
+# Detectar onsets y sugerir escenas clave
+def suggest_scenes(y, sample_rate):
+    onset_env = librosa.onset.onset_strength(y=y, sr=sample_rate)
+    onset_frames = librosa.onset.onset_detect(onset_envelope=onset_env, sr=sample_rate)
+    onset_times = librosa.frames_to_time(onset_frames, sr=sample_rate)
+
+    print(f"Onsets detectados en los tiempos: {onset_times}")
+
+    # Generar sugerencias de escenas
+    scene_suggestions = []
+    for onset in onset_times:
+        if onset < 30:
+            scene_suggestions.append(f"Apertura animada en el segundo {onset:.2f} con energía alta.")
+        elif onset < 60:
+            scene_suggestions.append(f"Ritmo estable en el segundo {onset:.2f}, sugerencia de escena urbana tranquila.")
+        else:
+            scene_suggestions.append(f"Clímax dinámico en el segundo {onset:.2f}.")
+    return scene_suggestions
+
+# Transcribir letras para conectar con emociones y escenas
+def transcribe_audio(audio_file):
+    recognizer = sr.Recognizer()
+    try:
+        with sr.AudioFile(audio_file) as source:
+            print("Cargando el audio para transcripción...")
+            audio_data = recognizer.record(source)
+
+        print("Reconociendo el audio...")
+        text = recognizer.recognize_google(audio_data, language="es-ES")
+        print("\nLetra transcrita:")
+        print(text)
+        return text
+    except sr.UnknownValueError:
+        print("No se pudo entender el audio.")
+        return None
+    except sr.RequestError as e:
+        print(f"No se pudo conectar al servicio de reconocimiento. Error: {e}")
+        return None
+
+# Sugerir emociones basadas en BPM y letras
+def suggest_emotions(bpm, lyrics):
+    emotions = []
+    if bpm > 100:
+        emotions.append("Energía alta, ideal para escenas dinámicas y alegres.")
+    else:
+        emotions.append("Energía moderada, adecuada para escenas relajadas o nostálgicas.")
+
+    if lyrics:
+        if "amor" in lyrics.lower():
+            emotions.append("Transmite romance o conexión.")
+        if "calle" in lyrics.lower():
+            emotions.append("Refleja temática urbana.")
+    return emotions
+
+# Función principal
+def main(audio_file_path):
+    # Procesar el audio
+    y, sample_rate = process_audio(audio_file_path)
+
+    # Analizar BPM
+    bpm = analyze_bpm(y, sample_rate)
+
+    # Sugerir escenas basadas en el análisis del audio
+    scene_suggestions = suggest_scenes(y, sample_rate)
+
+    # Transcribir el audio para capturar las letras
+    lyrics = transcribe_audio(audio_file_path)
+
+    # Sugerir emociones y estilos visuales
+    emotions = suggest_emotions(bpm, lyrics)
+
+    # Resultados finales
+    print("\n--- Resultados de Análisis ---")
+    print(f"BPM detectado: {bpm}")
+    print("\nSugerencias de Escenas:")
+    for suggestion in scene_suggestions:
+        print(suggestion)
+    print("\nAnálisis Emocional:")
+    for emotion in emotions:
+        print(emotion)
+
+# Ejecutar el análisis
+if __name__ == "__main__":
+    audio_file_path = 'C:\\Users\\faber\\Documents\\Python\\AnalisisDeAudio\\cumbiaHS.wav'
+    main(audio_file_path)

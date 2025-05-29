@@ -1,0 +1,81 @@
+import requests
+from textblob import TextBlob
+from datetime import datetime
+
+API_KEY = 'c5e8a3ddc884a301689fac960289a0d0'
+companies = ['TSLA', 'AMZN', 'NVDA', 'BABA', 'GOOGL', 'MSFT', 'AAPL']
+url = 'https://gnews.io/api/v4/search'
+start_date = '2022-08-01'
+end_date = datetime.now().strftime('%Y-%m-%d')
+
+def get_news(company):
+    all_news = []
+    page = 1
+    while True:
+        params = {
+            'q': company,
+            'lang': 'en',
+            'token': API_KEY,
+            'from': start_date,
+            'to': end_date,
+            'sortby': 'publishedAt',
+            'max': 100,
+            'page': page  # Paginación
+        }
+        
+        try:
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            print(f"Error fetching news for {company}: {e}")
+            return all_news
+        
+        data = response.json()
+        if 'articles' not in data or not data['articles']:
+            break
+        
+        articles = data.get('articles', [])
+        for article in articles:
+            title = article.get('title')
+            description = article.get('description')
+            content = article.get('content')
+            published_at = article.get('publishedAt')
+            
+            if title or description or content:
+                full_text = f"{title} {description} {content}"
+                sentiment = TextBlob(full_text).sentiment.polarity
+                
+                if sentiment > 0:
+                    sentiment_category = 'Positiva'
+                elif sentiment < 0:
+                    sentiment_category = 'Negativa'
+                else:
+                    sentiment_category = 'Neutra'
+                
+                all_news.append({
+                    'title': title,
+                    'description': description,
+                    'content': content,
+                    'published_at': published_at,
+                    'sentiment': sentiment_category
+                })
+        
+        # Incrementa el número de página para la siguiente solicitud
+        page += 1
+        
+        # Limita el número de páginas para evitar solicitudes excesivas
+        if page > 5:  # Puedes ajustar este límite
+            break
+    
+    return all_news
+
+def save_news_to_file(company, news_data):
+    with open(f'{company}_news.csv', 'w', encoding='utf-8') as file:
+        file.write('Title,Description,Content,PublishedAt,Sentiment\n')
+        for news in news_data:
+            file.write(f"{news['title']},{news['description']},{news['content']},{news['published_at']},{news['sentiment']}\n")
+
+for company in companies:
+    news_data = get_news(company)
+    save_news_to_file(company, news_data)
+    print(f'Noticias de {company} descargadas y guardadas en {company}_news.csv')

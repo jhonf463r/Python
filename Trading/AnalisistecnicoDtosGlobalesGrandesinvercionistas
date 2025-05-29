@@ -1,0 +1,108 @@
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from bs4 import BeautifulSoup
+import pandas as pd
+import time
+
+# Configurar Selenium con WebDriver Manager
+options = Options()
+options.add_argument("--headless")  # Ejecutar en segundo plano
+service = Service(ChromeDriverManager().install())
+driver = webdriver.Chrome(service=service, options=options)
+
+# URL de la página de WhaleWisdom para TSLA
+url = "https://whalewisdom.com/stock/tsla"
+driver.get(url)
+
+# Esperar a que la tabla esté completamente cargada
+try:
+    WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.CLASS_NAME, "v-data-table__wrapper"))
+    )
+    print("✅ Tabla de inversionistas cargada correctamente.")
+except Exception as e:
+    print(f"❌ Error al cargar la tabla: {e}")
+    driver.quit()
+    exit()
+
+# Obtener el código fuente de la página
+page_source = driver.page_source
+driver.quit()  # Cerrar el navegador después de obtener la página
+
+# Parsear la página con BeautifulSoup
+soup = BeautifulSoup(page_source, "html.parser")
+
+# Encontrar el div que contiene la tabla
+table_wrapper = soup.find("div", class_="v-data-table__wrapper")
+if not table_wrapper:
+    print("⚠️ No se encontró el contenedor de la tabla. Verifica el HTML de la página.")
+    exit()
+
+# Encontrar la tabla dentro del div
+table = table_wrapper.find("table")
+if not table:
+    print("⚠️ No se encontró la tabla. Verifica el HTML de la página.")
+    exit()
+
+# Obtener todas las filas dentro del tbody
+tbody = table.find("tbody")
+if not tbody:
+    print("⚠️ No se encontró el tbody de la tabla. Verifica el HTML de la página.")
+    exit()
+
+rows = tbody.find_all("tr")
+
+# Lista para almacenar los datos
+data = []
+
+# Extraer información de cada fila
+for row in rows:
+    cols = row.find_all("td")
+
+    # Verificar si la fila tiene suficientes columnas antes de acceder a ellas
+    if len(cols) < 15:  # Cambia 15 si el número esperado de columnas es diferente
+        print("⚠️ Fila con menos columnas de las esperadas. Saltando...")
+        continue
+
+    # Extraer los datos de cada columna
+    investor = cols[0].text.strip()
+    history_link = cols[1].find("a")["href"] if cols[1].find("a") else ""
+    shares_held = cols[2].text.strip()
+    market_value = cols[3].text.strip()
+    percent_portfolio = cols[4].text.strip()
+    previous_percent = cols[5].text.strip()
+    rank = cols[6].text.strip()
+    change_shares = cols[7].text.strip()
+    percent_change_shares = cols[8].text.strip()
+    percent_ownership = cols[9].text.strip()
+    quarter_owned = cols[10].text.strip()
+    avg_price = cols[11].text.strip()
+    filing_type = cols[12].text.strip()
+    source_date = cols[13].text.strip()
+    date_reported = cols[14].text.strip()
+
+    # Agregar los datos a la lista
+    data.append([
+        investor, history_link, shares_held, market_value, percent_portfolio,
+        previous_percent, rank, change_shares, percent_change_shares,
+        percent_ownership, quarter_owned, avg_price, filing_type,
+        source_date, date_reported
+    ])
+
+# Crear DataFrame con pandas
+df = pd.DataFrame(data, columns=[
+    "Investor", "History Link", "Shares Held", "Market Value", "Percent Portfolio",
+    "Previous Percent", "Rank", "Change Shares", "Percent Change Shares",
+    "Percent Ownership", "Quarter Owned", "Avg Price", "Filing Type",
+    "Source Date", "Date Reported"
+])
+
+# Guardar los datos en un CSV
+df.to_csv("inversionistas_tsla.csv", index=False, encoding="utf-8")
+
+print("✅ Datos de inversionistas guardados en 'inversionistas_tsla.csv'")
