@@ -1,53 +1,45 @@
-# Archivo: wplay/strategy/fibonacci.py
-
-from typing import List
-from .base import BettingStrategy
-
-class FibonacciStrategy(BettingStrategy):
+class FibonacciStrategy:
     """
-    Estrategia Fibonacci:
-      - Al perder, avanza un paso en la serie.
-      - Al ganar, retrocede un paso (mínimo 0).
-      - Si supera el tope (`max_step`), mantiene en el tope y puede resetearse si conviene.
+    Estrategia progresiva basada en la secuencia clásica de Fibonacci:
+    [1, 1, 2, 3, 5, 8, 13, 21, ...]
+    - Si pierdes: avanzas al siguiente número (hasta el tope).
+    - Si ganas o alcanzas el tope: reinicias desde el principio.
     """
 
-    def __init__(self, max_step: int = 10):
-        """
-        :param max_step: número máximo de pasos en la serie de Fibonacci.
-                         También define la longitud de la serie precomputada.
-        """
-        super().__init__()  # Inicialización de la clase base, si la hubiera
-        self.max_step = max_step
+    def __init__(self):
+        # Secuencia clásica de Fibonacci (dos "1" al inicio)
+        self.sequence = [1, 1, 2, 3, 5, 8, 13, 21]
+        self.index = 0
+        self.last_win_fibo = False
+        # El paso máximo corresponde al último índice de la secuencia
+        self.max_step = len(self.sequence) - 1
 
-        # Pre-genera la secuencia de Fibonacci hasta max_step
-        self.sequence: List[int] = [1, 1]
-        for i in range(2, max_step + 1):
-            self.sequence.append(self.sequence[-1] + self.sequence[-2])
-
-        # Índice actual en la serie
-        self.index: int = 0
-
-    def next_bet(self, last_win: bool) -> int:
+    def next_bet(self) -> int:
         """
-        Calcula el próximo valor de apuesta según la regla de Fibonacci:
-          - Si se ganó la apuesta anterior, retroceder un paso (sin bajar de 0).
-          - Si se perdió, avanzar un paso (hasta max_step).
-        :param last_win: True si la apuesta anterior fue ganadora.
-        :return: valor de la siguiente apuesta (bounded by sequence[max_step]).
+        Retorna el valor de la apuesta actual según el índice.
         """
-        if last_win:
-            # Retroceder un paso pero no por debajo de 0
-            self.index = max(0, self.index - 1)
-        else:
-            # Avanzar un paso pero no pasar de max_step
-            self.index = min(self.index + 1, self.max_step)
-
-        # Devolver la cuota correspondiente en la serie
         return self.sequence[self.index]
 
-    def reset(self) -> None:
+    def update(self, win: bool):
         """
-        Resetea la estrategia al primer término de la serie.
-        Útil tras una racha de victorias o cuando quieras reiniciar manualmente.
+        Actualiza el índice de la secuencia según el resultado:
+        - Si gana: reinicia (index = 0) y marca last_win_fibo.
+        - Si pierde y no estaba en el tope: avanza (index += 1).
+        - Si pierde y estaba en el tope: reinicia también.
+        """
+        self.last_win_fibo = win
+        if win:
+            self.reset()
+        else:
+            if self.index < self.max_step:
+                self.index += 1
+            else:
+                # Si ya estábamos en el tope, reiniciamos igualmente
+                self.reset()
+
+    def reset(self):
+        """
+        Reinicia la estrategia al comienzo de la secuencia.
         """
         self.index = 0
+        self.last_win_fibo = False

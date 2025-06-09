@@ -1,5 +1,3 @@
-# Archivo: wplay/data/db_reader.py
-
 import os
 import sqlite3
 import pandas as pd
@@ -13,12 +11,10 @@ class DBReader:
     CATEGORIES = ["rojo", "negro", "par", "impar", "1-18", "19-36"]
 
     def __init__(self, db_path: str = None):
-        # Si no se pasa db_path, usa la misma carpeta 'database' junto al paquete
         if db_path:
             self.db_path = db_path
         else:
             base = os.path.dirname(__file__)
-            # asumimos que la base de datos está en ../database/ruleta_stats.db
             self.db_path = os.path.join(base, os.pardir, "database", "ruleta_stats.db")
 
     def load_rounds(self) -> pd.DataFrame:
@@ -41,24 +37,34 @@ class DBReader:
         last_seen = {c: -1 for c in self.CATEGORIES}
         aus_data = {f'aus_{c}': [] for c in self.CATEGORIES}
 
-        # Asegurarse de que existe columna 'categoria'
-        if 'categoria' not in df.columns:
-            # Derivar categoría mínimo (rojo/negro)
-            def num_to_cat(numero):
-                if numero == 0:
-                    return '0'
-                rojo = {1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36}
-                return 'rojo' if numero in rojo else 'negro'
-            df['categoria'] = df['numero'].apply(num_to_cat)
+        # Asegurarse de que existe columna 'numero'
+        if 'numero' not in df.columns:
+            raise ValueError("El DataFrame debe tener columna 'numero' para calcular ausencias.")
 
-        for idx, cat in enumerate(df['categoria']):
+        # Función auxiliar para saber, a partir del número, a qué categorías pertenece
+        def categorias_por_numero(numero: int):
+            rojo_set = {1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36}
+            belongs = {
+                "rojo":   (numero in rojo_set),
+                "negro":  (numero != 0 and numero not in rojo_set),
+                "par":    (numero != 0 and numero % 2 == 0),
+                "impar":  (numero % 2 == 1),
+                "1-18":   (1 <= numero <= 18),
+                "19-36":  (19 <= numero <= 36),
+            }
+            return belongs
+
+        for idx, numero in enumerate(df['numero']):
+            belongs = categorias_por_numero(int(numero))
             for c in self.CATEGORIES:
-                last = last_seen[c]
-                aus = idx - last if last >= 0 else idx
-                aus_data[f'aus_{c}'].append(aus)
-            last_seen[cat] = idx
+                if belongs[c]:
+                    last_seen[c] = idx
+                    aus_data[f'aus_{c}'].append(0)
+                else:
+                    last = last_seen[c]
+                    aus_data[f'aus_{c}'].append(idx - last if last >= 0 else idx)
 
-        # Insertar columnas de ausencias
+        # Insertar columnas de ausencias al DataFrame
         for col, vals in aus_data.items():
             df[col] = vals
         return df

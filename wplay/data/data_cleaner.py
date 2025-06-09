@@ -44,30 +44,39 @@ class DataCleaner:
         if "delta_time" in df.columns:
             df = df[df.delta_time >= self.min_interval]
 
-        # 4) calcular categoría para cada registro
-        def num_to_cat(numero):
-            if numero == 0:
-                return "0"
-            rojo = {1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36}
-            return "rojo" if numero in rojo else "negro"
+        # 4) definir, para cada número, a qué categorías pertenece
+        def categorias_por_numero(numero: int):
+            rojo_set = {1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36}
+            belongs = {
+                "rojo":   (numero in rojo_set),
+                "negro":  (numero != 0 and numero not in rojo_set),
+                "par":    (numero != 0 and numero % 2 == 0),
+                "impar":  (numero % 2 == 1),
+                "1-18":   (1 <= numero <= 18),
+                "19-36":  (19 <= numero <= 36),
+            }
+            return belongs
 
-        df['categoria'] = df['numero'].apply(num_to_cat)
-
-        # 5) calcular ausencias de cada categoría
+        # 5a) inicializar último índice visto para cada categoría
         last_seen = {c: -1 for c in self.CATEGORIES}
         aus_data = {f'aus_{c}': [] for c in self.CATEGORIES}
-        for idx, cat in enumerate(df['categoria']):
-            for c in self.CATEGORIES:
-                last = last_seen[c]
-                aus = idx - last if last >= 0 else idx
-                aus_data[f'aus_{c}'].append(aus)
-            last_seen[cat] = idx
 
-        # añadir columnas de ausencias
+        # 5b) recorrer fila por fila, usando el dict belongs para las seis categorías
+        for idx, numero in enumerate(df['numero']):
+            belongs = categorias_por_numero(int(numero))
+            for c in self.CATEGORIES:
+                if belongs[c]:
+                    last_seen[c] = idx
+                    aus_data[f'aus_{c}'].append(0)
+                else:
+                    last = last_seen[c]
+                    aus_data[f'aus_{c}'].append(idx - last if last >= 0 else idx)
+
+        # 6) añadir esas columnas de ausencias al DataFrame
         for col, vals in aus_data.items():
             df[col] = vals
 
-        # 6) guardamos CSV limpio con nuevas features
+        # 7) guardamos CSV limpio con nuevas features
         os.makedirs(os.path.dirname(self.clean_csv) or ".", exist_ok=True)
         df.to_csv(self.clean_csv, index=False)
         print(f"✔️ DataCleaner: {len(df)} registros tras limpieza (CSV en '{self.clean_csv}')")

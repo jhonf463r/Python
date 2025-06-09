@@ -1,6 +1,6 @@
+import os
 import pandas as pd
 from datetime import datetime
-
 
 # Ajuste según número máximo de jugadores observado o estimado
 MAX_JUGADORES = 20
@@ -51,5 +51,6 @@ class FeatureEngineer:
 
         # Guardar CSV de características
         feature_df = pd.DataFrame(features)
+        os.makedirs(os.path.dirname(self.feat_csv) or ".", exist_ok=True)
         feature_df.to_csv(self.feat_csv, index=False)
         print(f"✔️ FeatureEngineer: {len(features)} filas generadas en '{self.feat_csv}'")

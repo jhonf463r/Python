@@ -115,20 +115,20 @@ class DataCollector:
     ) -> Tuple[bool, float]:
         """
         Dada la apuesta anterior (categoria, fichas):
-         - Determina color, paridad y rango del número.
-         - Calcula si ganaste y la ganancia neta.
+        - Determina color, paridad y rango del número.
+        - Calcula si ganaste y la ganancia neta (payout 2×).
         """
-        rojos = {1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36}
-        color = "rojo" if numero in rojos else "negro"
+        rojos   = {1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36}
+        color   = "rojo" if numero in rojos else "negro"
         paridad = "par" if (numero != 0 and numero % 2 == 0) else "impar"
-        rango = (
-            "1-18" if 1 <= numero <= 18
-            else "19-36" if 19 <= numero <= 36
-            else None
-        )
-        ganaste = categoria in {color, paridad, rango}
-        neto = valor_ficha * (fichas if ganaste else -fichas)
+        rango   = "1-18" if 1 <= numero <= 18 else "19-36" if 19 <= numero <= 36 else None
+
+        ganaste    = categoria in {color, paridad, rango}
+        # **Usar payout 2× (multiplicador = 2)**
+        multiplier = 2
+        neto       = valor_ficha * fichas * (multiplier if ganaste else -1)
         return ganaste, neto
+
 
     # ——— Métodos añadidos para integration con BettingEngine ———
 

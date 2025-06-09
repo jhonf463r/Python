@@ -7,8 +7,9 @@ import numpy as np
 import pyautogui
 import pyperclip
 import unicodedata
+from wplay.config import CHROME_EXECUTABLE, USER_DATA_DIR, CHROME_PROFILE
+from wplay.capture.chrome_handler import ChromeHandler
 from glob import glob
-
 from wplay.data.db_manager import DBManager
 from wplay.strategy.manager import StrategyManager
 from wplay.detectors.ruleta_detector import RuletaDetector
@@ -65,7 +66,33 @@ class LoginAutomation:
         self.strategy_manager = StrategyManager(db_path=db_path)
         self.ruleta_detector  = RuletaDetector(delay=0.5, debug_folder="debug_ruleta")
         self.numero_detector  = NumeroDetector(debug_folder="debug_numeros")
+    
+    def open_chrome(self, url: str):
+            """
+            Crea un nuevo ChromeHandler con la configuración de config.py
+            y abre la URL dada. Luego maximiza la ventana para asegurar
+            que toda la página esté visible.
+            """
+            # 1) Abrir Chrome
+            chrome = ChromeHandler(
+                executable_path=CHROME_EXECUTABLE,
+                user_data_dir=USER_DATA_DIR,
+                profile=CHROME_PROFILE
+            )
+            chrome.open_chrome(url)
 
+            # 2) Pequeña espera para que la ventana aparezca
+            time.sleep(2)
+
+            # 3) Maximizar la ventana (Windows: Win + Flecha arriba)
+            try:
+                pyautogui.hotkey("win", "up")
+                time.sleep(0.5)
+            except Exception as e:
+                print(f"[LOGIN] No pudo maximizar ventana: {e!r}")
+
+            # 4) Dejar unos segundos para que la página cargue completamente
+            time.sleep(5)
     def find_all_regions(self, threshold: float = 0.8) -> dict:
         """
         Escanea la pantalla buscando todas las plantillas entrenadas.
@@ -188,21 +215,32 @@ class LoginAutomation:
         print("⏱ Timeout en login_or_continue.")
         return False
 
-    def calcular_ganancia(self, numero: int, categoria: str, fichas: int) -> (bool, float):
-        """
-        Calcula color/paridad/rango y devuelve (ganó?, ganancia neta).
-        """
-        rojos = {1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36}
-        color = "rojo" if numero in rojos else "negro"
-        paridad = "par" if (numero != 0 and numero % 2 == 0) else "impar"
-        rango = "1-18" if 1 <= numero <= 18 else "19-36"
-        win = categoria in {color, paridad, rango}
-        val = 500
-        return win, val * (fichas if win else -fichas)
 
+    def calcular_ganancia(self, numero: int, categoria: str, fichas: int) -> tuple[bool, float]:
+    
+
+        """
+        Calcula color/paridad/rango y devuelve (ganó?, ganancia neta en dinero real).
+        Usa self.strategy_manager.wager_value como valor de ficha.
+        """
+        rojos    = {1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36}
+        color    = "rojo"   if numero in rojos else "negro"
+        paridad  = "par"    if (numero != 0 and numero % 2 == 0) else "impar"
+        rango    = "1-18"   if 1 <= numero <= 18 else "19-36"
+        win      = categoria in {color, paridad, rango}
+
+        # valor por ficha según el escalonado actual
+        ficha_val = self.strategy_manager.wager_value
+
+        # ganancia neta: +fichas×valor si gana, –lo mismo si pierde
+        net = ficha_val * fichas
+        return win, ( net if win else -net )
+
+    
     def monitor(self):
         """
         Modo monitoreo/apuestas basado en etiqueta 'apostar'.
+        Selecciona la ficha 500 o 5000 antes de apostar en real.
         """
         COOLDOWN = 12.0
         apuesta_en_curso = False
@@ -243,9 +281,9 @@ class LoginAutomation:
             else:
                 win, gain = False, 0.0
 
-            # 4) Elegir estrategia y cantidad
+            # 4) Elegir estrategia y cantidad de fichas
             strat = self.strategy_manager.choose()
-            amt = self.strategy_manager.bet_amount(strat, win)
+            amt   = self.strategy_manager.bet_amount(strat, win)
 
             # 5) Guardar en BD
             prev = getattr(self, "saldo", 0.0)
@@ -268,16 +306,25 @@ class LoginAutomation:
 
             # 6) Apostar
             etiqueta = "[SIM]" if self.simulate else "[REAL]"
+
+            if not self.simulate:
+                # 6.1) Actualizamos wager_value y seleccionamos plantilla 500_1.png o 5000_1.png
+                self.strategy_manager._update_wager_value()
+                self.seleccionar_ficha(self.strategy_manager.wager_value)
+
             print(f"{etiqueta} Apostando {amt} ficha(s) a '{strat}'")
+            # 6.2) Hacer click en la mesa la cantidad de veces indicada
             self.apostar_opcion(strat, amt)
 
             # 7) Reset
             apuesta_en_curso = True
-            last_cat = strat
-            last_strat = strat
-            last_amt = amt
+            last_cat     = strat
+            last_strat   = strat
+            last_amt     = amt
             vel_buffer.clear()
-            last_time = now
+            last_time    = now
+
+
 
     def apostar_opcion(self, categoria: str, n_fichas: int):
         """
@@ -303,3 +350,26 @@ class LoginAutomation:
             for _ in range(n_fichas):
                 human_click(cx, cy)
                 time.sleep(0.2)
+
+    def seleccionar_ficha(self, amt: int):
+        """
+        Selecciona la ficha correcta:
+         - si amt >= 5_000 → clic en plantilla '5000_1.png' (región '5000')
+         - sino → clic en plantilla '500_1.png' (región '500')
+        """
+        # Determinamos nombre de región según amt
+        if amt >= 5000:
+            name = "5000"
+        else:
+            name = "500"
+
+        det = self.find_all_regions()
+        if name not in det:
+            print(f"⚠ No detecté región '{name}' para seleccionar ficha.")
+            return False
+
+        x, y, w, h = det[name]
+        cx, cy = x + w//2, y + h//2
+        human_click(cx, cy)
+        time.sleep(0.2)
+        return True
