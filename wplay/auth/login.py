@@ -1,4 +1,4 @@
-# wplay/auth/login.py
+ # wplay/auth/login.py
 
 import os
 import time
@@ -66,80 +66,116 @@ class LoginAutomation:
         self.strategy_manager = StrategyManager(db_path=db_path)
         self.ruleta_detector  = RuletaDetector(delay=0.5, debug_folder="debug_ruleta")
         self.numero_detector  = NumeroDetector(debug_folder="debug_numeros")
+        
     
     def open_chrome(self, url: str):
-            """
-            Crea un nuevo ChromeHandler con la configuración de config.py
-            y abre la URL dada. Luego maximiza la ventana para asegurar
-            que toda la página esté visible.
-            """
-            # 1) Abrir Chrome
-            chrome = ChromeHandler(
-                executable_path=CHROME_EXECUTABLE,
-                user_data_dir=USER_DATA_DIR,
-                profile=CHROME_PROFILE
-            )
-            chrome.open_chrome(url)
+        # 1) Abrir Chrome (sin intentar pasarle flags extras)
+        chrome = ChromeHandler(
+            executable_path=CHROME_EXECUTABLE,
+            user_data_dir=USER_DATA_DIR,
+            profile=CHROME_PROFILE
+        )
+        chrome.open_chrome(url)
 
-            # 2) Pequeña espera para que la ventana aparezca
-            time.sleep(2)
+        # 2) Pequeña espera para que aparezca la ventana
+        time.sleep(2)
 
-            # 3) Maximizar la ventana (Windows: Win + Flecha arriba)
-            try:
-                pyautogui.hotkey("win", "up")
+        # 3) Forzar foco y maximizar con PyAutoGUI
+        try:
+            wins = pyautogui.getWindowsWithTitle("Chrome")
+            if wins:
+                win = wins[0]
+                win.activate()
+                time.sleep(0.2)
+                win.maximize()
                 time.sleep(0.5)
-            except Exception as e:
-                print(f"[LOGIN] No pudo maximizar ventana: {e!r}")
+            else:
+                # si no encuentra ventana por “Chrome”, pruebo con cualquier
+                all_wins = pyautogui.getAllWindows()
+                if all_wins:
+                    w = all_wins[0]
+                    w.activate(); time.sleep(0.2); w.maximize()
+        except Exception as e:
+            print(f"[LOGIN] No pudo maximizar ventana: {e!r}")
 
-            # 4) Dejar unos segundos para que la página cargue completamente
-            time.sleep(5)
+        # 4) Esperar a que la página cargue bien
+        time.sleep(5)
+
+
+   
     def find_all_regions(self, threshold: float = 0.8) -> dict:
         """
-        Escanea la pantalla buscando todas las plantillas entrenadas.
-        Devuelve un dict {nombre_region: (x,y,w,h)} y lo imprime en consola.
+        Escanea la pantalla buscando todas las plantillas entrenadas
+        salvo 'ruleta' (solo cargamos su ROI desde regions.json).
+        Devuelve un dict:
+          - para cada plantilla detectada: (x,y,w,h,tpl_path,match)
+          - siempre inyecta 'ruleta_coords': (x,y,w,h)
         """
         detected = {}
-        screen_gray = cv2.cvtColor(
-            np.array(pyautogui.screenshot()), cv2.COLOR_RGB2GRAY
-        )
+
+        # 1) Inyectar ROI estática de la ruleta desde regions.json
+        #    Esperamos que self.regions["ruleta"] sea lista de dicts con keys x,y,w,h
+        roi_list = self.regions.get("ruleta", [])
+        if roi_list:
+            r = roi_list[0]
+            detected["ruleta_coords"] = (r["x"], r["y"], r["w"], r["h"])
+            # print(f"[DEBUG] Región estática 'ruleta' → {detected['ruleta_coords']}")
+
+        # 2) Capturar pantalla y convertir a gris
+        screen = np.array(pyautogui.screenshot())
+        screen_gray = cv2.cvtColor(screen, cv2.COLOR_RGB2GRAY)
+
+        # 3) Directorio de plantillas
         tpl_dir = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "..", "templates", "region_images")
         )
 
-        # Prioridad a 'clic'
-        ordered = ["clic"] + [r for r in self.regions if r != "clic"]
+        # 4) Preparar orden: 'clic' primero, y luego todo excepto 'ruleta'
+        ordered = ["clic"] + [
+            name for name in self.regions.keys()
+            if name not in ("clic", "ruleta")
+        ]
+
+        # 5) Para cada plantilla activa, hacemos match
         for name in ordered:
-            if name not in self.regions:
-                continue
+            # normalizamos el nombre para buscar archivos
             norm = normalize_filename(name)
             for tpl_path in glob(f"{tpl_dir}/{norm}_*.png"):
                 tpl = cv2.imread(tpl_path, cv2.IMREAD_GRAYSCALE)
                 if tpl is None:
                     continue
+
                 res = cv2.matchTemplate(screen_gray, tpl, cv2.TM_CCOEFF_NORMED)
                 _, maxv, _, maxloc = cv2.minMaxLoc(res)
                 th = 0.92 if name == "clic" else threshold
                 if maxv >= th:
                     x, y = maxloc
                     h, w = tpl.shape
-                    detected[name] = (x, y, w, h)
-                    break
+                    detected[name] = (x, y, w, h, tpl_path, maxv)
+                    break  # solo la primera plantilla que pase umbral
 
-        if detected:
-            items = ", ".join(f"'{k}':{v}" for k, v in detected.items())
-           # print(f"🔍 Detecciones: {{{items}}}")
         return detected
+
 
     def click_region(self, name: str) -> bool:
         """
-        Hace clic en el centro de la región detectada para 'name'.
+        Ejecuta un clic real en el centro de la región detectada para 'name'.
+        Imprime qué etiqueta y plantilla provocan el clic.
         """
         det = self.find_all_regions()
-        if name not in det:
+        info = det.get(name)
+        if not info:
             print(f"⚠ No detecté región '{name}' para clic.")
             return False
-        x, y, w, h = det[name]
-        cx, cy = x + w//2, y + h//2
+
+        x, y, w, h, tpl_path, match = info
+        cx, cy = x + w // 2, y + h // 2
+
+        # depuración antes del clic
+        print(f"[DEBUG-click] etiqueta='{name}' "
+              f"plantilla='{os.path.basename(tpl_path)}' "
+              f"match={match:.2f} → coords=({cx},{cy})")
+
         human_click(cx, cy)
         return True
 
@@ -240,34 +276,35 @@ class LoginAutomation:
     def monitor(self):
         """
         Modo monitoreo/apuestas basado en etiqueta 'apostar'.
-        Selecciona la ficha 500 o 5000 antes de apostar en real.
+        - Extrae la ROI de 'ruleta' vía DataProcessor.get_ruleta_roi()
+        - Detecta giro y procesa velocidad sin duplicar lógica.
         """
         COOLDOWN = 12.0
         apuesta_en_curso = False
-        last_cat = None
-        last_strat = None
+        last_cat = last_strat = None
         last_amt = 0
         vel_buffer = []
         data_proc = DataProcessor()
         last_time = 0.0
+
+        chip_selected = False
+        click_opcion_count = 0
+        click_opcion_log_interval = 5
 
         print("Entrando en modo de monitoreo...")
         while True:
             det = self.find_all_regions()
             now = time.time()
 
-            # Esperar etiqueta 'apostar' + cooldown
+            # esperar etiqueta 'apostar' + cooldown
             if "apostar" not in det or (now - last_time) < COOLDOWN:
                 time.sleep(0.3)
                 continue
 
-            # 1) Giro
-            if "giro" in det:
-                spin = self.ruleta_detector.detectar_giro(det.get("ruleta_coords"), data_proc)
-                if spin:
-                    vel, dir_ = spin[2], spin[3]
-                    vel_buffer.append(vel)
-                    print(f"Giro vel={vel:.1f}, dir={dir_}")
+            # nueva tanda
+            chip_selected = False
+            click_opcion_count = 0
+            last_time = now
 
             # 2) Leer número
             numero = self.numero_detector.detectar_numero()
@@ -304,31 +341,34 @@ class LoginAutomation:
             self.db_manager.guardar_registro(registro)
             print(">>", registro)
 
-            # 6) Apostar
+            # 6) Apostar (simulado o real)
             etiqueta = "[SIM]" if self.simulate else "[REAL]"
 
-            if not self.simulate:
-                # 6.1) Actualizamos wager_value y seleccionamos plantilla 500_1.png o 5000_1.png
+            # 6.1) Seleccionar ficha solo una vez
+            if not self.simulate and not chip_selected:
                 self.strategy_manager._update_wager_value()
                 self.seleccionar_ficha(self.strategy_manager.wager_value)
+                chip_selected = True
+
+            # 6.2) Depuración de clics
+            click_opcion_count += amt
+            if click_opcion_count % click_opcion_log_interval == 0:
+                print(f"[DEBUG] Se acumularían {click_opcion_count} clics en la opción de apuesta")
 
             print(f"{etiqueta} Apostando {amt} ficha(s) a '{strat}'")
-            # 6.2) Hacer click en la mesa la cantidad de veces indicada
-            self.apostar_opcion(strat, amt)
 
-            # 7) Reset
             apuesta_en_curso = True
             last_cat     = strat
             last_strat   = strat
             last_amt     = amt
             vel_buffer.clear()
-            last_time    = now
 
 
 
-    def apostar_opcion(self, categoria: str, n_fichas: int):
+    def apostar_opcion(self, categoria: str, total_amount: int):
         """
-        Hace clic repetidamente en la sección de la mesa correspondiente.
+        Ejecuta los clics reales sobre la mesa para apostar 'total_amount' en 'categoria'.
+        Calcula el valor de ficha (500 o 5000) y repite human_click por cada ficha.
         """
         coords_map = {
             "rojo":   (952, 894, 61, 21),
@@ -336,40 +376,91 @@ class LoginAutomation:
             "1-18":   (811, 895, 43, 19),
             "19-36":  (1188, 897, 46, 16),
             "par":    (880, 896, 45, 18),
-            "impar":  (1107,896, 57, 19),
+            "impar":  (1107, 896, 57, 19),
         }
         if categoria not in coords_map:
             print(f"⚠ Opción desconocida: {categoria}")
             return
-        x, y, w, h = coords_map[categoria]
-        cx, cy = x + w//2, y + h//2
 
-        if self.simulate:
-            print(f"[SIM] Apostar {n_fichas} ficha(s) a {categoria}")
-        else:
-            for _ in range(n_fichas):
+        # Determinar valor de ficha y cantidad de fichas
+        chip_value = 5000 if total_amount % 5000 == 0 else 500
+        n_fichas = total_amount // chip_value
+
+        x, y, w, h = coords_map[categoria]
+        cx, cy = x + w // 2, y + h // 2
+
+        # Seleccionar ficha correspondiente
+        self.seleccionar_ficha(chip_value)
+
+        # Ejecutar n_fichas clics reales
+        for i in range(n_fichas):
+            human_click(cx, cy)
+            time.sleep(0.2)  # pequeña pausa entre clics
+       # print(f"[REAL] Ejecutados {n_fichas} clic(s) de valor {chip_value} en '{categoria}'")
+    def seleccionar_ficha(self, amt: int) -> bool:
+            """
+            Selecciona la ficha correcta (500 o 5000) buscando la mejor coincidencia
+            en varias escalas. Devuelve True si se hizo “clic” simuladamente.
+            """
+            name = "5000" if amt >= 5000 else "500"
+
+            if name not in self.regions:
+                print(f"⚠️ self.regions no contiene la clave '{name}'. "
+                    f"Agrega '5000' al dict de regiones.")
+                return False
+
+            tpl_dir = os.path.join(
+                os.path.dirname(__file__),
+                "..", "templates", "region_images"
+            )
+            tpl_paths = glob(f"{tpl_dir}/{name}_*.png")
+            if not tpl_paths:
+                print(f"⚠️ No encontré archivos {name}_*.png en {tpl_dir}")
+                return False
+
+            screen = cv2.cvtColor(
+                np.array(pyautogui.screenshot()),
+                cv2.COLOR_RGB2GRAY
+            )
+
+            best = {"val": 0.0, "loc": None, "w": 0, "h": 0, "tpl": None, "scale": 1.0}
+            for tpl_path in tpl_paths:
+                tpl_orig = cv2.imread(tpl_path, cv2.IMREAD_GRAYSCALE)
+                if tpl_orig is None:
+                    continue
+                h0, w0 = tpl_orig.shape
+
+                for scale in np.linspace(0.7, 1.3, 13):
+                    w, h = int(w0 * scale), int(h0 * scale)
+                    if w < 10 or h < 10:
+                        continue
+                    tpl = cv2.resize(tpl_orig, (w, h), interpolation=cv2.INTER_AREA)
+                    res = cv2.matchTemplate(screen, tpl, cv2.TM_CCOEFF_NORMED)
+                    _, maxv, _, maxloc = cv2.minMaxLoc(res)
+                    if maxv > best["val"]:
+                        best.update({
+                            "val": maxv,
+                            "loc": maxloc,
+                            "w": w,
+                            "h": h,
+                            "tpl": tpl_path,
+                            "scale": scale
+                        })
+
+            umbral = 0.8
+            if best["val"] >= umbral:
+                x, y = best["loc"]
+                cx = x + best["w"] // 2
+                cy = y + best["h"] // 2
+
+                # depuración de ficha
+                print(f"[DEBUG-ficha] etiqueta='{name}' "
+                    f"plantilla='{os.path.basename(best['tpl'])}' "
+                    f"scale={best['scale']:.2f} match={best['val']:.2f} → coords=({cx},{cy})")
+
                 human_click(cx, cy)
                 time.sleep(0.2)
+                return True
 
-    def seleccionar_ficha(self, amt: int):
-        """
-        Selecciona la ficha correcta:
-         - si amt >= 5_000 → clic en plantilla '5000_1.png' (región '5000')
-         - sino → clic en plantilla '500_1.png' (región '500')
-        """
-        # Determinamos nombre de región según amt
-        if amt >= 5000:
-            name = "5000"
-        else:
-            name = "500"
-
-        det = self.find_all_regions()
-        if name not in det:
-            print(f"⚠ No detecté región '{name}' para seleccionar ficha.")
+            print(f"⚠ No detecté ficha '{name}' (mejor match={best['val']:.2f})")
             return False
-
-        x, y, w, h = det[name]
-        cx, cy = x + w//2, y + h//2
-        human_click(cx, cy)
-        time.sleep(0.2)
-        return True

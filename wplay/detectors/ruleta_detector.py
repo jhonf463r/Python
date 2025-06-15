@@ -1,61 +1,63 @@
-# wplay/detectors/ruleta_detector.py
-
 import cv2
 import numpy as np
-import pyautogui
 import time
-import os
 import math
+import random
 from collections import deque
-from wplay.data.data_processor import DataProcessor
+import mss
+from typing import Tuple
+
+from wplay.data.data_processor import DataProcessor  # <-- aquí
+class DataProcessor:
+    def __init__(self, max_angle_jump=80.0, max_velocity=500.0):
+        self.max_angle_jump = max_angle_jump
+        self.max_velocity = max_velocity
 
 class RuletaDetector:
     def __init__(
         self,
-        delay: float = 0.5,
+        capture_fps: int = 30,
+        capture_duration: float = 1.0,
+        ransac_iters: int = 100,
+        inlier_tol: float = 3.0,
+        delay: float = 0.0,
         debug_folder: str = "debug_ruleta",
         lower_green: tuple[int,int,int] = (40, 70, 50),
         upper_green: tuple[int,int,int] = (90, 255, 180),
         min_area: int = 100,
         max_registros: int = 50
     ):
-        """
-        :param delay: tiempo entre capturas para estimar velocidad
-        :param debug_folder: carpeta donde guardar imágenes de debug
-        :param lower_green, upper_green: rango HSV para detectar la franja verde
-        :param min_area: área mínima de contorno para ser válido
-        :param max_registros: cuántos registros de giro guardar en memoria
-        """
+        self.capture_fps = capture_fps
+        self.capture_duration = capture_duration
+        self.ransac_iters = ransac_iters
+        self.inlier_tol = inlier_tol
         self.delay = delay
         self.debug_folder = debug_folder
         self.lower_green = np.array(lower_green, dtype=np.uint8)
         self.upper_green = np.array(upper_green, dtype=np.uint8)
         self.min_area = min_area
         self.registros = deque(maxlen=max_registros)
-        os.makedirs(self.debug_folder, exist_ok=True)
-        # Creamos un DataProcessor interno para validar saltos y velocidades
         self.data_processor = DataProcessor(max_angle_jump=80.0, max_velocity=500.0)
 
-    def guardar_imagen(self, imagen: np.ndarray, nombre: str):
-        ruta = os.path.join(self.debug_folder, nombre)
-        cv2.imwrite(ruta, imagen)
-
-    def capturar_ruleta(self, coords: tuple[int,int,int,int]) -> np.ndarray | None:
-        if coords is None:
-            return None
+    def capturar_frames(self, coords):
+        """
+        Captura una secuencia de frames con MSS y devuelve lista de (timestamp, frame)
+        """
         x, y, w, h = coords
-        shot = pyautogui.screenshot(region=(x, y, w, h))
-        return cv2.cvtColor(np.array(shot), cv2.COLOR_RGB2BGR)
+        total_frames = int(self.capture_fps * self.capture_duration)
+        frames = []
+        with mss.mss() as sct:
+            monitor = {"left": x, "top": y, "width": w, "height": h}
+            for _ in range(total_frames):
+                t = time.time()
+                sct_img = sct.grab(monitor)
+                frame = np.array(sct_img)[..., :3]
+                frames.append((t, cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)))
+                if self.delay:
+                    time.sleep(self.delay)
+        return frames
 
-    def detectar_color_verde(self, frame_bgr: np.ndarray) -> np.ndarray:
-        hsv = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsv, self.lower_green, self.upper_green)
-        kernel = np.ones((5, 5), np.uint8)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-        return mask
-
-    def calcular_centro_masa(self, mask: np.ndarray) -> tuple[int,int,float]:
+    def calcular_centro_masa(self, mask: np.ndarray):
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if not contours:
             return None, None, 0.0
@@ -64,103 +66,101 @@ class RuletaDetector:
         if area < self.min_area:
             return None, None, 0.0
         M = cv2.moments(c)
-        cx = int(M["m10"] / M["m00"])
-        cy = int(M["m01"] / M["m00"])
-        return cx, cy, area
-
+        return int(M["m10"]/M["m00"]), int(M["m01"]/M["m00"]), area
+    
     def calcular_angulo(self, frame_bgr: np.ndarray, cx: int, cy: int) -> float:
+        """
+        Calcula el ángulo (en grados) del punto (cx,cy) respecto al centro del frame.
+        Devuelve un valor en [-180, +180].
+        """
         h, w = frame_bgr.shape[:2]
         center_x, center_y = w // 2, h // 2
+        # atan2 retorna radianes; lo convertimos a grados
         ang = math.degrees(math.atan2(cy - center_y, cx - center_x))
         return ang
 
-    def detectar_giro(
-        self,
-        coords: tuple[int, int, int, int],
-        data_processor,
-        numero_caido: int | None = None
-    ) -> tuple[float, float, float, str, int] | None:
-        """
-        Toma varias capturas de la ruleta, procesa cada par de imágenes para calcular
-        el ángulo, la velocidad y la dirección del giro, y utiliza data_processor
-        para filtrar resultados. Devuelve el mejor (angle1, angle2, velocity, direction, numero_caido).
-        """
 
-        # 1) Debug: ROI
-        if coords is None:
-            print("[giro][DEBUG] coords=None: no se puede capturar la ruleta.")
-            return None
-        x, y, w, h = coords
-        roi_img = pyautogui.screenshot(region=(x, y, w, h))
-        roi_bgr = cv2.cvtColor(np.array(roi_img), cv2.COLOR_RGB2BGR)
-        os.makedirs(os.path.join(self.debug_folder, "spin_roi"), exist_ok=True)
-        roi_path = os.path.join(self.debug_folder, "spin_roi", "roi.png")
-        cv2.imwrite(roi_path, roi_bgr)
-      #  print(f"[giro][DEBUG] ROI guardado en {roi_path} → coords={coords}")
+    def detectar_color_verde(self, frame_bgr):
+        hsv = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)
+        mask = cv2.inRange(hsv, self.lower_green, self.upper_green)
+        kernel = np.ones((5,5), np.uint8)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        return cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
-        # 2) Capturas sucesivas
-        frames: list[np.ndarray] = []
-        for i in range(5):
-            f = self.capturar_ruleta(coords)
-            if f is None:
-                print(f"[giro][WARN] captura {i} falló, abortando.")
-                return None
-            frames.append(f)
-            time.sleep(self.delay)
-
-        # 3) Procesar pares consecutivos
-        resultados = []
-        spin_dir = os.path.join(self.debug_folder, "spin")
-        os.makedirs(spin_dir, exist_ok=True)
-
-        for i in range(1, len(frames)):
-            f1, f2 = frames[i-1], frames[i]
-            # máscaras
-            m1 = self.detectar_color_verde(f1)
-            m2 = self.detectar_color_verde(f2)
-            cv2.imwrite(os.path.join(spin_dir, f"frame_{i-1}.png"), f1)
-            cv2.imwrite(os.path.join(spin_dir, f"mask_{i-1}.png"), m1)
-         #   print(f"[giro][DEBUG] guardado frame_{i-1}.png y mask_{i-1}.png")
-
-            # centros de masa
-            cx1, cy1, area1 = self.calcular_centro_masa(m1)
-            cx2, cy2, area2 = self.calcular_centro_masa(m2)
-            if area1 == 0 or area2 == 0:
-           #     print(f"[giro][DEBUG] contorno no válido en par {i-1}/{i}: area1={area1}, area2={area2}")
+    def ransac_angular_velocity(self, times, angles):
+        best_vel = None
+        best_inliers = []
+        n = len(times)
+        for _ in range(self.ransac_iters):
+            i, j = random.sample(range(n), 2)
+            dt = times[j] - times[i]
+            if dt <= 0:
                 continue
+            dv = angles[j] - angles[i]
+            vel_candidate = dv / dt
+            # count inliers
+            inliers = []
+            for k in range(n):
+                pred = angles[i] + vel_candidate * (times[k] - times[i])
+                if abs(pred - angles[k]) <= self.inlier_tol:
+                    inliers.append(k)
+            if len(inliers) > len(best_inliers):
+                best_inliers = inliers
+                best_vel = vel_candidate
+        return best_vel, best_inliers
 
-            # ángulos y tiempos
-            ang1 = self.calcular_angulo(f1, cx1, cy1)
-            ang2 = self.calcular_angulo(f2, cx2, cy2)
-            t1 = time.time()
-            t2 = t1 + self.delay
-            vel = data_processor.calcular_velocidad_angular(ang1, ang2, t1, t2)
-            diff = ang2 - ang1
-            direc = "sin cambio" if abs(diff) < 1 else ("horario" if diff > 0 else "antihorario")
+    def detectar_giro(self, coords, data_processor, numero_caido=None):
+            """
+            Variante mejorada: captura continua de frames, calc. timestamps reales,
+            filtrado de ángulos, y RANSAC para velocidad angular.
+            """
+            if coords is None:
+                return None
+            # Captura N frames con MSS/OpenCV
+            seq = self.capturar_frames(coords)
+            times, frames = zip(*seq)
 
-          #  print(f"[giro][DEBUG] par {i-1}->{i}: ang1={ang1:.1f}, ang2={ang2:.1f}, "f"vel={vel:.1f}, dir={direc}")
+            # Extraer ángulos y áreas
+            angles, areas = [], []
+            for f in frames:
+                mask = self.detectar_color_verde(f)
+                cx, cy, area = self.calcular_centro_masa(mask)
+                if area == 0:
+                    angles.append(None)
+                    areas.append(0)
+                    continue
+                ang = self.calcular_angulo(f, cx, cy)
+                angles.append(ang)
+                areas.append(area)
 
-            resultados.append((ang1, ang2, vel, direc, numero_caido))
+            # Filtrar frames inválidos antes de RANSAC
+            valid = []  # (t_i, ang_i)
+            for i, (t, ang) in enumerate(zip(times, angles)):
+                if ang is None:
+                    continue
+                if i > 0:
+                    if angles[i-1] is None:
+                        continue
+                    if abs(ang - angles[i-1]) > data_processor.max_angle_jump:
+                        continue
+                    if abs(areas[i] - areas[i-1]) > 0.3 * areas[i-1]:
+                        continue
+                valid.append((t, ang))
+            if len(valid) < 5:
+                return None
+
+            # RANSAC para velocidad angular
+            times_v, angs_v = zip(*valid)
+            vel, inliers = self.ransac_angular_velocity(times_v, angs_v)
+            if vel is None or abs(vel) > data_processor.max_velocity:
+                return None
+
+            direction = 'horario' if vel > 0 else 'antihorario'
             self.registros.append({
-                "t1": t1, "t2": t2,
-                "angle1": ang1, "angle2": ang2,
-                "velocity": vel, "direction": direc,
-                "numero": numero_caido,
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+                'velocity': vel,
+                'direction': direction,
+                'numero': numero_caido,
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
             })
-
-        # 4) Filtrar por saltos y velocidad, elegir el más estable
-        mejor = None
-        for r in resultados:
-            a1, a2, v, d, num = r
-            if abs(a2 - a1) <= data_processor.max_angle_jump and v <= data_processor.max_velocity:
-                if mejor is None or v < mejor[2]:
-                    mejor = r
-
-        if mejor is None:
-            print("[giro][WARN] Ningún resultado válido tras filtrar saltos y velocidad.")
-      #  else:
-          #  print(f"[giro][OK] mejor resultado → angle1={mejor[0]:.1f}, "
-           #     f"angle2={mejor[1]:.1f}, vel={mejor[2]:.1f}, dir={mejor[3]}")
-
-        return mejor
+            return vel, direction, numero_caido
+   

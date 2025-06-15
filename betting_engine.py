@@ -17,6 +17,7 @@ from wplay.strategy.dqn_agent import DQNAgent
 from wplay.strategy.ppo_agent import PPOAgent
 from wplay.strategy.strategy_manager_dl import StrategyManagerDL
 from wplay.strategy.constants import MONTO_MAX
+from wplay.data.feature_engineer_deep import generate_unified_features
 
 class BettingEngine:
     def __init__(
@@ -84,17 +85,17 @@ class BettingEngine:
         df_raw.to_csv(CLEAN_CSV, index=False)
         print(f"✔️ DataCleaner: CSV limpio guardado en '{CLEAN_CSV}'")
 
-        # 2) FeatureEngineerDeep → genera LSTM_CSV y RL_CSV
-        print("🔄 FeatureEngineerDeep: generando características…")
-        fe = FeatureEngineerDeep(
-            clean_csv = CLEAN_CSV,
-            lstm_csv  = LSTM_CSV,
-            rl_csv    = RL_CSV,
-            window    = 50,
-            window_rl = 10
+        # 2) Generar características avanzadas con módulo separado
+        print("🔄 Generando características avanzadas…")
+
+        generate_unified_features(
+            clean_csv_path=CLEAN_CSV,
+            lstm_csv_path=LSTM_CSV,
+            rl_csv_path=RL_CSV,
+            window_lstm=50,
+            window_rl=10
         )
-        fe.transform()
-        print(f"✔️ FeatureEngineerDeep: {os.path.basename(LSTM_CSV)} y {os.path.basename(RL_CSV)} generados.")
+        print(f"✔️ Características generadas en '{LSTM_CSV}' y '{RL_CSV}'")
 
         # 3) Entrenar LSTM offline
         print("🔄 ModelTrainer: entrenando LSTM…")

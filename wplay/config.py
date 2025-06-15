@@ -5,7 +5,7 @@ import os
 # — Ruta de la base de datos SQLite —
 BASE_DIR = os.path.dirname(__file__)
 DB_PATH  = os.path.join(BASE_DIR, "database", "ruleta_stats.db")
-DATA_DIR = os.path.join(BASE_DIR, "data")
+DATA_DIR = os.path.join(BASE_DIR,  "wplay","data")
 MODELS   = os.path.join(BASE_DIR, "models")
 
 # — Configuración de Tesseract OCR —
