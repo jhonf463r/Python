@@ -1,44 +1,33 @@
-<<<<<<< HEAD
-# Entorno virtual
+# ─── Entornos virtuales ─────────────────────────────────────────────────────────
 .venv/
 venv/
 env/
+myenv/
 
-# VSCode
+# ─── IDEs y editores ────────────────────────────────────────────────────────────
 .vscode/
+.idea/
 
-# Python cache
-__pycache__/
-*.py[cod]
-
-# Archivos de log
-*.log
-=======
-# Archivos temporales
-*.csv
-*.tmp
-*.bak
-*.swp
-*.swo
-*.html
-.DS_Store
-
-# Archivos de Python
+# ─── Python y bytecode ──────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *.so
 
-# Entornos virtuales
-myenv/
-venv/
-env/
+# ─── Archivos de log y temporales ───────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# ─── Datos y reportes ───────────────────────────────────────────────────────────
+*.csv
 financial_reports/
 financial_reportsAMZ/
 financial_reportsTsl/
-# Archivos de configuración
-.vscode/
-.idea/
 
-# Archivos de dependencias
+# ─── Mac OS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+
+# ─── Dependencias y lockfiles ───────────────────────────────────────────────────
 Pipfile.lock
->>>>>>> 9324a883ad79b744557203414505f50b7976e4bc
