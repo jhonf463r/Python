@@ -1,0 +1,36 @@
+✅ Siguiente paso recomendado
+Crea un entorno limpio:
+
+bash
+Copiar
+Editar
+conda create -n wplay-win-gpu python=3.10 -y
+conda activate wplay-win-gpu
+Instala las dependencias:
+ 
+bash
+Copiar
+Editar
+pip install -r requirements.txt
+Verifica que TensorFlow detecta la GPU:
+
+bash
+Copiar
+Editar
+python -c "import tensorflow as tf; print(tf.__version__, tf.config.list_physical_devices('GPU'))"
+Ejecuta tu proyecto:
+
+bash
+Copiar
+Editar
+ conda activate wplay-win-gpu 
+python -m wplay
+¿Quieres que te genere el archivo requirements.txt listo para descargar?
+
+
+
+
+
+
+
+
