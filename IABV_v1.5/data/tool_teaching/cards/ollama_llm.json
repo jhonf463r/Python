@@ -2,7 +2,7 @@
   "tool_id": "ollama_llm",
   "title": "Ollama local",
   "tool_type": "llm_local",
-  "description": "Proveedor local principal para inferencia y razonamiento sin APIs de pago.",
+  "description": "Proveedor local principal para inferencia, chat adaptativo y razonamiento sin APIs de pago.",
   "adapter_key": "ollama",
   "validation_status": "approved",
   "local_first": true,
@@ -14,7 +14,10 @@
   "capabilities": [
     "llm_query",
     "summarize",
-    "classify"
+    "classify",
+    "knowledge.query.local",
+    "assistant.local.chat",
+    "local_chat_context"
   ],
   "success_count": 1,
   "failure_count": 0,
@@ -25,6 +28,7 @@
     "launch_mode": "local_provider",
     "response_capture_mode": "tool_result",
     "requires_manual_pasteback": false,
-    "updated_at_utc": "2026-04-18T15:55:21.668679+00:00"
+    "supports_local_chat": true,
+    "updated_at_utc": "2026-04-18T20:41:56.239158+00:00"
   }
 }

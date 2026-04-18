@@ -1,8 +1,13 @@
 ﻿from __future__ import annotations
 
-from iabv_v15.domain.models import AdaptiveSession, ApprovalDecision, RunStatus, TaskRole
+from iabv_v15.domain.models import AdaptiveSession, ApprovalDecision, RunStatus, TaskRole, ToolType
 from iabv_v15.services.adaptive.execution_playbook_service import OperationalExecutorResult
 from iabv_v15.services.tools.tool_teach_service import ToolTeachService
+
+
+_LOCAL_CHAT_PACK_IDS = frozenset({'knowledge.query', 'general.assistance'})
+_LOCAL_CHAT_INTENT_KEYS = frozenset({'knowledge.query', 'general.assistance'})
+_LOCAL_CHAT_ROLES = frozenset({TaskRole.KNOWLEDGE, TaskRole.ANALYTICS, TaskRole.RESEARCH})
 
 
 class ToolOperationalExecutor:
@@ -11,15 +16,35 @@ class ToolOperationalExecutor:
     def __init__(self, tool_teach_service: ToolTeachService) -> None:
         self.tool_teach_service = tool_teach_service
 
+    def _is_tool_flow(self, session: AdaptiveSession) -> bool:
+        return session.intent.detected_role in {TaskRole.TOOL_USE, TaskRole.TOOL_SANDBOX} or session.chosen_pack_id.startswith('tools.')
+
+    def _is_local_chat_flow(self, session: AdaptiveSession) -> bool:
+        pack_id = session.chosen_pack_id or ''
+        intent_key = session.intent.intent_key or ''
+        if pack_id in _LOCAL_CHAT_PACK_IDS:
+            return True
+        if intent_key in _LOCAL_CHAT_INTENT_KEYS:
+            return True
+        if session.intent.detected_role in _LOCAL_CHAT_ROLES and not pack_id:
+            return True
+        return False
+
     def supports(self, session: AdaptiveSession) -> bool:
-        if not (session.intent.detected_role in {TaskRole.TOOL_USE, TaskRole.TOOL_SANDBOX} or session.chosen_pack_id.startswith('tools.')):
+        tool_flow = self._is_tool_flow(session)
+        local_chat_flow = self._is_local_chat_flow(session)
+        if not (tool_flow or local_chat_flow):
             return False
         preview_task = self.tool_teach_service.build_task_for_session(session)
         card = self.tool_teach_service.registry.pick_card_for_task(preview_task)
         if card is None:
             return False
         adapter = self.tool_teach_service.adapters.get(card.adapter_key)
-        return bool(adapter and adapter.is_available(card))
+        if not (adapter and adapter.is_available(card)):
+            return False
+        if tool_flow:
+            return True
+        return card.tool_type == ToolType.LLM_LOCAL
 
     def describe(self, session: AdaptiveSession) -> str:
         if not self.supports(session):
