@@ -1,0 +1,63 @@
+{
+  "pattern_id": "5d4c032c-2b2c-4d93-ae77-3b2e6d9fb418",
+  "signature": "bc7425fedfe2a7086081a45f10ccbe7352c870f3",
+  "title": "Consultar ChatGPT",
+  "channel": "ui",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": "wplay",
+  "operations": [
+    {
+      "step_id": "68519e62-d1c6-4657-8bcc-c2170545cb82",
+      "channel": "ui",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false
+      }
+    },
+    {
+      "step_id": "993e0c22-7142-4c13-8db4-75d5d36b6d5e",
+      "channel": "ui",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false
+      }
+    }
+  ],
+  "reusable": true,
+  "success_count": 1,
+  "failure_count": 1,
+  "last_task_id": "0b0981ad-7742-4361-b4f8-0d9b25f58477",
+  "last_result_id": "e5e28919-cccf-455d-848d-72e195b70ade",
+  "created_at_utc": "2026-04-14T00:47:16.529669Z",
+  "updated_at_utc": "2026-04-14T00:47:41.164793Z",
+  "metadata": {
+    "objective_excerpt": "Consultar ChatGPT sobre: contesta en una frase si puedes revisar wplay",
+    "execution_scope": "read_only",
+    "approval_decision": "approved",
+    "last_validation_status": "unvalidated",
+    "last_execution_state": "failed",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "last_interaction_episode_id": "776cc371-add7-4026-b327-7d944a749f0b"
+  }
+}

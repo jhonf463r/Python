@@ -1,0 +1,49 @@
+{
+  "recommendation_id": "291bd794-561c-4939-8c23-9c7aee1f038e",
+  "domain": "code",
+  "subject_key": "wplay",
+  "recommended_route": "local",
+  "recommended_assistant_kind": "codex instalado",
+  "recommended_assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+  "score": 0.2916,
+  "confidence": 0.6429,
+  "rationale": "Recomiendo local para code en wplay usando codex instalado con configuracion without_plan|without_files|normal|short|without_tools|without_browser|general|external por score promedio 0.29 con 1 muestra(s).",
+  "supporting_run_ids": [
+    "ceb9c7d2-d00e-4639-ab95-65b2d2e79ae7"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "local",
+        "score": 0.2916,
+        "samples": 1
+      }
+    ],
+    "ranked_configurations": [
+      {
+        "route": "local",
+        "assistant_kind": "codex instalado",
+        "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "score": 0.2916,
+        "samples": 1,
+        "reuse_count": 0
+      }
+    ],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": []
+  },
+  "created_at_utc": "2026-04-12T22:28:00.270866Z"
+}

@@ -1,0 +1,104 @@
+{
+  "result_id": "deae04f6-e2b2-4e19-9ed8-f64aca5b08a4",
+  "task_id": "7c077558-6b7c-4b4e-a615-3df0ec81e889",
+  "tool_id": "codex_installed",
+  "tool_type": "custom",
+  "success": true,
+  "validation_status": "sandbox_pass",
+  "execution_state": {
+    "state": "sandbox_pass",
+    "detail": "Sandbox local de herramienta ejecutado.",
+    "executor_name": "external_assistant",
+    "sandboxed": true,
+    "validated": true,
+    "approval_decision": "approved",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": true,
+      "assistant_kind": "codex",
+      "launch_mode": "desktop_app",
+      "launch_target": "codex",
+      "response_capture_mode": "clipboard_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\nObjetivo del usuario: revisa wplay con codex\nAsistente sugerido: codex\nSitio: General\nIntento detectado: general.assistance\nPack activo: n/d\nEstado adaptativo: completed\nOutcome actual: Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Consulta local con contexto; sigue faltando un adaptador operativo del dominio.\nEvidencia textual:\n- Contexto activo: contexto general.\n- Ultima corrida: success | rol knowledge | pack knowledge.query.\n- Dossiers relacionados: 2.\nPaquete local para Codex:\nPaquete para Codex - IABV v1.5\n\nWorkspace: C:\\Python\\IABV_v1.5\nRol activo: Automatico\nMeta actual: revisa wplay con codex\nPolitica: local-first, secretos protegidos, sin OpenAI en runtime, sin imports legacy en runtime.\n\nEstado del proyecto:\n- episodios: 0\n- conocimiento: 3\n- ejecuciones: 3\n- artefactos: 0\n\nAnalitica:\nEpisodios 0, conocimiento 3, corridas 3 y confianza media 0.83. La prioridad sugerida es mejorar conversion a ejecucion.\n\nHuecos de ensenanza:\n- resumen: Aun no hay episodios. La prioridad mas alta es ensenar login, navegacion inicial y confirmacion.\n- siguientes ensenanzas: Ensenar el flujo base de acceso\n\nPBT:\n- generacion: 0\n- mejor score: 0.0\n- resumen: Sin ejecuciones PBT aun. La base esta lista para explorar configuraciones.\n\nEntrega esperada para Codex:\n1. diagnostico breve\n2. causa raiz\n3. cambio vertical recomendado\n4. pruebas a ejecutar\n5. riesgos o tradeoffs\n\nCentro evolutivo:\n- resumen: Dossiers recientes: 3 | fallos: 0 | parciales: 0 | incidentes invisibles: 0 | sesiones adaptativas: 5 | autotests: 0 | pendientes Codex: 0. Prioridad sugerida: seguir reforzando evidencia y conocimiento local.\n- backlog sugerido: Pista de mejora reportada por la ejecucion\n\nIABV_THREAD_KEY: iabv::codex::general::revisa-wplay-con-codex\nIABV_THREAD_TITLE: IABV Codex | revisa wplay con codex\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "session_scope": "external_app",
+      "session_label": "Codex",
+      "isolated_session": false,
+      "thread_key": "iabv::codex::general::revisa-wplay-con-codex",
+      "thread_title": "IABV Codex | revisa wplay con codex",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "2026-04-13T16:51:10.569422+00:00",
+      "reused_thread": true,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\tool_teaching\\external_assistants\\codex_home"
+    }
+  },
+  "rollback_state": null,
+  "output_text": "Asistente externo listo para consulta guiada.",
+  "extracted_data": {
+    "assistant_kind": "codex",
+    "launch_target": "codex"
+  },
+  "artifacts": [],
+  "error_message": "",
+  "execution_ms": 4,
+  "created_at_utc": "2026-04-13T16:51:10.569499Z",
+  "metadata": {
+    "sandbox": true,
+    "objective_id": "",
+    "project_id": "",
+    "task_goal_id": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "interaction_pattern_id": "080442f8-90f5-4c4c-a2a6-4768722ae1d1",
+    "interaction_channel": "background",
+    "interaction_episode_id": "c7c88518-13a2-48de-b33e-b6bf94a59cf4",
+    "mode_selection": {
+      "decision_id": "699ffe1f-f868-43d4-ad65-49369ded1a9d",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "background",
+      "selected_tool_id": "codex_installed",
+      "selected_tool_type": "custom",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": false,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=background | automatica=True | available=True",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "codex_installed",
+            "mode": "background",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "selected_mode": "background",
+    "selector_reason": "consulta_externa_preferida | modo=background | automatica=True | available=True",
+    "reuse_guard_active": false
+  }
+}

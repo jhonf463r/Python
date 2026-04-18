@@ -1,0 +1,104 @@
+{
+  "result_id": "1cf583a1-0069-430b-9351-e05af858c085",
+  "task_id": "0b0981ad-7742-4361-b4f8-0d9b25f58477",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "success": true,
+  "validation_status": "sandbox_pass",
+  "execution_state": {
+    "state": "sandbox_pass",
+    "detail": "Sandbox local de herramienta ejecutado.",
+    "executor_name": "external_assistant",
+    "sandboxed": true,
+    "validated": true,
+    "approval_decision": "approved",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": true,
+      "assistant_kind": "chatgpt",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://chatgpt.com/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Consulta viva para validar ChatGPT web asistido desde IABV.\n\nIABV_THREAD_KEY: iabv::chatgpt::wplay::contesta-en-una-frase-si-puedes-revisar-wplay\nIABV_THREAD_TITLE: IABV ChatGPT | contesta en una frase si puedes revisar wplay\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::chatgpt::wplay::contesta-en-una-frase-si-puedes-revisar-wplay",
+      "thread_title": "IABV ChatGPT | contesta en una frase si puedes revisar wplay",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "2026-04-14T00:47:16.495621+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\.tmp_tests\\live_route_diag_escalated_chatgpt\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+    }
+  },
+  "rollback_state": null,
+  "output_text": "Asistente externo listo para consulta guiada.",
+  "extracted_data": {
+    "assistant_kind": "chatgpt",
+    "launch_target": "https://chatgpt.com/"
+  },
+  "artifacts": [],
+  "error_message": "",
+  "execution_ms": 0,
+  "created_at_utc": "2026-04-14T00:47:16.495788Z",
+  "metadata": {
+    "sandbox": true,
+    "objective_id": "",
+    "project_id": "",
+    "task_goal_id": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "interaction_pattern_id": "5d4c032c-2b2c-4d93-ae77-3b2e6d9fb418",
+    "interaction_channel": "ui",
+    "interaction_episode_id": "aaae9809-efbe-4bd6-9522-75df9323734a",
+    "mode_selection": {
+      "decision_id": "38eb14d3-8215-4e5a-84b0-e3d7d5d98bb3",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "ui",
+      "selected_tool_id": "chatgpt_web_assisted",
+      "selected_tool_type": "llm_web_ui",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": false,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "chatgpt_web_assisted",
+            "mode": "ui",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "selected_mode": "ui",
+    "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+    "reuse_guard_active": false
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "objective_id": "a7c2d3bc-3922-43ba-baf0-cbe2ea720e46",
+  "kind": "subtask",
+  "title": "Ejecutar fase",
+  "summary": "No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+  "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+  "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+  "site_id": null,
+  "priority": 55,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.9,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+  ],
+  "tags": [
+    "execute"
+  ],
+  "metadata": {
+    "phase_key": "execute",
+    "requires_approval": false,
+    "executable": true,
+    "simulation_only": false,
+    "pack_id": "browser.generic"
+  },
+  "created_at_utc": "2026-04-11T01:11:58.999478Z",
+  "updated_at_utc": "2026-04-11T01:11:58.999479Z"
+}

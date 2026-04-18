@@ -1,0 +1,93 @@
+{
+  "result_id": "e1d1b18d-0bea-48b1-9390-427809a2671f",
+  "task_id": "67651a47-510d-495f-8822-890b31aa5a08",
+  "tool_id": "codex_installed",
+  "tool_type": "custom",
+  "success": false,
+  "validation_status": "blocked",
+  "execution_state": {
+    "state": "missing_tool",
+    "detail": "No encontre una ToolCard registrada para esta tarea.",
+    "executor_name": "",
+    "sandboxed": false,
+    "validated": false,
+    "approval_decision": "pending",
+    "destructive_blocked": true,
+    "metadata": {
+      "audit_reason": "Falta una via operativa local y conviene escalar con el asistente externo mas util para el tipo de fallo.",
+      "audit_snapshot_id": "87bb4caa-6a85-47a0-b791-5fdcd79da24d"
+    }
+  },
+  "rollback_state": null,
+  "output_text": "",
+  "extracted_data": {},
+  "artifacts": [],
+  "error_message": "tool_card_missing",
+  "execution_ms": 0,
+  "created_at_utc": "2026-04-16T04:30:23.332938Z",
+  "metadata": {
+    "live_audit": {
+      "audit_snapshot_id": "87bb4caa-6a85-47a0-b791-5fdcd79da24d",
+      "objective": "Consultar Codex sobre: Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+      "session_or_episode_id": "67651a47-510d-495f-8822-890b31aa5a08",
+      "mode_used": "fallback",
+      "evidence": [],
+      "findings": [
+        {
+          "finding_id": "abfd581e-03e6-4b78-82c6-3f6668eca2a2",
+          "kind": "tool_adapter_missing",
+          "title": "Falta adaptador operativo",
+          "summary": "No encontre una ToolCard registrada para esta tarea.",
+          "confidence": 0.93,
+          "evidence_refs": [],
+          "metadata": {
+            "state": "missing_tool",
+            "tool_id": "codex_installed"
+          }
+        }
+      ],
+      "decision": {
+        "decision_id": "4baaec4e-73db-423c-9697-e32b0dd8cf96",
+        "action": "consult_chatgpt",
+        "rationale": "Falta una via operativa local y conviene escalar con el asistente externo mas util para el tipo de fallo.",
+        "confidence": 0.82,
+        "recommended_tool_id": "chatgpt_installed",
+        "approval_required": true,
+        "metadata": {}
+      },
+      "confidence": 0.41,
+      "auto_safe_action": "",
+      "human_approval": false,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 0.2,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.45,
+        "bridge_drain_health": 0.0,
+        "observer_agreement_score": 0.4125,
+        "learning_consolidation_score": 0.4125,
+        "lab_precision": 0.3268,
+        "lab_robustness": 0.4,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.4024,
+        "lab_recommended_route_score": 0.0
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "codex_installed",
+        "tool_type": "custom",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "87bb4caa-6a85-47a0-b791-5fdcd79da24d",
+    "audit_decision": "consult_chatgpt",
+    "audit_recommendation": "consult_chatgpt",
+    "audit_summary": "Falta adaptador operativo Decision: consult_chatgpt. Confianza 0.41."
+  }
+}

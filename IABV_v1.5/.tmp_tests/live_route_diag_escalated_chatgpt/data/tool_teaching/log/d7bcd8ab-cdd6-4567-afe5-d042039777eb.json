@@ -1,0 +1,164 @@
+{
+  "log_id": "d7bcd8ab-cdd6-4567-afe5-d042039777eb",
+  "tool_id": "chatgpt_web_assisted",
+  "task_id": "0b0981ad-7742-4361-b4f8-0d9b25f58477",
+  "action_type": "task_result",
+  "state": "failed",
+  "created_at_utc": "2026-04-14T00:47:41.122934+00:00",
+  "payload": {
+    "result_id": "e5e28919-cccf-455d-848d-72e195b70ade",
+    "task_id": "0b0981ad-7742-4361-b4f8-0d9b25f58477",
+    "tool_id": "chatgpt_web_assisted",
+    "tool_type": "llm_web_ui",
+    "success": false,
+    "validation_status": "unvalidated",
+    "execution_state": {
+      "state": "failed",
+      "detail": "browser_input_missing",
+      "executor_name": "external_assistant",
+      "sandboxed": false,
+      "validated": false,
+      "approval_decision": "approved",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": false,
+        "assistant_kind": "chatgpt",
+        "launch_mode": "web_assisted",
+        "launch_target": "https://chatgpt.com/",
+        "response_capture_mode": "dom_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Consulta viva para validar ChatGPT web asistido desde IABV.\n\nIABV_THREAD_KEY: iabv::chatgpt::wplay::contesta-en-una-frase-si-puedes-revisar-wplay\nIABV_THREAD_TITLE: IABV ChatGPT | contesta en una frase si puedes revisar wplay\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "prompt_preview": "Consulta viva para validar ChatGPT web asistido desde IABV.\n\nIABV_THREAD_KEY: iabv::chatgpt::wplay::contesta-en-una-frase-si-puedes-revisar-wplay\nIABV_THREAD_TITLE: IABV ChatGPT | contesta en una frase si puedes revisar wplay\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "response_captured": false,
+        "launched": true,
+        "auto_capture_attempted": true,
+        "auto_capture_reason": "browser_input_missing",
+        "response_capture_pending": false,
+        "assistant_login_required": false,
+        "focused_title": "Just a moment...",
+        "session_scope": "program_chat",
+        "session_label": "ChatGPT especial de IABV",
+        "isolated_session": true,
+        "thread_key": "iabv::chatgpt::wplay::contesta-en-una-frase-si-puedes-revisar-wplay",
+        "thread_title": "IABV ChatGPT | contesta en una frase si puedes revisar wplay",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "2026-04-14T00:47:16.614363+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\.tmp_tests\\live_route_diag_escalated_chatgpt\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile",
+        "capture_source": "browser_dom",
+        "browser_profile_dir": "C:\\Python\\IABV_v1.5\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+      }
+    },
+    "rollback_state": null,
+    "output_text": "",
+    "extracted_data": {
+      "assistant_kind": "chatgpt",
+      "launch_target": "https://chatgpt.com/",
+      "prompt_preview": "Consulta viva para validar ChatGPT web asistido desde IABV.\n\nIABV_THREAD_KEY: iabv::chatgpt::wplay::contesta-en-una-frase-si-puedes-revisar-wplay\nIABV_THREAD_TITLE: IABV ChatGPT | contesta en una frase si puedes revisar wplay\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "focused_title": "Just a moment..."
+    },
+    "artifacts": [],
+    "error_message": "browser_input_missing",
+    "execution_ms": 24508,
+    "created_at_utc": "2026-04-14T00:47:41.122934Z",
+    "metadata": {
+      "sandbox": false,
+      "assistant_kind": "chatgpt",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "normal",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "with_browser",
+        "assistant_mode": "general",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "chatgpt",
+          "tool_id": "chatgpt_web_assisted",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 371
+        }
+      },
+      "config_signature": "without_plan|without_files|normal|short|with_tools|with_browser|general|external",
+      "external_state_flags": [
+        "capture_unverified"
+      ],
+      "ia_trace_entry": {
+        "trace_id": "a167670f-cdc4-420e-a52c-82bd26b68d9a",
+        "created_at_utc": "2026-04-14T00:47:41.123082Z",
+        "assistant_kind": "chatgpt",
+        "requested_assistant_kind": "chatgpt",
+        "actual_assistant_kind": "chatgpt",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "normal",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "with_browser",
+          "assistant_mode": "general",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "chatgpt",
+            "tool_id": "chatgpt_web_assisted",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 371
+          }
+        },
+        "config_signature": "without_plan|without_files|normal|short|with_tools|with_browser|general|external",
+        "comparison_scope_key": "wplay:consultar-chatgpt-sobre-contesta-en-una-frase-si-puedes-revisar-wplay",
+        "source_trace_ids": [],
+        "route": "ui",
+        "tool_id": "chatgpt_web_assisted",
+        "task_id": "0b0981ad-7742-4361-b4f8-0d9b25f58477",
+        "result_id": "e5e28919-cccf-455d-848d-72e195b70ade",
+        "session_scope": "program_chat",
+        "thread_key": "iabv::chatgpt::wplay::contesta-en-una-frase-si-puedes-revisar-wplay",
+        "thread_title": "IABV ChatGPT | contesta en una frase si puedes revisar wplay",
+        "capture_lane": "background",
+        "state": "failed",
+        "detail": "browser_input_missing",
+        "proposal_summary": "Consulta viva para validar ChatGPT web asistido desde IABV. IABV_THREAD_KEY: iabv::chatgpt::wplay::contesta-en-una-frase-si-puedes-revisar-wplay IABV_THREAD_TITLE: IABV ChatGPT | contesta en una frase si puedes revisar wplay IABV_LANE_PRIOR",
+        "outcome_summary": "",
+        "result_label": "Consultar ChatGPT",
+        "success": false,
+        "execution_ms": 24508,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "wplay",
+          "0b0981ad-7742-4361-b4f8-0d9b25f58477",
+          "e5e28919-cccf-455d-848d-72e195b70ade"
+        ],
+        "reused_later": false,
+        "verdict": "failed",
+        "coherence_flags": [],
+        "external_state_flags": [
+          "capture_unverified"
+        ],
+        "metadata": {
+          "response_capture_mode": "dom_capture",
+          "background_capture_mode": "browser_dom",
+          "comparison_scope_key": "wplay:consultar-chatgpt-sobre-contesta-en-una-frase-si-puedes-revisar-wplay"
+        }
+      },
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  }
+}

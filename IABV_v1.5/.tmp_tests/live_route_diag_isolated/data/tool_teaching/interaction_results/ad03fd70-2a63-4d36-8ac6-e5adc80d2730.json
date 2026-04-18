@@ -1,0 +1,132 @@
+{
+  "interaction_result_id": "ad03fd70-2a63-4d36-8ac6-e5adc80d2730",
+  "success": false,
+  "execution_state": {
+    "state": "failed",
+    "detail": "[WinError 5] Acceso denegado",
+    "executor_name": "external_assistant",
+    "sandboxed": false,
+    "validated": false,
+    "approval_decision": "approved",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": false,
+      "assistant_kind": "chatgpt",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://chatgpt.com/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Consulta viva para validar ChatGPT web asistido desde IABV.\n\nIABV_THREAD_KEY: iabv::chatgpt::wplay::contesta-en-una-frase-si-puedes-revisar-wplay\nIABV_THREAD_TITLE: IABV ChatGPT | contesta en una frase si puedes revisar wplay\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::chatgpt::wplay::contesta-en-una-frase-si-puedes-revisar-wplay",
+      "thread_title": "IABV ChatGPT | contesta en una frase si puedes revisar wplay",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "2026-04-14T00:45:15.440682+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\.tmp_tests\\live_route_diag_isolated\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile",
+      "auto_capture_attempted": true,
+      "auto_capture_reason": "[WinError 5] Acceso denegado"
+    }
+  },
+  "summary": "[WinError 5] Acceso denegado",
+  "errors": [
+    "[WinError 5] Acceso denegado"
+  ],
+  "confidence": 0.22,
+  "execution_ms": 5,
+  "rollback_state": null,
+  "extracted_data": {
+    "assistant_kind": "chatgpt",
+    "launch_target": "https://chatgpt.com/"
+  },
+  "artifacts": [],
+  "metadata": {
+    "validation_status": "unvalidated",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "live_audit": {
+      "audit_snapshot_id": "f90e9e53-aaeb-4c00-8334-c59f979b74e4",
+      "objective": "Consultar ChatGPT sobre: contesta en una frase si puedes revisar wplay",
+      "session_or_episode_id": "bf75b395-d3de-4da5-88fe-89b9e0d29ad9",
+      "mode_used": "ui",
+      "evidence": [
+        "4670aeee-c4aa-4e1d-a6ff-8836f6cc0832",
+        "bf75b395-d3de-4da5-88fe-89b9e0d29ad9",
+        "site:wplay"
+      ],
+      "findings": [
+        {
+          "finding_id": "67cef9ec-9164-4221-bf89-db40805d613e",
+          "kind": "external_route_blocked",
+          "title": "La via externa quedo bloqueada o sin captura verificable",
+          "summary": "La consulta externa no devolvio una respuesta confiable y el bloqueo debe tratarse como limitacion real, no como progreso valido.",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "4670aeee-c4aa-4e1d-a6ff-8836f6cc0832",
+            "bf75b395-d3de-4da5-88fe-89b9e0d29ad9",
+            "site:wplay"
+          ],
+          "metadata": {
+            "external_state_flags": [
+              "capture_unverified"
+            ]
+          }
+        }
+      ],
+      "decision": {
+        "decision_id": "a8d49466-4579-45f5-8bb6-f716e6ad7fe8",
+        "action": "continue_local",
+        "rationale": "La via externa quedo bloqueada o sin captura verificable; conviene seguir localmente mientras el bloqueo queda trazado.",
+        "confidence": 0.82,
+        "recommended_tool_id": "chatgpt_web_assisted",
+        "approval_required": false,
+        "metadata": {}
+      },
+      "confidence": 0.66,
+      "auto_safe_action": "",
+      "human_approval": true,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 0.2,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.45,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.6625,
+        "learning_consolidation_score": 0.6625,
+        "lab_precision": 0.124,
+        "lab_robustness": 0.4,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.3313,
+        "lab_recommended_route_score": 0.0
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "chatgpt_web_assisted",
+        "tool_type": "llm_web_ui",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "f90e9e53-aaeb-4c00-8334-c59f979b74e4"
+  }
+}

@@ -1,0 +1,2551 @@
+{
+  "status_id": "245a2d7d-5486-4877-8703-5cb3016a6fd2",
+  "created_at_utc": "2026-04-18T14:59:27.519233Z",
+  "updated_at_utc": "2026-04-18T14:59:27.519233Z",
+  "summary": "Superviso 5 contexto(s) con 8 propuesta(s) activa(s), 5 ya decidida(s) y 5 contexto(s) degradado(s). Mejor panorama actual: general favorece ollama con score 1.27 Validacion autonoma: idle. Sin validacion autonoma reciente.",
+  "performance": [
+    {
+      "performance_id": "2de759de-943d-4cbd-8fff-a8de60284ee8",
+      "domain": "language",
+      "subject_key": "general",
+      "route": "language_understanding",
+      "assistant_kind": "ollama",
+      "config_signature": "local_provider:ollama",
+      "sample_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "blocked_count": 0,
+      "fallback_count": 0,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "average_score": 0.9274,
+      "average_latency_ms": 0,
+      "adaptive_weight": 0.34,
+      "weighted_score": 1.2674,
+      "trend_score": 0.0,
+      "degraded": false,
+      "degradation_reasons": [],
+      "evidence_refs": [
+        "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e"
+      ],
+      "comparison_scope_keys": [
+        "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+        "general:tiene-todo-el-panorama-completo-de-tu-estructura-de-tu-arquitectura",
+        "general:tienes-el-panorama-completo-de-tu-estructura",
+        "general:que-modelo-de-ia-estas-usando-para-contestarme",
+        "general:que-gpu-estas-usando-ahora-mismo-la-gpu0-o-la-gpu1",
+        "general:que-modelo-de-ia-manejas-o-fucionas"
+      ],
+      "created_at_utc": "2026-04-18T14:59:27.765561Z",
+      "metadata": {
+        "reasons": [
+          "historial de exito 100%",
+          "reutilizacion alta 100%"
+        ],
+        "top_environment_signatures": [
+          "default"
+        ],
+        "top_time_buckets": [
+          "night"
+        ]
+      }
+    },
+    {
+      "performance_id": "42df4070-f911-4fe3-9706-8d1739015e7b",
+      "domain": "language",
+      "subject_key": "general",
+      "route": "language_understanding",
+      "assistant_kind": "adaptive local orchestrator",
+      "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+      "sample_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "blocked_count": 0,
+      "fallback_count": 0,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "average_score": 0.6258,
+      "average_latency_ms": 951,
+      "adaptive_weight": 0.2346,
+      "weighted_score": 0.8604,
+      "trend_score": 0.0,
+      "degraded": false,
+      "degradation_reasons": [],
+      "evidence_refs": [
+        "5192df44-13cb-4c62-8fd3-9352fdf11d4f"
+      ],
+      "comparison_scope_keys": [
+        "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+        "general:tiene-todo-el-panorama-completo-de-tu-estructura-de-tu-arquitectura",
+        "general:tienes-el-panorama-completo-de-tu-estructura",
+        "general:que-modelo-de-ia-estas-usando-para-contestarme",
+        "general:que-gpu-estas-usando-ahora-mismo-la-gpu0-o-la-gpu1",
+        "general:que-modelo-de-ia-manejas-o-fucionas"
+      ],
+      "created_at_utc": "2026-04-18T14:59:27.765606Z",
+      "metadata": {
+        "reasons": [
+          "historial de exito 100%"
+        ],
+        "top_environment_signatures": [
+          "conectado|partial"
+        ],
+        "top_time_buckets": [
+          "evening"
+        ]
+      }
+    },
+    {
+      "performance_id": "ff159abc-ded6-45e7-bac6-dc59b518d83d",
+      "domain": "language",
+      "subject_key": "general",
+      "route": "ui",
+      "assistant_kind": "adaptive local orchestrator",
+      "config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+      "sample_count": 2,
+      "success_count": 2,
+      "failure_count": 0,
+      "blocked_count": 0,
+      "fallback_count": 0,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "average_score": 0.6314,
+      "average_latency_ms": 10699,
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.7714,
+      "trend_score": 0.0,
+      "degraded": true,
+      "degradation_reasons": [
+        "latencia alta 10699 ms"
+      ],
+      "evidence_refs": [
+        "5e47c733-3081-42ca-a61c-6297c5604bde",
+        "36ac3959-6658-41b9-846a-18dd4615a610"
+      ],
+      "comparison_scope_keys": [
+        "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+        "general:tiene-todo-el-panorama-completo-de-tu-estructura-de-tu-arquitectura",
+        "general:tienes-el-panorama-completo-de-tu-estructura",
+        "general:que-modelo-de-ia-estas-usando-para-contestarme",
+        "general:que-gpu-estas-usando-ahora-mismo-la-gpu0-o-la-gpu1",
+        "general:que-modelo-de-ia-manejas-o-fucionas"
+      ],
+      "created_at_utc": "2026-04-18T14:59:27.765638Z",
+      "metadata": {
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 10699 ms"
+        ],
+        "top_environment_signatures": [
+          "conectado|partial"
+        ],
+        "top_time_buckets": [
+          "night",
+          "evening"
+        ]
+      }
+    },
+    {
+      "performance_id": "ca35ce81-19a4-4027-94c1-046c6b6a4631",
+      "domain": "language",
+      "subject_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+      "route": "local",
+      "assistant_kind": "ollama",
+      "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+      "sample_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "blocked_count": 0,
+      "fallback_count": 0,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "average_score": 0.6292,
+      "average_latency_ms": 70997,
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.7692,
+      "trend_score": 0.0,
+      "degraded": true,
+      "degradation_reasons": [
+        "latencia alta 70997 ms"
+      ],
+      "evidence_refs": [
+        "ca9faa21-19dd-4f3f-91ec-824cdf7e22a2"
+      ],
+      "comparison_scope_keys": [
+        "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura"
+      ],
+      "created_at_utc": "2026-04-18T14:59:27.768055Z",
+      "metadata": {
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 70997 ms"
+        ],
+        "top_environment_signatures": [
+          "conectado|partial"
+        ],
+        "top_time_buckets": [
+          "afternoon"
+        ]
+      }
+    },
+    {
+      "performance_id": "06f6d192-9ff3-418a-99ab-be65c9a433ab",
+      "domain": "language",
+      "subject_key": "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+      "route": "local",
+      "assistant_kind": "ollama",
+      "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+      "sample_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "blocked_count": 0,
+      "fallback_count": 0,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "average_score": 0.6292,
+      "average_latency_ms": 70997,
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.7692,
+      "trend_score": 0.0,
+      "degraded": true,
+      "degradation_reasons": [
+        "latencia alta 70997 ms"
+      ],
+      "evidence_refs": [
+        "988d0f06-49e7-4773-af37-b4c49c30dcf2"
+      ],
+      "comparison_scope_keys": [
+        "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura"
+      ],
+      "created_at_utc": "2026-04-18T14:59:27.769902Z",
+      "metadata": {
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 70997 ms"
+        ],
+        "top_environment_signatures": [
+          "conectado|partial"
+        ],
+        "top_time_buckets": [
+          "afternoon"
+        ]
+      }
+    },
+    {
+      "performance_id": "24c45f97-54d7-45ac-bcb2-9b661a2e58d2",
+      "domain": "language",
+      "subject_key": "9d07d8c6-19c6-4a1b-a1fc-7a8aa8b111ec",
+      "route": "local",
+      "assistant_kind": "ollama",
+      "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+      "sample_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "blocked_count": 0,
+      "fallback_count": 0,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "average_score": 0.5382,
+      "average_latency_ms": 70225,
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.6782,
+      "trend_score": 0.0,
+      "degraded": true,
+      "degradation_reasons": [
+        "latencia alta 70225 ms"
+      ],
+      "evidence_refs": [
+        "417cfb8a-3adc-48e6-8470-2ab722f79c3f"
+      ],
+      "comparison_scope_keys": [
+        "general:tiene-todo-el-panorama-completo-de-tu-estructura-de-tu-arquitectura"
+      ],
+      "created_at_utc": "2026-04-18T14:59:27.771677Z",
+      "metadata": {
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 70225 ms"
+        ],
+        "top_environment_signatures": [
+          "conectado|partial"
+        ],
+        "top_time_buckets": [
+          "afternoon"
+        ]
+      }
+    },
+    {
+      "performance_id": "96eb04c1-3222-47af-977c-0dbcbd970eb5",
+      "domain": "language",
+      "subject_key": "general:tiene-todo-el-panorama-completo-de-tu-estructura-de-tu-arquitectura",
+      "route": "local",
+      "assistant_kind": "ollama",
+      "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+      "sample_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "blocked_count": 0,
+      "fallback_count": 0,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "average_score": 0.5382,
+      "average_latency_ms": 70225,
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.6782,
+      "trend_score": 0.0,
+      "degraded": true,
+      "degradation_reasons": [
+        "latencia alta 70225 ms"
+      ],
+      "evidence_refs": [
+        "d5781ca0-cb7f-486b-a970-b7dcf8a71106"
+      ],
+      "comparison_scope_keys": [
+        "general:tiene-todo-el-panorama-completo-de-tu-estructura-de-tu-arquitectura"
+      ],
+      "created_at_utc": "2026-04-18T14:59:27.773505Z",
+      "metadata": {
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 70225 ms"
+        ],
+        "top_environment_signatures": [
+          "conectado|partial"
+        ],
+        "top_time_buckets": [
+          "afternoon"
+        ]
+      }
+    }
+  ],
+  "proposals": [
+    {
+      "proposal_id": "ecb89487-5183-4b5e-a660-763492498fa8",
+      "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|ui|iabv_runtime|desktop_real:desktop_human",
+      "domain": "language",
+      "subject_key": "general",
+      "status": "pending",
+      "proposal_kind": "validate_discovery",
+      "title": "Probar Desktop human runner para general",
+      "summary": "Desktop human runner aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+      "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+      "current_route": "language_understanding",
+      "current_assistant_kind": "ollama",
+      "current_config_signature": "local_provider:ollama",
+      "candidate_route": "ui",
+      "candidate_assistant_kind": "iabv_runtime",
+      "candidate_config_signature": "desktop_real:desktop_human",
+      "confidence": 0.7308,
+      "evidence_refs": [
+        "067b14ac-ae19-4146-88be-07318436561a",
+        "1158c9de-1705-4b26-8a8c-5924477e33fd",
+        "aab80e82-675c-43a9-932a-b027dec513ee",
+        "13511c24-acf0-421e-ac9d-95742003105d"
+      ],
+      "comparison_scope_keys": [
+        "general"
+      ],
+      "created_at_utc": "2026-04-18T14:59:27.765828Z",
+      "metadata": {
+        "next_action": "validate_in_sandbox",
+        "discovery_signal_id": "420db3d2-7063-4427-83ca-aaa531953fb4",
+        "discovery_source": "tool_registry",
+        "discovery_source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "compatibility_score": 0.55,
+        "impact_score": 0.42,
+        "cost_score": 0.74,
+        "baseline_weighted_score": 1.2674,
+        "alternative_weighted_score": 0.99,
+        "score_margin": -0.2774,
+        "baseline_profile": {
+          "weighted_score": 1.2674,
+          "sample_count": 4
+        },
+        "candidate_profile": {
+          "weighted_score": 0.99,
+          "compatibility_score": 0.55,
+          "impact_score": 0.42,
+          "cost_score": 0.74
+        },
+        "ranked_configurations": [
+          {
+            "route": "language_understanding",
+            "assistant_kind": "ollama",
+            "config_signature": "local_provider:ollama",
+            "weighted_score": 1.2674,
+            "score": 1.2674,
+            "samples": 4
+          },
+          {
+            "route": "ui",
+            "assistant_kind": "iabv_runtime",
+            "config_signature": "desktop_real:desktop_human",
+            "weighted_score": 0.99,
+            "score": 0.99,
+            "samples": 0
+          }
+        ],
+        "tool_type": "custom",
+        "capabilities": [
+          "launch_app",
+          "focus_window",
+          "click",
+          "type_text",
+          "scroll",
+          "screenshot",
+          "wait_for_window",
+          "wait_for_change"
+        ],
+        "current_route": "language_understanding",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "local_provider:ollama",
+        "estimated_candidate_score": 0.99,
+        "estimated_gain": 0.0558,
+        "live_status": "listo",
+        "requires_human_approval": true,
+        "local_first": true,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "proposal_id": "901a1cbf-4400-418d-9c9a-17daf60230e0",
+      "proposal_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f|collect_more_evidence|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+      "domain": "language",
+      "subject_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+      "status": "pending",
+      "proposal_kind": "collect_more_evidence",
+      "title": "Recolectar mas evidencia para f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+      "summary": "La ruta actual muestra degradacion, pero todavia no existe una alternativa con evidencia suficiente para competir.",
+      "rationale": "Conviene recolectar nuevas corridas comparables antes de seguir reforzando la preferencia actual.",
+      "current_route": "local",
+      "current_assistant_kind": "ollama",
+      "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+      "candidate_route": "local",
+      "candidate_assistant_kind": "ollama",
+      "candidate_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+      "confidence": 0.58,
+      "evidence_refs": [
+        "ca9faa21-19dd-4f3f-91ec-824cdf7e22a2"
+      ],
+      "comparison_scope_keys": [
+        "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura"
+      ],
+      "created_at_utc": "2026-04-18T14:59:27.768118Z",
+      "metadata": {
+        "next_action": "collect_more_runs",
+        "degradation_reasons": [
+          "latencia alta 70997 ms"
+        ],
+        "baseline_profile": {
+          "sample_count": 1,
+          "success_rate": 1.0,
+          "failure_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "reuse_ratio": 0.0,
+          "average_score": 0.6292,
+          "average_latency_ms": 70997,
+          "recency_score": 1.0,
+          "trend_score": 0.0,
+          "adaptive_weight": 0.14,
+          "weighted_score": 0.7692,
+          "top_environment_signatures": [
+            "conectado|partial"
+          ],
+          "top_time_buckets": [
+            "afternoon"
+          ],
+          "reasons": [
+            "historial de exito 100%",
+            "latencia promedio 70997 ms"
+          ]
+        }
+      }
+    },
+    {
+      "proposal_id": "bef96c00-3912-4c54-b7bc-1c884d859031",
+      "proposal_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f|validate_discovery|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local|language_understanding|ollama|local_provider:ollama",
+      "domain": "language",
+      "subject_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+      "status": "pending",
+      "proposal_kind": "validate_discovery",
+      "title": "Probar Ollama local para f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+      "summary": "Ollama local aparece disponible y compatible con f931bd01-e7e0-40e1-b91f-b35f92edf99f. Conviene validarlo frente a ollama.",
+      "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+      "current_route": "local",
+      "current_assistant_kind": "ollama",
+      "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+      "candidate_route": "language_understanding",
+      "candidate_assistant_kind": "ollama",
+      "candidate_config_signature": "local_provider:ollama",
+      "confidence": 0.8964,
+      "evidence_refs": [
+        "ca9faa21-19dd-4f3f-91ec-824cdf7e22a2"
+      ],
+      "comparison_scope_keys": [
+        "f931bd01-e7e0-40e1-b91f-b35f92edf99f"
+      ],
+      "created_at_utc": "2026-04-18T14:59:27.768182Z",
+      "metadata": {
+        "next_action": "validate_in_sandbox",
+        "discovery_signal_id": "1c2d4b34-2907-45b2-aaf3-8c38bc446dfd",
+        "discovery_source": "tool_registry",
+        "discovery_source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "compatibility_score": 0.95,
+        "impact_score": 0.42,
+        "cost_score": 0.92,
+        "baseline_weighted_score": 0.7692,
+        "alternative_weighted_score": 0.8304,
+        "score_margin": 0.0612,
+        "baseline_profile": {
+          "weighted_score": 0.7692,
+          "sample_count": 1
+        },
+        "candidate_profile": {
+          "weighted_score": 0.8304,
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.92
+        },
+        "ranked_configurations": [
+          {
+            "route": "local",
+            "assistant_kind": "ollama",
+            "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+            "weighted_score": 0.7692,
+            "score": 0.7692,
+            "samples": 1
+          },
+          {
+            "route": "language_understanding",
+            "assistant_kind": "ollama",
+            "config_signature": "local_provider:ollama",
+            "weighted_score": 0.8304,
+            "score": 0.8304,
+            "samples": 0
+          }
+        ],
+        "tool_type": "llm_local",
+        "capabilities": [
+          "llm_query",
+          "summarize",
+          "classify"
+        ],
+        "current_route": "local",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+        "estimated_candidate_score": 0.8304,
+        "estimated_gain": 0.0612,
+        "live_status": "disponible",
+        "requires_human_approval": false,
+        "local_first": true,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "proposal_id": "10974c64-143f-4dd6-8cf1-9f903ea2a203",
+      "proposal_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f|validate_discovery|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+      "domain": "language",
+      "subject_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+      "status": "pending",
+      "proposal_kind": "validate_discovery",
+      "title": "Probar ChatGPT web asistido para f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+      "summary": "ChatGPT web asistido aparece disponible y compatible con f931bd01-e7e0-40e1-b91f-b35f92edf99f. Conviene validarlo frente a ollama.",
+      "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+      "current_route": "local",
+      "current_assistant_kind": "ollama",
+      "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+      "candidate_route": "language_understanding",
+      "candidate_assistant_kind": "chatgpt",
+      "candidate_config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+      "confidence": 0.8412,
+      "evidence_refs": [
+        "ca9faa21-19dd-4f3f-91ec-824cdf7e22a2"
+      ],
+      "comparison_scope_keys": [
+        "f931bd01-e7e0-40e1-b91f-b35f92edf99f"
+      ],
+      "created_at_utc": "2026-04-18T14:59:27.768225Z",
+      "metadata": {
+        "next_action": "validate_in_sandbox",
+        "discovery_signal_id": "cffce491-a879-49d9-ab6a-f3744ad722a3",
+        "discovery_source": "tool_registry",
+        "discovery_source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "compatibility_score": 0.95,
+        "impact_score": 0.42,
+        "cost_score": 0.46,
+        "baseline_weighted_score": 0.7692,
+        "alternative_weighted_score": 0.8166,
+        "score_margin": 0.0474,
+        "baseline_profile": {
+          "weighted_score": 0.7692,
+          "sample_count": 1
+        },
+        "candidate_profile": {
+          "weighted_score": 0.8166,
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46
+        },
+        "ranked_configurations": [
+          {
+            "route": "local",
+            "assistant_kind": "ollama",
+            "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+            "weighted_score": 0.7692,
+            "score": 0.7692,
+            "samples": 1
+          },
+          {
+            "route": "language_understanding",
+            "assistant_kind": "chatgpt",
+            "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+            "weighted_score": 0.8166,
+            "score": 0.8166,
+            "samples": 0
+          }
+        ],
+        "tool_type": "llm_web_ui",
+        "capabilities": [
+          "launch_app",
+          "llm_query",
+          "consult_external",
+          "web_assisted"
+        ],
+        "current_route": "local",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+        "estimated_candidate_score": 0.8166,
+        "estimated_gain": 0.0474,
+        "live_status": "listo",
+        "requires_human_approval": true,
+        "local_first": false,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "proposal_id": "dc1bf4f9-11a8-4433-95c6-e35e0ef54a14",
+      "proposal_key": "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura|collect_more_evidence|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+      "domain": "language",
+      "subject_key": "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+      "status": "pending",
+      "proposal_kind": "collect_more_evidence",
+      "title": "Recolectar mas evidencia para general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+      "summary": "La ruta actual muestra degradacion, pero todavia no existe una alternativa con evidencia suficiente para competir.",
+      "rationale": "Conviene recolectar nuevas corridas comparables antes de seguir reforzando la preferencia actual.",
+      "current_route": "local",
+      "current_assistant_kind": "ollama",
+      "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+      "candidate_route": "local",
+      "candidate_assistant_kind": "ollama",
+      "candidate_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+      "confidence": 0.58,
+      "evidence_refs": [
+        "988d0f06-49e7-4773-af37-b4c49c30dcf2"
+      ],
+      "comparison_scope_keys": [
+        "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura"
+      ],
+      "created_at_utc": "2026-04-18T14:59:27.769944Z",
+      "metadata": {
+        "next_action": "collect_more_runs",
+        "degradation_reasons": [
+          "latencia alta 70997 ms"
+        ],
+        "baseline_profile": {
+          "sample_count": 1,
+          "success_rate": 1.0,
+          "failure_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "reuse_ratio": 0.0,
+          "average_score": 0.6292,
+          "average_latency_ms": 70997,
+          "recency_score": 1.0,
+          "trend_score": 0.0,
+          "adaptive_weight": 0.14,
+          "weighted_score": 0.7692,
+          "top_environment_signatures": [
+            "conectado|partial"
+          ],
+          "top_time_buckets": [
+            "afternoon"
+          ],
+          "reasons": [
+            "historial de exito 100%",
+            "latencia promedio 70997 ms"
+          ]
+        }
+      }
+    },
+    {
+      "proposal_id": "f5971ce3-2172-4ef2-8a3c-eb68ad3eaf32",
+      "proposal_key": "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura|validate_discovery|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local|language_understanding|ollama|local_provider:ollama",
+      "domain": "language",
+      "subject_key": "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+      "status": "pending",
+      "proposal_kind": "validate_discovery",
+      "title": "Probar Ollama local para general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+      "summary": "Ollama local aparece disponible y compatible con general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura. Conviene validarlo frente a ollama.",
+      "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+      "current_route": "local",
+      "current_assistant_kind": "ollama",
+      "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+      "candidate_route": "language_understanding",
+      "candidate_assistant_kind": "ollama",
+      "candidate_config_signature": "local_provider:ollama",
+      "confidence": 0.8964,
+      "evidence_refs": [
+        "988d0f06-49e7-4773-af37-b4c49c30dcf2"
+      ],
+      "comparison_scope_keys": [
+        "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura"
+      ],
+      "created_at_utc": "2026-04-18T14:59:27.769989Z",
+      "metadata": {
+        "next_action": "validate_in_sandbox",
+        "discovery_signal_id": "46d29bec-9a93-472c-82b6-0c3aba3b897a",
+        "discovery_source": "tool_registry",
+        "discovery_source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "compatibility_score": 0.95,
+        "impact_score": 0.42,
+        "cost_score": 0.92,
+        "baseline_weighted_score": 0.7692,
+        "alternative_weighted_score": 0.8304,
+        "score_margin": 0.0612,
+        "baseline_profile": {
+          "weighted_score": 0.7692,
+          "sample_count": 1
+        },
+        "candidate_profile": {
+          "weighted_score": 0.8304,
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.92
+        },
+        "ranked_configurations": [
+          {
+            "route": "local",
+            "assistant_kind": "ollama",
+            "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+            "weighted_score": 0.7692,
+            "score": 0.7692,
+            "samples": 1
+          },
+          {
+            "route": "language_understanding",
+            "assistant_kind": "ollama",
+            "config_signature": "local_provider:ollama",
+            "weighted_score": 0.8304,
+            "score": 0.8304,
+            "samples": 0
+          }
+        ],
+        "tool_type": "llm_local",
+        "capabilities": [
+          "llm_query",
+          "summarize",
+          "classify"
+        ],
+        "current_route": "local",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+        "estimated_candidate_score": 0.8304,
+        "estimated_gain": 0.0612,
+        "live_status": "disponible",
+        "requires_human_approval": false,
+        "local_first": true,
+        "supports_sandbox": true
+      }
+    }
+  ],
+  "degraded_subjects": [
+    "general",
+    "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+    "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+    "9d07d8c6-19c6-4a1b-a1fc-7a8aa8b111ec",
+    "general:tiene-todo-el-panorama-completo-de-tu-estructura-de-tu-arquitectura"
+  ],
+  "unresolved_fields": [],
+  "package_path": "",
+  "markdown_path": "",
+  "metadata": {
+    "subject_keys": [
+      "general",
+      "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+      "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+      "9d07d8c6-19c6-4a1b-a1fc-7a8aa8b111ec",
+      "general:tiene-todo-el-panorama-completo-de-tu-estructura-de-tu-arquitectura"
+    ],
+    "proposal_count": 8,
+    "active_proposal_count": 8,
+    "decided_proposal_count": 5,
+    "degraded_count": 5,
+    "validation_status": "idle",
+    "validation_summary": "Sin validacion autonoma reciente.",
+    "active_proposals": [
+      {
+        "proposal_id": "ecb89487-5183-4b5e-a660-763492498fa8",
+        "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|ui|iabv_runtime|desktop_real:desktop_human",
+        "domain": "language",
+        "subject_key": "general",
+        "status": "pending",
+        "proposal_kind": "validate_discovery",
+        "title": "Probar Desktop human runner para general",
+        "summary": "Desktop human runner aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+        "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+        "current_route": "language_understanding",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "local_provider:ollama",
+        "candidate_route": "ui",
+        "candidate_assistant_kind": "iabv_runtime",
+        "candidate_config_signature": "desktop_real:desktop_human",
+        "confidence": 0.7308,
+        "evidence_refs": [
+          "067b14ac-ae19-4146-88be-07318436561a",
+          "1158c9de-1705-4b26-8a8c-5924477e33fd",
+          "aab80e82-675c-43a9-932a-b027dec513ee",
+          "13511c24-acf0-421e-ac9d-95742003105d"
+        ],
+        "comparison_scope_keys": [
+          "general"
+        ],
+        "created_at_utc": "2026-04-18T14:59:27.765828Z",
+        "metadata": {
+          "next_action": "validate_in_sandbox",
+          "discovery_signal_id": "420db3d2-7063-4427-83ca-aaa531953fb4",
+          "discovery_source": "tool_registry",
+          "discovery_source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "compatibility_score": 0.55,
+          "impact_score": 0.42,
+          "cost_score": 0.74,
+          "baseline_weighted_score": 1.2674,
+          "alternative_weighted_score": 0.99,
+          "score_margin": -0.2774,
+          "baseline_profile": {
+            "weighted_score": 1.2674,
+            "sample_count": 4
+          },
+          "candidate_profile": {
+            "weighted_score": 0.99,
+            "compatibility_score": 0.55,
+            "impact_score": 0.42,
+            "cost_score": 0.74
+          },
+          "ranked_configurations": [
+            {
+              "route": "language_understanding",
+              "assistant_kind": "ollama",
+              "config_signature": "local_provider:ollama",
+              "weighted_score": 1.2674,
+              "score": 1.2674,
+              "samples": 4
+            },
+            {
+              "route": "ui",
+              "assistant_kind": "iabv_runtime",
+              "config_signature": "desktop_real:desktop_human",
+              "weighted_score": 0.99,
+              "score": 0.99,
+              "samples": 0
+            }
+          ],
+          "tool_type": "custom",
+          "capabilities": [
+            "launch_app",
+            "focus_window",
+            "click",
+            "type_text",
+            "scroll",
+            "screenshot",
+            "wait_for_window",
+            "wait_for_change"
+          ],
+          "current_route": "language_understanding",
+          "current_assistant_kind": "ollama",
+          "current_config_signature": "local_provider:ollama",
+          "estimated_candidate_score": 0.99,
+          "estimated_gain": 0.0558,
+          "live_status": "listo",
+          "requires_human_approval": true,
+          "local_first": true,
+          "supports_sandbox": true
+        }
+      },
+      {
+        "proposal_id": "901a1cbf-4400-418d-9c9a-17daf60230e0",
+        "proposal_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f|collect_more_evidence|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+        "domain": "language",
+        "subject_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+        "status": "pending",
+        "proposal_kind": "collect_more_evidence",
+        "title": "Recolectar mas evidencia para f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+        "summary": "La ruta actual muestra degradacion, pero todavia no existe una alternativa con evidencia suficiente para competir.",
+        "rationale": "Conviene recolectar nuevas corridas comparables antes de seguir reforzando la preferencia actual.",
+        "current_route": "local",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+        "candidate_route": "local",
+        "candidate_assistant_kind": "ollama",
+        "candidate_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+        "confidence": 0.58,
+        "evidence_refs": [
+          "ca9faa21-19dd-4f3f-91ec-824cdf7e22a2"
+        ],
+        "comparison_scope_keys": [
+          "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura"
+        ],
+        "created_at_utc": "2026-04-18T14:59:27.768118Z",
+        "metadata": {
+          "next_action": "collect_more_runs",
+          "degradation_reasons": [
+            "latencia alta 70997 ms"
+          ],
+          "baseline_profile": {
+            "sample_count": 1,
+            "success_rate": 1.0,
+            "failure_rate": 0.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "reuse_ratio": 0.0,
+            "average_score": 0.6292,
+            "average_latency_ms": 70997,
+            "recency_score": 1.0,
+            "trend_score": 0.0,
+            "adaptive_weight": 0.14,
+            "weighted_score": 0.7692,
+            "top_environment_signatures": [
+              "conectado|partial"
+            ],
+            "top_time_buckets": [
+              "afternoon"
+            ],
+            "reasons": [
+              "historial de exito 100%",
+              "latencia promedio 70997 ms"
+            ]
+          }
+        }
+      },
+      {
+        "proposal_id": "bef96c00-3912-4c54-b7bc-1c884d859031",
+        "proposal_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f|validate_discovery|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local|language_understanding|ollama|local_provider:ollama",
+        "domain": "language",
+        "subject_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+        "status": "pending",
+        "proposal_kind": "validate_discovery",
+        "title": "Probar Ollama local para f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+        "summary": "Ollama local aparece disponible y compatible con f931bd01-e7e0-40e1-b91f-b35f92edf99f. Conviene validarlo frente a ollama.",
+        "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+        "current_route": "local",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+        "candidate_route": "language_understanding",
+        "candidate_assistant_kind": "ollama",
+        "candidate_config_signature": "local_provider:ollama",
+        "confidence": 0.8964,
+        "evidence_refs": [
+          "ca9faa21-19dd-4f3f-91ec-824cdf7e22a2"
+        ],
+        "comparison_scope_keys": [
+          "f931bd01-e7e0-40e1-b91f-b35f92edf99f"
+        ],
+        "created_at_utc": "2026-04-18T14:59:27.768182Z",
+        "metadata": {
+          "next_action": "validate_in_sandbox",
+          "discovery_signal_id": "1c2d4b34-2907-45b2-aaf3-8c38bc446dfd",
+          "discovery_source": "tool_registry",
+          "discovery_source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.92,
+          "baseline_weighted_score": 0.7692,
+          "alternative_weighted_score": 0.8304,
+          "score_margin": 0.0612,
+          "baseline_profile": {
+            "weighted_score": 0.7692,
+            "sample_count": 1
+          },
+          "candidate_profile": {
+            "weighted_score": 0.8304,
+            "compatibility_score": 0.95,
+            "impact_score": 0.42,
+            "cost_score": 0.92
+          },
+          "ranked_configurations": [
+            {
+              "route": "local",
+              "assistant_kind": "ollama",
+              "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+              "weighted_score": 0.7692,
+              "score": 0.7692,
+              "samples": 1
+            },
+            {
+              "route": "language_understanding",
+              "assistant_kind": "ollama",
+              "config_signature": "local_provider:ollama",
+              "weighted_score": 0.8304,
+              "score": 0.8304,
+              "samples": 0
+            }
+          ],
+          "tool_type": "llm_local",
+          "capabilities": [
+            "llm_query",
+            "summarize",
+            "classify"
+          ],
+          "current_route": "local",
+          "current_assistant_kind": "ollama",
+          "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+          "estimated_candidate_score": 0.8304,
+          "estimated_gain": 0.0612,
+          "live_status": "disponible",
+          "requires_human_approval": false,
+          "local_first": true,
+          "supports_sandbox": true
+        }
+      },
+      {
+        "proposal_id": "10974c64-143f-4dd6-8cf1-9f903ea2a203",
+        "proposal_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f|validate_discovery|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "domain": "language",
+        "subject_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+        "status": "pending",
+        "proposal_kind": "validate_discovery",
+        "title": "Probar ChatGPT web asistido para f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+        "summary": "ChatGPT web asistido aparece disponible y compatible con f931bd01-e7e0-40e1-b91f-b35f92edf99f. Conviene validarlo frente a ollama.",
+        "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+        "current_route": "local",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+        "candidate_route": "language_understanding",
+        "candidate_assistant_kind": "chatgpt",
+        "candidate_config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "confidence": 0.8412,
+        "evidence_refs": [
+          "ca9faa21-19dd-4f3f-91ec-824cdf7e22a2"
+        ],
+        "comparison_scope_keys": [
+          "f931bd01-e7e0-40e1-b91f-b35f92edf99f"
+        ],
+        "created_at_utc": "2026-04-18T14:59:27.768225Z",
+        "metadata": {
+          "next_action": "validate_in_sandbox",
+          "discovery_signal_id": "cffce491-a879-49d9-ab6a-f3744ad722a3",
+          "discovery_source": "tool_registry",
+          "discovery_source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46,
+          "baseline_weighted_score": 0.7692,
+          "alternative_weighted_score": 0.8166,
+          "score_margin": 0.0474,
+          "baseline_profile": {
+            "weighted_score": 0.7692,
+            "sample_count": 1
+          },
+          "candidate_profile": {
+            "weighted_score": 0.8166,
+            "compatibility_score": 0.95,
+            "impact_score": 0.42,
+            "cost_score": 0.46
+          },
+          "ranked_configurations": [
+            {
+              "route": "local",
+              "assistant_kind": "ollama",
+              "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+              "weighted_score": 0.7692,
+              "score": 0.7692,
+              "samples": 1
+            },
+            {
+              "route": "language_understanding",
+              "assistant_kind": "chatgpt",
+              "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+              "weighted_score": 0.8166,
+              "score": 0.8166,
+              "samples": 0
+            }
+          ],
+          "tool_type": "llm_web_ui",
+          "capabilities": [
+            "launch_app",
+            "llm_query",
+            "consult_external",
+            "web_assisted"
+          ],
+          "current_route": "local",
+          "current_assistant_kind": "ollama",
+          "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+          "estimated_candidate_score": 0.8166,
+          "estimated_gain": 0.0474,
+          "live_status": "listo",
+          "requires_human_approval": true,
+          "local_first": false,
+          "supports_sandbox": true
+        }
+      },
+      {
+        "proposal_id": "dc1bf4f9-11a8-4433-95c6-e35e0ef54a14",
+        "proposal_key": "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura|collect_more_evidence|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+        "domain": "language",
+        "subject_key": "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+        "status": "pending",
+        "proposal_kind": "collect_more_evidence",
+        "title": "Recolectar mas evidencia para general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+        "summary": "La ruta actual muestra degradacion, pero todavia no existe una alternativa con evidencia suficiente para competir.",
+        "rationale": "Conviene recolectar nuevas corridas comparables antes de seguir reforzando la preferencia actual.",
+        "current_route": "local",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+        "candidate_route": "local",
+        "candidate_assistant_kind": "ollama",
+        "candidate_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+        "confidence": 0.58,
+        "evidence_refs": [
+          "988d0f06-49e7-4773-af37-b4c49c30dcf2"
+        ],
+        "comparison_scope_keys": [
+          "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura"
+        ],
+        "created_at_utc": "2026-04-18T14:59:27.769944Z",
+        "metadata": {
+          "next_action": "collect_more_runs",
+          "degradation_reasons": [
+            "latencia alta 70997 ms"
+          ],
+          "baseline_profile": {
+            "sample_count": 1,
+            "success_rate": 1.0,
+            "failure_rate": 0.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "reuse_ratio": 0.0,
+            "average_score": 0.6292,
+            "average_latency_ms": 70997,
+            "recency_score": 1.0,
+            "trend_score": 0.0,
+            "adaptive_weight": 0.14,
+            "weighted_score": 0.7692,
+            "top_environment_signatures": [
+              "conectado|partial"
+            ],
+            "top_time_buckets": [
+              "afternoon"
+            ],
+            "reasons": [
+              "historial de exito 100%",
+              "latencia promedio 70997 ms"
+            ]
+          }
+        }
+      },
+      {
+        "proposal_id": "f5971ce3-2172-4ef2-8a3c-eb68ad3eaf32",
+        "proposal_key": "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura|validate_discovery|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local|language_understanding|ollama|local_provider:ollama",
+        "domain": "language",
+        "subject_key": "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+        "status": "pending",
+        "proposal_kind": "validate_discovery",
+        "title": "Probar Ollama local para general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+        "summary": "Ollama local aparece disponible y compatible con general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura. Conviene validarlo frente a ollama.",
+        "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+        "current_route": "local",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+        "candidate_route": "language_understanding",
+        "candidate_assistant_kind": "ollama",
+        "candidate_config_signature": "local_provider:ollama",
+        "confidence": 0.8964,
+        "evidence_refs": [
+          "988d0f06-49e7-4773-af37-b4c49c30dcf2"
+        ],
+        "comparison_scope_keys": [
+          "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura"
+        ],
+        "created_at_utc": "2026-04-18T14:59:27.769989Z",
+        "metadata": {
+          "next_action": "validate_in_sandbox",
+          "discovery_signal_id": "46d29bec-9a93-472c-82b6-0c3aba3b897a",
+          "discovery_source": "tool_registry",
+          "discovery_source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.92,
+          "baseline_weighted_score": 0.7692,
+          "alternative_weighted_score": 0.8304,
+          "score_margin": 0.0612,
+          "baseline_profile": {
+            "weighted_score": 0.7692,
+            "sample_count": 1
+          },
+          "candidate_profile": {
+            "weighted_score": 0.8304,
+            "compatibility_score": 0.95,
+            "impact_score": 0.42,
+            "cost_score": 0.92
+          },
+          "ranked_configurations": [
+            {
+              "route": "local",
+              "assistant_kind": "ollama",
+              "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+              "weighted_score": 0.7692,
+              "score": 0.7692,
+              "samples": 1
+            },
+            {
+              "route": "language_understanding",
+              "assistant_kind": "ollama",
+              "config_signature": "local_provider:ollama",
+              "weighted_score": 0.8304,
+              "score": 0.8304,
+              "samples": 0
+            }
+          ],
+          "tool_type": "llm_local",
+          "capabilities": [
+            "llm_query",
+            "summarize",
+            "classify"
+          ],
+          "current_route": "local",
+          "current_assistant_kind": "ollama",
+          "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+          "estimated_candidate_score": 0.8304,
+          "estimated_gain": 0.0612,
+          "live_status": "disponible",
+          "requires_human_approval": false,
+          "local_first": true,
+          "supports_sandbox": true
+        }
+      }
+    ],
+    "decided_proposals": [
+      {
+        "proposal_id": "3c7e2b98-abb5-40e1-85e9-1564654f9f96",
+        "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|ui|playwright|playwright",
+        "domain": "language",
+        "subject_key": "general",
+        "status": "discarded",
+        "proposal_kind": "validate_discovery",
+        "title": "validate_discovery",
+        "summary": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+        "current_route": "language_understanding",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "local_provider:ollama",
+        "candidate_route": "ui",
+        "candidate_assistant_kind": "playwright",
+        "candidate_config_signature": "playwright",
+        "confidence": 0.7548,
+        "evidence_refs": [
+          "aab80e82-675c-43a9-932a-b027dec513ee",
+          "13511c24-acf0-421e-ac9d-95742003105d",
+          "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+          "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e"
+        ],
+        "comparison_scope_keys": [
+          "general"
+        ],
+        "metadata": {
+          "decision_state": {
+            "decision": "discarded",
+            "winner": "current_tool",
+            "reason": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+            "recorded_at_utc": "2026-04-18T13:30:44.509787Z",
+            "result_id": "f7be1f8b-d61f-49fd-ab6b-423ee30e5b99"
+          }
+        }
+      },
+      {
+        "proposal_id": "0997bb45-33a4-497b-ae90-d6f20357eefd",
+        "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|chatgpt|desktop_app:chatgpt_consult_v1:external_assistant",
+        "domain": "language",
+        "subject_key": "general",
+        "status": "discarded",
+        "proposal_kind": "validate_discovery",
+        "title": "validate_discovery",
+        "summary": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+        "current_route": "language_understanding",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "local_provider:ollama",
+        "candidate_route": "language_understanding",
+        "candidate_assistant_kind": "chatgpt",
+        "candidate_config_signature": "desktop_app:chatgpt_consult_v1:external_assistant",
+        "confidence": 0.8412,
+        "evidence_refs": [
+          "13511c24-acf0-421e-ac9d-95742003105d",
+          "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+          "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+          "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b"
+        ],
+        "comparison_scope_keys": [
+          "general"
+        ],
+        "metadata": {
+          "decision_state": {
+            "decision": "discarded",
+            "winner": "current_tool",
+            "reason": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+            "recorded_at_utc": "2026-04-18T13:27:44.143959Z",
+            "result_id": "d2e9ba3e-e5f8-474b-86c6-b897da577836"
+          }
+        }
+      },
+      {
+        "proposal_id": "2c100d79-d0b1-49fc-9f14-b18df7b0a5c2",
+        "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|claude|web_assisted:claude_web_consult_v1:external_assistant",
+        "domain": "language",
+        "subject_key": "general",
+        "status": "deferred",
+        "proposal_kind": "validate_discovery",
+        "title": "validate_discovery",
+        "summary": "La validacion de la propuesta se aplazo porque El entorno reporta ram_pressure con severidad high.",
+        "current_route": "language_understanding",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "local_provider:ollama",
+        "candidate_route": "language_understanding",
+        "candidate_assistant_kind": "claude",
+        "candidate_config_signature": "web_assisted:claude_web_consult_v1:external_assistant",
+        "confidence": 0.8412,
+        "evidence_refs": [
+          "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+          "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+          "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+          "5e47c733-3081-42ca-a61c-6297c5604bde"
+        ],
+        "comparison_scope_keys": [
+          "general"
+        ],
+        "metadata": {
+          "decision_state": {
+            "decision": "deferred",
+            "winner": "tie",
+            "reason": "La validacion de la propuesta se aplazo porque El entorno reporta ram_pressure con severidad high.",
+            "recorded_at_utc": "2026-04-18T13:24:43.792088Z",
+            "result_id": "e90eb73a-9fd5-4e0a-8319-3dc02abe17e2"
+          }
+        }
+      },
+      {
+        "proposal_id": "f169ad6f-5815-4286-a18b-3974abdcce72",
+        "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "domain": "language",
+        "subject_key": "general",
+        "status": "deferred",
+        "proposal_kind": "validate_discovery",
+        "title": "validate_discovery",
+        "summary": "La validacion de la propuesta se aplazo porque El entorno reporta ram_critical con severidad critical.",
+        "current_route": "language_understanding",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "local_provider:ollama",
+        "candidate_route": "language_understanding",
+        "candidate_assistant_kind": "chatgpt",
+        "candidate_config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "confidence": 0.8852,
+        "evidence_refs": [
+          "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+          "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+          "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+          "5e47c733-3081-42ca-a61c-6297c5604bde"
+        ],
+        "comparison_scope_keys": [
+          "general"
+        ],
+        "metadata": {
+          "decision_state": {
+            "decision": "deferred",
+            "winner": "tie",
+            "reason": "La validacion de la propuesta se aplazo porque El entorno reporta ram_critical con severidad critical.",
+            "recorded_at_utc": "2026-04-18T05:08:33.695870Z",
+            "result_id": "94606165-8dda-47dd-a913-1e1237872a65"
+          }
+        }
+      },
+      {
+        "proposal_id": "fa96768d-c885-4e37-92ea-9fd1dc586586",
+        "proposal_key": "general|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|long|without_tools|without_browser|general|external|language_understanding|ollama|local_provider:ollama",
+        "domain": "language",
+        "subject_key": "general",
+        "status": "promoted",
+        "proposal_kind": "validate_discovery",
+        "title": "validate_discovery",
+        "summary": "La ruta actual quedo bloqueada por network_slow. La alternativa ollama queda mejor alineada con el estado operativo.",
+        "current_route": "language_understanding",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+        "candidate_route": "language_understanding",
+        "candidate_assistant_kind": "ollama",
+        "candidate_config_signature": "local_provider:ollama",
+        "confidence": 0.96,
+        "evidence_refs": [
+          "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+          "5e47c733-3081-42ca-a61c-6297c5604bde",
+          "034483be-0b5b-44bb-b5dd-5ec34d274459",
+          "caa5563c-3227-490c-8470-854027d47e22"
+        ],
+        "comparison_scope_keys": [
+          "general"
+        ],
+        "metadata": {
+          "decision_state": {
+            "decision": "promoted",
+            "winner": "proposed_tool",
+            "reason": "La ruta actual quedo bloqueada por network_slow. La alternativa ollama queda mejor alineada con el estado operativo.",
+            "recorded_at_utc": "2026-04-18T01:18:58.719293Z",
+            "result_id": "ef4cfe30-0c99-43ea-803c-110184bd3752"
+          }
+        }
+      }
+    ],
+    "decision_log_summary": {
+      "winning_by_problem": {
+        "general": "ollama"
+      },
+      "degraded_tools": [
+        "adaptive local orchestrator"
+      ],
+      "in_validation": [
+        "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|claude|web_assisted:claude_web_consult_v1:external_assistant"
+      ],
+      "discarded_proposals": [
+        {
+          "subject_key": "general",
+          "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|chatgpt|desktop_app:chatgpt_consult_v1:external_assistant",
+          "assistant_kind": "chatgpt",
+          "route": "language_understanding",
+          "reason": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+          "status": "discarded"
+        },
+        {
+          "subject_key": "general",
+          "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|ui|playwright|playwright",
+          "assistant_kind": "playwright",
+          "route": "ui",
+          "reason": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+          "status": "discarded"
+        }
+      ],
+      "recent_decisions": [
+        {
+          "subject_key": "general",
+          "proposal_key": "general|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|long|without_tools|without_browser|general|external|language_understanding|ollama|local_provider:ollama",
+          "decision": "promoted",
+          "winner": "proposed_tool",
+          "assistant_kind": "ollama",
+          "route": "language_understanding",
+          "reason": "La ruta actual quedo bloqueada por network_slow. La alternativa ollama queda mejor alineada con el estado operativo."
+        },
+        {
+          "subject_key": "general",
+          "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+          "decision": "deferred",
+          "winner": "tie",
+          "assistant_kind": "chatgpt",
+          "route": "language_understanding",
+          "reason": "La validacion de la propuesta se aplazo porque El entorno reporta ram_critical con severidad critical."
+        },
+        {
+          "subject_key": "general",
+          "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|claude|web_assisted:claude_web_consult_v1:external_assistant",
+          "decision": "deferred",
+          "winner": "tie",
+          "assistant_kind": "claude",
+          "route": "language_understanding",
+          "reason": "La validacion de la propuesta se aplazo porque El entorno reporta ram_pressure con severidad high."
+        },
+        {
+          "subject_key": "general",
+          "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|chatgpt|desktop_app:chatgpt_consult_v1:external_assistant",
+          "decision": "discarded",
+          "winner": "current_tool",
+          "assistant_kind": "chatgpt",
+          "route": "language_understanding",
+          "reason": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo."
+        },
+        {
+          "subject_key": "general",
+          "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|ui|playwright|playwright",
+          "decision": "discarded",
+          "winner": "current_tool",
+          "assistant_kind": "playwright",
+          "route": "ui",
+          "reason": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo."
+        }
+      ],
+      "last_decision": {
+        "subject_key": "general",
+        "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|ui|playwright|playwright",
+        "decision": "discarded",
+        "winner": "current_tool",
+        "reason": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo."
+      },
+      "summary_by_tool": {
+        "adaptive local orchestrator": "degradado",
+        "ollama": "ganando",
+        "chatgpt": "descartado",
+        "claude": "en_validacion",
+        "playwright": "descartado"
+      },
+      "summary_by_problem": {
+        "general": "ollama"
+      },
+      "unresolved_fields": [],
+      "package_path": "C:\\Python\\IABV_v1.5\\data\\evolution\\tool_evolution\\decision_log.json",
+      "markdown_path": "C:\\Python\\IABV_v1.5\\data\\evolution\\tool_evolution\\decision_log.md"
+    },
+    "recent_decisions": [
+      {
+        "result_id": "ef4cfe30-0c99-43ea-803c-110184bd3752",
+        "proposal_id": "fa96768d-c885-4e37-92ea-9fd1dc586586",
+        "proposal_key": "general|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|long|without_tools|without_browser|general|external|language_understanding|ollama|local_provider:ollama",
+        "domain": "language",
+        "subject_key": "general",
+        "proposal_kind": "validate_discovery",
+        "decision": "promoted",
+        "winner": "proposed_tool",
+        "reason": "La ruta actual quedo bloqueada por network_slow. La alternativa ollama queda mejor alineada con el estado operativo.",
+        "current_route": "language_understanding",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+        "candidate_route": "language_understanding",
+        "candidate_assistant_kind": "ollama",
+        "candidate_config_signature": "local_provider:ollama",
+        "sandbox_experiment_id": "5dcfbb0e-a31f-4e45-a528-31be3ed1dd63",
+        "confidence": 0.96,
+        "evidence_refs": [
+          "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+          "5e47c733-3081-42ca-a61c-6297c5604bde",
+          "034483be-0b5b-44bb-b5dd-5ec34d274459",
+          "caa5563c-3227-490c-8470-854027d47e22"
+        ],
+        "comparison_scope_keys": [
+          "general"
+        ],
+        "metrics": {
+          "priority_score": 0.5617,
+          "baseline_weighted_score": 0.8604,
+          "candidate_weighted_score": 0.9536,
+          "score_margin": 0.0932,
+          "evidence_strength": 0.962,
+          "observed_blockers": [
+            "network_slow"
+          ]
+        },
+        "recorded_at_utc": "2026-04-18T01:18:58.719293Z",
+        "metadata": {
+          "next_action": "validate_in_sandbox",
+          "discovery_signal_id": "a99669b7-c60b-4ee5-a3de-e12459330da9",
+          "discovery_source": "tool_registry",
+          "discovery_source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "compatibility_score": 0.95,
+          "impact_score": 0.82,
+          "cost_score": 0.92,
+          "baseline_weighted_score": 0.8604,
+          "alternative_weighted_score": 0.9536,
+          "score_margin": 0.0932,
+          "baseline_profile": {
+            "weighted_score": 0.8604,
+            "sample_count": 4
+          },
+          "candidate_profile": {
+            "weighted_score": 0.9536,
+            "compatibility_score": 0.95,
+            "impact_score": 0.82,
+            "cost_score": 0.92
+          },
+          "ranked_configurations": [
+            {
+              "route": "language_understanding",
+              "assistant_kind": "adaptive local orchestrator",
+              "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+              "weighted_score": 0.8604,
+              "score": 0.8604,
+              "samples": 4
+            },
+            {
+              "route": "language_understanding",
+              "assistant_kind": "ollama",
+              "config_signature": "local_provider:ollama",
+              "weighted_score": 0.9536,
+              "score": 0.9536,
+              "samples": 0
+            }
+          ],
+          "tool_type": "llm_local",
+          "capabilities": [
+            "llm_query",
+            "summarize",
+            "classify"
+          ],
+          "current_route": "language_understanding",
+          "current_assistant_kind": "adaptive local orchestrator",
+          "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+          "estimated_candidate_score": 0.9536,
+          "estimated_gain": 0.0932,
+          "live_status": "disponible",
+          "requires_human_approval": false,
+          "local_first": true,
+          "supports_sandbox": true,
+          "decision_source": "tool_evolution_monitor",
+          "validation_verdict": "valid"
+        }
+      },
+      {
+        "result_id": "94606165-8dda-47dd-a913-1e1237872a65",
+        "proposal_id": "f169ad6f-5815-4286-a18b-3974abdcce72",
+        "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "domain": "language",
+        "subject_key": "general",
+        "proposal_kind": "validate_discovery",
+        "decision": "deferred",
+        "winner": "tie",
+        "reason": "La validacion de la propuesta se aplazo porque El entorno reporta ram_critical con severidad critical.",
+        "current_route": "language_understanding",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "local_provider:ollama",
+        "candidate_route": "language_understanding",
+        "candidate_assistant_kind": "chatgpt",
+        "candidate_config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "sandbox_experiment_id": "",
+        "confidence": 0.8852,
+        "evidence_refs": [
+          "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+          "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+          "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+          "5e47c733-3081-42ca-a61c-6297c5604bde"
+        ],
+        "comparison_scope_keys": [
+          "general"
+        ],
+        "metrics": {
+          "priority_score": 0.5204
+        },
+        "recorded_at_utc": "2026-04-18T05:08:33.695870Z",
+        "metadata": {
+          "next_action": "validate_in_sandbox",
+          "discovery_signal_id": "cc49e214-fcc5-4c8b-9732-7f5a588606b3",
+          "discovery_source": "tool_registry",
+          "discovery_source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "compatibility_score": 0.95,
+          "impact_score": 0.64,
+          "cost_score": 0.46,
+          "baseline_weighted_score": 1.2674,
+          "alternative_weighted_score": 0.99,
+          "score_margin": -0.2774,
+          "baseline_profile": {
+            "weighted_score": 1.2674,
+            "sample_count": 4
+          },
+          "candidate_profile": {
+            "weighted_score": 0.99,
+            "compatibility_score": 0.95,
+            "impact_score": 0.64,
+            "cost_score": 0.46
+          },
+          "ranked_configurations": [
+            {
+              "route": "language_understanding",
+              "assistant_kind": "ollama",
+              "config_signature": "local_provider:ollama",
+              "weighted_score": 1.2674,
+              "score": 1.2674,
+              "samples": 4
+            },
+            {
+              "route": "language_understanding",
+              "assistant_kind": "chatgpt",
+              "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+              "weighted_score": 0.99,
+              "score": 0.99,
+              "samples": 0
+            }
+          ],
+          "tool_type": "llm_web_ui",
+          "capabilities": [
+            "launch_app",
+            "llm_query",
+            "consult_external",
+            "web_assisted"
+          ],
+          "current_route": "language_understanding",
+          "current_assistant_kind": "ollama",
+          "current_config_signature": "local_provider:ollama",
+          "estimated_candidate_score": 0.99,
+          "estimated_gain": 0.065,
+          "live_status": "listo",
+          "requires_human_approval": true,
+          "local_first": false,
+          "supports_sandbox": true,
+          "decision_source": "tool_evolution_monitor",
+          "paused_reason": "El entorno reporta ram_critical con severidad critical."
+        }
+      },
+      {
+        "result_id": "e90eb73a-9fd5-4e0a-8319-3dc02abe17e2",
+        "proposal_id": "2c100d79-d0b1-49fc-9f14-b18df7b0a5c2",
+        "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|claude|web_assisted:claude_web_consult_v1:external_assistant",
+        "domain": "language",
+        "subject_key": "general",
+        "proposal_kind": "validate_discovery",
+        "decision": "deferred",
+        "winner": "tie",
+        "reason": "La validacion de la propuesta se aplazo porque El entorno reporta ram_pressure con severidad high.",
+        "current_route": "language_understanding",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "local_provider:ollama",
+        "candidate_route": "language_understanding",
+        "candidate_assistant_kind": "claude",
+        "candidate_config_signature": "web_assisted:claude_web_consult_v1:external_assistant",
+        "sandbox_experiment_id": "",
+        "confidence": 0.8412,
+        "evidence_refs": [
+          "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+          "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+          "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+          "5e47c733-3081-42ca-a61c-6297c5604bde"
+        ],
+        "comparison_scope_keys": [
+          "general"
+        ],
+        "metrics": {
+          "priority_score": 0.5058
+        },
+        "recorded_at_utc": "2026-04-18T13:24:43.792088Z",
+        "metadata": {
+          "next_action": "validate_in_sandbox",
+          "discovery_signal_id": "3e0cd391-b1dd-4c5f-b972-cbfe8b109116",
+          "discovery_source": "tool_registry",
+          "discovery_source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46,
+          "baseline_weighted_score": 1.2674,
+          "alternative_weighted_score": 0.99,
+          "score_margin": -0.2774,
+          "baseline_profile": {
+            "weighted_score": 1.2674,
+            "sample_count": 4
+          },
+          "candidate_profile": {
+            "weighted_score": 0.99,
+            "compatibility_score": 0.95,
+            "impact_score": 0.42,
+            "cost_score": 0.46
+          },
+          "ranked_configurations": [
+            {
+              "route": "language_understanding",
+              "assistant_kind": "ollama",
+              "config_signature": "local_provider:ollama",
+              "weighted_score": 1.2674,
+              "score": 1.2674,
+              "samples": 4
+            },
+            {
+              "route": "language_understanding",
+              "assistant_kind": "claude",
+              "config_signature": "web_assisted:claude_web_consult_v1:external_assistant",
+              "weighted_score": 0.99,
+              "score": 0.99,
+              "samples": 0
+            }
+          ],
+          "tool_type": "llm_web_ui",
+          "capabilities": [
+            "launch_app",
+            "llm_query",
+            "consult_external",
+            "web_assisted"
+          ],
+          "current_route": "language_understanding",
+          "current_assistant_kind": "ollama",
+          "current_config_signature": "local_provider:ollama",
+          "estimated_candidate_score": 0.99,
+          "estimated_gain": 0.0474,
+          "live_status": "listo",
+          "requires_human_approval": true,
+          "local_first": false,
+          "supports_sandbox": true,
+          "decision_source": "tool_evolution_monitor",
+          "paused_reason": "El entorno reporta ram_pressure con severidad high."
+        }
+      },
+      {
+        "result_id": "d2e9ba3e-e5f8-474b-86c6-b897da577836",
+        "proposal_id": "0997bb45-33a4-497b-ae90-d6f20357eefd",
+        "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|chatgpt|desktop_app:chatgpt_consult_v1:external_assistant",
+        "domain": "language",
+        "subject_key": "general",
+        "proposal_kind": "validate_discovery",
+        "decision": "discarded",
+        "winner": "current_tool",
+        "reason": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+        "current_route": "language_understanding",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "local_provider:ollama",
+        "candidate_route": "language_understanding",
+        "candidate_assistant_kind": "chatgpt",
+        "candidate_config_signature": "desktop_app:chatgpt_consult_v1:external_assistant",
+        "sandbox_experiment_id": "e2cf3b88-53bb-4a3d-8576-ba508e7a3462",
+        "confidence": 0.8412,
+        "evidence_refs": [
+          "13511c24-acf0-421e-ac9d-95742003105d",
+          "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+          "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+          "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b"
+        ],
+        "comparison_scope_keys": [
+          "general"
+        ],
+        "metrics": {
+          "priority_score": 0.5058,
+          "baseline_weighted_score": 1.2674,
+          "candidate_weighted_score": 0.99,
+          "score_margin": -0.2774,
+          "evidence_strength": 0.6585,
+          "observed_blockers": []
+        },
+        "recorded_at_utc": "2026-04-18T13:27:44.143959Z",
+        "metadata": {
+          "next_action": "validate_in_sandbox",
+          "discovery_signal_id": "1888f9d3-cdbe-4bcc-81ae-893e1019828f",
+          "discovery_source": "tool_registry",
+          "discovery_source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46,
+          "baseline_weighted_score": 1.2674,
+          "alternative_weighted_score": 0.99,
+          "score_margin": -0.2774,
+          "baseline_profile": {
+            "weighted_score": 1.2674,
+            "sample_count": 4
+          },
+          "candidate_profile": {
+            "weighted_score": 0.99,
+            "compatibility_score": 0.95,
+            "impact_score": 0.42,
+            "cost_score": 0.46
+          },
+          "ranked_configurations": [
+            {
+              "route": "language_understanding",
+              "assistant_kind": "ollama",
+              "config_signature": "local_provider:ollama",
+              "weighted_score": 1.2674,
+              "score": 1.2674,
+              "samples": 4
+            },
+            {
+              "route": "language_understanding",
+              "assistant_kind": "chatgpt",
+              "config_signature": "desktop_app:chatgpt_consult_v1:external_assistant",
+              "weighted_score": 0.99,
+              "score": 0.99,
+              "samples": 0
+            }
+          ],
+          "tool_type": "custom",
+          "capabilities": [
+            "launch_app",
+            "llm_query",
+            "consult_external",
+            "explain_issue"
+          ],
+          "current_route": "language_understanding",
+          "current_assistant_kind": "ollama",
+          "current_config_signature": "local_provider:ollama",
+          "estimated_candidate_score": 0.99,
+          "estimated_gain": 0.0474,
+          "live_status": "listo",
+          "requires_human_approval": true,
+          "local_first": false,
+          "supports_sandbox": true,
+          "decision_source": "tool_evolution_monitor",
+          "validation_verdict": "valid"
+        }
+      },
+      {
+        "result_id": "f7be1f8b-d61f-49fd-ab6b-423ee30e5b99",
+        "proposal_id": "3c7e2b98-abb5-40e1-85e9-1564654f9f96",
+        "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|ui|playwright|playwright",
+        "domain": "language",
+        "subject_key": "general",
+        "proposal_kind": "validate_discovery",
+        "decision": "discarded",
+        "winner": "current_tool",
+        "reason": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+        "current_route": "language_understanding",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "local_provider:ollama",
+        "candidate_route": "ui",
+        "candidate_assistant_kind": "playwright",
+        "candidate_config_signature": "playwright",
+        "sandbox_experiment_id": "53bb0b76-b795-43bb-8490-bc7202c0457a",
+        "confidence": 0.7548,
+        "evidence_refs": [
+          "aab80e82-675c-43a9-932a-b027dec513ee",
+          "13511c24-acf0-421e-ac9d-95742003105d",
+          "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+          "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e"
+        ],
+        "comparison_scope_keys": [
+          "general"
+        ],
+        "metrics": {
+          "priority_score": 0.483,
+          "baseline_weighted_score": 1.2674,
+          "candidate_weighted_score": 0.99,
+          "score_margin": -0.2774,
+          "evidence_strength": 0.6197,
+          "observed_blockers": []
+        },
+        "recorded_at_utc": "2026-04-18T13:30:44.509787Z",
+        "metadata": {
+          "next_action": "validate_in_sandbox",
+          "discovery_signal_id": "0ca74692-4b84-4342-b8ec-87d885d77871",
+          "discovery_source": "tool_registry",
+          "discovery_source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "compatibility_score": 0.55,
+          "impact_score": 0.54,
+          "cost_score": 0.74,
+          "baseline_weighted_score": 1.2674,
+          "alternative_weighted_score": 0.99,
+          "score_margin": -0.2774,
+          "baseline_profile": {
+            "weighted_score": 1.2674,
+            "sample_count": 4
+          },
+          "candidate_profile": {
+            "weighted_score": 0.99,
+            "compatibility_score": 0.55,
+            "impact_score": 0.54,
+            "cost_score": 0.74
+          },
+          "ranked_configurations": [
+            {
+              "route": "language_understanding",
+              "assistant_kind": "ollama",
+              "config_signature": "local_provider:ollama",
+              "weighted_score": 1.2674,
+              "score": 1.2674,
+              "samples": 4
+            },
+            {
+              "route": "ui",
+              "assistant_kind": "playwright",
+              "config_signature": "playwright",
+              "weighted_score": 0.99,
+              "score": 0.99,
+              "samples": 0
+            }
+          ],
+          "tool_type": "browser",
+          "capabilities": [
+            "open_url",
+            "click",
+            "type_text",
+            "extract_text",
+            "screenshot"
+          ],
+          "current_route": "language_understanding",
+          "current_assistant_kind": "ollama",
+          "current_config_signature": "local_provider:ollama",
+          "estimated_candidate_score": 0.99,
+          "estimated_gain": 0.0654,
+          "live_status": "listo",
+          "requires_human_approval": true,
+          "local_first": true,
+          "supports_sandbox": true,
+          "decision_source": "tool_evolution_monitor",
+          "validation_verdict": "valid"
+        }
+      }
+    ],
+    "discovery_summary": {
+      "subject_keys": [
+        "general",
+        "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+        "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+        "9d07d8c6-19c6-4a1b-a1fc-7a8aa8b111ec",
+        "general:tiene-todo-el-panorama-completo-de-tu-estructura-de-tu-arquitectura"
+      ],
+      "active_signals": [
+        {
+          "signal_id": "420db3d2-7063-4427-83ca-aaa531953fb4",
+          "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|ui|iabv_runtime|desktop_real:desktop_human",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "general",
+          "title": "Probar Desktop human runner para general",
+          "summary": "Desktop human runner aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+          "tool_id": "desktop_human_runner",
+          "tool_title": "Desktop human runner",
+          "assistant_kind": "iabv_runtime",
+          "route": "ui",
+          "config_signature": "desktop_real:desktop_human",
+          "status": "detected",
+          "confidence": 0.7308,
+          "compatibility_score": 0.55,
+          "impact_score": 0.42,
+          "cost_score": 0.74,
+          "evidence_refs": [
+            "067b14ac-ae19-4146-88be-07318436561a",
+            "1158c9de-1705-4b26-8a8c-5924477e33fd",
+            "aab80e82-675c-43a9-932a-b027dec513ee",
+            "13511c24-acf0-421e-ac9d-95742003105d"
+          ],
+          "metadata": {
+            "tool_type": "custom",
+            "capabilities": [
+              "launch_app",
+              "focus_window",
+              "click",
+              "type_text",
+              "scroll",
+              "screenshot",
+              "wait_for_window",
+              "wait_for_change"
+            ],
+            "current_route": "language_understanding",
+            "current_assistant_kind": "ollama",
+            "current_config_signature": "local_provider:ollama",
+            "baseline_weighted_score": 1.2674,
+            "estimated_candidate_score": 0.99,
+            "estimated_gain": 0.0558,
+            "live_status": "listo",
+            "requires_human_approval": true,
+            "local_first": true,
+            "supports_sandbox": true
+          }
+        },
+        {
+          "signal_id": "1c2d4b34-2907-45b2-aaf3-8c38bc446dfd",
+          "proposal_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f|validate_discovery|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local|language_understanding|ollama|local_provider:ollama",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+          "title": "Probar Ollama local para f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+          "summary": "Ollama local aparece disponible y compatible con f931bd01-e7e0-40e1-b91f-b35f92edf99f. Conviene validarlo frente a ollama.",
+          "tool_id": "ollama_llm",
+          "tool_title": "Ollama local",
+          "assistant_kind": "ollama",
+          "route": "language_understanding",
+          "config_signature": "local_provider:ollama",
+          "status": "detected",
+          "confidence": 0.8964,
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.92,
+          "evidence_refs": [
+            "ca9faa21-19dd-4f3f-91ec-824cdf7e22a2"
+          ],
+          "metadata": {
+            "tool_type": "llm_local",
+            "capabilities": [
+              "llm_query",
+              "summarize",
+              "classify"
+            ],
+            "current_route": "local",
+            "current_assistant_kind": "ollama",
+            "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+            "baseline_weighted_score": 0.7692,
+            "estimated_candidate_score": 0.8304,
+            "estimated_gain": 0.0612,
+            "live_status": "disponible",
+            "requires_human_approval": false,
+            "local_first": true,
+            "supports_sandbox": true
+          }
+        },
+        {
+          "signal_id": "cffce491-a879-49d9-ab6a-f3744ad722a3",
+          "proposal_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f|validate_discovery|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+          "title": "Probar ChatGPT web asistido para f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+          "summary": "ChatGPT web asistido aparece disponible y compatible con f931bd01-e7e0-40e1-b91f-b35f92edf99f. Conviene validarlo frente a ollama.",
+          "tool_id": "chatgpt_web_assisted",
+          "tool_title": "ChatGPT web asistido",
+          "assistant_kind": "chatgpt",
+          "route": "language_understanding",
+          "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+          "status": "detected",
+          "confidence": 0.8412,
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46,
+          "evidence_refs": [
+            "ca9faa21-19dd-4f3f-91ec-824cdf7e22a2"
+          ],
+          "metadata": {
+            "tool_type": "llm_web_ui",
+            "capabilities": [
+              "launch_app",
+              "llm_query",
+              "consult_external",
+              "web_assisted"
+            ],
+            "current_route": "local",
+            "current_assistant_kind": "ollama",
+            "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+            "baseline_weighted_score": 0.7692,
+            "estimated_candidate_score": 0.8166,
+            "estimated_gain": 0.0474,
+            "live_status": "listo",
+            "requires_human_approval": true,
+            "local_first": false,
+            "supports_sandbox": true
+          }
+        },
+        {
+          "signal_id": "ebf6768c-b071-4bf4-b47f-c8a77ede246d",
+          "proposal_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f|validate_discovery|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local|ui|playwright|playwright",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+          "title": "Probar Playwright browser para f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+          "summary": "Playwright browser aparece disponible y compatible con f931bd01-e7e0-40e1-b91f-b35f92edf99f. Conviene validarlo frente a ollama.",
+          "tool_id": "playwright_browser",
+          "tool_title": "Playwright browser",
+          "assistant_kind": "playwright",
+          "route": "ui",
+          "config_signature": "playwright",
+          "status": "detected",
+          "confidence": 0.7548,
+          "compatibility_score": 0.55,
+          "impact_score": 0.54,
+          "cost_score": 0.74,
+          "evidence_refs": [
+            "ca9faa21-19dd-4f3f-91ec-824cdf7e22a2"
+          ],
+          "metadata": {
+            "tool_type": "browser",
+            "capabilities": [
+              "open_url",
+              "click",
+              "type_text",
+              "extract_text",
+              "screenshot"
+            ],
+            "current_route": "local",
+            "current_assistant_kind": "ollama",
+            "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+            "baseline_weighted_score": 0.7692,
+            "estimated_candidate_score": 0.8346,
+            "estimated_gain": 0.0654,
+            "live_status": "listo",
+            "requires_human_approval": true,
+            "local_first": true,
+            "supports_sandbox": true
+          }
+        },
+        {
+          "signal_id": "5550ec37-ffd4-488d-9339-68d27552ec45",
+          "proposal_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f|validate_discovery|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local|language_understanding|claude|web_assisted:claude_web_consult_v1:external_assistant",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+          "title": "Probar Claude web asistido para f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+          "summary": "Claude web asistido aparece disponible y compatible con f931bd01-e7e0-40e1-b91f-b35f92edf99f. Conviene validarlo frente a ollama.",
+          "tool_id": "claude_web_assisted",
+          "tool_title": "Claude web asistido",
+          "assistant_kind": "claude",
+          "route": "language_understanding",
+          "config_signature": "web_assisted:claude_web_consult_v1:external_assistant",
+          "status": "detected",
+          "confidence": 0.8412,
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46,
+          "evidence_refs": [
+            "ca9faa21-19dd-4f3f-91ec-824cdf7e22a2"
+          ],
+          "metadata": {
+            "tool_type": "llm_web_ui",
+            "capabilities": [
+              "launch_app",
+              "llm_query",
+              "consult_external",
+              "web_assisted"
+            ],
+            "current_route": "local",
+            "current_assistant_kind": "ollama",
+            "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+            "baseline_weighted_score": 0.7692,
+            "estimated_candidate_score": 0.8166,
+            "estimated_gain": 0.0474,
+            "live_status": "abierto",
+            "requires_human_approval": true,
+            "local_first": false,
+            "supports_sandbox": true
+          }
+        },
+        {
+          "signal_id": "20751a02-d3aa-400e-850e-2226cb1585a5",
+          "proposal_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f|validate_discovery|local|ollama|without_plan|without_files|normal|short|without_tools|without_browser|general|local|language_understanding|chatgpt|desktop_app:chatgpt_consult_v1:external_assistant",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+          "title": "Probar ChatGPT instalado para f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+          "summary": "ChatGPT instalado aparece disponible y compatible con f931bd01-e7e0-40e1-b91f-b35f92edf99f. Conviene validarlo frente a ollama.",
+          "tool_id": "chatgpt_installed",
+          "tool_title": "ChatGPT instalado",
+          "assistant_kind": "chatgpt",
+          "route": "language_understanding",
+          "config_signature": "desktop_app:chatgpt_consult_v1:external_assistant",
+          "status": "detected",
+          "confidence": 0.8412,
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46,
+          "evidence_refs": [
+            "ca9faa21-19dd-4f3f-91ec-824cdf7e22a2"
+          ],
+          "metadata": {
+            "tool_type": "custom",
+            "capabilities": [
+              "launch_app",
+              "llm_query",
+              "consult_external",
+              "explain_issue"
+            ],
+            "current_route": "local",
+            "current_assistant_kind": "ollama",
+            "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+            "baseline_weighted_score": 0.7692,
+            "estimated_candidate_score": 0.8166,
+            "estimated_gain": 0.0474,
+            "live_status": "listo",
+            "requires_human_approval": true,
+            "local_first": false,
+            "supports_sandbox": true
+          }
+        }
+      ],
+      "in_validation_signals": [
+        {
+          "signal_id": "faf51050-e0bb-45b1-a5eb-61da0cb92022",
+          "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "general",
+          "title": "Probar ChatGPT web asistido para general",
+          "summary": "ChatGPT web asistido aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+          "tool_id": "chatgpt_web_assisted",
+          "tool_title": "ChatGPT web asistido",
+          "assistant_kind": "chatgpt",
+          "route": "language_understanding",
+          "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+          "status": "deferred",
+          "confidence": 0.8412,
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46,
+          "evidence_refs": [
+            "067b14ac-ae19-4146-88be-07318436561a",
+            "1158c9de-1705-4b26-8a8c-5924477e33fd",
+            "aab80e82-675c-43a9-932a-b027dec513ee",
+            "13511c24-acf0-421e-ac9d-95742003105d"
+          ],
+          "metadata": {
+            "tool_type": "llm_web_ui",
+            "capabilities": [
+              "launch_app",
+              "llm_query",
+              "consult_external",
+              "web_assisted"
+            ],
+            "current_route": "language_understanding",
+            "current_assistant_kind": "ollama",
+            "current_config_signature": "local_provider:ollama",
+            "baseline_weighted_score": 1.2674,
+            "estimated_candidate_score": 0.99,
+            "estimated_gain": 0.0474,
+            "live_status": "listo",
+            "requires_human_approval": true,
+            "local_first": false,
+            "supports_sandbox": true,
+            "decision_state": {
+              "decision": "deferred",
+              "winner": "tie",
+              "reason": "La validacion de la propuesta se aplazo porque El entorno reporta ram_critical con severidad critical.",
+              "recorded_at_utc": "2026-04-18 05:08:33.695870+00:00"
+            }
+          }
+        },
+        {
+          "signal_id": "7a3f179c-bd3a-4d89-950f-0505e9ab539f",
+          "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|claude|web_assisted:claude_web_consult_v1:external_assistant",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "general",
+          "title": "Probar Claude web asistido para general",
+          "summary": "Claude web asistido aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+          "tool_id": "claude_web_assisted",
+          "tool_title": "Claude web asistido",
+          "assistant_kind": "claude",
+          "route": "language_understanding",
+          "config_signature": "web_assisted:claude_web_consult_v1:external_assistant",
+          "status": "deferred",
+          "confidence": 0.8412,
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46,
+          "evidence_refs": [
+            "067b14ac-ae19-4146-88be-07318436561a",
+            "1158c9de-1705-4b26-8a8c-5924477e33fd",
+            "aab80e82-675c-43a9-932a-b027dec513ee",
+            "13511c24-acf0-421e-ac9d-95742003105d"
+          ],
+          "metadata": {
+            "tool_type": "llm_web_ui",
+            "capabilities": [
+              "launch_app",
+              "llm_query",
+              "consult_external",
+              "web_assisted"
+            ],
+            "current_route": "language_understanding",
+            "current_assistant_kind": "ollama",
+            "current_config_signature": "local_provider:ollama",
+            "baseline_weighted_score": 1.2674,
+            "estimated_candidate_score": 0.99,
+            "estimated_gain": 0.0474,
+            "live_status": "abierto",
+            "requires_human_approval": true,
+            "local_first": false,
+            "supports_sandbox": true,
+            "decision_state": {
+              "decision": "deferred",
+              "winner": "tie",
+              "reason": "La validacion de la propuesta se aplazo porque El entorno reporta ram_pressure con severidad high.",
+              "recorded_at_utc": "2026-04-18 13:24:43.792088+00:00"
+            }
+          }
+        }
+      ],
+      "promoted_signals": [],
+      "discarded_signals": [
+        {
+          "signal_id": "b0e21752-70ab-4696-aabe-b45d77bf3aba",
+          "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|ui|playwright|playwright",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "general",
+          "title": "Probar Playwright browser para general",
+          "summary": "Playwright browser aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+          "tool_id": "playwright_browser",
+          "tool_title": "Playwright browser",
+          "assistant_kind": "playwright",
+          "route": "ui",
+          "config_signature": "playwright",
+          "status": "discarded",
+          "confidence": 0.7548,
+          "compatibility_score": 0.55,
+          "impact_score": 0.54,
+          "cost_score": 0.74,
+          "evidence_refs": [
+            "067b14ac-ae19-4146-88be-07318436561a",
+            "1158c9de-1705-4b26-8a8c-5924477e33fd",
+            "aab80e82-675c-43a9-932a-b027dec513ee",
+            "13511c24-acf0-421e-ac9d-95742003105d"
+          ],
+          "metadata": {
+            "tool_type": "browser",
+            "capabilities": [
+              "open_url",
+              "click",
+              "type_text",
+              "extract_text",
+              "screenshot"
+            ],
+            "current_route": "language_understanding",
+            "current_assistant_kind": "ollama",
+            "current_config_signature": "local_provider:ollama",
+            "baseline_weighted_score": 1.2674,
+            "estimated_candidate_score": 0.99,
+            "estimated_gain": 0.0654,
+            "live_status": "listo",
+            "requires_human_approval": true,
+            "local_first": true,
+            "supports_sandbox": true,
+            "decision_state": {
+              "decision": "discarded",
+              "winner": "current_tool",
+              "reason": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+              "recorded_at_utc": "2026-04-18 13:30:44.509787+00:00"
+            }
+          }
+        },
+        {
+          "signal_id": "d673aee8-01a0-497f-8095-e0633eb0a455",
+          "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|chatgpt|desktop_app:chatgpt_consult_v1:external_assistant",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "general",
+          "title": "Probar ChatGPT instalado para general",
+          "summary": "ChatGPT instalado aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+          "tool_id": "chatgpt_installed",
+          "tool_title": "ChatGPT instalado",
+          "assistant_kind": "chatgpt",
+          "route": "language_understanding",
+          "config_signature": "desktop_app:chatgpt_consult_v1:external_assistant",
+          "status": "discarded",
+          "confidence": 0.8412,
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46,
+          "evidence_refs": [
+            "067b14ac-ae19-4146-88be-07318436561a",
+            "1158c9de-1705-4b26-8a8c-5924477e33fd",
+            "aab80e82-675c-43a9-932a-b027dec513ee",
+            "13511c24-acf0-421e-ac9d-95742003105d"
+          ],
+          "metadata": {
+            "tool_type": "custom",
+            "capabilities": [
+              "launch_app",
+              "llm_query",
+              "consult_external",
+              "explain_issue"
+            ],
+            "current_route": "language_understanding",
+            "current_assistant_kind": "ollama",
+            "current_config_signature": "local_provider:ollama",
+            "baseline_weighted_score": 1.2674,
+            "estimated_candidate_score": 0.99,
+            "estimated_gain": 0.0474,
+            "live_status": "listo",
+            "requires_human_approval": true,
+            "local_first": false,
+            "supports_sandbox": true,
+            "decision_state": {
+              "decision": "discarded",
+              "winner": "current_tool",
+              "reason": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+              "recorded_at_utc": "2026-04-18 13:27:44.143959+00:00"
+            }
+          }
+        }
+      ],
+      "unresolved_signals": []
+    }
+  }
+}

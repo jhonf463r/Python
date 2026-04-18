@@ -1,0 +1,31 @@
+{
+  "objective_id": "c93d7841-c62c-4992-ad44-1a994a639377",
+  "kind": "project",
+  "title": "Consulta a la base local",
+  "summary": "Responder desde conocimiento, memoria local y ejecuciones recientes sin preguntas genericas.",
+  "parent_id": "5e10e936-3429-4b65-88ee-ab82cd96957d",
+  "root_id": "5e10e936-3429-4b65-88ee-ab82cd96957d",
+  "site_id": null,
+  "priority": 50,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol project_evolution | pack project.evolution.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Laboratorio universal: language -> language_understanding (score 1.27, confianza 0.90).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:331ac83f-20f7-4775-9208-36a0b0b31bc1"
+  ],
+  "tags": [],
+  "metadata": {
+    "user_goal": "sabes por que tu trabajo en vivo no avanza el que tiene de consulta cojn cgatgp que esta al 26%",
+    "intent_key": "knowledge.query",
+    "site_display_name": "General"
+  },
+  "created_at_utc": "2026-04-18T15:54:07.109909Z",
+  "updated_at_utc": "2026-04-18T15:54:07.857508Z"
+}

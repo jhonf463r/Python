@@ -1,0 +1,32 @@
+{
+  "objective_id": "9fe52e79-1c18-4497-a04f-6c69305d5079",
+  "kind": "objective",
+  "title": "puedes comprobar si tiene comunicacion con codex ? diagamos si te puede responder alhuna consutalta que le hagas y obserbar todo el proceso como pérmisos que requiera",
+  "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+  "parent_id": null,
+  "root_id": "9fe52e79-1c18-4497-a04f-6c69305d5079",
+  "site_id": null,
+  "priority": 50,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:f3265c24-96ff-49f8-9dcf-76335ecd596a",
+    "Conocimiento local relacionado: 5 items.",
+    "run:2bf328b0-8515-4975-adea-1eb78b2c3425"
+  ],
+  "tags": [],
+  "metadata": {
+    "user_goal": "si has logrado comunicarte con codex?",
+    "intent_key": "general.assistance",
+    "domain_hint": "general"
+  },
+  "created_at_utc": "2026-04-13T23:17:05.780258Z",
+  "updated_at_utc": "2026-04-13T23:25:11.161208Z"
+}

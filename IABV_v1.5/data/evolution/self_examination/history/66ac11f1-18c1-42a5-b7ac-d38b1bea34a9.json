@@ -1,0 +1,475 @@
+{
+  "review_id": "66ac11f1-18c1-42a5-b7ac-d38b1bea34a9",
+  "created_at_utc": "2026-04-18T01:20:05.513576Z",
+  "updated_at_utc": "2026-04-18T01:20:05.513576Z",
+  "package_version": "self_examination.v1",
+  "summary": "Autoexaminacion needs_attention: 1 hallazgos activos. Lo mas fuerte ahora es ruta debil o inercial: chatgpt web asistido por ui. Mejoras validadas: 4 | issues recurrentes: 4.",
+  "status": "needs_attention",
+  "assistant_brief": "# IABV v1.5 - Operational Self Examination\n\nGenerado: 2026-04-18T01:20:05.513576+00:00\nResumen: Autoexaminacion needs_attention: 1 hallazgos activos. Lo mas fuerte ahora es ruta debil o inercial: chatgpt web asistido por ui. Mejoras validadas: 4 | issues recurrentes: 4.\n\nUsa esta revision para entender que esta fallando, que se repite y que ajustes conviene hacer antes de tocar la arquitectura.\n\n## Hallazgos\n- Ruta debil o inercial: chatgpt web asistido por ui: Se reutilizo 3 veces con exito 0%, bloqueos 0%, fallback 0% y tendencia +0.00. | recomendacion: Debilitar esta preferencia hasta que la tendencia vuelva a mejorar. | confianza 0.70\n\n## Ajustes recomendados\n- Ruta debil o inercial: chatgpt web asistido por ui: Debilitar esta preferencia hasta que la tendencia vuelva a mejorar. | fuente ExperimentLab, AdaptiveWeightLayer\n- Pendiente Codex: : Ya existe un patron equivalente Decision: continue_local. Confianza 0.96. | fuente EvolutionReviewService\n- Pendiente Codex: : Sin hallazgos. Decision: continue_local. Confianza 0.66. | fuente EvolutionReviewService\n- Pista de mejora reportada por la ejecucion: Seguir con la estrategia propuesta. | fuente EvolutionReviewService\n- Pista de mejora reportada por la ejecucion: Probar restauracion de sesion o dejar la fase como login guiado con aprobacion. | fuente EvolutionReviewService\n\n## Mejoras validadas\n- ollama por language_understanding: Recomiendo language_understanding para language en general usando ollama con configuracion local_provider:ollama por score base 0.93 y score adaptativo 1.27 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; reutilizacion alta 100%. | confianza 0.90\n- ollama por language_understanding: Recomiendo language_understanding para language en sandbox:general usando ollama con configuracion local_provider:ollama por score base 0.88 y score adaptativo 1.05 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; reutilizacion alta 100%. | confianza 0.80\n- adaptive local orchestrator por language_understanding: Recomiendo language_understanding para language en general usando adaptive local orchestrator con configuracion with_plan|without_files|normal|long|without_tools|without_browser|general|external por score base 0.63 y score adaptativo 0.86 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%. | confianza 0.78\n- adaptive local orchestrator por language_understanding: Recomiendo language_understanding para language en cb2d05da-7723-4f27-aaec-61ae4030e880 usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.61 y score adaptativo 0.82 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 1701 ms. | confianza 0.77\n\n## Retroalimentacion de ajustes\n- Ruta debil o inercial: chatgpt web asistido por ui: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- Pendiente Codex:: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- Pendiente Codex:: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- Pista de mejora reportada por la ejecucion: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.",
+  "findings": [
+    {
+      "finding_id": "930d60e0-cbb7-4356-addc-2633951e414a",
+      "category": "inertial_route",
+      "title": "Ruta debil o inercial: chatgpt web asistido por ui",
+      "summary": "Se reutilizo 3 veces con exito 0%, bloqueos 0%, fallback 0% y tendencia +0.00.",
+      "severity": "high",
+      "confidence": 0.7,
+      "recommendation": "Debilitar esta preferencia hasta que la tendencia vuelva a mejorar.",
+      "evidence_refs": [
+        "b0a3ed25-b1bd-469d-b719-3da950979cef",
+        "a221b210-21eb-439c-aa37-7d2001c2b77d",
+        "03f88a4c-f11a-4913-815e-15f4e0bbc55e"
+      ],
+      "source_refs": [
+        "ExperimentLab",
+        "AdaptiveWeightLayer"
+      ],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "route": "ui",
+        "assistant_kind": "chatgpt web asistido",
+        "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "profile": {
+          "sample_count": 3,
+          "success_rate": 0.0,
+          "failure_rate": 1.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "reuse_ratio": 0.0,
+          "average_score": 0.3504,
+          "average_latency_ms": 17376,
+          "recency_score": -0.7,
+          "trend_score": 0.0,
+          "adaptive_weight": -0.356,
+          "weighted_score": -0.0056,
+          "top_environment_signatures": [
+            "default"
+          ],
+          "top_time_buckets": [
+            "afternoon",
+            "evening"
+          ],
+          "reasons": [
+            "latencia promedio 17376 ms"
+          ]
+        },
+        "currently_recommended": false
+      }
+    }
+  ],
+  "recurring_issues": [
+    {
+      "title": "Ruta debil o inercial: chatgpt web asistido por ui",
+      "category": "inertial_route",
+      "summary": "Se reutilizo 3 veces con exito 0%, bloqueos 0%, fallback 0% y tendencia +0.00.",
+      "severity": "high",
+      "confidence": 0.7,
+      "evidence_refs": [
+        "b0a3ed25-b1bd-469d-b719-3da950979cef",
+        "a221b210-21eb-439c-aa37-7d2001c2b77d",
+        "03f88a4c-f11a-4913-815e-15f4e0bbc55e"
+      ],
+      "source_refs": [
+        "ExperimentLab",
+        "AdaptiveWeightLayer"
+      ]
+    },
+    {
+      "title": "light_checks_warning",
+      "category": "project_health_repeat",
+      "summary": "El issue light_checks_warning reaparece 10 veces en la capa evolutiva.",
+      "severity": "medium",
+      "confidence": 0.68,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ]
+    },
+    {
+      "title": "need_codex_fix",
+      "category": "project_health_repeat",
+      "summary": "El issue need_codex_fix reaparece 2 veces en la capa evolutiva.",
+      "severity": "medium",
+      "confidence": 0.68,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ]
+    },
+    {
+      "title": "knowledge.query",
+      "category": "project_health_repeat",
+      "summary": "El issue knowledge.query reaparece 1 veces en la capa evolutiva.",
+      "severity": "medium",
+      "confidence": 0.68,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ]
+    }
+  ],
+  "recommended_adjustments": [
+    {
+      "title": "Ruta debil o inercial: chatgpt web asistido por ui",
+      "recommended_change": "Debilitar esta preferencia hasta que la tendencia vuelva a mejorar.",
+      "category": "inertial_route",
+      "severity": "high",
+      "confidence": 0.7,
+      "evidence_refs": [
+        "b0a3ed25-b1bd-469d-b719-3da950979cef",
+        "a221b210-21eb-439c-aa37-7d2001c2b77d",
+        "03f88a4c-f11a-4913-815e-15f4e0bbc55e"
+      ],
+      "source_refs": [
+        "ExperimentLab",
+        "AdaptiveWeightLayer"
+      ],
+      "metadata": {
+        "route": "ui",
+        "assistant_kind": "chatgpt web asistido",
+        "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "profile": {
+          "sample_count": 3,
+          "success_rate": 0.0,
+          "failure_rate": 1.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "reuse_ratio": 0.0,
+          "average_score": 0.3504,
+          "average_latency_ms": 17376,
+          "recency_score": -0.7,
+          "trend_score": 0.0,
+          "adaptive_weight": -0.356,
+          "weighted_score": -0.0056,
+          "top_environment_signatures": [
+            "default"
+          ],
+          "top_time_buckets": [
+            "afternoon",
+            "evening"
+          ],
+          "reasons": [
+            "latencia promedio 17376 ms"
+          ]
+        },
+        "currently_recommended": false
+      },
+      "feedback_key": "inertial_route:chatgpt web asistido:ui:without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Pendiente Codex: ",
+      "recommended_change": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+      "category": "backlog",
+      "severity": "medium",
+      "confidence": 0.95,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ],
+      "metadata": {},
+      "feedback_key": "backlog:pendiente codex:",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Pendiente Codex: ",
+      "recommended_change": "Sin hallazgos. Decision: continue_local. Confianza 0.66.",
+      "category": "backlog",
+      "severity": "medium",
+      "confidence": 0.95,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ],
+      "metadata": {},
+      "feedback_key": "backlog:pendiente codex:",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Pista de mejora reportada por la ejecucion",
+      "recommended_change": "Seguir con la estrategia propuesta.",
+      "category": "backlog",
+      "severity": "medium",
+      "confidence": 0.6,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ],
+      "metadata": {},
+      "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Pista de mejora reportada por la ejecucion",
+      "recommended_change": "Probar restauracion de sesion o dejar la fase como login guiado con aprobacion.",
+      "category": "backlog",
+      "severity": "medium",
+      "confidence": 0.6,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ],
+      "metadata": {},
+      "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    }
+  ],
+  "validated_improvements": [
+    {
+      "title": "ollama por language_understanding",
+      "summary": "Recomiendo language_understanding para language en general usando ollama con configuracion local_provider:ollama por score base 0.93 y score adaptativo 1.27 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; reutilizacion alta 100%.",
+      "subject_key": "general",
+      "recommended_assistant_kind": "ollama",
+      "recommended_route": "language_understanding",
+      "confidence": 0.9008,
+      "score": 1.2674,
+      "reasons": [
+        "historial de exito 100%",
+        "reutilizacion alta 100%"
+      ],
+      "source_refs": [
+        "ExperimentLab",
+        "StrategySelector"
+      ],
+      "evidence_refs": [
+        "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e"
+      ],
+      "feedback_key": "inertial_route:ollama:language_understanding:local_provider:ollama"
+    },
+    {
+      "title": "ollama por language_understanding",
+      "summary": "Recomiendo language_understanding para language en sandbox:general usando ollama con configuracion local_provider:ollama por score base 0.88 y score adaptativo 1.05 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; reutilizacion alta 100%.",
+      "subject_key": "sandbox:general",
+      "recommended_assistant_kind": "ollama",
+      "recommended_route": "language_understanding",
+      "confidence": 0.8024,
+      "score": 1.0493,
+      "reasons": [
+        "historial de exito 100%",
+        "reutilizacion alta 100%",
+        "bloqueos frecuentes 100%"
+      ],
+      "source_refs": [
+        "ExperimentLab",
+        "StrategySelector"
+      ],
+      "evidence_refs": [
+        "7d7d5697-1ce1-488c-9547-7da43ec8bd46"
+      ],
+      "feedback_key": "inertial_route:ollama:language_understanding:local_provider:ollama"
+    },
+    {
+      "title": "adaptive local orchestrator por language_understanding",
+      "summary": "Recomiendo language_understanding para language en general usando adaptive local orchestrator con configuracion with_plan|without_files|normal|long|without_tools|without_browser|general|external por score base 0.63 y score adaptativo 0.86 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%.",
+      "subject_key": "general",
+      "recommended_assistant_kind": "adaptive local orchestrator",
+      "recommended_route": "language_understanding",
+      "confidence": 0.7797,
+      "score": 0.8604,
+      "reasons": [
+        "historial de exito 100%"
+      ],
+      "source_refs": [
+        "ExperimentLab",
+        "StrategySelector"
+      ],
+      "evidence_refs": [
+        "5192df44-13cb-4c62-8fd3-9352fdf11d4f"
+      ],
+      "feedback_key": "inertial_route:adaptive local orchestrator:language_understanding:with_plan|without_files|normal|long|without_tools|without_browser|general|external"
+    },
+    {
+      "title": "adaptive local orchestrator por language_understanding",
+      "summary": "Recomiendo language_understanding para language en cb2d05da-7723-4f27-aaec-61ae4030e880 usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.61 y score adaptativo 0.82 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 1701 ms.",
+      "subject_key": "cb2d05da-7723-4f27-aaec-61ae4030e880",
+      "recommended_assistant_kind": "adaptive local orchestrator",
+      "recommended_route": "language_understanding",
+      "confidence": 0.7653,
+      "score": 0.8224,
+      "reasons": [
+        "historial de exito 100%",
+        "latencia promedio 1701 ms"
+      ],
+      "source_refs": [
+        "ExperimentLab",
+        "StrategySelector"
+      ],
+      "evidence_refs": [
+        "9261c4cb-9784-4db4-9a6d-cad7733d147c"
+      ],
+      "feedback_key": "inertial_route:adaptive local orchestrator:language_understanding:with_plan|without_files|normal|short|without_tools|without_browser|general|external"
+    }
+  ],
+  "unresolved_risks": [],
+  "package_path": "C:\\Python\\IABV_v1.5\\data\\evolution\\self_examination\\latest.json",
+  "markdown_path": "C:\\Python\\IABV_v1.5\\data\\evolution\\self_examination\\latest.md",
+  "metadata": {
+    "recommendation_feedback": [
+      {
+        "title": "Ruta debil o inercial: chatgpt web asistido por ui",
+        "category": "inertial_route",
+        "feedback_key": "inertial_route:chatgpt web asistido:ui:without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [
+          "b0a3ed25-b1bd-469d-b719-3da950979cef",
+          "a221b210-21eb-439c-aa37-7d2001c2b77d"
+        ],
+        "source_refs": [
+          "ExperimentLab",
+          "AdaptiveWeightLayer",
+          "OperationalSelfExaminationService",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-04-18T01:20:11.656782+00:00"
+      },
+      {
+        "title": "Pendiente Codex:",
+        "category": "backlog",
+        "feedback_key": "backlog:pendiente codex:",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.52,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": false,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-04-18T01:20:11.656796+00:00"
+      },
+      {
+        "title": "Pendiente Codex:",
+        "category": "backlog",
+        "feedback_key": "backlog:pendiente codex:",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.52,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": false,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-04-18T01:20:11.656805+00:00"
+      },
+      {
+        "title": "Pista de mejora reportada por la ejecucion",
+        "category": "backlog",
+        "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.52,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": false,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-04-18T01:20:11.656813+00:00"
+      },
+      {
+        "title": "Pista de mejora reportada por la ejecucion",
+        "category": "backlog",
+        "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.52,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": false,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-04-18T01:20:11.656820+00:00"
+      }
+    ],
+    "feedback_summary": {
+      "total_reviewed": 5,
+      "validated_improvement": 0,
+      "valid_adjustment": 0,
+      "false_improvement": 0,
+      "no_evidence": 5
+    },
+    "workspace_root": "C:\\Python\\IABV_v1.5",
+    "source_refs": [
+      "RunRepository",
+      "AdaptiveSessionRepository",
+      "ExperimentLab",
+      "EvolutionReviewService",
+      "WorldModelSnapshot",
+      "AutonomousValidationSnapshot"
+    ]
+  }
+}

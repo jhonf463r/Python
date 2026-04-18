@@ -1,0 +1,579 @@
+{
+  "snapshot_id": "e69f7925-ffdd-4f02-9b03-fc732743e46d",
+  "active_windows": [
+    {
+      "window_id": "53da30f5-e4d4-4bcc-9b8b-a1e51f02a8db",
+      "title": "Devin - Google Chrome",
+      "app_name": "Devin",
+      "pid": 33248,
+      "focused": true,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "85851d4a-fc62-4bb3-aa5f-f136aed56d3e",
+      "title": "IABV v1.5",
+      "app_name": "IABV v1.5",
+      "pid": 37320,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "40f3448a-7d6b-4441-808b-7b5507ddacf3",
+      "title": "IABV_v1.5 - Windsurf",
+      "app_name": "IABV_v1.5",
+      "pid": 22292,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "686ef960-e781-4d59-94c8-df99f3baae5f",
+      "title": "Administrador de tareas",
+      "app_name": "Administrador de tareas",
+      "pid": 10096,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "5b6c6340-05fc-4244-8fce-30e41f6f2aea",
+      "title": "Configuraci\u00f3n",
+      "app_name": "Configuraci\u00f3n",
+      "pid": 20532,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "1fc1ccee-7f70-44a1-bb6c-72e39554cc9d",
+      "title": "Configuraci\u00f3n",
+      "app_name": "Configuraci\u00f3n",
+      "pid": 21572,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "4a2f26a1-5e4f-4ea9-bb20-ec1276bf964e",
+      "title": "Feid, Pirlo - CUAL ES ESA (Official Video) - YouTube - Opera",
+      "app_name": "Feid, Pirlo",
+      "pid": 34832,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "bb3aed09-3c66-4b72-84f0-2bf6344751e6",
+      "title": "Realtek Audio Console",
+      "app_name": "Realtek Audio Console",
+      "pid": 34728,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "8fdf40ab-266e-4ff2-af8d-3d9bfa55b19a",
+      "title": "Realtek Audio Console",
+      "app_name": "Realtek Audio Console",
+      "pid": 21572,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "1887e0bf-e69d-47f6-97b6-e9e0ec910ca6",
+      "title": "Nahimic",
+      "app_name": "Nahimic",
+      "pid": 21572,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "eb11534f-2782-4996-bfa0-7bea41c50101",
+      "title": "OmApSvcBroker",
+      "app_name": "OmApSvcBroker",
+      "pid": 31740,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "e245cd48-47ca-4684-baae-93aeaf9051f4",
+      "title": "Experiencia de entrada de Windows",
+      "app_name": "Experiencia de entrada de Windows",
+      "pid": 26272,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "25075068-5b4a-49c2-be3a-b11fe18f9462",
+      "title": "MSI Center",
+      "app_name": "MSI Center",
+      "pid": 17540,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "1a2d2932-4398-41c7-a62f-2821c7f79356",
+      "title": "Program Manager",
+      "app_name": "Program Manager",
+      "pid": 27004,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    }
+  ],
+  "focused_window": {
+    "window_id": "2fd2cf69-78dd-4cdf-8335-3afbe37d5954",
+    "title": "Devin - Google Chrome",
+    "app_name": "Devin",
+    "pid": 33248,
+    "focused": true,
+    "visible": true,
+    "tool_id": "",
+    "assistant_kind": "",
+    "state": "focused",
+    "detail": "",
+    "metadata": {}
+  },
+  "tool_live_status": [
+    {
+      "tool_id": "ollama_llm",
+      "title": "Ollama local",
+      "assistant_kind": "ollama",
+      "available": true,
+      "status": "disponible",
+      "detail": "Disponible.",
+      "launch_mode": "local_provider",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "disponibles",
+      "session_status": "activa",
+      "capture_status": "tool_result",
+      "probe_status": "verificado_pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": "2026-04-18T16:43:58.506133Z",
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Ollama local",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "tool_result",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "executed",
+        "permission_scope": "observe_window_content:ollama"
+      }
+    },
+    {
+      "tool_id": "chatgpt_web_assisted",
+      "title": "ChatGPT web asistido",
+      "assistant_kind": "chatgpt",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "web_assisted",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "capture_unverified",
+      "probe_status": "verificado_pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal",
+        "tool_history"
+      ],
+      "last_verified_at": "2026-04-18T16:43:58.561440Z",
+      "external_state_flags": [
+        "awaiting_response",
+        "capture_unverified"
+      ],
+      "detected_blocks": [
+        "awaiting_response",
+        "capture_unverified"
+      ],
+      "confidence": 0.34,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "ChatGPT web asistido",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "dom_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "[WinError 5] Acceso denegado",
+        "history_state": "awaiting_response",
+        "permission_scope": "observe_window_content:chatgpt"
+      }
+    },
+    {
+      "tool_id": "codex_installed",
+      "title": "Codex instalado",
+      "assistant_kind": "codex",
+      "available": true,
+      "status": "listo",
+      "detail": "Codex parece estar enfocado en el hilo correcto del workspace actual (Mejora comprensi\u00f3n conversacional).",
+      "launch_mode": "desktop_app",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "correcto_probable",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "capture_unverified",
+      "probe_status": "verificado_pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal",
+        "tool_history",
+        "codex_state_sqlite"
+      ],
+      "last_verified_at": "2026-04-18T16:43:58.602555Z",
+      "external_state_flags": [
+        "capture_unverified"
+      ],
+      "detected_blocks": [
+        "capture_unverified"
+      ],
+      "confidence": 0.34,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Codex instalado",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "clipboard_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "wrong_thread",
+        "history_state": "failed",
+        "permission_scope": "observe_window_content:codex"
+      }
+    },
+    {
+      "tool_id": "playwright_browser",
+      "title": "Playwright browser",
+      "assistant_kind": "",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Playwright browser",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:external"
+      }
+    },
+    {
+      "tool_id": "claude_web_assisted",
+      "title": "Claude web asistido",
+      "assistant_kind": "claude",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "web_assisted",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Claude web asistido",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "dom_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:claude"
+      }
+    },
+    {
+      "tool_id": "claude_installed",
+      "title": "Claude instalado",
+      "assistant_kind": "claude",
+      "available": false,
+      "status": "no_disponible",
+      "detail": "La herramienta no quedo confirmada como disponible en esta laptop.",
+      "launch_mode": "desktop_app",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "no_disponible",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.1,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Claude instalado",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "clipboard_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:claude"
+      }
+    },
+    {
+      "tool_id": "chatgpt_installed",
+      "title": "ChatGPT instalado",
+      "assistant_kind": "chatgpt",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "desktop_app",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "ChatGPT instalado",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "clipboard_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:chatgpt"
+      }
+    },
+    {
+      "tool_id": "desktop_human_runner",
+      "title": "Desktop human runner",
+      "assistant_kind": "iabv_runtime",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "desktop_real",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Desktop human runner",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "local_evidence",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:iabv_runtime"
+      }
+    }
+  ],
+  "network_status": {
+    "connected": true,
+    "status": "conectado",
+    "quality": "buena",
+    "latency_ms": 82.4,
+    "detail": "La red responde bien para consultas externas normales.",
+    "evidence": [
+      "latency_ms:82.4"
+    ],
+    "metadata": {}
+  },
+  "background_processes": [],
+  "detected_blocks": [
+    "awaiting_response",
+    "capture_unverified"
+  ],
+  "block_records": [],
+  "permission_gates": [],
+  "observation_sources": [
+    "environment_self_model",
+    "network_probe",
+    "tool_registry",
+    "universal_perception_signal",
+    "tool_history",
+    "codex_state_sqlite"
+  ],
+  "inferred_state": {
+    "summary": "Hay bloqueos operativos activos que conviene respetar antes de lanzar otra accion.",
+    "focused_window": "Devin - Google Chrome",
+    "active_window_count": 14,
+    "blocked_routes": [],
+    "permission_gates": [],
+    "blocked_tools": [
+      {
+        "assistant_kind": "chatgpt",
+        "tool_id": "chatgpt_web_assisted",
+        "status": "listo",
+        "detected_blocks": [
+          "awaiting_response",
+          "capture_unverified"
+        ]
+      },
+      {
+        "assistant_kind": "codex",
+        "tool_id": "codex_installed",
+        "status": "listo",
+        "detected_blocks": [
+          "capture_unverified"
+        ]
+      }
+    ],
+    "deductions": [
+      "La ventana en foco ahora mismo es Devin - Google Chrome."
+    ]
+  },
+  "confidence": 0.74,
+  "freshness_ms": 10681,
+  "last_updated": "2026-04-18T16:44:02.673138Z",
+  "unresolved_fields": [],
+  "metadata": {
+    "scan_reason": "perception_cycle",
+    "scan_mode": "light",
+    "workspace_root": "C:\\Python\\IABV_v1.5",
+    "observation_sources": [
+      "environment_self_model",
+      "network_probe",
+      "tool_registry",
+      "universal_perception_signal",
+      "tool_history",
+      "codex_state_sqlite"
+    ],
+    "permission_gates": [],
+    "changed_since_last_scan": [
+      "focus:Devin - Google Chrome"
+    ]
+  }
+}

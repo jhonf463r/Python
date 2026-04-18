@@ -1,0 +1,48 @@
+{
+  "run_id": "c1f77d0f-bf72-4d97-bf56-9b6d0902d31b",
+  "domain": "language",
+  "suite_name": "text_understanding_suite",
+  "objective": "Consultar Codex sobre: abre Wplay e inicia sesion",
+  "subject_key": "wplay",
+  "route": "ui",
+  "candidate_id": "dc9e3e40-e90e-410e-9f22-b53187b65350",
+  "candidate_label": "Claude web asistido",
+  "success": false,
+  "expected_summary": "text=Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+  "observed_summary": "Sesion aislada de Claude web asistido lista en modo dry-run. Llevare la consulta a un chat especial del programa cuando permitas el lanzamiento real.",
+  "metrics": {
+    "precision": 0.248,
+    "execution_ms": 0,
+    "operational_cost": 0.0,
+    "robustness": 0.4,
+    "reuse_score": 0.0,
+    "user_progress": 0.0,
+    "total_score": 0.3748,
+    "metadata": {
+      "domain": "language",
+      "objective": "Consultar Codex sobre: abre Wplay e inicia sesion",
+      "candidate_label": "Claude web asistido",
+      "route": "ui",
+      "latency_score": 1.0,
+      "cost_score": 1.0,
+      "user_progress_score": 0.0
+    }
+  },
+  "evidence_refs": [
+    "d391b753-91a2-459f-909e-0faa14e2cf86",
+    "1889f1d3-b070-4d84-8576-6243a4c1b88b",
+    "site:wplay"
+  ],
+  "metadata": {
+    "source": "live_audit_tool",
+    "user_progress": 0.0,
+    "evidence_refs": [
+      "d391b753-91a2-459f-909e-0faa14e2cf86",
+      "1889f1d3-b070-4d84-8576-6243a4c1b88b",
+      "site:wplay"
+    ],
+    "reused_pattern": false,
+    "suite_name": "text_understanding_suite"
+  },
+  "created_at_utc": "2026-04-11T00:44:17.179288Z"
+}

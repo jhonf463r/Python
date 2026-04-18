@@ -1,0 +1,50 @@
+{
+  "tool_id": "codex_installed",
+  "title": "Codex instalado",
+  "tool_type": "custom",
+  "description": "Consulta tecnica guiada usando la app o CLI instalada de Codex antes de caer a web.",
+  "adapter_key": "external_assistant",
+  "validation_status": "unvalidated",
+  "local_first": false,
+  "available": true,
+  "supports_sandbox": true,
+  "supports_write": false,
+  "requires_human_approval": true,
+  "supports_rollback": false,
+  "capabilities": [
+    "launch_app",
+    "llm_query",
+    "consult_external",
+    "code_assistance"
+  ],
+  "success_count": 0,
+  "failure_count": 0,
+  "last_result_id": null,
+  "last_validated_at_utc": null,
+  "metadata": {
+    "assistant_kind": "codex",
+    "launch_mode": "desktop_app",
+    "command_name": "codex",
+    "command_aliases": [
+      "codex.exe"
+    ],
+    "windows_default_paths": [
+      "{localappdata}\\Microsoft\\WindowsApps\\codex.exe",
+      "{programfiles}\\WindowsApps\\OpenAI.Codex_*\\app\\resources\\codex.exe",
+      "{programfiles}\\WindowsApps\\OpenAI.Codex_*\\app\\resources\\codex.EXE"
+    ],
+    "prompt_template_id": "codex_consult_v1",
+    "response_capture_mode": "clipboard_capture",
+    "background_capture_mode": "codex_rollout",
+    "session_state_path": "{userprofile}\\.codex\\state_5.sqlite",
+    "session_rollouts_root": "{userprofile}\\.codex\\sessions",
+    "requires_manual_pasteback": false,
+    "window_title_hints": [
+      "Codex"
+    ],
+    "submit_prompt_after_paste": true,
+    "response_wait_seconds": 10.0,
+    "dry_run_launch": false,
+    "updated_at_utc": "2026-04-15T15:01:27.997025+00:00"
+  }
+}

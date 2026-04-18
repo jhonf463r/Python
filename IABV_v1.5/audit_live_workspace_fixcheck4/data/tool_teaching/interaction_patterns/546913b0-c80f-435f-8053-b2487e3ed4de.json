@@ -1,0 +1,63 @@
+{
+  "pattern_id": "546913b0-c80f-435f-8053-b2487e3ed4de",
+  "signature": "6a57800cf23c742e7666f595842f5aed87279ff6",
+  "title": "Consultar ChatGPT",
+  "channel": "ui",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": null,
+  "operations": [
+    {
+      "step_id": "8c529db3-2a0d-455d-9508-61d30f55bb8c",
+      "channel": "ui",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false
+      }
+    },
+    {
+      "step_id": "0f148df0-8fe4-436c-bd9f-24f3864f94d2",
+      "channel": "ui",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false
+      }
+    }
+  ],
+  "reusable": true,
+  "success_count": 1,
+  "failure_count": 1,
+  "last_task_id": "6d32a5d0-d7ad-449e-a108-fc591ce230ed",
+  "last_result_id": "ebcbfe42-95ac-4b1f-b96a-d2645219175e",
+  "created_at_utc": "2026-04-13T19:35:18.508688Z",
+  "updated_at_utc": "2026-04-13T19:35:18.638610Z",
+  "metadata": {
+    "objective_excerpt": "Consultar ChatGPT sobre: necesito una consulta externa con chatgpt para revisar por que playwright no despega",
+    "execution_scope": "read_only",
+    "approval_decision": "approved",
+    "last_validation_status": "unvalidated",
+    "last_execution_state": "failed",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "last_interaction_episode_id": "82bb6ba1-c09f-4339-b0c1-d297ea310b2b"
+  }
+}

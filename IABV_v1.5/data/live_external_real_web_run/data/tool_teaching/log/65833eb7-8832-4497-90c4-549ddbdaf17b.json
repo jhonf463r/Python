@@ -1,0 +1,150 @@
+{
+  "log_id": "65833eb7-8832-4497-90c4-549ddbdaf17b",
+  "tool_id": "chatgpt_web_assisted",
+  "task_id": "cecac92a-c0d9-4a42-b383-96c2a6874a1a",
+  "action_type": "task_result",
+  "state": "failed",
+  "created_at_utc": "2026-04-12T22:30:13.708951+00:00",
+  "payload": {
+    "result_id": "d72f01e6-f25a-42ab-8070-3a1793ca63b5",
+    "task_id": "cecac92a-c0d9-4a42-b383-96c2a6874a1a",
+    "tool_id": "chatgpt_web_assisted",
+    "tool_type": "llm_web_ui",
+    "success": false,
+    "validation_status": "unvalidated",
+    "execution_state": {
+      "state": "failed",
+      "detail": "browser_dom_unavailable",
+      "executor_name": "external_assistant",
+      "sandboxed": false,
+      "validated": false,
+      "approval_decision": "approved",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": false,
+        "assistant_kind": "chatgpt",
+        "launch_mode": "web_assisted",
+        "launch_target": "https://chatgpt.com/",
+        "response_capture_mode": "dom_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Objetivo: validar proveedor externo real y detectar login, session expired, wrong thread o quota si aparecen con evidencia.\n\nIABV_THREAD_KEY: iabv::chatgpt::wplay::valida-si-esta-sesion-externa-esta-autenticada-y\nIABV_THREAD_TITLE: IABV ChatGPT | Valida si esta sesion externa esta autenticada y\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "session_scope": "program_chat",
+        "session_label": "ChatGPT especial de IABV",
+        "isolated_session": true,
+        "thread_key": "iabv::chatgpt::wplay::valida-si-esta-sesion-externa-esta-autenticada-y",
+        "thread_title": "IABV ChatGPT | Valida si esta sesion externa esta autenticada y",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "2026-04-12T22:30:13.708262+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_real_web_run\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile",
+        "auto_capture_attempted": true,
+        "auto_capture_reason": "browser_dom_unavailable"
+      }
+    },
+    "rollback_state": null,
+    "output_text": "",
+    "extracted_data": {
+      "assistant_kind": "chatgpt",
+      "launch_target": "https://chatgpt.com/"
+    },
+    "artifacts": [],
+    "error_message": "browser_dom_unavailable",
+    "execution_ms": 0,
+    "created_at_utc": "2026-04-12T22:30:13.708951Z",
+    "metadata": {
+      "sandbox": false,
+      "assistant_kind": "chatgpt",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "extended",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "with_browser",
+        "assistant_mode": "code",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "chatgpt",
+          "tool_id": "chatgpt_web_assisted",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 441
+        }
+      },
+      "config_signature": "without_plan|without_files|extended|short|with_tools|with_browser|code|external",
+      "external_state_flags": [],
+      "ia_trace_entry": {
+        "trace_id": "b8b060b0-1ebf-4014-bdd3-f042f67b7817",
+        "created_at_utc": "2026-04-12T22:30:13.709077Z",
+        "assistant_kind": "chatgpt",
+        "requested_assistant_kind": "chatgpt",
+        "actual_assistant_kind": "chatgpt",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "extended",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "with_browser",
+          "assistant_mode": "code",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "chatgpt",
+            "tool_id": "chatgpt_web_assisted",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 441
+          }
+        },
+        "config_signature": "without_plan|without_files|extended|short|with_tools|with_browser|code|external",
+        "comparison_scope_key": "wplay:consultar-chatgpt-sobre-valida-si-esta-sesion-externa-esta-autenticada-y",
+        "source_trace_ids": [],
+        "route": "ui",
+        "tool_id": "chatgpt_web_assisted",
+        "task_id": "cecac92a-c0d9-4a42-b383-96c2a6874a1a",
+        "result_id": "d72f01e6-f25a-42ab-8070-3a1793ca63b5",
+        "session_scope": "program_chat",
+        "thread_key": "iabv::chatgpt::wplay::valida-si-esta-sesion-externa-esta-autenticada-y",
+        "thread_title": "IABV ChatGPT | Valida si esta sesion externa esta autenticada y",
+        "capture_lane": "background",
+        "state": "failed",
+        "detail": "browser_dom_unavailable",
+        "proposal_summary": "Objetivo: validar proveedor externo real y detectar login, session expired, wrong thread o quota si aparecen con evidencia. IABV_THREAD_KEY: iabv::chatgpt::wplay::valida-si-esta-sesion-externa-esta-autenticada-y IABV_THREAD_TITLE: IABV Chat",
+        "outcome_summary": "",
+        "result_label": "Consultar ChatGPT",
+        "success": false,
+        "execution_ms": 0,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "wplay",
+          "cecac92a-c0d9-4a42-b383-96c2a6874a1a",
+          "d72f01e6-f25a-42ab-8070-3a1793ca63b5"
+        ],
+        "reused_later": false,
+        "verdict": "failed",
+        "coherence_flags": [],
+        "external_state_flags": [],
+        "metadata": {
+          "response_capture_mode": "dom_capture",
+          "background_capture_mode": "browser_dom",
+          "comparison_scope_key": "wplay:consultar-chatgpt-sobre-valida-si-esta-sesion-externa-esta-autenticada-y"
+        }
+      },
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  }
+}

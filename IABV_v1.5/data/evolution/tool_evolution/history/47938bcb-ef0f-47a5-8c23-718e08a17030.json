@@ -1,0 +1,1603 @@
+{
+  "status_id": "47938bcb-ef0f-47a5-8c23-718e08a17030",
+  "created_at_utc": "2026-04-18T01:16:43.738757Z",
+  "updated_at_utc": "2026-04-18T01:16:43.738757Z",
+  "summary": "Superviso 5 contexto(s) con 8 propuesta(s) activa(s), 0 ya decidida(s) y 5 contexto(s) degradado(s). Mejor panorama actual: general favorece adaptive local orchestrator con score 0.86 Validacion autonoma: idle. Sin validacion autonoma reciente.",
+  "performance": [
+    {
+      "performance_id": "ab435686-e51b-42f8-8468-482877553b92",
+      "domain": "language",
+      "subject_key": "general",
+      "route": "language_understanding",
+      "assistant_kind": "adaptive local orchestrator",
+      "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+      "sample_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "blocked_count": 0,
+      "fallback_count": 0,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "average_score": 0.6258,
+      "average_latency_ms": 951,
+      "adaptive_weight": 0.2346,
+      "weighted_score": 0.8604,
+      "trend_score": 0.0,
+      "degraded": false,
+      "degradation_reasons": [],
+      "evidence_refs": [
+        "5192df44-13cb-4c62-8fd3-9352fdf11d4f"
+      ],
+      "comparison_scope_keys": [
+        "wplay:sabes-abrir-la-pagina-de-wplay",
+        "wplay:sabes-usar-wplay-la-pagina",
+        "general:ok-prueba-tus-modelos-locales-a-ver-si-funcionan-bien-as-un-testeo",
+        "general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes",
+        "wplay:ok-pero-primero-dime-si-tienes-acceso-a-tu-estrutura-y-todo-tu-sistema",
+        "general:por-que-no-me-contestate-la-anterior-pregunta-de-que-modelo-usar-para-co"
+      ],
+      "created_at_utc": "2026-04-18T01:16:43.949159Z",
+      "metadata": {
+        "reasons": [
+          "historial de exito 100%"
+        ],
+        "top_environment_signatures": [
+          "conectado|partial"
+        ],
+        "top_time_buckets": [
+          "evening"
+        ]
+      }
+    },
+    {
+      "performance_id": "26ec6c16-2467-4452-934f-86c54e120777",
+      "domain": "language",
+      "subject_key": "general",
+      "route": "ui",
+      "assistant_kind": "adaptive local orchestrator",
+      "config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+      "sample_count": 2,
+      "success_count": 2,
+      "failure_count": 0,
+      "blocked_count": 0,
+      "fallback_count": 0,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "average_score": 0.6314,
+      "average_latency_ms": 10699,
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.7714,
+      "trend_score": 0.0,
+      "degraded": true,
+      "degradation_reasons": [
+        "latencia alta 10699 ms"
+      ],
+      "evidence_refs": [
+        "5e47c733-3081-42ca-a61c-6297c5604bde",
+        "36ac3959-6658-41b9-846a-18dd4615a610"
+      ],
+      "comparison_scope_keys": [
+        "wplay:sabes-abrir-la-pagina-de-wplay",
+        "wplay:sabes-usar-wplay-la-pagina",
+        "general:ok-prueba-tus-modelos-locales-a-ver-si-funcionan-bien-as-un-testeo",
+        "general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes",
+        "wplay:ok-pero-primero-dime-si-tienes-acceso-a-tu-estrutura-y-todo-tu-sistema",
+        "general:por-que-no-me-contestate-la-anterior-pregunta-de-que-modelo-usar-para-co"
+      ],
+      "created_at_utc": "2026-04-18T01:16:43.949186Z",
+      "metadata": {
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 10699 ms"
+        ],
+        "top_environment_signatures": [
+          "conectado|partial"
+        ],
+        "top_time_buckets": [
+          "night",
+          "evening"
+        ]
+      }
+    },
+    {
+      "performance_id": "30cb7614-a953-4b5b-a672-6354374c2e5a",
+      "domain": "language",
+      "subject_key": "general",
+      "route": "language_understanding",
+      "assistant_kind": "adaptive local orchestrator",
+      "config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "sample_count": 7,
+      "success_count": 7,
+      "failure_count": 0,
+      "blocked_count": 0,
+      "fallback_count": 0,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "average_score": 0.5817,
+      "average_latency_ms": 5248,
+      "adaptive_weight": 0.1379,
+      "weighted_score": 0.7195,
+      "trend_score": -0.043,
+      "degraded": true,
+      "degradation_reasons": [
+        "latencia alta 5248 ms"
+      ],
+      "evidence_refs": [
+        "034483be-0b5b-44bb-b5dd-5ec34d274459",
+        "caa5563c-3227-490c-8470-854027d47e22",
+        "f3c8d117-db8c-45e2-bf78-e5af08a7bc2a",
+        "62a25d7a-e932-4a41-8b67-6641cc482308",
+        "b5de3ef4-5fc3-441a-8e51-f27da459b2f8",
+        "3993f99d-bf45-41aa-86ff-9c161ccf156b"
+      ],
+      "comparison_scope_keys": [
+        "wplay:sabes-abrir-la-pagina-de-wplay",
+        "wplay:sabes-usar-wplay-la-pagina",
+        "general:ok-prueba-tus-modelos-locales-a-ver-si-funcionan-bien-as-un-testeo",
+        "general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes",
+        "wplay:ok-pero-primero-dime-si-tienes-acceso-a-tu-estrutura-y-todo-tu-sistema",
+        "general:por-que-no-me-contestate-la-anterior-pregunta-de-que-modelo-usar-para-co"
+      ],
+      "created_at_utc": "2026-04-18T01:16:43.949213Z",
+      "metadata": {
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 5248 ms"
+        ],
+        "top_environment_signatures": [
+          "conectado|partial"
+        ],
+        "top_time_buckets": [
+          "evening",
+          "night"
+        ]
+      }
+    },
+    {
+      "performance_id": "b929aa81-e016-4dad-9a34-0eefd1a8a22c",
+      "domain": "language",
+      "subject_key": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+      "route": "ui",
+      "assistant_kind": "adaptive local orchestrator",
+      "config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+      "sample_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "blocked_count": 0,
+      "fallback_count": 0,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "average_score": 0.6314,
+      "average_latency_ms": 12532,
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.7714,
+      "trend_score": 0.0,
+      "degraded": true,
+      "degradation_reasons": [
+        "latencia alta 12532 ms"
+      ],
+      "evidence_refs": [
+        "73f44d17-3aef-471c-a5b7-c191525c331d"
+      ],
+      "comparison_scope_keys": [
+        "wplay:sabes-abrir-la-pagina-de-wplay"
+      ],
+      "created_at_utc": "2026-04-18T01:16:43.950299Z",
+      "metadata": {
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 12532 ms"
+        ],
+        "top_environment_signatures": [
+          "conectado|partial"
+        ],
+        "top_time_buckets": [
+          "night"
+        ]
+      }
+    },
+    {
+      "performance_id": "763ee922-d8e9-4e34-abca-2cddddd08ca6",
+      "domain": "language",
+      "subject_key": "wplay:sabes-abrir-la-pagina-de-wplay",
+      "route": "ui",
+      "assistant_kind": "adaptive local orchestrator",
+      "config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+      "sample_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "blocked_count": 0,
+      "fallback_count": 0,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "average_score": 0.6314,
+      "average_latency_ms": 12532,
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.7714,
+      "trend_score": 0.0,
+      "degraded": true,
+      "degradation_reasons": [
+        "latencia alta 12532 ms"
+      ],
+      "evidence_refs": [
+        "5d195258-16b2-4d30-b064-5af73d220bd1"
+      ],
+      "comparison_scope_keys": [
+        "wplay:sabes-abrir-la-pagina-de-wplay"
+      ],
+      "created_at_utc": "2026-04-18T01:16:43.951306Z",
+      "metadata": {
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 12532 ms"
+        ],
+        "top_environment_signatures": [
+          "conectado|partial"
+        ],
+        "top_time_buckets": [
+          "night"
+        ]
+      }
+    },
+    {
+      "performance_id": "b087ffdc-4508-420e-ae41-20fcaac359e8",
+      "domain": "language",
+      "subject_key": "32a080be-5928-4e1a-ae65-463ba20a784d",
+      "route": "language_understanding",
+      "assistant_kind": "adaptive local orchestrator",
+      "config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "sample_count": 2,
+      "success_count": 2,
+      "failure_count": 0,
+      "blocked_count": 0,
+      "fallback_count": 0,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "average_score": 0.5714,
+      "average_latency_ms": 7276,
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.7114,
+      "trend_score": 0.0,
+      "degraded": true,
+      "degradation_reasons": [
+        "latencia alta 7276 ms"
+      ],
+      "evidence_refs": [
+        "96c39a35-151f-4507-bc22-6ec436e54d25",
+        "47996b43-c7c2-443f-bf34-28b93569e9c8"
+      ],
+      "comparison_scope_keys": [
+        "general:ok-prueba-tus-modelos-locales-a-ver-si-funcionan-bien-as-un-testeo",
+        "general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes"
+      ],
+      "created_at_utc": "2026-04-18T01:16:43.952402Z",
+      "metadata": {
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 7276 ms"
+        ],
+        "top_environment_signatures": [
+          "conectado|partial"
+        ],
+        "top_time_buckets": [
+          "night"
+        ]
+      }
+    },
+    {
+      "performance_id": "86e1bf4d-f174-484e-b05f-bf2d844a5089",
+      "domain": "language",
+      "subject_key": "general:ok-prueba-tus-modelos-locales-a-ver-si-funcionan-bien-as-un-testeo",
+      "route": "language_understanding",
+      "assistant_kind": "adaptive local orchestrator",
+      "config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "sample_count": 1,
+      "success_count": 1,
+      "failure_count": 0,
+      "blocked_count": 0,
+      "fallback_count": 0,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "average_score": 0.5286,
+      "average_latency_ms": 13121,
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.6686,
+      "trend_score": 0.0,
+      "degraded": true,
+      "degradation_reasons": [
+        "latencia alta 13121 ms"
+      ],
+      "evidence_refs": [
+        "ef085961-d9cb-4fbe-9b27-763d4d3df7ea"
+      ],
+      "comparison_scope_keys": [
+        "general:ok-prueba-tus-modelos-locales-a-ver-si-funcionan-bien-as-un-testeo"
+      ],
+      "created_at_utc": "2026-04-18T01:16:43.953368Z",
+      "metadata": {
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 13121 ms"
+        ],
+        "top_environment_signatures": [
+          "conectado|partial"
+        ],
+        "top_time_buckets": [
+          "night"
+        ]
+      }
+    }
+  ],
+  "proposals": [
+    {
+      "proposal_id": "7480baa9-34d7-467d-850d-48175fa5f8d6",
+      "proposal_key": "general|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|long|without_tools|without_browser|general|external|language_understanding|ollama|local_provider:ollama",
+      "domain": "language",
+      "subject_key": "general",
+      "status": "pending",
+      "proposal_kind": "validate_discovery",
+      "title": "Probar Ollama local para general",
+      "summary": "Ollama local aparece disponible y compatible con general. Conviene validarlo frente a adaptive local orchestrator.",
+      "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+      "current_route": "language_understanding",
+      "current_assistant_kind": "adaptive local orchestrator",
+      "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+      "candidate_route": "language_understanding",
+      "candidate_assistant_kind": "ollama",
+      "candidate_config_signature": "local_provider:ollama",
+      "confidence": 0.9324,
+      "evidence_refs": [
+        "5e47c733-3081-42ca-a61c-6297c5604bde",
+        "034483be-0b5b-44bb-b5dd-5ec34d274459",
+        "caa5563c-3227-490c-8470-854027d47e22",
+        "f3c8d117-db8c-45e2-bf78-e5af08a7bc2a"
+      ],
+      "comparison_scope_keys": [
+        "general"
+      ],
+      "created_at_utc": "2026-04-18T01:16:43.949269Z",
+      "metadata": {
+        "next_action": "validate_in_sandbox",
+        "discovery_signal_id": "5792e021-f21d-4d69-a79d-c5845d52b06d",
+        "discovery_source": "tool_registry",
+        "discovery_source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "compatibility_score": 0.95,
+        "impact_score": 0.6,
+        "cost_score": 0.92,
+        "baseline_weighted_score": 0.8604,
+        "alternative_weighted_score": 0.936,
+        "score_margin": 0.0756,
+        "baseline_profile": {
+          "weighted_score": 0.8604,
+          "sample_count": 4
+        },
+        "candidate_profile": {
+          "weighted_score": 0.936,
+          "compatibility_score": 0.95,
+          "impact_score": 0.6,
+          "cost_score": 0.92
+        },
+        "ranked_configurations": [
+          {
+            "route": "language_understanding",
+            "assistant_kind": "adaptive local orchestrator",
+            "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+            "weighted_score": 0.8604,
+            "score": 0.8604,
+            "samples": 4
+          },
+          {
+            "route": "language_understanding",
+            "assistant_kind": "ollama",
+            "config_signature": "local_provider:ollama",
+            "weighted_score": 0.936,
+            "score": 0.936,
+            "samples": 0
+          }
+        ],
+        "tool_type": "llm_local",
+        "capabilities": [
+          "llm_query",
+          "summarize",
+          "classify"
+        ],
+        "current_route": "language_understanding",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+        "estimated_candidate_score": 0.936,
+        "estimated_gain": 0.0756,
+        "live_status": "disponible",
+        "requires_human_approval": false,
+        "local_first": true,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "proposal_id": "7d3e966e-cfb7-4c94-9828-55f942a3a0cc",
+      "proposal_key": "general|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|long|without_tools|without_browser|general|external|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+      "domain": "language",
+      "subject_key": "general",
+      "status": "pending",
+      "proposal_kind": "validate_discovery",
+      "title": "Probar ChatGPT web asistido para general",
+      "summary": "ChatGPT web asistido aparece disponible y compatible con general. Conviene validarlo frente a adaptive local orchestrator.",
+      "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+      "current_route": "language_understanding",
+      "current_assistant_kind": "adaptive local orchestrator",
+      "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+      "candidate_route": "language_understanding",
+      "candidate_assistant_kind": "chatgpt",
+      "candidate_config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+      "confidence": 0.8412,
+      "evidence_refs": [
+        "5e47c733-3081-42ca-a61c-6297c5604bde",
+        "034483be-0b5b-44bb-b5dd-5ec34d274459",
+        "caa5563c-3227-490c-8470-854027d47e22",
+        "f3c8d117-db8c-45e2-bf78-e5af08a7bc2a"
+      ],
+      "comparison_scope_keys": [
+        "general"
+      ],
+      "created_at_utc": "2026-04-18T01:16:43.949294Z",
+      "metadata": {
+        "next_action": "validate_in_sandbox",
+        "discovery_signal_id": "3b901b91-bb04-4d1f-84dd-59600f6b0483",
+        "discovery_source": "tool_registry",
+        "discovery_source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "compatibility_score": 0.95,
+        "impact_score": 0.42,
+        "cost_score": 0.46,
+        "baseline_weighted_score": 0.8604,
+        "alternative_weighted_score": 0.9078,
+        "score_margin": 0.0474,
+        "baseline_profile": {
+          "weighted_score": 0.8604,
+          "sample_count": 4
+        },
+        "candidate_profile": {
+          "weighted_score": 0.9078,
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46
+        },
+        "ranked_configurations": [
+          {
+            "route": "language_understanding",
+            "assistant_kind": "adaptive local orchestrator",
+            "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+            "weighted_score": 0.8604,
+            "score": 0.8604,
+            "samples": 4
+          },
+          {
+            "route": "language_understanding",
+            "assistant_kind": "chatgpt",
+            "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+            "weighted_score": 0.9078,
+            "score": 0.9078,
+            "samples": 0
+          }
+        ],
+        "tool_type": "llm_web_ui",
+        "capabilities": [
+          "launch_app",
+          "llm_query",
+          "consult_external",
+          "web_assisted"
+        ],
+        "current_route": "language_understanding",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+        "estimated_candidate_score": 0.9078,
+        "estimated_gain": 0.0474,
+        "live_status": "listo",
+        "requires_human_approval": true,
+        "local_first": false,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "proposal_id": "a44858b4-629d-4248-b4d7-bb759f6d2766",
+      "proposal_key": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714|collect_more_evidence|ui|adaptive local orchestrator|with_plan|without_files|extended|short|with_tools|with_browser|general|external|ui|adaptive local orchestrator|with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+      "domain": "language",
+      "subject_key": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+      "status": "pending",
+      "proposal_kind": "collect_more_evidence",
+      "title": "Recolectar mas evidencia para a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+      "summary": "La ruta actual muestra degradacion, pero todavia no existe una alternativa con evidencia suficiente para competir.",
+      "rationale": "Conviene recolectar nuevas corridas comparables antes de seguir reforzando la preferencia actual.",
+      "current_route": "ui",
+      "current_assistant_kind": "adaptive local orchestrator",
+      "current_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+      "candidate_route": "ui",
+      "candidate_assistant_kind": "adaptive local orchestrator",
+      "candidate_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+      "confidence": 0.58,
+      "evidence_refs": [
+        "73f44d17-3aef-471c-a5b7-c191525c331d"
+      ],
+      "comparison_scope_keys": [
+        "wplay:sabes-abrir-la-pagina-de-wplay"
+      ],
+      "created_at_utc": "2026-04-18T01:16:43.950327Z",
+      "metadata": {
+        "next_action": "collect_more_runs",
+        "degradation_reasons": [
+          "latencia alta 12532 ms"
+        ],
+        "baseline_profile": {
+          "sample_count": 1,
+          "success_rate": 1.0,
+          "failure_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "reuse_ratio": 0.0,
+          "average_score": 0.6314,
+          "average_latency_ms": 12532,
+          "recency_score": 1.0,
+          "trend_score": 0.0,
+          "adaptive_weight": 0.14,
+          "weighted_score": 0.7714,
+          "top_environment_signatures": [
+            "conectado|partial"
+          ],
+          "top_time_buckets": [
+            "night"
+          ],
+          "reasons": [
+            "historial de exito 100%",
+            "latencia promedio 12532 ms"
+          ]
+        }
+      }
+    },
+    {
+      "proposal_id": "1fb2ee4c-8cac-474b-9760-0f9d19d58be6",
+      "proposal_key": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714|validate_discovery|ui|adaptive local orchestrator|with_plan|without_files|extended|short|with_tools|with_browser|general|external|language_understanding|ollama|local_provider:ollama",
+      "domain": "language",
+      "subject_key": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+      "status": "pending",
+      "proposal_kind": "validate_discovery",
+      "title": "Probar Ollama local para a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+      "summary": "Ollama local aparece disponible y compatible con a9163e6c-49aa-4441-bd8a-8b6b9c39d714. Conviene validarlo frente a adaptive local orchestrator.",
+      "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+      "current_route": "ui",
+      "current_assistant_kind": "adaptive local orchestrator",
+      "current_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+      "candidate_route": "language_understanding",
+      "candidate_assistant_kind": "ollama",
+      "candidate_config_signature": "local_provider:ollama",
+      "confidence": 0.9324,
+      "evidence_refs": [
+        "73f44d17-3aef-471c-a5b7-c191525c331d"
+      ],
+      "comparison_scope_keys": [
+        "a9163e6c-49aa-4441-bd8a-8b6b9c39d714"
+      ],
+      "created_at_utc": "2026-04-18T01:16:43.950353Z",
+      "metadata": {
+        "next_action": "validate_in_sandbox",
+        "discovery_signal_id": "fd7853a1-eee9-41e0-b983-ed3cb86c4b3e",
+        "discovery_source": "tool_registry",
+        "discovery_source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "compatibility_score": 0.95,
+        "impact_score": 0.6,
+        "cost_score": 0.92,
+        "baseline_weighted_score": 0.7714,
+        "alternative_weighted_score": 0.847,
+        "score_margin": 0.0756,
+        "baseline_profile": {
+          "weighted_score": 0.7714,
+          "sample_count": 1
+        },
+        "candidate_profile": {
+          "weighted_score": 0.847,
+          "compatibility_score": 0.95,
+          "impact_score": 0.6,
+          "cost_score": 0.92
+        },
+        "ranked_configurations": [
+          {
+            "route": "ui",
+            "assistant_kind": "adaptive local orchestrator",
+            "config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+            "weighted_score": 0.7714,
+            "score": 0.7714,
+            "samples": 1
+          },
+          {
+            "route": "language_understanding",
+            "assistant_kind": "ollama",
+            "config_signature": "local_provider:ollama",
+            "weighted_score": 0.847,
+            "score": 0.847,
+            "samples": 0
+          }
+        ],
+        "tool_type": "llm_local",
+        "capabilities": [
+          "llm_query",
+          "summarize",
+          "classify"
+        ],
+        "current_route": "ui",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+        "estimated_candidate_score": 0.847,
+        "estimated_gain": 0.0756,
+        "live_status": "disponible",
+        "requires_human_approval": false,
+        "local_first": true,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "proposal_id": "5e3b45b2-7392-4245-a68f-d2631572d8e1",
+      "proposal_key": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714|validate_discovery|ui|adaptive local orchestrator|with_plan|without_files|extended|short|with_tools|with_browser|general|external|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+      "domain": "language",
+      "subject_key": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+      "status": "pending",
+      "proposal_kind": "validate_discovery",
+      "title": "Probar ChatGPT web asistido para a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+      "summary": "ChatGPT web asistido aparece disponible y compatible con a9163e6c-49aa-4441-bd8a-8b6b9c39d714. Conviene validarlo frente a adaptive local orchestrator.",
+      "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+      "current_route": "ui",
+      "current_assistant_kind": "adaptive local orchestrator",
+      "current_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+      "candidate_route": "language_understanding",
+      "candidate_assistant_kind": "chatgpt",
+      "candidate_config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+      "confidence": 0.8412,
+      "evidence_refs": [
+        "73f44d17-3aef-471c-a5b7-c191525c331d"
+      ],
+      "comparison_scope_keys": [
+        "a9163e6c-49aa-4441-bd8a-8b6b9c39d714"
+      ],
+      "created_at_utc": "2026-04-18T01:16:43.950369Z",
+      "metadata": {
+        "next_action": "validate_in_sandbox",
+        "discovery_signal_id": "ce45509a-5b91-47b5-86b5-6cccef10e1db",
+        "discovery_source": "tool_registry",
+        "discovery_source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "compatibility_score": 0.95,
+        "impact_score": 0.42,
+        "cost_score": 0.46,
+        "baseline_weighted_score": 0.7714,
+        "alternative_weighted_score": 0.8188,
+        "score_margin": 0.0474,
+        "baseline_profile": {
+          "weighted_score": 0.7714,
+          "sample_count": 1
+        },
+        "candidate_profile": {
+          "weighted_score": 0.8188,
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46
+        },
+        "ranked_configurations": [
+          {
+            "route": "ui",
+            "assistant_kind": "adaptive local orchestrator",
+            "config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+            "weighted_score": 0.7714,
+            "score": 0.7714,
+            "samples": 1
+          },
+          {
+            "route": "language_understanding",
+            "assistant_kind": "chatgpt",
+            "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+            "weighted_score": 0.8188,
+            "score": 0.8188,
+            "samples": 0
+          }
+        ],
+        "tool_type": "llm_web_ui",
+        "capabilities": [
+          "launch_app",
+          "llm_query",
+          "consult_external",
+          "web_assisted"
+        ],
+        "current_route": "ui",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+        "estimated_candidate_score": 0.8188,
+        "estimated_gain": 0.0474,
+        "live_status": "listo",
+        "requires_human_approval": true,
+        "local_first": false,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "proposal_id": "9e98ffae-3fd5-48db-afd2-655ad0f0ca04",
+      "proposal_key": "wplay:sabes-abrir-la-pagina-de-wplay|collect_more_evidence|ui|adaptive local orchestrator|with_plan|without_files|extended|short|with_tools|with_browser|general|external|ui|adaptive local orchestrator|with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+      "domain": "language",
+      "subject_key": "wplay:sabes-abrir-la-pagina-de-wplay",
+      "status": "pending",
+      "proposal_kind": "collect_more_evidence",
+      "title": "Recolectar mas evidencia para wplay:sabes-abrir-la-pagina-de-wplay",
+      "summary": "La ruta actual muestra degradacion, pero todavia no existe una alternativa con evidencia suficiente para competir.",
+      "rationale": "Conviene recolectar nuevas corridas comparables antes de seguir reforzando la preferencia actual.",
+      "current_route": "ui",
+      "current_assistant_kind": "adaptive local orchestrator",
+      "current_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+      "candidate_route": "ui",
+      "candidate_assistant_kind": "adaptive local orchestrator",
+      "candidate_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+      "confidence": 0.58,
+      "evidence_refs": [
+        "5d195258-16b2-4d30-b064-5af73d220bd1"
+      ],
+      "comparison_scope_keys": [
+        "wplay:sabes-abrir-la-pagina-de-wplay"
+      ],
+      "created_at_utc": "2026-04-18T01:16:43.951329Z",
+      "metadata": {
+        "next_action": "collect_more_runs",
+        "degradation_reasons": [
+          "latencia alta 12532 ms"
+        ],
+        "baseline_profile": {
+          "sample_count": 1,
+          "success_rate": 1.0,
+          "failure_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "reuse_ratio": 0.0,
+          "average_score": 0.6314,
+          "average_latency_ms": 12532,
+          "recency_score": 1.0,
+          "trend_score": 0.0,
+          "adaptive_weight": 0.14,
+          "weighted_score": 0.7714,
+          "top_environment_signatures": [
+            "conectado|partial"
+          ],
+          "top_time_buckets": [
+            "night"
+          ],
+          "reasons": [
+            "historial de exito 100%",
+            "latencia promedio 12532 ms"
+          ]
+        }
+      }
+    }
+  ],
+  "degraded_subjects": [
+    "general",
+    "a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+    "wplay:sabes-abrir-la-pagina-de-wplay",
+    "32a080be-5928-4e1a-ae65-463ba20a784d",
+    "general:ok-prueba-tus-modelos-locales-a-ver-si-funcionan-bien-as-un-testeo"
+  ],
+  "unresolved_fields": [],
+  "package_path": "",
+  "markdown_path": "",
+  "metadata": {
+    "subject_keys": [
+      "general",
+      "a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+      "wplay:sabes-abrir-la-pagina-de-wplay",
+      "32a080be-5928-4e1a-ae65-463ba20a784d",
+      "general:ok-prueba-tus-modelos-locales-a-ver-si-funcionan-bien-as-un-testeo"
+    ],
+    "proposal_count": 8,
+    "active_proposal_count": 8,
+    "decided_proposal_count": 0,
+    "degraded_count": 5,
+    "validation_status": "idle",
+    "validation_summary": "Sin validacion autonoma reciente.",
+    "active_proposals": [
+      {
+        "proposal_id": "7480baa9-34d7-467d-850d-48175fa5f8d6",
+        "proposal_key": "general|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|long|without_tools|without_browser|general|external|language_understanding|ollama|local_provider:ollama",
+        "domain": "language",
+        "subject_key": "general",
+        "status": "pending",
+        "proposal_kind": "validate_discovery",
+        "title": "Probar Ollama local para general",
+        "summary": "Ollama local aparece disponible y compatible con general. Conviene validarlo frente a adaptive local orchestrator.",
+        "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+        "current_route": "language_understanding",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+        "candidate_route": "language_understanding",
+        "candidate_assistant_kind": "ollama",
+        "candidate_config_signature": "local_provider:ollama",
+        "confidence": 0.9324,
+        "evidence_refs": [
+          "5e47c733-3081-42ca-a61c-6297c5604bde",
+          "034483be-0b5b-44bb-b5dd-5ec34d274459",
+          "caa5563c-3227-490c-8470-854027d47e22",
+          "f3c8d117-db8c-45e2-bf78-e5af08a7bc2a"
+        ],
+        "comparison_scope_keys": [
+          "general"
+        ],
+        "created_at_utc": "2026-04-18T01:16:43.949269Z",
+        "metadata": {
+          "next_action": "validate_in_sandbox",
+          "discovery_signal_id": "5792e021-f21d-4d69-a79d-c5845d52b06d",
+          "discovery_source": "tool_registry",
+          "discovery_source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "compatibility_score": 0.95,
+          "impact_score": 0.6,
+          "cost_score": 0.92,
+          "baseline_weighted_score": 0.8604,
+          "alternative_weighted_score": 0.936,
+          "score_margin": 0.0756,
+          "baseline_profile": {
+            "weighted_score": 0.8604,
+            "sample_count": 4
+          },
+          "candidate_profile": {
+            "weighted_score": 0.936,
+            "compatibility_score": 0.95,
+            "impact_score": 0.6,
+            "cost_score": 0.92
+          },
+          "ranked_configurations": [
+            {
+              "route": "language_understanding",
+              "assistant_kind": "adaptive local orchestrator",
+              "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+              "weighted_score": 0.8604,
+              "score": 0.8604,
+              "samples": 4
+            },
+            {
+              "route": "language_understanding",
+              "assistant_kind": "ollama",
+              "config_signature": "local_provider:ollama",
+              "weighted_score": 0.936,
+              "score": 0.936,
+              "samples": 0
+            }
+          ],
+          "tool_type": "llm_local",
+          "capabilities": [
+            "llm_query",
+            "summarize",
+            "classify"
+          ],
+          "current_route": "language_understanding",
+          "current_assistant_kind": "adaptive local orchestrator",
+          "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+          "estimated_candidate_score": 0.936,
+          "estimated_gain": 0.0756,
+          "live_status": "disponible",
+          "requires_human_approval": false,
+          "local_first": true,
+          "supports_sandbox": true
+        }
+      },
+      {
+        "proposal_id": "7d3e966e-cfb7-4c94-9828-55f942a3a0cc",
+        "proposal_key": "general|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|long|without_tools|without_browser|general|external|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "domain": "language",
+        "subject_key": "general",
+        "status": "pending",
+        "proposal_kind": "validate_discovery",
+        "title": "Probar ChatGPT web asistido para general",
+        "summary": "ChatGPT web asistido aparece disponible y compatible con general. Conviene validarlo frente a adaptive local orchestrator.",
+        "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+        "current_route": "language_understanding",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+        "candidate_route": "language_understanding",
+        "candidate_assistant_kind": "chatgpt",
+        "candidate_config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "confidence": 0.8412,
+        "evidence_refs": [
+          "5e47c733-3081-42ca-a61c-6297c5604bde",
+          "034483be-0b5b-44bb-b5dd-5ec34d274459",
+          "caa5563c-3227-490c-8470-854027d47e22",
+          "f3c8d117-db8c-45e2-bf78-e5af08a7bc2a"
+        ],
+        "comparison_scope_keys": [
+          "general"
+        ],
+        "created_at_utc": "2026-04-18T01:16:43.949294Z",
+        "metadata": {
+          "next_action": "validate_in_sandbox",
+          "discovery_signal_id": "3b901b91-bb04-4d1f-84dd-59600f6b0483",
+          "discovery_source": "tool_registry",
+          "discovery_source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46,
+          "baseline_weighted_score": 0.8604,
+          "alternative_weighted_score": 0.9078,
+          "score_margin": 0.0474,
+          "baseline_profile": {
+            "weighted_score": 0.8604,
+            "sample_count": 4
+          },
+          "candidate_profile": {
+            "weighted_score": 0.9078,
+            "compatibility_score": 0.95,
+            "impact_score": 0.42,
+            "cost_score": 0.46
+          },
+          "ranked_configurations": [
+            {
+              "route": "language_understanding",
+              "assistant_kind": "adaptive local orchestrator",
+              "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+              "weighted_score": 0.8604,
+              "score": 0.8604,
+              "samples": 4
+            },
+            {
+              "route": "language_understanding",
+              "assistant_kind": "chatgpt",
+              "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+              "weighted_score": 0.9078,
+              "score": 0.9078,
+              "samples": 0
+            }
+          ],
+          "tool_type": "llm_web_ui",
+          "capabilities": [
+            "launch_app",
+            "llm_query",
+            "consult_external",
+            "web_assisted"
+          ],
+          "current_route": "language_understanding",
+          "current_assistant_kind": "adaptive local orchestrator",
+          "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+          "estimated_candidate_score": 0.9078,
+          "estimated_gain": 0.0474,
+          "live_status": "listo",
+          "requires_human_approval": true,
+          "local_first": false,
+          "supports_sandbox": true
+        }
+      },
+      {
+        "proposal_id": "a44858b4-629d-4248-b4d7-bb759f6d2766",
+        "proposal_key": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714|collect_more_evidence|ui|adaptive local orchestrator|with_plan|without_files|extended|short|with_tools|with_browser|general|external|ui|adaptive local orchestrator|with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+        "domain": "language",
+        "subject_key": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+        "status": "pending",
+        "proposal_kind": "collect_more_evidence",
+        "title": "Recolectar mas evidencia para a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+        "summary": "La ruta actual muestra degradacion, pero todavia no existe una alternativa con evidencia suficiente para competir.",
+        "rationale": "Conviene recolectar nuevas corridas comparables antes de seguir reforzando la preferencia actual.",
+        "current_route": "ui",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+        "candidate_route": "ui",
+        "candidate_assistant_kind": "adaptive local orchestrator",
+        "candidate_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+        "confidence": 0.58,
+        "evidence_refs": [
+          "73f44d17-3aef-471c-a5b7-c191525c331d"
+        ],
+        "comparison_scope_keys": [
+          "wplay:sabes-abrir-la-pagina-de-wplay"
+        ],
+        "created_at_utc": "2026-04-18T01:16:43.950327Z",
+        "metadata": {
+          "next_action": "collect_more_runs",
+          "degradation_reasons": [
+            "latencia alta 12532 ms"
+          ],
+          "baseline_profile": {
+            "sample_count": 1,
+            "success_rate": 1.0,
+            "failure_rate": 0.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "reuse_ratio": 0.0,
+            "average_score": 0.6314,
+            "average_latency_ms": 12532,
+            "recency_score": 1.0,
+            "trend_score": 0.0,
+            "adaptive_weight": 0.14,
+            "weighted_score": 0.7714,
+            "top_environment_signatures": [
+              "conectado|partial"
+            ],
+            "top_time_buckets": [
+              "night"
+            ],
+            "reasons": [
+              "historial de exito 100%",
+              "latencia promedio 12532 ms"
+            ]
+          }
+        }
+      },
+      {
+        "proposal_id": "1fb2ee4c-8cac-474b-9760-0f9d19d58be6",
+        "proposal_key": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714|validate_discovery|ui|adaptive local orchestrator|with_plan|without_files|extended|short|with_tools|with_browser|general|external|language_understanding|ollama|local_provider:ollama",
+        "domain": "language",
+        "subject_key": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+        "status": "pending",
+        "proposal_kind": "validate_discovery",
+        "title": "Probar Ollama local para a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+        "summary": "Ollama local aparece disponible y compatible con a9163e6c-49aa-4441-bd8a-8b6b9c39d714. Conviene validarlo frente a adaptive local orchestrator.",
+        "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+        "current_route": "ui",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+        "candidate_route": "language_understanding",
+        "candidate_assistant_kind": "ollama",
+        "candidate_config_signature": "local_provider:ollama",
+        "confidence": 0.9324,
+        "evidence_refs": [
+          "73f44d17-3aef-471c-a5b7-c191525c331d"
+        ],
+        "comparison_scope_keys": [
+          "a9163e6c-49aa-4441-bd8a-8b6b9c39d714"
+        ],
+        "created_at_utc": "2026-04-18T01:16:43.950353Z",
+        "metadata": {
+          "next_action": "validate_in_sandbox",
+          "discovery_signal_id": "fd7853a1-eee9-41e0-b983-ed3cb86c4b3e",
+          "discovery_source": "tool_registry",
+          "discovery_source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "compatibility_score": 0.95,
+          "impact_score": 0.6,
+          "cost_score": 0.92,
+          "baseline_weighted_score": 0.7714,
+          "alternative_weighted_score": 0.847,
+          "score_margin": 0.0756,
+          "baseline_profile": {
+            "weighted_score": 0.7714,
+            "sample_count": 1
+          },
+          "candidate_profile": {
+            "weighted_score": 0.847,
+            "compatibility_score": 0.95,
+            "impact_score": 0.6,
+            "cost_score": 0.92
+          },
+          "ranked_configurations": [
+            {
+              "route": "ui",
+              "assistant_kind": "adaptive local orchestrator",
+              "config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+              "weighted_score": 0.7714,
+              "score": 0.7714,
+              "samples": 1
+            },
+            {
+              "route": "language_understanding",
+              "assistant_kind": "ollama",
+              "config_signature": "local_provider:ollama",
+              "weighted_score": 0.847,
+              "score": 0.847,
+              "samples": 0
+            }
+          ],
+          "tool_type": "llm_local",
+          "capabilities": [
+            "llm_query",
+            "summarize",
+            "classify"
+          ],
+          "current_route": "ui",
+          "current_assistant_kind": "adaptive local orchestrator",
+          "current_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+          "estimated_candidate_score": 0.847,
+          "estimated_gain": 0.0756,
+          "live_status": "disponible",
+          "requires_human_approval": false,
+          "local_first": true,
+          "supports_sandbox": true
+        }
+      },
+      {
+        "proposal_id": "5e3b45b2-7392-4245-a68f-d2631572d8e1",
+        "proposal_key": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714|validate_discovery|ui|adaptive local orchestrator|with_plan|without_files|extended|short|with_tools|with_browser|general|external|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "domain": "language",
+        "subject_key": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+        "status": "pending",
+        "proposal_kind": "validate_discovery",
+        "title": "Probar ChatGPT web asistido para a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+        "summary": "ChatGPT web asistido aparece disponible y compatible con a9163e6c-49aa-4441-bd8a-8b6b9c39d714. Conviene validarlo frente a adaptive local orchestrator.",
+        "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+        "current_route": "ui",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+        "candidate_route": "language_understanding",
+        "candidate_assistant_kind": "chatgpt",
+        "candidate_config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "confidence": 0.8412,
+        "evidence_refs": [
+          "73f44d17-3aef-471c-a5b7-c191525c331d"
+        ],
+        "comparison_scope_keys": [
+          "a9163e6c-49aa-4441-bd8a-8b6b9c39d714"
+        ],
+        "created_at_utc": "2026-04-18T01:16:43.950369Z",
+        "metadata": {
+          "next_action": "validate_in_sandbox",
+          "discovery_signal_id": "ce45509a-5b91-47b5-86b5-6cccef10e1db",
+          "discovery_source": "tool_registry",
+          "discovery_source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46,
+          "baseline_weighted_score": 0.7714,
+          "alternative_weighted_score": 0.8188,
+          "score_margin": 0.0474,
+          "baseline_profile": {
+            "weighted_score": 0.7714,
+            "sample_count": 1
+          },
+          "candidate_profile": {
+            "weighted_score": 0.8188,
+            "compatibility_score": 0.95,
+            "impact_score": 0.42,
+            "cost_score": 0.46
+          },
+          "ranked_configurations": [
+            {
+              "route": "ui",
+              "assistant_kind": "adaptive local orchestrator",
+              "config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+              "weighted_score": 0.7714,
+              "score": 0.7714,
+              "samples": 1
+            },
+            {
+              "route": "language_understanding",
+              "assistant_kind": "chatgpt",
+              "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+              "weighted_score": 0.8188,
+              "score": 0.8188,
+              "samples": 0
+            }
+          ],
+          "tool_type": "llm_web_ui",
+          "capabilities": [
+            "launch_app",
+            "llm_query",
+            "consult_external",
+            "web_assisted"
+          ],
+          "current_route": "ui",
+          "current_assistant_kind": "adaptive local orchestrator",
+          "current_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+          "estimated_candidate_score": 0.8188,
+          "estimated_gain": 0.0474,
+          "live_status": "listo",
+          "requires_human_approval": true,
+          "local_first": false,
+          "supports_sandbox": true
+        }
+      },
+      {
+        "proposal_id": "9e98ffae-3fd5-48db-afd2-655ad0f0ca04",
+        "proposal_key": "wplay:sabes-abrir-la-pagina-de-wplay|collect_more_evidence|ui|adaptive local orchestrator|with_plan|without_files|extended|short|with_tools|with_browser|general|external|ui|adaptive local orchestrator|with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+        "domain": "language",
+        "subject_key": "wplay:sabes-abrir-la-pagina-de-wplay",
+        "status": "pending",
+        "proposal_kind": "collect_more_evidence",
+        "title": "Recolectar mas evidencia para wplay:sabes-abrir-la-pagina-de-wplay",
+        "summary": "La ruta actual muestra degradacion, pero todavia no existe una alternativa con evidencia suficiente para competir.",
+        "rationale": "Conviene recolectar nuevas corridas comparables antes de seguir reforzando la preferencia actual.",
+        "current_route": "ui",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+        "candidate_route": "ui",
+        "candidate_assistant_kind": "adaptive local orchestrator",
+        "candidate_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+        "confidence": 0.58,
+        "evidence_refs": [
+          "5d195258-16b2-4d30-b064-5af73d220bd1"
+        ],
+        "comparison_scope_keys": [
+          "wplay:sabes-abrir-la-pagina-de-wplay"
+        ],
+        "created_at_utc": "2026-04-18T01:16:43.951329Z",
+        "metadata": {
+          "next_action": "collect_more_runs",
+          "degradation_reasons": [
+            "latencia alta 12532 ms"
+          ],
+          "baseline_profile": {
+            "sample_count": 1,
+            "success_rate": 1.0,
+            "failure_rate": 0.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "reuse_ratio": 0.0,
+            "average_score": 0.6314,
+            "average_latency_ms": 12532,
+            "recency_score": 1.0,
+            "trend_score": 0.0,
+            "adaptive_weight": 0.14,
+            "weighted_score": 0.7714,
+            "top_environment_signatures": [
+              "conectado|partial"
+            ],
+            "top_time_buckets": [
+              "night"
+            ],
+            "reasons": [
+              "historial de exito 100%",
+              "latencia promedio 12532 ms"
+            ]
+          }
+        }
+      }
+    ],
+    "decided_proposals": [],
+    "decision_log_summary": {
+      "winning_by_problem": {},
+      "degraded_tools": [],
+      "in_validation": [],
+      "discarded_proposals": [],
+      "recent_decisions": [],
+      "last_decision": {},
+      "summary_by_tool": {},
+      "summary_by_problem": {},
+      "unresolved_fields": [],
+      "package_path": "",
+      "markdown_path": ""
+    },
+    "recent_decisions": [],
+    "discovery_summary": {
+      "subject_keys": [
+        "general",
+        "a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+        "wplay:sabes-abrir-la-pagina-de-wplay",
+        "32a080be-5928-4e1a-ae65-463ba20a784d",
+        "general:ok-prueba-tus-modelos-locales-a-ver-si-funcionan-bien-as-un-testeo"
+      ],
+      "active_signals": [
+        {
+          "signal_id": "5792e021-f21d-4d69-a79d-c5845d52b06d",
+          "proposal_key": "general|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|long|without_tools|without_browser|general|external|language_understanding|ollama|local_provider:ollama",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "general",
+          "title": "Probar Ollama local para general",
+          "summary": "Ollama local aparece disponible y compatible con general. Conviene validarlo frente a adaptive local orchestrator.",
+          "tool_id": "ollama_llm",
+          "tool_title": "Ollama local",
+          "assistant_kind": "ollama",
+          "route": "language_understanding",
+          "config_signature": "local_provider:ollama",
+          "status": "detected",
+          "confidence": 0.9324,
+          "compatibility_score": 0.95,
+          "impact_score": 0.6,
+          "cost_score": 0.92,
+          "evidence_refs": [
+            "5e47c733-3081-42ca-a61c-6297c5604bde",
+            "034483be-0b5b-44bb-b5dd-5ec34d274459",
+            "caa5563c-3227-490c-8470-854027d47e22",
+            "f3c8d117-db8c-45e2-bf78-e5af08a7bc2a"
+          ],
+          "metadata": {
+            "tool_type": "llm_local",
+            "capabilities": [
+              "llm_query",
+              "summarize",
+              "classify"
+            ],
+            "current_route": "language_understanding",
+            "current_assistant_kind": "adaptive local orchestrator",
+            "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+            "baseline_weighted_score": 0.8604,
+            "estimated_candidate_score": 0.936,
+            "estimated_gain": 0.0756,
+            "live_status": "disponible",
+            "requires_human_approval": false,
+            "local_first": true,
+            "supports_sandbox": true
+          }
+        },
+        {
+          "signal_id": "3b901b91-bb04-4d1f-84dd-59600f6b0483",
+          "proposal_key": "general|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|long|without_tools|without_browser|general|external|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "general",
+          "title": "Probar ChatGPT web asistido para general",
+          "summary": "ChatGPT web asistido aparece disponible y compatible con general. Conviene validarlo frente a adaptive local orchestrator.",
+          "tool_id": "chatgpt_web_assisted",
+          "tool_title": "ChatGPT web asistido",
+          "assistant_kind": "chatgpt",
+          "route": "language_understanding",
+          "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+          "status": "detected",
+          "confidence": 0.8412,
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46,
+          "evidence_refs": [
+            "5e47c733-3081-42ca-a61c-6297c5604bde",
+            "034483be-0b5b-44bb-b5dd-5ec34d274459",
+            "caa5563c-3227-490c-8470-854027d47e22",
+            "f3c8d117-db8c-45e2-bf78-e5af08a7bc2a"
+          ],
+          "metadata": {
+            "tool_type": "llm_web_ui",
+            "capabilities": [
+              "launch_app",
+              "llm_query",
+              "consult_external",
+              "web_assisted"
+            ],
+            "current_route": "language_understanding",
+            "current_assistant_kind": "adaptive local orchestrator",
+            "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+            "baseline_weighted_score": 0.8604,
+            "estimated_candidate_score": 0.9078,
+            "estimated_gain": 0.0474,
+            "live_status": "listo",
+            "requires_human_approval": true,
+            "local_first": false,
+            "supports_sandbox": true
+          }
+        },
+        {
+          "signal_id": "18cde3b2-8442-402a-bcb4-7128bcd46224",
+          "proposal_key": "general|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|long|without_tools|without_browser|general|external|ui|playwright|playwright",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "general",
+          "title": "Probar Playwright browser para general",
+          "summary": "Playwright browser aparece disponible y compatible con general. Conviene validarlo frente a adaptive local orchestrator.",
+          "tool_id": "playwright_browser",
+          "tool_title": "Playwright browser",
+          "assistant_kind": "playwright",
+          "route": "ui",
+          "config_signature": "playwright",
+          "status": "detected",
+          "confidence": 0.7548,
+          "compatibility_score": 0.55,
+          "impact_score": 0.54,
+          "cost_score": 0.74,
+          "evidence_refs": [
+            "5e47c733-3081-42ca-a61c-6297c5604bde",
+            "034483be-0b5b-44bb-b5dd-5ec34d274459",
+            "caa5563c-3227-490c-8470-854027d47e22",
+            "f3c8d117-db8c-45e2-bf78-e5af08a7bc2a"
+          ],
+          "metadata": {
+            "tool_type": "browser",
+            "capabilities": [
+              "open_url",
+              "click",
+              "type_text",
+              "extract_text",
+              "screenshot"
+            ],
+            "current_route": "language_understanding",
+            "current_assistant_kind": "adaptive local orchestrator",
+            "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+            "baseline_weighted_score": 0.8604,
+            "estimated_candidate_score": 0.9258,
+            "estimated_gain": 0.0654,
+            "live_status": "listo",
+            "requires_human_approval": true,
+            "local_first": true,
+            "supports_sandbox": true
+          }
+        },
+        {
+          "signal_id": "56f5b5d9-7f64-4e96-ba97-c1ebd5e057fe",
+          "proposal_key": "general|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|long|without_tools|without_browser|general|external|language_understanding|claude|web_assisted:claude_web_consult_v1:external_assistant",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "general",
+          "title": "Probar Claude web asistido para general",
+          "summary": "Claude web asistido aparece disponible y compatible con general. Conviene validarlo frente a adaptive local orchestrator.",
+          "tool_id": "claude_web_assisted",
+          "tool_title": "Claude web asistido",
+          "assistant_kind": "claude",
+          "route": "language_understanding",
+          "config_signature": "web_assisted:claude_web_consult_v1:external_assistant",
+          "status": "detected",
+          "confidence": 0.8412,
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46,
+          "evidence_refs": [
+            "5e47c733-3081-42ca-a61c-6297c5604bde",
+            "034483be-0b5b-44bb-b5dd-5ec34d274459",
+            "caa5563c-3227-490c-8470-854027d47e22",
+            "f3c8d117-db8c-45e2-bf78-e5af08a7bc2a"
+          ],
+          "metadata": {
+            "tool_type": "llm_web_ui",
+            "capabilities": [
+              "launch_app",
+              "llm_query",
+              "consult_external",
+              "web_assisted"
+            ],
+            "current_route": "language_understanding",
+            "current_assistant_kind": "adaptive local orchestrator",
+            "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+            "baseline_weighted_score": 0.8604,
+            "estimated_candidate_score": 0.9078,
+            "estimated_gain": 0.0474,
+            "live_status": "listo",
+            "requires_human_approval": true,
+            "local_first": false,
+            "supports_sandbox": true
+          }
+        },
+        {
+          "signal_id": "cc838497-9a35-4204-8ac1-7273b3bacef9",
+          "proposal_key": "general|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|long|without_tools|without_browser|general|external|language_understanding|chatgpt|desktop_app:chatgpt_consult_v1:external_assistant",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "general",
+          "title": "Probar ChatGPT instalado para general",
+          "summary": "ChatGPT instalado aparece disponible y compatible con general. Conviene validarlo frente a adaptive local orchestrator.",
+          "tool_id": "chatgpt_installed",
+          "tool_title": "ChatGPT instalado",
+          "assistant_kind": "chatgpt",
+          "route": "language_understanding",
+          "config_signature": "desktop_app:chatgpt_consult_v1:external_assistant",
+          "status": "detected",
+          "confidence": 0.8412,
+          "compatibility_score": 0.95,
+          "impact_score": 0.42,
+          "cost_score": 0.46,
+          "evidence_refs": [
+            "5e47c733-3081-42ca-a61c-6297c5604bde",
+            "034483be-0b5b-44bb-b5dd-5ec34d274459",
+            "caa5563c-3227-490c-8470-854027d47e22",
+            "f3c8d117-db8c-45e2-bf78-e5af08a7bc2a"
+          ],
+          "metadata": {
+            "tool_type": "custom",
+            "capabilities": [
+              "launch_app",
+              "llm_query",
+              "consult_external",
+              "explain_issue"
+            ],
+            "current_route": "language_understanding",
+            "current_assistant_kind": "adaptive local orchestrator",
+            "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+            "baseline_weighted_score": 0.8604,
+            "estimated_candidate_score": 0.9078,
+            "estimated_gain": 0.0474,
+            "live_status": "listo",
+            "requires_human_approval": true,
+            "local_first": false,
+            "supports_sandbox": true
+          }
+        },
+        {
+          "signal_id": "3a0d26b8-4328-47a4-ac62-fe4c013fbf6a",
+          "proposal_key": "general|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|long|without_tools|without_browser|general|external|ui|iabv_runtime|desktop_real:desktop_human",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "general",
+          "title": "Probar Desktop human runner para general",
+          "summary": "Desktop human runner aparece disponible y compatible con general. Conviene validarlo frente a adaptive local orchestrator.",
+          "tool_id": "desktop_human_runner",
+          "tool_title": "Desktop human runner",
+          "assistant_kind": "iabv_runtime",
+          "route": "ui",
+          "config_signature": "desktop_real:desktop_human",
+          "status": "detected",
+          "confidence": 0.7308,
+          "compatibility_score": 0.55,
+          "impact_score": 0.42,
+          "cost_score": 0.74,
+          "evidence_refs": [
+            "5e47c733-3081-42ca-a61c-6297c5604bde",
+            "034483be-0b5b-44bb-b5dd-5ec34d274459",
+            "caa5563c-3227-490c-8470-854027d47e22",
+            "f3c8d117-db8c-45e2-bf78-e5af08a7bc2a"
+          ],
+          "metadata": {
+            "tool_type": "custom",
+            "capabilities": [
+              "launch_app",
+              "focus_window",
+              "click",
+              "type_text",
+              "scroll",
+              "screenshot",
+              "wait_for_window",
+              "wait_for_change"
+            ],
+            "current_route": "language_understanding",
+            "current_assistant_kind": "adaptive local orchestrator",
+            "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+            "baseline_weighted_score": 0.8604,
+            "estimated_candidate_score": 0.9162,
+            "estimated_gain": 0.0558,
+            "live_status": "listo",
+            "requires_human_approval": true,
+            "local_first": true,
+            "supports_sandbox": true
+          }
+        }
+      ],
+      "in_validation_signals": [],
+      "promoted_signals": [],
+      "discarded_signals": [],
+      "unresolved_signals": []
+    }
+  }
+}

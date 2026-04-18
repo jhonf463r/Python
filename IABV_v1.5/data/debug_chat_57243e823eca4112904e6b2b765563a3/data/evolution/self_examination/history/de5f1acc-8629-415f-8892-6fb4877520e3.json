@@ -1,0 +1,44 @@
+{
+  "review_id": "de5f1acc-8629-415f-8892-6fb4877520e3",
+  "created_at_utc": "2026-04-17T14:33:09.246097Z",
+  "updated_at_utc": "2026-04-17T14:33:09.246097Z",
+  "package_version": "self_examination.v1",
+  "summary": "Autoexaminacion partial: todavia no tengo suficiente evidencia acumulada para emitir una revision fuerte.",
+  "status": "partial",
+  "assistant_brief": "# IABV v1.5 - Operational Self Examination\n\nGenerado: 2026-04-17T14:33:09.246097+00:00\nResumen: Autoexaminacion partial: todavia no tengo suficiente evidencia acumulada para emitir una revision fuerte.\n\nUsa esta revision para entender que esta fallando, que se repite y que ajustes conviene hacer antes de tocar la arquitectura.\n\n## Hallazgos\n- Sin hallazgos fuertes confirmados.\n\n## Ajustes recomendados\n- Seguir capturando evidencia evolutiva: Ejecutar consultas, ensenanzas y autodiagnosticos para poblar la capa evolutiva. | fuente EvolutionReviewService\n\n## Mejoras validadas\n- Sin mejoras validadas fuertes todavia.\n\nUNRESOLVED: UNRESOLVED:claude_content_probe, UNRESOLVED:autonomous_validation_cycle, UNRESOLVED:experiment_history, UNRESOLVED:adaptive_sessions",
+  "findings": [],
+  "recurring_issues": [],
+  "recommended_adjustments": [
+    {
+      "title": "Seguir capturando evidencia evolutiva",
+      "recommended_change": "Ejecutar consultas, ensenanzas y autodiagnosticos para poblar la capa evolutiva.",
+      "category": "backlog",
+      "severity": "medium",
+      "confidence": 0.35,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ]
+    }
+  ],
+  "validated_improvements": [],
+  "unresolved_risks": [
+    "UNRESOLVED:claude_content_probe",
+    "UNRESOLVED:autonomous_validation_cycle",
+    "UNRESOLVED:experiment_history",
+    "UNRESOLVED:adaptive_sessions"
+  ],
+  "package_path": "C:\\Python\\IABV_v1.5\\data\\debug_chat_57243e823eca4112904e6b2b765563a3\\data\\evolution\\self_examination\\latest.json",
+  "markdown_path": "C:\\Python\\IABV_v1.5\\data\\debug_chat_57243e823eca4112904e6b2b765563a3\\data\\evolution\\self_examination\\latest.md",
+  "metadata": {
+    "workspace_root": "C:\\Python\\IABV_v1.5\\data\\debug_chat_57243e823eca4112904e6b2b765563a3",
+    "source_refs": [
+      "RunRepository",
+      "AdaptiveSessionRepository",
+      "ExperimentLab",
+      "EvolutionReviewService",
+      "WorldModelSnapshot",
+      "AutonomousValidationSnapshot"
+    ]
+  }
+}

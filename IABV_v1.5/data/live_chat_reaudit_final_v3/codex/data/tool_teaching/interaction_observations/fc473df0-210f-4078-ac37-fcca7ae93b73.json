@@ -1,0 +1,42 @@
+{
+  "observation_id": "fc473df0-210f-4078-ac37-fcca7ae93b73",
+  "pattern_id": "06b106f3-8b05-4510-92e4-571cfa282eb8",
+  "task_id": "8b53a53e-abee-417c-8567-8fe8150f3ce9",
+  "result_id": "cf47d641-326e-4e61-ae4c-6aa1f0de1b1a",
+  "episode_id": "db29e02d-da89-460b-a3b4-3b1a04777536",
+  "success": false,
+  "channel": "background",
+  "tool_id": "codex_installed",
+  "tool_type": "custom",
+  "site_id": null,
+  "summary": "wrong_thread",
+  "confidence": 0.22,
+  "evidence_refs": [
+    "cf47d641-326e-4e61-ae4c-6aa1f0de1b1a:assistant_kind",
+    "cf47d641-326e-4e61-ae4c-6aa1f0de1b1a:focused_title",
+    "cf47d641-326e-4e61-ae4c-6aa1f0de1b1a:launch_target",
+    "cf47d641-326e-4e61-ae4c-6aa1f0de1b1a:prompt_preview"
+  ],
+  "created_at_utc": "2026-04-12T23:34:53.981480Z",
+  "metadata": {
+    "validation_status": "unvalidated",
+    "execution_state": "failed",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "assistant_kind",
+      "focused_title",
+      "launch_target",
+      "prompt_preview"
+    ],
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "result_id": "07c83342-8b42-445a-ba06-fb0075fe37a2",
+  "task_id": "f4ee8bbc-0f67-4a43-bc88-9a3cd1b6810f",
+  "tool_id": "codex_installed",
+  "tool_type": "custom",
+  "success": false,
+  "validation_status": "blocked",
+  "execution_state": {
+    "state": "missing_tool",
+    "detail": "No encontre una ToolCard registrada para esta tarea.",
+    "executor_name": "",
+    "sandboxed": false,
+    "validated": false,
+    "approval_decision": "pending",
+    "destructive_blocked": true,
+    "metadata": {
+      "audit_reason": "Falta una via operativa local y conviene escalar con el asistente externo mas util para el tipo de fallo.",
+      "audit_snapshot_id": "59d6d209-b233-4e19-a864-a79de78524cf"
+    }
+  },
+  "rollback_state": null,
+  "output_text": "",
+  "extracted_data": {},
+  "artifacts": [],
+  "error_message": "tool_card_missing",
+  "execution_ms": 0,
+  "created_at_utc": "2026-04-16T04:57:59.734389Z",
+  "metadata": {
+    "live_audit": {
+      "audit_snapshot_id": "59d6d209-b233-4e19-a864-a79de78524cf",
+      "objective": "Consultar Codex sobre: necesito consulta con codex pero si el hilo esta mal dilo claro y no finjas exito",
+      "session_or_episode_id": "f4ee8bbc-0f67-4a43-bc88-9a3cd1b6810f",
+      "mode_used": "fallback",
+      "evidence": [],
+      "findings": [
+        {
+          "finding_id": "0a6eae89-f090-4ea0-963c-d0ca3daea82c",
+          "kind": "tool_adapter_missing",
+          "title": "Falta adaptador operativo",
+          "summary": "No encontre una ToolCard registrada para esta tarea.",
+          "confidence": 0.93,
+          "evidence_refs": [],
+          "metadata": {
+            "state": "missing_tool",
+            "tool_id": "codex_installed"
+          }
+        }
+      ],
+      "decision": {
+        "decision_id": "1043b3e3-9451-426e-993e-291f979dc3f6",
+        "action": "consult_chatgpt",
+        "rationale": "Falta una via operativa local y conviene escalar con el asistente externo mas util para el tipo de fallo.",
+        "confidence": 0.82,
+        "recommended_tool_id": "chatgpt_installed",
+        "approval_required": true,
+        "metadata": {}
+      },
+      "confidence": 0.41,
+      "auto_safe_action": "",
+      "human_approval": false,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 0.2,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.45,
+        "bridge_drain_health": 0.0,
+        "observer_agreement_score": 0.4125,
+        "learning_consolidation_score": 0.4125,
+        "lab_precision": 0.3268,
+        "lab_robustness": 0.4,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.4024,
+        "lab_recommended_route_score": 0.0
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "codex_installed",
+        "tool_type": "custom",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "59d6d209-b233-4e19-a864-a79de78524cf",
+    "audit_decision": "consult_chatgpt",
+    "audit_recommendation": "consult_chatgpt",
+    "audit_summary": "Falta adaptador operativo Decision: consult_chatgpt. Confianza 0.41."
+  }
+}

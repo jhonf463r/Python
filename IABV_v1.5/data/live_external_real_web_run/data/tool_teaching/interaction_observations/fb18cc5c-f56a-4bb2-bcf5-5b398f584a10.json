@@ -1,0 +1,38 @@
+{
+  "observation_id": "fb18cc5c-f56a-4bb2-bcf5-5b398f584a10",
+  "pattern_id": "4da03b54-3f94-4996-8b80-7caeb8dca839",
+  "task_id": "83bdd192-8823-4210-a55d-2cf1f33d9ea5",
+  "result_id": "3d42c5f7-fe84-4187-9a1c-7fc79fcb0dc8",
+  "episode_id": "326205a7-0f6c-42a8-b73e-d0a6bfc88c7f",
+  "success": false,
+  "channel": "ui",
+  "tool_id": "claude_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": "wplay",
+  "summary": "browser_dom_unavailable",
+  "confidence": 0.22,
+  "evidence_refs": [
+    "3d42c5f7-fe84-4187-9a1c-7fc79fcb0dc8:assistant_kind",
+    "3d42c5f7-fe84-4187-9a1c-7fc79fcb0dc8:launch_target"
+  ],
+  "created_at_utc": "2026-04-12T22:30:14.312339Z",
+  "metadata": {
+    "validation_status": "unvalidated",
+    "execution_state": "failed",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "assistant_kind",
+      "launch_target"
+    ],
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

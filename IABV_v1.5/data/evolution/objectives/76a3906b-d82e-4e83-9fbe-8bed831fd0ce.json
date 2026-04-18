@@ -1,0 +1,35 @@
+{
+  "objective_id": "76a3906b-d82e-4e83-9fbe-8bed831fd0ce",
+  "kind": "subtask",
+  "title": "Proponer estrategia",
+  "summary": "Respuesta local contextual Ruta sugerida: language_understanding (score 0.86). Patron reutilizable lider: Consultar Codex | canal ui | exitos 3.",
+  "parent_id": "a0cb5362-4364-451d-a385-7d8187a7fcfe",
+  "root_id": "abb5dc37-8dcf-4311-9e3b-6cd549e68619",
+  "site_id": null,
+  "priority": 54,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Laboratorio universal: language -> language_understanding (score 0.86, confianza 0.88).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:a36d61f0-3191-4141-92cf-364b6933a069"
+  ],
+  "tags": [
+    "propose_strategy"
+  ],
+  "metadata": {
+    "phase_key": "propose_strategy",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "knowledge.query"
+  },
+  "created_at_utc": "2026-04-16T22:41:50.148588Z",
+  "updated_at_utc": "2026-04-16T22:41:50.148588Z"
+}

@@ -1,0 +1,33 @@
+{
+  "objective_id": "42e95cf2-2644-4126-a4e3-e5e30b70144b",
+  "kind": "subtask",
+  "title": "Ejecutar fase",
+  "summary": "No hay un executor de herramientas aplicable para Consulta local con contexto; sigue faltando un adaptador operativo del dominio.",
+  "parent_id": "b6635afe-f349-414d-9327-e0dc8d5df603",
+  "root_id": "b7004928-1ad9-40b4-99e0-6ff927f62851",
+  "site_id": null,
+  "priority": 55,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 5.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96."
+  ],
+  "tags": [
+    "execute"
+  ],
+  "metadata": {
+    "phase_key": "execute",
+    "requires_approval": false,
+    "executable": true,
+    "simulation_only": false,
+    "pack_id": "knowledge.query"
+  },
+  "created_at_utc": "2026-04-16T19:40:38.738945Z",
+  "updated_at_utc": "2026-04-16T19:40:38.738945Z"
+}

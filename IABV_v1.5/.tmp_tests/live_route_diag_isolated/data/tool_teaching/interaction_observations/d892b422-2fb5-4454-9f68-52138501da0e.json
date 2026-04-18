@@ -1,0 +1,38 @@
+{
+  "observation_id": "d892b422-2fb5-4454-9f68-52138501da0e",
+  "pattern_id": "4670aeee-c4aa-4e1d-a6ff-8836f6cc0832",
+  "task_id": "45b50dff-9e32-48b3-9ef5-92c127c7e0ca",
+  "result_id": "0a460d84-af23-4bb0-bddd-d5122b246f4f",
+  "episode_id": "bf75b395-d3de-4da5-88fe-89b9e0d29ad9",
+  "success": false,
+  "channel": "ui",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": "wplay",
+  "summary": "[WinError 5] Acceso denegado",
+  "confidence": 0.22,
+  "evidence_refs": [
+    "0a460d84-af23-4bb0-bddd-d5122b246f4f:assistant_kind",
+    "0a460d84-af23-4bb0-bddd-d5122b246f4f:launch_target"
+  ],
+  "created_at_utc": "2026-04-14T00:45:15.641830Z",
+  "metadata": {
+    "validation_status": "unvalidated",
+    "execution_state": "failed",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "assistant_kind",
+      "launch_target"
+    ],
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

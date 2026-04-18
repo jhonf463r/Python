@@ -1,0 +1,32 @@
+{
+  "objective_id": "355d40c9-dbc2-4c7f-b013-611b1c6efb3e",
+  "kind": "subtask",
+  "title": "Ejecutar fase",
+  "summary": "La fase execute queda intencionalmente en simulacion o guiado porque el pack es sensible o de alto riesgo.",
+  "parent_id": "63e92ba1-fc6c-4399-a111-1e26cec770c5",
+  "root_id": "63ffe23f-aaae-4096-9d13-4d29636057fc",
+  "site_id": "wplay",
+  "priority": 56,
+  "status": "pending",
+  "progress": 0.0,
+  "blocker": "",
+  "confidence": 0.9,
+  "evidence_refs": [
+    "Contexto activo: Wplay.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 5.",
+    "Laboratorio universal: language -> language_understanding (score 0.86, confianza 0.78)."
+  ],
+  "tags": [
+    "execute"
+  ],
+  "metadata": {
+    "phase_key": "execute",
+    "requires_approval": true,
+    "executable": false,
+    "simulation_only": true,
+    "pack_id": "wplay.core"
+  },
+  "created_at_utc": "2026-04-16T22:43:57.791803Z",
+  "updated_at_utc": "2026-04-16T22:43:57.791803Z"
+}

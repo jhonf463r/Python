@@ -1,0 +1,63 @@
+{
+  "pattern_id": "46d48869-5f11-4592-af12-5a007551e285",
+  "signature": "1796f9cf9ae6d65514374116c511a93096945047",
+  "title": "Consultar Codex",
+  "channel": "background",
+  "tool_id": "codex_installed",
+  "tool_type": "custom",
+  "site_id": "audit",
+  "operations": [
+    {
+      "step_id": "8b70ecf0-7f42-4e03-8a3a-701393872284",
+      "channel": "background",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false
+      }
+    },
+    {
+      "step_id": "5dbd8b46-2430-4abd-adbc-6436c1c8aae5",
+      "channel": "background",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false
+      }
+    }
+  ],
+  "reusable": true,
+  "success_count": 1,
+  "failure_count": 0,
+  "last_task_id": "d9e5565a-52da-4fb0-98b9-c8348d7b04e6",
+  "last_result_id": "7def2931-9327-466c-9c7b-1cbbdcef2240",
+  "created_at_utc": "2026-04-12T22:52:12.453396Z",
+  "updated_at_utc": "2026-04-12T22:52:25.895994Z",
+  "metadata": {
+    "objective_excerpt": "Consultar Codex sobre: Auditoria viva de IABV: valida si Codex responde o queda pendiente con estado formal.",
+    "execution_scope": "read_only",
+    "approval_decision": "approved",
+    "last_validation_status": "unvalidated",
+    "last_execution_state": "awaiting_response",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "last_interaction_episode_id": "91c93785-9371-4ce9-b8e6-a4984fe84492"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "step_id": "b6353a95-7b56-43e4-885f-75599ee0e650",
+  "channel": "ui",
+  "operation": "llm_query",
+  "target": "",
+  "value_hint": "<llm_query>",
+  "expected_signal": "tool_result",
+  "confidence": 0.9,
+  "metadata": {
+    "label": "Contexto redactado",
+    "requires_approval": false,
+    "destructive": false,
+    "parameters": {}
+  },
+  "action_id": "40825558-e3b5-4b31-acd6-dfb9cc60310d",
+  "started_at_utc": "2026-04-11T01:40:29.643152Z",
+  "finished_at_utc": "2026-04-11T01:40:29.643152Z",
+  "destructive": false,
+  "requires_approval": false
+}

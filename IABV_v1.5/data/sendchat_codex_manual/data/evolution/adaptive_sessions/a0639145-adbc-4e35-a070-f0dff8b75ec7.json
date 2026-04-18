@@ -1,0 +1,3184 @@
+{
+  "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+  "created_at_utc": "2026-04-11T01:11:58.586108Z",
+  "updated_at_utc": "2026-04-11T01:11:58.935760Z",
+  "run_id": "d537880c-52b5-4e52-af13-8207bff6bcb3",
+  "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+  "intent": {
+    "intent_id": "6b474b8b-657d-41ea-b864-31b70c634a1c",
+    "disposition": "plan_then_execute",
+    "intent_key": "research.external_consultation",
+    "title": "Consulta externa dirigida a Codex",
+    "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+    "detected_role": "research",
+    "site_hint": null,
+    "domain_hint": "external_assistant",
+    "confidence": 0.9,
+    "sensitive": false,
+    "monetary": false,
+    "multi_step": true,
+    "missing_requirements": [],
+    "reasoning": [
+      "el usuario pidio una consulta externa dirigida"
+    ]
+  },
+  "hypotheses": [
+    {
+      "intent_key": "knowledge.query",
+      "title": "Consulta local",
+      "confidence": 0.31,
+      "rationale": "Puede responderse parcialmente en local, pero la peticion explicita pide escalar a otra IA."
+    }
+  ],
+  "context": {
+    "context_id": "4344217f-9eb1-4376-83f6-f781d6be8eea",
+    "site_id": null,
+    "site_display_name": "General",
+    "recent_teachings": [],
+    "recent_runs": [],
+    "recent_incidents": [],
+    "recent_dossiers": [],
+    "knowledge_hits": [],
+    "capability_snapshot": [
+      {
+        "capability_id": "assistant.local.chat",
+        "title": "Chat adaptativo local",
+        "status": "ready",
+        "score": 0.9,
+        "site_id": null,
+        "evidence": [
+          "La capacidad depende principalmente del stack local y del contexto ya disponible."
+        ],
+        "missing_signals": [],
+        "last_episode_id": null,
+        "suggested_next_step": "Seguir con la estrategia propuesta.",
+        "metadata": {}
+      }
+    ],
+    "interaction_patterns": [],
+    "experiment_insights": [],
+    "session_readiness": {
+      "site_detected": false,
+      "teaching_matches": 0,
+      "incident_count": 0,
+      "dominant_incident": "",
+      "adaptive_sessions": 0,
+      "recent_sessions": [],
+      "live_audit_action": ""
+    },
+    "evidence_summary": [
+      "Contexto activo: contexto general."
+    ],
+    "live_audit": {},
+    "goal_context": {
+      "goal_context_id": "fbee1aaa-1bae-48c4-b727-0907084a9513",
+      "objective": {
+        "objective_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+        "kind": "objective",
+        "title": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+        "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+        "parent_id": null,
+        "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+        "site_id": null,
+        "priority": 50,
+        "status": "completed",
+        "progress": 1.0,
+        "blocker": "",
+        "confidence": 0.9,
+        "evidence_refs": [
+          "Contexto activo: contexto general.",
+          "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+        ],
+        "tags": [],
+        "metadata": {
+          "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+          "intent_key": "research.external_consultation",
+          "domain_hint": "external_assistant"
+        },
+        "created_at_utc": "2026-04-11T01:11:58.587892Z",
+        "updated_at_utc": "2026-04-11T01:11:59.081663Z"
+      },
+      "project": {
+        "objective_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+        "kind": "project",
+        "title": "Consulta externa dirigida a Codex",
+        "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+        "parent_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+        "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+        "site_id": null,
+        "priority": 50,
+        "status": "completed",
+        "progress": 1.0,
+        "blocker": "",
+        "confidence": 0.9,
+        "evidence_refs": [
+          "Contexto activo: contexto general.",
+          "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+        ],
+        "tags": [],
+        "metadata": {
+          "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+          "intent_key": "research.external_consultation",
+          "site_display_name": "General"
+        },
+        "created_at_utc": "2026-04-11T01:11:58.601852Z",
+        "updated_at_utc": "2026-04-11T01:11:59.049172Z"
+      },
+      "task": {
+        "objective_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+        "kind": "task",
+        "title": "Consulta externa dirigida a Codex",
+        "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+        "parent_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+        "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+        "site_id": null,
+        "priority": 50,
+        "status": "completed",
+        "progress": 1.0,
+        "blocker": "",
+        "confidence": 0.9,
+        "evidence_refs": [
+          "Contexto activo: contexto general.",
+          "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+        ],
+        "tags": [],
+        "metadata": {
+          "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+          "intent_key": "research.external_consultation",
+          "pack_id": "browser.generic",
+          "pack_title": "Navegacion web generica",
+          "level": "task",
+          "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+          "status": "completed"
+        },
+        "created_at_utc": "2026-04-11T01:11:58.615851Z",
+        "updated_at_utc": "2026-04-11T01:11:58.939658Z"
+      },
+      "subtasks": [
+        {
+          "objective_id": "dae941ba-4a5b-4bcc-9300-25c94d18defc",
+          "kind": "subtask",
+          "title": "Entender objetivo",
+          "summary": "La intencion ya fue clasificada y contextualizada.",
+          "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 51,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [
+            "understand_goal"
+          ],
+          "metadata": {
+            "phase_key": "understand_goal",
+            "requires_approval": false,
+            "executable": false,
+            "simulation_only": false,
+            "pack_id": "browser.generic"
+          },
+          "created_at_utc": "2026-04-11T01:11:58.951505Z",
+          "updated_at_utc": "2026-04-11T01:11:58.951505Z"
+        },
+        {
+          "objective_id": "8d51bfd9-39f6-4b51-9e39-bb5087b21c9d",
+          "kind": "subtask",
+          "title": "Seleccionar pack",
+          "summary": "Pack elegido: browser.generic.",
+          "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 52,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [
+            "select_pack"
+          ],
+          "metadata": {
+            "phase_key": "select_pack",
+            "requires_approval": false,
+            "executable": false,
+            "simulation_only": false,
+            "pack_id": "browser.generic"
+          },
+          "created_at_utc": "2026-04-11T01:11:58.963362Z",
+          "updated_at_utc": "2026-04-11T01:11:58.963363Z"
+        },
+        {
+          "objective_id": "f02a0e44-78c9-42de-8ba3-49affb40b17d",
+          "kind": "subtask",
+          "title": "Validar capacidades",
+          "summary": "Todo listo.",
+          "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 53,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [
+            "validate_capabilities"
+          ],
+          "metadata": {
+            "phase_key": "validate_capabilities",
+            "requires_approval": false,
+            "executable": false,
+            "simulation_only": false,
+            "pack_id": "browser.generic"
+          },
+          "created_at_utc": "2026-04-11T01:11:58.975084Z",
+          "updated_at_utc": "2026-04-11T01:11:58.975085Z"
+        },
+        {
+          "objective_id": "e65afc41-67b0-426d-a20b-18e60f3a1ce8",
+          "kind": "subtask",
+          "title": "Proponer estrategia",
+          "summary": "Navegacion guiada",
+          "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 54,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [
+            "propose_strategy"
+          ],
+          "metadata": {
+            "phase_key": "propose_strategy",
+            "requires_approval": false,
+            "executable": false,
+            "simulation_only": false,
+            "pack_id": "browser.generic"
+          },
+          "created_at_utc": "2026-04-11T01:11:58.986839Z",
+          "updated_at_utc": "2026-04-11T01:11:58.986839Z"
+        },
+        {
+          "objective_id": "a7c2d3bc-3922-43ba-baf0-cbe2ea720e46",
+          "kind": "subtask",
+          "title": "Ejecutar fase",
+          "summary": "No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+          "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 55,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [
+            "execute"
+          ],
+          "metadata": {
+            "phase_key": "execute",
+            "requires_approval": false,
+            "executable": true,
+            "simulation_only": false,
+            "pack_id": "browser.generic"
+          },
+          "created_at_utc": "2026-04-11T01:11:58.999478Z",
+          "updated_at_utc": "2026-04-11T01:11:58.999479Z"
+        },
+        {
+          "objective_id": "b3ba3143-537f-416e-8049-0b9128b64c5a",
+          "kind": "subtask",
+          "title": "Verificar resultado",
+          "summary": "Se ejecuta despues de la fase operativa.",
+          "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 56,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [
+            "verify"
+          ],
+          "metadata": {
+            "phase_key": "verify",
+            "requires_approval": false,
+            "executable": false,
+            "simulation_only": false,
+            "pack_id": "browser.generic"
+          },
+          "created_at_utc": "2026-04-11T01:11:59.012388Z",
+          "updated_at_utc": "2026-04-11T01:11:59.012388Z"
+        },
+        {
+          "objective_id": "173fb20d-a9f4-4614-b231-ac50b7abd527",
+          "kind": "subtask",
+          "title": "Registrar outcome",
+          "summary": "La sesion adaptativa deja traza reutilizable para evolutivo y Codex.",
+          "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 57,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [
+            "record_outcome"
+          ],
+          "metadata": {
+            "phase_key": "record_outcome",
+            "requires_approval": false,
+            "executable": false,
+            "simulation_only": false,
+            "pack_id": "browser.generic"
+          },
+          "created_at_utc": "2026-04-11T01:11:59.035512Z",
+          "updated_at_utc": "2026-04-11T01:11:59.035512Z"
+        }
+      ],
+      "active_node_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+      "active_title": "Consulta externa dirigida a Codex",
+      "priority": 50,
+      "status": "completed",
+      "progress": 1.0,
+      "blocker": "",
+      "confidence": 0.9,
+      "trend": "completado",
+      "evidence_refs": [
+        "Contexto activo: contexto general.",
+        "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+      ],
+      "metadata": {
+        "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+        "intent_key": "research.external_consultation",
+        "pack_id": "browser.generic",
+        "site_id": ""
+      }
+    },
+    "metadata": {
+      "policy_notes": "",
+      "known_domains": [],
+      "live_audit": {},
+      "goal_context": {
+        "goal_context_id": "fbee1aaa-1bae-48c4-b727-0907084a9513",
+        "objective": {
+          "objective_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "kind": "objective",
+          "title": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+          "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+          "parent_id": null,
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 50,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [],
+          "metadata": {
+            "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+            "intent_key": "research.external_consultation",
+            "domain_hint": "external_assistant"
+          },
+          "created_at_utc": "2026-04-11T01:11:58.587892Z",
+          "updated_at_utc": "2026-04-11T01:11:59.081663Z"
+        },
+        "project": {
+          "objective_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+          "kind": "project",
+          "title": "Consulta externa dirigida a Codex",
+          "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+          "parent_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 50,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [],
+          "metadata": {
+            "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+            "intent_key": "research.external_consultation",
+            "site_display_name": "General"
+          },
+          "created_at_utc": "2026-04-11T01:11:58.601852Z",
+          "updated_at_utc": "2026-04-11T01:11:59.049172Z"
+        },
+        "task": {
+          "objective_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "kind": "task",
+          "title": "Consulta externa dirigida a Codex",
+          "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+          "parent_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 50,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [],
+          "metadata": {
+            "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+            "intent_key": "research.external_consultation",
+            "pack_id": "browser.generic",
+            "pack_title": "Navegacion web generica",
+            "level": "task",
+            "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+            "status": "completed"
+          },
+          "created_at_utc": "2026-04-11T01:11:58.615851Z",
+          "updated_at_utc": "2026-04-11T01:11:58.939658Z"
+        },
+        "subtasks": [
+          {
+            "objective_id": "dae941ba-4a5b-4bcc-9300-25c94d18defc",
+            "kind": "subtask",
+            "title": "Entender objetivo",
+            "summary": "La intencion ya fue clasificada y contextualizada.",
+            "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 51,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [
+              "understand_goal"
+            ],
+            "metadata": {
+              "phase_key": "understand_goal",
+              "requires_approval": false,
+              "executable": false,
+              "simulation_only": false,
+              "pack_id": "browser.generic"
+            },
+            "created_at_utc": "2026-04-11T01:11:58.951505Z",
+            "updated_at_utc": "2026-04-11T01:11:58.951505Z"
+          },
+          {
+            "objective_id": "8d51bfd9-39f6-4b51-9e39-bb5087b21c9d",
+            "kind": "subtask",
+            "title": "Seleccionar pack",
+            "summary": "Pack elegido: browser.generic.",
+            "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 52,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [
+              "select_pack"
+            ],
+            "metadata": {
+              "phase_key": "select_pack",
+              "requires_approval": false,
+              "executable": false,
+              "simulation_only": false,
+              "pack_id": "browser.generic"
+            },
+            "created_at_utc": "2026-04-11T01:11:58.963362Z",
+            "updated_at_utc": "2026-04-11T01:11:58.963363Z"
+          },
+          {
+            "objective_id": "f02a0e44-78c9-42de-8ba3-49affb40b17d",
+            "kind": "subtask",
+            "title": "Validar capacidades",
+            "summary": "Todo listo.",
+            "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 53,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [
+              "validate_capabilities"
+            ],
+            "metadata": {
+              "phase_key": "validate_capabilities",
+              "requires_approval": false,
+              "executable": false,
+              "simulation_only": false,
+              "pack_id": "browser.generic"
+            },
+            "created_at_utc": "2026-04-11T01:11:58.975084Z",
+            "updated_at_utc": "2026-04-11T01:11:58.975085Z"
+          },
+          {
+            "objective_id": "e65afc41-67b0-426d-a20b-18e60f3a1ce8",
+            "kind": "subtask",
+            "title": "Proponer estrategia",
+            "summary": "Navegacion guiada",
+            "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 54,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [
+              "propose_strategy"
+            ],
+            "metadata": {
+              "phase_key": "propose_strategy",
+              "requires_approval": false,
+              "executable": false,
+              "simulation_only": false,
+              "pack_id": "browser.generic"
+            },
+            "created_at_utc": "2026-04-11T01:11:58.986839Z",
+            "updated_at_utc": "2026-04-11T01:11:58.986839Z"
+          },
+          {
+            "objective_id": "a7c2d3bc-3922-43ba-baf0-cbe2ea720e46",
+            "kind": "subtask",
+            "title": "Ejecutar fase",
+            "summary": "No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+            "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 55,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [
+              "execute"
+            ],
+            "metadata": {
+              "phase_key": "execute",
+              "requires_approval": false,
+              "executable": true,
+              "simulation_only": false,
+              "pack_id": "browser.generic"
+            },
+            "created_at_utc": "2026-04-11T01:11:58.999478Z",
+            "updated_at_utc": "2026-04-11T01:11:58.999479Z"
+          },
+          {
+            "objective_id": "b3ba3143-537f-416e-8049-0b9128b64c5a",
+            "kind": "subtask",
+            "title": "Verificar resultado",
+            "summary": "Se ejecuta despues de la fase operativa.",
+            "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 56,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [
+              "verify"
+            ],
+            "metadata": {
+              "phase_key": "verify",
+              "requires_approval": false,
+              "executable": false,
+              "simulation_only": false,
+              "pack_id": "browser.generic"
+            },
+            "created_at_utc": "2026-04-11T01:11:59.012388Z",
+            "updated_at_utc": "2026-04-11T01:11:59.012388Z"
+          },
+          {
+            "objective_id": "173fb20d-a9f4-4614-b231-ac50b7abd527",
+            "kind": "subtask",
+            "title": "Registrar outcome",
+            "summary": "La sesion adaptativa deja traza reutilizable para evolutivo y Codex.",
+            "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 57,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [
+              "record_outcome"
+            ],
+            "metadata": {
+              "phase_key": "record_outcome",
+              "requires_approval": false,
+              "executable": false,
+              "simulation_only": false,
+              "pack_id": "browser.generic"
+            },
+            "created_at_utc": "2026-04-11T01:11:59.035512Z",
+            "updated_at_utc": "2026-04-11T01:11:59.035512Z"
+          }
+        ],
+        "active_node_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+        "active_title": "Consulta externa dirigida a Codex",
+        "priority": 50,
+        "status": "completed",
+        "progress": 1.0,
+        "blocker": "",
+        "confidence": 0.9,
+        "trend": "completado",
+        "evidence_refs": [
+          "Contexto activo: contexto general.",
+          "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+        ],
+        "metadata": {
+          "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+          "intent_key": "research.external_consultation",
+          "pack_id": "browser.generic",
+          "site_id": ""
+        }
+      },
+      "goal_parameters": {
+        "selected_role": "training",
+        "site_hint": "",
+        "objective_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+        "objective_title": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+        "project_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+        "project_title": "Consulta externa dirigida a Codex",
+        "task_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+        "task_title": "Consulta externa dirigida a Codex",
+        "goal_status": "active",
+        "goal_progress": 0.58,
+        "goal_confidence": 0.9,
+        "goal_blocker": ""
+      },
+      "decision_context": {
+        "decision_context_id": "c1a854eb-4c1c-4656-80cf-889e26a2838a",
+        "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+        "intent": {
+          "intent_id": "6b474b8b-657d-41ea-b864-31b70c634a1c",
+          "disposition": "plan_then_execute",
+          "intent_key": "research.external_consultation",
+          "title": "Consulta externa dirigida a Codex",
+          "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+          "detected_role": "research",
+          "site_hint": null,
+          "domain_hint": "external_assistant",
+          "confidence": 0.9,
+          "sensitive": false,
+          "monetary": false,
+          "multi_step": true,
+          "missing_requirements": [],
+          "reasoning": [
+            "el usuario pidio una consulta externa dirigida"
+          ]
+        },
+        "route_decision": {
+          "detected_role": "research",
+          "planner_required": false,
+          "visual_required": false,
+          "tool_chain": [
+            "knowledge_search",
+            "embeddings"
+          ],
+          "reason": "Rol manual conservado en DecisionContext: Investigacion."
+        },
+        "chosen_pack_id": "browser.generic",
+        "chosen_pack_title": "Navegacion web generica",
+        "site_id": "",
+        "site_display_name": "General",
+        "evidence_refs": [
+          "Contexto activo: contexto general."
+        ],
+        "capability_snapshot": [
+          {
+            "capability_id": "assistant.local.chat",
+            "title": "Chat adaptativo local",
+            "status": "ready",
+            "score": 0.9,
+            "site_id": null,
+            "evidence": [
+              "La capacidad depende principalmente del stack local y del contexto ya disponible."
+            ],
+            "missing_signals": [],
+            "last_episode_id": null,
+            "suggested_next_step": "Seguir con la estrategia propuesta.",
+            "metadata": {}
+          }
+        ],
+        "live_audit": {},
+        "assistant_guidance": {
+          "mode": "need_adapter",
+          "title": "Falta adaptador operativo",
+          "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+          "actions": [
+            {
+              "action": "consult_codex",
+              "label": "Consultar Codex",
+              "detail": "Contrastar el siguiente cambio tecnico con evidencia verificable."
+            },
+            {
+              "action": "simulate",
+              "label": "Simular",
+              "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+            },
+            {
+              "action": "open_evolution_center",
+              "label": "Ver evolutivo",
+              "detail": "Seguir la evidencia y el backlog tecnico."
+            },
+            {
+              "action": "prepare_codex_packet",
+              "label": "Preparar Codex",
+              "detail": "Armar el caso tecnico verificable."
+            }
+          ],
+          "governance": {
+            "autonomy_level": "guarded_research",
+            "should_consult": true,
+            "should_retry": false,
+            "should_replan": false,
+            "research_needed": true,
+            "assistant_kind": "codex",
+            "recommended_action": "consult_codex",
+            "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+            "confidence": 0.9,
+            "approval_required": false,
+            "block_risky_action": false,
+            "require_sandbox": true,
+            "blockers": [],
+            "diagnostic_category": "need_adapter",
+            "decision_source": "autonomy_governance_policy"
+          }
+        },
+        "goal_context": {
+          "goal_context_id": "fbee1aaa-1bae-48c4-b727-0907084a9513",
+          "objective": {
+            "objective_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "kind": "objective",
+            "title": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+            "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+            "parent_id": null,
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 50,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [],
+            "metadata": {
+              "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+              "intent_key": "research.external_consultation",
+              "domain_hint": "external_assistant"
+            },
+            "created_at_utc": "2026-04-11T01:11:58.587892Z",
+            "updated_at_utc": "2026-04-11T01:11:59.081663Z"
+          },
+          "project": {
+            "objective_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+            "kind": "project",
+            "title": "Consulta externa dirigida a Codex",
+            "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+            "parent_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 50,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [],
+            "metadata": {
+              "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+              "intent_key": "research.external_consultation",
+              "site_display_name": "General"
+            },
+            "created_at_utc": "2026-04-11T01:11:58.601852Z",
+            "updated_at_utc": "2026-04-11T01:11:59.049172Z"
+          },
+          "task": {
+            "objective_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "kind": "task",
+            "title": "Consulta externa dirigida a Codex",
+            "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+            "parent_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 50,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [],
+            "metadata": {
+              "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+              "intent_key": "research.external_consultation",
+              "pack_id": "browser.generic",
+              "pack_title": "Navegacion web generica",
+              "level": "task",
+              "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+              "status": "completed"
+            },
+            "created_at_utc": "2026-04-11T01:11:58.615851Z",
+            "updated_at_utc": "2026-04-11T01:11:58.939658Z"
+          },
+          "subtasks": [
+            {
+              "objective_id": "dae941ba-4a5b-4bcc-9300-25c94d18defc",
+              "kind": "subtask",
+              "title": "Entender objetivo",
+              "summary": "La intencion ya fue clasificada y contextualizada.",
+              "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+              "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "site_id": null,
+              "priority": 51,
+              "status": "completed",
+              "progress": 1.0,
+              "blocker": "",
+              "confidence": 0.9,
+              "evidence_refs": [
+                "Contexto activo: contexto general.",
+                "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+              ],
+              "tags": [
+                "understand_goal"
+              ],
+              "metadata": {
+                "phase_key": "understand_goal",
+                "requires_approval": false,
+                "executable": false,
+                "simulation_only": false,
+                "pack_id": "browser.generic"
+              },
+              "created_at_utc": "2026-04-11T01:11:58.951505Z",
+              "updated_at_utc": "2026-04-11T01:11:58.951505Z"
+            },
+            {
+              "objective_id": "8d51bfd9-39f6-4b51-9e39-bb5087b21c9d",
+              "kind": "subtask",
+              "title": "Seleccionar pack",
+              "summary": "Pack elegido: browser.generic.",
+              "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+              "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "site_id": null,
+              "priority": 52,
+              "status": "completed",
+              "progress": 1.0,
+              "blocker": "",
+              "confidence": 0.9,
+              "evidence_refs": [
+                "Contexto activo: contexto general.",
+                "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+              ],
+              "tags": [
+                "select_pack"
+              ],
+              "metadata": {
+                "phase_key": "select_pack",
+                "requires_approval": false,
+                "executable": false,
+                "simulation_only": false,
+                "pack_id": "browser.generic"
+              },
+              "created_at_utc": "2026-04-11T01:11:58.963362Z",
+              "updated_at_utc": "2026-04-11T01:11:58.963363Z"
+            },
+            {
+              "objective_id": "f02a0e44-78c9-42de-8ba3-49affb40b17d",
+              "kind": "subtask",
+              "title": "Validar capacidades",
+              "summary": "Todo listo.",
+              "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+              "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "site_id": null,
+              "priority": 53,
+              "status": "completed",
+              "progress": 1.0,
+              "blocker": "",
+              "confidence": 0.9,
+              "evidence_refs": [
+                "Contexto activo: contexto general.",
+                "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+              ],
+              "tags": [
+                "validate_capabilities"
+              ],
+              "metadata": {
+                "phase_key": "validate_capabilities",
+                "requires_approval": false,
+                "executable": false,
+                "simulation_only": false,
+                "pack_id": "browser.generic"
+              },
+              "created_at_utc": "2026-04-11T01:11:58.975084Z",
+              "updated_at_utc": "2026-04-11T01:11:58.975085Z"
+            },
+            {
+              "objective_id": "e65afc41-67b0-426d-a20b-18e60f3a1ce8",
+              "kind": "subtask",
+              "title": "Proponer estrategia",
+              "summary": "Navegacion guiada",
+              "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+              "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "site_id": null,
+              "priority": 54,
+              "status": "completed",
+              "progress": 1.0,
+              "blocker": "",
+              "confidence": 0.9,
+              "evidence_refs": [
+                "Contexto activo: contexto general.",
+                "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+              ],
+              "tags": [
+                "propose_strategy"
+              ],
+              "metadata": {
+                "phase_key": "propose_strategy",
+                "requires_approval": false,
+                "executable": false,
+                "simulation_only": false,
+                "pack_id": "browser.generic"
+              },
+              "created_at_utc": "2026-04-11T01:11:58.986839Z",
+              "updated_at_utc": "2026-04-11T01:11:58.986839Z"
+            },
+            {
+              "objective_id": "a7c2d3bc-3922-43ba-baf0-cbe2ea720e46",
+              "kind": "subtask",
+              "title": "Ejecutar fase",
+              "summary": "No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+              "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+              "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "site_id": null,
+              "priority": 55,
+              "status": "completed",
+              "progress": 1.0,
+              "blocker": "",
+              "confidence": 0.9,
+              "evidence_refs": [
+                "Contexto activo: contexto general.",
+                "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+              ],
+              "tags": [
+                "execute"
+              ],
+              "metadata": {
+                "phase_key": "execute",
+                "requires_approval": false,
+                "executable": true,
+                "simulation_only": false,
+                "pack_id": "browser.generic"
+              },
+              "created_at_utc": "2026-04-11T01:11:58.999478Z",
+              "updated_at_utc": "2026-04-11T01:11:58.999479Z"
+            },
+            {
+              "objective_id": "b3ba3143-537f-416e-8049-0b9128b64c5a",
+              "kind": "subtask",
+              "title": "Verificar resultado",
+              "summary": "Se ejecuta despues de la fase operativa.",
+              "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+              "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "site_id": null,
+              "priority": 56,
+              "status": "completed",
+              "progress": 1.0,
+              "blocker": "",
+              "confidence": 0.9,
+              "evidence_refs": [
+                "Contexto activo: contexto general.",
+                "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+              ],
+              "tags": [
+                "verify"
+              ],
+              "metadata": {
+                "phase_key": "verify",
+                "requires_approval": false,
+                "executable": false,
+                "simulation_only": false,
+                "pack_id": "browser.generic"
+              },
+              "created_at_utc": "2026-04-11T01:11:59.012388Z",
+              "updated_at_utc": "2026-04-11T01:11:59.012388Z"
+            },
+            {
+              "objective_id": "173fb20d-a9f4-4614-b231-ac50b7abd527",
+              "kind": "subtask",
+              "title": "Registrar outcome",
+              "summary": "La sesion adaptativa deja traza reutilizable para evolutivo y Codex.",
+              "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+              "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "site_id": null,
+              "priority": 57,
+              "status": "completed",
+              "progress": 1.0,
+              "blocker": "",
+              "confidence": 0.9,
+              "evidence_refs": [
+                "Contexto activo: contexto general.",
+                "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+              ],
+              "tags": [
+                "record_outcome"
+              ],
+              "metadata": {
+                "phase_key": "record_outcome",
+                "requires_approval": false,
+                "executable": false,
+                "simulation_only": false,
+                "pack_id": "browser.generic"
+              },
+              "created_at_utc": "2026-04-11T01:11:59.035512Z",
+              "updated_at_utc": "2026-04-11T01:11:59.035512Z"
+            }
+          ],
+          "active_node_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "active_title": "Consulta externa dirigida a Codex",
+          "priority": 50,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "trend": "completado",
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "metadata": {
+            "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+            "intent_key": "research.external_consultation",
+            "pack_id": "browser.generic",
+            "site_id": ""
+          }
+        },
+        "memory_snapshot": {
+          "evidence": {
+            "site_id": "",
+            "site_display_name": "General",
+            "evidence_refs": [
+              "Contexto activo: contexto general."
+            ],
+            "recent_teachings": [],
+            "recent_incidents": [],
+            "recent_dossiers": []
+          },
+          "learning": {
+            "interaction_patterns": [],
+            "knowledge_hits": [],
+            "capabilities": [
+              {
+                "capability_id": "assistant.local.chat",
+                "title": "Chat adaptativo local",
+                "status": "ready",
+                "score": 0.9,
+                "site_id": ""
+              }
+            ],
+            "experiment_insights": []
+          },
+          "operational": {
+            "recent_runs": [],
+            "session_readiness": {
+              "site_detected": false,
+              "teaching_matches": 0,
+              "incident_count": 0,
+              "dominant_incident": "",
+              "adaptive_sessions": 0,
+              "recent_sessions": [],
+              "live_audit_action": ""
+            },
+            "live_audit": {}
+          },
+          "objectives": {
+            "goal_context": {
+              "goal_context_id": "fbee1aaa-1bae-48c4-b727-0907084a9513",
+              "objective": {
+                "objective_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                "kind": "objective",
+                "title": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+                "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+                "parent_id": null,
+                "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                "site_id": null,
+                "priority": 50,
+                "status": "completed",
+                "progress": 1.0,
+                "blocker": "",
+                "confidence": 0.9,
+                "evidence_refs": [
+                  "Contexto activo: contexto general.",
+                  "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                ],
+                "tags": [],
+                "metadata": {
+                  "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+                  "intent_key": "research.external_consultation",
+                  "domain_hint": "external_assistant"
+                },
+                "created_at_utc": "2026-04-11T01:11:58.587892Z",
+                "updated_at_utc": "2026-04-11T01:11:59.081663Z"
+              },
+              "project": {
+                "objective_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+                "kind": "project",
+                "title": "Consulta externa dirigida a Codex",
+                "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+                "parent_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                "site_id": null,
+                "priority": 50,
+                "status": "completed",
+                "progress": 1.0,
+                "blocker": "",
+                "confidence": 0.9,
+                "evidence_refs": [
+                  "Contexto activo: contexto general.",
+                  "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                ],
+                "tags": [],
+                "metadata": {
+                  "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+                  "intent_key": "research.external_consultation",
+                  "site_display_name": "General"
+                },
+                "created_at_utc": "2026-04-11T01:11:58.601852Z",
+                "updated_at_utc": "2026-04-11T01:11:59.049172Z"
+              },
+              "task": {
+                "objective_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+                "kind": "task",
+                "title": "Consulta externa dirigida a Codex",
+                "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+                "parent_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+                "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                "site_id": null,
+                "priority": 50,
+                "status": "completed",
+                "progress": 1.0,
+                "blocker": "",
+                "confidence": 0.9,
+                "evidence_refs": [
+                  "Contexto activo: contexto general.",
+                  "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                ],
+                "tags": [],
+                "metadata": {
+                  "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+                  "intent_key": "research.external_consultation",
+                  "pack_id": "browser.generic",
+                  "pack_title": "Navegacion web generica",
+                  "level": "task",
+                  "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+                  "status": "completed"
+                },
+                "created_at_utc": "2026-04-11T01:11:58.615851Z",
+                "updated_at_utc": "2026-04-11T01:11:58.939658Z"
+              },
+              "subtasks": [
+                {
+                  "objective_id": "dae941ba-4a5b-4bcc-9300-25c94d18defc",
+                  "kind": "subtask",
+                  "title": "Entender objetivo",
+                  "summary": "La intencion ya fue clasificada y contextualizada.",
+                  "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+                  "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                  "site_id": null,
+                  "priority": 51,
+                  "status": "completed",
+                  "progress": 1.0,
+                  "blocker": "",
+                  "confidence": 0.9,
+                  "evidence_refs": [
+                    "Contexto activo: contexto general.",
+                    "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                  ],
+                  "tags": [
+                    "understand_goal"
+                  ],
+                  "metadata": {
+                    "phase_key": "understand_goal",
+                    "requires_approval": false,
+                    "executable": false,
+                    "simulation_only": false,
+                    "pack_id": "browser.generic"
+                  },
+                  "created_at_utc": "2026-04-11T01:11:58.951505Z",
+                  "updated_at_utc": "2026-04-11T01:11:58.951505Z"
+                },
+                {
+                  "objective_id": "8d51bfd9-39f6-4b51-9e39-bb5087b21c9d",
+                  "kind": "subtask",
+                  "title": "Seleccionar pack",
+                  "summary": "Pack elegido: browser.generic.",
+                  "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+                  "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                  "site_id": null,
+                  "priority": 52,
+                  "status": "completed",
+                  "progress": 1.0,
+                  "blocker": "",
+                  "confidence": 0.9,
+                  "evidence_refs": [
+                    "Contexto activo: contexto general.",
+                    "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                  ],
+                  "tags": [
+                    "select_pack"
+                  ],
+                  "metadata": {
+                    "phase_key": "select_pack",
+                    "requires_approval": false,
+                    "executable": false,
+                    "simulation_only": false,
+                    "pack_id": "browser.generic"
+                  },
+                  "created_at_utc": "2026-04-11T01:11:58.963362Z",
+                  "updated_at_utc": "2026-04-11T01:11:58.963363Z"
+                },
+                {
+                  "objective_id": "f02a0e44-78c9-42de-8ba3-49affb40b17d",
+                  "kind": "subtask",
+                  "title": "Validar capacidades",
+                  "summary": "Todo listo.",
+                  "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+                  "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                  "site_id": null,
+                  "priority": 53,
+                  "status": "completed",
+                  "progress": 1.0,
+                  "blocker": "",
+                  "confidence": 0.9,
+                  "evidence_refs": [
+                    "Contexto activo: contexto general.",
+                    "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                  ],
+                  "tags": [
+                    "validate_capabilities"
+                  ],
+                  "metadata": {
+                    "phase_key": "validate_capabilities",
+                    "requires_approval": false,
+                    "executable": false,
+                    "simulation_only": false,
+                    "pack_id": "browser.generic"
+                  },
+                  "created_at_utc": "2026-04-11T01:11:58.975084Z",
+                  "updated_at_utc": "2026-04-11T01:11:58.975085Z"
+                },
+                {
+                  "objective_id": "e65afc41-67b0-426d-a20b-18e60f3a1ce8",
+                  "kind": "subtask",
+                  "title": "Proponer estrategia",
+                  "summary": "Navegacion guiada",
+                  "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+                  "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                  "site_id": null,
+                  "priority": 54,
+                  "status": "completed",
+                  "progress": 1.0,
+                  "blocker": "",
+                  "confidence": 0.9,
+                  "evidence_refs": [
+                    "Contexto activo: contexto general.",
+                    "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                  ],
+                  "tags": [
+                    "propose_strategy"
+                  ],
+                  "metadata": {
+                    "phase_key": "propose_strategy",
+                    "requires_approval": false,
+                    "executable": false,
+                    "simulation_only": false,
+                    "pack_id": "browser.generic"
+                  },
+                  "created_at_utc": "2026-04-11T01:11:58.986839Z",
+                  "updated_at_utc": "2026-04-11T01:11:58.986839Z"
+                },
+                {
+                  "objective_id": "a7c2d3bc-3922-43ba-baf0-cbe2ea720e46",
+                  "kind": "subtask",
+                  "title": "Ejecutar fase",
+                  "summary": "No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+                  "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+                  "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                  "site_id": null,
+                  "priority": 55,
+                  "status": "completed",
+                  "progress": 1.0,
+                  "blocker": "",
+                  "confidence": 0.9,
+                  "evidence_refs": [
+                    "Contexto activo: contexto general.",
+                    "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                  ],
+                  "tags": [
+                    "execute"
+                  ],
+                  "metadata": {
+                    "phase_key": "execute",
+                    "requires_approval": false,
+                    "executable": true,
+                    "simulation_only": false,
+                    "pack_id": "browser.generic"
+                  },
+                  "created_at_utc": "2026-04-11T01:11:58.999478Z",
+                  "updated_at_utc": "2026-04-11T01:11:58.999479Z"
+                },
+                {
+                  "objective_id": "b3ba3143-537f-416e-8049-0b9128b64c5a",
+                  "kind": "subtask",
+                  "title": "Verificar resultado",
+                  "summary": "Se ejecuta despues de la fase operativa.",
+                  "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+                  "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                  "site_id": null,
+                  "priority": 56,
+                  "status": "completed",
+                  "progress": 1.0,
+                  "blocker": "",
+                  "confidence": 0.9,
+                  "evidence_refs": [
+                    "Contexto activo: contexto general.",
+                    "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                  ],
+                  "tags": [
+                    "verify"
+                  ],
+                  "metadata": {
+                    "phase_key": "verify",
+                    "requires_approval": false,
+                    "executable": false,
+                    "simulation_only": false,
+                    "pack_id": "browser.generic"
+                  },
+                  "created_at_utc": "2026-04-11T01:11:59.012388Z",
+                  "updated_at_utc": "2026-04-11T01:11:59.012388Z"
+                },
+                {
+                  "objective_id": "173fb20d-a9f4-4614-b231-ac50b7abd527",
+                  "kind": "subtask",
+                  "title": "Registrar outcome",
+                  "summary": "La sesion adaptativa deja traza reutilizable para evolutivo y Codex.",
+                  "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+                  "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                  "site_id": null,
+                  "priority": 57,
+                  "status": "completed",
+                  "progress": 1.0,
+                  "blocker": "",
+                  "confidence": 0.9,
+                  "evidence_refs": [
+                    "Contexto activo: contexto general.",
+                    "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                  ],
+                  "tags": [
+                    "record_outcome"
+                  ],
+                  "metadata": {
+                    "phase_key": "record_outcome",
+                    "requires_approval": false,
+                    "executable": false,
+                    "simulation_only": false,
+                    "pack_id": "browser.generic"
+                  },
+                  "created_at_utc": "2026-04-11T01:11:59.035512Z",
+                  "updated_at_utc": "2026-04-11T01:11:59.035512Z"
+                }
+              ],
+              "active_node_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+              "active_title": "Consulta externa dirigida a Codex",
+              "priority": 50,
+              "status": "completed",
+              "progress": 1.0,
+              "blocker": "",
+              "confidence": 0.9,
+              "trend": "completado",
+              "evidence_refs": [
+                "Contexto activo: contexto general.",
+                "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+              ],
+              "metadata": {
+                "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+                "intent_key": "research.external_consultation",
+                "pack_id": "browser.generic",
+                "site_id": ""
+              }
+            },
+            "objective": {
+              "objective_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "kind": "objective",
+              "title": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+              "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+              "parent_id": null,
+              "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "site_id": null,
+              "priority": 50,
+              "status": "completed",
+              "progress": 1.0,
+              "blocker": "",
+              "confidence": 0.9,
+              "evidence_refs": [
+                "Contexto activo: contexto general.",
+                "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+              ],
+              "tags": [],
+              "metadata": {
+                "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+                "intent_key": "research.external_consultation",
+                "domain_hint": "external_assistant"
+              },
+              "created_at_utc": "2026-04-11T01:11:58.587892Z",
+              "updated_at_utc": "2026-04-11T01:11:59.081663Z"
+            },
+            "project": {
+              "objective_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+              "kind": "project",
+              "title": "Consulta externa dirigida a Codex",
+              "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+              "parent_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "site_id": null,
+              "priority": 50,
+              "status": "completed",
+              "progress": 1.0,
+              "blocker": "",
+              "confidence": 0.9,
+              "evidence_refs": [
+                "Contexto activo: contexto general.",
+                "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+              ],
+              "tags": [],
+              "metadata": {
+                "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+                "intent_key": "research.external_consultation",
+                "site_display_name": "General"
+              },
+              "created_at_utc": "2026-04-11T01:11:58.601852Z",
+              "updated_at_utc": "2026-04-11T01:11:59.049172Z"
+            },
+            "task": {
+              "objective_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+              "kind": "task",
+              "title": "Consulta externa dirigida a Codex",
+              "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+              "parent_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+              "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "site_id": null,
+              "priority": 50,
+              "status": "completed",
+              "progress": 1.0,
+              "blocker": "",
+              "confidence": 0.9,
+              "evidence_refs": [
+                "Contexto activo: contexto general.",
+                "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+              ],
+              "tags": [],
+              "metadata": {
+                "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+                "intent_key": "research.external_consultation",
+                "pack_id": "browser.generic",
+                "pack_title": "Navegacion web generica",
+                "level": "task",
+                "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+                "status": "completed"
+              },
+              "created_at_utc": "2026-04-11T01:11:58.615851Z",
+              "updated_at_utc": "2026-04-11T01:11:58.939658Z"
+            },
+            "status": "completed",
+            "progress": 1.0,
+            "confidence": 0.9,
+            "blocker": ""
+          }
+        },
+        "governance": {
+          "autonomy_level": "guarded_research",
+          "should_consult": true,
+          "should_retry": false,
+          "should_replan": false,
+          "research_needed": true,
+          "assistant_kind": "codex",
+          "recommended_action": "consult_codex",
+          "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+          "confidence": 0.9,
+          "approval_required": false,
+          "block_risky_action": false,
+          "require_sandbox": true,
+          "blockers": [],
+          "diagnostic_category": "need_adapter",
+          "decision_source": "autonomy_governance_policy"
+        },
+        "metadata": {
+          "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+          "intent_key": "research.external_consultation",
+          "decision_source": "adaptive_task_orchestrator"
+        }
+      }
+    }
+  },
+  "chosen_pack_id": "browser.generic",
+  "chosen_pack_title": "Navegacion web generica",
+  "status": "completed",
+  "capability_readiness": [
+    {
+      "capability_id": "assistant.local.chat",
+      "title": "Chat adaptativo local",
+      "status": "ready",
+      "score": 0.9,
+      "site_id": null,
+      "evidence": [
+        "La capacidad depende principalmente del stack local y del contexto ya disponible."
+      ],
+      "missing_signals": [],
+      "last_episode_id": null,
+      "suggested_next_step": "Seguir con la estrategia propuesta.",
+      "metadata": {}
+    }
+  ],
+  "strategy_candidates": [
+    {
+      "candidate_id": "67b68a2e-f9f4-4075-86bf-0fecdfde5715",
+      "pack_id": "browser.generic",
+      "title": "Navegacion guiada",
+      "rationale": "Propone una secuencia corta de apertura, navegacion y verificacion antes de actuar. Capacidades observadas: sin capacidades declaradas.",
+      "algorithm_id": "guided_navigation",
+      "parameters": [
+        {
+          "parameter_id": "4385d36b-6f1c-4e81-bad2-3909a3d6376c",
+          "key": "target_site",
+          "label": "Sitio objetivo",
+          "description": "Sitio o dominio sobre el que se trabajara.",
+          "value": "",
+          "default_value": "",
+          "kind": "text",
+          "editable": true,
+          "required": false,
+          "options": []
+        },
+        {
+          "parameter_id": "b2d1a101-dd2c-459a-8561-32fe09db4741",
+          "key": "target_goal",
+          "label": "Objetivo",
+          "description": "Tarea puntual de la navegacion.",
+          "value": "",
+          "default_value": "",
+          "kind": "text",
+          "editable": true,
+          "required": false,
+          "options": []
+        }
+      ],
+      "readiness_status": "ready",
+      "risk_level": "low",
+      "requires_approval": false,
+      "missing_requirements": [],
+      "metadata": {
+        "domain_kind": "browser",
+        "site_id": "",
+        "experiment_alignment_score": 0.0
+      }
+    },
+    {
+      "candidate_id": "ada7eef0-ab4f-4a6f-8434-93d4bd621045",
+      "pack_id": "browser.generic",
+      "title": "Busqueda y apertura",
+      "rationale": "Primero busca o ubica el sitio y luego propone la siguiente fase de interaccion. Capacidades observadas: sin capacidades declaradas.",
+      "algorithm_id": "search_then_open",
+      "parameters": [
+        {
+          "parameter_id": "4385d36b-6f1c-4e81-bad2-3909a3d6376c",
+          "key": "target_site",
+          "label": "Sitio objetivo",
+          "description": "Sitio o dominio sobre el que se trabajara.",
+          "value": "",
+          "default_value": "",
+          "kind": "text",
+          "editable": true,
+          "required": false,
+          "options": []
+        },
+        {
+          "parameter_id": "b2d1a101-dd2c-459a-8561-32fe09db4741",
+          "key": "target_goal",
+          "label": "Objetivo",
+          "description": "Tarea puntual de la navegacion.",
+          "value": "",
+          "default_value": "",
+          "kind": "text",
+          "editable": true,
+          "required": false,
+          "options": []
+        }
+      ],
+      "readiness_status": "ready",
+      "risk_level": "low",
+      "requires_approval": false,
+      "missing_requirements": [],
+      "metadata": {
+        "domain_kind": "browser",
+        "site_id": "",
+        "experiment_alignment_score": 0.0
+      }
+    }
+  ],
+  "playbook": {
+    "playbook_id": "11a7ae89-2846-4e96-a6f2-c9c5da7e696b",
+    "goal": "Consulta externa dirigida a Codex",
+    "pack_id": "browser.generic",
+    "summary": "Pack Navegacion web generica. Estrategia propuesta: Navegacion guiada.",
+    "status": "completed",
+    "steps": [
+      {
+        "step_id": "4c0bfadb-2d20-4e8c-841e-c95520eb0d6a",
+        "phase_key": "understand_goal",
+        "title": "Entender objetivo",
+        "description": "Objetivo interpretado: Consulta externa dirigida a Codex.",
+        "status": "success",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": null,
+        "executable": false,
+        "simulation_only": false,
+        "detail": "La intencion ya fue clasificada y contextualizada.",
+        "metadata": {
+          "site_id": "",
+          "intent_key": "research.external_consultation"
+        }
+      },
+      {
+        "step_id": "2dfd65cc-2fc7-4f5d-a87e-59a8088d0ae1",
+        "phase_key": "select_pack",
+        "title": "Seleccionar pack",
+        "description": "Se usa Navegacion web generica.",
+        "status": "success",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": "browser.generic",
+        "executable": false,
+        "simulation_only": false,
+        "detail": "Pack elegido: browser.generic.",
+        "metadata": {
+          "domain_kind": "browser",
+          "risk_level": "low"
+        }
+      },
+      {
+        "step_id": "b78a49d4-d1b8-4048-a1a2-0fac049e1bab",
+        "phase_key": "validate_capabilities",
+        "title": "Validar capacidades",
+        "description": "Se revisa si las ensenanzas y la evidencia soportan la tarea.",
+        "status": "success",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": null,
+        "executable": false,
+        "simulation_only": false,
+        "detail": "Todo listo.",
+        "metadata": {
+          "weakest_capability_id": "",
+          "interaction_pattern_count": 0,
+          "experiment_insight_count": 0
+        }
+      },
+      {
+        "step_id": "6ab9e397-a31f-42ef-969e-d8247e1c26a4",
+        "phase_key": "propose_strategy",
+        "title": "Proponer estrategia",
+        "description": "Propone una secuencia corta de apertura, navegacion y verificacion antes de actuar. Capacidades observadas: sin capacidades declaradas.",
+        "status": "success",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": null,
+        "executable": false,
+        "simulation_only": false,
+        "detail": "Navegacion guiada",
+        "metadata": {
+          "preferred_route": "",
+          "recommended_tool_id": "",
+          "recommended_execution_scope": "",
+          "experiment_alignment_score": 0.0,
+          "matching_pattern_ids": [],
+          "matching_pattern_count": 0,
+          "live_audit_action": ""
+        }
+      },
+      {
+        "step_id": "7eed670e-f2a0-43e8-bffc-7c3475fb3a44",
+        "phase_key": "execute",
+        "title": "Ejecutar fase",
+        "description": "Ejecutar o dejar preparada la siguiente fase operativa.",
+        "status": "partial",
+        "requires_approval": false,
+        "capability_id": "assistant.local.chat",
+        "pack_id": "browser.generic",
+        "executable": true,
+        "simulation_only": false,
+        "detail": "No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+        "metadata": {
+          "preferred_route": "",
+          "recommended_tool_id": "",
+          "recommended_execution_scope": "",
+          "matching_pattern_ids": [],
+          "matching_pattern_count": 0,
+          "execution_state": {
+            "state": "adapter_missing",
+            "executor_name": "tool_local_first_executor",
+            "executor_available": false,
+            "simulation_only": false,
+            "detail": "No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+            "execute_step_present": true
+          }
+        }
+      },
+      {
+        "step_id": "bc6c120b-40b8-4c47-a6a8-53a4c842e35c",
+        "phase_key": "verify",
+        "title": "Verificar resultado",
+        "description": "Confirmar senales de exito, incidentes y evidencia.",
+        "status": "partial",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": null,
+        "executable": false,
+        "simulation_only": false,
+        "detail": "Se ejecuta despues de la fase operativa.",
+        "metadata": {
+          "preferred_route": "",
+          "matching_pattern_ids": []
+        }
+      },
+      {
+        "step_id": "b92534ef-0991-4cd0-91f8-8ae43b4a7da8",
+        "phase_key": "record_outcome",
+        "title": "Registrar outcome",
+        "description": "Persistir resultado, evidencia y siguiente accion.",
+        "status": "partial",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": null,
+        "executable": false,
+        "simulation_only": false,
+        "detail": "La sesion adaptativa deja traza reutilizable para evolutivo y Codex.",
+        "metadata": {
+          "preferred_route": "",
+          "matching_pattern_ids": [],
+          "experiment_recommendation": {}
+        }
+      }
+    ],
+    "next_phase": "execute",
+    "requires_approval": false,
+    "simulation_only": false,
+    "metadata": {
+      "site_id": "",
+      "pack_title": "Navegacion web generica",
+      "chosen_algorithm": "guided_navigation",
+      "experiment_recommendation": {},
+      "preferred_route": "",
+      "recommended_tool_id": "",
+      "recommended_execution_scope": "",
+      "interaction_pattern_count": 0,
+      "matching_pattern_count": 0,
+      "matching_pattern_ids": [],
+      "live_audit": {}
+    }
+  },
+  "approval_checkpoints": [],
+  "outcome": {
+    "outcome_id": "87af1f8e-f137-4114-8b5c-f11419c260e4",
+    "status": "success",
+    "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+    "next_actions": [
+      "Consultar Codex",
+      "Simular",
+      "Ver evolutivo",
+      "Preparar Codex"
+    ],
+    "evidence_refs": [
+      "Contexto activo: contexto general."
+    ],
+    "metadata": {
+      "mode": "initial",
+      "source": "linked_run",
+      "run_id": "d537880c-52b5-4e52-af13-8207bff6bcb3",
+      "run_status": "success",
+      "run_error_summary": ""
+    }
+  },
+  "evidence_refs": [
+    "Contexto activo: contexto general."
+  ],
+  "scenario_id": "",
+  "scenario_mode": null,
+  "probe_diagnosis": null,
+  "runtime_adjustments": [],
+  "pending_issue_id": null,
+  "metadata": {
+    "approval_mode": "phased",
+    "execution_scope": "operational",
+    "goal_parameters": {
+      "selected_role": "training",
+      "site_hint": "",
+      "objective_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+      "objective_title": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+      "project_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+      "project_title": "Consulta externa dirigida a Codex",
+      "task_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+      "task_title": "Consulta externa dirigida a Codex",
+      "goal_status": "completed",
+      "goal_progress": 1.0,
+      "goal_confidence": 0.9,
+      "goal_blocker": ""
+    },
+    "execution_state": {
+      "state": "adapter_missing",
+      "executor_name": "tool_local_first_executor",
+      "executor_available": false,
+      "simulation_only": false,
+      "detail": "No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+      "execute_step_present": true
+    },
+    "goal_context": {
+      "goal_context_id": "fbee1aaa-1bae-48c4-b727-0907084a9513",
+      "objective": {
+        "objective_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+        "kind": "objective",
+        "title": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+        "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+        "parent_id": null,
+        "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+        "site_id": null,
+        "priority": 50,
+        "status": "completed",
+        "progress": 1.0,
+        "blocker": "",
+        "confidence": 0.9,
+        "evidence_refs": [
+          "Contexto activo: contexto general.",
+          "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+        ],
+        "tags": [],
+        "metadata": {
+          "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+          "intent_key": "research.external_consultation",
+          "domain_hint": "external_assistant"
+        },
+        "created_at_utc": "2026-04-11T01:11:58.587892Z",
+        "updated_at_utc": "2026-04-11T01:11:59.081663Z"
+      },
+      "project": {
+        "objective_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+        "kind": "project",
+        "title": "Consulta externa dirigida a Codex",
+        "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+        "parent_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+        "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+        "site_id": null,
+        "priority": 50,
+        "status": "completed",
+        "progress": 1.0,
+        "blocker": "",
+        "confidence": 0.9,
+        "evidence_refs": [
+          "Contexto activo: contexto general.",
+          "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+        ],
+        "tags": [],
+        "metadata": {
+          "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+          "intent_key": "research.external_consultation",
+          "site_display_name": "General"
+        },
+        "created_at_utc": "2026-04-11T01:11:58.601852Z",
+        "updated_at_utc": "2026-04-11T01:11:59.049172Z"
+      },
+      "task": {
+        "objective_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+        "kind": "task",
+        "title": "Consulta externa dirigida a Codex",
+        "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+        "parent_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+        "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+        "site_id": null,
+        "priority": 50,
+        "status": "completed",
+        "progress": 1.0,
+        "blocker": "",
+        "confidence": 0.9,
+        "evidence_refs": [
+          "Contexto activo: contexto general.",
+          "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+        ],
+        "tags": [],
+        "metadata": {
+          "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+          "intent_key": "research.external_consultation",
+          "pack_id": "browser.generic",
+          "pack_title": "Navegacion web generica",
+          "level": "task",
+          "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+          "status": "completed"
+        },
+        "created_at_utc": "2026-04-11T01:11:58.615851Z",
+        "updated_at_utc": "2026-04-11T01:11:58.939658Z"
+      },
+      "subtasks": [
+        {
+          "objective_id": "dae941ba-4a5b-4bcc-9300-25c94d18defc",
+          "kind": "subtask",
+          "title": "Entender objetivo",
+          "summary": "La intencion ya fue clasificada y contextualizada.",
+          "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 51,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [
+            "understand_goal"
+          ],
+          "metadata": {
+            "phase_key": "understand_goal",
+            "requires_approval": false,
+            "executable": false,
+            "simulation_only": false,
+            "pack_id": "browser.generic"
+          },
+          "created_at_utc": "2026-04-11T01:11:58.951505Z",
+          "updated_at_utc": "2026-04-11T01:11:58.951505Z"
+        },
+        {
+          "objective_id": "8d51bfd9-39f6-4b51-9e39-bb5087b21c9d",
+          "kind": "subtask",
+          "title": "Seleccionar pack",
+          "summary": "Pack elegido: browser.generic.",
+          "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 52,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [
+            "select_pack"
+          ],
+          "metadata": {
+            "phase_key": "select_pack",
+            "requires_approval": false,
+            "executable": false,
+            "simulation_only": false,
+            "pack_id": "browser.generic"
+          },
+          "created_at_utc": "2026-04-11T01:11:58.963362Z",
+          "updated_at_utc": "2026-04-11T01:11:58.963363Z"
+        },
+        {
+          "objective_id": "f02a0e44-78c9-42de-8ba3-49affb40b17d",
+          "kind": "subtask",
+          "title": "Validar capacidades",
+          "summary": "Todo listo.",
+          "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 53,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [
+            "validate_capabilities"
+          ],
+          "metadata": {
+            "phase_key": "validate_capabilities",
+            "requires_approval": false,
+            "executable": false,
+            "simulation_only": false,
+            "pack_id": "browser.generic"
+          },
+          "created_at_utc": "2026-04-11T01:11:58.975084Z",
+          "updated_at_utc": "2026-04-11T01:11:58.975085Z"
+        },
+        {
+          "objective_id": "e65afc41-67b0-426d-a20b-18e60f3a1ce8",
+          "kind": "subtask",
+          "title": "Proponer estrategia",
+          "summary": "Navegacion guiada",
+          "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 54,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [
+            "propose_strategy"
+          ],
+          "metadata": {
+            "phase_key": "propose_strategy",
+            "requires_approval": false,
+            "executable": false,
+            "simulation_only": false,
+            "pack_id": "browser.generic"
+          },
+          "created_at_utc": "2026-04-11T01:11:58.986839Z",
+          "updated_at_utc": "2026-04-11T01:11:58.986839Z"
+        },
+        {
+          "objective_id": "a7c2d3bc-3922-43ba-baf0-cbe2ea720e46",
+          "kind": "subtask",
+          "title": "Ejecutar fase",
+          "summary": "No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+          "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 55,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [
+            "execute"
+          ],
+          "metadata": {
+            "phase_key": "execute",
+            "requires_approval": false,
+            "executable": true,
+            "simulation_only": false,
+            "pack_id": "browser.generic"
+          },
+          "created_at_utc": "2026-04-11T01:11:58.999478Z",
+          "updated_at_utc": "2026-04-11T01:11:58.999479Z"
+        },
+        {
+          "objective_id": "b3ba3143-537f-416e-8049-0b9128b64c5a",
+          "kind": "subtask",
+          "title": "Verificar resultado",
+          "summary": "Se ejecuta despues de la fase operativa.",
+          "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 56,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [
+            "verify"
+          ],
+          "metadata": {
+            "phase_key": "verify",
+            "requires_approval": false,
+            "executable": false,
+            "simulation_only": false,
+            "pack_id": "browser.generic"
+          },
+          "created_at_utc": "2026-04-11T01:11:59.012388Z",
+          "updated_at_utc": "2026-04-11T01:11:59.012388Z"
+        },
+        {
+          "objective_id": "173fb20d-a9f4-4614-b231-ac50b7abd527",
+          "kind": "subtask",
+          "title": "Registrar outcome",
+          "summary": "La sesion adaptativa deja traza reutilizable para evolutivo y Codex.",
+          "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 57,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [
+            "record_outcome"
+          ],
+          "metadata": {
+            "phase_key": "record_outcome",
+            "requires_approval": false,
+            "executable": false,
+            "simulation_only": false,
+            "pack_id": "browser.generic"
+          },
+          "created_at_utc": "2026-04-11T01:11:59.035512Z",
+          "updated_at_utc": "2026-04-11T01:11:59.035512Z"
+        }
+      ],
+      "active_node_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+      "active_title": "Consulta externa dirigida a Codex",
+      "priority": 50,
+      "status": "completed",
+      "progress": 1.0,
+      "blocker": "",
+      "confidence": 0.9,
+      "trend": "completado",
+      "evidence_refs": [
+        "Contexto activo: contexto general.",
+        "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+      ],
+      "metadata": {
+        "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+        "intent_key": "research.external_consultation",
+        "pack_id": "browser.generic",
+        "site_id": ""
+      }
+    },
+    "decision_context": {
+      "decision_context_id": "c1a854eb-4c1c-4656-80cf-889e26a2838a",
+      "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+      "intent": {
+        "intent_id": "6b474b8b-657d-41ea-b864-31b70c634a1c",
+        "disposition": "plan_then_execute",
+        "intent_key": "research.external_consultation",
+        "title": "Consulta externa dirigida a Codex",
+        "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+        "detected_role": "research",
+        "site_hint": null,
+        "domain_hint": "external_assistant",
+        "confidence": 0.9,
+        "sensitive": false,
+        "monetary": false,
+        "multi_step": true,
+        "missing_requirements": [],
+        "reasoning": [
+          "el usuario pidio una consulta externa dirigida"
+        ]
+      },
+      "route_decision": {
+        "detected_role": "research",
+        "planner_required": false,
+        "visual_required": false,
+        "tool_chain": [
+          "knowledge_search",
+          "embeddings"
+        ],
+        "reason": "Rol manual conservado en DecisionContext: Investigacion."
+      },
+      "chosen_pack_id": "browser.generic",
+      "chosen_pack_title": "Navegacion web generica",
+      "site_id": "",
+      "site_display_name": "General",
+      "evidence_refs": [
+        "Contexto activo: contexto general."
+      ],
+      "capability_snapshot": [
+        {
+          "capability_id": "assistant.local.chat",
+          "title": "Chat adaptativo local",
+          "status": "ready",
+          "score": 0.9,
+          "site_id": null,
+          "evidence": [
+            "La capacidad depende principalmente del stack local y del contexto ya disponible."
+          ],
+          "missing_signals": [],
+          "last_episode_id": null,
+          "suggested_next_step": "Seguir con la estrategia propuesta.",
+          "metadata": {}
+        }
+      ],
+      "live_audit": {},
+      "assistant_guidance": {
+        "mode": "need_adapter",
+        "title": "Falta adaptador operativo",
+        "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+        "actions": [
+          {
+            "action": "consult_codex",
+            "label": "Consultar Codex",
+            "detail": "Contrastar el siguiente cambio tecnico con evidencia verificable."
+          },
+          {
+            "action": "simulate",
+            "label": "Simular",
+            "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+          },
+          {
+            "action": "open_evolution_center",
+            "label": "Ver evolutivo",
+            "detail": "Seguir la evidencia y el backlog tecnico."
+          },
+          {
+            "action": "prepare_codex_packet",
+            "label": "Preparar Codex",
+            "detail": "Armar el caso tecnico verificable."
+          }
+        ],
+        "governance": {
+          "autonomy_level": "guarded_research",
+          "should_consult": true,
+          "should_retry": false,
+          "should_replan": false,
+          "research_needed": true,
+          "assistant_kind": "codex",
+          "recommended_action": "consult_codex",
+          "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+          "confidence": 0.9,
+          "approval_required": false,
+          "block_risky_action": false,
+          "require_sandbox": true,
+          "blockers": [],
+          "diagnostic_category": "need_adapter",
+          "decision_source": "autonomy_governance_policy"
+        }
+      },
+      "goal_context": {
+        "goal_context_id": "fbee1aaa-1bae-48c4-b727-0907084a9513",
+        "objective": {
+          "objective_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "kind": "objective",
+          "title": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+          "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+          "parent_id": null,
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 50,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [],
+          "metadata": {
+            "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+            "intent_key": "research.external_consultation",
+            "domain_hint": "external_assistant"
+          },
+          "created_at_utc": "2026-04-11T01:11:58.587892Z",
+          "updated_at_utc": "2026-04-11T01:11:59.081663Z"
+        },
+        "project": {
+          "objective_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+          "kind": "project",
+          "title": "Consulta externa dirigida a Codex",
+          "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+          "parent_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 50,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [],
+          "metadata": {
+            "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+            "intent_key": "research.external_consultation",
+            "site_display_name": "General"
+          },
+          "created_at_utc": "2026-04-11T01:11:58.601852Z",
+          "updated_at_utc": "2026-04-11T01:11:59.049172Z"
+        },
+        "task": {
+          "objective_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+          "kind": "task",
+          "title": "Consulta externa dirigida a Codex",
+          "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+          "parent_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+          "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+          "site_id": null,
+          "priority": 50,
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": "",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "Contexto activo: contexto general.",
+            "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+          ],
+          "tags": [],
+          "metadata": {
+            "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+            "intent_key": "research.external_consultation",
+            "pack_id": "browser.generic",
+            "pack_title": "Navegacion web generica",
+            "level": "task",
+            "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+            "status": "completed"
+          },
+          "created_at_utc": "2026-04-11T01:11:58.615851Z",
+          "updated_at_utc": "2026-04-11T01:11:58.939658Z"
+        },
+        "subtasks": [
+          {
+            "objective_id": "dae941ba-4a5b-4bcc-9300-25c94d18defc",
+            "kind": "subtask",
+            "title": "Entender objetivo",
+            "summary": "La intencion ya fue clasificada y contextualizada.",
+            "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 51,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [
+              "understand_goal"
+            ],
+            "metadata": {
+              "phase_key": "understand_goal",
+              "requires_approval": false,
+              "executable": false,
+              "simulation_only": false,
+              "pack_id": "browser.generic"
+            },
+            "created_at_utc": "2026-04-11T01:11:58.951505Z",
+            "updated_at_utc": "2026-04-11T01:11:58.951505Z"
+          },
+          {
+            "objective_id": "8d51bfd9-39f6-4b51-9e39-bb5087b21c9d",
+            "kind": "subtask",
+            "title": "Seleccionar pack",
+            "summary": "Pack elegido: browser.generic.",
+            "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 52,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [
+              "select_pack"
+            ],
+            "metadata": {
+              "phase_key": "select_pack",
+              "requires_approval": false,
+              "executable": false,
+              "simulation_only": false,
+              "pack_id": "browser.generic"
+            },
+            "created_at_utc": "2026-04-11T01:11:58.963362Z",
+            "updated_at_utc": "2026-04-11T01:11:58.963363Z"
+          },
+          {
+            "objective_id": "f02a0e44-78c9-42de-8ba3-49affb40b17d",
+            "kind": "subtask",
+            "title": "Validar capacidades",
+            "summary": "Todo listo.",
+            "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 53,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [
+              "validate_capabilities"
+            ],
+            "metadata": {
+              "phase_key": "validate_capabilities",
+              "requires_approval": false,
+              "executable": false,
+              "simulation_only": false,
+              "pack_id": "browser.generic"
+            },
+            "created_at_utc": "2026-04-11T01:11:58.975084Z",
+            "updated_at_utc": "2026-04-11T01:11:58.975085Z"
+          },
+          {
+            "objective_id": "e65afc41-67b0-426d-a20b-18e60f3a1ce8",
+            "kind": "subtask",
+            "title": "Proponer estrategia",
+            "summary": "Navegacion guiada",
+            "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 54,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [
+              "propose_strategy"
+            ],
+            "metadata": {
+              "phase_key": "propose_strategy",
+              "requires_approval": false,
+              "executable": false,
+              "simulation_only": false,
+              "pack_id": "browser.generic"
+            },
+            "created_at_utc": "2026-04-11T01:11:58.986839Z",
+            "updated_at_utc": "2026-04-11T01:11:58.986839Z"
+          },
+          {
+            "objective_id": "a7c2d3bc-3922-43ba-baf0-cbe2ea720e46",
+            "kind": "subtask",
+            "title": "Ejecutar fase",
+            "summary": "No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+            "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 55,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [
+              "execute"
+            ],
+            "metadata": {
+              "phase_key": "execute",
+              "requires_approval": false,
+              "executable": true,
+              "simulation_only": false,
+              "pack_id": "browser.generic"
+            },
+            "created_at_utc": "2026-04-11T01:11:58.999478Z",
+            "updated_at_utc": "2026-04-11T01:11:58.999479Z"
+          },
+          {
+            "objective_id": "b3ba3143-537f-416e-8049-0b9128b64c5a",
+            "kind": "subtask",
+            "title": "Verificar resultado",
+            "summary": "Se ejecuta despues de la fase operativa.",
+            "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 56,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [
+              "verify"
+            ],
+            "metadata": {
+              "phase_key": "verify",
+              "requires_approval": false,
+              "executable": false,
+              "simulation_only": false,
+              "pack_id": "browser.generic"
+            },
+            "created_at_utc": "2026-04-11T01:11:59.012388Z",
+            "updated_at_utc": "2026-04-11T01:11:59.012388Z"
+          },
+          {
+            "objective_id": "173fb20d-a9f4-4614-b231-ac50b7abd527",
+            "kind": "subtask",
+            "title": "Registrar outcome",
+            "summary": "La sesion adaptativa deja traza reutilizable para evolutivo y Codex.",
+            "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 57,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [
+              "record_outcome"
+            ],
+            "metadata": {
+              "phase_key": "record_outcome",
+              "requires_approval": false,
+              "executable": false,
+              "simulation_only": false,
+              "pack_id": "browser.generic"
+            },
+            "created_at_utc": "2026-04-11T01:11:59.035512Z",
+            "updated_at_utc": "2026-04-11T01:11:59.035512Z"
+          }
+        ],
+        "active_node_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+        "active_title": "Consulta externa dirigida a Codex",
+        "priority": 50,
+        "status": "completed",
+        "progress": 1.0,
+        "blocker": "",
+        "confidence": 0.9,
+        "trend": "completado",
+        "evidence_refs": [
+          "Contexto activo: contexto general.",
+          "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+        ],
+        "metadata": {
+          "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+          "intent_key": "research.external_consultation",
+          "pack_id": "browser.generic",
+          "site_id": ""
+        }
+      },
+      "memory_snapshot": {
+        "evidence": {
+          "site_id": "",
+          "site_display_name": "General",
+          "evidence_refs": [
+            "Contexto activo: contexto general."
+          ],
+          "recent_teachings": [],
+          "recent_incidents": [],
+          "recent_dossiers": []
+        },
+        "learning": {
+          "interaction_patterns": [],
+          "knowledge_hits": [],
+          "capabilities": [
+            {
+              "capability_id": "assistant.local.chat",
+              "title": "Chat adaptativo local",
+              "status": "ready",
+              "score": 0.9,
+              "site_id": ""
+            }
+          ],
+          "experiment_insights": []
+        },
+        "operational": {
+          "recent_runs": [],
+          "session_readiness": {
+            "site_detected": false,
+            "teaching_matches": 0,
+            "incident_count": 0,
+            "dominant_incident": "",
+            "adaptive_sessions": 0,
+            "recent_sessions": [],
+            "live_audit_action": ""
+          },
+          "live_audit": {}
+        },
+        "objectives": {
+          "goal_context": {
+            "goal_context_id": "fbee1aaa-1bae-48c4-b727-0907084a9513",
+            "objective": {
+              "objective_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "kind": "objective",
+              "title": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+              "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+              "parent_id": null,
+              "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "site_id": null,
+              "priority": 50,
+              "status": "completed",
+              "progress": 1.0,
+              "blocker": "",
+              "confidence": 0.9,
+              "evidence_refs": [
+                "Contexto activo: contexto general.",
+                "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+              ],
+              "tags": [],
+              "metadata": {
+                "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+                "intent_key": "research.external_consultation",
+                "domain_hint": "external_assistant"
+              },
+              "created_at_utc": "2026-04-11T01:11:58.587892Z",
+              "updated_at_utc": "2026-04-11T01:11:59.081663Z"
+            },
+            "project": {
+              "objective_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+              "kind": "project",
+              "title": "Consulta externa dirigida a Codex",
+              "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+              "parent_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "site_id": null,
+              "priority": 50,
+              "status": "completed",
+              "progress": 1.0,
+              "blocker": "",
+              "confidence": 0.9,
+              "evidence_refs": [
+                "Contexto activo: contexto general.",
+                "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+              ],
+              "tags": [],
+              "metadata": {
+                "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+                "intent_key": "research.external_consultation",
+                "site_display_name": "General"
+              },
+              "created_at_utc": "2026-04-11T01:11:58.601852Z",
+              "updated_at_utc": "2026-04-11T01:11:59.049172Z"
+            },
+            "task": {
+              "objective_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+              "kind": "task",
+              "title": "Consulta externa dirigida a Codex",
+              "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+              "parent_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+              "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+              "site_id": null,
+              "priority": 50,
+              "status": "completed",
+              "progress": 1.0,
+              "blocker": "",
+              "confidence": 0.9,
+              "evidence_refs": [
+                "Contexto activo: contexto general.",
+                "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+              ],
+              "tags": [],
+              "metadata": {
+                "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+                "intent_key": "research.external_consultation",
+                "pack_id": "browser.generic",
+                "pack_title": "Navegacion web generica",
+                "level": "task",
+                "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+                "status": "completed"
+              },
+              "created_at_utc": "2026-04-11T01:11:58.615851Z",
+              "updated_at_utc": "2026-04-11T01:11:58.939658Z"
+            },
+            "subtasks": [
+              {
+                "objective_id": "dae941ba-4a5b-4bcc-9300-25c94d18defc",
+                "kind": "subtask",
+                "title": "Entender objetivo",
+                "summary": "La intencion ya fue clasificada y contextualizada.",
+                "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+                "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                "site_id": null,
+                "priority": 51,
+                "status": "completed",
+                "progress": 1.0,
+                "blocker": "",
+                "confidence": 0.9,
+                "evidence_refs": [
+                  "Contexto activo: contexto general.",
+                  "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                ],
+                "tags": [
+                  "understand_goal"
+                ],
+                "metadata": {
+                  "phase_key": "understand_goal",
+                  "requires_approval": false,
+                  "executable": false,
+                  "simulation_only": false,
+                  "pack_id": "browser.generic"
+                },
+                "created_at_utc": "2026-04-11T01:11:58.951505Z",
+                "updated_at_utc": "2026-04-11T01:11:58.951505Z"
+              },
+              {
+                "objective_id": "8d51bfd9-39f6-4b51-9e39-bb5087b21c9d",
+                "kind": "subtask",
+                "title": "Seleccionar pack",
+                "summary": "Pack elegido: browser.generic.",
+                "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+                "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                "site_id": null,
+                "priority": 52,
+                "status": "completed",
+                "progress": 1.0,
+                "blocker": "",
+                "confidence": 0.9,
+                "evidence_refs": [
+                  "Contexto activo: contexto general.",
+                  "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                ],
+                "tags": [
+                  "select_pack"
+                ],
+                "metadata": {
+                  "phase_key": "select_pack",
+                  "requires_approval": false,
+                  "executable": false,
+                  "simulation_only": false,
+                  "pack_id": "browser.generic"
+                },
+                "created_at_utc": "2026-04-11T01:11:58.963362Z",
+                "updated_at_utc": "2026-04-11T01:11:58.963363Z"
+              },
+              {
+                "objective_id": "f02a0e44-78c9-42de-8ba3-49affb40b17d",
+                "kind": "subtask",
+                "title": "Validar capacidades",
+                "summary": "Todo listo.",
+                "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+                "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                "site_id": null,
+                "priority": 53,
+                "status": "completed",
+                "progress": 1.0,
+                "blocker": "",
+                "confidence": 0.9,
+                "evidence_refs": [
+                  "Contexto activo: contexto general.",
+                  "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                ],
+                "tags": [
+                  "validate_capabilities"
+                ],
+                "metadata": {
+                  "phase_key": "validate_capabilities",
+                  "requires_approval": false,
+                  "executable": false,
+                  "simulation_only": false,
+                  "pack_id": "browser.generic"
+                },
+                "created_at_utc": "2026-04-11T01:11:58.975084Z",
+                "updated_at_utc": "2026-04-11T01:11:58.975085Z"
+              },
+              {
+                "objective_id": "e65afc41-67b0-426d-a20b-18e60f3a1ce8",
+                "kind": "subtask",
+                "title": "Proponer estrategia",
+                "summary": "Navegacion guiada",
+                "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+                "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                "site_id": null,
+                "priority": 54,
+                "status": "completed",
+                "progress": 1.0,
+                "blocker": "",
+                "confidence": 0.9,
+                "evidence_refs": [
+                  "Contexto activo: contexto general.",
+                  "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                ],
+                "tags": [
+                  "propose_strategy"
+                ],
+                "metadata": {
+                  "phase_key": "propose_strategy",
+                  "requires_approval": false,
+                  "executable": false,
+                  "simulation_only": false,
+                  "pack_id": "browser.generic"
+                },
+                "created_at_utc": "2026-04-11T01:11:58.986839Z",
+                "updated_at_utc": "2026-04-11T01:11:58.986839Z"
+              },
+              {
+                "objective_id": "a7c2d3bc-3922-43ba-baf0-cbe2ea720e46",
+                "kind": "subtask",
+                "title": "Ejecutar fase",
+                "summary": "No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+                "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+                "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                "site_id": null,
+                "priority": 55,
+                "status": "completed",
+                "progress": 1.0,
+                "blocker": "",
+                "confidence": 0.9,
+                "evidence_refs": [
+                  "Contexto activo: contexto general.",
+                  "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                ],
+                "tags": [
+                  "execute"
+                ],
+                "metadata": {
+                  "phase_key": "execute",
+                  "requires_approval": false,
+                  "executable": true,
+                  "simulation_only": false,
+                  "pack_id": "browser.generic"
+                },
+                "created_at_utc": "2026-04-11T01:11:58.999478Z",
+                "updated_at_utc": "2026-04-11T01:11:58.999479Z"
+              },
+              {
+                "objective_id": "b3ba3143-537f-416e-8049-0b9128b64c5a",
+                "kind": "subtask",
+                "title": "Verificar resultado",
+                "summary": "Se ejecuta despues de la fase operativa.",
+                "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+                "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                "site_id": null,
+                "priority": 56,
+                "status": "completed",
+                "progress": 1.0,
+                "blocker": "",
+                "confidence": 0.9,
+                "evidence_refs": [
+                  "Contexto activo: contexto general.",
+                  "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                ],
+                "tags": [
+                  "verify"
+                ],
+                "metadata": {
+                  "phase_key": "verify",
+                  "requires_approval": false,
+                  "executable": false,
+                  "simulation_only": false,
+                  "pack_id": "browser.generic"
+                },
+                "created_at_utc": "2026-04-11T01:11:59.012388Z",
+                "updated_at_utc": "2026-04-11T01:11:59.012388Z"
+              },
+              {
+                "objective_id": "173fb20d-a9f4-4614-b231-ac50b7abd527",
+                "kind": "subtask",
+                "title": "Registrar outcome",
+                "summary": "La sesion adaptativa deja traza reutilizable para evolutivo y Codex.",
+                "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+                "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+                "site_id": null,
+                "priority": 57,
+                "status": "completed",
+                "progress": 1.0,
+                "blocker": "",
+                "confidence": 0.9,
+                "evidence_refs": [
+                  "Contexto activo: contexto general.",
+                  "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+                ],
+                "tags": [
+                  "record_outcome"
+                ],
+                "metadata": {
+                  "phase_key": "record_outcome",
+                  "requires_approval": false,
+                  "executable": false,
+                  "simulation_only": false,
+                  "pack_id": "browser.generic"
+                },
+                "created_at_utc": "2026-04-11T01:11:59.035512Z",
+                "updated_at_utc": "2026-04-11T01:11:59.035512Z"
+              }
+            ],
+            "active_node_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "active_title": "Consulta externa dirigida a Codex",
+            "priority": 50,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "trend": "completado",
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "metadata": {
+              "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+              "intent_key": "research.external_consultation",
+              "pack_id": "browser.generic",
+              "site_id": ""
+            }
+          },
+          "objective": {
+            "objective_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "kind": "objective",
+            "title": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+            "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+            "parent_id": null,
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 50,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [],
+            "metadata": {
+              "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+              "intent_key": "research.external_consultation",
+              "domain_hint": "external_assistant"
+            },
+            "created_at_utc": "2026-04-11T01:11:58.587892Z",
+            "updated_at_utc": "2026-04-11T01:11:59.081663Z"
+          },
+          "project": {
+            "objective_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+            "kind": "project",
+            "title": "Consulta externa dirigida a Codex",
+            "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+            "parent_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 50,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [],
+            "metadata": {
+              "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+              "intent_key": "research.external_consultation",
+              "site_display_name": "General"
+            },
+            "created_at_utc": "2026-04-11T01:11:58.601852Z",
+            "updated_at_utc": "2026-04-11T01:11:59.049172Z"
+          },
+          "task": {
+            "objective_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+            "kind": "task",
+            "title": "Consulta externa dirigida a Codex",
+            "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+            "parent_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+            "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+            "site_id": null,
+            "priority": 50,
+            "status": "completed",
+            "progress": 1.0,
+            "blocker": "",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "Contexto activo: contexto general.",
+              "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+            ],
+            "tags": [],
+            "metadata": {
+              "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+              "intent_key": "research.external_consultation",
+              "pack_id": "browser.generic",
+              "pack_title": "Navegacion web generica",
+              "level": "task",
+              "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+              "status": "completed"
+            },
+            "created_at_utc": "2026-04-11T01:11:58.615851Z",
+            "updated_at_utc": "2026-04-11T01:11:58.939658Z"
+          },
+          "status": "completed",
+          "progress": 1.0,
+          "confidence": 0.9,
+          "blocker": ""
+        }
+      },
+      "governance": {
+        "autonomy_level": "guarded_research",
+        "should_consult": true,
+        "should_retry": false,
+        "should_replan": false,
+        "research_needed": true,
+        "assistant_kind": "codex",
+        "recommended_action": "consult_codex",
+        "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+        "confidence": 0.9,
+        "approval_required": false,
+        "block_risky_action": false,
+        "require_sandbox": true,
+        "blockers": [],
+        "diagnostic_category": "need_adapter",
+        "decision_source": "autonomy_governance_policy"
+      },
+      "metadata": {
+        "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+        "intent_key": "research.external_consultation",
+        "decision_source": "adaptive_task_orchestrator"
+      }
+    },
+    "assistant_guidance": {
+      "mode": "need_adapter",
+      "title": "Falta adaptador operativo",
+      "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+      "actions": [
+        {
+          "action": "consult_codex",
+          "label": "Consultar Codex",
+          "detail": "Contrastar el siguiente cambio tecnico con evidencia verificable."
+        },
+        {
+          "action": "simulate",
+          "label": "Simular",
+          "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+        },
+        {
+          "action": "open_evolution_center",
+          "label": "Ver evolutivo",
+          "detail": "Seguir la evidencia y el backlog tecnico."
+        },
+        {
+          "action": "prepare_codex_packet",
+          "label": "Preparar Codex",
+          "detail": "Armar el caso tecnico verificable."
+        }
+      ],
+      "governance": {
+        "autonomy_level": "guarded_research",
+        "should_consult": true,
+        "should_retry": false,
+        "should_replan": false,
+        "research_needed": true,
+        "assistant_kind": "codex",
+        "recommended_action": "consult_codex",
+        "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+        "confidence": 0.9,
+        "approval_required": false,
+        "block_risky_action": false,
+        "require_sandbox": true,
+        "blockers": [],
+        "diagnostic_category": "need_adapter",
+        "decision_source": "autonomy_governance_policy"
+      }
+    },
+    "governance": {
+      "autonomy_level": "guarded_research",
+      "should_consult": true,
+      "should_retry": false,
+      "should_replan": false,
+      "research_needed": true,
+      "assistant_kind": "codex",
+      "recommended_action": "consult_codex",
+      "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+      "confidence": 0.9,
+      "approval_required": false,
+      "block_risky_action": false,
+      "require_sandbox": true,
+      "blockers": [],
+      "diagnostic_category": "need_adapter",
+      "decision_source": "autonomy_governance_policy"
+    },
+    "linked_run_status": "success",
+    "linked_run_id": "d537880c-52b5-4e52-af13-8207bff6bcb3",
+    "linked_run_summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+    "linked_run_error": ""
+  }
+}

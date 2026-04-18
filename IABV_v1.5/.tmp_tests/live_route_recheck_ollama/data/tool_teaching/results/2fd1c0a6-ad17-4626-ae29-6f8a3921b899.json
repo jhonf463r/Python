@@ -1,0 +1,227 @@
+{
+  "result_id": "2fd1c0a6-ad17-4626-ae29-6f8a3921b899",
+  "task_id": "b33dcd1b-b2f9-42be-a4bc-23d7e32ffae9",
+  "tool_id": "ollama_llm",
+  "tool_type": "llm_local",
+  "success": true,
+  "validation_status": "approved",
+  "execution_state": {
+    "state": "executed",
+    "detail": "Herramienta ejecutada por el adaptador local.",
+    "executor_name": "ollama",
+    "sandboxed": false,
+    "validated": true,
+    "approval_decision": "skipped",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": false,
+      "assistant_kind": "ollama",
+      "launch_mode": "local_provider",
+      "response_capture_mode": "tool_result",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Recheck vivo de Ollama.\n\nIABV_THREAD_KEY: iabv::ollama::wplay::explica-en-una-frase-si-puedes-revisar-wplay\nIABV_THREAD_TITLE: IABV Ollama local | explica en una frase si puedes revisar wplay\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": true,
+      "launched": false,
+      "consultation_scope": "external_assistant",
+      "audit_reason": "La herramienta produjo evidencia suficiente para seguir en la via local actual.",
+      "audit_snapshot_id": "04191a71-467c-49b2-b201-19ab52c87070"
+    }
+  },
+  "rollback_state": null,
+  "output_text": "No puedo revisar \"wplay\" con la información disponible. Proporciona más contexto o detalles para ayudarte mejor.",
+  "extracted_data": {
+    "provider": "Ollama",
+    "report_kind": "chat"
+  },
+  "artifacts": [],
+  "error_message": "",
+  "execution_ms": 5872,
+  "created_at_utc": "2026-04-14T01:29:03.818395Z",
+  "metadata": {
+    "sandbox": false,
+    "assistant_kind": "ollama",
+    "assistant_configuration": {
+      "planning_mode": "without_plan",
+      "attachments_mode": "without_files",
+      "reasoning_level": "normal",
+      "context_mode": "short",
+      "tools_mode": "with_tools",
+      "browser_mode": "without_browser",
+      "assistant_mode": "general",
+      "origin_mode": "local",
+      "unresolved_fields": [
+        "attachments_mode"
+      ],
+      "metadata": {
+        "assistant_kind": "ollama",
+        "tool_id": "ollama_llm",
+        "attachments_support": "UNRESOLVED",
+        "context_pack_length": 337
+      }
+    },
+    "config_signature": "without_plan|without_files|normal|short|with_tools|without_browser|general|local",
+    "external_state_flags": [],
+    "ia_trace_entry": {
+      "trace_id": "c5690ba1-360c-4888-91a5-6b3359697cab",
+      "created_at_utc": "2026-04-14T01:29:03.818568Z",
+      "assistant_kind": "ollama",
+      "requested_assistant_kind": "ollama",
+      "actual_assistant_kind": "ollama",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "normal",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "without_browser",
+        "assistant_mode": "general",
+        "origin_mode": "local",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "ollama",
+          "tool_id": "ollama_llm",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 337
+        }
+      },
+      "config_signature": "without_plan|without_files|normal|short|with_tools|without_browser|general|local",
+      "comparison_scope_key": "wplay:consultar-ollama-local-sobre-explica-en-una-frase-si-puedes-revisar-wpla",
+      "source_trace_ids": [],
+      "route": "local",
+      "tool_id": "ollama_llm",
+      "task_id": "b33dcd1b-b2f9-42be-a4bc-23d7e32ffae9",
+      "result_id": "2fd1c0a6-ad17-4626-ae29-6f8a3921b899",
+      "session_scope": "local_runtime",
+      "thread_key": "iabv::ollama::wplay::explica-en-una-frase-si-puedes-revisar-wplay",
+      "thread_title": "IABV Ollama local | explica en una frase si puedes revisar wplay",
+      "capture_lane": "background",
+      "state": "executed",
+      "detail": "Herramienta ejecutada por el adaptador local.",
+      "proposal_summary": "Recheck vivo de Ollama. IABV_THREAD_KEY: iabv::ollama::wplay::explica-en-una-frase-si-puedes-revisar-wplay IABV_THREAD_TITLE: IABV Ollama local | explica en una frase si puedes revisar wplay IABV_LANE_PRIORITY: background > app > manual Ins",
+      "outcome_summary": "No puedo revisar \"wplay\" con la información disponible. Proporciona más contexto o detalles para ayudarte mejor.",
+      "result_label": "No puedo revisar \"wplay\" con la información disponible. Proporciona más contexto o detalles para ayudarte mejor.",
+      "success": true,
+      "execution_ms": 5872,
+      "confidence": 0.0,
+      "evidence_refs": [
+        "wplay",
+        "b33dcd1b-b2f9-42be-a4bc-23d7e32ffae9",
+        "2fd1c0a6-ad17-4626-ae29-6f8a3921b899"
+      ],
+      "reused_later": false,
+      "verdict": "executed",
+      "coherence_flags": [],
+      "external_state_flags": [],
+      "metadata": {
+        "response_capture_mode": "tool_result",
+        "background_capture_mode": "",
+        "comparison_scope_key": "wplay:consultar-ollama-local-sobre-explica-en-una-frase-si-puedes-revisar-wpla"
+      }
+    },
+    "objective_id": "",
+    "project_id": "",
+    "task_goal_id": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "interaction_pattern_id": "e40f561b-b71a-4b2c-b627-8ee97f716384",
+    "interaction_channel": "background",
+    "interaction_episode_id": "c14f912d-049b-44b0-b2f8-ee40379e3f8b",
+    "mode_selection": {
+      "decision_id": "429a6a90-7a8e-42d1-bdcf-56210ebde939",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "background",
+      "selected_tool_id": "ollama_llm",
+      "selected_tool_type": "llm_local",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": false,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=background | automatica=True | available=True",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "ollama_llm",
+            "mode": "background",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "selected_mode": "background",
+    "selector_reason": "consulta_externa_preferida | modo=background | automatica=True | available=True",
+    "reuse_guard_active": false,
+    "live_audit": {
+      "audit_snapshot_id": "04191a71-467c-49b2-b201-19ab52c87070",
+      "objective": "Consultar Ollama local sobre: explica en una frase si puedes revisar wplay",
+      "session_or_episode_id": "c14f912d-049b-44b0-b2f8-ee40379e3f8b",
+      "mode_used": "background",
+      "evidence": [
+        "e40f561b-b71a-4b2c-b627-8ee97f716384",
+        "c14f912d-049b-44b0-b2f8-ee40379e3f8b",
+        "site:wplay"
+      ],
+      "findings": [],
+      "decision": {
+        "decision_id": "8b378dc0-457d-442b-8984-5383acdba890",
+        "action": "continue_local",
+        "rationale": "La herramienta produjo evidencia suficiente para seguir en la via local actual.",
+        "confidence": 0.7,
+        "recommended_tool_id": "ollama_llm",
+        "approval_required": false,
+        "metadata": {}
+      },
+      "confidence": 0.96,
+      "auto_safe_action": "",
+      "human_approval": false,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 1.0,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.85,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.9625,
+        "learning_consolidation_score": 0.9625,
+        "lab_precision": 0.3152,
+        "lab_robustness": 0.4,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.2783,
+        "lab_recommended_route_score": 0.0
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "ollama_llm",
+        "tool_type": "llm_local",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "04191a71-467c-49b2-b201-19ab52c87070",
+    "audit_decision": "continue_local",
+    "audit_recommendation": "continue_local",
+    "audit_summary": "Sin hallazgos relevantes. Decision: continue_local. Confianza 0.96."
+  }
+}

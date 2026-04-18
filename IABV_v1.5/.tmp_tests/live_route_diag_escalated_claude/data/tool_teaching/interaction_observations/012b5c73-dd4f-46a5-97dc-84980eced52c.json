@@ -1,0 +1,42 @@
+{
+  "observation_id": "012b5c73-dd4f-46a5-97dc-84980eced52c",
+  "pattern_id": "561ce1fb-c27d-4697-866d-5747d972f3f8",
+  "task_id": "0ae0ac25-e69f-4471-859b-300d6f6e41eb",
+  "result_id": "f78a0171-e1b9-4afa-bfde-cac7c57b7848",
+  "episode_id": "8e2fe712-3cd4-491d-bf04-697362b26343",
+  "success": false,
+  "channel": "ui",
+  "tool_id": "claude_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": "wplay",
+  "summary": "browser_input_missing",
+  "confidence": 0.22,
+  "evidence_refs": [
+    "f78a0171-e1b9-4afa-bfde-cac7c57b7848:assistant_kind",
+    "f78a0171-e1b9-4afa-bfde-cac7c57b7848:focused_title",
+    "f78a0171-e1b9-4afa-bfde-cac7c57b7848:launch_target",
+    "f78a0171-e1b9-4afa-bfde-cac7c57b7848:prompt_preview"
+  ],
+  "created_at_utc": "2026-04-14T00:54:28.999495Z",
+  "metadata": {
+    "validation_status": "unvalidated",
+    "execution_state": "failed",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "assistant_kind",
+      "focused_title",
+      "launch_target",
+      "prompt_preview"
+    ],
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

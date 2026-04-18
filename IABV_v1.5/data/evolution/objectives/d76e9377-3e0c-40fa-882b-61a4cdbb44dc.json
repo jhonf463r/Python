@@ -1,0 +1,33 @@
+{
+  "objective_id": "d76e9377-3e0c-40fa-882b-61a4cdbb44dc",
+  "kind": "project",
+  "title": "Asistencia adaptativa general",
+  "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+  "parent_id": "e157db36-5cd7-4007-a666-47bc25ba75fe",
+  "root_id": "e157db36-5cd7-4007-a666-47bc25ba75fe",
+  "site_id": null,
+  "priority": 50,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Laboratorio universal: language -> language_understanding (score 0.87, confianza 0.78).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:4ae69d26-9638-4ba7-86ce-fecd744bc877",
+    "Conocimiento local relacionado: 5 items.",
+    "run:efa36b93-3129-4ccc-95fd-9c690e173de3"
+  ],
+  "tags": [],
+  "metadata": {
+    "user_goal": "por qué no responde Codex?”",
+    "intent_key": "general.assistance",
+    "site_display_name": "General"
+  },
+  "created_at_utc": "2026-04-16T19:43:03.664565Z",
+  "updated_at_utc": "2026-04-16T19:44:04.501368Z"
+}

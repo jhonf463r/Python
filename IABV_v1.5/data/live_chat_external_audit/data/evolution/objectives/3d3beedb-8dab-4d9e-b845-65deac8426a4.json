@@ -1,0 +1,29 @@
+{
+  "objective_id": "3d3beedb-8dab-4d9e-b845-65deac8426a4",
+  "kind": "subtask",
+  "title": "Proponer estrategia",
+  "summary": "Navegacion guiada",
+  "parent_id": "b9d1b7d2-f0d3-4c1c-8c5d-a5639078ceef",
+  "root_id": "aea15b45-7c7b-4abb-96bc-27e4c3f5c087",
+  "site_id": null,
+  "priority": 54,
+  "status": "pending",
+  "progress": 0.0,
+  "blocker": "",
+  "confidence": 0.9,
+  "evidence_refs": [
+    "Contexto activo: contexto general."
+  ],
+  "tags": [
+    "propose_strategy"
+  ],
+  "metadata": {
+    "phase_key": "propose_strategy",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "browser.generic"
+  },
+  "created_at_utc": "2026-04-11T01:04:21.325269Z",
+  "updated_at_utc": "2026-04-11T01:04:21.325269Z"
+}

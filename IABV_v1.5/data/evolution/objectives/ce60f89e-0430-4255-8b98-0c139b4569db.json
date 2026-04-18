@@ -1,0 +1,32 @@
+{
+  "objective_id": "ce60f89e-0430-4255-8b98-0c139b4569db",
+  "kind": "project",
+  "title": "Asistencia adaptativa general",
+  "summary": "Revisar evidencia del repo, fallos y mejoras verticales priorizadas.",
+  "parent_id": "d4663ed3-f6c9-49e0-b7e7-06d59b52834d",
+  "root_id": "d4663ed3-f6c9-49e0-b7e7-06d59b52834d",
+  "site_id": null,
+  "priority": 50,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.88,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Auditoria viva: Sin hallazgos. Decision: continue_local. Confianza 0.66.",
+    "run:2d0c55e1-2feb-4bf0-893c-881f91fc8fa6",
+    "Conocimiento local relacionado: 5 items.",
+    "run:0f8e499b-0ffe-4944-bdc6-56082e124efa"
+  ],
+  "tags": [],
+  "metadata": {
+    "user_goal": "que version de ia eres? tiene conocimientos de tu arquitectura ?",
+    "intent_key": "project.evolution",
+    "site_display_name": "General"
+  },
+  "created_at_utc": "2026-04-13T17:20:53.524722Z",
+  "updated_at_utc": "2026-04-13T17:21:57.372531Z"
+}

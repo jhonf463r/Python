@@ -1,0 +1,60 @@
+{
+  "interaction_result_id": "9bb2d684-6072-4aa8-a22a-28931501158f",
+  "success": true,
+  "execution_state": {
+    "state": "sandbox_pass",
+    "detail": "Sandbox local de herramienta ejecutado.",
+    "executor_name": "external_assistant",
+    "sandboxed": true,
+    "validated": true,
+    "approval_decision": "approved",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": true,
+      "assistant_kind": "codex",
+      "launch_mode": "desktop_app",
+      "launch_target": "codex",
+      "response_capture_mode": "clipboard_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Recheck vivo de Codex despues del fix.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "session_scope": "external_app",
+      "session_label": "Codex",
+      "isolated_session": false,
+      "thread_key": "iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp",
+      "thread_title": "IABV Codex | dime en una frase si puedes revisar un bug de wp",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "2026-04-14T01:31:35.857830+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\.tmp_tests\\live_route_recheck_codex_after_fix\\data\\tool_teaching\\external_assistants\\codex_home"
+    }
+  },
+  "summary": "Asistente externo listo para consulta guiada.",
+  "errors": [],
+  "confidence": 0.78,
+  "execution_ms": 5,
+  "rollback_state": null,
+  "extracted_data": {
+    "assistant_kind": "codex",
+    "launch_target": "codex"
+  },
+  "artifacts": [],
+  "metadata": {
+    "validation_status": "sandbox_pass",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

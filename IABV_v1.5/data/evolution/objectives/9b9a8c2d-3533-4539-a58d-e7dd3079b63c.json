@@ -1,0 +1,34 @@
+{
+  "objective_id": "9b9a8c2d-3533-4539-a58d-e7dd3079b63c",
+  "kind": "subtask",
+  "title": "Proponer estrategia",
+  "summary": "Navegacion guiada Patron reutilizable lider: Consultar Codex | canal ui | exitos 3.",
+  "parent_id": "0ba3f09b-ba12-4055-919f-f516bfa96b87",
+  "root_id": "584d7a48-5cad-4bff-b30f-7253e5f4c623",
+  "site_id": null,
+  "priority": 54,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:0f12c0b5-9046-48e4-9d73-8d4176a29d5f"
+  ],
+  "tags": [
+    "propose_strategy"
+  ],
+  "metadata": {
+    "phase_key": "propose_strategy",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "browser.generic"
+  },
+  "created_at_utc": "2026-04-15T03:14:57.446008Z",
+  "updated_at_utc": "2026-04-15T03:14:57.446009Z"
+}

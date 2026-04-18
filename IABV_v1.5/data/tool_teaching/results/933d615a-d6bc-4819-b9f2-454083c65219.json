@@ -1,0 +1,90 @@
+{
+  "result_id": "933d615a-d6bc-4819-b9f2-454083c65219",
+  "task_id": "50dbe004-5096-4af0-b8ea-b2a6e4d6e806",
+  "tool_id": "ollama_llm",
+  "tool_type": "llm_local",
+  "success": true,
+  "validation_status": "sandbox_pass",
+  "execution_state": {
+    "state": "sandbox_pass",
+    "detail": "Sandbox local de herramienta ejecutado.",
+    "executor_name": "ollama",
+    "sandboxed": true,
+    "validated": true,
+    "approval_decision": "skipped",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": true,
+      "assistant_kind": "ollama",
+      "launch_mode": "local_provider",
+      "response_capture_mode": "tool_result",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\nObjetivo del usuario: sabes por que tu trabajo en vivo no avanza el que tiene de consulta cojn cgatgp que esta al 26%\nAsistente sugerido: ollama\nSitio: General\nIntento detectado: knowledge.query\nPack activo: n/d\nEstado adaptativo: completed\nOutcome actual: Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Consulta local con contexto; sigue faltando un adaptador operativo del dominio.\nEvidencia textual:\n- Contexto activo: contexto general.\n- Ultima corrida: success | rol project_evolution | pack project.evolution.\n- Dossiers relacionados: 6.\n- Patrones universales reutilizables: 2 (ui:1 | background:1).\n- Laboratorio universal: language -> language_understanding (score 1.27, confianza 0.90).\n- Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::ollama::general::sabes-por-que-tu-trabajo-en-vivo-no-avanza-el-qu\nIABV_THREAD_TITLE: IABV Ollama local | sabes por que tu trabajo en vivo no avanza el qu\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": true,
+      "launched": false,
+      "consultation_scope": "external_assistant"
+    }
+  },
+  "rollback_state": null,
+  "output_text": "El flujo no avanza porque aún no existe un adaptador operativo para ejecutar la fase de consulta local con contexto. Para resolverlo, crea un adaptador específico para la consulta \"CGATGP\" en el workspace `C:\\Python\\IABV_v1.5`, vinculándolo al hilo dedicado `iabv::ollama::general::sabes-por-que-tu-trabajo-en-vivo-no-avanza-el-qu`. Esto permitirá integrar el contexto y avanzar el 26% de la tarea. ¿Necesitas asistencia para configurar este adaptador?",
+  "extracted_data": {
+    "provider": "Ollama",
+    "report_kind": "chat"
+  },
+  "artifacts": [],
+  "error_message": "",
+  "execution_ms": 30546,
+  "created_at_utc": "2026-04-18T15:55:04.552110Z",
+  "metadata": {
+    "sandbox": true,
+    "objective_id": "",
+    "project_id": "",
+    "task_goal_id": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "interaction_pattern_id": "aa337d48-920b-4dfb-8829-4981a614537b",
+    "interaction_channel": "background",
+    "interaction_episode_id": "4648c8a4-ae95-4d39-9b59-e388025cad44",
+    "mode_selection": {
+      "decision_id": "a2f49b10-638c-401c-8680-f3610e755bf1",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "background",
+      "selected_tool_id": "ollama_llm",
+      "selected_tool_type": "llm_local",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": false,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=background | automatica=True | available=True",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "ollama_llm",
+            "mode": "background",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "selected_mode": "background",
+    "selector_reason": "consulta_externa_preferida | modo=background | automatica=True | available=True",
+    "reuse_guard_active": false
+  }
+}

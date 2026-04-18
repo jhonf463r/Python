@@ -1,0 +1,42 @@
+{
+  "observation_id": "5caac981-1f7a-402b-84a9-0eed99222d34",
+  "pattern_id": "46d48869-5f11-4592-af12-5a007551e285",
+  "task_id": "d9e5565a-52da-4fb0-98b9-c8348d7b04e6",
+  "result_id": "7def2931-9327-466c-9c7b-1cbbdcef2240",
+  "episode_id": "91c93785-9371-4ce9-b8e6-a4984fe84492",
+  "success": false,
+  "channel": "background",
+  "tool_id": "codex_installed",
+  "tool_type": "custom",
+  "site_id": "audit",
+  "summary": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano.",
+  "confidence": 0.7,
+  "evidence_refs": [
+    "7def2931-9327-466c-9c7b-1cbbdcef2240:assistant_kind",
+    "7def2931-9327-466c-9c7b-1cbbdcef2240:focused_title",
+    "7def2931-9327-466c-9c7b-1cbbdcef2240:launch_target",
+    "7def2931-9327-466c-9c7b-1cbbdcef2240:prompt_preview"
+  ],
+  "created_at_utc": "2026-04-12T22:52:25.960956Z",
+  "metadata": {
+    "validation_status": "unvalidated",
+    "execution_state": "awaiting_response",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "assistant_kind",
+      "focused_title",
+      "launch_target",
+      "prompt_preview"
+    ],
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

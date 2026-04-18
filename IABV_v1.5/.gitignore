@@ -1,0 +1,32 @@
+# Base de datos SQLite
+*.sqlite
+*.sqlite3
+*.db
+
+# Archivos comprimidos grandes
+*.7z
+*.zip
+*.tar.gz
+
+# Perfiles de browser
+browser_profile/
+chrome_profile*/
+
+# Logs y datos temporales
+*.log
+tmp_*/
+__pycache__/
+*.pyc
+
+# Entornos virtuales
+venv/
+env/
+.venv/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Directorios de datos pesados
+data/app.sqlite
+data/**/*.sqlite

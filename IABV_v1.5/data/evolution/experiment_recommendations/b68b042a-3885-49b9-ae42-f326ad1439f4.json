@@ -1,0 +1,79 @@
+{
+  "recommendation_id": "b68b042a-3885-49b9-ae42-f326ad1439f4",
+  "domain": "language",
+  "subject_key": "sandbox:a0cb5362-4364-451d-a385-7d8187a7fcfe",
+  "recommended_route": "language_understanding",
+  "recommended_assistant_kind": "adaptive local orchestrator",
+  "recommended_assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+  "score": 0.9184,
+  "confidence": 0.8,
+  "rationale": "Recomiendo language_understanding para language en sandbox:a0cb5362-4364-451d-a385-7d8187a7fcfe usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.66 y score adaptativo 0.92 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%.",
+  "supporting_run_ids": [
+    "1e75ccb1-ace7-49b8-ad8c-04e073108f0f"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "language_understanding",
+        "score": 0.9184,
+        "samples": 1
+      }
+    ],
+    "ranked_configurations": [
+      {
+        "route": "language_understanding",
+        "assistant_kind": "adaptive local orchestrator",
+        "config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "score": 0.6584,
+        "adaptive_weight": 0.26,
+        "weighted_score": 0.9184,
+        "samples": 1,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%"
+        ]
+      }
+    ],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": [
+      "a0cb5362-4364-451d-a385-7d8187a7fcfe"
+    ],
+    "adaptive_learning_summary": {
+      "preferred_route": "language_understanding",
+      "preferred_assistant_kind": "adaptive local orchestrator",
+      "preferred_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "adaptive_weight": 0.26,
+      "weighted_score": 0.9184,
+      "sample_count": 1,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "top_environment_signatures": [
+        "default"
+      ],
+      "top_time_buckets": [
+        "evening"
+      ],
+      "reasons": [
+        "historial de exito 100%"
+      ]
+    }
+  },
+  "created_at_utc": "2026-04-16T22:43:13.964437Z"
+}

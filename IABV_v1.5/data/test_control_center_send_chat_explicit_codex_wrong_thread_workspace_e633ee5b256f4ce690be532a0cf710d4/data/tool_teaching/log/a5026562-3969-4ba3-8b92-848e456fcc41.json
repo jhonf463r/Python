@@ -1,0 +1,12 @@
+{
+  "log_id": "a5026562-3969-4ba3-8b92-848e456fcc41",
+  "tool_id": "codex_installed",
+  "task_id": "67c030f7-1815-4be1-8738-ac3f2301a20d",
+  "action_type": "preflight",
+  "state": "missing_tool",
+  "created_at_utc": "2026-04-16T04:33:08.628628+00:00",
+  "payload": {
+    "reason": "tool_card_missing",
+    "objective": "Consultar Codex sobre: necesito consulta con codex pero si el hilo esta mal dilo claro y no finjas exito"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "observation_id": "b4c06abd-cbf7-442d-900b-b58c833584ae",
+  "pattern_id": "be61f185-4864-4d59-997e-126c952cf4ff",
+  "task_id": "9b06a9a9-c982-4114-88f4-6750c85eeb56",
+  "result_id": "f58bec9d-b41a-4b50-8dd9-88fb86dd9032",
+  "episode_id": "f1addd3c-9900-4ee0-b967-5548a436afdd",
+  "success": false,
+  "channel": "ui",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": null,
+  "summary": "Asistente externo ChatGPT web asistido consultando en sesion aislada del programa. Todavia no hubo texto util para integrar.",
+  "confidence": 0.7,
+  "evidence_refs": [
+    "f58bec9d-b41a-4b50-8dd9-88fb86dd9032:assistant_kind",
+    "f58bec9d-b41a-4b50-8dd9-88fb86dd9032:focused_title",
+    "f58bec9d-b41a-4b50-8dd9-88fb86dd9032:launch_target",
+    "f58bec9d-b41a-4b50-8dd9-88fb86dd9032:prompt_preview"
+  ],
+  "created_at_utc": "2026-04-13T17:22:31.423883Z",
+  "metadata": {
+    "validation_status": "unvalidated",
+    "execution_state": "awaiting_response",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "assistant_kind",
+      "focused_title",
+      "launch_target",
+      "prompt_preview"
+    ],
+    "objective_id": "d4663ed3-f6c9-49e0-b7e7-06d59b52834d",
+    "objective_title": "hola, que sabes hacer",
+    "project_id": "ce60f89e-0430-4255-8b98-0c139b4569db",
+    "project_title": "Asistencia adaptativa general",
+    "task_goal_id": "ef967045-a57d-43c0-bed3-5d9b9d9949a6",
+    "task_goal_title": "hola, que sabes hacer",
+    "goal_progress": 1.0,
+    "goal_status": "completed",
+    "goal_blocker": ""
+  }
+}

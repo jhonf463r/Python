@@ -1,0 +1,63 @@
+{
+  "pattern_id": "fd2b6d88-cb2d-48e1-b6d1-6b3912ab45b4",
+  "signature": "f66bef114ce444e09c16838e22f6b6dab2562cdd",
+  "title": "Consultar ChatGPT",
+  "channel": "ui",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": "audit",
+  "operations": [
+    {
+      "step_id": "ff4080fb-e7d6-4fdf-a767-860fc3c13199",
+      "channel": "ui",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false
+      }
+    },
+    {
+      "step_id": "195a9ce2-8729-45d7-aceb-124459a728cf",
+      "channel": "ui",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false
+      }
+    }
+  ],
+  "reusable": true,
+  "success_count": 1,
+  "failure_count": 1,
+  "last_task_id": "3665a314-4539-4168-ba42-7c78a86a6ca9",
+  "last_result_id": "3f53a38f-dde7-47eb-a18a-67373be90903",
+  "created_at_utc": "2026-04-12T22:52:09.599087Z",
+  "updated_at_utc": "2026-04-12T22:52:09.733494Z",
+  "metadata": {
+    "objective_excerpt": "Consultar ChatGPT sobre: Auditoria viva de IABV: valida si el proveedor externo responde o falla con estado formal.",
+    "execution_scope": "read_only",
+    "approval_decision": "approved",
+    "last_validation_status": "unvalidated",
+    "last_execution_state": "failed",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "last_interaction_episode_id": "da6a5127-9401-4db1-a5e1-b54b2f379db3"
+  }
+}

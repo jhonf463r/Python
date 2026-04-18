@@ -1,0 +1,684 @@
+{
+  "snapshot_id": "a1979194-c847-4214-a151-c418cf0e4363",
+  "active_windows": [
+    {
+      "window_id": "8075a6d7-64d6-4fd1-b850-d0081619c890",
+      "title": "Ventana de desbordamiento de la bandeja del sistema.",
+      "app_name": "Ventana de desbordamiento de la bandeja del sistema.",
+      "pid": 17356,
+      "focused": true,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "433247e4-0b04-4596-86a9-43685d75c24c",
+      "title": "Administrador de tareas",
+      "app_name": "Administrador de tareas",
+      "pid": 15184,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "a977b6a9-d634-4e8c-96de-7d0f228a5b9d",
+      "title": "BENDECIDOS - VIDEO OFICIAL - YouTube - Google Chrome",
+      "app_name": "BENDECIDOS",
+      "pid": 23668,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "eb083ca4-88d5-4ff4-a988-d7de5949c747",
+      "title": "An\u00e1lisis de flujo de chat - Opera",
+      "app_name": "An\u00e1lisis de flujo de chat",
+      "pid": 27128,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "312e59bd-ae50-46d0-bb97-c577834e11c7",
+      "title": "Configuraci\u00f3n",
+      "app_name": "Configuraci\u00f3n",
+      "pid": 27492,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "0c2ba8de-7349-4645-a8cc-7f22d66f6c5f",
+      "title": "Configuraci\u00f3n",
+      "app_name": "Configuraci\u00f3n",
+      "pid": 19024,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "b466f5bc-5474-4a92-a898-f286d4232bb3",
+      "title": "Claude Code - IABV_v1.5 - Visual Studio Code",
+      "app_name": "Claude instalado",
+      "pid": 11356,
+      "focused": false,
+      "visible": true,
+      "tool_id": "claude_installed",
+      "assistant_kind": "claude",
+      "state": "no_disponible",
+      "detail": "La herramienta no quedo confirmada como disponible en esta laptop.",
+      "metadata": {}
+    },
+    {
+      "window_id": "09ecf544-2d8d-4867-905c-62b884465879",
+      "title": "An\u00e1lisis de flujo de chat \u2014 Mozilla Firefox",
+      "app_name": "An\u00e1lisis de flujo de chat \u2014 Mozilla Firefox",
+      "pid": 17328,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "8d5b16bb-5e27-455e-bbb0-a8b93d6af0ee",
+      "title": "Realtek Audio Console",
+      "app_name": "Realtek Audio Console",
+      "pid": 3232,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "28ace05c-4a7a-4bb6-95cc-6d193c551b6e",
+      "title": "Realtek Audio Console",
+      "app_name": "Realtek Audio Console",
+      "pid": 19024,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "26097c60-55f4-4b55-ae99-f25ab487c114",
+      "title": "Nahimic",
+      "app_name": "Nahimic",
+      "pid": 18748,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "8b803860-cda3-40f2-983b-0a23b84ea8ec",
+      "title": "Nahimic",
+      "app_name": "Nahimic",
+      "pid": 19024,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "f43a0dcb-e2c7-4707-8412-bc413af7a465",
+      "title": "OmApSvcBroker",
+      "app_name": "OmApSvcBroker",
+      "pid": 11976,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "1691342d-5fa7-4c39-a34c-1ddc9cd5dcd2",
+      "title": "Experiencia de entrada de Windows",
+      "app_name": "Experiencia de entrada de Windows",
+      "pid": 2756,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "75fd9480-5e97-4869-887a-b7716f9ddb3b",
+      "title": "Program Manager",
+      "app_name": "Program Manager",
+      "pid": 17356,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    }
+  ],
+  "focused_window": {
+    "window_id": "11113020-e421-4567-b72f-1ae8bd4585f9",
+    "title": "Ventana de desbordamiento de la bandeja del sistema.",
+    "app_name": "Ventana de desbordamiento de la bandeja del sistema.",
+    "pid": 17356,
+    "focused": true,
+    "visible": true,
+    "tool_id": "",
+    "assistant_kind": "",
+    "state": "focused",
+    "detail": "",
+    "metadata": {}
+  },
+  "tool_live_status": [
+    {
+      "tool_id": "claude_web_assisted",
+      "title": "Claude web asistido",
+      "assistant_kind": "claude",
+      "available": true,
+      "status": "abierto",
+      "detail": "La herramienta esta abierta y observable.",
+      "launch_mode": "web_assisted",
+      "window_open": true,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "abierta",
+      "capture_status": "no_disponible",
+      "probe_status": "permiso_requerido",
+      "permission_state": "requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal",
+        "windows_api",
+        "process_scan"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.5,
+      "metadata": {
+        "observed_pid": 11356,
+        "observed_title": "Claude Code - IABV_v1.5 - Visual Studio Code",
+        "window_count": 1,
+        "process_count": 0,
+        "response_capture_mode": "dom_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:claude"
+      }
+    },
+    {
+      "tool_id": "claude_installed",
+      "title": "Claude instalado",
+      "assistant_kind": "claude",
+      "available": false,
+      "status": "no_disponible",
+      "detail": "La herramienta no quedo confirmada como disponible en esta laptop.",
+      "launch_mode": "desktop_app",
+      "window_open": true,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "no_disponible",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal",
+        "windows_api",
+        "process_scan"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.34,
+      "metadata": {
+        "observed_pid": 11356,
+        "observed_title": "Claude Code - IABV_v1.5 - Visual Studio Code",
+        "window_count": 1,
+        "process_count": 0,
+        "response_capture_mode": "clipboard_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:claude"
+      }
+    },
+    {
+      "tool_id": "chatgpt_web_assisted",
+      "title": "ChatGPT web asistido",
+      "assistant_kind": "chatgpt",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "web_assisted",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "ChatGPT web asistido",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "dom_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:chatgpt"
+      }
+    },
+    {
+      "tool_id": "chatgpt_installed",
+      "title": "ChatGPT instalado",
+      "assistant_kind": "chatgpt",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "desktop_app",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "ChatGPT instalado",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "clipboard_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:chatgpt"
+      }
+    },
+    {
+      "tool_id": "codex_installed",
+      "title": "Codex instalado",
+      "assistant_kind": "codex",
+      "available": true,
+      "status": "listo",
+      "detail": "No encontre un hilo reciente de Codex asociado a este workspace.",
+      "launch_mode": "desktop_app",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "sin_hilo_iabv",
+      "messages_status": "no_disponible",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal",
+        "codex_state_sqlite"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Codex instalado",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "clipboard_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:codex"
+      }
+    },
+    {
+      "tool_id": "desktop_human_runner",
+      "title": "Desktop human runner",
+      "assistant_kind": "iabv_runtime",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "desktop_real",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Desktop human runner",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "local_evidence",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:iabv_runtime"
+      }
+    },
+    {
+      "tool_id": "ollama_llm",
+      "title": "Ollama local",
+      "assistant_kind": "ollama",
+      "available": false,
+      "status": "no_disponible",
+      "detail": "No tengo confirmacion de respuesta local ahora mismo.",
+      "launch_mode": "local_provider",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "no_disponible",
+      "session_status": "no_aplica",
+      "capture_status": "no_disponible",
+      "probe_status": "sin_confirmacion",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [
+        "assistant_unavailable"
+      ],
+      "confidence": 0.1,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Ollama local",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "tool_result",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:ollama"
+      }
+    },
+    {
+      "tool_id": "playwright_browser",
+      "title": "Playwright browser",
+      "assistant_kind": "",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Playwright browser",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:external"
+      }
+    }
+  ],
+  "network_status": {
+    "connected": true,
+    "status": "conectado",
+    "quality": "buena",
+    "latency_ms": 102.04,
+    "detail": "La red responde bien para consultas externas normales.",
+    "evidence": [
+      "latency_ms:102.04"
+    ],
+    "metadata": {}
+  },
+  "background_processes": [],
+  "detected_blocks": [
+    "assistant_unavailable",
+    "permission_required:observe_window_content:claude"
+  ],
+  "block_records": [
+    {
+      "block_id": "2e40cd17-6d02-4783-9ec4-c1565951e8ad",
+      "block_type": "permission_required",
+      "target_scope": "consult_claude",
+      "assistant_kind": "claude",
+      "title": "Observar Claude web asistido",
+      "detail": "Para verificar si Claude esta listo de verdad necesito observar el contenido visible de esa ventana.",
+      "status": "active",
+      "reason": "Falta permiso explicito para observar contenido visible antes de usar esta ruta.",
+      "evidence": [
+        "observe_window_content:claude"
+      ],
+      "confidence": 0.72,
+      "metadata": {
+        "scope": "observe_window_content:claude"
+      }
+    },
+    {
+      "block_id": "7a629cb9-4471-45f8-9593-309436a84345",
+      "block_type": "assistant_unavailable",
+      "target_scope": "consult_ollama",
+      "assistant_kind": "ollama",
+      "title": "Ollama local",
+      "detail": "No tengo confirmacion de respuesta local ahora mismo.",
+      "status": "active",
+      "reason": "La herramienta no quedo confirmada como lista en este estado operativo.",
+      "evidence": [
+        "ollama_llm"
+      ],
+      "confidence": 0.72,
+      "metadata": {}
+    }
+  ],
+  "permission_gates": [
+    {
+      "scope": "observe_window_content:claude",
+      "assistant_kind": "claude",
+      "title": "Observar Claude web asistido",
+      "detail": "Para verificar si Claude esta listo de verdad necesito observar el contenido visible de esa ventana.",
+      "status": "requerido",
+      "required_for": [
+        "consult_claude"
+      ],
+      "granted": false,
+      "confidence": 0.5,
+      "metadata": {
+        "tool_id": "claude_web_assisted",
+        "probe_status": "permiso_requerido",
+        "window_open": true,
+        "last_verified_at": ""
+      }
+    }
+  ],
+  "observation_sources": [
+    "environment_self_model",
+    "network_probe",
+    "tool_registry",
+    "universal_perception_signal",
+    "windows_api",
+    "process_scan",
+    "codex_state_sqlite",
+    "permission_registry"
+  ],
+  "inferred_state": {
+    "summary": "Hay bloqueos operativos activos que conviene respetar antes de lanzar otra accion.",
+    "focused_window": "Ventana de desbordamiento de la bandeja del sistema.",
+    "active_window_count": 15,
+    "blocked_routes": [
+      {
+        "block_type": "permission_required",
+        "target_scope": "consult_claude",
+        "assistant_kind": "claude"
+      },
+      {
+        "block_type": "assistant_unavailable",
+        "target_scope": "consult_ollama",
+        "assistant_kind": "ollama"
+      }
+    ],
+    "permission_gates": [
+      {
+        "scope": "observe_window_content:claude",
+        "assistant_kind": "claude",
+        "status": "requerido",
+        "required_for": [
+          "consult_claude"
+        ]
+      }
+    ],
+    "blocked_tools": [
+      {
+        "assistant_kind": "ollama",
+        "tool_id": "ollama_llm",
+        "status": "no_disponible",
+        "detected_blocks": [
+          "assistant_unavailable"
+        ]
+      }
+    ],
+    "deductions": [
+      "La ventana en foco ahora mismo es Ventana de desbordamiento de la bandeja del sistema..",
+      "Antes de verificar de verdad a Claude web asistido necesito permiso para observar su contenido visible."
+    ]
+  },
+  "confidence": 0.82,
+  "freshness_ms": 59309,
+  "last_updated": "2026-04-17T14:33:06.340521Z",
+  "unresolved_fields": [
+    "UNRESOLVED:claude_content_probe"
+  ],
+  "metadata": {
+    "scan_reason": "startup",
+    "scan_mode": "full",
+    "workspace_root": "C:\\Python\\IABV_v1.5\\data\\debug_chat_57243e823eca4112904e6b2b765563a3",
+    "observation_sources": [
+      "environment_self_model",
+      "network_probe",
+      "tool_registry",
+      "universal_perception_signal",
+      "windows_api",
+      "process_scan",
+      "codex_state_sqlite",
+      "permission_registry"
+    ],
+    "permission_gates": [
+      {
+        "scope": "observe_window_content:claude",
+        "assistant_kind": "claude",
+        "title": "Observar Claude web asistido",
+        "detail": "Para verificar si Claude esta listo de verdad necesito observar el contenido visible de esa ventana.",
+        "status": "requerido",
+        "required_for": [
+          "consult_claude"
+        ],
+        "granted": false,
+        "confidence": 0.5,
+        "metadata": {
+          "tool_id": "claude_web_assisted",
+          "probe_status": "permiso_requerido",
+          "window_open": true,
+          "last_verified_at": ""
+        }
+      }
+    ],
+    "changed_since_last_scan": [
+      "block:assistant_unavailable",
+      "block:permission_required:observe_window_content:claude",
+      "focus:Ventana de desbordamiento de la bandeja del sistema.",
+      "tool:claude_web_assisted->abierto",
+      "tool:claude_installed->no_disponible",
+      "tool:chatgpt_web_assisted->listo",
+      "tool:chatgpt_installed->listo",
+      "tool:codex_installed->listo",
+      "tool:desktop_human_runner->listo",
+      "tool:ollama_llm->no_disponible"
+    ]
+  }
+}

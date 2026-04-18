@@ -1,0 +1,33 @@
+{
+  "objective_id": "bbae5959-20c5-4772-b15a-beeceaee1316",
+  "kind": "subtask",
+  "title": "Validar capacidades",
+  "summary": "Todo listo.",
+  "parent_id": "ef967045-a57d-43c0-bed3-5d9b9d9949a6",
+  "root_id": "d4663ed3-f6c9-49e0-b7e7-06d59b52834d",
+  "site_id": null,
+  "priority": 53,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.66,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Auditoria viva: Sin hallazgos. Decision: continue_local. Confianza 0.66."
+  ],
+  "tags": [
+    "validate_capabilities"
+  ],
+  "metadata": {
+    "phase_key": "validate_capabilities",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "knowledge.query"
+  },
+  "created_at_utc": "2026-04-13T17:20:53.589412Z",
+  "updated_at_utc": "2026-04-13T17:20:53.589412Z"
+}

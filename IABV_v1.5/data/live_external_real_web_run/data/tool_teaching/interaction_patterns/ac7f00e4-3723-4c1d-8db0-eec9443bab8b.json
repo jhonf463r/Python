@@ -1,0 +1,63 @@
+{
+  "pattern_id": "ac7f00e4-3723-4c1d-8db0-eec9443bab8b",
+  "signature": "bc7425fedfe2a7086081a45f10ccbe7352c870f3",
+  "title": "Consultar ChatGPT",
+  "channel": "ui",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": "wplay",
+  "operations": [
+    {
+      "step_id": "85822c13-e295-4e25-9c56-0c0571aebf02",
+      "channel": "ui",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false
+      }
+    },
+    {
+      "step_id": "91df9240-9b4f-4e4e-83bf-6398f76d8bd1",
+      "channel": "ui",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false
+      }
+    }
+  ],
+  "reusable": true,
+  "success_count": 1,
+  "failure_count": 1,
+  "last_task_id": "cecac92a-c0d9-4a42-b383-96c2a6874a1a",
+  "last_result_id": "d72f01e6-f25a-42ab-8070-3a1793ca63b5",
+  "created_at_utc": "2026-04-12T22:30:13.617671Z",
+  "updated_at_utc": "2026-04-12T22:30:13.744245Z",
+  "metadata": {
+    "objective_excerpt": "Consultar ChatGPT sobre: Valida si esta sesion externa esta autenticada y si no lo esta, reporta el bloqueo formal sin fingir exito.",
+    "execution_scope": "read_only",
+    "approval_decision": "approved",
+    "last_validation_status": "unvalidated",
+    "last_execution_state": "failed",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "last_interaction_episode_id": "b02a5a46-f365-4e11-8b84-b90fffdb5551"
+  }
+}

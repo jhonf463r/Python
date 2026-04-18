@@ -1,0 +1,96 @@
+{
+  "interaction_result_id": "e4b21c1f-91d0-4b4e-9f27-21fd99662800",
+  "success": true,
+  "execution_state": {
+    "state": "executed",
+    "detail": "Herramienta ejecutada por el adaptador local.",
+    "executor_name": "ollama",
+    "sandboxed": false,
+    "validated": true,
+    "approval_decision": "skipped",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": false,
+      "assistant_kind": "ollama",
+      "launch_mode": "local_provider",
+      "response_capture_mode": "tool_result",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\nObjetivo del usuario: sabes por que tu trabajo en vivo no avanza el que tiene de consulta cojn cgatgp que esta al 26%\nAsistente sugerido: ollama\nSitio: General\nIntento detectado: knowledge.query\nPack activo: n/d\nEstado adaptativo: completed\nOutcome actual: Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Consulta local con contexto; sigue faltando un adaptador operativo del dominio.\nEvidencia textual:\n- Contexto activo: contexto general.\n- Ultima corrida: success | rol project_evolution | pack project.evolution.\n- Dossiers relacionados: 6.\n- Patrones universales reutilizables: 2 (ui:1 | background:1).\n- Laboratorio universal: language -> language_understanding (score 1.27, confianza 0.90).\n- Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::ollama::general::sabes-por-que-tu-trabajo-en-vivo-no-avanza-el-qu\nIABV_THREAD_TITLE: IABV Ollama local | sabes por que tu trabajo en vivo no avanza el qu\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": true,
+      "launched": false,
+      "consultation_scope": "external_assistant"
+    }
+  },
+  "summary": "El flujo no avanza porque aún no existe un adaptador operativo para ejecutar la fase de consulta local con contexto. El modelo no puede procesar la consulta \"cojn cgatgp\" al 26% debido a la falta de un ejecutor específico para este tipo de ",
+  "errors": [],
+  "confidence": 0.92,
+  "execution_ms": 16962,
+  "rollback_state": null,
+  "extracted_data": {
+    "provider": "Ollama",
+    "report_kind": "chat"
+  },
+  "artifacts": [],
+  "metadata": {
+    "validation_status": "approved",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "live_audit": {
+      "audit_snapshot_id": "e681d5f8-2ee6-4197-ad56-4255dfa6e473",
+      "objective": "Consultar Ollama local sobre: sabes por que tu trabajo en vivo no avanza el que tiene de consulta cojn cgatgp que esta al 26%",
+      "session_or_episode_id": "949a8104-921d-4a6a-ad6d-2e1694b350e2",
+      "mode_used": "background",
+      "evidence": [
+        "aa337d48-920b-4dfb-8829-4981a614537b",
+        "949a8104-921d-4a6a-ad6d-2e1694b350e2"
+      ],
+      "findings": [],
+      "decision": {
+        "decision_id": "262136f5-d9ea-46ec-92a1-dd25e9241f1c",
+        "action": "continue_local",
+        "rationale": "La herramienta produjo evidencia suficiente para seguir en la via local actual.",
+        "confidence": 0.7,
+        "recommended_tool_id": "ollama_llm",
+        "approval_required": false,
+        "metadata": {}
+      },
+      "confidence": 0.96,
+      "auto_safe_action": "",
+      "human_approval": false,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 1.0,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.85,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.9625,
+        "learning_consolidation_score": 0.9625,
+        "lab_precision": 0.0395,
+        "lab_robustness": 0.4,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.1818,
+        "lab_recommended_route_score": 0.0
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "ollama_llm",
+        "tool_type": "llm_local",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "e681d5f8-2ee6-4197-ad56-4255dfa6e473"
+  }
+}

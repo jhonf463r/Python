@@ -1,0 +1,38 @@
+{
+  "observation_id": "f4b3b313-7479-4414-90f7-cdf85010b078",
+  "pattern_id": "aa337d48-920b-4dfb-8829-4981a614537b",
+  "task_id": "50dbe004-5096-4af0-b8ea-b2a6e4d6e806",
+  "result_id": "72d6b15e-14b1-47f7-88b4-2635f7b627bf",
+  "episode_id": "949a8104-921d-4a6a-ad6d-2e1694b350e2",
+  "success": true,
+  "channel": "background",
+  "tool_id": "ollama_llm",
+  "tool_type": "llm_local",
+  "site_id": null,
+  "summary": "El flujo no avanza porque aún no existe un adaptador operativo para ejecutar la fase de consulta local con contexto. El modelo no puede procesar la consulta \"cojn cgatgp\" al 26% debido a la falta de un ejecutor específico para este tipo de ",
+  "confidence": 0.92,
+  "evidence_refs": [
+    "72d6b15e-14b1-47f7-88b4-2635f7b627bf:provider",
+    "72d6b15e-14b1-47f7-88b4-2635f7b627bf:report_kind"
+  ],
+  "created_at_utc": "2026-04-18T15:55:21.782429Z",
+  "metadata": {
+    "validation_status": "approved",
+    "execution_state": "executed",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "provider",
+      "report_kind"
+    ],
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

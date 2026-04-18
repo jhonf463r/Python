@@ -1,0 +1,81 @@
+from __future__ import annotations
+
+try:  # pragma: no cover - exercised only when PySide6 is available
+    from PySide6.QtCore import QObject, Property, Signal, Slot, QUrl
+    from PySide6.QtGui import QGuiApplication
+    from PySide6.QtQml import QQmlApplicationEngine
+    from PySide6.QtQuickControls2 import QQuickStyle
+
+    PYSIDE_AVAILABLE = True
+except ImportError:  # pragma: no cover - fallback for non-UI test environments
+    PYSIDE_AVAILABLE = False
+
+    class QObject:
+        def __init__(self, parent=None):
+            self._parent = parent
+
+    class _SignalProxy:
+        def __init__(self):
+            self._callbacks = []
+
+        def connect(self, callback):
+            self._callbacks.append(callback)
+
+        def emit(self, *args, **kwargs):
+            for callback in list(self._callbacks):
+                callback(*args, **kwargs)
+
+    def Signal(*args, **kwargs):
+        return _SignalProxy()
+
+    def Slot(*args, **kwargs):
+        def decorator(function):
+            return function
+
+        return decorator
+
+    def Property(_type, fget=None, fset=None, fdel=None, notify=None, constant=False):
+        return property(fget, fset, fdel)
+
+    class QUrl:
+        def __init__(self, path: str):
+            self.path = path
+
+        @staticmethod
+        def fromLocalFile(path: str) -> 'QUrl':
+            return QUrl(path)
+
+    class QGuiApplication:
+        def __init__(self, argv):
+            self.argv = argv
+
+        @staticmethod
+        def instance():
+            return None
+
+        def exec(self) -> int:
+            return 0
+
+        def quit(self) -> None:
+            return None
+
+    class QQmlApplicationEngine:
+        def __init__(self):
+            self._root_objects = []
+
+        def rootContext(self):
+            return self
+
+        def setContextProperty(self, name, value):
+            setattr(self, name, value)
+
+        def load(self, url):
+            self._root_objects = [url]
+
+        def rootObjects(self):
+            return self._root_objects
+
+    class QQuickStyle:
+        @staticmethod
+        def setStyle(_style: str) -> None:
+            return None

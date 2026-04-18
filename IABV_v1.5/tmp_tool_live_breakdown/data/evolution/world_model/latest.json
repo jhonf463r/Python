@@ -1,0 +1,559 @@
+{
+  "snapshot_id": "dc5d762f-46b6-4c59-90f8-44d40b36894f",
+  "active_windows": [
+    {
+      "window_id": "7aa43216-76b9-4bfa-8561-3ca854bed887",
+      "title": "Codex",
+      "app_name": "Codex instalado",
+      "pid": 19564,
+      "focused": true,
+      "visible": true,
+      "tool_id": "codex_installed",
+      "assistant_kind": "codex",
+      "state": "abierto",
+      "detail": "No encontre un hilo reciente de Codex asociado a este workspace.",
+      "metadata": {}
+    },
+    {
+      "window_id": "9882542b-7b2f-44e5-8113-11c9e4d351c4",
+      "title": "Administrador de tareas",
+      "app_name": "Administrador de tareas",
+      "pid": 7580,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "9e025a1d-e5fd-43ac-a4aa-4687a0eba358",
+      "title": "MCP en Codex \u2014 Mozilla Firefox",
+      "app_name": "MCP en Codex \u2014 Mozilla Firefox",
+      "pid": 23700,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "739659d7-25ea-4421-8a79-a95b96e7f64f",
+      "title": "OmApSvcBroker",
+      "app_name": "OmApSvcBroker",
+      "pid": 6608,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "0a1bba96-1f97-491e-9ca1-15108d9dab8c",
+      "title": "Nahimic",
+      "app_name": "Nahimic",
+      "pid": 9676,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "d23cc5ff-1df8-4dbc-a6c5-479b23bc65a4",
+      "title": "Nahimic",
+      "app_name": "Nahimic",
+      "pid": 6948,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "074b2159-d1db-4d5b-98a9-8d7495b87ea3",
+      "title": "Experiencia de entrada de Windows",
+      "app_name": "Experiencia de entrada de Windows",
+      "pid": 17208,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "82bcc711-3c0f-4c6e-bdb7-694321971c9c",
+      "title": "Program Manager",
+      "app_name": "Program Manager",
+      "pid": 10752,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    }
+  ],
+  "focused_window": {
+    "window_id": "159db13f-fd8d-4339-9db7-4797c899d5fc",
+    "title": "Codex",
+    "app_name": "Codex",
+    "pid": 19564,
+    "focused": true,
+    "visible": true,
+    "tool_id": "",
+    "assistant_kind": "",
+    "state": "focused",
+    "detail": "",
+    "metadata": {}
+  },
+  "tool_live_status": [
+    {
+      "tool_id": "claude_web_assisted",
+      "title": "Claude web asistido",
+      "assistant_kind": "claude",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "web_assisted",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Claude web asistido",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "dom_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:claude"
+      }
+    },
+    {
+      "tool_id": "claude_installed",
+      "title": "Claude instalado",
+      "assistant_kind": "claude",
+      "available": false,
+      "status": "no_disponible",
+      "detail": "La herramienta no quedo confirmada como disponible en esta laptop.",
+      "launch_mode": "desktop_app",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "no_disponible",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.1,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Claude instalado",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "clipboard_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:claude"
+      }
+    },
+    {
+      "tool_id": "chatgpt_web_assisted",
+      "title": "ChatGPT web asistido",
+      "assistant_kind": "chatgpt",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "web_assisted",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "ChatGPT web asistido",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "dom_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:chatgpt"
+      }
+    },
+    {
+      "tool_id": "chatgpt_installed",
+      "title": "ChatGPT instalado",
+      "assistant_kind": "chatgpt",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "desktop_app",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "ChatGPT instalado",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "clipboard_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:chatgpt"
+      }
+    },
+    {
+      "tool_id": "codex_installed",
+      "title": "Codex instalado",
+      "assistant_kind": "codex",
+      "available": true,
+      "status": "abierto",
+      "detail": "No encontre un hilo reciente de Codex asociado a este workspace.",
+      "launch_mode": "desktop_app",
+      "window_open": true,
+      "focused": true,
+      "thread_status": "sin_hilo_iabv",
+      "messages_status": "no_disponible",
+      "session_status": "abierta",
+      "capture_status": "no_disponible",
+      "probe_status": "permiso_requerido",
+      "permission_state": "requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal",
+        "windows_api",
+        "process_scan",
+        "codex_state_sqlite"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.5,
+      "metadata": {
+        "observed_pid": 19564,
+        "observed_title": "Codex",
+        "window_count": 2,
+        "process_count": 0,
+        "response_capture_mode": "clipboard_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:codex"
+      }
+    },
+    {
+      "tool_id": "desktop_human_runner",
+      "title": "Desktop human runner",
+      "assistant_kind": "iabv_runtime",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "desktop_real",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Desktop human runner",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "local_evidence",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:iabv_runtime"
+      }
+    },
+    {
+      "tool_id": "ollama_llm",
+      "title": "Ollama local",
+      "assistant_kind": "ollama",
+      "available": true,
+      "status": "disponible",
+      "detail": "Proveedor local listo.",
+      "launch_mode": "local_provider",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "disponibles",
+      "session_status": "activa",
+      "capture_status": "tool_result",
+      "probe_status": "verificado_pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": "2026-04-15T15:08:55.494637Z",
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Ollama local",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "tool_result",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:ollama"
+      }
+    },
+    {
+      "tool_id": "playwright_browser",
+      "title": "Playwright browser",
+      "assistant_kind": "",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Playwright browser",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:external"
+      }
+    }
+  ],
+  "network_status": {
+    "connected": true,
+    "status": "conectado",
+    "quality": "buena",
+    "latency_ms": 78.52,
+    "detail": "La red responde bien para consultas externas normales.",
+    "evidence": [
+      "latency_ms:78.52"
+    ],
+    "metadata": {}
+  },
+  "background_processes": [],
+  "detected_blocks": [
+    "permission_required:observe_window_content:codex"
+  ],
+  "block_records": [
+    {
+      "block_id": "fbc0e3b9-301a-43ce-a741-3df6d4332984",
+      "block_type": "permission_required",
+      "target_scope": "consult_codex",
+      "assistant_kind": "codex",
+      "title": "Observar Codex instalado",
+      "detail": "Para verificar si Codex esta listo de verdad necesito observar el contenido visible de esa ventana.",
+      "status": "active",
+      "reason": "Falta permiso explicito para observar contenido visible antes de usar esta ruta.",
+      "evidence": [
+        "observe_window_content:codex"
+      ],
+      "confidence": 0.72,
+      "metadata": {
+        "scope": "observe_window_content:codex"
+      }
+    }
+  ],
+  "permission_gates": [
+    {
+      "scope": "observe_window_content:codex",
+      "assistant_kind": "codex",
+      "title": "Observar Codex instalado",
+      "detail": "Para verificar si Codex esta listo de verdad necesito observar el contenido visible de esa ventana.",
+      "status": "requerido",
+      "required_for": [
+        "consult_codex"
+      ],
+      "granted": false,
+      "confidence": 0.5,
+      "metadata": {
+        "tool_id": "codex_installed",
+        "probe_status": "permiso_requerido",
+        "window_open": true,
+        "last_verified_at": ""
+      }
+    }
+  ],
+  "observation_sources": [
+    "environment_self_model",
+    "network_probe",
+    "tool_registry",
+    "universal_perception_signal",
+    "windows_api",
+    "process_scan",
+    "codex_state_sqlite",
+    "permission_registry"
+  ],
+  "inferred_state": {
+    "summary": "Hay bloqueos operativos activos que conviene respetar antes de lanzar otra accion.",
+    "focused_window": "Codex",
+    "active_window_count": 8,
+    "blocked_routes": [
+      {
+        "block_type": "permission_required",
+        "target_scope": "consult_codex",
+        "assistant_kind": "codex"
+      }
+    ],
+    "permission_gates": [
+      {
+        "scope": "observe_window_content:codex",
+        "assistant_kind": "codex",
+        "status": "requerido",
+        "required_for": [
+          "consult_codex"
+        ]
+      }
+    ],
+    "blocked_tools": [],
+    "deductions": [
+      "La ventana en foco ahora mismo es Codex.",
+      "Antes de verificar de verdad a Codex instalado necesito permiso para observar su contenido visible."
+    ]
+  },
+  "confidence": 0.82,
+  "freshness_ms": 52766,
+  "last_updated": "2026-04-15T15:09:05.582807Z",
+  "unresolved_fields": [
+    "UNRESOLVED:codex_content_probe"
+  ],
+  "metadata": {
+    "scan_reason": "startup",
+    "scan_mode": "full",
+    "workspace_root": "C:\\Python\\IABV_v1.5\\tmp_tool_live_breakdown",
+    "observation_sources": [
+      "environment_self_model",
+      "network_probe",
+      "tool_registry",
+      "universal_perception_signal",
+      "windows_api",
+      "process_scan",
+      "codex_state_sqlite",
+      "permission_registry"
+    ],
+    "permission_gates": [
+      {
+        "scope": "observe_window_content:codex",
+        "assistant_kind": "codex",
+        "title": "Observar Codex instalado",
+        "detail": "Para verificar si Codex esta listo de verdad necesito observar el contenido visible de esa ventana.",
+        "status": "requerido",
+        "required_for": [
+          "consult_codex"
+        ],
+        "granted": false,
+        "confidence": 0.5,
+        "metadata": {
+          "tool_id": "codex_installed",
+          "probe_status": "permiso_requerido",
+          "window_open": true,
+          "last_verified_at": ""
+        }
+      }
+    ],
+    "changed_since_last_scan": [
+      "block:permission_required:observe_window_content:codex",
+      "focus:Codex",
+      "tool:claude_web_assisted->listo",
+      "tool:claude_installed->no_disponible",
+      "tool:chatgpt_web_assisted->listo",
+      "tool:chatgpt_installed->listo",
+      "tool:codex_installed->abierto",
+      "tool:desktop_human_runner->listo",
+      "tool:ollama_llm->disponible",
+      "tool:playwright_browser->listo"
+    ]
+  }
+}

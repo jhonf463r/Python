@@ -1,0 +1,35 @@
+{
+  "objective_id": "d0d559b1-4a38-4729-a4ac-f2134a4f4a1a",
+  "kind": "task",
+  "title": "Consulta a la base local",
+  "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Consulta local con contexto; sigue faltando un adaptador operativo del dominio.",
+  "parent_id": "c93d7841-c62c-4992-ad44-1a994a639377",
+  "root_id": "5e10e936-3429-4b65-88ee-ab82cd96957d",
+  "site_id": null,
+  "priority": 50,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol project_evolution | pack project.evolution.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Laboratorio universal: language -> language_understanding (score 1.27, confianza 0.90).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:331ac83f-20f7-4775-9208-36a0b0b31bc1"
+  ],
+  "tags": [],
+  "metadata": {
+    "user_goal": "sabes por que tu trabajo en vivo no avanza el que tiene de consulta cojn cgatgp que esta al 26%",
+    "intent_key": "knowledge.query",
+    "pack_id": "knowledge.query",
+    "pack_title": "Consulta local con contexto",
+    "level": "task",
+    "session_id": "48b59739-d437-46b5-84e0-6acd5b7a8f99",
+    "status": "completed"
+  },
+  "created_at_utc": "2026-04-18T15:54:07.122165Z",
+  "updated_at_utc": "2026-04-18T15:54:07.723666Z"
+}

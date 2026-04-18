@@ -1,0 +1,113 @@
+{
+  "interaction_result_id": "352ed7b6-d749-4f9a-92c8-22df83f229f2",
+  "success": false,
+  "execution_state": {
+    "state": "failed",
+    "detail": "[WinError 5] Acceso denegado",
+    "executor_name": "external_assistant",
+    "sandboxed": false,
+    "validated": false,
+    "approval_decision": "approved",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": false,
+      "assistant_kind": "chatgpt",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://chatgpt.com/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\audit_live_workspace\nObjetivo del usuario: Necesito una consulta externa con ChatGPT para revisar por que Playwright no logra abrir bien desde el programa\nAsistente sugerido: chatgpt\nSitio: general\nIntento detectado: n/d\nPack activo: n/d\nEstado adaptativo: n/d\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::chatgpt::general::necesito-una-consulta-externa-con-chatgpt-para-r\nIABV_THREAD_TITLE: IABV ChatGPT | Necesito una consulta externa con ChatGPT para r\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::chatgpt::general::necesito-una-consulta-externa-con-chatgpt-para-r",
+      "thread_title": "IABV ChatGPT | Necesito una consulta externa con ChatGPT para r",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "2026-04-13T17:38:16.702997+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\audit_live_workspace\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile",
+      "auto_capture_attempted": true,
+      "auto_capture_reason": "[WinError 5] Acceso denegado"
+    }
+  },
+  "summary": "[WinError 5] Acceso denegado",
+  "errors": [
+    "[WinError 5] Acceso denegado"
+  ],
+  "confidence": 0.22,
+  "execution_ms": 16,
+  "rollback_state": null,
+  "extracted_data": {
+    "assistant_kind": "chatgpt",
+    "launch_target": "https://chatgpt.com/"
+  },
+  "artifacts": [],
+  "metadata": {
+    "validation_status": "unvalidated",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "live_audit": {
+      "audit_snapshot_id": "fb2ae749-585c-4f98-ab0d-1f712f4c30ec",
+      "objective": "Consultar ChatGPT sobre: Necesito una consulta externa con ChatGPT para revisar por que Playwright no logra abrir bien desde el programa",
+      "session_or_episode_id": "46d14b3f-45ce-41ea-8fc3-c2e89c5fd316",
+      "mode_used": "ui",
+      "evidence": [
+        "c47f6b8b-ad1b-4d79-ab0f-7efa3fb848d7",
+        "46d14b3f-45ce-41ea-8fc3-c2e89c5fd316"
+      ],
+      "findings": [],
+      "decision": {
+        "decision_id": "39723868-3d50-4270-a8e0-6704d920c053",
+        "action": "continue_local",
+        "rationale": "La herramienta produjo evidencia suficiente para seguir en la via local actual.",
+        "confidence": 0.55,
+        "recommended_tool_id": "chatgpt_web_assisted",
+        "approval_required": true,
+        "metadata": {}
+      },
+      "confidence": 0.66,
+      "auto_safe_action": "",
+      "human_approval": true,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 0.2,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.45,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.6625,
+        "learning_consolidation_score": 0.6625,
+        "lab_precision": 0.124,
+        "lab_robustness": 0.4,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.331,
+        "lab_recommended_route_score": 0.331
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "chatgpt_web_assisted",
+        "tool_type": "llm_web_ui",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "fb2ae749-585c-4f98-ab0d-1f712f4c30ec"
+  }
+}

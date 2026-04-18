@@ -1,0 +1,22 @@
+{
+  "recommendation_id": "24bd0a33-06c9-4b19-9361-e42df179fba4",
+  "domain": "language",
+  "subject_key": "wplay",
+  "recommended_route": "ui",
+  "score": 0.3748,
+  "confidence": 0.6637,
+  "rationale": "Recomiendo ui para language en wplay por score promedio 0.37 con 1 muestra(s).",
+  "supporting_run_ids": [
+    "c1f77d0f-bf72-4d97-bf56-9b6d0902d31b"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "ui",
+        "score": 0.3748,
+        "samples": 1
+      }
+    ]
+  },
+  "created_at_utc": "2026-04-11T00:44:17.190431Z"
+}

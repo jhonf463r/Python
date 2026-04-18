@@ -1,0 +1,20 @@
+{
+  "step_id": "a98ec85d-3c58-4606-85a1-32ee5c6cf5bf",
+  "channel": "background",
+  "operation": "run_command",
+  "target": "",
+  "value_hint": "echo",
+  "expected_signal": "",
+  "confidence": 0.9,
+  "metadata": {
+    "label": "Comando local",
+    "requires_approval": false,
+    "destructive": false,
+    "parameters": {}
+  },
+  "action_id": "d6c226e3-2979-46e3-9e26-865b61ba33a1",
+  "started_at_utc": "2026-04-18T05:09:08.401849Z",
+  "finished_at_utc": "2026-04-18T05:09:08.401849Z",
+  "destructive": false,
+  "requires_approval": false
+}

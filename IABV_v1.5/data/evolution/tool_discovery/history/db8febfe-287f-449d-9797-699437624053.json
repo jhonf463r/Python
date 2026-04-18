@@ -1,0 +1,962 @@
+{
+  "status_id": "db8febfe-287f-449d-9797-699437624053",
+  "created_at_utc": "2026-04-18T13:22:47.361177Z",
+  "updated_at_utc": "2026-04-18T13:22:47.361177Z",
+  "summary": "Detecte 23 senal(es) de descubrimiento: 22 activa(s), 1 en evaluacion, 0 promovida(s), 0 descartada(s).",
+  "signals": [
+    {
+      "signal_id": "b80cb078-c1e0-435f-b45d-475840e1dd0e",
+      "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+      "source": "tool_registry",
+      "source_refs": [
+        "ToolRegistry",
+        "ExperimentLab",
+        "WorldModelSnapshot"
+      ],
+      "domain": "language",
+      "scope": "general",
+      "title": "Probar ChatGPT web asistido para general",
+      "summary": "ChatGPT web asistido aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+      "tool_id": "chatgpt_web_assisted",
+      "tool_title": "ChatGPT web asistido",
+      "assistant_kind": "chatgpt",
+      "route": "language_understanding",
+      "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+      "status": "deferred",
+      "confidence": 0.8852,
+      "compatibility_score": 0.95,
+      "impact_score": 0.64,
+      "cost_score": 0.46,
+      "evidence_refs": [
+        "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+        "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+        "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+        "5e47c733-3081-42ca-a61c-6297c5604bde"
+      ],
+      "metadata": {
+        "tool_type": "llm_web_ui",
+        "capabilities": [
+          "launch_app",
+          "llm_query",
+          "consult_external",
+          "web_assisted"
+        ],
+        "current_route": "language_understanding",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "local_provider:ollama",
+        "baseline_weighted_score": 1.2674,
+        "estimated_candidate_score": 0.99,
+        "estimated_gain": 0.065,
+        "live_status": "listo",
+        "requires_human_approval": true,
+        "local_first": false,
+        "supports_sandbox": true,
+        "decision_state": {
+          "decision": "deferred",
+          "winner": "tie",
+          "reason": "La validacion de la propuesta se aplazo porque El entorno reporta ram_critical con severidad critical.",
+          "recorded_at_utc": "2026-04-18 05:08:33.695870+00:00"
+        }
+      }
+    },
+    {
+      "signal_id": "9d46bc97-1dd3-4919-919a-b7e797c944a8",
+      "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|ui|playwright|playwright",
+      "source": "tool_registry",
+      "source_refs": [
+        "ToolRegistry",
+        "ExperimentLab",
+        "WorldModelSnapshot"
+      ],
+      "domain": "language",
+      "scope": "general",
+      "title": "Probar Playwright browser para general",
+      "summary": "Playwright browser aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+      "tool_id": "playwright_browser",
+      "tool_title": "Playwright browser",
+      "assistant_kind": "playwright",
+      "route": "ui",
+      "config_signature": "playwright",
+      "status": "detected",
+      "confidence": 0.7988,
+      "compatibility_score": 0.55,
+      "impact_score": 0.76,
+      "cost_score": 0.74,
+      "evidence_refs": [
+        "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+        "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+        "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+        "5e47c733-3081-42ca-a61c-6297c5604bde"
+      ],
+      "metadata": {
+        "tool_type": "browser",
+        "capabilities": [
+          "open_url",
+          "click",
+          "type_text",
+          "extract_text",
+          "screenshot"
+        ],
+        "current_route": "language_understanding",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "local_provider:ollama",
+        "baseline_weighted_score": 1.2674,
+        "estimated_candidate_score": 0.99,
+        "estimated_gain": 0.083,
+        "live_status": "listo",
+        "requires_human_approval": true,
+        "local_first": true,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "signal_id": "8bbeb1f4-d62e-4043-82ff-110e8d823dd8",
+      "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|claude|web_assisted:claude_web_consult_v1:external_assistant",
+      "source": "tool_registry",
+      "source_refs": [
+        "ToolRegistry",
+        "ExperimentLab",
+        "WorldModelSnapshot"
+      ],
+      "domain": "language",
+      "scope": "general",
+      "title": "Probar Claude web asistido para general",
+      "summary": "Claude web asistido aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+      "tool_id": "claude_web_assisted",
+      "tool_title": "Claude web asistido",
+      "assistant_kind": "claude",
+      "route": "language_understanding",
+      "config_signature": "web_assisted:claude_web_consult_v1:external_assistant",
+      "status": "detected",
+      "confidence": 0.8852,
+      "compatibility_score": 0.95,
+      "impact_score": 0.64,
+      "cost_score": 0.46,
+      "evidence_refs": [
+        "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+        "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+        "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+        "5e47c733-3081-42ca-a61c-6297c5604bde"
+      ],
+      "metadata": {
+        "tool_type": "llm_web_ui",
+        "capabilities": [
+          "launch_app",
+          "llm_query",
+          "consult_external",
+          "web_assisted"
+        ],
+        "current_route": "language_understanding",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "local_provider:ollama",
+        "baseline_weighted_score": 1.2674,
+        "estimated_candidate_score": 0.99,
+        "estimated_gain": 0.065,
+        "live_status": "listo",
+        "requires_human_approval": true,
+        "local_first": false,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "signal_id": "7b4308bf-76a3-4cbd-a809-7d6250eee40a",
+      "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|chatgpt|desktop_app:chatgpt_consult_v1:external_assistant",
+      "source": "tool_registry",
+      "source_refs": [
+        "ToolRegistry",
+        "ExperimentLab",
+        "WorldModelSnapshot"
+      ],
+      "domain": "language",
+      "scope": "general",
+      "title": "Probar ChatGPT instalado para general",
+      "summary": "ChatGPT instalado aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+      "tool_id": "chatgpt_installed",
+      "tool_title": "ChatGPT instalado",
+      "assistant_kind": "chatgpt",
+      "route": "language_understanding",
+      "config_signature": "desktop_app:chatgpt_consult_v1:external_assistant",
+      "status": "detected",
+      "confidence": 0.8852,
+      "compatibility_score": 0.95,
+      "impact_score": 0.64,
+      "cost_score": 0.46,
+      "evidence_refs": [
+        "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+        "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+        "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+        "5e47c733-3081-42ca-a61c-6297c5604bde"
+      ],
+      "metadata": {
+        "tool_type": "custom",
+        "capabilities": [
+          "launch_app",
+          "llm_query",
+          "consult_external",
+          "explain_issue"
+        ],
+        "current_route": "language_understanding",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "local_provider:ollama",
+        "baseline_weighted_score": 1.2674,
+        "estimated_candidate_score": 0.99,
+        "estimated_gain": 0.065,
+        "live_status": "listo",
+        "requires_human_approval": true,
+        "local_first": false,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "signal_id": "edb11003-35e2-4e38-8c13-a67dd0850737",
+      "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|ui|iabv_runtime|desktop_real:desktop_human",
+      "source": "tool_registry",
+      "source_refs": [
+        "ToolRegistry",
+        "ExperimentLab",
+        "WorldModelSnapshot"
+      ],
+      "domain": "language",
+      "scope": "general",
+      "title": "Probar Desktop human runner para general",
+      "summary": "Desktop human runner aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+      "tool_id": "desktop_human_runner",
+      "tool_title": "Desktop human runner",
+      "assistant_kind": "iabv_runtime",
+      "route": "ui",
+      "config_signature": "desktop_real:desktop_human",
+      "status": "detected",
+      "confidence": 0.7748,
+      "compatibility_score": 0.55,
+      "impact_score": 0.64,
+      "cost_score": 0.74,
+      "evidence_refs": [
+        "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+        "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+        "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+        "5e47c733-3081-42ca-a61c-6297c5604bde"
+      ],
+      "metadata": {
+        "tool_type": "custom",
+        "capabilities": [
+          "launch_app",
+          "focus_window",
+          "click",
+          "type_text",
+          "scroll",
+          "screenshot",
+          "wait_for_window",
+          "wait_for_change"
+        ],
+        "current_route": "language_understanding",
+        "current_assistant_kind": "ollama",
+        "current_config_signature": "local_provider:ollama",
+        "baseline_weighted_score": 1.2674,
+        "estimated_candidate_score": 0.99,
+        "estimated_gain": 0.0734,
+        "live_status": "listo",
+        "requires_human_approval": true,
+        "local_first": true,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "signal_id": "45b75fe5-ee5f-4bbf-ae16-9bf1570147fc",
+      "proposal_key": "cb2d05da-7723-4f27-aaec-61ae4030e880|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|short|without_tools|without_browser|general|external|language_understanding|ollama|local_provider:ollama",
+      "source": "tool_registry",
+      "source_refs": [
+        "ToolRegistry",
+        "ExperimentLab",
+        "WorldModelSnapshot"
+      ],
+      "domain": "language",
+      "scope": "cb2d05da-7723-4f27-aaec-61ae4030e880",
+      "title": "Probar Ollama local para cb2d05da-7723-4f27-aaec-61ae4030e880",
+      "summary": "Ollama local aparece disponible y compatible con cb2d05da-7723-4f27-aaec-61ae4030e880. Conviene validarlo frente a adaptive local orchestrator.",
+      "tool_id": "ollama_llm",
+      "tool_title": "Ollama local",
+      "assistant_kind": "ollama",
+      "route": "language_understanding",
+      "config_signature": "local_provider:ollama",
+      "status": "detected",
+      "confidence": 0.96,
+      "compatibility_score": 0.95,
+      "impact_score": 0.82,
+      "cost_score": 0.92,
+      "evidence_refs": [
+        "59de4515-87b9-4ae0-ac28-d45f5871a9e7",
+        "9261c4cb-9784-4db4-9a6d-cad7733d147c"
+      ],
+      "metadata": {
+        "tool_type": "llm_local",
+        "capabilities": [
+          "llm_query",
+          "summarize",
+          "classify"
+        ],
+        "current_route": "language_understanding",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "baseline_weighted_score": 0.7082,
+        "estimated_candidate_score": 0.8014,
+        "estimated_gain": 0.0932,
+        "live_status": "disponible",
+        "requires_human_approval": false,
+        "local_first": true,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "signal_id": "192a8183-82e2-46e3-ab58-ae2c0e5e7d7a",
+      "proposal_key": "cb2d05da-7723-4f27-aaec-61ae4030e880|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|short|without_tools|without_browser|general|external|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+      "source": "tool_registry",
+      "source_refs": [
+        "ToolRegistry",
+        "ExperimentLab",
+        "WorldModelSnapshot"
+      ],
+      "domain": "language",
+      "scope": "cb2d05da-7723-4f27-aaec-61ae4030e880",
+      "title": "Probar ChatGPT web asistido para cb2d05da-7723-4f27-aaec-61ae4030e880",
+      "summary": "ChatGPT web asistido aparece disponible y compatible con cb2d05da-7723-4f27-aaec-61ae4030e880. Conviene validarlo frente a adaptive local orchestrator.",
+      "tool_id": "chatgpt_web_assisted",
+      "tool_title": "ChatGPT web asistido",
+      "assistant_kind": "chatgpt",
+      "route": "language_understanding",
+      "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+      "status": "detected",
+      "confidence": 0.8852,
+      "compatibility_score": 0.95,
+      "impact_score": 0.64,
+      "cost_score": 0.46,
+      "evidence_refs": [
+        "59de4515-87b9-4ae0-ac28-d45f5871a9e7",
+        "9261c4cb-9784-4db4-9a6d-cad7733d147c"
+      ],
+      "metadata": {
+        "tool_type": "llm_web_ui",
+        "capabilities": [
+          "launch_app",
+          "llm_query",
+          "consult_external",
+          "web_assisted"
+        ],
+        "current_route": "language_understanding",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "baseline_weighted_score": 0.7082,
+        "estimated_candidate_score": 0.7732,
+        "estimated_gain": 0.065,
+        "live_status": "listo",
+        "requires_human_approval": true,
+        "local_first": false,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "signal_id": "6c7b8dab-932d-4522-963a-8a2c7c7d7a7b",
+      "proposal_key": "cb2d05da-7723-4f27-aaec-61ae4030e880|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|short|without_tools|without_browser|general|external|ui|playwright|playwright",
+      "source": "tool_registry",
+      "source_refs": [
+        "ToolRegistry",
+        "ExperimentLab",
+        "WorldModelSnapshot"
+      ],
+      "domain": "language",
+      "scope": "cb2d05da-7723-4f27-aaec-61ae4030e880",
+      "title": "Probar Playwright browser para cb2d05da-7723-4f27-aaec-61ae4030e880",
+      "summary": "Playwright browser aparece disponible y compatible con cb2d05da-7723-4f27-aaec-61ae4030e880. Conviene validarlo frente a adaptive local orchestrator.",
+      "tool_id": "playwright_browser",
+      "tool_title": "Playwright browser",
+      "assistant_kind": "playwright",
+      "route": "ui",
+      "config_signature": "playwright",
+      "status": "detected",
+      "confidence": 0.7988,
+      "compatibility_score": 0.55,
+      "impact_score": 0.76,
+      "cost_score": 0.74,
+      "evidence_refs": [
+        "59de4515-87b9-4ae0-ac28-d45f5871a9e7",
+        "9261c4cb-9784-4db4-9a6d-cad7733d147c"
+      ],
+      "metadata": {
+        "tool_type": "browser",
+        "capabilities": [
+          "open_url",
+          "click",
+          "type_text",
+          "extract_text",
+          "screenshot"
+        ],
+        "current_route": "language_understanding",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "baseline_weighted_score": 0.7082,
+        "estimated_candidate_score": 0.7912,
+        "estimated_gain": 0.083,
+        "live_status": "listo",
+        "requires_human_approval": true,
+        "local_first": true,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "signal_id": "41fdd070-2682-4967-bf00-20f58df3b511",
+      "proposal_key": "cb2d05da-7723-4f27-aaec-61ae4030e880|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|short|without_tools|without_browser|general|external|language_understanding|claude|web_assisted:claude_web_consult_v1:external_assistant",
+      "source": "tool_registry",
+      "source_refs": [
+        "ToolRegistry",
+        "ExperimentLab",
+        "WorldModelSnapshot"
+      ],
+      "domain": "language",
+      "scope": "cb2d05da-7723-4f27-aaec-61ae4030e880",
+      "title": "Probar Claude web asistido para cb2d05da-7723-4f27-aaec-61ae4030e880",
+      "summary": "Claude web asistido aparece disponible y compatible con cb2d05da-7723-4f27-aaec-61ae4030e880. Conviene validarlo frente a adaptive local orchestrator.",
+      "tool_id": "claude_web_assisted",
+      "tool_title": "Claude web asistido",
+      "assistant_kind": "claude",
+      "route": "language_understanding",
+      "config_signature": "web_assisted:claude_web_consult_v1:external_assistant",
+      "status": "detected",
+      "confidence": 0.8852,
+      "compatibility_score": 0.95,
+      "impact_score": 0.64,
+      "cost_score": 0.46,
+      "evidence_refs": [
+        "59de4515-87b9-4ae0-ac28-d45f5871a9e7",
+        "9261c4cb-9784-4db4-9a6d-cad7733d147c"
+      ],
+      "metadata": {
+        "tool_type": "llm_web_ui",
+        "capabilities": [
+          "launch_app",
+          "llm_query",
+          "consult_external",
+          "web_assisted"
+        ],
+        "current_route": "language_understanding",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "baseline_weighted_score": 0.7082,
+        "estimated_candidate_score": 0.7732,
+        "estimated_gain": 0.065,
+        "live_status": "listo",
+        "requires_human_approval": true,
+        "local_first": false,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "signal_id": "a558fa2f-3645-4253-af64-592fc25697cd",
+      "proposal_key": "cb2d05da-7723-4f27-aaec-61ae4030e880|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|short|without_tools|without_browser|general|external|language_understanding|chatgpt|desktop_app:chatgpt_consult_v1:external_assistant",
+      "source": "tool_registry",
+      "source_refs": [
+        "ToolRegistry",
+        "ExperimentLab",
+        "WorldModelSnapshot"
+      ],
+      "domain": "language",
+      "scope": "cb2d05da-7723-4f27-aaec-61ae4030e880",
+      "title": "Probar ChatGPT instalado para cb2d05da-7723-4f27-aaec-61ae4030e880",
+      "summary": "ChatGPT instalado aparece disponible y compatible con cb2d05da-7723-4f27-aaec-61ae4030e880. Conviene validarlo frente a adaptive local orchestrator.",
+      "tool_id": "chatgpt_installed",
+      "tool_title": "ChatGPT instalado",
+      "assistant_kind": "chatgpt",
+      "route": "language_understanding",
+      "config_signature": "desktop_app:chatgpt_consult_v1:external_assistant",
+      "status": "detected",
+      "confidence": 0.8852,
+      "compatibility_score": 0.95,
+      "impact_score": 0.64,
+      "cost_score": 0.46,
+      "evidence_refs": [
+        "59de4515-87b9-4ae0-ac28-d45f5871a9e7",
+        "9261c4cb-9784-4db4-9a6d-cad7733d147c"
+      ],
+      "metadata": {
+        "tool_type": "custom",
+        "capabilities": [
+          "launch_app",
+          "llm_query",
+          "consult_external",
+          "explain_issue"
+        ],
+        "current_route": "language_understanding",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "baseline_weighted_score": 0.7082,
+        "estimated_candidate_score": 0.7732,
+        "estimated_gain": 0.065,
+        "live_status": "listo",
+        "requires_human_approval": true,
+        "local_first": false,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "signal_id": "472c7da1-7637-473b-9426-6dc21edcaa3e",
+      "proposal_key": "cb2d05da-7723-4f27-aaec-61ae4030e880|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|short|without_tools|without_browser|general|external|ui|iabv_runtime|desktop_real:desktop_human",
+      "source": "tool_registry",
+      "source_refs": [
+        "ToolRegistry",
+        "ExperimentLab",
+        "WorldModelSnapshot"
+      ],
+      "domain": "language",
+      "scope": "cb2d05da-7723-4f27-aaec-61ae4030e880",
+      "title": "Probar Desktop human runner para cb2d05da-7723-4f27-aaec-61ae4030e880",
+      "summary": "Desktop human runner aparece disponible y compatible con cb2d05da-7723-4f27-aaec-61ae4030e880. Conviene validarlo frente a adaptive local orchestrator.",
+      "tool_id": "desktop_human_runner",
+      "tool_title": "Desktop human runner",
+      "assistant_kind": "iabv_runtime",
+      "route": "ui",
+      "config_signature": "desktop_real:desktop_human",
+      "status": "detected",
+      "confidence": 0.7748,
+      "compatibility_score": 0.55,
+      "impact_score": 0.64,
+      "cost_score": 0.74,
+      "evidence_refs": [
+        "59de4515-87b9-4ae0-ac28-d45f5871a9e7",
+        "9261c4cb-9784-4db4-9a6d-cad7733d147c"
+      ],
+      "metadata": {
+        "tool_type": "custom",
+        "capabilities": [
+          "launch_app",
+          "focus_window",
+          "click",
+          "type_text",
+          "scroll",
+          "screenshot",
+          "wait_for_window",
+          "wait_for_change"
+        ],
+        "current_route": "language_understanding",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "baseline_weighted_score": 0.7082,
+        "estimated_candidate_score": 0.7816,
+        "estimated_gain": 0.0734,
+        "live_status": "listo",
+        "requires_human_approval": true,
+        "local_first": true,
+        "supports_sandbox": true
+      }
+    },
+    {
+      "signal_id": "ddbfb908-3826-49de-a81c-e73ed72555bd",
+      "proposal_key": "general:que-gpu-estas-usando-ahora-mismo-la-gpu0-o-la-gpu1|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|short|without_tools|without_browser|general|external|language_understanding|ollama|local_provider:ollama",
+      "source": "tool_registry",
+      "source_refs": [
+        "ToolRegistry",
+        "ExperimentLab",
+        "WorldModelSnapshot"
+      ],
+      "domain": "language",
+      "scope": "general:que-gpu-estas-usando-ahora-mismo-la-gpu0-o-la-gpu1",
+      "title": "Probar Ollama local para general:que-gpu-estas-usando-ahora-mismo-la-gpu0-o-la-gpu1",
+      "summary": "Ollama local aparece disponible y compatible con general:que-gpu-estas-usando-ahora-mismo-la-gpu0-o-la-gpu1. Conviene validarlo frente a adaptive local orchestrator.",
+      "tool_id": "ollama_llm",
+      "tool_title": "Ollama local",
+      "assistant_kind": "ollama",
+      "route": "language_understanding",
+      "config_signature": "local_provider:ollama",
+      "status": "detected",
+      "confidence": 0.96,
+      "compatibility_score": 0.95,
+      "impact_score": 0.82,
+      "cost_score": 0.92,
+      "evidence_refs": [
+        "01024f61-c834-470d-8bde-636bf026ab6d"
+      ],
+      "metadata": {
+        "tool_type": "llm_local",
+        "capabilities": [
+          "llm_query",
+          "summarize",
+          "classify"
+        ],
+        "current_route": "language_understanding",
+        "current_assistant_kind": "adaptive local orchestrator",
+        "current_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "baseline_weighted_score": 0.6686,
+        "estimated_candidate_score": 0.7618,
+        "estimated_gain": 0.0932,
+        "live_status": "disponible",
+        "requires_human_approval": false,
+        "local_first": true,
+        "supports_sandbox": true
+      }
+    }
+  ],
+  "unresolved_fields": [],
+  "package_path": "",
+  "markdown_path": "",
+  "metadata": {
+    "subject_keys": [
+      "general",
+      "cb2d05da-7723-4f27-aaec-61ae4030e880",
+      "general:que-gpu-estas-usando-ahora-mismo-la-gpu0-o-la-gpu1",
+      "general:que-modelo-de-ia-manejas-o-fucionas"
+    ],
+    "active_signals": [
+      {
+        "signal_id": "9d46bc97-1dd3-4919-919a-b7e797c944a8",
+        "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|ui|playwright|playwright",
+        "source": "tool_registry",
+        "source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "domain": "language",
+        "scope": "general",
+        "title": "Probar Playwright browser para general",
+        "summary": "Playwright browser aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+        "tool_id": "playwright_browser",
+        "tool_title": "Playwright browser",
+        "assistant_kind": "playwright",
+        "route": "ui",
+        "config_signature": "playwright",
+        "status": "detected",
+        "confidence": 0.7988,
+        "compatibility_score": 0.55,
+        "impact_score": 0.76,
+        "cost_score": 0.74,
+        "evidence_refs": [
+          "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+          "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+          "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+          "5e47c733-3081-42ca-a61c-6297c5604bde"
+        ],
+        "metadata": {
+          "tool_type": "browser",
+          "capabilities": [
+            "open_url",
+            "click",
+            "type_text",
+            "extract_text",
+            "screenshot"
+          ],
+          "current_route": "language_understanding",
+          "current_assistant_kind": "ollama",
+          "current_config_signature": "local_provider:ollama",
+          "baseline_weighted_score": 1.2674,
+          "estimated_candidate_score": 0.99,
+          "estimated_gain": 0.083,
+          "live_status": "listo",
+          "requires_human_approval": true,
+          "local_first": true,
+          "supports_sandbox": true
+        }
+      },
+      {
+        "signal_id": "8bbeb1f4-d62e-4043-82ff-110e8d823dd8",
+        "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|claude|web_assisted:claude_web_consult_v1:external_assistant",
+        "source": "tool_registry",
+        "source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "domain": "language",
+        "scope": "general",
+        "title": "Probar Claude web asistido para general",
+        "summary": "Claude web asistido aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+        "tool_id": "claude_web_assisted",
+        "tool_title": "Claude web asistido",
+        "assistant_kind": "claude",
+        "route": "language_understanding",
+        "config_signature": "web_assisted:claude_web_consult_v1:external_assistant",
+        "status": "detected",
+        "confidence": 0.8852,
+        "compatibility_score": 0.95,
+        "impact_score": 0.64,
+        "cost_score": 0.46,
+        "evidence_refs": [
+          "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+          "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+          "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+          "5e47c733-3081-42ca-a61c-6297c5604bde"
+        ],
+        "metadata": {
+          "tool_type": "llm_web_ui",
+          "capabilities": [
+            "launch_app",
+            "llm_query",
+            "consult_external",
+            "web_assisted"
+          ],
+          "current_route": "language_understanding",
+          "current_assistant_kind": "ollama",
+          "current_config_signature": "local_provider:ollama",
+          "baseline_weighted_score": 1.2674,
+          "estimated_candidate_score": 0.99,
+          "estimated_gain": 0.065,
+          "live_status": "listo",
+          "requires_human_approval": true,
+          "local_first": false,
+          "supports_sandbox": true
+        }
+      },
+      {
+        "signal_id": "7b4308bf-76a3-4cbd-a809-7d6250eee40a",
+        "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|chatgpt|desktop_app:chatgpt_consult_v1:external_assistant",
+        "source": "tool_registry",
+        "source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "domain": "language",
+        "scope": "general",
+        "title": "Probar ChatGPT instalado para general",
+        "summary": "ChatGPT instalado aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+        "tool_id": "chatgpt_installed",
+        "tool_title": "ChatGPT instalado",
+        "assistant_kind": "chatgpt",
+        "route": "language_understanding",
+        "config_signature": "desktop_app:chatgpt_consult_v1:external_assistant",
+        "status": "detected",
+        "confidence": 0.8852,
+        "compatibility_score": 0.95,
+        "impact_score": 0.64,
+        "cost_score": 0.46,
+        "evidence_refs": [
+          "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+          "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+          "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+          "5e47c733-3081-42ca-a61c-6297c5604bde"
+        ],
+        "metadata": {
+          "tool_type": "custom",
+          "capabilities": [
+            "launch_app",
+            "llm_query",
+            "consult_external",
+            "explain_issue"
+          ],
+          "current_route": "language_understanding",
+          "current_assistant_kind": "ollama",
+          "current_config_signature": "local_provider:ollama",
+          "baseline_weighted_score": 1.2674,
+          "estimated_candidate_score": 0.99,
+          "estimated_gain": 0.065,
+          "live_status": "listo",
+          "requires_human_approval": true,
+          "local_first": false,
+          "supports_sandbox": true
+        }
+      },
+      {
+        "signal_id": "edb11003-35e2-4e38-8c13-a67dd0850737",
+        "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|ui|iabv_runtime|desktop_real:desktop_human",
+        "source": "tool_registry",
+        "source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "domain": "language",
+        "scope": "general",
+        "title": "Probar Desktop human runner para general",
+        "summary": "Desktop human runner aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+        "tool_id": "desktop_human_runner",
+        "tool_title": "Desktop human runner",
+        "assistant_kind": "iabv_runtime",
+        "route": "ui",
+        "config_signature": "desktop_real:desktop_human",
+        "status": "detected",
+        "confidence": 0.7748,
+        "compatibility_score": 0.55,
+        "impact_score": 0.64,
+        "cost_score": 0.74,
+        "evidence_refs": [
+          "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+          "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+          "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+          "5e47c733-3081-42ca-a61c-6297c5604bde"
+        ],
+        "metadata": {
+          "tool_type": "custom",
+          "capabilities": [
+            "launch_app",
+            "focus_window",
+            "click",
+            "type_text",
+            "scroll",
+            "screenshot",
+            "wait_for_window",
+            "wait_for_change"
+          ],
+          "current_route": "language_understanding",
+          "current_assistant_kind": "ollama",
+          "current_config_signature": "local_provider:ollama",
+          "baseline_weighted_score": 1.2674,
+          "estimated_candidate_score": 0.99,
+          "estimated_gain": 0.0734,
+          "live_status": "listo",
+          "requires_human_approval": true,
+          "local_first": true,
+          "supports_sandbox": true
+        }
+      },
+      {
+        "signal_id": "45b75fe5-ee5f-4bbf-ae16-9bf1570147fc",
+        "proposal_key": "cb2d05da-7723-4f27-aaec-61ae4030e880|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|short|without_tools|without_browser|general|external|language_understanding|ollama|local_provider:ollama",
+        "source": "tool_registry",
+        "source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "domain": "language",
+        "scope": "cb2d05da-7723-4f27-aaec-61ae4030e880",
+        "title": "Probar Ollama local para cb2d05da-7723-4f27-aaec-61ae4030e880",
+        "summary": "Ollama local aparece disponible y compatible con cb2d05da-7723-4f27-aaec-61ae4030e880. Conviene validarlo frente a adaptive local orchestrator.",
+        "tool_id": "ollama_llm",
+        "tool_title": "Ollama local",
+        "assistant_kind": "ollama",
+        "route": "language_understanding",
+        "config_signature": "local_provider:ollama",
+        "status": "detected",
+        "confidence": 0.96,
+        "compatibility_score": 0.95,
+        "impact_score": 0.82,
+        "cost_score": 0.92,
+        "evidence_refs": [
+          "59de4515-87b9-4ae0-ac28-d45f5871a9e7",
+          "9261c4cb-9784-4db4-9a6d-cad7733d147c"
+        ],
+        "metadata": {
+          "tool_type": "llm_local",
+          "capabilities": [
+            "llm_query",
+            "summarize",
+            "classify"
+          ],
+          "current_route": "language_understanding",
+          "current_assistant_kind": "adaptive local orchestrator",
+          "current_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+          "baseline_weighted_score": 0.7082,
+          "estimated_candidate_score": 0.8014,
+          "estimated_gain": 0.0932,
+          "live_status": "disponible",
+          "requires_human_approval": false,
+          "local_first": true,
+          "supports_sandbox": true
+        }
+      },
+      {
+        "signal_id": "192a8183-82e2-46e3-ab58-ae2c0e5e7d7a",
+        "proposal_key": "cb2d05da-7723-4f27-aaec-61ae4030e880|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|short|without_tools|without_browser|general|external|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "source": "tool_registry",
+        "source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "domain": "language",
+        "scope": "cb2d05da-7723-4f27-aaec-61ae4030e880",
+        "title": "Probar ChatGPT web asistido para cb2d05da-7723-4f27-aaec-61ae4030e880",
+        "summary": "ChatGPT web asistido aparece disponible y compatible con cb2d05da-7723-4f27-aaec-61ae4030e880. Conviene validarlo frente a adaptive local orchestrator.",
+        "tool_id": "chatgpt_web_assisted",
+        "tool_title": "ChatGPT web asistido",
+        "assistant_kind": "chatgpt",
+        "route": "language_understanding",
+        "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "status": "detected",
+        "confidence": 0.8852,
+        "compatibility_score": 0.95,
+        "impact_score": 0.64,
+        "cost_score": 0.46,
+        "evidence_refs": [
+          "59de4515-87b9-4ae0-ac28-d45f5871a9e7",
+          "9261c4cb-9784-4db4-9a6d-cad7733d147c"
+        ],
+        "metadata": {
+          "tool_type": "llm_web_ui",
+          "capabilities": [
+            "launch_app",
+            "llm_query",
+            "consult_external",
+            "web_assisted"
+          ],
+          "current_route": "language_understanding",
+          "current_assistant_kind": "adaptive local orchestrator",
+          "current_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+          "baseline_weighted_score": 0.7082,
+          "estimated_candidate_score": 0.7732,
+          "estimated_gain": 0.065,
+          "live_status": "listo",
+          "requires_human_approval": true,
+          "local_first": false,
+          "supports_sandbox": true
+        }
+      }
+    ],
+    "in_validation_signals": [
+      {
+        "signal_id": "b80cb078-c1e0-435f-b45d-475840e1dd0e",
+        "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "source": "tool_registry",
+        "source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "domain": "language",
+        "scope": "general",
+        "title": "Probar ChatGPT web asistido para general",
+        "summary": "ChatGPT web asistido aparece disponible y compatible con general. Conviene validarlo frente a ollama.",
+        "tool_id": "chatgpt_web_assisted",
+        "tool_title": "ChatGPT web asistido",
+        "assistant_kind": "chatgpt",
+        "route": "language_understanding",
+        "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "status": "deferred",
+        "confidence": 0.8852,
+        "compatibility_score": 0.95,
+        "impact_score": 0.64,
+        "cost_score": 0.46,
+        "evidence_refs": [
+          "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+          "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+          "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+          "5e47c733-3081-42ca-a61c-6297c5604bde"
+        ],
+        "metadata": {
+          "tool_type": "llm_web_ui",
+          "capabilities": [
+            "launch_app",
+            "llm_query",
+            "consult_external",
+            "web_assisted"
+          ],
+          "current_route": "language_understanding",
+          "current_assistant_kind": "ollama",
+          "current_config_signature": "local_provider:ollama",
+          "baseline_weighted_score": 1.2674,
+          "estimated_candidate_score": 0.99,
+          "estimated_gain": 0.065,
+          "live_status": "listo",
+          "requires_human_approval": true,
+          "local_first": false,
+          "supports_sandbox": true,
+          "decision_state": {
+            "decision": "deferred",
+            "winner": "tie",
+            "reason": "La validacion de la propuesta se aplazo porque El entorno reporta ram_critical con severidad critical.",
+            "recorded_at_utc": "2026-04-18 05:08:33.695870+00:00"
+          }
+        }
+      }
+    ],
+    "promoted_signals": [],
+    "discarded_signals": [],
+    "unresolved_signals": []
+  }
+}

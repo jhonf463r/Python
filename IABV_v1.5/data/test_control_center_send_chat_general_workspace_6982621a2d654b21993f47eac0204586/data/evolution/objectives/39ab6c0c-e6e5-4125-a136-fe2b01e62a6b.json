@@ -1,0 +1,29 @@
+{
+  "objective_id": "39ab6c0c-e6e5-4125-a136-fe2b01e62a6b",
+  "kind": "subtask",
+  "title": "Verificar resultado",
+  "summary": "Se ejecuta despues de la fase operativa.",
+  "parent_id": "bc8f7929-2baa-4923-ba4b-ceaae4d2620a",
+  "root_id": "3a3006f8-fc88-491a-a112-f1ae678319a1",
+  "site_id": null,
+  "priority": 56,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.62,
+  "evidence_refs": [
+    "Contexto activo: contexto general."
+  ],
+  "tags": [
+    "verify"
+  ],
+  "metadata": {
+    "phase_key": "verify",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "knowledge.query"
+  },
+  "created_at_utc": "2026-04-14T05:03:22.062381Z",
+  "updated_at_utc": "2026-04-14T05:03:22.062381Z"
+}

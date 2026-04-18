@@ -1,0 +1,37 @@
+{
+  "objective_id": "0ba3f09b-ba12-4055-919f-f516bfa96b87",
+  "kind": "task",
+  "title": "Autodiagnostico conversacional del sistema",
+  "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Consulta local con contexto; sigue faltando un adaptador operativo del dominio.",
+  "parent_id": "b673a9ca-058e-4a74-92bb-715fee7d3faa",
+  "root_id": "584d7a48-5cad-4bff-b30f-7253e5f4c623",
+  "site_id": null,
+  "priority": 50,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:0f12c0b5-9046-48e4-9d73-8d4176a29d5f",
+    "Ultima corrida: success | rol knowledge | pack browser.generic.",
+    "Conocimiento local relacionado: 1 items.",
+    "run:9adae01b-bd60-4946-9fb8-679cc6912096"
+  ],
+  "tags": [],
+  "metadata": {
+    "user_goal": "y de lo que estan en local sabes cual corre mejor en esta laptop ?",
+    "intent_key": "general.assistance",
+    "pack_id": "knowledge.query",
+    "pack_title": "Consulta local con contexto",
+    "level": "task",
+    "session_id": "5d4eb6e9-0e75-4bfb-b326-168e79f708c7",
+    "status": "completed"
+  },
+  "created_at_utc": "2026-04-15T03:14:56.974051Z",
+  "updated_at_utc": "2026-04-15T03:16:06.041130Z"
+}

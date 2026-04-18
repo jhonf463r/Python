@@ -1,0 +1,38 @@
+{
+  "observation_id": "febf4c3f-e03c-4c17-9a00-1781b25d4f2d",
+  "pattern_id": "dac84be2-d2ff-46ed-bdc6-ea3ae3cc492a",
+  "task_id": "cc151734-6f91-48ed-aac4-4bd35f70c072",
+  "result_id": "e4f5de66-b2cd-4f40-b57a-a4762d79abd0",
+  "episode_id": "e1f99095-ce01-4596-8cb9-8c01c7252c21",
+  "success": false,
+  "channel": "ui",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": null,
+  "summary": "[WinError 5] Acceso denegado",
+  "confidence": 0.22,
+  "evidence_refs": [
+    "e4f5de66-b2cd-4f40-b57a-a4762d79abd0:assistant_kind",
+    "e4f5de66-b2cd-4f40-b57a-a4762d79abd0:launch_target"
+  ],
+  "created_at_utc": "2026-04-13T19:46:24.363281Z",
+  "metadata": {
+    "validation_status": "unvalidated",
+    "execution_state": "failed",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "assistant_kind",
+      "launch_target"
+    ],
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "objective_id": "099ed891-78ae-4613-a6c2-c2335d1f4ef9",
+  "kind": "subtask",
+  "title": "Proponer estrategia",
+  "summary": "Respuesta local contextual Ruta sugerida: language_understanding (score 0.86). Patron reutilizable lider: Consultar Codex | canal ui | exitos 3.",
+  "parent_id": "cb2d05da-7723-4f27-aaec-61ae4030e880",
+  "root_id": "9dfc2720-cef6-43e1-8caa-8836778d247b",
+  "site_id": null,
+  "priority": 54,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol training | pack wplay.core.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Laboratorio universal: language -> language_understanding (score 0.86, confianza 0.78).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:c23435a2-1b21-4f89-ab0c-16707686f21c",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Laboratorio universal: language -> language_understanding (score 0.82, confianza 0.77).",
+    "Conocimiento local relacionado: 5 items.",
+    "run:5f4bdaf6-94b0-4537-89cf-31ae2e716b5c"
+  ],
+  "tags": [
+    "propose_strategy"
+  ],
+  "metadata": {
+    "phase_key": "propose_strategy",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "knowledge.query"
+  },
+  "created_at_utc": "2026-04-18T01:20:13.503930Z",
+  "updated_at_utc": "2026-04-18T01:20:13.503930Z"
+}

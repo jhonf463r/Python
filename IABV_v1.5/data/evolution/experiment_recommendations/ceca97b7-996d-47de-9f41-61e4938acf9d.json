@@ -1,0 +1,81 @@
+{
+  "recommendation_id": "ceca97b7-996d-47de-9f41-61e4938acf9d",
+  "domain": "language",
+  "subject_key": "d0d559b1-4a38-4729-a4ac-f2134a4f4a1a",
+  "recommended_route": "local",
+  "recommended_assistant_kind": "ollama",
+  "recommended_assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "local",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+  "score": 0.7307,
+  "confidence": 0.7228,
+  "rationale": "Recomiendo local para language en d0d559b1-4a38-4729-a4ac-f2134a4f4a1a usando ollama con configuracion without_plan|without_files|normal|short|without_tools|without_browser|general|local por score base 0.59 y score adaptativo 0.73 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 20777 ms.",
+  "supporting_run_ids": [
+    "6520b219-b6e5-4b3d-a339-ce3809362673"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "local",
+        "score": 0.7307,
+        "samples": 1
+      }
+    ],
+    "ranked_configurations": [
+      {
+        "route": "local",
+        "assistant_kind": "ollama",
+        "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+        "score": 0.5907,
+        "adaptive_weight": 0.14,
+        "weighted_score": 0.7307,
+        "samples": 1,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 20777 ms"
+        ]
+      }
+    ],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": [
+      "general:sabes-por-que-tu-trabajo-en-vivo-no-avanza-el-que-tiene-de-consulta-cojn"
+    ],
+    "adaptive_learning_summary": {
+      "preferred_route": "local",
+      "preferred_assistant_kind": "ollama",
+      "preferred_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.7307,
+      "sample_count": 1,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "top_environment_signatures": [
+        "conectado|partial"
+      ],
+      "top_time_buckets": [
+        "afternoon"
+      ],
+      "reasons": [
+        "historial de exito 100%",
+        "latencia promedio 20777 ms"
+      ]
+    }
+  },
+  "created_at_utc": "2026-04-18T15:54:07.951646Z"
+}

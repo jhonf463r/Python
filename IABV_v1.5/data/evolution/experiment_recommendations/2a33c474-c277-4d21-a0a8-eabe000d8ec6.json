@@ -1,0 +1,98 @@
+{
+  "recommendation_id": "2a33c474-c277-4d21-a0a8-eabe000d8ec6",
+  "domain": "language",
+  "subject_key": "general",
+  "recommended_route": "language_understanding",
+  "recommended_assistant_kind": "adaptive local orchestrator",
+  "recommended_assistant_configuration": {
+    "planning_mode": "with_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+  "score": 0.8608,
+  "confidence": 0.8798,
+  "rationale": "Recomiendo language_understanding para language en general usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.63 y score adaptativo 0.86 con 2 muestra(s). Ajuste adaptativo: historial de exito 100%.",
+  "supporting_run_ids": [
+    "85f5ab3e-8da5-4361-a198-bce9f1f628f3",
+    "3993f99d-bf45-41aa-86ff-9c161ccf156b"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "language_understanding",
+        "score": 0.8606,
+        "samples": 2
+      }
+    ],
+    "ranked_configurations": [
+      {
+        "route": "language_understanding",
+        "assistant_kind": "adaptive local orchestrator",
+        "config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "score": 0.626,
+        "adaptive_weight": 0.2348,
+        "weighted_score": 0.8608,
+        "samples": 2,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%"
+        ]
+      },
+      {
+        "route": "language_understanding",
+        "assistant_kind": "adaptive local orchestrator",
+        "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+        "score": 0.6258,
+        "adaptive_weight": 0.2346,
+        "weighted_score": 0.8604,
+        "samples": 1,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%"
+        ]
+      }
+    ],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": [
+      "general:puedes-ver-el-trabajo-en-vivo-me-refiero-a-dock-vivo-de-autonomia-de-tu",
+      "general:qué-tienes-abierto-ahora",
+      "general:ok-y-entocnes-empecemos-que-te-enseño-primero"
+    ],
+    "adaptive_learning_summary": {
+      "preferred_route": "language_understanding",
+      "preferred_assistant_kind": "adaptive local orchestrator",
+      "preferred_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "adaptive_weight": 0.2348,
+      "weighted_score": 0.8608,
+      "sample_count": 2,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "top_environment_signatures": [
+        "conectado|partial"
+      ],
+      "top_time_buckets": [
+        "evening"
+      ],
+      "reasons": [
+        "historial de exito 100%"
+      ]
+    }
+  },
+  "created_at_utc": "2026-04-16T22:30:55.206525Z"
+}

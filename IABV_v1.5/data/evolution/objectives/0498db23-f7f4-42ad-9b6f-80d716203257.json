@@ -1,0 +1,32 @@
+{
+  "objective_id": "0498db23-f7f4-42ad-9b6f-80d716203257",
+  "kind": "subtask",
+  "title": "Verificar resultado",
+  "summary": "Verificar que la ruta language_understanding deje senales observables consistentes. Se ejecuta despues de la fase operativa.",
+  "parent_id": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+  "root_id": "44cfa2a3-f4e4-416c-9d16-44f1c0fc65b1",
+  "site_id": "wplay",
+  "priority": 57,
+  "status": "pending",
+  "progress": 0.0,
+  "blocker": "",
+  "confidence": 0.9,
+  "evidence_refs": [
+    "Contexto activo: Wplay.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 5.",
+    "Laboratorio universal: language -> language_understanding (score 0.86, confianza 0.78)."
+  ],
+  "tags": [
+    "verify"
+  ],
+  "metadata": {
+    "phase_key": "verify",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "wplay.core"
+  },
+  "created_at_utc": "2026-04-16T23:24:07.725005Z",
+  "updated_at_utc": "2026-04-16T23:24:07.725005Z"
+}

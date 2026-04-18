@@ -1,0 +1,219 @@
+{
+  "focused_window": {
+    "window_id": "02e85193-0811-4acd-a54f-85ea78f36b6e",
+    "title": "Codex",
+    "app_name": "Codex",
+    "pid": 16668,
+    "focused": true,
+    "visible": true,
+    "tool_id": "",
+    "assistant_kind": "",
+    "state": "focused",
+    "detail": "",
+    "metadata": {}
+  },
+  "active_windows": [
+    {
+      "window_id": "3e7d40b7-046a-44dc-a2a1-660622061d02",
+      "title": "Codex",
+      "app_name": "Codex instalado",
+      "pid": 16668,
+      "focused": true,
+      "visible": true,
+      "tool_id": "codex_installed",
+      "assistant_kind": "codex",
+      "state": "abierto",
+      "detail": "Codex parece estar enfocado en el hilo correcto del workspace actual (Actúa como arquitecto principal de observabilidad multimodal y world model \r\noperativo del proyecto IABV v1.5.\r\n\r\nVISIÓN CENTRAL:\r\nEl sistema debe tener un meta-modelo operativo del entorno y de sí mismo.\r\nNo solo saber qué herramientas existen en teoría.\r\nSino ver en tiempo real:\r\n- qué está abierto en la pantalla\r\n- qué está haciendo cada ventana\r\n- qué está pasando en segundo plano\r\n- si hay internet y qué calidad tiene\r\n- si Codex tiene el hilo correcto activo\r\n- si Codex tiene mensajes disponibles o están agotados\r\n- si hay un ciclo infinito, bloqueo, throttling o bug activo\r\n- qué consume RAM, CPU y GPU ahora mismo\r\n- qué está bloqueando una tarea antes de intentarla\r\nY usar todo eso para razonar mejor, deducir lo que está pasando,\r\nproponer soluciones y aprender de cada interacción.\r\n\r\nTRES CAPAS QUE DEBES CERRAR:\r\n\r\nCAPA 1 — OBSERVABILIDAD MULTIMODAL ACTIVA\r\nEl sistema debe observar continuamente:\r\n\r\nVentanas abiertas:\r\n- qué programas están corriendo\r\n- qué ventana está en foco\r\n- qué título tiene cada ventana relevante\r\n- si Codex está abierto y en qué hilo\r\n- si ChatGPT está abierto y en qué conversación\r\n- si el hilo activo es el correcto para la tarea\r\n\r\nEstado de herramientas externas antes de usarlas:\r\n- si Codex tiene mensajes disponibles o están agotados\r\n- si ChatGPT tiene sesión activa o expirada\r\n- si Claude tiene créditos disponibles\r\n- si Ollama está respondiendo en este momento\r\n- si hay un bloqueo de IP, rate limit o cuota activa\r\n\r\nEstado de red:\r\n- si hay conexión a internet\r\n- calidad aproximada de la conexión\r\n- si un servicio externo está caído o lento\r\n- si el problema es red vs herramienta vs código\r\n\r\nEstado del sistema en segundo plano:\r\n- procesos que consumen recursos excesivos\r\n- ciclos infinitos o procesos colgados detectables\r\n- apps que interfieren con la captura o el foco\r\n- cambios relevantes desde el último ciclo\r\n\r\nCAPA 2 — WORLD MODEL OPERATIVO\r\nCon todo lo observado, el sistema debe construir y mantener un modelo\r\nvivo del mundo en el que opera:\r\n\r\nWorldModelSnapshot debe contener:\r\n- active_windows: ventanas abiertas y su estado\r\n- focused_window: qué tiene el foco ahora\r\n- tool_live_status: estado vivo de cada herramienta\r\n  - ollama: disponible/no disponible/lento\r\n  - codex: abierto/cerrado/hilo correcto/mensajes disponibles/agotados\r\n  - chatgpt: sesión activa/expirada/bloqueada\r\n  - claude: disponible/limitado/bloqueado\r\n- network_status: conectado/desconectado/lento/bloqueado\r\n- background_processes: procesos relevantes en segundo plano\r\n- detected_blocks: qué está bloqueando qué tarea\r\n- inferred_state: qué deduce el sistema de todo lo anterior\r\n- confidence: qué tan confiable es esta observación\r\n- last_updated: cuándo se actualizó por última vez\r\n\r\nEste modelo debe:\r\n- actualizarse en segundo plano sin bloquear el chat\r\n- alimentar al PerceptionSnapshot junto con EnvironmentSelfModel\r\n- ser consultado por el orquestador antes de decidir qué ruta usar\r\n- ser consultado antes de intentar cualquier herramienta externa\r\n- nunca ser modificado por la UI, solo leído\r\n\r\nCAPA 3 — SELF-MODEL OPERATIVO CON RAZONAMIENTO DEDUCTIVO\r\nEl sistema debe saber no solo qué tiene, sino qué puede hacer ahora mismo\r\ny por qué algo no está funcionando.\r\n\r\nCuando detecta un problema debe razonar así:\r\n- \"Codex está abierto pero el hilo activo no es el de IABV\"\r\n  → no intentes pegar ahí, abre el hilo correcto primero\r\n- \"Codex está abierto pero no quedan mensajes disponibles\"\r\n  → notifica al usuario antes de intentar la consulta\r\n- \"ChatGPT muestra Just a moment...\"\r\n  → hay verificación de seguridad activa, no es selector roto\r\n- \"La red está disponible pero el servicio externo no responde\"\r\n  → el problema es el servicio, no la conexión\r\n- \"Hay un proceso consumiendo el 80% de CPU\"\r\n  → avisa antes de lanzar una tarea pesada\r\n- \"El foco está en otra ventana\"\r\n  → espera o pide permiso antes de interactuar\r\n\r\nEste razonamiento deductivo debe:\r\n- entrar al DecisionContext antes de cada decisión\r\n- bloquear rutas que no pueden funcionar en el estado actual\r\n- sugerir la alternativa más útil disponible\r\n- registrar el aprendizaje para no repetir el mismo error\r\n\r\nINTEGRACIÓN CON LO QUE YA EXISTE:\r\n- WorldModelSnapshot entra a PerceptionSnapshot como world_model\r\n- No reemplaza EnvironmentSelfModel ni UniversalPerceptionSignal\r\n- Los tres se complementan:\r\n  EnvironmentSelfModel = conocimiento del cuerpo hardware/runtime\r\n  UniversalPerceptionSignal = observación de un programa o página específica\r\n  WorldModelSnapshot = panorama completo del mundo operativo en tiempo real\r\n- AdaptiveTaskOrchestrator consulta world_model antes de decidir ruta\r\n- AutonomyGovernancePolicy usa world_model para bloquear rutas inviables\r\n- El chat puede responder preguntas como \"qué está pasando?\" desde world_model\r\n- EvolutionCenter muestra world_model como observador, sin decidir\r\n\r\nPERMISOS Y TRANSPARENCIA:\r\nSi el sistema necesita observar algo que requiere permiso del usuario\r\ndebe pedirlo explícitamente en lenguaje simple:\r\n\"Para saber si Codex tiene mensajes disponibles necesito observar\r\nesa ventana. ¿Me das permiso?\"\r\n\r\nNunca debe:\r\n- asumir que tiene permiso para observar todo\r\n- actuar sobre una ventana sin confirmación\r\n- fingir que observó algo que no pudo leer\r\n- marcar como disponible una herramienta que no verificó\r\n\r\nCASOS QUE DEBE RESOLVER CORRECTAMENTE:\r\n1. Usuario pide consultar Codex pero Codex no tiene mensajes\r\n   → el sistema lo detecta antes de intentarlo y lo notifica\r\n2. Usuario pide consultar Codex pero el hilo activo es el chat\r\n   personal del usuario, no el hilo de IABV\r\n   → el sistema lo detecta y no pega en ese hilo\r\n3. ChatGPT muestra verificación de seguridad\r\n   → el sistema lo detecta como browser_security_verification\r\n   y no lo trata como selector roto\r\n4. Usuario pregunta \"qué está pasando con mi internet?\"\r\n   → el sistema responde desde network_status con evidencia real\r\n5. Usuario pregunta \"por qué no responde Codex?\"\r\n   → el sistema responde desde world_model con el estado real\r\n6. Hay un proceso en segundo plano consumiendo muchos recursos\r\n   → el sistema lo menciona si afecta la tarea actual\r\n7. Usuario pregunta \"qué tienes abierto ahora?\"\r\n   → el sistema responde desde active_windows con lo real\r\n\r\nREGLAS ESTRICTAS:\r\n- No crear otro cerebro ni otro orquestador\r\n- No duplicar PerceptionSnapshot\r\n- El monitoreo corre en segundo plano sin bloquear el chat\r\n- No actuar sobre ventanas sin permiso del usuario\r\n- Si algo no puede leerse, marcarlo como no_disponible con motivo\r\n- No fingir que observó algo que no pudo ver\r\n- Si el estado no puede confirmarse, marcarlo como UNRESOLVED\r\n- No hacer refactor masivo\r\n- Correr pruebas después de cada cambio\r\n- Si algo rompe, revertir\r\n\r\nSalida obligatoria:\r\n1. RESUMEN_EJECUTIVO\r\n2. DISEÑO_DE_WORLD_MODEL_SNAPSHOT\r\n3. IMPLEMENTACION_CAPA_OBSERVABILIDAD\r\n4. IMPLEMENTACION_WORLD_MODEL\r\n5. IMPLEMENTACION_SELF_MODEL_DEDUCTIVO\r\n6. INTEGRACION_CON_PERCEPTION_SNAPSHOT\r\n7. INTEGRACION_CON_ORCHESTRATOR_Y_GOVERNANCE\r\n8. CASOS_VALIDADOS\r\n9. PRUEBAS_EJECUTADAS\r\n10. PERMISOS_Y_TRANSPARENCIA\r\n11. UNRESOLVED\r\n12. CONCLUSION_HONESTA\r\n\r\nCriterio de éxito:\r\nAntes de usar cualquier herramienta externa, el sistema sabe si puede usarla.\r\nCuando algo falla, el sistema sabe por qué y se lo dice al usuario en lenguaje\r\nsimple.\r\nCuando el usuario pregunta qué está pasando, el sistema responde desde\r\nobservación real, no desde suposiciones.\r\nEl sistema nunca pega en el hilo equivocado ni intenta una herramienta\r\nagotada sin avisar primero.).",
+      "metadata": {}
+    },
+    {
+      "window_id": "d442cd63-0270-4a67-8cca-8b7da8b23d17",
+      "title": "Prompt para Codex - Opera",
+      "app_name": "Prompt para Codex",
+      "pid": 27128,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "a501ac41-a817-4a07-bb2c-0bfbdb914511",
+      "title": "Preguntas - Google Chrome",
+      "app_name": "Preguntas",
+      "pid": 23668,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "c8adcdc5-6820-413d-8ad3-f9324723dfb3",
+      "title": "MAPAMUNDI 2.svg - Inkscape",
+      "app_name": "MAPAMUNDI 2.svg",
+      "pid": 11632,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "7fcc35b3-7a90-4d07-a75b-67cd8b765cf9",
+      "title": "Administrador de tareas",
+      "app_name": "Administrador de tareas",
+      "pid": 15184,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "237029a9-67bf-4618-acc8-36a533933c5d",
+      "title": "Configuración",
+      "app_name": "Configuración",
+      "pid": 9936,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    }
+  ],
+  "codex_status": {
+    "tool_id": "codex_installed",
+    "title": "Codex instalado",
+    "assistant_kind": "codex",
+    "available": true,
+    "status": "abierto",
+    "detail": "Codex parece estar enfocado en el hilo correcto del workspace actual (Actúa como arquitecto principal de observabilidad multimodal y world model \r\noperativo del proyecto IABV v1.5.\r\n\r\nVISIÓN CENTRAL:\r\nEl sistema debe tener un meta-modelo operativo del entorno y de sí mismo.\r\nNo solo saber qué herramientas existen en teoría.\r\nSino ver en tiempo real:\r\n- qué está abierto en la pantalla\r\n- qué está haciendo cada ventana\r\n- qué está pasando en segundo plano\r\n- si hay internet y qué calidad tiene\r\n- si Codex tiene el hilo correcto activo\r\n- si Codex tiene mensajes disponibles o están agotados\r\n- si hay un ciclo infinito, bloqueo, throttling o bug activo\r\n- qué consume RAM, CPU y GPU ahora mismo\r\n- qué está bloqueando una tarea antes de intentarla\r\nY usar todo eso para razonar mejor, deducir lo que está pasando,\r\nproponer soluciones y aprender de cada interacción.\r\n\r\nTRES CAPAS QUE DEBES CERRAR:\r\n\r\nCAPA 1 — OBSERVABILIDAD MULTIMODAL ACTIVA\r\nEl sistema debe observar continuamente:\r\n\r\nVentanas abiertas:\r\n- qué programas están corriendo\r\n- qué ventana está en foco\r\n- qué título tiene cada ventana relevante\r\n- si Codex está abierto y en qué hilo\r\n- si ChatGPT está abierto y en qué conversación\r\n- si el hilo activo es el correcto para la tarea\r\n\r\nEstado de herramientas externas antes de usarlas:\r\n- si Codex tiene mensajes disponibles o están agotados\r\n- si ChatGPT tiene sesión activa o expirada\r\n- si Claude tiene créditos disponibles\r\n- si Ollama está respondiendo en este momento\r\n- si hay un bloqueo de IP, rate limit o cuota activa\r\n\r\nEstado de red:\r\n- si hay conexión a internet\r\n- calidad aproximada de la conexión\r\n- si un servicio externo está caído o lento\r\n- si el problema es red vs herramienta vs código\r\n\r\nEstado del sistema en segundo plano:\r\n- procesos que consumen recursos excesivos\r\n- ciclos infinitos o procesos colgados detectables\r\n- apps que interfieren con la captura o el foco\r\n- cambios relevantes desde el último ciclo\r\n\r\nCAPA 2 — WORLD MODEL OPERATIVO\r\nCon todo lo observado, el sistema debe construir y mantener un modelo\r\nvivo del mundo en el que opera:\r\n\r\nWorldModelSnapshot debe contener:\r\n- active_windows: ventanas abiertas y su estado\r\n- focused_window: qué tiene el foco ahora\r\n- tool_live_status: estado vivo de cada herramienta\r\n  - ollama: disponible/no disponible/lento\r\n  - codex: abierto/cerrado/hilo correcto/mensajes disponibles/agotados\r\n  - chatgpt: sesión activa/expirada/bloqueada\r\n  - claude: disponible/limitado/bloqueado\r\n- network_status: conectado/desconectado/lento/bloqueado\r\n- background_processes: procesos relevantes en segundo plano\r\n- detected_blocks: qué está bloqueando qué tarea\r\n- inferred_state: qué deduce el sistema de todo lo anterior\r\n- confidence: qué tan confiable es esta observación\r\n- last_updated: cuándo se actualizó por última vez\r\n\r\nEste modelo debe:\r\n- actualizarse en segundo plano sin bloquear el chat\r\n- alimentar al PerceptionSnapshot junto con EnvironmentSelfModel\r\n- ser consultado por el orquestador antes de decidir qué ruta usar\r\n- ser consultado antes de intentar cualquier herramienta externa\r\n- nunca ser modificado por la UI, solo leído\r\n\r\nCAPA 3 — SELF-MODEL OPERATIVO CON RAZONAMIENTO DEDUCTIVO\r\nEl sistema debe saber no solo qué tiene, sino qué puede hacer ahora mismo\r\ny por qué algo no está funcionando.\r\n\r\nCuando detecta un problema debe razonar así:\r\n- \"Codex está abierto pero el hilo activo no es el de IABV\"\r\n  → no intentes pegar ahí, abre el hilo correcto primero\r\n- \"Codex está abierto pero no quedan mensajes disponibles\"\r\n  → notifica al usuario antes de intentar la consulta\r\n- \"ChatGPT muestra Just a moment...\"\r\n  → hay verificación de seguridad activa, no es selector roto\r\n- \"La red está disponible pero el servicio externo no responde\"\r\n  → el problema es el servicio, no la conexión\r\n- \"Hay un proceso consumiendo el 80% de CPU\"\r\n  → avisa antes de lanzar una tarea pesada\r\n- \"El foco está en otra ventana\"\r\n  → espera o pide permiso antes de interactuar\r\n\r\nEste razonamiento deductivo debe:\r\n- entrar al DecisionContext antes de cada decisión\r\n- bloquear rutas que no pueden funcionar en el estado actual\r\n- sugerir la alternativa más útil disponible\r\n- registrar el aprendizaje para no repetir el mismo error\r\n\r\nINTEGRACIÓN CON LO QUE YA EXISTE:\r\n- WorldModelSnapshot entra a PerceptionSnapshot como world_model\r\n- No reemplaza EnvironmentSelfModel ni UniversalPerceptionSignal\r\n- Los tres se complementan:\r\n  EnvironmentSelfModel = conocimiento del cuerpo hardware/runtime\r\n  UniversalPerceptionSignal = observación de un programa o página específica\r\n  WorldModelSnapshot = panorama completo del mundo operativo en tiempo real\r\n- AdaptiveTaskOrchestrator consulta world_model antes de decidir ruta\r\n- AutonomyGovernancePolicy usa world_model para bloquear rutas inviables\r\n- El chat puede responder preguntas como \"qué está pasando?\" desde world_model\r\n- EvolutionCenter muestra world_model como observador, sin decidir\r\n\r\nPERMISOS Y TRANSPARENCIA:\r\nSi el sistema necesita observar algo que requiere permiso del usuario\r\ndebe pedirlo explícitamente en lenguaje simple:\r\n\"Para saber si Codex tiene mensajes disponibles necesito observar\r\nesa ventana. ¿Me das permiso?\"\r\n\r\nNunca debe:\r\n- asumir que tiene permiso para observar todo\r\n- actuar sobre una ventana sin confirmación\r\n- fingir que observó algo que no pudo leer\r\n- marcar como disponible una herramienta que no verificó\r\n\r\nCASOS QUE DEBE RESOLVER CORRECTAMENTE:\r\n1. Usuario pide consultar Codex pero Codex no tiene mensajes\r\n   → el sistema lo detecta antes de intentarlo y lo notifica\r\n2. Usuario pide consultar Codex pero el hilo activo es el chat\r\n   personal del usuario, no el hilo de IABV\r\n   → el sistema lo detecta y no pega en ese hilo\r\n3. ChatGPT muestra verificación de seguridad\r\n   → el sistema lo detecta como browser_security_verification\r\n   y no lo trata como selector roto\r\n4. Usuario pregunta \"qué está pasando con mi internet?\"\r\n   → el sistema responde desde network_status con evidencia real\r\n5. Usuario pregunta \"por qué no responde Codex?\"\r\n   → el sistema responde desde world_model con el estado real\r\n6. Hay un proceso en segundo plano consumiendo muchos recursos\r\n   → el sistema lo menciona si afecta la tarea actual\r\n7. Usuario pregunta \"qué tienes abierto ahora?\"\r\n   → el sistema responde desde active_windows con lo real\r\n\r\nREGLAS ESTRICTAS:\r\n- No crear otro cerebro ni otro orquestador\r\n- No duplicar PerceptionSnapshot\r\n- El monitoreo corre en segundo plano sin bloquear el chat\r\n- No actuar sobre ventanas sin permiso del usuario\r\n- Si algo no puede leerse, marcarlo como no_disponible con motivo\r\n- No fingir que observó algo que no pudo ver\r\n- Si el estado no puede confirmarse, marcarlo como UNRESOLVED\r\n- No hacer refactor masivo\r\n- Correr pruebas después de cada cambio\r\n- Si algo rompe, revertir\r\n\r\nSalida obligatoria:\r\n1. RESUMEN_EJECUTIVO\r\n2. DISEÑO_DE_WORLD_MODEL_SNAPSHOT\r\n3. IMPLEMENTACION_CAPA_OBSERVABILIDAD\r\n4. IMPLEMENTACION_WORLD_MODEL\r\n5. IMPLEMENTACION_SELF_MODEL_DEDUCTIVO\r\n6. INTEGRACION_CON_PERCEPTION_SNAPSHOT\r\n7. INTEGRACION_CON_ORCHESTRATOR_Y_GOVERNANCE\r\n8. CASOS_VALIDADOS\r\n9. PRUEBAS_EJECUTADAS\r\n10. PERMISOS_Y_TRANSPARENCIA\r\n11. UNRESOLVED\r\n12. CONCLUSION_HONESTA\r\n\r\nCriterio de éxito:\r\nAntes de usar cualquier herramienta externa, el sistema sabe si puede usarla.\r\nCuando algo falla, el sistema sabe por qué y se lo dice al usuario en lenguaje\r\nsimple.\r\nCuando el usuario pregunta qué está pasando, el sistema responde desde\r\nobservación real, no desde suposiciones.\r\nEl sistema nunca pega en el hilo equivocado ni intenta una herramienta\r\nagotada sin avisar primero.).",
+    "launch_mode": "desktop_app",
+    "window_open": true,
+    "focused": true,
+    "thread_status": "correcto_probable",
+    "messages_status": "desconocidos",
+    "session_status": "abierta",
+    "capture_status": "capture_unverified",
+    "probe_status": "permiso_requerido",
+    "permission_state": "requerido",
+    "observed_via": [
+      "tool_registry",
+      "universal_perception_signal",
+      "windows_api",
+      "process_scan",
+      "tool_history",
+      "codex_state_sqlite"
+    ],
+    "last_verified_at": null,
+    "external_state_flags": [
+      "capture_unverified"
+    ],
+    "detected_blocks": [
+      "capture_unverified"
+    ],
+    "confidence": 0.58,
+    "metadata": {
+      "observed_pid": 16668,
+      "observed_title": "Codex",
+      "window_count": 2,
+      "process_count": 0,
+      "response_capture_mode": "clipboard_capture",
+      "browser_security_verification": false,
+      "latest_error_message": "wrong_thread",
+      "history_state": "failed",
+      "permission_scope": "observe_window_content:codex"
+    }
+  },
+  "network_status": {
+    "connected": true,
+    "status": "conectado",
+    "quality": "buena",
+    "latency_ms": 83.78,
+    "detail": "La red responde bien para consultas externas normales.",
+    "evidence": [
+      "latency_ms:83.78"
+    ],
+    "metadata": {}
+  },
+  "detected_blocks": [
+    "awaiting_response",
+    "capture_unverified",
+    "permission_required:observe_window_content:codex"
+  ],
+  "block_records": [
+    {
+      "block_id": "c245407e-c405-47ed-bb99-1b56406ca0ea",
+      "block_type": "permission_required",
+      "target_scope": "consult_codex",
+      "assistant_kind": "codex",
+      "title": "Observar Codex instalado",
+      "detail": "Para verificar si Codex esta listo de verdad necesito observar el contenido visible de esa ventana.",
+      "status": "active",
+      "reason": "Falta permiso explicito para observar contenido visible antes de usar esta ruta.",
+      "evidence": [
+        "observe_window_content:codex"
+      ],
+      "confidence": 0.72,
+      "metadata": {
+        "scope": "observe_window_content:codex"
+      }
+    }
+  ],
+  "inferred_state": {
+    "summary": "Hay bloqueos operativos activos que conviene respetar antes de lanzar otra accion.",
+    "focused_window": "Codex",
+    "active_window_count": 14,
+    "blocked_routes": [
+      {
+        "block_type": "permission_required",
+        "target_scope": "consult_codex",
+        "assistant_kind": "codex"
+      }
+    ],
+    "permission_gates": [
+      {
+        "scope": "observe_window_content:codex",
+        "assistant_kind": "codex",
+        "status": "requerido",
+        "required_for": [
+          "consult_codex"
+        ]
+      }
+    ],
+    "blocked_tools": [
+      {
+        "assistant_kind": "chatgpt",
+        "tool_id": "chatgpt_web_assisted",
+        "status": "listo",
+        "detected_blocks": [
+          "awaiting_response",
+          "capture_unverified"
+        ]
+      },
+      {
+        "assistant_kind": "codex",
+        "tool_id": "codex_installed",
+        "status": "abierto",
+        "detected_blocks": [
+          "capture_unverified"
+        ]
+      }
+    ],
+    "deductions": [
+      "La ventana en foco ahora mismo es Codex.",
+      "Antes de verificar de verdad a Codex instalado necesito permiso para observar su contenido visible."
+    ]
+  }
+}

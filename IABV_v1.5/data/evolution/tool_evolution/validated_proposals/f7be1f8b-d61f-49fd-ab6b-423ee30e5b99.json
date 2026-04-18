@@ -1,0 +1,100 @@
+{
+  "result_id": "f7be1f8b-d61f-49fd-ab6b-423ee30e5b99",
+  "proposal_id": "3c7e2b98-abb5-40e1-85e9-1564654f9f96",
+  "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|ui|playwright|playwright",
+  "domain": "language",
+  "subject_key": "general",
+  "proposal_kind": "validate_discovery",
+  "decision": "discarded",
+  "winner": "current_tool",
+  "reason": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+  "current_route": "language_understanding",
+  "current_assistant_kind": "ollama",
+  "current_config_signature": "local_provider:ollama",
+  "candidate_route": "ui",
+  "candidate_assistant_kind": "playwright",
+  "candidate_config_signature": "playwright",
+  "sandbox_experiment_id": "53bb0b76-b795-43bb-8490-bc7202c0457a",
+  "confidence": 0.7548,
+  "evidence_refs": [
+    "aab80e82-675c-43a9-932a-b027dec513ee",
+    "13511c24-acf0-421e-ac9d-95742003105d",
+    "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+    "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e"
+  ],
+  "comparison_scope_keys": [
+    "general"
+  ],
+  "metrics": {
+    "priority_score": 0.483,
+    "baseline_weighted_score": 1.2674,
+    "candidate_weighted_score": 0.99,
+    "score_margin": -0.2774,
+    "evidence_strength": 0.6197,
+    "observed_blockers": []
+  },
+  "recorded_at_utc": "2026-04-18T13:30:44.509787Z",
+  "metadata": {
+    "next_action": "validate_in_sandbox",
+    "discovery_signal_id": "0ca74692-4b84-4342-b8ec-87d885d77871",
+    "discovery_source": "tool_registry",
+    "discovery_source_refs": [
+      "ToolRegistry",
+      "ExperimentLab",
+      "WorldModelSnapshot"
+    ],
+    "compatibility_score": 0.55,
+    "impact_score": 0.54,
+    "cost_score": 0.74,
+    "baseline_weighted_score": 1.2674,
+    "alternative_weighted_score": 0.99,
+    "score_margin": -0.2774,
+    "baseline_profile": {
+      "weighted_score": 1.2674,
+      "sample_count": 4
+    },
+    "candidate_profile": {
+      "weighted_score": 0.99,
+      "compatibility_score": 0.55,
+      "impact_score": 0.54,
+      "cost_score": 0.74
+    },
+    "ranked_configurations": [
+      {
+        "route": "language_understanding",
+        "assistant_kind": "ollama",
+        "config_signature": "local_provider:ollama",
+        "weighted_score": 1.2674,
+        "score": 1.2674,
+        "samples": 4
+      },
+      {
+        "route": "ui",
+        "assistant_kind": "playwright",
+        "config_signature": "playwright",
+        "weighted_score": 0.99,
+        "score": 0.99,
+        "samples": 0
+      }
+    ],
+    "tool_type": "browser",
+    "capabilities": [
+      "open_url",
+      "click",
+      "type_text",
+      "extract_text",
+      "screenshot"
+    ],
+    "current_route": "language_understanding",
+    "current_assistant_kind": "ollama",
+    "current_config_signature": "local_provider:ollama",
+    "estimated_candidate_score": 0.99,
+    "estimated_gain": 0.0654,
+    "live_status": "listo",
+    "requires_human_approval": true,
+    "local_first": true,
+    "supports_sandbox": true,
+    "decision_source": "tool_evolution_monitor",
+    "validation_verdict": "valid"
+  }
+}

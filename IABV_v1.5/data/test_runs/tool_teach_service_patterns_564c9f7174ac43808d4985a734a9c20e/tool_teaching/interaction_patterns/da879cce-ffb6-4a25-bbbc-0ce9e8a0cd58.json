@@ -1,0 +1,62 @@
+{
+  "pattern_id": "da879cce-ffb6-4a25-bbbc-0ce9e8a0cd58",
+  "signature": "e1eb00f6bf372d1de4c50dae0505d83f2d9b4275",
+  "title": "Abre una pagina local con playwright y toma una captura",
+  "channel": "ui",
+  "tool_id": "playwright_browser",
+  "tool_type": "browser",
+  "site_id": null,
+  "operations": [
+    {
+      "step_id": "8303bb3b-bd6c-4b74-b808-5691bf93d5a2",
+      "channel": "ui",
+      "operation": "open_url",
+      "target": "https://example.com/demo",
+      "value_hint": "",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir URL",
+        "requires_approval": false,
+        "destructive": false
+      }
+    },
+    {
+      "step_id": "7bb8b133-2529-4feb-8fe4-044ac6bff4d1",
+      "channel": "ui",
+      "operation": "screenshot",
+      "target": "",
+      "value_hint": "",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Tomar captura",
+        "requires_approval": false,
+        "destructive": false
+      }
+    }
+  ],
+  "reusable": true,
+  "success_count": 1,
+  "failure_count": 0,
+  "last_task_id": "3ffa151b-f4ed-468d-90dd-163bfc463579",
+  "last_result_id": "b2fe2129-e26f-461f-b38d-db3e02bd3edc",
+  "created_at_utc": "2026-04-18T05:01:22.011633Z",
+  "updated_at_utc": "2026-04-18T05:01:22.011633Z",
+  "metadata": {
+    "objective_excerpt": "Abre una pagina local con playwright y toma una captura",
+    "execution_scope": "read_only",
+    "approval_decision": "approved",
+    "last_validation_status": "sandbox_pass",
+    "last_execution_state": "sandbox_pass",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

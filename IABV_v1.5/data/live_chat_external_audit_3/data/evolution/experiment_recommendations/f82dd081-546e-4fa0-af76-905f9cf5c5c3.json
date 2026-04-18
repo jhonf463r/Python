@@ -1,0 +1,22 @@
+{
+  "recommendation_id": "f82dd081-546e-4fa0-af76-905f9cf5c5c3",
+  "domain": "language",
+  "subject_key": "claude_web_assisted",
+  "recommended_route": "ui",
+  "score": 0.3748,
+  "confidence": 0.6637,
+  "rationale": "Recomiendo ui para language en claude_web_assisted por score promedio 0.37 con 1 muestra(s).",
+  "supporting_run_ids": [
+    "fbc3c373-c0f2-4f0b-b2d6-4d4cf4f54c4f"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "ui",
+        "score": 0.3748,
+        "samples": 1
+      }
+    ]
+  },
+  "created_at_utc": "2026-04-11T01:40:29.734151Z"
+}

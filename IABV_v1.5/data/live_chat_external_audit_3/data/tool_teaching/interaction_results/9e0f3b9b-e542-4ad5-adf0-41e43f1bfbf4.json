@@ -1,0 +1,60 @@
+{
+  "interaction_result_id": "9e0f3b9b-e542-4ad5-adf0-41e43f1bfbf4",
+  "success": true,
+  "execution_state": {
+    "state": "sandbox_pass",
+    "detail": "Sandbox local de herramienta ejecutado.",
+    "executor_name": "external_assistant",
+    "sandboxed": true,
+    "validated": true,
+    "approval_decision": "approved",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": true,
+      "assistant_kind": "claude",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://claude.ai/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\data\\live_chat_external_audit_3\nObjetivo del usuario: Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa. Si no puedes verificar tu hilo o tu sesion termino, bloquealo claramente y propon la siguiente accion.\nAsistente sugerido: codex\nSitio: general\nIntento detectado: n/d\nPack activo: n/d\nEstado adaptativo: n/d\nPaquete local para Codex:\nPaquete para Codex - IABV v1.5\n\nWorkspace: C:\\Python\\IABV_v1.5\\data\\live_chat_external_audit_3\nRol activo: Automatico\nMeta actual: Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa. Si no puedes verificar tu hilo o tu sesion termino, bloquealo claramente y propon la siguiente accion.\nPolitica: local-first, secretos protegidos, sin OpenAI en runtime, sin imports legacy en runtime.\n\nEstado del proyecto:\n- episodios: 0\n- conocimiento: 0\n- ejecuciones: 0\n- artefactos: 0\n\nAnalitica:\nEpisodios 0, conocimiento 0, corridas 0 y confianza media 0.0. La prioridad sugerida es reforzar calidad de conocimiento.\n\nHuecos de ensenanza:\n- resumen: Aun no hay episodios. La prioridad mas alta es ensenar login, navegacion inicial y confirmacion.\n- siguientes ensenanzas: Ensenar el flujo base de acceso\n\nPBT:\n- generacion: 0\n- mejor score: 0.0\n- resumen: Sin ejecuciones PBT aun. La base esta lista para explorar configuraciones.\n\nEntrega esperada para Codex:\n1. diagnostico breve\n2. causa raiz\n3. cambio vertical recomendado\n4. pruebas a ejecutar\n5. riesgos o tradeoffs\n\nCentro evolutivo:\n- resumen: Dossiers recientes: 0 | fallos: 0 | parciales: 0 | incidentes invisibles: 0 | sesiones adaptativas: 0 | autotests: 0 | pendientes Codex: 0. Prioridad sugerida: seguir reforzando evidencia y conocimiento local.\n- backlog sugerido: Seguir capturando evidencia evolutiva\n\nIABV_THREAD_KEY: iabv::codex::general::necesito-una-consulta-tecnica-con-codex-para-dia\nIABV_THREAD_TITLE: IABV Codex | Necesito una consulta tecnica con Codex para dia\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "session_scope": "program_chat",
+      "session_label": "Claude especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::codex::general::necesito-una-consulta-tecnica-con-codex-para-dia",
+      "thread_title": "IABV Codex | Necesito una consulta tecnica con Codex para dia",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "2026-04-11T01:40:29.497893+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_chat_external_audit_3\\data\\tool_teaching\\external_assistants\\codex_home"
+    }
+  },
+  "summary": "Asistente externo listo para consulta guiada.",
+  "errors": [],
+  "confidence": 0.78,
+  "execution_ms": 0,
+  "rollback_state": null,
+  "extracted_data": {
+    "assistant_kind": "claude",
+    "launch_target": "https://claude.ai/"
+  },
+  "artifacts": [],
+  "metadata": {
+    "validation_status": "sandbox_pass",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "objective_id": "7adff0bb-8248-48eb-aed4-77a57166940a",
+  "kind": "subtask",
+  "title": "Validar capacidades",
+  "summary": "Todo listo.",
+  "parent_id": "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+  "root_id": "fe689d85-d065-404b-9b54-5f0a8eaf5d8f",
+  "site_id": null,
+  "priority": 53,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Laboratorio universal: language -> language_understanding (score 1.27, confianza 0.90).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96."
+  ],
+  "tags": [
+    "validate_capabilities"
+  ],
+  "metadata": {
+    "phase_key": "validate_capabilities",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "project.evolution"
+  },
+  "created_at_utc": "2026-04-18T13:57:25.309342Z",
+  "updated_at_utc": "2026-04-18T13:57:25.309342Z"
+}

@@ -1,0 +1,12 @@
+{
+  "log_id": "677d1c15-f505-4e85-84d5-f717fd893b60",
+  "tool_id": "codex_installed",
+  "task_id": "4e2791f2-9353-4093-abed-30d2f3aed2fe",
+  "action_type": "preflight",
+  "state": "missing_tool",
+  "created_at_utc": "2026-04-16T04:00:27.124628+00:00",
+  "payload": {
+    "reason": "tool_card_missing",
+    "objective": "Consultar Codex sobre: revisa wplay con codex"
+  }
+}

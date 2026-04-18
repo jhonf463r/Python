@@ -1,0 +1,60 @@
+{
+  "interaction_result_id": "0d08cf9b-85fd-4613-a5e0-476b93bbf956",
+  "success": true,
+  "execution_state": {
+    "state": "sandbox_pass",
+    "detail": "Sandbox local de herramienta ejecutado.",
+    "executor_name": "external_assistant",
+    "sandboxed": true,
+    "validated": true,
+    "approval_decision": "approved",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": true,
+      "assistant_kind": "chatgpt",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://chatgpt.com/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\audit_live_workspace\nObjetivo del usuario: Necesito una consulta externa con ChatGPT para revisar por que Playwright no logra abrir bien desde el programa\nAsistente sugerido: chatgpt\nSitio: general\nIntento detectado: n/d\nPack activo: n/d\nEstado adaptativo: n/d\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::chatgpt::general::necesito-una-consulta-externa-con-chatgpt-para-r\nIABV_THREAD_TITLE: IABV ChatGPT | Necesito una consulta externa con ChatGPT para r\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::chatgpt::general::necesito-una-consulta-externa-con-chatgpt-para-r",
+      "thread_title": "IABV ChatGPT | Necesito una consulta externa con ChatGPT para r",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "2026-04-13T17:38:16.569132+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\audit_live_workspace\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+    }
+  },
+  "summary": "Asistente externo listo para consulta guiada.",
+  "errors": [],
+  "confidence": 0.78,
+  "execution_ms": 0,
+  "rollback_state": null,
+  "extracted_data": {
+    "assistant_kind": "chatgpt",
+    "launch_target": "https://chatgpt.com/"
+  },
+  "artifacts": [],
+  "metadata": {
+    "validation_status": "sandbox_pass",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

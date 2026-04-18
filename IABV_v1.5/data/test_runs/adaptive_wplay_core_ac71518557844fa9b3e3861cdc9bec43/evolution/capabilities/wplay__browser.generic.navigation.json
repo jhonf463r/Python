@@ -1,0 +1,19 @@
+{
+  "capability_id": "browser.generic.navigation",
+  "title": "Navegacion web generica",
+  "status": "partial",
+  "score": 0.48,
+  "site_id": "wplay",
+  "evidence": [
+    "La navegacion generica aun necesita mas evidencia."
+  ],
+  "missing_signals": [
+    "Reforzar una ensenanza de apertura y movimiento por paginas."
+  ],
+  "last_episode_id": "68444041-8425-4321-97d0-cf083181807e",
+  "suggested_next_step": "Usar una ensenanza mas limpia o capturar un flujo corto de navegacion.",
+  "metadata": {
+    "visual_alignment_score": 0.0,
+    "manual_correction_count": 0
+  }
+}

@@ -1,0 +1,974 @@
+﻿from __future__ import annotations
+
+import re
+from typing import Any
+
+from iabv_v15.domain.models import InferenceRequest, IntentDisposition, IntentHypothesis, TaskIntent, TaskRole
+
+
+class IntentUnderstandingService:
+    SITE_ALIASES = {
+        'wplay': ['wplay', 'w play'],
+        'mercadolibre': ['mercadolibre', 'mercado libre'],
+        'google': ['google'],
+    }
+    CONVERSATIONAL_INTENT_KEYS = {
+        'general.assistance',
+        'knowledge.query',
+        'system.self_awareness',
+        'consulta_estado_evolutivo',
+    }
+    ACTIONABLE_INTENT_KEYS = {
+        'project.evolution',
+        'research.local',
+        'research.external_consultation',
+        'tools.local_workflow',
+        'tools.sandbox',
+        'wplay.login',
+        'wplay.core',
+        'wplay.casino',
+        'browser.search',
+        'browser.navigate',
+        'analytics.strategy',
+        'customer.support',
+    }
+    PROJECT_SIGNAL_PATTERNS = [
+        'proyecto',
+        'codigo',
+        'c?digo',
+        'bug',
+        'error',
+        'fallo',
+        'falla',
+        'mejora',
+        'refactor',
+        'convers',
+        'intencion',
+        'intenci',
+        'subintencion',
+        'subintenci',
+        'contexto',
+        'mensaje largo',
+        'mensajes largos',
+        'desvia',
+        'desv?a',
+        'desvios',
+        'ambig',
+    ]
+    ACTION_REQUEST_PATTERNS = [
+        'necesito',
+        'quiero',
+        'ayudame',
+        'ay?dame',
+        'revisa',
+        'revisa ',
+        'revisar',
+        'analiza',
+        'analizar',
+        'diagnostica',
+        'diagnosticar',
+        'corrige',
+        'corregir',
+        'arregla',
+        'arreglar',
+        'mejora',
+        'mejorar',
+        'implementa',
+        'implementar',
+        'ajusta',
+        'ajustar',
+        'separa',
+        'separar',
+        'clasifica',
+        'clasificar',
+        'explica',
+        'explicar',
+        'dime',
+        'responde',
+        'marca',
+        'confirma',
+        'prioriza',
+    ]
+
+    def classify(self, request: InferenceRequest) -> tuple[TaskIntent, list[IntentHypothesis]]:
+        text = self._normalize(request.user_goal)
+        conversation_text = self._conversation_context_text(request.conversation_context)
+        detected_site, context_carried_from_history = self._detect_site_with_history(
+            text,
+            request.goal_parameters,
+            conversation_text,
+        )
+        site_hint = request.site_hint or detected_site
+        analysis = self._analyze_conversation(
+            text=text,
+            request=request,
+            site_hint=site_hint,
+            conversation_text=conversation_text,
+            context_carried_from_history=context_carried_from_history,
+        )
+        hypotheses: list[IntentHypothesis] = []
+        analysis_metadata = {
+            'conversation_analysis': analysis,
+            'primary_intent': str(analysis.get('primary_intent') or ''),
+            'sub_intents': list(analysis.get('sub_intents') or []),
+            'compound_intent': bool(analysis.get('compound')),
+            'requires_clarification': bool(analysis.get('requires_clarification')),
+            'ambiguity_score': float(analysis.get('ambiguity_score') or 0.0),
+            'context_carried_from_history': bool(analysis.get('context_carried_from_history')),
+        }
+
+        def build(
+            *,
+            intent_key: str,
+            title: str,
+            detected_role: TaskRole,
+            disposition: IntentDisposition,
+            confidence: float,
+            domain_hint: str,
+            summary: str,
+            sensitive: bool = False,
+            monetary: bool = False,
+            multi_step: bool = False,
+            missing_requirements: list[str] | None = None,
+            reasoning: list[str] | None = None,
+            metadata: dict[str, Any] | None = None,
+        ) -> TaskIntent:
+            return TaskIntent(
+                disposition=disposition,
+                intent_key=intent_key,
+                title=title,
+                summary=summary,
+                detected_role=detected_role,
+                site_hint=site_hint,
+                domain_hint=domain_hint,
+                confidence=confidence,
+                sensitive=sensitive,
+                monetary=monetary,
+                multi_step=multi_step,
+                missing_requirements=missing_requirements or [],
+                reasoning=reasoning or [],
+                metadata={**analysis_metadata, **(metadata or {})},
+            )
+
+        def finalize(intent: TaskIntent, current_hypotheses: list[IntentHypothesis]) -> tuple[TaskIntent, list[IntentHypothesis]]:
+            merged_hypotheses = self._merge_intent_hypotheses(current_hypotheses, analysis)
+            if bool(analysis.get('requires_clarification')) and intent.intent_key in {'general.assistance', 'project.evolution', 'research.local'}:
+                clarification_prompt = str(analysis.get('clarification_prompt') or '').strip()
+                missing_requirements = list(intent.missing_requirements)
+                if clarification_prompt and clarification_prompt not in missing_requirements:
+                    missing_requirements.insert(0, clarification_prompt)
+                reasoning = list(intent.reasoning)
+                note = 'mensaje compuesto con ambiguedad fuerte; conviene aclarar antes de asumir'
+                if note not in reasoning:
+                    reasoning.append(note)
+                intent = intent.model_copy(
+                    update={
+                        'disposition': IntentDisposition.NEED_INFO if intent.disposition == IntentDisposition.ANSWER_NOW else intent.disposition,
+                        'missing_requirements': missing_requirements,
+                        'reasoning': reasoning,
+                        'confidence': min(intent.confidence, 0.58),
+                        'metadata': {**intent.metadata, 'requires_clarification': True},
+                    }
+                )
+            return intent, merged_hypotheses
+
+        if self._contains_any(text, ['hola', 'que sabes hacer', 'quÃ© sabes hacer']) and len(text.split()) <= 8 and not bool(analysis.get('compound')):
+            intent = build(
+                intent_key='general.assistance',
+                title='Asistencia general del centro de control',
+                detected_role=TaskRole.KNOWLEDGE,
+                disposition=IntentDisposition.ANSWER_NOW,
+                confidence=0.93,
+                domain_hint='general',
+                summary='Responder de forma util y corta sobre capacidades operativas del sistema.',
+                reasoning=['saludo o consulta general sobre capacidades'],
+                metadata={'conversational_prompt': True, 'meta_assistant_prompt': self._contains_any(text, ['codex', 'chatgpt', 'claude', 'ollama', 'ia', 'ias'])},
+            )
+            hypotheses.append(IntentHypothesis(intent_key='knowledge.query', title='Consulta local', confidence=0.44, rationale='Pregunta abierta sin sitio especifico.'))
+            return finalize(intent, hypotheses)
+
+        if self._is_self_awareness_prompt(text) and not bool(analysis.get('mixed_actionable')):
+            intent = build(
+                intent_key='system.self_awareness',
+                title='Autodiagnostico conversacional del sistema',
+                detected_role=TaskRole.KNOWLEDGE,
+                disposition=IntentDisposition.ANSWER_NOW,
+                confidence=0.94,
+                domain_hint='system',
+                summary='Responder directo desde el estado real del entorno, las herramientas disponibles y las conexiones activas.',
+                reasoning=['pregunta explicita por entorno, herramientas, arquitectura o estado actual del sistema'],
+                metadata={
+                    'conversational_prompt': True,
+                    'self_awareness_prompt': True,
+                    'meta_assistant_prompt': self._contains_any(text, ['codex', 'chatgpt', 'claude', 'ollama', 'ia', 'ias']),
+                },
+            )
+            hypotheses.append(
+                IntentHypothesis(
+                    intent_key='knowledge.query',
+                    title='Consulta local',
+                    confidence=0.61,
+                    rationale='La respuesta debe salir del estado real del sistema y no de una consulta externa.',
+                )
+            )
+            return finalize(intent, hypotheses)
+
+        if self._is_evolution_status_prompt(text) and not bool(analysis.get('mixed_actionable')):
+            intent = build(
+                intent_key='consulta_estado_evolutivo',
+                title='Consulta de estado evolutivo',
+                detected_role=TaskRole.KNOWLEDGE,
+                disposition=IntentDisposition.ANSWER_NOW,
+                confidence=0.92,
+                domain_hint='evolution',
+                summary='Responder desde el estado real de evolucion de herramientas, validacion y discovery sin disparar autonomia.',
+                reasoning=['pregunta explicita por ganadores, validacion, descartes o descubrimientos del ciclo evolutivo'],
+                metadata={
+                    'conversational_prompt': True,
+                    'evolution_status_prompt': True,
+                },
+            )
+            hypotheses.append(
+                IntentHypothesis(
+                    intent_key='knowledge.query',
+                    title='Consulta local',
+                    confidence=0.58,
+                    rationale='La respuesta debe salir del estado evolutivo ya persistido y no de una via externa.',
+                )
+            )
+            return finalize(intent, hypotheses)
+
+        explicit_assistant = self._requested_external_assistant(text)
+        if explicit_assistant and not bool(analysis.get('conditional_external_consultation')):
+            assistant_title = {
+                'codex': 'Codex',
+                'chatgpt': 'ChatGPT',
+                'claude': 'Claude',
+                'ollama': 'Ollama local',
+            }.get(explicit_assistant, explicit_assistant.title())
+            reasoning = ['el usuario pidio una consulta externa dirigida']
+            if site_hint:
+                reasoning.append(f'sitio detectado: {site_hint}')
+            intent = build(
+                intent_key='research.external_consultation',
+                title=f'Consulta externa dirigida a {assistant_title}',
+                detected_role=TaskRole.RESEARCH,
+                disposition=IntentDisposition.PLAN_THEN_EXECUTE,
+                confidence=0.9,
+                domain_hint='external_assistant',
+                summary=f'Preparar una consulta externa dirigida a {assistant_title}, mantener coherencia del asistente y devolver el progreso visible.',
+                multi_step=True,
+                reasoning=reasoning,
+                metadata={'conversational_prompt': False, 'explicit_external_consultation': True},
+            )
+            hypotheses.append(
+                IntentHypothesis(
+                    intent_key='knowledge.query',
+                    title='Consulta local',
+                    confidence=0.31,
+                    rationale='Puede responderse parcialmente en local, pero la peticion explicita pide escalar a otra IA.',
+                )
+            )
+            return finalize(intent, hypotheses)
+
+        if self._is_tool_prompt(text, request.goal_parameters) or str(analysis.get('primary_intent') or '') in {'tools.local_workflow', 'tools.sandbox'}:
+            sandbox_only = self._contains_any(text, ['sandbox', 'probar herramienta', 'probar tool', 'validar herramienta'])
+            intent = build(
+                intent_key='tools.sandbox' if sandbox_only else 'tools.local_workflow',
+                title='Sandbox de herramientas locales' if sandbox_only else 'Tool Teaching local-first',
+                detected_role=TaskRole.TOOL_SANDBOX if sandbox_only else TaskRole.TOOL_USE,
+                disposition=IntentDisposition.PLAN_THEN_EXECUTE,
+                confidence=0.9 if sandbox_only else 0.86,
+                domain_hint='tools',
+                summary='Seleccionar herramienta local, validarla en sandbox y ejecutar con trazabilidad.',
+                multi_step=True,
+                reasoning=['menciona una herramienta local o una prueba de sandbox'],
+            )
+            hypotheses.append(IntentHypothesis(intent_key='project.evolution', title='Evolucion del proyecto', confidence=0.38, rationale='La consulta puede terminar en ajuste tecnico o Codex si la herramienta falla.'))
+            return finalize(intent, hypotheses)
+        if site_hint == 'wplay' and self._contains_any(text, ['casino', 'juega', 'jugar', 'apuesta', 'estrategia', 'algoritmo']):
+            missing = []
+            if not self._contains_any(text, ['estrateg', 'algoritmo', 'limite', 'lÃ­mite', 'stop']):
+                missing.append('conviene confirmar o editar la estrategia antes de ejecutar fases sensibles')
+            intent = build(
+                intent_key='wplay.casino',
+                title='Sesion Wplay para casino y estrategia',
+                detected_role=TaskRole.TRAINING,
+                disposition=IntentDisposition.PLAN_THEN_EXECUTE,
+                confidence=0.95,
+                domain_hint='wplay',
+                summary='Preparar una sesion por fases para entrar a Wplay, navegar a casino y configurar estrategia con checkpoints.',
+                sensitive=True,
+                monetary=True,
+                multi_step=True,
+                missing_requirements=missing,
+                reasoning=['menciona Wplay', 'menciona juego o casino', 'requiere estrategia configurable y aprobaciones'],
+            )
+            hypotheses.extend([
+                IntentHypothesis(intent_key='wplay.login', title='Login Wplay', confidence=0.86, rationale='La ejecucion de casino depende del login.'),
+                IntentHypothesis(intent_key='wplay.core', title='Core Wplay', confidence=0.78, rationale='Hay una tarea operativa sobre el sitio.'),
+            ])
+            return finalize(intent, hypotheses)
+
+        if site_hint == 'wplay' and self._contains_any(text, ['inicia sesion', 'iniciar sesion', 'login', 'loguea', 'abre wplay']):
+            intent = build(
+                intent_key='wplay.login',
+                title='Sesion Wplay e inicio de sesion',
+                detected_role=TaskRole.TRAINING,
+                disposition=IntentDisposition.PLAN_THEN_EXECUTE,
+                confidence=0.94,
+                domain_hint='wplay',
+                summary='Preparar la apertura de Wplay y el inicio de sesion usando capacidades aprendidas y aprobacion por fases.',
+                sensitive=True,
+                multi_step=True,
+                reasoning=['menciona Wplay', 'menciona inicio de sesion o login'],
+            )
+            hypotheses.append(IntentHypothesis(intent_key='wplay.core', title='Core Wplay', confidence=0.67, rationale='Sesion operativa sobre Wplay.'))
+            return finalize(intent, hypotheses)
+
+        if site_hint == 'wplay' and self._contains_any(text, ['abre', 'abrir', 'pagina', 'p?gina', 'entra', 'ingresa', 've a']):
+            intent = build(
+                intent_key='wplay.core',
+                title='Abrir Wplay y preparar sesion',
+                detected_role=TaskRole.TRAINING,
+                disposition=IntentDisposition.PLAN_THEN_EXECUTE,
+                confidence=0.9,
+                domain_hint='wplay',
+                summary='Abrir Wplay, validar si la sesion puede restaurarse y dejar lista la siguiente fase sin saltar directo a acciones criticas.',
+                sensitive=False,
+                multi_step=True,
+                reasoning=['menciona Wplay', 'pide abrir o entrar al sitio'],
+            )
+            hypotheses.append(IntentHypothesis(intent_key='wplay.login', title='Login Wplay', confidence=0.74, rationale='Si la sesion no se restaura, el siguiente paso sera login guiado.'))
+            return finalize(intent, hypotheses)
+
+        if self._contains_any(text, ['abre', 'abrir', 've a', 'buscar', 'busca', 'navega']) and (site_hint is not None or self._contains_any(text, ['google', 'mercadolibre', 'mercado libre'])):
+            target_title = 'Busqueda web guiada' if self._contains_any(text, ['buscar', 'busca']) else 'Navegacion web guiada'
+            intent_key = 'browser.search' if self._contains_any(text, ['buscar', 'busca']) else 'browser.navigate'
+            reasoning = ['hay un verbo operativo de navegador']
+            if site_hint:
+                reasoning.append(f'sitio detectado: {site_hint}')
+            intent = build(
+                intent_key=intent_key,
+                title=target_title,
+                detected_role=TaskRole.TRAINING,
+                disposition=IntentDisposition.PLAN_THEN_EXECUTE,
+                confidence=0.82,
+                domain_hint='browser',
+                summary='Preparar navegacion guiada por fases sobre navegador o sitio especifico.',
+                sensitive=site_hint == 'wplay',
+                multi_step=True,
+                reasoning=reasoning,
+            )
+            return finalize(intent, hypotheses)
+
+        if self._is_project_prompt(text) or str(analysis.get('primary_intent') or '') == 'project.evolution':
+            disposition = IntentDisposition.PLAN_THEN_EXECUTE if request.deep_reasoning or len(text.split()) >= 12 else IntentDisposition.ANSWER_NOW
+            reasoning = ['consulta relacionada con codigo o arquitectura']
+            if bool(analysis.get('compound')):
+                reasoning.append('mensaje compuesto con intencion principal y subintenciones detectadas')
+            if bool(analysis.get('context_carried_from_history')):
+                reasoning.append('continuidad conversacional aplicada desde el historial reciente')
+            sub_intents = [str(item) for item in (analysis.get('sub_intents') or []) if str(item).strip()]
+            if sub_intents:
+                reasoning.append('subintenciones detectadas: ' + ', '.join(sub_intents[:3]))
+            intent = build(
+                intent_key='project.evolution',
+                title='Evolucion del proyecto',
+                detected_role=TaskRole.PROJECT_EVOLUTION,
+                disposition=disposition,
+                confidence=0.88,
+                domain_hint='project',
+                summary='Revisar evidencia del repo, fallos y mejoras verticales priorizadas.',
+                multi_step=disposition == IntentDisposition.PLAN_THEN_EXECUTE,
+                reasoning=reasoning,
+            )
+            return finalize(intent, hypotheses)
+
+        if self._contains_any(text, ['marketing', 'estadistica', 'estadisticas', 'metricas', 'campana', 'campaÃ±a', 'roi', 'embudo', 'conversion']):
+            intent = build(
+                intent_key='analytics.strategy',
+                title='Analitica y estrategia',
+                detected_role=TaskRole.ANALYTICS,
+                disposition=IntentDisposition.ANSWER_NOW if len(text.split()) < 14 else IntentDisposition.PLAN_THEN_EXECUTE,
+                confidence=0.84,
+                domain_hint='analytics',
+                summary='Responder con metricas locales y, si hace falta, proponer una estrategia por fases.',
+                multi_step=len(text.split()) >= 14,
+                reasoning=['consulta analitica o de marketing'],
+            )
+            return finalize(intent, hypotheses)
+
+        if self._contains_any(text, ['cliente', 'soporte', 'respuesta al cliente', 'pedido', 'producto', 'formas de pago', 'horario']):
+            intent = build(
+                intent_key='customer.support',
+                title='Atencion al cliente',
+                detected_role=TaskRole.CUSTOMER_SUPPORT,
+                disposition=IntentDisposition.ANSWER_NOW,
+                confidence=0.84,
+                domain_hint='customer',
+                summary='Construir una respuesta local apoyada en conocimiento y datos internos.',
+                reasoning=['consulta de soporte o cliente'],
+            )
+            return finalize(intent, hypotheses)
+
+        if self._contains_any(text, ['investiga', 'investigar', 'compar', 'benchmark', 'analiza a fondo', 'tendencia']) or str(analysis.get('primary_intent') or '') == 'research.local':
+            intent = build(
+                intent_key='research.local',
+                title='Investigacion local',
+                detected_role=TaskRole.RESEARCH,
+                disposition=IntentDisposition.PLAN_THEN_EXECUTE,
+                confidence=0.79,
+                domain_hint='research',
+                summary='Sintetizar evidencia local, conocimiento y huecos antes de proponer la siguiente linea de trabajo.',
+                multi_step=True,
+                reasoning=['consulta de investigacion o comparacion'],
+            )
+            return finalize(intent, hypotheses)
+
+        if self._contains_any(text, ['conocimiento', 'base de conocimiento', 'documentacion', 'documentaciÃ³n', 'memoria', 'consulta', 'que sabes', 'quÃ© sabes']) or str(analysis.get('primary_intent') or '') == 'knowledge.query':
+            intent = build(
+                intent_key='knowledge.query',
+                title='Consulta a la base local',
+                detected_role=TaskRole.KNOWLEDGE,
+                disposition=IntentDisposition.ANSWER_NOW,
+                confidence=0.77,
+                domain_hint='knowledge',
+                summary='Responder desde conocimiento, memoria local y ejecuciones recientes sin preguntas genericas.',
+                reasoning=['consulta de memoria o base de conocimiento'],
+                metadata={'conversational_prompt': True, 'meta_assistant_prompt': self._contains_any(text, ['codex', 'chatgpt', 'claude', 'ollama', 'ia', 'ias'])},
+            )
+            return finalize(intent, hypotheses)
+
+        missing_requirements = []
+        if self._contains_any(text, ['abre', 'abrir', 've a', 'navega', 'buscar', 'busca']) and site_hint is None:
+            missing_requirements.append('indica el sitio o la URL exacta para preparar la estrategia')
+        disposition = IntentDisposition.NEED_INFO if missing_requirements else IntentDisposition.ANSWER_NOW
+        intent = build(
+            intent_key='general.assistance',
+            title='Asistencia adaptativa general',
+            detected_role=TaskRole.KNOWLEDGE,
+            disposition=disposition,
+            confidence=0.62,
+            domain_hint='general',
+            summary='Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.',
+            missing_requirements=missing_requirements,
+            reasoning=['no coincide con un dominio fuerte, se aplica fallback adaptativo'],
+            metadata={'conversational_prompt': disposition == IntentDisposition.ANSWER_NOW},
+        )
+        return finalize(intent, hypotheses)
+
+    def _analyze_conversation(
+        self,
+        *,
+        text: str,
+        request: InferenceRequest,
+        site_hint: str | None,
+        conversation_text: str,
+        context_carried_from_history: bool,
+    ) -> dict[str, Any]:
+        segments = self._segment_message(text)
+        candidate_scores: dict[str, dict[str, Any]] = {}
+        conditional_external = self._contains_any(
+            text,
+            [
+                'si hace falta',
+                'si conviene',
+                'si toca',
+                'si lo ves necesario',
+                'si vale la pena',
+                'despues decide',
+                'despu?s decide',
+                'si no puedes',
+            ],
+        )
+
+        def register(intent_key: str, score: float, reason: str) -> None:
+            bucket = candidate_scores.setdefault(intent_key, {'intent_key': intent_key, 'score': 0.0, 'reasons': []})
+            bucket['score'] = float(bucket.get('score') or 0.0) + float(score)
+            reasons = list(bucket.get('reasons') or [])
+            if reason not in reasons:
+                reasons.append(reason)
+            bucket['reasons'] = reasons
+
+        if self._is_self_awareness_prompt(text):
+            register('system.self_awareness', 5.0, 'pregunta explicita por entorno, herramientas o conexiones')
+        if self._is_evolution_status_prompt(text):
+            register('consulta_estado_evolutivo', 5.0, 'pregunta explicita por estado evolutivo o discovery')
+        explicit_assistant = self._requested_external_assistant(text)
+        if explicit_assistant:
+            register(
+                'research.external_consultation',
+                5.0 if not conditional_external else 2.0,
+                f'consulta externa mencionada para {explicit_assistant}',
+            )
+        if self._is_tool_prompt(text, request.goal_parameters):
+            register(
+                'tools.sandbox' if self._contains_any(text, ['sandbox', 'probar herramienta', 'probar tool', 'validar herramienta']) else 'tools.local_workflow',
+                4.0,
+                'mensaje asociado a herramientas locales o sandbox',
+            )
+        if site_hint == 'wplay' and self._contains_any(text, ['casino', 'juega', 'jugar', 'apuesta', 'estrategia', 'algoritmo']):
+            register('wplay.casino', 5.0, 'flujo Wplay orientado a casino o estrategia')
+        if site_hint == 'wplay' and self._contains_any(text, ['inicia sesion', 'iniciar sesion', 'login', 'loguea', 'abre wplay']):
+            register('wplay.login', 5.0, 'flujo Wplay orientado a login')
+        if site_hint == 'wplay' and self._contains_any(text, ['abre', 'abrir', 'pagina', 'p?gina', 'entra', 'ingresa', 've a']):
+            register('wplay.core', 4.0, 'flujo Wplay orientado a navegacion base')
+        if self._contains_any(text, ['abre', 'abrir', 've a', 'buscar', 'busca', 'navega']) and (site_hint is not None or self._contains_any(text, ['google', 'mercadolibre', 'mercado libre'])):
+            register(
+                'browser.search' if self._contains_any(text, ['buscar', 'busca']) else 'browser.navigate',
+                3.5,
+                'mensaje operativo de navegador sobre sitio conocido',
+            )
+        if self._is_project_prompt(text):
+            project_score = 4.0
+            if self._contains_any(text, self.ACTION_REQUEST_PATTERNS):
+                project_score += 1.0
+            if len(segments) >= 3:
+                project_score += 0.5
+            register('project.evolution', project_score, 'mensaje tecnico sobre proyecto, chat o comprension conversacional')
+        if self._contains_any(text, ['marketing', 'estadistica', 'estadisticas', 'metricas', 'campana', 'campaÃ±a', 'roi', 'embudo', 'conversion']):
+            register('analytics.strategy', 4.0, 'mensaje de analitica o marketing')
+        if self._contains_any(text, ['cliente', 'soporte', 'respuesta al cliente', 'pedido', 'producto', 'formas de pago', 'horario']):
+            register('customer.support', 4.0, 'mensaje de soporte o atencion al cliente')
+        if self._contains_any(text, ['investiga', 'investigar', 'compar', 'benchmark', 'analiza a fondo', 'tendencia']):
+            register('research.local', 4.0, 'mensaje de investigacion o comparacion')
+        if self._contains_any(text, ['conocimiento', 'base de conocimiento', 'documentacion', 'documentaciÃ³n', 'memoria', 'consulta', 'que sabes', 'quÃ© sabes']):
+            register('knowledge.query', 3.0, 'mensaje de memoria o base local')
+        if context_carried_from_history and site_hint:
+            register('general.assistance', 0.5, f'continuidad conversacional aplicada desde {site_hint}')
+        if not candidate_scores:
+            register('general.assistance', 1.0, 'fallback adaptativo')
+        ordered = sorted(
+            candidate_scores.values(),
+            key=lambda item: (-float(item.get('score') or 0.0), str(item.get('intent_key') or '')),
+        )
+        primary_intent = str(ordered[0].get('intent_key') or 'general.assistance')
+        best_actionable = next(
+            (item for item in ordered if str(item.get('intent_key') or '') in self.ACTIONABLE_INTENT_KEYS),
+            None,
+        )
+        if primary_intent in self.CONVERSATIONAL_INTENT_KEYS and best_actionable is not None:
+            if float(best_actionable.get('score') or 0.0) >= float(ordered[0].get('score') or 0.0) - 1.0:
+                primary_intent = str(best_actionable.get('intent_key') or primary_intent)
+        top_score = float(ordered[0].get('score') or 0.0)
+        sub_intents: list[str] = []
+        for item in ordered:
+            intent_key = str(item.get('intent_key') or '')
+            if not intent_key or intent_key == primary_intent:
+                continue
+            if float(item.get('score') or 0.0) >= max(2.0, top_score - 2.0):
+                sub_intents.append(intent_key)
+        sub_intents = list(dict.fromkeys(sub_intents))[:4]
+        actionable_candidates = [
+            str(item.get('intent_key') or '')
+            for item in ordered
+            if str(item.get('intent_key') or '') in self.ACTIONABLE_INTENT_KEYS
+        ]
+        conversational_candidates = [
+            str(item.get('intent_key') or '')
+            for item in ordered
+            if str(item.get('intent_key') or '') in self.CONVERSATIONAL_INTENT_KEYS
+        ]
+        mixed_actionable = bool(actionable_candidates) and (
+            bool(conversational_candidates)
+            or len(set(actionable_candidates)) > 1
+            or bool(sub_intents)
+        )
+        ambiguity_score = 0.0
+
+        # Length: longer messages tend to be more complex
+        if len(text.split()) >= 24:
+            ambiguity_score += 0.12
+        elif len(text.split()) >= 16:
+            ambiguity_score += 0.06
+
+        # Segments: multiple logical breaks indicate complexity
+        if len(segments) >= 3:
+            ambiguity_score += min(0.24, 0.08 * (len(segments) - 1))
+        elif len(segments) == 2:
+            # Two segments with "pero", "aunque", "luego" connectors often indicate alternatives
+            ambiguity_score += 0.08
+
+        # Sub-intents: multiple detected intents indicate compound message
+        if sub_intents:
+            ambiguity_score += min(0.3, 0.12 * len(sub_intents))
+
+        # Uncertainty markers: explicit expressions of doubt/alternatives
+        has_uncertainty = self._contains_any(text, ['quizas', 'quiz?', 'tal vez', 'no se', 'duda', 'ambig', 'conviene', 'amerita'])
+        if has_uncertainty:
+            ambiguity_score += 0.22
+
+        # Temporal uncertainty: phrases like "ahora o despues", "despues o ahora" express ordering doubt
+        has_temporal_uncertainty = self._contains_any(text, ['ahora o despues', 'despues o ahora', 'despues o luego', 'si ahora o despues', 'no se si ahora', 'no se cuando'])
+        if has_temporal_uncertainty:
+            ambiguity_score += 0.18
+
+        # Conditional secondary actions: "quizas" + action verb indicates tentative intent
+        action_verbs = ['revisa', 'revisar', 'refactor', 'refactoriza', 'mejora', 'mejorar', 'ajusta', 'arregla', 'arreglar', 'analiza', 'analizar']
+        has_multiple_actions = sum(1 for verb in action_verbs if verb in text)
+        if has_multiple_actions >= 2:
+            ambiguity_score += 0.15
+        elif has_multiple_actions == 1 and has_uncertainty:
+            # Single action but expressed with uncertainty (quizas + verb)
+            ambiguity_score += 0.10
+
+        # Score margin between top candidates
+        if len(ordered) > 1:
+            score_margin = float(ordered[0].get('score') or 0.0) - float(ordered[1].get('score') or 0.0)
+            if score_margin <= 0.5:
+                ambiguity_score += 0.22
+            elif score_margin <= 1.0:
+                ambiguity_score += 0.12
+
+        if conditional_external:
+            ambiguity_score += 0.08
+
+        ambiguity_score = round(min(1.0, ambiguity_score), 2)
+        requires_clarification = ambiguity_score >= 0.78 or (primary_intent == 'general.assistance' and len(sub_intents) >= 2)
+        clarification_prompt = (
+            'Detecte varias intenciones mezcladas. Confirma que quieres que atienda primero: '
+            f'{primary_intent}.'
+            if requires_clarification
+            else ''
+        )
+        request_like_segments = [
+            segment['text']
+            for segment in segments
+            if 'request' in list(segment.get('labels') or []) or 'instruction' in list(segment.get('labels') or [])
+        ]
+        objective_summary = request_like_segments[0] if request_like_segments else (segments[0]['text'] if segments else text)
+        return {
+            'primary_intent': primary_intent,
+            'sub_intents': sub_intents,
+            'candidate_intents': [
+                {
+                    'intent_key': str(item.get('intent_key') or ''),
+                    'score': round(float(item.get('score') or 0.0), 2),
+                    'reasons': list(item.get('reasons') or []),
+                }
+                for item in ordered[:6]
+            ],
+            'segments': segments,
+            'compound': len(segments) > 1 or bool(sub_intents),
+            'mixed_actionable': mixed_actionable,
+            'ambiguity_score': ambiguity_score,
+            'requires_clarification': requires_clarification,
+            'clarification_prompt': clarification_prompt,
+            'objective_summary': objective_summary,
+            'constraints': self._extract_constraints(text, segments),
+            'context_carried_from_history': bool(context_carried_from_history and not request.site_hint),
+            'conversation_turns_used': min(len(request.conversation_context or []), 6) if conversation_text else 0,
+            'conditional_external_consultation': conditional_external,
+        }
+
+    def _conversation_context_text(self, conversation_context: list[dict[str, Any]] | None) -> str:
+        if not conversation_context:
+            return ''
+        snippets: list[str] = []
+        for item in conversation_context[-6:]:
+            if not isinstance(item, dict):
+                continue
+            parts = [str(item.get('text') or '').strip(), str(item.get('meta') or '').strip()]
+            merged = ' '.join(part for part in parts if part)
+            if merged:
+                snippets.append(merged)
+        return self._normalize(' '.join(snippets)) if snippets else ''
+
+    def _segment_message(self, text: str) -> list[dict[str, Any]]:
+        if not text:
+            return []
+        raw_segments = re.split(
+            r'(?<=[\.\?\!\n;:])\s+|\s+(?:pero|aunque|ademas|además|luego|despues|después|por otro lado)\s+',
+            text,
+        )
+        segments: list[dict[str, Any]] = []
+        for raw in raw_segments:
+            cleaned = ' '.join(str(raw or '').strip(' ,;:-').split())
+            if not cleaned:
+                continue
+            labels = self._segment_labels(cleaned)
+            segments.append(
+                {
+                    'text': cleaned,
+                    'labels': labels,
+                    'primary_label': labels[0] if labels else 'statement',
+                }
+            )
+        return segments[:8]
+
+    def _segment_labels(self, segment: str) -> list[str]:
+        lowered = self._normalize(segment)
+        labels: list[str] = []
+        if self._contains_any(lowered, ['te doy contexto', 'contexto', 'pasa que', 'viene de', 'venimos de', 'el problema', 'sigue', 'porque', 'por que']):
+            labels.append('context')
+        if self._contains_any(lowered, self.ACTION_REQUEST_PATTERNS):
+            labels.append('request')
+        if self._contains_any(lowered, ['sin ', 'no ', 'debe', 'evita', 'primero', 'antes', 'si hay ambig', 'si no puedes', 'sin ejecutar', 'no ejecutes', 'no invent', 'no asum']):
+            labels.append('criteria')
+        if self._contains_any(lowered, ['revisa', 'analiza', 'corrige', 'arregla', 'separa', 'clasifica', 'responde', 'dilo claro', 'marca', 'confirma', 'prioriza', 'no ejecutes']):
+            labels.append('instruction')
+        if '?' in segment or self._contains_any(lowered, ['duda', 'no se', 'quizas', 'quiz?', 'tal vez', 'conviene', 'amerita']):
+            labels.append('doubt')
+        if not labels:
+            labels.append('statement')
+        order = {'request': 0, 'context': 1, 'criteria': 2, 'instruction': 3, 'doubt': 4, 'statement': 5}
+        return sorted(list(dict.fromkeys(labels)), key=lambda label: order.get(label, 99))
+
+    def _extract_constraints(self, text: str, segments: list[dict[str, Any]]) -> list[str]:
+        constraints: list[str] = []
+        direct_constraints = {
+            'no ejecutes': 'no ejecutar todavia',
+            'sin ejecutar': 'no ejecutar todavia',
+            'si hay ambig': 'explicitar ambiguedad fuerte',
+            'no invent': 'no inventar',
+            'no asum': 'no asumir',
+            'dilo claro': 'declarar limites con claridad',
+            'responde primero': 'responder primero la intencion principal',
+        }
+        for probe, label in direct_constraints.items():
+            if probe in text and label not in constraints:
+                constraints.append(label)
+        for segment in segments:
+            labels = list(segment.get('labels') or [])
+            if 'criteria' in labels:
+                snippet = str(segment.get('text') or '').strip()
+                if snippet and snippet not in constraints:
+                    constraints.append(snippet)
+        return constraints[:5]
+
+    def _merge_intent_hypotheses(
+        self,
+        current_hypotheses: list[IntentHypothesis],
+        analysis: dict[str, Any],
+    ) -> list[IntentHypothesis]:
+        merged = list(current_hypotheses)
+        seen = {item.intent_key for item in merged}
+        primary_intent = str(analysis.get('primary_intent') or '')
+        for item in list(analysis.get('candidate_intents') or []):
+            intent_key = str(item.get('intent_key') or '')
+            if not intent_key or intent_key == primary_intent or intent_key in seen:
+                continue
+            score = float(item.get('score') or 0.0)
+            if score < 2.0:
+                continue
+            rationale = '; '.join(str(reason) for reason in list(item.get('reasons') or [])[:2]) or 'Subintencion detectada en un mensaje compuesto.'
+            merged.append(
+                IntentHypothesis(
+                    intent_key=intent_key,
+                    title=self._intent_title(intent_key),
+                    confidence=round(min(0.84, max(0.35, score / 6.0)), 2),
+                    rationale=rationale,
+                )
+            )
+            seen.add(intent_key)
+        return merged
+
+    def _intent_title(self, intent_key: str) -> str:
+        return {
+            'general.assistance': 'Asistencia general',
+            'knowledge.query': 'Consulta local',
+            'system.self_awareness': 'Autodiagnostico conversacional',
+            'consulta_estado_evolutivo': 'Consulta de estado evolutivo',
+            'research.external_consultation': 'Consulta externa dirigida',
+            'research.local': 'Investigacion local',
+            'project.evolution': 'Evolucion del proyecto',
+            'tools.local_workflow': 'Tool Teaching local-first',
+            'tools.sandbox': 'Sandbox de herramientas',
+            'wplay.login': 'Login Wplay',
+            'wplay.core': 'Core Wplay',
+            'wplay.casino': 'Casino Wplay',
+            'browser.search': 'Busqueda web guiada',
+            'browser.navigate': 'Navegacion web guiada',
+            'analytics.strategy': 'Analitica y estrategia',
+            'customer.support': 'Atencion al cliente',
+        }.get(intent_key, intent_key)
+
+    def _is_tool_prompt(self, text: str, goal_parameters: dict[str, Any]) -> bool:
+        if goal_parameters.get('tool_id'):
+            return True
+        if self._contains_any(text, ['playwright', 'ollama', 'aider', 'mcp', 'powershell', 'shell']):
+            return True
+        if self._contains_any(text, ['herramienta local', 'herramientas locales', 'tool local', 'tools locales', 'local-first']):
+            return True
+        if 'tool' in text:
+            return True
+        return 'herramienta' in text and self._contains_any(
+            text,
+            [
+                'sandbox',
+                'probar herramienta',
+                'probar tool',
+                'validar herramienta',
+                'adaptador',
+                'workflow',
+                'usa la herramienta',
+                'usar herramienta',
+                'ejecuta la herramienta',
+            ],
+        )
+
+    def _is_project_prompt(self, text: str) -> bool:
+        strong_project_terms = self._contains_any(
+            text,
+            ['proyecto', 'codigo', 'c?digo', 'bug', 'error', 'fallo', 'falla', 'mejora', 'refactor'],
+        )
+        conversational_issue_terms = self._contains_any(
+            text,
+            ['convers', 'intencion', 'intenci', 'subintencion', 'subintenci', 'contexto', 'mensaje largo', 'mensajes largos', 'desvia', 'desv?a', 'ambig'],
+        )
+        action_signals = self._contains_any(
+            text,
+            self.ACTION_REQUEST_PATTERNS
+            + ['por que', 'porque', 'diagnostico', 'diagnosticar', 'decide', 'prioriza'],
+        )
+        architecture_request = 'arquitectura' in text and action_signals
+        return strong_project_terms or (conversational_issue_terms and action_signals) or architecture_request
+
+    def _is_self_awareness_prompt(self, text: str) -> bool:
+        if not text:
+            return False
+        direct_phrases = (
+            'conoces tu entorno',
+            'conoce tu entorno',
+            'sabes tu entorno',
+            'sabes tu arquitectura',
+            'conoces tu arquitectura',
+            'que herramientas tienes',
+            'quÃ© herramientas tienes',
+            'que herramientas tienes disponibles',
+            'quÃ© herramientas tienes disponibles',
+            'que herramientas hay disponibles',
+            'quÃ© herramientas hay disponibles',
+            'con que ias te conectas',
+            'con quÃ© ias te conectas',
+            'con que ias te puedes conectar',
+            'con quÃ© ias te puedes conectar',
+            'con que ia te conectas',
+            'con quÃ© ia te conectas',
+            'con que ia te puedes conectar',
+            'con quÃ© ia te puedes conectar',
+            'con que asistentes te conectas',
+            'con quÃ© asistentes te conectas',
+            'con que asistentes te puedes conectar',
+            'con quÃ© asistentes te puedes conectar',
+            'que tan consciente eres',
+            'quÃ© tan consciente eres',
+            'que tan bien estas',
+            'quÃ© tan bien estÃ¡s',
+            'que tan bien estas ahora',
+            'quÃ© tan bien estÃ¡s ahora',
+            'como estas ahora',
+            'cÃ³mo estÃ¡s ahora',
+            'que tienes disponible',
+            'quÃ© tienes disponible',
+            'que puedes usar ahora',
+            'quÃ© puedes usar ahora',
+        )
+        if any(phrase in text for phrase in direct_phrases):
+            return True
+        word_tokens = set(re.findall(r'[a-z0-9_]+', text))
+        asks_system_state = any(token in word_tokens for token in ('entorno', 'arquitectura', 'herramienta', 'herramientas', 'ias', 'ia', 'estado', 'conexiones'))
+        asks_directly = any(token in text for token in ('conoces', 'sabes', 'tienes', 'disponibles', 'te conectas', 'te puedes conectar', 'puedes usar', 'consciente', 'que tan bien', 'como estas', 'como estÃ¡s'))
+        return asks_system_state and asks_directly
+
+    def _is_evolution_status_prompt(self, text: str) -> bool:
+        if not text:
+            return False
+        direct_phrases = (
+            'que herramienta va ganando',
+            'qué herramienta va ganando',
+            'que herramientas van ganando',
+            'qué herramientas van ganando',
+            'que esta en validacion',
+            'qué está en validacion',
+            'que esta en validación',
+            'qué está en validación',
+            'que fue descartado',
+            'qué fue descartado',
+            'que herramientas fueron descartadas',
+            'qué herramientas fueron descartadas',
+            'que se descubrio nuevo',
+            'qué se descubrio nuevo',
+            'que se descubrió nuevo',
+            'qué se descubrió nuevo',
+            'que herramienta nueva vale la pena probar',
+            'qué herramienta nueva vale la pena probar',
+            'que herramienta vale la pena probar',
+            'qué herramienta vale la pena probar',
+        )
+        if any(phrase in text for phrase in direct_phrases):
+            return True
+        word_tokens = set(re.findall(r'[a-z0-9_]+', text))
+        asks_evolution = any(token in word_tokens for token in ('ganando', 'validacion', 'validacion', 'descartado', 'descartadas', 'descubrio', 'descubrio', 'descubierta', 'nuevo', 'nueva'))
+        asks_tools = any(token in word_tokens for token in ('herramienta', 'herramientas', 'ruta', 'rutas', 'prueba', 'probar'))
+        asks_state = any(token in word_tokens for token in ('esta', 'estan', 'va', 'van', 'fue', 'fueron', 'vale'))
+        return asks_evolution and (asks_tools or asks_state)
+
+    def _detect_site(self, text: str, goal_parameters: dict[str, Any]) -> str | None:
+        site_hint, _ = self._detect_site_with_history(text, goal_parameters, '')
+        return site_hint
+
+    def _detect_site_with_history(
+        self,
+        text: str,
+        goal_parameters: dict[str, Any],
+        conversation_text: str,
+    ) -> tuple[str | None, bool]:
+        probes: list[str] = [text]
+        probes.extend(str(value).lower() for value in goal_parameters.values() if isinstance(value, (str, int, float)))
+        merged = ' '.join(probes)
+        for site_id, aliases in self.SITE_ALIASES.items():
+            if any(alias in merged for alias in aliases):
+                return site_id, False
+        if conversation_text:
+            for site_id, aliases in self.SITE_ALIASES.items():
+                if any(alias in conversation_text for alias in aliases):
+                    return site_id, True
+        return None, False
+
+    def _contains_any(self, text: str, patterns: list[str]) -> bool:
+        return any(pattern in text for pattern in patterns)
+
+    def _normalize(self, text: str) -> str:
+        normalized = text.strip().lower()
+        normalized = re.sub(r'\s+', ' ', normalized)
+        return normalized
+
+    def _requested_external_assistant(self, text: str) -> str:
+        normalized = self._normalize(text)
+        if not normalized:
+            return ''
+        if self._contains_any(normalized, ['que sabes hacer', 'qu? sabes hacer', 'como funcionas', 'c?mo funcionas', 'sabes consultar automaticamente']):
+            return ''
+        consult_verbs = (
+            'consulta',
+            'consulta externa',
+            'consultar',
+            'consultalo',
+            'cons?ltalo',
+            'usa ',
+            'utiliza ',
+            'apoyate en',
+            'ap?yate en',
+            'pregunta a',
+            'valida con',
+            'revisa con',
+            'escala a',
+            'escalalo a',
+            'escalalo con',
+            'razona con',
+            'piensa con',
+        )
+        if not any(verb in normalized for verb in consult_verbs):
+            return ''
+        if 'chatgpt' in normalized:
+            return 'chatgpt'
+        if 'claude' in normalized:
+            return 'claude'
+        if 'codex' in normalized:
+            return 'codex'
+        if 'ollama' in normalized:
+            return 'ollama'
+        return ''
+

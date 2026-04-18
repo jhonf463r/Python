@@ -1,0 +1,38 @@
+{
+  "observation_id": "cf5842a2-eefe-461c-a0ad-7372aa565468",
+  "pattern_id": "60e4217c-c351-459d-8d6b-ac767cadc7c2",
+  "task_id": "c967f134-05d9-4379-9ac8-08b8764242e9",
+  "result_id": "ce7a6ae4-d312-4403-8943-85b525c1e360",
+  "episode_id": "a7ba1cc1-b54d-460e-b16b-f9f8f233e965",
+  "success": true,
+  "channel": "ui",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": null,
+  "summary": "Asistente externo listo para consulta guiada.",
+  "confidence": 0.78,
+  "evidence_refs": [
+    "ce7a6ae4-d312-4403-8943-85b525c1e360:assistant_kind",
+    "ce7a6ae4-d312-4403-8943-85b525c1e360:launch_target"
+  ],
+  "created_at_utc": "2026-04-12T22:55:16.237991Z",
+  "metadata": {
+    "validation_status": "sandbox_pass",
+    "execution_state": "sandbox_pass",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "assistant_kind",
+      "launch_target"
+    ],
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

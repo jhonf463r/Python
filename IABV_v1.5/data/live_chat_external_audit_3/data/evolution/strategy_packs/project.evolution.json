@@ -1,0 +1,43 @@
+{
+  "pack_id": "project.evolution",
+  "title": "Evolucion del proyecto",
+  "domain_kind": "project",
+  "supported_intents": [
+    "project.evolution"
+  ],
+  "required_capabilities": [
+    "project.review.local"
+  ],
+  "required_context": [
+    "recent_dossiers",
+    "recent_incidents",
+    "recent_runs"
+  ],
+  "available_algorithms": [
+    {
+      "algorithm_id": "vertical_change_recommendation",
+      "title": "Cambio vertical recomendado",
+      "summary": "Resume evidencia, causa probable, cambio vertical y pruebas sugeridas para avanzar con Codex.",
+      "parameter_keys": [],
+      "success_signals": [],
+      "fallback_signals": [],
+      "notes": ""
+    }
+  ],
+  "parameter_schema": [],
+  "risk_level": "medium",
+  "approval_policy": "never",
+  "execution_templates": [
+    "leer evidencia",
+    "proponer mejora"
+  ],
+  "success_signals": [
+    "mejora priorizada"
+  ],
+  "fallback_signals": [
+    "need_more_evidence"
+  ],
+  "metadata": {
+    "updated_at_utc": "2026-04-11T01:40:22.231739+00:00"
+  }
+}

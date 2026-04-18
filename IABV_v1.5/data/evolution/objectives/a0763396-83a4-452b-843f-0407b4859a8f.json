@@ -1,0 +1,33 @@
+{
+  "objective_id": "a0763396-83a4-452b-843f-0407b4859a8f",
+  "kind": "subtask",
+  "title": "Verificar resultado",
+  "summary": "Comparar contra 2 patrones universales ya aprendidos antes de marcar exito.",
+  "parent_id": "ef967045-a57d-43c0-bed3-5d9b9d9949a6",
+  "root_id": "d4663ed3-f6c9-49e0-b7e7-06d59b52834d",
+  "site_id": null,
+  "priority": 56,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.66,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Auditoria viva: Sin hallazgos. Decision: continue_local. Confianza 0.66."
+  ],
+  "tags": [
+    "verify"
+  ],
+  "metadata": {
+    "phase_key": "verify",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "knowledge.query"
+  },
+  "created_at_utc": "2026-04-13T17:20:53.658040Z",
+  "updated_at_utc": "2026-04-13T17:20:53.658040Z"
+}

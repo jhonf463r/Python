@@ -1,0 +1,5 @@
+2026-04-13 19:54:10,771 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+2026-04-13 19:54:19,606 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+2026-04-13 19:54:20,070 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+2026-04-13 19:54:20,303 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+2026-04-13 19:54:21,082 | INFO | iabv_v15.services.capture.browser_session_controller | Started persistent browser context: C:\Python\IABV_v1.5\data\tool_teaching\external_assistants\claude_program_session\browser_profile

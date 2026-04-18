@@ -1,0 +1,99 @@
+{
+  "recommendation_id": "de0fd2cd-345c-438a-b396-ffb318a5e159",
+  "domain": "language",
+  "subject_key": "sandbox:general",
+  "recommended_route": "language_understanding",
+  "recommended_assistant_kind": "chatgpt",
+  "recommended_assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "desktop_app:chatgpt_consult_v1:external_assistant",
+  "score": 1.1249,
+  "confidence": 0.8695,
+  "rationale": "Recomiendo language_understanding para language en sandbox:general usando chatgpt con configuracion desktop_app:chatgpt_consult_v1:external_assistant por score base 0.78 y score adaptativo 1.12 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; reutilizacion alta 100%.",
+  "supporting_run_ids": [
+    "5456e21c-b4fa-4f4c-b00c-7d3933a78150"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "language_understanding",
+        "score": 1.0871,
+        "samples": 2
+      }
+    ],
+    "ranked_configurations": [
+      {
+        "route": "language_understanding",
+        "assistant_kind": "chatgpt",
+        "config_signature": "desktop_app:chatgpt_consult_v1:external_assistant",
+        "score": 0.7849,
+        "adaptive_weight": 0.34,
+        "weighted_score": 1.1249,
+        "samples": 1,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%",
+          "reutilizacion alta 100%"
+        ]
+      },
+      {
+        "route": "language_understanding",
+        "assistant_kind": "ollama",
+        "config_signature": "local_provider:ollama",
+        "score": 0.8773,
+        "adaptive_weight": 0.172,
+        "weighted_score": 1.0493,
+        "samples": 1,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 1.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%",
+          "reutilizacion alta 100%",
+          "bloqueos frecuentes 100%"
+        ]
+      }
+    ],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": [
+      "general"
+    ],
+    "adaptive_learning_summary": {
+      "preferred_route": "language_understanding",
+      "preferred_assistant_kind": "chatgpt",
+      "preferred_config_signature": "desktop_app:chatgpt_consult_v1:external_assistant",
+      "adaptive_weight": 0.34,
+      "weighted_score": 1.1249,
+      "sample_count": 1,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "top_environment_signatures": [
+        "default"
+      ],
+      "top_time_buckets": [
+        "afternoon"
+      ],
+      "reasons": [
+        "historial de exito 100%",
+        "reutilizacion alta 100%"
+      ]
+    }
+  },
+  "created_at_utc": "2026-04-18T13:27:44.135975Z"
+}

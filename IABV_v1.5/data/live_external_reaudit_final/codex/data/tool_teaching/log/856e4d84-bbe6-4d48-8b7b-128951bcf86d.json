@@ -1,0 +1,164 @@
+{
+  "log_id": "856e4d84-bbe6-4d48-8b7b-128951bcf86d",
+  "tool_id": "codex_installed",
+  "task_id": "d9e5565a-52da-4fb0-98b9-c8348d7b04e6",
+  "action_type": "task_result",
+  "state": "awaiting_response",
+  "created_at_utc": "2026-04-12T22:52:25.786691+00:00",
+  "payload": {
+    "result_id": "7def2931-9327-466c-9c7b-1cbbdcef2240",
+    "task_id": "d9e5565a-52da-4fb0-98b9-c8348d7b04e6",
+    "tool_id": "codex_installed",
+    "tool_type": "custom",
+    "success": true,
+    "validation_status": "unvalidated",
+    "execution_state": {
+      "state": "awaiting_response",
+      "detail": "Herramienta ejecutada por el adaptador local.",
+      "executor_name": "external_assistant",
+      "sandboxed": false,
+      "validated": true,
+      "approval_decision": "approved",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": false,
+        "assistant_kind": "codex",
+        "launch_mode": "desktop_app",
+        "launch_target": "codex",
+        "response_capture_mode": "clipboard_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Validacion final real desde IABV v1.5.\n\nIABV_THREAD_KEY: iabv::codex::audit::auditoria-viva-de-iabv-valida-si-codex-responde-\nIABV_THREAD_TITLE: IABV Codex | Auditoria viva de IABV: valida si Codex responde\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "prompt_preview": "Validacion final real desde IABV v1.5.\n\nIABV_THREAD_KEY: iabv::codex::audit::auditoria-viva-de-iabv-valida-si-codex-responde-\nIABV_THREAD_TITLE: IABV Codex | Auditoria viva de IABV: valida si Codex responde\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "response_captured": false,
+        "launched": true,
+        "auto_capture_attempted": true,
+        "auto_capture_reason": "capture_pending",
+        "response_capture_pending": true,
+        "focused_title": "Codex",
+        "session_scope": "external_app",
+        "session_label": "Codex",
+        "isolated_session": false,
+        "thread_key": "iabv::codex::audit::auditoria-viva-de-iabv-valida-si-codex-responde-",
+        "thread_title": "IABV Codex | Auditoria viva de IABV: valida si Codex responde",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+        "last_capture_attempt_utc": "2026-04-12T22:52:12.536501+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_reaudit_final\\codex\\data\\tool_teaching\\external_assistants\\codex_home",
+        "capture_source": "codex_rollout"
+      }
+    },
+    "rollback_state": null,
+    "output_text": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano.",
+    "extracted_data": {
+      "assistant_kind": "codex",
+      "launch_target": "codex",
+      "prompt_preview": "Validacion final real desde IABV v1.5.\n\nIABV_THREAD_KEY: iabv::codex::audit::auditoria-viva-de-iabv-valida-si-codex-responde-\nIABV_THREAD_TITLE: IABV Codex | Auditoria viva de IABV: valida si Codex responde\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "focused_title": "Codex"
+    },
+    "artifacts": [],
+    "error_message": "",
+    "execution_ms": 13252,
+    "created_at_utc": "2026-04-12T22:52:25.786691Z",
+    "metadata": {
+      "sandbox": false,
+      "assistant_kind": "codex",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "normal",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "without_browser",
+        "assistant_mode": "code",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "codex",
+          "tool_id": "codex_installed",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 352
+        }
+      },
+      "config_signature": "without_plan|without_files|normal|short|with_tools|without_browser|code|external",
+      "external_state_flags": [
+        "awaiting_response",
+        "capture_unverified"
+      ],
+      "ia_trace_entry": {
+        "trace_id": "b016daee-b275-4183-84ca-9ce9ed11a381",
+        "created_at_utc": "2026-04-12T22:52:25.786817Z",
+        "assistant_kind": "codex",
+        "requested_assistant_kind": "codex",
+        "actual_assistant_kind": "codex",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "normal",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "without_browser",
+          "assistant_mode": "code",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "codex",
+            "tool_id": "codex_installed",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 352
+          }
+        },
+        "config_signature": "without_plan|without_files|normal|short|with_tools|without_browser|code|external",
+        "comparison_scope_key": "audit:consultar-codex-sobre-auditoria-viva-de-iabv-valida-si-codex-responde-o",
+        "source_trace_ids": [],
+        "route": "code_agent",
+        "tool_id": "codex_installed",
+        "task_id": "d9e5565a-52da-4fb0-98b9-c8348d7b04e6",
+        "result_id": "7def2931-9327-466c-9c7b-1cbbdcef2240",
+        "session_scope": "external_app",
+        "thread_key": "iabv::codex::audit::auditoria-viva-de-iabv-valida-si-codex-responde-",
+        "thread_title": "IABV Codex | Auditoria viva de IABV: valida si Codex responde",
+        "capture_lane": "background",
+        "state": "awaiting_response",
+        "detail": "Herramienta ejecutada por el adaptador local.",
+        "proposal_summary": "Validacion final real desde IABV v1.5. IABV_THREAD_KEY: iabv::codex::audit::auditoria-viva-de-iabv-valida-si-codex-responde- IABV_THREAD_TITLE: IABV Codex | Auditoria viva de IABV: valida si Codex responde IABV_LANE_PRIORITY: background > a",
+        "outcome_summary": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano.",
+        "result_label": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano.",
+        "success": true,
+        "execution_ms": 13252,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "audit",
+          "d9e5565a-52da-4fb0-98b9-c8348d7b04e6",
+          "7def2931-9327-466c-9c7b-1cbbdcef2240"
+        ],
+        "reused_later": false,
+        "verdict": "awaiting_response",
+        "coherence_flags": [],
+        "external_state_flags": [
+          "awaiting_response",
+          "capture_unverified"
+        ],
+        "metadata": {
+          "response_capture_mode": "clipboard_capture",
+          "background_capture_mode": "codex_rollout",
+          "comparison_scope_key": "audit:consultar-codex-sobre-auditoria-viva-de-iabv-valida-si-codex-responde-o"
+        }
+      },
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "review_id": "f8b7f375-add8-4a4b-bc50-10c57dd37072",
+  "created_at_utc": "2026-04-15T23:59:57.185058Z",
+  "updated_at_utc": "2026-04-15T23:59:57.185058Z",
+  "package_version": "self_examination.v1",
+  "summary": "Autoexaminacion partial: todavia no tengo suficiente evidencia acumulada para emitir una revision fuerte.",
+  "status": "partial",
+  "assistant_brief": "# IABV v1.5 - Operational Self Examination\n\nGenerado: 2026-04-15T23:59:57.185058+00:00\nResumen: Autoexaminacion partial: todavia no tengo suficiente evidencia acumulada para emitir una revision fuerte.\n\nUsa esta revision para entender que esta fallando, que se repite y que ajustes conviene hacer antes de tocar la arquitectura.\n\n## Hallazgos\n- Sin hallazgos fuertes confirmados.\n\n## Ajustes recomendados\n- Seguir capturando evidencia evolutiva: Ejecutar consultas, ensenanzas y autodiagnosticos para poblar la capa evolutiva. | fuente EvolutionReviewService\n\n## Mejoras validadas\n- Sin mejoras validadas fuertes todavia.\n\nUNRESOLVED: UNRESOLVED:codex_thread_tracking, UNRESOLVED:autonomous_validation_cycle, UNRESOLVED:experiment_history, UNRESOLVED:adaptive_sessions",
+  "findings": [],
+  "recurring_issues": [],
+  "recommended_adjustments": [
+    {
+      "title": "Seguir capturando evidencia evolutiva",
+      "recommended_change": "Ejecutar consultas, ensenanzas y autodiagnosticos para poblar la capa evolutiva.",
+      "category": "backlog",
+      "severity": "medium",
+      "confidence": 0.35,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ]
+    }
+  ],
+  "validated_improvements": [],
+  "unresolved_risks": [
+    "UNRESOLVED:codex_thread_tracking",
+    "UNRESOLVED:autonomous_validation_cycle",
+    "UNRESOLVED:experiment_history",
+    "UNRESOLVED:adaptive_sessions"
+  ],
+  "package_path": "C:\\Python\\IABV_v1.5\\data\\test_control_center_self_examination_adjustments_workspace_95e5bed3d7bb48c2b2e57067100a80b2\\data\\evolution\\self_examination\\latest.json",
+  "markdown_path": "C:\\Python\\IABV_v1.5\\data\\test_control_center_self_examination_adjustments_workspace_95e5bed3d7bb48c2b2e57067100a80b2\\data\\evolution\\self_examination\\latest.md",
+  "metadata": {
+    "workspace_root": "C:\\Python\\IABV_v1.5\\data\\test_control_center_self_examination_adjustments_workspace_95e5bed3d7bb48c2b2e57067100a80b2",
+    "source_refs": [
+      "RunRepository",
+      "AdaptiveSessionRepository",
+      "ExperimentLab",
+      "EvolutionReviewService",
+      "WorldModelSnapshot",
+      "AutonomousValidationSnapshot"
+    ]
+  }
+}

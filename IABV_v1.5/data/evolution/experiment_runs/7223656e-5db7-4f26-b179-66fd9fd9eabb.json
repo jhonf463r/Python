@@ -1,0 +1,91 @@
+{
+  "run_id": "7223656e-5db7-4f26-b179-66fd9fd9eabb",
+  "domain": "language",
+  "suite_name": "sandbox_experiment",
+  "objective": "Validar si adaptive local orchestrator sigue siendo la mejor via para 6bdb8f82-6db3-4a56-9e7b-4c3562883d85.",
+  "subject_key": "sandbox:6bdb8f82-6db3-4a56-9e7b-4c3562883d85",
+  "route": "language_understanding",
+  "assistant_kind": "adaptive local orchestrator",
+  "assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+  "candidate_id": "f69df877-eb8d-46d6-aaf4-96387f2ac0ca",
+  "candidate_label": "adaptive local orchestrator",
+  "success": true,
+  "expected_summary": "Validar preferencia historica sin contaminar la ruta principal.",
+  "observed_summary": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+  "metrics": {
+    "precision": 0.4498,
+    "execution_ms": 0,
+    "operational_cost": 0.0,
+    "robustness": 1.0,
+    "reuse_score": 0.2,
+    "user_progress": 0.18,
+    "total_score": 0.6218,
+    "metadata": {
+      "assistant_kind": "adaptive local orchestrator",
+      "config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "comparison_scope_key": "6bdb8f82-6db3-4a56-9e7b-4c3562883d85",
+      "source_trace_ids": [
+        "ebd1747e-fa63-40d3-8e19-ac9bddc473d2"
+      ],
+      "proposal_summary": "Validar si adaptive local orchestrator sigue siendo la mejor via para 6bdb8f82-6db3-4a56-9e7b-4c3562883d85.",
+      "outcome_summary": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+      "learning_source": "sandbox_experiment",
+      "isolated_experiment": true,
+      "sandbox_experiment_id": "f69df877-eb8d-46d6-aaf4-96387f2ac0ca",
+      "validation_verdict": "valid",
+      "validation_reason": "scheduled_validation",
+      "observed_blockers": [],
+      "blocked": false,
+      "external_state_flags": [],
+      "source_subject_key": "6bdb8f82-6db3-4a56-9e7b-4c3562883d85",
+      "route": "language_understanding",
+      "candidate_label": "adaptive local orchestrator",
+      "sample_support": 1,
+      "latency_score": 1.0,
+      "cost_score": 1.0,
+      "user_progress_score": 0.18,
+      "relative_vs_same_config": 1.0
+    }
+  },
+  "evidence_refs": [
+    "ebd1747e-fa63-40d3-8e19-ac9bddc473d2"
+  ],
+  "reused_later": false,
+  "better_than_previous": false,
+  "metadata": {
+    "assistant_kind": "adaptive local orchestrator",
+    "config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+    "comparison_scope_key": "6bdb8f82-6db3-4a56-9e7b-4c3562883d85",
+    "source_trace_ids": [
+      "ebd1747e-fa63-40d3-8e19-ac9bddc473d2"
+    ],
+    "proposal_summary": "Validar si adaptive local orchestrator sigue siendo la mejor via para 6bdb8f82-6db3-4a56-9e7b-4c3562883d85.",
+    "outcome_summary": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+    "learning_source": "sandbox_experiment",
+    "isolated_experiment": true,
+    "sandbox_experiment_id": "f69df877-eb8d-46d6-aaf4-96387f2ac0ca",
+    "validation_verdict": "valid",
+    "validation_reason": "scheduled_validation",
+    "observed_blockers": [],
+    "blocked": false,
+    "external_state_flags": [],
+    "source_subject_key": "6bdb8f82-6db3-4a56-9e7b-4c3562883d85",
+    "suite_name": "sandbox_experiment",
+    "candidate_label": "adaptive local orchestrator",
+    "route": "language_understanding",
+    "trace_id": ""
+  },
+  "created_at_utc": "2026-04-16T22:32:04.916075Z"
+}

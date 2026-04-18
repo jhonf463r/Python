@@ -1,0 +1,4 @@
+2026-04-13 20:28:31,926 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+2026-04-13 20:28:36,450 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+2026-04-13 20:28:36,956 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+2026-04-13 20:28:37,235 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"

@@ -1,0 +1,38 @@
+{
+  "observation_id": "d924bdf7-49e0-41de-9703-6640fe1f1736",
+  "pattern_id": "be61f185-4864-4d59-997e-126c952cf4ff",
+  "task_id": "12792628-d8c7-4d96-bf8c-c9c7f1b71084",
+  "result_id": "59dc14fe-fbad-46d2-b8a6-abce79e63045",
+  "episode_id": "890f0d44-2284-44f6-8e3d-d38a53e4c6a7",
+  "success": true,
+  "channel": "ui",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": null,
+  "summary": "Asistente externo listo para consulta guiada.",
+  "confidence": 0.78,
+  "evidence_refs": [
+    "59dc14fe-fbad-46d2-b8a6-abce79e63045:assistant_kind",
+    "59dc14fe-fbad-46d2-b8a6-abce79e63045:launch_target"
+  ],
+  "created_at_utc": "2026-04-13T18:49:11.879664Z",
+  "metadata": {
+    "validation_status": "sandbox_pass",
+    "execution_state": "sandbox_pass",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "assistant_kind",
+      "launch_target"
+    ],
+    "objective_id": "00447b3e-dc07-407c-a142-54b2c1722dee",
+    "objective_title": "tienes conocimiento de tu entorno y tu arquitectura ?",
+    "project_id": "5ed7302e-ac45-47e2-95d3-806b29174652",
+    "project_title": "Evolucion del proyecto",
+    "task_goal_id": "eedfd21a-7ff7-4ad1-9cdb-f01c88dce60c",
+    "task_goal_title": "Evolucion del proyecto",
+    "goal_progress": 1.0,
+    "goal_status": "completed",
+    "goal_blocker": ""
+  }
+}

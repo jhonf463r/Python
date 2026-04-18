@@ -1,0 +1,139 @@
+{
+  "interaction_result_id": "ac20e533-88d0-4092-b8e0-31e338b47808",
+  "success": false,
+  "execution_state": {
+    "state": "awaiting_response",
+    "detail": "Herramienta ejecutada por el adaptador local.",
+    "executor_name": "external_assistant",
+    "sandboxed": false,
+    "validated": true,
+    "approval_decision": "approved",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": false,
+      "assistant_kind": "codex",
+      "launch_mode": "desktop_app",
+      "launch_target": "codex",
+      "response_capture_mode": "clipboard_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Recheck vivo de Codex.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "prompt_preview": "Recheck vivo de Codex.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "launched": true,
+      "auto_capture_attempted": true,
+      "auto_capture_reason": "capture_pending",
+      "response_capture_pending": true,
+      "focused_title": "Codex",
+      "session_scope": "external_app",
+      "session_label": "Codex",
+      "isolated_session": false,
+      "thread_key": "iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp",
+      "thread_title": "IABV Codex | dime en una frase si puedes revisar un bug de wp",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "2026-04-14T01:28:37.424639+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\.tmp_tests\\live_route_recheck_codex\\data\\tool_teaching\\external_assistants\\codex_home",
+      "capture_source": "codex_rollout"
+    }
+  },
+  "summary": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano.",
+  "errors": [],
+  "confidence": 0.7,
+  "execution_ms": 14013,
+  "rollback_state": null,
+  "extracted_data": {
+    "assistant_kind": "codex",
+    "launch_target": "codex",
+    "prompt_preview": "Recheck vivo de Codex.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+    "focused_title": "Codex"
+  },
+  "artifacts": [],
+  "metadata": {
+    "validation_status": "unvalidated",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "live_audit": {
+      "audit_snapshot_id": "36aadad5-4c1b-4458-a8c7-0cf9b1152da7",
+      "objective": "Consultar Codex sobre: dime en una frase si puedes revisar un bug de wplay",
+      "session_or_episode_id": "ede798de-7488-454b-bc17-ce8735c9938b",
+      "mode_used": "background",
+      "evidence": [
+        "dce848ee-44e1-4983-bdea-967994e426e0",
+        "ede798de-7488-454b-bc17-ce8735c9938b",
+        "site:wplay"
+      ],
+      "findings": [
+        {
+          "finding_id": "172a8907-f612-48fd-9da9-fe531c348347",
+          "kind": "external_route_blocked",
+          "title": "La via externa quedo bloqueada o sin captura verificable",
+          "summary": "La consulta externa no devolvio una respuesta confiable y el bloqueo debe tratarse como limitacion real, no como progreso valido.",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "dce848ee-44e1-4983-bdea-967994e426e0",
+            "ede798de-7488-454b-bc17-ce8735c9938b",
+            "site:wplay"
+          ],
+          "metadata": {
+            "external_state_flags": [
+              "awaiting_response",
+              "capture_unverified"
+            ]
+          }
+        }
+      ],
+      "decision": {
+        "decision_id": "6db44b13-cd42-4330-a522-8baffb3ddf2a",
+        "action": "continue_local",
+        "rationale": "La via externa quedo bloqueada o sin captura verificable; conviene seguir localmente mientras el bloqueo queda trazado.",
+        "confidence": 0.82,
+        "recommended_tool_id": "codex_installed",
+        "approval_required": false,
+        "metadata": {}
+      },
+      "confidence": 0.96,
+      "auto_safe_action": "",
+      "human_approval": true,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 1.0,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.85,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.9625,
+        "learning_consolidation_score": 0.9625,
+        "lab_precision": 0.3846,
+        "lab_robustness": 0.35,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.2916,
+        "lab_recommended_route_score": 0.0
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "codex_installed",
+        "tool_type": "custom",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "36aadad5-4c1b-4458-a8c7-0cf9b1152da7"
+  }
+}

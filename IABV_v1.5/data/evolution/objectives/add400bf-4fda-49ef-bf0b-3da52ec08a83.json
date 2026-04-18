@@ -1,0 +1,36 @@
+{
+  "objective_id": "add400bf-4fda-49ef-bf0b-3da52ec08a83",
+  "kind": "subtask",
+  "title": "Entender objetivo",
+  "summary": "La intencion ya fue clasificada y contextualizada.",
+  "parent_id": "6e98c71a-9b29-4614-b5ad-61a7e74838dd",
+  "root_id": "e157db36-5cd7-4007-a666-47bc25ba75fe",
+  "site_id": null,
+  "priority": 51,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Laboratorio universal: language -> language_understanding (score 0.87, confianza 0.78).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:4ae69d26-9638-4ba7-86ce-fecd744bc877",
+    "Conocimiento local relacionado: 5 items."
+  ],
+  "tags": [
+    "understand_goal"
+  ],
+  "metadata": {
+    "phase_key": "understand_goal",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "knowledge.query"
+  },
+  "created_at_utc": "2026-04-16T19:44:03.905014Z",
+  "updated_at_utc": "2026-04-16T19:44:03.905014Z"
+}

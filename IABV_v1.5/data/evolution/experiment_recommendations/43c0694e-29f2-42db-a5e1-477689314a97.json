@@ -1,0 +1,81 @@
+{
+  "recommendation_id": "43c0694e-29f2-42db-a5e1-477689314a97",
+  "domain": "language",
+  "subject_key": "wplay:sabes-usar-wplay-la-pagina",
+  "recommended_route": "ui",
+  "recommended_assistant_kind": "adaptive local orchestrator",
+  "recommended_assistant_configuration": {
+    "planning_mode": "with_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "extended",
+    "context_mode": "short",
+    "tools_mode": "with_tools",
+    "browser_mode": "with_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+  "score": 0.7714,
+  "confidence": 0.7317,
+  "rationale": "Recomiendo ui para language en wplay:sabes-usar-wplay-la-pagina usando adaptive local orchestrator con configuracion with_plan|without_files|extended|short|with_tools|with_browser|general|external por score base 0.63 y score adaptativo 0.77 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 8867 ms.",
+  "supporting_run_ids": [
+    "6be03cfb-e94e-4f4d-b10b-13192f61522e"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "ui",
+        "score": 0.7714,
+        "samples": 1
+      }
+    ],
+    "ranked_configurations": [
+      {
+        "route": "ui",
+        "assistant_kind": "adaptive local orchestrator",
+        "config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+        "score": 0.6314,
+        "adaptive_weight": 0.14,
+        "weighted_score": 0.7714,
+        "samples": 1,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 8867 ms"
+        ]
+      }
+    ],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": [
+      "wplay:sabes-usar-wplay-la-pagina"
+    ],
+    "adaptive_learning_summary": {
+      "preferred_route": "ui",
+      "preferred_assistant_kind": "adaptive local orchestrator",
+      "preferred_config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.7714,
+      "sample_count": 1,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "top_environment_signatures": [
+        "conectado|partial"
+      ],
+      "top_time_buckets": [
+        "evening"
+      ],
+      "reasons": [
+        "historial de exito 100%",
+        "latencia promedio 8867 ms"
+      ]
+    }
+  },
+  "created_at_utc": "2026-04-16T22:43:58.444195Z"
+}

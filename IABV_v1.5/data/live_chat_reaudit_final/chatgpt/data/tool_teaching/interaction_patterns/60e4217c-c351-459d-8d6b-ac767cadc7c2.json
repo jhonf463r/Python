@@ -1,0 +1,63 @@
+{
+  "pattern_id": "60e4217c-c351-459d-8d6b-ac767cadc7c2",
+  "signature": "6a57800cf23c742e7666f595842f5aed87279ff6",
+  "title": "Consultar ChatGPT",
+  "channel": "ui",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": null,
+  "operations": [
+    {
+      "step_id": "af698386-e4c8-443f-a246-b7261b13051b",
+      "channel": "ui",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false
+      }
+    },
+    {
+      "step_id": "392b7d42-ef99-44e3-b6c7-99b3aabe1f33",
+      "channel": "ui",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false
+      }
+    }
+  ],
+  "reusable": true,
+  "success_count": 1,
+  "failure_count": 1,
+  "last_task_id": "c967f134-05d9-4379-9ac8-08b8764242e9",
+  "last_result_id": "7b722415-53ee-43e0-9f13-f7601ce5ef28",
+  "created_at_utc": "2026-04-12T22:55:16.148192Z",
+  "updated_at_utc": "2026-04-12T22:55:16.327279Z",
+  "metadata": {
+    "objective_excerpt": "Consultar ChatGPT sobre: Necesito una consulta tecnica con ChatGPT para validar si la ruta externa real responde o falla y que lo digas claro.",
+    "execution_scope": "read_only",
+    "approval_decision": "approved",
+    "last_validation_status": "unvalidated",
+    "last_execution_state": "failed",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "last_interaction_episode_id": "f45693c1-a64f-4efb-ac55-7c25eece9899"
+  }
+}

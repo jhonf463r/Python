@@ -1,0 +1,12 @@
+{
+  "log_id": "e7b7bc19-ed51-4d4d-bc84-815bec93e7fe",
+  "tool_id": "codex_installed",
+  "task_id": "67651a47-510d-495f-8822-890b31aa5a08",
+  "action_type": "preflight",
+  "state": "missing_tool",
+  "created_at_utc": "2026-04-16T04:30:23.332944+00:00",
+  "payload": {
+    "reason": "tool_card_missing",
+    "objective": "Consultar Codex sobre: Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa."
+  }
+}

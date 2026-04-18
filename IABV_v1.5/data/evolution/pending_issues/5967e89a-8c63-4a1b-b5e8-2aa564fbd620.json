@@ -1,0 +1,36 @@
+{
+  "issue_id": "5967e89a-8c63-4a1b-b5e8-2aa564fbd620",
+  "created_at_utc": "2026-04-13T17:22:03.193601Z",
+  "status": "needs_fix",
+  "scenario_id": "",
+  "goal": "que version de ia eres? tiene conocimientos de tu arquitectura ?",
+  "category": "need_codex_fix",
+  "summary": "Sin hallazgos. Decision: continue_local. Confianza 0.66.",
+  "probable_cause": "Sin hallazgos. Decision: continue_local. Confianza 0.66.",
+  "unresolved_reason": "Sin hallazgos. Decision: continue_local. Confianza 0.66.",
+  "run_id": "0f8e499b-0ffe-4944-bdc6-56082e124efa",
+  "episode_id": null,
+  "session_id": "a103d968-0df3-46e2-bcc4-ed1f656bc11f",
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Conocimiento local relacionado: 5 items.",
+    "Auditoria viva: Sin hallazgos. Decision: continue_local. Confianza 0.66.",
+    "216138ce-d737-4077-9a59-864117832b96"
+  ],
+  "runtime_adjustments": [],
+  "recommended_change": "Sin hallazgos. Decision: continue_local. Confianza 0.66.",
+  "suggested_tests": [
+    "que version de ia eres? tiene conocimientos de tu arquitectura ?",
+    "Revisar Centro Evolutivo"
+  ],
+  "metadata": {
+    "autonomous_evolution": true,
+    "assistant_kind": "codex",
+    "source": "chat",
+    "site_id": "",
+    "intent_key": "project.evolution"
+  }
+}

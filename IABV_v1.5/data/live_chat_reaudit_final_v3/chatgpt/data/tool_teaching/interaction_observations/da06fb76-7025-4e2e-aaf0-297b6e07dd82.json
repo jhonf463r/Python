@@ -1,0 +1,38 @@
+{
+  "observation_id": "da06fb76-7025-4e2e-aaf0-297b6e07dd82",
+  "pattern_id": "636463ab-738d-4c77-accd-1c463f09472b",
+  "task_id": "67022be3-e6e0-4491-b005-243a988ddcbe",
+  "result_id": "03069f1e-c65e-4cf0-ab9c-73818fc32db4",
+  "episode_id": "a57c0553-7114-4226-843b-73b2a6b79eef",
+  "success": false,
+  "channel": "ui",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": null,
+  "summary": "browser_dom_unavailable",
+  "confidence": 0.22,
+  "evidence_refs": [
+    "03069f1e-c65e-4cf0-ab9c-73818fc32db4:assistant_kind",
+    "03069f1e-c65e-4cf0-ab9c-73818fc32db4:launch_target"
+  ],
+  "created_at_utc": "2026-04-12T23:34:48.013537Z",
+  "metadata": {
+    "validation_status": "unvalidated",
+    "execution_state": "failed",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "assistant_kind",
+      "launch_target"
+    ],
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

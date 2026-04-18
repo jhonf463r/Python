@@ -1,0 +1,29 @@
+{
+  "objective_id": "a8f213c3-a8ad-4ad1-a7de-2589d4aa2bfe",
+  "kind": "subtask",
+  "title": "Seleccionar pack",
+  "summary": "Pack elegido: knowledge.query.",
+  "parent_id": "9cac3685-3a86-4c42-ae61-beee4a46ce64",
+  "root_id": "a87f9923-1ebe-405e-bb3e-818742b7508f",
+  "site_id": null,
+  "priority": 52,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.62,
+  "evidence_refs": [
+    "Contexto activo: contexto general."
+  ],
+  "tags": [
+    "select_pack"
+  ],
+  "metadata": {
+    "phase_key": "select_pack",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "knowledge.query"
+  },
+  "created_at_utc": "2026-04-16T04:56:04.761315Z",
+  "updated_at_utc": "2026-04-16T04:56:04.761316Z"
+}

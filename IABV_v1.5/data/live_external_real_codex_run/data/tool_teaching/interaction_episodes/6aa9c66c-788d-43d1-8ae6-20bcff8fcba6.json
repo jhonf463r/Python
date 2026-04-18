@@ -1,0 +1,728 @@
+{
+  "interaction_episode_id": "6aa9c66c-788d-43d1-8ae6-20bcff8fcba6",
+  "objective": "Consultar Codex sobre: Diagnostica por que IABV no siempre logra lanzar y capturar consultas externas automaticamente y propone el siguiente microajuste minimo verificable.",
+  "mode_used": "background",
+  "environment": {
+    "tool_id": "codex_installed",
+    "tool_type": "custom",
+    "adapter_key": "external_assistant",
+    "site_id": "wplay",
+    "execution_scope": "read_only"
+  },
+  "captured_metadata": {
+    "task_metadata": {
+      "goal_parameters": {
+        "tool_id": "codex_installed",
+        "allowed_tool_ids": [
+          "codex_installed",
+          "chatgpt_installed",
+          "chatgpt_web_assisted",
+          "claude_installed",
+          "claude_web_assisted"
+        ],
+        "title": "Consultar Codex",
+        "expected_outcome": "Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+        "context_pack": "Objetivo: validar una consulta externa real a Codex y observar si la captura, sesion, hilo o cuota fallan con evidencia formal.\n\nIABV_THREAD_KEY: iabv::codex::wplay::diagnostica-por-que-iabv-no-siempre-logra-lanzar\nIABV_THREAD_TITLE: IABV Codex | Diagnostica por que IABV no siempre logra lanzar\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "assistant_preference": "codex",
+        "assistant_kind": "codex",
+        "consultation_scope": "external_assistant",
+        "response_capture_mode": "clipboard_capture",
+        "requires_manual_pasteback": false,
+        "prompt_template_id": "codex_consult_v1",
+        "execution_scope": "read_only",
+        "diagnostic_category": "need_codex_fix",
+        "incident_kind": "bridge_lag",
+        "site_id": "wplay",
+        "lab_recommendation": {},
+        "dry_run_launch": false,
+        "allow_local_automatic_consultation": false,
+        "session_scope": "external_app",
+        "isolated_session_required": false,
+        "session_label": "Codex",
+        "thread_key": "iabv::codex::wplay::diagnostica-por-que-iabv-no-siempre-logra-lanzar",
+        "thread_title": "IABV Codex | Diagnostica por que IABV no siempre logra lanzar",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+        "last_capture_attempt_utc": "",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_real_codex_run\\data\\tool_teaching\\external_assistants\\codex_home"
+      },
+      "created_at_utc": "2026-04-12T22:27:46.116248+00:00",
+      "updated_at_utc": "2026-04-12T22:27:46.116248+00:00",
+      "mode_selection": {
+        "decision_id": "0a4a3426-e0f9-430c-82f7-b86783c6c072",
+        "selector_name": "universal_mode_selector",
+        "selected_mode": "fallback",
+        "selected_tool_id": "codex_installed",
+        "selected_tool_type": "custom",
+        "adapter_exists": true,
+        "available": true,
+        "fallback_used": true,
+        "already_resolved": false,
+        "equivalent_pattern_exists": false,
+        "improvement_already_implemented": false,
+        "reusable_pattern_id": null,
+        "reusable_episode_id": null,
+        "scores": {
+          "availability": 1.0,
+          "adapter_exists": 1.0,
+          "desired_match": 0.0,
+          "suggested_match": 1.0,
+          "automatic_capture": 1.0,
+          "total": 5.0
+        },
+        "reason": "consulta_externa_preferida | modo=background | automatica=True | available=True",
+        "metadata": {
+          "desired_modes": [
+            "ui"
+          ],
+          "candidate_ranking": [
+            {
+              "tool_id": "codex_installed",
+              "mode": "background",
+              "score": 5.0
+            }
+          ],
+          "selection_policy": "preferred_external_tool"
+        }
+      },
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reuse_guard_active": false,
+      "reused_pattern_id": "",
+      "reused_episode_id": "",
+      "adapter_exists": true,
+      "selected_mode": "fallback",
+      "selector_reason": "consulta_externa_preferida | modo=background | automatica=True | available=True",
+      "requested_tool_id": "codex_installed",
+      "reused_actions_from_pattern": false,
+      "requested_assistant_kind": "codex",
+      "assistant_kind": "codex",
+      "actual_assistant_kind": "codex",
+      "consultation_scope": "external_assistant",
+      "response_capture_mode": "clipboard_capture",
+      "requires_manual_pasteback": false,
+      "diagnostic_category": "need_codex_fix",
+      "incident_kind": "bridge_lag",
+      "dry_run_launch": false,
+      "lab_recommendation": {},
+      "context_pack": "Objetivo: validar una consulta externa real a Codex y observar si la captura, sesion, hilo o cuota fallan con evidencia formal.\n\nIABV_THREAD_KEY: iabv::codex::wplay::diagnostica-por-que-iabv-no-siempre-logra-lanzar\nIABV_THREAD_TITLE: IABV Codex | Diagnostica por que IABV no siempre logra lanzar\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "comparison_scope_key": "wplay:consultar-codex-sobre-diagnostica-por-que-iabv-no-siempre-logra-lanzar-y",
+      "source_trace_ids": [],
+      "proposal_summary": "Objetivo: validar una consulta externa real a Codex y observar si la captura, sesion, hilo o cuota fallan con evidencia formal. IABV_THREAD_KEY: iabv::codex::wplay::diagnostica-por-que-iabv-no-siempre-logra-lanzar IABV_THREAD_TITLE: IABV Co",
+      "thread_key": "iabv::codex::wplay::diagnostica-por-que-iabv-no-siempre-logra-lanzar",
+      "thread_title": "IABV Codex | Diagnostica por que IABV no siempre logra lanzar",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_real_codex_run\\data\\tool_teaching\\external_assistants\\codex_home",
+      "session_scope": "external_app",
+      "session_label": "Codex",
+      "isolated_session_required": false,
+      "background_capture_mode": "codex_rollout",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "extended",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "without_browser",
+        "assistant_mode": "code",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "codex",
+          "tool_id": "codex_installed",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 441
+        }
+      },
+      "config_signature": "without_plan|without_files|extended|short|with_tools|without_browser|code|external",
+      "ia_trace_entry": {
+        "trace_id": "e352be3e-4163-4509-8e7b-985d6d7ff571",
+        "created_at_utc": "2026-04-12T22:27:46.122422Z",
+        "assistant_kind": "codex",
+        "requested_assistant_kind": "codex",
+        "actual_assistant_kind": "codex",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "extended",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "without_browser",
+          "assistant_mode": "code",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "codex",
+            "tool_id": "codex_installed",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 441
+          }
+        },
+        "config_signature": "without_plan|without_files|extended|short|with_tools|without_browser|code|external",
+        "comparison_scope_key": "wplay:consultar-codex-sobre-diagnostica-por-que-iabv-no-siempre-logra-lanzar-y",
+        "source_trace_ids": [],
+        "route": "code_agent",
+        "tool_id": "codex_installed",
+        "task_id": "beba7a0f-7723-4292-a862-4f712deba07c",
+        "result_id": "",
+        "session_scope": "external_app",
+        "thread_key": "iabv::codex::wplay::diagnostica-por-que-iabv-no-siempre-logra-lanzar",
+        "thread_title": "IABV Codex | Diagnostica por que IABV no siempre logra lanzar",
+        "capture_lane": "background",
+        "state": "pending",
+        "detail": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+        "proposal_summary": "Objetivo: validar una consulta externa real a Codex y observar si la captura, sesion, hilo o cuota fallan con evidencia formal. IABV_THREAD_KEY: iabv::codex::wplay::diagnostica-por-que-iabv-no-siempre-logra-lanzar IABV_THREAD_TITLE: IABV Co",
+        "outcome_summary": "",
+        "result_label": "Consultar Codex",
+        "success": false,
+        "execution_ms": 0,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "wplay",
+          "beba7a0f-7723-4292-a862-4f712deba07c"
+        ],
+        "reused_later": false,
+        "verdict": "",
+        "coherence_flags": [],
+        "external_state_flags": [],
+        "metadata": {
+          "response_capture_mode": "clipboard_capture",
+          "background_capture_mode": "codex_rollout",
+          "comparison_scope_key": "wplay:consultar-codex-sobre-diagnostica-por-que-iabv-no-siempre-logra-lanzar-y"
+        }
+      },
+      "background_headless": true,
+      "approval_required": true,
+      "destructive": false
+    },
+    "execution_metadata": {
+      "sandbox": false,
+      "assistant_kind": "codex",
+      "launch_mode": "desktop_app",
+      "launch_target": "codex",
+      "response_capture_mode": "clipboard_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Objetivo: validar una consulta externa real a Codex y observar si la captura, sesion, hilo o cuota fallan con evidencia formal.\n\nIABV_THREAD_KEY: iabv::codex::wplay::diagnostica-por-que-iabv-no-siempre-logra-lanzar\nIABV_THREAD_TITLE: IABV Codex | Diagnostica por que IABV no siempre logra lanzar\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "prompt_preview": "Objetivo: validar una consulta externa real a Codex y observar si la captura, sesion, hilo o cuota fallan con evidencia formal.\n\nIABV_THREAD_KEY: iabv::codex::wplay::diagnostica-por-que-iabv-no-siempre-logra-lanzar\nIABV_THREAD_TITLE: IABV Codex | Diagnostica por que IABV no siempre logra lanzar\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este",
+      "response_captured": false,
+      "launched": true,
+      "auto_capture_attempted": true,
+      "auto_capture_reason": "capture_pending",
+      "response_capture_pending": true,
+      "focused_title": "Codex",
+      "session_scope": "external_app",
+      "session_label": "Codex",
+      "isolated_session": false,
+      "thread_key": "iabv::codex::wplay::diagnostica-por-que-iabv-no-siempre-logra-lanzar",
+      "thread_title": "IABV Codex | Diagnostica por que IABV no siempre logra lanzar",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "2026-04-12T22:27:46.272899+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_real_codex_run\\data\\tool_teaching\\external_assistants\\codex_home",
+      "capture_source": "codex_rollout"
+    },
+    "result_metadata": {
+      "sandbox": false,
+      "assistant_kind": "codex",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "extended",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "without_browser",
+        "assistant_mode": "code",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "codex",
+          "tool_id": "codex_installed",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 441
+        }
+      },
+      "config_signature": "without_plan|without_files|extended|short|with_tools|without_browser|code|external",
+      "external_state_flags": [
+        "awaiting_response",
+        "capture_unverified"
+      ],
+      "ia_trace_entry": {
+        "trace_id": "8364771a-b243-4b09-bd6b-4c297a4493b1",
+        "created_at_utc": "2026-04-12T22:28:00.096114Z",
+        "assistant_kind": "codex",
+        "requested_assistant_kind": "codex",
+        "actual_assistant_kind": "codex",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "extended",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "without_browser",
+          "assistant_mode": "code",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "codex",
+            "tool_id": "codex_installed",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 441
+          }
+        },
+        "config_signature": "without_plan|without_files|extended|short|with_tools|without_browser|code|external",
+        "comparison_scope_key": "wplay:consultar-codex-sobre-diagnostica-por-que-iabv-no-siempre-logra-lanzar-y",
+        "source_trace_ids": [],
+        "route": "code_agent",
+        "tool_id": "codex_installed",
+        "task_id": "beba7a0f-7723-4292-a862-4f712deba07c",
+        "result_id": "a3dd072c-2296-4167-9227-cf2052bb4d1b",
+        "session_scope": "external_app",
+        "thread_key": "iabv::codex::wplay::diagnostica-por-que-iabv-no-siempre-logra-lanzar",
+        "thread_title": "IABV Codex | Diagnostica por que IABV no siempre logra lanzar",
+        "capture_lane": "background",
+        "state": "awaiting_response",
+        "detail": "Herramienta ejecutada por el adaptador local.",
+        "proposal_summary": "Objetivo: validar una consulta externa real a Codex y observar si la captura, sesion, hilo o cuota fallan con evidencia formal. IABV_THREAD_KEY: iabv::codex::wplay::diagnostica-por-que-iabv-no-siempre-logra-lanzar IABV_THREAD_TITLE: IABV Co",
+        "outcome_summary": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano.",
+        "result_label": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano.",
+        "success": true,
+        "execution_ms": 13825,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "wplay",
+          "beba7a0f-7723-4292-a862-4f712deba07c",
+          "a3dd072c-2296-4167-9227-cf2052bb4d1b"
+        ],
+        "reused_later": false,
+        "verdict": "awaiting_response",
+        "coherence_flags": [],
+        "external_state_flags": [
+          "awaiting_response",
+          "capture_unverified"
+        ],
+        "metadata": {
+          "response_capture_mode": "clipboard_capture",
+          "background_capture_mode": "codex_rollout",
+          "comparison_scope_key": "wplay:consultar-codex-sobre-diagnostica-por-que-iabv-no-siempre-logra-lanzar-y"
+        }
+      },
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  },
+  "actions": [
+    {
+      "step_id": "f728e89b-8f84-4a32-843c-7ee1507c902c",
+      "channel": "background",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "8dfd4d11-0993-4fe8-9984-3d9f6c12e535",
+      "started_at_utc": "2026-04-12T22:28:00.150054Z",
+      "finished_at_utc": "2026-04-12T22:28:00.150054Z",
+      "destructive": false,
+      "requires_approval": true
+    },
+    {
+      "step_id": "23b8b527-b969-4ba8-92f9-8bb465e449f5",
+      "channel": "background",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "9f6a5c94-1095-42d3-8ec3-12e7dfad60fe",
+      "started_at_utc": "2026-04-12T22:28:00.150054Z",
+      "finished_at_utc": "2026-04-12T22:28:00.150054Z",
+      "destructive": false,
+      "requires_approval": false
+    }
+  ],
+  "result": {
+    "interaction_result_id": "a46e39c8-6271-4f7e-9f8d-e55e3b26de29",
+    "success": false,
+    "execution_state": {
+      "state": "awaiting_response",
+      "detail": "Herramienta ejecutada por el adaptador local.",
+      "executor_name": "external_assistant",
+      "sandboxed": false,
+      "validated": true,
+      "approval_decision": "approved",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": false,
+        "assistant_kind": "codex",
+        "launch_mode": "desktop_app",
+        "launch_target": "codex",
+        "response_capture_mode": "clipboard_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Objetivo: validar una consulta externa real a Codex y observar si la captura, sesion, hilo o cuota fallan con evidencia formal.\n\nIABV_THREAD_KEY: iabv::codex::wplay::diagnostica-por-que-iabv-no-siempre-logra-lanzar\nIABV_THREAD_TITLE: IABV Codex | Diagnostica por que IABV no siempre logra lanzar\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "prompt_preview": "Objetivo: validar una consulta externa real a Codex y observar si la captura, sesion, hilo o cuota fallan con evidencia formal.\n\nIABV_THREAD_KEY: iabv::codex::wplay::diagnostica-por-que-iabv-no-siempre-logra-lanzar\nIABV_THREAD_TITLE: IABV Codex | Diagnostica por que IABV no siempre logra lanzar\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este",
+        "response_captured": false,
+        "launched": true,
+        "auto_capture_attempted": true,
+        "auto_capture_reason": "capture_pending",
+        "response_capture_pending": true,
+        "focused_title": "Codex",
+        "session_scope": "external_app",
+        "session_label": "Codex",
+        "isolated_session": false,
+        "thread_key": "iabv::codex::wplay::diagnostica-por-que-iabv-no-siempre-logra-lanzar",
+        "thread_title": "IABV Codex | Diagnostica por que IABV no siempre logra lanzar",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+        "last_capture_attempt_utc": "2026-04-12T22:27:46.272899+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_real_codex_run\\data\\tool_teaching\\external_assistants\\codex_home",
+        "capture_source": "codex_rollout"
+      }
+    },
+    "summary": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano.",
+    "errors": [],
+    "confidence": 0.7,
+    "execution_ms": 13825,
+    "rollback_state": null,
+    "extracted_data": {
+      "assistant_kind": "codex",
+      "launch_target": "codex",
+      "prompt_preview": "Objetivo: validar una consulta externa real a Codex y observar si la captura, sesion, hilo o cuota fallan con evidencia formal.\n\nIABV_THREAD_KEY: iabv::codex::wplay::diagnostica-por-que-iabv-no-siempre-logra-lanzar\nIABV_THREAD_TITLE: IABV Codex | Diagnostica por que IABV no siempre logra lanzar\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este",
+      "focused_title": "Codex"
+    },
+    "artifacts": [],
+    "metadata": {
+      "validation_status": "unvalidated",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": "",
+      "live_audit": {
+        "audit_snapshot_id": "3336df66-3415-493c-b4eb-3488e0e8884d",
+        "objective": "Consultar Codex sobre: Diagnostica por que IABV no siempre logra lanzar y capturar consultas externas automaticamente y propone el siguiente microajuste minimo verificable.",
+        "session_or_episode_id": "6aa9c66c-788d-43d1-8ae6-20bcff8fcba6",
+        "mode_used": "fallback",
+        "evidence": [
+          "c9d95a69-d81c-4594-8f20-6f9560ef4238",
+          "6aa9c66c-788d-43d1-8ae6-20bcff8fcba6",
+          "site:wplay"
+        ],
+        "findings": [],
+        "decision": {
+          "decision_id": "63b87d13-1263-4cea-a519-83f6d0938644",
+          "action": "continue_local",
+          "rationale": "La herramienta produjo evidencia suficiente para seguir en la via local actual.",
+          "confidence": 0.7,
+          "recommended_tool_id": "codex_installed",
+          "approval_required": true,
+          "metadata": {}
+        },
+        "confidence": 0.96,
+        "auto_safe_action": "",
+        "human_approval": true,
+        "reused_pattern": false,
+        "metrics": {
+          "semantic_action_alignment": 1.0,
+          "target_element_alignment": 1.0,
+          "progress_visibility_score": 0.85,
+          "bridge_drain_health": 1.0,
+          "observer_agreement_score": 0.9625,
+          "learning_consolidation_score": 0.9625,
+          "lab_precision": 0.3846,
+          "lab_robustness": 0.35,
+          "lab_reuse_score": 0.0,
+          "lab_total_score": 0.2916,
+          "lab_recommended_route_score": 0.2916
+        },
+        "metadata": {
+          "mirror_mode": "tool_execution",
+          "tool_id": "codex_installed",
+          "tool_type": "custom",
+          "selector_name": "universal_mode_selector",
+          "goal_context": {
+            "objective_id": "",
+            "status": "",
+            "progress": 0.0,
+            "blocker": ""
+          }
+        }
+      },
+      "audit_snapshot_id": "3336df66-3415-493c-b4eb-3488e0e8884d"
+    }
+  },
+  "errors": [],
+  "evidence": [
+    {
+      "evidence_id": "102df36b-2eb2-4c10-837a-517a05990749",
+      "kind": "log",
+      "label": "Dato extraido: assistant_kind",
+      "ref_id": "a3dd072c-2296-4167-9227-cf2052bb4d1b:assistant_kind",
+      "path": null,
+      "metadata": {
+        "key": "assistant_kind"
+      },
+      "confidence": 0.7
+    },
+    {
+      "evidence_id": "5b02bd94-2b13-4e0c-841f-babdc12484ad",
+      "kind": "log",
+      "label": "Dato extraido: focused_title",
+      "ref_id": "a3dd072c-2296-4167-9227-cf2052bb4d1b:focused_title",
+      "path": null,
+      "metadata": {
+        "key": "focused_title"
+      },
+      "confidence": 0.7
+    },
+    {
+      "evidence_id": "259b058d-d2a3-428c-9d4c-99a5a70fd80b",
+      "kind": "log",
+      "label": "Dato extraido: launch_target",
+      "ref_id": "a3dd072c-2296-4167-9227-cf2052bb4d1b:launch_target",
+      "path": null,
+      "metadata": {
+        "key": "launch_target"
+      },
+      "confidence": 0.7
+    },
+    {
+      "evidence_id": "e3fd0c2f-cb2d-4101-8421-07b9d4693829",
+      "kind": "log",
+      "label": "Dato extraido: prompt_preview",
+      "ref_id": "a3dd072c-2296-4167-9227-cf2052bb4d1b:prompt_preview",
+      "path": null,
+      "metadata": {
+        "key": "prompt_preview"
+      },
+      "confidence": 0.7
+    }
+  ],
+  "learning_signals": [
+    {
+      "signal_id": "f2363939-6b01-4faa-916d-3c07fc6a3aa9",
+      "label": "pattern:background:codex_installed",
+      "channel": "background",
+      "signal_type": "pattern_reuse",
+      "confidence": 0.7,
+      "source": "interaction_learning_service",
+      "evidence_refs": [
+        "a3dd072c-2296-4167-9227-cf2052bb4d1b:assistant_kind",
+        "a3dd072c-2296-4167-9227-cf2052bb4d1b:focused_title",
+        "a3dd072c-2296-4167-9227-cf2052bb4d1b:launch_target",
+        "a3dd072c-2296-4167-9227-cf2052bb4d1b:prompt_preview"
+      ],
+      "metadata": {
+        "pattern_id": "c9d95a69-d81c-4594-8f20-6f9560ef4238"
+      }
+    }
+  ],
+  "confidence": 0.7,
+  "human_approval": true,
+  "policy_decision": {
+    "decision_id": "85025aa1-4987-4d12-8dc4-bcc9d6a3b6d8",
+    "requires_human_approval": true,
+    "approval_decision": "approved",
+    "blocked": false,
+    "rationale": "Herramienta ejecutada por el adaptador local.",
+    "confidence": 0.7,
+    "metadata": {
+      "execution_scope": "read_only",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "selector_name": "universal_mode_selector",
+  "selector_reason": "consulta_externa_preferida | modo=background | automatica=True | available=True",
+  "pattern_id": "c9d95a69-d81c-4594-8f20-6f9560ef4238",
+  "reused_pattern": true,
+  "tool_id": "codex_installed",
+  "tool_type": "custom",
+  "task_id": "beba7a0f-7723-4292-a862-4f712deba07c",
+  "result_id": "a3dd072c-2296-4167-9227-cf2052bb4d1b",
+  "site_id": "wplay",
+  "created_at_utc": "2026-04-12T22:28:00.150054Z",
+  "updated_at_utc": "2026-04-12T22:28:00.150054Z",
+  "metadata": {
+    "learning_signals": [
+      {
+        "signal_id": "f2363939-6b01-4faa-916d-3c07fc6a3aa9",
+        "label": "pattern:background:codex_installed",
+        "channel": "background",
+        "signal_type": "pattern_reuse",
+        "confidence": 0.7,
+        "source": "interaction_learning_service",
+        "evidence_refs": [
+          "a3dd072c-2296-4167-9227-cf2052bb4d1b:assistant_kind",
+          "a3dd072c-2296-4167-9227-cf2052bb4d1b:focused_title",
+          "a3dd072c-2296-4167-9227-cf2052bb4d1b:launch_target",
+          "a3dd072c-2296-4167-9227-cf2052bb4d1b:prompt_preview"
+        ],
+        "metadata": {
+          "pattern_id": "c9d95a69-d81c-4594-8f20-6f9560ef4238"
+        }
+      }
+    ],
+    "mode_selection": {
+      "decision_id": "0a4a3426-e0f9-430c-82f7-b86783c6c072",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "fallback",
+      "selected_tool_id": "codex_installed",
+      "selected_tool_type": "custom",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": true,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 0.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=background | automatica=True | available=True",
+      "metadata": {
+        "desired_modes": [
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "codex_installed",
+            "mode": "background",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "selected_mode": "fallback",
+    "reusable_pattern_id": "",
+    "reusable_episode_id": "",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "live_audit": {
+      "audit_snapshot_id": "3336df66-3415-493c-b4eb-3488e0e8884d",
+      "objective": "Consultar Codex sobre: Diagnostica por que IABV no siempre logra lanzar y capturar consultas externas automaticamente y propone el siguiente microajuste minimo verificable.",
+      "session_or_episode_id": "6aa9c66c-788d-43d1-8ae6-20bcff8fcba6",
+      "mode_used": "fallback",
+      "evidence": [
+        "c9d95a69-d81c-4594-8f20-6f9560ef4238",
+        "6aa9c66c-788d-43d1-8ae6-20bcff8fcba6",
+        "site:wplay"
+      ],
+      "findings": [],
+      "decision": {
+        "decision_id": "63b87d13-1263-4cea-a519-83f6d0938644",
+        "action": "continue_local",
+        "rationale": "La herramienta produjo evidencia suficiente para seguir en la via local actual.",
+        "confidence": 0.7,
+        "recommended_tool_id": "codex_installed",
+        "approval_required": true,
+        "metadata": {}
+      },
+      "confidence": 0.96,
+      "auto_safe_action": "",
+      "human_approval": true,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 1.0,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.85,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.9625,
+        "learning_consolidation_score": 0.9625,
+        "lab_precision": 0.3846,
+        "lab_robustness": 0.35,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.2916,
+        "lab_recommended_route_score": 0.2916
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "codex_installed",
+        "tool_type": "custom",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "3336df66-3415-493c-b4eb-3488e0e8884d",
+    "audit_summary": "Sin hallazgos relevantes. Decision: continue_local. Confianza 0.96."
+  }
+}

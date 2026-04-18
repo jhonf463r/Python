@@ -1,0 +1,494 @@
+{
+  "interaction_episode_id": "a7ba1cc1-b54d-460e-b16b-f9f8f233e965",
+  "objective": "Consultar ChatGPT sobre: Necesito una consulta tecnica con ChatGPT para validar si la ruta externa real responde o falla y que lo digas claro.",
+  "mode_used": "ui",
+  "environment": {
+    "tool_id": "chatgpt_web_assisted",
+    "tool_type": "llm_web_ui",
+    "adapter_key": "external_assistant",
+    "site_id": "",
+    "execution_scope": "read_only"
+  },
+  "captured_metadata": {
+    "task_metadata": {
+      "goal_parameters": {
+        "tool_id": "chatgpt_web_assisted",
+        "allowed_tool_ids": [
+          "chatgpt_installed",
+          "chatgpt_web_assisted"
+        ],
+        "title": "Consultar ChatGPT",
+        "expected_outcome": "Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+        "context_pack": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\data\\live_chat_reaudit_final\\chatgpt\nObjetivo del usuario: Necesito una consulta tecnica con ChatGPT para validar si la ruta externa real responde o falla y que lo digas claro.\nAsistente sugerido: chatgpt\nSitio: general\nIntento detectado: n/d\nPack activo: n/d\nEstado adaptativo: n/d\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::chatgpt::general::necesito-una-consulta-tecnica-con-chatgpt-para-v\nIABV_THREAD_TITLE: IABV ChatGPT | Necesito una consulta tecnica con ChatGPT para v\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "assistant_preference": "chatgpt",
+        "assistant_kind": "chatgpt",
+        "consultation_scope": "external_assistant",
+        "response_capture_mode": "dom_capture",
+        "requires_manual_pasteback": false,
+        "prompt_template_id": "chatgpt_web_consult_v1",
+        "execution_scope": "read_only",
+        "diagnostic_category": "idle",
+        "incident_kind": "",
+        "site_id": "",
+        "lab_recommendation": {},
+        "dry_run_launch": false,
+        "allow_local_automatic_consultation": false,
+        "session_scope": "program_chat",
+        "isolated_session_required": true,
+        "session_label": "ChatGPT especial de IABV",
+        "thread_key": "iabv::chatgpt::general::necesito-una-consulta-tecnica-con-chatgpt-para-v",
+        "thread_title": "IABV ChatGPT | Necesito una consulta tecnica con ChatGPT para v",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_chat_reaudit_final\\chatgpt\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+      },
+      "created_at_utc": "2026-04-12T22:55:16.068468+00:00",
+      "updated_at_utc": "2026-04-12T22:55:16.068468+00:00",
+      "mode_selection": {
+        "decision_id": "f67a4de0-f777-4071-baeb-906e130c7706",
+        "selector_name": "universal_mode_selector",
+        "selected_mode": "ui",
+        "selected_tool_id": "chatgpt_web_assisted",
+        "selected_tool_type": "llm_web_ui",
+        "adapter_exists": true,
+        "available": true,
+        "fallback_used": false,
+        "already_resolved": false,
+        "equivalent_pattern_exists": false,
+        "improvement_already_implemented": false,
+        "reusable_pattern_id": null,
+        "reusable_episode_id": null,
+        "scores": {
+          "availability": 1.0,
+          "adapter_exists": 1.0,
+          "desired_match": 1.0,
+          "suggested_match": 1.0,
+          "automatic_capture": 1.0,
+          "total": 5.0
+        },
+        "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+        "metadata": {
+          "desired_modes": [
+            "background",
+            "ui"
+          ],
+          "candidate_ranking": [
+            {
+              "tool_id": "chatgpt_web_assisted",
+              "mode": "ui",
+              "score": 5.0
+            }
+          ],
+          "selection_policy": "preferred_external_tool"
+        }
+      },
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reuse_guard_active": false,
+      "reused_pattern_id": "",
+      "reused_episode_id": "",
+      "adapter_exists": true,
+      "selected_mode": "ui",
+      "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "requested_tool_id": "chatgpt_web_assisted",
+      "reused_actions_from_pattern": false,
+      "requested_assistant_kind": "chatgpt",
+      "assistant_kind": "chatgpt",
+      "actual_assistant_kind": "chatgpt",
+      "consultation_scope": "external_assistant",
+      "response_capture_mode": "dom_capture",
+      "requires_manual_pasteback": false,
+      "diagnostic_category": "idle",
+      "incident_kind": "",
+      "dry_run_launch": false,
+      "lab_recommendation": {},
+      "context_pack": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\data\\live_chat_reaudit_final\\chatgpt\nObjetivo del usuario: Necesito una consulta tecnica con ChatGPT para validar si la ruta externa real responde o falla y que lo digas claro.\nAsistente sugerido: chatgpt\nSitio: general\nIntento detectado: n/d\nPack activo: n/d\nEstado adaptativo: n/d\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::chatgpt::general::necesito-una-consulta-tecnica-con-chatgpt-para-v\nIABV_THREAD_TITLE: IABV ChatGPT | Necesito una consulta tecnica con ChatGPT para v\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "comparison_scope_key": "general:consultar-chatgpt-sobre-necesito-una-consulta-tecnica-con-chatgpt-para-v",
+      "source_trace_ids": [],
+      "proposal_summary": "Context pack - consulta externa IABV v1.5 Workspace: C:\\Python\\IABV_v1.5\\data\\live_chat_reaudit_final\\chatgpt Objetivo del usuario: Necesito una consulta tecnica con ChatGPT para validar si la ruta externa real responde o falla y que lo dig",
+      "thread_key": "iabv::chatgpt::general::necesito-una-consulta-tecnica-con-chatgpt-para-v",
+      "thread_title": "IABV ChatGPT | Necesito una consulta tecnica con ChatGPT para v",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_chat_reaudit_final\\chatgpt\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile",
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session_required": true,
+      "background_capture_mode": "browser_dom",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "normal",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "with_browser",
+        "assistant_mode": "general",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "chatgpt",
+          "tool_id": "chatgpt_web_assisted",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 797
+        }
+      },
+      "config_signature": "without_plan|without_files|normal|short|with_tools|with_browser|general|external",
+      "ia_trace_entry": {
+        "trace_id": "ed940c37-c3b0-4cac-945f-cf543d078c1e",
+        "created_at_utc": "2026-04-12T22:55:16.070256Z",
+        "assistant_kind": "chatgpt",
+        "requested_assistant_kind": "chatgpt",
+        "actual_assistant_kind": "chatgpt",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "normal",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "with_browser",
+          "assistant_mode": "general",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "chatgpt",
+            "tool_id": "chatgpt_web_assisted",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 797
+          }
+        },
+        "config_signature": "without_plan|without_files|normal|short|with_tools|with_browser|general|external",
+        "comparison_scope_key": "general:consultar-chatgpt-sobre-necesito-una-consulta-tecnica-con-chatgpt-para-v",
+        "source_trace_ids": [],
+        "route": "ui",
+        "tool_id": "chatgpt_web_assisted",
+        "task_id": "c967f134-05d9-4379-9ac8-08b8764242e9",
+        "result_id": "",
+        "session_scope": "program_chat",
+        "thread_key": "iabv::chatgpt::general::necesito-una-consulta-tecnica-con-chatgpt-para-v",
+        "thread_title": "IABV ChatGPT | Necesito una consulta tecnica con ChatGPT para v",
+        "capture_lane": "background",
+        "state": "pending",
+        "detail": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "proposal_summary": "Context pack - consulta externa IABV v1.5 Workspace: C:\\Python\\IABV_v1.5\\data\\live_chat_reaudit_final\\chatgpt Objetivo del usuario: Necesito una consulta tecnica con ChatGPT para validar si la ruta externa real responde o falla y que lo dig",
+        "outcome_summary": "",
+        "result_label": "Consultar ChatGPT",
+        "success": false,
+        "execution_ms": 0,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "c967f134-05d9-4379-9ac8-08b8764242e9"
+        ],
+        "reused_later": false,
+        "verdict": "",
+        "coherence_flags": [],
+        "external_state_flags": [],
+        "metadata": {
+          "response_capture_mode": "dom_capture",
+          "background_capture_mode": "browser_dom",
+          "comparison_scope_key": "general:consultar-chatgpt-sobre-necesito-una-consulta-tecnica-con-chatgpt-para-v"
+        }
+      },
+      "background_headless": true,
+      "approval_required": true,
+      "destructive": false
+    },
+    "execution_metadata": {
+      "sandbox": true,
+      "assistant_kind": "chatgpt",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://chatgpt.com/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\data\\live_chat_reaudit_final\\chatgpt\nObjetivo del usuario: Necesito una consulta tecnica con ChatGPT para validar si la ruta externa real responde o falla y que lo digas claro.\nAsistente sugerido: chatgpt\nSitio: general\nIntento detectado: n/d\nPack activo: n/d\nEstado adaptativo: n/d\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::chatgpt::general::necesito-una-consulta-tecnica-con-chatgpt-para-v\nIABV_THREAD_TITLE: IABV ChatGPT | Necesito una consulta tecnica con ChatGPT para v\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::chatgpt::general::necesito-una-consulta-tecnica-con-chatgpt-para-v",
+      "thread_title": "IABV ChatGPT | Necesito una consulta tecnica con ChatGPT para v",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "2026-04-12T22:55:16.094286+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_chat_reaudit_final\\chatgpt\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+    },
+    "result_metadata": {
+      "sandbox": true,
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  },
+  "actions": [
+    {
+      "step_id": "8c3f0bba-ec96-438c-b222-3be5cbbd1fd5",
+      "channel": "ui",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "3147c9b8-ae1e-4ede-849d-2e8e77704d41",
+      "started_at_utc": "2026-04-12T22:55:16.148192Z",
+      "finished_at_utc": "2026-04-12T22:55:16.148192Z",
+      "destructive": false,
+      "requires_approval": true
+    },
+    {
+      "step_id": "02fc28ec-5483-43ef-85b9-6cc59cc12a1d",
+      "channel": "ui",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "20f8864a-872e-4d80-a263-7d58e4031825",
+      "started_at_utc": "2026-04-12T22:55:16.148192Z",
+      "finished_at_utc": "2026-04-12T22:55:16.148192Z",
+      "destructive": false,
+      "requires_approval": false
+    }
+  ],
+  "result": {
+    "interaction_result_id": "27bb096e-2878-4312-a507-7477cd7d1d15",
+    "success": true,
+    "execution_state": {
+      "state": "sandbox_pass",
+      "detail": "Sandbox local de herramienta ejecutado.",
+      "executor_name": "external_assistant",
+      "sandboxed": true,
+      "validated": true,
+      "approval_decision": "approved",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": true,
+        "assistant_kind": "chatgpt",
+        "launch_mode": "web_assisted",
+        "launch_target": "https://chatgpt.com/",
+        "response_capture_mode": "dom_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\data\\live_chat_reaudit_final\\chatgpt\nObjetivo del usuario: Necesito una consulta tecnica con ChatGPT para validar si la ruta externa real responde o falla y que lo digas claro.\nAsistente sugerido: chatgpt\nSitio: general\nIntento detectado: n/d\nPack activo: n/d\nEstado adaptativo: n/d\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::chatgpt::general::necesito-una-consulta-tecnica-con-chatgpt-para-v\nIABV_THREAD_TITLE: IABV ChatGPT | Necesito una consulta tecnica con ChatGPT para v\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "response_captured": false,
+        "session_scope": "program_chat",
+        "session_label": "ChatGPT especial de IABV",
+        "isolated_session": true,
+        "thread_key": "iabv::chatgpt::general::necesito-una-consulta-tecnica-con-chatgpt-para-v",
+        "thread_title": "IABV ChatGPT | Necesito una consulta tecnica con ChatGPT para v",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "2026-04-12T22:55:16.094286+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_chat_reaudit_final\\chatgpt\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+      }
+    },
+    "summary": "Asistente externo listo para consulta guiada.",
+    "errors": [],
+    "confidence": 0.78,
+    "execution_ms": 0,
+    "rollback_state": null,
+    "extracted_data": {
+      "assistant_kind": "chatgpt",
+      "launch_target": "https://chatgpt.com/"
+    },
+    "artifacts": [],
+    "metadata": {
+      "validation_status": "sandbox_pass",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "errors": [],
+  "evidence": [
+    {
+      "evidence_id": "a40f70d5-5de4-4e47-9312-b565595e68a5",
+      "kind": "log",
+      "label": "Dato extraido: assistant_kind",
+      "ref_id": "ce7a6ae4-d312-4403-8943-85b525c1e360:assistant_kind",
+      "path": null,
+      "metadata": {
+        "key": "assistant_kind"
+      },
+      "confidence": 0.7
+    },
+    {
+      "evidence_id": "1a3fe991-5de8-497c-b931-64032cdcc058",
+      "kind": "log",
+      "label": "Dato extraido: launch_target",
+      "ref_id": "ce7a6ae4-d312-4403-8943-85b525c1e360:launch_target",
+      "path": null,
+      "metadata": {
+        "key": "launch_target"
+      },
+      "confidence": 0.7
+    }
+  ],
+  "learning_signals": [
+    {
+      "signal_id": "a4bbfa83-6391-497f-819f-894345a15798",
+      "label": "pattern:ui:chatgpt_web_assisted",
+      "channel": "ui",
+      "signal_type": "pattern_reuse",
+      "confidence": 0.78,
+      "source": "interaction_learning_service",
+      "evidence_refs": [
+        "ce7a6ae4-d312-4403-8943-85b525c1e360:assistant_kind",
+        "ce7a6ae4-d312-4403-8943-85b525c1e360:launch_target"
+      ],
+      "metadata": {
+        "pattern_id": "60e4217c-c351-459d-8d6b-ac767cadc7c2"
+      }
+    }
+  ],
+  "confidence": 0.78,
+  "human_approval": true,
+  "policy_decision": {
+    "decision_id": "6db7c829-853b-4cfb-97fe-22a5621af1a3",
+    "requires_human_approval": true,
+    "approval_decision": "approved",
+    "blocked": false,
+    "rationale": "Sandbox local de herramienta ejecutado.",
+    "confidence": 0.78,
+    "metadata": {
+      "execution_scope": "read_only",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "selector_name": "universal_mode_selector",
+  "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+  "pattern_id": "60e4217c-c351-459d-8d6b-ac767cadc7c2",
+  "reused_pattern": false,
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "task_id": "c967f134-05d9-4379-9ac8-08b8764242e9",
+  "result_id": "ce7a6ae4-d312-4403-8943-85b525c1e360",
+  "site_id": null,
+  "created_at_utc": "2026-04-12T22:55:16.148192Z",
+  "updated_at_utc": "2026-04-12T22:55:16.148192Z",
+  "metadata": {
+    "learning_signals": [
+      {
+        "signal_id": "a4bbfa83-6391-497f-819f-894345a15798",
+        "label": "pattern:ui:chatgpt_web_assisted",
+        "channel": "ui",
+        "signal_type": "pattern_reuse",
+        "confidence": 0.78,
+        "source": "interaction_learning_service",
+        "evidence_refs": [
+          "ce7a6ae4-d312-4403-8943-85b525c1e360:assistant_kind",
+          "ce7a6ae4-d312-4403-8943-85b525c1e360:launch_target"
+        ],
+        "metadata": {
+          "pattern_id": "60e4217c-c351-459d-8d6b-ac767cadc7c2"
+        }
+      }
+    ],
+    "mode_selection": {
+      "decision_id": "f67a4de0-f777-4071-baeb-906e130c7706",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "ui",
+      "selected_tool_id": "chatgpt_web_assisted",
+      "selected_tool_type": "llm_web_ui",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": false,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "chatgpt_web_assisted",
+            "mode": "ui",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "selected_mode": "ui",
+    "reusable_pattern_id": "",
+    "reusable_episode_id": "",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

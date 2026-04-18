@@ -1,0 +1,38 @@
+{
+  "observation_id": "bf51a097-d3ba-4666-8488-1043b4c32c40",
+  "pattern_id": "561ce1fb-c27d-4697-866d-5747d972f3f8",
+  "task_id": "0ae0ac25-e69f-4471-859b-300d6f6e41eb",
+  "result_id": "91d6e322-f4a2-4dc1-b90e-3f3b0d0f0707",
+  "episode_id": "cb6d4d7e-068e-4740-ad85-5ed576340359",
+  "success": true,
+  "channel": "ui",
+  "tool_id": "claude_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": "wplay",
+  "summary": "Asistente externo listo para consulta guiada.",
+  "confidence": 0.78,
+  "evidence_refs": [
+    "91d6e322-f4a2-4dc1-b90e-3f3b0d0f0707:assistant_kind",
+    "91d6e322-f4a2-4dc1-b90e-3f3b0d0f0707:launch_target"
+  ],
+  "created_at_utc": "2026-04-14T00:54:20.429945Z",
+  "metadata": {
+    "validation_status": "sandbox_pass",
+    "execution_state": "sandbox_pass",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "assistant_kind",
+      "launch_target"
+    ],
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "observation_id": "ccc2e02d-49cd-4496-8273-8358012ab9c9",
+  "pattern_id": "be61f185-4864-4d59-997e-126c952cf4ff",
+  "task_id": "12792628-d8c7-4d96-bf8c-c9c7f1b71084",
+  "result_id": "a1be8139-fe33-44b6-8ec9-c3bd0ede5baf",
+  "episode_id": "f802c2a3-681d-4395-8757-4857797b7173",
+  "success": false,
+  "channel": "ui",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": null,
+  "summary": "Asistente externo ChatGPT web asistido consultando en sesion aislada del programa. Todavia no hubo texto util para integrar.",
+  "confidence": 0.7,
+  "evidence_refs": [
+    "a1be8139-fe33-44b6-8ec9-c3bd0ede5baf:assistant_kind",
+    "a1be8139-fe33-44b6-8ec9-c3bd0ede5baf:focused_title",
+    "a1be8139-fe33-44b6-8ec9-c3bd0ede5baf:launch_target",
+    "a1be8139-fe33-44b6-8ec9-c3bd0ede5baf:prompt_preview"
+  ],
+  "created_at_utc": "2026-04-13T18:49:36.783369Z",
+  "metadata": {
+    "validation_status": "unvalidated",
+    "execution_state": "awaiting_response",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "assistant_kind",
+      "focused_title",
+      "launch_target",
+      "prompt_preview"
+    ],
+    "objective_id": "00447b3e-dc07-407c-a142-54b2c1722dee",
+    "objective_title": "tienes conocimiento de tu entorno y tu arquitectura ?",
+    "project_id": "5ed7302e-ac45-47e2-95d3-806b29174652",
+    "project_title": "Evolucion del proyecto",
+    "task_goal_id": "eedfd21a-7ff7-4ad1-9cdb-f01c88dce60c",
+    "task_goal_title": "Evolucion del proyecto",
+    "goal_progress": 1.0,
+    "goal_status": "completed",
+    "goal_blocker": ""
+  }
+}

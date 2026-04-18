@@ -1,0 +1,33 @@
+{
+  "objective_id": "78c794fc-3b37-4a94-89db-ff10bb98cb2b",
+  "kind": "subtask",
+  "title": "Proponer estrategia",
+  "summary": "Respuesta local contextual",
+  "parent_id": "e51a4406-4571-4dcd-86bd-910db33e1384",
+  "root_id": "e77621b3-613e-4824-a59e-e0982540f4cc",
+  "site_id": "wplay",
+  "priority": 54,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.62,
+  "evidence_refs": [
+    "Contexto activo: Wplay.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 5.",
+    "run:cf561968-3e42-4fda-b8e5-c1ba3e8a83a2",
+    "Dossiers relacionados: 6."
+  ],
+  "tags": [
+    "propose_strategy"
+  ],
+  "metadata": {
+    "phase_key": "propose_strategy",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "knowledge.query"
+  },
+  "created_at_utc": "2026-04-13T17:05:11.914666Z",
+  "updated_at_utc": "2026-04-13T17:05:11.914667Z"
+}

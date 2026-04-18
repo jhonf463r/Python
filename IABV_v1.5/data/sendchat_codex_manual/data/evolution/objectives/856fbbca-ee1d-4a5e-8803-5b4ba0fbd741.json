@@ -1,0 +1,26 @@
+{
+  "objective_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+  "kind": "project",
+  "title": "Consulta externa dirigida a Codex",
+  "summary": "Preparar una consulta externa dirigida a Codex, mantener coherencia del asistente y devolver el progreso visible.",
+  "parent_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+  "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+  "site_id": null,
+  "priority": 50,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.9,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+  ],
+  "tags": [],
+  "metadata": {
+    "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+    "intent_key": "research.external_consultation",
+    "site_display_name": "General"
+  },
+  "created_at_utc": "2026-04-11T01:11:58.601852Z",
+  "updated_at_utc": "2026-04-11T01:11:59.049172Z"
+}

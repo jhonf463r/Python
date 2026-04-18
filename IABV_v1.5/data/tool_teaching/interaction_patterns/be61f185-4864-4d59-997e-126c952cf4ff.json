@@ -1,0 +1,63 @@
+{
+  "pattern_id": "be61f185-4864-4d59-997e-126c952cf4ff",
+  "signature": "6a57800cf23c742e7666f595842f5aed87279ff6",
+  "title": "Consultar Codex",
+  "channel": "ui",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": null,
+  "operations": [
+    {
+      "step_id": "407684fe-5ff0-4f85-8bf0-50b1d87ee302",
+      "channel": "ui",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false
+      }
+    },
+    {
+      "step_id": "ba24760e-ac4a-4f7d-bb5d-f3ef2eebeef0",
+      "channel": "ui",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false
+      }
+    }
+  ],
+  "reusable": true,
+  "success_count": 3,
+  "failure_count": 1,
+  "last_task_id": "12792628-d8c7-4d96-bf8c-c9c7f1b71084",
+  "last_result_id": "a1be8139-fe33-44b6-8ec9-c3bd0ede5baf",
+  "created_at_utc": "2026-04-13T16:51:15.723870Z",
+  "updated_at_utc": "2026-04-13T18:49:36.715476Z",
+  "metadata": {
+    "objective_excerpt": "Consultar Codex sobre: tienes conocimiento de tu entorno y tu arquitectura ?",
+    "execution_scope": "read_only",
+    "approval_decision": "approved",
+    "last_validation_status": "unvalidated",
+    "last_execution_state": "awaiting_response",
+    "objective_id": "00447b3e-dc07-407c-a142-54b2c1722dee",
+    "objective_title": "tienes conocimiento de tu entorno y tu arquitectura ?",
+    "project_id": "5ed7302e-ac45-47e2-95d3-806b29174652",
+    "project_title": "Evolucion del proyecto",
+    "task_goal_id": "eedfd21a-7ff7-4ad1-9cdb-f01c88dce60c",
+    "task_goal_title": "Evolucion del proyecto",
+    "goal_progress": 1.0,
+    "goal_status": "completed",
+    "goal_blocker": "",
+    "last_interaction_episode_id": "f802c2a3-681d-4395-8757-4857797b7173"
+  }
+}

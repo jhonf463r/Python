@@ -1,0 +1,717 @@
+{
+  "interaction_episode_id": "e1f99095-ce01-4596-8cb9-8c01c7252c21",
+  "objective": "Consultar ChatGPT sobre: necesito una consulta externa con chatgpt para revisar por que playwright no despega",
+  "mode_used": "ui",
+  "environment": {
+    "tool_id": "chatgpt_web_assisted",
+    "tool_type": "llm_web_ui",
+    "adapter_key": "external_assistant",
+    "site_id": "",
+    "execution_scope": "read_only"
+  },
+  "captured_metadata": {
+    "task_metadata": {
+      "goal_parameters": {
+        "tool_id": "chatgpt_web_assisted",
+        "allowed_tool_ids": [
+          "chatgpt_installed",
+          "chatgpt_web_assisted"
+        ],
+        "title": "Consultar ChatGPT",
+        "expected_outcome": "Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+        "context_pack": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\audit_live_workspace_fixcheck5\nObjetivo del usuario: necesito una consulta externa con chatgpt para revisar por que playwright no despega\nAsistente sugerido: chatgpt\nSitio: general\nIntento detectado: n/d\nPack activo: n/d\nEstado adaptativo: n/d\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::chatgpt::general::necesito-una-consulta-externa-con-chatgpt-para-r\nIABV_THREAD_TITLE: IABV ChatGPT | necesito una consulta externa con chatgpt para r\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "assistant_preference": "chatgpt",
+        "assistant_kind": "chatgpt",
+        "consultation_scope": "external_assistant",
+        "response_capture_mode": "dom_capture",
+        "requires_manual_pasteback": false,
+        "prompt_template_id": "chatgpt_web_consult_v1",
+        "execution_scope": "read_only",
+        "diagnostic_category": "idle",
+        "incident_kind": "",
+        "site_id": "",
+        "lab_recommendation": {},
+        "dry_run_launch": false,
+        "allow_local_automatic_consultation": false,
+        "session_scope": "program_chat",
+        "isolated_session_required": true,
+        "session_label": "ChatGPT especial de IABV",
+        "thread_key": "iabv::chatgpt::general::necesito-una-consulta-externa-con-chatgpt-para-r",
+        "thread_title": "IABV ChatGPT | necesito una consulta externa con chatgpt para r",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\audit_live_workspace_fixcheck5\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+      },
+      "created_at_utc": "2026-04-13T19:46:24.132895+00:00",
+      "updated_at_utc": "2026-04-13T19:46:24.132895+00:00",
+      "mode_selection": {
+        "decision_id": "e9014a4e-e6f2-40c6-b49a-c7cfc6268545",
+        "selector_name": "universal_mode_selector",
+        "selected_mode": "ui",
+        "selected_tool_id": "chatgpt_web_assisted",
+        "selected_tool_type": "llm_web_ui",
+        "adapter_exists": true,
+        "available": true,
+        "fallback_used": false,
+        "already_resolved": false,
+        "equivalent_pattern_exists": false,
+        "improvement_already_implemented": false,
+        "reusable_pattern_id": null,
+        "reusable_episode_id": null,
+        "scores": {
+          "availability": 1.0,
+          "adapter_exists": 1.0,
+          "desired_match": 1.0,
+          "suggested_match": 1.0,
+          "automatic_capture": 1.0,
+          "total": 5.0
+        },
+        "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+        "metadata": {
+          "desired_modes": [
+            "ui"
+          ],
+          "candidate_ranking": [
+            {
+              "tool_id": "chatgpt_web_assisted",
+              "mode": "ui",
+              "score": 5.0
+            }
+          ],
+          "selection_policy": "preferred_external_tool"
+        }
+      },
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reuse_guard_active": false,
+      "reused_pattern_id": "",
+      "reused_episode_id": "",
+      "adapter_exists": true,
+      "selected_mode": "ui",
+      "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "requested_tool_id": "chatgpt_web_assisted",
+      "reused_actions_from_pattern": false,
+      "requested_assistant_kind": "chatgpt",
+      "assistant_kind": "chatgpt",
+      "actual_assistant_kind": "chatgpt",
+      "consultation_scope": "external_assistant",
+      "response_capture_mode": "dom_capture",
+      "requires_manual_pasteback": false,
+      "diagnostic_category": "idle",
+      "incident_kind": "",
+      "dry_run_launch": false,
+      "lab_recommendation": {},
+      "context_pack": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\audit_live_workspace_fixcheck5\nObjetivo del usuario: necesito una consulta externa con chatgpt para revisar por que playwright no despega\nAsistente sugerido: chatgpt\nSitio: general\nIntento detectado: n/d\nPack activo: n/d\nEstado adaptativo: n/d\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::chatgpt::general::necesito-una-consulta-externa-con-chatgpt-para-r\nIABV_THREAD_TITLE: IABV ChatGPT | necesito una consulta externa con chatgpt para r\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "comparison_scope_key": "general:consultar-chatgpt-sobre-necesito-una-consulta-externa-con-chatgpt-para-r",
+      "source_trace_ids": [],
+      "proposal_summary": "Context pack - consulta externa IABV v1.5 Workspace: C:\\Python\\IABV_v1.5\\audit_live_workspace_fixcheck5 Objetivo del usuario: necesito una consulta externa con chatgpt para revisar por que playwright no despega Asistente sugerido: chatgpt S",
+      "thread_key": "iabv::chatgpt::general::necesito-una-consulta-externa-con-chatgpt-para-r",
+      "thread_title": "IABV ChatGPT | necesito una consulta externa con chatgpt para r",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\audit_live_workspace_fixcheck5\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile",
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session_required": true,
+      "background_capture_mode": "browser_dom",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "normal",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "with_browser",
+        "assistant_mode": "general",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "chatgpt",
+          "tool_id": "chatgpt_web_assisted",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 758
+        }
+      },
+      "config_signature": "without_plan|without_files|normal|short|with_tools|with_browser|general|external",
+      "ia_trace_entry": {
+        "trace_id": "a7a4d546-c146-46f0-ac81-a4c66c3425c2",
+        "created_at_utc": "2026-04-13T19:46:24.134339Z",
+        "assistant_kind": "chatgpt",
+        "requested_assistant_kind": "chatgpt",
+        "actual_assistant_kind": "chatgpt",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "normal",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "with_browser",
+          "assistant_mode": "general",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "chatgpt",
+            "tool_id": "chatgpt_web_assisted",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 758
+          }
+        },
+        "config_signature": "without_plan|without_files|normal|short|with_tools|with_browser|general|external",
+        "comparison_scope_key": "general:consultar-chatgpt-sobre-necesito-una-consulta-externa-con-chatgpt-para-r",
+        "source_trace_ids": [],
+        "route": "ui",
+        "tool_id": "chatgpt_web_assisted",
+        "task_id": "cc151734-6f91-48ed-aac4-4bd35f70c072",
+        "result_id": "",
+        "session_scope": "program_chat",
+        "thread_key": "iabv::chatgpt::general::necesito-una-consulta-externa-con-chatgpt-para-r",
+        "thread_title": "IABV ChatGPT | necesito una consulta externa con chatgpt para r",
+        "capture_lane": "background",
+        "state": "pending",
+        "detail": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "proposal_summary": "Context pack - consulta externa IABV v1.5 Workspace: C:\\Python\\IABV_v1.5\\audit_live_workspace_fixcheck5 Objetivo del usuario: necesito una consulta externa con chatgpt para revisar por que playwright no despega Asistente sugerido: chatgpt S",
+        "outcome_summary": "",
+        "result_label": "Consultar ChatGPT",
+        "success": false,
+        "execution_ms": 0,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "cc151734-6f91-48ed-aac4-4bd35f70c072"
+        ],
+        "reused_later": false,
+        "verdict": "",
+        "coherence_flags": [],
+        "external_state_flags": [],
+        "metadata": {
+          "response_capture_mode": "dom_capture",
+          "background_capture_mode": "browser_dom",
+          "comparison_scope_key": "general:consultar-chatgpt-sobre-necesito-una-consulta-externa-con-chatgpt-para-r"
+        }
+      },
+      "background_headless": true,
+      "approval_required": true,
+      "destructive": false
+    },
+    "execution_metadata": {
+      "sandbox": false,
+      "assistant_kind": "chatgpt",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://chatgpt.com/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\audit_live_workspace_fixcheck5\nObjetivo del usuario: necesito una consulta externa con chatgpt para revisar por que playwright no despega\nAsistente sugerido: chatgpt\nSitio: general\nIntento detectado: n/d\nPack activo: n/d\nEstado adaptativo: n/d\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::chatgpt::general::necesito-una-consulta-externa-con-chatgpt-para-r\nIABV_THREAD_TITLE: IABV ChatGPT | necesito una consulta externa con chatgpt para r\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::chatgpt::general::necesito-una-consulta-externa-con-chatgpt-para-r",
+      "thread_title": "IABV ChatGPT | necesito una consulta externa con chatgpt para r",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "2026-04-13T19:46:24.261702+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\audit_live_workspace_fixcheck5\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile",
+      "auto_capture_attempted": true,
+      "auto_capture_reason": "[WinError 5] Acceso denegado"
+    },
+    "result_metadata": {
+      "sandbox": false,
+      "assistant_kind": "chatgpt",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "normal",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "with_browser",
+        "assistant_mode": "general",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "chatgpt",
+          "tool_id": "chatgpt_web_assisted",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 758
+        }
+      },
+      "config_signature": "without_plan|without_files|normal|short|with_tools|with_browser|general|external",
+      "external_state_flags": [
+        "capture_unverified"
+      ],
+      "ia_trace_entry": {
+        "trace_id": "4cf1f186-4e80-42fe-96ec-301649a34533",
+        "created_at_utc": "2026-04-13T19:46:24.265469Z",
+        "assistant_kind": "chatgpt",
+        "requested_assistant_kind": "chatgpt",
+        "actual_assistant_kind": "chatgpt",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "normal",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "with_browser",
+          "assistant_mode": "general",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "chatgpt",
+            "tool_id": "chatgpt_web_assisted",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 758
+          }
+        },
+        "config_signature": "without_plan|without_files|normal|short|with_tools|with_browser|general|external",
+        "comparison_scope_key": "general:consultar-chatgpt-sobre-necesito-una-consulta-externa-con-chatgpt-para-r",
+        "source_trace_ids": [],
+        "route": "ui",
+        "tool_id": "chatgpt_web_assisted",
+        "task_id": "cc151734-6f91-48ed-aac4-4bd35f70c072",
+        "result_id": "e4f5de66-b2cd-4f40-b57a-a4762d79abd0",
+        "session_scope": "program_chat",
+        "thread_key": "iabv::chatgpt::general::necesito-una-consulta-externa-con-chatgpt-para-r",
+        "thread_title": "IABV ChatGPT | necesito una consulta externa con chatgpt para r",
+        "capture_lane": "background",
+        "state": "failed",
+        "detail": "[WinError 5] Acceso denegado",
+        "proposal_summary": "Context pack - consulta externa IABV v1.5 Workspace: C:\\Python\\IABV_v1.5\\audit_live_workspace_fixcheck5 Objetivo del usuario: necesito una consulta externa con chatgpt para revisar por que playwright no despega Asistente sugerido: chatgpt S",
+        "outcome_summary": "",
+        "result_label": "Consultar ChatGPT",
+        "success": false,
+        "execution_ms": 3,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "cc151734-6f91-48ed-aac4-4bd35f70c072",
+          "e4f5de66-b2cd-4f40-b57a-a4762d79abd0"
+        ],
+        "reused_later": false,
+        "verdict": "failed",
+        "coherence_flags": [],
+        "external_state_flags": [
+          "capture_unverified"
+        ],
+        "metadata": {
+          "response_capture_mode": "dom_capture",
+          "background_capture_mode": "browser_dom",
+          "comparison_scope_key": "general:consultar-chatgpt-sobre-necesito-una-consulta-externa-con-chatgpt-para-r"
+        }
+      },
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  },
+  "actions": [
+    {
+      "step_id": "8ddb450a-cffd-4bca-8cf2-626775253524",
+      "channel": "ui",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "d51b0fda-fbb2-4ab2-9603-6d0a647fdac2",
+      "started_at_utc": "2026-04-13T19:46:24.303202Z",
+      "finished_at_utc": "2026-04-13T19:46:24.303202Z",
+      "destructive": false,
+      "requires_approval": true
+    },
+    {
+      "step_id": "a0f3c57d-eea7-4937-b92c-005e43b1b0d6",
+      "channel": "ui",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "12590720-ea88-4fcd-bcdc-fa6da98cb0e4",
+      "started_at_utc": "2026-04-13T19:46:24.303202Z",
+      "finished_at_utc": "2026-04-13T19:46:24.303202Z",
+      "destructive": false,
+      "requires_approval": false
+    }
+  ],
+  "result": {
+    "interaction_result_id": "5c4a156a-0ba8-4960-8284-51cc0e512450",
+    "success": false,
+    "execution_state": {
+      "state": "failed",
+      "detail": "[WinError 5] Acceso denegado",
+      "executor_name": "external_assistant",
+      "sandboxed": false,
+      "validated": false,
+      "approval_decision": "approved",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": false,
+        "assistant_kind": "chatgpt",
+        "launch_mode": "web_assisted",
+        "launch_target": "https://chatgpt.com/",
+        "response_capture_mode": "dom_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\audit_live_workspace_fixcheck5\nObjetivo del usuario: necesito una consulta externa con chatgpt para revisar por que playwright no despega\nAsistente sugerido: chatgpt\nSitio: general\nIntento detectado: n/d\nPack activo: n/d\nEstado adaptativo: n/d\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::chatgpt::general::necesito-una-consulta-externa-con-chatgpt-para-r\nIABV_THREAD_TITLE: IABV ChatGPT | necesito una consulta externa con chatgpt para r\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "session_scope": "program_chat",
+        "session_label": "ChatGPT especial de IABV",
+        "isolated_session": true,
+        "thread_key": "iabv::chatgpt::general::necesito-una-consulta-externa-con-chatgpt-para-r",
+        "thread_title": "IABV ChatGPT | necesito una consulta externa con chatgpt para r",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "2026-04-13T19:46:24.261702+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\audit_live_workspace_fixcheck5\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile",
+        "auto_capture_attempted": true,
+        "auto_capture_reason": "[WinError 5] Acceso denegado"
+      }
+    },
+    "summary": "[WinError 5] Acceso denegado",
+    "errors": [
+      "[WinError 5] Acceso denegado"
+    ],
+    "confidence": 0.22,
+    "execution_ms": 3,
+    "rollback_state": null,
+    "extracted_data": {
+      "assistant_kind": "chatgpt",
+      "launch_target": "https://chatgpt.com/"
+    },
+    "artifacts": [],
+    "metadata": {
+      "validation_status": "unvalidated",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": "",
+      "live_audit": {
+        "audit_snapshot_id": "999ccb4e-c7ae-4abc-88a3-b71ef116b7b8",
+        "objective": "Consultar ChatGPT sobre: necesito una consulta externa con chatgpt para revisar por que playwright no despega",
+        "session_or_episode_id": "e1f99095-ce01-4596-8cb9-8c01c7252c21",
+        "mode_used": "ui",
+        "evidence": [
+          "dac84be2-d2ff-46ed-bdc6-ea3ae3cc492a",
+          "e1f99095-ce01-4596-8cb9-8c01c7252c21"
+        ],
+        "findings": [
+          {
+            "finding_id": "6d77b98d-3c2f-41ab-b41c-0022dfdf61a8",
+            "kind": "external_route_blocked",
+            "title": "La via externa quedo bloqueada o sin captura verificable",
+            "summary": "La consulta externa no devolvio una respuesta confiable y el bloqueo debe tratarse como limitacion real, no como progreso valido.",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "dac84be2-d2ff-46ed-bdc6-ea3ae3cc492a",
+              "e1f99095-ce01-4596-8cb9-8c01c7252c21"
+            ],
+            "metadata": {
+              "external_state_flags": [
+                "capture_unverified"
+              ]
+            }
+          }
+        ],
+        "decision": {
+          "decision_id": "7a2fbc3b-1739-4b30-a9f7-42e166169607",
+          "action": "continue_local",
+          "rationale": "La via externa quedo bloqueada o sin captura verificable; conviene seguir localmente mientras el bloqueo queda trazado.",
+          "confidence": 0.82,
+          "recommended_tool_id": "chatgpt_web_assisted",
+          "approval_required": false,
+          "metadata": {}
+        },
+        "confidence": 0.66,
+        "auto_safe_action": "",
+        "human_approval": true,
+        "reused_pattern": false,
+        "metrics": {
+          "semantic_action_alignment": 0.2,
+          "target_element_alignment": 1.0,
+          "progress_visibility_score": 0.45,
+          "bridge_drain_health": 1.0,
+          "observer_agreement_score": 0.6625,
+          "learning_consolidation_score": 0.6625,
+          "lab_precision": 0.124,
+          "lab_robustness": 0.4,
+          "lab_reuse_score": 0.0,
+          "lab_total_score": 0.3313,
+          "lab_recommended_route_score": 0.0
+        },
+        "metadata": {
+          "mirror_mode": "tool_execution",
+          "tool_id": "chatgpt_web_assisted",
+          "tool_type": "llm_web_ui",
+          "selector_name": "universal_mode_selector",
+          "goal_context": {
+            "objective_id": "",
+            "status": "",
+            "progress": 0.0,
+            "blocker": ""
+          }
+        }
+      },
+      "audit_snapshot_id": "999ccb4e-c7ae-4abc-88a3-b71ef116b7b8"
+    }
+  },
+  "errors": [
+    "[WinError 5] Acceso denegado"
+  ],
+  "evidence": [
+    {
+      "evidence_id": "adc79e6d-3f01-42c3-ba30-7c5741a77628",
+      "kind": "log",
+      "label": "Dato extraido: assistant_kind",
+      "ref_id": "e4f5de66-b2cd-4f40-b57a-a4762d79abd0:assistant_kind",
+      "path": null,
+      "metadata": {
+        "key": "assistant_kind"
+      },
+      "confidence": 0.7
+    },
+    {
+      "evidence_id": "b6ad4c8f-5800-47b9-9166-33068add1f4b",
+      "kind": "log",
+      "label": "Dato extraido: launch_target",
+      "ref_id": "e4f5de66-b2cd-4f40-b57a-a4762d79abd0:launch_target",
+      "path": null,
+      "metadata": {
+        "key": "launch_target"
+      },
+      "confidence": 0.7
+    }
+  ],
+  "learning_signals": [
+    {
+      "signal_id": "e9ba39f3-4e44-44b3-8c5b-9370b6c74b0f",
+      "label": "pattern:ui:chatgpt_web_assisted",
+      "channel": "ui",
+      "signal_type": "pattern_reuse",
+      "confidence": 0.22,
+      "source": "interaction_learning_service",
+      "evidence_refs": [
+        "e4f5de66-b2cd-4f40-b57a-a4762d79abd0:assistant_kind",
+        "e4f5de66-b2cd-4f40-b57a-a4762d79abd0:launch_target"
+      ],
+      "metadata": {
+        "pattern_id": "dac84be2-d2ff-46ed-bdc6-ea3ae3cc492a"
+      }
+    }
+  ],
+  "confidence": 0.22,
+  "human_approval": true,
+  "policy_decision": {
+    "decision_id": "447b8cf5-5e38-4d04-a198-0b5ffca9d8b0",
+    "requires_human_approval": true,
+    "approval_decision": "approved",
+    "blocked": false,
+    "rationale": "[WinError 5] Acceso denegado",
+    "confidence": 0.22,
+    "metadata": {
+      "execution_scope": "read_only",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "selector_name": "universal_mode_selector",
+  "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+  "pattern_id": "dac84be2-d2ff-46ed-bdc6-ea3ae3cc492a",
+  "reused_pattern": true,
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "task_id": "cc151734-6f91-48ed-aac4-4bd35f70c072",
+  "result_id": "e4f5de66-b2cd-4f40-b57a-a4762d79abd0",
+  "site_id": null,
+  "created_at_utc": "2026-04-13T19:46:24.303202Z",
+  "updated_at_utc": "2026-04-13T19:46:24.303202Z",
+  "metadata": {
+    "learning_signals": [
+      {
+        "signal_id": "e9ba39f3-4e44-44b3-8c5b-9370b6c74b0f",
+        "label": "pattern:ui:chatgpt_web_assisted",
+        "channel": "ui",
+        "signal_type": "pattern_reuse",
+        "confidence": 0.22,
+        "source": "interaction_learning_service",
+        "evidence_refs": [
+          "e4f5de66-b2cd-4f40-b57a-a4762d79abd0:assistant_kind",
+          "e4f5de66-b2cd-4f40-b57a-a4762d79abd0:launch_target"
+        ],
+        "metadata": {
+          "pattern_id": "dac84be2-d2ff-46ed-bdc6-ea3ae3cc492a"
+        }
+      }
+    ],
+    "mode_selection": {
+      "decision_id": "e9014a4e-e6f2-40c6-b49a-c7cfc6268545",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "ui",
+      "selected_tool_id": "chatgpt_web_assisted",
+      "selected_tool_type": "llm_web_ui",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": false,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "metadata": {
+        "desired_modes": [
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "chatgpt_web_assisted",
+            "mode": "ui",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "selected_mode": "ui",
+    "reusable_pattern_id": "",
+    "reusable_episode_id": "",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "live_audit": {
+      "audit_snapshot_id": "999ccb4e-c7ae-4abc-88a3-b71ef116b7b8",
+      "objective": "Consultar ChatGPT sobre: necesito una consulta externa con chatgpt para revisar por que playwright no despega",
+      "session_or_episode_id": "e1f99095-ce01-4596-8cb9-8c01c7252c21",
+      "mode_used": "ui",
+      "evidence": [
+        "dac84be2-d2ff-46ed-bdc6-ea3ae3cc492a",
+        "e1f99095-ce01-4596-8cb9-8c01c7252c21"
+      ],
+      "findings": [
+        {
+          "finding_id": "6d77b98d-3c2f-41ab-b41c-0022dfdf61a8",
+          "kind": "external_route_blocked",
+          "title": "La via externa quedo bloqueada o sin captura verificable",
+          "summary": "La consulta externa no devolvio una respuesta confiable y el bloqueo debe tratarse como limitacion real, no como progreso valido.",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "dac84be2-d2ff-46ed-bdc6-ea3ae3cc492a",
+            "e1f99095-ce01-4596-8cb9-8c01c7252c21"
+          ],
+          "metadata": {
+            "external_state_flags": [
+              "capture_unverified"
+            ]
+          }
+        }
+      ],
+      "decision": {
+        "decision_id": "7a2fbc3b-1739-4b30-a9f7-42e166169607",
+        "action": "continue_local",
+        "rationale": "La via externa quedo bloqueada o sin captura verificable; conviene seguir localmente mientras el bloqueo queda trazado.",
+        "confidence": 0.82,
+        "recommended_tool_id": "chatgpt_web_assisted",
+        "approval_required": false,
+        "metadata": {}
+      },
+      "confidence": 0.66,
+      "auto_safe_action": "",
+      "human_approval": true,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 0.2,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.45,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.6625,
+        "learning_consolidation_score": 0.6625,
+        "lab_precision": 0.124,
+        "lab_robustness": 0.4,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.3313,
+        "lab_recommended_route_score": 0.0
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "chatgpt_web_assisted",
+        "tool_type": "llm_web_ui",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "999ccb4e-c7ae-4abc-88a3-b71ef116b7b8",
+    "audit_summary": "La via externa quedo bloqueada o sin captura verificable Decision: continue_local. Confianza 0.66."
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "step_id": "339ff4cd-962a-4433-a049-3ce7b2d18c63",
+  "channel": "background",
+  "operation": "llm_query",
+  "target": "",
+  "value_hint": "<llm_query>",
+  "expected_signal": "tool_result",
+  "confidence": 0.9,
+  "metadata": {
+    "label": "Consulta automatica local",
+    "requires_approval": false,
+    "destructive": false,
+    "parameters": {}
+  },
+  "action_id": "8910043a-1250-4357-9443-e69ce724cf95",
+  "started_at_utc": "2026-04-18T15:55:21.715651Z",
+  "finished_at_utc": "2026-04-18T15:55:21.715651Z",
+  "destructive": false,
+  "requires_approval": false
+}

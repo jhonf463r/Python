@@ -1,0 +1,35 @@
+{
+  "objective_id": "9d07d8c6-19c6-4a1b-a1fc-7a8aa8b111ec",
+  "kind": "task",
+  "title": "Asistencia adaptativa general",
+  "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Consulta local con contexto; sigue faltando un adaptador operativo del dominio.",
+  "parent_id": "7bdf0d55-705c-4d01-bb0b-ddaaa455d5ee",
+  "root_id": "5388b1ec-36eb-4037-8309-4c5f93ccca55",
+  "site_id": null,
+  "priority": 50,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Laboratorio universal: language -> language_understanding (score 1.27, confianza 0.90).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:82ac164b-7dd3-4d58-b3de-0c2ea5554ab9"
+  ],
+  "tags": [],
+  "metadata": {
+    "user_goal": "tiene todo el panorama completo de tu estructura de tu arquitectura ?",
+    "intent_key": "general.assistance",
+    "pack_id": "knowledge.query",
+    "pack_title": "Consulta local con contexto",
+    "level": "task",
+    "session_id": "95fc924c-b1f3-4ad0-94bf-2e8b1929de7c",
+    "status": "completed"
+  },
+  "created_at_utc": "2026-04-18T13:45:09.150375Z",
+  "updated_at_utc": "2026-04-18T13:45:10.057573Z"
+}

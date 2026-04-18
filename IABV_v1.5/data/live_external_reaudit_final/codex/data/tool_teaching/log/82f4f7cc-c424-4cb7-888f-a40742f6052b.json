@@ -1,0 +1,68 @@
+{
+  "log_id": "82f4f7cc-c424-4cb7-888f-a40742f6052b",
+  "tool_id": "codex_installed",
+  "task_id": "d9e5565a-52da-4fb0-98b9-c8348d7b04e6",
+  "action_type": "task_result",
+  "state": "sandbox_pass",
+  "created_at_utc": "2026-04-12T22:52:12.421729+00:00",
+  "payload": {
+    "result_id": "f167ea55-90f4-464a-8ec2-443d26b5a7f1",
+    "task_id": "d9e5565a-52da-4fb0-98b9-c8348d7b04e6",
+    "tool_id": "codex_installed",
+    "tool_type": "custom",
+    "success": true,
+    "validation_status": "sandbox_pass",
+    "execution_state": {
+      "state": "sandbox_pass",
+      "detail": "Sandbox local de herramienta ejecutado.",
+      "executor_name": "external_assistant",
+      "sandboxed": true,
+      "validated": true,
+      "approval_decision": "approved",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": true,
+        "assistant_kind": "codex",
+        "launch_mode": "desktop_app",
+        "launch_target": "codex",
+        "response_capture_mode": "clipboard_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Validacion final real desde IABV v1.5.\n\nIABV_THREAD_KEY: iabv::codex::audit::auditoria-viva-de-iabv-valida-si-codex-responde-\nIABV_THREAD_TITLE: IABV Codex | Auditoria viva de IABV: valida si Codex responde\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "response_captured": false,
+        "session_scope": "external_app",
+        "session_label": "Codex",
+        "isolated_session": false,
+        "thread_key": "iabv::codex::audit::auditoria-viva-de-iabv-valida-si-codex-responde-",
+        "thread_title": "IABV Codex | Auditoria viva de IABV: valida si Codex responde",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+        "last_capture_attempt_utc": "2026-04-12T22:52:12.421657+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_reaudit_final\\codex\\data\\tool_teaching\\external_assistants\\codex_home"
+      }
+    },
+    "rollback_state": null,
+    "output_text": "Asistente externo listo para consulta guiada.",
+    "extracted_data": {
+      "assistant_kind": "codex",
+      "launch_target": "codex"
+    },
+    "artifacts": [],
+    "error_message": "",
+    "execution_ms": 2,
+    "created_at_utc": "2026-04-12T22:52:12.421729Z",
+    "metadata": {
+      "sandbox": true,
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  }
+}

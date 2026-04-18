@@ -1,0 +1,46 @@
+{
+  "run_id": "fbc3c373-c0f2-4f0b-b2d6-4d4cf4f54c4f",
+  "domain": "language",
+  "suite_name": "text_understanding_suite",
+  "objective": "Consultar Codex sobre: Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa. Si no puedes verificar tu hilo o tu sesion termino, bloquealo claramente y propon la siguiente accion.",
+  "subject_key": "claude_web_assisted",
+  "route": "ui",
+  "candidate_id": "eb77b395-8f39-4e4f-90dd-1af465a4a55c",
+  "candidate_label": "Claude web asistido",
+  "success": false,
+  "expected_summary": "text=Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+  "observed_summary": "Sesion aislada de Claude web asistido lista en modo dry-run. Llevare la consulta a un chat especial del programa cuando permitas el lanzamiento real.",
+  "metrics": {
+    "precision": 0.248,
+    "execution_ms": 0,
+    "operational_cost": 0.0,
+    "robustness": 0.4,
+    "reuse_score": 0.0,
+    "user_progress": 0.0,
+    "total_score": 0.3748,
+    "metadata": {
+      "domain": "language",
+      "objective": "Consultar Codex sobre: Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa. Si no puedes verificar tu hilo o tu sesion termino, bloquealo claramente y propon la siguiente accion.",
+      "candidate_label": "Claude web asistido",
+      "route": "ui",
+      "latency_score": 1.0,
+      "cost_score": 1.0,
+      "user_progress_score": 0.0
+    }
+  },
+  "evidence_refs": [
+    "76309925-2579-4221-b22f-fa1de9af7d3a",
+    "bd0a166d-14ca-4086-959c-7568062a6551"
+  ],
+  "metadata": {
+    "source": "live_audit_tool",
+    "user_progress": 0.0,
+    "evidence_refs": [
+      "76309925-2579-4221-b22f-fa1de9af7d3a",
+      "bd0a166d-14ca-4086-959c-7568062a6551"
+    ],
+    "reused_pattern": false,
+    "suite_name": "text_understanding_suite"
+  },
+  "created_at_utc": "2026-04-11T01:40:29.724580Z"
+}

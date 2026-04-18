@@ -1,0 +1,33 @@
+{
+  "objective_id": "2c4c812a-28ec-42e2-b71b-5772e4014179",
+  "kind": "subtask",
+  "title": "Seleccionar pack",
+  "summary": "Pack elegido: wplay.core.",
+  "parent_id": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+  "root_id": "44cfa2a3-f4e4-416c-9d16-44f1c0fc65b1",
+  "site_id": "wplay",
+  "priority": 52,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.9,
+  "evidence_refs": [
+    "Contexto activo: Wplay.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 5.",
+    "Laboratorio universal: language -> language_understanding (score 0.86, confianza 0.78).",
+    "run:92e7b832-130d-4ee0-b418-3577200451b6"
+  ],
+  "tags": [
+    "select_pack"
+  ],
+  "metadata": {
+    "phase_key": "select_pack",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "wplay.core"
+  },
+  "created_at_utc": "2026-04-16T23:24:08.184047Z",
+  "updated_at_utc": "2026-04-16T23:24:08.184047Z"
+}

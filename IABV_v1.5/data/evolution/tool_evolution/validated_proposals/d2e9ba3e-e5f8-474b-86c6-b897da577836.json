@@ -1,0 +1,99 @@
+{
+  "result_id": "d2e9ba3e-e5f8-474b-86c6-b897da577836",
+  "proposal_id": "0997bb45-33a4-497b-ae90-d6f20357eefd",
+  "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|chatgpt|desktop_app:chatgpt_consult_v1:external_assistant",
+  "domain": "language",
+  "subject_key": "general",
+  "proposal_kind": "validate_discovery",
+  "decision": "discarded",
+  "winner": "current_tool",
+  "reason": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+  "current_route": "language_understanding",
+  "current_assistant_kind": "ollama",
+  "current_config_signature": "local_provider:ollama",
+  "candidate_route": "language_understanding",
+  "candidate_assistant_kind": "chatgpt",
+  "candidate_config_signature": "desktop_app:chatgpt_consult_v1:external_assistant",
+  "sandbox_experiment_id": "e2cf3b88-53bb-4a3d-8576-ba508e7a3462",
+  "confidence": 0.8412,
+  "evidence_refs": [
+    "13511c24-acf0-421e-ac9d-95742003105d",
+    "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+    "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+    "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b"
+  ],
+  "comparison_scope_keys": [
+    "general"
+  ],
+  "metrics": {
+    "priority_score": 0.5058,
+    "baseline_weighted_score": 1.2674,
+    "candidate_weighted_score": 0.99,
+    "score_margin": -0.2774,
+    "evidence_strength": 0.6585,
+    "observed_blockers": []
+  },
+  "recorded_at_utc": "2026-04-18T13:27:44.143959Z",
+  "metadata": {
+    "next_action": "validate_in_sandbox",
+    "discovery_signal_id": "1888f9d3-cdbe-4bcc-81ae-893e1019828f",
+    "discovery_source": "tool_registry",
+    "discovery_source_refs": [
+      "ToolRegistry",
+      "ExperimentLab",
+      "WorldModelSnapshot"
+    ],
+    "compatibility_score": 0.95,
+    "impact_score": 0.42,
+    "cost_score": 0.46,
+    "baseline_weighted_score": 1.2674,
+    "alternative_weighted_score": 0.99,
+    "score_margin": -0.2774,
+    "baseline_profile": {
+      "weighted_score": 1.2674,
+      "sample_count": 4
+    },
+    "candidate_profile": {
+      "weighted_score": 0.99,
+      "compatibility_score": 0.95,
+      "impact_score": 0.42,
+      "cost_score": 0.46
+    },
+    "ranked_configurations": [
+      {
+        "route": "language_understanding",
+        "assistant_kind": "ollama",
+        "config_signature": "local_provider:ollama",
+        "weighted_score": 1.2674,
+        "score": 1.2674,
+        "samples": 4
+      },
+      {
+        "route": "language_understanding",
+        "assistant_kind": "chatgpt",
+        "config_signature": "desktop_app:chatgpt_consult_v1:external_assistant",
+        "weighted_score": 0.99,
+        "score": 0.99,
+        "samples": 0
+      }
+    ],
+    "tool_type": "custom",
+    "capabilities": [
+      "launch_app",
+      "llm_query",
+      "consult_external",
+      "explain_issue"
+    ],
+    "current_route": "language_understanding",
+    "current_assistant_kind": "ollama",
+    "current_config_signature": "local_provider:ollama",
+    "estimated_candidate_score": 0.99,
+    "estimated_gain": 0.0474,
+    "live_status": "listo",
+    "requires_human_approval": true,
+    "local_first": false,
+    "supports_sandbox": true,
+    "decision_source": "tool_evolution_monitor",
+    "validation_verdict": "valid"
+  }
+}

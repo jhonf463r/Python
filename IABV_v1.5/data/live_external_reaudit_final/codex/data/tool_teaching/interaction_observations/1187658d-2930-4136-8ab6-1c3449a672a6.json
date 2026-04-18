@@ -1,0 +1,38 @@
+{
+  "observation_id": "1187658d-2930-4136-8ab6-1c3449a672a6",
+  "pattern_id": "46d48869-5f11-4592-af12-5a007551e285",
+  "task_id": "d9e5565a-52da-4fb0-98b9-c8348d7b04e6",
+  "result_id": "f167ea55-90f4-464a-8ec2-443d26b5a7f1",
+  "episode_id": "e63f9eae-5e03-450c-8ac4-6687809f77fc",
+  "success": true,
+  "channel": "background",
+  "tool_id": "codex_installed",
+  "tool_type": "custom",
+  "site_id": "audit",
+  "summary": "Asistente externo listo para consulta guiada.",
+  "confidence": 0.78,
+  "evidence_refs": [
+    "f167ea55-90f4-464a-8ec2-443d26b5a7f1:assistant_kind",
+    "f167ea55-90f4-464a-8ec2-443d26b5a7f1:launch_target"
+  ],
+  "created_at_utc": "2026-04-12T22:52:12.514078Z",
+  "metadata": {
+    "validation_status": "sandbox_pass",
+    "execution_state": "sandbox_pass",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "assistant_kind",
+      "launch_target"
+    ],
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

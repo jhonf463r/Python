@@ -1,0 +1,81 @@
+{
+  "recommendation_id": "74bba343-ba84-479e-be8c-c80e8d58c001",
+  "domain": "language",
+  "subject_key": "7622d47f-2a89-4928-852e-d1859a411d12",
+  "recommended_route": "local",
+  "recommended_assistant_kind": "ollama",
+  "recommended_assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "local",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+  "score": 0.6782,
+  "confidence": 0.7112,
+  "rationale": "Recomiendo local para language en 7622d47f-2a89-4928-852e-d1859a411d12 usando ollama con configuracion without_plan|without_files|normal|short|without_tools|without_browser|general|local por score base 0.54 y score adaptativo 0.68 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 23559 ms.",
+  "supporting_run_ids": [
+    "5838db84-c4c0-4df0-b492-f2a2fb3c3d8e"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "local",
+        "score": 0.6782,
+        "samples": 1
+      }
+    ],
+    "ranked_configurations": [
+      {
+        "route": "local",
+        "assistant_kind": "ollama",
+        "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+        "score": 0.5382,
+        "adaptive_weight": 0.14,
+        "weighted_score": 0.6782,
+        "samples": 1,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 23559 ms"
+        ]
+      }
+    ],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": [
+      "general:sabes-por-que-no-avanza-el-trabajo-en-vivo"
+    ],
+    "adaptive_learning_summary": {
+      "preferred_route": "local",
+      "preferred_assistant_kind": "ollama",
+      "preferred_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.6782,
+      "sample_count": 1,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "top_environment_signatures": [
+        "conectado|partial"
+      ],
+      "top_time_buckets": [
+        "afternoon"
+      ],
+      "reasons": [
+        "historial de exito 100%",
+        "latencia promedio 23559 ms"
+      ]
+    }
+  },
+  "created_at_utc": "2026-04-18T16:41:10.361535Z"
+}

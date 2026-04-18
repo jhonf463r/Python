@@ -1,0 +1,30 @@
+{
+  "issue_id": "9dfad182-b80d-4b50-a399-ed45ed97c6d0",
+  "created_at_utc": "2026-04-18T05:02:40.601306Z",
+  "status": "needs_fix",
+  "scenario_id": "",
+  "goal": "conoces tu entorno y, con eso claro, revisa por que el chat se desvia con mensajes largos sin ejecutar nada todavia",
+  "category": "need_codex_fix",
+  "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Evolucion del proyecto; sigue faltando un adaptador operativo del dominio.",
+  "probable_cause": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Evolucion del proyecto; sigue faltando un adaptador operativo del dominio.",
+  "unresolved_reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Evolucion del proyecto; sigue faltando un adaptador operativo del dominio.",
+  "run_id": "66ce43f2-f1e0-4d0e-881c-29072081472a",
+  "episode_id": null,
+  "session_id": "162dbbe1-6844-4dcb-a488-92380489a5ea",
+  "evidence_refs": [
+    "Contexto activo: contexto general."
+  ],
+  "runtime_adjustments": [],
+  "recommended_change": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Evolucion del proyecto; sigue faltando un adaptador operativo del dominio.",
+  "suggested_tests": [
+    "conoces tu entorno y, con eso claro, revisa por que el chat se desvia con mensajes largos sin ejecutar nada todavia",
+    "Revisar Centro Evolutivo"
+  ],
+  "metadata": {
+    "autonomous_evolution": true,
+    "assistant_kind": "codex",
+    "source": "chat",
+    "site_id": "",
+    "intent_key": "project.evolution"
+  }
+}

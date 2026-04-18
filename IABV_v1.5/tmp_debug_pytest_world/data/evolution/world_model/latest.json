@@ -1,0 +1,563 @@
+{
+  "snapshot_id": "157e8fc9-fea4-4490-8fc6-d09ab23e5c19",
+  "active_windows": [
+    {
+      "window_id": "9cbf121c-2306-430b-b847-decc6365ca4a",
+      "title": "AlcolirykoZ - La vuelta ol\u00edmpica (Con Carolina Oliveros) Prod. El Arke\u00f3logo [Video lyric] - YouTube - Opera",
+      "app_name": "AlcolirykoZ",
+      "pid": 18716,
+      "focused": true,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "97e40bf9-a581-42fc-b79a-06ddf363a49f",
+      "title": "Administrador de tareas",
+      "app_name": "Administrador de tareas",
+      "pid": 7580,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "50e8870c-ebad-4a4c-b7cb-27de87c2c459",
+      "title": "Codex",
+      "app_name": "Codex instalado",
+      "pid": 19564,
+      "focused": false,
+      "visible": true,
+      "tool_id": "codex_installed",
+      "assistant_kind": "codex",
+      "state": "abierto",
+      "detail": "No encontre un hilo reciente de Codex asociado a este workspace.",
+      "metadata": {}
+    },
+    {
+      "window_id": "ba0ebd6d-f806-4d51-9c00-92a0bf30ba43",
+      "title": "MCP en Codex \u2014 Mozilla Firefox",
+      "app_name": "MCP en Codex \u2014 Mozilla Firefox",
+      "pid": 23700,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "671265e9-6a38-4649-af04-9b56a865d786",
+      "title": "OmApSvcBroker",
+      "app_name": "OmApSvcBroker",
+      "pid": 6608,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "0086778a-70d4-4889-834d-0a734a6db6b5",
+      "title": "Nahimic",
+      "app_name": "Nahimic",
+      "pid": 9676,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "05a06d6b-912e-45af-83f8-ac608958f6d0",
+      "title": "Nahimic",
+      "app_name": "Nahimic",
+      "pid": 6948,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "9c883bdc-bca9-4975-82af-33ba69a41680",
+      "title": "Experiencia de entrada de Windows",
+      "app_name": "Experiencia de entrada de Windows",
+      "pid": 17208,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "b616897c-f63d-4059-907f-efae936bc0fa",
+      "title": "Program Manager",
+      "app_name": "Program Manager",
+      "pid": 10752,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    }
+  ],
+  "focused_window": {
+    "window_id": "52e34124-318b-433c-9537-6b1600ac3bc3",
+    "title": "AlcolirykoZ - La vuelta ol\u00edmpica (Con Carolina Oliveros) Prod. El Arke\u00f3logo [Video lyric] - YouTube - Opera",
+    "app_name": "AlcolirykoZ",
+    "pid": 18716,
+    "focused": true,
+    "visible": true,
+    "tool_id": "",
+    "assistant_kind": "",
+    "state": "focused",
+    "detail": "",
+    "metadata": {}
+  },
+  "tool_live_status": [
+    {
+      "tool_id": "claude_web_assisted",
+      "title": "Claude web asistido",
+      "assistant_kind": "claude",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "web_assisted",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Claude web asistido",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "dom_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:claude"
+      }
+    },
+    {
+      "tool_id": "claude_installed",
+      "title": "Claude instalado",
+      "assistant_kind": "claude",
+      "available": false,
+      "status": "no_disponible",
+      "detail": "La herramienta no quedo confirmada como disponible en esta laptop.",
+      "launch_mode": "desktop_app",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "no_disponible",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.1,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Claude instalado",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "clipboard_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:claude"
+      }
+    },
+    {
+      "tool_id": "chatgpt_web_assisted",
+      "title": "ChatGPT web asistido",
+      "assistant_kind": "chatgpt",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "web_assisted",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "ChatGPT web asistido",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "dom_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:chatgpt"
+      }
+    },
+    {
+      "tool_id": "chatgpt_installed",
+      "title": "ChatGPT instalado",
+      "assistant_kind": "chatgpt",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "desktop_app",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "ChatGPT instalado",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "clipboard_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:chatgpt"
+      }
+    },
+    {
+      "tool_id": "codex_installed",
+      "title": "Codex instalado",
+      "assistant_kind": "codex",
+      "available": true,
+      "status": "abierto",
+      "detail": "No encontre un hilo reciente de Codex asociado a este workspace.",
+      "launch_mode": "desktop_app",
+      "window_open": true,
+      "focused": false,
+      "thread_status": "sin_hilo_iabv",
+      "messages_status": "no_disponible",
+      "session_status": "abierta",
+      "capture_status": "no_disponible",
+      "probe_status": "permiso_requerido",
+      "permission_state": "requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal",
+        "windows_api",
+        "process_scan",
+        "codex_state_sqlite"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.5,
+      "metadata": {
+        "observed_pid": 19564,
+        "observed_title": "Codex",
+        "window_count": 2,
+        "process_count": 0,
+        "response_capture_mode": "clipboard_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:codex"
+      }
+    },
+    {
+      "tool_id": "desktop_human_runner",
+      "title": "Desktop human runner",
+      "assistant_kind": "iabv_runtime",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "desktop_real",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Desktop human runner",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "local_evidence",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:iabv_runtime"
+      }
+    },
+    {
+      "tool_id": "ollama_llm",
+      "title": "Ollama local",
+      "assistant_kind": "ollama",
+      "available": true,
+      "status": "disponible",
+      "detail": "Disponible.",
+      "launch_mode": "local_provider",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "disponibles",
+      "session_status": "activa",
+      "capture_status": "tool_result",
+      "probe_status": "verificado_pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": "2026-04-15T15:29:59.455369Z",
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Ollama local",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "tool_result",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:ollama"
+      }
+    },
+    {
+      "tool_id": "playwright_browser",
+      "title": "Playwright browser",
+      "assistant_kind": "",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Playwright browser",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:external"
+      }
+    }
+  ],
+  "network_status": {
+    "connected": true,
+    "status": "conectado",
+    "quality": "buena",
+    "latency_ms": 84.3,
+    "detail": "La red responde bien para consultas externas normales.",
+    "evidence": [
+      "latency_ms:84.3"
+    ],
+    "metadata": {}
+  },
+  "background_processes": [],
+  "detected_blocks": [
+    "permission_required:observe_window_content:codex"
+  ],
+  "block_records": [
+    {
+      "block_id": "d602f3c7-6cdc-4400-b766-67e3d5603909",
+      "block_type": "permission_required",
+      "target_scope": "consult_codex",
+      "assistant_kind": "codex",
+      "title": "Observar Codex instalado",
+      "detail": "Para verificar si Codex esta listo de verdad necesito observar el contenido visible de esa ventana.",
+      "status": "active",
+      "reason": "Falta permiso explicito para observar contenido visible antes de usar esta ruta.",
+      "evidence": [
+        "observe_window_content:codex"
+      ],
+      "confidence": 0.72,
+      "metadata": {
+        "scope": "observe_window_content:codex"
+      }
+    }
+  ],
+  "permission_gates": [
+    {
+      "scope": "observe_window_content:codex",
+      "assistant_kind": "codex",
+      "title": "Observar Codex instalado",
+      "detail": "Para verificar si Codex esta listo de verdad necesito observar el contenido visible de esa ventana.",
+      "status": "requerido",
+      "required_for": [
+        "consult_codex"
+      ],
+      "granted": false,
+      "confidence": 0.5,
+      "metadata": {
+        "tool_id": "codex_installed",
+        "probe_status": "permiso_requerido",
+        "window_open": true,
+        "last_verified_at": ""
+      }
+    }
+  ],
+  "observation_sources": [
+    "environment_self_model",
+    "network_probe",
+    "tool_registry",
+    "universal_perception_signal",
+    "windows_api",
+    "process_scan",
+    "codex_state_sqlite",
+    "permission_registry"
+  ],
+  "inferred_state": {
+    "summary": "Hay bloqueos operativos activos que conviene respetar antes de lanzar otra accion.",
+    "focused_window": "AlcolirykoZ - La vuelta ol\u00edmpica (Con Carolina Oliveros) Prod. El Arke\u00f3logo [Video lyric] - YouTube - Opera",
+    "active_window_count": 9,
+    "blocked_routes": [
+      {
+        "block_type": "permission_required",
+        "target_scope": "consult_codex",
+        "assistant_kind": "codex"
+      }
+    ],
+    "permission_gates": [
+      {
+        "scope": "observe_window_content:codex",
+        "assistant_kind": "codex",
+        "status": "requerido",
+        "required_for": [
+          "consult_codex"
+        ]
+      }
+    ],
+    "blocked_tools": [],
+    "deductions": [
+      "La ventana en foco ahora mismo es AlcolirykoZ - La vuelta ol\u00edmpica (Con Carolina Oliveros) Prod. El Arke\u00f3logo [Video lyric] - YouTube - Opera.",
+      "Antes de verificar de verdad a Codex instalado necesito permiso para observar su contenido visible."
+    ]
+  },
+  "confidence": 0.82,
+  "freshness_ms": 641,
+  "last_updated": "2026-04-15T15:29:59.458717Z",
+  "unresolved_fields": [
+    "UNRESOLVED:codex_content_probe"
+  ],
+  "metadata": {
+    "scan_reason": "role_router_ready",
+    "scan_mode": "light",
+    "workspace_root": "C:\\Python\\IABV_v1.5\\tmp_debug_pytest_world",
+    "observation_sources": [
+      "environment_self_model",
+      "network_probe",
+      "tool_registry",
+      "universal_perception_signal",
+      "windows_api",
+      "process_scan",
+      "codex_state_sqlite",
+      "permission_registry"
+    ],
+    "permission_gates": [
+      {
+        "scope": "observe_window_content:codex",
+        "assistant_kind": "codex",
+        "title": "Observar Codex instalado",
+        "detail": "Para verificar si Codex esta listo de verdad necesito observar el contenido visible de esa ventana.",
+        "status": "requerido",
+        "required_for": [
+          "consult_codex"
+        ],
+        "granted": false,
+        "confidence": 0.5,
+        "metadata": {
+          "tool_id": "codex_installed",
+          "probe_status": "permiso_requerido",
+          "window_open": true,
+          "last_verified_at": ""
+        }
+      }
+    ],
+    "changed_since_last_scan": [
+      "tool:ollama_llm->disponible"
+    ]
+  }
+}

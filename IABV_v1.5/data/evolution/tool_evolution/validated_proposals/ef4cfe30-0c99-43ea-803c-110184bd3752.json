@@ -1,0 +1,100 @@
+{
+  "result_id": "ef4cfe30-0c99-43ea-803c-110184bd3752",
+  "proposal_id": "fa96768d-c885-4e37-92ea-9fd1dc586586",
+  "proposal_key": "general|validate_discovery|language_understanding|adaptive local orchestrator|with_plan|without_files|normal|long|without_tools|without_browser|general|external|language_understanding|ollama|local_provider:ollama",
+  "domain": "language",
+  "subject_key": "general",
+  "proposal_kind": "validate_discovery",
+  "decision": "promoted",
+  "winner": "proposed_tool",
+  "reason": "La ruta actual quedo bloqueada por network_slow. La alternativa ollama queda mejor alineada con el estado operativo.",
+  "current_route": "language_understanding",
+  "current_assistant_kind": "adaptive local orchestrator",
+  "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+  "candidate_route": "language_understanding",
+  "candidate_assistant_kind": "ollama",
+  "candidate_config_signature": "local_provider:ollama",
+  "sandbox_experiment_id": "5dcfbb0e-a31f-4e45-a528-31be3ed1dd63",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+    "5e47c733-3081-42ca-a61c-6297c5604bde",
+    "034483be-0b5b-44bb-b5dd-5ec34d274459",
+    "caa5563c-3227-490c-8470-854027d47e22"
+  ],
+  "comparison_scope_keys": [
+    "general"
+  ],
+  "metrics": {
+    "priority_score": 0.5617,
+    "baseline_weighted_score": 0.8604,
+    "candidate_weighted_score": 0.9536,
+    "score_margin": 0.0932,
+    "evidence_strength": 0.962,
+    "observed_blockers": [
+      "network_slow"
+    ]
+  },
+  "recorded_at_utc": "2026-04-18T01:18:58.719293Z",
+  "metadata": {
+    "next_action": "validate_in_sandbox",
+    "discovery_signal_id": "a99669b7-c60b-4ee5-a3de-e12459330da9",
+    "discovery_source": "tool_registry",
+    "discovery_source_refs": [
+      "ToolRegistry",
+      "ExperimentLab",
+      "WorldModelSnapshot"
+    ],
+    "compatibility_score": 0.95,
+    "impact_score": 0.82,
+    "cost_score": 0.92,
+    "baseline_weighted_score": 0.8604,
+    "alternative_weighted_score": 0.9536,
+    "score_margin": 0.0932,
+    "baseline_profile": {
+      "weighted_score": 0.8604,
+      "sample_count": 4
+    },
+    "candidate_profile": {
+      "weighted_score": 0.9536,
+      "compatibility_score": 0.95,
+      "impact_score": 0.82,
+      "cost_score": 0.92
+    },
+    "ranked_configurations": [
+      {
+        "route": "language_understanding",
+        "assistant_kind": "adaptive local orchestrator",
+        "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+        "weighted_score": 0.8604,
+        "score": 0.8604,
+        "samples": 4
+      },
+      {
+        "route": "language_understanding",
+        "assistant_kind": "ollama",
+        "config_signature": "local_provider:ollama",
+        "weighted_score": 0.9536,
+        "score": 0.9536,
+        "samples": 0
+      }
+    ],
+    "tool_type": "llm_local",
+    "capabilities": [
+      "llm_query",
+      "summarize",
+      "classify"
+    ],
+    "current_route": "language_understanding",
+    "current_assistant_kind": "adaptive local orchestrator",
+    "current_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+    "estimated_candidate_score": 0.9536,
+    "estimated_gain": 0.0932,
+    "live_status": "disponible",
+    "requires_human_approval": false,
+    "local_first": true,
+    "supports_sandbox": true,
+    "decision_source": "tool_evolution_monitor",
+    "validation_verdict": "valid"
+  }
+}

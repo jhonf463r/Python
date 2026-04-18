@@ -1,0 +1,104 @@
+{
+  "result_id": "37a36e4f-b234-4d99-8662-a902fa2ad088",
+  "task_id": "7323bba6-40aa-4713-bf6d-a8d426590d3b",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "success": true,
+  "validation_status": "sandbox_pass",
+  "execution_state": {
+    "state": "sandbox_pass",
+    "detail": "Sandbox local de herramienta ejecutado.",
+    "executor_name": "external_assistant",
+    "sandboxed": true,
+    "validated": true,
+    "approval_decision": "approved",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": true,
+      "assistant_kind": "chatgpt",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://chatgpt.com/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\nObjetivo del usuario: haber mira no se si me explico bien pero wplay se queda raro como medio lageado y no se si eres tu o codex o chatgpt pero ayudame a entender que pasa y como revisarlo sin hacer cualquier cosa\nAsistente sugerido: chatgpt\nSitio: General\nIntento detectado: general.assistance\nPack activo: n/d\nEstado adaptativo: completed\nOutcome actual: Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Consulta local con contexto; sigue faltando un adaptador operativo del dominio.\nEvidencia textual:\n- Contexto activo: contexto general.\n- Ultima corrida: success | rol knowledge | pack knowledge.query.\n- Dossiers relacionados: 2.\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::chatgpt::general::haber-mira-no-se-si-me-explico-bien-pero-wplay-s\nIABV_THREAD_TITLE: IABV ChatGPT | haber mira no se si me explico bien pero wplay s\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::chatgpt::general::haber-mira-no-se-si-me-explico-bien-pero-wplay-s",
+      "thread_title": "IABV ChatGPT | haber mira no se si me explico bien pero wplay s",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "2026-04-13T16:51:15.688313+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+    }
+  },
+  "rollback_state": null,
+  "output_text": "Asistente externo listo para consulta guiada.",
+  "extracted_data": {
+    "assistant_kind": "chatgpt",
+    "launch_target": "https://chatgpt.com/"
+  },
+  "artifacts": [],
+  "error_message": "",
+  "execution_ms": 0,
+  "created_at_utc": "2026-04-13T16:51:15.688384Z",
+  "metadata": {
+    "sandbox": true,
+    "objective_id": "",
+    "project_id": "",
+    "task_goal_id": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "interaction_pattern_id": "be61f185-4864-4d59-997e-126c952cf4ff",
+    "interaction_channel": "ui",
+    "interaction_episode_id": "aa657e87-40f8-4726-81c2-d8de8a9691c9",
+    "mode_selection": {
+      "decision_id": "5f7299a6-9356-4833-a75f-5ccb96dfc94b",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "ui",
+      "selected_tool_id": "chatgpt_web_assisted",
+      "selected_tool_type": "llm_web_ui",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": false,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "chatgpt_web_assisted",
+            "mode": "ui",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "selected_mode": "ui",
+    "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+    "reuse_guard_active": false
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "issue_id": "b4e79517-b66d-48c8-9b69-86ad8790cb86",
+  "created_at_utc": "2026-04-18T04:56:22.825485Z",
+  "status": "needs_fix",
+  "scenario_id": "",
+  "goal": "abre Wplay e inicia sesion",
+  "category": "need_codex_fix",
+  "summary": "El bridge visible sigue saturado.",
+  "probable_cause": "El bridge visible sigue saturado.",
+  "unresolved_reason": "Ajustar sondeo y drenado sin bloquear la pagina.",
+  "run_id": null,
+  "episode_id": null,
+  "session_id": "adaptive-wplay-local-fallback",
+  "evidence_refs": [
+    "incident:bridge_lag",
+    "assistant:ollama",
+    "response_source:self_teach_auto_capture",
+    "file:src/iabv_v15/services/capture/browser_teach_session_service.py"
+  ],
+  "runtime_adjustments": [],
+  "recommended_change": "Ajustar sondeo y drenado sin bloquear la pagina.",
+  "suggested_tests": [
+    "abre Wplay e inicia sesion",
+    "Revisar Centro Evolutivo",
+    "Captura con escritura rapida"
+  ],
+  "metadata": {
+    "autonomous_evolution": true,
+    "assistant_kind": "ollama",
+    "source": "self_teach",
+    "site_id": "wplay",
+    "intent_key": "wplay.login",
+    "external_consult_response": {
+      "assistant_kind": "ollama",
+      "summary": "El bridge visible sigue saturado.",
+      "recommended_change": "Ajustar sondeo y drenado sin bloquear la pagina.",
+      "next_action": "prepare_codex_packet",
+      "confidence": 0.95,
+      "response_kind": "code_fix",
+      "file_scope": [
+        "src/iabv_v15/services/capture/browser_teach_session_service.py"
+      ],
+      "suggested_tests": [
+        "Captura con escritura rapida"
+      ],
+      "response_validation": {
+        "status": "review_needed",
+        "confidence": 0.95,
+        "validation_track": "packet_review",
+        "sandbox_required": true,
+        "rollback_ready": false,
+        "requires_human_approval": true,
+        "rationale": "La respuesta implica cambios tecnicos o alcance suficiente para requerir revision guiada antes de adoptarla.",
+        "blockers": [
+          "La adopcion debe pasar por sandbox o validacion equivalente antes de consolidarse.",
+          "La respuesta no debe aplicarse sola fuera de la ruta guiada o del packet tecnico."
+        ],
+        "assistant_kind": "ollama"
+      },
+      "adoption_plan": {
+        "status": "guarded",
+        "execution_lane": "codex_packet",
+        "next_action": "prepare_codex_packet",
+        "sandbox_required": true,
+        "rollback_ready": false,
+        "requires_human_approval": true,
+        "validation_steps": [
+          "Validar en sandbox o via controlada antes de consolidar el cambio.",
+          "Captura con escritura rapida"
+        ],
+        "human_help": "Actualiza el packet tecnico y revisa el cambio propuesto antes de tocar el repo.",
+        "site_id": "wplay",
+        "pending_issue_id": "b4e79517-b66d-48c8-9b69-86ad8790cb86"
+      },
+      "ingested_at_utc": "2026-04-18T04:56:23.378885+00:00"
+    },
+    "autonomous_response_codex_task_spec": {
+      "codex_task_id": "763093e0-1231-4983-b1a0-85d9f0a45657",
+      "title": "Aplicar respuesta autonoma",
+      "goal": "Ajustar sondeo y drenado sin bloquear la pagina.",
+      "file_scope": [
+        {
+          "path": "src/iabv_v15/services/capture/browser_teach_session_service.py",
+          "writable": true,
+          "reason": "Sugerido por la respuesta externa."
+        }
+      ],
+      "constraints": {
+        "read_only_paths": [],
+        "forbidden_operations": [],
+        "notes": []
+      },
+      "acceptance_criteria": [
+        {
+          "criterion_id": "3667108d-a928-49c7-848f-1c0568dc9171",
+          "description": "El bridge visible sigue saturado.",
+          "required": true,
+          "metadata": {}
+        }
+      ],
+      "test_plan": {
+        "plan_id": "f974b682-305e-4fdf-bdc2-3d41a8a4da14",
+        "title": "Pruebas sugeridas por la consulta externa",
+        "commands": [
+          "Captura con escritura rapida"
+        ],
+        "expected_outcomes": [
+          "La siguiente iteracion debe dejar el caso mejor explicado o verificablemente corregido."
+        ],
+        "metadata": {
+          "assistant_kind": "ollama"
+        }
+      },
+      "context_pack": {
+        "context_pack_id": "39d2f1f0-36f2-4ee9-a740-7a280ef42f2f",
+        "summary": "El bridge visible sigue saturado.",
+        "evidence_refs": [
+          "b4e79517-b66d-48c8-9b69-86ad8790cb86",
+          "bridge_lag"
+        ],
+        "interaction_episode_ids": [],
+        "capability_ids": [],
+        "metadata": {
+          "assistant_kind": "ollama",
+          "site_id": "wplay"
+        }
+      },
+      "metadata": {
+        "assistant_kind": "ollama",
+        "autonomous_response": true
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "episode_id": "3fe2ad9b-2b24-4639-939f-96cf6d77767c",
+  "title": "Test Capture",
+  "created_at_utc": "2026-04-18T05:01:19.611291Z",
+  "updated_at_utc": "2026-04-18T05:01:19.644933Z",
+  "step_count": 1,
+  "source": "desktop",
+  "tags": [
+    "smoke"
+  ],
+  "notes": ""
+}

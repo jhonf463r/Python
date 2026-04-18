@@ -1,0 +1,243 @@
+{
+  "review_id": "dacfebf0-1fb6-4d4d-8cf7-4e1807fe323d",
+  "created_at_utc": "2026-04-16T19:39:37.410478Z",
+  "updated_at_utc": "2026-04-16T19:39:37.410478Z",
+  "package_version": "self_examination.v1",
+  "summary": "Autoexaminacion needs_attention: 1 hallazgos activos. Lo mas fuerte ahora es ruta debil o inercial: chatgpt web asistido por ui. Mejoras validadas: 1 | issues recurrentes: 4.",
+  "status": "needs_attention",
+  "assistant_brief": "# IABV v1.5 - Operational Self Examination\n\nGenerado: 2026-04-16T19:39:37.410478+00:00\nResumen: Autoexaminacion needs_attention: 1 hallazgos activos. Lo mas fuerte ahora es ruta debil o inercial: chatgpt web asistido por ui. Mejoras validadas: 1 | issues recurrentes: 4.\n\nUsa esta revision para entender que esta fallando, que se repite y que ajustes conviene hacer antes de tocar la arquitectura.\n\n## Hallazgos\n- Ruta debil o inercial: chatgpt web asistido por ui: Se reutilizo 3 veces con exito 0%, bloqueos 0%, fallback 0% y tendencia +0.00. | recomendacion: Debilitar esta preferencia hasta que la tendencia vuelva a mejorar. Hoy sigue apareciendo como preferencia y conviene revisar si se mantiene por inercia. | confianza 0.70\n\n## Ajustes recomendados\n- Ruta debil o inercial: chatgpt web asistido por ui: Debilitar esta preferencia hasta que la tendencia vuelva a mejorar. Hoy sigue apareciendo como preferencia y conviene revisar si se mantiene por inercia. | fuente ExperimentLab, AdaptiveWeightLayer\n- Pendiente Codex: : Ya existe un patron equivalente Decision: continue_local. Confianza 0.96. | fuente EvolutionReviewService\n- Pendiente Codex: : Sin hallazgos. Decision: continue_local. Confianza 0.66. | fuente EvolutionReviewService\n- Pista de mejora reportada por la ejecucion: Seguir con la estrategia propuesta. | fuente EvolutionReviewService\n\n## Mejoras validadas\n- chatgpt web asistido por ui: Hay una mejora fuerte en experimentos recientes, pero todavia no un recommendation consolidado. | confianza 0.58\n\n## Retroalimentacion de ajustes\n- Todavia no hay suficiente evidencia posterior para juzgar ajustes anteriores.\n\nUNRESOLVED: UNRESOLVED:autonomous_validation_cycle",
+  "findings": [
+    {
+      "finding_id": "a5953d5f-7a53-4956-a73f-8a818259c8c9",
+      "category": "inertial_route",
+      "title": "Ruta debil o inercial: chatgpt web asistido por ui",
+      "summary": "Se reutilizo 3 veces con exito 0%, bloqueos 0%, fallback 0% y tendencia +0.00.",
+      "severity": "high",
+      "confidence": 0.7,
+      "recommendation": "Debilitar esta preferencia hasta que la tendencia vuelva a mejorar. Hoy sigue apareciendo como preferencia y conviene revisar si se mantiene por inercia.",
+      "evidence_refs": [
+        "b0a3ed25-b1bd-469d-b719-3da950979cef",
+        "a221b210-21eb-439c-aa37-7d2001c2b77d",
+        "03f88a4c-f11a-4913-815e-15f4e0bbc55e"
+      ],
+      "source_refs": [
+        "ExperimentLab",
+        "AdaptiveWeightLayer"
+      ],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "route": "ui",
+        "assistant_kind": "chatgpt web asistido",
+        "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "profile": {
+          "sample_count": 3,
+          "success_rate": 0.0,
+          "failure_rate": 1.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "reuse_ratio": 0.0,
+          "average_score": 0.3504,
+          "average_latency_ms": 17376,
+          "recency_score": -0.7,
+          "trend_score": 0.0,
+          "adaptive_weight": -0.356,
+          "weighted_score": -0.0056,
+          "top_environment_signatures": [
+            "default"
+          ],
+          "top_time_buckets": [
+            "afternoon",
+            "evening"
+          ],
+          "reasons": [
+            "latencia promedio 17376 ms"
+          ]
+        },
+        "currently_recommended": true
+      }
+    }
+  ],
+  "recurring_issues": [
+    {
+      "title": "Ruta debil o inercial: chatgpt web asistido por ui",
+      "category": "inertial_route",
+      "summary": "Se reutilizo 3 veces con exito 0%, bloqueos 0%, fallback 0% y tendencia +0.00.",
+      "severity": "high",
+      "confidence": 0.7,
+      "evidence_refs": [
+        "b0a3ed25-b1bd-469d-b719-3da950979cef",
+        "a221b210-21eb-439c-aa37-7d2001c2b77d",
+        "03f88a4c-f11a-4913-815e-15f4e0bbc55e"
+      ],
+      "source_refs": [
+        "ExperimentLab",
+        "AdaptiveWeightLayer"
+      ]
+    },
+    {
+      "title": "light_checks_warning",
+      "category": "project_health_repeat",
+      "summary": "El issue light_checks_warning reaparece 10 veces en la capa evolutiva.",
+      "severity": "medium",
+      "confidence": 0.68,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ]
+    },
+    {
+      "title": "need_codex_fix",
+      "category": "project_health_repeat",
+      "summary": "El issue need_codex_fix reaparece 2 veces en la capa evolutiva.",
+      "severity": "medium",
+      "confidence": 0.68,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ]
+    },
+    {
+      "title": "knowledge.query",
+      "category": "project_health_repeat",
+      "summary": "El issue knowledge.query reaparece 1 veces en la capa evolutiva.",
+      "severity": "medium",
+      "confidence": 0.68,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ]
+    }
+  ],
+  "recommended_adjustments": [
+    {
+      "title": "Ruta debil o inercial: chatgpt web asistido por ui",
+      "recommended_change": "Debilitar esta preferencia hasta que la tendencia vuelva a mejorar. Hoy sigue apareciendo como preferencia y conviene revisar si se mantiene por inercia.",
+      "category": "inertial_route",
+      "severity": "high",
+      "confidence": 0.7,
+      "evidence_refs": [
+        "b0a3ed25-b1bd-469d-b719-3da950979cef",
+        "a221b210-21eb-439c-aa37-7d2001c2b77d",
+        "03f88a4c-f11a-4913-815e-15f4e0bbc55e"
+      ],
+      "source_refs": [
+        "ExperimentLab",
+        "AdaptiveWeightLayer"
+      ],
+      "metadata": {
+        "route": "ui",
+        "assistant_kind": "chatgpt web asistido",
+        "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "profile": {
+          "sample_count": 3,
+          "success_rate": 0.0,
+          "failure_rate": 1.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "reuse_ratio": 0.0,
+          "average_score": 0.3504,
+          "average_latency_ms": 17376,
+          "recency_score": -0.7,
+          "trend_score": 0.0,
+          "adaptive_weight": -0.356,
+          "weighted_score": -0.0056,
+          "top_environment_signatures": [
+            "default"
+          ],
+          "top_time_buckets": [
+            "afternoon",
+            "evening"
+          ],
+          "reasons": [
+            "latencia promedio 17376 ms"
+          ]
+        },
+        "currently_recommended": true
+      },
+      "feedback_key": "inertial_route:chatgpt web asistido:ui:without_plan|without_files|normal|short|without_tools|without_browser|general|external"
+    },
+    {
+      "title": "Pendiente Codex: ",
+      "recommended_change": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+      "category": "backlog",
+      "severity": "medium",
+      "confidence": 0.95,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ],
+      "metadata": {},
+      "feedback_key": "backlog:pendiente codex:"
+    },
+    {
+      "title": "Pendiente Codex: ",
+      "recommended_change": "Sin hallazgos. Decision: continue_local. Confianza 0.66.",
+      "category": "backlog",
+      "severity": "medium",
+      "confidence": 0.95,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ],
+      "metadata": {},
+      "feedback_key": "backlog:pendiente codex:"
+    },
+    {
+      "title": "Pista de mejora reportada por la ejecucion",
+      "recommended_change": "Seguir con la estrategia propuesta.",
+      "category": "backlog",
+      "severity": "medium",
+      "confidence": 0.6,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ],
+      "metadata": {},
+      "feedback_key": "backlog:pista de mejora reportada por la ejecucion"
+    }
+  ],
+  "validated_improvements": [
+    {
+      "title": "chatgpt web asistido por ui",
+      "summary": "Hay una mejora fuerte en experimentos recientes, pero todavia no un recommendation consolidado.",
+      "subject_key": "00447b3e-dc07-407c-a142-54b2c1722dee",
+      "recommended_assistant_kind": "chatgpt web asistido",
+      "recommended_route": "ui",
+      "confidence": 0.58,
+      "score": 0.36,
+      "reasons": [],
+      "source_refs": [
+        "ExperimentLab"
+      ],
+      "evidence_refs": [
+        "b0a3ed25-b1bd-469d-b719-3da950979cef"
+      ],
+      "feedback_key": "inertial_route:chatgpt web asistido:ui:without_plan|without_files|normal|short|without_tools|without_browser|general|external"
+    }
+  ],
+  "unresolved_risks": [
+    "UNRESOLVED:autonomous_validation_cycle"
+  ],
+  "package_path": "C:\\Python\\IABV_v1.5\\data\\evolution\\self_examination\\latest.json",
+  "markdown_path": "C:\\Python\\IABV_v1.5\\data\\evolution\\self_examination\\latest.md",
+  "metadata": {
+    "recommendation_feedback": [],
+    "feedback_summary": {
+      "total_reviewed": 0,
+      "validated_improvement": 0,
+      "valid_adjustment": 0,
+      "false_improvement": 0,
+      "no_evidence": 0
+    },
+    "workspace_root": "C:\\Python\\IABV_v1.5",
+    "source_refs": [
+      "RunRepository",
+      "AdaptiveSessionRepository",
+      "ExperimentLab",
+      "EvolutionReviewService",
+      "WorldModelSnapshot",
+      "AutonomousValidationSnapshot"
+    ]
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "tool_id": "chatgpt_installed",
+  "title": "ChatGPT instalado",
+  "tool_type": "custom",
+  "description": "Consulta explicativa guiada usando la app instalada de ChatGPT cuando esta disponible.",
+  "adapter_key": "external_assistant",
+  "validation_status": "unvalidated",
+  "local_first": false,
+  "available": true,
+  "supports_sandbox": true,
+  "supports_write": false,
+  "requires_human_approval": true,
+  "supports_rollback": false,
+  "capabilities": [
+    "launch_app",
+    "llm_query",
+    "consult_external",
+    "explain_issue"
+  ],
+  "success_count": 0,
+  "failure_count": 0,
+  "last_result_id": null,
+  "last_validated_at_utc": null,
+  "metadata": {
+    "assistant_kind": "chatgpt",
+    "launch_mode": "desktop_app",
+    "command_name": "chatgpt",
+    "command_aliases": [
+      "ChatGPT",
+      "chatgpt.exe",
+      "OpenAI"
+    ],
+    "windows_default_paths": [
+      "{localappdata}\\Programs\\ChatGPT\\ChatGPT.exe",
+      "{localappdata}\\OpenAI\\ChatGPT.exe",
+      "{localappdata}\\OpenAI\\*\\ChatGPT.exe",
+      "{localappdata}\\OpenAI\\**\\ChatGPT.exe",
+      "{localappdata}\\Microsoft\\WindowsApps\\ChatGPT.exe",
+      "{programfiles}\\ChatGPT\\ChatGPT.exe",
+      "{programfilesx86}\\ChatGPT\\ChatGPT.exe"
+    ],
+    "prompt_template_id": "chatgpt_consult_v1",
+    "response_capture_mode": "clipboard_capture",
+    "requires_manual_pasteback": false,
+    "window_title_hints": [
+      "ChatGPT"
+    ],
+    "submit_prompt_after_paste": true,
+    "response_wait_seconds": 10.0,
+    "dry_run_launch": false,
+    "updated_at_utc": "2026-04-13T19:29:22.169038+00:00"
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "run_id": "03f88a4c-f11a-4913-815e-15f4e0bbc55e",
+  "domain": "language",
+  "suite_name": "text_understanding_suite",
+  "objective": "Consultar ChatGPT sobre: haber mira no se si me explico bien pero wplay se queda raro como medio lageado y no se si eres tu o codex o chatgpt pero ayudame a entender que pasa y como revisarlo sin hacer cualquier cosa",
+  "subject_key": "chatgpt_web_assisted",
+  "route": "ui",
+  "assistant_kind": "chatgpt web asistido",
+  "assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+  "candidate_id": "8cf9dc71-eccd-4854-8234-29f8b1444c69",
+  "candidate_label": "ChatGPT web asistido",
+  "success": false,
+  "expected_summary": "text=Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+  "observed_summary": "[WinError 5] Acceso denegado",
+  "metrics": {
+    "precision": 0.12403100775193798,
+    "execution_ms": 3,
+    "operational_cost": 0.0,
+    "robustness": 0.4,
+    "reuse_score": 0.0,
+    "user_progress": 0.0,
+    "total_score": 0.3313,
+    "metadata": {
+      "domain": "language",
+      "objective": "Consultar ChatGPT sobre: haber mira no se si me explico bien pero wplay se queda raro como medio lageado y no se si eres tu o codex o chatgpt pero ayudame a entender que pasa y como revisarlo sin hacer cualquier cosa",
+      "candidate_label": "ChatGPT web asistido",
+      "route": "ui",
+      "assistant_kind": "chatgpt web asistido",
+      "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "sample_support": 1,
+      "latency_score": 0.9994,
+      "cost_score": 1.0,
+      "user_progress_score": 0.0,
+      "relative_vs_same_config": 1.0
+    }
+  },
+  "evidence_refs": [
+    "be61f185-4864-4d59-997e-126c952cf4ff",
+    "25e6f7ce-a837-411f-baf7-35ed024eee31"
+  ],
+  "reused_later": false,
+  "better_than_previous": false,
+  "metadata": {
+    "source": "live_audit_tool",
+    "user_progress": 0.0,
+    "evidence_refs": [
+      "be61f185-4864-4d59-997e-126c952cf4ff",
+      "25e6f7ce-a837-411f-baf7-35ed024eee31"
+    ],
+    "reused_pattern": false,
+    "suite_name": "text_understanding_suite",
+    "assistant_kind": "chatgpt web asistido",
+    "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+    "trace_id": "",
+    "comparison_scope_key": "",
+    "source_trace_ids": [],
+    "proposal_summary": "",
+    "outcome_summary": "[WinError 5] Acceso denegado"
+  },
+  "created_at_utc": "2026-04-13T16:51:15.930809Z"
+}

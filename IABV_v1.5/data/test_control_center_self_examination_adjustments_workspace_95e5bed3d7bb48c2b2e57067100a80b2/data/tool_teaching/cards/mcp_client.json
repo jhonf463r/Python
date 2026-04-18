@@ -1,0 +1,24 @@
+{
+  "tool_id": "mcp_client",
+  "title": "MCP client",
+  "tool_type": "mcp_client",
+  "description": "Cliente MCP extensible para conectores o servidores futuros.",
+  "adapter_key": "mcp",
+  "validation_status": "unvalidated",
+  "local_first": true,
+  "available": false,
+  "supports_sandbox": true,
+  "supports_write": false,
+  "requires_human_approval": true,
+  "supports_rollback": false,
+  "capabilities": [
+    "mcp_call"
+  ],
+  "success_count": 0,
+  "failure_count": 0,
+  "last_result_id": null,
+  "last_validated_at_utc": null,
+  "metadata": {
+    "updated_at_utc": "2026-04-15T23:59:34.246630+00:00"
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "recommendation_id": "33ef2387-3c30-4308-9c93-809c48d7986f",
+  "domain": "code",
+  "subject_key": "general:haber-mira-q-puedes-aser-tu-aca-adentro-tipo-codex-chatgpt-y-eso-lo-mane",
+  "recommended_route": "language_understanding",
+  "recommended_assistant_kind": "adaptive local orchestrator",
+  "recommended_assistant_configuration": {
+    "planning_mode": "with_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+  "score": 0.6686,
+  "confidence": 0.7091,
+  "rationale": "Recomiendo language_understanding para code en general:haber-mira-q-puedes-aser-tu-aca-adentro-tipo-codex-chatgpt-y-eso-lo-mane usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.53 y score adaptativo 0.67 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 13948 ms.",
+  "supporting_run_ids": [
+    "5ec85105-b9a1-4e16-8100-9421844231be"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "language_understanding",
+        "score": 0.6686,
+        "samples": 1
+      }
+    ],
+    "ranked_configurations": [
+      {
+        "route": "language_understanding",
+        "assistant_kind": "adaptive local orchestrator",
+        "config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "score": 0.5286,
+        "adaptive_weight": 0.14,
+        "weighted_score": 0.6686,
+        "samples": 1,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 13948 ms"
+        ]
+      }
+    ],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": [
+      "general:haber-mira-q-puedes-aser-tu-aca-adentro-tipo-codex-chatgpt-y-eso-lo-mane"
+    ],
+    "adaptive_learning_summary": {
+      "preferred_route": "language_understanding",
+      "preferred_assistant_kind": "adaptive local orchestrator",
+      "preferred_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.6686,
+      "sample_count": 1,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "top_environment_signatures": [
+        "conectado|partial"
+      ],
+      "top_time_buckets": [
+        "night"
+      ],
+      "reasons": [
+        "historial de exito 100%",
+        "latencia promedio 13948 ms"
+      ]
+    }
+  },
+  "created_at_utc": "2026-04-16T03:57:00.278151Z"
+}

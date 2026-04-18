@@ -1,0 +1,38 @@
+{
+  "observation_id": "97ae592d-b1d5-4a35-b620-c3d89fcb768c",
+  "pattern_id": "e40f561b-b71a-4b2c-b627-8ee97f716384",
+  "task_id": "b33dcd1b-b2f9-42be-a4bc-23d7e32ffae9",
+  "result_id": "2fd1c0a6-ad17-4626-ae29-6f8a3921b899",
+  "episode_id": "c14f912d-049b-44b0-b2f8-ee40379e3f8b",
+  "success": true,
+  "channel": "background",
+  "tool_id": "ollama_llm",
+  "tool_type": "llm_local",
+  "site_id": "wplay",
+  "summary": "No puedo revisar \"wplay\" con la información disponible. Proporciona más contexto o detalles para ayudarte mejor.",
+  "confidence": 0.92,
+  "evidence_refs": [
+    "2fd1c0a6-ad17-4626-ae29-6f8a3921b899:provider",
+    "2fd1c0a6-ad17-4626-ae29-6f8a3921b899:report_kind"
+  ],
+  "created_at_utc": "2026-04-14T01:29:03.913550Z",
+  "metadata": {
+    "validation_status": "approved",
+    "execution_state": "executed",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "provider",
+      "report_kind"
+    ],
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

@@ -1,0 +1,498 @@
+{
+  "interaction_episode_id": "9e6ab2eb-8803-4f63-96f0-351fffaf15fd",
+  "objective": "Consultar Codex sobre: abre Wplay e inicia sesion",
+  "mode_used": "background",
+  "environment": {
+    "tool_id": "codex_installed",
+    "tool_type": "custom",
+    "adapter_key": "external_assistant",
+    "site_id": "wplay",
+    "execution_scope": "read_only"
+  },
+  "captured_metadata": {
+    "task_metadata": {
+      "goal_parameters": {
+        "tool_id": "codex_installed",
+        "allowed_tool_ids": [
+          "codex_installed",
+          "chatgpt_installed",
+          "chatgpt_web_assisted",
+          "claude_installed",
+          "claude_web_assisted"
+        ],
+        "title": "Consultar Codex",
+        "expected_outcome": "Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+        "context_pack": "Diagnostico: bridge_lag en Wplay.\n\nIABV_THREAD_KEY: iabv::codex::wplay::abre-wplay-e-inicia-sesion\nIABV_THREAD_TITLE: IABV Codex | abre Wplay e inicia sesion\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "assistant_preference": "codex",
+        "assistant_kind": "codex",
+        "consultation_scope": "external_assistant",
+        "response_capture_mode": "clipboard_capture",
+        "requires_manual_pasteback": false,
+        "prompt_template_id": "codex_consult_v1",
+        "execution_scope": "read_only",
+        "diagnostic_category": "need_codex_fix",
+        "incident_kind": "bridge_lag",
+        "site_id": "wplay",
+        "lab_recommendation": {},
+        "dry_run_launch": false,
+        "allow_local_automatic_consultation": false,
+        "session_scope": "external_app",
+        "isolated_session_required": false,
+        "session_label": "Codex",
+        "thread_key": "iabv::codex::wplay::abre-wplay-e-inicia-sesion",
+        "thread_title": "IABV Codex | abre Wplay e inicia sesion",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+        "last_capture_attempt_utc": "",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\test_runs\\tool_teach_service_external_clipboard_capture_db9b83455aeb4c8aaeba25af9adb5241\\data\\tool_teaching\\external_assistants\\codex_home"
+      },
+      "created_at_utc": "2026-04-18T05:04:23.400270+00:00",
+      "updated_at_utc": "2026-04-18T05:04:23.400270+00:00",
+      "mode_selection": {
+        "decision_id": "5e4a5a7e-0372-47a3-8e87-62a95930358c",
+        "selector_name": "universal_mode_selector",
+        "selected_mode": "background",
+        "selected_tool_id": "codex_installed",
+        "selected_tool_type": "custom",
+        "adapter_exists": true,
+        "available": true,
+        "fallback_used": false,
+        "already_resolved": false,
+        "equivalent_pattern_exists": false,
+        "improvement_already_implemented": false,
+        "reusable_pattern_id": null,
+        "reusable_episode_id": null,
+        "scores": {
+          "availability": 1.0,
+          "adapter_exists": 1.0,
+          "desired_match": 1.0,
+          "suggested_match": 1.0,
+          "automatic_capture": 1.0,
+          "total": 5.0
+        },
+        "reason": "consulta_externa_preferida | modo=background | automatica=True | available=True",
+        "metadata": {
+          "desired_modes": [
+            "background",
+            "ui"
+          ],
+          "candidate_ranking": [
+            {
+              "tool_id": "codex_installed",
+              "mode": "background",
+              "score": 5.0
+            }
+          ],
+          "selection_policy": "preferred_external_tool"
+        }
+      },
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reuse_guard_active": false,
+      "reused_pattern_id": "",
+      "reused_episode_id": "",
+      "adapter_exists": true,
+      "selected_mode": "background",
+      "selector_reason": "consulta_externa_preferida | modo=background | automatica=True | available=True",
+      "requested_tool_id": "codex_installed",
+      "reused_actions_from_pattern": false,
+      "requested_assistant_kind": "codex",
+      "assistant_kind": "codex",
+      "actual_assistant_kind": "codex",
+      "consultation_scope": "external_assistant",
+      "response_capture_mode": "clipboard_capture",
+      "requires_manual_pasteback": false,
+      "diagnostic_category": "need_codex_fix",
+      "incident_kind": "bridge_lag",
+      "dry_run_launch": false,
+      "lab_recommendation": {},
+      "context_pack": "Diagnostico: bridge_lag en Wplay.\n\nIABV_THREAD_KEY: iabv::codex::wplay::abre-wplay-e-inicia-sesion\nIABV_THREAD_TITLE: IABV Codex | abre Wplay e inicia sesion\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "comparison_scope_key": "wplay:consultar-codex-sobre-abre-wplay-e-inicia-sesion",
+      "source_trace_ids": [],
+      "proposal_summary": "Diagnostico: bridge_lag en Wplay. IABV_THREAD_KEY: iabv::codex::wplay::abre-wplay-e-inicia-sesion IABV_THREAD_TITLE: IABV Codex | abre Wplay e inicia sesion IABV_LANE_PRIORITY: background > app > manual Instruccion: usa o crea el hilo dedic",
+      "thread_key": "iabv::codex::wplay::abre-wplay-e-inicia-sesion",
+      "thread_title": "IABV Codex | abre Wplay e inicia sesion",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\test_runs\\tool_teach_service_external_clipboard_capture_db9b83455aeb4c8aaeba25af9adb5241\\data\\tool_teaching\\external_assistants\\codex_home",
+      "session_scope": "external_app",
+      "session_label": "Codex",
+      "isolated_session_required": false,
+      "background_capture_mode": "codex_rollout",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "extended",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "without_browser",
+        "assistant_mode": "code",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "codex",
+          "tool_id": "codex_installed",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 303
+        }
+      },
+      "config_signature": "without_plan|without_files|extended|short|with_tools|without_browser|code|external",
+      "ia_trace_entry": {
+        "trace_id": "294f9e48-2a9a-494d-938a-10bcc8609d7e",
+        "created_at_utc": "2026-04-18T05:04:23.402223Z",
+        "assistant_kind": "codex",
+        "requested_assistant_kind": "codex",
+        "actual_assistant_kind": "codex",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "extended",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "without_browser",
+          "assistant_mode": "code",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "codex",
+            "tool_id": "codex_installed",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 303
+          }
+        },
+        "config_signature": "without_plan|without_files|extended|short|with_tools|without_browser|code|external",
+        "comparison_scope_key": "wplay:consultar-codex-sobre-abre-wplay-e-inicia-sesion",
+        "source_trace_ids": [],
+        "route": "code_agent",
+        "tool_id": "codex_installed",
+        "task_id": "25045416-500f-4d35-8afb-00c736b4584c",
+        "result_id": "",
+        "session_scope": "external_app",
+        "thread_key": "iabv::codex::wplay::abre-wplay-e-inicia-sesion",
+        "thread_title": "IABV Codex | abre Wplay e inicia sesion",
+        "capture_lane": "background",
+        "state": "pending",
+        "detail": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+        "proposal_summary": "Diagnostico: bridge_lag en Wplay. IABV_THREAD_KEY: iabv::codex::wplay::abre-wplay-e-inicia-sesion IABV_THREAD_TITLE: IABV Codex | abre Wplay e inicia sesion IABV_LANE_PRIORITY: background > app > manual Instruccion: usa o crea el hilo dedic",
+        "outcome_summary": "",
+        "result_label": "Consultar Codex",
+        "success": false,
+        "execution_ms": 0,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "wplay",
+          "25045416-500f-4d35-8afb-00c736b4584c"
+        ],
+        "reused_later": false,
+        "verdict": "",
+        "coherence_flags": [],
+        "external_state_flags": [],
+        "metadata": {
+          "response_capture_mode": "clipboard_capture",
+          "background_capture_mode": "codex_rollout",
+          "comparison_scope_key": "wplay:consultar-codex-sobre-abre-wplay-e-inicia-sesion"
+        }
+      },
+      "background_headless": true,
+      "approval_required": true,
+      "destructive": false
+    },
+    "execution_metadata": {
+      "sandbox": true,
+      "assistant_kind": "codex",
+      "launch_mode": "desktop_app",
+      "launch_target": "C:\\Python\\IABV_v1.5\\data\\test_runs\\tool_teach_service_external_clipboard_capture_db9b83455aeb4c8aaeba25af9adb5241\\fake_codex.exe",
+      "response_capture_mode": "clipboard_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Diagnostico: bridge_lag en Wplay.\n\nIABV_THREAD_KEY: iabv::codex::wplay::abre-wplay-e-inicia-sesion\nIABV_THREAD_TITLE: IABV Codex | abre Wplay e inicia sesion\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "session_scope": "external_app",
+      "session_label": "Codex",
+      "isolated_session": false,
+      "thread_key": "iabv::codex::wplay::abre-wplay-e-inicia-sesion",
+      "thread_title": "IABV Codex | abre Wplay e inicia sesion",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "2026-04-18T05:04:23.412666+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\test_runs\\tool_teach_service_external_clipboard_capture_db9b83455aeb4c8aaeba25af9adb5241\\data\\tool_teaching\\external_assistants\\codex_home"
+    },
+    "result_metadata": {
+      "sandbox": true,
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  },
+  "actions": [
+    {
+      "step_id": "ca7128d4-68a1-4b83-aebc-01717b44e4fb",
+      "channel": "background",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "cdd1aeee-aec1-4280-9235-15e7f4acb87a",
+      "started_at_utc": "2026-04-18T05:04:23.449446Z",
+      "finished_at_utc": "2026-04-18T05:04:23.449446Z",
+      "destructive": false,
+      "requires_approval": true
+    },
+    {
+      "step_id": "ad99aa0a-0d05-457f-9c0d-f403d32dca7b",
+      "channel": "background",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "d865acdb-7352-498e-9b8b-a1159d9f3838",
+      "started_at_utc": "2026-04-18T05:04:23.449446Z",
+      "finished_at_utc": "2026-04-18T05:04:23.449446Z",
+      "destructive": false,
+      "requires_approval": false
+    }
+  ],
+  "result": {
+    "interaction_result_id": "e18e63d7-1d74-4194-a72c-99c66d14582d",
+    "success": true,
+    "execution_state": {
+      "state": "sandbox_pass",
+      "detail": "Sandbox local de herramienta ejecutado.",
+      "executor_name": "external_assistant",
+      "sandboxed": true,
+      "validated": true,
+      "approval_decision": "approved",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": true,
+        "assistant_kind": "codex",
+        "launch_mode": "desktop_app",
+        "launch_target": "C:\\Python\\IABV_v1.5\\data\\test_runs\\tool_teach_service_external_clipboard_capture_db9b83455aeb4c8aaeba25af9adb5241\\fake_codex.exe",
+        "response_capture_mode": "clipboard_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Diagnostico: bridge_lag en Wplay.\n\nIABV_THREAD_KEY: iabv::codex::wplay::abre-wplay-e-inicia-sesion\nIABV_THREAD_TITLE: IABV Codex | abre Wplay e inicia sesion\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "response_captured": false,
+        "session_scope": "external_app",
+        "session_label": "Codex",
+        "isolated_session": false,
+        "thread_key": "iabv::codex::wplay::abre-wplay-e-inicia-sesion",
+        "thread_title": "IABV Codex | abre Wplay e inicia sesion",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+        "last_capture_attempt_utc": "2026-04-18T05:04:23.412666+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\test_runs\\tool_teach_service_external_clipboard_capture_db9b83455aeb4c8aaeba25af9adb5241\\data\\tool_teaching\\external_assistants\\codex_home"
+      }
+    },
+    "summary": "Asistente externo listo para consulta guiada.",
+    "errors": [],
+    "confidence": 0.78,
+    "execution_ms": 0,
+    "rollback_state": null,
+    "extracted_data": {
+      "assistant_kind": "codex",
+      "launch_target": "C:\\Python\\IABV_v1.5\\data\\test_runs\\tool_teach_service_external_clipboard_capture_db9b83455aeb4c8aaeba25af9adb5241\\fake_codex.exe"
+    },
+    "artifacts": [],
+    "metadata": {
+      "validation_status": "sandbox_pass",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "errors": [],
+  "evidence": [
+    {
+      "evidence_id": "a0923618-21f2-4587-80f5-c5275fbc923d",
+      "kind": "log",
+      "label": "Dato extraido: assistant_kind",
+      "ref_id": "06872a38-88e1-46d1-9267-480c834646ea:assistant_kind",
+      "path": null,
+      "metadata": {
+        "key": "assistant_kind"
+      },
+      "confidence": 0.7
+    },
+    {
+      "evidence_id": "e5748acd-cc22-43aa-bffc-2354d35add29",
+      "kind": "log",
+      "label": "Dato extraido: launch_target",
+      "ref_id": "06872a38-88e1-46d1-9267-480c834646ea:launch_target",
+      "path": null,
+      "metadata": {
+        "key": "launch_target"
+      },
+      "confidence": 0.7
+    }
+  ],
+  "learning_signals": [
+    {
+      "signal_id": "7d6433e3-ffae-4096-b381-fa2b7f7fb4ba",
+      "label": "pattern:background:codex_installed",
+      "channel": "background",
+      "signal_type": "pattern_reuse",
+      "confidence": 0.78,
+      "source": "interaction_learning_service",
+      "evidence_refs": [
+        "06872a38-88e1-46d1-9267-480c834646ea:assistant_kind",
+        "06872a38-88e1-46d1-9267-480c834646ea:launch_target"
+      ],
+      "metadata": {
+        "pattern_id": "914e3903-8279-4bb1-a139-d247cfaff710"
+      }
+    }
+  ],
+  "confidence": 0.78,
+  "human_approval": true,
+  "policy_decision": {
+    "decision_id": "a62e91c5-d3d6-44e9-9a7c-c5cd232baca7",
+    "requires_human_approval": true,
+    "approval_decision": "approved",
+    "blocked": false,
+    "rationale": "Sandbox local de herramienta ejecutado.",
+    "confidence": 0.78,
+    "metadata": {
+      "execution_scope": "read_only",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "selector_name": "universal_mode_selector",
+  "selector_reason": "consulta_externa_preferida | modo=background | automatica=True | available=True",
+  "pattern_id": "914e3903-8279-4bb1-a139-d247cfaff710",
+  "reused_pattern": false,
+  "tool_id": "codex_installed",
+  "tool_type": "custom",
+  "task_id": "25045416-500f-4d35-8afb-00c736b4584c",
+  "result_id": "06872a38-88e1-46d1-9267-480c834646ea",
+  "site_id": "wplay",
+  "created_at_utc": "2026-04-18T05:04:23.449446Z",
+  "updated_at_utc": "2026-04-18T05:04:23.449446Z",
+  "metadata": {
+    "learning_signals": [
+      {
+        "signal_id": "7d6433e3-ffae-4096-b381-fa2b7f7fb4ba",
+        "label": "pattern:background:codex_installed",
+        "channel": "background",
+        "signal_type": "pattern_reuse",
+        "confidence": 0.78,
+        "source": "interaction_learning_service",
+        "evidence_refs": [
+          "06872a38-88e1-46d1-9267-480c834646ea:assistant_kind",
+          "06872a38-88e1-46d1-9267-480c834646ea:launch_target"
+        ],
+        "metadata": {
+          "pattern_id": "914e3903-8279-4bb1-a139-d247cfaff710"
+        }
+      }
+    ],
+    "mode_selection": {
+      "decision_id": "5e4a5a7e-0372-47a3-8e87-62a95930358c",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "background",
+      "selected_tool_id": "codex_installed",
+      "selected_tool_type": "custom",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": false,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=background | automatica=True | available=True",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "codex_installed",
+            "mode": "background",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "selected_mode": "background",
+    "reusable_pattern_id": "",
+    "reusable_episode_id": "",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "objective_id": "56f9b7e0-9f44-4665-93f5-3d690c287c8c",
+  "kind": "subtask",
+  "title": "Registrar outcome",
+  "summary": "La sesion adaptativa deja traza reutilizable para evolutivo y Codex. Registrar el resultado bajo la via language_understanding.",
+  "parent_id": "63e92ba1-fc6c-4399-a111-1e26cec770c5",
+  "root_id": "63ffe23f-aaae-4096-9d13-4d29636057fc",
+  "site_id": "wplay",
+  "priority": 57,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.9,
+  "evidence_refs": [
+    "Contexto activo: Wplay.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 5.",
+    "Laboratorio universal: language -> language_understanding (score 0.86, confianza 0.78).",
+    "run:80142971-96c6-4fda-86c7-5180d9360e39",
+    "Ultima corrida: success | rol training | pack wplay.core.",
+    "Dossiers relacionados: 6.",
+    "Laboratorio universal: language -> ui (score 0.77, confianza 0.73).",
+    "Conocimiento local relacionado: 1 items."
+  ],
+  "tags": [
+    "record_outcome"
+  ],
+  "metadata": {
+    "phase_key": "record_outcome",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "knowledge.query"
+  },
+  "created_at_utc": "2026-04-16T22:45:17.380370Z",
+  "updated_at_utc": "2026-04-16T22:45:17.380371Z"
+}

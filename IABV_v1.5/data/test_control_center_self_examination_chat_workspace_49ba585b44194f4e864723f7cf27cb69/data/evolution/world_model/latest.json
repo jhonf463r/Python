@@ -1,0 +1,579 @@
+{
+  "snapshot_id": "54913b0e-fd43-4b19-80dd-8ed27279c240",
+  "active_windows": [
+    {
+      "window_id": "eef1c70e-499f-46d8-b1ab-3a9c3d407314",
+      "title": "Codex",
+      "app_name": "Codex",
+      "pid": 11240,
+      "focused": true,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "a0004077-bb47-402b-b5f5-f2b99127781f",
+      "title": "Administrador de tareas",
+      "app_name": "Administrador de tareas",
+      "pid": 15184,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "04725f61-6d6f-4a6c-9b81-5dcf8bc1f568",
+      "title": "Prompt para Codex - Google Chrome",
+      "app_name": "Prompt para Codex",
+      "pid": 23668,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "85772759-6281-4538-9806-dd67c5a709fa",
+      "title": "Codex - Opera",
+      "app_name": "Codex",
+      "pid": 20684,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "bd694267-f48e-43c8-999a-bb375307450e",
+      "title": "Configuraci\u00f3n",
+      "app_name": "Configuraci\u00f3n",
+      "pid": 9936,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "a3e3facb-66f8-472b-85a9-3c48424d7712",
+      "title": "Configuraci\u00f3n",
+      "app_name": "Configuraci\u00f3n",
+      "pid": 19024,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "0a3df0b5-9905-4789-9640-fae87bf4ea51",
+      "title": "Investigaci\u00f3n apps datos gratis \u2014 Mozilla Firefox",
+      "app_name": "Investigaci\u00f3n apps datos gratis \u2014 Mozilla Firefox",
+      "pid": 19336,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "c56d0b24-6f92-4c06-a67a-12ad007c6e98",
+      "title": "Realtek Audio Console",
+      "app_name": "Realtek Audio Console",
+      "pid": 3232,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "9f1d7e35-175a-4f2d-b454-d9187c845559",
+      "title": "Realtek Audio Console",
+      "app_name": "Realtek Audio Console",
+      "pid": 19024,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "ab9d5157-d8a4-4e00-854a-5eaf2300d03b",
+      "title": "Nahimic",
+      "app_name": "Nahimic",
+      "pid": 18748,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "0d800f4e-c345-4344-b42d-13bcaedce913",
+      "title": "Nahimic",
+      "app_name": "Nahimic",
+      "pid": 19024,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "fa960138-baf6-4c1d-b0f7-b27c8d2974c2",
+      "title": "OmApSvcBroker",
+      "app_name": "OmApSvcBroker",
+      "pid": 11976,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "c981606a-1545-4040-b9c1-621eb39ea721",
+      "title": "Experiencia de entrada de Windows",
+      "app_name": "Experiencia de entrada de Windows",
+      "pid": 2756,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "08350488-01be-40c1-a769-2a5cf1aa5679",
+      "title": "Program Manager",
+      "app_name": "Program Manager",
+      "pid": 17356,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    }
+  ],
+  "focused_window": {
+    "window_id": "76d7bf92-e550-4d2e-8992-f5972787d321",
+    "title": "Codex",
+    "app_name": "Codex",
+    "pid": 11240,
+    "focused": true,
+    "visible": true,
+    "tool_id": "",
+    "assistant_kind": "",
+    "state": "focused",
+    "detail": "",
+    "metadata": {}
+  },
+  "tool_live_status": [
+    {
+      "tool_id": "claude_web_assisted",
+      "title": "Claude web asistido",
+      "assistant_kind": "claude",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "web_assisted",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Claude web asistido",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "dom_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:claude"
+      }
+    },
+    {
+      "tool_id": "claude_installed",
+      "title": "Claude instalado",
+      "assistant_kind": "claude",
+      "available": false,
+      "status": "no_disponible",
+      "detail": "La herramienta no quedo confirmada como disponible en esta laptop.",
+      "launch_mode": "desktop_app",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "no_disponible",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.1,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Claude instalado",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "clipboard_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:claude"
+      }
+    },
+    {
+      "tool_id": "chatgpt_web_assisted",
+      "title": "ChatGPT web asistido",
+      "assistant_kind": "chatgpt",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "web_assisted",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "ChatGPT web asistido",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "dom_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:chatgpt"
+      }
+    },
+    {
+      "tool_id": "chatgpt_installed",
+      "title": "ChatGPT instalado",
+      "assistant_kind": "chatgpt",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "desktop_app",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "ChatGPT instalado",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "clipboard_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:chatgpt"
+      }
+    },
+    {
+      "tool_id": "codex_installed",
+      "title": "Codex instalado",
+      "assistant_kind": "codex",
+      "available": true,
+      "status": "listo",
+      "detail": "No pude verificar el hilo activo de Codex dentro del entorno de pruebas.",
+      "launch_mode": "desktop_app",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_disponible",
+      "messages_status": "no_disponible",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal",
+        "codex_state_sqlite"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Codex instalado",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "clipboard_capture",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:codex"
+      }
+    },
+    {
+      "tool_id": "desktop_human_runner",
+      "title": "Desktop human runner",
+      "assistant_kind": "iabv_runtime",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "desktop_real",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Desktop human runner",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "local_evidence",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:iabv_runtime"
+      }
+    },
+    {
+      "tool_id": "ollama_llm",
+      "title": "Ollama local",
+      "assistant_kind": "ollama",
+      "available": false,
+      "status": "no_disponible",
+      "detail": "[WinError 10061] No se puede establecer una conexi\u00f3n ya que el equipo de destino deneg\u00f3 expresamente dicha conexi\u00f3n",
+      "launch_mode": "local_provider",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "no_disponible",
+      "session_status": "no_aplica",
+      "capture_status": "no_disponible",
+      "probe_status": "sin_confirmacion",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [
+        "assistant_unavailable"
+      ],
+      "confidence": 0.1,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Ollama local",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "tool_result",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:ollama"
+      }
+    },
+    {
+      "tool_id": "playwright_browser",
+      "title": "Playwright browser",
+      "assistant_kind": "",
+      "available": true,
+      "status": "listo",
+      "detail": "La herramienta esta registrada y se puede intentar abrir.",
+      "launch_mode": "",
+      "window_open": false,
+      "focused": false,
+      "thread_status": "no_aplica",
+      "messages_status": "desconocidos",
+      "session_status": "desconocida",
+      "capture_status": "no_disponible",
+      "probe_status": "pasivo",
+      "permission_state": "no_requerido",
+      "observed_via": [
+        "tool_registry",
+        "universal_perception_signal"
+      ],
+      "last_verified_at": null,
+      "external_state_flags": [],
+      "detected_blocks": [],
+      "confidence": 0.26,
+      "metadata": {
+        "observed_pid": 0,
+        "observed_title": "Playwright browser",
+        "window_count": 0,
+        "process_count": 0,
+        "response_capture_mode": "",
+        "browser_security_verification": false,
+        "latest_error_message": "",
+        "history_state": "",
+        "permission_scope": "observe_window_content:external"
+      }
+    }
+  ],
+  "network_status": {
+    "connected": true,
+    "status": "conectado",
+    "quality": "buena",
+    "latency_ms": 121.5,
+    "detail": "La red responde bien para consultas externas normales.",
+    "evidence": [
+      "latency_ms:121.5"
+    ],
+    "metadata": {}
+  },
+  "background_processes": [],
+  "detected_blocks": [
+    "assistant_unavailable"
+  ],
+  "block_records": [
+    {
+      "block_id": "5d787f99-ca49-471a-a9bc-d33ce319f04b",
+      "block_type": "assistant_unavailable",
+      "target_scope": "consult_ollama",
+      "assistant_kind": "ollama",
+      "title": "Ollama local",
+      "detail": "[WinError 10061] No se puede establecer una conexi\u00f3n ya que el equipo de destino deneg\u00f3 expresamente dicha conexi\u00f3n",
+      "status": "active",
+      "reason": "La herramienta no quedo confirmada como lista en este estado operativo.",
+      "evidence": [
+        "ollama_llm"
+      ],
+      "confidence": 0.72,
+      "metadata": {}
+    }
+  ],
+  "permission_gates": [],
+  "observation_sources": [
+    "environment_self_model",
+    "network_probe",
+    "tool_registry",
+    "universal_perception_signal",
+    "codex_state_sqlite"
+  ],
+  "inferred_state": {
+    "summary": "Hay bloqueos operativos activos que conviene respetar antes de lanzar otra accion.",
+    "focused_window": "Codex",
+    "active_window_count": 14,
+    "blocked_routes": [
+      {
+        "block_type": "assistant_unavailable",
+        "target_scope": "consult_ollama",
+        "assistant_kind": "ollama"
+      }
+    ],
+    "permission_gates": [],
+    "blocked_tools": [
+      {
+        "assistant_kind": "ollama",
+        "tool_id": "ollama_llm",
+        "status": "no_disponible",
+        "detected_blocks": [
+          "assistant_unavailable"
+        ]
+      }
+    ],
+    "deductions": [
+      "La ventana en foco ahora mismo es Codex."
+    ]
+  },
+  "confidence": 0.7,
+  "freshness_ms": 4847,
+  "last_updated": "2026-04-15T23:59:29.914488Z",
+  "unresolved_fields": [
+    "UNRESOLVED:codex_thread_tracking"
+  ],
+  "metadata": {
+    "scan_reason": "role_router_ready",
+    "scan_mode": "light",
+    "workspace_root": "C:\\Python\\IABV_v1.5\\data\\test_control_center_self_examination_chat_workspace_49ba585b44194f4e864723f7cf27cb69",
+    "observation_sources": [
+      "environment_self_model",
+      "network_probe",
+      "tool_registry",
+      "universal_perception_signal",
+      "codex_state_sqlite"
+    ],
+    "permission_gates": [],
+    "changed_since_last_scan": []
+  }
+}

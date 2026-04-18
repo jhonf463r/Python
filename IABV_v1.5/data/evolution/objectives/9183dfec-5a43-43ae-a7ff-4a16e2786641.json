@@ -1,0 +1,35 @@
+{
+  "objective_id": "9183dfec-5a43-43ae-a7ff-4a16e2786641",
+  "kind": "subtask",
+  "title": "Proponer estrategia",
+  "summary": "Respuesta local contextual Ruta sugerida: language_understanding (score 0.86). Patron reutilizable lider: Consultar Ollama local | canal background | exitos 2.",
+  "parent_id": "7622d47f-2a89-4928-852e-d1859a411d12",
+  "root_id": "e167a565-7b97-47c1-916e-1f8aace4fb77",
+  "site_id": null,
+  "priority": 54,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 3 (background:2 | ui:1).",
+    "Laboratorio universal: language -> language_understanding (score 1.27, confianza 0.90).",
+    "Auditoria viva: Sin hallazgos. Decision: continue_local. Confianza 0.96.",
+    "run:1934a0ab-4f2e-411b-9bb8-71a71fcd50ec"
+  ],
+  "tags": [
+    "propose_strategy"
+  ],
+  "metadata": {
+    "phase_key": "propose_strategy",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "knowledge.query"
+  },
+  "created_at_utc": "2026-04-18T16:41:10.212006Z",
+  "updated_at_utc": "2026-04-18T16:41:10.212006Z"
+}

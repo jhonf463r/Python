@@ -1,0 +1,46 @@
+{
+  "interaction_result_id": "deaf287a-0bd5-4a4d-a2d2-d656581a4b44",
+  "success": true,
+  "execution_state": {
+    "state": "sandbox_pass",
+    "detail": "Sandbox local de herramienta ejecutado.",
+    "executor_name": "ollama",
+    "sandboxed": true,
+    "validated": true,
+    "approval_decision": "skipped",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": true,
+      "assistant_kind": "ollama",
+      "launch_mode": "local_provider",
+      "response_capture_mode": "tool_result",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\nObjetivo del usuario: sabes por que tu trabajo en vivo no avanza el que tiene de consulta cojn cgatgp que esta al 26%\nAsistente sugerido: ollama\nSitio: General\nIntento detectado: knowledge.query\nPack activo: n/d\nEstado adaptativo: completed\nOutcome actual: Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Consulta local con contexto; sigue faltando un adaptador operativo del dominio.\nEvidencia textual:\n- Contexto activo: contexto general.\n- Ultima corrida: success | rol project_evolution | pack project.evolution.\n- Dossiers relacionados: 6.\n- Patrones universales reutilizables: 2 (ui:1 | background:1).\n- Laboratorio universal: language -> language_understanding (score 1.27, confianza 0.90).\n- Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::ollama::general::sabes-por-que-tu-trabajo-en-vivo-no-avanza-el-qu\nIABV_THREAD_TITLE: IABV Ollama local | sabes por que tu trabajo en vivo no avanza el qu\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": true,
+      "launched": false,
+      "consultation_scope": "external_assistant"
+    }
+  },
+  "summary": "El flujo no avanza porque aún no existe un adaptador operativo para ejecutar la fase de consulta local con contexto. Para resolverlo, crea un adaptador específico para la consulta \"CGATGP\" en el workspace `C:\\Python\\IABV_v1.5`, vinculándolo",
+  "errors": [],
+  "confidence": 0.78,
+  "execution_ms": 30546,
+  "rollback_state": null,
+  "extracted_data": {
+    "provider": "Ollama",
+    "report_kind": "chat"
+  },
+  "artifacts": [],
+  "metadata": {
+    "validation_status": "sandbox_pass",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

@@ -1,0 +1,139 @@
+{
+  "interaction_result_id": "ea617e27-17dd-40c1-b130-01e051b391be",
+  "success": false,
+  "execution_state": {
+    "state": "awaiting_response",
+    "detail": "Herramienta ejecutada por el adaptador local.",
+    "executor_name": "external_assistant",
+    "sandboxed": false,
+    "validated": true,
+    "approval_decision": "approved",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": false,
+      "assistant_kind": "codex",
+      "launch_mode": "desktop_app",
+      "launch_target": "codex",
+      "response_capture_mode": "clipboard_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Recheck vivo de Codex despues del fix.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "prompt_preview": "Recheck vivo de Codex despues del fix.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "launched": true,
+      "auto_capture_attempted": true,
+      "auto_capture_reason": "codex_rollout_pending",
+      "response_capture_pending": true,
+      "focused_title": "Codex",
+      "session_scope": "external_app",
+      "session_label": "Codex",
+      "isolated_session": false,
+      "thread_key": "iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp",
+      "thread_title": "IABV Codex | dime en una frase si puedes revisar un bug de wp",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "2026-04-14T01:33:26.031820+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\.tmp_tests\\live_route_recheck_codex_after_fix_meta\\data\\tool_teaching\\external_assistants\\codex_home",
+      "capture_source": "codex_rollout"
+    }
+  },
+  "summary": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano.",
+  "errors": [],
+  "confidence": 0.7,
+  "execution_ms": 13726,
+  "rollback_state": null,
+  "extracted_data": {
+    "assistant_kind": "codex",
+    "launch_target": "codex",
+    "prompt_preview": "Recheck vivo de Codex despues del fix.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+    "focused_title": "Codex"
+  },
+  "artifacts": [],
+  "metadata": {
+    "validation_status": "unvalidated",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "live_audit": {
+      "audit_snapshot_id": "b80d76ac-6740-4ec4-a83b-a994940759ee",
+      "objective": "Consultar Codex sobre: dime en una frase si puedes revisar un bug de wplay",
+      "session_or_episode_id": "24ebfc04-5832-4b10-b5e1-d45e018c4262",
+      "mode_used": "background",
+      "evidence": [
+        "23956cb1-c5c9-4515-8582-0f7b08b1e538",
+        "24ebfc04-5832-4b10-b5e1-d45e018c4262",
+        "site:wplay"
+      ],
+      "findings": [
+        {
+          "finding_id": "b8be7484-9105-4bf1-8fd7-b0908c2a5305",
+          "kind": "external_route_blocked",
+          "title": "La via externa quedo bloqueada o sin captura verificable",
+          "summary": "La consulta externa no devolvio una respuesta confiable y el bloqueo debe tratarse como limitacion real, no como progreso valido.",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "23956cb1-c5c9-4515-8582-0f7b08b1e538",
+            "24ebfc04-5832-4b10-b5e1-d45e018c4262",
+            "site:wplay"
+          ],
+          "metadata": {
+            "external_state_flags": [
+              "awaiting_response",
+              "capture_unverified"
+            ]
+          }
+        }
+      ],
+      "decision": {
+        "decision_id": "6946293a-fcf4-4006-a029-b6c80d737f1f",
+        "action": "continue_local",
+        "rationale": "La via externa quedo bloqueada o sin captura verificable; conviene seguir localmente mientras el bloqueo queda trazado.",
+        "confidence": 0.82,
+        "recommended_tool_id": "codex_installed",
+        "approval_required": false,
+        "metadata": {}
+      },
+      "confidence": 0.96,
+      "auto_safe_action": "",
+      "human_approval": true,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 1.0,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.85,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.9625,
+        "learning_consolidation_score": 0.9625,
+        "lab_precision": 0.3846,
+        "lab_robustness": 0.35,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.2916,
+        "lab_recommended_route_score": 0.0
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "codex_installed",
+        "tool_type": "custom",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "b80d76ac-6740-4ec4-a83b-a994940759ee"
+  }
+}

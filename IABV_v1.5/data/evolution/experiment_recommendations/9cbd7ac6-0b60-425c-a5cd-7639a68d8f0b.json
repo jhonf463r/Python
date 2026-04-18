@@ -1,0 +1,81 @@
+{
+  "recommendation_id": "9cbd7ac6-0b60-425c-a5cd-7639a68d8f0b",
+  "domain": "language",
+  "subject_key": "general:que-modelo-de-ia-manejas-o-fucionas",
+  "recommended_route": "language_understanding",
+  "recommended_assistant_kind": "adaptive local orchestrator",
+  "recommended_assistant_configuration": {
+    "planning_mode": "with_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+  "score": 0.8224,
+  "confidence": 0.7653,
+  "rationale": "Recomiendo language_understanding para language en general:que-modelo-de-ia-manejas-o-fucionas usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.61 y score adaptativo 0.82 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 1701 ms.",
+  "supporting_run_ids": [
+    "d02959b6-19f5-4306-92dd-19f64f4baa7a"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "language_understanding",
+        "score": 0.8224,
+        "samples": 1
+      }
+    ],
+    "ranked_configurations": [
+      {
+        "route": "language_understanding",
+        "assistant_kind": "adaptive local orchestrator",
+        "config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "score": 0.6078,
+        "adaptive_weight": 0.2146,
+        "weighted_score": 0.8224,
+        "samples": 1,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 1701 ms"
+        ]
+      }
+    ],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": [
+      "general:que-modelo-de-ia-manejas-o-fucionas"
+    ],
+    "adaptive_learning_summary": {
+      "preferred_route": "language_understanding",
+      "preferred_assistant_kind": "adaptive local orchestrator",
+      "preferred_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "adaptive_weight": 0.2146,
+      "weighted_score": 0.8224,
+      "sample_count": 1,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "top_environment_signatures": [
+        "conectado|partial"
+      ],
+      "top_time_buckets": [
+        "night"
+      ],
+      "reasons": [
+        "historial de exito 100%",
+        "latencia promedio 1701 ms"
+      ]
+    }
+  },
+  "created_at_utc": "2026-04-18T01:18:44.222988Z"
+}

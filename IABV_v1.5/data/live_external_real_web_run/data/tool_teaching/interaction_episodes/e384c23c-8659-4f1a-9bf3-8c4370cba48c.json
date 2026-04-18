@@ -1,0 +1,495 @@
+{
+  "interaction_episode_id": "e384c23c-8659-4f1a-9bf3-8c4370cba48c",
+  "objective": "Consultar ChatGPT sobre: Valida si esta sesion externa esta autenticada y si no lo esta, reporta el bloqueo formal sin fingir exito.",
+  "mode_used": "ui",
+  "environment": {
+    "tool_id": "chatgpt_web_assisted",
+    "tool_type": "llm_web_ui",
+    "adapter_key": "external_assistant",
+    "site_id": "wplay",
+    "execution_scope": "read_only"
+  },
+  "captured_metadata": {
+    "task_metadata": {
+      "goal_parameters": {
+        "tool_id": "chatgpt_web_assisted",
+        "allowed_tool_ids": [
+          "chatgpt_installed",
+          "chatgpt_web_assisted"
+        ],
+        "title": "Consultar ChatGPT",
+        "expected_outcome": "Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+        "context_pack": "Objetivo: validar proveedor externo real y detectar login, session expired, wrong thread o quota si aparecen con evidencia.\n\nIABV_THREAD_KEY: iabv::chatgpt::wplay::valida-si-esta-sesion-externa-esta-autenticada-y\nIABV_THREAD_TITLE: IABV ChatGPT | Valida si esta sesion externa esta autenticada y\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "assistant_preference": "chatgpt",
+        "assistant_kind": "chatgpt",
+        "consultation_scope": "external_assistant",
+        "response_capture_mode": "dom_capture",
+        "requires_manual_pasteback": false,
+        "prompt_template_id": "chatgpt_web_consult_v1",
+        "execution_scope": "read_only",
+        "diagnostic_category": "need_codex_fix",
+        "incident_kind": "bridge_lag",
+        "site_id": "wplay",
+        "lab_recommendation": {},
+        "dry_run_launch": false,
+        "allow_local_automatic_consultation": false,
+        "session_scope": "program_chat",
+        "isolated_session_required": true,
+        "session_label": "ChatGPT especial de IABV",
+        "thread_key": "iabv::chatgpt::wplay::valida-si-esta-sesion-externa-esta-autenticada-y",
+        "thread_title": "IABV ChatGPT | Valida si esta sesion externa esta autenticada y",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_real_web_run\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+      },
+      "created_at_utc": "2026-04-12T22:30:13.571560+00:00",
+      "updated_at_utc": "2026-04-12T22:30:13.571560+00:00",
+      "mode_selection": {
+        "decision_id": "40366cf1-220d-43ca-8b41-56eda6762f23",
+        "selector_name": "universal_mode_selector",
+        "selected_mode": "ui",
+        "selected_tool_id": "chatgpt_web_assisted",
+        "selected_tool_type": "llm_web_ui",
+        "adapter_exists": true,
+        "available": true,
+        "fallback_used": false,
+        "already_resolved": false,
+        "equivalent_pattern_exists": false,
+        "improvement_already_implemented": false,
+        "reusable_pattern_id": null,
+        "reusable_episode_id": null,
+        "scores": {
+          "availability": 1.0,
+          "adapter_exists": 1.0,
+          "desired_match": 1.0,
+          "suggested_match": 1.0,
+          "automatic_capture": 1.0,
+          "total": 5.0
+        },
+        "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+        "metadata": {
+          "desired_modes": [
+            "background",
+            "ui"
+          ],
+          "candidate_ranking": [
+            {
+              "tool_id": "chatgpt_web_assisted",
+              "mode": "ui",
+              "score": 5.0
+            }
+          ],
+          "selection_policy": "preferred_external_tool"
+        }
+      },
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reuse_guard_active": false,
+      "reused_pattern_id": "",
+      "reused_episode_id": "",
+      "adapter_exists": true,
+      "selected_mode": "ui",
+      "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "requested_tool_id": "chatgpt_web_assisted",
+      "reused_actions_from_pattern": false,
+      "requested_assistant_kind": "chatgpt",
+      "assistant_kind": "chatgpt",
+      "actual_assistant_kind": "chatgpt",
+      "consultation_scope": "external_assistant",
+      "response_capture_mode": "dom_capture",
+      "requires_manual_pasteback": false,
+      "diagnostic_category": "need_codex_fix",
+      "incident_kind": "bridge_lag",
+      "dry_run_launch": false,
+      "lab_recommendation": {},
+      "context_pack": "Objetivo: validar proveedor externo real y detectar login, session expired, wrong thread o quota si aparecen con evidencia.\n\nIABV_THREAD_KEY: iabv::chatgpt::wplay::valida-si-esta-sesion-externa-esta-autenticada-y\nIABV_THREAD_TITLE: IABV ChatGPT | Valida si esta sesion externa esta autenticada y\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "comparison_scope_key": "wplay:consultar-chatgpt-sobre-valida-si-esta-sesion-externa-esta-autenticada-y",
+      "source_trace_ids": [],
+      "proposal_summary": "Objetivo: validar proveedor externo real y detectar login, session expired, wrong thread o quota si aparecen con evidencia. IABV_THREAD_KEY: iabv::chatgpt::wplay::valida-si-esta-sesion-externa-esta-autenticada-y IABV_THREAD_TITLE: IABV Chat",
+      "thread_key": "iabv::chatgpt::wplay::valida-si-esta-sesion-externa-esta-autenticada-y",
+      "thread_title": "IABV ChatGPT | Valida si esta sesion externa esta autenticada y",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_real_web_run\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile",
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session_required": true,
+      "background_capture_mode": "browser_dom",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "extended",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "with_browser",
+        "assistant_mode": "code",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "chatgpt",
+          "tool_id": "chatgpt_web_assisted",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 441
+        }
+      },
+      "config_signature": "without_plan|without_files|extended|short|with_tools|with_browser|code|external",
+      "ia_trace_entry": {
+        "trace_id": "c4dcb5c0-6c8e-4f37-803c-e02c0ca9ce2e",
+        "created_at_utc": "2026-04-12T22:30:13.573017Z",
+        "assistant_kind": "chatgpt",
+        "requested_assistant_kind": "chatgpt",
+        "actual_assistant_kind": "chatgpt",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "extended",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "with_browser",
+          "assistant_mode": "code",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "chatgpt",
+            "tool_id": "chatgpt_web_assisted",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 441
+          }
+        },
+        "config_signature": "without_plan|without_files|extended|short|with_tools|with_browser|code|external",
+        "comparison_scope_key": "wplay:consultar-chatgpt-sobre-valida-si-esta-sesion-externa-esta-autenticada-y",
+        "source_trace_ids": [],
+        "route": "ui",
+        "tool_id": "chatgpt_web_assisted",
+        "task_id": "cecac92a-c0d9-4a42-b383-96c2a6874a1a",
+        "result_id": "",
+        "session_scope": "program_chat",
+        "thread_key": "iabv::chatgpt::wplay::valida-si-esta-sesion-externa-esta-autenticada-y",
+        "thread_title": "IABV ChatGPT | Valida si esta sesion externa esta autenticada y",
+        "capture_lane": "background",
+        "state": "pending",
+        "detail": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "proposal_summary": "Objetivo: validar proveedor externo real y detectar login, session expired, wrong thread o quota si aparecen con evidencia. IABV_THREAD_KEY: iabv::chatgpt::wplay::valida-si-esta-sesion-externa-esta-autenticada-y IABV_THREAD_TITLE: IABV Chat",
+        "outcome_summary": "",
+        "result_label": "Consultar ChatGPT",
+        "success": false,
+        "execution_ms": 0,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "wplay",
+          "cecac92a-c0d9-4a42-b383-96c2a6874a1a"
+        ],
+        "reused_later": false,
+        "verdict": "",
+        "coherence_flags": [],
+        "external_state_flags": [],
+        "metadata": {
+          "response_capture_mode": "dom_capture",
+          "background_capture_mode": "browser_dom",
+          "comparison_scope_key": "wplay:consultar-chatgpt-sobre-valida-si-esta-sesion-externa-esta-autenticada-y"
+        }
+      },
+      "background_headless": true,
+      "approval_required": true,
+      "destructive": false
+    },
+    "execution_metadata": {
+      "sandbox": true,
+      "assistant_kind": "chatgpt",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://chatgpt.com/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Objetivo: validar proveedor externo real y detectar login, session expired, wrong thread o quota si aparecen con evidencia.\n\nIABV_THREAD_KEY: iabv::chatgpt::wplay::valida-si-esta-sesion-externa-esta-autenticada-y\nIABV_THREAD_TITLE: IABV ChatGPT | Valida si esta sesion externa esta autenticada y\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::chatgpt::wplay::valida-si-esta-sesion-externa-esta-autenticada-y",
+      "thread_title": "IABV ChatGPT | Valida si esta sesion externa esta autenticada y",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "2026-04-12T22:30:13.581890+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_real_web_run\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+    },
+    "result_metadata": {
+      "sandbox": true,
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  },
+  "actions": [
+    {
+      "step_id": "91bf73e7-f1f7-4743-a165-0e91741a408f",
+      "channel": "ui",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "902a23d1-32e5-48ef-a2e2-a028d67d587a",
+      "started_at_utc": "2026-04-12T22:30:13.617671Z",
+      "finished_at_utc": "2026-04-12T22:30:13.617671Z",
+      "destructive": false,
+      "requires_approval": true
+    },
+    {
+      "step_id": "b0afe53d-77f7-4436-bbc9-c83392cb1839",
+      "channel": "ui",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "3c122f24-312c-4e88-9e2a-266ba2775111",
+      "started_at_utc": "2026-04-12T22:30:13.617671Z",
+      "finished_at_utc": "2026-04-12T22:30:13.617671Z",
+      "destructive": false,
+      "requires_approval": false
+    }
+  ],
+  "result": {
+    "interaction_result_id": "d6a8ba7d-30bb-467f-bfc5-88257cba4c36",
+    "success": true,
+    "execution_state": {
+      "state": "sandbox_pass",
+      "detail": "Sandbox local de herramienta ejecutado.",
+      "executor_name": "external_assistant",
+      "sandboxed": true,
+      "validated": true,
+      "approval_decision": "approved",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": true,
+        "assistant_kind": "chatgpt",
+        "launch_mode": "web_assisted",
+        "launch_target": "https://chatgpt.com/",
+        "response_capture_mode": "dom_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Objetivo: validar proveedor externo real y detectar login, session expired, wrong thread o quota si aparecen con evidencia.\n\nIABV_THREAD_KEY: iabv::chatgpt::wplay::valida-si-esta-sesion-externa-esta-autenticada-y\nIABV_THREAD_TITLE: IABV ChatGPT | Valida si esta sesion externa esta autenticada y\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "response_captured": false,
+        "session_scope": "program_chat",
+        "session_label": "ChatGPT especial de IABV",
+        "isolated_session": true,
+        "thread_key": "iabv::chatgpt::wplay::valida-si-esta-sesion-externa-esta-autenticada-y",
+        "thread_title": "IABV ChatGPT | Valida si esta sesion externa esta autenticada y",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "2026-04-12T22:30:13.581890+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_real_web_run\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+      }
+    },
+    "summary": "Asistente externo listo para consulta guiada.",
+    "errors": [],
+    "confidence": 0.78,
+    "execution_ms": 0,
+    "rollback_state": null,
+    "extracted_data": {
+      "assistant_kind": "chatgpt",
+      "launch_target": "https://chatgpt.com/"
+    },
+    "artifacts": [],
+    "metadata": {
+      "validation_status": "sandbox_pass",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "errors": [],
+  "evidence": [
+    {
+      "evidence_id": "09ce120c-6fe4-4d57-85da-4a411e206c9b",
+      "kind": "log",
+      "label": "Dato extraido: assistant_kind",
+      "ref_id": "5d44d21f-5318-4452-b660-3a6150f2fc7e:assistant_kind",
+      "path": null,
+      "metadata": {
+        "key": "assistant_kind"
+      },
+      "confidence": 0.7
+    },
+    {
+      "evidence_id": "7292f50d-6c8e-437e-a473-7f479e6aaff1",
+      "kind": "log",
+      "label": "Dato extraido: launch_target",
+      "ref_id": "5d44d21f-5318-4452-b660-3a6150f2fc7e:launch_target",
+      "path": null,
+      "metadata": {
+        "key": "launch_target"
+      },
+      "confidence": 0.7
+    }
+  ],
+  "learning_signals": [
+    {
+      "signal_id": "e5f64062-f7a4-4da5-ad6c-48819605b705",
+      "label": "pattern:ui:chatgpt_web_assisted",
+      "channel": "ui",
+      "signal_type": "pattern_reuse",
+      "confidence": 0.78,
+      "source": "interaction_learning_service",
+      "evidence_refs": [
+        "5d44d21f-5318-4452-b660-3a6150f2fc7e:assistant_kind",
+        "5d44d21f-5318-4452-b660-3a6150f2fc7e:launch_target"
+      ],
+      "metadata": {
+        "pattern_id": "ac7f00e4-3723-4c1d-8db0-eec9443bab8b"
+      }
+    }
+  ],
+  "confidence": 0.78,
+  "human_approval": true,
+  "policy_decision": {
+    "decision_id": "aa8121ca-4ac7-40fc-bc8c-18857d522a32",
+    "requires_human_approval": true,
+    "approval_decision": "approved",
+    "blocked": false,
+    "rationale": "Sandbox local de herramienta ejecutado.",
+    "confidence": 0.78,
+    "metadata": {
+      "execution_scope": "read_only",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "selector_name": "universal_mode_selector",
+  "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+  "pattern_id": "ac7f00e4-3723-4c1d-8db0-eec9443bab8b",
+  "reused_pattern": false,
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "task_id": "cecac92a-c0d9-4a42-b383-96c2a6874a1a",
+  "result_id": "5d44d21f-5318-4452-b660-3a6150f2fc7e",
+  "site_id": "wplay",
+  "created_at_utc": "2026-04-12T22:30:13.617671Z",
+  "updated_at_utc": "2026-04-12T22:30:13.617671Z",
+  "metadata": {
+    "learning_signals": [
+      {
+        "signal_id": "e5f64062-f7a4-4da5-ad6c-48819605b705",
+        "label": "pattern:ui:chatgpt_web_assisted",
+        "channel": "ui",
+        "signal_type": "pattern_reuse",
+        "confidence": 0.78,
+        "source": "interaction_learning_service",
+        "evidence_refs": [
+          "5d44d21f-5318-4452-b660-3a6150f2fc7e:assistant_kind",
+          "5d44d21f-5318-4452-b660-3a6150f2fc7e:launch_target"
+        ],
+        "metadata": {
+          "pattern_id": "ac7f00e4-3723-4c1d-8db0-eec9443bab8b"
+        }
+      }
+    ],
+    "mode_selection": {
+      "decision_id": "40366cf1-220d-43ca-8b41-56eda6762f23",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "ui",
+      "selected_tool_id": "chatgpt_web_assisted",
+      "selected_tool_type": "llm_web_ui",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": false,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "chatgpt_web_assisted",
+            "mode": "ui",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "selected_mode": "ui",
+    "reusable_pattern_id": "",
+    "reusable_episode_id": "",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

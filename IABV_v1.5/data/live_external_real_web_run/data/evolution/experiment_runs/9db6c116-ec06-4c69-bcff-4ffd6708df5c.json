@@ -1,0 +1,75 @@
+{
+  "run_id": "9db6c116-ec06-4c69-bcff-4ffd6708df5c",
+  "domain": "language",
+  "suite_name": "text_understanding_suite",
+  "objective": "Consultar Claude sobre: Valida si esta sesion externa esta autenticada y si no lo esta, reporta el bloqueo formal sin fingir exito.",
+  "subject_key": "wplay",
+  "route": "ui",
+  "assistant_kind": "claude web asistido",
+  "assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+  "candidate_id": "4f8dca97-a6b9-4d76-9c21-a65b1ec66311",
+  "candidate_label": "Claude web asistido",
+  "success": false,
+  "expected_summary": "text=Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+  "observed_summary": "browser_dom_unavailable",
+  "metrics": {
+    "precision": 0.20967741935483872,
+    "execution_ms": 0,
+    "operational_cost": 0.0,
+    "robustness": 0.4,
+    "reuse_score": 0.0,
+    "user_progress": 0.0,
+    "total_score": 0.3614,
+    "metadata": {
+      "domain": "language",
+      "objective": "Consultar Claude sobre: Valida si esta sesion externa esta autenticada y si no lo esta, reporta el bloqueo formal sin fingir exito.",
+      "candidate_label": "Claude web asistido",
+      "route": "ui",
+      "assistant_kind": "claude web asistido",
+      "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "sample_support": 1,
+      "latency_score": 1.0,
+      "cost_score": 1.0,
+      "user_progress_score": 0.0,
+      "relative_vs_same_config": 1.0
+    }
+  },
+  "evidence_refs": [
+    "4da03b54-3f94-4996-8b80-7caeb8dca839",
+    "326205a7-0f6c-42a8-b73e-d0a6bfc88c7f",
+    "site:wplay"
+  ],
+  "reused_later": false,
+  "better_than_previous": false,
+  "metadata": {
+    "source": "live_audit_tool",
+    "user_progress": 0.0,
+    "evidence_refs": [
+      "4da03b54-3f94-4996-8b80-7caeb8dca839",
+      "326205a7-0f6c-42a8-b73e-d0a6bfc88c7f",
+      "site:wplay"
+    ],
+    "reused_pattern": false,
+    "suite_name": "text_understanding_suite",
+    "assistant_kind": "claude web asistido",
+    "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+    "trace_id": "",
+    "comparison_scope_key": "",
+    "source_trace_ids": [],
+    "proposal_summary": "",
+    "outcome_summary": "browser_dom_unavailable"
+  },
+  "created_at_utc": "2026-04-12T22:30:14.350608Z"
+}

@@ -1,0 +1,63 @@
+{
+  "pattern_id": "4da03b54-3f94-4996-8b80-7caeb8dca839",
+  "signature": "2338967957972b73bb7ca5a79032564d908391f5",
+  "title": "Consultar Claude",
+  "channel": "ui",
+  "tool_id": "claude_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": "wplay",
+  "operations": [
+    {
+      "step_id": "851cc272-1d1d-4182-ac98-e8c1d680602f",
+      "channel": "ui",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false
+      }
+    },
+    {
+      "step_id": "273cdb86-ec15-43dd-b21d-46d0a4f40b44",
+      "channel": "ui",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false
+      }
+    }
+  ],
+  "reusable": true,
+  "success_count": 1,
+  "failure_count": 1,
+  "last_task_id": "83bdd192-8823-4210-a55d-2cf1f33d9ea5",
+  "last_result_id": "3d42c5f7-fe84-4187-9a1c-7fc79fcb0dc8",
+  "created_at_utc": "2026-04-12T22:30:14.063058Z",
+  "updated_at_utc": "2026-04-12T22:30:14.232100Z",
+  "metadata": {
+    "objective_excerpt": "Consultar Claude sobre: Valida si esta sesion externa esta autenticada y si no lo esta, reporta el bloqueo formal sin fingir exito.",
+    "execution_scope": "read_only",
+    "approval_decision": "approved",
+    "last_validation_status": "unvalidated",
+    "last_execution_state": "failed",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "last_interaction_episode_id": "326205a7-0f6c-42a8-b73e-d0a6bfc88c7f"
+  }
+}

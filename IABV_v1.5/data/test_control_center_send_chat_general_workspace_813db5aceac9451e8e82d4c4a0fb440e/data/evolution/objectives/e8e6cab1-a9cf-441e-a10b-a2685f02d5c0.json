@@ -1,0 +1,30 @@
+{
+  "objective_id": "e8e6cab1-a9cf-441e-a10b-a2685f02d5c0",
+  "kind": "subtask",
+  "title": "Proponer estrategia",
+  "summary": "Respuesta local contextual",
+  "parent_id": "8f4ea06d-e327-4f5d-8112-b7bf44501f4e",
+  "root_id": "3965ee5c-a80a-45f5-be29-2825ebeaa768",
+  "site_id": null,
+  "priority": 54,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.62,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "run:94186a84-a452-4638-8767-e977c5cb57c5"
+  ],
+  "tags": [
+    "propose_strategy"
+  ],
+  "metadata": {
+    "phase_key": "propose_strategy",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "knowledge.query"
+  },
+  "created_at_utc": "2026-04-16T03:57:00.161190Z",
+  "updated_at_utc": "2026-04-16T03:57:00.161190Z"
+}

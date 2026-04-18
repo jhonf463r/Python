@@ -1,0 +1,46 @@
+{
+  "interaction_result_id": "c85a96d1-6822-45b6-b6ef-61d0caf63986",
+  "success": true,
+  "execution_state": {
+    "state": "sandbox_pass",
+    "detail": "Sandbox local de herramienta ejecutado.",
+    "executor_name": "ollama",
+    "sandboxed": true,
+    "validated": true,
+    "approval_decision": "skipped",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": true,
+      "assistant_kind": "ollama",
+      "launch_mode": "local_provider",
+      "response_capture_mode": "tool_result",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Consulta viva para validar que Ollama responde desde IABV.\n\nIABV_THREAD_KEY: iabv::ollama::wplay::explica-en-una-frase-si-puedes-revisar-wplay\nIABV_THREAD_TITLE: IABV Ollama local | explica en una frase si puedes revisar wplay\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": true,
+      "launched": false,
+      "consultation_scope": "external_assistant"
+    }
+  },
+  "summary": "Puedo revisar wplay en una frase: \"wplay es un sitio web que ofrece contenido en vivo y juegos en línea\". Esta respuesta se genera mediante Ollama en el entorno IABV.",
+  "errors": [],
+  "confidence": 0.78,
+  "execution_ms": 22161,
+  "rollback_state": null,
+  "extracted_data": {
+    "provider": "Ollama",
+    "report_kind": "chat"
+  },
+  "artifacts": [],
+  "metadata": {
+    "validation_status": "sandbox_pass",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

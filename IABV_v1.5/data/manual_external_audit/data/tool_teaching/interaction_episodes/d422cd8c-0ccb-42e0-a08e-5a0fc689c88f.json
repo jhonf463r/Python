@@ -1,0 +1,467 @@
+{
+  "interaction_episode_id": "d422cd8c-0ccb-42e0-a08e-5a0fc689c88f",
+  "objective": "Consultar Codex sobre: abre Wplay e inicia sesion",
+  "mode_used": "ui",
+  "environment": {
+    "tool_id": "claude_web_assisted",
+    "tool_type": "llm_web_ui",
+    "adapter_key": "external_assistant",
+    "site_id": "wplay",
+    "execution_scope": "read_only"
+  },
+  "captured_metadata": {
+    "task_metadata": {
+      "goal_parameters": {
+        "tool_id": "codex_installed",
+        "allowed_tool_ids": [
+          "codex_installed",
+          "chatgpt_installed",
+          "chatgpt_web_assisted",
+          "claude_installed",
+          "claude_web_assisted"
+        ],
+        "title": "Consultar Codex",
+        "expected_outcome": "Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+        "context_pack": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\data\\manual_external_audit\nObjetivo del usuario: abre Wplay e inicia sesion\nAsistente sugerido: codex\nSitio: Wplay\nIntento detectado: wplay.login\nPack activo: Login Wplay\nEstado adaptativo: need_codex_fix\nDiagnostico: need_codex_fix\nResumen diagnostico: La ensenanza existe pero el bridge no consolida bien el flujo.\nIncidente dominante: bridge_lag\nCapacidades debiles:\n- Login Wplay | insufficient | Reensenar el login corto y revisar el bridge.\nPaquete local para Codex:\nPaquete para Codex - IABV v1.5\n\nWorkspace: C:\\Python\\IABV_v1.5\\data\\manual_external_audit\nRol activo: Automatico\nMeta actual: abre Wplay e inicia sesion\nPolitica: local-first, secretos protegidos, sin OpenAI en runtime, sin imports legacy en runtime.\n\nEstado del proyecto:\n- episodios: 0\n- conocimiento: 0\n- ejecuciones: 0\n- artefactos: 0\n\nAnalitica:\nEpisodios 0, conocimiento 0, corridas 0 y confianza media 0.0. La prioridad sugerida es reforzar calidad de conocimiento.\n\nHuecos de ensenanza:\n- resumen: Aun no hay episodios. La prioridad mas alta es ensenar login, navegacion inicial y confirmacion.\n- siguientes ensenanzas: Ensenar el flujo base de acceso\n\nPBT:\n- generacion: 0\n- mejor score: 0.0\n- resumen: Sin ejecuciones PBT aun. La base esta lista para explorar configuraciones.\n\nEntrega esperada para Codex:\n1. diagnostico breve\n2. causa raiz\n3. cambio vertical recomendado\n4. pruebas a ejecutar\n5. riesgos o tradeoffs\n\nCentro evolutivo:\n- resumen: Dossiers recientes: 0 | fallos: 0 | parciales: 0 | incidentes invisibles: 0 | sesiones adaptativas: 0 | autotests: 0 | pendientes Codex: 0. Prioridad sugerida: seguir reforzando evidencia y conocimiento local.\n- backlog sugerido: Seguir capturando evidencia evolutiva\n\nIABV_THREAD_KEY: iabv::codex::wplay::abre-wplay-e-inicia-sesion\nIABV_THREAD_TITLE: IABV Codex | abre Wplay e inicia sesion\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "assistant_preference": "codex",
+        "assistant_kind": "codex",
+        "consultation_scope": "external_assistant",
+        "response_capture_mode": "clipboard_capture",
+        "requires_manual_pasteback": false,
+        "prompt_template_id": "codex_consult_v1",
+        "execution_scope": "read_only",
+        "diagnostic_category": "need_codex_fix",
+        "incident_kind": "bridge_lag",
+        "site_id": "wplay",
+        "lab_recommendation": {},
+        "dry_run_launch": false,
+        "allow_local_automatic_consultation": false,
+        "session_scope": "external_app",
+        "isolated_session_required": false,
+        "session_label": "Codex",
+        "thread_key": "iabv::codex::wplay::abre-wplay-e-inicia-sesion",
+        "thread_title": "IABV Codex | abre Wplay e inicia sesion",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+        "last_capture_attempt_utc": "",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\manual_external_audit\\data\\tool_teaching\\external_assistants\\codex_home"
+      },
+      "created_at_utc": "2026-04-11T00:44:16.903539+00:00",
+      "updated_at_utc": "2026-04-11T00:44:16.903539+00:00",
+      "mode_selection": {
+        "decision_id": "75013dc5-9fe8-4831-8721-7fa42e415e62",
+        "selector_name": "universal_mode_selector",
+        "selected_mode": "ui",
+        "selected_tool_id": "claude_web_assisted",
+        "selected_tool_type": "llm_web_ui",
+        "adapter_exists": true,
+        "available": true,
+        "fallback_used": true,
+        "already_resolved": false,
+        "equivalent_pattern_exists": false,
+        "improvement_already_implemented": false,
+        "reusable_pattern_id": null,
+        "reusable_episode_id": null,
+        "scores": {
+          "availability": 1.0,
+          "adapter_exists": 1.0,
+          "stability": 0.55,
+          "cost": 0.55,
+          "risk": 0.9,
+          "latency": 0.5,
+          "frequency": 0.0,
+          "learned_pattern": 0.0,
+          "desired_match": 1.0,
+          "suggested_match": 0.0,
+          "resolved_bonus": 0.0,
+          "total": 7.145
+        },
+        "reason": "modo=ui | disponibilidad=1.00 | estabilidad=0.55 | costo=0.55 | riesgo=0.90 | latencia=0.50 | uso=0.00 | patron=0.00",
+        "metadata": {
+          "desired_modes": [
+            "background",
+            "ui"
+          ],
+          "candidate_ranking": [
+            {
+              "tool_id": "claude_web_assisted",
+              "mode": "ui",
+              "score": 7.145
+            },
+            {
+              "tool_id": "chatgpt_web_assisted",
+              "mode": "ui",
+              "score": 7.145
+            },
+            {
+              "tool_id": "codex_installed",
+              "mode": "background",
+              "score": 5.405
+            },
+            {
+              "tool_id": "chatgpt_installed",
+              "mode": "background",
+              "score": 4.905
+            },
+            {
+              "tool_id": "claude_installed",
+              "mode": "background",
+              "score": 4.905
+            }
+          ]
+        }
+      },
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reuse_guard_active": false,
+      "reused_pattern_id": "",
+      "reused_episode_id": "",
+      "adapter_exists": true,
+      "selected_mode": "ui",
+      "selector_reason": "modo=ui | disponibilidad=1.00 | estabilidad=0.55 | costo=0.55 | riesgo=0.90 | latencia=0.50 | uso=0.00 | patron=0.00",
+      "requested_tool_id": "codex_installed",
+      "reused_actions_from_pattern": false,
+      "requested_assistant_kind": "codex",
+      "assistant_kind": "claude",
+      "actual_assistant_kind": "claude",
+      "consultation_scope": "external_assistant",
+      "response_capture_mode": "dom_capture",
+      "requires_manual_pasteback": false,
+      "diagnostic_category": "need_codex_fix",
+      "incident_kind": "bridge_lag",
+      "dry_run_launch": false,
+      "lab_recommendation": {},
+      "context_pack": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\data\\manual_external_audit\nObjetivo del usuario: abre Wplay e inicia sesion\nAsistente sugerido: codex\nSitio: Wplay\nIntento detectado: wplay.login\nPack activo: Login Wplay\nEstado adaptativo: need_codex_fix\nDiagnostico: need_codex_fix\nResumen diagnostico: La ensenanza existe pero el bridge no consolida bien el flujo.\nIncidente dominante: bridge_lag\nCapacidades debiles:\n- Login Wplay | insufficient | Reensenar el login corto y revisar el bridge.\nPaquete local para Codex:\nPaquete para Codex - IABV v1.5\n\nWorkspace: C:\\Python\\IABV_v1.5\\data\\manual_external_audit\nRol activo: Automatico\nMeta actual: abre Wplay e inicia sesion\nPolitica: local-first, secretos protegidos, sin OpenAI en runtime, sin imports legacy en runtime.\n\nEstado del proyecto:\n- episodios: 0\n- conocimiento: 0\n- ejecuciones: 0\n- artefactos: 0\n\nAnalitica:\nEpisodios 0, conocimiento 0, corridas 0 y confianza media 0.0. La prioridad sugerida es reforzar calidad de conocimiento.\n\nHuecos de ensenanza:\n- resumen: Aun no hay episodios. La prioridad mas alta es ensenar login, navegacion inicial y confirmacion.\n- siguientes ensenanzas: Ensenar el flujo base de acceso\n\nPBT:\n- generacion: 0\n- mejor score: 0.0\n- resumen: Sin ejecuciones PBT aun. La base esta lista para explorar configuraciones.\n\nEntrega esperada para Codex:\n1. diagnostico breve\n2. causa raiz\n3. cambio vertical recomendado\n4. pruebas a ejecutar\n5. riesgos o tradeoffs\n\nCentro evolutivo:\n- resumen: Dossiers recientes: 0 | fallos: 0 | parciales: 0 | incidentes invisibles: 0 | sesiones adaptativas: 0 | autotests: 0 | pendientes Codex: 0. Prioridad sugerida: seguir reforzando evidencia y conocimiento local.\n- backlog sugerido: Seguir capturando evidencia evolutiva\n\nIABV_THREAD_KEY: iabv::codex::wplay::abre-wplay-e-inicia-sesion\nIABV_THREAD_TITLE: IABV Codex | abre Wplay e inicia sesion\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "thread_key": "iabv::codex::wplay::abre-wplay-e-inicia-sesion",
+      "thread_title": "IABV Codex | abre Wplay e inicia sesion",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\manual_external_audit\\data\\tool_teaching\\external_assistants\\codex_home",
+      "session_scope": "program_chat",
+      "session_label": "Claude especial de IABV",
+      "isolated_session_required": true,
+      "background_capture_mode": "browser_dom",
+      "background_headless": true,
+      "approval_required": true,
+      "destructive": false
+    },
+    "execution_metadata": {
+      "sandbox": true,
+      "assistant_kind": "claude",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://claude.ai/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\data\\manual_external_audit\nObjetivo del usuario: abre Wplay e inicia sesion\nAsistente sugerido: codex\nSitio: Wplay\nIntento detectado: wplay.login\nPack activo: Login Wplay\nEstado adaptativo: need_codex_fix\nDiagnostico: need_codex_fix\nResumen diagnostico: La ensenanza existe pero el bridge no consolida bien el flujo.\nIncidente dominante: bridge_lag\nCapacidades debiles:\n- Login Wplay | insufficient | Reensenar el login corto y revisar el bridge.\nPaquete local para Codex:\nPaquete para Codex - IABV v1.5\n\nWorkspace: C:\\Python\\IABV_v1.5\\data\\manual_external_audit\nRol activo: Automatico\nMeta actual: abre Wplay e inicia sesion\nPolitica: local-first, secretos protegidos, sin OpenAI en runtime, sin imports legacy en runtime.\n\nEstado del proyecto:\n- episodios: 0\n- conocimiento: 0\n- ejecuciones: 0\n- artefactos: 0\n\nAnalitica:\nEpisodios 0, conocimiento 0, corridas 0 y confianza media 0.0. La prioridad sugerida es reforzar calidad de conocimiento.\n\nHuecos de ensenanza:\n- resumen: Aun no hay episodios. La prioridad mas alta es ensenar login, navegacion inicial y confirmacion.\n- siguientes ensenanzas: Ensenar el flujo base de acceso\n\nPBT:\n- generacion: 0\n- mejor score: 0.0\n- resumen: Sin ejecuciones PBT aun. La base esta lista para explorar configuraciones.\n\nEntrega esperada para Codex:\n1. diagnostico breve\n2. causa raiz\n3. cambio vertical recomendado\n4. pruebas a ejecutar\n5. riesgos o tradeoffs\n\nCentro evolutivo:\n- resumen: Dossiers recientes: 0 | fallos: 0 | parciales: 0 | incidentes invisibles: 0 | sesiones adaptativas: 0 | autotests: 0 | pendientes Codex: 0. Prioridad sugerida: seguir reforzando evidencia y conocimiento local.\n- backlog sugerido: Seguir capturando evidencia evolutiva\n\nIABV_THREAD_KEY: iabv::codex::wplay::abre-wplay-e-inicia-sesion\nIABV_THREAD_TITLE: IABV Codex | abre Wplay e inicia sesion\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "session_scope": "program_chat",
+      "session_label": "Claude especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::codex::wplay::abre-wplay-e-inicia-sesion",
+      "thread_title": "IABV Codex | abre Wplay e inicia sesion",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "2026-04-11T00:44:16.920206+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\manual_external_audit\\data\\tool_teaching\\external_assistants\\codex_home"
+    },
+    "result_metadata": {
+      "sandbox": true,
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  },
+  "actions": [
+    {
+      "step_id": "6bb65226-4d80-4998-9711-28c5d1da66ca",
+      "channel": "ui",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "6a71543e-6bec-475a-8777-efc91218887d",
+      "started_at_utc": "2026-04-11T00:44:16.957243Z",
+      "finished_at_utc": "2026-04-11T00:44:16.957243Z",
+      "destructive": false,
+      "requires_approval": true
+    },
+    {
+      "step_id": "bba37fa7-ba0d-4900-9c46-f99e66dffbed",
+      "channel": "ui",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "320c378c-f7b8-4b2c-bd27-d94ef338d29b",
+      "started_at_utc": "2026-04-11T00:44:16.957243Z",
+      "finished_at_utc": "2026-04-11T00:44:16.957243Z",
+      "destructive": false,
+      "requires_approval": false
+    }
+  ],
+  "result": {
+    "interaction_result_id": "7601e59a-0f96-4558-b235-a296fbb88b31",
+    "success": true,
+    "execution_state": {
+      "state": "sandbox_pass",
+      "detail": "Sandbox local de herramienta ejecutado.",
+      "executor_name": "external_assistant",
+      "sandboxed": true,
+      "validated": true,
+      "approval_decision": "approved",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": true,
+        "assistant_kind": "claude",
+        "launch_mode": "web_assisted",
+        "launch_target": "https://claude.ai/",
+        "response_capture_mode": "dom_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\data\\manual_external_audit\nObjetivo del usuario: abre Wplay e inicia sesion\nAsistente sugerido: codex\nSitio: Wplay\nIntento detectado: wplay.login\nPack activo: Login Wplay\nEstado adaptativo: need_codex_fix\nDiagnostico: need_codex_fix\nResumen diagnostico: La ensenanza existe pero el bridge no consolida bien el flujo.\nIncidente dominante: bridge_lag\nCapacidades debiles:\n- Login Wplay | insufficient | Reensenar el login corto y revisar el bridge.\nPaquete local para Codex:\nPaquete para Codex - IABV v1.5\n\nWorkspace: C:\\Python\\IABV_v1.5\\data\\manual_external_audit\nRol activo: Automatico\nMeta actual: abre Wplay e inicia sesion\nPolitica: local-first, secretos protegidos, sin OpenAI en runtime, sin imports legacy en runtime.\n\nEstado del proyecto:\n- episodios: 0\n- conocimiento: 0\n- ejecuciones: 0\n- artefactos: 0\n\nAnalitica:\nEpisodios 0, conocimiento 0, corridas 0 y confianza media 0.0. La prioridad sugerida es reforzar calidad de conocimiento.\n\nHuecos de ensenanza:\n- resumen: Aun no hay episodios. La prioridad mas alta es ensenar login, navegacion inicial y confirmacion.\n- siguientes ensenanzas: Ensenar el flujo base de acceso\n\nPBT:\n- generacion: 0\n- mejor score: 0.0\n- resumen: Sin ejecuciones PBT aun. La base esta lista para explorar configuraciones.\n\nEntrega esperada para Codex:\n1. diagnostico breve\n2. causa raiz\n3. cambio vertical recomendado\n4. pruebas a ejecutar\n5. riesgos o tradeoffs\n\nCentro evolutivo:\n- resumen: Dossiers recientes: 0 | fallos: 0 | parciales: 0 | incidentes invisibles: 0 | sesiones adaptativas: 0 | autotests: 0 | pendientes Codex: 0. Prioridad sugerida: seguir reforzando evidencia y conocimiento local.\n- backlog sugerido: Seguir capturando evidencia evolutiva\n\nIABV_THREAD_KEY: iabv::codex::wplay::abre-wplay-e-inicia-sesion\nIABV_THREAD_TITLE: IABV Codex | abre Wplay e inicia sesion\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "response_captured": false,
+        "session_scope": "program_chat",
+        "session_label": "Claude especial de IABV",
+        "isolated_session": true,
+        "thread_key": "iabv::codex::wplay::abre-wplay-e-inicia-sesion",
+        "thread_title": "IABV Codex | abre Wplay e inicia sesion",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+        "last_capture_attempt_utc": "2026-04-11T00:44:16.920206+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\manual_external_audit\\data\\tool_teaching\\external_assistants\\codex_home"
+      }
+    },
+    "summary": "Asistente externo listo para consulta guiada.",
+    "errors": [],
+    "confidence": 0.78,
+    "execution_ms": 0,
+    "rollback_state": null,
+    "extracted_data": {
+      "assistant_kind": "claude",
+      "launch_target": "https://claude.ai/"
+    },
+    "artifacts": [],
+    "metadata": {
+      "validation_status": "sandbox_pass",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "errors": [],
+  "evidence": [
+    {
+      "evidence_id": "db1dd933-1741-46c6-997a-ac00912cd194",
+      "kind": "log",
+      "label": "Dato extraido: assistant_kind",
+      "ref_id": "51faca2f-4502-4f22-aa6d-59d78f5bf4b1:assistant_kind",
+      "path": null,
+      "metadata": {
+        "key": "assistant_kind"
+      },
+      "confidence": 0.7
+    },
+    {
+      "evidence_id": "484d059c-0e27-4e91-be8f-77595cc12a64",
+      "kind": "log",
+      "label": "Dato extraido: launch_target",
+      "ref_id": "51faca2f-4502-4f22-aa6d-59d78f5bf4b1:launch_target",
+      "path": null,
+      "metadata": {
+        "key": "launch_target"
+      },
+      "confidence": 0.7
+    }
+  ],
+  "learning_signals": [
+    {
+      "signal_id": "df0dedd3-0ebe-478a-89eb-536870d9d5f1",
+      "label": "pattern:ui:claude_web_assisted",
+      "channel": "ui",
+      "signal_type": "pattern_reuse",
+      "confidence": 0.78,
+      "source": "interaction_learning_service",
+      "evidence_refs": [
+        "51faca2f-4502-4f22-aa6d-59d78f5bf4b1:assistant_kind",
+        "51faca2f-4502-4f22-aa6d-59d78f5bf4b1:launch_target"
+      ],
+      "metadata": {
+        "pattern_id": "d391b753-91a2-459f-909e-0faa14e2cf86"
+      }
+    }
+  ],
+  "confidence": 0.78,
+  "human_approval": true,
+  "policy_decision": {
+    "decision_id": "7f209e17-8225-4151-af80-033dfc35a429",
+    "requires_human_approval": true,
+    "approval_decision": "approved",
+    "blocked": false,
+    "rationale": "Sandbox local de herramienta ejecutado.",
+    "confidence": 0.78,
+    "metadata": {
+      "execution_scope": "read_only",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "selector_name": "universal_mode_selector",
+  "selector_reason": "modo=ui | disponibilidad=1.00 | estabilidad=0.55 | costo=0.55 | riesgo=0.90 | latencia=0.50 | uso=0.00 | patron=0.00",
+  "pattern_id": "d391b753-91a2-459f-909e-0faa14e2cf86",
+  "reused_pattern": false,
+  "tool_id": "claude_web_assisted",
+  "tool_type": "llm_web_ui",
+  "task_id": "bdcb07bb-d34b-4f7b-92ac-efb2a3d95f96",
+  "result_id": "51faca2f-4502-4f22-aa6d-59d78f5bf4b1",
+  "site_id": "wplay",
+  "created_at_utc": "2026-04-11T00:44:16.957243Z",
+  "updated_at_utc": "2026-04-11T00:44:16.957243Z",
+  "metadata": {
+    "learning_signals": [
+      {
+        "signal_id": "df0dedd3-0ebe-478a-89eb-536870d9d5f1",
+        "label": "pattern:ui:claude_web_assisted",
+        "channel": "ui",
+        "signal_type": "pattern_reuse",
+        "confidence": 0.78,
+        "source": "interaction_learning_service",
+        "evidence_refs": [
+          "51faca2f-4502-4f22-aa6d-59d78f5bf4b1:assistant_kind",
+          "51faca2f-4502-4f22-aa6d-59d78f5bf4b1:launch_target"
+        ],
+        "metadata": {
+          "pattern_id": "d391b753-91a2-459f-909e-0faa14e2cf86"
+        }
+      }
+    ],
+    "mode_selection": {
+      "decision_id": "75013dc5-9fe8-4831-8721-7fa42e415e62",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "ui",
+      "selected_tool_id": "claude_web_assisted",
+      "selected_tool_type": "llm_web_ui",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": true,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "stability": 0.55,
+        "cost": 0.55,
+        "risk": 0.9,
+        "latency": 0.5,
+        "frequency": 0.0,
+        "learned_pattern": 0.0,
+        "desired_match": 1.0,
+        "suggested_match": 0.0,
+        "resolved_bonus": 0.0,
+        "total": 7.145
+      },
+      "reason": "modo=ui | disponibilidad=1.00 | estabilidad=0.55 | costo=0.55 | riesgo=0.90 | latencia=0.50 | uso=0.00 | patron=0.00",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "claude_web_assisted",
+            "mode": "ui",
+            "score": 7.145
+          },
+          {
+            "tool_id": "chatgpt_web_assisted",
+            "mode": "ui",
+            "score": 7.145
+          },
+          {
+            "tool_id": "codex_installed",
+            "mode": "background",
+            "score": 5.405
+          },
+          {
+            "tool_id": "chatgpt_installed",
+            "mode": "background",
+            "score": 4.905
+          },
+          {
+            "tool_id": "claude_installed",
+            "mode": "background",
+            "score": 4.905
+          }
+        ]
+      }
+    },
+    "selected_mode": "ui",
+    "reusable_pattern_id": "",
+    "reusable_episode_id": "",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

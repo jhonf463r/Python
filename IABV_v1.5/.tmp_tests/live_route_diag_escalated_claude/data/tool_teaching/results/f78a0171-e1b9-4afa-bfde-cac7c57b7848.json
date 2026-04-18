@@ -1,0 +1,274 @@
+{
+  "result_id": "f78a0171-e1b9-4afa-bfde-cac7c57b7848",
+  "task_id": "0ae0ac25-e69f-4471-859b-300d6f6e41eb",
+  "tool_id": "claude_web_assisted",
+  "tool_type": "llm_web_ui",
+  "success": false,
+  "validation_status": "unvalidated",
+  "execution_state": {
+    "state": "failed",
+    "detail": "browser_input_missing",
+    "executor_name": "external_assistant",
+    "sandboxed": false,
+    "validated": false,
+    "approval_decision": "approved",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": false,
+      "assistant_kind": "claude",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://claude.ai/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Consulta viva para validar Claude web asistido desde IABV.\n\nIABV_THREAD_KEY: iabv::claude::wplay::contesta-en-una-frase-si-puedes-revisar-wplay\nIABV_THREAD_TITLE: IABV Claude | contesta en una frase si puedes revisar wplay\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "prompt_preview": "Consulta viva para validar Claude web asistido desde IABV.\n\nIABV_THREAD_KEY: iabv::claude::wplay::contesta-en-una-frase-si-puedes-revisar-wplay\nIABV_THREAD_TITLE: IABV Claude | contesta en una frase si puedes revisar wplay\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "launched": true,
+      "auto_capture_attempted": true,
+      "auto_capture_reason": "browser_input_missing",
+      "response_capture_pending": false,
+      "assistant_login_required": false,
+      "focused_title": "Just a moment...",
+      "session_scope": "program_chat",
+      "session_label": "Claude especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::claude::wplay::contesta-en-una-frase-si-puedes-revisar-wplay",
+      "thread_title": "IABV Claude | contesta en una frase si puedes revisar wplay",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "2026-04-14T00:54:20.451696+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\.tmp_tests\\live_route_diag_escalated_claude\\data\\tool_teaching\\external_assistants\\claude_program_session\\browser_profile",
+      "capture_source": "browser_dom",
+      "browser_profile_dir": "C:\\Python\\IABV_v1.5\\data\\tool_teaching\\external_assistants\\claude_program_session\\browser_profile",
+      "audit_reason": "La via externa quedo bloqueada o sin captura verificable; conviene seguir localmente mientras el bloqueo queda trazado.",
+      "audit_snapshot_id": "cebba4c5-ae9f-4959-833a-47848c5279b3"
+    }
+  },
+  "rollback_state": null,
+  "output_text": "",
+  "extracted_data": {
+    "assistant_kind": "claude",
+    "launch_target": "https://claude.ai/",
+    "prompt_preview": "Consulta viva para validar Claude web asistido desde IABV.\n\nIABV_THREAD_KEY: iabv::claude::wplay::contesta-en-una-frase-si-puedes-revisar-wplay\nIABV_THREAD_TITLE: IABV Claude | contesta en una frase si puedes revisar wplay\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+    "focused_title": "Just a moment..."
+  },
+  "artifacts": [],
+  "error_message": "browser_input_missing",
+  "execution_ms": 8446,
+  "created_at_utc": "2026-04-14T00:54:28.898573Z",
+  "metadata": {
+    "sandbox": false,
+    "assistant_kind": "claude",
+    "assistant_configuration": {
+      "planning_mode": "without_plan",
+      "attachments_mode": "without_files",
+      "reasoning_level": "normal",
+      "context_mode": "short",
+      "tools_mode": "with_tools",
+      "browser_mode": "with_browser",
+      "assistant_mode": "general",
+      "origin_mode": "external",
+      "unresolved_fields": [
+        "attachments_mode"
+      ],
+      "metadata": {
+        "assistant_kind": "claude",
+        "tool_id": "claude_web_assisted",
+        "attachments_support": "UNRESOLVED",
+        "context_pack_length": 368
+      }
+    },
+    "config_signature": "without_plan|without_files|normal|short|with_tools|with_browser|general|external",
+    "external_state_flags": [
+      "capture_unverified"
+    ],
+    "ia_trace_entry": {
+      "trace_id": "181546ee-770c-4646-99a4-8953e1172c2b",
+      "created_at_utc": "2026-04-14T00:54:28.898742Z",
+      "assistant_kind": "claude",
+      "requested_assistant_kind": "claude",
+      "actual_assistant_kind": "claude",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "normal",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "with_browser",
+        "assistant_mode": "general",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "claude",
+          "tool_id": "claude_web_assisted",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 368
+        }
+      },
+      "config_signature": "without_plan|without_files|normal|short|with_tools|with_browser|general|external",
+      "comparison_scope_key": "wplay:consultar-claude-sobre-contesta-en-una-frase-si-puedes-revisar-wplay",
+      "source_trace_ids": [],
+      "route": "ui",
+      "tool_id": "claude_web_assisted",
+      "task_id": "0ae0ac25-e69f-4471-859b-300d6f6e41eb",
+      "result_id": "f78a0171-e1b9-4afa-bfde-cac7c57b7848",
+      "session_scope": "program_chat",
+      "thread_key": "iabv::claude::wplay::contesta-en-una-frase-si-puedes-revisar-wplay",
+      "thread_title": "IABV Claude | contesta en una frase si puedes revisar wplay",
+      "capture_lane": "background",
+      "state": "failed",
+      "detail": "browser_input_missing",
+      "proposal_summary": "Consulta viva para validar Claude web asistido desde IABV. IABV_THREAD_KEY: iabv::claude::wplay::contesta-en-una-frase-si-puedes-revisar-wplay IABV_THREAD_TITLE: IABV Claude | contesta en una frase si puedes revisar wplay IABV_LANE_PRIORITY",
+      "outcome_summary": "",
+      "result_label": "Consultar Claude",
+      "success": false,
+      "execution_ms": 8446,
+      "confidence": 0.0,
+      "evidence_refs": [
+        "wplay",
+        "0ae0ac25-e69f-4471-859b-300d6f6e41eb",
+        "f78a0171-e1b9-4afa-bfde-cac7c57b7848"
+      ],
+      "reused_later": false,
+      "verdict": "failed",
+      "coherence_flags": [],
+      "external_state_flags": [
+        "capture_unverified"
+      ],
+      "metadata": {
+        "response_capture_mode": "dom_capture",
+        "background_capture_mode": "browser_dom",
+        "comparison_scope_key": "wplay:consultar-claude-sobre-contesta-en-una-frase-si-puedes-revisar-wplay"
+      }
+    },
+    "objective_id": "",
+    "project_id": "",
+    "task_goal_id": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "interaction_pattern_id": "561ce1fb-c27d-4697-866d-5747d972f3f8",
+    "interaction_channel": "ui",
+    "interaction_episode_id": "8e2fe712-3cd4-491d-bf04-697362b26343",
+    "mode_selection": {
+      "decision_id": "b22e2e2e-41bb-4115-9da5-5fe509b7b53c",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "ui",
+      "selected_tool_id": "claude_web_assisted",
+      "selected_tool_type": "llm_web_ui",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": false,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "claude_web_assisted",
+            "mode": "ui",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "selected_mode": "ui",
+    "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+    "reuse_guard_active": false,
+    "live_audit": {
+      "audit_snapshot_id": "cebba4c5-ae9f-4959-833a-47848c5279b3",
+      "objective": "Consultar Claude sobre: contesta en una frase si puedes revisar wplay",
+      "session_or_episode_id": "8e2fe712-3cd4-491d-bf04-697362b26343",
+      "mode_used": "ui",
+      "evidence": [
+        "561ce1fb-c27d-4697-866d-5747d972f3f8",
+        "8e2fe712-3cd4-491d-bf04-697362b26343",
+        "site:wplay"
+      ],
+      "findings": [
+        {
+          "finding_id": "15606576-81ee-4cb7-96f3-d726cfca34fb",
+          "kind": "external_route_blocked",
+          "title": "La via externa quedo bloqueada o sin captura verificable",
+          "summary": "La consulta externa no devolvio una respuesta confiable y el bloqueo debe tratarse como limitacion real, no como progreso valido.",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "561ce1fb-c27d-4697-866d-5747d972f3f8",
+            "8e2fe712-3cd4-491d-bf04-697362b26343",
+            "site:wplay"
+          ],
+          "metadata": {
+            "external_state_flags": [
+              "capture_unverified"
+            ]
+          }
+        }
+      ],
+      "decision": {
+        "decision_id": "20347550-584f-4229-b827-d2e47415f9ee",
+        "action": "continue_local",
+        "rationale": "La via externa quedo bloqueada o sin captura verificable; conviene seguir localmente mientras el bloqueo queda trazado.",
+        "confidence": 0.82,
+        "recommended_tool_id": "claude_web_assisted",
+        "approval_required": false,
+        "metadata": {}
+      },
+      "confidence": 0.66,
+      "auto_safe_action": "",
+      "human_approval": true,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 0.2,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.45,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.6625,
+        "learning_consolidation_score": 0.6625,
+        "lab_precision": 0.1967,
+        "lab_robustness": 0.4,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.2369,
+        "lab_recommended_route_score": 0.0
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "claude_web_assisted",
+        "tool_type": "llm_web_ui",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "cebba4c5-ae9f-4959-833a-47848c5279b3",
+    "audit_decision": "continue_local",
+    "audit_recommendation": "continue_local",
+    "audit_summary": "La via externa quedo bloqueada o sin captura verificable Decision: continue_local. Confianza 0.66."
+  }
+}

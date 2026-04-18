@@ -1,0 +1,38 @@
+{
+  "objective_id": "93d0e785-1cc7-42c9-98f3-abc23510a79c",
+  "kind": "subtask",
+  "title": "Verificar resultado",
+  "summary": "Verificar que la ruta language_understanding deje senales observables consistentes. Comparar contra 2 patrones universales ya aprendidos antes de marcar exito.",
+  "parent_id": "32a080be-5928-4e1a-ae65-463ba20a784d",
+  "root_id": "80df1283-ad04-4ba5-9d5c-c213ea30033b",
+  "site_id": null,
+  "priority": 56,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Laboratorio universal: language -> language_understanding (score 0.86, confianza 0.78).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:057e44b0-82a0-4eff-9862-96c3516d99a9",
+    "Dossiers relacionados: 5.",
+    "Laboratorio universal: language -> language_understanding (score 0.84, confianza 0.77).",
+    "Conocimiento local relacionado: 5 items."
+  ],
+  "tags": [
+    "verify"
+  ],
+  "metadata": {
+    "phase_key": "verify",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "knowledge.query"
+  },
+  "created_at_utc": "2026-04-16T23:19:50.558919Z",
+  "updated_at_utc": "2026-04-16T23:19:50.558919Z"
+}

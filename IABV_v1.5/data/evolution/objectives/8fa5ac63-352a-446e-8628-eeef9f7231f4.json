@@ -1,0 +1,35 @@
+{
+  "objective_id": "8fa5ac63-352a-446e-8628-eeef9f7231f4",
+  "kind": "task",
+  "title": "Autodiagnostico conversacional del sistema",
+  "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+  "parent_id": "8f2ec871-6cd8-4efb-94fc-3139b0adb87d",
+  "root_id": "ba2e41b0-db03-4277-838b-8d409c18f783",
+  "site_id": null,
+  "priority": 50,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 5.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Laboratorio universal: code -> language_understanding (score 0.67, confianza 0.71).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:f96b2302-73a4-4c11-b4f2-7bd0514c021f"
+  ],
+  "tags": [],
+  "metadata": {
+    "user_goal": "puedes auto modificarte asi como lo hace codex, usando ollama y un agente de codificacion de codigo localmente  haceindo mas eficiente el uso de codex , digamos que si no hay mesajes disponibles en codex puedes ir adelantando trabajo localmente colas herramientas diponibles y ya caundo codex tenga mensajes puedas rectificar las mejoras o correguir si hay errores o perfecionar si es el caso ?",
+    "intent_key": "system.self_awareness",
+    "pack_id": "browser.generic",
+    "pack_title": "Navegacion web generica",
+    "level": "task",
+    "session_id": "f40a4d79-8de5-4cb5-a44c-15a47923276d",
+    "status": "completed"
+  },
+  "created_at_utc": "2026-04-16T19:46:46.730558Z",
+  "updated_at_utc": "2026-04-16T19:46:47.097922Z"
+}

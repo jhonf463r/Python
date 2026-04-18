@@ -1,0 +1,40 @@
+{
+  "observation_id": "611409be-1196-4844-aadd-16740faeb5f2",
+  "pattern_id": "4699dabe-915a-4f9c-98fc-bbe91b152381",
+  "task_id": "0138260a-2efb-4b67-8add-ff1c28246f71",
+  "result_id": "8a71e3e2-0489-4345-a482-d00c18cb1b21",
+  "episode_id": "898a8636-23f6-400a-8c59-5376544c300f",
+  "success": false,
+  "channel": "ui",
+  "tool_id": "claude_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": null,
+  "summary": "Sesion aislada de Claude web asistido lista en modo dry-run. Llevare la consulta a un chat especial del programa cuando permitas el lanzamiento real.",
+  "confidence": 0.7,
+  "evidence_refs": [
+    "8a71e3e2-0489-4345-a482-d00c18cb1b21:assistant_kind",
+    "8a71e3e2-0489-4345-a482-d00c18cb1b21:launch_target",
+    "8a71e3e2-0489-4345-a482-d00c18cb1b21:prompt_preview"
+  ],
+  "created_at_utc": "2026-04-11T01:27:15.136563Z",
+  "metadata": {
+    "validation_status": "unvalidated",
+    "execution_state": "awaiting_response",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "assistant_kind",
+      "launch_target",
+      "prompt_preview"
+    ],
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

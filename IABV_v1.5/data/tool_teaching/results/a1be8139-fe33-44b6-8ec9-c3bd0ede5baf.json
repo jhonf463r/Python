@@ -1,0 +1,429 @@
+{
+  "result_id": "a1be8139-fe33-44b6-8ec9-c3bd0ede5baf",
+  "task_id": "12792628-d8c7-4d96-bf8c-c9c7f1b71084",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "success": true,
+  "validation_status": "unvalidated",
+  "execution_state": {
+    "state": "awaiting_response",
+    "detail": "Herramienta ejecutada por el adaptador local.",
+    "executor_name": "external_assistant",
+    "sandboxed": false,
+    "validated": true,
+    "approval_decision": "approved",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": false,
+      "assistant_kind": "chatgpt",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://chatgpt.com/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Consulta autonoma IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\nObjetivo: tienes conocimiento de tu entorno y tu arquitectura ?\nAsistente elegido: codex\nPending issue: 1cce349e-7257-4625-a66c-c85b935c1444\nIABV_QUERY_ID: 1cce349e-7257-4625-a66c-c85b935c1444\nAuditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.\nObjetivo de la consulta: diagnosticar la causa raiz tecnica y proponer el siguiente cambio vertical verificable.\nFormato de salida obligatorio:\nCausa raiz probable: <una frase concreta>\nCambio vertical recomendado: <siguiente cambio o microajuste>\nPruebas sugeridas: <1 a 3 pruebas cortas separadas por coma>\nfile_scope: <rutas src/tests si aplica; si no aplica, escribe n/a>\nPaquete estructurado:\nPaquete para Codex - Pendiente Self-Teacher IABV v1.5\n\nWorkspace: C:\\Python\\IABV_v1.5\nPending issue: 1cce349e-7257-4625-a66c-c85b935c1444\nEscenario: \nRun: 9ce5fd40-7701-4410-b9e4-1d724ce574c7\nEpisode: n/d\nSession: 52046a39-db1b-422e-bd9a-3e29155e6eaf\n\nDiagnostico breve:\nYa existe un patron equivalente Decision: continue_local. Confianza 0.96.\n\nCausa raiz probable:\nYa existe un patron equivalente Decision: continue_local. Confianza 0.96.\n\nEvidencia referenciada:\n- evidence_ref: Contexto activo: contexto general.\n- evidence_ref: Ultima corrida: success | rol knowledge | pack knowledge.query.\n- evidence_ref: Dossiers relacionados: 6.\n- evidence_ref: Patrones universales reutilizables: 2 (ui:1 | background:1).\n- evidence_ref: Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.\n- evidence_ref: 7df8f3a5-d1a6-43ce-aa8a-ca7e0e9c44bd\n- run_record: Run record principal -> 9ce5fd40-7701-4410-b9e4-1d724ce574c7\n\nAjustes runtime intentados:\nsin tuning runtime previo\n\nCambio vertical recomendado:\nYa existe un patron equivalente Decision: continue_local. Confianza 0.96.\n\nPruebas sugeridas:\ntienes conocimiento de tu entorno y tu arquitectura ?, Revisar Centro Evolutivo\n\nRiesgos o tradeoffs:\nSeguir solo con tuning runtime puede ocultar el problema real; conviene corregir la integracion de fondo.\n\nIABV_THREAD_KEY: iabv::codex::general::tienes-conocimiento-de-tu-entorno-y-tu-arquitect\nIABV_THREAD_TITLE: IABV Codex | tienes conocimiento de tu entorno y tu arquitect\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "prompt_preview": "Consulta autonoma IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\nObjetivo: tienes conocimiento de tu entorno y tu arquitectura ?\nAsistente elegido: codex\nPending issue: 1cce349e-7257-4625-a66c-c85b935c1444\nIABV_QUERY_ID: 1cce349e-7257-4625-a66c-c85b935c1444\nAuditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.\nObjetivo de la consulta: diagnosticar la causa raiz tecnic",
+      "response_captured": false,
+      "launched": true,
+      "auto_capture_attempted": true,
+      "auto_capture_reason": "browser_input_missing",
+      "response_capture_pending": true,
+      "assistant_login_required": false,
+      "focused_title": "Just a moment...",
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::codex::general::tienes-conocimiento-de-tu-entorno-y-tu-arquitect",
+      "thread_title": "IABV Codex | tienes conocimiento de tu entorno y tu arquitect",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "2026-04-13T18:49:11.899738+00:00",
+      "reused_thread": true,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\tool_teaching\\external_assistants\\codex_home",
+      "capture_source": "browser_dom",
+      "browser_profile_dir": "C:\\Python\\IABV_v1.5\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile",
+      "audit_reason": "La herramienta produjo evidencia suficiente para seguir en la via local actual.",
+      "audit_snapshot_id": "94f6a947-3e43-4f9e-af61-5643e7b0f8f2"
+    }
+  },
+  "rollback_state": null,
+  "output_text": "Asistente externo ChatGPT web asistido consultando en sesion aislada del programa. Todavia no hubo texto util para integrar.",
+  "extracted_data": {
+    "assistant_kind": "chatgpt",
+    "launch_target": "https://chatgpt.com/",
+    "prompt_preview": "Consulta autonoma IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\nObjetivo: tienes conocimiento de tu entorno y tu arquitectura ?\nAsistente elegido: codex\nPending issue: 1cce349e-7257-4625-a66c-c85b935c1444\nIABV_QUERY_ID: 1cce349e-7257-4625-a66c-c85b935c1444\nAuditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.\nObjetivo de la consulta: diagnosticar la causa raiz tecnic",
+    "focused_title": "Just a moment..."
+  },
+  "artifacts": [],
+  "error_message": "",
+  "execution_ms": 24756,
+  "created_at_utc": "2026-04-13T18:49:36.656672Z",
+  "metadata": {
+    "sandbox": false,
+    "assistant_kind": "chatgpt",
+    "assistant_configuration": {
+      "planning_mode": "without_plan",
+      "attachments_mode": "without_files",
+      "reasoning_level": "extended",
+      "context_mode": "long",
+      "tools_mode": "with_tools",
+      "browser_mode": "with_browser",
+      "assistant_mode": "code",
+      "origin_mode": "external",
+      "unresolved_fields": [
+        "attachments_mode"
+      ],
+      "metadata": {
+        "assistant_kind": "codex",
+        "tool_id": "chatgpt_web_assisted",
+        "attachments_support": "UNRESOLVED",
+        "context_pack_length": 2392
+      }
+    },
+    "config_signature": "without_plan|without_files|extended|long|with_tools|with_browser|code|external",
+    "external_state_flags": [
+      "awaiting_response",
+      "capture_unverified"
+    ],
+    "ia_trace_entry": {
+      "trace_id": "86af583b-3790-44d1-8a48-0c61466eedaa",
+      "created_at_utc": "2026-04-13T18:49:36.921662Z",
+      "assistant_kind": "chatgpt",
+      "requested_assistant_kind": "codex",
+      "actual_assistant_kind": "chatgpt",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "extended",
+        "context_mode": "long",
+        "tools_mode": "with_tools",
+        "browser_mode": "with_browser",
+        "assistant_mode": "code",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "codex",
+          "tool_id": "chatgpt_web_assisted",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 2392
+        }
+      },
+      "config_signature": "without_plan|without_files|extended|long|with_tools|with_browser|code|external",
+      "comparison_scope_key": "eedfd21a-7ff7-4ad1-9cdb-f01c88dce60c",
+      "source_trace_ids": [],
+      "route": "ui",
+      "tool_id": "chatgpt_web_assisted",
+      "task_id": "12792628-d8c7-4d96-bf8c-c9c7f1b71084",
+      "result_id": "a1be8139-fe33-44b6-8ec9-c3bd0ede5baf",
+      "session_scope": "program_chat",
+      "thread_key": "iabv::codex::general::tienes-conocimiento-de-tu-entorno-y-tu-arquitect",
+      "thread_title": "IABV Codex | tienes conocimiento de tu entorno y tu arquitect",
+      "capture_lane": "background",
+      "state": "awaiting_response",
+      "detail": "Asistente externo ChatGPT web asistido consultando en sesion aislada del programa. Todavia no hubo texto util para integrar.",
+      "proposal_summary": "Consulta autonoma IABV v1.5 Workspace: C:\\Python\\IABV_v1.5 Objetivo: tienes conocimiento de tu entorno y tu arquitectura ? Asistente elegido: codex Pending issue: 1cce349e-7257-4625-a66c-c85b935c1444 IABV_QUERY_ID: 1cce349e-7257-4625-a66c-c",
+      "outcome_summary": "Asistente externo ChatGPT web asistido consultando en sesion aislada del programa. Todavia no hubo texto util para integrar.",
+      "result_label": "Asistente externo ChatGPT web asistido consultando en sesion aislada del programa. Todavia no hubo texto util para integrar.",
+      "success": true,
+      "execution_ms": 24756,
+      "confidence": 0.0,
+      "evidence_refs": [],
+      "reused_later": true,
+      "verdict": "awaiting_response",
+      "coherence_flags": [],
+      "external_state_flags": [
+        "awaiting_response",
+        "capture_unverified"
+      ],
+      "metadata": {
+        "response_capture_mode": "dom_capture",
+        "background_capture_mode": ""
+      }
+    },
+    "objective_id": "00447b3e-dc07-407c-a142-54b2c1722dee",
+    "project_id": "5ed7302e-ac45-47e2-95d3-806b29174652",
+    "task_goal_id": "eedfd21a-7ff7-4ad1-9cdb-f01c88dce60c",
+    "goal_progress": 1.0,
+    "goal_status": "completed",
+    "interaction_pattern_id": "be61f185-4864-4d59-997e-126c952cf4ff",
+    "interaction_channel": "ui",
+    "interaction_episode_id": "f802c2a3-681d-4395-8757-4857797b7173",
+    "mode_selection": {
+      "decision_id": "9a69529d-b4fe-4c07-9c1f-92e1dab8bbc7",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "ui",
+      "selected_tool_id": "chatgpt_web_assisted",
+      "selected_tool_type": "llm_web_ui",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": true,
+      "already_resolved": true,
+      "equivalent_pattern_exists": true,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": "be61f185-4864-4d59-997e-126c952cf4ff",
+      "reusable_episode_id": "fe64c191-a305-4df5-a824-fae79fe8ecf8",
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "stability": 0.6666666666666666,
+        "cost": 0.55,
+        "risk": 0.9,
+        "latency": 0.1,
+        "frequency": 0.5,
+        "learned_pattern": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 0.0,
+        "resolved_bonus": 1.0,
+        "total": 9.9
+      },
+      "reason": "modo=ui | disponibilidad=1.00 | estabilidad=0.67 | costo=0.55 | riesgo=0.90 | latencia=0.10 | uso=0.50 | patron=1.00 | patron_equivalente=be61f185-4864-4d59-997e-126c952cf4ff | episodio_resuelto=fe64c191-a305-4df5-a824-fae79fe8ecf8",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "chatgpt_web_assisted",
+            "mode": "ui",
+            "score": 9.9
+          },
+          {
+            "tool_id": "codex_installed",
+            "mode": "background",
+            "score": 8.1761
+          },
+          {
+            "tool_id": "ollama_llm",
+            "mode": "background",
+            "score": 7.365
+          },
+          {
+            "tool_id": "claude_web_assisted",
+            "mode": "ui",
+            "score": 7.145
+          },
+          {
+            "tool_id": "chatgpt_installed",
+            "mode": "background",
+            "score": 7.105
+          }
+        ],
+        "reusable_pattern_id": "be61f185-4864-4d59-997e-126c952cf4ff",
+        "reusable_episode_id": "fe64c191-a305-4df5-a824-fae79fe8ecf8"
+      }
+    },
+    "selected_mode": "ui",
+    "selector_reason": "modo=ui | disponibilidad=1.00 | estabilidad=0.67 | costo=0.55 | riesgo=0.90 | latencia=0.10 | uso=0.50 | patron=1.00 | patron_equivalente=be61f185-4864-4d59-997e-126c952cf4ff | episodio_resuelto=fe64c191-a305-4df5-a824-fae79fe8ecf8",
+    "reuse_guard_active": true,
+    "live_audit": {
+      "audit_snapshot_id": "94f6a947-3e43-4f9e-af61-5643e7b0f8f2",
+      "objective": "Consultar Codex sobre: tienes conocimiento de tu entorno y tu arquitectura ?",
+      "session_or_episode_id": "f802c2a3-681d-4395-8757-4857797b7173",
+      "mode_used": "ui",
+      "evidence": [
+        "be61f185-4864-4d59-997e-126c952cf4ff",
+        "f802c2a3-681d-4395-8757-4857797b7173"
+      ],
+      "findings": [
+        {
+          "finding_id": "bd835c97-127c-4a0f-9c7b-9edf55d4339b",
+          "kind": "equivalent_pattern_exists",
+          "title": "Ya existe un patron equivalente",
+          "summary": "La tarea ya tenia memoria reutilizable y no deberia reensenarse desde cero.",
+          "confidence": 0.84,
+          "evidence_refs": [
+            "be61f185-4864-4d59-997e-126c952cf4ff",
+            "f802c2a3-681d-4395-8757-4857797b7173"
+          ],
+          "metadata": {}
+        }
+      ],
+      "decision": {
+        "decision_id": "416fbe6c-1081-4661-b141-971bd5dfd7e3",
+        "action": "continue_local",
+        "rationale": "La herramienta produjo evidencia suficiente para seguir en la via local actual.",
+        "confidence": 0.7,
+        "recommended_tool_id": "chatgpt_web_assisted",
+        "approval_required": true,
+        "metadata": {}
+      },
+      "confidence": 0.96,
+      "auto_safe_action": "",
+      "human_approval": true,
+      "reused_pattern": true,
+      "metrics": {
+        "semantic_action_alignment": 1.0,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.85,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.9625,
+        "learning_consolidation_score": 0.9625,
+        "lab_precision": 0.32,
+        "lab_robustness": 0.4,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.36,
+        "lab_recommended_route_score": 0.36
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "chatgpt_web_assisted",
+        "tool_type": "llm_web_ui",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "00447b3e-dc07-407c-a142-54b2c1722dee",
+          "status": "completed",
+          "progress": 1.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "94f6a947-3e43-4f9e-af61-5643e7b0f8f2",
+    "audit_decision": "continue_local",
+    "audit_recommendation": "continue_local",
+    "audit_summary": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "autonomous_consultation": {
+      "status": "awaiting_response",
+      "assistant_kind": "chatgpt",
+      "requested_assistant_kind": "codex",
+      "actual_assistant_kind": "chatgpt",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "extended",
+        "context_mode": "long",
+        "tools_mode": "with_tools",
+        "browser_mode": "with_browser",
+        "assistant_mode": "code",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "codex",
+          "tool_id": "chatgpt_web_assisted",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 2392
+        }
+      },
+      "config_signature": "without_plan|without_files|extended|long|with_tools|with_browser|code|external",
+      "reason": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+      "decision_source": "chat",
+      "recommended_action": "consult_codex",
+      "pending_issue_id": "1cce349e-7257-4625-a66c-c85b935c1444",
+      "query": {
+        "issue_hint": "",
+        "incident_id": null,
+        "incident_kind": "",
+        "pending_issue_id": "1cce349e-7257-4625-a66c-c85b935c1444",
+        "episode_id": null,
+        "run_id": null,
+        "task_role": null,
+        "status": null,
+        "recent_hours": null,
+        "limit": 5
+      },
+      "dry_run": false,
+      "selected_tool_id": "chatgpt_web_assisted",
+      "launch_mode": "web_assisted",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "response_capture_pending": true,
+      "assistant_login_required": false,
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "thread_key": "iabv::codex::general::tienes-conocimiento-de-tu-entorno-y-tu-arquitect",
+      "thread_title": "IABV Codex | tienes conocimiento de tu entorno y tu arquitect",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "2026-04-13T18:49:11.899738+00:00",
+      "reused_thread": true,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\tool_teaching\\external_assistants\\codex_home",
+      "isolated_session": true,
+      "coherence_flags": [],
+      "external_state_flags": [
+        "awaiting_response",
+        "capture_unverified"
+      ],
+      "reuse_guard_active": true,
+      "comparison_scope_key": "eedfd21a-7ff7-4ad1-9cdb-f01c88dce60c",
+      "source_trace_ids": [],
+      "proposal_summary": "Consulta autonoma IABV v1.5 Workspace: C:\\Python\\IABV_v1.5 Objetivo: tienes conocimiento de tu entorno y tu arquitectura ? Asistente elegido: codex Pending issue: 1cce349e-7257-4625-a66c-c85b935c1444 IABV_QUERY_ID: 1cce349e-7257-4625-a66c-c",
+      "context_pack_excerpt": "Consulta autonoma IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\nObjetivo: tienes conocimiento de tu entorno y tu arquitectura ?\nAsistente elegido: codex\nPending issue: 1cce349e-7257-4625-a66c-c85b935c1444\nIABV_QUERY_ID: 1cce349e-7257-4625-a66c-c85b935c1444\nAuditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.\nObjetivo de la consulta: diagnosticar la causa raiz tecnica y proponer el siguiente cambio vertical verificable.\nFormato de salida obligatorio:\nCausa raiz probable: <una frase concreta>\nCambio vertical recomendado: <siguiente cambio o microajuste>\nPruebas su",
+      "preview_summary": "Preparare una consulta externa guiada con ChatGPT web asistido. Primero validare la via elegida y luego abrire el asistente con un contexto redactado y copiable. Ya tengo 1 patron(es) reutilizable(s) de interaccion para este flujo. Selector universal: ui. Ya hay un episodio resuelto equivalente; no hace falta reensenar este flujo. El selector cayo en fallback porque no encontro una via mejor disponible. Asistente elegido: chatgpt. Hilo dedicado IABV: IABV Codex | tienes conocimiento de tu entorno y tu arquitect. Lane prioritaria: background. Intentare resolver la consulta en una sesion aislada del programa, usando un chat especial separado del navegador normal y capturando la respuesta en segundo plano.",
+      "outcome_summary": "Asistente externo ChatGPT web asistido consultando en sesion aislada del programa. Todavia no hubo texto util para integrar.",
+      "detail": "Asistente externo ChatGPT web asistido consultando en sesion aislada del programa. Todavia no hubo texto util para integrar.",
+      "task_id": "12792628-d8c7-4d96-bf8c-c9c7f1b71084",
+      "result_id": "a1be8139-fe33-44b6-8ec9-c3bd0ede5baf",
+      "execution_ms": 24756,
+      "ia_trace_entry": {
+        "trace_id": "86af583b-3790-44d1-8a48-0c61466eedaa",
+        "created_at_utc": "2026-04-13T18:49:36.921662Z",
+        "assistant_kind": "chatgpt",
+        "requested_assistant_kind": "codex",
+        "actual_assistant_kind": "chatgpt",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "extended",
+          "context_mode": "long",
+          "tools_mode": "with_tools",
+          "browser_mode": "with_browser",
+          "assistant_mode": "code",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "codex",
+            "tool_id": "chatgpt_web_assisted",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 2392
+          }
+        },
+        "config_signature": "without_plan|without_files|extended|long|with_tools|with_browser|code|external",
+        "comparison_scope_key": "eedfd21a-7ff7-4ad1-9cdb-f01c88dce60c",
+        "source_trace_ids": [],
+        "route": "ui",
+        "tool_id": "chatgpt_web_assisted",
+        "task_id": "12792628-d8c7-4d96-bf8c-c9c7f1b71084",
+        "result_id": "a1be8139-fe33-44b6-8ec9-c3bd0ede5baf",
+        "session_scope": "program_chat",
+        "thread_key": "iabv::codex::general::tienes-conocimiento-de-tu-entorno-y-tu-arquitect",
+        "thread_title": "IABV Codex | tienes conocimiento de tu entorno y tu arquitect",
+        "capture_lane": "background",
+        "state": "awaiting_response",
+        "detail": "Asistente externo ChatGPT web asistido consultando en sesion aislada del programa. Todavia no hubo texto util para integrar.",
+        "proposal_summary": "Consulta autonoma IABV v1.5 Workspace: C:\\Python\\IABV_v1.5 Objetivo: tienes conocimiento de tu entorno y tu arquitectura ? Asistente elegido: codex Pending issue: 1cce349e-7257-4625-a66c-c85b935c1444 IABV_QUERY_ID: 1cce349e-7257-4625-a66c-c",
+        "outcome_summary": "Asistente externo ChatGPT web asistido consultando en sesion aislada del programa. Todavia no hubo texto util para integrar.",
+        "result_label": "Asistente externo ChatGPT web asistido consultando en sesion aislada del programa. Todavia no hubo texto util para integrar.",
+        "success": true,
+        "execution_ms": 24756,
+        "confidence": 0.0,
+        "evidence_refs": [],
+        "reused_later": true,
+        "verdict": "awaiting_response",
+        "coherence_flags": [],
+        "external_state_flags": [
+          "awaiting_response",
+          "capture_unverified"
+        ],
+        "metadata": {
+          "response_capture_mode": "dom_capture",
+          "background_capture_mode": ""
+        }
+      }
+    }
+  }
+}

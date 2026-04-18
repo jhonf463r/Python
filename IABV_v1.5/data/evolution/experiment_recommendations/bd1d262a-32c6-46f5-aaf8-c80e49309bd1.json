@@ -1,0 +1,79 @@
+{
+  "recommendation_id": "bd1d262a-32c6-46f5-aaf8-c80e49309bd1",
+  "domain": "language",
+  "subject_key": "6bdb8f82-6db3-4a56-9e7b-4c3562883d85",
+  "recommended_route": "language_understanding",
+  "recommended_assistant_kind": "adaptive local orchestrator",
+  "recommended_assistant_configuration": {
+    "planning_mode": "with_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+  "score": 0.8541,
+  "confidence": 0.7773,
+  "rationale": "Recomiendo language_understanding para language en 6bdb8f82-6db3-4a56-9e7b-4c3562883d85 usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.62 y score adaptativo 0.85 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%.",
+  "supporting_run_ids": [
+    "ebd1747e-fa63-40d3-8e19-ac9bddc473d2"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "language_understanding",
+        "score": 0.8541,
+        "samples": 1
+      }
+    ],
+    "ranked_configurations": [
+      {
+        "route": "language_understanding",
+        "assistant_kind": "adaptive local orchestrator",
+        "config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "score": 0.6228,
+        "adaptive_weight": 0.2313,
+        "weighted_score": 0.8541,
+        "samples": 1,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%"
+        ]
+      }
+    ],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": [
+      "general:ok-y-entocnes-empecemos-que-te-enseño-primero"
+    ],
+    "adaptive_learning_summary": {
+      "preferred_route": "language_understanding",
+      "preferred_assistant_kind": "adaptive local orchestrator",
+      "preferred_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "adaptive_weight": 0.2313,
+      "weighted_score": 0.8541,
+      "sample_count": 1,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "top_environment_signatures": [
+        "conectado|partial"
+      ],
+      "top_time_buckets": [
+        "evening"
+      ],
+      "reasons": [
+        "historial de exito 100%"
+      ]
+    }
+  },
+  "created_at_utc": "2026-04-16T22:30:55.176196Z"
+}

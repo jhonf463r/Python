@@ -1,0 +1,29 @@
+{
+  "issue_id": "d36f9134-9168-4e5b-992a-25faeececf1e",
+  "created_at_utc": "2026-04-18T04:57:30.320201Z",
+  "status": "needs_fix",
+  "scenario_id": "",
+  "goal": "consulta con codex este incidente tecnico",
+  "category": "need_codex_fix",
+  "summary": "El usuario pidio una consulta externa dirigida a codex; esa preferencia debe respetarse antes de reciclar incidentes o rutas previas.",
+  "probable_cause": "El usuario pidio una consulta externa dirigida a codex; esa preferencia debe respetarse antes de reciclar incidentes o rutas previas.",
+  "unresolved_reason": "El usuario pidio una consulta externa dirigida a codex; esa preferencia debe respetarse antes de reciclar incidentes o rutas previas.",
+  "run_id": null,
+  "episode_id": null,
+  "session_id": null,
+  "evidence_refs": [],
+  "runtime_adjustments": [],
+  "recommended_change": "El usuario pidio una consulta externa dirigida a codex; esa preferencia debe respetarse antes de reciclar incidentes o rutas previas.",
+  "suggested_tests": [
+    "abre Wplay e inicia sesion",
+    "consulta con codex este incidente tecnico",
+    "Revisar Centro Evolutivo"
+  ],
+  "metadata": {
+    "autonomous_evolution": true,
+    "assistant_kind": "codex",
+    "source": "chat",
+    "site_id": "wplay",
+    "intent_key": "wplay.core"
+  }
+}

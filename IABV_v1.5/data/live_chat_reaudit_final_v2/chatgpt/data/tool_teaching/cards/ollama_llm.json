@@ -1,0 +1,30 @@
+{
+  "tool_id": "ollama_llm",
+  "title": "Ollama local",
+  "tool_type": "llm_local",
+  "description": "Proveedor local principal para inferencia y razonamiento sin APIs de pago.",
+  "adapter_key": "ollama",
+  "validation_status": "unvalidated",
+  "local_first": true,
+  "available": false,
+  "supports_sandbox": true,
+  "supports_write": false,
+  "requires_human_approval": false,
+  "supports_rollback": false,
+  "capabilities": [
+    "llm_query",
+    "summarize",
+    "classify"
+  ],
+  "success_count": 0,
+  "failure_count": 0,
+  "last_result_id": null,
+  "last_validated_at_utc": null,
+  "metadata": {
+    "assistant_kind": "ollama",
+    "launch_mode": "local_provider",
+    "response_capture_mode": "tool_result",
+    "requires_manual_pasteback": false,
+    "updated_at_utc": "2026-04-12T23:23:39.004797+00:00"
+  }
+}

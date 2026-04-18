@@ -1,0 +1,20 @@
+{
+  "step_id": "b7faf354-d93d-4b88-afef-bdf12c319c17",
+  "channel": "ui",
+  "operation": "launch_app",
+  "target": "",
+  "value_hint": "<launch_app>",
+  "expected_signal": "",
+  "confidence": 0.9,
+  "metadata": {
+    "label": "Abrir asistente externo",
+    "requires_approval": true,
+    "destructive": false,
+    "parameters": {}
+  },
+  "action_id": "4452aa54-007f-4f0e-9068-8b08a0dac154",
+  "started_at_utc": "2026-04-12T22:30:13.744245Z",
+  "finished_at_utc": "2026-04-12T22:30:13.744245Z",
+  "destructive": false,
+  "requires_approval": true
+}

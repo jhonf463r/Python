@@ -1,0 +1,94 @@
+{
+  "result_id": "e90eb73a-9fd5-4e0a-8319-3dc02abe17e2",
+  "proposal_id": "2c100d79-d0b1-49fc-9f14-b18df7b0a5c2",
+  "proposal_key": "general|validate_discovery|language_understanding|ollama|local_provider:ollama|language_understanding|claude|web_assisted:claude_web_consult_v1:external_assistant",
+  "domain": "language",
+  "subject_key": "general",
+  "proposal_kind": "validate_discovery",
+  "decision": "deferred",
+  "winner": "tie",
+  "reason": "La validacion de la propuesta se aplazo porque El entorno reporta ram_pressure con severidad high.",
+  "current_route": "language_understanding",
+  "current_assistant_kind": "ollama",
+  "current_config_signature": "local_provider:ollama",
+  "candidate_route": "language_understanding",
+  "candidate_assistant_kind": "claude",
+  "candidate_config_signature": "web_assisted:claude_web_consult_v1:external_assistant",
+  "sandbox_experiment_id": "",
+  "confidence": 0.8412,
+  "evidence_refs": [
+    "83cba060-f8b1-4a9c-83f5-8bf32b1267e9",
+    "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e",
+    "ed2756f0-a6bd-40b3-b8e2-a1b62e05c95b",
+    "5e47c733-3081-42ca-a61c-6297c5604bde"
+  ],
+  "comparison_scope_keys": [
+    "general"
+  ],
+  "metrics": {
+    "priority_score": 0.5058
+  },
+  "recorded_at_utc": "2026-04-18T13:24:43.792088Z",
+  "metadata": {
+    "next_action": "validate_in_sandbox",
+    "discovery_signal_id": "3e0cd391-b1dd-4c5f-b972-cbfe8b109116",
+    "discovery_source": "tool_registry",
+    "discovery_source_refs": [
+      "ToolRegistry",
+      "ExperimentLab",
+      "WorldModelSnapshot"
+    ],
+    "compatibility_score": 0.95,
+    "impact_score": 0.42,
+    "cost_score": 0.46,
+    "baseline_weighted_score": 1.2674,
+    "alternative_weighted_score": 0.99,
+    "score_margin": -0.2774,
+    "baseline_profile": {
+      "weighted_score": 1.2674,
+      "sample_count": 4
+    },
+    "candidate_profile": {
+      "weighted_score": 0.99,
+      "compatibility_score": 0.95,
+      "impact_score": 0.42,
+      "cost_score": 0.46
+    },
+    "ranked_configurations": [
+      {
+        "route": "language_understanding",
+        "assistant_kind": "ollama",
+        "config_signature": "local_provider:ollama",
+        "weighted_score": 1.2674,
+        "score": 1.2674,
+        "samples": 4
+      },
+      {
+        "route": "language_understanding",
+        "assistant_kind": "claude",
+        "config_signature": "web_assisted:claude_web_consult_v1:external_assistant",
+        "weighted_score": 0.99,
+        "score": 0.99,
+        "samples": 0
+      }
+    ],
+    "tool_type": "llm_web_ui",
+    "capabilities": [
+      "launch_app",
+      "llm_query",
+      "consult_external",
+      "web_assisted"
+    ],
+    "current_route": "language_understanding",
+    "current_assistant_kind": "ollama",
+    "current_config_signature": "local_provider:ollama",
+    "estimated_candidate_score": 0.99,
+    "estimated_gain": 0.0474,
+    "live_status": "listo",
+    "requires_human_approval": true,
+    "local_first": false,
+    "supports_sandbox": true,
+    "decision_source": "tool_evolution_monitor",
+    "paused_reason": "El entorno reporta ram_pressure con severidad high."
+  }
+}

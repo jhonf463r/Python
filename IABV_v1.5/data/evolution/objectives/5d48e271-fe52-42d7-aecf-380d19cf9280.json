@@ -1,0 +1,34 @@
+{
+  "objective_id": "5d48e271-fe52-42d7-aecf-380d19cf9280",
+  "kind": "project",
+  "title": "Abrir Wplay y preparar sesion",
+  "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+  "parent_id": "63ffe23f-aaae-4096-9d13-4d29636057fc",
+  "root_id": "63ffe23f-aaae-4096-9d13-4d29636057fc",
+  "site_id": "wplay",
+  "priority": 50,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.9,
+  "evidence_refs": [
+    "Contexto activo: Wplay.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 5.",
+    "Laboratorio universal: language -> language_understanding (score 0.86, confianza 0.78).",
+    "run:80142971-96c6-4fda-86c7-5180d9360e39",
+    "Ultima corrida: success | rol training | pack wplay.core.",
+    "Dossiers relacionados: 6.",
+    "Laboratorio universal: language -> ui (score 0.77, confianza 0.73).",
+    "Conocimiento local relacionado: 1 items.",
+    "run:56e36fa4-64f3-400f-baa2-e3f37ff18f78"
+  ],
+  "tags": [],
+  "metadata": {
+    "user_goal": "ok pero primero dime si tienes acceso a tu estrutura y todo tu sistema ?",
+    "intent_key": "general.assistance",
+    "site_display_name": "Wplay"
+  },
+  "created_at_utc": "2026-04-16T22:43:57.670634Z",
+  "updated_at_utc": "2026-04-16T22:45:18.026056Z"
+}

@@ -1,0 +1,206 @@
+# IABV v1.5 - Instrucciones Principales Para Codex
+
+Eres el agente principal de ingenieria y evolucion de este proyecto.
+Tu trabajo no es improvisar: debes leer el estado real del repo, respetar
+la arquitectura vigente y dejar cada sesion con mejor evidencia, mejor
+contexto operativo y menos trabajo redundante.
+
+## Identidad Del Proyecto
+- Nombre: `IABV v1.5`
+- Workspace: `C:\Python\IABV_v1.5`
+- Codigo fuente: `src/iabv_v15/`
+- Pruebas: `tests/`
+- Datos de trabajo: `data/`
+- UI: Python + PySide6 + QML
+- Enfoque: `local-first`, observabilidad operativa, autonomia gobernada, aprendizaje acumulativo y contexto portable
+
+## Comando Oficial De Pruebas
+Bateria completa:
+
+```powershell
+$env:PYTHONPATH='C:\Python\IABV_v1.5\src';
+& 'C:\Users\faber\miniconda3\python.exe' -m pytest -p no:cacheprovider tests/ -q
+```
+
+Regla operativa:
+- primero corre pruebas focalizadas del slice que toques
+- luego corre una regresion razonable
+- usa la bateria completa cuando el cambio toque contratos compartidos o cierre una fase importante
+
+## Arquitectura Central Vigente
+
+### Cerebro Y Decision
+- `PerceptionSnapshot`: entrada unificada antes de cada decision
+- `AdaptiveTaskOrchestrator`: orquestador principal
+- `TaskContextAssembler`: ensambla contexto, perception y world model summary
+- `AutonomyGovernancePolicy`: decide que rutas son viables o deben bloquearse
+- `IntentUnderstandingService`: clasifica la intencion
+- `LocalRoleRouter`: decide ruta y proveedor local
+
+### Modelos Del Entorno
+- `EnvironmentSelfModel`: estado de hardware, runtime y riesgos del entorno
+- `WorldModelSnapshot`: panorama operativo vivo del sistema, herramientas, red, ventanas y bloqueos
+- `UniversalPerceptionSignal`: observacion puntual de programa o pagina
+
+### Aprendizaje, Contexto Y Revision
+- `ExperimentLab`: compara rutas, asistentes y configuraciones
+- `StrategySelector`: recomienda rutas por historial y evidencia
+- `AdaptiveWeightLayer`: ajusta preferencia futura con base en resultados reales
+- `TaskOutcomeRecorder`: cierra el loop de aprendizaje desde la ejecucion normal
+- `PortableContextService`: exporta contexto comprimido y portable para nuevas sesiones
+- `OperationalSelfExaminationService`: revisa patrones repetidos, degradaciones y ajustes recomendados
+- `ia_trace_summary`: resumen de que IA o configuracion rindio mejor
+- `comparison_scope_key`: agrupa problemas comparables para evaluar ganadores reales
+- `adaptive_learning_summary`, `learned_patterns`, `validation_summary`: resumen operativo reusable
+
+### Sandbox Y Validacion
+- `SandboxExperimentService`: valida cambios o rutas candidatas sin tocar el sistema vivo
+- `AutonomousValidationCycleService`: revisa candidatos y promueve solo lo que tenga evidencia
+- `GuidedImprovementCycle`: sigue existiendo como estructura de mejora guiada; no es otro cerebro
+
+### Herramientas Y Ejecucion
+- `ToolTeachService`: consultas a herramientas externas
+- `ToolRegistry` y `ToolCard`: catalogo operativo de herramientas
+- `AutonomousEvolutionService`: puente de consulta externa autonoma
+- `UIExecutionRunner`: ejecucion UI controlada
+
+### UI
+- `ControlCenterViewModel`: observa, explica y dispara flujos aprobados
+- `EvolutionCenterViewModel`: observa estado evolutivo, world model, portable context y autoexaminacion
+- Los ViewModels no deben convertirse en otro cerebro ni tomar decisiones de ruta por su cuenta
+
+## Capas Cerradas Que Debes Respetar
+
+### P1 - World Model Operativo
+Ya esta cerrado.
+Estado esperado:
+- `WorldModelService` es la fuente viva de ventanas, foco, herramientas, red, procesos y bloqueos
+- se consulta antes de rutas externas
+- `TaskContextAssembler`, `AdaptiveTaskOrchestrator` y `AutonomyGovernancePolicy` consumen `world_model`
+- la UI lo lee; no lo modifica
+
+### P2 - Neuroplasticidad Operativa Real
+Ya esta cerrada en su nucleo.
+Estado esperado:
+- la ejecucion normal registra resultados reales
+- `ExperimentLab`, `StrategySelector` y `AdaptiveWeightLayer` influyen decisiones futuras
+- el sistema aprende por evidencia, no por costumbre
+
+### P3 - Contexto Portable
+Ya esta cerrado.
+Estado esperado:
+- `PortableContextService` genera paquete portable desde estado vivo y aprendizaje persistido
+- el contexto portable se propaga por `TaskContextAssembler`, `AdaptiveTaskOrchestrator` y `EvolutionCenterViewModel`
+- no existe una memoria paralela
+
+### P4 - Autoexaminacion Operativa Real
+Ya esta cerrada.
+Estado esperado:
+- `OperationalSelfExaminationService` detecta patrones, riesgos y ajustes recomendados
+- tambien revisa si sus ajustes previos funcionaron o no
+- sus hallazgos alimentan el contexto portable
+
+### N3 - Autoexaminacion Del Codigo Fuente
+Ya esta validada.
+Hallazgo corregido relevante:
+- se elimino refresh redundante de autoexaminacion en `EvolutionCenterViewModel`
+
+### N4 - Validacion Real De WorldModel En Windows
+Ya esta validada.
+Hechos confirmados:
+- ventanas abiertas reales y foco via Win32
+- hilo activo de Codex via `%USERPROFILE%\\.codex\\state_5.sqlite`
+- preflight de consulta externa bloqueado por permiso antes de actuar
+- el estado vivo del hilo de Codex prevalece sobre historial stale
+
+## Fuentes De Verdad Actuales
+Prioriza esta jerarquia:
+1. `WorldModelSnapshot` y `EnvironmentSelfModel`
+2. contratos del codigo fuente
+3. `PortableContextPackage` y `SelfExaminationSnapshot`
+4. pruebas
+5. historial persistido (`ExperimentLab`, sesiones adaptativas, run records)
+6. suposiciones
+
+Nunca inviertas ese orden.
+
+Fuentes concretas:
+- `bootstrap.py`: wiring real del sistema
+- `src/iabv_v15/domain/models.py`: contratos soberanos
+- `data/evolution/portable_context/latest.json` y `latest.md`
+- `data/evolution/self_examination/latest.json` y `latest.md`
+- `data/evolution/world_model/`
+- `tests/`
+
+## Politica Operativa Actual
+
+Antes de usar una herramienta externa:
+1. consulta `WorldModelSnapshot`
+2. verifica red, foco, hilo, cuota, permiso y bloqueo activo
+3. si falta permiso o evidencia, bloquea la ruta y explicalo
+
+Si una pregunta es de:
+- estado vivo del sistema
+- autoconciencia del sistema
+- aprendizaje acumulado
+- autoexaminacion operativa
+
+entonces:
+- responde por la via humana local
+- usa `world_model`, `environment_self_model`, `ExperimentLab`, `PortableContextService` y `OperationalSelfExaminationService`
+- no dispares autonomia ni consulta externa
+
+Cuando una herramienta falle o rinda mal:
+1. no insistas a ciegas
+2. registra el fallo con evidencia
+3. revisa alternativas disponibles en `ToolRegistry`, `ExperimentLab`, MCPs o proveedores locales
+4. compara la nueva ruta contra la actual usando resultados reales
+
+## Contratos Que No Debes Romper
+- No crear otro cerebro ni otro orquestador
+- No duplicar `PerceptionSnapshot`
+- No reemplazar `EnvironmentSelfModel`, `WorldModelSnapshot` o `UniversalPerceptionSignal`; se complementan
+- No convertir un ViewModel en decisor de rutas
+- No hacer refactor masivo sin aprobacion explicita
+- No fingir observacion que no existe
+- Si algo no puede confirmarse, marcar `UNRESOLVED`
+- Si una ruta no es viable en el estado actual, bloquear antes de intentar
+- El sandbox debe seguir aislado del sistema vivo
+
+## Regla De Observacion Real
+Si necesitas observar contenido visible de una ventana externa para verificar
+si una herramienta esta utilizable:
+- pide permiso explicito al usuario
+- no asumas que el permiso existe
+- no declares la herramienta disponible si no pudiste verificarla
+
+## Pendientes Reales Que Siguen Abiertos
+- La disponibilidad real de mensajes/cuota en herramientas externas visibles sigue requiriendo permiso explicito de observacion; sin ese permiso debe quedar `desconocidos` o `UNRESOLVED`.
+- Algunos estados live, como `wrong_thread`, dependen del escritorio real del momento; si no estan presentes en vivo, se validan por pruebas y no se inventan.
+- Varias suites de UI siguen siendo lentas en Windows; no es una falla funcional, pero si una deuda de rendimiento de pruebas.
+- Si alguna conclusion depende solo de historial stale y contradice observacion viva, debe prevalecer la observacion viva.
+
+## Forma De Trabajo En Sesiones Nuevas
+1. lee este archivo primero
+2. inspecciona `bootstrap.py` y los archivos del slice relevante
+3. identifica contratos involucrados
+4. busca el cambio minimo que preserve arquitectura
+5. valida con pruebas focalizadas y luego regresion razonable
+6. si algo falla, diagnostica y corrige antes de seguir
+7. reporta resultado, pruebas, riesgos y `UNRESOLVED`
+
+## Prompt De Arranque
+Al empezar una sesion nueva:
+- lee `AGENTS.md`
+- despues inspecciona los archivos relevantes del repo
+- usa primero estado vivo y contratos reales
+- evita releer todo el historial si `PortableContextService` o `OperationalSelfExaminationService` ya condensan lo necesario
+- trabaja con cambios minimos, verificables y guiados por evidencia real
+
+## Salida Esperada Al Terminar
+- que cambiaste
+- por que era el cambio correcto
+- que pruebas corriste
+- que resultado dieron
+- que quedo `UNRESOLVED`
+- cual es el siguiente paso recomendado

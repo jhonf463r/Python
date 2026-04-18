@@ -1,0 +1,30 @@
+{
+  "issue_id": "2ac475dd-d2d3-4583-ab8d-82a8217197df",
+  "created_at_utc": "2026-04-11T01:04:40.065401Z",
+  "status": "needs_fix",
+  "scenario_id": "",
+  "goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa. Si no puedes verificar tu hilo o tu sesion termino, bloquealo claramente y propon la siguiente accion.",
+  "category": "need_codex_fix",
+  "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+  "probable_cause": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+  "unresolved_reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+  "run_id": "d9102deb-6300-43f1-93ab-52ddf98e5771",
+  "episode_id": null,
+  "session_id": "60b5c1db-eb20-4c6b-8b52-579f3588414d",
+  "evidence_refs": [
+    "Contexto activo: contexto general."
+  ],
+  "runtime_adjustments": [],
+  "recommended_change": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+  "suggested_tests": [
+    "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa. Si no puedes verificar tu hilo o tu sesion termino, bloquealo claramente y propon la siguiente accion.",
+    "Revisar Centro Evolutivo"
+  ],
+  "metadata": {
+    "autonomous_evolution": true,
+    "assistant_kind": "codex",
+    "source": "chat",
+    "site_id": "",
+    "intent_key": "research.external_consultation"
+  }
+}

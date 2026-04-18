@@ -1,0 +1,73 @@
+{
+  "run_id": "e15ef8ab-b97d-4d8e-bfd3-47b14da3175d",
+  "domain": "language",
+  "suite_name": "text_understanding_suite",
+  "objective": "Consultar ChatGPT sobre: Necesito una consulta externa con ChatGPT para revisar por que Playwright no logra abrir bien desde el programa",
+  "subject_key": "chatgpt_web_assisted",
+  "route": "ui",
+  "assistant_kind": "chatgpt web asistido",
+  "assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+  "candidate_id": "22bd862d-26ae-4bdc-b4ac-8af52b4d18ea",
+  "candidate_label": "ChatGPT web asistido",
+  "success": false,
+  "expected_summary": "text=Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+  "observed_summary": "[WinError 5] Acceso denegado",
+  "metrics": {
+    "precision": 0.12403100775193798,
+    "execution_ms": 5,
+    "operational_cost": 0.0,
+    "robustness": 0.4,
+    "reuse_score": 0.0,
+    "user_progress": 0.0,
+    "total_score": 0.3313,
+    "metadata": {
+      "domain": "language",
+      "objective": "Consultar ChatGPT sobre: Necesito una consulta externa con ChatGPT para revisar por que Playwright no logra abrir bien desde el programa",
+      "candidate_label": "ChatGPT web asistido",
+      "route": "ui",
+      "assistant_kind": "chatgpt web asistido",
+      "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "sample_support": 1,
+      "latency_score": 0.999,
+      "cost_score": 1.0,
+      "user_progress_score": 0.0,
+      "relative_vs_same_config": 1.0
+    }
+  },
+  "evidence_refs": [
+    "a98fe54a-93b8-47e8-9d04-06ccdb81ca23",
+    "8706eeba-4992-45f3-84e2-bdcd7f2b5f24"
+  ],
+  "reused_later": false,
+  "better_than_previous": false,
+  "metadata": {
+    "source": "live_audit_tool",
+    "user_progress": 0.0,
+    "evidence_refs": [
+      "a98fe54a-93b8-47e8-9d04-06ccdb81ca23",
+      "8706eeba-4992-45f3-84e2-bdcd7f2b5f24"
+    ],
+    "reused_pattern": false,
+    "suite_name": "text_understanding_suite",
+    "assistant_kind": "chatgpt web asistido",
+    "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+    "trace_id": "",
+    "comparison_scope_key": "",
+    "source_trace_ids": [],
+    "proposal_summary": "",
+    "outcome_summary": "[WinError 5] Acceso denegado"
+  },
+  "created_at_utc": "2026-04-13T18:44:19.759571Z"
+}

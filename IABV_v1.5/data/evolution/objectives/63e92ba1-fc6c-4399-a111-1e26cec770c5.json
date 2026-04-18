@@ -1,0 +1,38 @@
+{
+  "objective_id": "63e92ba1-fc6c-4399-a111-1e26cec770c5",
+  "kind": "task",
+  "title": "Abrir Wplay y preparar sesion",
+  "summary": "Ya tengo estrategia y contexto para Wplay, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Consulta local con contexto; sigue faltando un adaptador operativo del dominio.",
+  "parent_id": "5d48e271-fe52-42d7-aecf-380d19cf9280",
+  "root_id": "63ffe23f-aaae-4096-9d13-4d29636057fc",
+  "site_id": "wplay",
+  "priority": 50,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.9,
+  "evidence_refs": [
+    "Contexto activo: Wplay.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 5.",
+    "Laboratorio universal: language -> language_understanding (score 0.86, confianza 0.78).",
+    "run:80142971-96c6-4fda-86c7-5180d9360e39",
+    "Ultima corrida: success | rol training | pack wplay.core.",
+    "Dossiers relacionados: 6.",
+    "Laboratorio universal: language -> ui (score 0.77, confianza 0.73).",
+    "Conocimiento local relacionado: 1 items.",
+    "run:56e36fa4-64f3-400f-baa2-e3f37ff18f78"
+  ],
+  "tags": [],
+  "metadata": {
+    "user_goal": "ok pero primero dime si tienes acceso a tu estrutura y todo tu sistema ?",
+    "intent_key": "general.assistance",
+    "pack_id": "knowledge.query",
+    "pack_title": "Consulta local con contexto",
+    "level": "task",
+    "session_id": "57298049-a50a-405f-9b0a-988e75979804",
+    "status": "completed"
+  },
+  "created_at_utc": "2026-04-16T22:43:57.684111Z",
+  "updated_at_utc": "2026-04-16T22:45:17.738205Z"
+}

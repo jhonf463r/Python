@@ -1,0 +1,73 @@
+{
+  "run_id": "12d8e3ee-9d46-4279-bcec-6fbb35376393",
+  "domain": "code",
+  "suite_name": "code_understanding_suite",
+  "objective": "Consultar Codex sobre: Necesito una consulta tecnica con Codex para validar si la ruta externa real responde o queda pendiente y que lo digas claro.",
+  "subject_key": "codex_installed",
+  "route": "background",
+  "assistant_kind": "codex instalado",
+  "assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+  "candidate_id": "eae73e44-f5f1-4002-8e3a-b33d3bcabf17",
+  "candidate_label": "Codex instalado",
+  "success": false,
+  "expected_summary": "text=Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+  "observed_summary": "La auditoría por chat real pegó en el harness, no en el brain: `_build_ui_objects()` no devuelve el `dict` que asumí ahí. Ya lo corrijo con la forma real de bootstrap y sigo con la validación del flujo de usuario final, que es justo la piez",
+  "metrics": {
+    "precision": 0.06521739130434782,
+    "execution_ms": 4099,
+    "operational_cost": 0.0,
+    "robustness": 0.35,
+    "reuse_score": 0.0,
+    "user_progress": 0.0,
+    "total_score": 0.2015,
+    "metadata": {
+      "domain": "code",
+      "objective": "Consultar Codex sobre: Necesito una consulta tecnica con Codex para validar si la ruta externa real responde o queda pendiente y que lo digas claro.",
+      "candidate_label": "Codex instalado",
+      "route": "background",
+      "assistant_kind": "codex instalado",
+      "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "sample_support": 1,
+      "latency_score": 0.1802,
+      "cost_score": 1.0,
+      "user_progress_score": 0.0,
+      "relative_vs_same_config": 1.0
+    }
+  },
+  "evidence_refs": [
+    "73c6b4bd-5fa9-45a2-89a7-113bfe2509ba",
+    "cd5e82b9-135a-4a9a-a051-358532238dfe"
+  ],
+  "reused_later": false,
+  "better_than_previous": false,
+  "metadata": {
+    "source": "live_audit_tool",
+    "user_progress": 0.0,
+    "evidence_refs": [
+      "73c6b4bd-5fa9-45a2-89a7-113bfe2509ba",
+      "cd5e82b9-135a-4a9a-a051-358532238dfe"
+    ],
+    "reused_pattern": false,
+    "suite_name": "code_understanding_suite",
+    "assistant_kind": "codex instalado",
+    "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+    "trace_id": "",
+    "comparison_scope_key": "",
+    "source_trace_ids": [],
+    "proposal_summary": "",
+    "outcome_summary": "La auditoría por chat real pegó en el harness, no en el brain: `_build_ui_objects()` no devuelve el `dict` que asumí ahí. Ya lo corrijo con la forma real de bootstrap y sigo con la validación del flujo de usuario final, que es justo la piez"
+  },
+  "created_at_utc": "2026-04-12T22:55:22.976889Z"
+}

@@ -1,0 +1,48 @@
+{
+  "status_id": "0e34cfc9-415a-431a-b498-48d082cbe45d",
+  "created_at_utc": "2026-04-18T04:57:25.874570Z",
+  "updated_at_utc": "2026-04-18T04:57:25.874570Z",
+  "summary": "Todavia no hay suficiente evidencia comparativa para un monitor de evolucion de herramientas.",
+  "performance": [],
+  "proposals": [],
+  "degraded_subjects": [],
+  "unresolved_fields": [
+    "UNRESOLVED:tool_evolution_subjects",
+    "UNRESOLVED:tool_evolution_performance"
+  ],
+  "package_path": "",
+  "markdown_path": "",
+  "metadata": {
+    "subject_keys": [],
+    "proposal_count": 0,
+    "active_proposal_count": 0,
+    "decided_proposal_count": 0,
+    "degraded_count": 0,
+    "validation_status": "idle",
+    "validation_summary": "Sin validacion autonoma reciente.",
+    "active_proposals": [],
+    "decided_proposals": [],
+    "decision_log_summary": {
+      "winning_by_problem": {},
+      "degraded_tools": [],
+      "in_validation": [],
+      "discarded_proposals": [],
+      "recent_decisions": [],
+      "last_decision": {},
+      "summary_by_tool": {},
+      "summary_by_problem": {},
+      "unresolved_fields": [],
+      "package_path": "",
+      "markdown_path": ""
+    },
+    "recent_decisions": [],
+    "discovery_summary": {
+      "subject_keys": [],
+      "active_signals": [],
+      "in_validation_signals": [],
+      "promoted_signals": [],
+      "discarded_signals": [],
+      "unresolved_signals": []
+    }
+  }
+}

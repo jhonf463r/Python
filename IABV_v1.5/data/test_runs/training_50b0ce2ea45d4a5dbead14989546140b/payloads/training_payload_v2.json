@@ -1,0 +1,152 @@
+{
+  "spec": {
+    "version": 2,
+    "fields": [
+      "episodes",
+      "steps",
+      "artifacts",
+      "knowledge_items",
+      "run_records",
+      "capture_channels",
+      "site_context",
+      "redaction_summary",
+      "metadata"
+    ]
+  },
+  "payload": {
+    "version": 2,
+    "generated_at_utc": "2026-04-18T05:04:49.232288Z",
+    "workspace": "C:\\Python\\IABV_v1.5\\data\\test_runs\\training_50b0ce2ea45d4a5dbead14989546140b",
+    "episodes": [
+      {
+        "episode_id": "e216f69d-c8cc-4bff-b6d5-cdef7e54c3f2",
+        "title": "Payload Episode",
+        "created_at_utc": "2026-04-18T05:04:48.969107Z",
+        "updated_at_utc": "2026-04-18T05:04:48.969113Z",
+        "step_count": 0,
+        "source": "desktop",
+        "tags": [],
+        "notes": ""
+      }
+    ],
+    "steps": [],
+    "artifacts": [],
+    "knowledge_items": [
+      {
+        "knowledge_id": "7ff65b60-d56a-4622-a45a-834337edebfa",
+        "title": "Payload knowledge",
+        "summary": "Useful memory",
+        "source_episode_id": "e216f69d-c8cc-4bff-b6d5-cdef7e54c3f2",
+        "task_label": null,
+        "confidence": 0.0,
+        "tags": [],
+        "payload": {},
+        "created_at_utc": "2026-04-18T05:04:49.168746Z",
+        "updated_at_utc": "2026-04-18T05:04:49.170286Z"
+      }
+    ],
+    "run_records": [
+      {
+        "run_id": "14239ef2-7627-4f91-9d4c-4970908eaedc",
+        "created_at_utc": "2026-04-18T05:04:48.997296Z",
+        "request": {
+          "request_id": "844517ef-101d-40bd-9077-fe812d31b742",
+          "user_goal": "Review payload generation",
+          "prompt": "",
+          "screenshots": [
+            "one.png",
+            "two.png"
+          ],
+          "steps": [],
+          "offline_only": false,
+          "complexity": "deep",
+          "ambiguity": "medium",
+          "requires_vision": true,
+          "deep_reasoning": false,
+          "task_role": "training",
+          "allowed_tools": [],
+          "knowledge_scope": [],
+          "read_only_sql": false,
+          "requires_visual_reasoning": false,
+          "auto_route": false,
+          "role_hint": null,
+          "enable_planning": false,
+          "conversation_context": [],
+          "site_hint": null,
+          "approval_mode": "phased",
+          "execution_scope": "operational",
+          "goal_parameters": {},
+          "metadata": {}
+        },
+        "result": {
+          "request_id": "844517ef-101d-40bd-9077-fe812d31b742",
+          "provider_name": "LM Studio",
+          "reasoning_mode": "local",
+          "summary": "Payload summary",
+          "inferred_task": "Review payload generation",
+          "confidence": 0.81,
+          "confidence_reduced": false,
+          "used_fallback": false,
+          "clarifications": [],
+          "used_tools": [],
+          "sources": [],
+          "follow_up_teachings": [],
+          "report_kind": "chat",
+          "detected_role": null,
+          "planner_used": false,
+          "executor_model": "",
+          "diagnostic_flags": [],
+          "improvement_hints": [],
+          "incident_refs": [],
+          "hidden_incident_refs": [],
+          "health_flags": [],
+          "recommended_next_checks": [],
+          "scenario": null,
+          "probe_diagnosis": null,
+          "runtime_adjustments": [],
+          "pending_issue_ref": "",
+          "intent": null,
+          "chosen_pack": null,
+          "strategy_candidates": [],
+          "playbook": null,
+          "approval_checkpoints": [],
+          "capability_readiness": [],
+          "next_actions": [],
+          "error_summary": "",
+          "raw_output": {}
+        },
+        "route": {
+          "primary_provider": "LM Studio",
+          "primary_kind": "local",
+          "fallback_provider": "Ollama",
+          "reason": "simple",
+          "fallback_enabled": true
+        },
+        "status": "success",
+        "duration_ms": null,
+        "error_summary": ""
+      }
+    ],
+    "capture_channels": [],
+    "site_context": {
+      "domains": [],
+      "site_ids": [],
+      "episode_count": 1
+    },
+    "redaction_summary": {
+      "redacted_steps": 0,
+      "redacted_network_fields": 0,
+      "stored_secrets": 0,
+      "warnings": []
+    },
+    "metadata": {
+      "source": "desktop-control-app",
+      "browser_teach_mode": true,
+      "artifact_count": 0
+    }
+  },
+  "meta": {
+    "saved_at": "2026-04-18T05:04:49.257382+00:00",
+    "snapshot_hash": "21b8b091a5ed21265aac861e83f04b6d134c39bc"
+  }
+}

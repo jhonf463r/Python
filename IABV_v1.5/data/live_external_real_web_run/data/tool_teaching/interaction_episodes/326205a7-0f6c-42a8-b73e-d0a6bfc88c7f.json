@@ -1,0 +1,685 @@
+{
+  "interaction_episode_id": "326205a7-0f6c-42a8-b73e-d0a6bfc88c7f",
+  "objective": "Consultar Claude sobre: Valida si esta sesion externa esta autenticada y si no lo esta, reporta el bloqueo formal sin fingir exito.",
+  "mode_used": "ui",
+  "environment": {
+    "tool_id": "claude_web_assisted",
+    "tool_type": "llm_web_ui",
+    "adapter_key": "external_assistant",
+    "site_id": "wplay",
+    "execution_scope": "read_only"
+  },
+  "captured_metadata": {
+    "task_metadata": {
+      "goal_parameters": {
+        "tool_id": "claude_web_assisted",
+        "allowed_tool_ids": [
+          "claude_installed",
+          "claude_web_assisted"
+        ],
+        "title": "Consultar Claude",
+        "expected_outcome": "Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+        "context_pack": "Objetivo: validar proveedor externo real y detectar login, session expired, wrong thread o quota si aparecen con evidencia.\n\nIABV_THREAD_KEY: iabv::claude::wplay::valida-si-esta-sesion-externa-esta-autenticada-y\nIABV_THREAD_TITLE: IABV Claude | Valida si esta sesion externa esta autenticada y\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "assistant_preference": "claude",
+        "assistant_kind": "claude",
+        "consultation_scope": "external_assistant",
+        "response_capture_mode": "dom_capture",
+        "requires_manual_pasteback": false,
+        "prompt_template_id": "claude_web_consult_v1",
+        "execution_scope": "read_only",
+        "diagnostic_category": "need_codex_fix",
+        "incident_kind": "bridge_lag",
+        "site_id": "wplay",
+        "lab_recommendation": {},
+        "dry_run_launch": false,
+        "allow_local_automatic_consultation": false,
+        "session_scope": "program_chat",
+        "isolated_session_required": true,
+        "session_label": "Claude especial de IABV",
+        "thread_key": "iabv::claude::wplay::valida-si-esta-sesion-externa-esta-autenticada-y",
+        "thread_title": "IABV Claude | Valida si esta sesion externa esta autenticada y",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_real_web_run\\data\\tool_teaching\\external_assistants\\claude_program_session\\browser_profile"
+      },
+      "created_at_utc": "2026-04-12T22:30:14.012208+00:00",
+      "updated_at_utc": "2026-04-12T22:30:14.012208+00:00",
+      "mode_selection": {
+        "decision_id": "76dbe3d3-4cbb-48f6-a356-1e22d47dc18f",
+        "selector_name": "universal_mode_selector",
+        "selected_mode": "ui",
+        "selected_tool_id": "claude_web_assisted",
+        "selected_tool_type": "llm_web_ui",
+        "adapter_exists": true,
+        "available": true,
+        "fallback_used": false,
+        "already_resolved": false,
+        "equivalent_pattern_exists": false,
+        "improvement_already_implemented": false,
+        "reusable_pattern_id": null,
+        "reusable_episode_id": null,
+        "scores": {
+          "availability": 1.0,
+          "adapter_exists": 1.0,
+          "desired_match": 1.0,
+          "suggested_match": 1.0,
+          "automatic_capture": 1.0,
+          "total": 5.0
+        },
+        "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+        "metadata": {
+          "desired_modes": [
+            "background",
+            "ui"
+          ],
+          "candidate_ranking": [
+            {
+              "tool_id": "claude_web_assisted",
+              "mode": "ui",
+              "score": 5.0
+            }
+          ],
+          "selection_policy": "preferred_external_tool"
+        }
+      },
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reuse_guard_active": false,
+      "reused_pattern_id": "",
+      "reused_episode_id": "",
+      "adapter_exists": true,
+      "selected_mode": "ui",
+      "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "requested_tool_id": "claude_web_assisted",
+      "reused_actions_from_pattern": false,
+      "requested_assistant_kind": "claude",
+      "assistant_kind": "claude",
+      "actual_assistant_kind": "claude",
+      "consultation_scope": "external_assistant",
+      "response_capture_mode": "dom_capture",
+      "requires_manual_pasteback": false,
+      "diagnostic_category": "need_codex_fix",
+      "incident_kind": "bridge_lag",
+      "dry_run_launch": false,
+      "lab_recommendation": {},
+      "context_pack": "Objetivo: validar proveedor externo real y detectar login, session expired, wrong thread o quota si aparecen con evidencia.\n\nIABV_THREAD_KEY: iabv::claude::wplay::valida-si-esta-sesion-externa-esta-autenticada-y\nIABV_THREAD_TITLE: IABV Claude | Valida si esta sesion externa esta autenticada y\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "comparison_scope_key": "wplay:consultar-claude-sobre-valida-si-esta-sesion-externa-esta-autenticada-y",
+      "source_trace_ids": [],
+      "proposal_summary": "Objetivo: validar proveedor externo real y detectar login, session expired, wrong thread o quota si aparecen con evidencia. IABV_THREAD_KEY: iabv::claude::wplay::valida-si-esta-sesion-externa-esta-autenticada-y IABV_THREAD_TITLE: IABV Claud",
+      "thread_key": "iabv::claude::wplay::valida-si-esta-sesion-externa-esta-autenticada-y",
+      "thread_title": "IABV Claude | Valida si esta sesion externa esta autenticada y",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_real_web_run\\data\\tool_teaching\\external_assistants\\claude_program_session\\browser_profile",
+      "session_scope": "program_chat",
+      "session_label": "Claude especial de IABV",
+      "isolated_session_required": true,
+      "background_capture_mode": "browser_dom",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "extended",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "with_browser",
+        "assistant_mode": "code",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "claude",
+          "tool_id": "claude_web_assisted",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 439
+        }
+      },
+      "config_signature": "without_plan|without_files|extended|short|with_tools|with_browser|code|external",
+      "ia_trace_entry": {
+        "trace_id": "ddfe77d1-c7cb-4577-be00-dad1237bc08e",
+        "created_at_utc": "2026-04-12T22:30:14.013775Z",
+        "assistant_kind": "claude",
+        "requested_assistant_kind": "claude",
+        "actual_assistant_kind": "claude",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "extended",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "with_browser",
+          "assistant_mode": "code",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "claude",
+            "tool_id": "claude_web_assisted",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 439
+          }
+        },
+        "config_signature": "without_plan|without_files|extended|short|with_tools|with_browser|code|external",
+        "comparison_scope_key": "wplay:consultar-claude-sobre-valida-si-esta-sesion-externa-esta-autenticada-y",
+        "source_trace_ids": [],
+        "route": "ui",
+        "tool_id": "claude_web_assisted",
+        "task_id": "83bdd192-8823-4210-a55d-2cf1f33d9ea5",
+        "result_id": "",
+        "session_scope": "program_chat",
+        "thread_key": "iabv::claude::wplay::valida-si-esta-sesion-externa-esta-autenticada-y",
+        "thread_title": "IABV Claude | Valida si esta sesion externa esta autenticada y",
+        "capture_lane": "background",
+        "state": "pending",
+        "detail": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "proposal_summary": "Objetivo: validar proveedor externo real y detectar login, session expired, wrong thread o quota si aparecen con evidencia. IABV_THREAD_KEY: iabv::claude::wplay::valida-si-esta-sesion-externa-esta-autenticada-y IABV_THREAD_TITLE: IABV Claud",
+        "outcome_summary": "",
+        "result_label": "Consultar Claude",
+        "success": false,
+        "execution_ms": 0,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "wplay",
+          "83bdd192-8823-4210-a55d-2cf1f33d9ea5"
+        ],
+        "reused_later": false,
+        "verdict": "",
+        "coherence_flags": [],
+        "external_state_flags": [],
+        "metadata": {
+          "response_capture_mode": "dom_capture",
+          "background_capture_mode": "browser_dom",
+          "comparison_scope_key": "wplay:consultar-claude-sobre-valida-si-esta-sesion-externa-esta-autenticada-y"
+        }
+      },
+      "background_headless": true,
+      "approval_required": true,
+      "destructive": false
+    },
+    "execution_metadata": {
+      "sandbox": false,
+      "assistant_kind": "claude",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://claude.ai/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Objetivo: validar proveedor externo real y detectar login, session expired, wrong thread o quota si aparecen con evidencia.\n\nIABV_THREAD_KEY: iabv::claude::wplay::valida-si-esta-sesion-externa-esta-autenticada-y\nIABV_THREAD_TITLE: IABV Claude | Valida si esta sesion externa esta autenticada y\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "session_scope": "program_chat",
+      "session_label": "Claude especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::claude::wplay::valida-si-esta-sesion-externa-esta-autenticada-y",
+      "thread_title": "IABV Claude | Valida si esta sesion externa esta autenticada y",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "2026-04-12T22:30:14.169265+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_real_web_run\\data\\tool_teaching\\external_assistants\\claude_program_session\\browser_profile",
+      "auto_capture_attempted": true,
+      "auto_capture_reason": "browser_dom_unavailable"
+    },
+    "result_metadata": {
+      "sandbox": false,
+      "assistant_kind": "claude",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "extended",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "with_browser",
+        "assistant_mode": "code",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "claude",
+          "tool_id": "claude_web_assisted",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 439
+        }
+      },
+      "config_signature": "without_plan|without_files|extended|short|with_tools|with_browser|code|external",
+      "external_state_flags": [],
+      "ia_trace_entry": {
+        "trace_id": "1030091a-0e43-4169-92b1-bb0c04ca9a52",
+        "created_at_utc": "2026-04-12T22:30:14.169998Z",
+        "assistant_kind": "claude",
+        "requested_assistant_kind": "claude",
+        "actual_assistant_kind": "claude",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "extended",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "with_browser",
+          "assistant_mode": "code",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "claude",
+            "tool_id": "claude_web_assisted",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 439
+          }
+        },
+        "config_signature": "without_plan|without_files|extended|short|with_tools|with_browser|code|external",
+        "comparison_scope_key": "wplay:consultar-claude-sobre-valida-si-esta-sesion-externa-esta-autenticada-y",
+        "source_trace_ids": [],
+        "route": "ui",
+        "tool_id": "claude_web_assisted",
+        "task_id": "83bdd192-8823-4210-a55d-2cf1f33d9ea5",
+        "result_id": "3d42c5f7-fe84-4187-9a1c-7fc79fcb0dc8",
+        "session_scope": "program_chat",
+        "thread_key": "iabv::claude::wplay::valida-si-esta-sesion-externa-esta-autenticada-y",
+        "thread_title": "IABV Claude | Valida si esta sesion externa esta autenticada y",
+        "capture_lane": "background",
+        "state": "failed",
+        "detail": "browser_dom_unavailable",
+        "proposal_summary": "Objetivo: validar proveedor externo real y detectar login, session expired, wrong thread o quota si aparecen con evidencia. IABV_THREAD_KEY: iabv::claude::wplay::valida-si-esta-sesion-externa-esta-autenticada-y IABV_THREAD_TITLE: IABV Claud",
+        "outcome_summary": "",
+        "result_label": "Consultar Claude",
+        "success": false,
+        "execution_ms": 0,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "wplay",
+          "83bdd192-8823-4210-a55d-2cf1f33d9ea5",
+          "3d42c5f7-fe84-4187-9a1c-7fc79fcb0dc8"
+        ],
+        "reused_later": false,
+        "verdict": "failed",
+        "coherence_flags": [],
+        "external_state_flags": [],
+        "metadata": {
+          "response_capture_mode": "dom_capture",
+          "background_capture_mode": "browser_dom",
+          "comparison_scope_key": "wplay:consultar-claude-sobre-valida-si-esta-sesion-externa-esta-autenticada-y"
+        }
+      },
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  },
+  "actions": [
+    {
+      "step_id": "ea387800-e15f-4b04-9315-ef54e0fe428f",
+      "channel": "ui",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "cc61f14f-923f-4358-a91b-6cc3fd331de9",
+      "started_at_utc": "2026-04-12T22:30:14.232100Z",
+      "finished_at_utc": "2026-04-12T22:30:14.232100Z",
+      "destructive": false,
+      "requires_approval": true
+    },
+    {
+      "step_id": "0fd549c7-8884-485d-9ff0-4226b29d6340",
+      "channel": "ui",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "e3b62e1e-897d-4654-a993-fabcb506a812",
+      "started_at_utc": "2026-04-12T22:30:14.232100Z",
+      "finished_at_utc": "2026-04-12T22:30:14.232100Z",
+      "destructive": false,
+      "requires_approval": false
+    }
+  ],
+  "result": {
+    "interaction_result_id": "69930796-a06b-4212-9d95-6481d40150df",
+    "success": false,
+    "execution_state": {
+      "state": "failed",
+      "detail": "browser_dom_unavailable",
+      "executor_name": "external_assistant",
+      "sandboxed": false,
+      "validated": false,
+      "approval_decision": "approved",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": false,
+        "assistant_kind": "claude",
+        "launch_mode": "web_assisted",
+        "launch_target": "https://claude.ai/",
+        "response_capture_mode": "dom_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Objetivo: validar proveedor externo real y detectar login, session expired, wrong thread o quota si aparecen con evidencia.\n\nIABV_THREAD_KEY: iabv::claude::wplay::valida-si-esta-sesion-externa-esta-autenticada-y\nIABV_THREAD_TITLE: IABV Claude | Valida si esta sesion externa esta autenticada y\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "session_scope": "program_chat",
+        "session_label": "Claude especial de IABV",
+        "isolated_session": true,
+        "thread_key": "iabv::claude::wplay::valida-si-esta-sesion-externa-esta-autenticada-y",
+        "thread_title": "IABV Claude | Valida si esta sesion externa esta autenticada y",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "2026-04-12T22:30:14.169265+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_real_web_run\\data\\tool_teaching\\external_assistants\\claude_program_session\\browser_profile",
+        "auto_capture_attempted": true,
+        "auto_capture_reason": "browser_dom_unavailable"
+      }
+    },
+    "summary": "browser_dom_unavailable",
+    "errors": [
+      "browser_dom_unavailable"
+    ],
+    "confidence": 0.22,
+    "execution_ms": 0,
+    "rollback_state": null,
+    "extracted_data": {
+      "assistant_kind": "claude",
+      "launch_target": "https://claude.ai/"
+    },
+    "artifacts": [],
+    "metadata": {
+      "validation_status": "unvalidated",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": "",
+      "live_audit": {
+        "audit_snapshot_id": "badfa39a-1e25-4b47-8337-c5c2dc9cb1ca",
+        "objective": "Consultar Claude sobre: Valida si esta sesion externa esta autenticada y si no lo esta, reporta el bloqueo formal sin fingir exito.",
+        "session_or_episode_id": "326205a7-0f6c-42a8-b73e-d0a6bfc88c7f",
+        "mode_used": "ui",
+        "evidence": [
+          "4da03b54-3f94-4996-8b80-7caeb8dca839",
+          "326205a7-0f6c-42a8-b73e-d0a6bfc88c7f",
+          "site:wplay"
+        ],
+        "findings": [],
+        "decision": {
+          "decision_id": "fd11c559-1edb-4ad3-9183-91826b3b6485",
+          "action": "continue_local",
+          "rationale": "La herramienta produjo evidencia suficiente para seguir en la via local actual.",
+          "confidence": 0.55,
+          "recommended_tool_id": "claude_web_assisted",
+          "approval_required": true,
+          "metadata": {}
+        },
+        "confidence": 0.66,
+        "auto_safe_action": "",
+        "human_approval": true,
+        "reused_pattern": false,
+        "metrics": {
+          "semantic_action_alignment": 0.2,
+          "target_element_alignment": 1.0,
+          "progress_visibility_score": 0.45,
+          "bridge_drain_health": 1.0,
+          "observer_agreement_score": 0.6625,
+          "learning_consolidation_score": 0.6625,
+          "lab_precision": 0.2097,
+          "lab_robustness": 0.4,
+          "lab_reuse_score": 0.0,
+          "lab_total_score": 0.3614,
+          "lab_recommended_route_score": 0.3614
+        },
+        "metadata": {
+          "mirror_mode": "tool_execution",
+          "tool_id": "claude_web_assisted",
+          "tool_type": "llm_web_ui",
+          "selector_name": "universal_mode_selector",
+          "goal_context": {
+            "objective_id": "",
+            "status": "",
+            "progress": 0.0,
+            "blocker": ""
+          }
+        }
+      },
+      "audit_snapshot_id": "badfa39a-1e25-4b47-8337-c5c2dc9cb1ca"
+    }
+  },
+  "errors": [
+    "browser_dom_unavailable"
+  ],
+  "evidence": [
+    {
+      "evidence_id": "eb793d9f-fd14-4c32-8806-9f12abf014c8",
+      "kind": "log",
+      "label": "Dato extraido: assistant_kind",
+      "ref_id": "3d42c5f7-fe84-4187-9a1c-7fc79fcb0dc8:assistant_kind",
+      "path": null,
+      "metadata": {
+        "key": "assistant_kind"
+      },
+      "confidence": 0.7
+    },
+    {
+      "evidence_id": "bd6d39ab-e15b-4c97-97e5-b17b2072ae5d",
+      "kind": "log",
+      "label": "Dato extraido: launch_target",
+      "ref_id": "3d42c5f7-fe84-4187-9a1c-7fc79fcb0dc8:launch_target",
+      "path": null,
+      "metadata": {
+        "key": "launch_target"
+      },
+      "confidence": 0.7
+    }
+  ],
+  "learning_signals": [
+    {
+      "signal_id": "151c70be-964b-4324-8c8e-d30a009359af",
+      "label": "pattern:ui:claude_web_assisted",
+      "channel": "ui",
+      "signal_type": "pattern_reuse",
+      "confidence": 0.22,
+      "source": "interaction_learning_service",
+      "evidence_refs": [
+        "3d42c5f7-fe84-4187-9a1c-7fc79fcb0dc8:assistant_kind",
+        "3d42c5f7-fe84-4187-9a1c-7fc79fcb0dc8:launch_target"
+      ],
+      "metadata": {
+        "pattern_id": "4da03b54-3f94-4996-8b80-7caeb8dca839"
+      }
+    }
+  ],
+  "confidence": 0.22,
+  "human_approval": true,
+  "policy_decision": {
+    "decision_id": "790e3580-fe41-4d1b-81a1-1ec71974f69b",
+    "requires_human_approval": true,
+    "approval_decision": "approved",
+    "blocked": false,
+    "rationale": "browser_dom_unavailable",
+    "confidence": 0.22,
+    "metadata": {
+      "execution_scope": "read_only",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "selector_name": "universal_mode_selector",
+  "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+  "pattern_id": "4da03b54-3f94-4996-8b80-7caeb8dca839",
+  "reused_pattern": true,
+  "tool_id": "claude_web_assisted",
+  "tool_type": "llm_web_ui",
+  "task_id": "83bdd192-8823-4210-a55d-2cf1f33d9ea5",
+  "result_id": "3d42c5f7-fe84-4187-9a1c-7fc79fcb0dc8",
+  "site_id": "wplay",
+  "created_at_utc": "2026-04-12T22:30:14.232100Z",
+  "updated_at_utc": "2026-04-12T22:30:14.232100Z",
+  "metadata": {
+    "learning_signals": [
+      {
+        "signal_id": "151c70be-964b-4324-8c8e-d30a009359af",
+        "label": "pattern:ui:claude_web_assisted",
+        "channel": "ui",
+        "signal_type": "pattern_reuse",
+        "confidence": 0.22,
+        "source": "interaction_learning_service",
+        "evidence_refs": [
+          "3d42c5f7-fe84-4187-9a1c-7fc79fcb0dc8:assistant_kind",
+          "3d42c5f7-fe84-4187-9a1c-7fc79fcb0dc8:launch_target"
+        ],
+        "metadata": {
+          "pattern_id": "4da03b54-3f94-4996-8b80-7caeb8dca839"
+        }
+      }
+    ],
+    "mode_selection": {
+      "decision_id": "76dbe3d3-4cbb-48f6-a356-1e22d47dc18f",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "ui",
+      "selected_tool_id": "claude_web_assisted",
+      "selected_tool_type": "llm_web_ui",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": false,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "claude_web_assisted",
+            "mode": "ui",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "selected_mode": "ui",
+    "reusable_pattern_id": "",
+    "reusable_episode_id": "",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "live_audit": {
+      "audit_snapshot_id": "badfa39a-1e25-4b47-8337-c5c2dc9cb1ca",
+      "objective": "Consultar Claude sobre: Valida si esta sesion externa esta autenticada y si no lo esta, reporta el bloqueo formal sin fingir exito.",
+      "session_or_episode_id": "326205a7-0f6c-42a8-b73e-d0a6bfc88c7f",
+      "mode_used": "ui",
+      "evidence": [
+        "4da03b54-3f94-4996-8b80-7caeb8dca839",
+        "326205a7-0f6c-42a8-b73e-d0a6bfc88c7f",
+        "site:wplay"
+      ],
+      "findings": [],
+      "decision": {
+        "decision_id": "fd11c559-1edb-4ad3-9183-91826b3b6485",
+        "action": "continue_local",
+        "rationale": "La herramienta produjo evidencia suficiente para seguir en la via local actual.",
+        "confidence": 0.55,
+        "recommended_tool_id": "claude_web_assisted",
+        "approval_required": true,
+        "metadata": {}
+      },
+      "confidence": 0.66,
+      "auto_safe_action": "",
+      "human_approval": true,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 0.2,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.45,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.6625,
+        "learning_consolidation_score": 0.6625,
+        "lab_precision": 0.2097,
+        "lab_robustness": 0.4,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.3614,
+        "lab_recommended_route_score": 0.3614
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "claude_web_assisted",
+        "tool_type": "llm_web_ui",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "badfa39a-1e25-4b47-8337-c5c2dc9cb1ca",
+    "audit_summary": "Sin hallazgos relevantes. Decision: continue_local. Confianza 0.66."
+  }
+}

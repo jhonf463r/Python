@@ -1,0 +1,103 @@
+{
+  "blocked": true,
+  "reason": "Para verificar si Codex esta listo de verdad necesito observar el contenido visible de esa ventana.",
+  "governance": {
+    "approval_required": true,
+    "block_risky_action": true,
+    "recommended_action": "request_observation_permission",
+    "blocked_routes": [
+      "consult_codex"
+    ]
+  },
+  "world_model_summary": {
+    "focused_window": "Codex",
+    "network_status": "conectado",
+    "detected_blocks": [
+      "awaiting_response",
+      "capture_unverified",
+      "permission_required:observe_window_content:codex"
+    ],
+    "blocked_routes": [
+      {
+        "block_type": "permission_required",
+        "target_scope": "consult_codex",
+        "assistant_kind": "codex"
+      }
+    ],
+    "permission_gates": [
+      {
+        "scope": "observe_window_content:codex",
+        "assistant_kind": "codex",
+        "status": "requerido"
+      }
+    ],
+    "active_window_count": 14,
+    "confidence": 0.82,
+    "freshness_ms": 17,
+    "codex_status": {
+      "status": "abierto",
+      "thread_status": "correcto_probable",
+      "messages_status": "desconocidos"
+    },
+    "chatgpt_status": {
+      "status": "listo",
+      "session_status": "desconocida",
+      "messages_status": "desconocidos",
+      "permission_state": "no_requerido",
+      "probe_status": "pasivo"
+    },
+    "claude_status": {
+      "status": "no_disponible",
+      "session_status": "no_disponible",
+      "messages_status": "desconocidos",
+      "permission_state": "no_requerido",
+      "probe_status": "pasivo"
+    },
+    "ollama_status": {
+      "status": "disponible",
+      "session_status": "activa",
+      "messages_status": "disponibles",
+      "permission_state": "no_requerido",
+      "probe_status": "verificado_pasivo"
+    },
+    "last_updated": "2026-04-16T21:11:23.359208+00:00"
+  },
+  "approval_checkpoints": [
+    {
+      "checkpoint_id": "67800fd4-d8c6-48dc-bd43-62898dfbe61c",
+      "session_id": null,
+      "playbook_id": null,
+      "title": "Permitir observacion de codex",
+      "detail": "Para verificar si Codex esta listo de verdad necesito observar el contenido visible de esa ventana.",
+      "decision": "pending",
+      "phase_key": "observation_permission",
+      "reason": "La ruta externa necesita observacion viva antes de continuar.",
+      "risk_level": "medium",
+      "created_at_utc": "2026-04-16T21:11:23.377348Z",
+      "decided_at_utc": null,
+      "metadata": {
+        "assistant_kind": "codex",
+        "permission_gates": [
+          {
+            "scope": "observe_window_content:codex",
+            "assistant_kind": "codex",
+            "title": "Observar Codex instalado",
+            "detail": "Para verificar si Codex esta listo de verdad necesito observar el contenido visible de esa ventana.",
+            "status": "requerido",
+            "required_for": [
+              "consult_codex"
+            ],
+            "granted": false,
+            "confidence": 0.58,
+            "metadata": {
+              "tool_id": "codex_installed",
+              "probe_status": "permiso_requerido",
+              "window_open": true,
+              "last_verified_at": ""
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,564 @@
+{
+  "task_id": "50dbe004-5096-4af0-b8ea-b2a6e4d6e806",
+  "tool_id": "ollama_llm",
+  "title": "Consultar Ollama local",
+  "objective": "Consultar Ollama local sobre: sabes por que tu trabajo en vivo no avanza el que tiene de consulta cojn cgatgp que esta al 26%",
+  "requested_by_role": "tool_use",
+  "status": "pending",
+  "actions": [
+    {
+      "action_id": "813841ea-bd30-43c2-9dfd-9751aea14cb7",
+      "action_type": "llm_query",
+      "label": "Consulta automatica local",
+      "target": "",
+      "value": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\nObjetivo del usuario: sabes por que tu trabajo en vivo no avanza el que tiene de consulta cojn cgatgp que esta al 26%\nAsistente sugerido: ollama\nSitio: General\nIntento detectado: knowledge.query\nPack activo: n/d\nEstado adaptativo: completed\nOutcome actual: Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Consulta local con contexto; sigue faltando un adaptador operativo del dominio.\nEvidencia textual:\n- Contexto activo: contexto general.\n- Ultima corrida: success | rol project_evolution | pack project.evolution.\n- Dossiers relacionados: 6.\n- Patrones universales reutilizables: 2 (ui:1 | background:1).\n- Laboratorio universal: language -> language_understanding (score 1.27, confianza 0.90).\n- Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::ollama::general::sabes-por-que-tu-trabajo-en-vivo-no-avanza-el-qu\nIABV_THREAD_TITLE: IABV Ollama local | sabes por que tu trabajo en vivo no avanza el qu\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "parameters": {},
+      "expected_signal": "tool_result",
+      "destructive": false,
+      "requires_approval": false,
+      "metadata": {
+        "assistant_kind": "ollama",
+        "consultation_scope": "external_assistant",
+        "response_capture_mode": "tool_result",
+        "reused_from_pattern": false
+      }
+    }
+  ],
+  "rollback_actions": [],
+  "execution_scope": "read_only",
+  "approval_decision": "skipped",
+  "sandbox_first": true,
+  "site_id": null,
+  "session_id": null,
+  "run_id": null,
+  "pack_id": "",
+  "expected_outcome": "Consulta local automatica ejecutada y respuesta ya disponible para IABV.",
+  "metadata": {
+    "goal_parameters": {
+      "tool_id": "ollama_llm",
+      "allowed_tool_ids": [
+        "ollama_llm"
+      ],
+      "title": "Consultar Ollama local",
+      "expected_outcome": "Consulta local automatica ejecutada y respuesta ya disponible para IABV.",
+      "context_pack": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\nObjetivo del usuario: sabes por que tu trabajo en vivo no avanza el que tiene de consulta cojn cgatgp que esta al 26%\nAsistente sugerido: ollama\nSitio: General\nIntento detectado: knowledge.query\nPack activo: n/d\nEstado adaptativo: completed\nOutcome actual: Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Consulta local con contexto; sigue faltando un adaptador operativo del dominio.\nEvidencia textual:\n- Contexto activo: contexto general.\n- Ultima corrida: success | rol project_evolution | pack project.evolution.\n- Dossiers relacionados: 6.\n- Patrones universales reutilizables: 2 (ui:1 | background:1).\n- Laboratorio universal: language -> language_understanding (score 1.27, confianza 0.90).\n- Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::ollama::general::sabes-por-que-tu-trabajo-en-vivo-no-avanza-el-qu\nIABV_THREAD_TITLE: IABV Ollama local | sabes por que tu trabajo en vivo no avanza el qu\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "assistant_preference": "ollama",
+      "assistant_kind": "ollama",
+      "consultation_scope": "external_assistant",
+      "response_capture_mode": "tool_result",
+      "requires_manual_pasteback": false,
+      "prompt_template_id": "local_consult_v1",
+      "execution_scope": "read_only",
+      "diagnostic_category": "idle",
+      "incident_kind": "",
+      "site_id": "",
+      "lab_recommendation": {
+        "recommendation_id": "49dcc293-4f0e-4a6e-b6da-83d8752530f3",
+        "domain": "language",
+        "subject_key": "general",
+        "recommended_route": "language_understanding",
+        "recommended_assistant_kind": "ollama",
+        "recommended_assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "normal",
+          "context_mode": "short",
+          "tools_mode": "without_tools",
+          "browser_mode": "without_browser",
+          "assistant_mode": "general",
+          "origin_mode": "local",
+          "unresolved_fields": [],
+          "metadata": {}
+        },
+        "recommended_config_signature": "local_provider:ollama",
+        "score": 1.2674,
+        "confidence": 0.9008,
+        "rationale": "Recomiendo language_understanding para language en general usando ollama con configuracion local_provider:ollama por score base 0.93 y score adaptativo 1.27 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; reutilizacion alta 100%.",
+        "supporting_run_ids": [
+          "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e"
+        ],
+        "metadata": {
+          "ranked_routes": [
+            {
+              "route": "language_understanding",
+              "score": 0.9482,
+              "samples": 3
+            },
+            {
+              "route": "ui",
+              "score": 0.7714,
+              "samples": 1
+            },
+            {
+              "route": "local",
+              "score": 0.7234,
+              "samples": 1
+            }
+          ],
+          "ranked_configurations": [
+            {
+              "route": "language_understanding",
+              "assistant_kind": "ollama",
+              "config_signature": "local_provider:ollama",
+              "score": 0.9274,
+              "adaptive_weight": 0.34,
+              "weighted_score": 1.2674,
+              "samples": 1,
+              "reuse_count": 0,
+              "success_rate": 1.0,
+              "blocked_rate": 0.0,
+              "fallback_rate": 0.0,
+              "reasons": [
+                "historial de exito 100%",
+                "reutilizacion alta 100%"
+              ]
+            },
+            {
+              "route": "language_understanding",
+              "assistant_kind": "adaptive local orchestrator",
+              "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+              "score": 0.6258,
+              "adaptive_weight": 0.2346,
+              "weighted_score": 0.8604,
+              "samples": 1,
+              "reuse_count": 0,
+              "success_rate": 1.0,
+              "blocked_rate": 0.0,
+              "fallback_rate": 0.0,
+              "reasons": [
+                "historial de exito 100%"
+              ]
+            },
+            {
+              "route": "ui",
+              "assistant_kind": "adaptive local orchestrator",
+              "config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+              "score": 0.6314,
+              "adaptive_weight": 0.14,
+              "weighted_score": 0.7714,
+              "samples": 2,
+              "reuse_count": 0,
+              "success_rate": 1.0,
+              "blocked_rate": 0.0,
+              "fallback_rate": 0.0,
+              "reasons": [
+                "historial de exito 100%",
+                "latencia promedio 10699 ms"
+              ]
+            },
+            {
+              "route": "local",
+              "assistant_kind": "ollama",
+              "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+              "score": 0.583,
+              "adaptive_weight": 0.1404,
+              "weighted_score": 0.7234,
+              "samples": 5,
+              "reuse_count": 0,
+              "success_rate": 1.0,
+              "blocked_rate": 0.0,
+              "fallback_rate": 0.0,
+              "reasons": [
+                "historial de exito 100%",
+                "latencia promedio 36481 ms"
+              ]
+            },
+            {
+              "route": "language_understanding",
+              "assistant_kind": "adaptive local orchestrator",
+              "config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+              "score": 0.5787,
+              "adaptive_weight": 0.1382,
+              "weighted_score": 0.7169,
+              "samples": 9,
+              "reuse_count": 0,
+              "success_rate": 1.0,
+              "blocked_rate": 0.0,
+              "fallback_rate": 0.0,
+              "reasons": [
+                "historial de exito 100%",
+                "latencia promedio 5826 ms"
+              ]
+            }
+          ],
+          "winning_trace_ids": [],
+          "losing_trace_ids": [],
+          "comparison_scope_keys": [
+            "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+            "general:tiene-todo-el-panorama-completo-de-tu-estructura-de-tu-arquitectura",
+            "general:tienes-el-panorama-completo-de-tu-estructura",
+            "general:que-modelo-de-ia-estas-usando-para-contestarme",
+            "general:que-gpu-estas-usando-ahora-mismo-la-gpu0-o-la-gpu1",
+            "general",
+            "general:que-modelo-de-ia-manejas-o-fucionas",
+            "wplay:sabes-abrir-la-pagina-de-wplay"
+          ],
+          "adaptive_learning_summary": {
+            "preferred_route": "language_understanding",
+            "preferred_assistant_kind": "ollama",
+            "preferred_config_signature": "local_provider:ollama",
+            "adaptive_weight": 0.34,
+            "weighted_score": 1.2674,
+            "sample_count": 1,
+            "success_rate": 1.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "top_environment_signatures": [
+              "default"
+            ],
+            "top_time_buckets": [
+              "night"
+            ],
+            "reasons": [
+              "historial de exito 100%",
+              "reutilizacion alta 100%"
+            ]
+          }
+        },
+        "created_at_utc": "2026-04-18T15:54:07.987786Z"
+      },
+      "dry_run_launch": false,
+      "allow_local_automatic_consultation": false,
+      "session_scope": "local_runtime",
+      "isolated_session_required": false,
+      "session_label": "Ollama local",
+      "thread_key": "iabv::ollama::general::sabes-por-que-tu-trabajo-en-vivo-no-avanza-el-qu",
+      "thread_title": "IABV Ollama local | sabes por que tu trabajo en vivo no avanza el qu",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta automatica de la herramienta local o externa.",
+      "last_capture_attempt_utc": "",
+      "reused_thread": false,
+      "session_profile_dir": ""
+    },
+    "created_at_utc": "2026-04-18T15:54:33.629515+00:00",
+    "updated_at_utc": "2026-04-18T15:54:33.629515+00:00",
+    "mode_selection": {
+      "decision_id": "a2f49b10-638c-401c-8680-f3610e755bf1",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "background",
+      "selected_tool_id": "ollama_llm",
+      "selected_tool_type": "llm_local",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": false,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=background | automatica=True | available=True",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "ollama_llm",
+            "mode": "background",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "already_resolved": false,
+    "equivalent_pattern_exists": false,
+    "improvement_already_implemented": false,
+    "reuse_guard_active": false,
+    "reused_pattern_id": "",
+    "reused_episode_id": "",
+    "adapter_exists": true,
+    "selected_mode": "background",
+    "selector_reason": "consulta_externa_preferida | modo=background | automatica=True | available=True",
+    "requested_tool_id": "ollama_llm",
+    "reused_actions_from_pattern": false,
+    "requested_assistant_kind": "ollama",
+    "assistant_kind": "ollama",
+    "actual_assistant_kind": "ollama",
+    "consultation_scope": "external_assistant",
+    "response_capture_mode": "tool_result",
+    "requires_manual_pasteback": false,
+    "diagnostic_category": "idle",
+    "incident_kind": "",
+    "dry_run_launch": false,
+    "lab_recommendation": {
+      "recommendation_id": "49dcc293-4f0e-4a6e-b6da-83d8752530f3",
+      "domain": "language",
+      "subject_key": "general",
+      "recommended_route": "language_understanding",
+      "recommended_assistant_kind": "ollama",
+      "recommended_assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "normal",
+        "context_mode": "short",
+        "tools_mode": "without_tools",
+        "browser_mode": "without_browser",
+        "assistant_mode": "general",
+        "origin_mode": "local",
+        "unresolved_fields": [],
+        "metadata": {}
+      },
+      "recommended_config_signature": "local_provider:ollama",
+      "score": 1.2674,
+      "confidence": 0.9008,
+      "rationale": "Recomiendo language_understanding para language en general usando ollama con configuracion local_provider:ollama por score base 0.93 y score adaptativo 1.27 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; reutilizacion alta 100%.",
+      "supporting_run_ids": [
+        "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e"
+      ],
+      "metadata": {
+        "ranked_routes": [
+          {
+            "route": "language_understanding",
+            "score": 0.9482,
+            "samples": 3
+          },
+          {
+            "route": "ui",
+            "score": 0.7714,
+            "samples": 1
+          },
+          {
+            "route": "local",
+            "score": 0.7234,
+            "samples": 1
+          }
+        ],
+        "ranked_configurations": [
+          {
+            "route": "language_understanding",
+            "assistant_kind": "ollama",
+            "config_signature": "local_provider:ollama",
+            "score": 0.9274,
+            "adaptive_weight": 0.34,
+            "weighted_score": 1.2674,
+            "samples": 1,
+            "reuse_count": 0,
+            "success_rate": 1.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "reasons": [
+              "historial de exito 100%",
+              "reutilizacion alta 100%"
+            ]
+          },
+          {
+            "route": "language_understanding",
+            "assistant_kind": "adaptive local orchestrator",
+            "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+            "score": 0.6258,
+            "adaptive_weight": 0.2346,
+            "weighted_score": 0.8604,
+            "samples": 1,
+            "reuse_count": 0,
+            "success_rate": 1.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "reasons": [
+              "historial de exito 100%"
+            ]
+          },
+          {
+            "route": "ui",
+            "assistant_kind": "adaptive local orchestrator",
+            "config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+            "score": 0.6314,
+            "adaptive_weight": 0.14,
+            "weighted_score": 0.7714,
+            "samples": 2,
+            "reuse_count": 0,
+            "success_rate": 1.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "reasons": [
+              "historial de exito 100%",
+              "latencia promedio 10699 ms"
+            ]
+          },
+          {
+            "route": "local",
+            "assistant_kind": "ollama",
+            "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+            "score": 0.583,
+            "adaptive_weight": 0.1404,
+            "weighted_score": 0.7234,
+            "samples": 5,
+            "reuse_count": 0,
+            "success_rate": 1.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "reasons": [
+              "historial de exito 100%",
+              "latencia promedio 36481 ms"
+            ]
+          },
+          {
+            "route": "language_understanding",
+            "assistant_kind": "adaptive local orchestrator",
+            "config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+            "score": 0.5787,
+            "adaptive_weight": 0.1382,
+            "weighted_score": 0.7169,
+            "samples": 9,
+            "reuse_count": 0,
+            "success_rate": 1.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "reasons": [
+              "historial de exito 100%",
+              "latencia promedio 5826 ms"
+            ]
+          }
+        ],
+        "winning_trace_ids": [],
+        "losing_trace_ids": [],
+        "comparison_scope_keys": [
+          "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura",
+          "general:tiene-todo-el-panorama-completo-de-tu-estructura-de-tu-arquitectura",
+          "general:tienes-el-panorama-completo-de-tu-estructura",
+          "general:que-modelo-de-ia-estas-usando-para-contestarme",
+          "general:que-gpu-estas-usando-ahora-mismo-la-gpu0-o-la-gpu1",
+          "general",
+          "general:que-modelo-de-ia-manejas-o-fucionas",
+          "wplay:sabes-abrir-la-pagina-de-wplay"
+        ],
+        "adaptive_learning_summary": {
+          "preferred_route": "language_understanding",
+          "preferred_assistant_kind": "ollama",
+          "preferred_config_signature": "local_provider:ollama",
+          "adaptive_weight": 0.34,
+          "weighted_score": 1.2674,
+          "sample_count": 1,
+          "success_rate": 1.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "top_environment_signatures": [
+            "default"
+          ],
+          "top_time_buckets": [
+            "night"
+          ],
+          "reasons": [
+            "historial de exito 100%",
+            "reutilizacion alta 100%"
+          ]
+        }
+      },
+      "created_at_utc": "2026-04-18T15:54:07.987786Z"
+    },
+    "context_pack": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\nObjetivo del usuario: sabes por que tu trabajo en vivo no avanza el que tiene de consulta cojn cgatgp que esta al 26%\nAsistente sugerido: ollama\nSitio: General\nIntento detectado: knowledge.query\nPack activo: n/d\nEstado adaptativo: completed\nOutcome actual: Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Consulta local con contexto; sigue faltando un adaptador operativo del dominio.\nEvidencia textual:\n- Contexto activo: contexto general.\n- Ultima corrida: success | rol project_evolution | pack project.evolution.\n- Dossiers relacionados: 6.\n- Patrones universales reutilizables: 2 (ui:1 | background:1).\n- Laboratorio universal: language -> language_understanding (score 1.27, confianza 0.90).\n- Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.\nObjetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.\n\nIABV_THREAD_KEY: iabv::ollama::general::sabes-por-que-tu-trabajo-en-vivo-no-avanza-el-qu\nIABV_THREAD_TITLE: IABV Ollama local | sabes por que tu trabajo en vivo no avanza el qu\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+    "comparison_scope_key": "general:consultar-ollama-local-sobre-sabes-por-que-tu-trabajo-en-vivo-no-avanza",
+    "source_trace_ids": [],
+    "proposal_summary": "Context pack - consulta externa IABV v1.5 Workspace: C:\\Python\\IABV_v1.5 Objetivo del usuario: sabes por que tu trabajo en vivo no avanza el que tiene de consulta cojn cgatgp que esta al 26% Asistente sugerido: ollama Sitio: General Intento",
+    "thread_key": "iabv::ollama::general::sabes-por-que-tu-trabajo-en-vivo-no-avanza-el-qu",
+    "thread_title": "IABV Ollama local | sabes por que tu trabajo en vivo no avanza el qu",
+    "capture_lane": "background",
+    "lane_priority": [
+      "background",
+      "app",
+      "manual"
+    ],
+    "awaiting_reason": "Esperando respuesta automatica de la herramienta local o externa.",
+    "last_capture_attempt_utc": "",
+    "reused_thread": false,
+    "session_profile_dir": "",
+    "session_scope": "local_runtime",
+    "session_label": "Ollama local",
+    "isolated_session_required": false,
+    "background_capture_mode": "",
+    "assistant_configuration": {
+      "planning_mode": "without_plan",
+      "attachments_mode": "without_files",
+      "reasoning_level": "normal",
+      "context_mode": "long",
+      "tools_mode": "with_tools",
+      "browser_mode": "without_browser",
+      "assistant_mode": "general",
+      "origin_mode": "local",
+      "unresolved_fields": [
+        "attachments_mode"
+      ],
+      "metadata": {
+        "assistant_kind": "ollama",
+        "tool_id": "ollama_llm",
+        "attachments_support": "UNRESOLVED",
+        "context_pack_length": 1426
+      }
+    },
+    "config_signature": "without_plan|without_files|normal|long|with_tools|without_browser|general|local",
+    "ia_trace_entry": {
+      "trace_id": "f594ff4e-4660-4a97-8ad3-f04642edc097",
+      "created_at_utc": "2026-04-18T15:54:33.973345Z",
+      "assistant_kind": "ollama",
+      "requested_assistant_kind": "ollama",
+      "actual_assistant_kind": "ollama",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "normal",
+        "context_mode": "long",
+        "tools_mode": "with_tools",
+        "browser_mode": "without_browser",
+        "assistant_mode": "general",
+        "origin_mode": "local",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "ollama",
+          "tool_id": "ollama_llm",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 1426
+        }
+      },
+      "config_signature": "without_plan|without_files|normal|long|with_tools|without_browser|general|local",
+      "comparison_scope_key": "general:consultar-ollama-local-sobre-sabes-por-que-tu-trabajo-en-vivo-no-avanza",
+      "source_trace_ids": [],
+      "route": "local",
+      "tool_id": "ollama_llm",
+      "task_id": "50dbe004-5096-4af0-b8ea-b2a6e4d6e806",
+      "result_id": "",
+      "session_scope": "local_runtime",
+      "thread_key": "iabv::ollama::general::sabes-por-que-tu-trabajo-en-vivo-no-avanza-el-qu",
+      "thread_title": "IABV Ollama local | sabes por que tu trabajo en vivo no avanza el qu",
+      "capture_lane": "background",
+      "state": "pending",
+      "detail": "Esperando respuesta automatica de la herramienta local o externa.",
+      "proposal_summary": "Context pack - consulta externa IABV v1.5 Workspace: C:\\Python\\IABV_v1.5 Objetivo del usuario: sabes por que tu trabajo en vivo no avanza el que tiene de consulta cojn cgatgp que esta al 26% Asistente sugerido: ollama Sitio: General Intento",
+      "outcome_summary": "",
+      "result_label": "Consultar Ollama local",
+      "success": false,
+      "execution_ms": 0,
+      "confidence": 0.0,
+      "evidence_refs": [
+        "50dbe004-5096-4af0-b8ea-b2a6e4d6e806"
+      ],
+      "reused_later": false,
+      "verdict": "",
+      "coherence_flags": [],
+      "external_state_flags": [],
+      "metadata": {
+        "response_capture_mode": "tool_result",
+        "background_capture_mode": "",
+        "comparison_scope_key": "general:consultar-ollama-local-sobre-sabes-por-que-tu-trabajo-en-vivo-no-avanza"
+      }
+    },
+    "background_headless": true,
+    "approval_required": false,
+    "destructive": false
+  }
+}

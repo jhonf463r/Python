@@ -1,0 +1,30 @@
+{
+  "objective_id": "ac5f364d-86d6-4b7b-8814-a0dc26febe0c",
+  "kind": "subtask",
+  "title": "Entender objetivo",
+  "summary": "La intencion ya fue clasificada y contextualizada.",
+  "parent_id": "8f4ea06d-e327-4f5d-8112-b7bf44501f4e",
+  "root_id": "3965ee5c-a80a-45f5-be29-2825ebeaa768",
+  "site_id": null,
+  "priority": 51,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.62,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "run:94186a84-a452-4638-8767-e977c5cb57c5"
+  ],
+  "tags": [
+    "understand_goal"
+  ],
+  "metadata": {
+    "phase_key": "understand_goal",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "knowledge.query"
+  },
+  "created_at_utc": "2026-04-16T03:57:00.104882Z",
+  "updated_at_utc": "2026-04-16T03:57:00.104883Z"
+}

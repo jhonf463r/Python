@@ -1,0 +1,32 @@
+{
+  "objective_id": "73f4a0c3-7b9f-4e47-9065-b456334f2da9",
+  "kind": "subtask",
+  "title": "Entender objetivo",
+  "summary": "La intencion ya fue clasificada y contextualizada.",
+  "parent_id": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+  "root_id": "44cfa2a3-f4e4-416c-9d16-44f1c0fc65b1",
+  "site_id": "wplay",
+  "priority": 51,
+  "status": "active",
+  "progress": 0.45,
+  "blocker": "",
+  "confidence": 0.9,
+  "evidence_refs": [
+    "Contexto activo: Wplay.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 5.",
+    "Laboratorio universal: language -> language_understanding (score 0.86, confianza 0.78)."
+  ],
+  "tags": [
+    "understand_goal"
+  ],
+  "metadata": {
+    "phase_key": "understand_goal",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "wplay.core"
+  },
+  "created_at_utc": "2026-04-16T23:24:07.619220Z",
+  "updated_at_utc": "2026-04-16T23:24:07.619221Z"
+}

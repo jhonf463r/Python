@@ -1,0 +1,116 @@
+{
+  "interaction_result_id": "c8678f59-ee32-4994-968c-4c90f7988bde",
+  "success": false,
+  "execution_state": {
+    "state": "awaiting_response",
+    "detail": "Herramienta ejecutada por el adaptador local.",
+    "executor_name": "external_assistant",
+    "sandboxed": false,
+    "validated": true,
+    "approval_decision": "approved",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": false,
+      "assistant_kind": "claude",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://claude.ai/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\data\\live_chat_external_audit_2\nObjetivo del usuario: Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa. Si no puedes verificar tu hilo o tu sesion termino, bloquealo claramente y propon la siguiente accion.\nAsistente sugerido: codex\nSitio: general\nIntento detectado: n/d\nPack activo: n/d\nEstado adaptativo: n/d\nPaquete local para Codex:\nPaquete para Codex - IABV v1.5\n\nWorkspace: C:\\Python\\IABV_v1.5\\data\\live_chat_external_audit_2\nRol activo: Automatico\nMeta actual: Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa. Si no puedes verificar tu hilo o tu sesion termino, bloquealo claramente y propon la siguiente accion.\nPolitica: local-first, secretos protegidos, sin OpenAI en runtime, sin imports legacy en runtime.\n\nEstado del proyecto:\n- episodios: 0\n- conocimiento: 0\n- ejecuciones: 0\n- artefactos: 0\n\nAnalitica:\nEpisodios 0, conocimiento 0, corridas 0 y confianza media 0.0. La prioridad sugerida es reforzar calidad de conocimiento.\n\nHuecos de ensenanza:\n- resumen: Aun no hay episodios. La prioridad mas alta es ensenar login, navegacion inicial y confirmacion.\n- siguientes ensenanzas: Ensenar el flujo base de acceso\n\nPBT:\n- generacion: 0\n- mejor score: 0.0\n- resumen: Sin ejecuciones PBT aun. La base esta lista para explorar configuraciones.\n\nEntrega esperada para Codex:\n1. diagnostico breve\n2. causa raiz\n3. cambio vertical recomendado\n4. pruebas a ejecutar\n5. riesgos o tradeoffs\n\nCentro evolutivo:\n- resumen: Dossiers recientes: 0 | fallos: 0 | parciales: 0 | incidentes invisibles: 0 | sesiones adaptativas: 0 | autotests: 0 | pendientes Codex: 0. Prioridad sugerida: seguir reforzando evidencia y conocimiento local.\n- backlog sugerido: Seguir capturando evidencia evolutiva\n\nIABV_THREAD_KEY: iabv::codex::general::necesito-una-consulta-tecnica-con-codex-para-dia\nIABV_THREAD_TITLE: IABV Codex | Necesito una consulta tecnica con Codex para dia\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "prompt_preview": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\data\\live_chat_external_audit_2\nObjetivo del usuario: Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa. Si no puedes verificar tu hilo o tu sesion termino, bloquealo claramente y propon la siguie",
+      "response_captured": false,
+      "launched": true,
+      "auto_capture_attempted": false,
+      "auto_capture_reason": "dry_run_launch",
+      "response_capture_pending": true,
+      "session_scope": "program_chat",
+      "session_label": "Claude especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::codex::general::necesito-una-consulta-tecnica-con-codex-para-dia",
+      "thread_title": "IABV Codex | Necesito una consulta tecnica con Codex para dia",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "2026-04-11T01:27:15.043362+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_chat_external_audit_2\\data\\tool_teaching\\external_assistants\\codex_home"
+    }
+  },
+  "summary": "Sesion aislada de Claude web asistido lista en modo dry-run. Llevare la consulta a un chat especial del programa cuando permitas el lanzamiento real.",
+  "errors": [],
+  "confidence": 0.7,
+  "execution_ms": 0,
+  "rollback_state": null,
+  "extracted_data": {
+    "assistant_kind": "claude",
+    "launch_target": "https://claude.ai/",
+    "prompt_preview": "Context pack - consulta externa IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\data\\live_chat_external_audit_2\nObjetivo del usuario: Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa. Si no puedes verificar tu hilo o tu sesion termino, bloquealo claramente y propon la siguie"
+  },
+  "artifacts": [],
+  "metadata": {
+    "validation_status": "unvalidated",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "live_audit": {
+      "audit_snapshot_id": "b429f15f-6198-4676-a8b4-bbf9da44cd88",
+      "objective": "Consultar Codex sobre: Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa. Si no puedes verificar tu hilo o tu sesion termino, bloquealo claramente y propon la siguiente accion.",
+      "session_or_episode_id": "898a8636-23f6-400a-8c59-5376544c300f",
+      "mode_used": "ui",
+      "evidence": [
+        "4699dabe-915a-4f9c-98fc-bbe91b152381",
+        "898a8636-23f6-400a-8c59-5376544c300f"
+      ],
+      "findings": [],
+      "decision": {
+        "decision_id": "143b8366-68d4-43f7-84a9-29681fff0ef3",
+        "action": "continue_local",
+        "rationale": "La herramienta produjo evidencia suficiente para seguir en la via local actual.",
+        "confidence": 0.7,
+        "recommended_tool_id": "claude_web_assisted",
+        "approval_required": true,
+        "metadata": {}
+      },
+      "confidence": 0.96,
+      "auto_safe_action": "",
+      "human_approval": true,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 1.0,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.85,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.9625,
+        "learning_consolidation_score": 0.9625,
+        "lab_precision": 0.248,
+        "lab_robustness": 0.4,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.3748,
+        "lab_recommended_route_score": 0.3748
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "claude_web_assisted",
+        "tool_type": "llm_web_ui",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "b429f15f-6198-4676-a8b4-bbf9da44cd88"
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "recommendation_id": "7add11e1-ea8f-4c2f-ae2f-3da9a91891e0",
+  "domain": "language",
+  "subject_key": "32a080be-5928-4e1a-ae65-463ba20a784d",
+  "recommended_route": "language_understanding",
+  "recommended_assistant_kind": "adaptive local orchestrator",
+  "recommended_assistant_configuration": {
+    "planning_mode": "with_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+  "score": 0.7114,
+  "confidence": 0.8185,
+  "rationale": "Recomiendo language_understanding para language en 32a080be-5928-4e1a-ae65-463ba20a784d usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.57 y score adaptativo 0.71 con 2 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 7276 ms.",
+  "supporting_run_ids": [
+    "47996b43-c7c2-443f-bf34-28b93569e9c8",
+    "96c39a35-151f-4507-bc22-6ec436e54d25"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "language_understanding",
+        "score": 0.7114,
+        "samples": 1
+      }
+    ],
+    "ranked_configurations": [
+      {
+        "route": "language_understanding",
+        "assistant_kind": "adaptive local orchestrator",
+        "config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "score": 0.5714,
+        "adaptive_weight": 0.14,
+        "weighted_score": 0.7114,
+        "samples": 2,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 7276 ms"
+        ]
+      }
+    ],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": [
+      "general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes",
+      "general:ok-prueba-tus-modelos-locales-a-ver-si-funcionan-bien-as-un-testeo"
+    ],
+    "adaptive_learning_summary": {
+      "preferred_route": "language_understanding",
+      "preferred_assistant_kind": "adaptive local orchestrator",
+      "preferred_config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.7114,
+      "sample_count": 2,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "top_environment_signatures": [
+        "conectado|partial"
+      ],
+      "top_time_buckets": [
+        "night"
+      ],
+      "reasons": [
+        "historial de exito 100%",
+        "latencia promedio 7276 ms"
+      ]
+    }
+  },
+  "created_at_utc": "2026-04-16T23:19:51.214384Z"
+}

@@ -1,0 +1,97 @@
+{
+  "interaction_result_id": "bd0c903b-16c9-465f-af88-c374983bd5a6",
+  "success": true,
+  "execution_state": {
+    "state": "executed",
+    "detail": "Herramienta ejecutada por el adaptador local.",
+    "executor_name": "ollama",
+    "sandboxed": false,
+    "validated": true,
+    "approval_decision": "skipped",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": false,
+      "assistant_kind": "ollama",
+      "launch_mode": "local_provider",
+      "response_capture_mode": "tool_result",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Recheck vivo de Ollama.\n\nIABV_THREAD_KEY: iabv::ollama::wplay::explica-en-una-frase-si-puedes-revisar-wplay\nIABV_THREAD_TITLE: IABV Ollama local | explica en una frase si puedes revisar wplay\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": true,
+      "launched": false,
+      "consultation_scope": "external_assistant"
+    }
+  },
+  "summary": "No puedo revisar \"wplay\" con la información disponible. Proporciona más contexto o detalles para ayudarte mejor.",
+  "errors": [],
+  "confidence": 0.92,
+  "execution_ms": 5872,
+  "rollback_state": null,
+  "extracted_data": {
+    "provider": "Ollama",
+    "report_kind": "chat"
+  },
+  "artifacts": [],
+  "metadata": {
+    "validation_status": "approved",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "live_audit": {
+      "audit_snapshot_id": "04191a71-467c-49b2-b201-19ab52c87070",
+      "objective": "Consultar Ollama local sobre: explica en una frase si puedes revisar wplay",
+      "session_or_episode_id": "c14f912d-049b-44b0-b2f8-ee40379e3f8b",
+      "mode_used": "background",
+      "evidence": [
+        "e40f561b-b71a-4b2c-b627-8ee97f716384",
+        "c14f912d-049b-44b0-b2f8-ee40379e3f8b",
+        "site:wplay"
+      ],
+      "findings": [],
+      "decision": {
+        "decision_id": "8b378dc0-457d-442b-8984-5383acdba890",
+        "action": "continue_local",
+        "rationale": "La herramienta produjo evidencia suficiente para seguir en la via local actual.",
+        "confidence": 0.7,
+        "recommended_tool_id": "ollama_llm",
+        "approval_required": false,
+        "metadata": {}
+      },
+      "confidence": 0.96,
+      "auto_safe_action": "",
+      "human_approval": false,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 1.0,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.85,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.9625,
+        "learning_consolidation_score": 0.9625,
+        "lab_precision": 0.3152,
+        "lab_robustness": 0.4,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.2783,
+        "lab_recommended_route_score": 0.0
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "ollama_llm",
+        "tool_type": "llm_local",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "04191a71-467c-49b2-b201-19ab52c87070"
+  }
+}

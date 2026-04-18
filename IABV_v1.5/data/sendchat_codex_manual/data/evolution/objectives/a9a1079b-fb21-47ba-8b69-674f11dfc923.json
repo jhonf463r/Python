@@ -1,0 +1,29 @@
+{
+  "objective_id": "a9a1079b-fb21-47ba-8b69-674f11dfc923",
+  "kind": "subtask",
+  "title": "Registrar outcome",
+  "summary": "La sesion adaptativa deja traza reutilizable para evolutivo y Codex.",
+  "parent_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+  "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+  "site_id": null,
+  "priority": 57,
+  "status": "pending",
+  "progress": 0.0,
+  "blocker": "",
+  "confidence": 0.9,
+  "evidence_refs": [
+    "Contexto activo: contexto general."
+  ],
+  "tags": [
+    "record_outcome"
+  ],
+  "metadata": {
+    "phase_key": "record_outcome",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "browser.generic"
+  },
+  "created_at_utc": "2026-04-11T01:11:58.853859Z",
+  "updated_at_utc": "2026-04-11T01:11:58.853860Z"
+}

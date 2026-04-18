@@ -1,0 +1,256 @@
+{
+  "review_id": "9309218b-5821-4dc6-a28a-bb1ef4eecb83",
+  "created_at_utc": "2026-04-18T16:43:42.749368Z",
+  "updated_at_utc": "2026-04-18T16:43:42.749368Z",
+  "package_version": "self_examination.v1",
+  "summary": "Autoexaminacion partial: no veo degradaciones fuertes. Si hay 1 mejoras ya respaldadas por evidencia reciente.",
+  "status": "partial",
+  "assistant_brief": "# IABV v1.5 - Operational Self Examination\n\nGenerado: 2026-04-18T16:43:42.749368+00:00\nResumen: Autoexaminacion partial: no veo degradaciones fuertes. Si hay 1 mejoras ya respaldadas por evidencia reciente.\n\nUsa esta revision para entender que esta fallando, que se repite y que ajustes conviene hacer antes de tocar la arquitectura.\n\n## Hallazgos\n- Sin hallazgos fuertes confirmados.\n\n## Ajustes recomendados\n- Pendiente Codex: : Ya existe un patron equivalente Decision: continue_local. Confianza 0.96. | fuente EvolutionReviewService\n- Pendiente Codex: : Sin hallazgos. Decision: continue_local. Confianza 0.66. | fuente EvolutionReviewService\n- Pista de mejora reportada por la ejecucion: Seguir con la estrategia propuesta. | fuente EvolutionReviewService\n- Pista de mejora reportada por la ejecucion: Probar restauracion de sesion o dejar la fase como login guiado con aprobacion. | fuente EvolutionReviewService\n\n## Mejoras validadas\n- ollama por language_understanding: Recomiendo language_understanding para language en general usando ollama con configuracion local_provider:ollama por score base 0.93 y score adaptativo 1.27 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; reutilizacion alta 100%. | confianza 0.90\n\n## Retroalimentacion de ajustes\n- Pendiente Codex:: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- Pendiente Codex:: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- Pista de mejora reportada por la ejecucion: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- Pista de mejora reportada por la ejecucion: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n\nUNRESOLVED: UNRESOLVED:autonomous_validation_cycle",
+  "findings": [],
+  "recurring_issues": [
+    {
+      "title": "light_checks_warning",
+      "category": "project_health_repeat",
+      "summary": "El issue light_checks_warning reaparece 10 veces en la capa evolutiva.",
+      "severity": "medium",
+      "confidence": 0.68,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ]
+    },
+    {
+      "title": "need_codex_fix",
+      "category": "project_health_repeat",
+      "summary": "El issue need_codex_fix reaparece 2 veces en la capa evolutiva.",
+      "severity": "medium",
+      "confidence": 0.68,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ]
+    }
+  ],
+  "recommended_adjustments": [
+    {
+      "title": "Pendiente Codex: ",
+      "recommended_change": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+      "category": "backlog",
+      "severity": "medium",
+      "confidence": 0.95,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ],
+      "metadata": {},
+      "feedback_key": "backlog:pendiente codex:",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Pendiente Codex: ",
+      "recommended_change": "Sin hallazgos. Decision: continue_local. Confianza 0.66.",
+      "category": "backlog",
+      "severity": "medium",
+      "confidence": 0.95,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ],
+      "metadata": {},
+      "feedback_key": "backlog:pendiente codex:",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Pista de mejora reportada por la ejecucion",
+      "recommended_change": "Seguir con la estrategia propuesta.",
+      "category": "backlog",
+      "severity": "medium",
+      "confidence": 0.6,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ],
+      "metadata": {},
+      "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Pista de mejora reportada por la ejecucion",
+      "recommended_change": "Probar restauracion de sesion o dejar la fase como login guiado con aprobacion.",
+      "category": "backlog",
+      "severity": "medium",
+      "confidence": 0.6,
+      "evidence_refs": [],
+      "source_refs": [
+        "EvolutionReviewService"
+      ],
+      "metadata": {},
+      "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    }
+  ],
+  "validated_improvements": [
+    {
+      "title": "ollama por language_understanding",
+      "summary": "Recomiendo language_understanding para language en general usando ollama con configuracion local_provider:ollama por score base 0.93 y score adaptativo 1.27 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; reutilizacion alta 100%.",
+      "subject_key": "general",
+      "recommended_assistant_kind": "ollama",
+      "recommended_route": "language_understanding",
+      "confidence": 0.9008,
+      "score": 1.2674,
+      "reasons": [
+        "historial de exito 100%",
+        "reutilizacion alta 100%"
+      ],
+      "source_refs": [
+        "ExperimentLab",
+        "StrategySelector"
+      ],
+      "evidence_refs": [
+        "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e"
+      ],
+      "feedback_key": "inertial_route:ollama:language_understanding:local_provider:ollama"
+    }
+  ],
+  "unresolved_risks": [
+    "UNRESOLVED:autonomous_validation_cycle"
+  ],
+  "package_path": "C:\\Python\\IABV_v1.5\\data\\evolution\\self_examination\\latest.json",
+  "markdown_path": "C:\\Python\\IABV_v1.5\\data\\evolution\\self_examination\\latest.md",
+  "metadata": {
+    "recommendation_feedback": [
+      {
+        "title": "Pendiente Codex:",
+        "category": "backlog",
+        "feedback_key": "backlog:pendiente codex:",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.52,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": false,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-04-18T16:43:46.056693+00:00"
+      },
+      {
+        "title": "Pendiente Codex:",
+        "category": "backlog",
+        "feedback_key": "backlog:pendiente codex:",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.52,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": false,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-04-18T16:43:46.056706+00:00"
+      },
+      {
+        "title": "Pista de mejora reportada por la ejecucion",
+        "category": "backlog",
+        "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.52,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": false,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-04-18T16:43:46.056714+00:00"
+      },
+      {
+        "title": "Pista de mejora reportada por la ejecucion",
+        "category": "backlog",
+        "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.52,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": false,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-04-18T16:43:46.056721+00:00"
+      }
+    ],
+    "feedback_summary": {
+      "total_reviewed": 4,
+      "validated_improvement": 0,
+      "valid_adjustment": 0,
+      "false_improvement": 0,
+      "no_evidence": 4
+    },
+    "workspace_root": "C:\\Python\\IABV_v1.5",
+    "source_refs": [
+      "RunRepository",
+      "AdaptiveSessionRepository",
+      "ExperimentLab",
+      "EvolutionReviewService",
+      "WorldModelSnapshot",
+      "AutonomousValidationSnapshot"
+    ]
+  }
+}

@@ -1,0 +1,857 @@
+{
+  "interaction_episode_id": "744ec316-93e6-4803-aa4f-8ec81fdbca7c",
+  "objective": "Consultar Codex sobre: dime en una frase si puedes revisar un bug de wplay",
+  "mode_used": "background",
+  "environment": {
+    "tool_id": "codex_installed",
+    "tool_type": "custom",
+    "adapter_key": "external_assistant",
+    "site_id": "wplay",
+    "execution_scope": "read_only"
+  },
+  "captured_metadata": {
+    "task_metadata": {
+      "goal_parameters": {
+        "tool_id": "codex_installed",
+        "allowed_tool_ids": [
+          "codex_installed",
+          "chatgpt_installed",
+          "chatgpt_web_assisted",
+          "claude_installed",
+          "claude_web_assisted",
+          "ollama_llm"
+        ],
+        "title": "Consultar Codex",
+        "expected_outcome": "Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+        "context_pack": "Consulta viva para validar lanzamiento y captura de Codex desde IABV.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "assistant_preference": "codex",
+        "assistant_kind": "codex",
+        "consultation_scope": "external_assistant",
+        "response_capture_mode": "clipboard_capture",
+        "requires_manual_pasteback": false,
+        "prompt_template_id": "codex_consult_v1",
+        "execution_scope": "read_only",
+        "diagnostic_category": "need_codex_fix",
+        "incident_kind": "runtime_check",
+        "site_id": "wplay",
+        "lab_recommendation": {
+          "recommendation_id": "005b0758-cc93-41d5-b4ea-e53793196bd4",
+          "domain": "code",
+          "subject_key": "wplay",
+          "recommended_route": "fallback",
+          "recommended_assistant_kind": "",
+          "recommended_assistant_configuration": {
+            "planning_mode": "without_plan",
+            "attachments_mode": "without_files",
+            "reasoning_level": "normal",
+            "context_mode": "short",
+            "tools_mode": "without_tools",
+            "browser_mode": "without_browser",
+            "assistant_mode": "general",
+            "origin_mode": "external",
+            "unresolved_fields": [],
+            "metadata": {}
+          },
+          "recommended_config_signature": "",
+          "score": 0.0,
+          "confidence": 0.0,
+          "rationale": "Todavia no hay una corrida exitosa para recomendar una via; conviene evitar recomendaciones automaticas hasta tener evidencia mejor.",
+          "supporting_run_ids": [],
+          "metadata": {
+            "ranked_routes": [],
+            "ranked_configurations": [],
+            "winning_trace_ids": [],
+            "losing_trace_ids": [],
+            "comparison_scope_keys": []
+          },
+          "created_at_utc": "2026-04-14T00:43:03.384155Z"
+        },
+        "dry_run_launch": false,
+        "allow_local_automatic_consultation": true,
+        "session_scope": "external_app",
+        "isolated_session_required": false,
+        "session_label": "Codex",
+        "thread_key": "iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp",
+        "thread_title": "IABV Codex | dime en una frase si puedes revisar un bug de wp",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+        "last_capture_attempt_utc": "",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\.tmp_tests\\live_route_diag_isolated\\data\\tool_teaching\\external_assistants\\codex_home"
+      },
+      "created_at_utc": "2026-04-14T00:43:37.659434+00:00",
+      "updated_at_utc": "2026-04-14T00:43:37.659434+00:00",
+      "mode_selection": {
+        "decision_id": "fdda54f5-84b0-470b-a0ec-30ebf00871c9",
+        "selector_name": "universal_mode_selector",
+        "selected_mode": "background",
+        "selected_tool_id": "codex_installed",
+        "selected_tool_type": "custom",
+        "adapter_exists": true,
+        "available": true,
+        "fallback_used": false,
+        "already_resolved": true,
+        "equivalent_pattern_exists": true,
+        "improvement_already_implemented": false,
+        "reusable_pattern_id": "4c77173f-f2a5-4bad-afa9-c0bacedd75d7",
+        "reusable_episode_id": "6b46de3a-51cb-4f5c-8b5d-90fdc009b5c8",
+        "scores": {
+          "availability": 1.0,
+          "adapter_exists": 1.0,
+          "desired_match": 1.0,
+          "suggested_match": 1.0,
+          "automatic_capture": 1.0,
+          "total": 5.0
+        },
+        "reason": "consulta_externa_preferida | modo=background | automatica=True | available=True | patron_equivalente=4c77173f-f2a5-4bad-afa9-c0bacedd75d7 | episodio_resuelto=6b46de3a-51cb-4f5c-8b5d-90fdc009b5c8",
+        "metadata": {
+          "desired_modes": [
+            "background",
+            "ui"
+          ],
+          "candidate_ranking": [
+            {
+              "tool_id": "codex_installed",
+              "mode": "background",
+              "score": 5.0
+            }
+          ],
+          "selection_policy": "preferred_external_tool"
+        }
+      },
+      "already_resolved": true,
+      "equivalent_pattern_exists": true,
+      "improvement_already_implemented": false,
+      "reuse_guard_active": true,
+      "reused_pattern_id": "4c77173f-f2a5-4bad-afa9-c0bacedd75d7",
+      "reused_episode_id": "6b46de3a-51cb-4f5c-8b5d-90fdc009b5c8",
+      "adapter_exists": true,
+      "selected_mode": "background",
+      "selector_reason": "consulta_externa_preferida | modo=background | automatica=True | available=True | patron_equivalente=4c77173f-f2a5-4bad-afa9-c0bacedd75d7 | episodio_resuelto=6b46de3a-51cb-4f5c-8b5d-90fdc009b5c8",
+      "requested_tool_id": "codex_installed",
+      "reused_actions_from_pattern": false,
+      "requested_assistant_kind": "codex",
+      "assistant_kind": "codex",
+      "actual_assistant_kind": "codex",
+      "consultation_scope": "external_assistant",
+      "response_capture_mode": "clipboard_capture",
+      "requires_manual_pasteback": false,
+      "diagnostic_category": "need_codex_fix",
+      "incident_kind": "runtime_check",
+      "dry_run_launch": false,
+      "lab_recommendation": {
+        "recommendation_id": "005b0758-cc93-41d5-b4ea-e53793196bd4",
+        "domain": "code",
+        "subject_key": "wplay",
+        "recommended_route": "fallback",
+        "recommended_assistant_kind": "",
+        "recommended_assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "normal",
+          "context_mode": "short",
+          "tools_mode": "without_tools",
+          "browser_mode": "without_browser",
+          "assistant_mode": "general",
+          "origin_mode": "external",
+          "unresolved_fields": [],
+          "metadata": {}
+        },
+        "recommended_config_signature": "",
+        "score": 0.0,
+        "confidence": 0.0,
+        "rationale": "Todavia no hay una corrida exitosa para recomendar una via; conviene evitar recomendaciones automaticas hasta tener evidencia mejor.",
+        "supporting_run_ids": [],
+        "metadata": {
+          "ranked_routes": [],
+          "ranked_configurations": [],
+          "winning_trace_ids": [],
+          "losing_trace_ids": [],
+          "comparison_scope_keys": []
+        },
+        "created_at_utc": "2026-04-14T00:43:03.384155Z"
+      },
+      "context_pack": "Consulta viva para validar lanzamiento y captura de Codex desde IABV.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "comparison_scope_key": "wplay:consultar-codex-sobre-dime-en-una-frase-si-puedes-revisar-un-bug-de-wpla",
+      "source_trace_ids": [],
+      "proposal_summary": "Consulta viva para validar lanzamiento y captura de Codex desde IABV. IABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp IABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp IAB",
+      "thread_key": "iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp",
+      "thread_title": "IABV Codex | dime en una frase si puedes revisar un bug de wp",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\.tmp_tests\\live_route_diag_isolated\\data\\tool_teaching\\external_assistants\\codex_home",
+      "session_scope": "external_app",
+      "session_label": "Codex",
+      "isolated_session_required": false,
+      "background_capture_mode": "codex_rollout",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "extended",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "without_browser",
+        "assistant_mode": "code",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "codex",
+          "tool_id": "codex_installed",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 383
+        }
+      },
+      "config_signature": "without_plan|without_files|extended|short|with_tools|without_browser|code|external",
+      "ia_trace_entry": {
+        "trace_id": "2409fc07-a5af-467c-8d63-59a2bdc51e06",
+        "created_at_utc": "2026-04-14T00:43:37.670755Z",
+        "assistant_kind": "codex",
+        "requested_assistant_kind": "codex",
+        "actual_assistant_kind": "codex",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "extended",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "without_browser",
+          "assistant_mode": "code",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "codex",
+            "tool_id": "codex_installed",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 383
+          }
+        },
+        "config_signature": "without_plan|without_files|extended|short|with_tools|without_browser|code|external",
+        "comparison_scope_key": "wplay:consultar-codex-sobre-dime-en-una-frase-si-puedes-revisar-un-bug-de-wpla",
+        "source_trace_ids": [],
+        "route": "code_agent",
+        "tool_id": "codex_installed",
+        "task_id": "ba4a5d2e-e975-4283-a0e7-59efc333afaa",
+        "result_id": "",
+        "session_scope": "external_app",
+        "thread_key": "iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp",
+        "thread_title": "IABV Codex | dime en una frase si puedes revisar un bug de wp",
+        "capture_lane": "background",
+        "state": "pending",
+        "detail": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+        "proposal_summary": "Consulta viva para validar lanzamiento y captura de Codex desde IABV. IABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp IABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp IAB",
+        "outcome_summary": "",
+        "result_label": "Consultar Codex",
+        "success": false,
+        "execution_ms": 0,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "wplay",
+          "ba4a5d2e-e975-4283-a0e7-59efc333afaa"
+        ],
+        "reused_later": true,
+        "verdict": "",
+        "coherence_flags": [],
+        "external_state_flags": [],
+        "metadata": {
+          "response_capture_mode": "clipboard_capture",
+          "background_capture_mode": "codex_rollout",
+          "comparison_scope_key": "wplay:consultar-codex-sobre-dime-en-una-frase-si-puedes-revisar-un-bug-de-wpla"
+        }
+      },
+      "background_headless": true,
+      "approval_required": true,
+      "destructive": false
+    },
+    "execution_metadata": {
+      "sandbox": false,
+      "assistant_kind": "codex",
+      "launch_mode": "desktop_app",
+      "launch_target": "codex",
+      "response_capture_mode": "clipboard_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Consulta viva para validar lanzamiento y captura de Codex desde IABV.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "prompt_preview": "Consulta viva para validar lanzamiento y captura de Codex desde IABV.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "launched": true,
+      "auto_capture_attempted": true,
+      "auto_capture_reason": "capture_pending",
+      "response_capture_pending": true,
+      "focused_title": "Codex",
+      "session_scope": "external_app",
+      "session_label": "Codex",
+      "isolated_session": false,
+      "thread_key": "iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp",
+      "thread_title": "IABV Codex | dime en una frase si puedes revisar un bug de wp",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "2026-04-14T00:43:37.840086+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\.tmp_tests\\live_route_diag_isolated\\data\\tool_teaching\\external_assistants\\codex_home",
+      "capture_source": "codex_rollout"
+    },
+    "result_metadata": {
+      "sandbox": false,
+      "assistant_kind": "codex",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "extended",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "without_browser",
+        "assistant_mode": "code",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "codex",
+          "tool_id": "codex_installed",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 383
+        }
+      },
+      "config_signature": "without_plan|without_files|extended|short|with_tools|without_browser|code|external",
+      "external_state_flags": [
+        "awaiting_response",
+        "capture_unverified"
+      ],
+      "ia_trace_entry": {
+        "trace_id": "1986e645-bd80-4e98-963d-11cd4e17fedf",
+        "created_at_utc": "2026-04-14T00:43:51.551349Z",
+        "assistant_kind": "codex",
+        "requested_assistant_kind": "codex",
+        "actual_assistant_kind": "codex",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "extended",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "without_browser",
+          "assistant_mode": "code",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "codex",
+            "tool_id": "codex_installed",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 383
+          }
+        },
+        "config_signature": "without_plan|without_files|extended|short|with_tools|without_browser|code|external",
+        "comparison_scope_key": "wplay:consultar-codex-sobre-dime-en-una-frase-si-puedes-revisar-un-bug-de-wpla",
+        "source_trace_ids": [],
+        "route": "code_agent",
+        "tool_id": "codex_installed",
+        "task_id": "ba4a5d2e-e975-4283-a0e7-59efc333afaa",
+        "result_id": "cf70ea33-d74b-4dae-aa04-864ee43d895c",
+        "session_scope": "external_app",
+        "thread_key": "iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp",
+        "thread_title": "IABV Codex | dime en una frase si puedes revisar un bug de wp",
+        "capture_lane": "background",
+        "state": "awaiting_response",
+        "detail": "Herramienta ejecutada por el adaptador local.",
+        "proposal_summary": "Consulta viva para validar lanzamiento y captura de Codex desde IABV. IABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp IABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp IAB",
+        "outcome_summary": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano.",
+        "result_label": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano.",
+        "success": true,
+        "execution_ms": 13715,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "wplay",
+          "ba4a5d2e-e975-4283-a0e7-59efc333afaa",
+          "cf70ea33-d74b-4dae-aa04-864ee43d895c"
+        ],
+        "reused_later": true,
+        "verdict": "awaiting_response",
+        "coherence_flags": [],
+        "external_state_flags": [
+          "awaiting_response",
+          "capture_unverified"
+        ],
+        "metadata": {
+          "response_capture_mode": "clipboard_capture",
+          "background_capture_mode": "codex_rollout",
+          "comparison_scope_key": "wplay:consultar-codex-sobre-dime-en-una-frase-si-puedes-revisar-un-bug-de-wpla"
+        }
+      },
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  },
+  "actions": [
+    {
+      "step_id": "02732fda-d42f-4821-b3ed-be4d899a2570",
+      "channel": "background",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "56930b0c-2ad0-484d-be84-9fea46dab0c3",
+      "started_at_utc": "2026-04-14T00:43:51.604121Z",
+      "finished_at_utc": "2026-04-14T00:43:51.604121Z",
+      "destructive": false,
+      "requires_approval": true
+    },
+    {
+      "step_id": "36634c9c-e66b-44d0-a229-16e0ccfe1855",
+      "channel": "background",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "0a284bf4-0938-49ce-a687-ccc90f9d722f",
+      "started_at_utc": "2026-04-14T00:43:51.604121Z",
+      "finished_at_utc": "2026-04-14T00:43:51.604121Z",
+      "destructive": false,
+      "requires_approval": false
+    }
+  ],
+  "result": {
+    "interaction_result_id": "5fc6b850-e7ff-4bba-a999-ae8ae1878245",
+    "success": false,
+    "execution_state": {
+      "state": "awaiting_response",
+      "detail": "Herramienta ejecutada por el adaptador local.",
+      "executor_name": "external_assistant",
+      "sandboxed": false,
+      "validated": true,
+      "approval_decision": "approved",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": false,
+        "assistant_kind": "codex",
+        "launch_mode": "desktop_app",
+        "launch_target": "codex",
+        "response_capture_mode": "clipboard_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Consulta viva para validar lanzamiento y captura de Codex desde IABV.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "prompt_preview": "Consulta viva para validar lanzamiento y captura de Codex desde IABV.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "response_captured": false,
+        "launched": true,
+        "auto_capture_attempted": true,
+        "auto_capture_reason": "capture_pending",
+        "response_capture_pending": true,
+        "focused_title": "Codex",
+        "session_scope": "external_app",
+        "session_label": "Codex",
+        "isolated_session": false,
+        "thread_key": "iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp",
+        "thread_title": "IABV Codex | dime en una frase si puedes revisar un bug de wp",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+        "last_capture_attempt_utc": "2026-04-14T00:43:37.840086+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\.tmp_tests\\live_route_diag_isolated\\data\\tool_teaching\\external_assistants\\codex_home",
+        "capture_source": "codex_rollout"
+      }
+    },
+    "summary": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano.",
+    "errors": [],
+    "confidence": 0.7,
+    "execution_ms": 13715,
+    "rollback_state": null,
+    "extracted_data": {
+      "assistant_kind": "codex",
+      "launch_target": "codex",
+      "prompt_preview": "Consulta viva para validar lanzamiento y captura de Codex desde IABV.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "focused_title": "Codex"
+    },
+    "artifacts": [],
+    "metadata": {
+      "validation_status": "unvalidated",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": "",
+      "live_audit": {
+        "audit_snapshot_id": "26745c48-61d3-4142-a767-072bbf06b63e",
+        "objective": "Consultar Codex sobre: dime en una frase si puedes revisar un bug de wplay",
+        "session_or_episode_id": "744ec316-93e6-4803-aa4f-8ec81fdbca7c",
+        "mode_used": "background",
+        "evidence": [
+          "4c77173f-f2a5-4bad-afa9-c0bacedd75d7",
+          "744ec316-93e6-4803-aa4f-8ec81fdbca7c",
+          "site:wplay"
+        ],
+        "findings": [
+          {
+            "finding_id": "6369b2c7-932b-4d14-92b7-e26a49c299c5",
+            "kind": "external_route_blocked",
+            "title": "La via externa quedo bloqueada o sin captura verificable",
+            "summary": "La consulta externa no devolvio una respuesta confiable y el bloqueo debe tratarse como limitacion real, no como progreso valido.",
+            "confidence": 0.9,
+            "evidence_refs": [
+              "4c77173f-f2a5-4bad-afa9-c0bacedd75d7",
+              "744ec316-93e6-4803-aa4f-8ec81fdbca7c",
+              "site:wplay"
+            ],
+            "metadata": {
+              "external_state_flags": [
+                "awaiting_response",
+                "capture_unverified"
+              ]
+            }
+          },
+          {
+            "finding_id": "f0891bd3-4390-4d89-9772-9b2c6917a91e",
+            "kind": "equivalent_pattern_exists",
+            "title": "Ya existe un patron equivalente",
+            "summary": "La tarea ya tenia memoria reutilizable y no deberia reensenarse desde cero.",
+            "confidence": 0.84,
+            "evidence_refs": [
+              "4c77173f-f2a5-4bad-afa9-c0bacedd75d7",
+              "744ec316-93e6-4803-aa4f-8ec81fdbca7c",
+              "site:wplay"
+            ],
+            "metadata": {}
+          }
+        ],
+        "decision": {
+          "decision_id": "879a384c-0516-4775-97e5-d4617c1dcedb",
+          "action": "continue_local",
+          "rationale": "La via externa quedo bloqueada o sin captura verificable; conviene seguir localmente mientras el bloqueo queda trazado.",
+          "confidence": 0.82,
+          "recommended_tool_id": "codex_installed",
+          "approval_required": false,
+          "metadata": {}
+        },
+        "confidence": 0.96,
+        "auto_safe_action": "",
+        "human_approval": true,
+        "reused_pattern": true,
+        "metrics": {
+          "semantic_action_alignment": 1.0,
+          "target_element_alignment": 1.0,
+          "progress_visibility_score": 0.85,
+          "bridge_drain_health": 1.0,
+          "observer_agreement_score": 0.9625,
+          "learning_consolidation_score": 0.9625,
+          "lab_precision": 0.3846,
+          "lab_robustness": 0.35,
+          "lab_reuse_score": 0.0,
+          "lab_total_score": 0.2916,
+          "lab_recommended_route_score": 0.0
+        },
+        "metadata": {
+          "mirror_mode": "tool_execution",
+          "tool_id": "codex_installed",
+          "tool_type": "custom",
+          "selector_name": "universal_mode_selector",
+          "goal_context": {
+            "objective_id": "",
+            "status": "",
+            "progress": 0.0,
+            "blocker": ""
+          }
+        }
+      },
+      "audit_snapshot_id": "26745c48-61d3-4142-a767-072bbf06b63e"
+    }
+  },
+  "errors": [],
+  "evidence": [
+    {
+      "evidence_id": "7adc63fa-d3dd-48a0-bfe0-12f4ceacca48",
+      "kind": "log",
+      "label": "Dato extraido: assistant_kind",
+      "ref_id": "cf70ea33-d74b-4dae-aa04-864ee43d895c:assistant_kind",
+      "path": null,
+      "metadata": {
+        "key": "assistant_kind"
+      },
+      "confidence": 0.7
+    },
+    {
+      "evidence_id": "887181dd-64e9-4317-bc91-a8fc22bcd18d",
+      "kind": "log",
+      "label": "Dato extraido: focused_title",
+      "ref_id": "cf70ea33-d74b-4dae-aa04-864ee43d895c:focused_title",
+      "path": null,
+      "metadata": {
+        "key": "focused_title"
+      },
+      "confidence": 0.7
+    },
+    {
+      "evidence_id": "5281af02-a066-46b6-a642-07caf7c410eb",
+      "kind": "log",
+      "label": "Dato extraido: launch_target",
+      "ref_id": "cf70ea33-d74b-4dae-aa04-864ee43d895c:launch_target",
+      "path": null,
+      "metadata": {
+        "key": "launch_target"
+      },
+      "confidence": 0.7
+    },
+    {
+      "evidence_id": "f9913c84-5810-4db4-949e-7581d47deaab",
+      "kind": "log",
+      "label": "Dato extraido: prompt_preview",
+      "ref_id": "cf70ea33-d74b-4dae-aa04-864ee43d895c:prompt_preview",
+      "path": null,
+      "metadata": {
+        "key": "prompt_preview"
+      },
+      "confidence": 0.7
+    }
+  ],
+  "learning_signals": [
+    {
+      "signal_id": "20f8bec3-d2c3-44c9-8452-488258a1d884",
+      "label": "pattern:background:codex_installed",
+      "channel": "background",
+      "signal_type": "pattern_reuse",
+      "confidence": 0.7,
+      "source": "interaction_learning_service",
+      "evidence_refs": [
+        "cf70ea33-d74b-4dae-aa04-864ee43d895c:assistant_kind",
+        "cf70ea33-d74b-4dae-aa04-864ee43d895c:focused_title",
+        "cf70ea33-d74b-4dae-aa04-864ee43d895c:launch_target",
+        "cf70ea33-d74b-4dae-aa04-864ee43d895c:prompt_preview"
+      ],
+      "metadata": {
+        "pattern_id": "4c77173f-f2a5-4bad-afa9-c0bacedd75d7"
+      }
+    }
+  ],
+  "confidence": 0.7,
+  "human_approval": true,
+  "policy_decision": {
+    "decision_id": "ea961cd9-1aaf-48cf-934d-33506ccce6db",
+    "requires_human_approval": true,
+    "approval_decision": "approved",
+    "blocked": false,
+    "rationale": "Herramienta ejecutada por el adaptador local.",
+    "confidence": 0.7,
+    "metadata": {
+      "execution_scope": "read_only",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "selector_name": "universal_mode_selector",
+  "selector_reason": "consulta_externa_preferida | modo=background | automatica=True | available=True | patron_equivalente=4c77173f-f2a5-4bad-afa9-c0bacedd75d7 | episodio_resuelto=6b46de3a-51cb-4f5c-8b5d-90fdc009b5c8",
+  "pattern_id": "4c77173f-f2a5-4bad-afa9-c0bacedd75d7",
+  "reused_pattern": true,
+  "tool_id": "codex_installed",
+  "tool_type": "custom",
+  "task_id": "ba4a5d2e-e975-4283-a0e7-59efc333afaa",
+  "result_id": "cf70ea33-d74b-4dae-aa04-864ee43d895c",
+  "site_id": "wplay",
+  "created_at_utc": "2026-04-14T00:43:51.604121Z",
+  "updated_at_utc": "2026-04-14T00:43:51.604121Z",
+  "metadata": {
+    "learning_signals": [
+      {
+        "signal_id": "20f8bec3-d2c3-44c9-8452-488258a1d884",
+        "label": "pattern:background:codex_installed",
+        "channel": "background",
+        "signal_type": "pattern_reuse",
+        "confidence": 0.7,
+        "source": "interaction_learning_service",
+        "evidence_refs": [
+          "cf70ea33-d74b-4dae-aa04-864ee43d895c:assistant_kind",
+          "cf70ea33-d74b-4dae-aa04-864ee43d895c:focused_title",
+          "cf70ea33-d74b-4dae-aa04-864ee43d895c:launch_target",
+          "cf70ea33-d74b-4dae-aa04-864ee43d895c:prompt_preview"
+        ],
+        "metadata": {
+          "pattern_id": "4c77173f-f2a5-4bad-afa9-c0bacedd75d7"
+        }
+      }
+    ],
+    "mode_selection": {
+      "decision_id": "fdda54f5-84b0-470b-a0ec-30ebf00871c9",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "background",
+      "selected_tool_id": "codex_installed",
+      "selected_tool_type": "custom",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": false,
+      "already_resolved": true,
+      "equivalent_pattern_exists": true,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": "4c77173f-f2a5-4bad-afa9-c0bacedd75d7",
+      "reusable_episode_id": "6b46de3a-51cb-4f5c-8b5d-90fdc009b5c8",
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=background | automatica=True | available=True | patron_equivalente=4c77173f-f2a5-4bad-afa9-c0bacedd75d7 | episodio_resuelto=6b46de3a-51cb-4f5c-8b5d-90fdc009b5c8",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "codex_installed",
+            "mode": "background",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "selected_mode": "background",
+    "reusable_pattern_id": "4c77173f-f2a5-4bad-afa9-c0bacedd75d7",
+    "reusable_episode_id": "6b46de3a-51cb-4f5c-8b5d-90fdc009b5c8",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "live_audit": {
+      "audit_snapshot_id": "26745c48-61d3-4142-a767-072bbf06b63e",
+      "objective": "Consultar Codex sobre: dime en una frase si puedes revisar un bug de wplay",
+      "session_or_episode_id": "744ec316-93e6-4803-aa4f-8ec81fdbca7c",
+      "mode_used": "background",
+      "evidence": [
+        "4c77173f-f2a5-4bad-afa9-c0bacedd75d7",
+        "744ec316-93e6-4803-aa4f-8ec81fdbca7c",
+        "site:wplay"
+      ],
+      "findings": [
+        {
+          "finding_id": "6369b2c7-932b-4d14-92b7-e26a49c299c5",
+          "kind": "external_route_blocked",
+          "title": "La via externa quedo bloqueada o sin captura verificable",
+          "summary": "La consulta externa no devolvio una respuesta confiable y el bloqueo debe tratarse como limitacion real, no como progreso valido.",
+          "confidence": 0.9,
+          "evidence_refs": [
+            "4c77173f-f2a5-4bad-afa9-c0bacedd75d7",
+            "744ec316-93e6-4803-aa4f-8ec81fdbca7c",
+            "site:wplay"
+          ],
+          "metadata": {
+            "external_state_flags": [
+              "awaiting_response",
+              "capture_unverified"
+            ]
+          }
+        },
+        {
+          "finding_id": "f0891bd3-4390-4d89-9772-9b2c6917a91e",
+          "kind": "equivalent_pattern_exists",
+          "title": "Ya existe un patron equivalente",
+          "summary": "La tarea ya tenia memoria reutilizable y no deberia reensenarse desde cero.",
+          "confidence": 0.84,
+          "evidence_refs": [
+            "4c77173f-f2a5-4bad-afa9-c0bacedd75d7",
+            "744ec316-93e6-4803-aa4f-8ec81fdbca7c",
+            "site:wplay"
+          ],
+          "metadata": {}
+        }
+      ],
+      "decision": {
+        "decision_id": "879a384c-0516-4775-97e5-d4617c1dcedb",
+        "action": "continue_local",
+        "rationale": "La via externa quedo bloqueada o sin captura verificable; conviene seguir localmente mientras el bloqueo queda trazado.",
+        "confidence": 0.82,
+        "recommended_tool_id": "codex_installed",
+        "approval_required": false,
+        "metadata": {}
+      },
+      "confidence": 0.96,
+      "auto_safe_action": "",
+      "human_approval": true,
+      "reused_pattern": true,
+      "metrics": {
+        "semantic_action_alignment": 1.0,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.85,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.9625,
+        "learning_consolidation_score": 0.9625,
+        "lab_precision": 0.3846,
+        "lab_robustness": 0.35,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.2916,
+        "lab_recommended_route_score": 0.0
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "codex_installed",
+        "tool_type": "custom",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "26745c48-61d3-4142-a767-072bbf06b63e",
+    "audit_summary": "La via externa quedo bloqueada o sin captura verificable Decision: continue_local. Confianza 0.96."
+  }
+}

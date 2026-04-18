@@ -1,0 +1,49 @@
+{
+  "recommendation_id": "261e065d-980c-43bf-87a6-95eb2ed2b9b2",
+  "domain": "code",
+  "subject_key": "codex_installed",
+  "recommended_route": "background",
+  "recommended_assistant_kind": "codex instalado",
+  "recommended_assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+  "score": 0.2293,
+  "confidence": 0.6273,
+  "rationale": "Recomiendo background para code en codex_installed usando codex instalado con configuracion without_plan|without_files|normal|short|without_tools|without_browser|general|external por score promedio 0.23 con 1 muestra(s).",
+  "supporting_run_ids": [
+    "6b329a4b-3c34-4a0c-af33-58e1099d75be"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "background",
+        "score": 0.2293,
+        "samples": 1
+      }
+    ],
+    "ranked_configurations": [
+      {
+        "route": "background",
+        "assistant_kind": "codex instalado",
+        "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "score": 0.2293,
+        "samples": 1,
+        "reuse_count": 0
+      }
+    ],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": []
+  },
+  "created_at_utc": "2026-04-13T16:51:14.695818Z"
+}

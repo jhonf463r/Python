@@ -1,0 +1,91 @@
+{
+  "run_id": "21ea9b2c-235e-42a8-86e9-82de483ed10d",
+  "domain": "code",
+  "suite_name": "sandbox_experiment",
+  "objective": "Validar si adaptive local orchestrator sigue siendo la mejor via para general:puedes-auto-modificarte-asi-como-lo-hace-codex-usando-ollama-y-un-agente.",
+  "subject_key": "sandbox:general:puedes-auto-modificarte-asi-como-lo-hace-codex-usando-ollama-y-un-agente",
+  "route": "language_understanding",
+  "assistant_kind": "adaptive local orchestrator",
+  "assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+  "candidate_id": "699abf8e-4f13-4636-94cc-a1b035b55356",
+  "candidate_label": "adaptive local orchestrator",
+  "success": true,
+  "expected_summary": "Validar preferencia historica sin contaminar la ruta principal.",
+  "observed_summary": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+  "metrics": {
+    "precision": 0.4302,
+    "execution_ms": 0,
+    "operational_cost": 0.0,
+    "robustness": 1.0,
+    "reuse_score": 0.2,
+    "user_progress": 0.18,
+    "total_score": 0.615,
+    "metadata": {
+      "assistant_kind": "adaptive local orchestrator",
+      "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+      "comparison_scope_key": "general:puedes-auto-modificarte-asi-como-lo-hace-codex-usando-ollama-y-un-agente",
+      "source_trace_ids": [
+        "ab83a9e1-b91f-4881-9971-f38e0e68255a"
+      ],
+      "proposal_summary": "Validar si adaptive local orchestrator sigue siendo la mejor via para general:puedes-auto-modificarte-asi-como-lo-hace-codex-usando-ollama-y-un-agente.",
+      "outcome_summary": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+      "learning_source": "sandbox_experiment",
+      "isolated_experiment": true,
+      "sandbox_experiment_id": "699abf8e-4f13-4636-94cc-a1b035b55356",
+      "validation_verdict": "valid",
+      "validation_reason": "scheduled_validation",
+      "observed_blockers": [],
+      "blocked": false,
+      "external_state_flags": [],
+      "source_subject_key": "general:puedes-auto-modificarte-asi-como-lo-hace-codex-usando-ollama-y-un-agente",
+      "route": "language_understanding",
+      "candidate_label": "adaptive local orchestrator",
+      "sample_support": 1,
+      "latency_score": 1.0,
+      "cost_score": 1.0,
+      "user_progress_score": 0.18,
+      "relative_vs_same_config": 1.0
+    }
+  },
+  "evidence_refs": [
+    "ab83a9e1-b91f-4881-9971-f38e0e68255a"
+  ],
+  "reused_later": false,
+  "better_than_previous": false,
+  "metadata": {
+    "assistant_kind": "adaptive local orchestrator",
+    "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+    "comparison_scope_key": "general:puedes-auto-modificarte-asi-como-lo-hace-codex-usando-ollama-y-un-agente",
+    "source_trace_ids": [
+      "ab83a9e1-b91f-4881-9971-f38e0e68255a"
+    ],
+    "proposal_summary": "Validar si adaptive local orchestrator sigue siendo la mejor via para general:puedes-auto-modificarte-asi-como-lo-hace-codex-usando-ollama-y-un-agente.",
+    "outcome_summary": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+    "learning_source": "sandbox_experiment",
+    "isolated_experiment": true,
+    "sandbox_experiment_id": "699abf8e-4f13-4636-94cc-a1b035b55356",
+    "validation_verdict": "valid",
+    "validation_reason": "scheduled_validation",
+    "observed_blockers": [],
+    "blocked": false,
+    "external_state_flags": [],
+    "source_subject_key": "general:puedes-auto-modificarte-asi-como-lo-hace-codex-usando-ollama-y-un-agente",
+    "suite_name": "sandbox_experiment",
+    "candidate_label": "adaptive local orchestrator",
+    "route": "language_understanding",
+    "trace_id": ""
+  },
+  "created_at_utc": "2026-04-16T22:29:04.799952Z"
+}

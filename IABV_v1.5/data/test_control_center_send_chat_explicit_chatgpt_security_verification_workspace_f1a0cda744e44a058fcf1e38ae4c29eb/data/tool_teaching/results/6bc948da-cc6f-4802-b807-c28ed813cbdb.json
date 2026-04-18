@@ -1,0 +1,93 @@
+{
+  "result_id": "6bc948da-cc6f-4802-b807-c28ed813cbdb",
+  "task_id": "0e22c763-07a5-45dc-89fc-12a9e541b6af",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "success": false,
+  "validation_status": "blocked",
+  "execution_state": {
+    "state": "missing_tool",
+    "detail": "No encontre una ToolCard registrada para esta tarea.",
+    "executor_name": "",
+    "sandboxed": false,
+    "validated": false,
+    "approval_decision": "pending",
+    "destructive_blocked": true,
+    "metadata": {
+      "audit_reason": "Falta una via operativa local y conviene escalar con el asistente externo mas util para el tipo de fallo.",
+      "audit_snapshot_id": "c3b10b7a-27ff-4220-9820-eb1f3ef7e921"
+    }
+  },
+  "rollback_state": null,
+  "output_text": "",
+  "extracted_data": {},
+  "artifacts": [],
+  "error_message": "tool_card_missing",
+  "execution_ms": 0,
+  "created_at_utc": "2026-04-16T04:59:16.893944Z",
+  "metadata": {
+    "live_audit": {
+      "audit_snapshot_id": "c3b10b7a-27ff-4220-9820-eb1f3ef7e921",
+      "objective": "Consultar ChatGPT sobre: consulta chatgpt y si el sitio se bloquea dilo claro",
+      "session_or_episode_id": "0e22c763-07a5-45dc-89fc-12a9e541b6af",
+      "mode_used": "fallback",
+      "evidence": [],
+      "findings": [
+        {
+          "finding_id": "c608bfef-59b7-4d43-a107-f34560e65fcc",
+          "kind": "tool_adapter_missing",
+          "title": "Falta adaptador operativo",
+          "summary": "No encontre una ToolCard registrada para esta tarea.",
+          "confidence": 0.93,
+          "evidence_refs": [],
+          "metadata": {
+            "state": "missing_tool",
+            "tool_id": "chatgpt_web_assisted"
+          }
+        }
+      ],
+      "decision": {
+        "decision_id": "23fd7cb6-28f1-44e5-b45a-94b205d8134b",
+        "action": "consult_chatgpt",
+        "rationale": "Falta una via operativa local y conviene escalar con el asistente externo mas util para el tipo de fallo.",
+        "confidence": 0.82,
+        "recommended_tool_id": "chatgpt_installed",
+        "approval_required": true,
+        "metadata": {}
+      },
+      "confidence": 0.41,
+      "auto_safe_action": "",
+      "human_approval": false,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 0.2,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.45,
+        "bridge_drain_health": 0.0,
+        "observer_agreement_score": 0.4125,
+        "learning_consolidation_score": 0.4125,
+        "lab_precision": 0.3268,
+        "lab_robustness": 0.4,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.4024,
+        "lab_recommended_route_score": 0.0
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "chatgpt_web_assisted",
+        "tool_type": "llm_web_ui",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "c3b10b7a-27ff-4220-9820-eb1f3ef7e921",
+    "audit_decision": "consult_chatgpt",
+    "audit_recommendation": "consult_chatgpt",
+    "audit_summary": "Falta adaptador operativo Decision: consult_chatgpt. Confianza 0.41."
+  }
+}

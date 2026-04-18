@@ -1,0 +1,35 @@
+{
+  "objective_id": "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+  "kind": "task",
+  "title": "Evolucion del proyecto",
+  "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Evolucion del proyecto; sigue faltando un adaptador operativo del dominio.",
+  "parent_id": "4989b26b-799c-4b4e-b68a-5598cce3df79",
+  "root_id": "fe689d85-d065-404b-9b54-5f0a8eaf5d8f",
+  "site_id": null,
+  "priority": 50,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Laboratorio universal: language -> language_understanding (score 1.27, confianza 0.90).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:9764a249-323c-4fb0-a341-7c8cb0a0fb6b"
+  ],
+  "tags": [],
+  "metadata": {
+    "user_goal": "tienes todo el panorama completo de tu mismo proyecto y arquitectura",
+    "intent_key": "project.evolution",
+    "pack_id": "project.evolution",
+    "pack_title": "Evolucion del proyecto",
+    "level": "task",
+    "session_id": "8bb8fa3b-7d19-4aec-983a-892b96d4ce8e",
+    "status": "completed"
+  },
+  "created_at_utc": "2026-04-18T13:57:25.251714Z",
+  "updated_at_utc": "2026-04-18T13:57:25.853021Z"
+}

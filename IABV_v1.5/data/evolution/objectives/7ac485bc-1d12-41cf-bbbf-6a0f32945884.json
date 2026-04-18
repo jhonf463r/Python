@@ -1,0 +1,31 @@
+{
+  "objective_id": "7ac485bc-1d12-41cf-bbbf-6a0f32945884",
+  "kind": "project",
+  "title": "Asistencia adaptativa general",
+  "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+  "parent_id": "68e793c3-90a4-44fb-bd88-774637dbf012",
+  "root_id": "68e793c3-90a4-44fb-bd88-774637dbf012",
+  "site_id": null,
+  "priority": 50,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack browser.generic.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Laboratorio universal: language -> language_understanding (score 0.87, confianza 0.78).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:e0cbc2b3-32f3-48c3-87d2-0478c18f8928"
+  ],
+  "tags": [],
+  "metadata": {
+    "user_goal": "ok y entocnes empecemos , que te enseño primero ?",
+    "intent_key": "general.assistance",
+    "site_display_name": "General"
+  },
+  "created_at_utc": "2026-04-16T22:30:54.448118Z",
+  "updated_at_utc": "2026-04-16T22:30:55.099653Z"
+}

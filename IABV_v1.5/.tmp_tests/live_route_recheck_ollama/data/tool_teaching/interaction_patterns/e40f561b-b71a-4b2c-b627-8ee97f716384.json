@@ -1,0 +1,49 @@
+{
+  "pattern_id": "e40f561b-b71a-4b2c-b627-8ee97f716384",
+  "signature": "eb7ec29d4bed85e1882dd1b4af9eeabbd7abda57",
+  "title": "Consultar Ollama local",
+  "channel": "background",
+  "tool_id": "ollama_llm",
+  "tool_type": "llm_local",
+  "site_id": "wplay",
+  "operations": [
+    {
+      "step_id": "433728ae-3973-46b5-bf19-f41d4270cc11",
+      "channel": "background",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Consulta automatica local",
+        "requires_approval": false,
+        "destructive": false
+      }
+    }
+  ],
+  "reusable": true,
+  "success_count": 2,
+  "failure_count": 0,
+  "last_task_id": "b33dcd1b-b2f9-42be-a4bc-23d7e32ffae9",
+  "last_result_id": "2fd1c0a6-ad17-4626-ae29-6f8a3921b899",
+  "created_at_utc": "2026-04-14T01:28:57.865057Z",
+  "updated_at_utc": "2026-04-14T01:29:03.861201Z",
+  "metadata": {
+    "objective_excerpt": "Consultar Ollama local sobre: explica en una frase si puedes revisar wplay",
+    "execution_scope": "read_only",
+    "approval_decision": "skipped",
+    "last_validation_status": "approved",
+    "last_execution_state": "executed",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "last_interaction_episode_id": "c14f912d-049b-44b0-b2f8-ee40379e3f8b"
+  }
+}

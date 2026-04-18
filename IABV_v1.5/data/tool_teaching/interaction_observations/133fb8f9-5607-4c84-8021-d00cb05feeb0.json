@@ -1,0 +1,38 @@
+{
+  "observation_id": "133fb8f9-5607-4c84-8021-d00cb05feeb0",
+  "pattern_id": "aa337d48-920b-4dfb-8829-4981a614537b",
+  "task_id": "50dbe004-5096-4af0-b8ea-b2a6e4d6e806",
+  "result_id": "933d615a-d6bc-4819-b9f2-454083c65219",
+  "episode_id": "4648c8a4-ae95-4d39-9b59-e388025cad44",
+  "success": true,
+  "channel": "background",
+  "tool_id": "ollama_llm",
+  "tool_type": "llm_local",
+  "site_id": null,
+  "summary": "El flujo no avanza porque aún no existe un adaptador operativo para ejecutar la fase de consulta local con contexto. Para resolverlo, crea un adaptador específico para la consulta \"CGATGP\" en el workspace `C:\\Python\\IABV_v1.5`, vinculándolo",
+  "confidence": 0.78,
+  "evidence_refs": [
+    "933d615a-d6bc-4819-b9f2-454083c65219:provider",
+    "933d615a-d6bc-4819-b9f2-454083c65219:report_kind"
+  ],
+  "created_at_utc": "2026-04-18T15:55:04.672902Z",
+  "metadata": {
+    "validation_status": "sandbox_pass",
+    "execution_state": "sandbox_pass",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "provider",
+      "report_kind"
+    ],
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

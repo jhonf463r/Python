@@ -1,0 +1,5 @@
+2026-04-13 19:47:06,900 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+2026-04-13 19:47:15,741 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+2026-04-13 19:47:16,213 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+2026-04-13 19:47:16,460 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+2026-04-13 19:47:30,399 | INFO | iabv_v15.services.capture.browser_session_controller | Started persistent browser context: C:\Python\IABV_v1.5\data\tool_teaching\external_assistants\chatgpt_program_session\browser_profile

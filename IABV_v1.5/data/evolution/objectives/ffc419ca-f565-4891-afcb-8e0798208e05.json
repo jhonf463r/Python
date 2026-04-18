@@ -1,0 +1,35 @@
+{
+  "objective_id": "ffc419ca-f565-4891-afcb-8e0798208e05",
+  "kind": "subtask",
+  "title": "Registrar outcome",
+  "summary": "La sesion adaptativa deja traza reutilizable para evolutivo y Codex. Registrar el resultado bajo la via language_understanding. Actualizar el episodio o patron universal relacionado si la ejecucion confirma el flujo.",
+  "parent_id": "6bdb8f82-6db3-4a56-9e7b-4c3562883d85",
+  "root_id": "68e793c3-90a4-44fb-bd88-774637dbf012",
+  "site_id": null,
+  "priority": 57,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack browser.generic.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Laboratorio universal: language -> language_understanding (score 0.87, confianza 0.78).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:e0cbc2b3-32f3-48c3-87d2-0478c18f8928"
+  ],
+  "tags": [
+    "record_outcome"
+  ],
+  "metadata": {
+    "phase_key": "record_outcome",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "knowledge.query"
+  },
+  "created_at_utc": "2026-04-16T22:30:55.087961Z",
+  "updated_at_utc": "2026-04-16T22:30:55.087961Z"
+}

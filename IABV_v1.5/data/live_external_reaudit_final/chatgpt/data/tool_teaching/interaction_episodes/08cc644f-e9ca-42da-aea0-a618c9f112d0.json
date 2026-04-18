@@ -1,0 +1,496 @@
+{
+  "interaction_episode_id": "08cc644f-e9ca-42da-aea0-a618c9f112d0",
+  "objective": "Consultar ChatGPT sobre: Auditoria viva de IABV: valida si el proveedor externo responde o falla con estado formal.",
+  "mode_used": "ui",
+  "environment": {
+    "tool_id": "chatgpt_web_assisted",
+    "tool_type": "llm_web_ui",
+    "adapter_key": "external_assistant",
+    "site_id": "audit",
+    "execution_scope": "read_only"
+  },
+  "captured_metadata": {
+    "task_metadata": {
+      "goal_parameters": {
+        "comparison_scope_key": "audit:final-live:chatgpt",
+        "tool_id": "chatgpt_web_assisted",
+        "allowed_tool_ids": [
+          "chatgpt_installed",
+          "chatgpt_web_assisted"
+        ],
+        "title": "Consultar ChatGPT",
+        "expected_outcome": "Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+        "context_pack": "Validacion final real desde IABV v1.5.\n\nIABV_THREAD_KEY: iabv::chatgpt::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex\nIABV_THREAD_TITLE: IABV ChatGPT | Auditoria viva de IABV: valida si el proveedor e\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "assistant_preference": "chatgpt",
+        "assistant_kind": "chatgpt",
+        "consultation_scope": "external_assistant",
+        "response_capture_mode": "dom_capture",
+        "requires_manual_pasteback": false,
+        "prompt_template_id": "chatgpt_web_consult_v1",
+        "execution_scope": "read_only",
+        "diagnostic_category": "",
+        "incident_kind": "",
+        "site_id": "audit",
+        "lab_recommendation": {},
+        "dry_run_launch": false,
+        "allow_local_automatic_consultation": false,
+        "session_scope": "program_chat",
+        "isolated_session_required": true,
+        "session_label": "ChatGPT especial de IABV",
+        "thread_key": "iabv::chatgpt::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex",
+        "thread_title": "IABV ChatGPT | Auditoria viva de IABV: valida si el proveedor e",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_reaudit_final\\chatgpt\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+      },
+      "created_at_utc": "2026-04-12T22:52:09.558500+00:00",
+      "updated_at_utc": "2026-04-12T22:52:09.558500+00:00",
+      "mode_selection": {
+        "decision_id": "8ff43ecb-9037-48a2-809b-9c57377f0155",
+        "selector_name": "universal_mode_selector",
+        "selected_mode": "ui",
+        "selected_tool_id": "chatgpt_web_assisted",
+        "selected_tool_type": "llm_web_ui",
+        "adapter_exists": true,
+        "available": true,
+        "fallback_used": false,
+        "already_resolved": false,
+        "equivalent_pattern_exists": false,
+        "improvement_already_implemented": false,
+        "reusable_pattern_id": null,
+        "reusable_episode_id": null,
+        "scores": {
+          "availability": 1.0,
+          "adapter_exists": 1.0,
+          "desired_match": 1.0,
+          "suggested_match": 1.0,
+          "automatic_capture": 1.0,
+          "total": 5.0
+        },
+        "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+        "metadata": {
+          "desired_modes": [
+            "background",
+            "ui"
+          ],
+          "candidate_ranking": [
+            {
+              "tool_id": "chatgpt_web_assisted",
+              "mode": "ui",
+              "score": 5.0
+            }
+          ],
+          "selection_policy": "preferred_external_tool"
+        }
+      },
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reuse_guard_active": false,
+      "reused_pattern_id": "",
+      "reused_episode_id": "",
+      "adapter_exists": true,
+      "selected_mode": "ui",
+      "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "requested_tool_id": "chatgpt_web_assisted",
+      "reused_actions_from_pattern": false,
+      "requested_assistant_kind": "chatgpt",
+      "assistant_kind": "chatgpt",
+      "actual_assistant_kind": "chatgpt",
+      "consultation_scope": "external_assistant",
+      "response_capture_mode": "dom_capture",
+      "requires_manual_pasteback": false,
+      "diagnostic_category": "",
+      "incident_kind": "",
+      "dry_run_launch": false,
+      "lab_recommendation": {},
+      "context_pack": "Validacion final real desde IABV v1.5.\n\nIABV_THREAD_KEY: iabv::chatgpt::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex\nIABV_THREAD_TITLE: IABV ChatGPT | Auditoria viva de IABV: valida si el proveedor e\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "comparison_scope_key": "audit:consultar-chatgpt-sobre-auditoria-viva-de-iabv-valida-si-el-proveedor-ex",
+      "source_trace_ids": [],
+      "proposal_summary": "Validacion final real desde IABV v1.5. IABV_THREAD_KEY: iabv::chatgpt::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex IABV_THREAD_TITLE: IABV ChatGPT | Auditoria viva de IABV: valida si el proveedor e IABV_LANE_PRIORITY: background",
+      "thread_key": "iabv::chatgpt::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex",
+      "thread_title": "IABV ChatGPT | Auditoria viva de IABV: valida si el proveedor e",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_reaudit_final\\chatgpt\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile",
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session_required": true,
+      "background_capture_mode": "browser_dom",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "normal",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "with_browser",
+        "assistant_mode": "general",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "chatgpt",
+          "tool_id": "chatgpt_web_assisted",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 356
+        }
+      },
+      "config_signature": "without_plan|without_files|normal|short|with_tools|with_browser|general|external",
+      "ia_trace_entry": {
+        "trace_id": "553cc27e-92c6-4cc5-8c09-c9fe53766c20",
+        "created_at_utc": "2026-04-12T22:52:09.560011Z",
+        "assistant_kind": "chatgpt",
+        "requested_assistant_kind": "chatgpt",
+        "actual_assistant_kind": "chatgpt",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "normal",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "with_browser",
+          "assistant_mode": "general",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "chatgpt",
+            "tool_id": "chatgpt_web_assisted",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 356
+          }
+        },
+        "config_signature": "without_plan|without_files|normal|short|with_tools|with_browser|general|external",
+        "comparison_scope_key": "audit:consultar-chatgpt-sobre-auditoria-viva-de-iabv-valida-si-el-proveedor-ex",
+        "source_trace_ids": [],
+        "route": "ui",
+        "tool_id": "chatgpt_web_assisted",
+        "task_id": "3665a314-4539-4168-ba42-7c78a86a6ca9",
+        "result_id": "",
+        "session_scope": "program_chat",
+        "thread_key": "iabv::chatgpt::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex",
+        "thread_title": "IABV ChatGPT | Auditoria viva de IABV: valida si el proveedor e",
+        "capture_lane": "background",
+        "state": "pending",
+        "detail": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "proposal_summary": "Validacion final real desde IABV v1.5. IABV_THREAD_KEY: iabv::chatgpt::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex IABV_THREAD_TITLE: IABV ChatGPT | Auditoria viva de IABV: valida si el proveedor e IABV_LANE_PRIORITY: background",
+        "outcome_summary": "",
+        "result_label": "Consultar ChatGPT",
+        "success": false,
+        "execution_ms": 0,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "audit",
+          "3665a314-4539-4168-ba42-7c78a86a6ca9"
+        ],
+        "reused_later": false,
+        "verdict": "",
+        "coherence_flags": [],
+        "external_state_flags": [],
+        "metadata": {
+          "response_capture_mode": "dom_capture",
+          "background_capture_mode": "browser_dom",
+          "comparison_scope_key": "audit:consultar-chatgpt-sobre-auditoria-viva-de-iabv-valida-si-el-proveedor-ex"
+        }
+      },
+      "background_headless": true,
+      "approval_required": true,
+      "destructive": false
+    },
+    "execution_metadata": {
+      "sandbox": true,
+      "assistant_kind": "chatgpt",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://chatgpt.com/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Validacion final real desde IABV v1.5.\n\nIABV_THREAD_KEY: iabv::chatgpt::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex\nIABV_THREAD_TITLE: IABV ChatGPT | Auditoria viva de IABV: valida si el proveedor e\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::chatgpt::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex",
+      "thread_title": "IABV ChatGPT | Auditoria viva de IABV: valida si el proveedor e",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "2026-04-12T22:52:09.569363+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_reaudit_final\\chatgpt\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+    },
+    "result_metadata": {
+      "sandbox": true,
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  },
+  "actions": [
+    {
+      "step_id": "8ada906e-9a5d-4f70-b9a6-583209da04ba",
+      "channel": "ui",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "e467ff13-b1a4-40de-9398-9ea27bcc3dcf",
+      "started_at_utc": "2026-04-12T22:52:09.599087Z",
+      "finished_at_utc": "2026-04-12T22:52:09.599087Z",
+      "destructive": false,
+      "requires_approval": true
+    },
+    {
+      "step_id": "b140e471-7685-4c05-9458-58a67adbd88c",
+      "channel": "ui",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "5e01b39a-f139-43da-952d-edace8349921",
+      "started_at_utc": "2026-04-12T22:52:09.599087Z",
+      "finished_at_utc": "2026-04-12T22:52:09.599087Z",
+      "destructive": false,
+      "requires_approval": false
+    }
+  ],
+  "result": {
+    "interaction_result_id": "afc18be7-aa89-436c-801e-71db3c11ecd9",
+    "success": true,
+    "execution_state": {
+      "state": "sandbox_pass",
+      "detail": "Sandbox local de herramienta ejecutado.",
+      "executor_name": "external_assistant",
+      "sandboxed": true,
+      "validated": true,
+      "approval_decision": "approved",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": true,
+        "assistant_kind": "chatgpt",
+        "launch_mode": "web_assisted",
+        "launch_target": "https://chatgpt.com/",
+        "response_capture_mode": "dom_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Validacion final real desde IABV v1.5.\n\nIABV_THREAD_KEY: iabv::chatgpt::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex\nIABV_THREAD_TITLE: IABV ChatGPT | Auditoria viva de IABV: valida si el proveedor e\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "response_captured": false,
+        "session_scope": "program_chat",
+        "session_label": "ChatGPT especial de IABV",
+        "isolated_session": true,
+        "thread_key": "iabv::chatgpt::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex",
+        "thread_title": "IABV ChatGPT | Auditoria viva de IABV: valida si el proveedor e",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "2026-04-12T22:52:09.569363+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_reaudit_final\\chatgpt\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+      }
+    },
+    "summary": "Asistente externo listo para consulta guiada.",
+    "errors": [],
+    "confidence": 0.78,
+    "execution_ms": 0,
+    "rollback_state": null,
+    "extracted_data": {
+      "assistant_kind": "chatgpt",
+      "launch_target": "https://chatgpt.com/"
+    },
+    "artifacts": [],
+    "metadata": {
+      "validation_status": "sandbox_pass",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "errors": [],
+  "evidence": [
+    {
+      "evidence_id": "ca187877-e2e6-4843-951a-7661f9fdb809",
+      "kind": "log",
+      "label": "Dato extraido: assistant_kind",
+      "ref_id": "1ff4f372-923d-4c13-8f3e-4898c358561a:assistant_kind",
+      "path": null,
+      "metadata": {
+        "key": "assistant_kind"
+      },
+      "confidence": 0.7
+    },
+    {
+      "evidence_id": "dd58c5d4-1eeb-444b-9cbb-3a9133f4e4ee",
+      "kind": "log",
+      "label": "Dato extraido: launch_target",
+      "ref_id": "1ff4f372-923d-4c13-8f3e-4898c358561a:launch_target",
+      "path": null,
+      "metadata": {
+        "key": "launch_target"
+      },
+      "confidence": 0.7
+    }
+  ],
+  "learning_signals": [
+    {
+      "signal_id": "898adbc4-0da5-4f38-a50a-fead424190c9",
+      "label": "pattern:ui:chatgpt_web_assisted",
+      "channel": "ui",
+      "signal_type": "pattern_reuse",
+      "confidence": 0.78,
+      "source": "interaction_learning_service",
+      "evidence_refs": [
+        "1ff4f372-923d-4c13-8f3e-4898c358561a:assistant_kind",
+        "1ff4f372-923d-4c13-8f3e-4898c358561a:launch_target"
+      ],
+      "metadata": {
+        "pattern_id": "fd2b6d88-cb2d-48e1-b6d1-6b3912ab45b4"
+      }
+    }
+  ],
+  "confidence": 0.78,
+  "human_approval": true,
+  "policy_decision": {
+    "decision_id": "17aaacee-6748-4256-8a46-dd9d83ad2012",
+    "requires_human_approval": true,
+    "approval_decision": "approved",
+    "blocked": false,
+    "rationale": "Sandbox local de herramienta ejecutado.",
+    "confidence": 0.78,
+    "metadata": {
+      "execution_scope": "read_only",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "selector_name": "universal_mode_selector",
+  "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+  "pattern_id": "fd2b6d88-cb2d-48e1-b6d1-6b3912ab45b4",
+  "reused_pattern": false,
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "task_id": "3665a314-4539-4168-ba42-7c78a86a6ca9",
+  "result_id": "1ff4f372-923d-4c13-8f3e-4898c358561a",
+  "site_id": "audit",
+  "created_at_utc": "2026-04-12T22:52:09.599087Z",
+  "updated_at_utc": "2026-04-12T22:52:09.599087Z",
+  "metadata": {
+    "learning_signals": [
+      {
+        "signal_id": "898adbc4-0da5-4f38-a50a-fead424190c9",
+        "label": "pattern:ui:chatgpt_web_assisted",
+        "channel": "ui",
+        "signal_type": "pattern_reuse",
+        "confidence": 0.78,
+        "source": "interaction_learning_service",
+        "evidence_refs": [
+          "1ff4f372-923d-4c13-8f3e-4898c358561a:assistant_kind",
+          "1ff4f372-923d-4c13-8f3e-4898c358561a:launch_target"
+        ],
+        "metadata": {
+          "pattern_id": "fd2b6d88-cb2d-48e1-b6d1-6b3912ab45b4"
+        }
+      }
+    ],
+    "mode_selection": {
+      "decision_id": "8ff43ecb-9037-48a2-809b-9c57377f0155",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "ui",
+      "selected_tool_id": "chatgpt_web_assisted",
+      "selected_tool_type": "llm_web_ui",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": false,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "chatgpt_web_assisted",
+            "mode": "ui",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "selected_mode": "ui",
+    "reusable_pattern_id": "",
+    "reusable_episode_id": "",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

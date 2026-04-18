@@ -1,0 +1,33 @@
+{
+  "objective_id": "a9163e6c-49aa-4441-bd8a-8b6b9c39d714",
+  "kind": "task",
+  "title": "Abrir Wplay y preparar sesion",
+  "summary": "Puedo ayudarte con Wplay, pero todavia me falta una ensenanza limpia o evidencia visual suficiente para hacerlo con confianza. Si quieres, abro Estudio de ensenanza para capturar ese flujo corto ahora.",
+  "parent_id": "b7fcaf8d-3d0f-4db4-a722-fd5fcd73e928",
+  "root_id": "44cfa2a3-f4e4-416c-9d16-44f1c0fc65b1",
+  "site_id": "wplay",
+  "priority": 50,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.9,
+  "evidence_refs": [
+    "Contexto activo: Wplay.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 5.",
+    "Laboratorio universal: language -> language_understanding (score 0.86, confianza 0.78).",
+    "run:92e7b832-130d-4ee0-b418-3577200451b6"
+  ],
+  "tags": [],
+  "metadata": {
+    "user_goal": "sabes abrir la pagina de wplay?",
+    "intent_key": "wplay.core",
+    "pack_id": "wplay.core",
+    "pack_title": "Core Wplay",
+    "level": "task",
+    "session_id": "87f05032-b40a-4dbd-a933-5f606189cf8e",
+    "status": "completed"
+  },
+  "created_at_utc": "2026-04-16T23:24:07.593040Z",
+  "updated_at_utc": "2026-04-16T23:24:08.148847Z"
+}

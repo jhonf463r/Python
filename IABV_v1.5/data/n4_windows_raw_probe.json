@@ -1,0 +1,130 @@
+{
+  "focused_window": {
+    "hwnd": 3671608,
+    "title": "Codex",
+    "pid": 16668,
+    "focused": true
+  },
+  "windows": [
+    {
+      "hwnd": 3671608,
+      "title": "Codex",
+      "pid": 16668,
+      "focused": true
+    },
+    {
+      "hwnd": 5704710,
+      "title": "Prompt para Codex - Opera",
+      "pid": 27128,
+      "focused": false
+    },
+    {
+      "hwnd": 132846,
+      "title": "Preguntas - Google Chrome",
+      "pid": 23668,
+      "focused": false
+    },
+    {
+      "hwnd": 7408170,
+      "title": "MAPAMUNDI 2.svg - Inkscape",
+      "pid": 11632,
+      "focused": false
+    },
+    {
+      "hwnd": 66554,
+      "title": "Administrador de tareas",
+      "pid": 15184,
+      "focused": false
+    },
+    {
+      "hwnd": 1246938,
+      "title": "Configuración",
+      "pid": 9936,
+      "focused": false
+    },
+    {
+      "hwnd": 657186,
+      "title": "Configuración",
+      "pid": 19024,
+      "focused": false
+    },
+    {
+      "hwnd": 264346,
+      "title": "Realtek Audio Console",
+      "pid": 3232,
+      "focused": false
+    },
+    {
+      "hwnd": 6553842,
+      "title": "Realtek Audio Console",
+      "pid": 19024,
+      "focused": false
+    },
+    {
+      "hwnd": 67626,
+      "title": "Nahimic",
+      "pid": 18748,
+      "focused": false
+    },
+    {
+      "hwnd": 67592,
+      "title": "Nahimic",
+      "pid": 19024,
+      "focused": false
+    },
+    {
+      "hwnd": 67022,
+      "title": "OmApSvcBroker",
+      "pid": 11976,
+      "focused": false
+    },
+    {
+      "hwnd": 197582,
+      "title": "Experiencia de entrada de Windows",
+      "pid": 2756,
+      "focused": false
+    },
+    {
+      "hwnd": 65890,
+      "title": "Program Manager",
+      "pid": 17356,
+      "focused": false
+    }
+  ],
+  "codex_state": {
+    "path": "C:\\Users\\faber\\\\.codex\\\\state_5.sqlite",
+    "exists": true,
+    "threads": [
+      {
+        "rollout_path": "C:\\Users\\faber\\.codex\\sessions\\2026\\04\\14\\rollout-2026-04-14T13-23-27-019d8d3b-eb7a-78a0-a3a1-a5d6e0781bc9.jsonl",
+        "updated_at": 1776373131,
+        "cwd": "\\\\?\\C:\\Python\\IABV_v1.5",
+        "title": "Actúa como arquitecto principal de observabilidad multimodal y world model \r\noperativo del proyecto IABV v1.5.\r\n\r\nVISIÓN CENTRAL:\r\nEl sistema debe tener un meta-modelo operativo del entorno y de sí mismo.\r\nNo solo saber qué herramientas existen en teoría.\r\nSino ver en tiempo real:\r\n- qué está abierto en la pantalla\r\n- qué está haciendo cada ventana\r\n- qué está pasando en segundo plano\r\n- si hay internet y qué calidad tiene\r\n- si Codex tiene el hilo correcto activo\r\n- si Codex tiene mensajes disponibles o están agotados\r\n- si hay un ciclo infinito, bloqueo, throttling o bug activo\r\n- qué consume RAM, CPU y GPU ahora mismo\r\n- qué está bloqueando una tarea antes de intentarla\r\nY usar todo eso para razonar mejor, deducir lo que está pasando,\r\nproponer soluciones y aprender de cada interacción.\r\n\r\nTRES CAPAS QUE DEBES CERRAR:\r\n\r\nCAPA 1 — OBSERVABILIDAD MULTIMODAL ACTIVA\r\nEl sistema debe observar continuamente:\r\n\r\nVentanas abiertas:\r\n- qué programas están corriendo\r\n- qué ventana está en foco\r\n- qué título tiene cada ventana relevante\r\n- si Codex está abierto y en qué hilo\r\n- si ChatGPT está abierto y en qué conversación\r\n- si el hilo activo es el correcto para la tarea\r\n\r\nEstado de herramientas externas antes de usarlas:\r\n- si Codex tiene mensajes disponibles o están agotados\r\n- si ChatGPT tiene sesión activa o expirada\r\n- si Claude tiene créditos disponibles\r\n- si Ollama está respondiendo en este momento\r\n- si hay un bloqueo de IP, rate limit o cuota activa\r\n\r\nEstado de red:\r\n- si hay conexión a internet\r\n- calidad aproximada de la conexión\r\n- si un servicio externo está caído o lento\r\n- si el problema es red vs herramienta vs código\r\n\r\nEstado del sistema en segundo plano:\r\n- procesos que consumen recursos excesivos\r\n- ciclos infinitos o procesos colgados detectables\r\n- apps que interfieren con la captura o el foco\r\n- cambios relevantes desde el último ciclo\r\n\r\nCAPA 2 — WORLD MODEL OPERATIVO\r\nCon todo lo observado, el sistema debe construir y mantener un modelo\r\nvivo del mundo en el que opera:\r\n\r\nWorldModelSnapshot debe contener:\r\n- active_windows: ventanas abiertas y su estado\r\n- focused_window: qué tiene el foco ahora\r\n- tool_live_status: estado vivo de cada herramienta\r\n  - ollama: disponible/no disponible/lento\r\n  - codex: abierto/cerrado/hilo correcto/mensajes disponibles/agotados\r\n  - chatgpt: sesión activa/expirada/bloqueada\r\n  - claude: disponible/limitado/bloqueado\r\n- network_status: conectado/desconectado/lento/bloqueado\r\n- background_processes: procesos relevantes en segundo plano\r\n- detected_blocks: qué está bloqueando qué tarea\r\n- inferred_state: qué deduce el sistema de todo lo anterior\r\n- confidence: qué tan confiable es esta observación\r\n- last_updated: cuándo se actualizó por última vez\r\n\r\nEste modelo debe:\r\n- actualizarse en segundo plano sin bloquear el chat\r\n- alimentar al PerceptionSnapshot junto con EnvironmentSelfModel\r\n- ser consultado por el orquestador antes de decidir qué ruta usar\r\n- ser consultado antes de intentar cualquier herramienta externa\r\n- nunca ser modificado por la UI, solo leído\r\n\r\nCAPA 3 — SELF-MODEL OPERATIVO CON RAZONAMIENTO DEDUCTIVO\r\nEl sistema debe saber no solo qué tiene, sino qué puede hacer ahora mismo\r\ny por qué algo no está funcionando.\r\n\r\nCuando detecta un problema debe razonar así:\r\n- \"Codex está abierto pero el hilo activo no es el de IABV\"\r\n  → no intentes pegar ahí, abre el hilo correcto primero\r\n- \"Codex está abierto pero no quedan mensajes disponibles\"\r\n  → notifica al usuario antes de intentar la consulta\r\n- \"ChatGPT muestra Just a moment...\"\r\n  → hay verificación de seguridad activa, no es selector roto\r\n- \"La red está disponible pero el servicio externo no responde\"\r\n  → el problema es el servicio, no la conexión\r\n- \"Hay un proceso consumiendo el 80% de CPU\"\r\n  → avisa antes de lanzar una tarea pesada\r\n- \"El foco está en otra ventana\"\r\n  → espera o pide permiso antes de interactuar\r\n\r\nEste razonamiento deductivo debe:\r\n- entrar al DecisionContext antes de cada decisión\r\n- bloquear rutas que no pueden funcionar en el estado actual\r\n- sugerir la alternativa más útil disponible\r\n- registrar el aprendizaje para no repetir el mismo error\r\n\r\nINTEGRACIÓN CON LO QUE YA EXISTE:\r\n- WorldModelSnapshot entra a PerceptionSnapshot como world_model\r\n- No reemplaza EnvironmentSelfModel ni UniversalPerceptionSignal\r\n- Los tres se complementan:\r\n  EnvironmentSelfModel = conocimiento del cuerpo hardware/runtime\r\n  UniversalPerceptionSignal = observación de un programa o página específica\r\n  WorldModelSnapshot = panorama completo del mundo operativo en tiempo real\r\n- AdaptiveTaskOrchestrator consulta world_model antes de decidir ruta\r\n- AutonomyGovernancePolicy usa world_model para bloquear rutas inviables\r\n- El chat puede responder preguntas como \"qué está pasando?\" desde world_model\r\n- EvolutionCenter muestra world_model como observador, sin decidir\r\n\r\nPERMISOS Y TRANSPARENCIA:\r\nSi el sistema necesita observar algo que requiere permiso del usuario\r\ndebe pedirlo explícitamente en lenguaje simple:\r\n\"Para saber si Codex tiene mensajes disponibles necesito observar\r\nesa ventana. ¿Me das permiso?\"\r\n\r\nNunca debe:\r\n- asumir que tiene permiso para observar todo\r\n- actuar sobre una ventana sin confirmación\r\n- fingir que observó algo que no pudo leer\r\n- marcar como disponible una herramienta que no verificó\r\n\r\nCASOS QUE DEBE RESOLVER CORRECTAMENTE:\r\n1. Usuario pide consultar Codex pero Codex no tiene mensajes\r\n   → el sistema lo detecta antes de intentarlo y lo notifica\r\n2. Usuario pide consultar Codex pero el hilo activo es el chat\r\n   personal del usuario, no el hilo de IABV\r\n   → el sistema lo detecta y no pega en ese hilo\r\n3. ChatGPT muestra verificación de seguridad\r\n   → el sistema lo detecta como browser_security_verification\r\n   y no lo trata como selector roto\r\n4. Usuario pregunta \"qué está pasando con mi internet?\"\r\n   → el sistema responde desde network_status con evidencia real\r\n5. Usuario pregunta \"por qué no responde Codex?\"\r\n   → el sistema responde desde world_model con el estado real\r\n6. Hay un proceso en segundo plano consumiendo muchos recursos\r\n   → el sistema lo menciona si afecta la tarea actual\r\n7. Usuario pregunta \"qué tienes abierto ahora?\"\r\n   → el sistema responde desde active_windows con lo real\r\n\r\nREGLAS ESTRICTAS:\r\n- No crear otro cerebro ni otro orquestador\r\n- No duplicar PerceptionSnapshot\r\n- El monitoreo corre en segundo plano sin bloquear el chat\r\n- No actuar sobre ventanas sin permiso del usuario\r\n- Si algo no puede leerse, marcarlo como no_disponible con motivo\r\n- No fingir que observó algo que no pudo ver\r\n- Si el estado no puede confirmarse, marcarlo como UNRESOLVED\r\n- No hacer refactor masivo\r\n- Correr pruebas después de cada cambio\r\n- Si algo rompe, revertir\r\n\r\nSalida obligatoria:\r\n1. RESUMEN_EJECUTIVO\r\n2. DISEÑO_DE_WORLD_MODEL_SNAPSHOT\r\n3. IMPLEMENTACION_CAPA_OBSERVABILIDAD\r\n4. IMPLEMENTACION_WORLD_MODEL\r\n5. IMPLEMENTACION_SELF_MODEL_DEDUCTIVO\r\n6. INTEGRACION_CON_PERCEPTION_SNAPSHOT\r\n7. INTEGRACION_CON_ORCHESTRATOR_Y_GOVERNANCE\r\n8. CASOS_VALIDADOS\r\n9. PRUEBAS_EJECUTADAS\r\n10. PERMISOS_Y_TRANSPARENCIA\r\n11. UNRESOLVED\r\n12. CONCLUSION_HONESTA\r\n\r\nCriterio de éxito:\r\nAntes de usar cualquier herramienta externa, el sistema sabe si puede usarla.\r\nCuando algo falla, el sistema sabe por qué y se lo dice al usuario en lenguaje\r\nsimple.\r\nCuando el usuario pregunta qué está pasando, el sistema responde desde\r\nobservación real, no desde suposiciones.\r\nEl sistema nunca pega en el hilo equivocado ni intenta una herramienta\r\nagotada sin avisar primero."
+      },
+      {
+        "rollout_path": "C:\\Users\\faber\\.codex\\sessions\\2026\\04\\14\\rollout-2026-04-14T18-43-27-019d8e60-e1d5-7823-a8c8-662d1b47f212.jsonl",
+        "updated_at": 1776210242,
+        "cwd": "C:\\Python\\IABV_v1.5",
+        "title": "Solo responde en texto.\nNo uses /review ni skills ni agentes.\n\nExplícame qué archivos hay en este proyecto."
+      },
+      {
+        "rollout_path": "C:\\Users\\faber\\.codex\\sessions\\2026\\04\\14\\rollout-2026-04-14T18-20-53-019d8e4c-3b4e-7f31-b69b-db9dad2496a6.jsonl",
+        "updated_at": 1776208971,
+        "cwd": "C:\\Python\\IABV_v1.5",
+        "title": "ollama ps"
+      },
+      {
+        "rollout_path": "C:\\Users\\faber\\.codex\\sessions\\2026\\04\\14\\rollout-2026-04-14T18-15-33-019d8e47-59b1-70f2-a790-0e8fc8a4fab8.jsonl",
+        "updated_at": 1776208643,
+        "cwd": "C:\\Python\\IABV_v1.5",
+        "title": "Analiza este proyecto desde los archivos disponibles.\n\nExplícame en español:\n- estructura de carpetas\n- archivo principal\n- propósito del sistema\n\nNo ejecutes nada."
+      },
+      {
+        "rollout_path": "C:\\Users\\faber\\.codex\\sessions\\2026\\04\\14\\rollout-2026-04-14T18-12-50-019d8e44-db6c-74c3-a52d-67491a6c890b.jsonl",
+        "updated_at": 1776208445,
+        "cwd": "C:\\Users\\faber",
+        "title": "Explícame este proyecto en español:\n- estructura\n- archivo principal\n- qué hace el sistema\n\nNo modifiques nada."
+      }
+    ]
+  }
+}

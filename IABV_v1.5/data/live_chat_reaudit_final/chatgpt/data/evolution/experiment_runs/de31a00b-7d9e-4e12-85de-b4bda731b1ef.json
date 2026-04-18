@@ -1,0 +1,73 @@
+{
+  "run_id": "de31a00b-7d9e-4e12-85de-b4bda731b1ef",
+  "domain": "language",
+  "suite_name": "text_understanding_suite",
+  "objective": "Consultar ChatGPT sobre: Necesito una consulta tecnica con ChatGPT para validar si la ruta externa real responde o falla y que lo digas claro.",
+  "subject_key": "chatgpt_web_assisted",
+  "route": "ui",
+  "assistant_kind": "chatgpt web asistido",
+  "assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+  "candidate_id": "12dda7ff-6695-4dfa-a4b7-602dd6745d0a",
+  "candidate_label": "ChatGPT web asistido",
+  "success": false,
+  "expected_summary": "text=Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+  "observed_summary": "browser_dom_unavailable",
+  "metrics": {
+    "precision": 0.20967741935483872,
+    "execution_ms": 0,
+    "operational_cost": 0.0,
+    "robustness": 0.4,
+    "reuse_score": 0.0,
+    "user_progress": 0.0,
+    "total_score": 0.3614,
+    "metadata": {
+      "domain": "language",
+      "objective": "Consultar ChatGPT sobre: Necesito una consulta tecnica con ChatGPT para validar si la ruta externa real responde o falla y que lo digas claro.",
+      "candidate_label": "ChatGPT web asistido",
+      "route": "ui",
+      "assistant_kind": "chatgpt web asistido",
+      "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "sample_support": 1,
+      "latency_score": 1.0,
+      "cost_score": 1.0,
+      "user_progress_score": 0.0,
+      "relative_vs_same_config": 1.0
+    }
+  },
+  "evidence_refs": [
+    "60e4217c-c351-459d-8d6b-ac767cadc7c2",
+    "f45693c1-a64f-4efb-ac55-7c25eece9899"
+  ],
+  "reused_later": false,
+  "better_than_previous": false,
+  "metadata": {
+    "source": "live_audit_tool",
+    "user_progress": 0.0,
+    "evidence_refs": [
+      "60e4217c-c351-459d-8d6b-ac767cadc7c2",
+      "f45693c1-a64f-4efb-ac55-7c25eece9899"
+    ],
+    "reused_pattern": false,
+    "suite_name": "text_understanding_suite",
+    "assistant_kind": "chatgpt web asistido",
+    "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+    "trace_id": "",
+    "comparison_scope_key": "",
+    "source_trace_ids": [],
+    "proposal_summary": "",
+    "outcome_summary": "browser_dom_unavailable"
+  },
+  "created_at_utc": "2026-04-12T22:55:16.434853Z"
+}

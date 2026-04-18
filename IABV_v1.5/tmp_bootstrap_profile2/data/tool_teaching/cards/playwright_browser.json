@@ -1,0 +1,28 @@
+{
+  "tool_id": "playwright_browser",
+  "title": "Playwright browser",
+  "tool_type": "browser",
+  "description": "Automatizacion web local usando el stack Playwright ya integrado en captura.",
+  "adapter_key": "playwright",
+  "validation_status": "unvalidated",
+  "local_first": true,
+  "available": true,
+  "supports_sandbox": true,
+  "supports_write": true,
+  "requires_human_approval": true,
+  "supports_rollback": true,
+  "capabilities": [
+    "open_url",
+    "click",
+    "type_text",
+    "extract_text",
+    "screenshot"
+  ],
+  "success_count": 0,
+  "failure_count": 0,
+  "last_result_id": null,
+  "last_validated_at_utc": null,
+  "metadata": {
+    "updated_at_utc": "2026-04-15T15:03:16.871904+00:00"
+  }
+}

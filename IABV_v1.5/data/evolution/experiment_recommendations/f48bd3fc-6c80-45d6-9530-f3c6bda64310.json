@@ -1,0 +1,81 @@
+{
+  "recommendation_id": "f48bd3fc-6c80-45d6-9530-f3c6bda64310",
+  "domain": "language",
+  "subject_key": "f931bd01-e7e0-40e1-b91f-b35f92edf99f",
+  "recommended_route": "local",
+  "recommended_assistant_kind": "ollama",
+  "recommended_assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "local",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+  "score": 0.7692,
+  "confidence": 0.7312,
+  "rationale": "Recomiendo local para language en f931bd01-e7e0-40e1-b91f-b35f92edf99f usando ollama con configuracion without_plan|without_files|normal|short|without_tools|without_browser|general|local por score base 0.63 y score adaptativo 0.77 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 70997 ms.",
+  "supporting_run_ids": [
+    "ca9faa21-19dd-4f3f-91ec-824cdf7e22a2"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "local",
+        "score": 0.7692,
+        "samples": 1
+      }
+    ],
+    "ranked_configurations": [
+      {
+        "route": "local",
+        "assistant_kind": "ollama",
+        "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+        "score": 0.6292,
+        "adaptive_weight": 0.14,
+        "weighted_score": 0.7692,
+        "samples": 1,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 70997 ms"
+        ]
+      }
+    ],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": [
+      "general:tienes-todo-el-panorama-completo-de-tu-mismo-proyecto-y-arquitectura"
+    ],
+    "adaptive_learning_summary": {
+      "preferred_route": "local",
+      "preferred_assistant_kind": "ollama",
+      "preferred_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.7692,
+      "sample_count": 1,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "top_environment_signatures": [
+        "conectado|partial"
+      ],
+      "top_time_buckets": [
+        "afternoon"
+      ],
+      "reasons": [
+        "historial de exito 100%",
+        "latencia promedio 70997 ms"
+      ]
+    }
+  },
+  "created_at_utc": "2026-04-18T13:57:26.154379Z"
+}

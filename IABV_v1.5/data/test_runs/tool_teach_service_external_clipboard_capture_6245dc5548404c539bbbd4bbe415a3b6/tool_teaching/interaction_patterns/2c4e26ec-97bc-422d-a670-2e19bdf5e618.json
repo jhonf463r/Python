@@ -1,0 +1,63 @@
+{
+  "pattern_id": "2c4e26ec-97bc-422d-a670-2e19bdf5e618",
+  "signature": "3fc912e48bc987fa7dc6adafe2546e9d88e540c3",
+  "title": "Consultar Codex",
+  "channel": "background",
+  "tool_id": "codex_installed",
+  "tool_type": "custom",
+  "site_id": "wplay",
+  "operations": [
+    {
+      "step_id": "991a16ae-6954-4c25-9501-44c081da4403",
+      "channel": "background",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false
+      }
+    },
+    {
+      "step_id": "187f4a51-b892-415b-9907-540184f8e985",
+      "channel": "background",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false
+      }
+    }
+  ],
+  "reusable": true,
+  "success_count": 1,
+  "failure_count": 1,
+  "last_task_id": "78f54377-9bec-417f-970e-eaace168f9d7",
+  "last_result_id": "8bafc5be-6f6c-4902-a3d7-7da0989e2ec3",
+  "created_at_utc": "2026-04-18T05:09:45.559637Z",
+  "updated_at_utc": "2026-04-18T05:09:45.846905Z",
+  "metadata": {
+    "objective_excerpt": "Consultar Codex sobre: abre Wplay e inicia sesion",
+    "execution_scope": "read_only",
+    "approval_decision": "approved",
+    "last_validation_status": "unvalidated",
+    "last_execution_state": "failed",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "last_interaction_episode_id": "d93ea55e-2b33-4e9b-8de8-8a14ab8a45f3"
+  }
+}

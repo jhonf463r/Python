@@ -1,0 +1,165 @@
+{
+  "recommendation_id": "6fc5db43-73b9-48ab-ad23-90d72b11d4fb",
+  "domain": "language",
+  "subject_key": "general",
+  "recommended_route": "language_understanding",
+  "recommended_assistant_kind": "ollama",
+  "recommended_assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "local",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "local_provider:ollama",
+  "score": 1.2674,
+  "confidence": 0.9008,
+  "rationale": "Recomiendo language_understanding para language en general usando ollama con configuracion local_provider:ollama por score base 0.93 y score adaptativo 1.27 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; reutilizacion alta 100%.",
+  "supporting_run_ids": [
+    "fbc63ccc-d8d7-4311-ab36-01796a0eaf9e"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "language_understanding",
+        "score": 0.9482,
+        "samples": 3
+      },
+      {
+        "route": "ui",
+        "score": 0.7714,
+        "samples": 1
+      },
+      {
+        "route": "local",
+        "score": 0.705,
+        "samples": 1
+      }
+    ],
+    "ranked_configurations": [
+      {
+        "route": "language_understanding",
+        "assistant_kind": "ollama",
+        "config_signature": "local_provider:ollama",
+        "score": 0.9274,
+        "adaptive_weight": 0.34,
+        "weighted_score": 1.2674,
+        "samples": 1,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%",
+          "reutilizacion alta 100%"
+        ]
+      },
+      {
+        "route": "language_understanding",
+        "assistant_kind": "adaptive local orchestrator",
+        "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+        "score": 0.6258,
+        "adaptive_weight": 0.2346,
+        "weighted_score": 0.8604,
+        "samples": 1,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%"
+        ]
+      },
+      {
+        "route": "ui",
+        "assistant_kind": "adaptive local orchestrator",
+        "config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+        "score": 0.6314,
+        "adaptive_weight": 0.14,
+        "weighted_score": 0.7714,
+        "samples": 2,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 10699 ms"
+        ]
+      },
+      {
+        "route": "language_understanding",
+        "assistant_kind": "adaptive local orchestrator",
+        "config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "score": 0.5787,
+        "adaptive_weight": 0.1382,
+        "weighted_score": 0.7169,
+        "samples": 9,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 5826 ms"
+        ]
+      },
+      {
+        "route": "local",
+        "assistant_kind": "ollama",
+        "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|local",
+        "score": 0.565,
+        "adaptive_weight": 0.14,
+        "weighted_score": 0.705,
+        "samples": 3,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 30210 ms"
+        ]
+      }
+    ],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": [
+      "general:tienes-el-panorama-completo-de-tu-estructura",
+      "general:que-modelo-de-ia-estas-usando-para-contestarme",
+      "general:que-gpu-estas-usando-ahora-mismo-la-gpu0-o-la-gpu1",
+      "general",
+      "general:que-modelo-de-ia-manejas-o-fucionas",
+      "wplay:sabes-abrir-la-pagina-de-wplay",
+      "general:ok-prueba-tus-modelos-locales-a-ver-si-funcionan-bien-as-un-testeo",
+      "general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes"
+    ],
+    "adaptive_learning_summary": {
+      "preferred_route": "language_understanding",
+      "preferred_assistant_kind": "ollama",
+      "preferred_config_signature": "local_provider:ollama",
+      "adaptive_weight": 0.34,
+      "weighted_score": 1.2674,
+      "sample_count": 1,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "top_environment_signatures": [
+        "default"
+      ],
+      "top_time_buckets": [
+        "night"
+      ],
+      "reasons": [
+        "historial de exito 100%",
+        "reutilizacion alta 100%"
+      ]
+    }
+  },
+  "created_at_utc": "2026-04-18T13:45:10.287374Z"
+}

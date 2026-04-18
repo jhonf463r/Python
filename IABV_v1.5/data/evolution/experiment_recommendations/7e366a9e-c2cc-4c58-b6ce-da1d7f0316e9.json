@@ -1,0 +1,81 @@
+{
+  "recommendation_id": "7e366a9e-c2cc-4c58-b6ce-da1d7f0316e9",
+  "domain": "code",
+  "subject_key": "general:puedes-auto-modificarte-asi-como-lo-hace-codex-usando-ollama-y-un-agente",
+  "recommended_route": "language_understanding",
+  "recommended_assistant_kind": "adaptive local orchestrator",
+  "recommended_assistant_configuration": {
+    "planning_mode": "with_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "long",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+  "score": 0.7806,
+  "confidence": 0.7337,
+  "rationale": "Recomiendo language_understanding para code en general:puedes-auto-modificarte-asi-como-lo-hace-codex-usando-ollama-y-un-agente usando adaptive local orchestrator con configuracion with_plan|without_files|normal|long|without_tools|without_browser|general|external por score base 0.64 y score adaptativo 0.78 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 5400 ms.",
+  "supporting_run_ids": [
+    "ab83a9e1-b91f-4881-9971-f38e0e68255a"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "language_understanding",
+        "score": 0.7806,
+        "samples": 1
+      }
+    ],
+    "ranked_configurations": [
+      {
+        "route": "language_understanding",
+        "assistant_kind": "adaptive local orchestrator",
+        "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+        "score": 0.6406,
+        "adaptive_weight": 0.14,
+        "weighted_score": 0.7806,
+        "samples": 1,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 5400 ms"
+        ]
+      }
+    ],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": [
+      "general:puedes-auto-modificarte-asi-como-lo-hace-codex-usando-ollama-y-un-agente"
+    ],
+    "adaptive_learning_summary": {
+      "preferred_route": "language_understanding",
+      "preferred_assistant_kind": "adaptive local orchestrator",
+      "preferred_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+      "adaptive_weight": 0.14,
+      "weighted_score": 0.7806,
+      "sample_count": 1,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "top_environment_signatures": [
+        "conectado|partial"
+      ],
+      "top_time_buckets": [
+        "evening"
+      ],
+      "reasons": [
+        "historial de exito 100%",
+        "latencia promedio 5400 ms"
+      ]
+    }
+  },
+  "created_at_utc": "2026-04-16T19:46:47.221018Z"
+}

@@ -1,0 +1,1769 @@
+{
+  "package_id": "3cd14fe6-62b2-4517-a108-cda60918e7a4",
+  "created_at_utc": "2026-04-16T23:19:39.495219Z",
+  "updated_at_utc": "2026-04-16T23:19:39.495219Z",
+  "package_version": "portable_context.v1",
+  "project_id": "IABV_v1.5",
+  "summary": "Objetivo actual: que modelo de ia eres o con que modelo de ia me respondes ? | mejor ruta conocida: adaptive local orchestrator por language_understanding | bloqueos activos: 3 | pendientes: 2 | ajustes sugeridos: 5 | unresolved: 4",
+  "sections": [
+    {
+      "section_id": "project_state",
+      "title": "Estado actual del proyecto",
+      "summary": "que modelo de ia eres o con que modelo de ia me respondes ? | World model: conectado | Validacion: validated",
+      "items": [
+        {
+          "label": "Objetivo activo",
+          "value": "que modelo de ia eres o con que modelo de ia me respondes ?"
+        },
+        {
+          "label": "Proyecto activo",
+          "value": "Asistencia adaptativa general"
+        },
+        {
+          "label": "Tarea activa",
+          "value": "Asistencia adaptativa general"
+        },
+        {
+          "label": "Pulso evolutivo",
+          "value": "Dossiers recientes: 31 | fallos: 0 | parciales: 0 | incidentes invisibles: 0 | sesiones adaptativas: 33 | autotests: 0 | pendientes Codex: 2. Prioridad sugerida: seguir reforzando evidencia y conocimiento local."
+        },
+        {
+          "label": "World model",
+          "value": "Hay bloqueos operativos activos que conviene respetar antes de lanzar otra accion."
+        },
+        {
+          "label": "Validacion autonoma",
+          "value": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo."
+        }
+      ],
+      "source_kind": "aggregated_live_state",
+      "source_refs": [
+        "objective_repository",
+        "evolution_review_service",
+        "world_model_service",
+        "autonomous_validation_cycle"
+      ],
+      "confidence": 0.82,
+      "last_updated": "2026-04-16T23:18:55.087707Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "architecture",
+      "title": "Arquitectura central vigente",
+      "summary": "La arquitectura sigue siendo una sola: perception -> orchestrator -> governance -> ejecucion -> aprendizaje.",
+      "items": [
+        {
+          "component": "PerceptionSnapshot",
+          "status": "wired",
+          "detail": "Entrada unificada antes de decidir."
+        },
+        {
+          "component": "TaskContextAssembler",
+          "status": "wired",
+          "detail": "Arma contexto, memoria, aprendizaje y world model."
+        },
+        {
+          "component": "AdaptiveTaskOrchestrator",
+          "status": "wired",
+          "detail": "Decide ruta, governance y resultado final."
+        },
+        {
+          "component": "EnvironmentSelfModel",
+          "status": "wired",
+          "detail": "Describe hardware, runtime y riesgo operativo."
+        },
+        {
+          "component": "WorldModelSnapshot",
+          "status": "wired",
+          "detail": "Panorama operativo vivo de herramientas, red y ventanas."
+        },
+        {
+          "component": "ExperimentLab",
+          "status": "wired",
+          "detail": "Memoria persistida de resultados y recomendaciones."
+        },
+        {
+          "component": "AdaptiveWeightLayer",
+          "status": "wired",
+          "detail": "Ajusta preferencia futura segun evidencia real."
+        },
+        {
+          "component": "AutonomousValidationCycle",
+          "status": "wired",
+          "detail": "Valida candidatos en sandbox antes de promoverlos."
+        },
+        {
+          "component": "PortableContextPackage",
+          "status": "wired",
+          "detail": "Exporta contexto comprimido reusable para nuevas sesiones."
+        }
+      ],
+      "source_kind": "project_contract",
+      "source_refs": [
+        "AGENTS.md",
+        "bootstrap wiring"
+      ],
+      "confidence": 1.0,
+      "last_updated": "2026-04-16T23:19:39.495219Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "implemented_capabilities",
+      "title": "Piezas ya implementadas",
+      "summary": "Capas cerradas: P1 y nucleo de P2. P3 ya deja paquete portable util para sesiones nuevas. Validacion actual: La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+      "items": [
+        {
+          "capability": "P1 World Model operativo",
+          "status": "active",
+          "detail": "Observa estado de herramientas, red, foco, procesos y bloqueos antes de actuar."
+        },
+        {
+          "capability": "P2 Neuroplasticidad operativa",
+          "status": "active",
+          "detail": "Aprende resultados reales y ajusta preferencia futura de rutas e IAs."
+        },
+        {
+          "capability": "SandboxExperiment",
+          "status": "active",
+          "detail": "Valida candidatos antes de promoverlos como decision estable."
+        },
+        {
+          "capability": "P3 Contexto portable",
+          "status": "active",
+          "detail": "Condensa arquitectura, aprendizaje, bloqueos y pendientes en JSON + Markdown reutilizable."
+        },
+        {
+          "capability": "Preguntas humanas de aprendizaje",
+          "status": "active",
+          "detail": "Responde desde ExperimentLab y validacion sin disparar autonomia operativa."
+        },
+        {
+          "capability": "Preflight de asistentes externos",
+          "status": "active",
+          "detail": "Consulta world model y governance antes de abrir o pegar en otra herramienta."
+        }
+      ],
+      "source_kind": "project_contract",
+      "source_refs": [
+        "bootstrap wiring",
+        "world_model_service",
+        "experiment_lab_repository",
+        "autonomous_validation_cycle"
+      ],
+      "confidence": 0.95,
+      "last_updated": "2026-04-16T23:19:39.495219Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "learning",
+      "title": "Aprendizaje acumulado util",
+      "summary": "Aprendizaje acumulado: adaptive local orchestrator viene saliendo mejor en historial comparable.",
+      "items": [
+        {
+          "label": "Preferencia actual",
+          "assistant_kind": "adaptive local orchestrator",
+          "route": "language_understanding",
+          "reasons": [
+            "historial de exito 100%",
+            "latencia promedio 1432 ms"
+          ],
+          "confidence": 0.7705,
+          "score": 0.836
+        },
+        {
+          "label": "Patron aprendido",
+          "subject_key": "32a080be-5928-4e1a-ae65-463ba20a784d",
+          "assistant_kind": "adaptive local orchestrator",
+          "route": "language_understanding",
+          "reasons": [
+            "historial de exito 100%",
+            "latencia promedio 1432 ms"
+          ]
+        },
+        {
+          "label": "Patron aprendido",
+          "subject_key": "general",
+          "assistant_kind": "adaptive local orchestrator",
+          "route": "language_understanding",
+          "reasons": [
+            "historial de exito 100%"
+          ]
+        }
+      ],
+      "source_kind": "persistent_learning",
+      "source_refs": [
+        "ExperimentLab",
+        "AdaptiveWeightLayer",
+        "TaskOutcomeRecorder"
+      ],
+      "confidence": 0.7705,
+      "last_updated": "2026-04-16T23:19:39.495219Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "self_examination",
+      "title": "Autoexaminacion operativa",
+      "summary": "Autoexaminacion needs_attention: 1 hallazgos activos. Lo mas fuerte ahora es ruta debil o inercial: chatgpt web asistido por ui. Mejoras validadas: 4 | issues recurrentes: 4.",
+      "items": [
+        {
+          "label": "Ruta debil o inercial: chatgpt web asistido por ui",
+          "summary": "Se reutilizo 3 veces con exito 0%, bloqueos 0%, fallback 0% y tendencia +0.00.",
+          "recommendation": "Debilitar esta preferencia hasta que la tendencia vuelva a mejorar.",
+          "severity": "high",
+          "confidence": 0.7,
+          "source_refs": [
+            "ExperimentLab",
+            "AdaptiveWeightLayer"
+          ]
+        },
+        {
+          "label": "Ruta debil o inercial: chatgpt web asistido por ui",
+          "summary": "Debilitar esta preferencia hasta que la tendencia vuelva a mejorar.",
+          "severity": "high",
+          "confidence": 0.7,
+          "source_refs": [
+            "ExperimentLab",
+            "AdaptiveWeightLayer"
+          ]
+        },
+        {
+          "label": "Pendiente Codex: ",
+          "summary": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+          "severity": "medium",
+          "confidence": 0.95,
+          "source_refs": [
+            "EvolutionReviewService"
+          ]
+        },
+        {
+          "label": "Ruta debil o inercial: chatgpt web asistido por ui [no_evidence]",
+          "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+          "recommendation": "Mantenerla en observacion hasta tener mas corridas comparables.",
+          "confidence": 0.6,
+          "source_refs": [
+            "ExperimentLab",
+            "AdaptiveWeightLayer",
+            "OperationalSelfExaminationService",
+            "AutonomousValidationSnapshot"
+          ]
+        },
+        {
+          "label": "Pendiente Codex: [no_evidence]",
+          "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+          "recommendation": "Mantenerla en observacion hasta tener mas corridas comparables.",
+          "confidence": 0.52,
+          "source_refs": [
+            "EvolutionReviewService",
+            "OperationalSelfExaminationService",
+            "ExperimentLab",
+            "AutonomousValidationSnapshot"
+          ]
+        }
+      ],
+      "source_kind": "derived_review",
+      "source_refs": [
+        "OperationalSelfExaminationService",
+        "ExperimentLab",
+        "WorldModelSnapshot"
+      ],
+      "confidence": 0.95,
+      "last_updated": "2026-04-16T23:19:39.495219Z",
+      "unresolved_fields": [
+        "UNRESOLVED:codex_content_probe"
+      ],
+      "metadata": {
+        "recurring_issues": [
+          {
+            "title": "Ruta debil o inercial: chatgpt web asistido por ui",
+            "category": "inertial_route",
+            "summary": "Se reutilizo 3 veces con exito 0%, bloqueos 0%, fallback 0% y tendencia +0.00.",
+            "severity": "high",
+            "confidence": 0.7,
+            "evidence_refs": [
+              "b0a3ed25-b1bd-469d-b719-3da950979cef",
+              "a221b210-21eb-439c-aa37-7d2001c2b77d",
+              "03f88a4c-f11a-4913-815e-15f4e0bbc55e"
+            ],
+            "source_refs": [
+              "ExperimentLab",
+              "AdaptiveWeightLayer"
+            ]
+          },
+          {
+            "title": "light_checks_warning",
+            "category": "project_health_repeat",
+            "summary": "El issue light_checks_warning reaparece 10 veces en la capa evolutiva.",
+            "severity": "medium",
+            "confidence": 0.68,
+            "evidence_refs": [],
+            "source_refs": [
+              "EvolutionReviewService"
+            ]
+          },
+          {
+            "title": "need_codex_fix",
+            "category": "project_health_repeat",
+            "summary": "El issue need_codex_fix reaparece 2 veces en la capa evolutiva.",
+            "severity": "medium",
+            "confidence": 0.68,
+            "evidence_refs": [],
+            "source_refs": [
+              "EvolutionReviewService"
+            ]
+          },
+          {
+            "title": "knowledge.query",
+            "category": "project_health_repeat",
+            "summary": "El issue knowledge.query reaparece 1 veces en la capa evolutiva.",
+            "severity": "medium",
+            "confidence": 0.68,
+            "evidence_refs": [],
+            "source_refs": [
+              "EvolutionReviewService"
+            ]
+          }
+        ],
+        "validated_improvements": [
+          {
+            "title": "adaptive local orchestrator por language_understanding",
+            "summary": "Recomiendo language_understanding para language en sandbox:32a080be-5928-4e1a-ae65-463ba20a784d usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.62 y score adaptativo 0.88 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%.",
+            "subject_key": "sandbox:32a080be-5928-4e1a-ae65-463ba20a784d",
+            "recommended_assistant_kind": "adaptive local orchestrator",
+            "recommended_route": "language_understanding",
+            "confidence": 0.7918,
+            "score": 0.8807,
+            "reasons": [
+              "historial de exito 100%"
+            ],
+            "source_refs": [
+              "ExperimentLab",
+              "StrategySelector"
+            ],
+            "evidence_refs": [
+              "0eb7fd3b-fabb-4449-acd8-d20d5a60bffc"
+            ],
+            "feedback_key": "inertial_route:adaptive local orchestrator:language_understanding:with_plan|without_files|normal|short|without_tools|without_browser|general|external"
+          },
+          {
+            "title": "adaptive local orchestrator por language_understanding",
+            "summary": "Recomiendo language_understanding para language en general usando adaptive local orchestrator con configuracion with_plan|without_files|normal|long|without_tools|without_browser|general|external por score base 0.63 y score adaptativo 0.86 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%.",
+            "subject_key": "general",
+            "recommended_assistant_kind": "adaptive local orchestrator",
+            "recommended_route": "language_understanding",
+            "confidence": 0.7797,
+            "score": 0.8604,
+            "reasons": [
+              "historial de exito 100%"
+            ],
+            "source_refs": [
+              "ExperimentLab",
+              "StrategySelector"
+            ],
+            "evidence_refs": [
+              "5192df44-13cb-4c62-8fd3-9352fdf11d4f"
+            ],
+            "feedback_key": "inertial_route:adaptive local orchestrator:language_understanding:with_plan|without_files|normal|long|without_tools|without_browser|general|external"
+          },
+          {
+            "title": "adaptive local orchestrator por language_understanding",
+            "summary": "Recomiendo language_understanding para language en 32a080be-5928-4e1a-ae65-463ba20a784d usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.61 y score adaptativo 0.84 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 1432 ms.",
+            "subject_key": "32a080be-5928-4e1a-ae65-463ba20a784d",
+            "recommended_assistant_kind": "adaptive local orchestrator",
+            "recommended_route": "language_understanding",
+            "confidence": 0.7705,
+            "score": 0.836,
+            "reasons": [
+              "historial de exito 100%",
+              "latencia promedio 1432 ms"
+            ],
+            "source_refs": [
+              "ExperimentLab",
+              "StrategySelector"
+            ],
+            "evidence_refs": [
+              "47996b43-c7c2-443f-bf34-28b93569e9c8"
+            ],
+            "feedback_key": "inertial_route:adaptive local orchestrator:language_understanding:with_plan|without_files|normal|short|without_tools|without_browser|general|external"
+          },
+          {
+            "title": "adaptive local orchestrator por language_understanding",
+            "summary": "Recomiendo language_understanding para language en general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.61 y score adaptativo 0.84 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 1432 ms.",
+            "subject_key": "general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes",
+            "recommended_assistant_kind": "adaptive local orchestrator",
+            "recommended_route": "language_understanding",
+            "confidence": 0.7705,
+            "score": 0.836,
+            "reasons": [
+              "historial de exito 100%",
+              "latencia promedio 1432 ms"
+            ],
+            "source_refs": [
+              "ExperimentLab",
+              "StrategySelector"
+            ],
+            "evidence_refs": [
+              "ab201d31-6970-4ddc-9b7a-811de78bf6bb"
+            ],
+            "feedback_key": "inertial_route:adaptive local orchestrator:language_understanding:with_plan|without_files|normal|short|without_tools|without_browser|general|external"
+          }
+        ],
+        "recommendation_feedback": [
+          {
+            "title": "Ruta debil o inercial: chatgpt web asistido por ui",
+            "category": "inertial_route",
+            "feedback_key": "inertial_route:chatgpt web asistido:ui:without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+            "status": "no_evidence",
+            "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+            "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+            "confidence": 0.6,
+            "sample_count": 0,
+            "evidence_refs": [
+              "b0a3ed25-b1bd-469d-b719-3da950979cef",
+              "a221b210-21eb-439c-aa37-7d2001c2b77d"
+            ],
+            "source_refs": [
+              "ExperimentLab",
+              "AdaptiveWeightLayer",
+              "OperationalSelfExaminationService",
+              "AutonomousValidationSnapshot"
+            ],
+            "profile": {
+              "sample_count": 0,
+              "success_rate": 0.0,
+              "blocked_rate": 0.0,
+              "fallback_rate": 0.0,
+              "trend_score": 0.0
+            },
+            "current_issue_still_active": true,
+            "repeat_recommendation": true,
+            "updated_at_utc": "2026-04-16T23:19:49.490098+00:00"
+          },
+          {
+            "title": "Pendiente Codex:",
+            "category": "backlog",
+            "feedback_key": "backlog:pendiente codex:",
+            "status": "no_evidence",
+            "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+            "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+            "confidence": 0.52,
+            "sample_count": 0,
+            "evidence_refs": [],
+            "source_refs": [
+              "EvolutionReviewService",
+              "OperationalSelfExaminationService",
+              "ExperimentLab",
+              "AutonomousValidationSnapshot"
+            ],
+            "profile": {
+              "sample_count": 0,
+              "success_rate": 0.0,
+              "blocked_rate": 0.0,
+              "fallback_rate": 0.0,
+              "trend_score": 0.0
+            },
+            "current_issue_still_active": false,
+            "repeat_recommendation": true,
+            "updated_at_utc": "2026-04-16T23:19:49.490117+00:00"
+          },
+          {
+            "title": "Pendiente Codex:",
+            "category": "backlog",
+            "feedback_key": "backlog:pendiente codex:",
+            "status": "no_evidence",
+            "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+            "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+            "confidence": 0.52,
+            "sample_count": 0,
+            "evidence_refs": [],
+            "source_refs": [
+              "EvolutionReviewService",
+              "OperationalSelfExaminationService",
+              "ExperimentLab",
+              "AutonomousValidationSnapshot"
+            ],
+            "profile": {
+              "sample_count": 0,
+              "success_rate": 0.0,
+              "blocked_rate": 0.0,
+              "fallback_rate": 0.0,
+              "trend_score": 0.0
+            },
+            "current_issue_still_active": false,
+            "repeat_recommendation": true,
+            "updated_at_utc": "2026-04-16T23:19:49.490126+00:00"
+          },
+          {
+            "title": "Pista de mejora reportada por la ejecucion",
+            "category": "backlog",
+            "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+            "status": "no_evidence",
+            "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+            "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+            "confidence": 0.52,
+            "sample_count": 0,
+            "evidence_refs": [],
+            "source_refs": [
+              "EvolutionReviewService",
+              "OperationalSelfExaminationService",
+              "ExperimentLab",
+              "AutonomousValidationSnapshot"
+            ],
+            "profile": {
+              "sample_count": 0,
+              "success_rate": 0.0,
+              "blocked_rate": 0.0,
+              "fallback_rate": 0.0,
+              "trend_score": 0.0
+            },
+            "current_issue_still_active": false,
+            "repeat_recommendation": true,
+            "updated_at_utc": "2026-04-16T23:19:49.490135+00:00"
+          },
+          {
+            "title": "Pista de mejora reportada por la ejecucion",
+            "category": "backlog",
+            "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+            "status": "no_evidence",
+            "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+            "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+            "confidence": 0.52,
+            "sample_count": 0,
+            "evidence_refs": [],
+            "source_refs": [
+              "EvolutionReviewService",
+              "OperationalSelfExaminationService",
+              "ExperimentLab",
+              "AutonomousValidationSnapshot"
+            ],
+            "profile": {
+              "sample_count": 0,
+              "success_rate": 0.0,
+              "blocked_rate": 0.0,
+              "fallback_rate": 0.0,
+              "trend_score": 0.0
+            },
+            "current_issue_still_active": false,
+            "repeat_recommendation": true,
+            "updated_at_utc": "2026-04-16T23:19:49.490142+00:00"
+          }
+        ],
+        "feedback_summary": {
+          "total_reviewed": 5,
+          "validated_improvement": 0,
+          "valid_adjustment": 0,
+          "false_improvement": 0,
+          "no_evidence": 5
+        }
+      }
+    },
+    {
+      "section_id": "recommended_routes",
+      "title": "Herramientas y rutas recomendadas",
+      "summary": "Ruta lider actual: adaptive local orchestrator por language_understanding para 32a080be-5928-4e1a-ae65-463ba20a784d.",
+      "items": [
+        {
+          "subject_key": "32a080be-5928-4e1a-ae65-463ba20a784d",
+          "assistant_kind": "adaptive local orchestrator",
+          "route": "language_understanding",
+          "confidence": 0.7705,
+          "score": 0.836,
+          "reasons": [
+            "historial de exito 100%",
+            "latencia promedio 1432 ms"
+          ],
+          "comparison_scope_keys": [
+            "general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes"
+          ]
+        },
+        {
+          "subject_key": "general",
+          "assistant_kind": "adaptive local orchestrator",
+          "route": "language_understanding",
+          "confidence": 0.7797,
+          "score": 0.8604,
+          "reasons": [
+            "historial de exito 100%"
+          ],
+          "comparison_scope_keys": [
+            "wplay:ok-pero-primero-dime-si-tienes-acceso-a-tu-estrutura-y-todo-tu-sistema",
+            "wplay:sabes-usar-wplay-la-pagina",
+            "general:por-que-no-me-contestate-la-anterior-pregunta-de-que-modelo-usar-para-co",
+            "general:que-modelo-de-ia-estas-usando-para-responderme",
+            "general:ok-y-entocnes-empecemos-que-te-enseño-primero",
+            "general:puedes-ver-el-trabajo-en-vivo-me-refiero-a-dock-vivo-de-autonomia-de-tu",
+            "general:qué-tienes-abierto-ahora",
+            "general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes"
+          ]
+        }
+      ],
+      "source_kind": "persistent_learning",
+      "source_refs": [
+        "ExperimentLab",
+        "StrategySelector",
+        "comparison_scope_key"
+      ],
+      "confidence": 0.7705,
+      "last_updated": "2026-04-16T23:19:39.495219Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "operational_blocks",
+      "title": "Bloqueos, limites y rutas inviables",
+      "summary": "4 bloqueos o limitaciones activas.",
+      "items": [
+        {
+          "kind": "permission_required",
+          "target_scope": "consult_codex",
+          "assistant_kind": "codex",
+          "detail": "Para verificar si Codex esta listo de verdad necesito observar el contenido visible de esa ventana."
+        },
+        {
+          "kind": "permission_gate",
+          "target_scope": "observe_window_content:codex",
+          "assistant_kind": "codex",
+          "detail": "Para verificar si Codex esta listo de verdad necesito observar el contenido visible de esa ventana."
+        },
+        {
+          "kind": "tool_status",
+          "target_scope": "codex_installed",
+          "assistant_kind": "codex",
+          "detail": "Codex parece estar enfocado en el hilo correcto del workspace actual (Actúa como arquitecto principal de observabilidad multimodal y world model \r\noperativo del proyecto IABV v1.5.\r\n\r\nVISIÓN CENTRAL:\r\nEl sistema debe tener un meta-modelo operativo del entorno y de sí mismo.\r\nNo solo saber qué herramientas existen en teoría.\r\nSino ver en tiempo real:\r\n- qué está abierto en la pantalla\r\n- qué está haciendo cada ventana\r\n- qué está pasando en segundo plano\r\n- si hay internet y qué calidad tiene\r\n- si Codex tiene el hilo correcto activo\r\n- si Codex tiene mensajes disponibles o están agotados\r\n- si hay un ciclo infinito, bloqueo, throttling o bug activo\r\n- qué consume RAM, CPU y GPU ahora mismo\r\n- qué está bloqueando una tarea antes de intentarla\r\nY usar todo eso para razonar mejor, deducir lo que está pasando,\r\nproponer soluciones y aprender de cada interacción.\r\n\r\nTRES CAPAS QUE DEBES CERRAR:\r\n\r\nCAPA 1 — OBSERVABILIDAD MULTIMODAL ACTIVA\r\nEl sistema debe observar continuamente:\r\n\r\nVentanas abiertas:\r\n- qué programas están corriendo\r\n- qué ventana está en foco\r\n- qué título tiene cada ventana relevante\r\n- si Codex está abierto y en qué hilo\r\n- si ChatGPT está abierto y en qué conversación\r\n- si el hilo activo es el correcto para la tarea\r\n\r\nEstado de herramientas externas antes de usarlas:\r\n- si Codex tiene mensajes disponibles o están agotados\r\n- si ChatGPT tiene sesión activa o expirada\r\n- si Claude tiene créditos disponibles\r\n- si Ollama está respondiendo en este momento\r\n- si hay un bloqueo de IP, rate limit o cuota activa\r\n\r\nEstado de red:\r\n- si hay conexión a internet\r\n- calidad aproximada de la conexión\r\n- si un servicio externo está caído o lento\r\n- si el problema es red vs herramienta vs código\r\n\r\nEstado del sistema en segundo plano:\r\n- procesos que consumen recursos excesivos\r\n- ciclos infinitos o procesos colgados detectables\r\n- apps que interfieren con la captura o el foco\r\n- cambios relevantes desde el último ciclo\r\n\r\nCAPA 2 — WORLD MODEL OPERATIVO\r\nCon todo lo observado, el sistema debe construir y mantener un modelo\r\nvivo del mundo en el que opera:\r\n\r\nWorldModelSnapshot debe contener:\r\n- active_windows: ventanas abiertas y su estado\r\n- focused_window: qué tiene el foco ahora\r\n- tool_live_status: estado vivo de cada herramienta\r\n  - ollama: disponible/no disponible/lento\r\n  - codex: abierto/cerrado/hilo correcto/mensajes disponibles/agotados\r\n  - chatgpt: sesión activa/expirada/bloqueada\r\n  - claude: disponible/limitado/bloqueado\r\n- network_status: conectado/desconectado/lento/bloqueado\r\n- background_processes: procesos relevantes en segundo plano\r\n- detected_blocks: qué está bloqueando qué tarea\r\n- inferred_state: qué deduce el sistema de todo lo anterior\r\n- confidence: qué tan confiable es esta observación\r\n- last_updated: cuándo se actualizó por última vez\r\n\r\nEste modelo debe:\r\n- actualizarse en segundo plano sin bloquear el chat\r\n- alimentar al PerceptionSnapshot junto con EnvironmentSelfModel\r\n- ser consultado por el orquestador antes de decidir qué ruta usar\r\n- ser consultado antes de intentar cualquier herramienta externa\r\n- nunca ser modificado por la UI, solo leído\r\n\r\nCAPA 3 — SELF-MODEL OPERATIVO CON RAZONAMIENTO DEDUCTIVO\r\nEl sistema debe saber no solo qué tiene, sino qué puede hacer ahora mismo\r\ny por qué algo no está funcionando.\r\n\r\nCuando detecta un problema debe razonar así:\r\n- \"Codex está abierto pero el hilo activo no es el de IABV\"\r\n  → no intentes pegar ahí, abre el hilo correcto primero\r\n- \"Codex está abierto pero no quedan mensajes disponibles\"\r\n  → notifica al usuario antes de intentar la consulta\r\n- \"ChatGPT muestra Just a moment...\"\r\n  → hay verificación de seguridad activa, no es selector roto\r\n- \"La red está disponible pero el servicio externo no responde\"\r\n  → el problema es el servicio, no la conexión\r\n- \"Hay un proceso consumiendo el 80% de CPU\"\r\n  → avisa antes de lanzar una tarea pesada\r\n- \"El foco está en otra ventana\"\r\n  → espera o pide permiso antes de interactuar\r\n\r\nEste razonamiento deductivo debe:\r\n- entrar al DecisionContext antes de cada decisión\r\n- bloquear rutas que no pueden funcionar en el estado actual\r\n- sugerir la alternativa más útil disponible\r\n- registrar el aprendizaje para no repetir el mismo error\r\n\r\nINTEGRACIÓN CON LO QUE YA EXISTE:\r\n- WorldModelSnapshot entra a PerceptionSnapshot como world_model\r\n- No reemplaza EnvironmentSelfModel ni UniversalPerceptionSignal\r\n- Los tres se complementan:\r\n  EnvironmentSelfModel = conocimiento del cuerpo hardware/runtime\r\n  UniversalPerceptionSignal = observación de un programa o página específica\r\n  WorldModelSnapshot = panorama completo del mundo operativo en tiempo real\r\n- AdaptiveTaskOrchestrator consulta world_model antes de decidir ruta\r\n- AutonomyGovernancePolicy usa world_model para bloquear rutas inviables\r\n- El chat puede responder preguntas como \"qué está pasando?\" desde world_model\r\n- EvolutionCenter muestra world_model como observador, sin decidir\r\n\r\nPERMISOS Y TRANSPARENCIA:\r\nSi el sistema necesita observar algo que requiere permiso del usuario\r\ndebe pedirlo explícitamente en lenguaje simple:\r\n\"Para saber si Codex tiene mensajes disponibles necesito observar\r\nesa ventana. ¿Me das permiso?\"\r\n\r\nNunca debe:\r\n- asumir que tiene permiso para observar todo\r\n- actuar sobre una ventana sin confirmación\r\n- fingir que observó algo que no pudo leer\r\n- marcar como disponible una herramienta que no verificó\r\n\r\nCASOS QUE DEBE RESOLVER CORRECTAMENTE:\r\n1. Usuario pide consultar Codex pero Codex no tiene mensajes\r\n   → el sistema lo detecta antes de intentarlo y lo notifica\r\n2. Usuario pide consultar Codex pero el hilo activo es el chat\r\n   personal del usuario, no el hilo de IABV\r\n   → el sistema lo detecta y no pega en ese hilo\r\n3. ChatGPT muestra verificación de seguridad\r\n   → el sistema lo detecta como browser_security_verification\r\n   y no lo trata como selector roto\r\n4. Usuario pregunta \"qué está pasando con mi internet?\"\r\n   → el sistema responde desde network_status con evidencia real\r\n5. Usuario pregunta \"por qué no responde Codex?\"\r\n   → el sistema responde desde world_model con el estado real\r\n6. Hay un proceso en segundo plano consumiendo muchos recursos\r\n   → el sistema lo menciona si afecta la tarea actual\r\n7. Usuario pregunta \"qué tienes abierto ahora?\"\r\n   → el sistema responde desde active_windows con lo real\r\n\r\nREGLAS ESTRICTAS:\r\n- No crear otro cerebro ni otro orquestador\r\n- No duplicar PerceptionSnapshot\r\n- El monitoreo corre en segundo plano sin bloquear el chat\r\n- No actuar sobre ventanas sin permiso del usuario\r\n- Si algo no puede leerse, marcarlo como no_disponible con motivo\r\n- No fingir que observó algo que no pudo ver\r\n- Si el estado no puede confirmarse, marcarlo como UNRESOLVED\r\n- No hacer refactor masivo\r\n- Correr pruebas después de cada cambio\r\n- Si algo rompe, revertir\r\n\r\nSalida obligatoria:\r\n1. RESUMEN_EJECUTIVO\r\n2. DISEÑO_DE_WORLD_MODEL_SNAPSHOT\r\n3. IMPLEMENTACION_CAPA_OBSERVABILIDAD\r\n4. IMPLEMENTACION_WORLD_MODEL\r\n5. IMPLEMENTACION_SELF_MODEL_DEDUCTIVO\r\n6. INTEGRACION_CON_PERCEPTION_SNAPSHOT\r\n7. INTEGRACION_CON_ORCHESTRATOR_Y_GOVERNANCE\r\n8. CASOS_VALIDADOS\r\n9. PRUEBAS_EJECUTADAS\r\n10. PERMISOS_Y_TRANSPARENCIA\r\n11. UNRESOLVED\r\n12. CONCLUSION_HONESTA\r\n\r\nCriterio de éxito:\r\nAntes de usar cualquier herramienta externa, el sistema sabe si puede usarla.\r\nCuando algo falla, el sistema sabe por qué y se lo dice al usuario en lenguaje\r\nsimple.\r\nCuando el usuario pregunta qué está pasando, el sistema responde desde\r\nobservación real, no desde suposiciones.\r\nEl sistema nunca pega en el hilo equivocado ni intenta una herramienta\r\nagotada sin avisar primero.)."
+        },
+        {
+          "kind": "tool_status",
+          "target_scope": "claude_installed",
+          "assistant_kind": "claude",
+          "detail": "La herramienta no quedo confirmada como disponible en esta laptop."
+        }
+      ],
+      "source_kind": "live_operational_state",
+      "source_refs": [
+        "WorldModelSnapshot"
+      ],
+      "confidence": 0.82,
+      "last_updated": "2026-04-16T23:18:55.087707Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "validated_decisions",
+      "title": "Decisiones ya validadas",
+      "summary": "3 decisiones ya tienen validacion o confianza suficiente para reutilizarse.",
+      "items": [
+        {
+          "decision": "validation_cycle",
+          "summary": "La recomendacion actual sigue siendo coherente con el historial y el estado operativo.",
+          "status": "validated",
+          "promoted_count": 0,
+          "candidate_assistant_kind": "",
+          "candidate_route": "",
+          "verdict": ""
+        },
+        {
+          "decision": "recommended_route",
+          "subject_key": "32a080be-5928-4e1a-ae65-463ba20a784d",
+          "assistant_kind": "adaptive local orchestrator",
+          "route": "language_understanding",
+          "confidence": 0.7705,
+          "score": 0.836,
+          "supporting_run_ids": [
+            "47996b43-c7c2-443f-bf34-28b93569e9c8"
+          ]
+        },
+        {
+          "decision": "recommended_route",
+          "subject_key": "general",
+          "assistant_kind": "adaptive local orchestrator",
+          "route": "language_understanding",
+          "confidence": 0.7797,
+          "score": 0.8604,
+          "supporting_run_ids": [
+            "5192df44-13cb-4c62-8fd3-9352fdf11d4f"
+          ]
+        }
+      ],
+      "source_kind": "persistent_learning",
+      "source_refs": [
+        "ExperimentLab",
+        "AutonomousValidationCycle"
+      ],
+      "confidence": 0.82,
+      "last_updated": "2026-04-16T23:19:39.495219Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "decision_history",
+      "title": "Historial condensado de decisiones",
+      "summary": "2 decisiones recientes quedaron condensadas para retomar el hilo rapido.",
+      "items": [
+        {
+          "subject_key": "32a080be-5928-4e1a-ae65-463ba20a784d",
+          "assistant_kind": "adaptive local orchestrator",
+          "route": "language_understanding",
+          "why": "historial de exito 100%",
+          "comparison_scope_keys": [
+            "general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes"
+          ],
+          "created_at_utc": ""
+        },
+        {
+          "subject_key": "general",
+          "assistant_kind": "adaptive local orchestrator",
+          "route": "language_understanding",
+          "why": "historial de exito 100%",
+          "comparison_scope_keys": [
+            "wplay:ok-pero-primero-dime-si-tienes-acceso-a-tu-estrutura-y-todo-tu-sistema",
+            "wplay:sabes-usar-wplay-la-pagina",
+            "general:por-que-no-me-contestate-la-anterior-pregunta-de-que-modelo-usar-para-co",
+            "general:que-modelo-de-ia-estas-usando-para-responderme",
+            "general:ok-y-entocnes-empecemos-que-te-enseño-primero",
+            "general:puedes-ver-el-trabajo-en-vivo-me-refiero-a-dock-vivo-de-autonomia-de-tu",
+            "general:qué-tienes-abierto-ahora",
+            "general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes"
+          ],
+          "created_at_utc": ""
+        }
+      ],
+      "source_kind": "persistent_learning",
+      "source_refs": [
+        "ExperimentLab",
+        "ia_trace_summary"
+      ],
+      "confidence": 0.74,
+      "last_updated": "2026-04-16T23:19:39.495219Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "pending",
+      "title": "Pendientes priorizados",
+      "summary": "2 pending issues y 5 mejoras priorizadas.",
+      "items": [
+        {
+          "issue_id": "1cce349e-7257-4625-a66c-c85b935c1444",
+          "summary": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+          "category": "need_codex_fix",
+          "status": "needs_fix",
+          "probable_cause": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+          "recommended_change": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+          "updated_at_utc": "2026-04-13 18:49:11.201817+00:00"
+        },
+        {
+          "issue_id": "5967e89a-8c63-4a1b-b5e8-2aa564fbd620",
+          "summary": "Sin hallazgos. Decision: continue_local. Confianza 0.66.",
+          "category": "need_codex_fix",
+          "status": "needs_fix",
+          "probable_cause": "Sin hallazgos. Decision: continue_local. Confianza 0.66.",
+          "recommended_change": "Sin hallazgos. Decision: continue_local. Confianza 0.66.",
+          "updated_at_utc": "2026-04-13 17:22:03.193601+00:00"
+        },
+        {
+          "title": "Pendiente Codex: ",
+          "rationale": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+          "recommended_change": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+          "priority_score": 98,
+          "suggested_tests": [
+            "tienes conocimiento de tu entorno y tu arquitectura ?",
+            "Revisar Centro Evolutivo"
+          ]
+        },
+        {
+          "title": "Pendiente Codex: ",
+          "rationale": "Sin hallazgos. Decision: continue_local. Confianza 0.66.",
+          "recommended_change": "Sin hallazgos. Decision: continue_local. Confianza 0.66.",
+          "priority_score": 98,
+          "suggested_tests": [
+            "que version de ia eres? tiene conocimientos de tu arquitectura ?",
+            "Revisar Centro Evolutivo"
+          ]
+        },
+        {
+          "title": "Pista de mejora reportada por la ejecucion",
+          "rationale": "Seguir con la estrategia propuesta.",
+          "recommended_change": "Seguir con la estrategia propuesta.",
+          "priority_score": 60,
+          "suggested_tests": [
+            "Validar el comportamiento despues del cambio vertical"
+          ]
+        },
+        {
+          "title": "Pista de mejora reportada por la ejecucion",
+          "rationale": "Probar restauracion de sesion o dejar la fase como login guiado con aprobacion.",
+          "recommended_change": "Probar restauracion de sesion o dejar la fase como login guiado con aprobacion.",
+          "priority_score": 60,
+          "suggested_tests": [
+            "Validar el comportamiento despues del cambio vertical"
+          ]
+        }
+      ],
+      "source_kind": "persistent_backlog",
+      "source_refs": [
+        "pending_issue_repository",
+        "evolution_review_service"
+      ],
+      "confidence": 0.8,
+      "last_updated": "2026-04-16T23:19:39.495219Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "unresolved",
+      "title": "UNRESOLVED",
+      "summary": "4 campos siguen sin evidencia suficiente y no deben asumirse.",
+      "items": [
+        {
+          "field": "UNRESOLVED:cpu_temperature"
+        },
+        {
+          "field": "UNRESOLVED:battery_status"
+        },
+        {
+          "field": "UNRESOLVED:cpu_frequency"
+        },
+        {
+          "field": "UNRESOLVED:codex_content_probe"
+        }
+      ],
+      "source_kind": "honest_runtime_limits",
+      "source_refs": [
+        "WorldModelSnapshot",
+        "EnvironmentSelfModel",
+        "AutonomousValidationCycle"
+      ],
+      "confidence": 1.0,
+      "last_updated": "2026-04-16T23:19:39.495219Z",
+      "unresolved_fields": [
+        "UNRESOLVED:cpu_temperature",
+        "UNRESOLVED:battery_status",
+        "UNRESOLVED:cpu_frequency",
+        "UNRESOLVED:codex_content_probe"
+      ],
+      "metadata": {}
+    },
+    {
+      "section_id": "hard_rules",
+      "title": "Reglas duras que no deben romperse",
+      "summary": "Este paquete portable no reemplaza la arquitectura: solo la condensa y la hace reutilizable.",
+      "items": [
+        {
+          "rule": "No crear otro cerebro ni otro orquestador."
+        },
+        {
+          "rule": "No duplicar PerceptionSnapshot ni crear una memoria paralela."
+        },
+        {
+          "rule": "No romper governance ni saltarse bloqueos del world model."
+        },
+        {
+          "rule": "Cambios minimos, reversibles y verificables."
+        },
+        {
+          "rule": "Si algo no puede confirmarse con evidencia, marcar UNRESOLVED."
+        },
+        {
+          "rule": "Los ViewModels observan y explican; no inventan decisiones de ruta."
+        },
+        {
+          "rule": "Antes de usar una herramienta externa, consultar estado y bloqueos reales."
+        },
+        {
+          "rule": "El aprendizaje acumulado debe respetarse, pero sin dogma: cambiar de ruta solo con evidencia."
+        }
+      ],
+      "source_kind": "project_contract",
+      "source_refs": [
+        "AGENTS.md"
+      ],
+      "confidence": 1.0,
+      "last_updated": "2026-04-16T23:19:39.495219Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    }
+  ],
+  "assistant_brief": "# IABV v1.5 - Portable Context Package\n\nGenerado: 2026-04-16T23:19:39.495219+00:00\nResumen: Objetivo actual: que modelo de ia eres o con que modelo de ia me respondes ? | mejor ruta conocida: adaptive local orchestrator por language_understanding | bloqueos activos: 3 | pendientes: 2 | ajustes sugeridos: 5 | unresolved: 4\n\nUsa este contexto como arranque rapido para una sesion nueva. Si algo aparece como UNRESOLVED, no lo des por confirmado.\n\n## Estado actual del proyecto\nque modelo de ia eres o con que modelo de ia me respondes ? | World model: conectado | Validacion: validated\n- Objetivo activo: que modelo de ia eres o con que modelo de ia me respondes ?\n- Proyecto activo: Asistencia adaptativa general\n- Tarea activa: Asistencia adaptativa general\n- Pulso evolutivo: Dossiers recientes: 31 | fallos: 0 | parciales: 0 | incidentes invisibles: 0 | sesiones adaptativas: 33 | autotests: 0 | pendientes Codex: 2. Prioridad sugerida: seguir reforzando evidencia y conocimiento local.\n- World model: Hay bloqueos operativos activos que conviene respetar antes de lanzar otra accion.\n- Validacion autonoma: La recomendacion actual sigue siendo coherente con el historial y el estado operativo.\nFuente: aggregated_live_state | refs: objective_repository, evolution_review_service, world_model_service, autonomous_validation_cycle | actualizado: 2026-04-16T23:18:55.087707+00:00\n\n## Arquitectura central vigente\nLa arquitectura sigue siendo una sola: perception -> orchestrator -> governance -> ejecucion -> aprendizaje.\n- PerceptionSnapshot: wired | Entrada unificada antes de decidir.\n- TaskContextAssembler: wired | Arma contexto, memoria, aprendizaje y world model.\n- AdaptiveTaskOrchestrator: wired | Decide ruta, governance y resultado final.\n- EnvironmentSelfModel: wired | Describe hardware, runtime y riesgo operativo.\n- WorldModelSnapshot: wired | Panorama operativo vivo de herramientas, red y ventanas.\n- ExperimentLab: wired | Memoria persistida de resultados y recomendaciones.\nFuente: project_contract | refs: AGENTS.md, bootstrap wiring | actualizado: 2026-04-16T23:19:39.495219+00:00\n\n## Piezas ya implementadas\nCapas cerradas: P1 y nucleo de P2. P3 ya deja paquete portable util para sesiones nuevas. Validacion actual: La recomendacion actual sigue siendo coherente con el historial y el estado operativo.\n- P1 World Model operativo: active | Observa estado de herramientas, red, foco, procesos y bloqueos antes de actuar.\n- P2 Neuroplasticidad operativa: active | Aprende resultados reales y ajusta preferencia futura de rutas e IAs.\n- SandboxExperiment: active | Valida candidatos antes de promoverlos como decision estable.\n- P3 Contexto portable: active | Condensa arquitectura, aprendizaje, bloqueos y pendientes en JSON + Markdown reutilizable.\n- Preguntas humanas de aprendizaje: active | Responde desde ExperimentLab y validacion sin disparar autonomia operativa.\n- Preflight de asistentes externos: active | Consulta world model y governance antes de abrir o pegar en otra herramienta.\nFuente: project_contract | refs: bootstrap wiring, world_model_service, experiment_lab_repository, autonomous_validation_cycle | actualizado: 2026-04-16T23:19:39.495219+00:00\n\n## Aprendizaje acumulado util\nAprendizaje acumulado: adaptive local orchestrator viene saliendo mejor en historial comparable.\n- Preferencia actual | adaptive local orchestrator: language_understanding\n- Patron aprendido | adaptive local orchestrator: language_understanding\n- Patron aprendido | adaptive local orchestrator: language_understanding\nFuente: persistent_learning | refs: ExperimentLab, AdaptiveWeightLayer, TaskOutcomeRecorder | actualizado: 2026-04-16T23:19:39.495219+00:00\n\n## Autoexaminacion operativa\nAutoexaminacion needs_attention: 1 hallazgos activos. Lo mas fuerte ahora es ruta debil o inercial: chatgpt web asistido por ui. Mejoras validadas: 4 | issues recurrentes: 4.\n- Ruta debil o inercial: chatgpt web asistido por ui: Se reutilizo 3 veces con exito 0%, bloqueos 0%, fallback 0% y tendencia +0.00.\n- Ruta debil o inercial: chatgpt web asistido por ui: Debilitar esta preferencia hasta que la tendencia vuelva a mejorar.\n- Pendiente Codex: : Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.\n- Ruta debil o inercial: chatgpt web asistido por ui [no_evidence]: Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.\n- Pendiente Codex: [no_evidence]: Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.\nFuente: derived_review | refs: OperationalSelfExaminationService, ExperimentLab, WorldModelSnapshot | actualizado: 2026-04-16T23:19:39.495219+00:00\nUNRESOLVED: UNRESOLVED:codex_content_probe\n\n## Herramientas y rutas recomendadas\nRuta lider actual: adaptive local orchestrator por language_understanding para 32a080be-5928-4e1a-ae65-463ba20a784d.\n- 32a080be-5928-4e1a-ae65-463ba20a784d | adaptive local orchestrator: language_understanding\n- general | adaptive local orchestrator: language_understanding\nFuente: persistent_learning | refs: ExperimentLab, StrategySelector, comparison_scope_key | actualizado: 2026-04-16T23:19:39.495219+00:00\n\n## Bloqueos, limites y rutas inviables\n4 bloqueos o limitaciones activas.\n- permission_required: Para verificar si Codex esta listo de verdad necesito observar el contenido visible de esa ventana.\n- permission_gate: Para verificar si Codex esta listo de verdad necesito observar el contenido visible de esa ventana.\n- tool_status: Codex parece estar enfocado en el hilo correcto del workspace actual (Actúa como arquitecto principal de observabilidad multimodal y world model \r\noperativo del proyecto IABV v1.5.\r\n\r\nVISIÓN CENTRAL:\r\nEl sistema debe tener un meta-modelo operativo del entorno y de sí mismo.\r\nNo solo saber qué herramientas existen en teoría.\r\nSino ver en tiempo real:\r\n- qué está abierto en la pantalla\r\n- qué está haciendo cada ventana\r\n- qué está pasando en segundo plano\r\n- si hay internet y qué calidad tiene\r\n- si Codex tiene el hilo correcto activo\r\n- si Codex tiene mensajes disponibles o están agotados\r\n- si hay un ciclo infinito, bloqueo, throttling o bug activo\r\n- qué consume RAM, CPU y GPU ahora mismo\r\n- qué está bloqueando una tarea antes de intentarla\r\nY usar todo eso para razonar mejor, deducir lo que está pasando,\r\nproponer soluciones y aprender de cada interacción.\r\n\r\nTRES CAPAS QUE DEBES CERRAR:\r\n\r\nCAPA 1 — OBSERVABILIDAD MULTIMODAL ACTIVA\r\nEl sistema debe observar continuamente:\r\n\r\nVentanas abiertas:\r\n- qué programas están corriendo\r\n- qué ventana está en foco\r\n- qué título tiene cada ventana relevante\r\n- si Codex está abierto y en qué hilo\r\n- si ChatGPT está abierto y en qué conversación\r\n- si el hilo activo es el correcto para la tarea\r\n\r\nEstado de herramientas externas antes de usarlas:\r\n- si Codex tiene mensajes disponibles o están agotados\r\n- si ChatGPT tiene sesión activa o expirada\r\n- si Claude tiene créditos disponibles\r\n- si Ollama está respondiendo en este momento\r\n- si hay un bloqueo de IP, rate limit o cuota activa\r\n\r\nEstado de red:\r\n- si hay conexión a internet\r\n- calidad aproximada de la conexión\r\n- si un servicio externo está caído o lento\r\n- si el problema es red vs herramienta vs código\r\n\r\nEstado del sistema en segundo plano:\r\n- procesos que consumen recursos excesivos\r\n- ciclos infinitos o procesos colgados detectables\r\n- apps que interfieren con la captura o el foco\r\n- cambios relevantes desde el último ciclo\r\n\r\nCAPA 2 — WORLD MODEL OPERATIVO\r\nCon todo lo observado, el sistema debe construir y mantener un modelo\r\nvivo del mundo en el que opera:\r\n\r\nWorldModelSnapshot debe contener:\r\n- active_windows: ventanas abiertas y su estado\r\n- focused_window: qué tiene el foco ahora\r\n- tool_live_status: estado vivo de cada herramienta\r\n  - ollama: disponible/no disponible/lento\r\n  - codex: abierto/cerrado/hilo correcto/mensajes disponibles/agotados\r\n  - chatgpt: sesión activa/expirada/bloqueada\r\n  - claude: disponible/limitado/bloqueado\r\n- network_status: conectado/desconectado/lento/bloqueado\r\n- background_processes: procesos relevantes en segundo plano\r\n- detected_blocks: qué está bloqueando qué tarea\r\n- inferred_state: qué deduce el sistema de todo lo anterior\r\n- confidence: qué tan confiable es esta observación\r\n- last_updated: cuándo se actualizó por última vez\r\n\r\nEste modelo debe:\r\n- actualizarse en segundo plano sin bloquear el chat\r\n- alimentar al PerceptionSnapshot junto con EnvironmentSelfModel\r\n- ser consultado por el orquestador antes de decidir qué ruta usar\r\n- ser consultado antes de intentar cualquier herramienta externa\r\n- nunca ser modificado por la UI, solo leído\r\n\r\nCAPA 3 — SELF-MODEL OPERATIVO CON RAZONAMIENTO DEDUCTIVO\r\nEl sistema debe saber no solo qué tiene, sino qué puede hacer ahora mismo\r\ny por qué algo no está funcionando.\r\n\r\nCuando detecta un problema debe razonar así:\r\n- \"Codex está abierto pero el hilo activo no es el de IABV\"\r\n  → no intentes pegar ahí, abre el hilo correcto primero\r\n- \"Codex está abierto pero no quedan mensajes disponibles\"\r\n  → notifica al usuario antes de intentar la consulta\r\n- \"ChatGPT muestra Just a moment...\"\r\n  → hay verificación de seguridad activa, no es selector roto\r\n- \"La red está disponible pero el servicio externo no responde\"\r\n  → el problema es el servicio, no la conexión\r\n- \"Hay un proceso consumiendo el 80% de CPU\"\r\n  → avisa antes de lanzar una tarea pesada\r\n- \"El foco está en otra ventana\"\r\n  → espera o pide permiso antes de interactuar\r\n\r\nEste razonamiento deductivo debe:\r\n- entrar al DecisionContext antes de cada decisión\r\n- bloquear rutas que no pueden funcionar en el estado actual\r\n- sugerir la alternativa más útil disponible\r\n- registrar el aprendizaje para no repetir el mismo error\r\n\r\nINTEGRACIÓN CON LO QUE YA EXISTE:\r\n- WorldModelSnapshot entra a PerceptionSnapshot como world_model\r\n- No reemplaza EnvironmentSelfModel ni UniversalPerceptionSignal\r\n- Los tres se complementan:\r\n  EnvironmentSelfModel = conocimiento del cuerpo hardware/runtime\r\n  UniversalPerceptionSignal = observación de un programa o página específica\r\n  WorldModelSnapshot = panorama completo del mundo operativo en tiempo real\r\n- AdaptiveTaskOrchestrator consulta world_model antes de decidir ruta\r\n- AutonomyGovernancePolicy usa world_model para bloquear rutas inviables\r\n- El chat puede responder preguntas como \"qué está pasando?\" desde world_model\r\n- EvolutionCenter muestra world_model como observador, sin decidir\r\n\r\nPERMISOS Y TRANSPARENCIA:\r\nSi el sistema necesita observar algo que requiere permiso del usuario\r\ndebe pedirlo explícitamente en lenguaje simple:\r\n\"Para saber si Codex tiene mensajes disponibles necesito observar\r\nesa ventana. ¿Me das permiso?\"\r\n\r\nNunca debe:\r\n- asumir que tiene permiso para observar todo\r\n- actuar sobre una ventana sin confirmación\r\n- fingir que observó algo que no pudo leer\r\n- marcar como disponible una herramienta que no verificó\r\n\r\nCASOS QUE DEBE RESOLVER CORRECTAMENTE:\r\n1. Usuario pide consultar Codex pero Codex no tiene mensajes\r\n   → el sistema lo detecta antes de intentarlo y lo notifica\r\n2. Usuario pide consultar Codex pero el hilo activo es el chat\r\n   personal del usuario, no el hilo de IABV\r\n   → el sistema lo detecta y no pega en ese hilo\r\n3. ChatGPT muestra verificación de seguridad\r\n   → el sistema lo detecta como browser_security_verification\r\n   y no lo trata como selector roto\r\n4. Usuario pregunta \"qué está pasando con mi internet?\"\r\n   → el sistema responde desde network_status con evidencia real\r\n5. Usuario pregunta \"por qué no responde Codex?\"\r\n   → el sistema responde desde world_model con el estado real\r\n6. Hay un proceso en segundo plano consumiendo muchos recursos\r\n   → el sistema lo menciona si afecta la tarea actual\r\n7. Usuario pregunta \"qué tienes abierto ahora?\"\r\n   → el sistema responde desde active_windows con lo real\r\n\r\nREGLAS ESTRICTAS:\r\n- No crear otro cerebro ni otro orquestador\r\n- No duplicar PerceptionSnapshot\r\n- El monitoreo corre en segundo plano sin bloquear el chat\r\n- No actuar sobre ventanas sin permiso del usuario\r\n- Si algo no puede leerse, marcarlo como no_disponible con motivo\r\n- No fingir que observó algo que no pudo ver\r\n- Si el estado no puede confirmarse, marcarlo como UNRESOLVED\r\n- No hacer refactor masivo\r\n- Correr pruebas después de cada cambio\r\n- Si algo rompe, revertir\r\n\r\nSalida obligatoria:\r\n1. RESUMEN_EJECUTIVO\r\n2. DISEÑO_DE_WORLD_MODEL_SNAPSHOT\r\n3. IMPLEMENTACION_CAPA_OBSERVABILIDAD\r\n4. IMPLEMENTACION_WORLD_MODEL\r\n5. IMPLEMENTACION_SELF_MODEL_DEDUCTIVO\r\n6. INTEGRACION_CON_PERCEPTION_SNAPSHOT\r\n7. INTEGRACION_CON_ORCHESTRATOR_Y_GOVERNANCE\r\n8. CASOS_VALIDADOS\r\n9. PRUEBAS_EJECUTADAS\r\n10. PERMISOS_Y_TRANSPARENCIA\r\n11. UNRESOLVED\r\n12. CONCLUSION_HONESTA\r\n\r\nCriterio de éxito:\r\nAntes de usar cualquier herramienta externa, el sistema sabe si puede usarla.\r\nCuando algo falla, el sistema sabe por qué y se lo dice al usuario en lenguaje\r\nsimple.\r\nCuando el usuario pregunta qué está pasando, el sistema responde desde\r\nobservación real, no desde suposiciones.\r\nEl sistema nunca pega en el hilo equivocado ni intenta una herramienta\r\nagotada sin avisar primero.).\n- tool_status: La herramienta no quedo confirmada como disponible en esta laptop.\nFuente: live_operational_state | refs: WorldModelSnapshot | actualizado: 2026-04-16T23:18:55.087707+00:00\n\n## Decisiones ya validadas\n3 decisiones ya tienen validacion o confianza suficiente para reutilizarse.\n- validation_cycle: La recomendacion actual sigue siendo coherente con el historial y el estado operativo.\n- recommended_route | adaptive local orchestrator: language_understanding\n- recommended_route | adaptive local orchestrator: language_understanding\nFuente: persistent_learning | refs: ExperimentLab, AutonomousValidationCycle | actualizado: 2026-04-16T23:19:39.495219+00:00\n\n## Historial condensado de decisiones\n2 decisiones recientes quedaron condensadas para retomar el hilo rapido.\n- 32a080be-5928-4e1a-ae65-463ba20a784d | adaptive local orchestrator: language_understanding\n- general | adaptive local orchestrator: language_understanding\nFuente: persistent_learning | refs: ExperimentLab, ia_trace_summary | actualizado: 2026-04-16T23:19:39.495219+00:00\n\n## Pendientes priorizados\n2 pending issues y 5 mejoras priorizadas.\n- 1cce349e-7257-4625-a66c-c85b935c1444: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.\n- 5967e89a-8c63-4a1b-b5e8-2aa564fbd620: Sin hallazgos. Decision: continue_local. Confianza 0.66.\n- Pendiente Codex: : Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.\n- Pendiente Codex: : Sin hallazgos. Decision: continue_local. Confianza 0.66.\n- Pista de mejora reportada por la ejecucion: Seguir con la estrategia propuesta.\n- Pista de mejora reportada por la ejecucion: Probar restauracion de sesion o dejar la fase como login guiado con aprobacion.\nFuente: persistent_backlog | refs: pending_issue_repository, evolution_review_service | actualizado: 2026-04-16T23:19:39.495219+00:00\n\n## UNRESOLVED\n4 campos siguen sin evidencia suficiente y no deben asumirse.\n- UNRESOLVED:cpu_temperature: \n- UNRESOLVED:battery_status: \n- UNRESOLVED:cpu_frequency: \n- UNRESOLVED:codex_content_probe: \nFuente: honest_runtime_limits | refs: WorldModelSnapshot, EnvironmentSelfModel, AutonomousValidationCycle | actualizado: 2026-04-16T23:19:39.495219+00:00\nUNRESOLVED: UNRESOLVED:cpu_temperature, UNRESOLVED:battery_status, UNRESOLVED:cpu_frequency, UNRESOLVED:codex_content_probe\n\n## Reglas duras que no deben romperse\nEste paquete portable no reemplaza la arquitectura: solo la condensa y la hace reutilizable.\n- No crear otro cerebro ni otro orquestador.\n- No duplicar PerceptionSnapshot ni crear una memoria paralela.\n- No romper governance ni saltarse bloqueos del world model.\n- Cambios minimos, reversibles y verificables.\n- Si algo no puede confirmarse con evidencia, marcar UNRESOLVED.\n- Los ViewModels observan y explican; no inventan decisiones de ruta.\nFuente: project_contract | refs: AGENTS.md | actualizado: 2026-04-16T23:19:39.495219+00:00",
+  "package_path": "C:\\Python\\IABV_v1.5\\data\\evolution\\portable_context\\latest.json",
+  "markdown_path": "C:\\Python\\IABV_v1.5\\data\\evolution\\portable_context\\latest.md",
+  "unresolved_fields": [
+    "UNRESOLVED:cpu_temperature",
+    "UNRESOLVED:battery_status",
+    "UNRESOLVED:cpu_frequency",
+    "UNRESOLVED:codex_content_probe"
+  ],
+  "metadata": {
+    "workspace_root": "C:\\Python\\IABV_v1.5",
+    "site_id": "",
+    "active_objective_id": "32a080be-5928-4e1a-ae65-463ba20a784d",
+    "refresh_policy": "refresh_if_stale_or_goal_shift",
+    "source_count": 30,
+    "autoexamination_summary": {
+      "review_id": "f5eb2763-6df4-4883-8c6a-d105c42bbd52",
+      "package_version": "self_examination.v1",
+      "summary": "Autoexaminacion needs_attention: 1 hallazgos activos. Lo mas fuerte ahora es ruta debil o inercial: chatgpt web asistido por ui. Mejoras validadas: 4 | issues recurrentes: 4.",
+      "status": "needs_attention",
+      "assistant_brief": "# IABV v1.5 - Operational Self Examination\n\nGenerado: 2026-04-16T23:19:43.382761+00:00\nResumen: Autoexaminacion needs_attention: 1 hallazgos activos. Lo mas fuerte ahora es ruta debil o inercial: chatgpt web asistido por ui. Mejoras validadas: 4 | issues recurrentes: 4.\n\nUsa esta revision para entender que esta fallando, que se repite y que ajustes conviene hacer antes de tocar la arquitectura.\n\n## Hallazgos\n- Ruta debil o inercial: chatgpt web asistido por ui: Se reutilizo 3 veces con exito 0%, bloqueos 0%, fallback 0% y tendencia +0.00. | recomendacion: Debilitar esta preferencia hasta que la tendencia vuelva a mejorar. | confianza 0.70\n\n## Ajustes recomendados\n- Ruta debil o inercial: chatgpt web asistido por ui: Debilitar esta preferencia hasta que la tendencia vuelva a mejorar. | fuente ExperimentLab, AdaptiveWeightLayer\n- Pendiente Codex: : Ya existe un patron equivalente Decision: continue_local. Confianza 0.96. | fuente EvolutionReviewService\n- Pendiente Codex: : Sin hallazgos. Decision: continue_local. Confianza 0.66. | fuente EvolutionReviewService\n- Pista de mejora reportada por la ejecucion: Seguir con la estrategia propuesta. | fuente EvolutionReviewService\n- Pista de mejora reportada por la ejecucion: Probar restauracion de sesion o dejar la fase como login guiado con aprobacion. | fuente EvolutionReviewService\n\n## Mejoras validadas\n- adaptive local orchestrator por language_understanding: Recomiendo language_understanding para language en sandbox:32a080be-5928-4e1a-ae65-463ba20a784d usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.62 y score adaptativo 0.88 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%. | confianza 0.79\n- adaptive local orchestrator por language_understanding: Recomiendo language_understanding para language en general usando adaptive local orchestrator con configuracion with_plan|without_files|normal|long|without_tools|without_browser|general|external por score base 0.63 y score adaptativo 0.86 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%. | confianza 0.78\n- adaptive local orchestrator por language_understanding: Recomiendo language_understanding para language en 32a080be-5928-4e1a-ae65-463ba20a784d usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.61 y score adaptativo 0.84 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 1432 ms. | confianza 0.77\n- adaptive local orchestrator por language_understanding: Recomiendo language_understanding para language en general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.61 y score adaptativo 0.84 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 1432 ms. | confianza 0.77\n\n## Retroalimentacion de ajustes\n- Ruta debil o inercial: chatgpt web asistido por ui: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- Pendiente Codex:: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- Pendiente Codex:: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- Pista de mejora reportada por la ejecucion: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n\nUNRESOLVED: UNRESOLVED:codex_content_probe",
+      "top_findings": [
+        {
+          "finding_id": "2a972daa-4ac3-46f3-a6a6-a7fcb6fd49ed",
+          "category": "inertial_route",
+          "title": "Ruta debil o inercial: chatgpt web asistido por ui",
+          "summary": "Se reutilizo 3 veces con exito 0%, bloqueos 0%, fallback 0% y tendencia +0.00.",
+          "severity": "high",
+          "confidence": 0.7,
+          "recommendation": "Debilitar esta preferencia hasta que la tendencia vuelva a mejorar.",
+          "evidence_refs": [
+            "b0a3ed25-b1bd-469d-b719-3da950979cef",
+            "a221b210-21eb-439c-aa37-7d2001c2b77d",
+            "03f88a4c-f11a-4913-815e-15f4e0bbc55e"
+          ],
+          "source_refs": [
+            "ExperimentLab",
+            "AdaptiveWeightLayer"
+          ],
+          "status": "observed",
+          "unresolved_fields": [],
+          "metadata": {
+            "route": "ui",
+            "assistant_kind": "chatgpt web asistido",
+            "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+            "profile": {
+              "sample_count": 3,
+              "success_rate": 0.0,
+              "failure_rate": 1.0,
+              "blocked_rate": 0.0,
+              "fallback_rate": 0.0,
+              "reuse_ratio": 0.0,
+              "average_score": 0.3504,
+              "average_latency_ms": 17376,
+              "recency_score": -0.7,
+              "trend_score": 0.0,
+              "adaptive_weight": -0.356,
+              "weighted_score": -0.0056,
+              "top_environment_signatures": [
+                "default"
+              ],
+              "top_time_buckets": [
+                "afternoon",
+                "evening"
+              ],
+              "reasons": [
+                "latencia promedio 17376 ms"
+              ]
+            },
+            "currently_recommended": false
+          }
+        }
+      ],
+      "recurring_issues": [
+        {
+          "title": "Ruta debil o inercial: chatgpt web asistido por ui",
+          "category": "inertial_route",
+          "summary": "Se reutilizo 3 veces con exito 0%, bloqueos 0%, fallback 0% y tendencia +0.00.",
+          "severity": "high",
+          "confidence": 0.7,
+          "evidence_refs": [
+            "b0a3ed25-b1bd-469d-b719-3da950979cef",
+            "a221b210-21eb-439c-aa37-7d2001c2b77d",
+            "03f88a4c-f11a-4913-815e-15f4e0bbc55e"
+          ],
+          "source_refs": [
+            "ExperimentLab",
+            "AdaptiveWeightLayer"
+          ]
+        },
+        {
+          "title": "light_checks_warning",
+          "category": "project_health_repeat",
+          "summary": "El issue light_checks_warning reaparece 10 veces en la capa evolutiva.",
+          "severity": "medium",
+          "confidence": 0.68,
+          "evidence_refs": [],
+          "source_refs": [
+            "EvolutionReviewService"
+          ]
+        },
+        {
+          "title": "need_codex_fix",
+          "category": "project_health_repeat",
+          "summary": "El issue need_codex_fix reaparece 2 veces en la capa evolutiva.",
+          "severity": "medium",
+          "confidence": 0.68,
+          "evidence_refs": [],
+          "source_refs": [
+            "EvolutionReviewService"
+          ]
+        },
+        {
+          "title": "knowledge.query",
+          "category": "project_health_repeat",
+          "summary": "El issue knowledge.query reaparece 1 veces en la capa evolutiva.",
+          "severity": "medium",
+          "confidence": 0.68,
+          "evidence_refs": [],
+          "source_refs": [
+            "EvolutionReviewService"
+          ]
+        }
+      ],
+      "recommended_adjustments": [
+        {
+          "title": "Ruta debil o inercial: chatgpt web asistido por ui",
+          "recommended_change": "Debilitar esta preferencia hasta que la tendencia vuelva a mejorar.",
+          "category": "inertial_route",
+          "severity": "high",
+          "confidence": 0.7,
+          "evidence_refs": [
+            "b0a3ed25-b1bd-469d-b719-3da950979cef",
+            "a221b210-21eb-439c-aa37-7d2001c2b77d",
+            "03f88a4c-f11a-4913-815e-15f4e0bbc55e"
+          ],
+          "source_refs": [
+            "ExperimentLab",
+            "AdaptiveWeightLayer"
+          ],
+          "metadata": {
+            "route": "ui",
+            "assistant_kind": "chatgpt web asistido",
+            "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+            "profile": {
+              "sample_count": 3,
+              "success_rate": 0.0,
+              "failure_rate": 1.0,
+              "blocked_rate": 0.0,
+              "fallback_rate": 0.0,
+              "reuse_ratio": 0.0,
+              "average_score": 0.3504,
+              "average_latency_ms": 17376,
+              "recency_score": -0.7,
+              "trend_score": 0.0,
+              "adaptive_weight": -0.356,
+              "weighted_score": -0.0056,
+              "top_environment_signatures": [
+                "default"
+              ],
+              "top_time_buckets": [
+                "afternoon",
+                "evening"
+              ],
+              "reasons": [
+                "latencia promedio 17376 ms"
+              ]
+            },
+            "currently_recommended": false
+          },
+          "feedback_key": "inertial_route:chatgpt web asistido:ui:without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+          "last_feedback_status": "no_evidence",
+          "repeat_policy": "pending_evidence",
+          "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+        },
+        {
+          "title": "Pendiente Codex: ",
+          "recommended_change": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+          "category": "backlog",
+          "severity": "medium",
+          "confidence": 0.95,
+          "evidence_refs": [],
+          "source_refs": [
+            "EvolutionReviewService"
+          ],
+          "metadata": {},
+          "feedback_key": "backlog:pendiente codex:",
+          "last_feedback_status": "no_evidence",
+          "repeat_policy": "pending_evidence",
+          "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+        },
+        {
+          "title": "Pendiente Codex: ",
+          "recommended_change": "Sin hallazgos. Decision: continue_local. Confianza 0.66.",
+          "category": "backlog",
+          "severity": "medium",
+          "confidence": 0.95,
+          "evidence_refs": [],
+          "source_refs": [
+            "EvolutionReviewService"
+          ],
+          "metadata": {},
+          "feedback_key": "backlog:pendiente codex:",
+          "last_feedback_status": "no_evidence",
+          "repeat_policy": "pending_evidence",
+          "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+        },
+        {
+          "title": "Pista de mejora reportada por la ejecucion",
+          "recommended_change": "Seguir con la estrategia propuesta.",
+          "category": "backlog",
+          "severity": "medium",
+          "confidence": 0.6,
+          "evidence_refs": [],
+          "source_refs": [
+            "EvolutionReviewService"
+          ],
+          "metadata": {},
+          "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+          "last_feedback_status": "no_evidence",
+          "repeat_policy": "pending_evidence",
+          "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+        },
+        {
+          "title": "Pista de mejora reportada por la ejecucion",
+          "recommended_change": "Probar restauracion de sesion o dejar la fase como login guiado con aprobacion.",
+          "category": "backlog",
+          "severity": "medium",
+          "confidence": 0.6,
+          "evidence_refs": [],
+          "source_refs": [
+            "EvolutionReviewService"
+          ],
+          "metadata": {},
+          "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+          "last_feedback_status": "no_evidence",
+          "repeat_policy": "pending_evidence",
+          "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+        }
+      ],
+      "validated_improvements": [
+        {
+          "title": "adaptive local orchestrator por language_understanding",
+          "summary": "Recomiendo language_understanding para language en sandbox:32a080be-5928-4e1a-ae65-463ba20a784d usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.62 y score adaptativo 0.88 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%.",
+          "subject_key": "sandbox:32a080be-5928-4e1a-ae65-463ba20a784d",
+          "recommended_assistant_kind": "adaptive local orchestrator",
+          "recommended_route": "language_understanding",
+          "confidence": 0.7918,
+          "score": 0.8807,
+          "reasons": [
+            "historial de exito 100%"
+          ],
+          "source_refs": [
+            "ExperimentLab",
+            "StrategySelector"
+          ],
+          "evidence_refs": [
+            "0eb7fd3b-fabb-4449-acd8-d20d5a60bffc"
+          ],
+          "feedback_key": "inertial_route:adaptive local orchestrator:language_understanding:with_plan|without_files|normal|short|without_tools|without_browser|general|external"
+        },
+        {
+          "title": "adaptive local orchestrator por language_understanding",
+          "summary": "Recomiendo language_understanding para language en general usando adaptive local orchestrator con configuracion with_plan|without_files|normal|long|without_tools|without_browser|general|external por score base 0.63 y score adaptativo 0.86 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%.",
+          "subject_key": "general",
+          "recommended_assistant_kind": "adaptive local orchestrator",
+          "recommended_route": "language_understanding",
+          "confidence": 0.7797,
+          "score": 0.8604,
+          "reasons": [
+            "historial de exito 100%"
+          ],
+          "source_refs": [
+            "ExperimentLab",
+            "StrategySelector"
+          ],
+          "evidence_refs": [
+            "5192df44-13cb-4c62-8fd3-9352fdf11d4f"
+          ],
+          "feedback_key": "inertial_route:adaptive local orchestrator:language_understanding:with_plan|without_files|normal|long|without_tools|without_browser|general|external"
+        },
+        {
+          "title": "adaptive local orchestrator por language_understanding",
+          "summary": "Recomiendo language_understanding para language en 32a080be-5928-4e1a-ae65-463ba20a784d usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.61 y score adaptativo 0.84 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 1432 ms.",
+          "subject_key": "32a080be-5928-4e1a-ae65-463ba20a784d",
+          "recommended_assistant_kind": "adaptive local orchestrator",
+          "recommended_route": "language_understanding",
+          "confidence": 0.7705,
+          "score": 0.836,
+          "reasons": [
+            "historial de exito 100%",
+            "latencia promedio 1432 ms"
+          ],
+          "source_refs": [
+            "ExperimentLab",
+            "StrategySelector"
+          ],
+          "evidence_refs": [
+            "47996b43-c7c2-443f-bf34-28b93569e9c8"
+          ],
+          "feedback_key": "inertial_route:adaptive local orchestrator:language_understanding:with_plan|without_files|normal|short|without_tools|without_browser|general|external"
+        },
+        {
+          "title": "adaptive local orchestrator por language_understanding",
+          "summary": "Recomiendo language_understanding para language en general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.61 y score adaptativo 0.84 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 1432 ms.",
+          "subject_key": "general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes",
+          "recommended_assistant_kind": "adaptive local orchestrator",
+          "recommended_route": "language_understanding",
+          "confidence": 0.7705,
+          "score": 0.836,
+          "reasons": [
+            "historial de exito 100%",
+            "latencia promedio 1432 ms"
+          ],
+          "source_refs": [
+            "ExperimentLab",
+            "StrategySelector"
+          ],
+          "evidence_refs": [
+            "ab201d31-6970-4ddc-9b7a-811de78bf6bb"
+          ],
+          "feedback_key": "inertial_route:adaptive local orchestrator:language_understanding:with_plan|without_files|normal|short|without_tools|without_browser|general|external"
+        }
+      ],
+      "unresolved_risks": [
+        "UNRESOLVED:codex_content_probe"
+      ],
+      "recommendation_feedback": [
+        {
+          "title": "Ruta debil o inercial: chatgpt web asistido por ui",
+          "category": "inertial_route",
+          "feedback_key": "inertial_route:chatgpt web asistido:ui:without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+          "status": "no_evidence",
+          "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+          "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+          "confidence": 0.6,
+          "sample_count": 0,
+          "evidence_refs": [
+            "b0a3ed25-b1bd-469d-b719-3da950979cef",
+            "a221b210-21eb-439c-aa37-7d2001c2b77d"
+          ],
+          "source_refs": [
+            "ExperimentLab",
+            "AdaptiveWeightLayer",
+            "OperationalSelfExaminationService",
+            "AutonomousValidationSnapshot"
+          ],
+          "profile": {
+            "sample_count": 0,
+            "success_rate": 0.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "trend_score": 0.0
+          },
+          "current_issue_still_active": true,
+          "repeat_recommendation": true,
+          "updated_at_utc": "2026-04-16T23:19:49.490098+00:00"
+        },
+        {
+          "title": "Pendiente Codex:",
+          "category": "backlog",
+          "feedback_key": "backlog:pendiente codex:",
+          "status": "no_evidence",
+          "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+          "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+          "confidence": 0.52,
+          "sample_count": 0,
+          "evidence_refs": [],
+          "source_refs": [
+            "EvolutionReviewService",
+            "OperationalSelfExaminationService",
+            "ExperimentLab",
+            "AutonomousValidationSnapshot"
+          ],
+          "profile": {
+            "sample_count": 0,
+            "success_rate": 0.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "trend_score": 0.0
+          },
+          "current_issue_still_active": false,
+          "repeat_recommendation": true,
+          "updated_at_utc": "2026-04-16T23:19:49.490117+00:00"
+        },
+        {
+          "title": "Pendiente Codex:",
+          "category": "backlog",
+          "feedback_key": "backlog:pendiente codex:",
+          "status": "no_evidence",
+          "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+          "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+          "confidence": 0.52,
+          "sample_count": 0,
+          "evidence_refs": [],
+          "source_refs": [
+            "EvolutionReviewService",
+            "OperationalSelfExaminationService",
+            "ExperimentLab",
+            "AutonomousValidationSnapshot"
+          ],
+          "profile": {
+            "sample_count": 0,
+            "success_rate": 0.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "trend_score": 0.0
+          },
+          "current_issue_still_active": false,
+          "repeat_recommendation": true,
+          "updated_at_utc": "2026-04-16T23:19:49.490126+00:00"
+        },
+        {
+          "title": "Pista de mejora reportada por la ejecucion",
+          "category": "backlog",
+          "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+          "status": "no_evidence",
+          "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+          "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+          "confidence": 0.52,
+          "sample_count": 0,
+          "evidence_refs": [],
+          "source_refs": [
+            "EvolutionReviewService",
+            "OperationalSelfExaminationService",
+            "ExperimentLab",
+            "AutonomousValidationSnapshot"
+          ],
+          "profile": {
+            "sample_count": 0,
+            "success_rate": 0.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "trend_score": 0.0
+          },
+          "current_issue_still_active": false,
+          "repeat_recommendation": true,
+          "updated_at_utc": "2026-04-16T23:19:49.490135+00:00"
+        },
+        {
+          "title": "Pista de mejora reportada por la ejecucion",
+          "category": "backlog",
+          "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+          "status": "no_evidence",
+          "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+          "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+          "confidence": 0.52,
+          "sample_count": 0,
+          "evidence_refs": [],
+          "source_refs": [
+            "EvolutionReviewService",
+            "OperationalSelfExaminationService",
+            "ExperimentLab",
+            "AutonomousValidationSnapshot"
+          ],
+          "profile": {
+            "sample_count": 0,
+            "success_rate": 0.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "trend_score": 0.0
+          },
+          "current_issue_still_active": false,
+          "repeat_recommendation": true,
+          "updated_at_utc": "2026-04-16T23:19:49.490142+00:00"
+        }
+      ],
+      "feedback_summary": {
+        "total_reviewed": 5,
+        "validated_improvement": 0,
+        "valid_adjustment": 0,
+        "false_improvement": 0,
+        "no_evidence": 5
+      },
+      "updated_at_utc": "2026-04-16T23:19:43.382761+00:00",
+      "package_path": "C:\\Python\\IABV_v1.5\\data\\evolution\\self_examination\\latest.json",
+      "markdown_path": "C:\\Python\\IABV_v1.5\\data\\evolution\\self_examination\\latest.md"
+    },
+    "recurring_issues": [
+      {
+        "title": "Ruta debil o inercial: chatgpt web asistido por ui",
+        "category": "inertial_route",
+        "summary": "Se reutilizo 3 veces con exito 0%, bloqueos 0%, fallback 0% y tendencia +0.00.",
+        "severity": "high",
+        "confidence": 0.7,
+        "evidence_refs": [
+          "b0a3ed25-b1bd-469d-b719-3da950979cef",
+          "a221b210-21eb-439c-aa37-7d2001c2b77d",
+          "03f88a4c-f11a-4913-815e-15f4e0bbc55e"
+        ],
+        "source_refs": [
+          "ExperimentLab",
+          "AdaptiveWeightLayer"
+        ]
+      },
+      {
+        "title": "light_checks_warning",
+        "category": "project_health_repeat",
+        "summary": "El issue light_checks_warning reaparece 10 veces en la capa evolutiva.",
+        "severity": "medium",
+        "confidence": 0.68,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService"
+        ]
+      },
+      {
+        "title": "need_codex_fix",
+        "category": "project_health_repeat",
+        "summary": "El issue need_codex_fix reaparece 2 veces en la capa evolutiva.",
+        "severity": "medium",
+        "confidence": 0.68,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService"
+        ]
+      },
+      {
+        "title": "knowledge.query",
+        "category": "project_health_repeat",
+        "summary": "El issue knowledge.query reaparece 1 veces en la capa evolutiva.",
+        "severity": "medium",
+        "confidence": 0.68,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService"
+        ]
+      }
+    ],
+    "recommended_adjustments": [
+      {
+        "title": "Ruta debil o inercial: chatgpt web asistido por ui",
+        "recommended_change": "Debilitar esta preferencia hasta que la tendencia vuelva a mejorar.",
+        "category": "inertial_route",
+        "severity": "high",
+        "confidence": 0.7,
+        "evidence_refs": [
+          "b0a3ed25-b1bd-469d-b719-3da950979cef",
+          "a221b210-21eb-439c-aa37-7d2001c2b77d",
+          "03f88a4c-f11a-4913-815e-15f4e0bbc55e"
+        ],
+        "source_refs": [
+          "ExperimentLab",
+          "AdaptiveWeightLayer"
+        ],
+        "metadata": {
+          "route": "ui",
+          "assistant_kind": "chatgpt web asistido",
+          "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+          "profile": {
+            "sample_count": 3,
+            "success_rate": 0.0,
+            "failure_rate": 1.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "reuse_ratio": 0.0,
+            "average_score": 0.3504,
+            "average_latency_ms": 17376,
+            "recency_score": -0.7,
+            "trend_score": 0.0,
+            "adaptive_weight": -0.356,
+            "weighted_score": -0.0056,
+            "top_environment_signatures": [
+              "default"
+            ],
+            "top_time_buckets": [
+              "afternoon",
+              "evening"
+            ],
+            "reasons": [
+              "latencia promedio 17376 ms"
+            ]
+          },
+          "currently_recommended": false
+        },
+        "feedback_key": "inertial_route:chatgpt web asistido:ui:without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "last_feedback_status": "no_evidence",
+        "repeat_policy": "pending_evidence",
+        "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+      },
+      {
+        "title": "Pendiente Codex: ",
+        "recommended_change": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+        "category": "backlog",
+        "severity": "medium",
+        "confidence": 0.95,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService"
+        ],
+        "metadata": {},
+        "feedback_key": "backlog:pendiente codex:",
+        "last_feedback_status": "no_evidence",
+        "repeat_policy": "pending_evidence",
+        "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+      },
+      {
+        "title": "Pendiente Codex: ",
+        "recommended_change": "Sin hallazgos. Decision: continue_local. Confianza 0.66.",
+        "category": "backlog",
+        "severity": "medium",
+        "confidence": 0.95,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService"
+        ],
+        "metadata": {},
+        "feedback_key": "backlog:pendiente codex:",
+        "last_feedback_status": "no_evidence",
+        "repeat_policy": "pending_evidence",
+        "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+      },
+      {
+        "title": "Pista de mejora reportada por la ejecucion",
+        "recommended_change": "Seguir con la estrategia propuesta.",
+        "category": "backlog",
+        "severity": "medium",
+        "confidence": 0.6,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService"
+        ],
+        "metadata": {},
+        "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+        "last_feedback_status": "no_evidence",
+        "repeat_policy": "pending_evidence",
+        "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+      },
+      {
+        "title": "Pista de mejora reportada por la ejecucion",
+        "recommended_change": "Probar restauracion de sesion o dejar la fase como login guiado con aprobacion.",
+        "category": "backlog",
+        "severity": "medium",
+        "confidence": 0.6,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService"
+        ],
+        "metadata": {},
+        "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+        "last_feedback_status": "no_evidence",
+        "repeat_policy": "pending_evidence",
+        "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+      }
+    ],
+    "validated_improvements": [
+      {
+        "title": "adaptive local orchestrator por language_understanding",
+        "summary": "Recomiendo language_understanding para language en sandbox:32a080be-5928-4e1a-ae65-463ba20a784d usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.62 y score adaptativo 0.88 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%.",
+        "subject_key": "sandbox:32a080be-5928-4e1a-ae65-463ba20a784d",
+        "recommended_assistant_kind": "adaptive local orchestrator",
+        "recommended_route": "language_understanding",
+        "confidence": 0.7918,
+        "score": 0.8807,
+        "reasons": [
+          "historial de exito 100%"
+        ],
+        "source_refs": [
+          "ExperimentLab",
+          "StrategySelector"
+        ],
+        "evidence_refs": [
+          "0eb7fd3b-fabb-4449-acd8-d20d5a60bffc"
+        ],
+        "feedback_key": "inertial_route:adaptive local orchestrator:language_understanding:with_plan|without_files|normal|short|without_tools|without_browser|general|external"
+      },
+      {
+        "title": "adaptive local orchestrator por language_understanding",
+        "summary": "Recomiendo language_understanding para language en general usando adaptive local orchestrator con configuracion with_plan|without_files|normal|long|without_tools|without_browser|general|external por score base 0.63 y score adaptativo 0.86 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%.",
+        "subject_key": "general",
+        "recommended_assistant_kind": "adaptive local orchestrator",
+        "recommended_route": "language_understanding",
+        "confidence": 0.7797,
+        "score": 0.8604,
+        "reasons": [
+          "historial de exito 100%"
+        ],
+        "source_refs": [
+          "ExperimentLab",
+          "StrategySelector"
+        ],
+        "evidence_refs": [
+          "5192df44-13cb-4c62-8fd3-9352fdf11d4f"
+        ],
+        "feedback_key": "inertial_route:adaptive local orchestrator:language_understanding:with_plan|without_files|normal|long|without_tools|without_browser|general|external"
+      },
+      {
+        "title": "adaptive local orchestrator por language_understanding",
+        "summary": "Recomiendo language_understanding para language en 32a080be-5928-4e1a-ae65-463ba20a784d usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.61 y score adaptativo 0.84 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 1432 ms.",
+        "subject_key": "32a080be-5928-4e1a-ae65-463ba20a784d",
+        "recommended_assistant_kind": "adaptive local orchestrator",
+        "recommended_route": "language_understanding",
+        "confidence": 0.7705,
+        "score": 0.836,
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 1432 ms"
+        ],
+        "source_refs": [
+          "ExperimentLab",
+          "StrategySelector"
+        ],
+        "evidence_refs": [
+          "47996b43-c7c2-443f-bf34-28b93569e9c8"
+        ],
+        "feedback_key": "inertial_route:adaptive local orchestrator:language_understanding:with_plan|without_files|normal|short|without_tools|without_browser|general|external"
+      },
+      {
+        "title": "adaptive local orchestrator por language_understanding",
+        "summary": "Recomiendo language_understanding para language en general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes usando adaptive local orchestrator con configuracion with_plan|without_files|normal|short|without_tools|without_browser|general|external por score base 0.61 y score adaptativo 0.84 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%; latencia promedio 1432 ms.",
+        "subject_key": "general:que-modelo-de-ia-eres-o-con-que-modelo-de-ia-me-respondes",
+        "recommended_assistant_kind": "adaptive local orchestrator",
+        "recommended_route": "language_understanding",
+        "confidence": 0.7705,
+        "score": 0.836,
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 1432 ms"
+        ],
+        "source_refs": [
+          "ExperimentLab",
+          "StrategySelector"
+        ],
+        "evidence_refs": [
+          "ab201d31-6970-4ddc-9b7a-811de78bf6bb"
+        ],
+        "feedback_key": "inertial_route:adaptive local orchestrator:language_understanding:with_plan|without_files|normal|short|without_tools|without_browser|general|external"
+      }
+    ],
+    "recommendation_feedback": [
+      {
+        "title": "Ruta debil o inercial: chatgpt web asistido por ui",
+        "category": "inertial_route",
+        "feedback_key": "inertial_route:chatgpt web asistido:ui:without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [
+          "b0a3ed25-b1bd-469d-b719-3da950979cef",
+          "a221b210-21eb-439c-aa37-7d2001c2b77d"
+        ],
+        "source_refs": [
+          "ExperimentLab",
+          "AdaptiveWeightLayer",
+          "OperationalSelfExaminationService",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-04-16T23:19:49.490098+00:00"
+      },
+      {
+        "title": "Pendiente Codex:",
+        "category": "backlog",
+        "feedback_key": "backlog:pendiente codex:",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.52,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": false,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-04-16T23:19:49.490117+00:00"
+      },
+      {
+        "title": "Pendiente Codex:",
+        "category": "backlog",
+        "feedback_key": "backlog:pendiente codex:",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.52,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": false,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-04-16T23:19:49.490126+00:00"
+      },
+      {
+        "title": "Pista de mejora reportada por la ejecucion",
+        "category": "backlog",
+        "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.52,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": false,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-04-16T23:19:49.490135+00:00"
+      },
+      {
+        "title": "Pista de mejora reportada por la ejecucion",
+        "category": "backlog",
+        "feedback_key": "backlog:pista de mejora reportada por la ejecucion",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.52,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": false,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-04-16T23:19:49.490142+00:00"
+      }
+    ],
+    "feedback_summary": {
+      "total_reviewed": 5,
+      "validated_improvement": 0,
+      "valid_adjustment": 0,
+      "false_improvement": 0,
+      "no_evidence": 5
+    },
+    "unresolved_risks": [
+      "UNRESOLVED:codex_content_probe"
+    ]
+  }
+}

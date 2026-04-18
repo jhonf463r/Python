@@ -1,0 +1,36 @@
+{
+  "objective_id": "0bcc6df0-3dbb-42b7-ad9e-f9d246229526",
+  "kind": "task",
+  "title": "Asistencia adaptativa general",
+  "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Consulta local con contexto; sigue faltando un adaptador operativo del dominio.",
+  "parent_id": "649381a8-56ac-4e74-9ea8-03eafeed5b28",
+  "root_id": "9fe52e79-1c18-4497-a04f-6c69305d5079",
+  "site_id": null,
+  "priority": 50,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:f3265c24-96ff-49f8-9dcf-76335ecd596a",
+    "Conocimiento local relacionado: 5 items.",
+    "run:2bf328b0-8515-4975-adea-1eb78b2c3425"
+  ],
+  "tags": [],
+  "metadata": {
+    "user_goal": "si has logrado comunicarte con codex?",
+    "intent_key": "general.assistance",
+    "pack_id": "knowledge.query",
+    "pack_title": "Consulta local con contexto",
+    "level": "task",
+    "session_id": "8a08c552-abfa-4135-aa2f-1d8c57249e87",
+    "status": "completed"
+  },
+  "created_at_utc": "2026-04-13T23:17:05.801963Z",
+  "updated_at_utc": "2026-04-13T23:25:11.006211Z"
+}

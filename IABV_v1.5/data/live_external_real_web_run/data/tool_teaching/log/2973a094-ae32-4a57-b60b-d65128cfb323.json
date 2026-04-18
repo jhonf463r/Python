@@ -1,0 +1,68 @@
+{
+  "log_id": "2973a094-ae32-4a57-b60b-d65128cfb323",
+  "tool_id": "claude_web_assisted",
+  "task_id": "83bdd192-8823-4210-a55d-2cf1f33d9ea5",
+  "action_type": "task_result",
+  "state": "sandbox_pass",
+  "created_at_utc": "2026-04-12T22:30:14.027525+00:00",
+  "payload": {
+    "result_id": "f39c2987-eb2f-4731-a914-6d073d0fe578",
+    "task_id": "83bdd192-8823-4210-a55d-2cf1f33d9ea5",
+    "tool_id": "claude_web_assisted",
+    "tool_type": "llm_web_ui",
+    "success": true,
+    "validation_status": "sandbox_pass",
+    "execution_state": {
+      "state": "sandbox_pass",
+      "detail": "Sandbox local de herramienta ejecutado.",
+      "executor_name": "external_assistant",
+      "sandboxed": true,
+      "validated": true,
+      "approval_decision": "approved",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": true,
+        "assistant_kind": "claude",
+        "launch_mode": "web_assisted",
+        "launch_target": "https://claude.ai/",
+        "response_capture_mode": "dom_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Objetivo: validar proveedor externo real y detectar login, session expired, wrong thread o quota si aparecen con evidencia.\n\nIABV_THREAD_KEY: iabv::claude::wplay::valida-si-esta-sesion-externa-esta-autenticada-y\nIABV_THREAD_TITLE: IABV Claude | Valida si esta sesion externa esta autenticada y\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "response_captured": false,
+        "session_scope": "program_chat",
+        "session_label": "Claude especial de IABV",
+        "isolated_session": true,
+        "thread_key": "iabv::claude::wplay::valida-si-esta-sesion-externa-esta-autenticada-y",
+        "thread_title": "IABV Claude | Valida si esta sesion externa esta autenticada y",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "2026-04-12T22:30:14.027423+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_real_web_run\\data\\tool_teaching\\external_assistants\\claude_program_session\\browser_profile"
+      }
+    },
+    "rollback_state": null,
+    "output_text": "Asistente externo listo para consulta guiada.",
+    "extracted_data": {
+      "assistant_kind": "claude",
+      "launch_target": "https://claude.ai/"
+    },
+    "artifacts": [],
+    "error_message": "",
+    "execution_ms": 0,
+    "created_at_utc": "2026-04-12T22:30:14.027525Z",
+    "metadata": {
+      "sandbox": true,
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  }
+}

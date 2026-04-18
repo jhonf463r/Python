@@ -1,0 +1,656 @@
+{
+  "package_id": "1fb70f2e-b362-4c22-acf8-cf1aa4e3535a",
+  "created_at_utc": "2026-04-18T04:46:44.547554Z",
+  "updated_at_utc": "2026-04-18T04:46:44.547554Z",
+  "package_version": "portable_context.v1",
+  "project_id": "IABV_v1.5",
+  "summary": "Objetivo actual: sin objetivo activo confirmado | mejor ruta conocida: sin preferencia de ruta consolidada | bloqueos activos: 0 | pendientes: 0 | ajustes sugeridos: 1 | unresolved: 10",
+  "sections": [
+    {
+      "section_id": "project_state",
+      "title": "Estado actual del proyecto",
+      "summary": "Sin objetivo activo confirmado | World model: conectado | Validacion: idle",
+      "items": [
+        {
+          "label": "Objetivo activo",
+          "value": "sin objetivo activo confirmado"
+        },
+        {
+          "label": "Proyecto activo",
+          "value": "sin proyecto activo confirmado"
+        },
+        {
+          "label": "Tarea activa",
+          "value": "sin tarea activa confirmada"
+        },
+        {
+          "label": "Pulso evolutivo",
+          "value": "Dossiers recientes: 0 | fallos: 0 | parciales: 0 | incidentes invisibles: 0 | sesiones adaptativas: 0 | autotests: 0 | pendientes Codex: 0. Prioridad sugerida: seguir reforzando evidencia y conocimiento local."
+        },
+        {
+          "label": "World model",
+          "value": "Observacion operativa actualizada."
+        },
+        {
+          "label": "Validacion autonoma",
+          "value": "Sin validacion autonoma reciente."
+        }
+      ],
+      "source_kind": "aggregated_live_state",
+      "source_refs": [
+        "objective_repository",
+        "evolution_review_service",
+        "world_model_service",
+        "autonomous_validation_cycle"
+      ],
+      "confidence": 0.7,
+      "last_updated": "2026-04-18T04:46:44.098278Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "architecture",
+      "title": "Arquitectura central vigente",
+      "summary": "La arquitectura sigue siendo una sola: perception -> orchestrator -> governance -> ejecucion -> aprendizaje.",
+      "items": [
+        {
+          "component": "PerceptionSnapshot",
+          "status": "wired",
+          "detail": "Entrada unificada antes de decidir."
+        },
+        {
+          "component": "TaskContextAssembler",
+          "status": "wired",
+          "detail": "Arma contexto, memoria, aprendizaje y world model."
+        },
+        {
+          "component": "AdaptiveTaskOrchestrator",
+          "status": "wired",
+          "detail": "Decide ruta, governance y resultado final."
+        },
+        {
+          "component": "EnvironmentSelfModel",
+          "status": "wired",
+          "detail": "Describe hardware, runtime y riesgo operativo."
+        },
+        {
+          "component": "WorldModelSnapshot",
+          "status": "wired",
+          "detail": "Panorama operativo vivo de herramientas, red y ventanas."
+        },
+        {
+          "component": "ExperimentLab",
+          "status": "wired",
+          "detail": "Memoria persistida de resultados y recomendaciones."
+        },
+        {
+          "component": "AdaptiveWeightLayer",
+          "status": "wired",
+          "detail": "Ajusta preferencia futura segun evidencia real."
+        },
+        {
+          "component": "ToolEvolutionMonitor",
+          "status": "wired",
+          "detail": "Monitorea desempeno por herramienta y problema, y propone cambios con evidencia."
+        },
+        {
+          "component": "AutonomousValidationCycle",
+          "status": "wired",
+          "detail": "Valida candidatos en sandbox antes de promoverlos."
+        },
+        {
+          "component": "PortableContextPackage",
+          "status": "wired",
+          "detail": "Exporta contexto comprimido reusable para nuevas sesiones."
+        }
+      ],
+      "source_kind": "project_contract",
+      "source_refs": [
+        "AGENTS.md",
+        "bootstrap wiring"
+      ],
+      "confidence": 1.0,
+      "last_updated": "2026-04-18T04:46:44.547554Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "implemented_capabilities",
+      "title": "Piezas ya implementadas",
+      "summary": "Capas cerradas: P1 y nucleo de P2. P3 ya deja paquete portable util para sesiones nuevas. Validacion actual: Sin validacion autonoma reciente.",
+      "items": [
+        {
+          "capability": "P1 World Model operativo",
+          "status": "active",
+          "detail": "Observa estado de herramientas, red, foco, procesos y bloqueos antes de actuar."
+        },
+        {
+          "capability": "P2 Neuroplasticidad operativa",
+          "status": "partial",
+          "detail": "Aprende resultados reales y ajusta preferencia futura de rutas e IAs."
+        },
+        {
+          "capability": "Monitor de evolucion de herramientas",
+          "status": "active",
+          "detail": "Resume desempeno por problema, detecta degradacion y genera propuestas para sandbox."
+        },
+        {
+          "capability": "SandboxExperiment",
+          "status": "active",
+          "detail": "Valida candidatos antes de promoverlos como decision estable."
+        },
+        {
+          "capability": "P3 Contexto portable",
+          "status": "active",
+          "detail": "Condensa arquitectura, aprendizaje, bloqueos y pendientes en JSON + Markdown reutilizable."
+        },
+        {
+          "capability": "Preguntas humanas de aprendizaje",
+          "status": "active",
+          "detail": "Responde desde ExperimentLab y validacion sin disparar autonomia operativa."
+        },
+        {
+          "capability": "Preflight de asistentes externos",
+          "status": "active",
+          "detail": "Consulta world model y governance antes de abrir o pegar en otra herramienta."
+        }
+      ],
+      "source_kind": "project_contract",
+      "source_refs": [
+        "bootstrap wiring",
+        "world_model_service",
+        "experiment_lab_repository",
+        "autonomous_validation_cycle"
+      ],
+      "confidence": 0.95,
+      "last_updated": "2026-04-18T04:46:44.547554Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "learning",
+      "title": "Aprendizaje acumulado util",
+      "summary": "Aun no hay aprendizaje consolidado.",
+      "items": [],
+      "source_kind": "persistent_learning",
+      "source_refs": [
+        "ExperimentLab",
+        "AdaptiveWeightLayer",
+        "TaskOutcomeRecorder"
+      ],
+      "confidence": 0.58,
+      "last_updated": "2026-04-18T04:46:44.547554Z",
+      "unresolved_fields": [
+        "UNRESOLVED:learning_summary"
+      ],
+      "metadata": {}
+    },
+    {
+      "section_id": "tool_discovery",
+      "title": "Descubrimiento de herramientas",
+      "summary": "Detecte 0 senal(es) de descubrimiento: 0 activa(s), 0 en evaluacion, 0 promovida(s), 0 descartada(s).",
+      "items": [],
+      "source_kind": "tool_discovery",
+      "source_refs": [
+        "ToolRegistry",
+        "WorldModelSnapshot",
+        "ExperimentLab",
+        "AutonomousValidationCycleService"
+      ],
+      "confidence": 0.35,
+      "last_updated": "2026-04-18T04:46:44.547554Z",
+      "unresolved_fields": [
+        "UNRESOLVED:tool_discovery_subjects"
+      ],
+      "metadata": {
+        "active_signal_count": 0,
+        "in_validation_signal_count": 0,
+        "promoted_signal_count": 0,
+        "discarded_signal_count": 0
+      }
+    },
+    {
+      "section_id": "tool_evolution",
+      "title": "Evolucion de herramientas",
+      "summary": "Todavia no hay suficiente evidencia comparativa para un monitor de evolucion de herramientas.",
+      "items": [],
+      "source_kind": "experiment_lab_monitor",
+      "source_refs": [
+        "ExperimentLab",
+        "AdaptiveWeightLayer",
+        "AutonomousValidationCycle"
+      ],
+      "confidence": 0.35,
+      "last_updated": "2026-04-18T04:46:44.547554Z",
+      "unresolved_fields": [
+        "UNRESOLVED:tool_evolution_subjects",
+        "UNRESOLVED:tool_evolution_performance"
+      ],
+      "metadata": {
+        "degraded_subjects": [],
+        "proposal_count": 0,
+        "active_proposal_count": 0,
+        "decided_proposal_count": 0,
+        "winning_by_problem": {},
+        "in_validation": [],
+        "discarded_proposals": [],
+        "recent_decisions": []
+      }
+    },
+    {
+      "section_id": "tool_evolution_decisions",
+      "title": "Decisiones evolutivas",
+      "summary": "Sin decisiones evolutivas registradas todavia.",
+      "items": [],
+      "source_kind": "autonomous_validation_cycle",
+      "source_refs": [
+        "AutonomousValidationCycleService",
+        "SandboxExperimentService",
+        "ExperimentLab"
+      ],
+      "confidence": 0.35,
+      "last_updated": "2026-04-18T04:46:44.547554Z",
+      "unresolved_fields": [],
+      "metadata": {
+        "winning_by_problem": {},
+        "degraded_tools": [],
+        "in_validation": []
+      }
+    },
+    {
+      "section_id": "self_examination",
+      "title": "Autoexaminacion operativa",
+      "summary": "Autoexaminacion partial: todavia no tengo suficiente evidencia acumulada para emitir una revision fuerte.",
+      "items": [
+        {
+          "label": "Seguir capturando evidencia evolutiva",
+          "summary": "Ejecutar consultas, ensenanzas y autodiagnosticos para poblar la capa evolutiva.",
+          "severity": "medium",
+          "confidence": 0.35,
+          "source_refs": [
+            "EvolutionReviewService"
+          ]
+        }
+      ],
+      "source_kind": "derived_review",
+      "source_refs": [
+        "OperationalSelfExaminationService",
+        "ExperimentLab",
+        "WorldModelSnapshot"
+      ],
+      "confidence": 0.35,
+      "last_updated": "2026-04-18T04:46:44.547554Z",
+      "unresolved_fields": [
+        "UNRESOLVED:codex_thread_tracking",
+        "UNRESOLVED:autonomous_validation_cycle",
+        "UNRESOLVED:experiment_history",
+        "UNRESOLVED:adaptive_sessions"
+      ],
+      "metadata": {
+        "recurring_issues": [],
+        "validated_improvements": [],
+        "recommendation_feedback": [],
+        "feedback_summary": {
+          "total_reviewed": 0,
+          "validated_improvement": 0,
+          "valid_adjustment": 0,
+          "false_improvement": 0,
+          "no_evidence": 0
+        }
+      }
+    },
+    {
+      "section_id": "recommended_routes",
+      "title": "Herramientas y rutas recomendadas",
+      "summary": "No hay rutas recomendadas con evidencia suficiente.",
+      "items": [],
+      "source_kind": "persistent_learning",
+      "source_refs": [
+        "ExperimentLab",
+        "StrategySelector",
+        "comparison_scope_key"
+      ],
+      "confidence": 0.0,
+      "last_updated": "2026-04-18T04:46:44.547554Z",
+      "unresolved_fields": [
+        "UNRESOLVED:recommended_routes"
+      ],
+      "metadata": {}
+    },
+    {
+      "section_id": "operational_blocks",
+      "title": "Bloqueos, limites y rutas inviables",
+      "summary": "1 bloqueos o limitaciones activas.",
+      "items": [
+        {
+          "kind": "tool_status",
+          "target_scope": "claude_installed",
+          "assistant_kind": "claude",
+          "detail": "La herramienta no quedo confirmada como disponible en esta laptop."
+        }
+      ],
+      "source_kind": "live_operational_state",
+      "source_refs": [
+        "WorldModelSnapshot"
+      ],
+      "confidence": 0.7,
+      "last_updated": "2026-04-18T04:46:44.098278Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "validated_decisions",
+      "title": "Decisiones ya validadas",
+      "summary": "1 decisiones ya tienen validacion o confianza suficiente para reutilizarse.",
+      "items": [
+        {
+          "decision": "validation_cycle",
+          "summary": "Sin validacion autonoma reciente.",
+          "status": "idle",
+          "promoted_count": 0,
+          "candidate_assistant_kind": "",
+          "candidate_route": "",
+          "verdict": ""
+        }
+      ],
+      "source_kind": "persistent_learning",
+      "source_refs": [
+        "ExperimentLab",
+        "AutonomousValidationCycle"
+      ],
+      "confidence": 0.82,
+      "last_updated": "2026-04-18T04:46:44.547554Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "decision_history",
+      "title": "Historial condensado de decisiones",
+      "summary": "No hay historial condensado de decisiones relevantes.",
+      "items": [],
+      "source_kind": "persistent_learning",
+      "source_refs": [
+        "ExperimentLab",
+        "ia_trace_summary"
+      ],
+      "confidence": 0.0,
+      "last_updated": "2026-04-18T04:46:44.547554Z",
+      "unresolved_fields": [
+        "UNRESOLVED:decision_history"
+      ],
+      "metadata": {}
+    },
+    {
+      "section_id": "pending",
+      "title": "Pendientes priorizados",
+      "summary": "0 pending issues y 1 mejoras priorizadas.",
+      "items": [
+        {
+          "title": "Seguir capturando evidencia evolutiva",
+          "rationale": "Todavia no hay suficientes dossiers o incidentes para priorizar backlog fino.",
+          "recommended_change": "Ejecutar consultas, ensenanzas y autodiagnosticos para poblar la capa evolutiva.",
+          "priority_score": 35,
+          "suggested_tests": [
+            "Centro Evolutivo",
+            "Historial de Ejecuciones"
+          ]
+        }
+      ],
+      "source_kind": "persistent_backlog",
+      "source_refs": [
+        "pending_issue_repository",
+        "evolution_review_service"
+      ],
+      "confidence": 0.8,
+      "last_updated": "2026-04-18T04:46:44.547554Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "unresolved",
+      "title": "UNRESOLVED",
+      "summary": "10 campos siguen sin evidencia suficiente y no deben asumirse.",
+      "items": [
+        {
+          "field": "UNRESOLVED:cpu_temperature"
+        },
+        {
+          "field": "UNRESOLVED:battery_status"
+        },
+        {
+          "field": "UNRESOLVED:cpu_frequency"
+        },
+        {
+          "field": "UNRESOLVED:ollama_inventory"
+        },
+        {
+          "field": "UNRESOLVED:codex_thread_tracking"
+        },
+        {
+          "field": "UNRESOLVED:autonomous_validation_cycle"
+        },
+        {
+          "field": "UNRESOLVED:recommendation_history"
+        },
+        {
+          "field": "UNRESOLVED:active_goal_context"
+        },
+        {
+          "field": "UNRESOLVED:experiment_history"
+        },
+        {
+          "field": "UNRESOLVED:adaptive_sessions"
+        }
+      ],
+      "source_kind": "honest_runtime_limits",
+      "source_refs": [
+        "WorldModelSnapshot",
+        "EnvironmentSelfModel",
+        "AutonomousValidationCycle"
+      ],
+      "confidence": 1.0,
+      "last_updated": "2026-04-18T04:46:44.547554Z",
+      "unresolved_fields": [
+        "UNRESOLVED:cpu_temperature",
+        "UNRESOLVED:battery_status",
+        "UNRESOLVED:cpu_frequency",
+        "UNRESOLVED:ollama_inventory",
+        "UNRESOLVED:codex_thread_tracking",
+        "UNRESOLVED:autonomous_validation_cycle",
+        "UNRESOLVED:recommendation_history",
+        "UNRESOLVED:active_goal_context",
+        "UNRESOLVED:experiment_history",
+        "UNRESOLVED:adaptive_sessions"
+      ],
+      "metadata": {}
+    },
+    {
+      "section_id": "hard_rules",
+      "title": "Reglas duras que no deben romperse",
+      "summary": "Este paquete portable no reemplaza la arquitectura: solo la condensa y la hace reutilizable.",
+      "items": [
+        {
+          "rule": "No crear otro cerebro ni otro orquestador."
+        },
+        {
+          "rule": "No duplicar PerceptionSnapshot ni crear una memoria paralela."
+        },
+        {
+          "rule": "No romper governance ni saltarse bloqueos del world model."
+        },
+        {
+          "rule": "Cambios minimos, reversibles y verificables."
+        },
+        {
+          "rule": "Si algo no puede confirmarse con evidencia, marcar UNRESOLVED."
+        },
+        {
+          "rule": "Los ViewModels observan y explican; no inventan decisiones de ruta."
+        },
+        {
+          "rule": "Antes de usar una herramienta externa, consultar estado y bloqueos reales."
+        },
+        {
+          "rule": "El aprendizaje acumulado debe respetarse, pero sin dogma: cambiar de ruta solo con evidencia."
+        }
+      ],
+      "source_kind": "project_contract",
+      "source_refs": [
+        "AGENTS.md"
+      ],
+      "confidence": 1.0,
+      "last_updated": "2026-04-18T04:46:44.547554Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    }
+  ],
+  "assistant_brief": "# IABV v1.5 - Portable Context Package\n\nGenerado: 2026-04-18T04:46:44.547554+00:00\nResumen: Objetivo actual: sin objetivo activo confirmado | mejor ruta conocida: sin preferencia de ruta consolidada | bloqueos activos: 0 | pendientes: 0 | ajustes sugeridos: 1 | unresolved: 10\n\nUsa este contexto como arranque rapido para una sesion nueva. Si algo aparece como UNRESOLVED, no lo des por confirmado.\n\n## Estado actual del proyecto\nSin objetivo activo confirmado | World model: conectado | Validacion: idle\n- Objetivo activo: sin objetivo activo confirmado\n- Proyecto activo: sin proyecto activo confirmado\n- Tarea activa: sin tarea activa confirmada\n- Pulso evolutivo: Dossiers recientes: 0 | fallos: 0 | parciales: 0 | incidentes invisibles: 0 | sesiones adaptativas: 0 | autotests: 0 | pendientes Codex: 0. Prioridad sugerida: seguir reforzando evidencia y conocimiento local.\n- World model: Observacion operativa actualizada.\n- Validacion autonoma: Sin validacion autonoma reciente.\nFuente: aggregated_live_state | refs: objective_repository, evolution_review_service, world_model_service, autonomous_validation_cycle | actualizado: 2026-04-18T04:46:44.098278+00:00\n\n## Arquitectura central vigente\nLa arquitectura sigue siendo una sola: perception -> orchestrator -> governance -> ejecucion -> aprendizaje.\n- PerceptionSnapshot: wired | Entrada unificada antes de decidir.\n- TaskContextAssembler: wired | Arma contexto, memoria, aprendizaje y world model.\n- AdaptiveTaskOrchestrator: wired | Decide ruta, governance y resultado final.\n- EnvironmentSelfModel: wired | Describe hardware, runtime y riesgo operativo.\n- WorldModelSnapshot: wired | Panorama operativo vivo de herramientas, red y ventanas.\n- ExperimentLab: wired | Memoria persistida de resultados y recomendaciones.\nFuente: project_contract | refs: AGENTS.md, bootstrap wiring | actualizado: 2026-04-18T04:46:44.547554+00:00\n\n## Piezas ya implementadas\nCapas cerradas: P1 y nucleo de P2. P3 ya deja paquete portable util para sesiones nuevas. Validacion actual: Sin validacion autonoma reciente.\n- P1 World Model operativo: active | Observa estado de herramientas, red, foco, procesos y bloqueos antes de actuar.\n- P2 Neuroplasticidad operativa: partial | Aprende resultados reales y ajusta preferencia futura de rutas e IAs.\n- Monitor de evolucion de herramientas: active | Resume desempeno por problema, detecta degradacion y genera propuestas para sandbox.\n- SandboxExperiment: active | Valida candidatos antes de promoverlos como decision estable.\n- P3 Contexto portable: active | Condensa arquitectura, aprendizaje, bloqueos y pendientes en JSON + Markdown reutilizable.\n- Preguntas humanas de aprendizaje: active | Responde desde ExperimentLab y validacion sin disparar autonomia operativa.\nFuente: project_contract | refs: bootstrap wiring, world_model_service, experiment_lab_repository, autonomous_validation_cycle | actualizado: 2026-04-18T04:46:44.547554+00:00\n\n## Aprendizaje acumulado util\nAun no hay aprendizaje consolidado.\nFuente: persistent_learning | refs: ExperimentLab, AdaptiveWeightLayer, TaskOutcomeRecorder | actualizado: 2026-04-18T04:46:44.547554+00:00\nUNRESOLVED: UNRESOLVED:learning_summary\n\n## Descubrimiento de herramientas\nDetecte 0 senal(es) de descubrimiento: 0 activa(s), 0 en evaluacion, 0 promovida(s), 0 descartada(s).\nFuente: tool_discovery | refs: ToolRegistry, WorldModelSnapshot, ExperimentLab, AutonomousValidationCycleService | actualizado: 2026-04-18T04:46:44.547554+00:00\nUNRESOLVED: UNRESOLVED:tool_discovery_subjects\n\n## Evolucion de herramientas\nTodavia no hay suficiente evidencia comparativa para un monitor de evolucion de herramientas.\nFuente: experiment_lab_monitor | refs: ExperimentLab, AdaptiveWeightLayer, AutonomousValidationCycle | actualizado: 2026-04-18T04:46:44.547554+00:00\nUNRESOLVED: UNRESOLVED:tool_evolution_subjects, UNRESOLVED:tool_evolution_performance\n\n## Decisiones evolutivas\nSin decisiones evolutivas registradas todavia.\nFuente: autonomous_validation_cycle | refs: AutonomousValidationCycleService, SandboxExperimentService, ExperimentLab | actualizado: 2026-04-18T04:46:44.547554+00:00\n\n## Autoexaminacion operativa\nAutoexaminacion partial: todavia no tengo suficiente evidencia acumulada para emitir una revision fuerte.\n- Seguir capturando evidencia evolutiva: Ejecutar consultas, ensenanzas y autodiagnosticos para poblar la capa evolutiva.\nFuente: derived_review | refs: OperationalSelfExaminationService, ExperimentLab, WorldModelSnapshot | actualizado: 2026-04-18T04:46:44.547554+00:00\nUNRESOLVED: UNRESOLVED:codex_thread_tracking, UNRESOLVED:autonomous_validation_cycle, UNRESOLVED:experiment_history, UNRESOLVED:adaptive_sessions\n\n## Herramientas y rutas recomendadas\nNo hay rutas recomendadas con evidencia suficiente.\nFuente: persistent_learning | refs: ExperimentLab, StrategySelector, comparison_scope_key | actualizado: 2026-04-18T04:46:44.547554+00:00\nUNRESOLVED: UNRESOLVED:recommended_routes\n\n## Bloqueos, limites y rutas inviables\n1 bloqueos o limitaciones activas.\n- tool_status: La herramienta no quedo confirmada como disponible en esta laptop.\nFuente: live_operational_state | refs: WorldModelSnapshot | actualizado: 2026-04-18T04:46:44.098278+00:00\n\n## Decisiones ya validadas\n1 decisiones ya tienen validacion o confianza suficiente para reutilizarse.\n- validation_cycle: Sin validacion autonoma reciente.\nFuente: persistent_learning | refs: ExperimentLab, AutonomousValidationCycle | actualizado: 2026-04-18T04:46:44.547554+00:00\n\n## Historial condensado de decisiones\nNo hay historial condensado de decisiones relevantes.\nFuente: persistent_learning | refs: ExperimentLab, ia_trace_summary | actualizado: 2026-04-18T04:46:44.547554+00:00\nUNRESOLVED: UNRESOLVED:decision_history\n\n## Pendientes priorizados\n0 pending issues y 1 mejoras priorizadas.\n- Seguir capturando evidencia evolutiva: Ejecutar consultas, ensenanzas y autodiagnosticos para poblar la capa evolutiva.\nFuente: persistent_backlog | refs: pending_issue_repository, evolution_review_service | actualizado: 2026-04-18T04:46:44.547554+00:00\n\n## UNRESOLVED\n10 campos siguen sin evidencia suficiente y no deben asumirse.\n- UNRESOLVED:cpu_temperature: \n- UNRESOLVED:battery_status: \n- UNRESOLVED:cpu_frequency: \n- UNRESOLVED:ollama_inventory: \n- UNRESOLVED:codex_thread_tracking: \n- UNRESOLVED:autonomous_validation_cycle: \nFuente: honest_runtime_limits | refs: WorldModelSnapshot, EnvironmentSelfModel, AutonomousValidationCycle | actualizado: 2026-04-18T04:46:44.547554+00:00\nUNRESOLVED: UNRESOLVED:cpu_temperature, UNRESOLVED:battery_status, UNRESOLVED:cpu_frequency, UNRESOLVED:ollama_inventory, UNRESOLVED:codex_thread_tracking, UNRESOLVED:autonomous_validation_cycle, UNRESOLVED:recommendation_history, UNRESOLVED:active_goal_context, UNRESOLVED:experiment_history, UNRESOLVED:adaptive_sessions\n\n## Reglas duras que no deben romperse\nEste paquete portable no reemplaza la arquitectura: solo la condensa y la hace reutilizable.\n- No crear otro cerebro ni otro orquestador.\n- No duplicar PerceptionSnapshot ni crear una memoria paralela.\n- No romper governance ni saltarse bloqueos del world model.\n- Cambios minimos, reversibles y verificables.\n- Si algo no puede confirmarse con evidencia, marcar UNRESOLVED.\n- Los ViewModels observan y explican; no inventan decisiones de ruta.\nFuente: project_contract | refs: AGENTS.md | actualizado: 2026-04-18T04:46:44.547554+00:00",
+  "package_path": "C:\\Python\\IABV_v1.5\\data\\test_control_center_snapshot_conversational_workspace_4ce13710d6ae437b81e6a53f91a52cb4\\data\\evolution\\portable_context\\latest.json",
+  "markdown_path": "C:\\Python\\IABV_v1.5\\data\\test_control_center_snapshot_conversational_workspace_4ce13710d6ae437b81e6a53f91a52cb4\\data\\evolution\\portable_context\\latest.md",
+  "unresolved_fields": [
+    "UNRESOLVED:cpu_temperature",
+    "UNRESOLVED:battery_status",
+    "UNRESOLVED:cpu_frequency",
+    "UNRESOLVED:ollama_inventory",
+    "UNRESOLVED:codex_thread_tracking",
+    "UNRESOLVED:autonomous_validation_cycle",
+    "UNRESOLVED:recommendation_history",
+    "UNRESOLVED:active_goal_context",
+    "UNRESOLVED:experiment_history",
+    "UNRESOLVED:adaptive_sessions"
+  ],
+  "metadata": {
+    "workspace_root": "C:\\Python\\IABV_v1.5\\data\\test_control_center_snapshot_conversational_workspace_4ce13710d6ae437b81e6a53f91a52cb4",
+    "site_id": "",
+    "active_objective_id": "",
+    "refresh_policy": "refresh_if_stale_or_goal_shift",
+    "source_count": 40,
+    "tool_discovery_summary": {
+      "summary": "Detecte 0 senal(es) de descubrimiento: 0 activa(s), 0 en evaluacion, 0 promovida(s), 0 descartada(s).",
+      "status_id": "69cd9bd5-ea93-4f7a-99b1-c8d734ab93b1",
+      "updated_at_utc": "2026-04-18T04:46:44.574908+00:00",
+      "signals": [],
+      "active_signals": [],
+      "in_validation_signals": [],
+      "promoted_signals": [],
+      "discarded_signals": [],
+      "unresolved_fields": [
+        "UNRESOLVED:tool_discovery_subjects"
+      ],
+      "package_path": "C:\\Python\\IABV_v1.5\\data\\test_control_center_snapshot_conversational_workspace_4ce13710d6ae437b81e6a53f91a52cb4\\data\\evolution\\tool_discovery\\latest.json",
+      "markdown_path": "C:\\Python\\IABV_v1.5\\data\\test_control_center_snapshot_conversational_workspace_4ce13710d6ae437b81e6a53f91a52cb4\\data\\evolution\\tool_discovery\\latest.md"
+    },
+    "tool_discovery_signals": [],
+    "tool_evolution_summary": {
+      "summary": "Todavia no hay suficiente evidencia comparativa para un monitor de evolucion de herramientas.",
+      "status_id": "4d8c0c4c-baa1-4723-b95a-de89466944ff",
+      "updated_at_utc": "2026-04-18T04:46:44.988109+00:00",
+      "degraded_subjects": [],
+      "top_performers": [],
+      "proposals": [],
+      "active_proposals": [],
+      "decided_proposals": [],
+      "active_proposal_count": 0,
+      "decided_proposal_count": 0,
+      "winning_by_problem": {},
+      "in_validation": [],
+      "discarded_proposals": [],
+      "recent_decisions": [],
+      "unresolved_fields": [
+        "UNRESOLVED:tool_evolution_subjects",
+        "UNRESOLVED:tool_evolution_performance"
+      ],
+      "package_path": "C:\\Python\\IABV_v1.5\\data\\test_control_center_snapshot_conversational_workspace_4ce13710d6ae437b81e6a53f91a52cb4\\data\\evolution\\tool_evolution\\latest.json",
+      "markdown_path": "C:\\Python\\IABV_v1.5\\data\\test_control_center_snapshot_conversational_workspace_4ce13710d6ae437b81e6a53f91a52cb4\\data\\evolution\\tool_evolution\\latest.md"
+    },
+    "tool_evolution_proposals": [],
+    "tool_evolution_degraded_subjects": [],
+    "tool_evolution_decision_summary": {
+      "winning_by_problem": {},
+      "degraded_tools": [],
+      "in_validation": [],
+      "discarded_proposals": [],
+      "recent_decisions": [],
+      "last_decision": {},
+      "summary_by_tool": {},
+      "summary_by_problem": {},
+      "unresolved_fields": [],
+      "package_path": "",
+      "markdown_path": ""
+    },
+    "tool_evolution_validated_proposals": [],
+    "autoexamination_summary": {
+      "review_id": "f25dca94-1fbe-4022-bccf-496a09788a18",
+      "package_version": "self_examination.v1",
+      "summary": "Autoexaminacion partial: todavia no tengo suficiente evidencia acumulada para emitir una revision fuerte.",
+      "status": "partial",
+      "assistant_brief": "# IABV v1.5 - Operational Self Examination\n\nGenerado: 2026-04-18T04:46:45.352065+00:00\nResumen: Autoexaminacion partial: todavia no tengo suficiente evidencia acumulada para emitir una revision fuerte.\n\nUsa esta revision para entender que esta fallando, que se repite y que ajustes conviene hacer antes de tocar la arquitectura.\n\n## Hallazgos\n- Sin hallazgos fuertes confirmados.\n\n## Ajustes recomendados\n- Seguir capturando evidencia evolutiva: Ejecutar consultas, ensenanzas y autodiagnosticos para poblar la capa evolutiva. | fuente EvolutionReviewService\n\n## Mejoras validadas\n- Sin mejoras validadas fuertes todavia.\n\n## Retroalimentacion de ajustes\n- Todavia no hay suficiente evidencia posterior para juzgar ajustes anteriores.\n\nUNRESOLVED: UNRESOLVED:codex_thread_tracking, UNRESOLVED:autonomous_validation_cycle, UNRESOLVED:experiment_history, UNRESOLVED:adaptive_sessions",
+      "top_findings": [],
+      "recurring_issues": [],
+      "recommended_adjustments": [
+        {
+          "title": "Seguir capturando evidencia evolutiva",
+          "recommended_change": "Ejecutar consultas, ensenanzas y autodiagnosticos para poblar la capa evolutiva.",
+          "category": "backlog",
+          "severity": "medium",
+          "confidence": 0.35,
+          "evidence_refs": [],
+          "source_refs": [
+            "EvolutionReviewService"
+          ],
+          "metadata": {},
+          "feedback_key": "backlog:seguir capturando evidencia evolutiva"
+        }
+      ],
+      "validated_improvements": [],
+      "unresolved_risks": [
+        "UNRESOLVED:codex_thread_tracking",
+        "UNRESOLVED:autonomous_validation_cycle",
+        "UNRESOLVED:experiment_history",
+        "UNRESOLVED:adaptive_sessions"
+      ],
+      "recommendation_feedback": [],
+      "feedback_summary": {
+        "total_reviewed": 0,
+        "validated_improvement": 0,
+        "valid_adjustment": 0,
+        "false_improvement": 0,
+        "no_evidence": 0
+      },
+      "updated_at_utc": "2026-04-18T04:46:45.352065+00:00",
+      "package_path": "C:\\Python\\IABV_v1.5\\data\\test_control_center_snapshot_conversational_workspace_4ce13710d6ae437b81e6a53f91a52cb4\\data\\evolution\\self_examination\\latest.json",
+      "markdown_path": "C:\\Python\\IABV_v1.5\\data\\test_control_center_snapshot_conversational_workspace_4ce13710d6ae437b81e6a53f91a52cb4\\data\\evolution\\self_examination\\latest.md"
+    },
+    "recurring_issues": [],
+    "recommended_adjustments": [
+      {
+        "title": "Seguir capturando evidencia evolutiva",
+        "recommended_change": "Ejecutar consultas, ensenanzas y autodiagnosticos para poblar la capa evolutiva.",
+        "category": "backlog",
+        "severity": "medium",
+        "confidence": 0.35,
+        "evidence_refs": [],
+        "source_refs": [
+          "EvolutionReviewService"
+        ],
+        "metadata": {},
+        "feedback_key": "backlog:seguir capturando evidencia evolutiva"
+      }
+    ],
+    "validated_improvements": [],
+    "recommendation_feedback": [],
+    "feedback_summary": {
+      "total_reviewed": 0,
+      "validated_improvement": 0,
+      "valid_adjustment": 0,
+      "false_improvement": 0,
+      "no_evidence": 0
+    },
+    "unresolved_risks": [
+      "UNRESOLVED:codex_thread_tracking",
+      "UNRESOLVED:autonomous_validation_cycle",
+      "UNRESOLVED:experiment_history",
+      "UNRESOLVED:adaptive_sessions"
+    ]
+  }
+}

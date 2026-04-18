@@ -1,0 +1,35 @@
+{
+  "objective_id": "c95a971c-ee7a-4455-9b46-11e260803bef",
+  "kind": "subtask",
+  "title": "Seleccionar pack",
+  "summary": "Pack elegido: knowledge.query.",
+  "parent_id": "9d07d8c6-19c6-4a1b-a1fc-7a8aa8b111ec",
+  "root_id": "5388b1ec-36eb-4037-8309-4c5f93ccca55",
+  "site_id": null,
+  "priority": 52,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.96,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Laboratorio universal: language -> language_understanding (score 1.27, confianza 0.90).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "run:82ac164b-7dd3-4d58-b3de-0c2ea5554ab9"
+  ],
+  "tags": [
+    "select_pack"
+  ],
+  "metadata": {
+    "phase_key": "select_pack",
+    "requires_approval": false,
+    "executable": false,
+    "simulation_only": false,
+    "pack_id": "knowledge.query"
+  },
+  "created_at_utc": "2026-04-18T13:45:10.084731Z",
+  "updated_at_utc": "2026-04-18T13:45:10.084731Z"
+}

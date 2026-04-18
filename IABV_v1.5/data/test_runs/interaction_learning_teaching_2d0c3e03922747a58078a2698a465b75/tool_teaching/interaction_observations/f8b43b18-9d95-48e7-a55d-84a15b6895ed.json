@@ -1,0 +1,25 @@
+{
+  "observation_id": "f8b43b18-9d95-48e7-a55d-84a15b6895ed",
+  "pattern_id": "edbb4812-af56-4370-99f5-5152aa1e528b",
+  "task_id": "teaching:teach-1",
+  "result_id": "a16ad91b-dca4-4624-b73f-bbfc192e9be3",
+  "episode_id": "42787b1e-fc1e-4a7c-80c5-c6afcd8ca6f7",
+  "success": true,
+  "channel": "ui",
+  "tool_id": "playwright_browser",
+  "tool_type": "browser",
+  "site_id": "wplay",
+  "summary": "La ensenanza ya aporta senales utiles.",
+  "confidence": 0.6369999999999999,
+  "evidence_refs": [
+    "teach-1",
+    "C:\\Python\\IABV_v1.5\\data\\test_runs\\interaction_learning_teaching_2d0c3e03922747a58078a2698a465b75\\shot.png",
+    "visual_summary:teach-1"
+  ],
+  "created_at_utc": "2026-04-18T05:05:16.137388Z",
+  "metadata": {
+    "learning_status": "partial",
+    "login_status": "partial",
+    "manual_correction_count": 1
+  }
+}

@@ -1,0 +1,164 @@
+{
+  "log_id": "b4244b10-59a1-4542-8bd1-c325082789e3",
+  "tool_id": "codex_installed",
+  "task_id": "ba4a5d2e-e975-4283-a0e7-59efc333afaa",
+  "action_type": "task_result",
+  "state": "awaiting_response",
+  "created_at_utc": "2026-04-14T00:43:51.551200+00:00",
+  "payload": {
+    "result_id": "cf70ea33-d74b-4dae-aa04-864ee43d895c",
+    "task_id": "ba4a5d2e-e975-4283-a0e7-59efc333afaa",
+    "tool_id": "codex_installed",
+    "tool_type": "custom",
+    "success": true,
+    "validation_status": "unvalidated",
+    "execution_state": {
+      "state": "awaiting_response",
+      "detail": "Herramienta ejecutada por el adaptador local.",
+      "executor_name": "external_assistant",
+      "sandboxed": false,
+      "validated": true,
+      "approval_decision": "approved",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": false,
+        "assistant_kind": "codex",
+        "launch_mode": "desktop_app",
+        "launch_target": "codex",
+        "response_capture_mode": "clipboard_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Consulta viva para validar lanzamiento y captura de Codex desde IABV.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "prompt_preview": "Consulta viva para validar lanzamiento y captura de Codex desde IABV.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "response_captured": false,
+        "launched": true,
+        "auto_capture_attempted": true,
+        "auto_capture_reason": "capture_pending",
+        "response_capture_pending": true,
+        "focused_title": "Codex",
+        "session_scope": "external_app",
+        "session_label": "Codex",
+        "isolated_session": false,
+        "thread_key": "iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp",
+        "thread_title": "IABV Codex | dime en una frase si puedes revisar un bug de wp",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+        "last_capture_attempt_utc": "2026-04-14T00:43:37.840086+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\.tmp_tests\\live_route_diag_isolated\\data\\tool_teaching\\external_assistants\\codex_home",
+        "capture_source": "codex_rollout"
+      }
+    },
+    "rollback_state": null,
+    "output_text": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano.",
+    "extracted_data": {
+      "assistant_kind": "codex",
+      "launch_target": "codex",
+      "prompt_preview": "Consulta viva para validar lanzamiento y captura de Codex desde IABV.\n\nIABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp\nIABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "focused_title": "Codex"
+    },
+    "artifacts": [],
+    "error_message": "",
+    "execution_ms": 13715,
+    "created_at_utc": "2026-04-14T00:43:51.551200Z",
+    "metadata": {
+      "sandbox": false,
+      "assistant_kind": "codex",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "extended",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "without_browser",
+        "assistant_mode": "code",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "codex",
+          "tool_id": "codex_installed",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 383
+        }
+      },
+      "config_signature": "without_plan|without_files|extended|short|with_tools|without_browser|code|external",
+      "external_state_flags": [
+        "awaiting_response",
+        "capture_unverified"
+      ],
+      "ia_trace_entry": {
+        "trace_id": "1986e645-bd80-4e98-963d-11cd4e17fedf",
+        "created_at_utc": "2026-04-14T00:43:51.551349Z",
+        "assistant_kind": "codex",
+        "requested_assistant_kind": "codex",
+        "actual_assistant_kind": "codex",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "extended",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "without_browser",
+          "assistant_mode": "code",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "codex",
+            "tool_id": "codex_installed",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 383
+          }
+        },
+        "config_signature": "without_plan|without_files|extended|short|with_tools|without_browser|code|external",
+        "comparison_scope_key": "wplay:consultar-codex-sobre-dime-en-una-frase-si-puedes-revisar-un-bug-de-wpla",
+        "source_trace_ids": [],
+        "route": "code_agent",
+        "tool_id": "codex_installed",
+        "task_id": "ba4a5d2e-e975-4283-a0e7-59efc333afaa",
+        "result_id": "cf70ea33-d74b-4dae-aa04-864ee43d895c",
+        "session_scope": "external_app",
+        "thread_key": "iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp",
+        "thread_title": "IABV Codex | dime en una frase si puedes revisar un bug de wp",
+        "capture_lane": "background",
+        "state": "awaiting_response",
+        "detail": "Herramienta ejecutada por el adaptador local.",
+        "proposal_summary": "Consulta viva para validar lanzamiento y captura de Codex desde IABV. IABV_THREAD_KEY: iabv::codex::wplay::dime-en-una-frase-si-puedes-revisar-un-bug-de-wp IABV_THREAD_TITLE: IABV Codex | dime en una frase si puedes revisar un bug de wp IAB",
+        "outcome_summary": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano.",
+        "result_label": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano.",
+        "success": true,
+        "execution_ms": 13715,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "wplay",
+          "ba4a5d2e-e975-4283-a0e7-59efc333afaa",
+          "cf70ea33-d74b-4dae-aa04-864ee43d895c"
+        ],
+        "reused_later": true,
+        "verdict": "awaiting_response",
+        "coherence_flags": [],
+        "external_state_flags": [
+          "awaiting_response",
+          "capture_unverified"
+        ],
+        "metadata": {
+          "response_capture_mode": "clipboard_capture",
+          "background_capture_mode": "codex_rollout",
+          "comparison_scope_key": "wplay:consultar-codex-sobre-dime-en-una-frase-si-puedes-revisar-un-bug-de-wpla"
+        }
+      },
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  }
+}

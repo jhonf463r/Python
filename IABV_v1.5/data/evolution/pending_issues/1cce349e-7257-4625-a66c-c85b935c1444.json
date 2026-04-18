@@ -1,0 +1,35 @@
+{
+  "issue_id": "1cce349e-7257-4625-a66c-c85b935c1444",
+  "created_at_utc": "2026-04-13T18:49:11.201817Z",
+  "status": "needs_fix",
+  "scenario_id": "",
+  "goal": "tienes conocimiento de tu entorno y tu arquitectura ?",
+  "category": "need_codex_fix",
+  "summary": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+  "probable_cause": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+  "unresolved_reason": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+  "run_id": "9ce5fd40-7701-4410-b9e4-1d724ce574c7",
+  "episode_id": null,
+  "session_id": "52046a39-db1b-422e-bd9a-3e29155e6eaf",
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "Ultima corrida: success | rol knowledge | pack knowledge.query.",
+    "Dossiers relacionados: 6.",
+    "Patrones universales reutilizables: 2 (ui:1 | background:1).",
+    "Auditoria viva: Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+    "7df8f3a5-d1a6-43ce-aa8a-ca7e0e9c44bd"
+  ],
+  "runtime_adjustments": [],
+  "recommended_change": "Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.",
+  "suggested_tests": [
+    "tienes conocimiento de tu entorno y tu arquitectura ?",
+    "Revisar Centro Evolutivo"
+  ],
+  "metadata": {
+    "autonomous_evolution": true,
+    "assistant_kind": "codex",
+    "source": "chat",
+    "site_id": "",
+    "intent_key": "project.evolution"
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "recommendation_id": "1a1d95fd-a919-48ea-bec4-c4d9ea737f4e",
+  "domain": "language",
+  "subject_key": "general",
+  "recommended_route": "language_understanding",
+  "recommended_assistant_kind": "adaptive local orchestrator",
+  "recommended_assistant_configuration": {
+    "planning_mode": "with_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "long",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+  "score": 0.8604,
+  "confidence": 0.7797,
+  "rationale": "Recomiendo language_understanding para language en general usando adaptive local orchestrator con configuracion with_plan|without_files|normal|long|without_tools|without_browser|general|external por score base 0.63 y score adaptativo 0.86 con 1 muestra(s). Ajuste adaptativo: historial de exito 100%.",
+  "supporting_run_ids": [
+    "5192df44-13cb-4c62-8fd3-9352fdf11d4f"
+  ],
+  "metadata": {
+    "ranked_routes": [
+      {
+        "route": "language_understanding",
+        "score": 0.8208,
+        "samples": 2
+      },
+      {
+        "route": "ui",
+        "score": 0.7714,
+        "samples": 1
+      }
+    ],
+    "ranked_configurations": [
+      {
+        "route": "language_understanding",
+        "assistant_kind": "adaptive local orchestrator",
+        "config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+        "score": 0.6258,
+        "adaptive_weight": 0.2346,
+        "weighted_score": 0.8604,
+        "samples": 1,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%"
+        ]
+      },
+      {
+        "route": "language_understanding",
+        "assistant_kind": "adaptive local orchestrator",
+        "config_signature": "with_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "score": 0.6001,
+        "adaptive_weight": 0.181,
+        "weighted_score": 0.7811,
+        "samples": 4,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 2889 ms"
+        ]
+      },
+      {
+        "route": "ui",
+        "assistant_kind": "adaptive local orchestrator",
+        "config_signature": "with_plan|without_files|extended|short|with_tools|with_browser|general|external",
+        "score": 0.6314,
+        "adaptive_weight": 0.14,
+        "weighted_score": 0.7714,
+        "samples": 1,
+        "reuse_count": 0,
+        "success_rate": 1.0,
+        "blocked_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%",
+          "latencia promedio 8867 ms"
+        ]
+      }
+    ],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": [
+      "general:por-que-no-me-contestate-la-anterior-pregunta-de-que-modelo-usar-para-co",
+      "general:que-modelo-de-ia-estas-usando-para-responderme",
+      "general:ok-y-entocnes-empecemos-que-te-enseño-primero",
+      "general:puedes-ver-el-trabajo-en-vivo-me-refiero-a-dock-vivo-de-autonomia-de-tu",
+      "general:qué-tienes-abierto-ahora",
+      "wplay:sabes-usar-wplay-la-pagina"
+    ],
+    "adaptive_learning_summary": {
+      "preferred_route": "language_understanding",
+      "preferred_assistant_kind": "adaptive local orchestrator",
+      "preferred_config_signature": "with_plan|without_files|normal|long|without_tools|without_browser|general|external",
+      "adaptive_weight": 0.2346,
+      "weighted_score": 0.8604,
+      "sample_count": 1,
+      "success_rate": 1.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "top_environment_signatures": [
+        "conectado|partial"
+      ],
+      "top_time_buckets": [
+        "evening"
+      ],
+      "reasons": [
+        "historial de exito 100%"
+      ]
+    }
+  },
+  "created_at_utc": "2026-04-16T22:43:58.508571Z"
+}

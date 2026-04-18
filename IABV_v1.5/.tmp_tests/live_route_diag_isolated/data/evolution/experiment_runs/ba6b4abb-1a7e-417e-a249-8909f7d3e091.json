@@ -1,0 +1,75 @@
+{
+  "run_id": "ba6b4abb-1a7e-417e-a249-8909f7d3e091",
+  "domain": "code",
+  "suite_name": "code_understanding_suite",
+  "objective": "Consultar Codex sobre: dime en una frase si puedes revisar un bug de wplay",
+  "subject_key": "wplay",
+  "route": "background",
+  "assistant_kind": "codex instalado",
+  "assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+  "candidate_id": "81df5058-d5cf-4dfa-94ab-15351dfe1d70",
+  "candidate_label": "Codex instalado",
+  "success": false,
+  "expected_summary": "text=Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+  "observed_summary": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano.",
+  "metrics": {
+    "precision": 0.38461538461538464,
+    "execution_ms": 13715,
+    "operational_cost": 0.0,
+    "robustness": 0.35,
+    "reuse_score": 0.0,
+    "user_progress": 0.0,
+    "total_score": 0.2916,
+    "metadata": {
+      "domain": "code",
+      "objective": "Consultar Codex sobre: dime en una frase si puedes revisar un bug de wplay",
+      "candidate_label": "Codex instalado",
+      "route": "background",
+      "assistant_kind": "codex instalado",
+      "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "sample_support": 2,
+      "latency_score": 0.0,
+      "cost_score": 1.0,
+      "user_progress_score": 0.0,
+      "relative_vs_same_config": 0.0
+    }
+  },
+  "evidence_refs": [
+    "4c77173f-f2a5-4bad-afa9-c0bacedd75d7",
+    "744ec316-93e6-4803-aa4f-8ec81fdbca7c",
+    "site:wplay"
+  ],
+  "reused_later": false,
+  "better_than_previous": false,
+  "metadata": {
+    "source": "live_audit_tool",
+    "user_progress": 0.0,
+    "evidence_refs": [
+      "4c77173f-f2a5-4bad-afa9-c0bacedd75d7",
+      "744ec316-93e6-4803-aa4f-8ec81fdbca7c",
+      "site:wplay"
+    ],
+    "reused_pattern": true,
+    "suite_name": "code_understanding_suite",
+    "assistant_kind": "codex instalado",
+    "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+    "trace_id": "",
+    "comparison_scope_key": "",
+    "source_trace_ids": [],
+    "proposal_summary": "",
+    "outcome_summary": "Asistente externo Codex instalado consultando. IABV sigue intentando capturar la respuesta desde la sesion de Codex en segundo plano."
+  },
+  "created_at_utc": "2026-04-14T00:43:51.695541Z"
+}

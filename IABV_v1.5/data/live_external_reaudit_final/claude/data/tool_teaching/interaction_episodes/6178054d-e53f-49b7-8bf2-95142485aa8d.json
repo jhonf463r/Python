@@ -1,0 +1,496 @@
+{
+  "interaction_episode_id": "6178054d-e53f-49b7-8bf2-95142485aa8d",
+  "objective": "Consultar Claude sobre: Auditoria viva de IABV: valida si el proveedor externo responde o falla con estado formal.",
+  "mode_used": "ui",
+  "environment": {
+    "tool_id": "claude_web_assisted",
+    "tool_type": "llm_web_ui",
+    "adapter_key": "external_assistant",
+    "site_id": "audit",
+    "execution_scope": "read_only"
+  },
+  "captured_metadata": {
+    "task_metadata": {
+      "goal_parameters": {
+        "comparison_scope_key": "audit:final-live:claude",
+        "tool_id": "claude_web_assisted",
+        "allowed_tool_ids": [
+          "claude_installed",
+          "claude_web_assisted"
+        ],
+        "title": "Consultar Claude",
+        "expected_outcome": "Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+        "context_pack": "Validacion final real desde IABV v1.5.\n\nIABV_THREAD_KEY: iabv::claude::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex\nIABV_THREAD_TITLE: IABV Claude | Auditoria viva de IABV: valida si el proveedor e\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "assistant_preference": "claude",
+        "assistant_kind": "claude",
+        "consultation_scope": "external_assistant",
+        "response_capture_mode": "dom_capture",
+        "requires_manual_pasteback": false,
+        "prompt_template_id": "claude_web_consult_v1",
+        "execution_scope": "read_only",
+        "diagnostic_category": "",
+        "incident_kind": "",
+        "site_id": "audit",
+        "lab_recommendation": {},
+        "dry_run_launch": false,
+        "allow_local_automatic_consultation": false,
+        "session_scope": "program_chat",
+        "isolated_session_required": true,
+        "session_label": "Claude especial de IABV",
+        "thread_key": "iabv::claude::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex",
+        "thread_title": "IABV Claude | Auditoria viva de IABV: valida si el proveedor e",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_reaudit_final\\claude\\data\\tool_teaching\\external_assistants\\claude_program_session\\browser_profile"
+      },
+      "created_at_utc": "2026-04-12T22:52:10.943685+00:00",
+      "updated_at_utc": "2026-04-12T22:52:10.943685+00:00",
+      "mode_selection": {
+        "decision_id": "0ef7b8ea-d253-426c-9bd9-212ac84718de",
+        "selector_name": "universal_mode_selector",
+        "selected_mode": "ui",
+        "selected_tool_id": "claude_web_assisted",
+        "selected_tool_type": "llm_web_ui",
+        "adapter_exists": true,
+        "available": true,
+        "fallback_used": false,
+        "already_resolved": false,
+        "equivalent_pattern_exists": false,
+        "improvement_already_implemented": false,
+        "reusable_pattern_id": null,
+        "reusable_episode_id": null,
+        "scores": {
+          "availability": 1.0,
+          "adapter_exists": 1.0,
+          "desired_match": 1.0,
+          "suggested_match": 1.0,
+          "automatic_capture": 1.0,
+          "total": 5.0
+        },
+        "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+        "metadata": {
+          "desired_modes": [
+            "background",
+            "ui"
+          ],
+          "candidate_ranking": [
+            {
+              "tool_id": "claude_web_assisted",
+              "mode": "ui",
+              "score": 5.0
+            }
+          ],
+          "selection_policy": "preferred_external_tool"
+        }
+      },
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reuse_guard_active": false,
+      "reused_pattern_id": "",
+      "reused_episode_id": "",
+      "adapter_exists": true,
+      "selected_mode": "ui",
+      "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "requested_tool_id": "claude_web_assisted",
+      "reused_actions_from_pattern": false,
+      "requested_assistant_kind": "claude",
+      "assistant_kind": "claude",
+      "actual_assistant_kind": "claude",
+      "consultation_scope": "external_assistant",
+      "response_capture_mode": "dom_capture",
+      "requires_manual_pasteback": false,
+      "diagnostic_category": "",
+      "incident_kind": "",
+      "dry_run_launch": false,
+      "lab_recommendation": {},
+      "context_pack": "Validacion final real desde IABV v1.5.\n\nIABV_THREAD_KEY: iabv::claude::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex\nIABV_THREAD_TITLE: IABV Claude | Auditoria viva de IABV: valida si el proveedor e\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "comparison_scope_key": "audit:consultar-claude-sobre-auditoria-viva-de-iabv-valida-si-el-proveedor-ext",
+      "source_trace_ids": [],
+      "proposal_summary": "Validacion final real desde IABV v1.5. IABV_THREAD_KEY: iabv::claude::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex IABV_THREAD_TITLE: IABV Claude | Auditoria viva de IABV: valida si el proveedor e IABV_LANE_PRIORITY: background >",
+      "thread_key": "iabv::claude::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex",
+      "thread_title": "IABV Claude | Auditoria viva de IABV: valida si el proveedor e",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_reaudit_final\\claude\\data\\tool_teaching\\external_assistants\\claude_program_session\\browser_profile",
+      "session_scope": "program_chat",
+      "session_label": "Claude especial de IABV",
+      "isolated_session_required": true,
+      "background_capture_mode": "browser_dom",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "normal",
+        "context_mode": "short",
+        "tools_mode": "with_tools",
+        "browser_mode": "with_browser",
+        "assistant_mode": "general",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "claude",
+          "tool_id": "claude_web_assisted",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 354
+        }
+      },
+      "config_signature": "without_plan|without_files|normal|short|with_tools|with_browser|general|external",
+      "ia_trace_entry": {
+        "trace_id": "69719c60-463f-4c63-bb34-b5cd5896fb74",
+        "created_at_utc": "2026-04-12T22:52:10.945252Z",
+        "assistant_kind": "claude",
+        "requested_assistant_kind": "claude",
+        "actual_assistant_kind": "claude",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "normal",
+          "context_mode": "short",
+          "tools_mode": "with_tools",
+          "browser_mode": "with_browser",
+          "assistant_mode": "general",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "claude",
+            "tool_id": "claude_web_assisted",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 354
+          }
+        },
+        "config_signature": "without_plan|without_files|normal|short|with_tools|with_browser|general|external",
+        "comparison_scope_key": "audit:consultar-claude-sobre-auditoria-viva-de-iabv-valida-si-el-proveedor-ext",
+        "source_trace_ids": [],
+        "route": "ui",
+        "tool_id": "claude_web_assisted",
+        "task_id": "63c905a8-1606-490a-b55a-061fda88e9b6",
+        "result_id": "",
+        "session_scope": "program_chat",
+        "thread_key": "iabv::claude::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex",
+        "thread_title": "IABV Claude | Auditoria viva de IABV: valida si el proveedor e",
+        "capture_lane": "background",
+        "state": "pending",
+        "detail": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "proposal_summary": "Validacion final real desde IABV v1.5. IABV_THREAD_KEY: iabv::claude::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex IABV_THREAD_TITLE: IABV Claude | Auditoria viva de IABV: valida si el proveedor e IABV_LANE_PRIORITY: background >",
+        "outcome_summary": "",
+        "result_label": "Consultar Claude",
+        "success": false,
+        "execution_ms": 0,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "audit",
+          "63c905a8-1606-490a-b55a-061fda88e9b6"
+        ],
+        "reused_later": false,
+        "verdict": "",
+        "coherence_flags": [],
+        "external_state_flags": [],
+        "metadata": {
+          "response_capture_mode": "dom_capture",
+          "background_capture_mode": "browser_dom",
+          "comparison_scope_key": "audit:consultar-claude-sobre-auditoria-viva-de-iabv-valida-si-el-proveedor-ext"
+        }
+      },
+      "background_headless": true,
+      "approval_required": true,
+      "destructive": false
+    },
+    "execution_metadata": {
+      "sandbox": true,
+      "assistant_kind": "claude",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://claude.ai/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Validacion final real desde IABV v1.5.\n\nIABV_THREAD_KEY: iabv::claude::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex\nIABV_THREAD_TITLE: IABV Claude | Auditoria viva de IABV: valida si el proveedor e\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "session_scope": "program_chat",
+      "session_label": "Claude especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::claude::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex",
+      "thread_title": "IABV Claude | Auditoria viva de IABV: valida si el proveedor e",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "2026-04-12T22:52:10.954039+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_reaudit_final\\claude\\data\\tool_teaching\\external_assistants\\claude_program_session\\browser_profile"
+    },
+    "result_metadata": {
+      "sandbox": true,
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  },
+  "actions": [
+    {
+      "step_id": "588d0681-fc08-44b3-8286-0e476ee207bc",
+      "channel": "ui",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "f95fcc78-2ead-4133-b7d2-0a21ecee24a2",
+      "started_at_utc": "2026-04-12T22:52:10.984070Z",
+      "finished_at_utc": "2026-04-12T22:52:10.984070Z",
+      "destructive": false,
+      "requires_approval": true
+    },
+    {
+      "step_id": "8b605541-5e4d-4be6-ac51-1f1decbb3c79",
+      "channel": "ui",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "22db1d52-209d-4969-91b2-c099899d4a18",
+      "started_at_utc": "2026-04-12T22:52:10.984070Z",
+      "finished_at_utc": "2026-04-12T22:52:10.984070Z",
+      "destructive": false,
+      "requires_approval": false
+    }
+  ],
+  "result": {
+    "interaction_result_id": "450a2a89-8ef9-4d12-88af-60d1c92259b2",
+    "success": true,
+    "execution_state": {
+      "state": "sandbox_pass",
+      "detail": "Sandbox local de herramienta ejecutado.",
+      "executor_name": "external_assistant",
+      "sandboxed": true,
+      "validated": true,
+      "approval_decision": "approved",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": true,
+        "assistant_kind": "claude",
+        "launch_mode": "web_assisted",
+        "launch_target": "https://claude.ai/",
+        "response_capture_mode": "dom_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Validacion final real desde IABV v1.5.\n\nIABV_THREAD_KEY: iabv::claude::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex\nIABV_THREAD_TITLE: IABV Claude | Auditoria viva de IABV: valida si el proveedor e\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "response_captured": false,
+        "session_scope": "program_chat",
+        "session_label": "Claude especial de IABV",
+        "isolated_session": true,
+        "thread_key": "iabv::claude::audit::auditoria-viva-de-iabv-valida-si-el-proveedor-ex",
+        "thread_title": "IABV Claude | Auditoria viva de IABV: valida si el proveedor e",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "2026-04-12T22:52:10.954039+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\live_external_reaudit_final\\claude\\data\\tool_teaching\\external_assistants\\claude_program_session\\browser_profile"
+      }
+    },
+    "summary": "Asistente externo listo para consulta guiada.",
+    "errors": [],
+    "confidence": 0.78,
+    "execution_ms": 0,
+    "rollback_state": null,
+    "extracted_data": {
+      "assistant_kind": "claude",
+      "launch_target": "https://claude.ai/"
+    },
+    "artifacts": [],
+    "metadata": {
+      "validation_status": "sandbox_pass",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "errors": [],
+  "evidence": [
+    {
+      "evidence_id": "b1a39802-cfe4-4d88-828d-61e0bce3b47c",
+      "kind": "log",
+      "label": "Dato extraido: assistant_kind",
+      "ref_id": "c06152a0-2974-4955-a827-d82baa106d05:assistant_kind",
+      "path": null,
+      "metadata": {
+        "key": "assistant_kind"
+      },
+      "confidence": 0.7
+    },
+    {
+      "evidence_id": "3a83d807-40c7-4cbf-afc4-52f8100606b7",
+      "kind": "log",
+      "label": "Dato extraido: launch_target",
+      "ref_id": "c06152a0-2974-4955-a827-d82baa106d05:launch_target",
+      "path": null,
+      "metadata": {
+        "key": "launch_target"
+      },
+      "confidence": 0.7
+    }
+  ],
+  "learning_signals": [
+    {
+      "signal_id": "a0de033d-75fa-4d91-9ff4-6357110a1073",
+      "label": "pattern:ui:claude_web_assisted",
+      "channel": "ui",
+      "signal_type": "pattern_reuse",
+      "confidence": 0.78,
+      "source": "interaction_learning_service",
+      "evidence_refs": [
+        "c06152a0-2974-4955-a827-d82baa106d05:assistant_kind",
+        "c06152a0-2974-4955-a827-d82baa106d05:launch_target"
+      ],
+      "metadata": {
+        "pattern_id": "c4031828-80ae-492b-acf5-aabe02ef5c8e"
+      }
+    }
+  ],
+  "confidence": 0.78,
+  "human_approval": true,
+  "policy_decision": {
+    "decision_id": "daadc98c-2669-4274-b016-cd601df6e362",
+    "requires_human_approval": true,
+    "approval_decision": "approved",
+    "blocked": false,
+    "rationale": "Sandbox local de herramienta ejecutado.",
+    "confidence": 0.78,
+    "metadata": {
+      "execution_scope": "read_only",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "selector_name": "universal_mode_selector",
+  "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+  "pattern_id": "c4031828-80ae-492b-acf5-aabe02ef5c8e",
+  "reused_pattern": false,
+  "tool_id": "claude_web_assisted",
+  "tool_type": "llm_web_ui",
+  "task_id": "63c905a8-1606-490a-b55a-061fda88e9b6",
+  "result_id": "c06152a0-2974-4955-a827-d82baa106d05",
+  "site_id": "audit",
+  "created_at_utc": "2026-04-12T22:52:10.984070Z",
+  "updated_at_utc": "2026-04-12T22:52:10.984070Z",
+  "metadata": {
+    "learning_signals": [
+      {
+        "signal_id": "a0de033d-75fa-4d91-9ff4-6357110a1073",
+        "label": "pattern:ui:claude_web_assisted",
+        "channel": "ui",
+        "signal_type": "pattern_reuse",
+        "confidence": 0.78,
+        "source": "interaction_learning_service",
+        "evidence_refs": [
+          "c06152a0-2974-4955-a827-d82baa106d05:assistant_kind",
+          "c06152a0-2974-4955-a827-d82baa106d05:launch_target"
+        ],
+        "metadata": {
+          "pattern_id": "c4031828-80ae-492b-acf5-aabe02ef5c8e"
+        }
+      }
+    ],
+    "mode_selection": {
+      "decision_id": "0ef7b8ea-d253-426c-9bd9-212ac84718de",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "ui",
+      "selected_tool_id": "claude_web_assisted",
+      "selected_tool_type": "llm_web_ui",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": false,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "claude_web_assisted",
+            "mode": "ui",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "selected_mode": "ui",
+    "reusable_pattern_id": "",
+    "reusable_episode_id": "",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

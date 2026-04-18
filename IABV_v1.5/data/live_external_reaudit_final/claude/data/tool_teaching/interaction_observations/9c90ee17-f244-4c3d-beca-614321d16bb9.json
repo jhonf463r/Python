@@ -1,0 +1,38 @@
+{
+  "observation_id": "9c90ee17-f244-4c3d-beca-614321d16bb9",
+  "pattern_id": "c4031828-80ae-492b-acf5-aabe02ef5c8e",
+  "task_id": "63c905a8-1606-490a-b55a-061fda88e9b6",
+  "result_id": "90dd3bfb-c910-49d3-9a52-54f2752d26b4",
+  "episode_id": "765077d9-5911-4757-8f8c-63ce6e36809c",
+  "success": false,
+  "channel": "ui",
+  "tool_id": "claude_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": "audit",
+  "summary": "browser_dom_unavailable",
+  "confidence": 0.22,
+  "evidence_refs": [
+    "90dd3bfb-c910-49d3-9a52-54f2752d26b4:assistant_kind",
+    "90dd3bfb-c910-49d3-9a52-54f2752d26b4:launch_target"
+  ],
+  "created_at_utc": "2026-04-12T22:52:11.170469Z",
+  "metadata": {
+    "validation_status": "unvalidated",
+    "execution_state": "failed",
+    "rollback_state": "",
+    "artifact_count": 0,
+    "extracted_keys": [
+      "assistant_kind",
+      "launch_target"
+    ],
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": ""
+  }
+}

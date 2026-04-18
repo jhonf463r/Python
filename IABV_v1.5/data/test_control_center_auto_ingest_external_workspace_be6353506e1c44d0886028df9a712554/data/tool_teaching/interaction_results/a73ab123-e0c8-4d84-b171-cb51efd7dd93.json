@@ -1,0 +1,115 @@
+{
+  "interaction_result_id": "a73ab123-e0c8-4d84-b171-cb51efd7dd93",
+  "success": true,
+  "execution_state": {
+    "state": "executed",
+    "detail": "Herramienta ejecutada por el adaptador local.",
+    "executor_name": "external_assistant",
+    "sandboxed": false,
+    "validated": true,
+    "approval_decision": "approved",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": false,
+      "assistant_kind": "codex",
+      "launch_mode": "desktop_app",
+      "launch_target": "C:\\Users\\faber\\AppData\\Roaming\\npm\\codex.CMD",
+      "response_capture_mode": "direct_text",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Consulta autonoma IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\data\\test_control_center_auto_ingest_external_workspace_be6353506e1c44d0886028df9a712554\nObjetivo: abre Wplay e inicia sesion\nAsistente elegido: codex\nPending issue: a1347354-bc58-4e9e-8a6b-853e463e3c00\nIABV_QUERY_ID: a1347354-bc58-4e9e-8a6b-853e463e3c00\nSitio: wplay\nAuditoria viva: Bridge lag persistente despues de la ensenanza.\nObjetivo de la consulta: diagnosticar la causa raiz tecnica y proponer el siguiente cambio vertical verificable.\nFormato de salida obligatorio:\nCausa raiz probable: <una frase concreta>\nCambio vertical recomendado: <siguiente cambio o microajuste>\nPruebas sugeridas: <1 a 3 pruebas cortas separadas por coma>\nfile_scope: <rutas src/tests si aplica; si no aplica, escribe n/a>\nPaquete estructurado:\nPaquete para Codex - Pendiente Self-Teacher IABV v1.5\n\nWorkspace: C:\\Python\\IABV_v1.5\\data\\test_control_center_auto_ingest_external_workspace_be6353506e1c44d0886028df9a712554\nPending issue: a1347354-bc58-4e9e-8a6b-853e463e3c00\nEscenario: \nRun: n/d\nEpisode: n/d\nSession: adaptive-wplay-auto-ingest\n\nDiagnostico breve:\nEl problema parece tecnico y repetido.\n\nCausa raiz probable:\nBridge lag persistente despues de la ensenanza.\n\nEvidencia referenciada:\n- evidence_ref: incident:bridge_lag\n\nAjustes runtime intentados:\nsin tuning runtime previo\n\nCambio vertical recomendado:\nBridge lag persistente despues de la ensenanza.\n\nPruebas sugeridas:\nabre Wplay e inicia sesion, abre Wplay e inicia sesion, Revisar Centro Evolutivo\n\nRiesgos o tradeoffs:\nSeguir solo con tuning runtime puede ocultar el problema real; conviene corregir la integracion de fondo.\n\nIABV_THREAD_KEY: iabv::codex::wplay::abre-wplay-e-inicia-sesion\nIABV_THREAD_TITLE: IABV Codex | abre Wplay e inicia sesion\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "prompt_preview": "Consulta autonoma IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\data\\test_control_center_auto_ingest_external_workspace_be6353506e1c44d0886028df9a712554\nObjetivo: abre Wplay e inicia sesion\nAsistente elegido: codex\nPending issue: a1347354-bc58-4e9e-8a6b-853e463e3c00\nIABV_QUERY_ID: a1347354-bc58-4e9e-8a6b-853e463e3c00\nSitio: wplay\nAuditoria viva: Bridge lag persistente despues de la ensenanza.\nObjetivo ",
+      "response_captured": true,
+      "direct_response": true,
+      "launched": false,
+      "session_scope": "external_app",
+      "session_label": "Codex",
+      "isolated_session": false,
+      "thread_key": "iabv::codex::wplay::abre-wplay-e-inicia-sesion",
+      "thread_title": "IABV Codex | abre Wplay e inicia sesion",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando captura desde la sesion y los rollouts dedicados de Codex.",
+      "last_capture_attempt_utc": "2026-04-18T04:58:00.990690+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Python\\IABV_v1.5\\data\\test_control_center_auto_ingest_external_workspace_be6353506e1c44d0886028df9a712554\\data\\tool_teaching\\external_assistants\\codex_home"
+    }
+  },
+  "summary": "Causa raiz probable: El bridge visible sigue saturado. Cambio vertical recomendado: Ajustar sondeo y drenado sin bloquear la pagina. Pruebas sugeridas: Captura con escritura rapida",
+  "errors": [],
+  "confidence": 0.92,
+  "execution_ms": 4,
+  "rollback_state": null,
+  "extracted_data": {
+    "assistant_kind": "codex",
+    "launch_target": "C:\\Users\\faber\\AppData\\Roaming\\npm\\codex.CMD",
+    "prompt_preview": "Consulta autonoma IABV v1.5\nWorkspace: C:\\Python\\IABV_v1.5\\data\\test_control_center_auto_ingest_external_workspace_be6353506e1c44d0886028df9a712554\nObjetivo: abre Wplay e inicia sesion\nAsistente elegido: codex\nPending issue: a1347354-bc58-4e9e-8a6b-853e463e3c00\nIABV_QUERY_ID: a1347354-bc58-4e9e-8a6b-853e463e3c00\nSitio: wplay\nAuditoria viva: Bridge lag persistente despues de la ensenanza.\nObjetivo "
+  },
+  "artifacts": [],
+  "metadata": {
+    "validation_status": "approved",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "pending",
+    "goal_blocker": "",
+    "live_audit": {
+      "audit_snapshot_id": "ef1c2ed0-f5df-479d-b161-16689c80e19c",
+      "objective": "Consultar Codex sobre: abre Wplay e inicia sesion",
+      "session_or_episode_id": "28947f6a-1054-4be0-b470-c7f25987153e",
+      "mode_used": "background",
+      "evidence": [
+        "5059dcd6-29ba-4c65-85f0-95e66fe1be1f",
+        "28947f6a-1054-4be0-b470-c7f25987153e",
+        "site:wplay"
+      ],
+      "findings": [],
+      "decision": {
+        "decision_id": "8d0a5206-0f64-4b3e-ad37-fc6845084dee",
+        "action": "continue_local",
+        "rationale": "La herramienta produjo evidencia suficiente para seguir en la via local actual.",
+        "confidence": 0.7,
+        "recommended_tool_id": "codex_installed",
+        "approval_required": true,
+        "metadata": {}
+      },
+      "confidence": 0.96,
+      "auto_safe_action": "",
+      "human_approval": true,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 1.0,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.85,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.9625,
+        "learning_consolidation_score": 0.9625,
+        "lab_precision": 0.3247,
+        "lab_robustness": 0.35,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.3906,
+        "lab_recommended_route_score": 0.0
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "codex_installed",
+        "tool_type": "custom",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "pending",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "ef1c2ed0-f5df-479d-b161-16689c80e19c"
+  }
+}

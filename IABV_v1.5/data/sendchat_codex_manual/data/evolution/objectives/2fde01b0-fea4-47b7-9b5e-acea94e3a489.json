@@ -1,0 +1,30 @@
+{
+  "objective_id": "2fde01b0-fea4-47b7-9b5e-acea94e3a489",
+  "kind": "task",
+  "title": "Consulta externa dirigida a Codex",
+  "summary": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un executor de herramientas aplicable para Navegacion web generica; sigue faltando un adaptador operativo del dominio.",
+  "parent_id": "856fbbca-ee1d-4a5e-8803-5b4ba0fbd741",
+  "root_id": "28d006d4-019e-4e66-a6fa-6526da914cd8",
+  "site_id": null,
+  "priority": 50,
+  "status": "completed",
+  "progress": 1.0,
+  "blocker": "",
+  "confidence": 0.9,
+  "evidence_refs": [
+    "Contexto activo: contexto general.",
+    "run:d537880c-52b5-4e52-af13-8207bff6bcb3"
+  ],
+  "tags": [],
+  "metadata": {
+    "user_goal": "Necesito una consulta tecnica con Codex para diagnosticar por que IABV no siempre logra lanzar y capturar consultas externas automaticamente. Usa solo el hilo dedicado del programa.",
+    "intent_key": "research.external_consultation",
+    "pack_id": "browser.generic",
+    "pack_title": "Navegacion web generica",
+    "level": "task",
+    "session_id": "a0639145-adbc-4e35-a070-f0dff8b75ec7",
+    "status": "completed"
+  },
+  "created_at_utc": "2026-04-11T01:11:58.615851Z",
+  "updated_at_utc": "2026-04-11T01:11:58.939658Z"
+}
