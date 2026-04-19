@@ -25,8 +25,25 @@ except ImportError:  # pragma: no cover - fallback for non-UI test environments
             for callback in list(self._callbacks):
                 callback(*args, **kwargs)
 
+    class _SignalDescriptor:
+        def __init__(self, *args, **kwargs):
+            self._args = args
+            self._kwargs = kwargs
+
+        def __set_name__(self, owner, name):
+            self._attr = f'_signal_proxy_{name}'
+
+        def __get__(self, instance, owner=None):
+            if instance is None:
+                return self
+            proxy = instance.__dict__.get(self._attr)
+            if proxy is None:
+                proxy = _SignalProxy()
+                instance.__dict__[self._attr] = proxy
+            return proxy
+
     def Signal(*args, **kwargs):
-        return _SignalProxy()
+        return _SignalDescriptor(*args, **kwargs)
 
     def Slot(*args, **kwargs):
         def decorator(function):
