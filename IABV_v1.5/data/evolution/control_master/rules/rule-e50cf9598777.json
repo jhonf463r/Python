@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-e50cf9598777",
+  "title": "el estado vivo del hilo de Codex prevalece sobre historial stale",
+  "description": "",
+  "severity": "strict",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#el-estado-vivo-del-hilo-de-codex-prevalece-sobre-historial-stale"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.723253Z",
+  "updated_at_utc": "2026-04-19T19:23:46.358505Z"
+}

@@ -132,3 +132,73 @@ def test_seed_from_agents_md_via_bootstrap_is_idempotent() -> None:
         assert len(state.global_rules) == first
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_bootstrap_auto_seeds_agents_md_when_available() -> None:
+    """The bootstrap should idempotently seed governance rules from AGENTS.md at startup."""
+    root = _workspace("control_master_auto_seed")
+    try:
+        boot = AppBootstrap(str(root))
+        rules = boot.control_master_service.repository.list_rules()
+        # AGENTS.md sits in repo root; auto-seed should have produced at least one rule.
+        assert len(rules) > 0, "Expected AGENTS.md auto-seed to register rules at bootstrap"
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_orchestrator_exposes_control_master_dependencies_after_bootstrap() -> None:
+    """The orchestrator must reach the governance digest without user wiring."""
+    root = _workspace("control_master_orchestrator_wiring")
+    try:
+        boot = AppBootstrap(str(root))
+        orch = boot.adaptive_task_orchestrator
+        assert orch.control_master_service is boot.control_master_service
+        assert orch.control_master_digest_builder is boot.control_master_digest_builder
+        digest = orch._control_master_digest()
+        assert digest is not None
+        assert hasattr(digest, "current_vision")
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_orchestrator_digest_helper_is_safe_without_service() -> None:
+    """Defensive: orchestrator must tolerate missing control master service."""
+    root = _workspace("control_master_orchestrator_safe")
+    try:
+        boot = AppBootstrap(str(root))
+        orch = boot.adaptive_task_orchestrator
+        orch.control_master_service = None
+        assert orch._control_master_digest() is None
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_export_control_master_digest_returns_json_dict() -> None:
+    root = _workspace("control_master_export_digest")
+    try:
+        boot = AppBootstrap(str(root))
+        boot.control_master_service.set_vision("Vision persistida para export")
+        payload = boot.export_control_master_digest()
+        assert isinstance(payload, dict)
+        assert payload.get("current_vision") == "Vision persistida para export"
+        assert "rules_brief" in payload
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_orchestrator_digest_preserves_persisted_vision() -> None:
+    """Regression: the orchestrator helper must not drop fields like current_vision.
+
+    Previously the helper called current_state(refresh=True) which skipped the
+    persisted base state and left current_vision/current_tests_state/
+    evidence_links/metadata at their empty defaults.
+    """
+    root = _workspace("control_master_orchestrator_vision")
+    try:
+        boot = AppBootstrap(str(root))
+        boot.control_master_service.set_vision("Vision gobernable viva")
+        digest = boot.adaptive_task_orchestrator._control_master_digest()
+        assert digest is not None
+        assert digest.current_vision == "Vision gobernable viva"
+    finally:
+        shutil.rmtree(root, ignore_errors=True)

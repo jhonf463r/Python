@@ -1,0 +1,23 @@
+{
+  "objective_id": "obj-super-sync-outcome-loop",
+  "kind": "task",
+  "title": "Cierre de loop: TaskOutcomeRecorder -> ControlMasterService",
+  "summary": "Hoy cuando una sesion completa un objetivo o marca UNRESOLVED nada lo registra automaticamente en el control maestro. Conectar TaskOutcomeRecorder con mark_objective(completed) / mark_unresolved para cerrar el loop de aprendizaje sin intervencion humana.",
+  "parent_id": "obj-control-master-super-sync",
+  "root_id": "obj-control-master-super-sync",
+  "site_id": null,
+  "priority": 30,
+  "status": "active",
+  "progress": 0.0,
+  "blocker": "",
+  "confidence": 0.0,
+  "evidence_refs": [],
+  "tags": [
+    "control-master",
+    "learning",
+    "super-sync"
+  ],
+  "metadata": {},
+  "created_at_utc": "2026-04-19T19:22:00.747349Z",
+  "updated_at_utc": "2026-04-19T19:22:00.747351Z"
+}

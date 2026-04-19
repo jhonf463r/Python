@@ -1,0 +1,569 @@
+{
+  "state_id": "dc840807-ef2a-4e7a-8f11-4c6362ccbcb7",
+  "version": "control_master.v1",
+  "current_vision": "IABV v1.5 local-first con Control Maestro vivo: ControlMasterDigest como unica fuente compacta para que cualquier IA (Codex, ChatGPT, Devin, Claude) arranque sincronica sin pegar historial. Super sincronia = lectura automatica al entrar + escritura estructurada al cerrar cada sesion.",
+  "active_objective_ids": [
+    "obj-super-sync-outcome-loop",
+    "obj-super-sync-write-bridge",
+    "obj-super-sync-cli-export",
+    "obj-control-master-super-sync"
+  ],
+  "completed_objective_ids": [],
+  "paused_objective_ids": [],
+  "discarded_objective_ids": [],
+  "unresolved_items": [],
+  "global_rules": [
+    {
+      "rule_id": "rule-0aa0724f1626",
+      "title": "Si algo no puede confirmarse, marcar `UNRESOLVED`",
+      "description": "",
+      "severity": "irrevocable",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#si-algo-no-puede-confirmarse-marcar-unresolved"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.728139Z",
+      "updated_at_utc": "2026-04-19T19:23:46.365596Z"
+    },
+    {
+      "rule_id": "rule-0c4a50493aac",
+      "title": "ventanas abiertas reales y foco via Win32",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#ventanas-abiertas-reales-y-foco-via-win32"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.721147Z",
+      "updated_at_utc": "2026-04-19T19:23:46.356985Z"
+    },
+    {
+      "rule_id": "rule-108b0e24cd76",
+      "title": "preflight de consulta externa bloqueado por permiso antes de actuar",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#preflight-de-consulta-externa-bloqueado-por-permiso-antes-de-actuar"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.722926Z",
+      "updated_at_utc": "2026-04-19T19:23:46.358003Z"
+    },
+    {
+      "rule_id": "rule-1b3264f9ae23",
+      "title": "se consulta antes de rutas externas",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#se-consulta-antes-de-rutas-externas"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.716670Z",
+      "updated_at_utc": "2026-04-19T19:23:46.349225Z"
+    },
+    {
+      "rule_id": "rule-1fa220af1272",
+      "title": "el contexto portable se propaga por `TaskContextAssembler`, `AdaptiveTaskOrchestrator` y `EvolutionCenterViewModel`",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#el-contexto-portable-se-propaga-por-taskcontextassembler-adaptivetaskorchestrator-y-evolutioncenterviewmodel"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.719066Z",
+      "updated_at_utc": "2026-04-19T19:23:46.352910Z"
+    },
+    {
+      "rule_id": "rule-20d2b14b1b01",
+      "title": "No hacer refactor masivo sin aprobacion explicita",
+      "description": "",
+      "severity": "irrevocable",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#no-hacer-refactor-masivo-sin-aprobacion-explicita"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.727446Z",
+      "updated_at_utc": "2026-04-19T19:23:46.364593Z"
+    },
+    {
+      "rule_id": "rule-260710390804",
+      "title": "No fingir observacion que no existe",
+      "description": "",
+      "severity": "irrevocable",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#no-fingir-observacion-que-no-existe"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.727823Z",
+      "updated_at_utc": "2026-04-19T19:23:46.365116Z"
+    },
+    {
+      "rule_id": "rule-2d9cc070e56f",
+      "title": "no asumas que el permiso existe",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#no-asumas-que-el-permiso-existe"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.729284Z",
+      "updated_at_utc": "2026-04-19T19:23:46.367731Z"
+    },
+    {
+      "rule_id": "rule-3d271000eb8e",
+      "title": "Si una ruta no es viable en el estado actual, bloquear antes de intentar",
+      "description": "",
+      "severity": "irrevocable",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#si-una-ruta-no-es-viable-en-el-estado-actual-bloquear-antes-de-intentar"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.728514Z",
+      "updated_at_utc": "2026-04-19T19:23:46.366208Z"
+    },
+    {
+      "rule_id": "rule-462d29742fe3",
+      "title": "No convertir un ViewModel en decisor de rutas",
+      "description": "",
+      "severity": "irrevocable",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#no-convertir-un-viewmodel-en-decisor-de-rutas"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.727088Z",
+      "updated_at_utc": "2026-04-19T19:23:46.364116Z"
+    },
+    {
+      "rule_id": "rule-47868f5b4788",
+      "title": "aprendizaje acumulado",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#aprendizaje-acumulado"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.724424Z",
+      "updated_at_utc": "2026-04-19T19:23:46.360138Z"
+    },
+    {
+      "rule_id": "rule-4cd5a0193621",
+      "title": "hilo activo de Codex via `%USERPROFILE%\\\\.codex\\\\state_5.sqlite`",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#hilo-activo-de-codex-via-userprofilecodexstate5sqlite"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.722576Z",
+      "updated_at_utc": "2026-04-19T19:23:46.357490Z"
+    },
+    {
+      "rule_id": "rule-4ee340a86bd9",
+      "title": "autoconciencia del sistema",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#autoconciencia-del-sistema"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.724051Z",
+      "updated_at_utc": "2026-04-19T19:23:46.359576Z"
+    },
+    {
+      "rule_id": "rule-6e9b9796c285",
+      "title": "No reemplazar `EnvironmentSelfModel`, `WorldModelSnapshot` o `UniversalPerceptionSignal`; se complementan",
+      "description": "",
+      "severity": "irrevocable",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#no-reemplazar-environmentselfmodel-worldmodelsnapshot-o-universalperceptionsignal-se-complementan"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.726768Z",
+      "updated_at_utc": "2026-04-19T19:23:46.363584Z"
+    },
+    {
+      "rule_id": "rule-6ffc3e00957e",
+      "title": "el sistema aprende por evidencia, no por costumbre",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#el-sistema-aprende-por-evidencia-no-por-costumbre"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.718400Z",
+      "updated_at_utc": "2026-04-19T19:23:46.351860Z"
+    },
+    {
+      "rule_id": "rule-81fcee302a2f",
+      "title": "se elimino refresh redundante de autoexaminacion en `EvolutionCenterViewModel`",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#se-elimino-refresh-redundante-de-autoexaminacion-en-evolutioncenterviewmodel"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.720830Z",
+      "updated_at_utc": "2026-04-19T19:23:46.356163Z"
+    },
+    {
+      "rule_id": "rule-82cd0d4e68b1",
+      "title": "no dispares autonomia ni consulta externa",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#no-dispares-autonomia-ni-consulta-externa"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.725764Z",
+      "updated_at_utc": "2026-04-19T19:23:46.362084Z"
+    },
+    {
+      "rule_id": "rule-82d1d4d7bdbe",
+      "title": "El sandbox debe seguir aislado del sistema vivo",
+      "description": "",
+      "severity": "irrevocable",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#el-sandbox-debe-seguir-aislado-del-sistema-vivo"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.728794Z",
+      "updated_at_utc": "2026-04-19T19:23:46.366691Z"
+    },
+    {
+      "rule_id": "rule-8ee2ed6e39e3",
+      "title": "no declares la herramienta disponible si no pudiste verificarla",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#no-declares-la-herramienta-disponible-si-no-pudiste-verificarla"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.729570Z",
+      "updated_at_utc": "2026-04-19T19:23:46.368235Z"
+    },
+    {
+      "rule_id": "rule-90e8cb953b11",
+      "title": "tambien revisa si sus ajustes previos funcionaron o no",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#tambien-revisa-si-sus-ajustes-previos-funcionaron-o-no"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.720133Z",
+      "updated_at_utc": "2026-04-19T19:23:46.355012Z"
+    },
+    {
+      "rule_id": "rule-94c5d52ce342",
+      "title": "`TaskContextAssembler`, `AdaptiveTaskOrchestrator` y `AutonomyGovernancePolicy` consumen `world_model`",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#taskcontextassembler-adaptivetaskorchestrator-y-autonomygovernancepolicy-consumen-worldmodel"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.717012Z",
+      "updated_at_utc": "2026-04-19T19:23:46.349737Z"
+    },
+    {
+      "rule_id": "rule-95854c05c1c0",
+      "title": "`OperationalSelfExaminationService` detecta patrones, riesgos y ajustes recomendados",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#operationalselfexaminationservice-detecta-patrones-riesgos-y-ajustes-recomendados"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.719804Z",
+      "updated_at_utc": "2026-04-19T19:23:46.354478Z"
+    },
+    {
+      "rule_id": "rule-b6fa329962a2",
+      "title": "sus hallazgos alimentan el contexto portable",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#sus-hallazgos-alimentan-el-contexto-portable"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.720502Z",
+      "updated_at_utc": "2026-04-19T19:23:46.355605Z"
+    },
+    {
+      "rule_id": "rule-ba36f4823ab2",
+      "title": "`WorldModelService` es la fuente viva de ventanas, foco, herramientas, red, procesos y bloqueos",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#worldmodelservice-es-la-fuente-viva-de-ventanas-foco-herramientas-red-procesos-y-bloqueos"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.716065Z",
+      "updated_at_utc": "2026-04-19T19:23:46.348609Z"
+    },
+    {
+      "rule_id": "rule-bb8108e5296e",
+      "title": "estado vivo del sistema",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#estado-vivo-del-sistema"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.723678Z",
+      "updated_at_utc": "2026-04-19T19:23:46.359024Z"
+    },
+    {
+      "rule_id": "rule-d00884ceb2bb",
+      "title": "la ejecucion normal registra resultados reales",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#la-ejecucion-normal-registra-resultados-reales"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.717711Z",
+      "updated_at_utc": "2026-04-19T19:23:46.350742Z"
+    },
+    {
+      "rule_id": "rule-d0b04351f766",
+      "title": "la UI lo lee; no lo modifica",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#la-ui-lo-lee-no-lo-modifica"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.717340Z",
+      "updated_at_utc": "2026-04-19T19:23:46.350255Z"
+    },
+    {
+      "rule_id": "rule-d47cc08b0671",
+      "title": "No duplicar `PerceptionSnapshot`",
+      "description": "",
+      "severity": "irrevocable",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#no-duplicar-perceptionsnapshot"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.726436Z",
+      "updated_at_utc": "2026-04-19T19:23:46.363038Z"
+    },
+    {
+      "rule_id": "rule-d9c6abbd448b",
+      "title": "autoexaminacion operativa",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#autoexaminacion-operativa"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.724752Z",
+      "updated_at_utc": "2026-04-19T19:23:46.360597Z"
+    },
+    {
+      "rule_id": "rule-dd536aaf7ef7",
+      "title": "usa `world_model`, `environment_self_model`, `ExperimentLab`, `PortableContextService` y `OperationalSelfExaminationService`",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#usa-worldmodel-environmentselfmodel-experimentlab-portablecontextservice-y-operationalselfexaminationservice"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.725432Z",
+      "updated_at_utc": "2026-04-19T19:23:46.361583Z"
+    },
+    {
+      "rule_id": "rule-e50cf9598777",
+      "title": "el estado vivo del hilo de Codex prevalece sobre historial stale",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#el-estado-vivo-del-hilo-de-codex-prevalece-sobre-historial-stale"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.723253Z",
+      "updated_at_utc": "2026-04-19T19:23:46.358505Z"
+    },
+    {
+      "rule_id": "rule-e5349f91a18c",
+      "title": "`ExperimentLab`, `StrategySelector` y `AdaptiveWeightLayer` influyen decisiones futuras",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#experimentlab-strategyselector-y-adaptiveweightlayer-influyen-decisiones-futuras"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.718045Z",
+      "updated_at_utc": "2026-04-19T19:23:46.351271Z"
+    },
+    {
+      "rule_id": "rule-e96a1a52cd05",
+      "title": "responde por la via humana local",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#responde-por-la-via-humana-local"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.725068Z",
+      "updated_at_utc": "2026-04-19T19:23:46.361111Z"
+    },
+    {
+      "rule_id": "rule-efc33825fbd8",
+      "title": "no existe una memoria paralela",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#no-existe-una-memoria-paralela"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.719422Z",
+      "updated_at_utc": "2026-04-19T19:23:46.353960Z"
+    },
+    {
+      "rule_id": "rule-f1bad6f7fc5e",
+      "title": "`PortableContextService` genera paquete portable desde estado vivo y aprendizaje persistido",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#portablecontextservice-genera-paquete-portable-desde-estado-vivo-y-aprendizaje-persistido"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.718733Z",
+      "updated_at_utc": "2026-04-19T19:23:46.352387Z"
+    },
+    {
+      "rule_id": "rule-f65df050b492",
+      "title": "pide permiso explicito al usuario",
+      "description": "",
+      "severity": "strict",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#pide-permiso-explicito-al-usuario"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.729044Z",
+      "updated_at_utc": "2026-04-19T19:23:46.367219Z"
+    },
+    {
+      "rule_id": "rule-fa01c0c68731",
+      "title": "No crear otro cerebro ni otro orquestador",
+      "description": "",
+      "severity": "irrevocable",
+      "rationale": "",
+      "applies_to": [],
+      "status": "active",
+      "source_refs": [
+        "AGENTS.md#no-crear-otro-cerebro-ni-otro-orquestador"
+      ],
+      "created_at_utc": "2026-04-19T19:22:00.726083Z",
+      "updated_at_utc": "2026-04-19T19:23:46.362548Z"
+    }
+  ],
+  "technical_backlog": [],
+  "recent_decisions": [
+    {
+      "decision_id": "dec-self-governance-via-control-master",
+      "summary": "Los tres gaps de super sincronia se registran como objetivos reales dentro del propio ControlMasterService, sin codigo nuevo. El sistema se gobierna a si mismo.",
+      "reason": "El usuario pidio que cualquier sesion futura vea donde vamos y que falta. La infraestructura ya estaba: falta usarla. Registrar los gaps como objetivos persistidos es el camino minimo que preserva arquitectura y no inventa otro cerebro.",
+      "impact": "Cualquier sesion que consuma ControlMasterDigest vera estos objetivos en active_objectives_brief. No hay cambios de codigo.",
+      "affected_modules": [
+        "services/evolution/control_master_service",
+        "infra/persistence/objective_repository"
+      ],
+      "status": "accepted",
+      "evidence": [
+        "https://github.com/jhonf463r/Python/pull/14",
+        "https://github.com/jhonf463r/Python/pull/17",
+        "https://github.com/jhonf463r/Python/pull/20"
+      ],
+      "linked_tests": [],
+      "related_rule_ids": [],
+      "related_objective_ids": [
+        "obj-control-master-super-sync",
+        "obj-super-sync-cli-export",
+        "obj-super-sync-write-bridge",
+        "obj-super-sync-outcome-loop"
+      ],
+      "timestamp": "2026-04-19T19:23:46.112273Z",
+      "unresolved_notes": []
+    }
+  ],
+  "current_risks": [],
+  "current_tests_state": {},
+  "evidence_links": [],
+  "last_updated": "2026-04-19T19:23:46.389095Z",
+  "metadata": {}
+}

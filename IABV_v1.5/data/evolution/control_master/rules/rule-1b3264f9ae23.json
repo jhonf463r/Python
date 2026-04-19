@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-1b3264f9ae23",
+  "title": "se consulta antes de rutas externas",
+  "description": "",
+  "severity": "strict",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#se-consulta-antes-de-rutas-externas"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.716670Z",
+  "updated_at_utc": "2026-04-19T19:23:46.349225Z"
+}

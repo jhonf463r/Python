@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-4cd5a0193621",
+  "title": "hilo activo de Codex via `%USERPROFILE%\\\\.codex\\\\state_5.sqlite`",
+  "description": "",
+  "severity": "strict",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#hilo-activo-de-codex-via-userprofilecodexstate5sqlite"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.722576Z",
+  "updated_at_utc": "2026-04-19T19:23:46.357490Z"
+}

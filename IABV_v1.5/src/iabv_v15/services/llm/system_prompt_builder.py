@@ -13,6 +13,7 @@ import json
 from typing import Any
 
 from iabv_v15.domain.models import (
+    ControlMasterDigest,
     EnvironmentSelfModel,
     PerceptionSnapshot,
     PortableContextPackage,
@@ -35,15 +36,17 @@ class SystemPromptBuilder:
         tool_registry: list[ToolCard] | None,
         *,
         governance_rules: dict[str, Any] | None = None,
+        control_master_digest: ControlMasterDigest | None = None,
     ) -> str:
         sections: list[tuple[int, str]] = []
 
         sections.append((0, self._section_identity()))
         sections.append((1, self._section_live_state(world_model)))
         sections.append((2, self._section_hardware(env_self_model)))
-        sections.append((3, self._section_portable_context(portable_context)))
-        sections.append((4, self._section_tools(tool_registry)))
-        sections.append((5, self._section_governance(governance_rules)))
+        sections.append((3, self._section_control_master(control_master_digest)))
+        sections.append((4, self._section_portable_context(portable_context)))
+        sections.append((5, self._section_tools(tool_registry)))
+        sections.append((6, self._section_governance(governance_rules)))
 
         return self._truncate(sections)
 
@@ -142,6 +145,41 @@ class SystemPromptBuilder:
             )
             if card.capabilities:
                 parts.append(f'  Capacidades: {", ".join(card.capabilities[:6])}')
+        return '\n'.join(parts)
+
+    @staticmethod
+    def _section_control_master(digest: ControlMasterDigest | None) -> str:
+        if digest is None:
+            return '## Control Maestro\nNo disponible en esta sesion.'
+        parts: list[str] = ['## Control Maestro (digest)']
+        if digest.current_vision:
+            parts.append(f'Vision: {digest.current_vision}')
+        if digest.rules_brief:
+            parts.append('Reglas estrictas:')
+            for item in digest.rules_brief:
+                parts.append(f'- {item}')
+        if digest.active_objectives_brief:
+            parts.append(
+                f'Objetivos activos: {", ".join(digest.active_objectives_brief)}',
+            )
+        if digest.top_backlog:
+            parts.append('Backlog prioritario:')
+            for item in digest.top_backlog:
+                parts.append(f'- {item}')
+        if digest.current_risks:
+            parts.append('Riesgos actuales:')
+            for item in digest.current_risks:
+                parts.append(f'- {item}')
+        if digest.recent_decisions_brief:
+            parts.append('Decisiones recientes:')
+            for item in digest.recent_decisions_brief:
+                parts.append(f'- {item}')
+        if digest.unresolved:
+            parts.append('UNRESOLVED:')
+            for item in digest.unresolved:
+                parts.append(f'- {item}')
+        if digest.tests_state_brief:
+            parts.append(f'Tests: {digest.tests_state_brief}')
         return '\n'.join(parts)
 
     @staticmethod

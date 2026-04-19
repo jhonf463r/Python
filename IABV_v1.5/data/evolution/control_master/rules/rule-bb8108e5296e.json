@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-bb8108e5296e",
+  "title": "estado vivo del sistema",
+  "description": "",
+  "severity": "strict",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#estado-vivo-del-sistema"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.723678Z",
+  "updated_at_utc": "2026-04-19T19:23:46.359024Z"
+}

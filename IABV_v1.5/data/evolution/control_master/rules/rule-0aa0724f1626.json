@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-0aa0724f1626",
+  "title": "Si algo no puede confirmarse, marcar `UNRESOLVED`",
+  "description": "",
+  "severity": "irrevocable",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#si-algo-no-puede-confirmarse-marcar-unresolved"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.728139Z",
+  "updated_at_utc": "2026-04-19T19:23:46.365596Z"
+}

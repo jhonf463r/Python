@@ -1,0 +1,26 @@
+{
+  "decision_id": "dec-self-governance-via-control-master",
+  "summary": "Los tres gaps de super sincronia se registran como objetivos reales dentro del propio ControlMasterService, sin codigo nuevo. El sistema se gobierna a si mismo.",
+  "reason": "El usuario pidio que cualquier sesion futura vea donde vamos y que falta. La infraestructura ya estaba: falta usarla. Registrar los gaps como objetivos persistidos es el camino minimo que preserva arquitectura y no inventa otro cerebro.",
+  "impact": "Cualquier sesion que consuma ControlMasterDigest vera estos objetivos en active_objectives_brief. No hay cambios de codigo.",
+  "affected_modules": [
+    "services/evolution/control_master_service",
+    "infra/persistence/objective_repository"
+  ],
+  "status": "accepted",
+  "evidence": [
+    "https://github.com/jhonf463r/Python/pull/14",
+    "https://github.com/jhonf463r/Python/pull/17",
+    "https://github.com/jhonf463r/Python/pull/20"
+  ],
+  "linked_tests": [],
+  "related_rule_ids": [],
+  "related_objective_ids": [
+    "obj-control-master-super-sync",
+    "obj-super-sync-cli-export",
+    "obj-super-sync-write-bridge",
+    "obj-super-sync-outcome-loop"
+  ],
+  "timestamp": "2026-04-19T19:23:46.112273Z",
+  "unresolved_notes": []
+}

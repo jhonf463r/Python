@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-ba36f4823ab2",
+  "title": "`WorldModelService` es la fuente viva de ventanas, foco, herramientas, red, procesos y bloqueos",
+  "description": "",
+  "severity": "strict",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#worldmodelservice-es-la-fuente-viva-de-ventanas-foco-herramientas-red-procesos-y-bloqueos"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.716065Z",
+  "updated_at_utc": "2026-04-19T19:23:46.348609Z"
+}

@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-108b0e24cd76",
+  "title": "preflight de consulta externa bloqueado por permiso antes de actuar",
+  "description": "",
+  "severity": "strict",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#preflight-de-consulta-externa-bloqueado-por-permiso-antes-de-actuar"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.722926Z",
+  "updated_at_utc": "2026-04-19T19:23:46.358003Z"
+}

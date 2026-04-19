@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-81fcee302a2f",
+  "title": "se elimino refresh redundante de autoexaminacion en `EvolutionCenterViewModel`",
+  "description": "",
+  "severity": "strict",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#se-elimino-refresh-redundante-de-autoexaminacion-en-evolutioncenterviewmodel"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.720830Z",
+  "updated_at_utc": "2026-04-19T19:23:46.356163Z"
+}
