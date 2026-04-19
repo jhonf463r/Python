@@ -481,6 +481,7 @@ class AppBootstrap:
             approval_checkpoint_repository=self.approval_checkpoint_repository,
             experiment_lab=self.experiment_lab,
             adaptive_weight_layer=self.adaptive_weight_layer,
+            control_master_service=self.control_master_service,
         )
         self.scenario_registry = ScenarioRegistry()
         self.execution_probe_service = ExecutionProbeService(
