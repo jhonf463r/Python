@@ -10,6 +10,7 @@ import webbrowser
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
+from urllib.parse import urlparse
 
 try:
     import httpx
@@ -28,6 +29,53 @@ class ToolAdapter:
 
     def __init__(self, runner_factory: Callable[[str], UIExecutionRunner] | None = None) -> None:
         self.runner_factory = runner_factory or (lambda workspace_root: UIExecutionRunner(workspace_root))
+        # Inyectado por bootstrap cuando el adapter maneja asistentes externos
+        # que pueden requerir login. Mantenerlo opcional evita romper
+        # contratos para adapters que nunca tocan credenciales.
+        self.credential_broker: Any = None
+
+    def _resolve_credential_domain(self, card: ToolCard) -> str:
+        """Dominio preferido para asociar credenciales de un asistente externo."""
+        explicit = str(card.metadata.get('credential_domain') or '').strip().lower()
+        if explicit:
+            return explicit
+        web_url = str(card.metadata.get('web_url') or '').strip()
+        if web_url:
+            try:
+                host = (urlparse(web_url).hostname or '').strip().lower()
+            except ValueError:
+                host = ''
+            if host:
+                return host
+        assistant_kind = str(card.metadata.get('assistant_kind') or '').strip().lower()
+        return assistant_kind
+
+    def _request_login_credentials(self, card: ToolCard) -> None:
+        """Emite el prompt de credenciales si el broker esta disponible y aun faltan.
+
+        Idempotente: si la credencial ya existe en el broker para el dominio,
+        no vuelve a abrir el dialogo. Silencioso ante brokers no inyectados o
+        fallas locales, para no romper la ruta externa.
+        """
+        broker = self.credential_broker
+        if broker is None:
+            return
+        domain = self._resolve_credential_domain(card)
+        if not domain:
+            return
+        try:
+            if not broker.needs(domain):
+                return
+            reason = (
+                f'Iniciar sesion en {card.title} una vez para que IABV pueda '
+                'consultar en segundo plano desde su sesion aislada.'
+            )
+            username_hint = str(card.metadata.get('credential_username_hint') or '').strip() or None
+            broker.request(domain, reason=reason, username_hint=username_hint)
+        except Exception:
+            # El broker nunca debe tumbar la ruta externa; si falla el prompt
+            # simplemente seguimos con el mensaje de espera ya existente.
+            return
 
     def is_available(self, card: ToolCard) -> bool:
         launch_mode = str(card.metadata.get('launch_mode') or '').strip().lower()
@@ -280,6 +328,11 @@ class ToolAdapter:
                     fallback_reason = str(captured.get('error_message') or 'capture_pending')
                     if browser_dom_capture:
                         login_required = fallback_reason == 'assistant_login_required'
+                        if login_required:
+                            # Emitir popup de credenciales una sola vez por dominio.
+                            # Si la UI ya acepto usuario/pass antes, broker.needs()
+                            # devuelve False y esto es un noop.
+                            self._request_login_credentials(card)
                         keep_waiting = login_required or fallback_reason == 'browser_dom_capture_pending'
                         if not keep_waiting:
                             return {
