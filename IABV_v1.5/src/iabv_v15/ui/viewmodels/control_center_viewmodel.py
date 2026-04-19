@@ -5494,13 +5494,32 @@ class ControlCenterViewModel(QObject):
 
     @Slot(bool)
     def toggleMcpBridge(self, enabled: bool) -> None:
+        """Dispara el toggle del MCP bridge sin bloquear el hilo UI.
+
+        `service.set_enabled(True)` puede tardar hasta `DEFAULT_TUNNEL_TIMEOUT_S`
+        segundos (espera sincrónica a que cloudflared publique la URL). Corriéndolo
+        en el hilo UI freezea todo el programa hasta que la URL aparece o timeout.
+        Lo mandamos a un thread daemon; el service publica las transiciones
+        (`stopped → starting → running|failed`) vía `attach_listener`, que ya
+        reemitimos por `mcpBridgeChanged` al hilo UI.
+        """
+
         service = self.mcp_bridge_service
         if service is None:
             return
-        try:
-            service.set_enabled(bool(enabled))
-        except Exception:
-            pass
+        target = bool(enabled)
+
+        def _run() -> None:
+            try:
+                service.set_enabled(target)
+            except Exception:
+                pass
+
+        threading.Thread(
+            target=_run,
+            name='mcp-bridge-toggle',
+            daemon=True,
+        ).start()
 
     @Slot()
     def copyMcpTunnelUrl(self) -> None:

@@ -410,5 +410,139 @@ def test_invalid_transport_falls_back_to_default(tmp_path: Path) -> None:
     assert svc.status().transport == "streamable-http"
 
 
+# ----------------------------------------------------------------------
+# Race: set_enabled(False) concurrente con start en vuelo
+# Regresión del finding de Devin Review en PR #33
+
+
+class _SlowTunnelRunner(_FakeTunnelRunner):
+    """Tunnel fake que libera la URL sólo cuando un evento externo lo permite.
+
+    Sirve para simular que `wait_for_url()` está colgado esperando a cloudflared
+    mientras otro hilo llama `set_enabled(False)`.
+    """
+
+    def __init__(self, url: str = "https://slow.trycloudflare.com") -> None:
+        super().__init__(url=url, error=None)
+        self._ready.clear()
+
+    def start(self, bind_host: str, bind_port: int) -> None:
+        # NO auto-release the URL — el test la libera con release_url().
+        self.started += 1
+
+    def release_url(self) -> None:
+        self._ready.set()
+
+    def wait_for_url(self, timeout_s: float) -> str | None:
+        self._ready.wait(timeout=timeout_s)
+        return self._url if self._ready.is_set() else None
+
+
+def test_concurrent_disable_during_start_leaves_bridge_stopped(tmp_path: Path) -> None:
+    """Regresión del finding de Devin Review en PR #33.
+
+    Escenario:
+      1. Thread autostart llama `ensure_started()` → entra a `_start_locked()`
+         → queda bloqueado en `wait_for_url()`.
+      2. Thread toggle llama `set_enabled(False)` → persiste pref=False y
+         entra a `_stop_locked()` tras el operation_lock.
+      3. El tunnel publica URL después de (2) pero antes de que el start
+         termine de commitear el estado.
+
+    Resultado esperado: la intención del usuario (OFF) gana. El bridge queda
+    `state=stopped`, `running=False`, `enabled_pref=False` y cloudflared
+    detenido (no queda expuesto).
+    """
+
+    tunnel = _SlowTunnelRunner()
+    svc, server, _ = _build_service(tmp_path, tunnel_runner=tunnel)
+    svc.set_enabled(True)  # persiste pref y arranca sincrónicamente
+    # Reset al estado "start en vuelo": como el test anterior no bloquea, usamos
+    # otro flow. Simulamos una nueva operación donde el disable llega mientras
+    # el start está esperando URL.
+    tunnel._ready.clear()
+    tunnel._url = "https://slow.trycloudflare.com"
+
+    # Relanza un start (que se quedará esperando release_url).
+    start_done = threading.Event()
+    start_status: dict[str, MCPBridgeStatus] = {}
+
+    def _start_worker() -> None:
+        start_status["s"] = svc.ensure_started()
+        start_done.set()
+
+    threading.Thread(target=_start_worker, daemon=True, name="test-start").start()
+
+    # Esperamos un poco para que el thread entre a _start_locked y quede en wait_for_url.
+    # El lock de operación no está disponible para set_enabled(False) hasta que start termine.
+    import time
+    time.sleep(0.05)
+
+    # Mientras start está en vuelo, persistimos pref=False. El stop queda bloqueado
+    # esperando el operation_lock; liberamos la URL para que el start commitee.
+    def _disable_worker() -> None:
+        svc.set_enabled(False)
+
+    disable_thread = threading.Thread(target=_disable_worker, daemon=True, name="test-disable")
+    disable_thread.start()
+    time.sleep(0.05)  # let set_enabled persist pref before we release the URL
+    tunnel.release_url()
+
+    assert start_done.wait(timeout=3.0), "start thread nunca terminó"
+    disable_thread.join(timeout=3.0)
+
+    final = svc.status()
+    assert final.enabled_pref is False, "la intención del usuario (OFF) debe ganar"
+    assert final.running is False, "bridge NO debe quedar running tras disable concurrente"
+    assert final.state == "stopped", f"estado final debe ser stopped, no {final.state}"
+    # cloudflared debe estar detenido (no expuesto) — al menos una vez por el
+    # teardown de _start_locked o por el _stop_locked.
+    assert tunnel.stopped >= 1, "cloudflared debe detenerse tras el race"
+    assert server.stopped >= 1, "MCP server debe detenerse tras el race"
+
+
+def test_stop_serialized_after_start_in_flight(tmp_path: Path) -> None:
+    """Si un stop llega durante un start en vuelo, el operation_lock los serializa.
+
+    La métrica clave: ambos completan sin crash y el estado final es coherente
+    con el último intent (disable → stopped).
+    """
+
+    tunnel = _SlowTunnelRunner()
+    svc, _, _ = _build_service(tmp_path, tunnel_runner=tunnel)
+    svc._status.enabled_pref = True  # fuerza pref ON para disparar ensure_started
+    svc._persist_enabled_preference(True)
+
+    start_done = threading.Event()
+
+    def _start_worker() -> None:
+        svc.ensure_started()
+        start_done.set()
+
+    threading.Thread(target=_start_worker, daemon=True).start()
+
+    import time
+    time.sleep(0.05)
+    # stop() debería quedar esperando el operation_lock hasta que start termine.
+    stop_done = threading.Event()
+
+    def _stop_worker() -> None:
+        svc.stop()
+        stop_done.set()
+
+    threading.Thread(target=_stop_worker, daemon=True).start()
+    time.sleep(0.05)
+    # stop aún no debe haber completado (está esperando el operation_lock).
+    assert not stop_done.is_set(), "stop() no debe poder ejecutar mientras start tiene el operation_lock"
+
+    tunnel.release_url()
+    assert start_done.wait(timeout=3.0)
+    assert stop_done.wait(timeout=3.0)
+
+    final = svc.status()
+    assert final.running is False
+    assert final.state == "stopped"
+
+
 if __name__ == "__main__":  # pragma: no cover - debugging helper
     pytest.main([__file__, "-q"])
