@@ -16,7 +16,6 @@ from iabv_v15.domain.models import (
     InferenceRequest,
     InferenceResult,
     IssueSeverity,
-    IntentSchema,
     PerceptionSnapshot,
     ReasoningMode,
     ReportKind,
@@ -79,37 +78,22 @@ class AdaptiveTaskOrchestrator:
         self.autonomy_governance_policy = autonomy_governance_policy
 
     def build_decision_context_preview(self, request: InferenceRequest) -> DecisionContext:
-        # Usar clasificación con schema para mejor comprensión semántica
-        intent, intent_schema = self.intent_service.classify_with_schema(
-            request.user_goal,
-            request.goal_parameters,
-            conversation_history=request.metadata.get('conversation_history'),
-        )
+        intent, _ = self.intent_service.classify(request)
         route_decision = self.role_router.build_decision_from_intent(request=request, intent=intent)
-        perception = self.context_assembler.build_perception_snapshot(
-            request, intent, route_decision=route_decision, intent_schema=intent_schema
-        )
+        perception = self.context_assembler.build_perception_snapshot(request, intent, route_decision=route_decision)
         return perception.decision_context
 
     def handle_request(self, request: InferenceRequest) -> tuple[RoleRoute, InferenceResult, AdaptiveSession]:
-        # ETAPA 2: Clasificación semántica mejorada con IntentSchema
-        intent, intent_schema = self.intent_service.classify_with_schema(
-            request.user_goal,
-            request.goal_parameters,
-            conversation_history=request.metadata.get('conversation_history'),
-        )
-        hypotheses = intent.hypotheses
+        intent, hypotheses = self.intent_service.classify(request)
         route_decision = self.role_router.build_decision_from_intent(request=request, intent=intent)
-        perception = self.context_assembler.build_perception_snapshot(
-            request, intent, route_decision=route_decision, intent_schema=intent_schema
-        )
+        perception = self.context_assembler.build_perception_snapshot(request, intent, route_decision=route_decision)
         context = perception.task_context
 
-        # Extraer análisis conversacional del schema (más preciso que keywords)
-        ambiguity_score = intent_schema.ambiguity_score if intent_schema else 0.0
-        requires_clarification = intent_schema.requires_clarification if intent_schema else False
-        sub_intents = intent_schema.sub_intents if intent_schema else []
-        risk_level = intent_schema.risk_level if intent_schema else 'low'
+        # ETAPA 2: Check for ambiguity and clarity requirements
+        conversation_analysis = dict(perception.decision_context.metadata.get('conversation_analysis') or {})
+        ambiguity_score = float(conversation_analysis.get('ambiguity_score') or perception.decision_context.metadata.get('ambiguity_score') or 0.0)
+        requires_clarification = bool(conversation_analysis.get('requires_clarification') or perception.decision_context.metadata.get('requires_clarification'))
+        sub_intents = list(conversation_analysis.get('sub_intents') or perception.decision_context.metadata.get('sub_intents') or [])
 
         capabilities = self.capability_service.evaluate(intent, context)
         context.capability_snapshot = capabilities
@@ -153,10 +137,7 @@ class AdaptiveTaskOrchestrator:
                     'ambiguity_score': ambiguity_score,
                     'requires_clarification': requires_clarification,
                     'sub_intents': sub_intents,
-                    'risk_level': risk_level,
-                    'compound_intent': len(sub_intents) > 1 if sub_intents else False,
-                    'semantic_source': intent_schema.semantic_source if intent_schema else 'keywords',
-                    'intent_confidence': intent_schema.confidence if intent_schema else 0.0,
+                    'compound_intent': bool(conversation_analysis.get('compound') or perception.decision_context.metadata.get('compound_intent')),
                 },
             },
         )
@@ -187,29 +168,7 @@ class AdaptiveTaskOrchestrator:
         decision_context = self._decision_context_from_payload(payload=payload, user_goal=user_goal)
         metadata['decision_context'] = decision_context.model_dump(mode='json')
         payload['metadata'] = metadata
-        if self.autonomous_evolution_service is None:
-            return payload
-        # Verificar si hay una consulta expirada que necesite reintento
-        existing_status = existing.get('status')
-        external_state_flags = list(existing.get('external_state_flags') or [])
-        retry_count = int(existing.get('retry_count') or 0)
-        max_retries = 3
-        # Si está en awaiting_response pero expiró (SESSION_EXPIRED), permitir reintento
-        if existing_status == 'awaiting_response' and 'session_expired' in external_state_flags:
-            if retry_count >= max_retries:
-                # Máximo de reintentos alcanzado, marcar como fallido
-                existing['status'] = 'failed'
-                existing['retry_exhausted'] = True
-                existing['reason'] = f'Consulta expirada después de {max_retries} reintentos.'
-                metadata['autonomous_evolution'] = dict(existing)
-                payload['metadata'] = metadata
-                payload['assistant_guidance'] = f'La consulta externa no pudo completarse después de {max_retries} intentos. Recomiendo continuar localmente.'
-                return payload
-            # Limpiar estado para reintento
-            payload = self._prepare_retry_for_expired_consultation(payload, existing, retry_count)
-            decision_context = self._decision_context_from_payload(payload=payload, user_goal=user_goal)
-        elif existing_status in {'prepared', 'reused', 'failed'}:
-            # Estados finales, no reintentar
+        if self.autonomous_evolution_service is None or existing.get('status') in {'prepared', 'reused', 'awaiting_response', 'failed'}:
             return payload
         result = self.autonomous_evolution_service.plan_or_execute(
             adaptive_payload=payload,
@@ -217,10 +176,6 @@ class AdaptiveTaskOrchestrator:
             source=source,
             decision_context=decision_context,
         )
-        # Incrementar contador de reintentos si es un reintento
-        if existing_status == 'awaiting_response' and 'session_expired' in external_state_flags:
-            result['retry_count'] = retry_count + 1
-            result['is_retry'] = True
         metadata['autonomous_evolution'] = dict(result)
         if self._has_external_response(result):
             metadata['autonomous_evolution_response'] = dict(result)
@@ -231,30 +186,6 @@ class AdaptiveTaskOrchestrator:
         if result.get('status') in {'prepared', 'reused', 'awaiting_response'} and not self._has_external_response(result):
             payload['assistant_guidance'] = self._guidance_for_pending_external_response(result)
         return payload
-
-    def _prepare_retry_for_expired_consultation(
-        self,
-        payload: dict[str, Any],
-        existing_consultation: dict[str, Any],
-        retry_count: int,
-    ) -> dict[str, Any]:
-        """Limpia el estado de una consulta expirada para permitir reintento."""
-        new_payload = dict(payload)
-        metadata = dict(new_payload.get('metadata') or {})
-        # Limpiar flags de estado anterior
-        metadata.pop('autonomous_evolution', None)
-        metadata.pop('autonomous_evolution_response', None)
-        metadata.pop('pending_issue_id', None)
-        # Agregar metadata de reintento
-        metadata['consultation_retry'] = {
-            'previous_task_id': str(existing_consultation.get('task_id') or ''),
-            'previous_result_id': str(existing_consultation.get('result_id') or ''),
-            'retry_count': retry_count + 1,
-            'previous_status': 'session_expired',
-            'retry_reason': 'Consulta externa expirada, reintentando captura.',
-        }
-        new_payload['metadata'] = metadata
-        return new_payload
 
     def preview_autonomy(self, adaptive_payload: dict[str, Any], *, user_goal: str, source: str) -> dict[str, Any]:
         payload = dict(adaptive_payload or {})
