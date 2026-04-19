@@ -116,18 +116,15 @@ class OpenAICompatLocalProvider(LLMProvider):
     ) -> InferenceResult:
         if httpx is None:
             raise ProviderUnavailableError('httpx no esta instalado.')
+        effective_system = self._resolve_system_instruction(request, system_instruction)
+        messages: list[dict[str, str]] = [
+            {'role': 'system', 'content': effective_system},
+            {'role': 'user', 'content': self._build_user_payload(request, user_instruction)},
+        ]
+        messages.extend(self._conversation_context_messages(request))
         payload = {
             'model': self.config.model,
-            'messages': [
-                {
-                    'role': 'system',
-                    'content': system_instruction,
-                },
-                {
-                    'role': 'user',
-                    'content': self._build_user_payload(request, user_instruction),
-                },
-            ],
+            'messages': messages,
             'stream': False,
         }
         with httpx.Client(timeout=self.timeout_seconds) as client:
@@ -167,6 +164,28 @@ class OpenAICompatLocalProvider(LLMProvider):
             f'Pasos observados: {len(request.steps)}\n'
             f'Razonamiento visual requerido: {"si" if request.requires_visual_reasoning else "no"}'
         )
+
+    @staticmethod
+    def _resolve_system_instruction(request: InferenceRequest, fallback: str) -> str:
+        override = request.metadata.get('system_prompt_override')
+        if isinstance(override, str) and override.strip():
+            return override
+        return fallback
+
+    @staticmethod
+    def _conversation_context_messages(request: InferenceRequest) -> list[dict[str, str]]:
+        extra: list[dict[str, str]] = []
+        for item in request.conversation_context:
+            if not isinstance(item, dict):
+                continue
+            role = str(item.get('role') or '').strip()
+            content = str(item.get('content') or '').strip()
+            if not role or not content:
+                continue
+            if role not in {'system', 'user', 'assistant', 'tool'}:
+                continue
+            extra.append({'role': role, 'content': content})
+        return extra
 
     def _looks_inactive(self, exc: Exception) -> bool:
         message = str(exc).lower()
