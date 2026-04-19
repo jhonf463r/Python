@@ -432,6 +432,51 @@ def test_auto_close_passes_explicit_large_limit_to_list_children() -> None:
         shutil.rmtree(root, ignore_errors=True)
 
 
+def test_auto_close_respects_visited_set_to_prevent_cycles() -> None:
+    """The visited guard is defense-in-depth next to the ACTIVE guard.
+
+    Devin Review flagged that routing recursion through ``mark_objective``
+    reset the visited set (making it dead code). Fix threaded the set
+    through direct recursion. Assert the guard works by invoking the
+    private helper with the target already marked visited — it must bail
+    out without closing the otherwise-eligible parent.
+    """
+
+    root = _workspace()
+    try:
+        service, objectives = _build_service(root)
+        parent = objectives.save(
+            ObjectiveNode(
+                objective_id="obj-visited-parent",
+                kind=ObjectiveNodeKind.OBJECTIVE,
+                title="parent",
+                status=ObjectiveStatus.ACTIVE,
+            )
+        )
+        child = objectives.save(
+            ObjectiveNode(
+                objective_id="obj-visited-child",
+                kind=ObjectiveNodeKind.OBJECTIVE,
+                title="child already completed",
+                status=ObjectiveStatus.COMPLETED,
+                parent_id=parent.objective_id,
+            )
+        )
+        # Preload parent in visited set → helper must bail out *before*
+        # closing it, even though its only child is completed.
+        service._auto_close_ancestors_if_children_done(
+            parent.objective_id, {parent.objective_id}
+        )
+        assert objectives.get(parent.objective_id).status == ObjectiveStatus.ACTIVE
+        # Sanity: without preloading, the helper would have closed it.
+        service._auto_close_ancestors_if_children_done(parent.objective_id, set())
+        assert objectives.get(parent.objective_id).status == ObjectiveStatus.COMPLETED
+        # Irrelevant child kept for scope clarity in the assertion above.
+        assert objectives.get(child.objective_id).status == ObjectiveStatus.COMPLETED
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def test_auto_close_is_safe_when_repository_has_no_list_children() -> None:
     """Legacy repositories without ``list_children`` must keep working."""
 

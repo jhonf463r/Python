@@ -166,7 +166,7 @@ class ControlMasterService:
         updated = node.model_copy(update=updates)
         saved = self.objective_repository.save(updated)
         if saved.status == ObjectiveStatus.COMPLETED and saved.parent_id:
-            self._auto_close_ancestors_if_children_done(saved.parent_id, set())
+            self._auto_close_ancestors_if_children_done(saved.parent_id, {saved.objective_id})
         return saved
 
     def _auto_close_ancestors_if_children_done(
@@ -185,6 +185,11 @@ class ControlMasterService:
 
         Ancestors discarded via the ``discarded`` tag are skipped: their
         PAUSED status reflects a user decision and must not be overridden.
+
+        The ``visited`` set is threaded through direct recursion (not
+        re-entry via ``mark_objective``) so cycles in ``parent_id`` never
+        cause unbounded recursion even if the ACTIVE-only guard is ever
+        weakened.
         """
 
         if self.objective_repository is None:
@@ -216,10 +221,25 @@ class ControlMasterService:
             return
         if any(child.status != ObjectiveStatus.COMPLETED for child in children):
             return
-        # All children are completed → close the parent with an audit note
-        # and recurse one level up.
+        # All children are completed → close the parent in place with an
+        # audit note and recurse directly (keeping the same ``visited``
+        # set) so cycle protection survives the whole chain.
+        now = utc_now()
         note = f"auto-closed: all {len(children)} children completed"
-        self.mark_objective(parent_id, "completed", note=note)
+        metadata = dict(parent.metadata)
+        notes = list(metadata.get("control_master_notes", []))
+        notes.append({"note": note, "at": now.isoformat()})
+        metadata["control_master_notes"] = notes
+        closed = parent.model_copy(
+            update={
+                "status": ObjectiveStatus.COMPLETED,
+                "metadata": metadata,
+                "updated_at_utc": now,
+            }
+        )
+        self.objective_repository.save(closed)
+        if closed.parent_id:
+            self._auto_close_ancestors_if_children_done(closed.parent_id, visited)
 
     def mark_unresolved(self, item: str, *, evidence: list[str] | None = None) -> ControlMasterState:
         item_clean = item.strip()
