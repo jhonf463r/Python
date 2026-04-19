@@ -113,6 +113,13 @@ class ToolCallingBridge:
             )
 
         try:
+            if hasattr(self._executor, 'execute_tool_call'):
+                exec_result = self._executor.execute_tool_call(tool_call, session=session)
+                return ToolCallResult(
+                    tool_call=tool_call,
+                    success=getattr(exec_result, 'executed', False),
+                    output=getattr(exec_result, 'summary', '') or '',
+                )
             if session is not None and hasattr(self._executor, 'execute'):
                 exec_result = self._executor.execute(session)
                 return ToolCallResult(

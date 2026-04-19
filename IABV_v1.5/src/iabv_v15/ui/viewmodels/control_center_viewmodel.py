@@ -2684,8 +2684,6 @@ class ControlCenterViewModel(QObject):
         llm_answered = bool(local_chat_llm.get('available')) and bool(str(raw_summary or '').strip()) and not local_chat_llm.get('error')
         vm_small_talk = self._is_general_chat_message(message)
         general_chat = vm_small_talk or str(intent.get('intent_key') or '').strip() == 'general.assistance'
-        if vm_small_talk and not self._seems_task_like_message(message):
-            return self._general_chat_reply(message), 'Conversacion general.'
         if general_chat and not self._seems_task_like_message(message) and not llm_answered:
             return self._general_chat_reply(message), 'Conversacion general.'
         if llm_answered:

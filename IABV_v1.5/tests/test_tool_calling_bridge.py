@@ -191,4 +191,69 @@ def test_run_tool_loop_passes_session_to_execute() -> None:
 
     assert executor.calls == [sentinel_session]
     assert tool_calls_made[0]['success'] is True
-    assert tool_calls_made[0]['blocked'] is False
+
+
+class _RoutingExecutor:
+    """Executor that honours the tool identity via ``execute_tool_call``."""
+
+    def __init__(self) -> None:
+        self.invocations: list[tuple[str, dict[str, object], object]] = []
+
+    def supports(self, session: object) -> bool:
+        return True
+
+    def execute_tool_call(self, tool_call: object, *, session: object = None) -> object:
+        name = getattr(tool_call, 'name', '')
+        args = dict(getattr(tool_call, 'args', {}) or {})
+        self.invocations.append((name, args, session))
+
+        class _Res:
+            executed = True
+            summary = f'ran:{name}:{sorted(args.items())}'
+        return _Res()
+
+    def execute(self, session: object) -> object:  # pragma: no cover - fallback
+        class _Res:
+            executed = False
+            summary = 'generic'
+        return _Res()
+
+
+def test_execute_forwards_tool_call_identity_to_executor() -> None:
+    """Regression for Devin Review BUG on tool_calling_bridge.execute.
+
+    The bridge previously dropped ``tool_call.name`` and ``tool_call.args``
+    and always called ``executor.execute(session)``. Every tool call was
+    therefore silently misrouted. When the executor exposes
+    ``execute_tool_call`` the bridge must forward the parsed ToolCall so
+    routing reaches the correct adapter.
+    """
+    executor = _RoutingExecutor()
+    bridge = ToolCallingBridge(tool_executor=executor, governance_snapshot={})
+    sentinel_session = object()
+
+    tc = ToolCall(name='shell_command', args={'cmd': 'ls -la'})
+    result = bridge.execute(tc, session=sentinel_session)
+
+    assert result.success is True
+    assert result.blocked is False
+    assert 'shell_command' in result.output
+    assert "'cmd'" in result.output and "'ls -la'" in result.output
+    assert len(executor.invocations) == 1
+    name, args, forwarded_session = executor.invocations[0]
+    assert name == 'shell_command'
+    assert args == {'cmd': 'ls -la'}
+    assert forwarded_session is sentinel_session
+
+
+def test_execute_distinguishes_between_tool_calls() -> None:
+    """The bridge must not collapse different tool calls onto the same route."""
+    executor = _RoutingExecutor()
+    bridge = ToolCallingBridge(tool_executor=executor, governance_snapshot={})
+
+    bridge.execute(ToolCall(name='shell_command', args={'cmd': 'ls'}), session=object())
+    bridge.execute(ToolCall(name='playwright_browser', args={'url': 'https://example.com'}), session=object())
+
+    assert [inv[0] for inv in executor.invocations] == ['shell_command', 'playwright_browser']
+    assert executor.invocations[0][1] == {'cmd': 'ls'}
+    assert executor.invocations[1][1] == {'url': 'https://example.com'}
