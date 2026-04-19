@@ -177,9 +177,10 @@ def test_export_control_master_digest_returns_json_dict() -> None:
     root = _workspace("control_master_export_digest")
     try:
         boot = AppBootstrap(str(root))
-        payload = boot.export_control_master_digest(refresh=True)
+        boot.control_master_service.set_vision("Vision persistida para export")
+        payload = boot.export_control_master_digest()
         assert isinstance(payload, dict)
-        assert "current_vision" in payload
+        assert payload.get("current_vision") == "Vision persistida para export"
         assert "rules_brief" in payload
     finally:
         shutil.rmtree(root, ignore_errors=True)

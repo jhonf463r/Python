@@ -808,7 +808,7 @@ class AppBootstrap:
         package = self.portable_context_service.current_package(refresh=refresh)
         return package.model_dump(mode='json')
 
-    def export_control_master_digest(self, *, refresh: bool = True) -> dict[str, object]:
+    def export_control_master_digest(self, *, refresh: bool = False) -> dict[str, object]:
         service = getattr(self, 'control_master_service', None)
         builder = getattr(self, 'control_master_digest_builder', None)
         if service is None or builder is None:
