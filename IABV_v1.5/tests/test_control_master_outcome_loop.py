@@ -153,7 +153,7 @@ def test_session_without_objective_id_is_a_no_op() -> None:
         # Must not raise.
         boot.task_outcome_recorder.record(session)
         state = boot.control_master_service.current_state(refresh=False)
-        assert state.unresolved_items == state.unresolved_items  # sanity
+        assert state.unresolved_items == []
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
