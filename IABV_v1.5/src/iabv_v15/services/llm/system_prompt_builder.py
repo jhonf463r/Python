@@ -41,9 +41,9 @@ class SystemPromptBuilder:
         sections: list[tuple[int, str]] = []
 
         sections.append((0, self._section_identity()))
-        sections.append((1, self._section_control_master(control_master_digest)))
-        sections.append((2, self._section_live_state(world_model)))
-        sections.append((3, self._section_hardware(env_self_model)))
+        sections.append((1, self._section_live_state(world_model)))
+        sections.append((2, self._section_hardware(env_self_model)))
+        sections.append((3, self._section_control_master(control_master_digest)))
         sections.append((4, self._section_portable_context(portable_context)))
         sections.append((5, self._section_tools(tool_registry)))
         sections.append((6, self._section_governance(governance_rules)))
