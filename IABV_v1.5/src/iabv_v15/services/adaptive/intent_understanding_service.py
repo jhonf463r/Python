@@ -464,13 +464,32 @@ class IntentUnderstandingService:
         goal_parameters: dict[str, Any] | None = None,
         *,
         conversation_history: list[dict[str, Any]] | None = None,
+        request: InferenceRequest | None = None,
     ) -> tuple[TaskIntent, IntentSchema | None]:
-        request = InferenceRequest(
-            user_goal=user_goal,
-            goal_parameters=goal_parameters or {},
-            conversation_context=conversation_history or [],
-            metadata={'conversation_history': conversation_history or []},
-        )
+        if request is not None:
+            # Respect the caller's full request (site_hint, task_role, allowed_tools,
+            # prompt, deep_reasoning, requires_vision, screenshots, steps, etc.).
+            # Only enrich the fields we were given explicitly.
+            metadata = dict(request.metadata or {})
+            if conversation_history is not None:
+                metadata['conversation_history'] = conversation_history
+            updates: dict[str, Any] = {'metadata': metadata}
+            if user_goal and user_goal != request.user_goal:
+                updates['user_goal'] = user_goal
+            if goal_parameters:
+                merged_parameters = dict(request.goal_parameters or {})
+                merged_parameters.update(goal_parameters)
+                updates['goal_parameters'] = merged_parameters
+            if conversation_history is not None:
+                updates['conversation_context'] = conversation_history
+            request = request.model_copy(update=updates)
+        else:
+            request = InferenceRequest(
+                user_goal=user_goal,
+                goal_parameters=goal_parameters or {},
+                conversation_context=conversation_history or [],
+                metadata={'conversation_history': conversation_history or []},
+            )
         intent, hypotheses = self.classify(request)
         intent = intent.model_copy(update={'hypotheses': hypotheses})
         analysis: dict[str, Any] = dict(intent.metadata.get('conversation_analysis') or {})

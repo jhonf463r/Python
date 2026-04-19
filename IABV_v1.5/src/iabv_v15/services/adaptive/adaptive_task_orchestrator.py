@@ -103,6 +103,7 @@ class AdaptiveTaskOrchestrator:
             request.user_goal,
             request.goal_parameters,
             conversation_history=request.metadata.get('conversation_history'),
+            request=request,
         )
         route_decision = self.role_router.build_decision_from_intent(request=request, intent=intent)
         perception = self.context_assembler.build_perception_snapshot(
@@ -116,6 +117,7 @@ class AdaptiveTaskOrchestrator:
             request.user_goal,
             request.goal_parameters,
             conversation_history=request.metadata.get('conversation_history'),
+            request=request,
         )
         hypotheses = intent.hypotheses
         route_decision = self.role_router.build_decision_from_intent(request=request, intent=intent)

@@ -1,5 +1,7 @@
 ﻿from __future__ import annotations
 
+import hashlib
+import json
 from datetime import datetime, timezone
 
 from iabv_v15.domain.models import ToolCard, ToolTask, ToolType
@@ -13,11 +15,22 @@ class ToolRegistry:
         'workspace_root',
         'updated_at_utc',
     }
+    # In-process availability TTL. The cache is invalidated automatically
+    # whenever the adapter registration status changes or when the
+    # availability-relevant metadata hash changes (see
+    # `_availability_signature`), so external mutations via the repository
+    # are reflected on the next refresh even before the TTL expires.
     _AVAILABILITY_CACHE_SECONDS = 45.0
 
     def __init__(self, repository: ToolRecordRepository, adapters: dict[str, ToolAdapter]):
         self.repository = repository
         self.adapters = adapters
+        # In-process availability cache keyed by tool_id. The third tuple
+        # element is a hash of the metadata values that affect availability,
+        # so an external mutation via the repository (e.g. adding
+        # `executable_path` or `web_url`) invalidates the cache on the next
+        # refresh even if `updated_at_utc` is still the same.
+        self._availability_cache: dict[str, tuple[bool, datetime, str]] = {}
         self._seed_defaults()
 
     def list_cards(self) -> list[ToolCard]:
@@ -44,10 +57,21 @@ class ToolRegistry:
         return self.refresh_card(cards[0]) if cards else None
 
     def refresh_card(self, card: ToolCard, *, force: bool = False, max_age_seconds: float | None = None) -> ToolCard:
-        if not force and self._card_is_fresh(card, max_age_seconds=max_age_seconds):
-            return card
+        metadata_signature = self._availability_signature(card)
+        if not force:
+            cached = self._cached_availability(
+                card.tool_id,
+                metadata_signature=metadata_signature,
+                max_age_seconds=max_age_seconds,
+            )
+            if cached is not None:
+                if card.available == cached:
+                    return card
+                return card.model_copy(update={'available': cached})
         adapter = self.adapters.get(card.adapter_key)
         available = bool(adapter and adapter.is_available(card))
+        now = datetime.now(timezone.utc)
+        self._availability_cache[card.tool_id] = (available, now, metadata_signature)
         if card.available == available and str(card.metadata.get('updated_at_utc') or '').strip():
             return card
         updated = card.model_copy(
@@ -55,26 +79,67 @@ class ToolRegistry:
                 'available': available,
                 'metadata': {
                     **card.metadata,
-                    'updated_at_utc': datetime.now(timezone.utc).isoformat(),
+                    'updated_at_utc': now.isoformat(),
                 },
             }
         )
         self.repository.save_card(updated)
         return updated
 
-    def _card_is_fresh(self, card: ToolCard, *, max_age_seconds: float | None) -> bool:
+    def _availability_signature(self, card: ToolCard) -> str:
+        relevant = {
+            'adapter_key': card.adapter_key,
+            # Capture adapter registration status AND the identity of the
+            # adapter instance / its backing provider. This way, hot-swapping
+            # the adapter or replacing its provider (common in tests that
+            # toggle a fake local provider) invalidates the availability
+            # cache even when the card metadata is structurally unchanged.
+            'adapter_fingerprint': self._adapter_fingerprint(card.adapter_key),
+            'metadata': {
+                key: card.metadata.get(key)
+                for key in sorted(card.metadata.keys())
+                if key != 'updated_at_utc'
+            },
+        }
+        payload = json.dumps(relevant, sort_keys=True, default=str)
+        return hashlib.sha256(payload.encode('utf-8')).hexdigest()
+
+    def _adapter_fingerprint(self, adapter_key: str) -> str:
+        adapter = self.adapters.get(adapter_key)
+        if adapter is None:
+            return 'missing'
+        parts = [str(id(adapter))]
+        provider = getattr(adapter, 'provider', None)
+        if provider is not None:
+            parts.append(str(id(provider)))
+        return ':'.join(parts)
+
+    def _cached_availability(
+        self,
+        tool_id: str,
+        *,
+        metadata_signature: str,
+        max_age_seconds: float | None,
+    ) -> bool | None:
         ttl = self._AVAILABILITY_CACHE_SECONDS if max_age_seconds is None else max(float(max_age_seconds), 0.0)
         if ttl <= 0.0:
-            return False
-        updated_at = str(card.metadata.get('updated_at_utc') or '').strip()
-        if not updated_at:
-            return False
-        try:
-            refreshed_at = datetime.fromisoformat(updated_at.replace('Z', '+00:00'))
-        except ValueError:
-            return False
+            return None
+        cached = self._availability_cache.get(tool_id)
+        if cached is None:
+            return None
+        value, refreshed_at, signature = cached
+        if signature != metadata_signature:
+            return None
         age_seconds = (datetime.now(timezone.utc) - refreshed_at).total_seconds()
-        return 0.0 <= age_seconds <= ttl
+        if age_seconds < 0.0 or age_seconds > ttl:
+            return None
+        return value
+
+    def invalidate_availability_cache(self, tool_id: str | None = None) -> None:
+        if tool_id is None:
+            self._availability_cache.clear()
+            return
+        self._availability_cache.pop(tool_id, None)
 
     def _seed_defaults(self) -> None:
         defaults = [

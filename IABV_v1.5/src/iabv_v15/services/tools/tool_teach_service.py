@@ -1163,34 +1163,141 @@ class ToolTeachService:
         if self._assistant_family_for_tool_id(selected_tool_id) == requested_assistant:
             return selection
         preferred_tool_id = str(goal_parameters.get('tool_id') or suggested_tool_id or '').strip()
-        if not preferred_tool_id or self._assistant_family_for_tool_id(preferred_tool_id) != requested_assistant:
+        # If the upstream layer already steered us towards a deliberate
+        # cross-family route (e.g. lab_recommendation=LOCAL pinning
+        # preferred_tool_id='ollama_llm') and the selector honored it,
+        # respect that decision instead of forcing the requested family.
+        if preferred_tool_id and selected_tool_id == preferred_tool_id:
             return selection
-        preferred_card = self.registry.get_card(preferred_tool_id)
-        if preferred_card is None:
+        if bool(goal_parameters.get('allow_local_automatic_consultation')) and selected_tool_id == 'ollama_llm':
             return selection
-        preferred_card = self.registry.refresh_card(preferred_card)
-        adapter_exists = preferred_card.adapter_key in self.registry.adapters
-        if not preferred_card.available or not adapter_exists:
-            return selection
+        if preferred_tool_id and self._assistant_family_for_tool_id(preferred_tool_id) == requested_assistant:
+            override_card = self._resolve_available_family_card(
+                tool_id=preferred_tool_id,
+                request=request,
+            )
+            if override_card is not None:
+                return self._override_selection_with_card(
+                    selection=selection,
+                    card=override_card,
+                    policy='explicit_assistant_override',
+                    reason_tag='override_ia_explicita',
+                    metadata_overrides={
+                        'override_reason': 'La preferencia explicita del usuario debe mantenerse en la misma familia de asistente.',
+                        'requested_assistant_preference': requested_assistant,
+                    },
+                )
+        fallback_card = self._resolve_family_fallback_card(
+            requested_assistant=requested_assistant,
+            request=request,
+            exclude_tool_id=preferred_tool_id,
+        )
+        if fallback_card is not None:
+            return self._override_selection_with_card(
+                selection=selection,
+                card=fallback_card,
+                policy='explicit_assistant_override_family_fallback',
+                reason_tag='override_ia_explicita_fallback_familia',
+                metadata_overrides={
+                    'override_reason': 'La preferencia explicita del usuario se respeto con un fallback dentro de la misma familia.',
+                    'requested_assistant_preference': requested_assistant,
+                    'preferred_tool_id_unavailable': preferred_tool_id,
+                },
+            )
+        return self._block_selection_for_unavailable_preference(
+            selection=selection,
+            requested_assistant=requested_assistant,
+            preferred_tool_id=preferred_tool_id,
+        )
+
+    def _resolve_available_family_card(self, *, tool_id: str, request: InferenceRequest):
+        if not tool_id:
+            return None
+        card = self.registry.get_card(tool_id)
+        if card is None:
+            return None
+        card = self.registry.refresh_card(card, force=True)
+        adapter_exists = card.adapter_key in self.registry.adapters
+        if not card.available or not adapter_exists:
+            return None
         if self._tool_has_repeated_blocked_failures(
-            tool_id=preferred_card.tool_id,
-            mode_used=self._selection_mode_for_tool_type(preferred_card.tool_type).value,
+            tool_id=card.tool_id,
+            mode_used=self._selection_mode_for_tool_type(card.tool_type).value,
             site_id=request.site_hint,
             goal=request.user_goal,
         ):
-            return selection
+            return None
+        return card
+
+    def _resolve_family_fallback_card(
+        self,
+        *,
+        requested_assistant: str,
+        request: InferenceRequest,
+        exclude_tool_id: str,
+    ):
+        for candidate in self.registry.list_cards():
+            if candidate.tool_id == exclude_tool_id:
+                continue
+            if self._assistant_family_for_tool_id(candidate.tool_id) != requested_assistant:
+                continue
+            card = self._resolve_available_family_card(tool_id=candidate.tool_id, request=request)
+            if card is not None:
+                return card
+        return None
+
+    def _override_selection_with_card(
+        self,
+        *,
+        selection: ModeSelectionDecision,
+        card,
+        policy: str,
+        reason_tag: str,
+        metadata_overrides: dict[str, Any] | None = None,
+    ) -> ModeSelectionDecision:
         metadata = dict(selection.metadata or {})
-        metadata['selection_policy'] = 'explicit_assistant_override'
-        metadata['override_reason'] = 'La preferencia explicita del usuario debe mantenerse en la misma familia de asistente.'
+        metadata['selection_policy'] = policy
+        if metadata_overrides:
+            metadata.update(metadata_overrides)
+        adapter_exists = card.adapter_key in self.registry.adapters
         return selection.model_copy(
             update={
-                'selected_mode': self._selection_mode_for_tool_type(preferred_card.tool_type),
-                'selected_tool_id': preferred_card.tool_id,
-                'selected_tool_type': preferred_card.tool_type,
+                'selected_mode': self._selection_mode_for_tool_type(card.tool_type),
+                'selected_tool_id': card.tool_id,
+                'selected_tool_type': card.tool_type,
                 'adapter_exists': adapter_exists,
-                'available': preferred_card.available,
+                'available': card.available,
                 'fallback_used': False,
-                'reason': (selection.reason + ' | override_ia_explicita').strip(' |'),
+                'reason': (selection.reason + ' | ' + reason_tag).strip(' |'),
+                'metadata': metadata,
+            }
+        )
+
+    def _block_selection_for_unavailable_preference(
+        self,
+        *,
+        selection: ModeSelectionDecision,
+        requested_assistant: str,
+        preferred_tool_id: str,
+    ) -> ModeSelectionDecision:
+        # Keep whatever the base selector already chose (cross-family fallback
+        # is legitimate when the requested family is completely unavailable).
+        # Annotate telemetry so the UI / audit layer can surface that the
+        # user's explicit preference could not be honored.
+        metadata = dict(selection.metadata or {})
+        existing_policy = str(metadata.get('selection_policy') or '')
+        metadata['selection_policy'] = existing_policy or 'explicit_assistant_preference_unavailable'
+        metadata['assistant_preference_blocked'] = True
+        metadata['requested_assistant_preference'] = requested_assistant
+        metadata['preferred_tool_id'] = preferred_tool_id
+        metadata['preference_unavailable_reason'] = (
+            'La preferencia explicita del usuario no pudo respetarse porque ningun miembro de la '
+            f"familia '{requested_assistant}' esta disponible en este momento."
+        )
+        return selection.model_copy(
+            update={
+                'fallback_used': True,
+                'reason': (selection.reason + ' | preferencia_explicita_no_disponible').strip(' |'),
                 'metadata': metadata,
             }
         )
@@ -1516,6 +1623,12 @@ class ToolTeachService:
             tool_ids = ['chatgpt_installed', 'chatgpt_web_assisted']
         elif assistant == 'claude':
             tool_ids = ['claude_installed', 'claude_web_assisted']
+        elif assistant == 'codex' and allow_local_automatic_consultation:
+            # User explicitly asked for codex + opted in to the local automatic
+            # consultation fallback: restrict the allowed set so the selector
+            # only considers codex (preferred family) or the local route,
+            # never a cross-family assisted web route the user did not ask for.
+            tool_ids = ['codex_installed']
         elif assistant in {'ollama', 'local', 'local_first'}:
             tool_ids = ['ollama_llm']
         else:
