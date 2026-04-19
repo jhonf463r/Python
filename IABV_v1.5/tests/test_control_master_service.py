@@ -49,6 +49,25 @@ class _FakeObjectiveRepository:
             out.append(node)
         return out[:limit]
 
+    def list_children(
+        self,
+        parent_id: str,
+        *,
+        kind: ObjectiveNodeKind | None = None,
+        status: ObjectiveStatus | None = None,
+        limit: int = 40,
+    ) -> list[ObjectiveNode]:
+        out: list[ObjectiveNode] = []
+        for node in self._items.values():
+            if node.parent_id != parent_id:
+                continue
+            if kind is not None and node.kind != kind:
+                continue
+            if status is not None and node.status != status:
+                continue
+            out.append(node)
+        return out[:limit]
+
 
 class _FakePendingIssueRepository:
     def __init__(self, items: list[dict]) -> None:
@@ -233,5 +252,149 @@ def test_technical_backlog_is_projected_from_pending_issues() -> None:
         state = service.current_state()
         titles = [item.get("title") for item in state.technical_backlog]
         assert titles == ["Refactorizar X", "Cerrar Y"]
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+# ----------------------------------------------------------------------
+# Auto-close: when every direct child is COMPLETED, the parent closes
+# automatically so the digest reflects the real state without manual PRs.
+# ----------------------------------------------------------------------
+
+
+def _make_tree(objectives: _FakeObjectiveRepository) -> tuple[ObjectiveNode, list[ObjectiveNode]]:
+    root = objectives.save(
+        ObjectiveNode(
+            objective_id="obj-root",
+            kind=ObjectiveNodeKind.OBJECTIVE,
+            title="super sync root",
+            status=ObjectiveStatus.ACTIVE,
+        )
+    )
+    children = [
+        objectives.save(
+            ObjectiveNode(
+                objective_id=f"obj-child-{i}",
+                kind=ObjectiveNodeKind.OBJECTIVE,
+                title=f"super sync child {i}",
+                status=ObjectiveStatus.ACTIVE,
+                parent_id=root.objective_id,
+                root_id=root.objective_id,
+            )
+        )
+        for i in range(1, 4)
+    ]
+    return root, children
+
+
+def test_auto_close_root_when_all_children_complete() -> None:
+    root = _workspace()
+    try:
+        service, objectives = _build_service(root)
+        root_node, children = _make_tree(objectives)
+        # Close the first two children: root stays ACTIVE.
+        service.mark_objective(children[0].objective_id, "completed")
+        service.mark_objective(children[1].objective_id, "completed")
+        assert objectives.get(root_node.objective_id).status == ObjectiveStatus.ACTIVE
+        # Closing the last child auto-closes the root with an audit note.
+        service.mark_objective(children[2].objective_id, "completed", note="manual")
+        parent = objectives.get(root_node.objective_id)
+        assert parent.status == ObjectiveStatus.COMPLETED
+        notes = parent.metadata.get("control_master_notes", [])
+        assert any("auto-closed" in n["note"] for n in notes)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_auto_close_respects_non_completed_siblings() -> None:
+    root = _workspace()
+    try:
+        service, objectives = _build_service(root)
+        root_node, children = _make_tree(objectives)
+        service.mark_objective(children[0].objective_id, "completed")
+        service.mark_objective(children[1].objective_id, "blocked")
+        service.mark_objective(children[2].objective_id, "completed")
+        # root must stay ACTIVE because child 1 is blocked, not completed.
+        assert objectives.get(root_node.objective_id).status == ObjectiveStatus.ACTIVE
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_auto_close_leaves_paused_parent_alone() -> None:
+    root = _workspace()
+    try:
+        service, objectives = _build_service(root)
+        root_node, children = _make_tree(objectives)
+        # User explicitly paused the root before children finished.
+        service.mark_objective(root_node.objective_id, "paused", note="on hold")
+        for child in children:
+            service.mark_objective(child.objective_id, "completed")
+        # Auto-close must NOT override the user's paused decision.
+        parent = objectives.get(root_node.objective_id)
+        assert parent.status == ObjectiveStatus.PAUSED
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_auto_close_walks_up_multiple_levels() -> None:
+    root = _workspace()
+    try:
+        service, objectives = _build_service(root)
+        grand = objectives.save(
+            ObjectiveNode(
+                objective_id="obj-grand",
+                kind=ObjectiveNodeKind.OBJECTIVE,
+                title="grandparent",
+                status=ObjectiveStatus.ACTIVE,
+            )
+        )
+        parent = objectives.save(
+            ObjectiveNode(
+                objective_id="obj-parent",
+                kind=ObjectiveNodeKind.OBJECTIVE,
+                title="parent",
+                status=ObjectiveStatus.ACTIVE,
+                parent_id=grand.objective_id,
+                root_id=grand.objective_id,
+            )
+        )
+        leaf = objectives.save(
+            ObjectiveNode(
+                objective_id="obj-leaf",
+                kind=ObjectiveNodeKind.OBJECTIVE,
+                title="leaf",
+                status=ObjectiveStatus.ACTIVE,
+                parent_id=parent.objective_id,
+                root_id=grand.objective_id,
+            )
+        )
+        service.mark_objective(leaf.objective_id, "completed")
+        # parent closes because its only child is completed; then
+        # grandparent closes because its only child (parent) is completed.
+        assert objectives.get(parent.objective_id).status == ObjectiveStatus.COMPLETED
+        assert objectives.get(grand.objective_id).status == ObjectiveStatus.COMPLETED
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_auto_close_is_safe_when_repository_has_no_list_children() -> None:
+    """Legacy repositories without ``list_children`` must keep working."""
+
+    root = _workspace()
+    try:
+        service, objectives = _build_service(root)
+        # Monkeypatch: strip list_children to simulate a legacy repo.
+        object.__setattr__(objectives, "list_children", None)
+        node = objectives.save(
+            ObjectiveNode(
+                kind=ObjectiveNodeKind.OBJECTIVE,
+                title="orphan completion",
+                status=ObjectiveStatus.ACTIVE,
+                parent_id="obj-missing-parent",
+            )
+        )
+        updated = service.mark_objective(node.objective_id, "completed")
+        assert updated is not None
+        assert updated.status == ObjectiveStatus.COMPLETED
     finally:
         shutil.rmtree(root, ignore_errors=True)

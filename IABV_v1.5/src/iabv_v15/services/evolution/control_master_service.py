@@ -164,7 +164,52 @@ class ControlMasterService:
             metadata["control_master_notes"] = notes
             updates["metadata"] = metadata
         updated = node.model_copy(update=updates)
-        return self.objective_repository.save(updated)
+        saved = self.objective_repository.save(updated)
+        if saved.status == ObjectiveStatus.COMPLETED and saved.parent_id:
+            self._auto_close_ancestors_if_children_done(saved.parent_id, set())
+        return saved
+
+    def _auto_close_ancestors_if_children_done(
+        self,
+        parent_id: str,
+        visited: set[str],
+    ) -> None:
+        """Close ancestor objectives whose direct children are all completed.
+
+        Walks up via ``parent_id``. Only auto-closes if:
+        - the repository exposes ``list_children`` (legacy repos are no-ops);
+        - the parent is currently ACTIVE (terminal/blocked/paused ancestors
+          are left alone — the user made that decision explicitly);
+        - every direct child is ``COMPLETED`` (blocked/paused/pending/
+          discarded children mean the parent is not fully done).
+
+        Ancestors discarded via the ``discarded`` tag are skipped: their
+        PAUSED status reflects a user decision and must not be overridden.
+        """
+
+        if self.objective_repository is None:
+            return
+        if parent_id in visited:
+            return
+        visited.add(parent_id)
+        list_children = getattr(self.objective_repository, "list_children", None)
+        if list_children is None:
+            return
+        parent = self.objective_repository.get(parent_id)
+        if parent is None or parent.status != ObjectiveStatus.ACTIVE:
+            return
+        try:
+            children = list_children(parent_id)
+        except Exception:
+            return
+        if not children:
+            return
+        if any(child.status != ObjectiveStatus.COMPLETED for child in children):
+            return
+        # All children are completed → close the parent with an audit note
+        # and recurse one level up.
+        note = f"auto-closed: all {len(children)} children completed"
+        self.mark_objective(parent_id, "completed", note=note)
 
     def mark_unresolved(self, item: str, *, evidence: list[str] | None = None) -> ControlMasterState:
         item_clean = item.strip()
