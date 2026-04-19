@@ -1,0 +1,27 @@
+{
+  "annotation_id": "aced685b-3165-4f4d-bd41-38fe0e0c7525",
+  "created_at_utc": "2026-04-19T19:45:50.976550Z",
+  "updated_at_utc": "2026-04-19T19:45:50.976551Z",
+  "episode_id": "5a647de3-95e0-4d05-9a8c-c2d4c98cddc5",
+  "step_id": "e0ea6ea0-0dfe-4c1c-9d11-286456580f75",
+  "screenshot_path": "/home/ubuntu/repos/Python/IABV_v1.5/data/test_runs/capture_studio_manual_annotation_94aad59d98fb4b949014af9dacb2544f/data/screenshots/5a647de3-95e0-4d05-9a8c-c2d4c98cddc5/visible_step.png",
+  "group_key": "/home/ubuntu/repos/Python/IABV_v1.5/data/test_runs/capture_studio_manual_annotation_94aad59d98fb4b949014af9dacb2544f/data/screenshots/5a647de3-95e0-4d05-9a8c-c2d4c98cddc5/visible_step.png",
+  "linked_screenshot_id": "/home/ubuntu/repos/Python/IABV_v1.5/data/test_runs/capture_studio_manual_annotation_94aad59d98fb4b949014af9dacb2544f/data/screenshots/5a647de3-95e0-4d05-9a8c-c2d4c98cddc5/visible_step.png",
+  "status": "user_corrected",
+  "source": "user",
+  "overlay_kind": "rect",
+  "confidence_score": 0.96,
+  "overlay_rect": {
+    "valid": 1.0,
+    "x": 0.12,
+    "y": 0.18,
+    "width": 0.24,
+    "height": 0.14
+  },
+  "overlay_point": {},
+  "overlay_label": "Iniciar sesion y llegar al panel principal.",
+  "overlay_notes": "Correccion manual del usuario sobre el replay.",
+  "metadata": {
+    "selected_step_index": 0
+  }
+}

@@ -1,0 +1,4223 @@
+{
+  "session_id": "0f4efcb7-df8f-4330-b59e-385ab0ce210b",
+  "created_at_utc": "2026-04-19T19:45:52.733347Z",
+  "updated_at_utc": "2026-04-19T19:45:52.733348Z",
+  "run_id": null,
+  "user_goal": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+  "intent": {
+    "intent_id": "c190f89f-4c81-48ac-80df-21672c0c6dd5",
+    "disposition": "answer_now",
+    "intent_key": "general.assistance",
+    "title": "Asistencia adaptativa general",
+    "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+    "detected_role": "knowledge",
+    "site_hint": null,
+    "domain_hint": "general",
+    "confidence": 0.62,
+    "sensitive": false,
+    "monetary": false,
+    "multi_step": false,
+    "missing_requirements": [],
+    "reasoning": [
+      "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+    ],
+    "hypotheses": [],
+    "metadata": {
+      "conversation_analysis": {
+        "primary_intent": "general.assistance",
+        "sub_intents": [],
+        "candidate_intents": [
+          {
+            "intent_key": "general.assistance",
+            "score": 1.0,
+            "reasons": [
+              "fallback adaptativo"
+            ]
+          }
+        ],
+        "segments": [
+          {
+            "text": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+            "labels": [
+              "request"
+            ],
+            "primary_label": "request"
+          }
+        ],
+        "compound": false,
+        "mixed_actionable": false,
+        "ambiguity_score": 0.0,
+        "requires_clarification": false,
+        "clarification_prompt": "",
+        "objective_summary": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+        "constraints": [],
+        "context_carried_from_history": false,
+        "conversation_turns_used": 0,
+        "conditional_external_consultation": false
+      },
+      "primary_intent": "general.assistance",
+      "sub_intents": [],
+      "compound_intent": false,
+      "requires_clarification": false,
+      "ambiguity_score": 0.0,
+      "context_carried_from_history": false,
+      "conversational_prompt": true
+    }
+  },
+  "hypotheses": [],
+  "context": {
+    "context_id": "fbcf6c9d-9f4c-4b63-bd12-db73f972680e",
+    "site_id": null,
+    "site_display_name": "General",
+    "recent_teachings": [],
+    "recent_runs": [],
+    "recent_incidents": [],
+    "recent_dossiers": [],
+    "knowledge_hits": [],
+    "capability_snapshot": [
+      {
+        "capability_id": "assistant.local.chat",
+        "title": "Chat adaptativo local",
+        "status": "ready",
+        "score": 0.9,
+        "site_id": null,
+        "evidence": [
+          "La capacidad depende principalmente del stack local y del contexto ya disponible."
+        ],
+        "missing_signals": [],
+        "last_episode_id": null,
+        "suggested_next_step": "Seguir con la estrategia propuesta.",
+        "metadata": {}
+      }
+    ],
+    "interaction_patterns": [],
+    "experiment_insights": [],
+    "session_readiness": {
+      "site_detected": false,
+      "teaching_matches": 0,
+      "incident_count": 0,
+      "dominant_incident": "",
+      "adaptive_sessions": 0,
+      "recent_sessions": [],
+      "live_audit_action": ""
+    },
+    "evidence_summary": [
+      "Contexto activo: contexto general."
+    ],
+    "live_audit": {},
+    "goal_context": {
+      "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+      "objective": {},
+      "project": {},
+      "task": {},
+      "subtasks": [],
+      "active_node_id": "",
+      "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+      "priority": 50,
+      "status": "pending",
+      "progress": 0.0,
+      "blocker": "",
+      "confidence": 0.0,
+      "trend": "sin base",
+      "evidence_refs": [],
+      "metadata": {}
+    },
+    "metadata": {
+      "policy_notes": "",
+      "known_domains": [],
+      "live_audit": {},
+      "goal_context": {
+        "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+        "objective": {},
+        "project": {},
+        "task": {},
+        "subtasks": [],
+        "active_node_id": "",
+        "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+        "priority": 50,
+        "status": "pending",
+        "progress": 0.0,
+        "blocker": "",
+        "confidence": 0.0,
+        "trend": "sin base",
+        "evidence_refs": [],
+        "metadata": {}
+      },
+      "adaptive_learning_summary": {},
+      "learned_patterns": [],
+      "validation_learning_summary": {},
+      "decision_context": {
+        "decision_context_id": "89755e24-4960-4111-ae6b-f119ceb41350",
+        "user_goal": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+        "intent": {
+          "intent_id": "c190f89f-4c81-48ac-80df-21672c0c6dd5",
+          "disposition": "answer_now",
+          "intent_key": "general.assistance",
+          "title": "Asistencia adaptativa general",
+          "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+          "detected_role": "knowledge",
+          "site_hint": null,
+          "domain_hint": "general",
+          "confidence": 0.62,
+          "sensitive": false,
+          "monetary": false,
+          "multi_step": false,
+          "missing_requirements": [],
+          "reasoning": [
+            "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+          ],
+          "hypotheses": [],
+          "metadata": {
+            "conversation_analysis": {
+              "primary_intent": "general.assistance",
+              "sub_intents": [],
+              "candidate_intents": [
+                {
+                  "intent_key": "general.assistance",
+                  "score": 1.0,
+                  "reasons": [
+                    "fallback adaptativo"
+                  ]
+                }
+              ],
+              "segments": [
+                {
+                  "text": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                  "labels": [
+                    "request"
+                  ],
+                  "primary_label": "request"
+                }
+              ],
+              "compound": false,
+              "mixed_actionable": false,
+              "ambiguity_score": 0.0,
+              "requires_clarification": false,
+              "clarification_prompt": "",
+              "objective_summary": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+              "constraints": [],
+              "context_carried_from_history": false,
+              "conversation_turns_used": 0,
+              "conditional_external_consultation": false
+            },
+            "primary_intent": "general.assistance",
+            "sub_intents": [],
+            "compound_intent": false,
+            "requires_clarification": false,
+            "ambiguity_score": 0.0,
+            "context_carried_from_history": false,
+            "conversational_prompt": true
+          }
+        },
+        "route_decision": {
+          "detected_role": "knowledge",
+          "planner_required": false,
+          "visual_required": false,
+          "tool_chain": [
+            "knowledge_search",
+            "embeddings"
+          ],
+          "reason": "Rol resuelto desde intent general.assistance: Base de conocimiento."
+        },
+        "chosen_pack_id": "knowledge.query",
+        "chosen_pack_title": "Consulta local con contexto",
+        "site_id": "",
+        "site_display_name": "General",
+        "evidence_refs": [
+          "Contexto activo: contexto general."
+        ],
+        "capability_snapshot": [
+          {
+            "capability_id": "assistant.local.chat",
+            "title": "Chat adaptativo local",
+            "status": "ready",
+            "score": 0.9,
+            "site_id": null,
+            "evidence": [
+              "La capacidad depende principalmente del stack local y del contexto ya disponible."
+            ],
+            "missing_signals": [],
+            "last_episode_id": null,
+            "suggested_next_step": "Seguir con la estrategia propuesta.",
+            "metadata": {}
+          }
+        ],
+        "live_audit": {},
+        "assistant_guidance": {
+          "mode": "need_adapter",
+          "title": "Falta adaptador operativo",
+          "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+          "actions": [
+            {
+              "action": "consult_codex",
+              "label": "Consultar Codex",
+              "detail": "Contrastar el siguiente cambio tecnico con evidencia verificable."
+            },
+            {
+              "action": "simulate",
+              "label": "Simular",
+              "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+            },
+            {
+              "action": "open_evolution_center",
+              "label": "Ver evolutivo",
+              "detail": "Seguir la evidencia y el backlog tecnico."
+            },
+            {
+              "action": "prepare_codex_packet",
+              "label": "Preparar Codex",
+              "detail": "Armar el caso tecnico verificable."
+            }
+          ],
+          "governance": {
+            "autonomy_level": "guarded_research",
+            "should_consult": true,
+            "should_retry": false,
+            "should_replan": false,
+            "research_needed": true,
+            "assistant_kind": "codex",
+            "recommended_action": "consult_codex",
+            "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+            "confidence": 0.74,
+            "approval_required": false,
+            "block_risky_action": false,
+            "require_sandbox": true,
+            "blockers": [],
+            "diagnostic_category": "need_adapter",
+            "decision_source": "autonomy_governance_policy",
+            "external_state_flags": [],
+            "blocked_routes": [],
+            "permission_gates": []
+          }
+        },
+        "goal_context": {
+          "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+          "objective": {},
+          "project": {},
+          "task": {},
+          "subtasks": [],
+          "active_node_id": "",
+          "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+          "priority": 50,
+          "status": "pending",
+          "progress": 0.0,
+          "blocker": "",
+          "confidence": 0.0,
+          "trend": "sin base",
+          "evidence_refs": [],
+          "metadata": {}
+        },
+        "memory_snapshot": {
+          "evidence": {
+            "site_id": "",
+            "site_display_name": "General",
+            "evidence_refs": [
+              "Contexto activo: contexto general."
+            ],
+            "recent_teachings": [],
+            "recent_incidents": [],
+            "recent_dossiers": []
+          },
+          "learning": {
+            "interaction_patterns": [],
+            "knowledge_hits": [],
+            "capabilities": [
+              {
+                "capability_id": "assistant.local.chat",
+                "title": "Chat adaptativo local",
+                "status": "ready",
+                "score": 0.9,
+                "site_id": null,
+                "evidence": [
+                  "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                ],
+                "missing_signals": [],
+                "last_episode_id": null,
+                "suggested_next_step": "Seguir con la estrategia propuesta.",
+                "metadata": {}
+              }
+            ],
+            "experiment_insights": [],
+            "adaptive_learning_summary": {},
+            "learned_patterns": [],
+            "validation_learning_summary": {}
+          },
+          "operational": {
+            "recent_runs": [],
+            "session_readiness": {
+              "site_detected": false,
+              "teaching_matches": 0,
+              "incident_count": 0,
+              "dominant_incident": "",
+              "adaptive_sessions": 0,
+              "recent_sessions": [],
+              "live_audit_action": ""
+            },
+            "live_audit": {}
+          },
+          "objectives": {
+            "goal_context": {
+              "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+              "objective": {},
+              "project": {},
+              "task": {},
+              "subtasks": [],
+              "active_node_id": "",
+              "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+              "priority": 50,
+              "status": "pending",
+              "progress": 0.0,
+              "blocker": "",
+              "confidence": 0.0,
+              "trend": "sin base",
+              "evidence_refs": [],
+              "metadata": {}
+            },
+            "objective": {},
+            "project": {},
+            "task": {},
+            "status": "pending",
+            "progress": 0.0,
+            "confidence": 0.0,
+            "blocker": ""
+          }
+        },
+        "governance": {
+          "autonomy_level": "guarded_research",
+          "should_consult": true,
+          "should_retry": false,
+          "should_replan": false,
+          "research_needed": true,
+          "assistant_kind": "codex",
+          "recommended_action": "consult_codex",
+          "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+          "confidence": 0.74,
+          "approval_required": false,
+          "block_risky_action": false,
+          "require_sandbox": true,
+          "blockers": [],
+          "diagnostic_category": "need_adapter",
+          "decision_source": "autonomy_governance_policy",
+          "external_state_flags": [],
+          "blocked_routes": [],
+          "permission_gates": []
+        },
+        "metadata": {
+          "session_id": "0f4efcb7-df8f-4330-b59e-385ab0ce210b",
+          "intent_key": "general.assistance",
+          "decision_source": "adaptive_task_orchestrator",
+          "decision_stage": "post_governance",
+          "conversational_prompt": true,
+          "external_state_flags": [],
+          "ia_trace_summary": {
+            "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+            "comparison_scope_keys": [
+              "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+              "general"
+            ],
+            "latest_trace_ids": [],
+            "tested_assistants": [],
+            "best_assistant_kind": "",
+            "best_config_signature": "",
+            "blocked_assistants": [],
+            "reusable_trace_ids": [],
+            "winning_trace_ids": [],
+            "losing_trace_ids": []
+          },
+          "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+          "preferred_assistant_kind": "codex",
+          "preferred_config_signature": "",
+          "supporting_trace_ids": [],
+          "adaptive_learning_summary": {},
+          "learned_patterns": [],
+          "validation_learning_summary": {},
+          "environment_id": "",
+          "environment_scan_status": "unavailable",
+          "environment_notifications": [],
+          "environment_risk_signals": [],
+          "world_model_summary": {
+            "focused_window": "",
+            "network_status": "desconocido",
+            "detected_blocks": [],
+            "blocked_routes": [],
+            "permission_gates": [],
+            "active_window_count": 0,
+            "confidence": 0.0,
+            "freshness_ms": 0,
+            "codex_status": {
+              "status": "",
+              "thread_status": "",
+              "messages_status": ""
+            },
+            "chatgpt_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "claude_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "ollama_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "last_updated": "2026-04-19T19:45:52.729247+00:00"
+          },
+          "portable_context_summary": {}
+        }
+      },
+      "perception_snapshot": {
+        "snapshot_id": "058b6c10-7208-4f53-beab-8054cdb3cece",
+        "created_at_utc": "2026-04-19T19:45:52.729363Z",
+        "task_context": {
+          "context_id": "fbcf6c9d-9f4c-4b63-bd12-db73f972680e",
+          "site_id": null,
+          "site_display_name": "General",
+          "recent_teachings": [],
+          "recent_runs": [],
+          "recent_incidents": [],
+          "recent_dossiers": [],
+          "knowledge_hits": [],
+          "capability_snapshot": [
+            {
+              "capability_id": "assistant.local.chat",
+              "title": "Chat adaptativo local",
+              "status": "ready",
+              "score": 0.9,
+              "site_id": null,
+              "evidence": [
+                "La capacidad depende principalmente del stack local y del contexto ya disponible."
+              ],
+              "missing_signals": [],
+              "last_episode_id": null,
+              "suggested_next_step": "Seguir con la estrategia propuesta.",
+              "metadata": {}
+            }
+          ],
+          "interaction_patterns": [],
+          "experiment_insights": [],
+          "session_readiness": {
+            "site_detected": false,
+            "teaching_matches": 0,
+            "incident_count": 0,
+            "dominant_incident": "",
+            "adaptive_sessions": 0,
+            "recent_sessions": [],
+            "live_audit_action": ""
+          },
+          "evidence_summary": [
+            "Contexto activo: contexto general."
+          ],
+          "live_audit": {},
+          "goal_context": {
+            "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+            "objective": {},
+            "project": {},
+            "task": {},
+            "subtasks": [],
+            "active_node_id": "",
+            "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+            "priority": 50,
+            "status": "pending",
+            "progress": 0.0,
+            "blocker": "",
+            "confidence": 0.0,
+            "trend": "sin base",
+            "evidence_refs": [],
+            "metadata": {}
+          },
+          "metadata": {
+            "policy_notes": "",
+            "known_domains": [],
+            "live_audit": {},
+            "goal_context": {
+              "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+              "objective": {},
+              "project": {},
+              "task": {},
+              "subtasks": [],
+              "active_node_id": "",
+              "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+              "priority": 50,
+              "status": "pending",
+              "progress": 0.0,
+              "blocker": "",
+              "confidence": 0.0,
+              "trend": "sin base",
+              "evidence_refs": [],
+              "metadata": {}
+            },
+            "adaptive_learning_summary": {},
+            "learned_patterns": [],
+            "validation_learning_summary": {},
+            "decision_context": {
+              "decision_context_id": "89755e24-4960-4111-ae6b-f119ceb41350",
+              "user_goal": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+              "intent": {
+                "intent_id": "c190f89f-4c81-48ac-80df-21672c0c6dd5",
+                "disposition": "answer_now",
+                "intent_key": "general.assistance",
+                "title": "Asistencia adaptativa general",
+                "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+                "detected_role": "knowledge",
+                "site_hint": null,
+                "domain_hint": "general",
+                "confidence": 0.62,
+                "sensitive": false,
+                "monetary": false,
+                "multi_step": false,
+                "missing_requirements": [],
+                "reasoning": [
+                  "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+                ],
+                "hypotheses": [],
+                "metadata": {
+                  "conversation_analysis": {
+                    "primary_intent": "general.assistance",
+                    "sub_intents": [],
+                    "candidate_intents": [
+                      {
+                        "intent_key": "general.assistance",
+                        "score": 1.0,
+                        "reasons": [
+                          "fallback adaptativo"
+                        ]
+                      }
+                    ],
+                    "segments": [
+                      {
+                        "text": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                        "labels": [
+                          "request"
+                        ],
+                        "primary_label": "request"
+                      }
+                    ],
+                    "compound": false,
+                    "mixed_actionable": false,
+                    "ambiguity_score": 0.0,
+                    "requires_clarification": false,
+                    "clarification_prompt": "",
+                    "objective_summary": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                    "constraints": [],
+                    "context_carried_from_history": false,
+                    "conversation_turns_used": 0,
+                    "conditional_external_consultation": false
+                  },
+                  "primary_intent": "general.assistance",
+                  "sub_intents": [],
+                  "compound_intent": false,
+                  "requires_clarification": false,
+                  "ambiguity_score": 0.0,
+                  "context_carried_from_history": false,
+                  "conversational_prompt": true
+                }
+              },
+              "route_decision": {
+                "detected_role": "knowledge",
+                "planner_required": false,
+                "visual_required": false,
+                "tool_chain": [
+                  "knowledge_search",
+                  "embeddings"
+                ],
+                "reason": "Rol resuelto desde intent general.assistance: Base de conocimiento."
+              },
+              "chosen_pack_id": "knowledge.query",
+              "chosen_pack_title": "Consulta local con contexto",
+              "site_id": "",
+              "site_display_name": "General",
+              "evidence_refs": [
+                "Contexto activo: contexto general."
+              ],
+              "capability_snapshot": [
+                {
+                  "capability_id": "assistant.local.chat",
+                  "title": "Chat adaptativo local",
+                  "status": "ready",
+                  "score": 0.9,
+                  "site_id": null,
+                  "evidence": [
+                    "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                  ],
+                  "missing_signals": [],
+                  "last_episode_id": null,
+                  "suggested_next_step": "Seguir con la estrategia propuesta.",
+                  "metadata": {}
+                }
+              ],
+              "live_audit": {},
+              "assistant_guidance": {
+                "mode": "need_adapter",
+                "title": "Falta adaptador operativo",
+                "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+                "actions": [
+                  {
+                    "action": "consult_codex",
+                    "label": "Consultar Codex",
+                    "detail": "Contrastar el siguiente cambio tecnico con evidencia verificable."
+                  },
+                  {
+                    "action": "simulate",
+                    "label": "Simular",
+                    "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+                  },
+                  {
+                    "action": "open_evolution_center",
+                    "label": "Ver evolutivo",
+                    "detail": "Seguir la evidencia y el backlog tecnico."
+                  },
+                  {
+                    "action": "prepare_codex_packet",
+                    "label": "Preparar Codex",
+                    "detail": "Armar el caso tecnico verificable."
+                  }
+                ],
+                "governance": {
+                  "autonomy_level": "guarded_research",
+                  "should_consult": true,
+                  "should_retry": false,
+                  "should_replan": false,
+                  "research_needed": true,
+                  "assistant_kind": "codex",
+                  "recommended_action": "consult_codex",
+                  "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+                  "confidence": 0.74,
+                  "approval_required": false,
+                  "block_risky_action": false,
+                  "require_sandbox": true,
+                  "blockers": [],
+                  "diagnostic_category": "need_adapter",
+                  "decision_source": "autonomy_governance_policy",
+                  "external_state_flags": [],
+                  "blocked_routes": [],
+                  "permission_gates": []
+                }
+              },
+              "goal_context": {
+                "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+                "objective": {},
+                "project": {},
+                "task": {},
+                "subtasks": [],
+                "active_node_id": "",
+                "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                "priority": 50,
+                "status": "pending",
+                "progress": 0.0,
+                "blocker": "",
+                "confidence": 0.0,
+                "trend": "sin base",
+                "evidence_refs": [],
+                "metadata": {}
+              },
+              "memory_snapshot": {
+                "evidence": {
+                  "site_id": "",
+                  "site_display_name": "General",
+                  "evidence_refs": [
+                    "Contexto activo: contexto general."
+                  ],
+                  "recent_teachings": [],
+                  "recent_incidents": [],
+                  "recent_dossiers": []
+                },
+                "learning": {
+                  "interaction_patterns": [],
+                  "knowledge_hits": [],
+                  "capabilities": [
+                    {
+                      "capability_id": "assistant.local.chat",
+                      "title": "Chat adaptativo local",
+                      "status": "ready",
+                      "score": 0.9,
+                      "site_id": null,
+                      "evidence": [
+                        "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                      ],
+                      "missing_signals": [],
+                      "last_episode_id": null,
+                      "suggested_next_step": "Seguir con la estrategia propuesta.",
+                      "metadata": {}
+                    }
+                  ],
+                  "experiment_insights": [],
+                  "adaptive_learning_summary": {},
+                  "learned_patterns": [],
+                  "validation_learning_summary": {}
+                },
+                "operational": {
+                  "recent_runs": [],
+                  "session_readiness": {
+                    "site_detected": false,
+                    "teaching_matches": 0,
+                    "incident_count": 0,
+                    "dominant_incident": "",
+                    "adaptive_sessions": 0,
+                    "recent_sessions": [],
+                    "live_audit_action": ""
+                  },
+                  "live_audit": {}
+                },
+                "objectives": {
+                  "goal_context": {
+                    "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+                    "objective": {},
+                    "project": {},
+                    "task": {},
+                    "subtasks": [],
+                    "active_node_id": "",
+                    "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                    "priority": 50,
+                    "status": "pending",
+                    "progress": 0.0,
+                    "blocker": "",
+                    "confidence": 0.0,
+                    "trend": "sin base",
+                    "evidence_refs": [],
+                    "metadata": {}
+                  },
+                  "objective": {},
+                  "project": {},
+                  "task": {},
+                  "status": "pending",
+                  "progress": 0.0,
+                  "confidence": 0.0,
+                  "blocker": ""
+                }
+              },
+              "governance": {
+                "autonomy_level": "guarded_research",
+                "should_consult": true,
+                "should_retry": false,
+                "should_replan": false,
+                "research_needed": true,
+                "assistant_kind": "codex",
+                "recommended_action": "consult_codex",
+                "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+                "confidence": 0.74,
+                "approval_required": false,
+                "block_risky_action": false,
+                "require_sandbox": true,
+                "blockers": [],
+                "diagnostic_category": "need_adapter",
+                "decision_source": "autonomy_governance_policy",
+                "external_state_flags": [],
+                "blocked_routes": [],
+                "permission_gates": []
+              },
+              "metadata": {
+                "session_id": "0f4efcb7-df8f-4330-b59e-385ab0ce210b",
+                "intent_key": "general.assistance",
+                "decision_source": "adaptive_task_orchestrator",
+                "decision_stage": "post_governance",
+                "conversational_prompt": true,
+                "external_state_flags": [],
+                "ia_trace_summary": {
+                  "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+                  "comparison_scope_keys": [
+                    "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+                    "general"
+                  ],
+                  "latest_trace_ids": [],
+                  "tested_assistants": [],
+                  "best_assistant_kind": "",
+                  "best_config_signature": "",
+                  "blocked_assistants": [],
+                  "reusable_trace_ids": [],
+                  "winning_trace_ids": [],
+                  "losing_trace_ids": []
+                },
+                "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+                "preferred_assistant_kind": "codex",
+                "preferred_config_signature": "",
+                "supporting_trace_ids": [],
+                "adaptive_learning_summary": {},
+                "learned_patterns": [],
+                "validation_learning_summary": {},
+                "environment_id": "",
+                "environment_scan_status": "unavailable",
+                "environment_notifications": [],
+                "environment_risk_signals": [],
+                "world_model_summary": {
+                  "focused_window": "",
+                  "network_status": "desconocido",
+                  "detected_blocks": [],
+                  "blocked_routes": [],
+                  "permission_gates": [],
+                  "active_window_count": 0,
+                  "confidence": 0.0,
+                  "freshness_ms": 0,
+                  "codex_status": {
+                    "status": "",
+                    "thread_status": "",
+                    "messages_status": ""
+                  },
+                  "chatgpt_status": {
+                    "status": "",
+                    "session_status": "",
+                    "messages_status": "",
+                    "permission_state": "",
+                    "probe_status": ""
+                  },
+                  "claude_status": {
+                    "status": "",
+                    "session_status": "",
+                    "messages_status": "",
+                    "permission_state": "",
+                    "probe_status": ""
+                  },
+                  "ollama_status": {
+                    "status": "",
+                    "session_status": "",
+                    "messages_status": "",
+                    "permission_state": "",
+                    "probe_status": ""
+                  },
+                  "last_updated": "2026-04-19T19:45:52.729247+00:00"
+                },
+                "portable_context_summary": {}
+              }
+            }
+          }
+        },
+        "decision_context": {
+          "decision_context_id": "89755e24-4960-4111-ae6b-f119ceb41350",
+          "user_goal": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+          "intent": {
+            "intent_id": "c190f89f-4c81-48ac-80df-21672c0c6dd5",
+            "disposition": "answer_now",
+            "intent_key": "general.assistance",
+            "title": "Asistencia adaptativa general",
+            "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+            "detected_role": "knowledge",
+            "site_hint": null,
+            "domain_hint": "general",
+            "confidence": 0.62,
+            "sensitive": false,
+            "monetary": false,
+            "multi_step": false,
+            "missing_requirements": [],
+            "reasoning": [
+              "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+            ],
+            "hypotheses": [],
+            "metadata": {
+              "conversation_analysis": {
+                "primary_intent": "general.assistance",
+                "sub_intents": [],
+                "candidate_intents": [
+                  {
+                    "intent_key": "general.assistance",
+                    "score": 1.0,
+                    "reasons": [
+                      "fallback adaptativo"
+                    ]
+                  }
+                ],
+                "segments": [
+                  {
+                    "text": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                    "labels": [
+                      "request"
+                    ],
+                    "primary_label": "request"
+                  }
+                ],
+                "compound": false,
+                "mixed_actionable": false,
+                "ambiguity_score": 0.0,
+                "requires_clarification": false,
+                "clarification_prompt": "",
+                "objective_summary": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                "constraints": [],
+                "context_carried_from_history": false,
+                "conversation_turns_used": 0,
+                "conditional_external_consultation": false
+              },
+              "primary_intent": "general.assistance",
+              "sub_intents": [],
+              "compound_intent": false,
+              "requires_clarification": false,
+              "ambiguity_score": 0.0,
+              "context_carried_from_history": false,
+              "conversational_prompt": true
+            }
+          },
+          "route_decision": {
+            "detected_role": "knowledge",
+            "planner_required": false,
+            "visual_required": false,
+            "tool_chain": [
+              "knowledge_search",
+              "embeddings"
+            ],
+            "reason": "Rol resuelto desde intent general.assistance: Base de conocimiento."
+          },
+          "chosen_pack_id": "knowledge.query",
+          "chosen_pack_title": "Consulta local con contexto",
+          "site_id": "",
+          "site_display_name": "General",
+          "evidence_refs": [
+            "Contexto activo: contexto general."
+          ],
+          "capability_snapshot": [
+            {
+              "capability_id": "assistant.local.chat",
+              "title": "Chat adaptativo local",
+              "status": "ready",
+              "score": 0.9,
+              "site_id": null,
+              "evidence": [
+                "La capacidad depende principalmente del stack local y del contexto ya disponible."
+              ],
+              "missing_signals": [],
+              "last_episode_id": null,
+              "suggested_next_step": "Seguir con la estrategia propuesta.",
+              "metadata": {}
+            }
+          ],
+          "live_audit": {},
+          "assistant_guidance": {
+            "mode": "need_adapter",
+            "title": "Falta adaptador operativo",
+            "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+            "actions": [
+              {
+                "action": "consult_codex",
+                "label": "Consultar Codex",
+                "detail": "Contrastar el siguiente cambio tecnico con evidencia verificable."
+              },
+              {
+                "action": "simulate",
+                "label": "Simular",
+                "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+              },
+              {
+                "action": "open_evolution_center",
+                "label": "Ver evolutivo",
+                "detail": "Seguir la evidencia y el backlog tecnico."
+              },
+              {
+                "action": "prepare_codex_packet",
+                "label": "Preparar Codex",
+                "detail": "Armar el caso tecnico verificable."
+              }
+            ],
+            "governance": {
+              "autonomy_level": "guarded_research",
+              "should_consult": true,
+              "should_retry": false,
+              "should_replan": false,
+              "research_needed": true,
+              "assistant_kind": "codex",
+              "recommended_action": "consult_codex",
+              "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+              "confidence": 0.74,
+              "approval_required": false,
+              "block_risky_action": false,
+              "require_sandbox": true,
+              "blockers": [],
+              "diagnostic_category": "need_adapter",
+              "decision_source": "autonomy_governance_policy",
+              "external_state_flags": [],
+              "blocked_routes": [],
+              "permission_gates": []
+            }
+          },
+          "goal_context": {
+            "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+            "objective": {},
+            "project": {},
+            "task": {},
+            "subtasks": [],
+            "active_node_id": "",
+            "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+            "priority": 50,
+            "status": "pending",
+            "progress": 0.0,
+            "blocker": "",
+            "confidence": 0.0,
+            "trend": "sin base",
+            "evidence_refs": [],
+            "metadata": {}
+          },
+          "memory_snapshot": {
+            "evidence": {
+              "site_id": "",
+              "site_display_name": "General",
+              "evidence_refs": [
+                "Contexto activo: contexto general."
+              ],
+              "recent_teachings": [],
+              "recent_incidents": [],
+              "recent_dossiers": []
+            },
+            "learning": {
+              "interaction_patterns": [],
+              "knowledge_hits": [],
+              "capabilities": [
+                {
+                  "capability_id": "assistant.local.chat",
+                  "title": "Chat adaptativo local",
+                  "status": "ready",
+                  "score": 0.9,
+                  "site_id": null,
+                  "evidence": [
+                    "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                  ],
+                  "missing_signals": [],
+                  "last_episode_id": null,
+                  "suggested_next_step": "Seguir con la estrategia propuesta.",
+                  "metadata": {}
+                }
+              ],
+              "experiment_insights": [],
+              "adaptive_learning_summary": {},
+              "learned_patterns": [],
+              "validation_learning_summary": {}
+            },
+            "operational": {
+              "recent_runs": [],
+              "session_readiness": {
+                "site_detected": false,
+                "teaching_matches": 0,
+                "incident_count": 0,
+                "dominant_incident": "",
+                "adaptive_sessions": 0,
+                "recent_sessions": [],
+                "live_audit_action": ""
+              },
+              "live_audit": {}
+            },
+            "objectives": {
+              "goal_context": {
+                "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+                "objective": {},
+                "project": {},
+                "task": {},
+                "subtasks": [],
+                "active_node_id": "",
+                "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                "priority": 50,
+                "status": "pending",
+                "progress": 0.0,
+                "blocker": "",
+                "confidence": 0.0,
+                "trend": "sin base",
+                "evidence_refs": [],
+                "metadata": {}
+              },
+              "objective": {},
+              "project": {},
+              "task": {},
+              "status": "pending",
+              "progress": 0.0,
+              "confidence": 0.0,
+              "blocker": ""
+            }
+          },
+          "governance": {
+            "autonomy_level": "guarded_research",
+            "should_consult": true,
+            "should_retry": false,
+            "should_replan": false,
+            "research_needed": true,
+            "assistant_kind": "codex",
+            "recommended_action": "consult_codex",
+            "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+            "confidence": 0.74,
+            "approval_required": false,
+            "block_risky_action": false,
+            "require_sandbox": true,
+            "blockers": [],
+            "diagnostic_category": "need_adapter",
+            "decision_source": "autonomy_governance_policy",
+            "external_state_flags": [],
+            "blocked_routes": [],
+            "permission_gates": []
+          },
+          "metadata": {
+            "session_id": "0f4efcb7-df8f-4330-b59e-385ab0ce210b",
+            "intent_key": "general.assistance",
+            "decision_source": "adaptive_task_orchestrator",
+            "decision_stage": "post_governance",
+            "conversational_prompt": true,
+            "external_state_flags": [],
+            "ia_trace_summary": {
+              "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+              "comparison_scope_keys": [
+                "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+                "general"
+              ],
+              "latest_trace_ids": [],
+              "tested_assistants": [],
+              "best_assistant_kind": "",
+              "best_config_signature": "",
+              "blocked_assistants": [],
+              "reusable_trace_ids": [],
+              "winning_trace_ids": [],
+              "losing_trace_ids": []
+            },
+            "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+            "preferred_assistant_kind": "codex",
+            "preferred_config_signature": "",
+            "supporting_trace_ids": [],
+            "adaptive_learning_summary": {},
+            "learned_patterns": [],
+            "validation_learning_summary": {},
+            "environment_id": "",
+            "environment_scan_status": "unavailable",
+            "environment_notifications": [],
+            "environment_risk_signals": [],
+            "world_model_summary": {
+              "focused_window": "",
+              "network_status": "desconocido",
+              "detected_blocks": [],
+              "blocked_routes": [],
+              "permission_gates": [],
+              "active_window_count": 0,
+              "confidence": 0.0,
+              "freshness_ms": 0,
+              "codex_status": {
+                "status": "",
+                "thread_status": "",
+                "messages_status": ""
+              },
+              "chatgpt_status": {
+                "status": "",
+                "session_status": "",
+                "messages_status": "",
+                "permission_state": "",
+                "probe_status": ""
+              },
+              "claude_status": {
+                "status": "",
+                "session_status": "",
+                "messages_status": "",
+                "permission_state": "",
+                "probe_status": ""
+              },
+              "ollama_status": {
+                "status": "",
+                "session_status": "",
+                "messages_status": "",
+                "permission_state": "",
+                "probe_status": ""
+              },
+              "last_updated": "2026-04-19T19:45:52.729247+00:00"
+            },
+            "portable_context_summary": {}
+          }
+        },
+        "goal_context": {
+          "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+          "objective": {},
+          "project": {},
+          "task": {},
+          "subtasks": [],
+          "active_node_id": "",
+          "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+          "priority": 50,
+          "status": "pending",
+          "progress": 0.0,
+          "blocker": "",
+          "confidence": 0.0,
+          "trend": "sin base",
+          "evidence_refs": [],
+          "metadata": {}
+        },
+        "memory_snapshot": {
+          "evidence": {
+            "site_id": "",
+            "site_display_name": "General",
+            "evidence_refs": [
+              "Contexto activo: contexto general."
+            ],
+            "recent_teachings": [],
+            "recent_incidents": [],
+            "recent_dossiers": []
+          },
+          "learning": {
+            "interaction_patterns": [],
+            "knowledge_hits": [],
+            "capabilities": [
+              {
+                "capability_id": "assistant.local.chat",
+                "title": "Chat adaptativo local",
+                "status": "ready",
+                "score": 0.9,
+                "site_id": null,
+                "evidence": [
+                  "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                ],
+                "missing_signals": [],
+                "last_episode_id": null,
+                "suggested_next_step": "Seguir con la estrategia propuesta.",
+                "metadata": {}
+              }
+            ],
+            "experiment_insights": [],
+            "adaptive_learning_summary": {},
+            "learned_patterns": [],
+            "validation_learning_summary": {}
+          },
+          "operational": {
+            "recent_runs": [],
+            "session_readiness": {
+              "site_detected": false,
+              "teaching_matches": 0,
+              "incident_count": 0,
+              "dominant_incident": "",
+              "adaptive_sessions": 0,
+              "recent_sessions": [],
+              "live_audit_action": ""
+            },
+            "live_audit": {}
+          },
+          "objectives": {
+            "goal_context": {
+              "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+              "objective": {},
+              "project": {},
+              "task": {},
+              "subtasks": [],
+              "active_node_id": "",
+              "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+              "priority": 50,
+              "status": "pending",
+              "progress": 0.0,
+              "blocker": "",
+              "confidence": 0.0,
+              "trend": "sin base",
+              "evidence_refs": [],
+              "metadata": {}
+            },
+            "objective": {},
+            "project": {},
+            "task": {},
+            "status": "pending",
+            "progress": 0.0,
+            "confidence": 0.0,
+            "blocker": ""
+          }
+        },
+        "live_audit": {},
+        "runtime_signals": [],
+        "session_health": null,
+        "ia_trace": [],
+        "visual_signal": {
+          "source": "",
+          "source_app": "",
+          "capture_available": false,
+          "dom_available": false,
+          "latest_url": "",
+          "latest_title": "",
+          "visible_targets": [],
+          "login_detected": false,
+          "learning_ready": false,
+          "cross_check_status": "",
+          "visual_evidence_refs": [],
+          "visual_snapshot": {},
+          "dom_summary": {},
+          "available_actions": [],
+          "detected_blocks": [],
+          "confidence": 0.0,
+          "unresolved_fields": [
+            "UNRESOLVED:visual_signal_source"
+          ],
+          "metadata": {}
+        },
+        "environment_self_model": {
+          "environment_id": "",
+          "known_environment": false,
+          "scan_status": "unavailable",
+          "hardware_profile": {},
+          "runtime_profile": {},
+          "capability_graph": [],
+          "available_tools": [],
+          "missing_tools": [],
+          "installable_tools": [],
+          "ai_capacity": {},
+          "risk_signals": [],
+          "notifications": [],
+          "last_scan": "2026-04-19T19:45:52.729221Z",
+          "changed_since_last_scan": [],
+          "unresolved_fields": [
+            "UNRESOLVED:environment_self_model"
+          ],
+          "metadata": {}
+        },
+        "world_model": {
+          "snapshot_id": "2935d418-5e2f-49e3-9804-54906c1b92c2",
+          "active_windows": [],
+          "focused_window": null,
+          "tool_live_status": [],
+          "network_status": {
+            "connected": false,
+            "status": "desconocido",
+            "quality": "desconocida",
+            "latency_ms": null,
+            "detail": "",
+            "evidence": [],
+            "metadata": {}
+          },
+          "background_processes": [],
+          "detected_blocks": [],
+          "block_records": [],
+          "permission_gates": [],
+          "observation_sources": [],
+          "inferred_state": {},
+          "confidence": 0.0,
+          "freshness_ms": 0,
+          "last_updated": "2026-04-19T19:45:52.729247Z",
+          "unresolved_fields": [
+            "UNRESOLVED:world_model"
+          ],
+          "metadata": {}
+        },
+        "external_state_flags": [],
+        "unresolved_fields": [
+          "UNRESOLVED:runtime_signals",
+          "UNRESOLVED:session_health",
+          "UNRESOLVED:ia_trace",
+          "UNRESOLVED:visual_signal",
+          "UNRESOLVED:environment_self_model",
+          "UNRESOLVED:world_model"
+        ],
+        "metadata": {
+          "site_id": "",
+          "conversational_prompt": true,
+          "meta_assistant_prompt": false,
+          "conversation_analysis": {
+            "primary_intent": "general.assistance",
+            "sub_intents": [],
+            "candidate_intents": [
+              {
+                "intent_key": "general.assistance",
+                "score": 1.0,
+                "reasons": [
+                  "fallback adaptativo"
+                ]
+              }
+            ],
+            "segments": [
+              {
+                "text": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                "labels": [
+                  "request"
+                ],
+                "primary_label": "request"
+              }
+            ],
+            "compound": false,
+            "mixed_actionable": false,
+            "ambiguity_score": 0.0,
+            "requires_clarification": false,
+            "clarification_prompt": "",
+            "objective_summary": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+            "constraints": [],
+            "context_carried_from_history": false,
+            "conversation_turns_used": 0,
+            "conditional_external_consultation": false
+          },
+          "primary_intent": "general.assistance",
+          "sub_intents": [],
+          "ambiguity_score": 0.0,
+          "requires_clarification": false,
+          "compound_intent": false,
+          "constraints": [],
+          "ia_trace_summary": {
+            "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+            "comparison_scope_keys": [
+              "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+              "general"
+            ],
+            "latest_trace_ids": [],
+            "tested_assistants": [],
+            "best_assistant_kind": "",
+            "best_config_signature": "",
+            "blocked_assistants": [],
+            "reusable_trace_ids": [],
+            "winning_trace_ids": [],
+            "losing_trace_ids": []
+          },
+          "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+          "adaptive_learning_summary": {},
+          "learned_patterns": [],
+          "validation_learning_summary": {},
+          "environment_id": "",
+          "environment_scan_status": "unavailable",
+          "environment_notifications": [],
+          "world_model_summary": {
+            "focused_window": "",
+            "network_status": "desconocido",
+            "detected_blocks": [],
+            "blocked_routes": [],
+            "permission_gates": [],
+            "active_window_count": 0,
+            "confidence": 0.0,
+            "freshness_ms": 0,
+            "codex_status": {
+              "status": "",
+              "thread_status": "",
+              "messages_status": ""
+            },
+            "chatgpt_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "claude_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "ollama_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "last_updated": "2026-04-19T19:45:52.729247+00:00"
+          },
+          "portable_context_summary": {},
+          "decision_stage": "post_governance",
+          "assistant_guidance_mode": "need_adapter"
+        }
+      }
+    }
+  },
+  "chosen_pack_id": "knowledge.query",
+  "chosen_pack_title": "Consulta local con contexto",
+  "status": "completed",
+  "capability_readiness": [
+    {
+      "capability_id": "assistant.local.chat",
+      "title": "Chat adaptativo local",
+      "status": "ready",
+      "score": 0.9,
+      "site_id": null,
+      "evidence": [
+        "La capacidad depende principalmente del stack local y del contexto ya disponible."
+      ],
+      "missing_signals": [],
+      "last_episode_id": null,
+      "suggested_next_step": "Seguir con la estrategia propuesta.",
+      "metadata": {}
+    }
+  ],
+  "strategy_candidates": [
+    {
+      "candidate_id": "19613c43-ff21-4885-992e-6046e71d2a0d",
+      "pack_id": "knowledge.query",
+      "title": "Respuesta local contextual",
+      "rationale": "Usa memoria local, ejecuciones recientes y evidencia para responder sin preguntas genericas. Capacidades observadas: sin capacidades declaradas.",
+      "algorithm_id": "context_first_answer",
+      "parameters": [],
+      "readiness_status": "ready",
+      "risk_level": "low",
+      "requires_approval": false,
+      "missing_requirements": [],
+      "metadata": {
+        "domain_kind": "knowledge",
+        "site_id": "",
+        "experiment_alignment_score": 0.0
+      }
+    }
+  ],
+  "playbook": {
+    "playbook_id": "03203e58-c613-4b50-b70b-a01592a48b83",
+    "goal": "Asistencia adaptativa general",
+    "pack_id": "knowledge.query",
+    "summary": "Pack Consulta local con contexto. Estrategia propuesta: Respuesta local contextual.",
+    "status": "completed",
+    "steps": [
+      {
+        "step_id": "a4886803-961a-4e20-b460-5365867bd86f",
+        "phase_key": "understand_goal",
+        "title": "Entender objetivo",
+        "description": "Objetivo interpretado: Asistencia adaptativa general.",
+        "status": "success",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": null,
+        "executable": false,
+        "simulation_only": false,
+        "detail": "La intencion ya fue clasificada y contextualizada.",
+        "metadata": {
+          "site_id": "",
+          "intent_key": "general.assistance"
+        }
+      },
+      {
+        "step_id": "88c6a761-8517-4a77-9bc9-5af386b95760",
+        "phase_key": "select_pack",
+        "title": "Seleccionar pack",
+        "description": "Se usa Consulta local con contexto.",
+        "status": "success",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": "knowledge.query",
+        "executable": false,
+        "simulation_only": false,
+        "detail": "Pack elegido: knowledge.query.",
+        "metadata": {
+          "domain_kind": "knowledge",
+          "risk_level": "low"
+        }
+      },
+      {
+        "step_id": "56bf3325-6656-457d-8f53-711f4ee0c525",
+        "phase_key": "validate_capabilities",
+        "title": "Validar capacidades",
+        "description": "Se revisa si las ensenanzas y la evidencia soportan la tarea.",
+        "status": "success",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": null,
+        "executable": false,
+        "simulation_only": false,
+        "detail": "Todo listo.",
+        "metadata": {
+          "weakest_capability_id": "",
+          "interaction_pattern_count": 0,
+          "experiment_insight_count": 0
+        }
+      },
+      {
+        "step_id": "37f2b843-10d8-4d88-9009-5f24f4ac3637",
+        "phase_key": "propose_strategy",
+        "title": "Proponer estrategia",
+        "description": "Usa memoria local, ejecuciones recientes y evidencia para responder sin preguntas genericas. Capacidades observadas: sin capacidades declaradas.",
+        "status": "success",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": null,
+        "executable": false,
+        "simulation_only": false,
+        "detail": "Respuesta local contextual",
+        "metadata": {
+          "preferred_route": "",
+          "recommended_tool_id": "",
+          "recommended_execution_scope": "",
+          "experiment_alignment_score": 0.0,
+          "matching_pattern_ids": [],
+          "matching_pattern_count": 0,
+          "live_audit_action": ""
+        }
+      },
+      {
+        "step_id": "4a222ca8-c01e-4a4f-bc86-32e778aa6386",
+        "phase_key": "execute",
+        "title": "Ejecutar fase",
+        "description": "Ejecutar o dejar preparada la siguiente fase operativa.",
+        "status": "partial",
+        "requires_approval": false,
+        "capability_id": "assistant.local.chat",
+        "pack_id": "knowledge.query",
+        "executable": true,
+        "simulation_only": false,
+        "detail": "No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+        "metadata": {
+          "preferred_route": "",
+          "recommended_tool_id": "",
+          "recommended_execution_scope": "",
+          "matching_pattern_ids": [],
+          "matching_pattern_count": 0,
+          "execution_state": {
+            "state": "adapter_missing",
+            "executor_name": "no_operational_executor",
+            "executor_available": false,
+            "simulation_only": false,
+            "detail": "No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+            "execute_step_present": true
+          }
+        }
+      },
+      {
+        "step_id": "560b91b2-9929-4d50-b9ba-aeb391f424d3",
+        "phase_key": "verify",
+        "title": "Verificar resultado",
+        "description": "Confirmar senales de exito, incidentes y evidencia.",
+        "status": "partial",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": null,
+        "executable": false,
+        "simulation_only": false,
+        "detail": "Se ejecuta despues de la fase operativa.",
+        "metadata": {
+          "preferred_route": "",
+          "matching_pattern_ids": []
+        }
+      },
+      {
+        "step_id": "7d0097aa-4d8e-4f20-9530-52bbf3ee10ad",
+        "phase_key": "record_outcome",
+        "title": "Registrar outcome",
+        "description": "Persistir resultado, evidencia y siguiente accion.",
+        "status": "partial",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": null,
+        "executable": false,
+        "simulation_only": false,
+        "detail": "La sesion adaptativa deja traza reutilizable para evolutivo y Codex.",
+        "metadata": {
+          "preferred_route": "",
+          "matching_pattern_ids": [],
+          "experiment_recommendation": {}
+        }
+      }
+    ],
+    "next_phase": "none",
+    "requires_approval": false,
+    "simulation_only": false,
+    "metadata": {
+      "site_id": "",
+      "pack_title": "Consulta local con contexto",
+      "chosen_algorithm": "context_first_answer",
+      "experiment_recommendation": {},
+      "preferred_route": "",
+      "recommended_tool_id": "",
+      "recommended_execution_scope": "",
+      "interaction_pattern_count": 0,
+      "matching_pattern_count": 0,
+      "matching_pattern_ids": [],
+      "live_audit": {}
+    }
+  },
+  "approval_checkpoints": [],
+  "outcome": {
+    "outcome_id": "d391e33b-8bcb-4426-929f-6bfa6e583e2a",
+    "status": "success",
+    "summary": "Consulta local con contexto. Readiness: Chat adaptativo local: ready. Ejecucion: No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+    "next_actions": [
+      "Simular",
+      "Preparar Codex"
+    ],
+    "evidence_refs": [],
+    "metadata": {
+      "mode": "initial"
+    }
+  },
+  "evidence_refs": [
+    "Contexto activo: contexto general."
+  ],
+  "scenario_id": "",
+  "scenario_mode": null,
+  "probe_diagnosis": null,
+  "runtime_adjustments": [],
+  "pending_issue_id": null,
+  "metadata": {
+    "approval_mode": "phased",
+    "execution_scope": "operational",
+    "goal_parameters": {
+      "objective_id": "",
+      "objective_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+      "project_id": "",
+      "project_title": "",
+      "task_id": "",
+      "task_title": "",
+      "goal_status": "pending",
+      "goal_progress": 0.0,
+      "goal_confidence": 0.0,
+      "goal_blocker": ""
+    },
+    "perception_snapshot": {
+      "snapshot_id": "058b6c10-7208-4f53-beab-8054cdb3cece",
+      "created_at_utc": "2026-04-19T19:45:52.729363Z",
+      "task_context": {
+        "context_id": "fbcf6c9d-9f4c-4b63-bd12-db73f972680e",
+        "site_id": null,
+        "site_display_name": "General",
+        "recent_teachings": [],
+        "recent_runs": [],
+        "recent_incidents": [],
+        "recent_dossiers": [],
+        "knowledge_hits": [],
+        "capability_snapshot": [
+          {
+            "capability_id": "assistant.local.chat",
+            "title": "Chat adaptativo local",
+            "status": "ready",
+            "score": 0.9,
+            "site_id": null,
+            "evidence": [
+              "La capacidad depende principalmente del stack local y del contexto ya disponible."
+            ],
+            "missing_signals": [],
+            "last_episode_id": null,
+            "suggested_next_step": "Seguir con la estrategia propuesta.",
+            "metadata": {}
+          }
+        ],
+        "interaction_patterns": [],
+        "experiment_insights": [],
+        "session_readiness": {
+          "site_detected": false,
+          "teaching_matches": 0,
+          "incident_count": 0,
+          "dominant_incident": "",
+          "adaptive_sessions": 0,
+          "recent_sessions": [],
+          "live_audit_action": ""
+        },
+        "evidence_summary": [
+          "Contexto activo: contexto general."
+        ],
+        "live_audit": {},
+        "goal_context": {
+          "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+          "objective": {},
+          "project": {},
+          "task": {},
+          "subtasks": [],
+          "active_node_id": "",
+          "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+          "priority": 50,
+          "status": "pending",
+          "progress": 0.0,
+          "blocker": "",
+          "confidence": 0.0,
+          "trend": "sin base",
+          "evidence_refs": [],
+          "metadata": {}
+        },
+        "metadata": {
+          "policy_notes": "",
+          "known_domains": [],
+          "live_audit": {},
+          "goal_context": {
+            "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+            "objective": {},
+            "project": {},
+            "task": {},
+            "subtasks": [],
+            "active_node_id": "",
+            "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+            "priority": 50,
+            "status": "pending",
+            "progress": 0.0,
+            "blocker": "",
+            "confidence": 0.0,
+            "trend": "sin base",
+            "evidence_refs": [],
+            "metadata": {}
+          },
+          "adaptive_learning_summary": {},
+          "learned_patterns": [],
+          "validation_learning_summary": {},
+          "decision_context": {
+            "decision_context_id": "89755e24-4960-4111-ae6b-f119ceb41350",
+            "user_goal": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+            "intent": {
+              "intent_id": "c190f89f-4c81-48ac-80df-21672c0c6dd5",
+              "disposition": "answer_now",
+              "intent_key": "general.assistance",
+              "title": "Asistencia adaptativa general",
+              "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+              "detected_role": "knowledge",
+              "site_hint": null,
+              "domain_hint": "general",
+              "confidence": 0.62,
+              "sensitive": false,
+              "monetary": false,
+              "multi_step": false,
+              "missing_requirements": [],
+              "reasoning": [
+                "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+              ],
+              "hypotheses": [],
+              "metadata": {
+                "conversation_analysis": {
+                  "primary_intent": "general.assistance",
+                  "sub_intents": [],
+                  "candidate_intents": [
+                    {
+                      "intent_key": "general.assistance",
+                      "score": 1.0,
+                      "reasons": [
+                        "fallback adaptativo"
+                      ]
+                    }
+                  ],
+                  "segments": [
+                    {
+                      "text": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                      "labels": [
+                        "request"
+                      ],
+                      "primary_label": "request"
+                    }
+                  ],
+                  "compound": false,
+                  "mixed_actionable": false,
+                  "ambiguity_score": 0.0,
+                  "requires_clarification": false,
+                  "clarification_prompt": "",
+                  "objective_summary": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                  "constraints": [],
+                  "context_carried_from_history": false,
+                  "conversation_turns_used": 0,
+                  "conditional_external_consultation": false
+                },
+                "primary_intent": "general.assistance",
+                "sub_intents": [],
+                "compound_intent": false,
+                "requires_clarification": false,
+                "ambiguity_score": 0.0,
+                "context_carried_from_history": false,
+                "conversational_prompt": true
+              }
+            },
+            "route_decision": {
+              "detected_role": "knowledge",
+              "planner_required": false,
+              "visual_required": false,
+              "tool_chain": [
+                "knowledge_search",
+                "embeddings"
+              ],
+              "reason": "Rol resuelto desde intent general.assistance: Base de conocimiento."
+            },
+            "chosen_pack_id": "knowledge.query",
+            "chosen_pack_title": "Consulta local con contexto",
+            "site_id": "",
+            "site_display_name": "General",
+            "evidence_refs": [
+              "Contexto activo: contexto general."
+            ],
+            "capability_snapshot": [
+              {
+                "capability_id": "assistant.local.chat",
+                "title": "Chat adaptativo local",
+                "status": "ready",
+                "score": 0.9,
+                "site_id": null,
+                "evidence": [
+                  "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                ],
+                "missing_signals": [],
+                "last_episode_id": null,
+                "suggested_next_step": "Seguir con la estrategia propuesta.",
+                "metadata": {}
+              }
+            ],
+            "live_audit": {},
+            "assistant_guidance": {
+              "mode": "need_adapter",
+              "title": "Falta adaptador operativo",
+              "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+              "actions": [
+                {
+                  "action": "consult_codex",
+                  "label": "Consultar Codex",
+                  "detail": "Contrastar el siguiente cambio tecnico con evidencia verificable."
+                },
+                {
+                  "action": "simulate",
+                  "label": "Simular",
+                  "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+                },
+                {
+                  "action": "open_evolution_center",
+                  "label": "Ver evolutivo",
+                  "detail": "Seguir la evidencia y el backlog tecnico."
+                },
+                {
+                  "action": "prepare_codex_packet",
+                  "label": "Preparar Codex",
+                  "detail": "Armar el caso tecnico verificable."
+                }
+              ],
+              "governance": {
+                "autonomy_level": "guarded_research",
+                "should_consult": true,
+                "should_retry": false,
+                "should_replan": false,
+                "research_needed": true,
+                "assistant_kind": "codex",
+                "recommended_action": "consult_codex",
+                "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+                "confidence": 0.74,
+                "approval_required": false,
+                "block_risky_action": false,
+                "require_sandbox": true,
+                "blockers": [],
+                "diagnostic_category": "need_adapter",
+                "decision_source": "autonomy_governance_policy",
+                "external_state_flags": [],
+                "blocked_routes": [],
+                "permission_gates": []
+              }
+            },
+            "goal_context": {
+              "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+              "objective": {},
+              "project": {},
+              "task": {},
+              "subtasks": [],
+              "active_node_id": "",
+              "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+              "priority": 50,
+              "status": "pending",
+              "progress": 0.0,
+              "blocker": "",
+              "confidence": 0.0,
+              "trend": "sin base",
+              "evidence_refs": [],
+              "metadata": {}
+            },
+            "memory_snapshot": {
+              "evidence": {
+                "site_id": "",
+                "site_display_name": "General",
+                "evidence_refs": [
+                  "Contexto activo: contexto general."
+                ],
+                "recent_teachings": [],
+                "recent_incidents": [],
+                "recent_dossiers": []
+              },
+              "learning": {
+                "interaction_patterns": [],
+                "knowledge_hits": [],
+                "capabilities": [
+                  {
+                    "capability_id": "assistant.local.chat",
+                    "title": "Chat adaptativo local",
+                    "status": "ready",
+                    "score": 0.9,
+                    "site_id": null,
+                    "evidence": [
+                      "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                    ],
+                    "missing_signals": [],
+                    "last_episode_id": null,
+                    "suggested_next_step": "Seguir con la estrategia propuesta.",
+                    "metadata": {}
+                  }
+                ],
+                "experiment_insights": [],
+                "adaptive_learning_summary": {},
+                "learned_patterns": [],
+                "validation_learning_summary": {}
+              },
+              "operational": {
+                "recent_runs": [],
+                "session_readiness": {
+                  "site_detected": false,
+                  "teaching_matches": 0,
+                  "incident_count": 0,
+                  "dominant_incident": "",
+                  "adaptive_sessions": 0,
+                  "recent_sessions": [],
+                  "live_audit_action": ""
+                },
+                "live_audit": {}
+              },
+              "objectives": {
+                "goal_context": {
+                  "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+                  "objective": {},
+                  "project": {},
+                  "task": {},
+                  "subtasks": [],
+                  "active_node_id": "",
+                  "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                  "priority": 50,
+                  "status": "pending",
+                  "progress": 0.0,
+                  "blocker": "",
+                  "confidence": 0.0,
+                  "trend": "sin base",
+                  "evidence_refs": [],
+                  "metadata": {}
+                },
+                "objective": {},
+                "project": {},
+                "task": {},
+                "status": "pending",
+                "progress": 0.0,
+                "confidence": 0.0,
+                "blocker": ""
+              }
+            },
+            "governance": {
+              "autonomy_level": "guarded_research",
+              "should_consult": true,
+              "should_retry": false,
+              "should_replan": false,
+              "research_needed": true,
+              "assistant_kind": "codex",
+              "recommended_action": "consult_codex",
+              "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+              "confidence": 0.74,
+              "approval_required": false,
+              "block_risky_action": false,
+              "require_sandbox": true,
+              "blockers": [],
+              "diagnostic_category": "need_adapter",
+              "decision_source": "autonomy_governance_policy",
+              "external_state_flags": [],
+              "blocked_routes": [],
+              "permission_gates": []
+            },
+            "metadata": {
+              "session_id": "0f4efcb7-df8f-4330-b59e-385ab0ce210b",
+              "intent_key": "general.assistance",
+              "decision_source": "adaptive_task_orchestrator",
+              "decision_stage": "post_governance",
+              "conversational_prompt": true,
+              "external_state_flags": [],
+              "ia_trace_summary": {
+                "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+                "comparison_scope_keys": [
+                  "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+                  "general"
+                ],
+                "latest_trace_ids": [],
+                "tested_assistants": [],
+                "best_assistant_kind": "",
+                "best_config_signature": "",
+                "blocked_assistants": [],
+                "reusable_trace_ids": [],
+                "winning_trace_ids": [],
+                "losing_trace_ids": []
+              },
+              "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+              "preferred_assistant_kind": "codex",
+              "preferred_config_signature": "",
+              "supporting_trace_ids": [],
+              "adaptive_learning_summary": {},
+              "learned_patterns": [],
+              "validation_learning_summary": {},
+              "environment_id": "",
+              "environment_scan_status": "unavailable",
+              "environment_notifications": [],
+              "environment_risk_signals": [],
+              "world_model_summary": {
+                "focused_window": "",
+                "network_status": "desconocido",
+                "detected_blocks": [],
+                "blocked_routes": [],
+                "permission_gates": [],
+                "active_window_count": 0,
+                "confidence": 0.0,
+                "freshness_ms": 0,
+                "codex_status": {
+                  "status": "",
+                  "thread_status": "",
+                  "messages_status": ""
+                },
+                "chatgpt_status": {
+                  "status": "",
+                  "session_status": "",
+                  "messages_status": "",
+                  "permission_state": "",
+                  "probe_status": ""
+                },
+                "claude_status": {
+                  "status": "",
+                  "session_status": "",
+                  "messages_status": "",
+                  "permission_state": "",
+                  "probe_status": ""
+                },
+                "ollama_status": {
+                  "status": "",
+                  "session_status": "",
+                  "messages_status": "",
+                  "permission_state": "",
+                  "probe_status": ""
+                },
+                "last_updated": "2026-04-19T19:45:52.729247+00:00"
+              },
+              "portable_context_summary": {}
+            }
+          },
+          "perception_snapshot": {
+            "snapshot_id": "058b6c10-7208-4f53-beab-8054cdb3cece",
+            "created_at_utc": "2026-04-19T19:45:52.729363Z",
+            "task_context": {
+              "context_id": "fbcf6c9d-9f4c-4b63-bd12-db73f972680e",
+              "site_id": null,
+              "site_display_name": "General",
+              "recent_teachings": [],
+              "recent_runs": [],
+              "recent_incidents": [],
+              "recent_dossiers": [],
+              "knowledge_hits": [],
+              "capability_snapshot": [
+                {
+                  "capability_id": "assistant.local.chat",
+                  "title": "Chat adaptativo local",
+                  "status": "ready",
+                  "score": 0.9,
+                  "site_id": null,
+                  "evidence": [
+                    "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                  ],
+                  "missing_signals": [],
+                  "last_episode_id": null,
+                  "suggested_next_step": "Seguir con la estrategia propuesta.",
+                  "metadata": {}
+                }
+              ],
+              "interaction_patterns": [],
+              "experiment_insights": [],
+              "session_readiness": {
+                "site_detected": false,
+                "teaching_matches": 0,
+                "incident_count": 0,
+                "dominant_incident": "",
+                "adaptive_sessions": 0,
+                "recent_sessions": [],
+                "live_audit_action": ""
+              },
+              "evidence_summary": [
+                "Contexto activo: contexto general."
+              ],
+              "live_audit": {},
+              "goal_context": {
+                "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+                "objective": {},
+                "project": {},
+                "task": {},
+                "subtasks": [],
+                "active_node_id": "",
+                "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                "priority": 50,
+                "status": "pending",
+                "progress": 0.0,
+                "blocker": "",
+                "confidence": 0.0,
+                "trend": "sin base",
+                "evidence_refs": [],
+                "metadata": {}
+              },
+              "metadata": {
+                "policy_notes": "",
+                "known_domains": [],
+                "live_audit": {},
+                "goal_context": {
+                  "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+                  "objective": {},
+                  "project": {},
+                  "task": {},
+                  "subtasks": [],
+                  "active_node_id": "",
+                  "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                  "priority": 50,
+                  "status": "pending",
+                  "progress": 0.0,
+                  "blocker": "",
+                  "confidence": 0.0,
+                  "trend": "sin base",
+                  "evidence_refs": [],
+                  "metadata": {}
+                },
+                "adaptive_learning_summary": {},
+                "learned_patterns": [],
+                "validation_learning_summary": {},
+                "decision_context": {
+                  "decision_context_id": "89755e24-4960-4111-ae6b-f119ceb41350",
+                  "user_goal": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                  "intent": {
+                    "intent_id": "c190f89f-4c81-48ac-80df-21672c0c6dd5",
+                    "disposition": "answer_now",
+                    "intent_key": "general.assistance",
+                    "title": "Asistencia adaptativa general",
+                    "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+                    "detected_role": "knowledge",
+                    "site_hint": null,
+                    "domain_hint": "general",
+                    "confidence": 0.62,
+                    "sensitive": false,
+                    "monetary": false,
+                    "multi_step": false,
+                    "missing_requirements": [],
+                    "reasoning": [
+                      "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+                    ],
+                    "hypotheses": [],
+                    "metadata": {
+                      "conversation_analysis": {
+                        "primary_intent": "general.assistance",
+                        "sub_intents": [],
+                        "candidate_intents": [
+                          {
+                            "intent_key": "general.assistance",
+                            "score": 1.0,
+                            "reasons": [
+                              "fallback adaptativo"
+                            ]
+                          }
+                        ],
+                        "segments": [
+                          {
+                            "text": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                            "labels": [
+                              "request"
+                            ],
+                            "primary_label": "request"
+                          }
+                        ],
+                        "compound": false,
+                        "mixed_actionable": false,
+                        "ambiguity_score": 0.0,
+                        "requires_clarification": false,
+                        "clarification_prompt": "",
+                        "objective_summary": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                        "constraints": [],
+                        "context_carried_from_history": false,
+                        "conversation_turns_used": 0,
+                        "conditional_external_consultation": false
+                      },
+                      "primary_intent": "general.assistance",
+                      "sub_intents": [],
+                      "compound_intent": false,
+                      "requires_clarification": false,
+                      "ambiguity_score": 0.0,
+                      "context_carried_from_history": false,
+                      "conversational_prompt": true
+                    }
+                  },
+                  "route_decision": {
+                    "detected_role": "knowledge",
+                    "planner_required": false,
+                    "visual_required": false,
+                    "tool_chain": [
+                      "knowledge_search",
+                      "embeddings"
+                    ],
+                    "reason": "Rol resuelto desde intent general.assistance: Base de conocimiento."
+                  },
+                  "chosen_pack_id": "knowledge.query",
+                  "chosen_pack_title": "Consulta local con contexto",
+                  "site_id": "",
+                  "site_display_name": "General",
+                  "evidence_refs": [
+                    "Contexto activo: contexto general."
+                  ],
+                  "capability_snapshot": [
+                    {
+                      "capability_id": "assistant.local.chat",
+                      "title": "Chat adaptativo local",
+                      "status": "ready",
+                      "score": 0.9,
+                      "site_id": null,
+                      "evidence": [
+                        "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                      ],
+                      "missing_signals": [],
+                      "last_episode_id": null,
+                      "suggested_next_step": "Seguir con la estrategia propuesta.",
+                      "metadata": {}
+                    }
+                  ],
+                  "live_audit": {},
+                  "assistant_guidance": {
+                    "mode": "need_adapter",
+                    "title": "Falta adaptador operativo",
+                    "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+                    "actions": [
+                      {
+                        "action": "consult_codex",
+                        "label": "Consultar Codex",
+                        "detail": "Contrastar el siguiente cambio tecnico con evidencia verificable."
+                      },
+                      {
+                        "action": "simulate",
+                        "label": "Simular",
+                        "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+                      },
+                      {
+                        "action": "open_evolution_center",
+                        "label": "Ver evolutivo",
+                        "detail": "Seguir la evidencia y el backlog tecnico."
+                      },
+                      {
+                        "action": "prepare_codex_packet",
+                        "label": "Preparar Codex",
+                        "detail": "Armar el caso tecnico verificable."
+                      }
+                    ],
+                    "governance": {
+                      "autonomy_level": "guarded_research",
+                      "should_consult": true,
+                      "should_retry": false,
+                      "should_replan": false,
+                      "research_needed": true,
+                      "assistant_kind": "codex",
+                      "recommended_action": "consult_codex",
+                      "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+                      "confidence": 0.74,
+                      "approval_required": false,
+                      "block_risky_action": false,
+                      "require_sandbox": true,
+                      "blockers": [],
+                      "diagnostic_category": "need_adapter",
+                      "decision_source": "autonomy_governance_policy",
+                      "external_state_flags": [],
+                      "blocked_routes": [],
+                      "permission_gates": []
+                    }
+                  },
+                  "goal_context": {
+                    "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+                    "objective": {},
+                    "project": {},
+                    "task": {},
+                    "subtasks": [],
+                    "active_node_id": "",
+                    "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                    "priority": 50,
+                    "status": "pending",
+                    "progress": 0.0,
+                    "blocker": "",
+                    "confidence": 0.0,
+                    "trend": "sin base",
+                    "evidence_refs": [],
+                    "metadata": {}
+                  },
+                  "memory_snapshot": {
+                    "evidence": {
+                      "site_id": "",
+                      "site_display_name": "General",
+                      "evidence_refs": [
+                        "Contexto activo: contexto general."
+                      ],
+                      "recent_teachings": [],
+                      "recent_incidents": [],
+                      "recent_dossiers": []
+                    },
+                    "learning": {
+                      "interaction_patterns": [],
+                      "knowledge_hits": [],
+                      "capabilities": [
+                        {
+                          "capability_id": "assistant.local.chat",
+                          "title": "Chat adaptativo local",
+                          "status": "ready",
+                          "score": 0.9,
+                          "site_id": null,
+                          "evidence": [
+                            "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                          ],
+                          "missing_signals": [],
+                          "last_episode_id": null,
+                          "suggested_next_step": "Seguir con la estrategia propuesta.",
+                          "metadata": {}
+                        }
+                      ],
+                      "experiment_insights": [],
+                      "adaptive_learning_summary": {},
+                      "learned_patterns": [],
+                      "validation_learning_summary": {}
+                    },
+                    "operational": {
+                      "recent_runs": [],
+                      "session_readiness": {
+                        "site_detected": false,
+                        "teaching_matches": 0,
+                        "incident_count": 0,
+                        "dominant_incident": "",
+                        "adaptive_sessions": 0,
+                        "recent_sessions": [],
+                        "live_audit_action": ""
+                      },
+                      "live_audit": {}
+                    },
+                    "objectives": {
+                      "goal_context": {
+                        "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+                        "objective": {},
+                        "project": {},
+                        "task": {},
+                        "subtasks": [],
+                        "active_node_id": "",
+                        "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                        "priority": 50,
+                        "status": "pending",
+                        "progress": 0.0,
+                        "blocker": "",
+                        "confidence": 0.0,
+                        "trend": "sin base",
+                        "evidence_refs": [],
+                        "metadata": {}
+                      },
+                      "objective": {},
+                      "project": {},
+                      "task": {},
+                      "status": "pending",
+                      "progress": 0.0,
+                      "confidence": 0.0,
+                      "blocker": ""
+                    }
+                  },
+                  "governance": {
+                    "autonomy_level": "guarded_research",
+                    "should_consult": true,
+                    "should_retry": false,
+                    "should_replan": false,
+                    "research_needed": true,
+                    "assistant_kind": "codex",
+                    "recommended_action": "consult_codex",
+                    "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+                    "confidence": 0.74,
+                    "approval_required": false,
+                    "block_risky_action": false,
+                    "require_sandbox": true,
+                    "blockers": [],
+                    "diagnostic_category": "need_adapter",
+                    "decision_source": "autonomy_governance_policy",
+                    "external_state_flags": [],
+                    "blocked_routes": [],
+                    "permission_gates": []
+                  },
+                  "metadata": {
+                    "session_id": "0f4efcb7-df8f-4330-b59e-385ab0ce210b",
+                    "intent_key": "general.assistance",
+                    "decision_source": "adaptive_task_orchestrator",
+                    "decision_stage": "post_governance",
+                    "conversational_prompt": true,
+                    "external_state_flags": [],
+                    "ia_trace_summary": {
+                      "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+                      "comparison_scope_keys": [
+                        "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+                        "general"
+                      ],
+                      "latest_trace_ids": [],
+                      "tested_assistants": [],
+                      "best_assistant_kind": "",
+                      "best_config_signature": "",
+                      "blocked_assistants": [],
+                      "reusable_trace_ids": [],
+                      "winning_trace_ids": [],
+                      "losing_trace_ids": []
+                    },
+                    "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+                    "preferred_assistant_kind": "codex",
+                    "preferred_config_signature": "",
+                    "supporting_trace_ids": [],
+                    "adaptive_learning_summary": {},
+                    "learned_patterns": [],
+                    "validation_learning_summary": {},
+                    "environment_id": "",
+                    "environment_scan_status": "unavailable",
+                    "environment_notifications": [],
+                    "environment_risk_signals": [],
+                    "world_model_summary": {
+                      "focused_window": "",
+                      "network_status": "desconocido",
+                      "detected_blocks": [],
+                      "blocked_routes": [],
+                      "permission_gates": [],
+                      "active_window_count": 0,
+                      "confidence": 0.0,
+                      "freshness_ms": 0,
+                      "codex_status": {
+                        "status": "",
+                        "thread_status": "",
+                        "messages_status": ""
+                      },
+                      "chatgpt_status": {
+                        "status": "",
+                        "session_status": "",
+                        "messages_status": "",
+                        "permission_state": "",
+                        "probe_status": ""
+                      },
+                      "claude_status": {
+                        "status": "",
+                        "session_status": "",
+                        "messages_status": "",
+                        "permission_state": "",
+                        "probe_status": ""
+                      },
+                      "ollama_status": {
+                        "status": "",
+                        "session_status": "",
+                        "messages_status": "",
+                        "permission_state": "",
+                        "probe_status": ""
+                      },
+                      "last_updated": "2026-04-19T19:45:52.729247+00:00"
+                    },
+                    "portable_context_summary": {}
+                  }
+                }
+              }
+            },
+            "decision_context": {
+              "decision_context_id": "89755e24-4960-4111-ae6b-f119ceb41350",
+              "user_goal": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+              "intent": {
+                "intent_id": "c190f89f-4c81-48ac-80df-21672c0c6dd5",
+                "disposition": "answer_now",
+                "intent_key": "general.assistance",
+                "title": "Asistencia adaptativa general",
+                "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+                "detected_role": "knowledge",
+                "site_hint": null,
+                "domain_hint": "general",
+                "confidence": 0.62,
+                "sensitive": false,
+                "monetary": false,
+                "multi_step": false,
+                "missing_requirements": [],
+                "reasoning": [
+                  "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+                ],
+                "hypotheses": [],
+                "metadata": {
+                  "conversation_analysis": {
+                    "primary_intent": "general.assistance",
+                    "sub_intents": [],
+                    "candidate_intents": [
+                      {
+                        "intent_key": "general.assistance",
+                        "score": 1.0,
+                        "reasons": [
+                          "fallback adaptativo"
+                        ]
+                      }
+                    ],
+                    "segments": [
+                      {
+                        "text": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                        "labels": [
+                          "request"
+                        ],
+                        "primary_label": "request"
+                      }
+                    ],
+                    "compound": false,
+                    "mixed_actionable": false,
+                    "ambiguity_score": 0.0,
+                    "requires_clarification": false,
+                    "clarification_prompt": "",
+                    "objective_summary": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                    "constraints": [],
+                    "context_carried_from_history": false,
+                    "conversation_turns_used": 0,
+                    "conditional_external_consultation": false
+                  },
+                  "primary_intent": "general.assistance",
+                  "sub_intents": [],
+                  "compound_intent": false,
+                  "requires_clarification": false,
+                  "ambiguity_score": 0.0,
+                  "context_carried_from_history": false,
+                  "conversational_prompt": true
+                }
+              },
+              "route_decision": {
+                "detected_role": "knowledge",
+                "planner_required": false,
+                "visual_required": false,
+                "tool_chain": [
+                  "knowledge_search",
+                  "embeddings"
+                ],
+                "reason": "Rol resuelto desde intent general.assistance: Base de conocimiento."
+              },
+              "chosen_pack_id": "knowledge.query",
+              "chosen_pack_title": "Consulta local con contexto",
+              "site_id": "",
+              "site_display_name": "General",
+              "evidence_refs": [
+                "Contexto activo: contexto general."
+              ],
+              "capability_snapshot": [
+                {
+                  "capability_id": "assistant.local.chat",
+                  "title": "Chat adaptativo local",
+                  "status": "ready",
+                  "score": 0.9,
+                  "site_id": null,
+                  "evidence": [
+                    "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                  ],
+                  "missing_signals": [],
+                  "last_episode_id": null,
+                  "suggested_next_step": "Seguir con la estrategia propuesta.",
+                  "metadata": {}
+                }
+              ],
+              "live_audit": {},
+              "assistant_guidance": {
+                "mode": "need_adapter",
+                "title": "Falta adaptador operativo",
+                "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+                "actions": [
+                  {
+                    "action": "consult_codex",
+                    "label": "Consultar Codex",
+                    "detail": "Contrastar el siguiente cambio tecnico con evidencia verificable."
+                  },
+                  {
+                    "action": "simulate",
+                    "label": "Simular",
+                    "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+                  },
+                  {
+                    "action": "open_evolution_center",
+                    "label": "Ver evolutivo",
+                    "detail": "Seguir la evidencia y el backlog tecnico."
+                  },
+                  {
+                    "action": "prepare_codex_packet",
+                    "label": "Preparar Codex",
+                    "detail": "Armar el caso tecnico verificable."
+                  }
+                ],
+                "governance": {
+                  "autonomy_level": "guarded_research",
+                  "should_consult": true,
+                  "should_retry": false,
+                  "should_replan": false,
+                  "research_needed": true,
+                  "assistant_kind": "codex",
+                  "recommended_action": "consult_codex",
+                  "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+                  "confidence": 0.74,
+                  "approval_required": false,
+                  "block_risky_action": false,
+                  "require_sandbox": true,
+                  "blockers": [],
+                  "diagnostic_category": "need_adapter",
+                  "decision_source": "autonomy_governance_policy",
+                  "external_state_flags": [],
+                  "blocked_routes": [],
+                  "permission_gates": []
+                }
+              },
+              "goal_context": {
+                "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+                "objective": {},
+                "project": {},
+                "task": {},
+                "subtasks": [],
+                "active_node_id": "",
+                "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                "priority": 50,
+                "status": "pending",
+                "progress": 0.0,
+                "blocker": "",
+                "confidence": 0.0,
+                "trend": "sin base",
+                "evidence_refs": [],
+                "metadata": {}
+              },
+              "memory_snapshot": {
+                "evidence": {
+                  "site_id": "",
+                  "site_display_name": "General",
+                  "evidence_refs": [
+                    "Contexto activo: contexto general."
+                  ],
+                  "recent_teachings": [],
+                  "recent_incidents": [],
+                  "recent_dossiers": []
+                },
+                "learning": {
+                  "interaction_patterns": [],
+                  "knowledge_hits": [],
+                  "capabilities": [
+                    {
+                      "capability_id": "assistant.local.chat",
+                      "title": "Chat adaptativo local",
+                      "status": "ready",
+                      "score": 0.9,
+                      "site_id": null,
+                      "evidence": [
+                        "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                      ],
+                      "missing_signals": [],
+                      "last_episode_id": null,
+                      "suggested_next_step": "Seguir con la estrategia propuesta.",
+                      "metadata": {}
+                    }
+                  ],
+                  "experiment_insights": [],
+                  "adaptive_learning_summary": {},
+                  "learned_patterns": [],
+                  "validation_learning_summary": {}
+                },
+                "operational": {
+                  "recent_runs": [],
+                  "session_readiness": {
+                    "site_detected": false,
+                    "teaching_matches": 0,
+                    "incident_count": 0,
+                    "dominant_incident": "",
+                    "adaptive_sessions": 0,
+                    "recent_sessions": [],
+                    "live_audit_action": ""
+                  },
+                  "live_audit": {}
+                },
+                "objectives": {
+                  "goal_context": {
+                    "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+                    "objective": {},
+                    "project": {},
+                    "task": {},
+                    "subtasks": [],
+                    "active_node_id": "",
+                    "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                    "priority": 50,
+                    "status": "pending",
+                    "progress": 0.0,
+                    "blocker": "",
+                    "confidence": 0.0,
+                    "trend": "sin base",
+                    "evidence_refs": [],
+                    "metadata": {}
+                  },
+                  "objective": {},
+                  "project": {},
+                  "task": {},
+                  "status": "pending",
+                  "progress": 0.0,
+                  "confidence": 0.0,
+                  "blocker": ""
+                }
+              },
+              "governance": {
+                "autonomy_level": "guarded_research",
+                "should_consult": true,
+                "should_retry": false,
+                "should_replan": false,
+                "research_needed": true,
+                "assistant_kind": "codex",
+                "recommended_action": "consult_codex",
+                "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+                "confidence": 0.74,
+                "approval_required": false,
+                "block_risky_action": false,
+                "require_sandbox": true,
+                "blockers": [],
+                "diagnostic_category": "need_adapter",
+                "decision_source": "autonomy_governance_policy",
+                "external_state_flags": [],
+                "blocked_routes": [],
+                "permission_gates": []
+              },
+              "metadata": {
+                "session_id": "0f4efcb7-df8f-4330-b59e-385ab0ce210b",
+                "intent_key": "general.assistance",
+                "decision_source": "adaptive_task_orchestrator",
+                "decision_stage": "post_governance",
+                "conversational_prompt": true,
+                "external_state_flags": [],
+                "ia_trace_summary": {
+                  "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+                  "comparison_scope_keys": [
+                    "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+                    "general"
+                  ],
+                  "latest_trace_ids": [],
+                  "tested_assistants": [],
+                  "best_assistant_kind": "",
+                  "best_config_signature": "",
+                  "blocked_assistants": [],
+                  "reusable_trace_ids": [],
+                  "winning_trace_ids": [],
+                  "losing_trace_ids": []
+                },
+                "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+                "preferred_assistant_kind": "codex",
+                "preferred_config_signature": "",
+                "supporting_trace_ids": [],
+                "adaptive_learning_summary": {},
+                "learned_patterns": [],
+                "validation_learning_summary": {},
+                "environment_id": "",
+                "environment_scan_status": "unavailable",
+                "environment_notifications": [],
+                "environment_risk_signals": [],
+                "world_model_summary": {
+                  "focused_window": "",
+                  "network_status": "desconocido",
+                  "detected_blocks": [],
+                  "blocked_routes": [],
+                  "permission_gates": [],
+                  "active_window_count": 0,
+                  "confidence": 0.0,
+                  "freshness_ms": 0,
+                  "codex_status": {
+                    "status": "",
+                    "thread_status": "",
+                    "messages_status": ""
+                  },
+                  "chatgpt_status": {
+                    "status": "",
+                    "session_status": "",
+                    "messages_status": "",
+                    "permission_state": "",
+                    "probe_status": ""
+                  },
+                  "claude_status": {
+                    "status": "",
+                    "session_status": "",
+                    "messages_status": "",
+                    "permission_state": "",
+                    "probe_status": ""
+                  },
+                  "ollama_status": {
+                    "status": "",
+                    "session_status": "",
+                    "messages_status": "",
+                    "permission_state": "",
+                    "probe_status": ""
+                  },
+                  "last_updated": "2026-04-19T19:45:52.729247+00:00"
+                },
+                "portable_context_summary": {}
+              }
+            },
+            "goal_context": {
+              "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+              "objective": {},
+              "project": {},
+              "task": {},
+              "subtasks": [],
+              "active_node_id": "",
+              "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+              "priority": 50,
+              "status": "pending",
+              "progress": 0.0,
+              "blocker": "",
+              "confidence": 0.0,
+              "trend": "sin base",
+              "evidence_refs": [],
+              "metadata": {}
+            },
+            "memory_snapshot": {
+              "evidence": {
+                "site_id": "",
+                "site_display_name": "General",
+                "evidence_refs": [
+                  "Contexto activo: contexto general."
+                ],
+                "recent_teachings": [],
+                "recent_incidents": [],
+                "recent_dossiers": []
+              },
+              "learning": {
+                "interaction_patterns": [],
+                "knowledge_hits": [],
+                "capabilities": [
+                  {
+                    "capability_id": "assistant.local.chat",
+                    "title": "Chat adaptativo local",
+                    "status": "ready",
+                    "score": 0.9,
+                    "site_id": null,
+                    "evidence": [
+                      "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                    ],
+                    "missing_signals": [],
+                    "last_episode_id": null,
+                    "suggested_next_step": "Seguir con la estrategia propuesta.",
+                    "metadata": {}
+                  }
+                ],
+                "experiment_insights": [],
+                "adaptive_learning_summary": {},
+                "learned_patterns": [],
+                "validation_learning_summary": {}
+              },
+              "operational": {
+                "recent_runs": [],
+                "session_readiness": {
+                  "site_detected": false,
+                  "teaching_matches": 0,
+                  "incident_count": 0,
+                  "dominant_incident": "",
+                  "adaptive_sessions": 0,
+                  "recent_sessions": [],
+                  "live_audit_action": ""
+                },
+                "live_audit": {}
+              },
+              "objectives": {
+                "goal_context": {
+                  "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+                  "objective": {},
+                  "project": {},
+                  "task": {},
+                  "subtasks": [],
+                  "active_node_id": "",
+                  "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                  "priority": 50,
+                  "status": "pending",
+                  "progress": 0.0,
+                  "blocker": "",
+                  "confidence": 0.0,
+                  "trend": "sin base",
+                  "evidence_refs": [],
+                  "metadata": {}
+                },
+                "objective": {},
+                "project": {},
+                "task": {},
+                "status": "pending",
+                "progress": 0.0,
+                "confidence": 0.0,
+                "blocker": ""
+              }
+            },
+            "live_audit": {},
+            "runtime_signals": [],
+            "session_health": null,
+            "ia_trace": [],
+            "visual_signal": {
+              "source": "",
+              "source_app": "",
+              "capture_available": false,
+              "dom_available": false,
+              "latest_url": "",
+              "latest_title": "",
+              "visible_targets": [],
+              "login_detected": false,
+              "learning_ready": false,
+              "cross_check_status": "",
+              "visual_evidence_refs": [],
+              "visual_snapshot": {},
+              "dom_summary": {},
+              "available_actions": [],
+              "detected_blocks": [],
+              "confidence": 0.0,
+              "unresolved_fields": [
+                "UNRESOLVED:visual_signal_source"
+              ],
+              "metadata": {}
+            },
+            "environment_self_model": {
+              "environment_id": "",
+              "known_environment": false,
+              "scan_status": "unavailable",
+              "hardware_profile": {},
+              "runtime_profile": {},
+              "capability_graph": [],
+              "available_tools": [],
+              "missing_tools": [],
+              "installable_tools": [],
+              "ai_capacity": {},
+              "risk_signals": [],
+              "notifications": [],
+              "last_scan": "2026-04-19T19:45:52.729221Z",
+              "changed_since_last_scan": [],
+              "unresolved_fields": [
+                "UNRESOLVED:environment_self_model"
+              ],
+              "metadata": {}
+            },
+            "world_model": {
+              "snapshot_id": "2935d418-5e2f-49e3-9804-54906c1b92c2",
+              "active_windows": [],
+              "focused_window": null,
+              "tool_live_status": [],
+              "network_status": {
+                "connected": false,
+                "status": "desconocido",
+                "quality": "desconocida",
+                "latency_ms": null,
+                "detail": "",
+                "evidence": [],
+                "metadata": {}
+              },
+              "background_processes": [],
+              "detected_blocks": [],
+              "block_records": [],
+              "permission_gates": [],
+              "observation_sources": [],
+              "inferred_state": {},
+              "confidence": 0.0,
+              "freshness_ms": 0,
+              "last_updated": "2026-04-19T19:45:52.729247Z",
+              "unresolved_fields": [
+                "UNRESOLVED:world_model"
+              ],
+              "metadata": {}
+            },
+            "external_state_flags": [],
+            "unresolved_fields": [
+              "UNRESOLVED:runtime_signals",
+              "UNRESOLVED:session_health",
+              "UNRESOLVED:ia_trace",
+              "UNRESOLVED:visual_signal",
+              "UNRESOLVED:environment_self_model",
+              "UNRESOLVED:world_model"
+            ],
+            "metadata": {
+              "site_id": "",
+              "conversational_prompt": true,
+              "meta_assistant_prompt": false,
+              "conversation_analysis": {
+                "primary_intent": "general.assistance",
+                "sub_intents": [],
+                "candidate_intents": [
+                  {
+                    "intent_key": "general.assistance",
+                    "score": 1.0,
+                    "reasons": [
+                      "fallback adaptativo"
+                    ]
+                  }
+                ],
+                "segments": [
+                  {
+                    "text": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                    "labels": [
+                      "request"
+                    ],
+                    "primary_label": "request"
+                  }
+                ],
+                "compound": false,
+                "mixed_actionable": false,
+                "ambiguity_score": 0.0,
+                "requires_clarification": false,
+                "clarification_prompt": "",
+                "objective_summary": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                "constraints": [],
+                "context_carried_from_history": false,
+                "conversation_turns_used": 0,
+                "conditional_external_consultation": false
+              },
+              "primary_intent": "general.assistance",
+              "sub_intents": [],
+              "ambiguity_score": 0.0,
+              "requires_clarification": false,
+              "compound_intent": false,
+              "constraints": [],
+              "ia_trace_summary": {
+                "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+                "comparison_scope_keys": [
+                  "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+                  "general"
+                ],
+                "latest_trace_ids": [],
+                "tested_assistants": [],
+                "best_assistant_kind": "",
+                "best_config_signature": "",
+                "blocked_assistants": [],
+                "reusable_trace_ids": [],
+                "winning_trace_ids": [],
+                "losing_trace_ids": []
+              },
+              "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+              "adaptive_learning_summary": {},
+              "learned_patterns": [],
+              "validation_learning_summary": {},
+              "environment_id": "",
+              "environment_scan_status": "unavailable",
+              "environment_notifications": [],
+              "world_model_summary": {
+                "focused_window": "",
+                "network_status": "desconocido",
+                "detected_blocks": [],
+                "blocked_routes": [],
+                "permission_gates": [],
+                "active_window_count": 0,
+                "confidence": 0.0,
+                "freshness_ms": 0,
+                "codex_status": {
+                  "status": "",
+                  "thread_status": "",
+                  "messages_status": ""
+                },
+                "chatgpt_status": {
+                  "status": "",
+                  "session_status": "",
+                  "messages_status": "",
+                  "permission_state": "",
+                  "probe_status": ""
+                },
+                "claude_status": {
+                  "status": "",
+                  "session_status": "",
+                  "messages_status": "",
+                  "permission_state": "",
+                  "probe_status": ""
+                },
+                "ollama_status": {
+                  "status": "",
+                  "session_status": "",
+                  "messages_status": "",
+                  "permission_state": "",
+                  "probe_status": ""
+                },
+                "last_updated": "2026-04-19T19:45:52.729247+00:00"
+              },
+              "portable_context_summary": {},
+              "decision_stage": "post_governance",
+              "assistant_guidance_mode": "need_adapter"
+            }
+          }
+        }
+      },
+      "decision_context": {
+        "decision_context_id": "89755e24-4960-4111-ae6b-f119ceb41350",
+        "user_goal": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+        "intent": {
+          "intent_id": "c190f89f-4c81-48ac-80df-21672c0c6dd5",
+          "disposition": "answer_now",
+          "intent_key": "general.assistance",
+          "title": "Asistencia adaptativa general",
+          "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+          "detected_role": "knowledge",
+          "site_hint": null,
+          "domain_hint": "general",
+          "confidence": 0.62,
+          "sensitive": false,
+          "monetary": false,
+          "multi_step": false,
+          "missing_requirements": [],
+          "reasoning": [
+            "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+          ],
+          "hypotheses": [],
+          "metadata": {
+            "conversation_analysis": {
+              "primary_intent": "general.assistance",
+              "sub_intents": [],
+              "candidate_intents": [
+                {
+                  "intent_key": "general.assistance",
+                  "score": 1.0,
+                  "reasons": [
+                    "fallback adaptativo"
+                  ]
+                }
+              ],
+              "segments": [
+                {
+                  "text": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                  "labels": [
+                    "request"
+                  ],
+                  "primary_label": "request"
+                }
+              ],
+              "compound": false,
+              "mixed_actionable": false,
+              "ambiguity_score": 0.0,
+              "requires_clarification": false,
+              "clarification_prompt": "",
+              "objective_summary": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+              "constraints": [],
+              "context_carried_from_history": false,
+              "conversation_turns_used": 0,
+              "conditional_external_consultation": false
+            },
+            "primary_intent": "general.assistance",
+            "sub_intents": [],
+            "compound_intent": false,
+            "requires_clarification": false,
+            "ambiguity_score": 0.0,
+            "context_carried_from_history": false,
+            "conversational_prompt": true
+          }
+        },
+        "route_decision": {
+          "detected_role": "knowledge",
+          "planner_required": false,
+          "visual_required": false,
+          "tool_chain": [
+            "knowledge_search",
+            "embeddings"
+          ],
+          "reason": "Rol resuelto desde intent general.assistance: Base de conocimiento."
+        },
+        "chosen_pack_id": "knowledge.query",
+        "chosen_pack_title": "Consulta local con contexto",
+        "site_id": "",
+        "site_display_name": "General",
+        "evidence_refs": [
+          "Contexto activo: contexto general."
+        ],
+        "capability_snapshot": [
+          {
+            "capability_id": "assistant.local.chat",
+            "title": "Chat adaptativo local",
+            "status": "ready",
+            "score": 0.9,
+            "site_id": null,
+            "evidence": [
+              "La capacidad depende principalmente del stack local y del contexto ya disponible."
+            ],
+            "missing_signals": [],
+            "last_episode_id": null,
+            "suggested_next_step": "Seguir con la estrategia propuesta.",
+            "metadata": {}
+          }
+        ],
+        "live_audit": {},
+        "assistant_guidance": {
+          "mode": "need_adapter",
+          "title": "Falta adaptador operativo",
+          "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+          "actions": [
+            {
+              "action": "consult_codex",
+              "label": "Consultar Codex",
+              "detail": "Contrastar el siguiente cambio tecnico con evidencia verificable."
+            },
+            {
+              "action": "simulate",
+              "label": "Simular",
+              "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+            },
+            {
+              "action": "open_evolution_center",
+              "label": "Ver evolutivo",
+              "detail": "Seguir la evidencia y el backlog tecnico."
+            },
+            {
+              "action": "prepare_codex_packet",
+              "label": "Preparar Codex",
+              "detail": "Armar el caso tecnico verificable."
+            }
+          ],
+          "governance": {
+            "autonomy_level": "guarded_research",
+            "should_consult": true,
+            "should_retry": false,
+            "should_replan": false,
+            "research_needed": true,
+            "assistant_kind": "codex",
+            "recommended_action": "consult_codex",
+            "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+            "confidence": 0.74,
+            "approval_required": false,
+            "block_risky_action": false,
+            "require_sandbox": true,
+            "blockers": [],
+            "diagnostic_category": "need_adapter",
+            "decision_source": "autonomy_governance_policy",
+            "external_state_flags": [],
+            "blocked_routes": [],
+            "permission_gates": []
+          }
+        },
+        "goal_context": {
+          "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+          "objective": {},
+          "project": {},
+          "task": {},
+          "subtasks": [],
+          "active_node_id": "",
+          "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+          "priority": 50,
+          "status": "pending",
+          "progress": 0.0,
+          "blocker": "",
+          "confidence": 0.0,
+          "trend": "sin base",
+          "evidence_refs": [],
+          "metadata": {}
+        },
+        "memory_snapshot": {
+          "evidence": {
+            "site_id": "",
+            "site_display_name": "General",
+            "evidence_refs": [
+              "Contexto activo: contexto general."
+            ],
+            "recent_teachings": [],
+            "recent_incidents": [],
+            "recent_dossiers": []
+          },
+          "learning": {
+            "interaction_patterns": [],
+            "knowledge_hits": [],
+            "capabilities": [
+              {
+                "capability_id": "assistant.local.chat",
+                "title": "Chat adaptativo local",
+                "status": "ready",
+                "score": 0.9,
+                "site_id": null,
+                "evidence": [
+                  "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                ],
+                "missing_signals": [],
+                "last_episode_id": null,
+                "suggested_next_step": "Seguir con la estrategia propuesta.",
+                "metadata": {}
+              }
+            ],
+            "experiment_insights": [],
+            "adaptive_learning_summary": {},
+            "learned_patterns": [],
+            "validation_learning_summary": {}
+          },
+          "operational": {
+            "recent_runs": [],
+            "session_readiness": {
+              "site_detected": false,
+              "teaching_matches": 0,
+              "incident_count": 0,
+              "dominant_incident": "",
+              "adaptive_sessions": 0,
+              "recent_sessions": [],
+              "live_audit_action": ""
+            },
+            "live_audit": {}
+          },
+          "objectives": {
+            "goal_context": {
+              "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+              "objective": {},
+              "project": {},
+              "task": {},
+              "subtasks": [],
+              "active_node_id": "",
+              "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+              "priority": 50,
+              "status": "pending",
+              "progress": 0.0,
+              "blocker": "",
+              "confidence": 0.0,
+              "trend": "sin base",
+              "evidence_refs": [],
+              "metadata": {}
+            },
+            "objective": {},
+            "project": {},
+            "task": {},
+            "status": "pending",
+            "progress": 0.0,
+            "confidence": 0.0,
+            "blocker": ""
+          }
+        },
+        "governance": {
+          "autonomy_level": "guarded_research",
+          "should_consult": true,
+          "should_retry": false,
+          "should_replan": false,
+          "research_needed": true,
+          "assistant_kind": "codex",
+          "recommended_action": "consult_codex",
+          "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+          "confidence": 0.74,
+          "approval_required": false,
+          "block_risky_action": false,
+          "require_sandbox": true,
+          "blockers": [],
+          "diagnostic_category": "need_adapter",
+          "decision_source": "autonomy_governance_policy",
+          "external_state_flags": [],
+          "blocked_routes": [],
+          "permission_gates": []
+        },
+        "metadata": {
+          "session_id": "0f4efcb7-df8f-4330-b59e-385ab0ce210b",
+          "intent_key": "general.assistance",
+          "decision_source": "adaptive_task_orchestrator",
+          "decision_stage": "post_governance",
+          "conversational_prompt": true,
+          "external_state_flags": [],
+          "ia_trace_summary": {
+            "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+            "comparison_scope_keys": [
+              "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+              "general"
+            ],
+            "latest_trace_ids": [],
+            "tested_assistants": [],
+            "best_assistant_kind": "",
+            "best_config_signature": "",
+            "blocked_assistants": [],
+            "reusable_trace_ids": [],
+            "winning_trace_ids": [],
+            "losing_trace_ids": []
+          },
+          "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+          "preferred_assistant_kind": "codex",
+          "preferred_config_signature": "",
+          "supporting_trace_ids": [],
+          "adaptive_learning_summary": {},
+          "learned_patterns": [],
+          "validation_learning_summary": {},
+          "environment_id": "",
+          "environment_scan_status": "unavailable",
+          "environment_notifications": [],
+          "environment_risk_signals": [],
+          "world_model_summary": {
+            "focused_window": "",
+            "network_status": "desconocido",
+            "detected_blocks": [],
+            "blocked_routes": [],
+            "permission_gates": [],
+            "active_window_count": 0,
+            "confidence": 0.0,
+            "freshness_ms": 0,
+            "codex_status": {
+              "status": "",
+              "thread_status": "",
+              "messages_status": ""
+            },
+            "chatgpt_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "claude_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "ollama_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "last_updated": "2026-04-19T19:45:52.729247+00:00"
+          },
+          "portable_context_summary": {}
+        }
+      },
+      "goal_context": {
+        "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+        "objective": {},
+        "project": {},
+        "task": {},
+        "subtasks": [],
+        "active_node_id": "",
+        "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+        "priority": 50,
+        "status": "pending",
+        "progress": 0.0,
+        "blocker": "",
+        "confidence": 0.0,
+        "trend": "sin base",
+        "evidence_refs": [],
+        "metadata": {}
+      },
+      "memory_snapshot": {
+        "evidence": {
+          "site_id": "",
+          "site_display_name": "General",
+          "evidence_refs": [
+            "Contexto activo: contexto general."
+          ],
+          "recent_teachings": [],
+          "recent_incidents": [],
+          "recent_dossiers": []
+        },
+        "learning": {
+          "interaction_patterns": [],
+          "knowledge_hits": [],
+          "capabilities": [
+            {
+              "capability_id": "assistant.local.chat",
+              "title": "Chat adaptativo local",
+              "status": "ready",
+              "score": 0.9,
+              "site_id": null,
+              "evidence": [
+                "La capacidad depende principalmente del stack local y del contexto ya disponible."
+              ],
+              "missing_signals": [],
+              "last_episode_id": null,
+              "suggested_next_step": "Seguir con la estrategia propuesta.",
+              "metadata": {}
+            }
+          ],
+          "experiment_insights": [],
+          "adaptive_learning_summary": {},
+          "learned_patterns": [],
+          "validation_learning_summary": {}
+        },
+        "operational": {
+          "recent_runs": [],
+          "session_readiness": {
+            "site_detected": false,
+            "teaching_matches": 0,
+            "incident_count": 0,
+            "dominant_incident": "",
+            "adaptive_sessions": 0,
+            "recent_sessions": [],
+            "live_audit_action": ""
+          },
+          "live_audit": {}
+        },
+        "objectives": {
+          "goal_context": {
+            "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+            "objective": {},
+            "project": {},
+            "task": {},
+            "subtasks": [],
+            "active_node_id": "",
+            "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+            "priority": 50,
+            "status": "pending",
+            "progress": 0.0,
+            "blocker": "",
+            "confidence": 0.0,
+            "trend": "sin base",
+            "evidence_refs": [],
+            "metadata": {}
+          },
+          "objective": {},
+          "project": {},
+          "task": {},
+          "status": "pending",
+          "progress": 0.0,
+          "confidence": 0.0,
+          "blocker": ""
+        }
+      },
+      "live_audit": {},
+      "runtime_signals": [],
+      "session_health": null,
+      "ia_trace": [],
+      "visual_signal": {
+        "source": "",
+        "source_app": "",
+        "capture_available": false,
+        "dom_available": false,
+        "latest_url": "",
+        "latest_title": "",
+        "visible_targets": [],
+        "login_detected": false,
+        "learning_ready": false,
+        "cross_check_status": "",
+        "visual_evidence_refs": [],
+        "visual_snapshot": {},
+        "dom_summary": {},
+        "available_actions": [],
+        "detected_blocks": [],
+        "confidence": 0.0,
+        "unresolved_fields": [
+          "UNRESOLVED:visual_signal_source"
+        ],
+        "metadata": {}
+      },
+      "environment_self_model": {
+        "environment_id": "",
+        "known_environment": false,
+        "scan_status": "unavailable",
+        "hardware_profile": {},
+        "runtime_profile": {},
+        "capability_graph": [],
+        "available_tools": [],
+        "missing_tools": [],
+        "installable_tools": [],
+        "ai_capacity": {},
+        "risk_signals": [],
+        "notifications": [],
+        "last_scan": "2026-04-19T19:45:52.729221Z",
+        "changed_since_last_scan": [],
+        "unresolved_fields": [
+          "UNRESOLVED:environment_self_model"
+        ],
+        "metadata": {}
+      },
+      "world_model": {
+        "snapshot_id": "2935d418-5e2f-49e3-9804-54906c1b92c2",
+        "active_windows": [],
+        "focused_window": null,
+        "tool_live_status": [],
+        "network_status": {
+          "connected": false,
+          "status": "desconocido",
+          "quality": "desconocida",
+          "latency_ms": null,
+          "detail": "",
+          "evidence": [],
+          "metadata": {}
+        },
+        "background_processes": [],
+        "detected_blocks": [],
+        "block_records": [],
+        "permission_gates": [],
+        "observation_sources": [],
+        "inferred_state": {},
+        "confidence": 0.0,
+        "freshness_ms": 0,
+        "last_updated": "2026-04-19T19:45:52.729247Z",
+        "unresolved_fields": [
+          "UNRESOLVED:world_model"
+        ],
+        "metadata": {}
+      },
+      "external_state_flags": [],
+      "unresolved_fields": [
+        "UNRESOLVED:runtime_signals",
+        "UNRESOLVED:session_health",
+        "UNRESOLVED:ia_trace",
+        "UNRESOLVED:visual_signal",
+        "UNRESOLVED:environment_self_model",
+        "UNRESOLVED:world_model"
+      ],
+      "metadata": {
+        "site_id": "",
+        "conversational_prompt": true,
+        "meta_assistant_prompt": false,
+        "conversation_analysis": {
+          "primary_intent": "general.assistance",
+          "sub_intents": [],
+          "candidate_intents": [
+            {
+              "intent_key": "general.assistance",
+              "score": 1.0,
+              "reasons": [
+                "fallback adaptativo"
+              ]
+            }
+          ],
+          "segments": [
+            {
+              "text": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+              "labels": [
+                "request"
+              ],
+              "primary_label": "request"
+            }
+          ],
+          "compound": false,
+          "mixed_actionable": false,
+          "ambiguity_score": 0.0,
+          "requires_clarification": false,
+          "clarification_prompt": "",
+          "objective_summary": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+          "constraints": [],
+          "context_carried_from_history": false,
+          "conversation_turns_used": 0,
+          "conditional_external_consultation": false
+        },
+        "primary_intent": "general.assistance",
+        "sub_intents": [],
+        "ambiguity_score": 0.0,
+        "requires_clarification": false,
+        "compound_intent": false,
+        "constraints": [],
+        "ia_trace_summary": {
+          "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+          "comparison_scope_keys": [
+            "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+            "general"
+          ],
+          "latest_trace_ids": [],
+          "tested_assistants": [],
+          "best_assistant_kind": "",
+          "best_config_signature": "",
+          "blocked_assistants": [],
+          "reusable_trace_ids": [],
+          "winning_trace_ids": [],
+          "losing_trace_ids": []
+        },
+        "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+        "adaptive_learning_summary": {},
+        "learned_patterns": [],
+        "validation_learning_summary": {},
+        "environment_id": "",
+        "environment_scan_status": "unavailable",
+        "environment_notifications": [],
+        "world_model_summary": {
+          "focused_window": "",
+          "network_status": "desconocido",
+          "detected_blocks": [],
+          "blocked_routes": [],
+          "permission_gates": [],
+          "active_window_count": 0,
+          "confidence": 0.0,
+          "freshness_ms": 0,
+          "codex_status": {
+            "status": "",
+            "thread_status": "",
+            "messages_status": ""
+          },
+          "chatgpt_status": {
+            "status": "",
+            "session_status": "",
+            "messages_status": "",
+            "permission_state": "",
+            "probe_status": ""
+          },
+          "claude_status": {
+            "status": "",
+            "session_status": "",
+            "messages_status": "",
+            "permission_state": "",
+            "probe_status": ""
+          },
+          "ollama_status": {
+            "status": "",
+            "session_status": "",
+            "messages_status": "",
+            "permission_state": "",
+            "probe_status": ""
+          },
+          "last_updated": "2026-04-19T19:45:52.729247+00:00"
+        },
+        "portable_context_summary": {},
+        "decision_stage": "post_governance",
+        "assistant_guidance_mode": "need_adapter"
+      }
+    },
+    "etapa2_conversation_analysis": {
+      "ambiguity_score": 0.0,
+      "requires_clarification": false,
+      "sub_intents": [],
+      "risk_level": "low",
+      "compound_intent": false,
+      "semantic_source": "conversation_analysis",
+      "intent_confidence": 0.62
+    },
+    "execution_state": {
+      "state": "adapter_missing",
+      "executor_name": "no_operational_executor",
+      "executor_available": false,
+      "simulation_only": false,
+      "detail": "No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+      "execute_step_present": true
+    },
+    "decision_context": {
+      "decision_context_id": "89755e24-4960-4111-ae6b-f119ceb41350",
+      "user_goal": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+      "intent": {
+        "intent_id": "c190f89f-4c81-48ac-80df-21672c0c6dd5",
+        "disposition": "answer_now",
+        "intent_key": "general.assistance",
+        "title": "Asistencia adaptativa general",
+        "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+        "detected_role": "knowledge",
+        "site_hint": null,
+        "domain_hint": "general",
+        "confidence": 0.62,
+        "sensitive": false,
+        "monetary": false,
+        "multi_step": false,
+        "missing_requirements": [],
+        "reasoning": [
+          "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+        ],
+        "hypotheses": [],
+        "metadata": {
+          "conversation_analysis": {
+            "primary_intent": "general.assistance",
+            "sub_intents": [],
+            "candidate_intents": [
+              {
+                "intent_key": "general.assistance",
+                "score": 1.0,
+                "reasons": [
+                  "fallback adaptativo"
+                ]
+              }
+            ],
+            "segments": [
+              {
+                "text": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+                "labels": [
+                  "request"
+                ],
+                "primary_label": "request"
+              }
+            ],
+            "compound": false,
+            "mixed_actionable": false,
+            "ambiguity_score": 0.0,
+            "requires_clarification": false,
+            "clarification_prompt": "",
+            "objective_summary": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+            "constraints": [],
+            "context_carried_from_history": false,
+            "conversation_turns_used": 0,
+            "conditional_external_consultation": false
+          },
+          "primary_intent": "general.assistance",
+          "sub_intents": [],
+          "compound_intent": false,
+          "requires_clarification": false,
+          "ambiguity_score": 0.0,
+          "context_carried_from_history": false,
+          "conversational_prompt": true
+        }
+      },
+      "route_decision": {
+        "detected_role": "knowledge",
+        "planner_required": false,
+        "visual_required": false,
+        "tool_chain": [
+          "knowledge_search",
+          "embeddings"
+        ],
+        "reason": "Rol resuelto desde intent general.assistance: Base de conocimiento."
+      },
+      "chosen_pack_id": "knowledge.query",
+      "chosen_pack_title": "Consulta local con contexto",
+      "site_id": "",
+      "site_display_name": "General",
+      "evidence_refs": [
+        "Contexto activo: contexto general."
+      ],
+      "capability_snapshot": [
+        {
+          "capability_id": "assistant.local.chat",
+          "title": "Chat adaptativo local",
+          "status": "ready",
+          "score": 0.9,
+          "site_id": null,
+          "evidence": [
+            "La capacidad depende principalmente del stack local y del contexto ya disponible."
+          ],
+          "missing_signals": [],
+          "last_episode_id": null,
+          "suggested_next_step": "Seguir con la estrategia propuesta.",
+          "metadata": {}
+        }
+      ],
+      "live_audit": {},
+      "assistant_guidance": {
+        "mode": "need_adapter",
+        "title": "Falta adaptador operativo",
+        "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+        "actions": [
+          {
+            "action": "consult_codex",
+            "label": "Consultar Codex",
+            "detail": "Contrastar el siguiente cambio tecnico con evidencia verificable."
+          },
+          {
+            "action": "simulate",
+            "label": "Simular",
+            "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+          },
+          {
+            "action": "open_evolution_center",
+            "label": "Ver evolutivo",
+            "detail": "Seguir la evidencia y el backlog tecnico."
+          },
+          {
+            "action": "prepare_codex_packet",
+            "label": "Preparar Codex",
+            "detail": "Armar el caso tecnico verificable."
+          }
+        ],
+        "governance": {
+          "autonomy_level": "guarded_research",
+          "should_consult": true,
+          "should_retry": false,
+          "should_replan": false,
+          "research_needed": true,
+          "assistant_kind": "codex",
+          "recommended_action": "consult_codex",
+          "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+          "confidence": 0.74,
+          "approval_required": false,
+          "block_risky_action": false,
+          "require_sandbox": true,
+          "blockers": [],
+          "diagnostic_category": "need_adapter",
+          "decision_source": "autonomy_governance_policy",
+          "external_state_flags": [],
+          "blocked_routes": [],
+          "permission_gates": []
+        }
+      },
+      "goal_context": {
+        "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+        "objective": {},
+        "project": {},
+        "task": {},
+        "subtasks": [],
+        "active_node_id": "",
+        "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+        "priority": 50,
+        "status": "pending",
+        "progress": 0.0,
+        "blocker": "",
+        "confidence": 0.0,
+        "trend": "sin base",
+        "evidence_refs": [],
+        "metadata": {}
+      },
+      "memory_snapshot": {
+        "evidence": {
+          "site_id": "",
+          "site_display_name": "General",
+          "evidence_refs": [
+            "Contexto activo: contexto general."
+          ],
+          "recent_teachings": [],
+          "recent_incidents": [],
+          "recent_dossiers": []
+        },
+        "learning": {
+          "interaction_patterns": [],
+          "knowledge_hits": [],
+          "capabilities": [
+            {
+              "capability_id": "assistant.local.chat",
+              "title": "Chat adaptativo local",
+              "status": "ready",
+              "score": 0.9,
+              "site_id": null,
+              "evidence": [
+                "La capacidad depende principalmente del stack local y del contexto ya disponible."
+              ],
+              "missing_signals": [],
+              "last_episode_id": null,
+              "suggested_next_step": "Seguir con la estrategia propuesta.",
+              "metadata": {}
+            }
+          ],
+          "experiment_insights": [],
+          "adaptive_learning_summary": {},
+          "learned_patterns": [],
+          "validation_learning_summary": {}
+        },
+        "operational": {
+          "recent_runs": [],
+          "session_readiness": {
+            "site_detected": false,
+            "teaching_matches": 0,
+            "incident_count": 0,
+            "dominant_incident": "",
+            "adaptive_sessions": 0,
+            "recent_sessions": [],
+            "live_audit_action": ""
+          },
+          "live_audit": {}
+        },
+        "objectives": {
+          "goal_context": {
+            "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+            "objective": {},
+            "project": {},
+            "task": {},
+            "subtasks": [],
+            "active_node_id": "",
+            "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+            "priority": 50,
+            "status": "pending",
+            "progress": 0.0,
+            "blocker": "",
+            "confidence": 0.0,
+            "trend": "sin base",
+            "evidence_refs": [],
+            "metadata": {}
+          },
+          "objective": {},
+          "project": {},
+          "task": {},
+          "status": "pending",
+          "progress": 0.0,
+          "confidence": 0.0,
+          "blocker": ""
+        }
+      },
+      "governance": {
+        "autonomy_level": "guarded_research",
+        "should_consult": true,
+        "should_retry": false,
+        "should_replan": false,
+        "research_needed": true,
+        "assistant_kind": "codex",
+        "recommended_action": "consult_codex",
+        "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+        "confidence": 0.74,
+        "approval_required": false,
+        "block_risky_action": false,
+        "require_sandbox": true,
+        "blockers": [],
+        "diagnostic_category": "need_adapter",
+        "decision_source": "autonomy_governance_policy",
+        "external_state_flags": [],
+        "blocked_routes": [],
+        "permission_gates": []
+      },
+      "metadata": {
+        "session_id": "0f4efcb7-df8f-4330-b59e-385ab0ce210b",
+        "intent_key": "general.assistance",
+        "decision_source": "adaptive_task_orchestrator",
+        "decision_stage": "post_governance",
+        "conversational_prompt": true,
+        "external_state_flags": [],
+        "ia_trace_summary": {
+          "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+          "comparison_scope_keys": [
+            "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+            "general"
+          ],
+          "latest_trace_ids": [],
+          "tested_assistants": [],
+          "best_assistant_kind": "",
+          "best_config_signature": "",
+          "blocked_assistants": [],
+          "reusable_trace_ids": [],
+          "winning_trace_ids": [],
+          "losing_trace_ids": []
+        },
+        "comparison_scope_key": "general:explicame-en-dos-frases-cuales-son-las-herramientas-que-el-sistema-tiene",
+        "preferred_assistant_kind": "codex",
+        "preferred_config_signature": "",
+        "supporting_trace_ids": [],
+        "adaptive_learning_summary": {},
+        "learned_patterns": [],
+        "validation_learning_summary": {},
+        "environment_id": "",
+        "environment_scan_status": "unavailable",
+        "environment_notifications": [],
+        "environment_risk_signals": [],
+        "world_model_summary": {
+          "focused_window": "",
+          "network_status": "desconocido",
+          "detected_blocks": [],
+          "blocked_routes": [],
+          "permission_gates": [],
+          "active_window_count": 0,
+          "confidence": 0.0,
+          "freshness_ms": 0,
+          "codex_status": {
+            "status": "",
+            "thread_status": "",
+            "messages_status": ""
+          },
+          "chatgpt_status": {
+            "status": "",
+            "session_status": "",
+            "messages_status": "",
+            "permission_state": "",
+            "probe_status": ""
+          },
+          "claude_status": {
+            "status": "",
+            "session_status": "",
+            "messages_status": "",
+            "permission_state": "",
+            "probe_status": ""
+          },
+          "ollama_status": {
+            "status": "",
+            "session_status": "",
+            "messages_status": "",
+            "permission_state": "",
+            "probe_status": ""
+          },
+          "last_updated": "2026-04-19T19:45:52.729247+00:00"
+        },
+        "portable_context_summary": {}
+      }
+    },
+    "assistant_guidance": {
+      "mode": "need_adapter",
+      "title": "Falta adaptador operativo",
+      "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+      "actions": [
+        {
+          "action": "consult_codex",
+          "label": "Consultar Codex",
+          "detail": "Contrastar el siguiente cambio tecnico con evidencia verificable."
+        },
+        {
+          "action": "simulate",
+          "label": "Simular",
+          "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+        },
+        {
+          "action": "open_evolution_center",
+          "label": "Ver evolutivo",
+          "detail": "Seguir la evidencia y el backlog tecnico."
+        },
+        {
+          "action": "prepare_codex_packet",
+          "label": "Preparar Codex",
+          "detail": "Armar el caso tecnico verificable."
+        }
+      ],
+      "governance": {
+        "autonomy_level": "guarded_research",
+        "should_consult": true,
+        "should_retry": false,
+        "should_replan": false,
+        "research_needed": true,
+        "assistant_kind": "codex",
+        "recommended_action": "consult_codex",
+        "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+        "confidence": 0.74,
+        "approval_required": false,
+        "block_risky_action": false,
+        "require_sandbox": true,
+        "blockers": [],
+        "diagnostic_category": "need_adapter",
+        "decision_source": "autonomy_governance_policy",
+        "external_state_flags": [],
+        "blocked_routes": [],
+        "permission_gates": []
+      }
+    },
+    "governance": {
+      "autonomy_level": "guarded_research",
+      "should_consult": true,
+      "should_retry": false,
+      "should_replan": false,
+      "research_needed": true,
+      "assistant_kind": "codex",
+      "recommended_action": "consult_codex",
+      "reason": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+      "confidence": 0.74,
+      "approval_required": false,
+      "block_risky_action": false,
+      "require_sandbox": true,
+      "blockers": [],
+      "diagnostic_category": "need_adapter",
+      "decision_source": "autonomy_governance_policy",
+      "external_state_flags": [],
+      "blocked_routes": [],
+      "permission_gates": []
+    },
+    "goal_context": {
+      "goal_context_id": "998c2f16-5d16-427e-a872-e32c6d046f23",
+      "objective": {},
+      "project": {},
+      "task": {},
+      "subtasks": [],
+      "active_node_id": "",
+      "active_title": "explicame en dos frases cuales son las herramientas que el sistema tiene registradas",
+      "priority": 50,
+      "status": "pending",
+      "progress": 0.0,
+      "blocker": "",
+      "confidence": 0.0,
+      "trend": "sin base",
+      "evidence_refs": [],
+      "metadata": {}
+    }
+  }
+}

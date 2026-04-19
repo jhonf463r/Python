@@ -1,0 +1,63 @@
+{
+  "pack_id": "tools.sandbox",
+  "title": "Sandbox de herramientas",
+  "domain_kind": "tools",
+  "supported_intents": [
+    "tools.sandbox"
+  ],
+  "required_capabilities": [
+    "tools.local.registry",
+    "tools.local.sandbox"
+  ],
+  "required_context": [
+    "recent_runs"
+  ],
+  "available_algorithms": [
+    {
+      "algorithm_id": "sandbox_probe",
+      "title": "Probe de sandbox",
+      "summary": "Prueba la herramienta local en aislamiento antes de cualquier ejecucion fuera del sandbox.",
+      "parameter_keys": [
+        "tool_id"
+      ],
+      "success_signals": [
+        "sandbox_pass"
+      ],
+      "fallback_signals": [
+        "sandbox_fail",
+        "adapter_missing"
+      ],
+      "notes": ""
+    }
+  ],
+  "parameter_schema": [
+    {
+      "parameter_id": "745b3960-08cf-4cd0-86f9-c61a6500a585",
+      "key": "tool_id",
+      "label": "Herramienta",
+      "description": "ToolCard a validar en sandbox.",
+      "value": null,
+      "default_value": "",
+      "kind": "text",
+      "editable": true,
+      "required": false,
+      "options": []
+    }
+  ],
+  "risk_level": "low",
+  "approval_policy": "never",
+  "execution_templates": [
+    "seleccionar herramienta",
+    "correr sandbox",
+    "registrar validacion"
+  ],
+  "success_signals": [
+    "sandbox_pass"
+  ],
+  "fallback_signals": [
+    "sandbox_fail"
+  ],
+  "metadata": {
+    "updated_at_utc": "2026-04-19T17:39:58.105800+00:00"
+  }
+}

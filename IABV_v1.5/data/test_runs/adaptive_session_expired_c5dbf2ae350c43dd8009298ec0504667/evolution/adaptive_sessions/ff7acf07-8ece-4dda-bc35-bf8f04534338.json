@@ -1,0 +1,4284 @@
+{
+  "session_id": "ff7acf07-8ece-4dda-bc35-bf8f04534338",
+  "created_at_utc": "2026-04-19T19:45:16.085985Z",
+  "updated_at_utc": "2026-04-19T19:45:16.085987Z",
+  "run_id": null,
+  "user_goal": "analiza este caso tecnico",
+  "intent": {
+    "intent_id": "132f0d81-3bc0-4180-b649-86a12d54deb0",
+    "disposition": "answer_now",
+    "intent_key": "general.assistance",
+    "title": "Asistencia adaptativa general",
+    "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+    "detected_role": "knowledge",
+    "site_hint": null,
+    "domain_hint": "general",
+    "confidence": 0.62,
+    "sensitive": false,
+    "monetary": false,
+    "multi_step": false,
+    "missing_requirements": [],
+    "reasoning": [
+      "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+    ],
+    "hypotheses": [],
+    "metadata": {
+      "conversation_analysis": {
+        "primary_intent": "general.assistance",
+        "sub_intents": [],
+        "candidate_intents": [
+          {
+            "intent_key": "general.assistance",
+            "score": 1.0,
+            "reasons": [
+              "fallback adaptativo"
+            ]
+          }
+        ],
+        "segments": [
+          {
+            "text": "analiza este caso tecnico",
+            "labels": [
+              "request",
+              "instruction"
+            ],
+            "primary_label": "request"
+          }
+        ],
+        "compound": false,
+        "mixed_actionable": false,
+        "ambiguity_score": 0.0,
+        "requires_clarification": false,
+        "clarification_prompt": "",
+        "objective_summary": "analiza este caso tecnico",
+        "constraints": [],
+        "context_carried_from_history": false,
+        "conversation_turns_used": 0,
+        "conditional_external_consultation": false
+      },
+      "primary_intent": "general.assistance",
+      "sub_intents": [],
+      "compound_intent": false,
+      "requires_clarification": false,
+      "ambiguity_score": 0.0,
+      "context_carried_from_history": false,
+      "conversational_prompt": true
+    }
+  },
+  "hypotheses": [],
+  "context": {
+    "context_id": "4d31fae4-0c4d-4002-907f-b409ddf26fb7",
+    "site_id": null,
+    "site_display_name": "General",
+    "recent_teachings": [],
+    "recent_runs": [],
+    "recent_incidents": [],
+    "recent_dossiers": [],
+    "knowledge_hits": [],
+    "capability_snapshot": [
+      {
+        "capability_id": "assistant.local.chat",
+        "title": "Chat adaptativo local",
+        "status": "ready",
+        "score": 0.9,
+        "site_id": null,
+        "evidence": [
+          "La capacidad depende principalmente del stack local y del contexto ya disponible."
+        ],
+        "missing_signals": [],
+        "last_episode_id": null,
+        "suggested_next_step": "Seguir con la estrategia propuesta.",
+        "metadata": {}
+      }
+    ],
+    "interaction_patterns": [],
+    "experiment_insights": [],
+    "session_readiness": {
+      "site_detected": false,
+      "teaching_matches": 0,
+      "incident_count": 0,
+      "dominant_incident": "",
+      "adaptive_sessions": 0,
+      "recent_sessions": [],
+      "live_audit_action": ""
+    },
+    "evidence_summary": [
+      "Contexto activo: contexto general."
+    ],
+    "live_audit": {},
+    "goal_context": {
+      "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+      "objective": {},
+      "project": {},
+      "task": {},
+      "subtasks": [],
+      "active_node_id": "",
+      "active_title": "analiza este caso tecnico",
+      "priority": 50,
+      "status": "pending",
+      "progress": 0.0,
+      "blocker": "",
+      "confidence": 0.0,
+      "trend": "sin base",
+      "evidence_refs": [],
+      "metadata": {}
+    },
+    "metadata": {
+      "policy_notes": "",
+      "known_domains": [],
+      "live_audit": {},
+      "goal_context": {
+        "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+        "objective": {},
+        "project": {},
+        "task": {},
+        "subtasks": [],
+        "active_node_id": "",
+        "active_title": "analiza este caso tecnico",
+        "priority": 50,
+        "status": "pending",
+        "progress": 0.0,
+        "blocker": "",
+        "confidence": 0.0,
+        "trend": "sin base",
+        "evidence_refs": [],
+        "metadata": {}
+      },
+      "adaptive_learning_summary": {},
+      "learned_patterns": [],
+      "validation_learning_summary": {},
+      "decision_context": {
+        "decision_context_id": "c63b89fa-1793-4c97-9302-011ace40938e",
+        "user_goal": "analiza este caso tecnico",
+        "intent": {
+          "intent_id": "132f0d81-3bc0-4180-b649-86a12d54deb0",
+          "disposition": "answer_now",
+          "intent_key": "general.assistance",
+          "title": "Asistencia adaptativa general",
+          "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+          "detected_role": "knowledge",
+          "site_hint": null,
+          "domain_hint": "general",
+          "confidence": 0.62,
+          "sensitive": false,
+          "monetary": false,
+          "multi_step": false,
+          "missing_requirements": [],
+          "reasoning": [
+            "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+          ],
+          "hypotheses": [],
+          "metadata": {
+            "conversation_analysis": {
+              "primary_intent": "general.assistance",
+              "sub_intents": [],
+              "candidate_intents": [
+                {
+                  "intent_key": "general.assistance",
+                  "score": 1.0,
+                  "reasons": [
+                    "fallback adaptativo"
+                  ]
+                }
+              ],
+              "segments": [
+                {
+                  "text": "analiza este caso tecnico",
+                  "labels": [
+                    "request",
+                    "instruction"
+                  ],
+                  "primary_label": "request"
+                }
+              ],
+              "compound": false,
+              "mixed_actionable": false,
+              "ambiguity_score": 0.0,
+              "requires_clarification": false,
+              "clarification_prompt": "",
+              "objective_summary": "analiza este caso tecnico",
+              "constraints": [],
+              "context_carried_from_history": false,
+              "conversation_turns_used": 0,
+              "conditional_external_consultation": false
+            },
+            "primary_intent": "general.assistance",
+            "sub_intents": [],
+            "compound_intent": false,
+            "requires_clarification": false,
+            "ambiguity_score": 0.0,
+            "context_carried_from_history": false,
+            "conversational_prompt": true
+          }
+        },
+        "route_decision": {
+          "detected_role": "knowledge",
+          "planner_required": false,
+          "visual_required": false,
+          "tool_chain": [
+            "knowledge_search",
+            "embeddings"
+          ],
+          "reason": "Rol resuelto desde intent general.assistance: Base de conocimiento."
+        },
+        "chosen_pack_id": "knowledge.query",
+        "chosen_pack_title": "Consulta local con contexto",
+        "site_id": "",
+        "site_display_name": "General",
+        "evidence_refs": [
+          "Contexto activo: contexto general."
+        ],
+        "capability_snapshot": [
+          {
+            "capability_id": "assistant.local.chat",
+            "title": "Chat adaptativo local",
+            "status": "ready",
+            "score": 0.9,
+            "site_id": null,
+            "evidence": [
+              "La capacidad depende principalmente del stack local y del contexto ya disponible."
+            ],
+            "missing_signals": [],
+            "last_episode_id": null,
+            "suggested_next_step": "Seguir con la estrategia propuesta.",
+            "metadata": {}
+          }
+        ],
+        "live_audit": {},
+        "assistant_guidance": {
+          "mode": "need_adapter",
+          "title": "Falta adaptador operativo",
+          "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+          "actions": [
+            {
+              "action": "simulate",
+              "label": "Simular",
+              "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+            },
+            {
+              "action": "open_evolution_center",
+              "label": "Ver evolutivo",
+              "detail": "Seguir la evidencia y el backlog tecnico."
+            },
+            {
+              "action": "prepare_codex_packet",
+              "label": "Preparar Codex",
+              "detail": "Armar el caso tecnico verificable."
+            }
+          ],
+          "governance": {
+            "autonomy_level": "guarded_local",
+            "should_consult": false,
+            "should_retry": false,
+            "should_replan": false,
+            "research_needed": false,
+            "assistant_kind": "",
+            "recommended_action": "continue_local",
+            "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+            "confidence": 0.84,
+            "approval_required": false,
+            "block_risky_action": false,
+            "require_sandbox": false,
+            "blockers": [
+              "La sesion del asistente externo no quedo lista para continuar."
+            ],
+            "diagnostic_category": "need_adapter",
+            "decision_source": "autonomy_governance_policy",
+            "external_state_flags": [
+              "session_expired"
+            ],
+            "blocked_routes": [],
+            "permission_gates": []
+          }
+        },
+        "goal_context": {
+          "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+          "objective": {},
+          "project": {},
+          "task": {},
+          "subtasks": [],
+          "active_node_id": "",
+          "active_title": "analiza este caso tecnico",
+          "priority": 50,
+          "status": "pending",
+          "progress": 0.0,
+          "blocker": "",
+          "confidence": 0.0,
+          "trend": "sin base",
+          "evidence_refs": [],
+          "metadata": {}
+        },
+        "memory_snapshot": {
+          "evidence": {
+            "site_id": "",
+            "site_display_name": "General",
+            "evidence_refs": [
+              "Contexto activo: contexto general."
+            ],
+            "recent_teachings": [],
+            "recent_incidents": [],
+            "recent_dossiers": []
+          },
+          "learning": {
+            "interaction_patterns": [],
+            "knowledge_hits": [],
+            "capabilities": [
+              {
+                "capability_id": "assistant.local.chat",
+                "title": "Chat adaptativo local",
+                "status": "ready",
+                "score": 0.9,
+                "site_id": null,
+                "evidence": [
+                  "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                ],
+                "missing_signals": [],
+                "last_episode_id": null,
+                "suggested_next_step": "Seguir con la estrategia propuesta.",
+                "metadata": {}
+              }
+            ],
+            "experiment_insights": [],
+            "adaptive_learning_summary": {},
+            "learned_patterns": [],
+            "validation_learning_summary": {}
+          },
+          "operational": {
+            "recent_runs": [],
+            "session_readiness": {
+              "site_detected": false,
+              "teaching_matches": 0,
+              "incident_count": 0,
+              "dominant_incident": "",
+              "adaptive_sessions": 0,
+              "recent_sessions": [],
+              "live_audit_action": ""
+            },
+            "live_audit": {}
+          },
+          "objectives": {
+            "goal_context": {
+              "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+              "objective": {},
+              "project": {},
+              "task": {},
+              "subtasks": [],
+              "active_node_id": "",
+              "active_title": "analiza este caso tecnico",
+              "priority": 50,
+              "status": "pending",
+              "progress": 0.0,
+              "blocker": "",
+              "confidence": 0.0,
+              "trend": "sin base",
+              "evidence_refs": [],
+              "metadata": {}
+            },
+            "objective": {},
+            "project": {},
+            "task": {},
+            "status": "pending",
+            "progress": 0.0,
+            "confidence": 0.0,
+            "blocker": ""
+          }
+        },
+        "governance": {
+          "autonomy_level": "guarded_local",
+          "should_consult": false,
+          "should_retry": false,
+          "should_replan": false,
+          "research_needed": false,
+          "assistant_kind": "",
+          "recommended_action": "continue_local",
+          "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+          "confidence": 0.84,
+          "approval_required": false,
+          "block_risky_action": false,
+          "require_sandbox": false,
+          "blockers": [
+            "La sesion del asistente externo no quedo lista para continuar."
+          ],
+          "diagnostic_category": "need_adapter",
+          "decision_source": "autonomy_governance_policy",
+          "external_state_flags": [
+            "session_expired"
+          ],
+          "blocked_routes": [],
+          "permission_gates": []
+        },
+        "metadata": {
+          "session_id": "ff7acf07-8ece-4dda-bc35-bf8f04534338",
+          "intent_key": "general.assistance",
+          "decision_source": "adaptive_task_orchestrator",
+          "decision_stage": "post_governance",
+          "conversational_prompt": true,
+          "external_state_flags": [
+            "session_expired"
+          ],
+          "ia_trace_summary": {
+            "comparison_scope_key": "general:analiza-este-caso-tecnico",
+            "comparison_scope_keys": [
+              "general:analiza-este-caso-tecnico",
+              "general"
+            ],
+            "latest_trace_ids": [],
+            "tested_assistants": [],
+            "best_assistant_kind": "",
+            "best_config_signature": "",
+            "blocked_assistants": [],
+            "reusable_trace_ids": [],
+            "winning_trace_ids": [],
+            "losing_trace_ids": []
+          },
+          "comparison_scope_key": "general:analiza-este-caso-tecnico",
+          "preferred_assistant_kind": "",
+          "preferred_config_signature": "",
+          "supporting_trace_ids": [],
+          "adaptive_learning_summary": {},
+          "learned_patterns": [],
+          "validation_learning_summary": {},
+          "environment_id": "",
+          "environment_scan_status": "unavailable",
+          "environment_notifications": [],
+          "environment_risk_signals": [],
+          "world_model_summary": {
+            "focused_window": "",
+            "network_status": "desconocido",
+            "detected_blocks": [],
+            "blocked_routes": [],
+            "permission_gates": [],
+            "active_window_count": 0,
+            "confidence": 0.0,
+            "freshness_ms": 0,
+            "codex_status": {
+              "status": "",
+              "thread_status": "",
+              "messages_status": ""
+            },
+            "chatgpt_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "claude_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "ollama_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "last_updated": "2026-04-19T19:45:16.081943+00:00"
+          },
+          "portable_context_summary": {}
+        }
+      },
+      "perception_snapshot": {
+        "snapshot_id": "99353846-0f8a-4108-aab0-d66394034e0d",
+        "created_at_utc": "2026-04-19T19:45:16.082059Z",
+        "task_context": {
+          "context_id": "4d31fae4-0c4d-4002-907f-b409ddf26fb7",
+          "site_id": null,
+          "site_display_name": "General",
+          "recent_teachings": [],
+          "recent_runs": [],
+          "recent_incidents": [],
+          "recent_dossiers": [],
+          "knowledge_hits": [],
+          "capability_snapshot": [
+            {
+              "capability_id": "assistant.local.chat",
+              "title": "Chat adaptativo local",
+              "status": "ready",
+              "score": 0.9,
+              "site_id": null,
+              "evidence": [
+                "La capacidad depende principalmente del stack local y del contexto ya disponible."
+              ],
+              "missing_signals": [],
+              "last_episode_id": null,
+              "suggested_next_step": "Seguir con la estrategia propuesta.",
+              "metadata": {}
+            }
+          ],
+          "interaction_patterns": [],
+          "experiment_insights": [],
+          "session_readiness": {
+            "site_detected": false,
+            "teaching_matches": 0,
+            "incident_count": 0,
+            "dominant_incident": "",
+            "adaptive_sessions": 0,
+            "recent_sessions": [],
+            "live_audit_action": ""
+          },
+          "evidence_summary": [
+            "Contexto activo: contexto general."
+          ],
+          "live_audit": {},
+          "goal_context": {
+            "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+            "objective": {},
+            "project": {},
+            "task": {},
+            "subtasks": [],
+            "active_node_id": "",
+            "active_title": "analiza este caso tecnico",
+            "priority": 50,
+            "status": "pending",
+            "progress": 0.0,
+            "blocker": "",
+            "confidence": 0.0,
+            "trend": "sin base",
+            "evidence_refs": [],
+            "metadata": {}
+          },
+          "metadata": {
+            "policy_notes": "",
+            "known_domains": [],
+            "live_audit": {},
+            "goal_context": {
+              "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+              "objective": {},
+              "project": {},
+              "task": {},
+              "subtasks": [],
+              "active_node_id": "",
+              "active_title": "analiza este caso tecnico",
+              "priority": 50,
+              "status": "pending",
+              "progress": 0.0,
+              "blocker": "",
+              "confidence": 0.0,
+              "trend": "sin base",
+              "evidence_refs": [],
+              "metadata": {}
+            },
+            "adaptive_learning_summary": {},
+            "learned_patterns": [],
+            "validation_learning_summary": {},
+            "decision_context": {
+              "decision_context_id": "c63b89fa-1793-4c97-9302-011ace40938e",
+              "user_goal": "analiza este caso tecnico",
+              "intent": {
+                "intent_id": "132f0d81-3bc0-4180-b649-86a12d54deb0",
+                "disposition": "answer_now",
+                "intent_key": "general.assistance",
+                "title": "Asistencia adaptativa general",
+                "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+                "detected_role": "knowledge",
+                "site_hint": null,
+                "domain_hint": "general",
+                "confidence": 0.62,
+                "sensitive": false,
+                "monetary": false,
+                "multi_step": false,
+                "missing_requirements": [],
+                "reasoning": [
+                  "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+                ],
+                "hypotheses": [],
+                "metadata": {
+                  "conversation_analysis": {
+                    "primary_intent": "general.assistance",
+                    "sub_intents": [],
+                    "candidate_intents": [
+                      {
+                        "intent_key": "general.assistance",
+                        "score": 1.0,
+                        "reasons": [
+                          "fallback adaptativo"
+                        ]
+                      }
+                    ],
+                    "segments": [
+                      {
+                        "text": "analiza este caso tecnico",
+                        "labels": [
+                          "request",
+                          "instruction"
+                        ],
+                        "primary_label": "request"
+                      }
+                    ],
+                    "compound": false,
+                    "mixed_actionable": false,
+                    "ambiguity_score": 0.0,
+                    "requires_clarification": false,
+                    "clarification_prompt": "",
+                    "objective_summary": "analiza este caso tecnico",
+                    "constraints": [],
+                    "context_carried_from_history": false,
+                    "conversation_turns_used": 0,
+                    "conditional_external_consultation": false
+                  },
+                  "primary_intent": "general.assistance",
+                  "sub_intents": [],
+                  "compound_intent": false,
+                  "requires_clarification": false,
+                  "ambiguity_score": 0.0,
+                  "context_carried_from_history": false,
+                  "conversational_prompt": true
+                }
+              },
+              "route_decision": {
+                "detected_role": "knowledge",
+                "planner_required": false,
+                "visual_required": false,
+                "tool_chain": [
+                  "knowledge_search",
+                  "embeddings"
+                ],
+                "reason": "Rol resuelto desde intent general.assistance: Base de conocimiento."
+              },
+              "chosen_pack_id": "knowledge.query",
+              "chosen_pack_title": "Consulta local con contexto",
+              "site_id": "",
+              "site_display_name": "General",
+              "evidence_refs": [
+                "Contexto activo: contexto general."
+              ],
+              "capability_snapshot": [
+                {
+                  "capability_id": "assistant.local.chat",
+                  "title": "Chat adaptativo local",
+                  "status": "ready",
+                  "score": 0.9,
+                  "site_id": null,
+                  "evidence": [
+                    "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                  ],
+                  "missing_signals": [],
+                  "last_episode_id": null,
+                  "suggested_next_step": "Seguir con la estrategia propuesta.",
+                  "metadata": {}
+                }
+              ],
+              "live_audit": {},
+              "assistant_guidance": {
+                "mode": "need_adapter",
+                "title": "Falta adaptador operativo",
+                "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+                "actions": [
+                  {
+                    "action": "simulate",
+                    "label": "Simular",
+                    "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+                  },
+                  {
+                    "action": "open_evolution_center",
+                    "label": "Ver evolutivo",
+                    "detail": "Seguir la evidencia y el backlog tecnico."
+                  },
+                  {
+                    "action": "prepare_codex_packet",
+                    "label": "Preparar Codex",
+                    "detail": "Armar el caso tecnico verificable."
+                  }
+                ],
+                "governance": {
+                  "autonomy_level": "guarded_local",
+                  "should_consult": false,
+                  "should_retry": false,
+                  "should_replan": false,
+                  "research_needed": false,
+                  "assistant_kind": "",
+                  "recommended_action": "continue_local",
+                  "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+                  "confidence": 0.84,
+                  "approval_required": false,
+                  "block_risky_action": false,
+                  "require_sandbox": false,
+                  "blockers": [
+                    "La sesion del asistente externo no quedo lista para continuar."
+                  ],
+                  "diagnostic_category": "need_adapter",
+                  "decision_source": "autonomy_governance_policy",
+                  "external_state_flags": [
+                    "session_expired"
+                  ],
+                  "blocked_routes": [],
+                  "permission_gates": []
+                }
+              },
+              "goal_context": {
+                "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+                "objective": {},
+                "project": {},
+                "task": {},
+                "subtasks": [],
+                "active_node_id": "",
+                "active_title": "analiza este caso tecnico",
+                "priority": 50,
+                "status": "pending",
+                "progress": 0.0,
+                "blocker": "",
+                "confidence": 0.0,
+                "trend": "sin base",
+                "evidence_refs": [],
+                "metadata": {}
+              },
+              "memory_snapshot": {
+                "evidence": {
+                  "site_id": "",
+                  "site_display_name": "General",
+                  "evidence_refs": [
+                    "Contexto activo: contexto general."
+                  ],
+                  "recent_teachings": [],
+                  "recent_incidents": [],
+                  "recent_dossiers": []
+                },
+                "learning": {
+                  "interaction_patterns": [],
+                  "knowledge_hits": [],
+                  "capabilities": [
+                    {
+                      "capability_id": "assistant.local.chat",
+                      "title": "Chat adaptativo local",
+                      "status": "ready",
+                      "score": 0.9,
+                      "site_id": null,
+                      "evidence": [
+                        "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                      ],
+                      "missing_signals": [],
+                      "last_episode_id": null,
+                      "suggested_next_step": "Seguir con la estrategia propuesta.",
+                      "metadata": {}
+                    }
+                  ],
+                  "experiment_insights": [],
+                  "adaptive_learning_summary": {},
+                  "learned_patterns": [],
+                  "validation_learning_summary": {}
+                },
+                "operational": {
+                  "recent_runs": [],
+                  "session_readiness": {
+                    "site_detected": false,
+                    "teaching_matches": 0,
+                    "incident_count": 0,
+                    "dominant_incident": "",
+                    "adaptive_sessions": 0,
+                    "recent_sessions": [],
+                    "live_audit_action": ""
+                  },
+                  "live_audit": {}
+                },
+                "objectives": {
+                  "goal_context": {
+                    "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+                    "objective": {},
+                    "project": {},
+                    "task": {},
+                    "subtasks": [],
+                    "active_node_id": "",
+                    "active_title": "analiza este caso tecnico",
+                    "priority": 50,
+                    "status": "pending",
+                    "progress": 0.0,
+                    "blocker": "",
+                    "confidence": 0.0,
+                    "trend": "sin base",
+                    "evidence_refs": [],
+                    "metadata": {}
+                  },
+                  "objective": {},
+                  "project": {},
+                  "task": {},
+                  "status": "pending",
+                  "progress": 0.0,
+                  "confidence": 0.0,
+                  "blocker": ""
+                }
+              },
+              "governance": {
+                "autonomy_level": "guarded_local",
+                "should_consult": false,
+                "should_retry": false,
+                "should_replan": false,
+                "research_needed": false,
+                "assistant_kind": "",
+                "recommended_action": "continue_local",
+                "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+                "confidence": 0.84,
+                "approval_required": false,
+                "block_risky_action": false,
+                "require_sandbox": false,
+                "blockers": [
+                  "La sesion del asistente externo no quedo lista para continuar."
+                ],
+                "diagnostic_category": "need_adapter",
+                "decision_source": "autonomy_governance_policy",
+                "external_state_flags": [
+                  "session_expired"
+                ],
+                "blocked_routes": [],
+                "permission_gates": []
+              },
+              "metadata": {
+                "session_id": "ff7acf07-8ece-4dda-bc35-bf8f04534338",
+                "intent_key": "general.assistance",
+                "decision_source": "adaptive_task_orchestrator",
+                "decision_stage": "post_governance",
+                "conversational_prompt": true,
+                "external_state_flags": [
+                  "session_expired"
+                ],
+                "ia_trace_summary": {
+                  "comparison_scope_key": "general:analiza-este-caso-tecnico",
+                  "comparison_scope_keys": [
+                    "general:analiza-este-caso-tecnico",
+                    "general"
+                  ],
+                  "latest_trace_ids": [],
+                  "tested_assistants": [],
+                  "best_assistant_kind": "",
+                  "best_config_signature": "",
+                  "blocked_assistants": [],
+                  "reusable_trace_ids": [],
+                  "winning_trace_ids": [],
+                  "losing_trace_ids": []
+                },
+                "comparison_scope_key": "general:analiza-este-caso-tecnico",
+                "preferred_assistant_kind": "",
+                "preferred_config_signature": "",
+                "supporting_trace_ids": [],
+                "adaptive_learning_summary": {},
+                "learned_patterns": [],
+                "validation_learning_summary": {},
+                "environment_id": "",
+                "environment_scan_status": "unavailable",
+                "environment_notifications": [],
+                "environment_risk_signals": [],
+                "world_model_summary": {
+                  "focused_window": "",
+                  "network_status": "desconocido",
+                  "detected_blocks": [],
+                  "blocked_routes": [],
+                  "permission_gates": [],
+                  "active_window_count": 0,
+                  "confidence": 0.0,
+                  "freshness_ms": 0,
+                  "codex_status": {
+                    "status": "",
+                    "thread_status": "",
+                    "messages_status": ""
+                  },
+                  "chatgpt_status": {
+                    "status": "",
+                    "session_status": "",
+                    "messages_status": "",
+                    "permission_state": "",
+                    "probe_status": ""
+                  },
+                  "claude_status": {
+                    "status": "",
+                    "session_status": "",
+                    "messages_status": "",
+                    "permission_state": "",
+                    "probe_status": ""
+                  },
+                  "ollama_status": {
+                    "status": "",
+                    "session_status": "",
+                    "messages_status": "",
+                    "permission_state": "",
+                    "probe_status": ""
+                  },
+                  "last_updated": "2026-04-19T19:45:16.081943+00:00"
+                },
+                "portable_context_summary": {}
+              }
+            }
+          }
+        },
+        "decision_context": {
+          "decision_context_id": "c63b89fa-1793-4c97-9302-011ace40938e",
+          "user_goal": "analiza este caso tecnico",
+          "intent": {
+            "intent_id": "132f0d81-3bc0-4180-b649-86a12d54deb0",
+            "disposition": "answer_now",
+            "intent_key": "general.assistance",
+            "title": "Asistencia adaptativa general",
+            "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+            "detected_role": "knowledge",
+            "site_hint": null,
+            "domain_hint": "general",
+            "confidence": 0.62,
+            "sensitive": false,
+            "monetary": false,
+            "multi_step": false,
+            "missing_requirements": [],
+            "reasoning": [
+              "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+            ],
+            "hypotheses": [],
+            "metadata": {
+              "conversation_analysis": {
+                "primary_intent": "general.assistance",
+                "sub_intents": [],
+                "candidate_intents": [
+                  {
+                    "intent_key": "general.assistance",
+                    "score": 1.0,
+                    "reasons": [
+                      "fallback adaptativo"
+                    ]
+                  }
+                ],
+                "segments": [
+                  {
+                    "text": "analiza este caso tecnico",
+                    "labels": [
+                      "request",
+                      "instruction"
+                    ],
+                    "primary_label": "request"
+                  }
+                ],
+                "compound": false,
+                "mixed_actionable": false,
+                "ambiguity_score": 0.0,
+                "requires_clarification": false,
+                "clarification_prompt": "",
+                "objective_summary": "analiza este caso tecnico",
+                "constraints": [],
+                "context_carried_from_history": false,
+                "conversation_turns_used": 0,
+                "conditional_external_consultation": false
+              },
+              "primary_intent": "general.assistance",
+              "sub_intents": [],
+              "compound_intent": false,
+              "requires_clarification": false,
+              "ambiguity_score": 0.0,
+              "context_carried_from_history": false,
+              "conversational_prompt": true
+            }
+          },
+          "route_decision": {
+            "detected_role": "knowledge",
+            "planner_required": false,
+            "visual_required": false,
+            "tool_chain": [
+              "knowledge_search",
+              "embeddings"
+            ],
+            "reason": "Rol resuelto desde intent general.assistance: Base de conocimiento."
+          },
+          "chosen_pack_id": "knowledge.query",
+          "chosen_pack_title": "Consulta local con contexto",
+          "site_id": "",
+          "site_display_name": "General",
+          "evidence_refs": [
+            "Contexto activo: contexto general."
+          ],
+          "capability_snapshot": [
+            {
+              "capability_id": "assistant.local.chat",
+              "title": "Chat adaptativo local",
+              "status": "ready",
+              "score": 0.9,
+              "site_id": null,
+              "evidence": [
+                "La capacidad depende principalmente del stack local y del contexto ya disponible."
+              ],
+              "missing_signals": [],
+              "last_episode_id": null,
+              "suggested_next_step": "Seguir con la estrategia propuesta.",
+              "metadata": {}
+            }
+          ],
+          "live_audit": {},
+          "assistant_guidance": {
+            "mode": "need_adapter",
+            "title": "Falta adaptador operativo",
+            "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+            "actions": [
+              {
+                "action": "simulate",
+                "label": "Simular",
+                "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+              },
+              {
+                "action": "open_evolution_center",
+                "label": "Ver evolutivo",
+                "detail": "Seguir la evidencia y el backlog tecnico."
+              },
+              {
+                "action": "prepare_codex_packet",
+                "label": "Preparar Codex",
+                "detail": "Armar el caso tecnico verificable."
+              }
+            ],
+            "governance": {
+              "autonomy_level": "guarded_local",
+              "should_consult": false,
+              "should_retry": false,
+              "should_replan": false,
+              "research_needed": false,
+              "assistant_kind": "",
+              "recommended_action": "continue_local",
+              "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+              "confidence": 0.84,
+              "approval_required": false,
+              "block_risky_action": false,
+              "require_sandbox": false,
+              "blockers": [
+                "La sesion del asistente externo no quedo lista para continuar."
+              ],
+              "diagnostic_category": "need_adapter",
+              "decision_source": "autonomy_governance_policy",
+              "external_state_flags": [
+                "session_expired"
+              ],
+              "blocked_routes": [],
+              "permission_gates": []
+            }
+          },
+          "goal_context": {
+            "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+            "objective": {},
+            "project": {},
+            "task": {},
+            "subtasks": [],
+            "active_node_id": "",
+            "active_title": "analiza este caso tecnico",
+            "priority": 50,
+            "status": "pending",
+            "progress": 0.0,
+            "blocker": "",
+            "confidence": 0.0,
+            "trend": "sin base",
+            "evidence_refs": [],
+            "metadata": {}
+          },
+          "memory_snapshot": {
+            "evidence": {
+              "site_id": "",
+              "site_display_name": "General",
+              "evidence_refs": [
+                "Contexto activo: contexto general."
+              ],
+              "recent_teachings": [],
+              "recent_incidents": [],
+              "recent_dossiers": []
+            },
+            "learning": {
+              "interaction_patterns": [],
+              "knowledge_hits": [],
+              "capabilities": [
+                {
+                  "capability_id": "assistant.local.chat",
+                  "title": "Chat adaptativo local",
+                  "status": "ready",
+                  "score": 0.9,
+                  "site_id": null,
+                  "evidence": [
+                    "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                  ],
+                  "missing_signals": [],
+                  "last_episode_id": null,
+                  "suggested_next_step": "Seguir con la estrategia propuesta.",
+                  "metadata": {}
+                }
+              ],
+              "experiment_insights": [],
+              "adaptive_learning_summary": {},
+              "learned_patterns": [],
+              "validation_learning_summary": {}
+            },
+            "operational": {
+              "recent_runs": [],
+              "session_readiness": {
+                "site_detected": false,
+                "teaching_matches": 0,
+                "incident_count": 0,
+                "dominant_incident": "",
+                "adaptive_sessions": 0,
+                "recent_sessions": [],
+                "live_audit_action": ""
+              },
+              "live_audit": {}
+            },
+            "objectives": {
+              "goal_context": {
+                "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+                "objective": {},
+                "project": {},
+                "task": {},
+                "subtasks": [],
+                "active_node_id": "",
+                "active_title": "analiza este caso tecnico",
+                "priority": 50,
+                "status": "pending",
+                "progress": 0.0,
+                "blocker": "",
+                "confidence": 0.0,
+                "trend": "sin base",
+                "evidence_refs": [],
+                "metadata": {}
+              },
+              "objective": {},
+              "project": {},
+              "task": {},
+              "status": "pending",
+              "progress": 0.0,
+              "confidence": 0.0,
+              "blocker": ""
+            }
+          },
+          "governance": {
+            "autonomy_level": "guarded_local",
+            "should_consult": false,
+            "should_retry": false,
+            "should_replan": false,
+            "research_needed": false,
+            "assistant_kind": "",
+            "recommended_action": "continue_local",
+            "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+            "confidence": 0.84,
+            "approval_required": false,
+            "block_risky_action": false,
+            "require_sandbox": false,
+            "blockers": [
+              "La sesion del asistente externo no quedo lista para continuar."
+            ],
+            "diagnostic_category": "need_adapter",
+            "decision_source": "autonomy_governance_policy",
+            "external_state_flags": [
+              "session_expired"
+            ],
+            "blocked_routes": [],
+            "permission_gates": []
+          },
+          "metadata": {
+            "session_id": "ff7acf07-8ece-4dda-bc35-bf8f04534338",
+            "intent_key": "general.assistance",
+            "decision_source": "adaptive_task_orchestrator",
+            "decision_stage": "post_governance",
+            "conversational_prompt": true,
+            "external_state_flags": [
+              "session_expired"
+            ],
+            "ia_trace_summary": {
+              "comparison_scope_key": "general:analiza-este-caso-tecnico",
+              "comparison_scope_keys": [
+                "general:analiza-este-caso-tecnico",
+                "general"
+              ],
+              "latest_trace_ids": [],
+              "tested_assistants": [],
+              "best_assistant_kind": "",
+              "best_config_signature": "",
+              "blocked_assistants": [],
+              "reusable_trace_ids": [],
+              "winning_trace_ids": [],
+              "losing_trace_ids": []
+            },
+            "comparison_scope_key": "general:analiza-este-caso-tecnico",
+            "preferred_assistant_kind": "",
+            "preferred_config_signature": "",
+            "supporting_trace_ids": [],
+            "adaptive_learning_summary": {},
+            "learned_patterns": [],
+            "validation_learning_summary": {},
+            "environment_id": "",
+            "environment_scan_status": "unavailable",
+            "environment_notifications": [],
+            "environment_risk_signals": [],
+            "world_model_summary": {
+              "focused_window": "",
+              "network_status": "desconocido",
+              "detected_blocks": [],
+              "blocked_routes": [],
+              "permission_gates": [],
+              "active_window_count": 0,
+              "confidence": 0.0,
+              "freshness_ms": 0,
+              "codex_status": {
+                "status": "",
+                "thread_status": "",
+                "messages_status": ""
+              },
+              "chatgpt_status": {
+                "status": "",
+                "session_status": "",
+                "messages_status": "",
+                "permission_state": "",
+                "probe_status": ""
+              },
+              "claude_status": {
+                "status": "",
+                "session_status": "",
+                "messages_status": "",
+                "permission_state": "",
+                "probe_status": ""
+              },
+              "ollama_status": {
+                "status": "",
+                "session_status": "",
+                "messages_status": "",
+                "permission_state": "",
+                "probe_status": ""
+              },
+              "last_updated": "2026-04-19T19:45:16.081943+00:00"
+            },
+            "portable_context_summary": {}
+          }
+        },
+        "goal_context": {
+          "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+          "objective": {},
+          "project": {},
+          "task": {},
+          "subtasks": [],
+          "active_node_id": "",
+          "active_title": "analiza este caso tecnico",
+          "priority": 50,
+          "status": "pending",
+          "progress": 0.0,
+          "blocker": "",
+          "confidence": 0.0,
+          "trend": "sin base",
+          "evidence_refs": [],
+          "metadata": {}
+        },
+        "memory_snapshot": {
+          "evidence": {
+            "site_id": "",
+            "site_display_name": "General",
+            "evidence_refs": [
+              "Contexto activo: contexto general."
+            ],
+            "recent_teachings": [],
+            "recent_incidents": [],
+            "recent_dossiers": []
+          },
+          "learning": {
+            "interaction_patterns": [],
+            "knowledge_hits": [],
+            "capabilities": [
+              {
+                "capability_id": "assistant.local.chat",
+                "title": "Chat adaptativo local",
+                "status": "ready",
+                "score": 0.9,
+                "site_id": null,
+                "evidence": [
+                  "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                ],
+                "missing_signals": [],
+                "last_episode_id": null,
+                "suggested_next_step": "Seguir con la estrategia propuesta.",
+                "metadata": {}
+              }
+            ],
+            "experiment_insights": [],
+            "adaptive_learning_summary": {},
+            "learned_patterns": [],
+            "validation_learning_summary": {}
+          },
+          "operational": {
+            "recent_runs": [],
+            "session_readiness": {
+              "site_detected": false,
+              "teaching_matches": 0,
+              "incident_count": 0,
+              "dominant_incident": "",
+              "adaptive_sessions": 0,
+              "recent_sessions": [],
+              "live_audit_action": ""
+            },
+            "live_audit": {}
+          },
+          "objectives": {
+            "goal_context": {
+              "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+              "objective": {},
+              "project": {},
+              "task": {},
+              "subtasks": [],
+              "active_node_id": "",
+              "active_title": "analiza este caso tecnico",
+              "priority": 50,
+              "status": "pending",
+              "progress": 0.0,
+              "blocker": "",
+              "confidence": 0.0,
+              "trend": "sin base",
+              "evidence_refs": [],
+              "metadata": {}
+            },
+            "objective": {},
+            "project": {},
+            "task": {},
+            "status": "pending",
+            "progress": 0.0,
+            "confidence": 0.0,
+            "blocker": ""
+          }
+        },
+        "live_audit": {},
+        "runtime_signals": [],
+        "session_health": null,
+        "ia_trace": [],
+        "visual_signal": {
+          "source": "",
+          "source_app": "",
+          "capture_available": false,
+          "dom_available": false,
+          "latest_url": "",
+          "latest_title": "",
+          "visible_targets": [],
+          "login_detected": false,
+          "learning_ready": false,
+          "cross_check_status": "",
+          "visual_evidence_refs": [],
+          "visual_snapshot": {},
+          "dom_summary": {},
+          "available_actions": [],
+          "detected_blocks": [],
+          "confidence": 0.0,
+          "unresolved_fields": [
+            "UNRESOLVED:visual_signal_source"
+          ],
+          "metadata": {}
+        },
+        "environment_self_model": {
+          "environment_id": "",
+          "known_environment": false,
+          "scan_status": "unavailable",
+          "hardware_profile": {},
+          "runtime_profile": {},
+          "capability_graph": [],
+          "available_tools": [],
+          "missing_tools": [],
+          "installable_tools": [],
+          "ai_capacity": {},
+          "risk_signals": [],
+          "notifications": [],
+          "last_scan": "2026-04-19T19:45:16.081919Z",
+          "changed_since_last_scan": [],
+          "unresolved_fields": [
+            "UNRESOLVED:environment_self_model"
+          ],
+          "metadata": {}
+        },
+        "world_model": {
+          "snapshot_id": "5274c7a2-4fa8-45b7-854d-eb75a494cb76",
+          "active_windows": [],
+          "focused_window": null,
+          "tool_live_status": [],
+          "network_status": {
+            "connected": false,
+            "status": "desconocido",
+            "quality": "desconocida",
+            "latency_ms": null,
+            "detail": "",
+            "evidence": [],
+            "metadata": {}
+          },
+          "background_processes": [],
+          "detected_blocks": [],
+          "block_records": [],
+          "permission_gates": [],
+          "observation_sources": [],
+          "inferred_state": {},
+          "confidence": 0.0,
+          "freshness_ms": 0,
+          "last_updated": "2026-04-19T19:45:16.081943Z",
+          "unresolved_fields": [
+            "UNRESOLVED:world_model"
+          ],
+          "metadata": {}
+        },
+        "external_state_flags": [
+          "session_expired"
+        ],
+        "unresolved_fields": [
+          "UNRESOLVED:runtime_signals",
+          "UNRESOLVED:session_health",
+          "UNRESOLVED:ia_trace",
+          "UNRESOLVED:visual_signal",
+          "UNRESOLVED:environment_self_model",
+          "UNRESOLVED:world_model"
+        ],
+        "metadata": {
+          "site_id": "",
+          "conversational_prompt": true,
+          "meta_assistant_prompt": false,
+          "conversation_analysis": {
+            "primary_intent": "general.assistance",
+            "sub_intents": [],
+            "candidate_intents": [
+              {
+                "intent_key": "general.assistance",
+                "score": 1.0,
+                "reasons": [
+                  "fallback adaptativo"
+                ]
+              }
+            ],
+            "segments": [
+              {
+                "text": "analiza este caso tecnico",
+                "labels": [
+                  "request",
+                  "instruction"
+                ],
+                "primary_label": "request"
+              }
+            ],
+            "compound": false,
+            "mixed_actionable": false,
+            "ambiguity_score": 0.0,
+            "requires_clarification": false,
+            "clarification_prompt": "",
+            "objective_summary": "analiza este caso tecnico",
+            "constraints": [],
+            "context_carried_from_history": false,
+            "conversation_turns_used": 0,
+            "conditional_external_consultation": false
+          },
+          "primary_intent": "general.assistance",
+          "sub_intents": [],
+          "ambiguity_score": 0.0,
+          "requires_clarification": false,
+          "compound_intent": false,
+          "constraints": [],
+          "ia_trace_summary": {
+            "comparison_scope_key": "general:analiza-este-caso-tecnico",
+            "comparison_scope_keys": [
+              "general:analiza-este-caso-tecnico",
+              "general"
+            ],
+            "latest_trace_ids": [],
+            "tested_assistants": [],
+            "best_assistant_kind": "",
+            "best_config_signature": "",
+            "blocked_assistants": [],
+            "reusable_trace_ids": [],
+            "winning_trace_ids": [],
+            "losing_trace_ids": []
+          },
+          "comparison_scope_key": "general:analiza-este-caso-tecnico",
+          "adaptive_learning_summary": {},
+          "learned_patterns": [],
+          "validation_learning_summary": {},
+          "environment_id": "",
+          "environment_scan_status": "unavailable",
+          "environment_notifications": [],
+          "world_model_summary": {
+            "focused_window": "",
+            "network_status": "desconocido",
+            "detected_blocks": [],
+            "blocked_routes": [],
+            "permission_gates": [],
+            "active_window_count": 0,
+            "confidence": 0.0,
+            "freshness_ms": 0,
+            "codex_status": {
+              "status": "",
+              "thread_status": "",
+              "messages_status": ""
+            },
+            "chatgpt_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "claude_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "ollama_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "last_updated": "2026-04-19T19:45:16.081943+00:00"
+          },
+          "portable_context_summary": {},
+          "decision_stage": "post_governance",
+          "assistant_guidance_mode": "need_adapter"
+        }
+      }
+    }
+  },
+  "chosen_pack_id": "knowledge.query",
+  "chosen_pack_title": "Consulta local con contexto",
+  "status": "completed",
+  "capability_readiness": [
+    {
+      "capability_id": "assistant.local.chat",
+      "title": "Chat adaptativo local",
+      "status": "ready",
+      "score": 0.9,
+      "site_id": null,
+      "evidence": [
+        "La capacidad depende principalmente del stack local y del contexto ya disponible."
+      ],
+      "missing_signals": [],
+      "last_episode_id": null,
+      "suggested_next_step": "Seguir con la estrategia propuesta.",
+      "metadata": {}
+    }
+  ],
+  "strategy_candidates": [
+    {
+      "candidate_id": "ce3fcc3d-22f2-4773-ac6a-a65872430cd6",
+      "pack_id": "knowledge.query",
+      "title": "Respuesta local contextual",
+      "rationale": "Usa memoria local, ejecuciones recientes y evidencia para responder sin preguntas genericas. Capacidades observadas: sin capacidades declaradas.",
+      "algorithm_id": "context_first_answer",
+      "parameters": [],
+      "readiness_status": "ready",
+      "risk_level": "low",
+      "requires_approval": false,
+      "missing_requirements": [],
+      "metadata": {
+        "domain_kind": "knowledge",
+        "site_id": "",
+        "experiment_alignment_score": 0.0
+      }
+    }
+  ],
+  "playbook": {
+    "playbook_id": "d7268f16-e509-47d4-bfcf-de25ad036c9d",
+    "goal": "Asistencia adaptativa general",
+    "pack_id": "knowledge.query",
+    "summary": "Pack Consulta local con contexto. Estrategia propuesta: Respuesta local contextual.",
+    "status": "completed",
+    "steps": [
+      {
+        "step_id": "a74fbac7-29b9-42cc-ba44-0fe5cd27107c",
+        "phase_key": "understand_goal",
+        "title": "Entender objetivo",
+        "description": "Objetivo interpretado: Asistencia adaptativa general.",
+        "status": "success",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": null,
+        "executable": false,
+        "simulation_only": false,
+        "detail": "La intencion ya fue clasificada y contextualizada.",
+        "metadata": {
+          "site_id": "",
+          "intent_key": "general.assistance"
+        }
+      },
+      {
+        "step_id": "6d07c5d2-06ac-4d29-bfd6-fef7b9c31b32",
+        "phase_key": "select_pack",
+        "title": "Seleccionar pack",
+        "description": "Se usa Consulta local con contexto.",
+        "status": "success",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": "knowledge.query",
+        "executable": false,
+        "simulation_only": false,
+        "detail": "Pack elegido: knowledge.query.",
+        "metadata": {
+          "domain_kind": "knowledge",
+          "risk_level": "low"
+        }
+      },
+      {
+        "step_id": "c7c2479b-3b35-4014-918d-1feaa834dc4a",
+        "phase_key": "validate_capabilities",
+        "title": "Validar capacidades",
+        "description": "Se revisa si las ensenanzas y la evidencia soportan la tarea.",
+        "status": "success",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": null,
+        "executable": false,
+        "simulation_only": false,
+        "detail": "Todo listo.",
+        "metadata": {
+          "weakest_capability_id": "",
+          "interaction_pattern_count": 0,
+          "experiment_insight_count": 0
+        }
+      },
+      {
+        "step_id": "037a8517-fd84-4139-a3fd-40c573a3ee5c",
+        "phase_key": "propose_strategy",
+        "title": "Proponer estrategia",
+        "description": "Usa memoria local, ejecuciones recientes y evidencia para responder sin preguntas genericas. Capacidades observadas: sin capacidades declaradas.",
+        "status": "success",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": null,
+        "executable": false,
+        "simulation_only": false,
+        "detail": "Respuesta local contextual",
+        "metadata": {
+          "preferred_route": "",
+          "recommended_tool_id": "",
+          "recommended_execution_scope": "",
+          "experiment_alignment_score": 0.0,
+          "matching_pattern_ids": [],
+          "matching_pattern_count": 0,
+          "live_audit_action": ""
+        }
+      },
+      {
+        "step_id": "a5e1b4aa-c8ff-4afa-b207-b28af4bf50cf",
+        "phase_key": "execute",
+        "title": "Ejecutar fase",
+        "description": "Ejecutar o dejar preparada la siguiente fase operativa.",
+        "status": "partial",
+        "requires_approval": false,
+        "capability_id": "assistant.local.chat",
+        "pack_id": "knowledge.query",
+        "executable": true,
+        "simulation_only": false,
+        "detail": "No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+        "metadata": {
+          "preferred_route": "",
+          "recommended_tool_id": "",
+          "recommended_execution_scope": "",
+          "matching_pattern_ids": [],
+          "matching_pattern_count": 0,
+          "execution_state": {
+            "state": "adapter_missing",
+            "executor_name": "no_operational_executor",
+            "executor_available": false,
+            "simulation_only": false,
+            "detail": "No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+            "execute_step_present": true
+          }
+        }
+      },
+      {
+        "step_id": "79764e98-4bb6-47e2-b427-e421d5ec6285",
+        "phase_key": "verify",
+        "title": "Verificar resultado",
+        "description": "Confirmar senales de exito, incidentes y evidencia.",
+        "status": "partial",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": null,
+        "executable": false,
+        "simulation_only": false,
+        "detail": "Se ejecuta despues de la fase operativa.",
+        "metadata": {
+          "preferred_route": "",
+          "matching_pattern_ids": []
+        }
+      },
+      {
+        "step_id": "5cf50f61-7143-447c-8f99-1cecf54320e8",
+        "phase_key": "record_outcome",
+        "title": "Registrar outcome",
+        "description": "Persistir resultado, evidencia y siguiente accion.",
+        "status": "partial",
+        "requires_approval": false,
+        "capability_id": null,
+        "pack_id": null,
+        "executable": false,
+        "simulation_only": false,
+        "detail": "La sesion adaptativa deja traza reutilizable para evolutivo y Codex.",
+        "metadata": {
+          "preferred_route": "",
+          "matching_pattern_ids": [],
+          "experiment_recommendation": {}
+        }
+      }
+    ],
+    "next_phase": "none",
+    "requires_approval": false,
+    "simulation_only": false,
+    "metadata": {
+      "site_id": "",
+      "pack_title": "Consulta local con contexto",
+      "chosen_algorithm": "context_first_answer",
+      "experiment_recommendation": {},
+      "preferred_route": "",
+      "recommended_tool_id": "",
+      "recommended_execution_scope": "",
+      "interaction_pattern_count": 0,
+      "matching_pattern_count": 0,
+      "matching_pattern_ids": [],
+      "live_audit": {}
+    }
+  },
+  "approval_checkpoints": [],
+  "outcome": {
+    "outcome_id": "bed08320-5fd6-4e3f-b099-ca7fb78c68e7",
+    "status": "success",
+    "summary": "Consulta local con contexto. Readiness: Chat adaptativo local: ready. Ejecucion: No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+    "next_actions": [
+      "Simular",
+      "Preparar Codex"
+    ],
+    "evidence_refs": [],
+    "metadata": {
+      "mode": "initial"
+    }
+  },
+  "evidence_refs": [
+    "Contexto activo: contexto general."
+  ],
+  "scenario_id": "",
+  "scenario_mode": null,
+  "probe_diagnosis": null,
+  "runtime_adjustments": [],
+  "pending_issue_id": null,
+  "metadata": {
+    "approval_mode": "phased",
+    "execution_scope": "operational",
+    "goal_parameters": {
+      "objective_id": "",
+      "objective_title": "analiza este caso tecnico",
+      "project_id": "",
+      "project_title": "",
+      "task_id": "",
+      "task_title": "",
+      "goal_status": "pending",
+      "goal_progress": 0.0,
+      "goal_confidence": 0.0,
+      "goal_blocker": ""
+    },
+    "perception_snapshot": {
+      "snapshot_id": "99353846-0f8a-4108-aab0-d66394034e0d",
+      "created_at_utc": "2026-04-19T19:45:16.082059Z",
+      "task_context": {
+        "context_id": "4d31fae4-0c4d-4002-907f-b409ddf26fb7",
+        "site_id": null,
+        "site_display_name": "General",
+        "recent_teachings": [],
+        "recent_runs": [],
+        "recent_incidents": [],
+        "recent_dossiers": [],
+        "knowledge_hits": [],
+        "capability_snapshot": [
+          {
+            "capability_id": "assistant.local.chat",
+            "title": "Chat adaptativo local",
+            "status": "ready",
+            "score": 0.9,
+            "site_id": null,
+            "evidence": [
+              "La capacidad depende principalmente del stack local y del contexto ya disponible."
+            ],
+            "missing_signals": [],
+            "last_episode_id": null,
+            "suggested_next_step": "Seguir con la estrategia propuesta.",
+            "metadata": {}
+          }
+        ],
+        "interaction_patterns": [],
+        "experiment_insights": [],
+        "session_readiness": {
+          "site_detected": false,
+          "teaching_matches": 0,
+          "incident_count": 0,
+          "dominant_incident": "",
+          "adaptive_sessions": 0,
+          "recent_sessions": [],
+          "live_audit_action": ""
+        },
+        "evidence_summary": [
+          "Contexto activo: contexto general."
+        ],
+        "live_audit": {},
+        "goal_context": {
+          "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+          "objective": {},
+          "project": {},
+          "task": {},
+          "subtasks": [],
+          "active_node_id": "",
+          "active_title": "analiza este caso tecnico",
+          "priority": 50,
+          "status": "pending",
+          "progress": 0.0,
+          "blocker": "",
+          "confidence": 0.0,
+          "trend": "sin base",
+          "evidence_refs": [],
+          "metadata": {}
+        },
+        "metadata": {
+          "policy_notes": "",
+          "known_domains": [],
+          "live_audit": {},
+          "goal_context": {
+            "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+            "objective": {},
+            "project": {},
+            "task": {},
+            "subtasks": [],
+            "active_node_id": "",
+            "active_title": "analiza este caso tecnico",
+            "priority": 50,
+            "status": "pending",
+            "progress": 0.0,
+            "blocker": "",
+            "confidence": 0.0,
+            "trend": "sin base",
+            "evidence_refs": [],
+            "metadata": {}
+          },
+          "adaptive_learning_summary": {},
+          "learned_patterns": [],
+          "validation_learning_summary": {},
+          "decision_context": {
+            "decision_context_id": "c63b89fa-1793-4c97-9302-011ace40938e",
+            "user_goal": "analiza este caso tecnico",
+            "intent": {
+              "intent_id": "132f0d81-3bc0-4180-b649-86a12d54deb0",
+              "disposition": "answer_now",
+              "intent_key": "general.assistance",
+              "title": "Asistencia adaptativa general",
+              "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+              "detected_role": "knowledge",
+              "site_hint": null,
+              "domain_hint": "general",
+              "confidence": 0.62,
+              "sensitive": false,
+              "monetary": false,
+              "multi_step": false,
+              "missing_requirements": [],
+              "reasoning": [
+                "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+              ],
+              "hypotheses": [],
+              "metadata": {
+                "conversation_analysis": {
+                  "primary_intent": "general.assistance",
+                  "sub_intents": [],
+                  "candidate_intents": [
+                    {
+                      "intent_key": "general.assistance",
+                      "score": 1.0,
+                      "reasons": [
+                        "fallback adaptativo"
+                      ]
+                    }
+                  ],
+                  "segments": [
+                    {
+                      "text": "analiza este caso tecnico",
+                      "labels": [
+                        "request",
+                        "instruction"
+                      ],
+                      "primary_label": "request"
+                    }
+                  ],
+                  "compound": false,
+                  "mixed_actionable": false,
+                  "ambiguity_score": 0.0,
+                  "requires_clarification": false,
+                  "clarification_prompt": "",
+                  "objective_summary": "analiza este caso tecnico",
+                  "constraints": [],
+                  "context_carried_from_history": false,
+                  "conversation_turns_used": 0,
+                  "conditional_external_consultation": false
+                },
+                "primary_intent": "general.assistance",
+                "sub_intents": [],
+                "compound_intent": false,
+                "requires_clarification": false,
+                "ambiguity_score": 0.0,
+                "context_carried_from_history": false,
+                "conversational_prompt": true
+              }
+            },
+            "route_decision": {
+              "detected_role": "knowledge",
+              "planner_required": false,
+              "visual_required": false,
+              "tool_chain": [
+                "knowledge_search",
+                "embeddings"
+              ],
+              "reason": "Rol resuelto desde intent general.assistance: Base de conocimiento."
+            },
+            "chosen_pack_id": "knowledge.query",
+            "chosen_pack_title": "Consulta local con contexto",
+            "site_id": "",
+            "site_display_name": "General",
+            "evidence_refs": [
+              "Contexto activo: contexto general."
+            ],
+            "capability_snapshot": [
+              {
+                "capability_id": "assistant.local.chat",
+                "title": "Chat adaptativo local",
+                "status": "ready",
+                "score": 0.9,
+                "site_id": null,
+                "evidence": [
+                  "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                ],
+                "missing_signals": [],
+                "last_episode_id": null,
+                "suggested_next_step": "Seguir con la estrategia propuesta.",
+                "metadata": {}
+              }
+            ],
+            "live_audit": {},
+            "assistant_guidance": {
+              "mode": "need_adapter",
+              "title": "Falta adaptador operativo",
+              "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+              "actions": [
+                {
+                  "action": "simulate",
+                  "label": "Simular",
+                  "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+                },
+                {
+                  "action": "open_evolution_center",
+                  "label": "Ver evolutivo",
+                  "detail": "Seguir la evidencia y el backlog tecnico."
+                },
+                {
+                  "action": "prepare_codex_packet",
+                  "label": "Preparar Codex",
+                  "detail": "Armar el caso tecnico verificable."
+                }
+              ],
+              "governance": {
+                "autonomy_level": "guarded_local",
+                "should_consult": false,
+                "should_retry": false,
+                "should_replan": false,
+                "research_needed": false,
+                "assistant_kind": "",
+                "recommended_action": "continue_local",
+                "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+                "confidence": 0.84,
+                "approval_required": false,
+                "block_risky_action": false,
+                "require_sandbox": false,
+                "blockers": [
+                  "La sesion del asistente externo no quedo lista para continuar."
+                ],
+                "diagnostic_category": "need_adapter",
+                "decision_source": "autonomy_governance_policy",
+                "external_state_flags": [
+                  "session_expired"
+                ],
+                "blocked_routes": [],
+                "permission_gates": []
+              }
+            },
+            "goal_context": {
+              "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+              "objective": {},
+              "project": {},
+              "task": {},
+              "subtasks": [],
+              "active_node_id": "",
+              "active_title": "analiza este caso tecnico",
+              "priority": 50,
+              "status": "pending",
+              "progress": 0.0,
+              "blocker": "",
+              "confidence": 0.0,
+              "trend": "sin base",
+              "evidence_refs": [],
+              "metadata": {}
+            },
+            "memory_snapshot": {
+              "evidence": {
+                "site_id": "",
+                "site_display_name": "General",
+                "evidence_refs": [
+                  "Contexto activo: contexto general."
+                ],
+                "recent_teachings": [],
+                "recent_incidents": [],
+                "recent_dossiers": []
+              },
+              "learning": {
+                "interaction_patterns": [],
+                "knowledge_hits": [],
+                "capabilities": [
+                  {
+                    "capability_id": "assistant.local.chat",
+                    "title": "Chat adaptativo local",
+                    "status": "ready",
+                    "score": 0.9,
+                    "site_id": null,
+                    "evidence": [
+                      "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                    ],
+                    "missing_signals": [],
+                    "last_episode_id": null,
+                    "suggested_next_step": "Seguir con la estrategia propuesta.",
+                    "metadata": {}
+                  }
+                ],
+                "experiment_insights": [],
+                "adaptive_learning_summary": {},
+                "learned_patterns": [],
+                "validation_learning_summary": {}
+              },
+              "operational": {
+                "recent_runs": [],
+                "session_readiness": {
+                  "site_detected": false,
+                  "teaching_matches": 0,
+                  "incident_count": 0,
+                  "dominant_incident": "",
+                  "adaptive_sessions": 0,
+                  "recent_sessions": [],
+                  "live_audit_action": ""
+                },
+                "live_audit": {}
+              },
+              "objectives": {
+                "goal_context": {
+                  "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+                  "objective": {},
+                  "project": {},
+                  "task": {},
+                  "subtasks": [],
+                  "active_node_id": "",
+                  "active_title": "analiza este caso tecnico",
+                  "priority": 50,
+                  "status": "pending",
+                  "progress": 0.0,
+                  "blocker": "",
+                  "confidence": 0.0,
+                  "trend": "sin base",
+                  "evidence_refs": [],
+                  "metadata": {}
+                },
+                "objective": {},
+                "project": {},
+                "task": {},
+                "status": "pending",
+                "progress": 0.0,
+                "confidence": 0.0,
+                "blocker": ""
+              }
+            },
+            "governance": {
+              "autonomy_level": "guarded_local",
+              "should_consult": false,
+              "should_retry": false,
+              "should_replan": false,
+              "research_needed": false,
+              "assistant_kind": "",
+              "recommended_action": "continue_local",
+              "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+              "confidence": 0.84,
+              "approval_required": false,
+              "block_risky_action": false,
+              "require_sandbox": false,
+              "blockers": [
+                "La sesion del asistente externo no quedo lista para continuar."
+              ],
+              "diagnostic_category": "need_adapter",
+              "decision_source": "autonomy_governance_policy",
+              "external_state_flags": [
+                "session_expired"
+              ],
+              "blocked_routes": [],
+              "permission_gates": []
+            },
+            "metadata": {
+              "session_id": "ff7acf07-8ece-4dda-bc35-bf8f04534338",
+              "intent_key": "general.assistance",
+              "decision_source": "adaptive_task_orchestrator",
+              "decision_stage": "post_governance",
+              "conversational_prompt": true,
+              "external_state_flags": [
+                "session_expired"
+              ],
+              "ia_trace_summary": {
+                "comparison_scope_key": "general:analiza-este-caso-tecnico",
+                "comparison_scope_keys": [
+                  "general:analiza-este-caso-tecnico",
+                  "general"
+                ],
+                "latest_trace_ids": [],
+                "tested_assistants": [],
+                "best_assistant_kind": "",
+                "best_config_signature": "",
+                "blocked_assistants": [],
+                "reusable_trace_ids": [],
+                "winning_trace_ids": [],
+                "losing_trace_ids": []
+              },
+              "comparison_scope_key": "general:analiza-este-caso-tecnico",
+              "preferred_assistant_kind": "",
+              "preferred_config_signature": "",
+              "supporting_trace_ids": [],
+              "adaptive_learning_summary": {},
+              "learned_patterns": [],
+              "validation_learning_summary": {},
+              "environment_id": "",
+              "environment_scan_status": "unavailable",
+              "environment_notifications": [],
+              "environment_risk_signals": [],
+              "world_model_summary": {
+                "focused_window": "",
+                "network_status": "desconocido",
+                "detected_blocks": [],
+                "blocked_routes": [],
+                "permission_gates": [],
+                "active_window_count": 0,
+                "confidence": 0.0,
+                "freshness_ms": 0,
+                "codex_status": {
+                  "status": "",
+                  "thread_status": "",
+                  "messages_status": ""
+                },
+                "chatgpt_status": {
+                  "status": "",
+                  "session_status": "",
+                  "messages_status": "",
+                  "permission_state": "",
+                  "probe_status": ""
+                },
+                "claude_status": {
+                  "status": "",
+                  "session_status": "",
+                  "messages_status": "",
+                  "permission_state": "",
+                  "probe_status": ""
+                },
+                "ollama_status": {
+                  "status": "",
+                  "session_status": "",
+                  "messages_status": "",
+                  "permission_state": "",
+                  "probe_status": ""
+                },
+                "last_updated": "2026-04-19T19:45:16.081943+00:00"
+              },
+              "portable_context_summary": {}
+            }
+          },
+          "perception_snapshot": {
+            "snapshot_id": "99353846-0f8a-4108-aab0-d66394034e0d",
+            "created_at_utc": "2026-04-19T19:45:16.082059Z",
+            "task_context": {
+              "context_id": "4d31fae4-0c4d-4002-907f-b409ddf26fb7",
+              "site_id": null,
+              "site_display_name": "General",
+              "recent_teachings": [],
+              "recent_runs": [],
+              "recent_incidents": [],
+              "recent_dossiers": [],
+              "knowledge_hits": [],
+              "capability_snapshot": [
+                {
+                  "capability_id": "assistant.local.chat",
+                  "title": "Chat adaptativo local",
+                  "status": "ready",
+                  "score": 0.9,
+                  "site_id": null,
+                  "evidence": [
+                    "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                  ],
+                  "missing_signals": [],
+                  "last_episode_id": null,
+                  "suggested_next_step": "Seguir con la estrategia propuesta.",
+                  "metadata": {}
+                }
+              ],
+              "interaction_patterns": [],
+              "experiment_insights": [],
+              "session_readiness": {
+                "site_detected": false,
+                "teaching_matches": 0,
+                "incident_count": 0,
+                "dominant_incident": "",
+                "adaptive_sessions": 0,
+                "recent_sessions": [],
+                "live_audit_action": ""
+              },
+              "evidence_summary": [
+                "Contexto activo: contexto general."
+              ],
+              "live_audit": {},
+              "goal_context": {
+                "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+                "objective": {},
+                "project": {},
+                "task": {},
+                "subtasks": [],
+                "active_node_id": "",
+                "active_title": "analiza este caso tecnico",
+                "priority": 50,
+                "status": "pending",
+                "progress": 0.0,
+                "blocker": "",
+                "confidence": 0.0,
+                "trend": "sin base",
+                "evidence_refs": [],
+                "metadata": {}
+              },
+              "metadata": {
+                "policy_notes": "",
+                "known_domains": [],
+                "live_audit": {},
+                "goal_context": {
+                  "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+                  "objective": {},
+                  "project": {},
+                  "task": {},
+                  "subtasks": [],
+                  "active_node_id": "",
+                  "active_title": "analiza este caso tecnico",
+                  "priority": 50,
+                  "status": "pending",
+                  "progress": 0.0,
+                  "blocker": "",
+                  "confidence": 0.0,
+                  "trend": "sin base",
+                  "evidence_refs": [],
+                  "metadata": {}
+                },
+                "adaptive_learning_summary": {},
+                "learned_patterns": [],
+                "validation_learning_summary": {},
+                "decision_context": {
+                  "decision_context_id": "c63b89fa-1793-4c97-9302-011ace40938e",
+                  "user_goal": "analiza este caso tecnico",
+                  "intent": {
+                    "intent_id": "132f0d81-3bc0-4180-b649-86a12d54deb0",
+                    "disposition": "answer_now",
+                    "intent_key": "general.assistance",
+                    "title": "Asistencia adaptativa general",
+                    "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+                    "detected_role": "knowledge",
+                    "site_hint": null,
+                    "domain_hint": "general",
+                    "confidence": 0.62,
+                    "sensitive": false,
+                    "monetary": false,
+                    "multi_step": false,
+                    "missing_requirements": [],
+                    "reasoning": [
+                      "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+                    ],
+                    "hypotheses": [],
+                    "metadata": {
+                      "conversation_analysis": {
+                        "primary_intent": "general.assistance",
+                        "sub_intents": [],
+                        "candidate_intents": [
+                          {
+                            "intent_key": "general.assistance",
+                            "score": 1.0,
+                            "reasons": [
+                              "fallback adaptativo"
+                            ]
+                          }
+                        ],
+                        "segments": [
+                          {
+                            "text": "analiza este caso tecnico",
+                            "labels": [
+                              "request",
+                              "instruction"
+                            ],
+                            "primary_label": "request"
+                          }
+                        ],
+                        "compound": false,
+                        "mixed_actionable": false,
+                        "ambiguity_score": 0.0,
+                        "requires_clarification": false,
+                        "clarification_prompt": "",
+                        "objective_summary": "analiza este caso tecnico",
+                        "constraints": [],
+                        "context_carried_from_history": false,
+                        "conversation_turns_used": 0,
+                        "conditional_external_consultation": false
+                      },
+                      "primary_intent": "general.assistance",
+                      "sub_intents": [],
+                      "compound_intent": false,
+                      "requires_clarification": false,
+                      "ambiguity_score": 0.0,
+                      "context_carried_from_history": false,
+                      "conversational_prompt": true
+                    }
+                  },
+                  "route_decision": {
+                    "detected_role": "knowledge",
+                    "planner_required": false,
+                    "visual_required": false,
+                    "tool_chain": [
+                      "knowledge_search",
+                      "embeddings"
+                    ],
+                    "reason": "Rol resuelto desde intent general.assistance: Base de conocimiento."
+                  },
+                  "chosen_pack_id": "knowledge.query",
+                  "chosen_pack_title": "Consulta local con contexto",
+                  "site_id": "",
+                  "site_display_name": "General",
+                  "evidence_refs": [
+                    "Contexto activo: contexto general."
+                  ],
+                  "capability_snapshot": [
+                    {
+                      "capability_id": "assistant.local.chat",
+                      "title": "Chat adaptativo local",
+                      "status": "ready",
+                      "score": 0.9,
+                      "site_id": null,
+                      "evidence": [
+                        "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                      ],
+                      "missing_signals": [],
+                      "last_episode_id": null,
+                      "suggested_next_step": "Seguir con la estrategia propuesta.",
+                      "metadata": {}
+                    }
+                  ],
+                  "live_audit": {},
+                  "assistant_guidance": {
+                    "mode": "need_adapter",
+                    "title": "Falta adaptador operativo",
+                    "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+                    "actions": [
+                      {
+                        "action": "simulate",
+                        "label": "Simular",
+                        "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+                      },
+                      {
+                        "action": "open_evolution_center",
+                        "label": "Ver evolutivo",
+                        "detail": "Seguir la evidencia y el backlog tecnico."
+                      },
+                      {
+                        "action": "prepare_codex_packet",
+                        "label": "Preparar Codex",
+                        "detail": "Armar el caso tecnico verificable."
+                      }
+                    ],
+                    "governance": {
+                      "autonomy_level": "guarded_local",
+                      "should_consult": false,
+                      "should_retry": false,
+                      "should_replan": false,
+                      "research_needed": false,
+                      "assistant_kind": "",
+                      "recommended_action": "continue_local",
+                      "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+                      "confidence": 0.84,
+                      "approval_required": false,
+                      "block_risky_action": false,
+                      "require_sandbox": false,
+                      "blockers": [
+                        "La sesion del asistente externo no quedo lista para continuar."
+                      ],
+                      "diagnostic_category": "need_adapter",
+                      "decision_source": "autonomy_governance_policy",
+                      "external_state_flags": [
+                        "session_expired"
+                      ],
+                      "blocked_routes": [],
+                      "permission_gates": []
+                    }
+                  },
+                  "goal_context": {
+                    "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+                    "objective": {},
+                    "project": {},
+                    "task": {},
+                    "subtasks": [],
+                    "active_node_id": "",
+                    "active_title": "analiza este caso tecnico",
+                    "priority": 50,
+                    "status": "pending",
+                    "progress": 0.0,
+                    "blocker": "",
+                    "confidence": 0.0,
+                    "trend": "sin base",
+                    "evidence_refs": [],
+                    "metadata": {}
+                  },
+                  "memory_snapshot": {
+                    "evidence": {
+                      "site_id": "",
+                      "site_display_name": "General",
+                      "evidence_refs": [
+                        "Contexto activo: contexto general."
+                      ],
+                      "recent_teachings": [],
+                      "recent_incidents": [],
+                      "recent_dossiers": []
+                    },
+                    "learning": {
+                      "interaction_patterns": [],
+                      "knowledge_hits": [],
+                      "capabilities": [
+                        {
+                          "capability_id": "assistant.local.chat",
+                          "title": "Chat adaptativo local",
+                          "status": "ready",
+                          "score": 0.9,
+                          "site_id": null,
+                          "evidence": [
+                            "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                          ],
+                          "missing_signals": [],
+                          "last_episode_id": null,
+                          "suggested_next_step": "Seguir con la estrategia propuesta.",
+                          "metadata": {}
+                        }
+                      ],
+                      "experiment_insights": [],
+                      "adaptive_learning_summary": {},
+                      "learned_patterns": [],
+                      "validation_learning_summary": {}
+                    },
+                    "operational": {
+                      "recent_runs": [],
+                      "session_readiness": {
+                        "site_detected": false,
+                        "teaching_matches": 0,
+                        "incident_count": 0,
+                        "dominant_incident": "",
+                        "adaptive_sessions": 0,
+                        "recent_sessions": [],
+                        "live_audit_action": ""
+                      },
+                      "live_audit": {}
+                    },
+                    "objectives": {
+                      "goal_context": {
+                        "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+                        "objective": {},
+                        "project": {},
+                        "task": {},
+                        "subtasks": [],
+                        "active_node_id": "",
+                        "active_title": "analiza este caso tecnico",
+                        "priority": 50,
+                        "status": "pending",
+                        "progress": 0.0,
+                        "blocker": "",
+                        "confidence": 0.0,
+                        "trend": "sin base",
+                        "evidence_refs": [],
+                        "metadata": {}
+                      },
+                      "objective": {},
+                      "project": {},
+                      "task": {},
+                      "status": "pending",
+                      "progress": 0.0,
+                      "confidence": 0.0,
+                      "blocker": ""
+                    }
+                  },
+                  "governance": {
+                    "autonomy_level": "guarded_local",
+                    "should_consult": false,
+                    "should_retry": false,
+                    "should_replan": false,
+                    "research_needed": false,
+                    "assistant_kind": "",
+                    "recommended_action": "continue_local",
+                    "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+                    "confidence": 0.84,
+                    "approval_required": false,
+                    "block_risky_action": false,
+                    "require_sandbox": false,
+                    "blockers": [
+                      "La sesion del asistente externo no quedo lista para continuar."
+                    ],
+                    "diagnostic_category": "need_adapter",
+                    "decision_source": "autonomy_governance_policy",
+                    "external_state_flags": [
+                      "session_expired"
+                    ],
+                    "blocked_routes": [],
+                    "permission_gates": []
+                  },
+                  "metadata": {
+                    "session_id": "ff7acf07-8ece-4dda-bc35-bf8f04534338",
+                    "intent_key": "general.assistance",
+                    "decision_source": "adaptive_task_orchestrator",
+                    "decision_stage": "post_governance",
+                    "conversational_prompt": true,
+                    "external_state_flags": [
+                      "session_expired"
+                    ],
+                    "ia_trace_summary": {
+                      "comparison_scope_key": "general:analiza-este-caso-tecnico",
+                      "comparison_scope_keys": [
+                        "general:analiza-este-caso-tecnico",
+                        "general"
+                      ],
+                      "latest_trace_ids": [],
+                      "tested_assistants": [],
+                      "best_assistant_kind": "",
+                      "best_config_signature": "",
+                      "blocked_assistants": [],
+                      "reusable_trace_ids": [],
+                      "winning_trace_ids": [],
+                      "losing_trace_ids": []
+                    },
+                    "comparison_scope_key": "general:analiza-este-caso-tecnico",
+                    "preferred_assistant_kind": "",
+                    "preferred_config_signature": "",
+                    "supporting_trace_ids": [],
+                    "adaptive_learning_summary": {},
+                    "learned_patterns": [],
+                    "validation_learning_summary": {},
+                    "environment_id": "",
+                    "environment_scan_status": "unavailable",
+                    "environment_notifications": [],
+                    "environment_risk_signals": [],
+                    "world_model_summary": {
+                      "focused_window": "",
+                      "network_status": "desconocido",
+                      "detected_blocks": [],
+                      "blocked_routes": [],
+                      "permission_gates": [],
+                      "active_window_count": 0,
+                      "confidence": 0.0,
+                      "freshness_ms": 0,
+                      "codex_status": {
+                        "status": "",
+                        "thread_status": "",
+                        "messages_status": ""
+                      },
+                      "chatgpt_status": {
+                        "status": "",
+                        "session_status": "",
+                        "messages_status": "",
+                        "permission_state": "",
+                        "probe_status": ""
+                      },
+                      "claude_status": {
+                        "status": "",
+                        "session_status": "",
+                        "messages_status": "",
+                        "permission_state": "",
+                        "probe_status": ""
+                      },
+                      "ollama_status": {
+                        "status": "",
+                        "session_status": "",
+                        "messages_status": "",
+                        "permission_state": "",
+                        "probe_status": ""
+                      },
+                      "last_updated": "2026-04-19T19:45:16.081943+00:00"
+                    },
+                    "portable_context_summary": {}
+                  }
+                }
+              }
+            },
+            "decision_context": {
+              "decision_context_id": "c63b89fa-1793-4c97-9302-011ace40938e",
+              "user_goal": "analiza este caso tecnico",
+              "intent": {
+                "intent_id": "132f0d81-3bc0-4180-b649-86a12d54deb0",
+                "disposition": "answer_now",
+                "intent_key": "general.assistance",
+                "title": "Asistencia adaptativa general",
+                "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+                "detected_role": "knowledge",
+                "site_hint": null,
+                "domain_hint": "general",
+                "confidence": 0.62,
+                "sensitive": false,
+                "monetary": false,
+                "multi_step": false,
+                "missing_requirements": [],
+                "reasoning": [
+                  "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+                ],
+                "hypotheses": [],
+                "metadata": {
+                  "conversation_analysis": {
+                    "primary_intent": "general.assistance",
+                    "sub_intents": [],
+                    "candidate_intents": [
+                      {
+                        "intent_key": "general.assistance",
+                        "score": 1.0,
+                        "reasons": [
+                          "fallback adaptativo"
+                        ]
+                      }
+                    ],
+                    "segments": [
+                      {
+                        "text": "analiza este caso tecnico",
+                        "labels": [
+                          "request",
+                          "instruction"
+                        ],
+                        "primary_label": "request"
+                      }
+                    ],
+                    "compound": false,
+                    "mixed_actionable": false,
+                    "ambiguity_score": 0.0,
+                    "requires_clarification": false,
+                    "clarification_prompt": "",
+                    "objective_summary": "analiza este caso tecnico",
+                    "constraints": [],
+                    "context_carried_from_history": false,
+                    "conversation_turns_used": 0,
+                    "conditional_external_consultation": false
+                  },
+                  "primary_intent": "general.assistance",
+                  "sub_intents": [],
+                  "compound_intent": false,
+                  "requires_clarification": false,
+                  "ambiguity_score": 0.0,
+                  "context_carried_from_history": false,
+                  "conversational_prompt": true
+                }
+              },
+              "route_decision": {
+                "detected_role": "knowledge",
+                "planner_required": false,
+                "visual_required": false,
+                "tool_chain": [
+                  "knowledge_search",
+                  "embeddings"
+                ],
+                "reason": "Rol resuelto desde intent general.assistance: Base de conocimiento."
+              },
+              "chosen_pack_id": "knowledge.query",
+              "chosen_pack_title": "Consulta local con contexto",
+              "site_id": "",
+              "site_display_name": "General",
+              "evidence_refs": [
+                "Contexto activo: contexto general."
+              ],
+              "capability_snapshot": [
+                {
+                  "capability_id": "assistant.local.chat",
+                  "title": "Chat adaptativo local",
+                  "status": "ready",
+                  "score": 0.9,
+                  "site_id": null,
+                  "evidence": [
+                    "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                  ],
+                  "missing_signals": [],
+                  "last_episode_id": null,
+                  "suggested_next_step": "Seguir con la estrategia propuesta.",
+                  "metadata": {}
+                }
+              ],
+              "live_audit": {},
+              "assistant_guidance": {
+                "mode": "need_adapter",
+                "title": "Falta adaptador operativo",
+                "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+                "actions": [
+                  {
+                    "action": "simulate",
+                    "label": "Simular",
+                    "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+                  },
+                  {
+                    "action": "open_evolution_center",
+                    "label": "Ver evolutivo",
+                    "detail": "Seguir la evidencia y el backlog tecnico."
+                  },
+                  {
+                    "action": "prepare_codex_packet",
+                    "label": "Preparar Codex",
+                    "detail": "Armar el caso tecnico verificable."
+                  }
+                ],
+                "governance": {
+                  "autonomy_level": "guarded_local",
+                  "should_consult": false,
+                  "should_retry": false,
+                  "should_replan": false,
+                  "research_needed": false,
+                  "assistant_kind": "",
+                  "recommended_action": "continue_local",
+                  "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+                  "confidence": 0.84,
+                  "approval_required": false,
+                  "block_risky_action": false,
+                  "require_sandbox": false,
+                  "blockers": [
+                    "La sesion del asistente externo no quedo lista para continuar."
+                  ],
+                  "diagnostic_category": "need_adapter",
+                  "decision_source": "autonomy_governance_policy",
+                  "external_state_flags": [
+                    "session_expired"
+                  ],
+                  "blocked_routes": [],
+                  "permission_gates": []
+                }
+              },
+              "goal_context": {
+                "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+                "objective": {},
+                "project": {},
+                "task": {},
+                "subtasks": [],
+                "active_node_id": "",
+                "active_title": "analiza este caso tecnico",
+                "priority": 50,
+                "status": "pending",
+                "progress": 0.0,
+                "blocker": "",
+                "confidence": 0.0,
+                "trend": "sin base",
+                "evidence_refs": [],
+                "metadata": {}
+              },
+              "memory_snapshot": {
+                "evidence": {
+                  "site_id": "",
+                  "site_display_name": "General",
+                  "evidence_refs": [
+                    "Contexto activo: contexto general."
+                  ],
+                  "recent_teachings": [],
+                  "recent_incidents": [],
+                  "recent_dossiers": []
+                },
+                "learning": {
+                  "interaction_patterns": [],
+                  "knowledge_hits": [],
+                  "capabilities": [
+                    {
+                      "capability_id": "assistant.local.chat",
+                      "title": "Chat adaptativo local",
+                      "status": "ready",
+                      "score": 0.9,
+                      "site_id": null,
+                      "evidence": [
+                        "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                      ],
+                      "missing_signals": [],
+                      "last_episode_id": null,
+                      "suggested_next_step": "Seguir con la estrategia propuesta.",
+                      "metadata": {}
+                    }
+                  ],
+                  "experiment_insights": [],
+                  "adaptive_learning_summary": {},
+                  "learned_patterns": [],
+                  "validation_learning_summary": {}
+                },
+                "operational": {
+                  "recent_runs": [],
+                  "session_readiness": {
+                    "site_detected": false,
+                    "teaching_matches": 0,
+                    "incident_count": 0,
+                    "dominant_incident": "",
+                    "adaptive_sessions": 0,
+                    "recent_sessions": [],
+                    "live_audit_action": ""
+                  },
+                  "live_audit": {}
+                },
+                "objectives": {
+                  "goal_context": {
+                    "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+                    "objective": {},
+                    "project": {},
+                    "task": {},
+                    "subtasks": [],
+                    "active_node_id": "",
+                    "active_title": "analiza este caso tecnico",
+                    "priority": 50,
+                    "status": "pending",
+                    "progress": 0.0,
+                    "blocker": "",
+                    "confidence": 0.0,
+                    "trend": "sin base",
+                    "evidence_refs": [],
+                    "metadata": {}
+                  },
+                  "objective": {},
+                  "project": {},
+                  "task": {},
+                  "status": "pending",
+                  "progress": 0.0,
+                  "confidence": 0.0,
+                  "blocker": ""
+                }
+              },
+              "governance": {
+                "autonomy_level": "guarded_local",
+                "should_consult": false,
+                "should_retry": false,
+                "should_replan": false,
+                "research_needed": false,
+                "assistant_kind": "",
+                "recommended_action": "continue_local",
+                "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+                "confidence": 0.84,
+                "approval_required": false,
+                "block_risky_action": false,
+                "require_sandbox": false,
+                "blockers": [
+                  "La sesion del asistente externo no quedo lista para continuar."
+                ],
+                "diagnostic_category": "need_adapter",
+                "decision_source": "autonomy_governance_policy",
+                "external_state_flags": [
+                  "session_expired"
+                ],
+                "blocked_routes": [],
+                "permission_gates": []
+              },
+              "metadata": {
+                "session_id": "ff7acf07-8ece-4dda-bc35-bf8f04534338",
+                "intent_key": "general.assistance",
+                "decision_source": "adaptive_task_orchestrator",
+                "decision_stage": "post_governance",
+                "conversational_prompt": true,
+                "external_state_flags": [
+                  "session_expired"
+                ],
+                "ia_trace_summary": {
+                  "comparison_scope_key": "general:analiza-este-caso-tecnico",
+                  "comparison_scope_keys": [
+                    "general:analiza-este-caso-tecnico",
+                    "general"
+                  ],
+                  "latest_trace_ids": [],
+                  "tested_assistants": [],
+                  "best_assistant_kind": "",
+                  "best_config_signature": "",
+                  "blocked_assistants": [],
+                  "reusable_trace_ids": [],
+                  "winning_trace_ids": [],
+                  "losing_trace_ids": []
+                },
+                "comparison_scope_key": "general:analiza-este-caso-tecnico",
+                "preferred_assistant_kind": "",
+                "preferred_config_signature": "",
+                "supporting_trace_ids": [],
+                "adaptive_learning_summary": {},
+                "learned_patterns": [],
+                "validation_learning_summary": {},
+                "environment_id": "",
+                "environment_scan_status": "unavailable",
+                "environment_notifications": [],
+                "environment_risk_signals": [],
+                "world_model_summary": {
+                  "focused_window": "",
+                  "network_status": "desconocido",
+                  "detected_blocks": [],
+                  "blocked_routes": [],
+                  "permission_gates": [],
+                  "active_window_count": 0,
+                  "confidence": 0.0,
+                  "freshness_ms": 0,
+                  "codex_status": {
+                    "status": "",
+                    "thread_status": "",
+                    "messages_status": ""
+                  },
+                  "chatgpt_status": {
+                    "status": "",
+                    "session_status": "",
+                    "messages_status": "",
+                    "permission_state": "",
+                    "probe_status": ""
+                  },
+                  "claude_status": {
+                    "status": "",
+                    "session_status": "",
+                    "messages_status": "",
+                    "permission_state": "",
+                    "probe_status": ""
+                  },
+                  "ollama_status": {
+                    "status": "",
+                    "session_status": "",
+                    "messages_status": "",
+                    "permission_state": "",
+                    "probe_status": ""
+                  },
+                  "last_updated": "2026-04-19T19:45:16.081943+00:00"
+                },
+                "portable_context_summary": {}
+              }
+            },
+            "goal_context": {
+              "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+              "objective": {},
+              "project": {},
+              "task": {},
+              "subtasks": [],
+              "active_node_id": "",
+              "active_title": "analiza este caso tecnico",
+              "priority": 50,
+              "status": "pending",
+              "progress": 0.0,
+              "blocker": "",
+              "confidence": 0.0,
+              "trend": "sin base",
+              "evidence_refs": [],
+              "metadata": {}
+            },
+            "memory_snapshot": {
+              "evidence": {
+                "site_id": "",
+                "site_display_name": "General",
+                "evidence_refs": [
+                  "Contexto activo: contexto general."
+                ],
+                "recent_teachings": [],
+                "recent_incidents": [],
+                "recent_dossiers": []
+              },
+              "learning": {
+                "interaction_patterns": [],
+                "knowledge_hits": [],
+                "capabilities": [
+                  {
+                    "capability_id": "assistant.local.chat",
+                    "title": "Chat adaptativo local",
+                    "status": "ready",
+                    "score": 0.9,
+                    "site_id": null,
+                    "evidence": [
+                      "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                    ],
+                    "missing_signals": [],
+                    "last_episode_id": null,
+                    "suggested_next_step": "Seguir con la estrategia propuesta.",
+                    "metadata": {}
+                  }
+                ],
+                "experiment_insights": [],
+                "adaptive_learning_summary": {},
+                "learned_patterns": [],
+                "validation_learning_summary": {}
+              },
+              "operational": {
+                "recent_runs": [],
+                "session_readiness": {
+                  "site_detected": false,
+                  "teaching_matches": 0,
+                  "incident_count": 0,
+                  "dominant_incident": "",
+                  "adaptive_sessions": 0,
+                  "recent_sessions": [],
+                  "live_audit_action": ""
+                },
+                "live_audit": {}
+              },
+              "objectives": {
+                "goal_context": {
+                  "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+                  "objective": {},
+                  "project": {},
+                  "task": {},
+                  "subtasks": [],
+                  "active_node_id": "",
+                  "active_title": "analiza este caso tecnico",
+                  "priority": 50,
+                  "status": "pending",
+                  "progress": 0.0,
+                  "blocker": "",
+                  "confidence": 0.0,
+                  "trend": "sin base",
+                  "evidence_refs": [],
+                  "metadata": {}
+                },
+                "objective": {},
+                "project": {},
+                "task": {},
+                "status": "pending",
+                "progress": 0.0,
+                "confidence": 0.0,
+                "blocker": ""
+              }
+            },
+            "live_audit": {},
+            "runtime_signals": [],
+            "session_health": null,
+            "ia_trace": [],
+            "visual_signal": {
+              "source": "",
+              "source_app": "",
+              "capture_available": false,
+              "dom_available": false,
+              "latest_url": "",
+              "latest_title": "",
+              "visible_targets": [],
+              "login_detected": false,
+              "learning_ready": false,
+              "cross_check_status": "",
+              "visual_evidence_refs": [],
+              "visual_snapshot": {},
+              "dom_summary": {},
+              "available_actions": [],
+              "detected_blocks": [],
+              "confidence": 0.0,
+              "unresolved_fields": [
+                "UNRESOLVED:visual_signal_source"
+              ],
+              "metadata": {}
+            },
+            "environment_self_model": {
+              "environment_id": "",
+              "known_environment": false,
+              "scan_status": "unavailable",
+              "hardware_profile": {},
+              "runtime_profile": {},
+              "capability_graph": [],
+              "available_tools": [],
+              "missing_tools": [],
+              "installable_tools": [],
+              "ai_capacity": {},
+              "risk_signals": [],
+              "notifications": [],
+              "last_scan": "2026-04-19T19:45:16.081919Z",
+              "changed_since_last_scan": [],
+              "unresolved_fields": [
+                "UNRESOLVED:environment_self_model"
+              ],
+              "metadata": {}
+            },
+            "world_model": {
+              "snapshot_id": "5274c7a2-4fa8-45b7-854d-eb75a494cb76",
+              "active_windows": [],
+              "focused_window": null,
+              "tool_live_status": [],
+              "network_status": {
+                "connected": false,
+                "status": "desconocido",
+                "quality": "desconocida",
+                "latency_ms": null,
+                "detail": "",
+                "evidence": [],
+                "metadata": {}
+              },
+              "background_processes": [],
+              "detected_blocks": [],
+              "block_records": [],
+              "permission_gates": [],
+              "observation_sources": [],
+              "inferred_state": {},
+              "confidence": 0.0,
+              "freshness_ms": 0,
+              "last_updated": "2026-04-19T19:45:16.081943Z",
+              "unresolved_fields": [
+                "UNRESOLVED:world_model"
+              ],
+              "metadata": {}
+            },
+            "external_state_flags": [
+              "session_expired"
+            ],
+            "unresolved_fields": [
+              "UNRESOLVED:runtime_signals",
+              "UNRESOLVED:session_health",
+              "UNRESOLVED:ia_trace",
+              "UNRESOLVED:visual_signal",
+              "UNRESOLVED:environment_self_model",
+              "UNRESOLVED:world_model"
+            ],
+            "metadata": {
+              "site_id": "",
+              "conversational_prompt": true,
+              "meta_assistant_prompt": false,
+              "conversation_analysis": {
+                "primary_intent": "general.assistance",
+                "sub_intents": [],
+                "candidate_intents": [
+                  {
+                    "intent_key": "general.assistance",
+                    "score": 1.0,
+                    "reasons": [
+                      "fallback adaptativo"
+                    ]
+                  }
+                ],
+                "segments": [
+                  {
+                    "text": "analiza este caso tecnico",
+                    "labels": [
+                      "request",
+                      "instruction"
+                    ],
+                    "primary_label": "request"
+                  }
+                ],
+                "compound": false,
+                "mixed_actionable": false,
+                "ambiguity_score": 0.0,
+                "requires_clarification": false,
+                "clarification_prompt": "",
+                "objective_summary": "analiza este caso tecnico",
+                "constraints": [],
+                "context_carried_from_history": false,
+                "conversation_turns_used": 0,
+                "conditional_external_consultation": false
+              },
+              "primary_intent": "general.assistance",
+              "sub_intents": [],
+              "ambiguity_score": 0.0,
+              "requires_clarification": false,
+              "compound_intent": false,
+              "constraints": [],
+              "ia_trace_summary": {
+                "comparison_scope_key": "general:analiza-este-caso-tecnico",
+                "comparison_scope_keys": [
+                  "general:analiza-este-caso-tecnico",
+                  "general"
+                ],
+                "latest_trace_ids": [],
+                "tested_assistants": [],
+                "best_assistant_kind": "",
+                "best_config_signature": "",
+                "blocked_assistants": [],
+                "reusable_trace_ids": [],
+                "winning_trace_ids": [],
+                "losing_trace_ids": []
+              },
+              "comparison_scope_key": "general:analiza-este-caso-tecnico",
+              "adaptive_learning_summary": {},
+              "learned_patterns": [],
+              "validation_learning_summary": {},
+              "environment_id": "",
+              "environment_scan_status": "unavailable",
+              "environment_notifications": [],
+              "world_model_summary": {
+                "focused_window": "",
+                "network_status": "desconocido",
+                "detected_blocks": [],
+                "blocked_routes": [],
+                "permission_gates": [],
+                "active_window_count": 0,
+                "confidence": 0.0,
+                "freshness_ms": 0,
+                "codex_status": {
+                  "status": "",
+                  "thread_status": "",
+                  "messages_status": ""
+                },
+                "chatgpt_status": {
+                  "status": "",
+                  "session_status": "",
+                  "messages_status": "",
+                  "permission_state": "",
+                  "probe_status": ""
+                },
+                "claude_status": {
+                  "status": "",
+                  "session_status": "",
+                  "messages_status": "",
+                  "permission_state": "",
+                  "probe_status": ""
+                },
+                "ollama_status": {
+                  "status": "",
+                  "session_status": "",
+                  "messages_status": "",
+                  "permission_state": "",
+                  "probe_status": ""
+                },
+                "last_updated": "2026-04-19T19:45:16.081943+00:00"
+              },
+              "portable_context_summary": {},
+              "decision_stage": "post_governance",
+              "assistant_guidance_mode": "need_adapter"
+            }
+          }
+        }
+      },
+      "decision_context": {
+        "decision_context_id": "c63b89fa-1793-4c97-9302-011ace40938e",
+        "user_goal": "analiza este caso tecnico",
+        "intent": {
+          "intent_id": "132f0d81-3bc0-4180-b649-86a12d54deb0",
+          "disposition": "answer_now",
+          "intent_key": "general.assistance",
+          "title": "Asistencia adaptativa general",
+          "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+          "detected_role": "knowledge",
+          "site_hint": null,
+          "domain_hint": "general",
+          "confidence": 0.62,
+          "sensitive": false,
+          "monetary": false,
+          "multi_step": false,
+          "missing_requirements": [],
+          "reasoning": [
+            "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+          ],
+          "hypotheses": [],
+          "metadata": {
+            "conversation_analysis": {
+              "primary_intent": "general.assistance",
+              "sub_intents": [],
+              "candidate_intents": [
+                {
+                  "intent_key": "general.assistance",
+                  "score": 1.0,
+                  "reasons": [
+                    "fallback adaptativo"
+                  ]
+                }
+              ],
+              "segments": [
+                {
+                  "text": "analiza este caso tecnico",
+                  "labels": [
+                    "request",
+                    "instruction"
+                  ],
+                  "primary_label": "request"
+                }
+              ],
+              "compound": false,
+              "mixed_actionable": false,
+              "ambiguity_score": 0.0,
+              "requires_clarification": false,
+              "clarification_prompt": "",
+              "objective_summary": "analiza este caso tecnico",
+              "constraints": [],
+              "context_carried_from_history": false,
+              "conversation_turns_used": 0,
+              "conditional_external_consultation": false
+            },
+            "primary_intent": "general.assistance",
+            "sub_intents": [],
+            "compound_intent": false,
+            "requires_clarification": false,
+            "ambiguity_score": 0.0,
+            "context_carried_from_history": false,
+            "conversational_prompt": true
+          }
+        },
+        "route_decision": {
+          "detected_role": "knowledge",
+          "planner_required": false,
+          "visual_required": false,
+          "tool_chain": [
+            "knowledge_search",
+            "embeddings"
+          ],
+          "reason": "Rol resuelto desde intent general.assistance: Base de conocimiento."
+        },
+        "chosen_pack_id": "knowledge.query",
+        "chosen_pack_title": "Consulta local con contexto",
+        "site_id": "",
+        "site_display_name": "General",
+        "evidence_refs": [
+          "Contexto activo: contexto general."
+        ],
+        "capability_snapshot": [
+          {
+            "capability_id": "assistant.local.chat",
+            "title": "Chat adaptativo local",
+            "status": "ready",
+            "score": 0.9,
+            "site_id": null,
+            "evidence": [
+              "La capacidad depende principalmente del stack local y del contexto ya disponible."
+            ],
+            "missing_signals": [],
+            "last_episode_id": null,
+            "suggested_next_step": "Seguir con la estrategia propuesta.",
+            "metadata": {}
+          }
+        ],
+        "live_audit": {},
+        "assistant_guidance": {
+          "mode": "need_adapter",
+          "title": "Falta adaptador operativo",
+          "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+          "actions": [
+            {
+              "action": "simulate",
+              "label": "Simular",
+              "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+            },
+            {
+              "action": "open_evolution_center",
+              "label": "Ver evolutivo",
+              "detail": "Seguir la evidencia y el backlog tecnico."
+            },
+            {
+              "action": "prepare_codex_packet",
+              "label": "Preparar Codex",
+              "detail": "Armar el caso tecnico verificable."
+            }
+          ],
+          "governance": {
+            "autonomy_level": "guarded_local",
+            "should_consult": false,
+            "should_retry": false,
+            "should_replan": false,
+            "research_needed": false,
+            "assistant_kind": "",
+            "recommended_action": "continue_local",
+            "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+            "confidence": 0.84,
+            "approval_required": false,
+            "block_risky_action": false,
+            "require_sandbox": false,
+            "blockers": [
+              "La sesion del asistente externo no quedo lista para continuar."
+            ],
+            "diagnostic_category": "need_adapter",
+            "decision_source": "autonomy_governance_policy",
+            "external_state_flags": [
+              "session_expired"
+            ],
+            "blocked_routes": [],
+            "permission_gates": []
+          }
+        },
+        "goal_context": {
+          "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+          "objective": {},
+          "project": {},
+          "task": {},
+          "subtasks": [],
+          "active_node_id": "",
+          "active_title": "analiza este caso tecnico",
+          "priority": 50,
+          "status": "pending",
+          "progress": 0.0,
+          "blocker": "",
+          "confidence": 0.0,
+          "trend": "sin base",
+          "evidence_refs": [],
+          "metadata": {}
+        },
+        "memory_snapshot": {
+          "evidence": {
+            "site_id": "",
+            "site_display_name": "General",
+            "evidence_refs": [
+              "Contexto activo: contexto general."
+            ],
+            "recent_teachings": [],
+            "recent_incidents": [],
+            "recent_dossiers": []
+          },
+          "learning": {
+            "interaction_patterns": [],
+            "knowledge_hits": [],
+            "capabilities": [
+              {
+                "capability_id": "assistant.local.chat",
+                "title": "Chat adaptativo local",
+                "status": "ready",
+                "score": 0.9,
+                "site_id": null,
+                "evidence": [
+                  "La capacidad depende principalmente del stack local y del contexto ya disponible."
+                ],
+                "missing_signals": [],
+                "last_episode_id": null,
+                "suggested_next_step": "Seguir con la estrategia propuesta.",
+                "metadata": {}
+              }
+            ],
+            "experiment_insights": [],
+            "adaptive_learning_summary": {},
+            "learned_patterns": [],
+            "validation_learning_summary": {}
+          },
+          "operational": {
+            "recent_runs": [],
+            "session_readiness": {
+              "site_detected": false,
+              "teaching_matches": 0,
+              "incident_count": 0,
+              "dominant_incident": "",
+              "adaptive_sessions": 0,
+              "recent_sessions": [],
+              "live_audit_action": ""
+            },
+            "live_audit": {}
+          },
+          "objectives": {
+            "goal_context": {
+              "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+              "objective": {},
+              "project": {},
+              "task": {},
+              "subtasks": [],
+              "active_node_id": "",
+              "active_title": "analiza este caso tecnico",
+              "priority": 50,
+              "status": "pending",
+              "progress": 0.0,
+              "blocker": "",
+              "confidence": 0.0,
+              "trend": "sin base",
+              "evidence_refs": [],
+              "metadata": {}
+            },
+            "objective": {},
+            "project": {},
+            "task": {},
+            "status": "pending",
+            "progress": 0.0,
+            "confidence": 0.0,
+            "blocker": ""
+          }
+        },
+        "governance": {
+          "autonomy_level": "guarded_local",
+          "should_consult": false,
+          "should_retry": false,
+          "should_replan": false,
+          "research_needed": false,
+          "assistant_kind": "",
+          "recommended_action": "continue_local",
+          "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+          "confidence": 0.84,
+          "approval_required": false,
+          "block_risky_action": false,
+          "require_sandbox": false,
+          "blockers": [
+            "La sesion del asistente externo no quedo lista para continuar."
+          ],
+          "diagnostic_category": "need_adapter",
+          "decision_source": "autonomy_governance_policy",
+          "external_state_flags": [
+            "session_expired"
+          ],
+          "blocked_routes": [],
+          "permission_gates": []
+        },
+        "metadata": {
+          "session_id": "ff7acf07-8ece-4dda-bc35-bf8f04534338",
+          "intent_key": "general.assistance",
+          "decision_source": "adaptive_task_orchestrator",
+          "decision_stage": "post_governance",
+          "conversational_prompt": true,
+          "external_state_flags": [
+            "session_expired"
+          ],
+          "ia_trace_summary": {
+            "comparison_scope_key": "general:analiza-este-caso-tecnico",
+            "comparison_scope_keys": [
+              "general:analiza-este-caso-tecnico",
+              "general"
+            ],
+            "latest_trace_ids": [],
+            "tested_assistants": [],
+            "best_assistant_kind": "",
+            "best_config_signature": "",
+            "blocked_assistants": [],
+            "reusable_trace_ids": [],
+            "winning_trace_ids": [],
+            "losing_trace_ids": []
+          },
+          "comparison_scope_key": "general:analiza-este-caso-tecnico",
+          "preferred_assistant_kind": "",
+          "preferred_config_signature": "",
+          "supporting_trace_ids": [],
+          "adaptive_learning_summary": {},
+          "learned_patterns": [],
+          "validation_learning_summary": {},
+          "environment_id": "",
+          "environment_scan_status": "unavailable",
+          "environment_notifications": [],
+          "environment_risk_signals": [],
+          "world_model_summary": {
+            "focused_window": "",
+            "network_status": "desconocido",
+            "detected_blocks": [],
+            "blocked_routes": [],
+            "permission_gates": [],
+            "active_window_count": 0,
+            "confidence": 0.0,
+            "freshness_ms": 0,
+            "codex_status": {
+              "status": "",
+              "thread_status": "",
+              "messages_status": ""
+            },
+            "chatgpt_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "claude_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "ollama_status": {
+              "status": "",
+              "session_status": "",
+              "messages_status": "",
+              "permission_state": "",
+              "probe_status": ""
+            },
+            "last_updated": "2026-04-19T19:45:16.081943+00:00"
+          },
+          "portable_context_summary": {}
+        }
+      },
+      "goal_context": {
+        "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+        "objective": {},
+        "project": {},
+        "task": {},
+        "subtasks": [],
+        "active_node_id": "",
+        "active_title": "analiza este caso tecnico",
+        "priority": 50,
+        "status": "pending",
+        "progress": 0.0,
+        "blocker": "",
+        "confidence": 0.0,
+        "trend": "sin base",
+        "evidence_refs": [],
+        "metadata": {}
+      },
+      "memory_snapshot": {
+        "evidence": {
+          "site_id": "",
+          "site_display_name": "General",
+          "evidence_refs": [
+            "Contexto activo: contexto general."
+          ],
+          "recent_teachings": [],
+          "recent_incidents": [],
+          "recent_dossiers": []
+        },
+        "learning": {
+          "interaction_patterns": [],
+          "knowledge_hits": [],
+          "capabilities": [
+            {
+              "capability_id": "assistant.local.chat",
+              "title": "Chat adaptativo local",
+              "status": "ready",
+              "score": 0.9,
+              "site_id": null,
+              "evidence": [
+                "La capacidad depende principalmente del stack local y del contexto ya disponible."
+              ],
+              "missing_signals": [],
+              "last_episode_id": null,
+              "suggested_next_step": "Seguir con la estrategia propuesta.",
+              "metadata": {}
+            }
+          ],
+          "experiment_insights": [],
+          "adaptive_learning_summary": {},
+          "learned_patterns": [],
+          "validation_learning_summary": {}
+        },
+        "operational": {
+          "recent_runs": [],
+          "session_readiness": {
+            "site_detected": false,
+            "teaching_matches": 0,
+            "incident_count": 0,
+            "dominant_incident": "",
+            "adaptive_sessions": 0,
+            "recent_sessions": [],
+            "live_audit_action": ""
+          },
+          "live_audit": {}
+        },
+        "objectives": {
+          "goal_context": {
+            "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+            "objective": {},
+            "project": {},
+            "task": {},
+            "subtasks": [],
+            "active_node_id": "",
+            "active_title": "analiza este caso tecnico",
+            "priority": 50,
+            "status": "pending",
+            "progress": 0.0,
+            "blocker": "",
+            "confidence": 0.0,
+            "trend": "sin base",
+            "evidence_refs": [],
+            "metadata": {}
+          },
+          "objective": {},
+          "project": {},
+          "task": {},
+          "status": "pending",
+          "progress": 0.0,
+          "confidence": 0.0,
+          "blocker": ""
+        }
+      },
+      "live_audit": {},
+      "runtime_signals": [],
+      "session_health": null,
+      "ia_trace": [],
+      "visual_signal": {
+        "source": "",
+        "source_app": "",
+        "capture_available": false,
+        "dom_available": false,
+        "latest_url": "",
+        "latest_title": "",
+        "visible_targets": [],
+        "login_detected": false,
+        "learning_ready": false,
+        "cross_check_status": "",
+        "visual_evidence_refs": [],
+        "visual_snapshot": {},
+        "dom_summary": {},
+        "available_actions": [],
+        "detected_blocks": [],
+        "confidence": 0.0,
+        "unresolved_fields": [
+          "UNRESOLVED:visual_signal_source"
+        ],
+        "metadata": {}
+      },
+      "environment_self_model": {
+        "environment_id": "",
+        "known_environment": false,
+        "scan_status": "unavailable",
+        "hardware_profile": {},
+        "runtime_profile": {},
+        "capability_graph": [],
+        "available_tools": [],
+        "missing_tools": [],
+        "installable_tools": [],
+        "ai_capacity": {},
+        "risk_signals": [],
+        "notifications": [],
+        "last_scan": "2026-04-19T19:45:16.081919Z",
+        "changed_since_last_scan": [],
+        "unresolved_fields": [
+          "UNRESOLVED:environment_self_model"
+        ],
+        "metadata": {}
+      },
+      "world_model": {
+        "snapshot_id": "5274c7a2-4fa8-45b7-854d-eb75a494cb76",
+        "active_windows": [],
+        "focused_window": null,
+        "tool_live_status": [],
+        "network_status": {
+          "connected": false,
+          "status": "desconocido",
+          "quality": "desconocida",
+          "latency_ms": null,
+          "detail": "",
+          "evidence": [],
+          "metadata": {}
+        },
+        "background_processes": [],
+        "detected_blocks": [],
+        "block_records": [],
+        "permission_gates": [],
+        "observation_sources": [],
+        "inferred_state": {},
+        "confidence": 0.0,
+        "freshness_ms": 0,
+        "last_updated": "2026-04-19T19:45:16.081943Z",
+        "unresolved_fields": [
+          "UNRESOLVED:world_model"
+        ],
+        "metadata": {}
+      },
+      "external_state_flags": [
+        "session_expired"
+      ],
+      "unresolved_fields": [
+        "UNRESOLVED:runtime_signals",
+        "UNRESOLVED:session_health",
+        "UNRESOLVED:ia_trace",
+        "UNRESOLVED:visual_signal",
+        "UNRESOLVED:environment_self_model",
+        "UNRESOLVED:world_model"
+      ],
+      "metadata": {
+        "site_id": "",
+        "conversational_prompt": true,
+        "meta_assistant_prompt": false,
+        "conversation_analysis": {
+          "primary_intent": "general.assistance",
+          "sub_intents": [],
+          "candidate_intents": [
+            {
+              "intent_key": "general.assistance",
+              "score": 1.0,
+              "reasons": [
+                "fallback adaptativo"
+              ]
+            }
+          ],
+          "segments": [
+            {
+              "text": "analiza este caso tecnico",
+              "labels": [
+                "request",
+                "instruction"
+              ],
+              "primary_label": "request"
+            }
+          ],
+          "compound": false,
+          "mixed_actionable": false,
+          "ambiguity_score": 0.0,
+          "requires_clarification": false,
+          "clarification_prompt": "",
+          "objective_summary": "analiza este caso tecnico",
+          "constraints": [],
+          "context_carried_from_history": false,
+          "conversation_turns_used": 0,
+          "conditional_external_consultation": false
+        },
+        "primary_intent": "general.assistance",
+        "sub_intents": [],
+        "ambiguity_score": 0.0,
+        "requires_clarification": false,
+        "compound_intent": false,
+        "constraints": [],
+        "ia_trace_summary": {
+          "comparison_scope_key": "general:analiza-este-caso-tecnico",
+          "comparison_scope_keys": [
+            "general:analiza-este-caso-tecnico",
+            "general"
+          ],
+          "latest_trace_ids": [],
+          "tested_assistants": [],
+          "best_assistant_kind": "",
+          "best_config_signature": "",
+          "blocked_assistants": [],
+          "reusable_trace_ids": [],
+          "winning_trace_ids": [],
+          "losing_trace_ids": []
+        },
+        "comparison_scope_key": "general:analiza-este-caso-tecnico",
+        "adaptive_learning_summary": {},
+        "learned_patterns": [],
+        "validation_learning_summary": {},
+        "environment_id": "",
+        "environment_scan_status": "unavailable",
+        "environment_notifications": [],
+        "world_model_summary": {
+          "focused_window": "",
+          "network_status": "desconocido",
+          "detected_blocks": [],
+          "blocked_routes": [],
+          "permission_gates": [],
+          "active_window_count": 0,
+          "confidence": 0.0,
+          "freshness_ms": 0,
+          "codex_status": {
+            "status": "",
+            "thread_status": "",
+            "messages_status": ""
+          },
+          "chatgpt_status": {
+            "status": "",
+            "session_status": "",
+            "messages_status": "",
+            "permission_state": "",
+            "probe_status": ""
+          },
+          "claude_status": {
+            "status": "",
+            "session_status": "",
+            "messages_status": "",
+            "permission_state": "",
+            "probe_status": ""
+          },
+          "ollama_status": {
+            "status": "",
+            "session_status": "",
+            "messages_status": "",
+            "permission_state": "",
+            "probe_status": ""
+          },
+          "last_updated": "2026-04-19T19:45:16.081943+00:00"
+        },
+        "portable_context_summary": {},
+        "decision_stage": "post_governance",
+        "assistant_guidance_mode": "need_adapter"
+      }
+    },
+    "etapa2_conversation_analysis": {
+      "ambiguity_score": 0.0,
+      "requires_clarification": false,
+      "sub_intents": [],
+      "risk_level": "low",
+      "compound_intent": false,
+      "semantic_source": "conversation_analysis",
+      "intent_confidence": 0.62
+    },
+    "execution_state": {
+      "state": "adapter_missing",
+      "executor_name": "no_operational_executor",
+      "executor_available": false,
+      "simulation_only": false,
+      "detail": "No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+      "execute_step_present": true
+    },
+    "decision_context": {
+      "decision_context_id": "c63b89fa-1793-4c97-9302-011ace40938e",
+      "user_goal": "analiza este caso tecnico",
+      "intent": {
+        "intent_id": "132f0d81-3bc0-4180-b649-86a12d54deb0",
+        "disposition": "answer_now",
+        "intent_key": "general.assistance",
+        "title": "Asistencia adaptativa general",
+        "summary": "Aterrizar la intencion y responder con el siguiente paso util sin preguntas vagas.",
+        "detected_role": "knowledge",
+        "site_hint": null,
+        "domain_hint": "general",
+        "confidence": 0.62,
+        "sensitive": false,
+        "monetary": false,
+        "multi_step": false,
+        "missing_requirements": [],
+        "reasoning": [
+          "no coincide con un dominio fuerte, se aplica fallback adaptativo"
+        ],
+        "hypotheses": [],
+        "metadata": {
+          "conversation_analysis": {
+            "primary_intent": "general.assistance",
+            "sub_intents": [],
+            "candidate_intents": [
+              {
+                "intent_key": "general.assistance",
+                "score": 1.0,
+                "reasons": [
+                  "fallback adaptativo"
+                ]
+              }
+            ],
+            "segments": [
+              {
+                "text": "analiza este caso tecnico",
+                "labels": [
+                  "request",
+                  "instruction"
+                ],
+                "primary_label": "request"
+              }
+            ],
+            "compound": false,
+            "mixed_actionable": false,
+            "ambiguity_score": 0.0,
+            "requires_clarification": false,
+            "clarification_prompt": "",
+            "objective_summary": "analiza este caso tecnico",
+            "constraints": [],
+            "context_carried_from_history": false,
+            "conversation_turns_used": 0,
+            "conditional_external_consultation": false
+          },
+          "primary_intent": "general.assistance",
+          "sub_intents": [],
+          "compound_intent": false,
+          "requires_clarification": false,
+          "ambiguity_score": 0.0,
+          "context_carried_from_history": false,
+          "conversational_prompt": true
+        }
+      },
+      "route_decision": {
+        "detected_role": "knowledge",
+        "planner_required": false,
+        "visual_required": false,
+        "tool_chain": [
+          "knowledge_search",
+          "embeddings"
+        ],
+        "reason": "Rol resuelto desde intent general.assistance: Base de conocimiento."
+      },
+      "chosen_pack_id": "knowledge.query",
+      "chosen_pack_title": "Consulta local con contexto",
+      "site_id": "",
+      "site_display_name": "General",
+      "evidence_refs": [
+        "Contexto activo: contexto general."
+      ],
+      "capability_snapshot": [
+        {
+          "capability_id": "assistant.local.chat",
+          "title": "Chat adaptativo local",
+          "status": "ready",
+          "score": 0.9,
+          "site_id": null,
+          "evidence": [
+            "La capacidad depende principalmente del stack local y del contexto ya disponible."
+          ],
+          "missing_signals": [],
+          "last_episode_id": null,
+          "suggested_next_step": "Seguir con la estrategia propuesta.",
+          "metadata": {}
+        }
+      ],
+      "live_audit": {},
+      "assistant_guidance": {
+        "mode": "need_adapter",
+        "title": "Falta adaptador operativo",
+        "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+        "actions": [
+          {
+            "action": "simulate",
+            "label": "Simular",
+            "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+          },
+          {
+            "action": "open_evolution_center",
+            "label": "Ver evolutivo",
+            "detail": "Seguir la evidencia y el backlog tecnico."
+          },
+          {
+            "action": "prepare_codex_packet",
+            "label": "Preparar Codex",
+            "detail": "Armar el caso tecnico verificable."
+          }
+        ],
+        "governance": {
+          "autonomy_level": "guarded_local",
+          "should_consult": false,
+          "should_retry": false,
+          "should_replan": false,
+          "research_needed": false,
+          "assistant_kind": "",
+          "recommended_action": "continue_local",
+          "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+          "confidence": 0.84,
+          "approval_required": false,
+          "block_risky_action": false,
+          "require_sandbox": false,
+          "blockers": [
+            "La sesion del asistente externo no quedo lista para continuar."
+          ],
+          "diagnostic_category": "need_adapter",
+          "decision_source": "autonomy_governance_policy",
+          "external_state_flags": [
+            "session_expired"
+          ],
+          "blocked_routes": [],
+          "permission_gates": []
+        }
+      },
+      "goal_context": {
+        "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+        "objective": {},
+        "project": {},
+        "task": {},
+        "subtasks": [],
+        "active_node_id": "",
+        "active_title": "analiza este caso tecnico",
+        "priority": 50,
+        "status": "pending",
+        "progress": 0.0,
+        "blocker": "",
+        "confidence": 0.0,
+        "trend": "sin base",
+        "evidence_refs": [],
+        "metadata": {}
+      },
+      "memory_snapshot": {
+        "evidence": {
+          "site_id": "",
+          "site_display_name": "General",
+          "evidence_refs": [
+            "Contexto activo: contexto general."
+          ],
+          "recent_teachings": [],
+          "recent_incidents": [],
+          "recent_dossiers": []
+        },
+        "learning": {
+          "interaction_patterns": [],
+          "knowledge_hits": [],
+          "capabilities": [
+            {
+              "capability_id": "assistant.local.chat",
+              "title": "Chat adaptativo local",
+              "status": "ready",
+              "score": 0.9,
+              "site_id": null,
+              "evidence": [
+                "La capacidad depende principalmente del stack local y del contexto ya disponible."
+              ],
+              "missing_signals": [],
+              "last_episode_id": null,
+              "suggested_next_step": "Seguir con la estrategia propuesta.",
+              "metadata": {}
+            }
+          ],
+          "experiment_insights": [],
+          "adaptive_learning_summary": {},
+          "learned_patterns": [],
+          "validation_learning_summary": {}
+        },
+        "operational": {
+          "recent_runs": [],
+          "session_readiness": {
+            "site_detected": false,
+            "teaching_matches": 0,
+            "incident_count": 0,
+            "dominant_incident": "",
+            "adaptive_sessions": 0,
+            "recent_sessions": [],
+            "live_audit_action": ""
+          },
+          "live_audit": {}
+        },
+        "objectives": {
+          "goal_context": {
+            "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+            "objective": {},
+            "project": {},
+            "task": {},
+            "subtasks": [],
+            "active_node_id": "",
+            "active_title": "analiza este caso tecnico",
+            "priority": 50,
+            "status": "pending",
+            "progress": 0.0,
+            "blocker": "",
+            "confidence": 0.0,
+            "trend": "sin base",
+            "evidence_refs": [],
+            "metadata": {}
+          },
+          "objective": {},
+          "project": {},
+          "task": {},
+          "status": "pending",
+          "progress": 0.0,
+          "confidence": 0.0,
+          "blocker": ""
+        }
+      },
+      "governance": {
+        "autonomy_level": "guarded_local",
+        "should_consult": false,
+        "should_retry": false,
+        "should_replan": false,
+        "research_needed": false,
+        "assistant_kind": "",
+        "recommended_action": "continue_local",
+        "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+        "confidence": 0.84,
+        "approval_required": false,
+        "block_risky_action": false,
+        "require_sandbox": false,
+        "blockers": [
+          "La sesion del asistente externo no quedo lista para continuar."
+        ],
+        "diagnostic_category": "need_adapter",
+        "decision_source": "autonomy_governance_policy",
+        "external_state_flags": [
+          "session_expired"
+        ],
+        "blocked_routes": [],
+        "permission_gates": []
+      },
+      "metadata": {
+        "session_id": "ff7acf07-8ece-4dda-bc35-bf8f04534338",
+        "intent_key": "general.assistance",
+        "decision_source": "adaptive_task_orchestrator",
+        "decision_stage": "post_governance",
+        "conversational_prompt": true,
+        "external_state_flags": [
+          "session_expired"
+        ],
+        "ia_trace_summary": {
+          "comparison_scope_key": "general:analiza-este-caso-tecnico",
+          "comparison_scope_keys": [
+            "general:analiza-este-caso-tecnico",
+            "general"
+          ],
+          "latest_trace_ids": [],
+          "tested_assistants": [],
+          "best_assistant_kind": "",
+          "best_config_signature": "",
+          "blocked_assistants": [],
+          "reusable_trace_ids": [],
+          "winning_trace_ids": [],
+          "losing_trace_ids": []
+        },
+        "comparison_scope_key": "general:analiza-este-caso-tecnico",
+        "preferred_assistant_kind": "",
+        "preferred_config_signature": "",
+        "supporting_trace_ids": [],
+        "adaptive_learning_summary": {},
+        "learned_patterns": [],
+        "validation_learning_summary": {},
+        "environment_id": "",
+        "environment_scan_status": "unavailable",
+        "environment_notifications": [],
+        "environment_risk_signals": [],
+        "world_model_summary": {
+          "focused_window": "",
+          "network_status": "desconocido",
+          "detected_blocks": [],
+          "blocked_routes": [],
+          "permission_gates": [],
+          "active_window_count": 0,
+          "confidence": 0.0,
+          "freshness_ms": 0,
+          "codex_status": {
+            "status": "",
+            "thread_status": "",
+            "messages_status": ""
+          },
+          "chatgpt_status": {
+            "status": "",
+            "session_status": "",
+            "messages_status": "",
+            "permission_state": "",
+            "probe_status": ""
+          },
+          "claude_status": {
+            "status": "",
+            "session_status": "",
+            "messages_status": "",
+            "permission_state": "",
+            "probe_status": ""
+          },
+          "ollama_status": {
+            "status": "",
+            "session_status": "",
+            "messages_status": "",
+            "permission_state": "",
+            "probe_status": ""
+          },
+          "last_updated": "2026-04-19T19:45:16.081943+00:00"
+        },
+        "portable_context_summary": {}
+      }
+    },
+    "assistant_guidance": {
+      "mode": "need_adapter",
+      "title": "Falta adaptador operativo",
+      "prompt": "Ya tengo estrategia y contexto para General, pero todavia no hay un adaptador operativo real que ejecute esta fase. No hay un adaptador operativo real conectado para Consulta local con contexto. La app puede planificar, simular y diagnosticar, pero todavia no ejecutar ese dominio por si sola.",
+      "actions": [
+        {
+          "action": "simulate",
+          "label": "Simular",
+          "detail": "Revisar la fase disponible antes de conectarla a un ejecutor real."
+        },
+        {
+          "action": "open_evolution_center",
+          "label": "Ver evolutivo",
+          "detail": "Seguir la evidencia y el backlog tecnico."
+        },
+        {
+          "action": "prepare_codex_packet",
+          "label": "Preparar Codex",
+          "detail": "Armar el caso tecnico verificable."
+        }
+      ],
+      "governance": {
+        "autonomy_level": "guarded_local",
+        "should_consult": false,
+        "should_retry": false,
+        "should_replan": false,
+        "research_needed": false,
+        "assistant_kind": "",
+        "recommended_action": "continue_local",
+        "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+        "confidence": 0.84,
+        "approval_required": false,
+        "block_risky_action": false,
+        "require_sandbox": false,
+        "blockers": [
+          "La sesion del asistente externo no quedo lista para continuar."
+        ],
+        "diagnostic_category": "need_adapter",
+        "decision_source": "autonomy_governance_policy",
+        "external_state_flags": [
+          "session_expired"
+        ],
+        "blocked_routes": [],
+        "permission_gates": []
+      }
+    },
+    "governance": {
+      "autonomy_level": "guarded_local",
+      "should_consult": false,
+      "should_retry": false,
+      "should_replan": false,
+      "research_needed": false,
+      "assistant_kind": "",
+      "recommended_action": "continue_local",
+      "reason": "La sesion externa no quedo lista para seguir. IABV debe informar el bloqueo y continuar por la mejor via local mientras la sesion se recupera.",
+      "confidence": 0.84,
+      "approval_required": false,
+      "block_risky_action": false,
+      "require_sandbox": false,
+      "blockers": [
+        "La sesion del asistente externo no quedo lista para continuar."
+      ],
+      "diagnostic_category": "need_adapter",
+      "decision_source": "autonomy_governance_policy",
+      "external_state_flags": [
+        "session_expired"
+      ],
+      "blocked_routes": [],
+      "permission_gates": []
+    },
+    "goal_context": {
+      "goal_context_id": "814ecd4a-5fa0-41ef-906f-46f0456a7ba6",
+      "objective": {},
+      "project": {},
+      "task": {},
+      "subtasks": [],
+      "active_node_id": "",
+      "active_title": "analiza este caso tecnico",
+      "priority": 50,
+      "status": "pending",
+      "progress": 0.0,
+      "blocker": "",
+      "confidence": 0.0,
+      "trend": "sin base",
+      "evidence_refs": [],
+      "metadata": {}
+    }
+  }
+}

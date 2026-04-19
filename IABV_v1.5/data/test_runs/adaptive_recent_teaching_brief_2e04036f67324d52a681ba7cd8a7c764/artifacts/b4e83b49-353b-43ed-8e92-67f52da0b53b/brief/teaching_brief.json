@@ -1,0 +1,8 @@
+{
+  "lesson_title": "Wplay login corto",
+  "target_label": "Wplay",
+  "start_url": "https://www.wplay.co/login",
+  "objective": "Abrir Wplay e iniciar sesion.",
+  "expected_outcome": "Sesion iniciada y panel principal visible.",
+  "notes": "No compartir secretos."
+}

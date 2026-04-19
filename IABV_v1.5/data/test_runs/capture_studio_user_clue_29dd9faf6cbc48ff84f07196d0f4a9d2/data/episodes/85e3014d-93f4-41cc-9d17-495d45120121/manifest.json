@@ -1,0 +1,13 @@
+{
+  "episode_id": "85e3014d-93f4-41cc-9d17-495d45120121",
+  "title": "Login guiado",
+  "created_at_utc": "2026-04-19T19:45:50.672185Z",
+  "updated_at_utc": "2026-04-19T19:45:50.701620Z",
+  "step_count": 3,
+  "source": "desktop",
+  "tags": [
+    "target:Google",
+    "teach_mode:browser"
+  ],
+  "notes": "teach_url=https://www.google.com"
+}
