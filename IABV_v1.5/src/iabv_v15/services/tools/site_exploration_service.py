@@ -250,9 +250,14 @@ class SiteExplorationService:
         parsed = urlparse(cleaned)
         if not parsed.scheme or not parsed.hostname:
             return ''
-        # normaliza trailing slash y drop del fragment
+        # normaliza trailing slash y drop del fragment. Conserva el port
+        # cuando viene explicito: parsed.hostname nunca incluye el port y
+        # reconstruir sin el rompe crawls a localhost:3000, staging:8080, etc.
         path = parsed.path or '/'
-        return f'{parsed.scheme}://{parsed.hostname.lower()}{path}' + (f'?{parsed.query}' if parsed.query else '')
+        host_part = parsed.hostname.lower()
+        if parsed.port is not None:
+            host_part = f'{host_part}:{parsed.port}'
+        return f'{parsed.scheme}://{host_part}{path}' + (f'?{parsed.query}' if parsed.query else '')
 
 
 _HEADINGS_JS = """
