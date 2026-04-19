@@ -1097,7 +1097,16 @@ class ToolTeachService:
                 base += ' Ya existe un patron equivalente reutilizable.'
             if mode_selection.get('improvement_already_implemented'):
                 base += ' La mejora pedida parece ya implementada en el historial aprendido.'
-            if mode_selection.get('fallback_used'):
+            if mode_selection.get('assistant_preference_blocked'):
+                requested_family = str(mode_selection.get('requested_assistant_preference') or '').strip()
+                reason = str(mode_selection.get('preference_unavailable_reason') or '').strip()
+                if requested_family and reason:
+                    base += f' No pude respetar tu preferencia explicita de {requested_family}: {reason}'
+                elif requested_family:
+                    base += f' No pude respetar tu preferencia explicita de {requested_family}; use la mejor alternativa disponible.'
+                elif reason:
+                    base += f' {reason}'
+            elif mode_selection.get('fallback_used'):
                 base += ' El selector cayo en fallback porque no encontro una via mejor disponible.'
         if task.metadata.get('consultation_scope') == 'external_assistant':
             assistant_kind = str(task.metadata.get('assistant_kind') or card.metadata.get('assistant_kind') or card.title)
