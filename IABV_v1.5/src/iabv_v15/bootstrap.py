@@ -2,6 +2,7 @@
 
 import logging
 import os
+import threading
 from pathlib import Path
 import sys
 
@@ -644,10 +645,28 @@ class AppBootstrap:
                     self,
                     workspace_root=self.config.workspace_root,
                 )
-                self.mcp_bridge_service.ensure_started()
             except Exception:
                 logger.exception('No se pudo inicializar MCPBridgeService; bridge desactivado')
                 self.mcp_bridge_service = None
+            else:
+                # `ensure_started()` espera hasta DEFAULT_TUNNEL_TIMEOUT_S a que
+                # cloudflared publique la URL. Corriendo en el hilo del arranque
+                # freezearia el splash/UI hasta 30 s. Lo disparamos a un daemon
+                # thread: el service publica transiciones vía listener y el
+                # ViewModel refleja el estado apenas cambie.
+                bridge_ref = self.mcp_bridge_service
+
+                def _autostart_bridge() -> None:
+                    try:
+                        bridge_ref.ensure_started()
+                    except Exception:
+                        logger.exception('Auto-arranque de MCPBridgeService fallo')
+
+                threading.Thread(
+                    target=_autostart_bridge,
+                    name='mcp-bridge-autostart',
+                    daemon=True,
+                ).start()
 
         self.control_center_viewmodel = ControlCenterViewModel(
             config=self.config,
