@@ -1,5 +1,12 @@
 # Preflight Gate — Causa Raíz de los 8 Tests Humanizados Rotos
 
+> **Estado:** RESUELTO. El fix propuesto en este documento se aplicó en el commit
+> `5ffbb54d` ("fix(humanized-notices): signal leak + desktop snapshot cache +
+> preflight downgrade (#25)"), que degrada `assistant_unavailable` a
+> `attempt_external_with_fallback` en la rama `targeted==no_disponible` de
+> `AutonomyGovernancePolicy`. Los 8 tests listados en este documento ya pasan.
+> Archivado en `docs/history/` como referencia de la investigación.
+
 ## Resumen Ejecutivo
 
 El problema NO es que falten mensajes humanizados — **ya existen todos en el código**. El problema es que el flujo nunca los alcanza porque el **preflight gate aborta antes de ejecutar la consulta externa**.
