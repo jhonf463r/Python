@@ -1097,9 +1097,10 @@ class ToolTeachService:
                 base += ' Ya existe un patron equivalente reutilizable.'
             if mode_selection.get('improvement_already_implemented'):
                 base += ' La mejora pedida parece ya implementada en el historial aprendido.'
-            if mode_selection.get('assistant_preference_blocked'):
-                requested_family = str(mode_selection.get('requested_assistant_preference') or '').strip()
-                reason = str(mode_selection.get('preference_unavailable_reason') or '').strip()
+            selection_metadata = dict(mode_selection.get('metadata') or {})
+            if selection_metadata.get('assistant_preference_blocked'):
+                requested_family = str(selection_metadata.get('requested_assistant_preference') or '').strip()
+                reason = str(selection_metadata.get('preference_unavailable_reason') or '').strip()
                 if requested_family and reason:
                     base += f' No pude respetar tu preferencia explicita de {requested_family}: {reason}'
                 elif requested_family:

@@ -1292,6 +1292,11 @@ def test_tool_teach_service_external_trace_marks_codex_state_missing_as_missing_
 
 
 def test_tool_teach_service_preview_summary_surfaces_blocked_assistant_preference() -> None:
+    # Mirror production: ModeSelectionDecision.model_dump(mode='json') keeps
+    # assistant_preference_blocked / requested_assistant_preference /
+    # preference_unavailable_reason *nested* under mode_selection['metadata'],
+    # because they are set on ModeSelectionDecision.metadata by
+    # _block_selection_for_unavailable_preference.
     card = ToolCard(
         tool_id='chatgpt_web_assisted',
         title='ChatGPT Web',
@@ -1310,19 +1315,26 @@ def test_tool_teach_service_preview_summary_surfaces_blocked_assistant_preferenc
             'assistant_kind': 'chatgpt',
         },
     )
-    mode_selection = {
-        'selected_mode': 'ui',
-        'selected_tool_id': 'chatgpt_web_assisted',
-        'fallback_used': True,
-        'assistant_preference_blocked': True,
-        'requested_assistant_preference': 'codex',
-        'preferred_tool_id': 'codex_installed',
-        'preference_unavailable_reason': (
-            "La preferencia explicita del usuario no pudo respetarse porque "
-            "ningun miembro de la familia 'codex' esta disponible en este momento."
-        ),
-        'selection_policy': 'explicit_assistant_preference_unavailable',
-    }
+    decision = ModeSelectionDecision(
+        selected_mode=InteractionMode.UI,
+        selected_tool_id='chatgpt_web_assisted',
+        selected_tool_type=ToolType.LLM_WEB_UI,
+        adapter_exists=True,
+        available=True,
+        fallback_used=True,
+        reason='preferencia_explicita_no_disponible',
+        metadata={
+            'selection_policy': 'explicit_assistant_preference_unavailable',
+            'assistant_preference_blocked': True,
+            'requested_assistant_preference': 'codex',
+            'preferred_tool_id': 'codex_installed',
+            'preference_unavailable_reason': (
+                "La preferencia explicita del usuario no pudo respetarse porque "
+                "ningun miembro de la familia 'codex' esta disponible en este momento."
+            ),
+        },
+    )
+    mode_selection = decision.model_dump(mode='json')
 
     summary = ToolTeachService._preview_summary(
         None, card, task, None, mode_selection
@@ -1353,11 +1365,17 @@ def test_tool_teach_service_preview_summary_without_block_preserves_generic_fall
             'assistant_kind': 'chatgpt',
         },
     )
-    mode_selection = {
-        'selected_mode': 'ui',
-        'selected_tool_id': 'chatgpt_web_assisted',
-        'fallback_used': True,
-    }
+    decision = ModeSelectionDecision(
+        selected_mode=InteractionMode.UI,
+        selected_tool_id='chatgpt_web_assisted',
+        selected_tool_type=ToolType.LLM_WEB_UI,
+        adapter_exists=True,
+        available=True,
+        fallback_used=True,
+        reason='cross_family_fallback',
+        metadata={},
+    )
+    mode_selection = decision.model_dump(mode='json')
 
     summary = ToolTeachService._preview_summary(
         None, card, task, None, mode_selection
