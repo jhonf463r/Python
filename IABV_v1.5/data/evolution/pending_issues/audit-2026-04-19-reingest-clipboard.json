@@ -1,7 +1,7 @@
 {
   "issue_id": "audit-2026-04-19-reingest-clipboard",
   "created_at_utc": "2026-04-19T18:55:00.000000Z",
-  "status": "being_fixed_in_pr",
+  "status": "needs_fix",
   "scenario_id": "retry_after_session_expired",
   "goal": "Cuando una consulta externa queda >5min sin respuesta, el retry debe releer el DOM ya visible y no re-pegar el prompt. Debe funcionar tanto en el path browser_dom como en el fallback clipboard.",
   "category": "need_codex_fix",

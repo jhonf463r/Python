@@ -1,10 +1,10 @@
 {
   "issue_id": "audit-2026-04-19-chatgpt-web-validation",
   "created_at_utc": "2026-04-19T18:55:00.000000Z",
-  "status": "blocked_on_credentials",
+  "status": "open",
   "scenario_id": "chatgpt_web_assisted_end_to_end",
   "goal": "Validar end-to-end el flujo chatgpt_web_assisted contra chatgpt.com real: popup de credenciales (PR #12), captura DOM via Playwright, reingesta tras SESSION_EXPIRED (PRs #13 + #21), popup de aprobacion de observacion (PR #15).",
-  "category": "need_user_action",
+  "category": "need_codex_fix",
   "summary": "No se puede validar end-to-end sin credenciales de una cuenta ChatGPT web. La VM Linux ya tiene Playwright + Chromium instalados y listos.",
   "probable_cause": "Bloqueo operativo, no bug.",
   "unresolved_reason": "Esperando que el usuario provea credenciales via el mecanismo de 3 opciones (temporal sesion / permanente user-scope / skip). Sin credenciales, queda UNRESOLVED.",
@@ -32,6 +32,7 @@
     "source": "human_audit",
     "site_id": "chatgpt.com",
     "intent_key": "tools.consult_external",
-    "audit_report": "data/evolution/audits/human-audit-2026-04-19.md"
+    "audit_report": "data/evolution/audits/human-audit-2026-04-19.md",
+    "blocked_on": "user_credentials"
   }
 }
