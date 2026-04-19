@@ -138,6 +138,28 @@ def test_sync_applies_ff_pull_when_safe() -> None:
     assert ("git", "pull", "--ff-only", "origin", "main") in runner.calls
 
 
+def test_sync_up_to_date_does_not_register_unresolved() -> None:
+    # Calling sync() on a repo that is already up to date is the healthy
+    # no-op state. It must NOT pollute ControlMasterService.unresolved_items.
+    recipe = {
+        ("git", "fetch", "origin", "main"): FakeCompleted(),
+        ("git", "status", "--porcelain"): FakeCompleted(stdout=""),
+        ("git", "rev-list", "--left-right", "--count", "HEAD...origin/main"): FakeCompleted(stdout="0 0\n"),
+    }
+    recorded: list[tuple[str, list[str] | None]] = []
+
+    class FakeCM:
+        def mark_unresolved(self, item: str, *, evidence: list[str] | None = None) -> None:
+            recorded.append((item, evidence))
+
+    svc, runner = _svc(recipe, control_master_service=FakeCM())
+    result = svc.sync()
+    assert result.applied is False
+    assert any("up to date" in r for r in result.blocked_reasons)
+    assert recorded == []  # healthy no-op: zero UNRESOLVED noise
+    assert ("git", "pull", "--ff-only", "origin", "main") not in runner.calls
+
+
 def test_sync_blocks_on_dirty_tree_and_registers_unresolved() -> None:
     recipe = {
         ("git", "fetch", "origin", "main"): FakeCompleted(),

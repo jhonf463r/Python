@@ -133,8 +133,12 @@ class GitSyncService:
         blocked: list[str] = []
 
         if not status.can_sync:
-            blocked.append(status.block_reason or "unknown block reason")
-            self._register_unresolved(status)
+            reason = status.block_reason or "unknown block reason"
+            blocked.append(reason)
+            # "already up to date" is the healthy no-op state, not an issue that
+            # needs operator attention — skip it to avoid polluting the digest.
+            if not self._is_benign_noop(status):
+                self._register_unresolved(status)
             return GitSyncResult(status_before=status, applied=False, blocked_reasons=tuple(blocked))
 
         policy_allows, policy_reason = self._policy_allows()
@@ -166,6 +170,16 @@ class GitSyncService:
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _is_benign_noop(status: GitSyncStatus) -> bool:
+        """True when the block reason is the healthy "nothing to do" state."""
+
+        if status.fetch_failed or status.tree_dirty:
+            return False
+        if status.commits_behind == 0 and status.commits_ahead == 0:
+            return True
+        return False
 
     def _is_tree_dirty(self) -> bool:
         result = self._run(["git", "status", "--porcelain"])
