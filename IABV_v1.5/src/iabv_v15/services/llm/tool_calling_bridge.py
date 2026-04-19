@@ -140,14 +140,17 @@ class ToolCallingBridge:
         request: Any,
         system_prompt: str,
         initial_response: str,
+        session: AdaptiveSession | None = None,
     ) -> tuple[str, list[dict[str, Any]], int]:
         """Re-invoke the LLM with tool results until no more calls or max iterations.
 
+        Builds a running ``conversation_context`` that is cloned into a new
+        ``InferenceRequest`` on every re-invocation, so the provider sees the
+        accumulated assistant + tool messages (not just the original goal).
+
         Returns ``(final_summary, tool_calls_made, iterations)``.
         """
-        messages: list[dict[str, str]] = [
-            {'role': 'system', 'content': system_prompt},
-            {'role': 'user', 'content': request.user_goal},
+        conversation: list[dict[str, str]] = [
             {'role': 'assistant', 'content': initial_response},
         ]
         tool_calls_made: list[dict[str, Any]] = []
@@ -160,7 +163,7 @@ class ToolCallingBridge:
                 break
             iterations += 1
             for tc in calls:
-                result = self.execute(tc)
+                result = self.execute(tc, session=session)
                 tool_calls_made.append({
                     'name': tc.name,
                     'args': tc.args,
@@ -169,15 +172,21 @@ class ToolCallingBridge:
                     'output': result.output[:500],
                     'error': result.error[:200],
                 })
-                messages.append({
+                conversation.append({
                     'role': 'tool',
                     'content': self._format_tool_result(result),
                 })
 
+            enriched_request = self._clone_request_with_context(
+                request,
+                system_prompt=system_prompt,
+                conversation=conversation,
+            )
+
             try:
-                llm_result = provider.answer_user(request)
+                llm_result = provider.answer_user(enriched_request)
                 current_text = str(getattr(llm_result, 'summary', '') or '').strip()
-                messages.append({'role': 'assistant', 'content': current_text})
+                conversation.append({'role': 'assistant', 'content': current_text})
             except Exception:
                 break
 
@@ -195,3 +204,40 @@ class ToolCallingBridge:
         if result.success:
             return result.output or '(sin salida)'
         return f'[ERROR] {result.error}'
+
+    @staticmethod
+    def _clone_request_with_context(
+        request: Any,
+        *,
+        system_prompt: str,
+        conversation: list[dict[str, str]],
+    ) -> Any:
+        """Clone the ``InferenceRequest`` injecting system prompt + history.
+
+        Falls back to mutating the original when the request does not support
+        ``model_copy`` (e.g. plain test doubles) so the provider still receives
+        the enriched context.
+        """
+        metadata_update = {'system_prompt_override': system_prompt}
+        conversation_copy = [dict(item) for item in conversation]
+        model_copy = getattr(request, 'model_copy', None)
+        if callable(model_copy):
+            try:
+                merged_metadata = dict(getattr(request, 'metadata', {}) or {})
+                merged_metadata.update(metadata_update)
+                return model_copy(update={
+                    'metadata': merged_metadata,
+                    'conversation_context': conversation_copy,
+                })
+            except Exception:
+                pass
+        try:
+            existing_metadata = getattr(request, 'metadata', None)
+            if isinstance(existing_metadata, dict):
+                existing_metadata.update(metadata_update)
+            else:
+                setattr(request, 'metadata', dict(metadata_update))
+            setattr(request, 'conversation_context', conversation_copy)
+        except Exception:
+            pass
+        return request
