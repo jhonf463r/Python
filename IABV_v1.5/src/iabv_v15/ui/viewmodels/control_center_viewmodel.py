@@ -53,6 +53,13 @@ class ControlCenterViewModel(QObject):
     providerHealthChanged = Signal(list)       # [ProviderHealth]
     mcpBridgeChanged = Signal(dict)            # status dict del MCPBridgeService
 
+    # Señales del botón "Auditarme ahora" (Frente 2 — SelfAuditService).
+    # El VM NO decide rutas ni reacciona al resultado más allá de emitir:
+    # cualquier acción sobre el snapshot es decisión humana.
+    selfAuditStarted = Signal()
+    selfAuditCompleted = Signal(str)  # JSON serializado del SelfAuditSnapshot
+    selfAuditFailed = Signal(str)     # detalle textual del fallo
+
     def __init__(
         self,
         *,
@@ -87,6 +94,7 @@ class ControlCenterViewModel(QObject):
         mcp_bridge_service: Any | None = None,
         control_master_service: Any | None = None,
         control_master_digest_builder: Any | None = None,
+        self_audit_service: Any | None = None,
     ) -> None:
         super().__init__()
         self.config = config
@@ -122,6 +130,9 @@ class ControlCenterViewModel(QObject):
         self.control_master_digest_builder = control_master_digest_builder
         self._control_master_digest: dict[str, Any] = {}
         self._control_master_brief = 'Control maestro no disponible en esta sesion.'
+        self.self_audit_service = self_audit_service
+        self._last_self_audit_summary = ''
+        self._self_audit_running = False
 
         self._selected_role = config.default_task_role.value
         self._auto_route_enabled = True
@@ -5585,6 +5596,78 @@ class ControlCenterViewModel(QObject):
 
     controlMasterDigest = Property(dict, get_control_master_digest, notify=dataChanged)
     controlMasterBrief = Property(str, get_control_master_brief, notify=dataChanged)
+
+    # --- Self Audit (Frente 2 — "Auditarme ahora") ---
+    # El slot corre el `SelfAuditService` en background y emite señales.
+    # UNRESOLVED: el botón QML que llama `runSelfAuditNow()` y el
+    # comportamiento real del hilo sólo pueden validarse corriendo la UI
+    # en Windows. Este backend se testea con `threading.Thread` directo
+    # vía pytest; el único punto testable desde Qt es el wire-up QML.
+    def get_last_self_audit_summary(self) -> str:
+        return self._last_self_audit_summary
+
+    def _emit_self_audit_payload(self, snapshot: Any) -> None:
+        """Emite `selfAuditCompleted` con el snapshot serializado (JSON)."""
+
+        import json as _json
+        from dataclasses import asdict as _asdict, is_dataclass as _is_dc
+        from datetime import datetime as _dt
+
+        def _default(value: Any) -> Any:
+            if isinstance(value, _dt):
+                return value.isoformat()
+            return str(value)
+
+        if _is_dc(snapshot):
+            payload = _asdict(snapshot)
+        elif hasattr(snapshot, 'model_dump'):
+            try:
+                payload = snapshot.model_dump(mode='json')
+            except TypeError:
+                payload = snapshot.model_dump()
+        elif isinstance(snapshot, dict):
+            payload = snapshot
+        else:
+            payload = {'snapshot': str(snapshot)}
+        self._last_self_audit_summary = str(payload.get('summary_markdown') or '')
+        self.selfAuditCompleted.emit(_json.dumps(payload, default=_default))
+        self.dataChanged.emit()
+
+    @Slot(str)
+    def runSelfAuditNow(self, reason: str = '') -> None:
+        """Dispara `SelfAuditService.run(reason=...)` en un hilo background.
+
+        Emite `selfAuditStarted` al arrancar y `selfAuditCompleted`
+        (con el snapshot JSON) o `selfAuditFailed` (con el detalle) al
+        terminar. NO toma decisiones de ruta: cualquier acción sobre el
+        resultado queda en manos del humano vía UI.
+        """
+
+        service = self.self_audit_service
+        if service is None:
+            self.selfAuditFailed.emit('self_audit_service no disponible en esta sesion')
+            return
+        if self._self_audit_running:
+            return
+        self._self_audit_running = True
+        self.selfAuditStarted.emit()
+
+        def worker() -> None:
+            try:
+                snapshot = service.run(reason=reason or None)
+                self._emit_self_audit_payload(snapshot)
+            except Exception as exc:  # pragma: no cover - defensa
+                self.selfAuditFailed.emit(f'self_audit_failed: {exc}')
+            finally:
+                self._self_audit_running = False
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    lastSelfAuditSummary = Property(
+        str,
+        get_last_self_audit_summary,
+        notify=dataChanged,
+    )
 
 
 

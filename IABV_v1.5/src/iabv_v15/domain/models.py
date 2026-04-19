@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
@@ -1247,6 +1248,32 @@ class ToolCard(BaseModel):
     last_result_id: str | None = None
     last_validated_at_utc: datetime | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    def dry_check(self) -> "ToolCheckResult":
+        """Revisa sin side effects si la tool declara estar disponible.
+
+        Hook extensible para overrides puntuales: por default refleja el
+        estado declarativo actual (`available` + `validation_status`). No
+        toca red ni sistema; el probe real vive en los adapters.
+        """
+
+        if self.available:
+            status = "ready"
+            reason: str | None = None
+        else:
+            status = "missing"
+            reason = "adapter reported tool as not available"
+        return ToolCheckResult(
+            tool_id=self.tool_id,
+            available=bool(self.available),
+            status=status,
+            reason=reason,
+            evidence={
+                "adapter_key": self.adapter_key,
+                "validation_status": self.validation_status.value,
+                "tool_type": self.tool_type.value,
+            },
+        )
 
 
 class ToolAction(BaseModel):
@@ -2578,3 +2605,63 @@ class ControlMasterDigest(BaseModel):
 
 
 
+
+# ---------------------------------------------------------------------------
+# SelfAudit — resultados agregados de la revisión read-only del sistema vivo
+# ---------------------------------------------------------------------------
+#
+# Estos tres contratos son puros (read-only, frozen). Los consume
+# `SelfAuditService` para responder "auditate a vos mismo" desde UI/MCP sin
+# cambiar estado del sistema vivo y sin duplicar PerceptionSnapshot.
+
+
+@dataclass(frozen=True)
+class ToolCheckResult:
+    """Resultado de un dry-check de una tool del ToolRegistry.
+
+    - `status` usa el vocabulario: `ready` | `degraded` | `missing` | `blocked`.
+    - `evidence` es un diccionario abierto con pistas reproducibles
+      (adapter_key, validation_status, tool_type, última observación, etc.).
+    """
+
+    tool_id: str
+    available: bool
+    status: str
+    reason: str | None = None
+    evidence: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class EnvironmentMatchResult:
+    """Contraste entre `EnvironmentSelfModel` y el `WorldModelSnapshot` vivo.
+
+    - `matched=True` significa que los dos modelos son coherentes
+      (mismas tools disponibles, sin risk signals que contradigan el
+      world_model, etc.).
+    - `mismatches` son descripciones concretas y humanas, no códigos.
+    - Los digests permiten trazabilidad sin exponer los modelos completos.
+    """
+
+    matched: bool
+    mismatches: list[str] = field(default_factory=list)
+    environment_digest: str = ""
+    world_model_digest: str = ""
+
+
+@dataclass(frozen=True)
+class SelfAuditSnapshot:
+    """Snapshot agregado de la autoauditoría operativa.
+
+    Emitido por `SelfAuditService.run(...)` y persistido en
+    `data/evolution/self_audit/{latest.json, latest.md, history/<ISO>.json}`.
+    Es la fuente única consumida por el botón "Auditarme ahora" del
+    Control Center y por la tool MCP `run_self_audit`.
+    """
+
+    generated_at: datetime
+    reason: str | None
+    tool_checks: list[ToolCheckResult]
+    environment_match: EnvironmentMatchResult
+    pending_issues: list[str]
+    world_model_digest: dict[str, Any]
+    summary_markdown: str

@@ -9,6 +9,8 @@ Tools expuestas:
   - self_examination_current: review operativo actual + patrones detectados
   - chatgpt_web_capture: flujo chatgpt_web_assisted (browser_dom_capture) con
                          soporte de reingest_only (PR #13 / PR #21)
+  - run_self_audit: ejecuta `SelfAuditService` (read-only) y devuelve snapshot
+                    serializado; pasa por governance gate `assistant_kind='audit'`
 
 Audit tools (capa humana para que Devin observe la laptop del usuario):
   - run_pytest: ejecuta la batería oficial (o una suite whitelisted) read-only
@@ -634,6 +636,49 @@ class IABVMCPServer:
                 )
             except audit_tools.AuditToolError as exc:
                 return exc.to_payload()
+
+        # ------------------------------------------------------------
+        # Frente 2 — Self audit tool
+        #
+        # `run_self_audit` ejecuta el `SelfAuditService` y devuelve el
+        # snapshot serializado. Pasa por el gate de governance con
+        # `assistant_kind='audit'` (fail-closed). No requiere red.
+        # Si el container no expone el service (bootstrap degradado),
+        # devuelve un payload `{'error': 'self_audit_unavailable', ...}`
+        # en vez de crashear: la ruta debe ser siempre observable.
+
+        @mcp.tool()
+        def run_self_audit(reason: str | None = None) -> dict[str, Any]:
+            """Ejecuta el SelfAuditService (read-only) y devuelve el snapshot.
+
+            Pasa por el governance gate `assistant_kind='audit'` (fail-closed).
+            No toca red ni sistema vivo; sólo lee estado ya observado por los
+            services de evolution. El snapshot queda persistido en
+            `data/evolution/self_audit/{latest.json, latest.md, history/*}`.
+
+            Args:
+                reason: etiqueta humana opcional que se guarda con el snapshot
+                    para trazabilidad (por ejemplo, `"pre_release_check"`).
+            """
+
+            block = self._governance_block_for_route(
+                assistant_kind="audit",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
+            service = getattr(self.container, "self_audit_service", None)
+            if service is None:
+                return {
+                    "error": "self_audit_unavailable",
+                    "detail": (
+                        "container.self_audit_service no está disponible. "
+                        "Revisa bootstrap.py: el wiring de SelfAuditService "
+                        "puede haber degradado."
+                    ),
+                }
+            snapshot = service.run(reason=reason)
+            return _to_jsonable(snapshot) or {}
 
     # ------------------------------------------------------------------
     # Ciclo de vida
