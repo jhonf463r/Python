@@ -178,6 +178,25 @@ def test_sync_respects_autonomy_policy_block() -> None:
     assert ("git", "pull", "--ff-only", "origin", "main") not in runner.calls
 
 
+def test_sync_accepts_real_autonomy_governance_policy_default_allow() -> None:
+    # The real AutonomyGovernancePolicy exposes allow_git_sync() returning
+    # (True, None) by default. Wire it to confirm the gate contract holds
+    # end-to-end in production bootstrap shape.
+    from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
+
+    recipe = {
+        ("git", "fetch", "origin", "main"): FakeCompleted(),
+        ("git", "status", "--porcelain"): FakeCompleted(stdout=""),
+        ("git", "rev-list", "--left-right", "--count", "HEAD...origin/main"): FakeCompleted(stdout="0 1\n"),
+        ("git", "pull", "--ff-only", "origin", "main"): FakeCompleted(stdout="Fast-forward\n"),
+        ("git", "rev-parse", "HEAD"): FakeCompleted(stdout="abc123\n"),
+    }
+    svc, _ = _svc(recipe, autonomy_governance_policy=AutonomyGovernancePolicy())
+    result = svc.sync()
+    assert result.applied is True
+    assert result.commits_applied == 1
+
+
 def test_sync_reports_pull_failure() -> None:
     recipe = {
         ("git", "fetch", "origin", "main"): FakeCompleted(),

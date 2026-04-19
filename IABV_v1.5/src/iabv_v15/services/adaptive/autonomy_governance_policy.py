@@ -25,6 +25,17 @@ class AutonomyGovernancePolicy:
         'critical_object_missing',
     }
 
+    def allow_git_sync(self) -> tuple[bool, str | None]:
+        """Gate for infrastructure-level git sync (``GitSyncService``).
+
+        Returns ``(allowed, reason_if_blocked)``. Default is to allow — the
+        actual safety is enforced by ``GitSyncService`` itself (clean tree,
+        no local unpushed commits, fast-forward only). Override in tests or
+        replace at runtime to impose maintenance windows or emergency halts.
+        """
+
+        return True, None
+
     def evaluate(
         self,
         *,

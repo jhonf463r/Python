@@ -455,6 +455,7 @@ class AppBootstrap:
         self.git_sync_service = GitSyncService(
             repo_root=self.config.workspace_root,
             branch='main',
+            autonomy_governance_policy=self.autonomy_governance_policy,
             control_master_service=self.control_master_service,
         )
         self.task_context_assembler = TaskContextAssembler(
