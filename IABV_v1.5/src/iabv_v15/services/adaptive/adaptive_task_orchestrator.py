@@ -808,8 +808,10 @@ class AdaptiveTaskOrchestrator:
         )
         system_prompt_hash = SystemPromptBuilder.prompt_hash(system_prompt)
 
+        enriched_request = self._inject_system_prompt(request, system_prompt)
+
         try:
-            result = provider.answer_user(request)
+            result = provider.answer_user(enriched_request)
         except Exception as exc:
             return {
                 'summary': '', 'provider_name': getattr(provider, 'name', ''),
@@ -835,9 +837,10 @@ class AdaptiveTaskOrchestrator:
         )
         final_summary, tool_calls_made, iterations = bridge.run_tool_loop(
             provider=provider,
-            request=request,
+            request=enriched_request,
             system_prompt=system_prompt,
             initial_response=initial_summary,
+            session=session,
         )
         summary = final_summary or initial_summary
         return {
@@ -849,6 +852,23 @@ class AdaptiveTaskOrchestrator:
             'tool_calls_made': tool_calls_made,
             'iterations': iterations,
         }
+
+    @staticmethod
+    def _inject_system_prompt(request: InferenceRequest, system_prompt: str) -> InferenceRequest:
+        """Clone the request injecting the system prompt override via metadata.
+
+        ``OpenAICompatLocalProvider`` reads ``metadata['system_prompt_override']``
+        to replace its default system instruction; this lets the LLM see the
+        full system awareness already on the first call without rewriting the
+        provider surface.
+        """
+        merged_metadata = dict(request.metadata or {})
+        merged_metadata['system_prompt_override'] = system_prompt
+        try:
+            return request.model_copy(update={'metadata': merged_metadata})
+        except Exception:
+            request.metadata = merged_metadata
+            return request
 
     def _portable_context_package(self) -> Any:
         service = getattr(self.context_assembler, 'portable_context_service', None)
