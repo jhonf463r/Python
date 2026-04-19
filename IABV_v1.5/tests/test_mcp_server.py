@@ -122,6 +122,10 @@ class _FakeContainer:
         adaptive_task_orchestrator: object | None = None,
         ui_execution_runner: object | None = None,
         site_manual_repository: object | None = None,
+        workspace_root: str | None = None,
+        ui_screenshot_provider: object | None = None,
+        environment_self_model: object | None = None,
+        config: object | None = None,
     ) -> None:
         self.world_model_service = world_model_service
         self.portable_context_service = portable_context_service
@@ -130,6 +134,13 @@ class _FakeContainer:
         self.adaptive_task_orchestrator = adaptive_task_orchestrator
         self.ui_execution_runner = ui_execution_runner
         self.site_manual_repository = site_manual_repository
+        # Audit tools leen `container.config.workspace_root` (o
+        # `container.workspace_root` como fallback). Usamos el fallback
+        # directo para no replicar AppConfig en los tests.
+        self.workspace_root = workspace_root
+        self.ui_screenshot_provider = ui_screenshot_provider
+        self.environment_self_model = environment_self_model
+        self.config = config
 
 
 def _default_snapshot(
@@ -442,3 +453,165 @@ def test_governance_ignores_permission_gates_already_granted() -> None:
     payload = _call_tool(server, "chatgpt_web_capture", prompt_text="hola")
     assert "governance_blocked" not in payload
     assert runner.calls
+
+
+# ----------------------------------------------------------------------
+# Audit tools (Frente 1). El wiring en `server.py` delega en el módulo
+# `audit_tools` — acá cubrimos 1) registro, 2) governance bloqueando,
+# 3) happy path degradado.
+
+
+def test_server_registers_audit_tools() -> None:
+    server = IABVMCPServer(_build_container())
+    registered = set(server.mcp._tool_manager._tools.keys())
+    audit = {
+        "run_pytest",
+        "read_repo_file",
+        "list_repo_directory",
+        "capture_ui_screenshot",
+        "git_status_and_log",
+    }
+    assert audit <= registered, f"faltan audit tools: {audit - registered}"
+
+
+def test_read_repo_file_happy_path_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "hello.md").write_text("hola", encoding="utf-8")
+    server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
+    payload = _call_tool(server, "read_repo_file", relative_path="docs/hello.md")
+    assert payload["content"] == "hola"
+    assert payload["path"] == "docs/hello.md"
+
+
+def test_read_repo_file_returns_error_payload_on_invalid(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
+    payload = _call_tool(server, "read_repo_file", relative_path="/etc/passwd")
+    assert payload["error"] == "absolute_path_forbidden"
+
+
+def test_list_repo_directory_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    (tmp_path / "a.txt").write_text("x")
+    (tmp_path / ".env").write_text("S")
+    server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
+    payload = _call_tool(server, "list_repo_directory", relative_path="")
+    names = {entry["name"]: entry for entry in payload["entries"]}
+    assert ".env" in names and names[".env"]["sensitive"] is True
+
+
+def test_capture_ui_screenshot_without_provider_degrades_via_server() -> None:
+    server = IABVMCPServer(_build_container())
+    payload = _call_tool(server, "capture_ui_screenshot")
+    assert payload["error"] == "ui_not_running"
+
+
+def test_audit_tools_blocked_when_audit_block_active(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """Un `OperationalBlockRecord` con assistant_kind='audit' debe bloquear
+    todas las audit tools (fail-closed)."""
+
+    block = OperationalBlockRecord(
+        block_type="audit_paused",
+        assistant_kind="audit",
+        title="Auditoría pausada manualmente",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
+    server = IABVMCPServer(
+        _build_container(world_model_service=wm, workspace_root=str(tmp_path)),
+    )
+    for tool_name, kwargs in [
+        ("read_repo_file", {"relative_path": "README.md"}),
+        ("list_repo_directory", {"relative_path": ""}),
+        ("capture_ui_screenshot", {}),
+        ("git_status_and_log", {}),
+        ("run_pytest", {}),
+    ]:
+        payload = _call_tool(server, tool_name, **kwargs)
+        assert payload["governance_blocked"] is True, f"{tool_name} no respetó el block"
+        assert payload["reason"] == "operational_block_active"
+
+
+def test_audit_tools_blocked_when_global_wildcard_block_active(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """Un bloqueo con assistant_kind='*' también debe detener las audit tools."""
+
+    block = OperationalBlockRecord(
+        block_type="freeze_all",
+        assistant_kind="*",
+        title="Freeze global",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
+    server = IABVMCPServer(
+        _build_container(world_model_service=wm, workspace_root=str(tmp_path)),
+    )
+    payload = _call_tool(server, "read_repo_file", relative_path="README.md")
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "operational_block_active"
+
+
+def test_audit_tools_allow_when_only_unrelated_block(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """Si el block es para otra ruta (ej. chatgpt_web), audit debe pasar."""
+
+    (tmp_path / "file.md").write_text("contenido")
+    unrelated = OperationalBlockRecord(
+        block_type="cloudflare",
+        assistant_kind="chatgpt_web",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[unrelated]))
+    server = IABVMCPServer(
+        _build_container(world_model_service=wm, workspace_root=str(tmp_path)),
+    )
+    payload = _call_tool(server, "read_repo_file", relative_path="file.md")
+    assert "governance_blocked" not in payload
+    assert payload["content"] == "contenido"
+
+
+def test_run_pytest_tool_signature_rejects_python_executable() -> None:
+    """El MCP tool `run_pytest` NO debe exponer `python_executable` a los
+    clientes remotos; la elección del intérprete es decisión del host.
+
+    Regresión de la finding Devin Review
+    BUG_pr-review-job-1f9ba1f9056944b0b4f49844ab925503_0001.
+    """
+
+    import inspect
+
+    server = IABVMCPServer(_build_container())
+    tool = _get_tool(server, "run_pytest")
+    sig = inspect.signature(tool.fn)
+    assert "python_executable" not in sig.parameters
+    assert set(sig.parameters) <= {"suite", "keyword"}
+
+
+def test_pytest_python_executable_prefers_environment_self_model(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """`_pytest_python_executable` debe resolver primero desde
+    `container.environment_self_model.runtime_profile`, no desde el client.
+    """
+
+    fake_python = tmp_path / "python"
+    fake_python.write_text("#!/bin/sh\n")
+    fake_python.chmod(0o755)
+
+    class _ESM:
+        runtime_profile = {"python_executable": str(fake_python)}
+
+    monkeypatch.delenv("IABV_PYTEST_PYTHON", raising=False)
+    server = IABVMCPServer(
+        _build_container(environment_self_model=_ESM()),
+    )
+    assert server._pytest_python_executable() == str(fake_python.resolve())
+
+
+def test_pytest_python_executable_rejects_unsafe_candidates(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Si la env var trae un path con shell metachars, debe descartarse y
+    caer al siguiente candidato / None, nunca devolver el valor crudo."""
+
+    monkeypatch.setenv("IABV_PYTEST_PYTHON", "/usr/bin/python3; rm -rf /")
+    server = IABVMCPServer(_build_container())
+    assert server._pytest_python_executable() is None
+
+
+def test_pytest_python_executable_returns_none_when_no_candidates(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.delenv("IABV_PYTEST_PYTHON", raising=False)
+    server = IABVMCPServer(_build_container())
+    assert server._pytest_python_executable() is None

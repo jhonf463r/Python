@@ -10,6 +10,15 @@ Tools expuestas:
   - chatgpt_web_capture: flujo chatgpt_web_assisted (browser_dom_capture) con
                          soporte de reingest_only (PR #13 / PR #21)
 
+Audit tools (capa humana para que Devin observe la laptop del usuario):
+  - run_pytest: ejecuta la batería oficial (o una suite whitelisted) read-only
+  - read_repo_file: lee archivos dentro del workspace, respetando blacklist
+                    de secrets y tope de tamaño
+  - list_repo_directory: lista entries con {name, type, size, mtime}
+  - capture_ui_screenshot: captura ventana IABV vía provider del container
+                           (degrada explícito a `ui_not_running` si no hay)
+  - git_status_and_log: read-only `git status --porcelain -b` + `git log`
+
 Contratos que NO se rompen:
   - No decide rutas: sólo expone servicios existentes.
   - Respeta AutonomyGovernancePolicy: gates activos siguen bloqueando.
@@ -24,6 +33,8 @@ import logging
 import os
 from dataclasses import asdict, is_dataclass
 from typing import Any
+
+from iabv_v15.infra.mcp import audit_tools
 
 logger = logging.getLogger(__name__)
 
@@ -126,6 +137,80 @@ class IABVMCPServer:
                 workspace_root = os.getcwd()
             return UIExecutionRunner(workspace_root=str(workspace_root))
         return svc
+
+    def _workspace_root(self) -> str:
+        """Resuelve el `workspace_root` que usan las audit tools.
+
+        Prioriza `container.config.workspace_root` (bootstrap normal); si no
+        está, cae a `container.workspace_root` y como último recurso al
+        `cwd()`. Las audit tools rechazarán rutas fuera de este root.
+        """
+
+        config = getattr(self.container, "config", None)
+        root = getattr(config, "workspace_root", None) if config else None
+        if root is None:
+            root = getattr(self.container, "workspace_root", None)
+        if root is None:
+            root = os.getcwd()
+        return str(root)
+
+    def _ui_screenshot_provider(self) -> Any:
+        """Devuelve el provider registrado para capturar la ventana IABV.
+
+        El container puede exponer `ui_screenshot_provider` en Windows real
+        (QScreen.grabWindow / mss). En Linux CI normalmente no existe y la
+        tool degrada a `ui_not_running` sin fallar.
+        """
+
+        return getattr(self.container, "ui_screenshot_provider", None)
+
+    def _pytest_python_executable(self) -> str | None:
+        """Resuelve el intérprete Python para ``run_pytest`` server-side.
+
+        Los MCP clients no eligen binario (sería RCE); la elección es del
+        host. Jerarquía:
+
+        1. ``container.config.pytest_python_executable`` si existe;
+        2. ``container.environment_self_model.runtime_profile.python_executable``
+           (lo que ya registra `EnvironmentSelfAwarenessService`);
+        3. env var ``IABV_PYTEST_PYTHON`` (override operativo en Windows);
+        4. ``None`` → `audit_tools.run_pytest` cae a `sys.executable`.
+
+        Cualquier valor que falle la validación estricta de
+        ``validate_pytest_executable`` (basename python* / existe / sin
+        metachars de shell) se descarta silenciosamente en favor del
+        siguiente nivel.
+        """
+
+        candidates: list[str] = []
+        config = getattr(self.container, "config", None)
+        if config is not None:
+            cfg_value = getattr(config, "pytest_python_executable", None)
+            if cfg_value:
+                candidates.append(str(cfg_value))
+        env_self_model = getattr(self.container, "environment_self_model", None)
+        if env_self_model is not None:
+            runtime = getattr(env_self_model, "runtime_profile", None)
+            if isinstance(runtime, dict):
+                rt_value = runtime.get("python_executable")
+                if rt_value:
+                    candidates.append(str(rt_value))
+            elif runtime is not None:
+                rt_value = getattr(runtime, "python_executable", None)
+                if rt_value:
+                    candidates.append(str(rt_value))
+        env_value = os.environ.get("IABV_PYTEST_PYTHON")
+        if env_value:
+            candidates.append(env_value)
+
+        for candidate in candidates:
+            try:
+                normalized = audit_tools.validate_pytest_executable(candidate)
+            except audit_tools.AuditToolError:
+                continue
+            if normalized:
+                return normalized
+        return None
 
     # ------------------------------------------------------------------
     # Gate de governance / world_model antes de rutas externas
@@ -418,6 +503,137 @@ class IABVMCPServer:
                 reingest_only=bool(reingest_only),
             )
             return _to_jsonable(result) or {}
+
+        # ----------------------------------------------------------------
+        # Audit tools (Frente 1 del plan Devin ↔ IABV).
+        #
+        # Todas pasan por `_governance_block_for_route(assistant_kind="audit",
+        # requires_network=False)` así un `OperationalBlockRecord` global o
+        # específico de `audit` puede freezar la auditoría humana sin tener
+        # que desactivar el bridge entero.
+
+        @mcp.tool()
+        def run_pytest(
+            suite: str | None = None,
+            keyword: str | None = None,
+        ) -> dict[str, Any]:
+            """Ejecuta la batería oficial (o una suite whitelisted) read-only.
+
+            Args:
+                suite: ruta relativa al workspace (default ``tests/``).
+                    Debe matchear ``tests/`` o ``tests/subdir/test_*.py``;
+                    cualquier otra cosa se rechaza para evitar ejecución
+                    arbitraria fuera del árbol de pruebas.
+                keyword: valor opcional de ``-k`` (alphanum + ``_.:[]-``).
+
+            El intérprete Python se resuelve server-side (desde
+            ``container.config`` / ``EnvironmentSelfModel`` o la env var
+            ``IABV_PYTEST_PYTHON`` en Windows; si nada aplica, cae a
+            ``sys.executable``). Los MCP clients NO pueden elegir binario.
+            """
+
+            block = self._governance_block_for_route(
+                assistant_kind="audit",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
+            try:
+                return audit_tools.run_pytest(
+                    self._workspace_root(),
+                    suite=suite,
+                    keyword=keyword,
+                    python_executable=self._pytest_python_executable(),
+                )
+            except audit_tools.AuditToolError as exc:
+                return exc.to_payload()
+
+        @mcp.tool()
+        def read_repo_file(relative_path: str) -> dict[str, Any]:
+            """Lee un archivo dentro del workspace como texto UTF-8.
+
+            Rechaza paths absolutos, ``..``, archivos fuera del workspace,
+            archivos sensibles (``.env*``, ``credentials*.json``, ``*.key``,
+            ``*.pem``, ...) y archivos > 1 MiB.
+            """
+
+            block = self._governance_block_for_route(
+                assistant_kind="audit",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
+            try:
+                return audit_tools.read_repo_file(self._workspace_root(), relative_path)
+            except audit_tools.AuditToolError as exc:
+                return exc.to_payload()
+
+        @mcp.tool()
+        def list_repo_directory(
+            relative_path: str = "",
+            max_entries: int = audit_tools.DEFAULT_LIST_MAX,
+        ) -> dict[str, Any]:
+            """Lista entries de un directorio dentro del workspace.
+
+            Devuelve ``{name, type, size, mtime, sensitive}`` por entry.
+            ``max_entries`` se capea a ``MAX_LIST_ENTRIES`` (200).
+            """
+
+            block = self._governance_block_for_route(
+                assistant_kind="audit",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
+            try:
+                return audit_tools.list_repo_directory(
+                    self._workspace_root(),
+                    relative_path,
+                    max_entries=int(max_entries),
+                )
+            except audit_tools.AuditToolError as exc:
+                return exc.to_payload()
+
+        @mcp.tool()
+        def capture_ui_screenshot(region: str = "control_center") -> dict[str, Any]:
+            """Captura un screenshot de la ventana IABV si la UI está mapeada.
+
+            Si el container no registró `ui_screenshot_provider` (caso Linux
+            CI o la UI sin arrancar), devuelve ``{error: 'ui_not_running'}``
+            en vez de tirar excepción.
+            """
+
+            block = self._governance_block_for_route(
+                assistant_kind="audit",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
+            provider = self._ui_screenshot_provider()
+            return audit_tools.capture_ui_screenshot(provider, region=region)
+
+        @mcp.tool()
+        def git_status_and_log(limit: int = audit_tools.DEFAULT_GIT_LOG_LIMIT) -> dict[str, Any]:
+            """Lee ``git status --porcelain -b`` + ``git log -n <limit>``.
+
+            Read-only. Devuelve ``{branch, ahead, behind, dirty_files,
+            dirty_count, last_commits}`` o ``{error}`` si algo falla (ej.
+            el workspace no es repo).
+            """
+
+            block = self._governance_block_for_route(
+                assistant_kind="audit",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
+            try:
+                return audit_tools.git_status_and_log(
+                    self._workspace_root(),
+                    limit=int(limit),
+                )
+            except audit_tools.AuditToolError as exc:
+                return exc.to_payload()
 
     # ------------------------------------------------------------------
     # Ciclo de vida
