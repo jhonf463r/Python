@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 import sys
@@ -7,6 +8,8 @@ import sys
 from iabv_v15.domain.models import ProviderConfig, ProviderKind
 from iabv_v15.infra.config import load_app_config, load_theme_config
 from iabv_v15.infra.logging import configure_logging
+
+logger = logging.getLogger(__name__)
 from iabv_v15.infra.persistence.adaptive_session_repository import AdaptiveSessionRepository
 from iabv_v15.infra.persistence.approval_checkpoint_repository import ApprovalCheckpointRepository
 from iabv_v15.infra.persistence.capability_repository import CapabilityRepository
@@ -74,6 +77,10 @@ from iabv_v15.services.evolution.operational_self_examination_service import Ope
 from iabv_v15.infra.persistence.control_master_repository import ControlMasterRepository
 from iabv_v15.services.evolution.control_master_digest_builder import ControlMasterDigestBuilder
 from iabv_v15.services.evolution.control_master_service import ControlMasterService
+from iabv_v15.services.evolution.mcp_bridge_service import (
+    MCPBridgeService,
+    build_mcp_bridge_service,
+)
 from iabv_v15.services.evolution.portable_context_service import PortableContextService
 from iabv_v15.services.evolution.tool_discovery_service import ToolDiscoveryService
 from iabv_v15.services.evolution.tool_evolution_monitor import ToolEvolutionMonitor
@@ -627,6 +634,21 @@ class AppBootstrap:
             self.role_router,
             self.embedding_service,
         )
+        # --- MCP bridge (Capa 1): expone el programa a agentes externos
+        # (Devin/Claude/Codex) via MCP sobre un tunnel local. El service lee
+        # su preferencia persistida y, si estaba habilitado, se auto-arranca.
+        # Si governance lo bloquea, queda en state=failed sin crashear.
+        if getattr(self, 'mcp_bridge_service', None) is None:
+            try:
+                self.mcp_bridge_service = build_mcp_bridge_service(
+                    self,
+                    workspace_root=self.config.workspace_root,
+                )
+                self.mcp_bridge_service.ensure_started()
+            except Exception:
+                logger.exception('No se pudo inicializar MCPBridgeService; bridge desactivado')
+                self.mcp_bridge_service = None
+
         self.control_center_viewmodel = ControlCenterViewModel(
             config=self.config,
             episode_repository=self.episode_repository,
@@ -655,6 +677,7 @@ class AppBootstrap:
             autonomous_validation_cycle=self.autonomous_validation_cycle,
             tool_discovery_service=self.tool_discovery_service,
             self_examination_service=self.operational_self_examination_service,
+            mcp_bridge_service=self.mcp_bridge_service,
         )
         self.capture_studio_viewmodel = CaptureStudioViewModel(
             config=self.config,
@@ -709,6 +732,7 @@ class AppBootstrap:
         # la Qt Signal del ControlCenterViewModel y EvolutionCenterViewModel para que
         # los dialogos QML (Task B) los reciban.
         self._wire_task_a_signals()
+
         for service_name in ('autonomous_validation_cycle', 'world_model_service', 'environment_self_awareness_service'):
             service = getattr(self, service_name, None)
             if service is None or not hasattr(service, 'stop'):
@@ -763,6 +787,12 @@ class AppBootstrap:
                 router.stop_polling(timeout_s=2.0)
             except Exception:
                 pass
+        bridge = getattr(self, 'mcp_bridge_service', None)
+        if bridge is not None:
+            try:
+                bridge.shutdown()
+            except Exception:
+                logger.exception('Error al cerrar MCPBridgeService')
         self.stop()
 
     def export_portable_context(self, *, refresh: bool = True) -> dict[str, object]:
