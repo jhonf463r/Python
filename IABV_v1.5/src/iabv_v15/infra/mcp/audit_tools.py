@@ -336,6 +336,64 @@ def validate_pytest_keyword(keyword: str | None) -> str | None:
     return text
 
 
+def validate_pytest_executable(python_executable: str | None) -> str | None:
+    """Valida el path del intérprete Python antes de usarlo como comando.
+
+    Defensa en profundidad: aunque el MCP tool público no acepta este
+    parámetro (se resuelve server-side), cualquier caller interno que pase
+    un valor debe cumplir:
+
+    - ser un path existente;
+    - no contener separador de pipe/shell (``;``, ``|``, ``&``, backticks, ``$(``);
+    - apuntar a un ejecutable cuyo basename comience con ``python`` o
+      ``pypy`` (o termine en ``python.exe``/``pypy.exe``).
+
+    Devuelve el path canonicalizado (string absoluto) o ``None`` si el
+    argumento es ``None``/vacío. Lanza ``AuditToolError`` con código
+    ``invalid_python_executable`` si el valor no es aceptable.
+    """
+
+    if python_executable is None:
+        return None
+    text = str(python_executable).strip()
+    if not text:
+        return None
+    # Rechazar cualquier char de shell metachar que no tiene sentido en un
+    # path a un ejecutable — esto evita `python.exe; rm -rf /` o similares
+    # si el caller olvidó shell=False.
+    forbidden = (";", "|", "&", "`", "$(", "\n", "\r", "\"", "'", "*", "?", "<", ">")
+    for token in forbidden:
+        if token in text:
+            raise AuditToolError(
+                "invalid_python_executable",
+                f"python_executable contiene un caracter prohibido {token!r}: {python_executable!r}",
+            )
+    candidate = Path(text)
+    if not candidate.is_absolute():
+        # no obligamos absoluto (sys.executable suele serlo) pero sí que se
+        # resuelva a un path real en disco.
+        candidate = Path(text).resolve()
+    if not candidate.exists() or not candidate.is_file():
+        raise AuditToolError(
+            "invalid_python_executable",
+            f"python_executable no apunta a un archivo existente: {python_executable!r}",
+        )
+    basename = candidate.name.lower()
+    if basename.endswith(".exe"):
+        stem = basename[: -len(".exe")]
+    else:
+        stem = basename
+    if not (stem.startswith("python") or stem.startswith("pypy")):
+        raise AuditToolError(
+            "invalid_python_executable",
+            (
+                "python_executable debe apuntar a un binario cuyo nombre comience con "
+                f"'python' o 'pypy' (recibido: {candidate.name!r})"
+            ),
+        )
+    return str(candidate)
+
+
 class SubprocessRunner(Protocol):
     def __call__(
         self,
@@ -445,12 +503,17 @@ def run_pytest(
 
     normalized_suite = validate_pytest_suite(suite)
     normalized_keyword = validate_pytest_keyword(keyword)
+    normalized_executable = validate_pytest_executable(python_executable)
 
     root = Path(workspace_root).resolve()
     if not root.exists() or not root.is_dir():
         raise AuditToolError("workspace_missing", f"workspace_root no válido: {root}")
 
-    python_exe = python_executable or os.environ.get("IABV_PYTEST_PYTHON") or os.sys.executable  # type: ignore[attr-defined]
+    python_exe = (
+        normalized_executable
+        or validate_pytest_executable(os.environ.get("IABV_PYTEST_PYTHON"))
+        or os.sys.executable  # type: ignore[attr-defined]
+    )
     cmd: list[str] = [
         python_exe,
         "-m",

@@ -124,6 +124,8 @@ class _FakeContainer:
         site_manual_repository: object | None = None,
         workspace_root: str | None = None,
         ui_screenshot_provider: object | None = None,
+        environment_self_model: object | None = None,
+        config: object | None = None,
     ) -> None:
         self.world_model_service = world_model_service
         self.portable_context_service = portable_context_service
@@ -137,6 +139,8 @@ class _FakeContainer:
         # directo para no replicar AppConfig en los tests.
         self.workspace_root = workspace_root
         self.ui_screenshot_provider = ui_screenshot_provider
+        self.environment_self_model = environment_self_model
+        self.config = config
 
 
 def _default_snapshot(
@@ -560,3 +564,54 @@ def test_audit_tools_allow_when_only_unrelated_block(tmp_path) -> None:  # type:
     payload = _call_tool(server, "read_repo_file", relative_path="file.md")
     assert "governance_blocked" not in payload
     assert payload["content"] == "contenido"
+
+
+def test_run_pytest_tool_signature_rejects_python_executable() -> None:
+    """El MCP tool `run_pytest` NO debe exponer `python_executable` a los
+    clientes remotos; la elección del intérprete es decisión del host.
+
+    Regresión de la finding Devin Review
+    BUG_pr-review-job-1f9ba1f9056944b0b4f49844ab925503_0001.
+    """
+
+    import inspect
+
+    server = IABVMCPServer(_build_container())
+    tool = _get_tool(server, "run_pytest")
+    sig = inspect.signature(tool.fn)
+    assert "python_executable" not in sig.parameters
+    assert set(sig.parameters) <= {"suite", "keyword"}
+
+
+def test_pytest_python_executable_prefers_environment_self_model(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """`_pytest_python_executable` debe resolver primero desde
+    `container.environment_self_model.runtime_profile`, no desde el client.
+    """
+
+    fake_python = tmp_path / "python"
+    fake_python.write_text("#!/bin/sh\n")
+    fake_python.chmod(0o755)
+
+    class _ESM:
+        runtime_profile = {"python_executable": str(fake_python)}
+
+    monkeypatch.delenv("IABV_PYTEST_PYTHON", raising=False)
+    server = IABVMCPServer(
+        _build_container(environment_self_model=_ESM()),
+    )
+    assert server._pytest_python_executable() == str(fake_python.resolve())
+
+
+def test_pytest_python_executable_rejects_unsafe_candidates(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Si la env var trae un path con shell metachars, debe descartarse y
+    caer al siguiente candidato / None, nunca devolver el valor crudo."""
+
+    monkeypatch.setenv("IABV_PYTEST_PYTHON", "/usr/bin/python3; rm -rf /")
+    server = IABVMCPServer(_build_container())
+    assert server._pytest_python_executable() is None
+
+
+def test_pytest_python_executable_returns_none_when_no_candidates(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.delenv("IABV_PYTEST_PYTHON", raising=False)
+    server = IABVMCPServer(_build_container())
+    assert server._pytest_python_executable() is None

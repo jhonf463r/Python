@@ -164,6 +164,54 @@ class IABVMCPServer:
 
         return getattr(self.container, "ui_screenshot_provider", None)
 
+    def _pytest_python_executable(self) -> str | None:
+        """Resuelve el intérprete Python para ``run_pytest`` server-side.
+
+        Los MCP clients no eligen binario (sería RCE); la elección es del
+        host. Jerarquía:
+
+        1. ``container.config.pytest_python_executable`` si existe;
+        2. ``container.environment_self_model.runtime_profile.python_executable``
+           (lo que ya registra `EnvironmentSelfAwarenessService`);
+        3. env var ``IABV_PYTEST_PYTHON`` (override operativo en Windows);
+        4. ``None`` → `audit_tools.run_pytest` cae a `sys.executable`.
+
+        Cualquier valor que falle la validación estricta de
+        ``validate_pytest_executable`` (basename python* / existe / sin
+        metachars de shell) se descarta silenciosamente en favor del
+        siguiente nivel.
+        """
+
+        candidates: list[str] = []
+        config = getattr(self.container, "config", None)
+        if config is not None:
+            cfg_value = getattr(config, "pytest_python_executable", None)
+            if cfg_value:
+                candidates.append(str(cfg_value))
+        env_self_model = getattr(self.container, "environment_self_model", None)
+        if env_self_model is not None:
+            runtime = getattr(env_self_model, "runtime_profile", None)
+            if isinstance(runtime, dict):
+                rt_value = runtime.get("python_executable")
+                if rt_value:
+                    candidates.append(str(rt_value))
+            elif runtime is not None:
+                rt_value = getattr(runtime, "python_executable", None)
+                if rt_value:
+                    candidates.append(str(rt_value))
+        env_value = os.environ.get("IABV_PYTEST_PYTHON")
+        if env_value:
+            candidates.append(env_value)
+
+        for candidate in candidates:
+            try:
+                normalized = audit_tools.validate_pytest_executable(candidate)
+            except audit_tools.AuditToolError:
+                continue
+            if normalized:
+                return normalized
+        return None
+
     # ------------------------------------------------------------------
     # Gate de governance / world_model antes de rutas externas
     #
@@ -468,7 +516,6 @@ class IABVMCPServer:
         def run_pytest(
             suite: str | None = None,
             keyword: str | None = None,
-            python_executable: str | None = None,
         ) -> dict[str, Any]:
             """Ejecuta la batería oficial (o una suite whitelisted) read-only.
 
@@ -478,8 +525,11 @@ class IABVMCPServer:
                     cualquier otra cosa se rechaza para evitar ejecución
                     arbitraria fuera del árbol de pruebas.
                 keyword: valor opcional de ``-k`` (alphanum + ``_.:[]-``).
-                python_executable: override del intérprete (útil en Windows
-                    si el usuario quiere forzar ``miniconda3\\python.exe``).
+
+            El intérprete Python se resuelve server-side (desde
+            ``container.config`` / ``EnvironmentSelfModel`` o la env var
+            ``IABV_PYTEST_PYTHON`` en Windows; si nada aplica, cae a
+            ``sys.executable``). Los MCP clients NO pueden elegir binario.
             """
 
             block = self._governance_block_for_route(
@@ -493,7 +543,7 @@ class IABVMCPServer:
                     self._workspace_root(),
                     suite=suite,
                     keyword=keyword,
-                    python_executable=python_executable,
+                    python_executable=self._pytest_python_executable(),
                 )
             except audit_tools.AuditToolError as exc:
                 return exc.to_payload()

