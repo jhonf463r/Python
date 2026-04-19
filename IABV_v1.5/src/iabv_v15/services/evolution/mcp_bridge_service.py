@@ -330,6 +330,13 @@ class MCPBridgeService:
         self._clock = clock or time.time
 
         self._lock = threading.RLock()
+        # `_lock` se libera durante las operaciones de I/O largas
+        # (`run_threaded`, `tunnel.start`, `wait_for_url`). `_operation_lock`
+        # serializa el ciclo completo de start/stop para que una llamada
+        # concurrente a `set_enabled(False)` no pueda terminar antes que un
+        # start en vuelo y perder la carrera final (bridge quedaba `running`
+        # con `enabled_pref=False`).
+        self._operation_lock = threading.Lock()
         self._listeners: list[Callable[[dict[str, Any]], None]] = []
 
         self._status = MCPBridgeStatus(
@@ -365,7 +372,15 @@ class MCPBridgeService:
                 return self.status()
             if self._status.running and self._status.state == "running":
                 return self.status()
-        return self._start_locked()
+        with self._operation_lock:
+            # Re-chequeo dentro del operation_lock: otro hilo pudo haber
+            # completado el start o un set_enabled(False) en el intervalo.
+            with self._lock:
+                if not self._status.enabled_pref:
+                    return self.status()
+                if self._status.running and self._status.state == "running":
+                    return self.status()
+            return self._start_locked()
 
     def set_enabled(self, enabled: bool) -> MCPBridgeStatus:
         """Persiste preferencia y refleja el estado."""
@@ -374,11 +389,23 @@ class MCPBridgeService:
             self._status.enabled_pref = bool(enabled)
             self._persist_enabled_preference(bool(enabled))
             self._touch()
-        if enabled:
-            return self._start_locked()
-        return self.stop()
+        with self._operation_lock:
+            # La preferencia ya está persistida; si entre el release de
+            # `_lock` y la adquisición de `_operation_lock` hubo otro toggle,
+            # el estado actual de `enabled_pref` es la intención ganadora.
+            with self._lock:
+                pref_now = self._status.enabled_pref
+            if pref_now:
+                return self._start_locked()
+            return self._stop_locked()
 
     def stop(self) -> MCPBridgeStatus:
+        with self._operation_lock:
+            return self._stop_locked()
+
+    def _stop_locked(self) -> MCPBridgeStatus:
+        """Detiene tunnel + server; debe llamarse con `_operation_lock` tomado."""
+
         with self._lock:
             if not self._status.running and self._status.state == "stopped":
                 return self.status()
@@ -453,8 +480,20 @@ class MCPBridgeService:
 
         url = self._tunnel_runner.wait_for_url(timeout_s=self._tunnel_timeout_s)
         tunnel_error = getattr(self._tunnel_runner, "last_error", None)
+        teardown = False
         with self._lock:
-            if url:
+            # Defensa en profundidad: aunque `_operation_lock` serialice start/stop,
+            # `set_enabled(False)` pudo haber persistido `enabled_pref=False` antes
+            # de quedarse esperando el lock. Si ese es el caso, tiramos abajo el
+            # bridge ahora en vez de publicar `running=True` y que el stop posterior
+            # tenga que revertirlo.
+            if url and not self._status.enabled_pref:
+                self._status.tunnel_url = None
+                self._status.running = False
+                self._status.last_error = None
+                self._update_state("stopped")
+                teardown = True
+            elif url:
                 self._status.tunnel_url = url
                 self._status.running = True
                 self._status.last_error = None
@@ -464,10 +503,12 @@ class MCPBridgeService:
                 self._status.running = False
                 self._status.last_error = tunnel_error or "Timeout esperando URL del tunnel"
                 self._update_state("failed")
-        # Si el tunnel no publicó URL a tiempo, liberamos recursos: dejar el
-        # server MCP y el proceso cloudflared vivos llevaría a puerto ocupado
-        # en el próximo intento y a un estado irrecuperable sin reiniciar la app.
-        if not url:
+                teardown = True
+        # Si el tunnel no publicó URL a tiempo, o la preferencia cambió durante
+        # el start, liberamos recursos: dejar el server MCP y el proceso
+        # cloudflared vivos llevaría a puerto ocupado en el próximo intento y
+        # a un estado irrecuperable sin reiniciar la app.
+        if teardown:
             try:
                 self._tunnel_runner.stop()
             except Exception:  # pragma: no cover - defensa
