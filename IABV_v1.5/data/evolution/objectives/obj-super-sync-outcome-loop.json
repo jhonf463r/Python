@@ -7,7 +7,7 @@
   "root_id": "obj-control-master-super-sync",
   "site_id": null,
   "priority": 30,
-  "status": "active",
+  "status": "completed",
   "progress": 0.0,
   "blocker": "",
   "confidence": 0.0,
@@ -17,7 +17,14 @@
     "learning",
     "super-sync"
   ],
-  "metadata": {},
+  "metadata": {
+    "control_master_notes": [
+      {
+        "note": "shipped en PR #24: TaskOutcomeRecorder propaga status terminal a ControlMasterService via session.metadata.control_master_objective_id",
+        "at": "2026-04-19T19:44:10.563433+00:00"
+      }
+    ]
+  },
   "created_at_utc": "2026-04-19T19:22:00.747349Z",
-  "updated_at_utc": "2026-04-19T19:22:00.747351Z"
+  "updated_at_utc": "2026-04-19T19:44:10.563433Z"
 }

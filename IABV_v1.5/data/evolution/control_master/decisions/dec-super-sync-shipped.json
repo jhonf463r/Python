@@ -1,0 +1,27 @@
+{
+  "decision_id": "dec-super-sync-shipped",
+  "summary": "Los 3 gaps super-sync (cli-export, write-bridge, outcome-loop) quedan cerrados via PR #23 y PR #24; el objetivo raiz sigue ACTIVE hasta que PR #20/#23/#24 se mergeen a main",
+  "reason": "Solo con PRs mergeados la super sincronia vive en main. Mientras tanto las piezas existen, tienen tests verdes y estan cerradas como tareas en el propio ControlMasterService.",
+  "impact": "Cualquier IA que lea el digest en main vera el objetivo raiz ACTIVE con 3 tareas completadas anotadas con el PR que las cerro. Es auto-documentacion real del progreso.",
+  "affected_modules": [
+    "services/adaptive/task_outcome_recorder",
+    "cli/control_master",
+    "bootstrap"
+  ],
+  "status": "accepted",
+  "evidence": [
+    "https://github.com/jhonf463r/Python/pull/20",
+    "https://github.com/jhonf463r/Python/pull/23",
+    "https://github.com/jhonf463r/Python/pull/24"
+  ],
+  "linked_tests": [],
+  "related_rule_ids": [],
+  "related_objective_ids": [
+    "obj-control-master-super-sync",
+    "obj-super-sync-cli-export",
+    "obj-super-sync-write-bridge",
+    "obj-super-sync-outcome-loop"
+  ],
+  "timestamp": "2026-04-19T19:44:23.380918Z",
+  "unresolved_notes": []
+}

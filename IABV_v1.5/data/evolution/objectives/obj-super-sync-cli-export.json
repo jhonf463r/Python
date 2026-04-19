@@ -7,7 +7,7 @@
   "root_id": "obj-control-master-super-sync",
   "site_id": null,
   "priority": 20,
-  "status": "active",
+  "status": "completed",
   "progress": 0.0,
   "blocker": "",
   "confidence": 0.0,
@@ -17,7 +17,14 @@
     "cli",
     "super-sync"
   ],
-  "metadata": {},
+  "metadata": {
+    "control_master_notes": [
+      {
+        "note": "shipped en PR #23: python -m iabv_v15 cm export-digest + set-vision + add-objective + mark-objective + record-decision + mark-unresolved",
+        "at": "2026-04-19T19:44:08.689099+00:00"
+      }
+    ]
+  },
   "created_at_utc": "2026-04-19T19:22:00.740838Z",
-  "updated_at_utc": "2026-04-19T19:22:00.740840Z"
+  "updated_at_utc": "2026-04-19T19:44:08.689099Z"
 }
