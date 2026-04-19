@@ -146,6 +146,7 @@ class UIExecutionRunner:
         input_selectors: list[str] | tuple[str, ...] | None = None,
         response_selectors: list[str] | tuple[str, ...] | None = None,
         submit_selectors: list[str] | tuple[str, ...] | None = None,
+        reingest_only: bool = False,
     ) -> dict[str, Any]:
         started = time.perf_counter()
         started_unix = time.time()
@@ -162,6 +163,7 @@ class UIExecutionRunner:
                 input_selectors=list(input_selectors or []),
                 response_selectors=list(response_selectors or []),
                 submit_selectors=list(submit_selectors or []),
+                reingest_only=reingest_only,
             )
         initial_clipboard = self.read_clipboard_text()
         launched = False
@@ -690,6 +692,7 @@ class UIExecutionRunner:
         input_selectors: list[str],
         response_selectors: list[str],
         submit_selectors: list[str],
+        reingest_only: bool = False,
     ) -> dict[str, Any]:
         started = time.perf_counter()
         profile_dir = Path(browser_profile_dir) if browser_profile_dir else (self.workspace_root / 'data' / 'tool_teaching' / 'external_assistants' / 'web_program_session' / 'browser_profile')
@@ -746,7 +749,7 @@ class UIExecutionRunner:
                     continue
                 break
 
-            if not input_selector:
+            if not input_selector and not reingest_only:
                 if self._browser_page_requires_security_verification(page):
                     error_message = 'browser_security_verification'
                 elif self._browser_page_requires_login(page):
@@ -767,9 +770,14 @@ class UIExecutionRunner:
                     'execution_ms': int((time.perf_counter() - started) * 1000),
                     'metadata': {'background_capture_mode': 'browser_dom', 'security_retries': attempt + 1},
                 }
-            self._fill_browser_prompt(page, input_selector, prompt_text)
-            prompt_pasted = True
-            self._submit_browser_prompt(page, submit_selectors)
+            if reingest_only:
+                # Modo reingesta: la sesion aislada ya tiene un hilo abierto con respuesta.
+                # No re-pegar prompt ni re-submittear; solo leer los response_selectors actuales.
+                pass
+            else:
+                self._fill_browser_prompt(page, input_selector, prompt_text)
+                prompt_pasted = True
+                self._submit_browser_prompt(page, submit_selectors)
             deadline = time.monotonic() + max(3.0, response_wait_seconds)
             stable_hits = 0
             last_text = ''
@@ -804,13 +812,14 @@ class UIExecutionRunner:
             'response_captured': response_captured,
             'captured_text': captured_text if response_captured else '',
             'captured_excerpt': captured_text[:400] if captured_text else '',
-            'capture_source': 'browser_dom',
+            'capture_source': 'browser_dom_reingest' if reingest_only else 'browser_dom',
             'error_message': error_message,
             'browser_profile_dir': str(profile_dir),
             'execution_ms': int((time.perf_counter() - started) * 1000),
             'metadata': {
                 'background_capture_mode': 'browser_dom',
                 'browser_headless': browser_headless,
+                'reingest_only': reingest_only,
             },
         }
 

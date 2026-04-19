@@ -671,3 +671,78 @@ def test_external_assistant_adapter_uses_explicit_credential_domain_when_provide
     assert len(broker.requests) == 1
     assert broker.requests[0]['domain'] == 'chatgpt.iabv.local'
     assert broker.requests[0]['username_hint'] == 'faber'
+
+
+def _recording_runner_factory(recorded_calls: list[dict[str, object]]):
+    """Runner factory que graba los kwargs pasados y devuelve respuesta capturada."""
+
+    class _Runner:
+        def __init__(self, workspace_root: str) -> None:
+            self.workspace_root = workspace_root
+
+        def capture_response_from_app(self, **kwargs) -> dict[str, object]:
+            recorded_calls.append(dict(kwargs))
+            return {
+                'launched': True,
+                'focused_title': 'ChatGPT',
+                'response_captured': True,
+                'captured_text': 'respuesta reingesta util',
+                'capture_source': 'browser_dom_reingest' if kwargs.get('reingest_only') else 'browser_dom',
+                'browser_profile_dir': '',
+                'error_message': '',
+            }
+
+    return lambda workspace_root: _Runner(workspace_root)
+
+
+def _chatgpt_task_with_metadata(metadata: dict[str, object]):
+    from iabv_v15.domain.models import ToolAction, ToolActionType, ToolTask, TaskRole
+
+    return ToolTask(
+        tool_id='chatgpt_web_assisted',
+        title='Consultar ChatGPT',
+        objective='Diagnosticar por que no despega la consulta',
+        requested_by_role=TaskRole.TOOL_USE,
+        actions=[ToolAction(action_type=ToolActionType.LLM_QUERY, label='Consulta', value='Revisa la causa del atasco')],
+        metadata=dict(metadata),
+    )
+
+
+def test_external_assistant_adapter_forwards_reingest_flag_when_task_requests_reingest() -> None:
+    """Cuando el orquestador marca reingest_existing_response en la task, el adapter
+    le pide al runner reingest_only=True y desactiva submit_after_paste."""
+    calls: list[dict[str, object]] = []
+    adapter = ExternalAssistantToolAdapter(runner_factory=_recording_runner_factory(calls))
+    task = _chatgpt_task_with_metadata({'reingest_existing_response': True})
+
+    result = adapter.run(_chatgpt_web_card(), task, sandbox=False)
+
+    assert result['success'] is True
+    assert len(calls) == 1
+    assert calls[0]['reingest_only'] is True
+    # Debe saltar el submit automatico cuando solo queremos releer la respuesta.
+    assert calls[0]['submit_after_paste'] is False
+
+
+def test_external_assistant_adapter_forwards_reingest_flag_from_goal_parameters() -> None:
+    """El flag tambien se acepta anidado en goal_parameters (camino normal que
+    viaja por plan_or_execute -> execute_external_consultation)."""
+    calls: list[dict[str, object]] = []
+    adapter = ExternalAssistantToolAdapter(runner_factory=_recording_runner_factory(calls))
+    task = _chatgpt_task_with_metadata({'goal_parameters': {'reingest_existing_response': True}})
+
+    adapter.run(_chatgpt_web_card(), task, sandbox=False)
+
+    assert calls[0]['reingest_only'] is True
+    assert calls[0]['submit_after_paste'] is False
+
+
+def test_external_assistant_adapter_defaults_reingest_only_to_false() -> None:
+    """Sin flag explicito el runner recibe reingest_only=False y submit normal."""
+    calls: list[dict[str, object]] = []
+    adapter = ExternalAssistantToolAdapter(runner_factory=_recording_runner_factory(calls))
+
+    adapter.run(_chatgpt_web_card(), _chatgpt_task(), sandbox=False)
+
+    assert calls[0]['reingest_only'] is False
+    assert calls[0]['submit_after_paste'] is True

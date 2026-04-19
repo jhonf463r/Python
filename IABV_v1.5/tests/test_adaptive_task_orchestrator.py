@@ -1086,3 +1086,77 @@ def test_adaptive_orchestrator_upgrades_real_wplay_login_when_visual_evidence_is
     assert login_capability['status'] == 'ready_with_approval'
     assert restore_capability['status'] == 'ready_with_approval'
     assert result.raw_output['assistant_guidance']['mode'] != 'need_teaching'
+
+
+def test_prepare_retry_marks_reingest_flag_for_session_expired_consultation() -> None:
+    """Cuando la consulta expiro (hilo abierto con respuesta lista), el reintento
+    debe pedir reingesta del DOM en vez de relanzar la pagina desde cero."""
+    orchestrator, _ = _orchestrator(_workspace('retry_reingest_session_expired'))
+
+    payload = {'metadata': {'pending_issue_id': 'issue-42'}}
+    existing = {'task_id': 'task-abc', 'result_id': 'result-xyz'}
+
+    new_payload = orchestrator._prepare_retry_for_expired_consultation(
+        payload=payload,
+        existing_consultation=existing,
+        retry_count=0,
+        previous_status='session_expired',
+    )
+
+    retry_meta = new_payload['metadata']['consultation_retry']
+    assert retry_meta['previous_status'] == 'session_expired'
+    assert retry_meta['reingest_only'] is True
+    assert new_payload['metadata']['reingest_existing_response'] is True
+    # El reintento debe empezar desde 1, no reescribir el original.
+    assert retry_meta['retry_count'] == 1
+    # No debe arrastrar pending_issue_id viejo.
+    assert 'pending_issue_id' not in new_payload['metadata']
+
+
+def test_prepare_retry_skips_reingest_flag_for_failed_or_blocked_consultation() -> None:
+    """En fallos o bloqueos el reintento debe hacer el flujo completo
+    (relanzar + pegar prompt + submit), no solo releer el DOM."""
+    orchestrator, _ = _orchestrator(_workspace('retry_reingest_failed'))
+
+    payload = {'metadata': {}}
+    existing = {'task_id': 'task-1', 'result_id': 'result-1'}
+
+    failed_payload = orchestrator._prepare_retry_for_expired_consultation(
+        payload=payload,
+        existing_consultation=existing,
+        retry_count=1,
+        previous_status='failed',
+    )
+    blocked_payload = orchestrator._prepare_retry_for_expired_consultation(
+        payload=payload,
+        existing_consultation=existing,
+        retry_count=0,
+        previous_status='blocked',
+    )
+
+    for retry_payload in (failed_payload, blocked_payload):
+        retry_meta = retry_payload['metadata']['consultation_retry']
+        assert retry_meta['reingest_only'] is False
+        assert retry_payload['metadata'].get('reingest_existing_response') is None
+
+
+def test_prepare_retry_is_idempotent_and_does_not_mutate_input_payload() -> None:
+    """El helper debe devolver un payload nuevo sin alterar el original."""
+    orchestrator, _ = _orchestrator(_workspace('retry_reingest_idempotent'))
+
+    original_metadata = {'autonomous_evolution': {'old': True}, 'pending_issue_id': 'x'}
+    payload = {'metadata': dict(original_metadata)}
+
+    new_payload = orchestrator._prepare_retry_for_expired_consultation(
+        payload=payload,
+        existing_consultation={'task_id': 't', 'result_id': 'r'},
+        retry_count=0,
+        previous_status='session_expired',
+    )
+
+    # El payload original no se toca.
+    assert payload['metadata'] == original_metadata
+    # El nuevo payload si limpia flags anteriores.
+    assert 'autonomous_evolution' not in new_payload['metadata']
+    assert 'pending_issue_id' not in new_payload['metadata']
+    assert new_payload['metadata']['reingest_existing_response'] is True
