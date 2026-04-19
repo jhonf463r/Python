@@ -78,6 +78,7 @@ from iabv_v15.services.evolution.operational_self_examination_service import Ope
 from iabv_v15.infra.persistence.control_master_repository import ControlMasterRepository
 from iabv_v15.services.evolution.control_master_digest_builder import ControlMasterDigestBuilder
 from iabv_v15.services.evolution.control_master_service import ControlMasterService
+from iabv_v15.services.evolution.git_sync_service import GitSyncService
 from iabv_v15.services.evolution.mcp_bridge_service import (
     MCPBridgeService,
     build_mcp_bridge_service,
@@ -451,6 +452,12 @@ class AppBootstrap:
             experiment_lab_repository=self.experiment_lab_repository,
         )
         self.control_master_digest_builder = ControlMasterDigestBuilder()
+        self.git_sync_service = GitSyncService(
+            repo_root=self.config.workspace_root,
+            branch='main',
+            autonomy_governance_policy=self.autonomy_governance_policy,
+            control_master_service=self.control_master_service,
+        )
         self.task_context_assembler = TaskContextAssembler(
             episode_repository=self.episode_repository,
             knowledge_repository=self.knowledge_repository,
