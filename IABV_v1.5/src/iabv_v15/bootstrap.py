@@ -51,6 +51,10 @@ from iabv_v15.services.capture.browser_session_controller import BrowserSessionC
 from iabv_v15.services.capture.browser_teach_session_service import BrowserTeachSessionService
 from iabv_v15.services.capture.redaction_engine import RedactionEngine
 from iabv_v15.services.capture.secret_vault import SecretVault
+from iabv_v15.services.environment.environment_bootstrap_service import EnvironmentBootstrapService
+from iabv_v15.services.providers.provider_health_router import ProviderHealthRouter, default_local_probes
+from iabv_v15.services.security.credential_broker import CredentialBroker
+from iabv_v15.services.ux.clarification_request_service import ClarificationRequestService
 from iabv_v15.services.capture.sensitive_field_detector import SensitiveFieldDetector
 from iabv_v15.services.capture.site_policy_registry import SitePolicyRegistry
 from iabv_v15.services.capture.site_session_manager import SiteSessionManager
@@ -487,6 +491,32 @@ class AppBootstrap:
             incident_packet_service=self.incident_packet_service,
             pending_issue_repository=self.pending_issue_repository,
         )
+
+        # --- Task A: backend services para dialogos UI (Task B) ---
+        # Los 4 servicios no deciden rutas ni tocan ViewModels; solo median
+        # prompts de UI, respuestas, instalaciones y salud de proveedores.
+        self.credential_broker = CredentialBroker(secret_vault=self.secret_vault)
+        self.clarification_request_service = ClarificationRequestService()
+        self.environment_bootstrap_service = EnvironmentBootstrapService()
+        self.provider_health_router = ProviderHealthRouter(
+            probes=default_local_probes(
+                ollama_base_url=self.config.ollama_base_url,
+                embeddings_base_url=self.config.ollama_base_url,
+                external_assistant_urls=getattr(self.config, 'external_assistant_urls', None) or {},
+            )
+        )
+        # Inyectar en los servicios que los consumen (sin modificar sus ctors):
+        # solo se adjuntan como atributos opcionales a disposicion de cada servicio.
+        self.autonomous_evolution_service.credential_broker = self.credential_broker
+        self.autonomous_evolution_service.clarification_request_service = self.clarification_request_service
+        self.autonomous_evolution_service.environment_bootstrap_service = self.environment_bootstrap_service
+        self.autonomous_evolution_service.provider_health_router = self.provider_health_router
+        self.browser_teach_session_service.credential_broker = self.credential_broker
+        self.browser_teach_session_service.clarification_request_service = self.clarification_request_service
+        self.operational_executor.credential_broker = self.credential_broker
+        self.operational_executor.clarification_request_service = self.clarification_request_service
+        self.operational_executor.environment_bootstrap_service = self.environment_bootstrap_service
+
         self.knowledge_service = KnowledgeService(self.knowledge_repository, unified_memory_layer=self.unified_memory_layer)
         self.adaptive_task_orchestrator = AdaptiveTaskOrchestrator(
             role_router=self.role_router,
@@ -644,6 +674,12 @@ class AppBootstrap:
         self.knowledge_base_viewmodel = KnowledgeBaseViewModel(self.knowledge_repository)
         self.provider_settings_viewmodel = ProviderSettingsViewModel(self.provider_configs, self.role_router, self.embedding_service)
         self.run_history_viewmodel = RunHistoryViewModel(self.run_repository, self.execution_dossier_repository)
+
+        # --- Task A: conectar handlers de backend a senales de ambos ViewModels ---
+        # Los servicios backend emiten via handler registrado; el handler reemite por
+        # la Qt Signal del ControlCenterViewModel y EvolutionCenterViewModel para que
+        # los dialogos QML (Task B) los reciban.
+        self._wire_task_a_signals()
         for service_name in ('autonomous_validation_cycle', 'world_model_service', 'environment_self_awareness_service'):
             service = getattr(self, service_name, None)
             if service is None or not hasattr(service, 'stop'):
@@ -653,7 +689,51 @@ class AppBootstrap:
             except TypeError:
                 service.stop()
 
+    def _wire_task_a_signals(self) -> None:
+        """Conecta handlers de los 4 servicios backend (Task A) a ambos ViewModels.
+
+        Cada handler re-emite el payload como Qt Signal de ControlCenter y
+        EvolutionCenter, para que los dialogos/paneles QML de Task B los
+        reciban sin acoplar el backend a Qt ni a los ViewModels.
+        """
+        view_models = [vm for vm in (self.control_center_viewmodel, self.evolution_center_viewmodel) if vm is not None]
+        if not view_models:
+            return
+
+        def _emit(signal_name: str, payload):
+            for vm in view_models:
+                signal = getattr(vm, signal_name, None)
+                if signal is None:
+                    continue
+                try:
+                    signal.emit(payload)
+                except Exception:
+                    # Evitamos que un fallo en un sink UI bloquee el resto.
+                    continue
+
+        self.credential_broker.register_prompt_handler(
+            lambda payload: _emit('credentialPromptRequested', payload)
+        )
+        self.clarification_request_service.register_prompt_handler(
+            lambda payload: _emit('clarificationRequested', payload)
+        )
+        self.environment_bootstrap_service.register_prompt_handler(
+            lambda payload: _emit('missingDependencyRequested', payload)
+        )
+        self.environment_bootstrap_service.register_activity_handler(
+            lambda payload: _emit('backgroundActivityChanged', payload)
+        )
+        self.provider_health_router.register_health_listener(
+            lambda payload: _emit('providerHealthChanged', payload)
+        )
+
     def shutdown(self) -> None:
+        router = getattr(self, 'provider_health_router', None)
+        if router is not None:
+            try:
+                router.stop_polling(timeout_s=2.0)
+            except Exception:
+                pass
         self.stop()
 
     def export_portable_context(self, *, refresh: bool = True) -> dict[str, object]:
