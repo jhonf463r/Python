@@ -863,6 +863,8 @@ class ToolAdapter:
         expanded = candidate
         for token, value in replacements.items():
             expanded = expanded.replace(token, value)
+        if os.sep != '\\':
+            expanded = expanded.replace('\\', os.sep)
         if any(token in expanded for token in ('*', '?', '[')):
             return [str(Path(item)) for item in glob.glob(expanded, recursive=True)]
         return [expanded]
