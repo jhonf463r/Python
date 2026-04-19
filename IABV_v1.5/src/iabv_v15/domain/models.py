@@ -1726,6 +1726,7 @@ class TaskIntent(BaseModel):
     multi_step: bool = False
     missing_requirements: list[str] = Field(default_factory=list)
     reasoning: list[str] = Field(default_factory=list)
+    hypotheses: list["IntentHypothesis"] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -1734,6 +1735,22 @@ class IntentHypothesis(BaseModel):
     title: str
     confidence: float = 0.0
     rationale: str = ""
+
+
+class IntentSchema(BaseModel):
+    primary_intent: str = "general.assistance"
+    sub_intents: list[str] = Field(default_factory=list)
+    ambiguity_score: float = 0.0
+    requires_clarification: bool = False
+    clarification_prompt: str = ""
+    risk_level: str = "low"
+    confidence: float = 0.0
+    semantic_source: str = "keywords"
+    compound: bool = False
+    constraints: list[str] = Field(default_factory=list)
+    objective_summary: str = ""
+    context_carried_from_history: bool = False
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class CapabilityReadiness(BaseModel):
