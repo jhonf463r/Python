@@ -7,6 +7,7 @@ in the generated system prompt with priority-based truncation.
 from __future__ import annotations
 
 from iabv_v15.domain.models import (
+    ControlMasterDigest,
     EnvironmentSelfModel,
     ToolCard,
     ToolType,
@@ -113,3 +114,44 @@ def test_prompt_truncation_respects_limit() -> None:
         tool_registry=huge_cards,
     )
     assert len(prompt) <= 15_000
+
+
+def test_prompt_includes_control_master_section_when_digest_present() -> None:
+    builder = SystemPromptBuilder()
+    digest = ControlMasterDigest(
+        current_vision='IABV v1.5 local-first',
+        rules_brief=['[IRREVOCABLE] No crear otro cerebro'],
+        active_objectives_brief=['obj-1: Cerrar capa world model'],
+        top_backlog=['Integrar digest en prompt'],
+        current_risks=['falta permiso de observacion'],
+        recent_decisions_brief=['2026-04-18: migrar a PySide6'],
+        unresolved=['validar Codex vivo en Windows'],
+        tests_state_brief='390 passed / 28 failed (Linux)',
+    )
+    prompt = builder.build(
+        perception=None,
+        world_model=None,
+        env_self_model=None,
+        portable_context=None,
+        tool_registry=None,
+        control_master_digest=digest,
+    )
+    assert 'Control Maestro' in prompt
+    assert 'IABV v1.5 local-first' in prompt
+    assert 'No crear otro cerebro' in prompt
+    assert 'obj-1: Cerrar capa world model' in prompt
+    assert 'validar Codex vivo en Windows' in prompt
+    assert 'UNRESOLVED' in prompt
+
+
+def test_prompt_falls_back_when_no_digest() -> None:
+    builder = SystemPromptBuilder()
+    prompt = builder.build(
+        perception=None,
+        world_model=None,
+        env_self_model=None,
+        portable_context=None,
+        tool_registry=None,
+    )
+    assert 'Control Maestro' in prompt
+    assert 'No disponible en esta sesion' in prompt

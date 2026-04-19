@@ -85,6 +85,8 @@ class ControlCenterViewModel(QObject):
         tool_discovery_service: Any | None = None,
         self_examination_service: Any | None = None,
         mcp_bridge_service: Any | None = None,
+        control_master_service: Any | None = None,
+        control_master_digest_builder: Any | None = None,
     ) -> None:
         super().__init__()
         self.config = config
@@ -116,6 +118,8 @@ class ControlCenterViewModel(QObject):
         self.autonomous_validation_cycle = autonomous_validation_cycle
         self.tool_discovery_service = tool_discovery_service
         self.self_examination_service = self_examination_service
+        self.control_master_service = control_master_service
+        self.control_master_digest_builder = control_master_digest_builder
 
         self._selected_role = config.default_task_role.value
         self._auto_route_enabled = True
@@ -5515,6 +5519,40 @@ class ControlCenterViewModel(QObject):
     mcpTunnelUrl = Property(str, get_mcp_tunnel_url, notify=mcpBridgeChanged)
     mcpBridgeBlocked = Property(bool, get_mcp_bridge_blocked, notify=mcpBridgeChanged)
     mcpBridgeReason = Property(str, get_mcp_bridge_reason, notify=mcpBridgeChanged)
+
+    # --- Control Master (read-only) ---
+    def get_control_master_digest(self) -> dict[str, Any]:
+        service = self.control_master_service
+        builder = self.control_master_digest_builder
+        if service is None or builder is None:
+            return {}
+        try:
+            state = service.current_state(refresh=False)
+            return builder.build(state).model_dump(mode='json')
+        except Exception:
+            return {}
+
+    def get_control_master_brief(self) -> str:
+        digest = self.get_control_master_digest()
+        if not digest:
+            return 'Control maestro no disponible en esta sesion.'
+        parts: list[str] = []
+        vision = str(digest.get('current_vision') or '').strip()
+        if vision:
+            parts.append(f'Vision: {vision}')
+        rules = digest.get('rules_brief') or []
+        if rules:
+            parts.append(f'Reglas ({len(rules)}): {rules[0]}')
+        active = digest.get('active_objectives_brief') or []
+        if active:
+            parts.append(f'Objetivos activos: {", ".join(active[:3])}')
+        unresolved = digest.get('unresolved') or []
+        if unresolved:
+            parts.append(f'UNRESOLVED: {unresolved[0]}')
+        return ' | '.join(parts) or 'Control maestro disponible (sin senales salientes).'
+
+    controlMasterDigest = Property(dict, get_control_master_digest, notify=dataChanged)
+    controlMasterBrief = Property(str, get_control_master_brief, notify=dataChanged)
 
 
 

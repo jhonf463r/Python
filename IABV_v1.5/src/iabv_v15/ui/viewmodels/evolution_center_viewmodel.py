@@ -45,6 +45,8 @@ class EvolutionCenterViewModel(QObject):
         autonomous_validation_cycle: Any | None = None,
         portable_context_service: Any | None = None,
         self_examination_service: Any | None = None,
+        control_master_service: Any | None = None,
+        control_master_digest_builder: Any | None = None,
     ) -> None:
         super().__init__()
         self.dossier_repository = dossier_repository
@@ -62,6 +64,10 @@ class EvolutionCenterViewModel(QObject):
         self.autonomous_validation_cycle = autonomous_validation_cycle
         self.portable_context_service = portable_context_service
         self.self_examination_service = self_examination_service
+        self.control_master_service = control_master_service
+        self.control_master_digest_builder = control_master_digest_builder
+        self._control_master_digest: dict[str, Any] = {}
+        self._control_master_brief = 'Todavia no he consultado el control maestro desde esta vista.'
         self._working = False
         self._status_text = 'La capa evolutiva esta lista para resumir fallos, parciales e incidentes invisibles.'
         self._health_snapshot: dict[str, Any] = {}
@@ -137,6 +143,12 @@ class EvolutionCenterViewModel(QObject):
     def get_portable_context_brief(self) -> str:
         return self._portable_context_brief
 
+    def get_control_master_digest(self) -> dict[str, Any]:
+        return self._control_master_digest
+
+    def get_control_master_brief(self) -> str:
+        return self._control_master_brief
+
     def get_tool_evolution_panel(self) -> dict[str, Any]:
         return self._tool_evolution_panel
 
@@ -199,6 +211,13 @@ class EvolutionCenterViewModel(QObject):
             if self.self_examination_service is not None and hasattr(self.self_examination_service, 'current_review')
             else {}
         )
+        control_master_digest: dict[str, Any] = {}
+        if self.control_master_service is not None and self.control_master_digest_builder is not None:
+            try:
+                state = self.control_master_service.current_state(refresh=False)
+                control_master_digest = self.control_master_digest_builder.build(state).model_dump(mode='json')
+            except Exception:
+                control_master_digest = {}
         self._health_snapshot = snapshot.model_dump(mode='json')
         self._recent_dossiers = dossiers
         self._recent_incidents = filtered_incidents
@@ -214,6 +233,10 @@ class EvolutionCenterViewModel(QObject):
         self._tool_evolution_panel = self._build_tool_evolution_panel(portable_context=portable_context, autonomous_validation=autonomous_validation)
         self._self_examination = self_examination
         self._self_examination_brief = str(self_examination.get('assistant_brief') or '').strip() or self._self_examination_brief
+        self._control_master_digest = control_master_digest
+        control_master_brief = self._format_control_master_brief(control_master_digest)
+        if control_master_brief:
+            self._control_master_brief = control_master_brief
         if dossiers:
             if self._pinned_dossier_selection:
                 current_id = self._selected_dossier.get('dossier_id') if self._selected_dossier else ''
@@ -239,6 +262,25 @@ class EvolutionCenterViewModel(QObject):
         if validation_summary:
             self._status_text = f'{self._status_text} | Validacion autonoma: {validation_summary}'
         self.dataChanged.emit()
+
+    @staticmethod
+    def _format_control_master_brief(digest: dict[str, Any]) -> str:
+        if not digest:
+            return ''
+        parts: list[str] = []
+        vision = str(digest.get('current_vision') or '').strip()
+        if vision:
+            parts.append(f'Vision: {vision}')
+        rules = digest.get('rules_brief') or []
+        if rules:
+            parts.append(f'Reglas ({len(rules)}): {rules[0]}')
+        active = digest.get('active_objectives_brief') or []
+        if active:
+            parts.append(f'Objetivos activos: {", ".join(active[:3])}')
+        unresolved = digest.get('unresolved') or []
+        if unresolved:
+            parts.append(f'UNRESOLVED: {unresolved[0]}')
+        return ' | '.join(parts)
 
     def _build_tool_evolution_panel(self, *, portable_context: dict[str, Any], autonomous_validation: dict[str, Any]) -> dict[str, Any]:
         metadata = dict((portable_context or {}).get('metadata') or {})
@@ -582,6 +624,8 @@ class EvolutionCenterViewModel(QObject):
     autonomousValidation = Property(dict, get_autonomous_validation, notify=dataChanged)
     portableContext = Property(dict, get_portable_context, notify=dataChanged)
     portableContextBrief = Property(str, get_portable_context_brief, notify=dataChanged)
+    controlMasterDigest = Property(dict, get_control_master_digest, notify=dataChanged)
+    controlMasterBrief = Property(str, get_control_master_brief, notify=dataChanged)
     toolEvolutionPanel = Property(dict, get_tool_evolution_panel, notify=dataChanged)
     selfExamination = Property(dict, get_self_examination, notify=dataChanged)
     selfExaminationBrief = Property(str, get_self_examination_brief, notify=dataChanged)

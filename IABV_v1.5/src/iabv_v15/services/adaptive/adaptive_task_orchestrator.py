@@ -96,6 +96,8 @@ class AdaptiveTaskOrchestrator:
         self.unified_memory_layer = unified_memory_layer
         self.goal_engine = goal_engine
         self.autonomy_governance_policy = autonomy_governance_policy
+        self.control_master_service: Any | None = None
+        self.control_master_digest_builder: Any | None = None
 
     def build_decision_context_preview(self, request: InferenceRequest) -> DecisionContext:
         # Usar clasificación con schema para mejor comprensión semántica
@@ -902,6 +904,8 @@ class AdaptiveTaskOrchestrator:
         tool_cards = self._tool_cards()
         governance_snapshot = self._governance_for_chat(session)
 
+        control_master_digest = self._control_master_digest()
+
         prompt_builder = SystemPromptBuilder()
         system_prompt = prompt_builder.build(
             perception=None,
@@ -910,6 +914,7 @@ class AdaptiveTaskOrchestrator:
             portable_context=portable_context,
             tool_registry=tool_cards,
             governance_rules=governance_snapshot,
+            control_master_digest=control_master_digest,
         )
         system_prompt_hash = SystemPromptBuilder.prompt_hash(system_prompt)
 
@@ -1010,6 +1015,17 @@ class AdaptiveTaskOrchestrator:
         if governance:
             return governance
         return {}
+
+    def _control_master_digest(self) -> Any:
+        service = self.control_master_service
+        builder = self.control_master_digest_builder
+        if service is None or builder is None:
+            return None
+        try:
+            state = service.current_state(refresh=True)
+            return builder.build(state)
+        except Exception:
+            return None
 
     def _build_decision_context(
         self,

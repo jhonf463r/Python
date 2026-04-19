@@ -572,6 +572,9 @@ class AppBootstrap:
         )
         self.portable_context_service.task_context_assembler = self.task_context_assembler
         self.portable_context_service.adaptive_task_orchestrator = self.adaptive_task_orchestrator
+        self.adaptive_task_orchestrator.control_master_service = self.control_master_service
+        self.adaptive_task_orchestrator.control_master_digest_builder = self.control_master_digest_builder
+        self._seed_control_master_from_agents_md()
         self.inference_service = InferenceService(
             self.role_router,
             self.run_repository,
@@ -678,6 +681,8 @@ class AppBootstrap:
             tool_discovery_service=self.tool_discovery_service,
             self_examination_service=self.operational_self_examination_service,
             mcp_bridge_service=self.mcp_bridge_service,
+            control_master_service=self.control_master_service,
+            control_master_digest_builder=self.control_master_digest_builder,
         )
         self.capture_studio_viewmodel = CaptureStudioViewModel(
             config=self.config,
@@ -722,6 +727,8 @@ class AppBootstrap:
             autonomous_validation_cycle=self.autonomous_validation_cycle,
             portable_context_service=self.portable_context_service,
             self_examination_service=self.operational_self_examination_service,
+            control_master_service=self.control_master_service,
+            control_master_digest_builder=self.control_master_digest_builder,
         )
         self.knowledge_base_viewmodel = KnowledgeBaseViewModel(self.knowledge_repository)
         self.provider_settings_viewmodel = ProviderSettingsViewModel(self.provider_configs, self.role_router, self.embedding_service)
@@ -800,6 +807,32 @@ class AppBootstrap:
             return {}
         package = self.portable_context_service.current_package(refresh=refresh)
         return package.model_dump(mode='json')
+
+    def export_control_master_digest(self, *, refresh: bool = True) -> dict[str, object]:
+        service = getattr(self, 'control_master_service', None)
+        builder = getattr(self, 'control_master_digest_builder', None)
+        if service is None or builder is None:
+            return {}
+        state = service.current_state(refresh=refresh)
+        return builder.build(state).model_dump(mode='json')
+
+    def _seed_control_master_from_agents_md(self) -> None:
+        service = getattr(self, 'control_master_service', None)
+        if service is None:
+            return
+        workspace_root = Path(getattr(self.config, 'workspace_root', '.'))
+        candidates = [
+            workspace_root / 'AGENTS.md',
+            workspace_root.parent / 'AGENTS.md',
+            Path.cwd() / 'AGENTS.md',
+        ]
+        for candidate in candidates:
+            try:
+                if candidate.is_file():
+                    service.seed_from_agents_md(candidate)
+                    return
+            except Exception:
+                continue
 
     def create_engine(self):
         if not PYSIDE_AVAILABLE:
