@@ -2487,8 +2487,94 @@ class TrainingPayloadV2(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class ControlRuleSeverity(str, Enum):
+    INFO = "info"
+    ADVISORY = "advisory"
+    STRICT = "strict"
+    IRREVOCABLE = "irrevocable"
 
 
+class ControlRuleStatus(str, Enum):
+    ACTIVE = "active"
+    DEPRECATED = "deprecated"
+    SUPERSEDED = "superseded"
+
+
+class ControlRule(BaseModel):
+    rule_id: str = Field(default_factory=lambda: str(uuid4()))
+    title: str
+    description: str = ""
+    severity: ControlRuleSeverity = ControlRuleSeverity.ADVISORY
+    rationale: str = ""
+    applies_to: list[str] = Field(default_factory=list)
+    status: ControlRuleStatus = ControlRuleStatus.ACTIVE
+    source_refs: list[str] = Field(default_factory=list)
+    created_at_utc: datetime = Field(default_factory=utc_now)
+    updated_at_utc: datetime = Field(default_factory=utc_now)
+
+
+class ControlDecisionStatus(str, Enum):
+    PROPOSED = "proposed"
+    ACCEPTED = "accepted"
+    IMPLEMENTED = "implemented"
+    REVERTED = "reverted"
+
+
+class ControlDecision(BaseModel):
+    decision_id: str = Field(default_factory=lambda: str(uuid4()))
+    summary: str
+    reason: str = ""
+    impact: str = ""
+    affected_modules: list[str] = Field(default_factory=list)
+    status: ControlDecisionStatus = ControlDecisionStatus.PROPOSED
+    evidence: list[str] = Field(default_factory=list)
+    linked_tests: list[str] = Field(default_factory=list)
+    related_rule_ids: list[str] = Field(default_factory=list)
+    related_objective_ids: list[str] = Field(default_factory=list)
+    timestamp: datetime = Field(default_factory=utc_now)
+    unresolved_notes: list[str] = Field(default_factory=list)
+
+
+class ControlMasterState(BaseModel):
+    state_id: str = Field(default_factory=lambda: str(uuid4()))
+    version: str = "control_master.v1"
+    current_vision: str = ""
+    active_objective_ids: list[str] = Field(default_factory=list)
+    completed_objective_ids: list[str] = Field(default_factory=list)
+    paused_objective_ids: list[str] = Field(default_factory=list)
+    discarded_objective_ids: list[str] = Field(default_factory=list)
+    unresolved_items: list[str] = Field(default_factory=list)
+    global_rules: list[ControlRule] = Field(default_factory=list)
+    technical_backlog: list[dict[str, Any]] = Field(default_factory=list)
+    recent_decisions: list[ControlDecision] = Field(default_factory=list)
+    current_risks: list[dict[str, Any]] = Field(default_factory=list)
+    current_tests_state: dict[str, Any] = Field(default_factory=dict)
+    evidence_links: list[str] = Field(default_factory=list)
+    last_updated: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ControlMasterDigest(BaseModel):
+    """Compact governance pack (<2 KB text) injected into IAs.
+
+    Complementary to PortableContextPackage: narrower scope (vision +
+    rules + objectives + risks + decisions), always truncated to fit
+    safely inside a system prompt, and intentionally stateless about
+    chat history.
+    """
+
+    digest_id: str = Field(default_factory=lambda: str(uuid4()))
+    version: str = "control_master_digest.v1"
+    current_vision: str = ""
+    active_objectives_brief: list[str] = Field(default_factory=list)
+    rules_brief: list[str] = Field(default_factory=list)
+    top_backlog: list[str] = Field(default_factory=list)
+    current_risks: list[str] = Field(default_factory=list)
+    recent_decisions_brief: list[str] = Field(default_factory=list)
+    unresolved: list[str] = Field(default_factory=list)
+    tests_state_brief: str = ""
+    generated_at_utc: datetime = Field(default_factory=utc_now)
+    source_state_id: str = ""
 
 
 

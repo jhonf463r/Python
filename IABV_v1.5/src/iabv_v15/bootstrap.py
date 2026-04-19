@@ -71,6 +71,9 @@ from iabv_v15.services.evolution.hidden_incident_detector import HiddenIncidentD
 from iabv_v15.services.evolution.incident_packet_service import IncidentPacketService
 from iabv_v15.services.evolution.live_audit_supervisor import LiveAuditSupervisor
 from iabv_v15.services.evolution.operational_self_examination_service import OperationalSelfExaminationService
+from iabv_v15.infra.persistence.control_master_repository import ControlMasterRepository
+from iabv_v15.services.evolution.control_master_digest_builder import ControlMasterDigestBuilder
+from iabv_v15.services.evolution.control_master_service import ControlMasterService
 from iabv_v15.services.evolution.portable_context_service import PortableContextService
 from iabv_v15.services.evolution.tool_discovery_service import ToolDiscoveryService
 from iabv_v15.services.evolution.tool_evolution_monitor import ToolEvolutionMonitor
@@ -421,6 +424,15 @@ class AppBootstrap:
             tool_discovery_service=self.tool_discovery_service,
             tool_evolution_monitor=self.tool_evolution_monitor,
         )
+        self.control_master_repository = ControlMasterRepository(self.evolution_storage)
+        self.control_master_service = ControlMasterService(
+            repository=self.control_master_repository,
+            objective_repository=self.objective_repository,
+            pending_issue_repository=self.pending_issue_repository,
+            self_examination_service=self.operational_self_examination_service,
+            experiment_lab_repository=self.experiment_lab_repository,
+        )
+        self.control_master_digest_builder = ControlMasterDigestBuilder()
         self.task_context_assembler = TaskContextAssembler(
             episode_repository=self.episode_repository,
             knowledge_repository=self.knowledge_repository,
