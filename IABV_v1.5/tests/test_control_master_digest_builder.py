@@ -96,6 +96,39 @@ def test_digest_markdown_respects_max_chars_budget() -> None:
     assert len(rendered) <= 400
 
 
+def test_max_unresolved_is_decoupled_from_max_risks() -> None:
+    """max_risks=0 must NOT silently drop unresolved items."""
+    state = ControlMasterState(
+        current_vision="v",
+        unresolved_items=[f"item-{i}" for i in range(7)],
+    )
+    digest = ControlMasterDigestBuilder(max_risks=0, max_unresolved=4).build(state)
+    assert digest.unresolved == ["item-0", "item-1", "item-2", "item-3"]
+
+
+def test_unresolved_items_are_preserved_when_rule_trim_fits_budget() -> None:
+    """Governance signals must not be dropped once the digest already fits."""
+    # Fabricate a state where rule trimming alone brings it under budget,
+    # and there are a handful of unresolved items that must survive.
+    state = ControlMasterState(
+        current_vision="v",
+        global_rules=[
+            ControlRule(
+                title=f"Regla muy larga de gobernanza numero {i} con contexto adicional",
+                severity=ControlRuleSeverity.IRREVOCABLE,
+            )
+            for i in range(6)
+        ],
+        unresolved_items=["falta permiso de observacion", "validar Codex vivo"],
+    )
+    # Budget chosen so rule trimming fits it with unresolved intact.
+    digest = ControlMasterDigestBuilder(max_chars=350).build(state)
+    rendered = render_digest_markdown(digest)
+    assert len(rendered) <= 350
+    # Unresolved items must still both be there.
+    assert digest.unresolved == ["falta permiso de observacion", "validar Codex vivo"]
+
+
 def test_digest_is_independent_of_chat_history() -> None:
     """The digest API only takes the persisted state; it cannot read any chat."""
     builder = ControlMasterDigestBuilder()
