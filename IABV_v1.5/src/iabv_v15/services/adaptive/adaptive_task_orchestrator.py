@@ -268,7 +268,16 @@ class AdaptiveTaskOrchestrator:
         retry_count: int,
         previous_status: str = 'session_expired',
     ) -> dict[str, Any]:
-        """Limpia el estado de una consulta expirada o fallida para permitir reintento."""
+        """Limpia el estado de una consulta expirada o fallida para permitir reintento.
+
+        Cuando la consulta anterior quedo en `session_expired` (el usuario ya
+        interactuo con la sesion aislada del asistente y dejo una respuesta en
+        el hilo) el reintento no relanza la pagina ni re-pega el prompt: marca
+        `reingest_existing_response=True` para que el runner solo lea la
+        respuesta actual del DOM abierto. En cambio, cuando la consulta fallo o
+        fue bloqueada por una razon distinta, el reintento hace el flujo
+        completo (launch + paste + submit) como antes.
+        """
         new_payload = dict(payload)
         metadata = dict(new_payload.get('metadata') or {})
         # Limpiar flags de estado anterior
@@ -279,6 +288,7 @@ class AdaptiveTaskOrchestrator:
         if 'execution_state' in metadata:
             metadata.pop('execution_state', None)
         # Agregar metadata de reintento
+        is_session_expired = previous_status not in {'failed', 'blocked'}
         reason = (
             'Consulta externa fallida, reintentando.'
             if previous_status in {'failed', 'blocked'}
@@ -290,7 +300,14 @@ class AdaptiveTaskOrchestrator:
             'retry_count': retry_count + 1,
             'previous_status': previous_status,
             'retry_reason': reason,
+            'reingest_only': is_session_expired,
         }
+        # Bandera que llega al adapter/runner via _goal_context para saltar el
+        # re-pegado del prompt y solo leer la respuesta ya visible.
+        if is_session_expired:
+            metadata['reingest_existing_response'] = True
+        else:
+            metadata.pop('reingest_existing_response', None)
         new_payload['metadata'] = metadata
         return new_payload
 

@@ -50,6 +50,25 @@ class ToolAdapter:
         assistant_kind = str(card.metadata.get('assistant_kind') or '').strip().lower()
         return assistant_kind
 
+    def _reingest_only_flag(self, *, card: ToolCard, task: ToolTask) -> bool:
+        """Devuelve True si se debe reingerir la respuesta de una sesion ya abierta.
+
+        Se activa cuando el orquestador, tras detectar una consulta expirada,
+        programa un reintento marcando `reingest_existing_response=True`. En ese
+        caso el runner debe saltar el re-pegado del prompt y solo leer la
+        respuesta vigente en la sesion aislada.
+        """
+        task_metadata = dict(task.metadata or {})
+        goal_parameters = dict(task_metadata.get('goal_parameters') or {})
+        consultation_retry = dict(task_metadata.get('consultation_retry') or {})
+        candidates = (
+            task_metadata.get('reingest_existing_response'),
+            goal_parameters.get('reingest_existing_response'),
+            consultation_retry.get('reingest_only'),
+            card.metadata.get('reingest_existing_response'),
+        )
+        return any(bool(value) for value in candidates)
+
     def _request_login_credentials(self, card: ToolCard) -> None:
         """Emite el prompt de credenciales si el broker esta disponible y aun faltan.
 
@@ -179,6 +198,7 @@ class ToolAdapter:
                 },
             }
         dry_run = bool(task.metadata.get('dry_run_launch') or card.metadata.get('dry_run_launch'))
+        reingest_only = self._reingest_only_flag(card=card, task=task)
         try:
             if (clipboard_capture or browser_dom_capture) and not dry_run:
                 captured = self._capture_desktop_response(
@@ -187,6 +207,7 @@ class ToolAdapter:
                     launch_target=launch_target,
                     launch_mode=launch_mode,
                     prompt_text=prompt_text,
+                    reingest_only=reingest_only,
                 )
                 # Fallback a clipboard si browser_dom falla por verificación de seguridad o falta de input
                 if not captured.get('response_captured') and browser_dom_capture:
@@ -197,11 +218,12 @@ class ToolAdapter:
                             title_hints=self._title_hints(card=card, task=task),
                             prompt_text=prompt_text,
                             launch_mode=launch_mode,
-                            submit_after_paste=bool(task.metadata.get('submit_prompt_after_paste', card.metadata.get('submit_prompt_after_paste', True))),
+                            submit_after_paste=bool(task.metadata.get('submit_prompt_after_paste', card.metadata.get('submit_prompt_after_paste', True))) and not reingest_only,
                             launch_wait_seconds=float(task.metadata.get('launch_wait_seconds') or card.metadata.get('launch_wait_seconds') or 1.2),
                             window_wait_seconds=float(task.metadata.get('window_wait_seconds') or card.metadata.get('window_wait_seconds') or 8.0),
                             response_wait_seconds=float(task.metadata.get('response_wait_seconds') or card.metadata.get('response_wait_seconds') or 4.0),
                             background_capture_mode='',  # Forzar modo clipboard
+                            reingest_only=reingest_only,
                         )
                         if clipboard_fallback.get('response_captured'):
                             captured = clipboard_fallback
@@ -651,6 +673,7 @@ class ToolAdapter:
         launch_target: str,
         launch_mode: str,
         prompt_text: str,
+        reingest_only: bool = False,
     ) -> dict[str, Any]:
         workspace_root = str(task.metadata.get('workspace_root') or card.metadata.get('workspace_root') or Path.cwd())
         runner = self.runner_factory(workspace_root)
@@ -661,7 +684,7 @@ class ToolAdapter:
             title_hints=self._title_hints(card=card, task=task),
             prompt_text=prompt_text,
             launch_mode=launch_mode,
-            submit_after_paste=bool(task.metadata.get('submit_prompt_after_paste', card.metadata.get('submit_prompt_after_paste', True))),
+            submit_after_paste=bool(task.metadata.get('submit_prompt_after_paste', card.metadata.get('submit_prompt_after_paste', True))) and not reingest_only,
             launch_wait_seconds=float(task.metadata.get('launch_wait_seconds') or card.metadata.get('launch_wait_seconds') or 1.2),
             window_wait_seconds=float(task.metadata.get('window_wait_seconds') or card.metadata.get('window_wait_seconds') or 8.0),
             response_wait_seconds=float(task.metadata.get('response_wait_seconds') or card.metadata.get('response_wait_seconds') or 4.0),
@@ -680,6 +703,7 @@ class ToolAdapter:
             input_selectors=self._selectors(card=card, task=task, key='input_selectors'),
             response_selectors=self._selectors(card=card, task=task, key='response_selectors'),
             submit_selectors=self._selectors(card=card, task=task, key='submit_selectors'),
+            reingest_only=reingest_only,
         )
 
 
@@ -1164,3 +1188,98 @@ class DesktopHumanToolAdapter:
 
 class ExternalAssistantToolAdapter(ToolAdapter):
     tool_type = ToolType.CUSTOM
+
+
+class SiteExplorerToolAdapter:
+    """Adapter delgado sobre `SiteExplorationService`.
+
+    No toma decisiones de ruta: parsea la primera accion `open_url` del
+    `ToolTask` como punto de partida, lee `max_pages` y `priority_keywords`
+    de `parameters`, corre la exploracion y persiste el manual. El
+    `ToolCallingBridge` puede invocarlo desde el chat local sin pasar por
+    governance externa; igual respeta `requires_human_approval=True` a
+    nivel ToolCard.
+    """
+
+    tool_type = ToolType.BROWSER
+
+    def __init__(self, service: Any, repository: Any) -> None:
+        self.service = service
+        self.repository = repository
+
+    def is_available(self, card: ToolCard) -> bool:
+        checker = getattr(self.service, 'is_available', None)
+        return bool(checker()) if callable(checker) else True
+
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+        start = time.perf_counter()
+        start_url = ''
+        max_pages: int | None = None
+        priority_keywords: list[str] = []
+        for action in task.actions:
+            if action.action_type == ToolActionType.OPEN_URL:
+                start_url = action.target or str(action.parameters.get('url') or '')
+                max_pages_raw = action.parameters.get('max_pages')
+                if isinstance(max_pages_raw, int) and max_pages_raw > 0:
+                    max_pages = max_pages_raw
+                elif isinstance(max_pages_raw, str) and max_pages_raw.strip().isdigit():
+                    max_pages = int(max_pages_raw.strip())
+                raw_keywords = action.parameters.get('priority_keywords')
+                if isinstance(raw_keywords, (list, tuple)):
+                    priority_keywords = [str(k).strip() for k in raw_keywords if str(k).strip()]
+                break
+        if not start_url:
+            # fallback solo si el objective parece una URL absoluta; evita
+            # que descripciones humanas se interpreten como target.
+            candidate = str(task.objective or '').strip()
+            if candidate.startswith(('http://', 'https://')):
+                start_url = candidate
+        if not start_url:
+            return {
+                'success': False,
+                'output_text': '',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': 'SiteExplorer requiere una accion OPEN_URL con url valida.',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {'sandbox': sandbox},
+            }
+        result = self.service.explore(
+            start_url=start_url,
+            max_pages=max_pages,
+            priority_keywords=priority_keywords,
+        )
+        artifacts: list[str] = []
+        manual_payload = result.to_manual()
+        if result.success and self.repository is not None:
+            try:
+                json_path, md_path = self.repository.save(manual_payload)
+                artifacts.extend([str(json_path), str(md_path)])
+            except Exception as exc:  # noqa: BLE001
+                return {
+                    'success': False,
+                    'output_text': '',
+                    'extracted_data': manual_payload,
+                    'artifacts': artifacts,
+                    'error_message': f'No se pudo persistir el manual: {type(exc).__name__}: {exc}',
+                    'execution_ms': int((time.perf_counter() - start) * 1000),
+                    'metadata': {'sandbox': sandbox, 'hostname': result.hostname},
+                }
+        summary_text = (
+            f'Explore {result.hostname}: {len(result.pages)} paginas visitadas.'
+            if result.success
+            else f'Exploracion de {result.hostname or start_url} fallo: {result.error_message}'
+        )
+        return {
+            'success': result.success,
+            'output_text': summary_text,
+            'extracted_data': manual_payload,
+            'artifacts': artifacts,
+            'error_message': result.error_message,
+            'execution_ms': int((time.perf_counter() - start) * 1000),
+            'metadata': {
+                'sandbox': sandbox,
+                'hostname': result.hostname,
+                'pages_visited': len(result.pages),
+            },
+        }
