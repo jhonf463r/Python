@@ -139,9 +139,6 @@ def main() -> int:
     service = boot.control_master_service
     repo = boot.objective_repository
 
-    print(f"Setting vision ...")
-    service.set_vision(VISION)
-
     for payload in OBJECTIVES:
         objective_id = payload["objective_id"]
         existing = repo.get(objective_id)
@@ -175,6 +172,11 @@ def main() -> int:
 
     print(f"Recording governing decision ...")
     service.record_decision(DECISION)
+
+    # set_vision() must run AFTER objective seeding so save_state() snapshots
+    # the already-projected active objectives into latest.json.
+    print(f"Setting vision ...")
+    service.set_vision(VISION)
 
     print("Refreshing digest ...")
     digest = boot.export_control_master_digest()

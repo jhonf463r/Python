@@ -1,13 +1,13 @@
 # IABV v1.5 - Control Maestro
 
-Generado: 2026-04-19T19:22:20.313192+00:00
+Generado: 2026-04-19T19:23:46.389095+00:00
 Version: control_master.v1
 
 ## Vision actual
 IABV v1.5 local-first con Control Maestro vivo: ControlMasterDigest como unica fuente compacta para que cualquier IA (Codex, ChatGPT, Devin, Claude) arranque sincronica sin pegar historial. Super sincronia = lectura automatica al entrar + escritura estructurada al cerrar cada sesion.
 
 ## Objetivos
-- Activos: 1
+- Activos: 4
 - Completados: 0
 - Pausados: 0
 - Descartados: 0
@@ -92,7 +92,7 @@ IABV v1.5 local-first con Control Maestro vivo: ControlMasterDigest como unica f
 (sin backlog persistido)
 
 ## Decisiones recientes
-- [accepted] Los tres gaps de super sincronia se registran como objetivos reales dentro del propio ControlMasterService, sin codigo nuevo. El sistema se gobierna a si mismo. (2026-04-19T19:22:00.334438+00:00)
+- [accepted] Los tres gaps de super sincronia se registran como objetivos reales dentro del propio ControlMasterService, sin codigo nuevo. El sistema se gobierna a si mismo. (2026-04-19T19:23:46.112273+00:00)
   - razon: El usuario pidio que cualquier sesion futura vea donde vamos y que falta. La infraestructura ya estaba: falta usarla. Registrar los gaps como objetivos persistidos es el camino minimo que preserva arquitectura y no inventa otro cerebro.
 
 ## Riesgos actuales
