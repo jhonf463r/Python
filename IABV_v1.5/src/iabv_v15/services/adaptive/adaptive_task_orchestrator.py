@@ -41,6 +41,8 @@ from iabv_v15.services.adaptive.intent_understanding_service import IntentUnders
 from iabv_v15.services.adaptive.strategy_pack_registry import StrategyPackRegistry
 from iabv_v15.services.adaptive.task_context_assembler import TaskContextAssembler
 from iabv_v15.services.adaptive.task_outcome_recorder import TaskOutcomeRecorder
+from iabv_v15.services.llm.system_prompt_builder import SystemPromptBuilder
+from iabv_v15.services.llm.tool_calling_bridge import ToolCallingBridge
 from iabv_v15.services.roles.local_role_router import LocalRoleRouter
 
 
@@ -845,6 +847,9 @@ class AdaptiveTaskOrchestrator:
     ) -> dict[str, Any] | None:
         """Invoke the local Ollama provider for conversational chat flows.
 
+        Uses ``SystemPromptBuilder`` to give the LLM full system awareness and
+        ``ToolCallingBridge`` to allow iterative tool execution (max 5 loops).
+
         Returns a dict with the captured ``summary`` plus metadata so the
         caller can both use the answer and audit how it was produced. Returns
         ``None`` if the flow does not qualify as local chat, the provider is
@@ -865,19 +870,107 @@ class AdaptiveTaskOrchestrator:
             return {'summary': '', 'provider_name': getattr(provider, 'name', ''), 'available': False, 'error': str(exc)}
         if not bool(getattr(health, 'available', False)):
             return {'summary': '', 'provider_name': getattr(provider, 'name', ''), 'available': False, 'error': str(getattr(health, 'detail', '') or '')}
+
+        # --- Build system prompt with full system awareness ---
+        perception_payload = dict(
+            session.metadata.get('perception_snapshot')
+            or session.context.metadata.get('perception_snapshot')
+            or {},
+        )
+        world_model = self._world_model()
+        env_self_model = self._environment_self_model()
+        portable_context = self._portable_context_package()
+        tool_cards = self._tool_cards()
+        governance_snapshot = self._governance_for_chat(session)
+
+        prompt_builder = SystemPromptBuilder()
+        system_prompt = prompt_builder.build(
+            perception=None,
+            world_model=world_model,
+            env_self_model=env_self_model,
+            portable_context=portable_context,
+            tool_registry=tool_cards,
+            governance_rules=governance_snapshot,
+        )
+        system_prompt_hash = SystemPromptBuilder.prompt_hash(system_prompt)
+
         try:
             result = provider.answer_user(request)
         except Exception as exc:
-            return {'summary': '', 'provider_name': getattr(provider, 'name', ''), 'available': True, 'error': str(exc)}
-        summary = str(getattr(result, 'summary', '') or '').strip()
-        if not summary:
-            return {'summary': '', 'provider_name': getattr(result, 'provider_name', '') or getattr(provider, 'name', ''), 'available': True, 'error': 'empty_summary'}
+            return {
+                'summary': '', 'provider_name': getattr(provider, 'name', ''),
+                'available': True, 'error': str(exc),
+                'system_prompt_hash': system_prompt_hash,
+                'tool_calls_made': [], 'iterations': 0,
+            }
+        initial_summary = str(getattr(result, 'summary', '') or '').strip()
+        if not initial_summary:
+            return {
+                'summary': '', 'provider_name': getattr(result, 'provider_name', '') or getattr(provider, 'name', ''),
+                'available': True, 'error': 'empty_summary',
+                'system_prompt_hash': system_prompt_hash,
+                'tool_calls_made': [], 'iterations': 0,
+            }
+
+        # --- Tool-calling loop ---
+        tool_executor = getattr(self, '_tool_operational_executor', None)
+        bridge = ToolCallingBridge(
+            tool_executor=tool_executor,
+            tool_registry=tool_cards,
+            governance_snapshot=governance_snapshot,
+        )
+        final_summary, tool_calls_made, iterations = bridge.run_tool_loop(
+            provider=provider,
+            request=request,
+            system_prompt=system_prompt,
+            initial_response=initial_summary,
+        )
+        summary = final_summary or initial_summary
         return {
             'summary': summary,
             'provider_name': str(getattr(result, 'provider_name', '') or getattr(provider, 'name', '')),
             'available': True,
             'error': '',
+            'system_prompt_hash': system_prompt_hash,
+            'tool_calls_made': tool_calls_made,
+            'iterations': iterations,
         }
+
+    def _portable_context_package(self) -> Any:
+        service = getattr(self.context_assembler, 'portable_context_service', None)
+        if service is None or not hasattr(service, 'current_package'):
+            return None
+        try:
+            return service.current_package(
+                task_context=None,
+                environment_self_model=None,
+                world_model=None,
+            )
+        except Exception:
+            return None
+
+    def _tool_cards(self) -> list[Any]:
+        registry = getattr(self.role_router, '_tool_registry', None)
+        if registry is not None and hasattr(registry, 'list_cards'):
+            try:
+                return registry.list_cards()
+            except Exception:
+                pass
+        teach_service = getattr(self, '_tool_teach_service', None)
+        if teach_service is not None and hasattr(teach_service, 'registry'):
+            try:
+                return teach_service.registry.list_cards()
+            except Exception:
+                pass
+        return []
+
+    def _governance_for_chat(self, session: AdaptiveSession) -> dict[str, Any]:
+        if self.autonomy_governance_policy is None:
+            return {}
+        governance = dict(session.metadata.get('governance') or {})
+        if governance:
+            return governance
+        return {}
 
     def _build_decision_context(
         self,
