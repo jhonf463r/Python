@@ -120,6 +120,8 @@ class ControlCenterViewModel(QObject):
         self.self_examination_service = self_examination_service
         self.control_master_service = control_master_service
         self.control_master_digest_builder = control_master_digest_builder
+        self._control_master_digest: dict[str, Any] = {}
+        self._control_master_brief = 'Control maestro no disponible en esta sesion.'
 
         self._selected_role = config.default_task_role.value
         self._auto_route_enabled = True
@@ -3910,6 +3912,7 @@ class ControlCenterViewModel(QObject):
             self._busy_label = self._startup_readiness_text(validating_local_stack=True)
         self._seed_development_packet()
         self._refresh_autonomy_dock()
+        self._refresh_control_master()
         self.dataChanged.emit()
 
     def _refresh_autonomy_dock(self) -> None:
@@ -5520,22 +5523,17 @@ class ControlCenterViewModel(QObject):
     mcpBridgeBlocked = Property(bool, get_mcp_bridge_blocked, notify=mcpBridgeChanged)
     mcpBridgeReason = Property(str, get_mcp_bridge_reason, notify=mcpBridgeChanged)
 
-    # --- Control Master (read-only) ---
+    # --- Control Master (read-only, cached via refresh()) ---
     def get_control_master_digest(self) -> dict[str, Any]:
-        service = self.control_master_service
-        builder = self.control_master_digest_builder
-        if service is None or builder is None:
-            return {}
-        try:
-            state = service.current_state(refresh=False)
-            return builder.build(state).model_dump(mode='json')
-        except Exception:
-            return {}
+        return self._control_master_digest
 
     def get_control_master_brief(self) -> str:
-        digest = self.get_control_master_digest()
+        return self._control_master_brief
+
+    @staticmethod
+    def _format_control_master_brief(digest: dict[str, Any]) -> str:
         if not digest:
-            return 'Control maestro no disponible en esta sesion.'
+            return ''
         parts: list[str] = []
         vision = str(digest.get('current_vision') or '').strip()
         if vision:
@@ -5549,7 +5547,22 @@ class ControlCenterViewModel(QObject):
         unresolved = digest.get('unresolved') or []
         if unresolved:
             parts.append(f'UNRESOLVED: {unresolved[0]}')
-        return ' | '.join(parts) or 'Control maestro disponible (sin senales salientes).'
+        return ' | '.join(parts)
+
+    def _refresh_control_master(self) -> None:
+        service = self.control_master_service
+        builder = self.control_master_digest_builder
+        if service is None or builder is None:
+            return
+        try:
+            state = service.current_state(refresh=False)
+            digest = builder.build(state).model_dump(mode='json')
+        except Exception:
+            return
+        self._control_master_digest = digest
+        brief = self._format_control_master_brief(digest)
+        if brief:
+            self._control_master_brief = brief
 
     controlMasterDigest = Property(dict, get_control_master_digest, notify=dataChanged)
     controlMasterBrief = Property(str, get_control_master_brief, notify=dataChanged)
