@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-2d9cc070e56f",
+  "title": "no asumas que el permiso existe",
+  "description": "",
+  "severity": "strict",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#no-asumas-que-el-permiso-existe"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.729284Z",
+  "updated_at_utc": "2026-04-19T19:22:20.306963Z"
+}

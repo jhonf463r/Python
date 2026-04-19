@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-f1bad6f7fc5e",
+  "title": "`PortableContextService` genera paquete portable desde estado vivo y aprendizaje persistido",
+  "description": "",
+  "severity": "strict",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#portablecontextservice-genera-paquete-portable-desde-estado-vivo-y-aprendizaje-persistido"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.718733Z",
+  "updated_at_utc": "2026-04-19T19:22:20.293037Z"
+}

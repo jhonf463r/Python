@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-90e8cb953b11",
+  "title": "tambien revisa si sus ajustes previos funcionaron o no",
+  "description": "",
+  "severity": "strict",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#tambien-revisa-si-sus-ajustes-previos-funcionaron-o-no"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.720133Z",
+  "updated_at_utc": "2026-04-19T19:22:20.294972Z"
+}

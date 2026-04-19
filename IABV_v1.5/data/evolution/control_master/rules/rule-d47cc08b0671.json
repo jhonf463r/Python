@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-d47cc08b0671",
+  "title": "No duplicar `PerceptionSnapshot`",
+  "description": "",
+  "severity": "irrevocable",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#no-duplicar-perceptionsnapshot"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.726436Z",
+  "updated_at_utc": "2026-04-19T19:22:20.302417Z"
+}

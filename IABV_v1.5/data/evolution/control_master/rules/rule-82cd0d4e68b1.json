@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-82cd0d4e68b1",
+  "title": "no dispares autonomia ni consulta externa",
+  "description": "",
+  "severity": "strict",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#no-dispares-autonomia-ni-consulta-externa"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.725764Z",
+  "updated_at_utc": "2026-04-19T19:22:20.301425Z"
+}

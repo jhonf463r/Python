@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-e96a1a52cd05",
+  "title": "responde por la via humana local",
+  "description": "",
+  "severity": "strict",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#responde-por-la-via-humana-local"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.725068Z",
+  "updated_at_utc": "2026-04-19T19:22:20.300335Z"
+}

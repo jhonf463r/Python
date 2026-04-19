@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-8ee2ed6e39e3",
+  "title": "no declares la herramienta disponible si no pudiste verificarla",
+  "description": "",
+  "severity": "strict",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#no-declares-la-herramienta-disponible-si-no-pudiste-verificarla"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.729570Z",
+  "updated_at_utc": "2026-04-19T19:22:20.307423Z"
+}

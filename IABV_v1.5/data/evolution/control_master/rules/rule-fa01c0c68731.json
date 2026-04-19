@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-fa01c0c68731",
+  "title": "No crear otro cerebro ni otro orquestador",
+  "description": "",
+  "severity": "irrevocable",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#no-crear-otro-cerebro-ni-otro-orquestador"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.726083Z",
+  "updated_at_utc": "2026-04-19T19:22:20.301961Z"
+}

@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-6ffc3e00957e",
+  "title": "el sistema aprende por evidencia, no por costumbre",
+  "description": "",
+  "severity": "strict",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#el-sistema-aprende-por-evidencia-no-por-costumbre"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.718400Z",
+  "updated_at_utc": "2026-04-19T19:22:20.292566Z"
+}

@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-d0b04351f766",
+  "title": "la UI lo lee; no lo modifica",
+  "description": "",
+  "severity": "strict",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#la-ui-lo-lee-no-lo-modifica"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.717340Z",
+  "updated_at_utc": "2026-04-19T19:22:20.291025Z"
+}

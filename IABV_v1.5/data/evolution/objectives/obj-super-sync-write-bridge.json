@@ -1,0 +1,24 @@
+{
+  "objective_id": "obj-super-sync-write-bridge",
+  "kind": "task",
+  "title": "Puente de escritura: UI/CLI sobre ControlMasterService",
+  "summary": "Las IAs solo pueden leer el control maestro. Para 'agregar tareas pendientes' desde cualquier sesion falta affordance en UI y CLI que llame add_objective / record_decision / mark_unresolved. Los metodos del servicio ya existen; falta el camino desde fuera.",
+  "parent_id": "obj-control-master-super-sync",
+  "root_id": "obj-control-master-super-sync",
+  "site_id": null,
+  "priority": 25,
+  "status": "active",
+  "progress": 0.0,
+  "blocker": "",
+  "confidence": 0.0,
+  "evidence_refs": [],
+  "tags": [
+    "control-master",
+    "ui",
+    "cli",
+    "super-sync"
+  ],
+  "metadata": {},
+  "created_at_utc": "2026-04-19T19:22:00.744117Z",
+  "updated_at_utc": "2026-04-19T19:22:00.744119Z"
+}

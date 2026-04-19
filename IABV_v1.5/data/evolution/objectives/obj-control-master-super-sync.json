@@ -1,0 +1,19 @@
+{
+  "objective_id": "obj-control-master-super-sync",
+  "kind": "objective",
+  "title": "Capa Control Maestro: super sincronia entre sesiones",
+  "summary": "Garantizar que cualquier IA (Codex, ChatGPT, Devin, Claude) que tome el proyecto pueda leer y escribir el estado real sin pegar historial de chat. Usa ControlMasterDigest como unica fuente compacta de verdad.",
+  "parent_id": null,
+  "root_id": "obj-control-master-super-sync",
+  "site_id": null,
+  "priority": 10,
+  "status": "active",
+  "progress": 0.0,
+  "blocker": "",
+  "confidence": 0.0,
+  "evidence_refs": [],
+  "tags": [],
+  "metadata": {},
+  "created_at_utc": "2026-04-19T19:22:00.737214Z",
+  "updated_at_utc": "2026-04-19T19:22:00.737216Z"
+}

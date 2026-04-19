@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-3d271000eb8e",
+  "title": "Si una ruta no es viable en el estado actual, bloquear antes de intentar",
+  "description": "",
+  "severity": "irrevocable",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#si-una-ruta-no-es-viable-en-el-estado-actual-bloquear-antes-de-intentar"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.728514Z",
+  "updated_at_utc": "2026-04-19T19:22:20.305400Z"
+}

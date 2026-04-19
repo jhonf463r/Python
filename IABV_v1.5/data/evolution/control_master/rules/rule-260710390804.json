@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-260710390804",
+  "title": "No fingir observacion que no existe",
+  "description": "",
+  "severity": "irrevocable",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#no-fingir-observacion-que-no-existe"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.727823Z",
+  "updated_at_utc": "2026-04-19T19:22:20.304453Z"
+}

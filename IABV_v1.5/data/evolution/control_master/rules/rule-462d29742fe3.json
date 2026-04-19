@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-462d29742fe3",
+  "title": "No convertir un ViewModel en decisor de rutas",
+  "description": "",
+  "severity": "irrevocable",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#no-convertir-un-viewmodel-en-decisor-de-rutas"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.727088Z",
+  "updated_at_utc": "2026-04-19T19:22:20.303380Z"
+}

@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-20d2b14b1b01",
+  "title": "No hacer refactor masivo sin aprobacion explicita",
+  "description": "",
+  "severity": "irrevocable",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#no-hacer-refactor-masivo-sin-aprobacion-explicita"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.727446Z",
+  "updated_at_utc": "2026-04-19T19:22:20.303975Z"
+}

@@ -1,0 +1,23 @@
+{
+  "objective_id": "obj-super-sync-cli-export",
+  "kind": "task",
+  "title": "Exponer un CLI para exportar el ControlMasterDigest",
+  "summary": "Hoy AppBootstrap.export_control_master_digest() existe pero solo es invocable desde codigo. Falta un entrypoint tipo 'python -m iabv_v15 export-digest' que escupa el digest como JSON/markdown para pegarlo a cualquier IA externa.",
+  "parent_id": "obj-control-master-super-sync",
+  "root_id": "obj-control-master-super-sync",
+  "site_id": null,
+  "priority": 20,
+  "status": "active",
+  "progress": 0.0,
+  "blocker": "",
+  "confidence": 0.0,
+  "evidence_refs": [],
+  "tags": [
+    "control-master",
+    "cli",
+    "super-sync"
+  ],
+  "metadata": {},
+  "created_at_utc": "2026-04-19T19:22:00.740838Z",
+  "updated_at_utc": "2026-04-19T19:22:00.740840Z"
+}

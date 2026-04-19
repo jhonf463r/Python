@@ -1,0 +1,14 @@
+{
+  "rule_id": "rule-1fa220af1272",
+  "title": "el contexto portable se propaga por `TaskContextAssembler`, `AdaptiveTaskOrchestrator` y `EvolutionCenterViewModel`",
+  "description": "",
+  "severity": "strict",
+  "rationale": "",
+  "applies_to": [],
+  "status": "active",
+  "source_refs": [
+    "AGENTS.md#el-contexto-portable-se-propaga-por-taskcontextassembler-adaptivetaskorchestrator-y-evolutioncenterviewmodel"
+  ],
+  "created_at_utc": "2026-04-19T19:22:00.719066Z",
+  "updated_at_utc": "2026-04-19T19:22:20.293542Z"
+}
