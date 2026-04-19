@@ -96,6 +96,7 @@ class TaskContextAssembler:
         session_health: SessionHealthSnapshot | None = None,
         ia_trace: list[IATraceEntry] | None = None,
         visual_signal: dict[str, Any] | None = None,
+        intent_schema: Any = None,
     ) -> PerceptionSnapshot:
         task_context = self._build_task_context(request=request, intent=intent)
         goal_context = task_context.goal_context

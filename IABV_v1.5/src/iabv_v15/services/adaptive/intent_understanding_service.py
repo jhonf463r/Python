@@ -3,7 +3,7 @@
 import re
 from typing import Any
 
-from iabv_v15.domain.models import InferenceRequest, IntentDisposition, IntentHypothesis, TaskIntent, TaskRole
+from iabv_v15.domain.models import InferenceRequest, IntentDisposition, IntentHypothesis, IntentSchema, TaskIntent, TaskRole
 
 
 class IntentUnderstandingService:
@@ -457,6 +457,43 @@ class IntentUnderstandingService:
             metadata={'conversational_prompt': disposition == IntentDisposition.ANSWER_NOW},
         )
         return finalize(intent, hypotheses)
+
+    def classify_with_schema(
+        self,
+        user_goal: str,
+        goal_parameters: dict[str, Any] | None = None,
+        *,
+        conversation_history: list[dict[str, Any]] | None = None,
+    ) -> tuple[TaskIntent, IntentSchema | None]:
+        request = InferenceRequest(
+            user_goal=user_goal,
+            goal_parameters=goal_parameters or {},
+            conversation_context=conversation_history or [],
+            metadata={'conversation_history': conversation_history or []},
+        )
+        intent, hypotheses = self.classify(request)
+        intent = intent.model_copy(update={'hypotheses': hypotheses})
+        analysis: dict[str, Any] = dict(intent.metadata.get('conversation_analysis') or {})
+        sub_intents = list(analysis.get('sub_intents') or [])
+        ambiguity_score = float(analysis.get('ambiguity_score') or 0.0)
+        risk_level = 'high' if intent.sensitive or intent.monetary else (
+            'medium' if ambiguity_score >= 0.5 or intent.multi_step else 'low'
+        )
+        schema = IntentSchema(
+            primary_intent=intent.intent_key,
+            sub_intents=sub_intents,
+            ambiguity_score=ambiguity_score,
+            requires_clarification=bool(analysis.get('requires_clarification')),
+            clarification_prompt=str(analysis.get('clarification_prompt') or ''),
+            risk_level=risk_level,
+            confidence=intent.confidence,
+            semantic_source='conversation_analysis',
+            compound=bool(analysis.get('compound')),
+            constraints=list(analysis.get('constraints') or []),
+            objective_summary=str(analysis.get('objective_summary') or ''),
+            context_carried_from_history=bool(analysis.get('context_carried_from_history')),
+        )
+        return intent, schema
 
     def _analyze_conversation(
         self,
