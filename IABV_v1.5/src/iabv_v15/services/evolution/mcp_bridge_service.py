@@ -464,6 +464,18 @@ class MCPBridgeService:
                 self._status.running = False
                 self._status.last_error = tunnel_error or "Timeout esperando URL del tunnel"
                 self._update_state("failed")
+        # Si el tunnel no publicó URL a tiempo, liberamos recursos: dejar el
+        # server MCP y el proceso cloudflared vivos llevaría a puerto ocupado
+        # en el próximo intento y a un estado irrecuperable sin reiniciar la app.
+        if not url:
+            try:
+                self._tunnel_runner.stop()
+            except Exception:  # pragma: no cover - defensa
+                pass
+            try:
+                self._server_runner.stop()
+            except Exception:  # pragma: no cover - defensa
+                pass
         return self.status()
 
     def _governance_gate_block(self) -> str | None:
@@ -491,7 +503,11 @@ class MCPBridgeService:
             if getattr(record, "status", "active") != "active":
                 continue
             scope = str(getattr(record, "assistant_kind", "") or "").lower()
-            if scope in ("", "*", "mcp_bridge"):
+            # Solo bloqueamos si el scope apunta explícitamente al bridge o es
+            # un bloqueo global ("*"). assistant_kind="" (default del modelo)
+            # se usa para condiciones operativas generales (network_slow, ram_pressure,
+            # focus_unresolved, etc.) que NO deben bloquear el bridge MCP.
+            if scope in ("*", "mcp_bridge"):
                 title = getattr(record, "title", "") or getattr(record, "block_type", "operational_block")
                 return f"Bloqueo operativo activo: {title}"
         return None

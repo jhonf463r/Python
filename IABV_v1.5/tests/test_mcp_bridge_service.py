@@ -304,6 +304,46 @@ def test_failed_tunnel_marks_status_failed_without_crashing(tmp_path: Path) -> N
     assert server.started == 1
 
 
+def test_tunnel_timeout_releases_server_and_tunnel_resources(tmp_path: Path) -> None:
+    """Si wait_for_url() timeoutea, server + tunnel deben liberarse para permitir reintento.
+
+    Sin esta limpieza, el proceso cloudflared seguiría vivo con el puerto ocupado
+    y un reintento via set_enabled(True) quedaría en un estado irrecuperable.
+    """
+
+    tunnel = _FakeTunnelRunner(url=None, error=None)
+    svc, server, _ = _build_service(tmp_path, tunnel_runner=tunnel)
+    status = svc.set_enabled(True)
+    assert status.state == "failed"
+    assert "Timeout" in (status.last_error or "")
+    assert server.started == 1
+    assert server.stopped >= 1, "MCP server debe detenerse al timeout del tunnel"
+    assert tunnel.stopped >= 1, "cloudflared debe detenerse al timeout del tunnel"
+
+
+def test_block_for_empty_assistant_kind_does_not_block_bridge(tmp_path: Path) -> None:
+    """`assistant_kind=""` es el default del modelo y se usa para condiciones
+    operativas generales (network_slow, ram_pressure, focus_unresolved, etc.)
+    que NO deben bloquear el MCP bridge. Sólo `*` o `mcp_bridge` bloquean.
+    """
+
+    snapshot = _default_snapshot(
+        blocks=[
+            OperationalBlockRecord(
+                block_type="network_slow",
+                assistant_kind="",  # default para condiciones genéricas
+                title="Red lenta detectada",
+                status="active",
+            ),
+        ],
+    )
+    svc, server, _ = _build_service(tmp_path, snapshot=snapshot)
+    status = svc.set_enabled(True)
+    assert status.governance_blocked is False
+    assert server.started == 1
+    assert status.state == "running"
+
+
 # ----------------------------------------------------------------------
 # Shutdown
 

@@ -1,0 +1,13 @@
+{
+  "episode_id": "6b6c9f42-0280-4eea-bedb-352da71b2668",
+  "title": "Login guiado",
+  "created_at_utc": "2026-04-19T20:15:58.201304Z",
+  "updated_at_utc": "2026-04-19T20:15:58.219945Z",
+  "step_count": 3,
+  "source": "desktop",
+  "tags": [
+    "target:Wplay",
+    "teach_mode:browser"
+  ],
+  "notes": "teach_url=https://wplay.co"
+}
