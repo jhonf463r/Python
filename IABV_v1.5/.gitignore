@@ -53,4 +53,7 @@ data/evolution/tool_evolution/
 data/tool_teaching/external_assistants/
 data/tool_teaching/interaction_*/
 data/tool_teaching/cards/
+data/tool_teaching/log/
+data/tool_teaching/results/
+data/tool_teaching/tasks/
 
