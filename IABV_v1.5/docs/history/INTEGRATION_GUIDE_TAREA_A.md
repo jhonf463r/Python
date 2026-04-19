@@ -2,6 +2,21 @@
 
 **Documento para equipo de Tarea A**
 
+> **Estado:** RESUELTO. Los 7 items del checklist estan implementados en
+> `AppBootstrap._wire_task_a_signals()` (`src/iabv_v15/bootstrap.py` lineas
+> 768 y 779-815). Los 4 servicios backend (`CredentialBroker`,
+> `ClarificationRequestService`, `EnvironmentBootstrapService`,
+> `ProviderHealthRouter`) registran handlers que re-emiten los payloads como
+> senales Qt de ambos ViewModels. Tests de integracion end-to-end en
+> `tests/test_task_a_wiring.py` y tests de emision de senal en
+> `tests/test_control_center_viewmodel.py` (`test_control_center_emits_*`).
+> Archivado en `docs/history/` como referencia.
+>
+> Nota sobre el item 4: el checklist menciona `ProviderRouter` pero el wiring
+> real usa `ProviderHealthRouter` — un servicio dedicado a polling de salud
+> que es quien produce `providerHealthChanged`. `ProviderRouter` sigue siendo
+> el que decide rutas de inferencia y no debe emitir senales UI.
+
 ---
 
 ## 🎯 Resumen
@@ -159,13 +174,13 @@ class ProviderRouter:
 
 ## 📝 Checklist de Integración para Tarea A
 
-- [ ] `CredentialBroker` conecta a `credentialPromptRequested`
-- [ ] `ClarificationRequestService` conecta a `clarificationRequested`
-- [ ] `EnvironmentBootstrapService` conecta a `missingDependencyRequested`
-- [ ] `ProviderRouter` actualiza via `providerHealthChanged`
-- [ ] Servicios de actividad usan `backgroundActivityChanged`
-- [ ] Todos los callbacks están registrados
-- [ ] Tests de integración pasan
+- [x] `CredentialBroker` conecta a `credentialPromptRequested` (bootstrap.py:801)
+- [x] `ClarificationRequestService` conecta a `clarificationRequested` (bootstrap.py:804)
+- [x] `EnvironmentBootstrapService` conecta a `missingDependencyRequested` (bootstrap.py:807)
+- [x] `ProviderHealthRouter` actualiza via `providerHealthChanged` (bootstrap.py:813) — ver nota al inicio
+- [x] `EnvironmentBootstrapService.register_activity_handler` usa `backgroundActivityChanged` (bootstrap.py:810)
+- [x] Todos los callbacks están registrados via `AppBootstrap._wire_task_a_signals()`
+- [x] Tests de integración pasan (`tests/test_task_a_wiring.py`, `tests/test_control_center_viewmodel.py::test_control_center_emits_*`)
 
 ---
 
