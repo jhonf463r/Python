@@ -311,7 +311,7 @@ class SelfAuditService:
         if getter is None:
             return None
         try:
-            return getter()
+            return getter(refresh=False)
         except TypeError:
             # current_review accepts refresh kw; retry without args.
             return getter()
