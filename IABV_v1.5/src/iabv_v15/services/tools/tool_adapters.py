@@ -1164,3 +1164,98 @@ class DesktopHumanToolAdapter:
 
 class ExternalAssistantToolAdapter(ToolAdapter):
     tool_type = ToolType.CUSTOM
+
+
+class SiteExplorerToolAdapter:
+    """Adapter delgado sobre `SiteExplorationService`.
+
+    No toma decisiones de ruta: parsea la primera accion `open_url` del
+    `ToolTask` como punto de partida, lee `max_pages` y `priority_keywords`
+    de `parameters`, corre la exploracion y persiste el manual. El
+    `ToolCallingBridge` puede invocarlo desde el chat local sin pasar por
+    governance externa; igual respeta `requires_human_approval=True` a
+    nivel ToolCard.
+    """
+
+    tool_type = ToolType.BROWSER
+
+    def __init__(self, service: Any, repository: Any) -> None:
+        self.service = service
+        self.repository = repository
+
+    def is_available(self, card: ToolCard) -> bool:
+        checker = getattr(self.service, 'is_available', None)
+        return bool(checker()) if callable(checker) else True
+
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+        start = time.perf_counter()
+        start_url = ''
+        max_pages: int | None = None
+        priority_keywords: list[str] = []
+        for action in task.actions:
+            if action.action_type == ToolActionType.OPEN_URL:
+                start_url = action.target or str(action.parameters.get('url') or '')
+                max_pages_raw = action.parameters.get('max_pages')
+                if isinstance(max_pages_raw, int) and max_pages_raw > 0:
+                    max_pages = max_pages_raw
+                elif isinstance(max_pages_raw, str) and max_pages_raw.strip().isdigit():
+                    max_pages = int(max_pages_raw.strip())
+                raw_keywords = action.parameters.get('priority_keywords')
+                if isinstance(raw_keywords, (list, tuple)):
+                    priority_keywords = [str(k).strip() for k in raw_keywords if str(k).strip()]
+                break
+        if not start_url:
+            # fallback solo si el objective parece una URL absoluta; evita
+            # que descripciones humanas se interpreten como target.
+            candidate = str(task.objective or '').strip()
+            if candidate.startswith(('http://', 'https://')):
+                start_url = candidate
+        if not start_url:
+            return {
+                'success': False,
+                'output_text': '',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': 'SiteExplorer requiere una accion OPEN_URL con url valida.',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {'sandbox': sandbox},
+            }
+        result = self.service.explore(
+            start_url=start_url,
+            max_pages=max_pages,
+            priority_keywords=priority_keywords,
+        )
+        artifacts: list[str] = []
+        manual_payload = result.to_manual()
+        if result.success and self.repository is not None:
+            try:
+                json_path, md_path = self.repository.save(manual_payload)
+                artifacts.extend([str(json_path), str(md_path)])
+            except Exception as exc:  # noqa: BLE001
+                return {
+                    'success': False,
+                    'output_text': '',
+                    'extracted_data': manual_payload,
+                    'artifacts': artifacts,
+                    'error_message': f'No se pudo persistir el manual: {type(exc).__name__}: {exc}',
+                    'execution_ms': int((time.perf_counter() - start) * 1000),
+                    'metadata': {'sandbox': sandbox, 'hostname': result.hostname},
+                }
+        summary_text = (
+            f'Explore {result.hostname}: {len(result.pages)} paginas visitadas.'
+            if result.success
+            else f'Exploracion de {result.hostname or start_url} fallo: {result.error_message}'
+        )
+        return {
+            'success': result.success,
+            'output_text': summary_text,
+            'extracted_data': manual_payload,
+            'artifacts': artifacts,
+            'error_message': result.error_message,
+            'execution_ms': int((time.perf_counter() - start) * 1000),
+            'metadata': {
+                'sandbox': sandbox,
+                'hostname': result.hostname,
+                'pages_visited': len(result.pages),
+            },
+        }
