@@ -1,0 +1,43 @@
+{
+  "issue_id": "audit-2026-04-19-windows-validation",
+  "created_at_utc": "2026-04-19T18:55:00.000000Z",
+  "status": "blocked_on_user_windows",
+  "scenario_id": "visual_validation_pr_series",
+  "goal": "Validar visualmente en Windows real los 5 PRs de la serie A->B->C->D + fix-review (PRs #12, #13, #15, #16, #18) + el fix nuevo #21.",
+  "category": "need_user_action",
+  "summary": "Los PRs tienen checklists explicitas que solo se pueden validar en la maquina Windows del usuario. La VM Linux no puede correr ChatGPT.exe / Codex.exe ni la UI PySide6/QML con rutas C:\\ hardcoded.",
+  "probable_cause": "Diferencia de plataforma. No es bug.",
+  "unresolved_reason": "Esperando que el usuario corra la bateria PowerShell en Windows y ejercite los flujos visuales documentados en cada PR.",
+  "run_id": "devin-24c8eff425584b9498bbb008b18cd3aa",
+  "episode_id": null,
+  "session_id": "devin-24c8eff425584b9498bbb008b18cd3aa",
+  "evidence_refs": [
+    "PR #12 (merged): https://github.com/jhonf463r/Python/pull/12 - popup credenciales",
+    "PR #13 (merged): https://github.com/jhonf463r/Python/pull/13 - reingest DOM",
+    "PR #15 (merged): https://github.com/jhonf463r/Python/pull/15 - permiso de observacion",
+    "PR #16 (merged): https://github.com/jhonf463r/Python/pull/16 - site_explorer_v1",
+    "PR #18 (merged): https://github.com/jhonf463r/Python/pull/18 - puntuacion + port",
+    "PR #21 (open): https://github.com/jhonf463r/Python/pull/21 - reingest+clipboard fix",
+    "AGENTS.md comando oficial de pruebas (seccion 'Comando Oficial De Pruebas')",
+    "data/evolution/audits/human-audit-2026-04-19.md"
+  ],
+  "runtime_adjustments": [],
+  "recommended_change": "Correr en Windows: $env:PYTHONPATH='C:\\Python\\IABV_v1.5\\src'; & 'C:\\Users\\faber\\miniconda3\\python.exe' -m pytest -p no:cacheprovider tests/ -q; y ejercitar las checklists visuales de cada PR.",
+  "suggested_tests": [
+    "PR #12 checklist: disparar consulta externa ChatGPT sin sesion cacheada -> popup aparece.",
+    "PR #13 checklist: consulta >5min con respuesta visible -> retry re-ingesta sin re-pegar prompt.",
+    "PR #15 checklist: governance con permission_gate=requerido -> popup clarificacion emite.",
+    "PR #16 checklist: chat local 'explora https://python.org' -> data/evolution/site_manuals/python.org.md creado.",
+    "PR #18 checklist: responder 'No, autorizo' -> queda negado (no bypassea gate).",
+    "PR #21 checklist: forzar fallback a clipboard en retry de SESSION_EXPIRED -> captured_text = respuesta real, no prompt."
+  ],
+  "metadata": {
+    "autonomous_evolution": false,
+    "assistant_kind": "devin",
+    "source": "human_audit",
+    "site_id": "",
+    "intent_key": "quality.regression",
+    "audit_report": "data/evolution/audits/human-audit-2026-04-19.md",
+    "platform_required": "windows"
+  }
+}

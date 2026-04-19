@@ -1,0 +1,37 @@
+{
+  "issue_id": "audit-2026-04-19-chatgpt-web-validation",
+  "created_at_utc": "2026-04-19T18:55:00.000000Z",
+  "status": "blocked_on_credentials",
+  "scenario_id": "chatgpt_web_assisted_end_to_end",
+  "goal": "Validar end-to-end el flujo chatgpt_web_assisted contra chatgpt.com real: popup de credenciales (PR #12), captura DOM via Playwright, reingesta tras SESSION_EXPIRED (PRs #13 + #21), popup de aprobacion de observacion (PR #15).",
+  "category": "need_user_action",
+  "summary": "No se puede validar end-to-end sin credenciales de una cuenta ChatGPT web. La VM Linux ya tiene Playwright + Chromium instalados y listos.",
+  "probable_cause": "Bloqueo operativo, no bug.",
+  "unresolved_reason": "Esperando que el usuario provea credenciales via el mecanismo de 3 opciones (temporal sesion / permanente user-scope / skip). Sin credenciales, queda UNRESOLVED.",
+  "run_id": "devin-24c8eff425584b9498bbb008b18cd3aa",
+  "episode_id": null,
+  "session_id": "devin-24c8eff425584b9498bbb008b18cd3aa",
+  "evidence_refs": [
+    "SiteExplorationService verified OK on Linux VM via Playwright headless crawl of https://www.python.org (4 pages, 1538ms).",
+    "CredentialBroker verified OK: needs->request->accept->needs=False->get returns record.",
+    "ClarificationRequestService verified OK: handler payload {id,question,options,context}, ask() blocks until resolve(), timeout raises ClarificationTimeoutError.",
+    "WorldModelService on Linux: active_windows=0, tool_live_status=[] (expected: Win32-only probes), snapshot struct intact.",
+    "ExternalAssistantToolAdapter source en src/iabv_v15/services/tools/tool_adapters.py.",
+    "data/evolution/audits/human-audit-2026-04-19.md"
+  ],
+  "runtime_adjustments": [],
+  "recommended_change": "Usuario: responder a la pregunta 3-option del agente sobre credenciales ChatGPT web. Recomendado: crear una cuenta descartable (iabv.test.*@gmail.com) y guardar como secret permanente scope=user. 2FA TOTP tambien si aplica.",
+  "suggested_tests": [
+    "Con credenciales presentes: ejecutar un flujo chat_local -> consulta externa a chatgpt.com -> verificar browser_dom_capture retorna respuesta del asistente.",
+    "Forzar timeout de 5min y verificar retry con reingest_only=True (valida PRs #13+#21 end-to-end).",
+    "Revocar permiso de observacion antes de la consulta y verificar que aparece popup de clarificacion (valida PR #15)."
+  ],
+  "metadata": {
+    "autonomous_evolution": false,
+    "assistant_kind": "devin",
+    "source": "human_audit",
+    "site_id": "chatgpt.com",
+    "intent_key": "tools.consult_external",
+    "audit_report": "data/evolution/audits/human-audit-2026-04-19.md"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "issue_id": "audit-2026-04-19-reingest-clipboard",
+  "created_at_utc": "2026-04-19T18:55:00.000000Z",
+  "status": "being_fixed_in_pr",
+  "scenario_id": "retry_after_session_expired",
+  "goal": "Cuando una consulta externa queda >5min sin respuesta, el retry debe releer el DOM ya visible y no re-pegar el prompt. Debe funcionar tanto en el path browser_dom como en el fallback clipboard.",
+  "category": "need_codex_fix",
+  "summary": "ui_execution_runner.capture_response_from_app: el branch clipboard ignora reingest_only=True y pega el prompt sobre la ventana enfocada. El Ctrl+A/Ctrl+C posterior captura el prompt en vez de la respuesta del asistente.",
+  "probable_cause": "El guard 'and not reingest_only' existia en el path browser_dom (linea 777) pero no en el path clipboard (linea 186).",
+  "unresolved_reason": "En revision - PR #21 abierto con el fix + 2 regresiones. Esperando aprobacion y merge del usuario.",
+  "run_id": "devin-24c8eff425584b9498bbb008b18cd3aa",
+  "episode_id": null,
+  "session_id": "devin-24c8eff425584b9498bbb008b18cd3aa",
+  "evidence_refs": [
+    "Devin Review inline comment on PR #13 (ya mergeado).",
+    "src/iabv_v15/services/tools/ui_execution_runner.py:186 antes del fix: 'if focused_title:'",
+    "src/iabv_v15/services/tools/ui_execution_runner.py:186 despues del fix: 'if focused_title and not reingest_only:'",
+    "tests/test_ui_execution_runner.py: test_ui_execution_runner_skips_paste_in_clipboard_reingest_only",
+    "tests/test_ui_execution_runner.py: test_ui_execution_runner_still_pastes_prompt_when_not_reingesting",
+    "PR #21: https://github.com/jhonf463r/Python/pull/21"
+  ],
+  "runtime_adjustments": [],
+  "recommended_change": "Merge de PR #21. Validar en Windows real: dejar una consulta ChatGPT >5min con respuesta visible, forzar el fallback a clipboard (matar el browser profile de Playwright) y confirmar que la respuesta capturada es la del asistente y no el prompt.",
+  "suggested_tests": [
+    "PYTHONPATH=src python -m pytest tests/test_ui_execution_runner.py::test_ui_execution_runner_skips_paste_in_clipboard_reingest_only -v",
+    "PYTHONPATH=src python -m pytest tests/test_ui_execution_runner.py::test_ui_execution_runner_still_pastes_prompt_when_not_reingesting -v",
+    "Windows real: flujo retry tras SESSION_EXPIRED (checklist del PR #21)"
+  ],
+  "metadata": {
+    "autonomous_evolution": false,
+    "assistant_kind": "devin",
+    "source": "human_audit",
+    "site_id": "",
+    "intent_key": "tools.consult_external",
+    "linked_pr": "https://github.com/jhonf463r/Python/pull/21",
+    "audit_report": "data/evolution/audits/human-audit-2026-04-19.md"
+  }
+}
