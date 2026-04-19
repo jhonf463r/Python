@@ -778,6 +778,87 @@ Item {
                             }
                         }
 
+                        // Conexion IA externa (MCP bridge - Capa 1)
+                        Rectangle {
+                            id: mcpBridgeCard
+                            width: parent.width
+                            radius: 8
+                            color: "#111827"
+                            border.color: controlCenterViewModel && controlCenterViewModel.mcpBridgeBlocked ? "#dc2626" : (controlCenterViewModel && controlCenterViewModel.mcpBridgeRunning ? "#16a34a" : "#334155")
+                            border.width: 1
+                            implicitHeight: mcpBridgeColumn.implicitHeight + 24
+
+                            ColumnLayout {
+                                id: mcpBridgeColumn
+                                anchors.fill: parent
+                                anchors.margins: 12
+                                spacing: 6
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 10
+
+                                    Label {
+                                        text: "Conexion IA externa (MCP)"
+                                        color: textPrimary
+                                        font.pixelSize: 14
+                                        font.bold: true
+                                        font.family: "Segoe UI"
+                                        Layout.fillWidth: true
+                                    }
+
+                                    Switch {
+                                        id: mcpBridgeSwitch
+                                        checked: Boolean(controlCenterViewModel && controlCenterViewModel.mcpBridgeEnabled)
+                                        onToggled: {
+                                            if (controlCenterViewModel) controlCenterViewModel.toggleMcpBridge(mcpBridgeSwitch.checked)
+                                        }
+                                    }
+                                }
+
+                                Label {
+                                    Layout.fillWidth: true
+                                    wrapMode: Label.WordWrap
+                                    color: textSecondary
+                                    font.pixelSize: 11
+                                    font.family: "Segoe UI"
+                                    text: {
+                                        if (!controlCenterViewModel) return ""
+                                        if (controlCenterViewModel.mcpBridgeBlocked) return "Bloqueado por governance: " + (controlCenterViewModel.mcpBridgeReason || "revisar autonomia")
+                                        var st = controlCenterViewModel.mcpBridgeState || "stopped"
+                                        if (st === "running") return "Activo. Agentes externos pueden consumir las 6 tools core."
+                                        if (st === "starting") return "Iniciando servidor MCP y tunnel..."
+                                        if (st === "failed") return "Fallo: " + (controlCenterViewModel.mcpBridgeReason || "ver logs")
+                                        if (st === "stopping") return "Deteniendo..."
+                                        return "Apagado. Activar para exponer el programa a Devin/Claude/Codex."
+                                    }
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: Boolean(controlCenterViewModel && controlCenterViewModel.mcpTunnelUrl)
+                                    spacing: 8
+
+                                    TextField {
+                                        id: mcpUrlField
+                                        Layout.fillWidth: true
+                                        readOnly: true
+                                        text: controlCenterViewModel ? controlCenterViewModel.mcpTunnelUrl : ""
+                                        color: textPrimary
+                                        font.pixelSize: 11
+                                        font.family: "Consolas"
+                                    }
+
+                                    Button {
+                                        text: "Copiar URL"
+                                        onClicked: {
+                                            if (controlCenterViewModel) controlCenterViewModel.copyMcpTunnelUrl()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         // BackgroundActivityChip integrado (Task B)
                         BackgroundActivityChip {
                             id: backgroundChip

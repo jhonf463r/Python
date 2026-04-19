@@ -51,6 +51,7 @@ class ControlCenterViewModel(QObject):
     missingDependencyRequested = Signal(dict) # {package_name, manager, reason}
     backgroundActivityChanged = Signal(dict)  # {text, progress, status, details}
     providerHealthChanged = Signal(list)       # [ProviderHealth]
+    mcpBridgeChanged = Signal(dict)            # status dict del MCPBridgeService
 
     def __init__(
         self,
@@ -83,6 +84,7 @@ class ControlCenterViewModel(QObject):
         autonomous_validation_cycle: Any | None = None,
         tool_discovery_service: Any | None = None,
         self_examination_service: Any | None = None,
+        mcp_bridge_service: Any | None = None,
     ) -> None:
         super().__init__()
         self.config = config
@@ -175,6 +177,29 @@ class ControlCenterViewModel(QObject):
             'execute': False,
             'abort': False,
         }
+
+        # --- MCP bridge (Capa 1) ---
+        # Permite a agentes externos (Devin/Claude/Codex) consumir el programa
+        # via MCP. El ViewModel solo observa el estado publicado por el
+        # service; NO decide rutas y NO reemplaza governance.
+        self.mcp_bridge_service = mcp_bridge_service
+        self._mcp_bridge_status: dict[str, Any] = {
+            'enabled_pref': False,
+            'running': False,
+            'state': 'stopped',
+            'tunnel_url': None,
+            'transport': 'streamable-http',
+            'bind_host': '127.0.0.1',
+            'bind_port': 8765,
+            'last_error': None,
+            'governance_blocked': False,
+            'governance_reason': None,
+        }
+        if self.mcp_bridge_service is not None:
+            try:
+                self.mcp_bridge_service.attach_listener(self._on_mcp_bridge_status)
+            except Exception:
+                pass
 
         self.taskResolved.connect(self._apply_task_result)
         self.taskFailed.connect(self._apply_task_failure)
@@ -5419,6 +5444,77 @@ class ControlCenterViewModel(QObject):
     canSimulate = Property(bool, get_can_simulate, notify=dataChanged)
     canExecute = Property(bool, get_can_execute, notify=dataChanged)
     canAbort = Property(bool, get_can_abort, notify=dataChanged)
+
+    # ---- MCP bridge (Capa 1) ----
+    def _on_mcp_bridge_status(self, status: Any) -> None:
+        """Callback que recibe snapshots del MCPBridgeService.
+
+        Acepta dataclass `MCPBridgeStatus` o dict (status_dict). Se ejecuta en
+        el hilo del service; reemitimos por Qt Signal para que el QML lo vea
+        en el hilo UI.
+        """
+        to_dict = getattr(status, 'to_dict', None)
+        payload = to_dict() if callable(to_dict) else dict(status)
+        self._mcp_bridge_status = payload
+        try:
+            self.mcpBridgeChanged.emit(payload)
+        except Exception:
+            pass
+        self.dataChanged.emit()
+
+    def get_mcp_bridge_status(self) -> dict:
+        return dict(self._mcp_bridge_status)
+
+    def get_mcp_bridge_enabled(self) -> bool:
+        return bool(self._mcp_bridge_status.get('enabled_pref', False))
+
+    def get_mcp_bridge_running(self) -> bool:
+        return bool(self._mcp_bridge_status.get('running', False))
+
+    def get_mcp_bridge_state(self) -> str:
+        return str(self._mcp_bridge_status.get('state', 'stopped'))
+
+    def get_mcp_tunnel_url(self) -> str:
+        url = self._mcp_bridge_status.get('tunnel_url')
+        return str(url) if url else ''
+
+    def get_mcp_bridge_blocked(self) -> bool:
+        return bool(self._mcp_bridge_status.get('governance_blocked', False))
+
+    def get_mcp_bridge_reason(self) -> str:
+        reason = self._mcp_bridge_status.get('governance_reason') or self._mcp_bridge_status.get('last_error')
+        return str(reason) if reason else ''
+
+    @Slot(bool)
+    def toggleMcpBridge(self, enabled: bool) -> None:
+        service = self.mcp_bridge_service
+        if service is None:
+            return
+        try:
+            service.set_enabled(bool(enabled))
+        except Exception:
+            pass
+
+    @Slot()
+    def copyMcpTunnelUrl(self) -> None:
+        url = self.get_mcp_tunnel_url()
+        if not url:
+            return
+        app = QGuiApplication.instance()
+        if app is None:
+            return
+        clipboard = app.clipboard()
+        if clipboard is None:
+            return
+        clipboard.setText(url)
+
+    mcpBridgeStatus = Property('QVariant', get_mcp_bridge_status, notify=mcpBridgeChanged)
+    mcpBridgeEnabled = Property(bool, get_mcp_bridge_enabled, notify=mcpBridgeChanged)
+    mcpBridgeRunning = Property(bool, get_mcp_bridge_running, notify=mcpBridgeChanged)
+    mcpBridgeState = Property(str, get_mcp_bridge_state, notify=mcpBridgeChanged)
+    mcpTunnelUrl = Property(str, get_mcp_tunnel_url, notify=mcpBridgeChanged)
+    mcpBridgeBlocked = Property(bool, get_mcp_bridge_blocked, notify=mcpBridgeChanged)
+    mcpBridgeReason = Property(str, get_mcp_bridge_reason, notify=mcpBridgeChanged)
 
 
 

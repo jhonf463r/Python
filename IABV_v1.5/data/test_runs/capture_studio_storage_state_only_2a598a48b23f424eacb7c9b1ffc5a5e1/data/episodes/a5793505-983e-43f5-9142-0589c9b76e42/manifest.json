@@ -1,0 +1,13 @@
+{
+  "episode_id": "a5793505-983e-43f5-9142-0589c9b76e42",
+  "title": "Consulta guiada",
+  "created_at_utc": "2026-04-19T20:15:58.625086Z",
+  "updated_at_utc": "2026-04-19T20:15:58.628033Z",
+  "step_count": 1,
+  "source": "desktop",
+  "tags": [
+    "target:Google",
+    "teach_mode:browser"
+  ],
+  "notes": "teach_url=https://www.google.com"
+}

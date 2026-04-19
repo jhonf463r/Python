@@ -1,0 +1,25 @@
+{
+  "observation_id": "1d8a265f-ae16-4094-8248-22644338d1b6",
+  "pattern_id": "75c78696-4953-4d73-953d-e94b734a2cc6",
+  "task_id": "teaching:4f796994-793e-4841-8dce-a74d16acbbcb",
+  "result_id": "48102141-6051-4852-8739-603ade25afd8",
+  "episode_id": "d8baca9a-5490-4235-a5d4-a356e4e1dad9",
+  "success": true,
+  "channel": "ui",
+  "tool_id": "playwright_browser",
+  "tool_type": "browser",
+  "site_id": "wplay",
+  "summary": "El replay visual ya quedo fuerte: la galeria, los overlays y los objetos criticos respaldan la ensenanza.",
+  "confidence": 0.95,
+  "evidence_refs": [
+    "4f796994-793e-4841-8dce-a74d16acbbcb",
+    "/home/ubuntu/repos/Python/IABV_v1.5/data/test_runs/capture_studio_manual_annotation_cc6d44db7c434c54b6e6da6d55ad323f/data/screenshots/4f796994-793e-4841-8dce-a74d16acbbcb/visible_step.png",
+    "visual_summary:4f796994-793e-4841-8dce-a74d16acbbcb"
+  ],
+  "created_at_utc": "2026-04-19T20:15:59.561184Z",
+  "metadata": {
+    "learning_status": "ready",
+    "login_status": "partial",
+    "manual_correction_count": 1
+  }
+}
