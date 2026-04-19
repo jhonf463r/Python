@@ -179,7 +179,9 @@ def read_repo_file(
     """
 
     resolved = resolve_workspace_path(workspace_root, relative_path)
-    relative_norm = str(relative_path).replace(os.sep, "/").lstrip("./")
+    relative_norm = str(relative_path).replace(os.sep, "/")
+    while relative_norm.startswith("./"):
+        relative_norm = relative_norm[2:]
     if is_sensitive_path(relative_norm) or is_sensitive_path(resolved.name):
         raise AuditToolError(
             "sensitive_file_blocked",

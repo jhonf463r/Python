@@ -162,6 +162,31 @@ def test_read_repo_file_rejects_absolute(tmp_path: Path) -> None:
     assert exc.value.code == "absolute_path_forbidden"
 
 
+def test_read_repo_file_preserves_dotfile_names(tmp_path: Path) -> None:
+    (tmp_path / ".gitignore").write_text("*.pyc", encoding="utf-8")
+    (tmp_path / ".config").mkdir()
+    (tmp_path / ".config" / "settings.yml").write_text("key: 1", encoding="utf-8")
+
+    payload = read_repo_file(tmp_path, ".gitignore")
+    assert payload["path"] == ".gitignore"
+    assert payload["content"] == "*.pyc"
+
+    payload = read_repo_file(tmp_path, ".config/settings.yml")
+    assert payload["path"] == ".config/settings.yml"
+    assert payload["content"] == "key: 1"
+
+
+def test_read_repo_file_strips_only_leading_dot_slash(tmp_path: Path) -> None:
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "note.md").write_text("hola", encoding="utf-8")
+
+    payload = read_repo_file(tmp_path, "./docs/note.md")
+    assert payload["path"] == "docs/note.md"
+
+    payload = read_repo_file(tmp_path, "././docs/note.md")
+    assert payload["path"] == "docs/note.md"
+
+
 # ----------------------------------------------------------------------
 # list_repo_directory
 
