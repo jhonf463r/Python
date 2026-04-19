@@ -545,3 +545,129 @@ def test_external_assistant_adapter_treats_browser_security_verification_as_fail
     assert result['success'] is False
     assert result['error_message'] == 'browser_security_verification'
     assert result['metadata']['auto_capture_reason'] == 'browser_security_verification'
+
+
+class _FakeCredentialBroker:
+    """Double minimo del CredentialBroker usado en tests de integracion."""
+
+    def __init__(self, *, needs_map: dict[str, bool] | None = None) -> None:
+        self._needs = dict(needs_map or {})
+        self.requests: list[dict[str, object]] = []
+
+    def needs(self, domain: str) -> bool:
+        return bool(self._needs.get(domain, True))
+
+    def request(self, domain: str, reason: str, username_hint: str | None = None) -> None:
+        self.requests.append(
+            {
+                'domain': domain,
+                'reason': reason,
+                'username_hint': username_hint,
+            }
+        )
+
+
+def _login_required_runner_factory():
+    class _Runner:
+        def __init__(self, workspace_root: str) -> None:
+            self.workspace_root = workspace_root
+
+        def capture_response_from_app(self, **kwargs) -> dict[str, object]:
+            return {
+                'launched': True,
+                'focused_title': 'ChatGPT',
+                'response_captured': False,
+                'captured_text': '',
+                'capture_source': 'browser_dom',
+                'browser_profile_dir': '',
+                'error_message': 'assistant_login_required',
+            }
+
+    return lambda workspace_root: _Runner(workspace_root)
+
+
+def _chatgpt_web_card(**metadata_overrides):
+    metadata = {
+        'assistant_kind': 'chatgpt',
+        'launch_mode': 'web_assisted',
+        'response_capture_mode': 'dom_capture',
+        'requires_manual_pasteback': False,
+        'web_url': 'https://chatgpt.com/',
+        'window_title_hints': ['ChatGPT'],
+    }
+    metadata.update(metadata_overrides)
+    return ToolCard(
+        tool_id='chatgpt_web_assisted',
+        title='ChatGPT web asistido',
+        tool_type=ToolType.CUSTOM,
+        adapter_key='external_assistant',
+        metadata=metadata,
+    )
+
+
+def _chatgpt_task():
+    from iabv_v15.domain.models import ToolAction, ToolActionType, ToolTask, TaskRole
+
+    return ToolTask(
+        tool_id='chatgpt_web_assisted',
+        title='Consultar ChatGPT',
+        objective='Diagnosticar por que no despega la consulta',
+        requested_by_role=TaskRole.TOOL_USE,
+        actions=[ToolAction(action_type=ToolActionType.LLM_QUERY, label='Consulta', value='Revisa la causa del atasco')],
+    )
+
+
+def test_external_assistant_adapter_requests_credentials_when_login_required() -> None:
+    adapter = ExternalAssistantToolAdapter(runner_factory=_login_required_runner_factory())
+    broker = _FakeCredentialBroker()
+    adapter.credential_broker = broker
+    card = _chatgpt_web_card()
+
+    result = adapter.run(card, _chatgpt_task(), sandbox=False)
+
+    # El flujo sigue devolviendo success=True con assistant_login_required=True
+    # (la ruta queda esperando al usuario), pero ahora el broker recibio la solicitud.
+    assert result['success'] is True
+    assert result['metadata']['assistant_login_required'] is True
+    assert len(broker.requests) == 1
+    request = broker.requests[0]
+    assert request['domain'] == 'chatgpt.com'
+    assert 'ChatGPT' in str(request['reason'])
+
+
+def test_external_assistant_adapter_skips_credential_request_when_broker_has_credential() -> None:
+    adapter = ExternalAssistantToolAdapter(runner_factory=_login_required_runner_factory())
+    # Broker ya tiene credencial para chatgpt.com; no debe reabrir el popup.
+    broker = _FakeCredentialBroker(needs_map={'chatgpt.com': False})
+    adapter.credential_broker = broker
+    card = _chatgpt_web_card()
+
+    adapter.run(card, _chatgpt_task(), sandbox=False)
+
+    assert broker.requests == []
+
+
+def test_external_assistant_adapter_without_broker_does_not_crash_on_login_required() -> None:
+    # Escenario legacy: el adapter se construye sin broker inyectado.
+    adapter = ExternalAssistantToolAdapter(runner_factory=_login_required_runner_factory())
+    assert adapter.credential_broker is None
+
+    result = adapter.run(_chatgpt_web_card(), _chatgpt_task(), sandbox=False)
+
+    assert result['metadata']['assistant_login_required'] is True
+
+
+def test_external_assistant_adapter_uses_explicit_credential_domain_when_provided() -> None:
+    adapter = ExternalAssistantToolAdapter(runner_factory=_login_required_runner_factory())
+    broker = _FakeCredentialBroker()
+    adapter.credential_broker = broker
+    card = _chatgpt_web_card(
+        credential_domain='chatgpt.iabv.local',
+        credential_username_hint='faber',
+    )
+
+    adapter.run(card, _chatgpt_task(), sandbox=False)
+
+    assert len(broker.requests) == 1
+    assert broker.requests[0]['domain'] == 'chatgpt.iabv.local'
+    assert broker.requests[0]['username_hint'] == 'faber'

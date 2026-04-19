@@ -516,6 +516,13 @@ class AppBootstrap:
         self.operational_executor.credential_broker = self.credential_broker
         self.operational_executor.clarification_request_service = self.clarification_request_service
         self.operational_executor.environment_bootstrap_service = self.environment_bootstrap_service
+        # Inyectar credential_broker en adapters que pueden requerir login
+        # externo (ChatGPT, Claude, Gemini, etc.). El adapter dispara el
+        # popup de credenciales cuando la sesion aislada reporta
+        # assistant_login_required, sin decidir rutas.
+        external_adapter = self.tool_adapters.get('external_assistant')
+        if external_adapter is not None:
+            external_adapter.credential_broker = self.credential_broker
 
         self.knowledge_service = KnowledgeService(self.knowledge_repository, unified_memory_layer=self.unified_memory_layer)
         self.adaptive_task_orchestrator = AdaptiveTaskOrchestrator(
