@@ -153,7 +153,9 @@ def list_repo_directory(
 
 Inputs válidos: `relative_path` vacío o `"."` → raíz del workspace; si
 no, relativo, sin `..`, no absoluto, dentro del workspace. `max_entries`
-entero; se capea a `MAX_LIST_ENTRIES=200`, valores ≤0 se suben a 1.
+entero; se capea a `MAX_LIST_ENTRIES=200`, valores `<0` se suben a 1,
+valor `0` se trata como `DEFAULT_LIST_MAX=200` porque la implementación
+usa `int(max_entries or DEFAULT_LIST_MAX)` (`0` es falsy).
 
 Ejemplos:
 
@@ -319,10 +321,10 @@ aunque viva en subdirectorio. `list_repo_directory` sí lo muestra con
 leerlo. No hay workaround por MCP: renombrar el archivo o leerlo local
 fuera de la tool.
 
-### 4.4 `capture_ui_screenshot` degrada a `ui_not_available`
+### 4.4 `capture_ui_screenshot` degrada a `ui_not_running`
 
-El código real devuelve `error="ui_not_running"` (no
-`ui_not_available`); este runbook usa ese nombre. Causas:
+El payload real trae `error="ui_not_running"`; ese es el string exacto
+que hay que buscar en logs y código (ver `audit_tools.py`). Causas:
 
 - Container sin `UIScreenshotProvider` registrado (Linux CI, tests
   headless, MCP levantado sin UI). Esperado.
