@@ -25,6 +25,7 @@ from iabv_v15.infra.persistence.scenario_run_repository import ScenarioRunReposi
 from iabv_v15.infra.persistence.session_artifact_repository import SessionArtifactRepository
 from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
 from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+from iabv_v15.services.adaptive.assistant_preference_resolver import AssistantPreferenceResolver
 from iabv_v15.services.development.development_assist_service import DevelopmentAssistService
 from iabv_v15.services.evolution.autonomy_activity_projector import AutonomyActivityProjector
 from iabv_v15.services.evolution.evolution_review_service import EvolutionReviewService
@@ -91,6 +92,7 @@ class ControlCenterViewModel(QObject):
         self.artifact_repository = artifact_repository
         self.inference_service = inference_service
         self.role_router = role_router
+        self._assistant_preference_resolver = AssistantPreferenceResolver()
         self.adaptive_orchestrator = adaptive_orchestrator
         self.training_orchestrator = training_orchestrator
         self.pbt_service = pbt_service
@@ -616,61 +618,10 @@ class ControlCenterViewModel(QObject):
         return self._goal_context_from_repository(site_id)
 
     def _explicit_assistant_preference(self, message: str) -> str:
-        command = ' '.join(str(message or '').lower().strip().split())
-        if not command:
-            return ''
-        if any(command.startswith(prefix) for prefix in ('sabes ', 'puedes ', 'puedo ')) and any(
-            token in command for token in ('codex', 'chatgpt', 'claude', 'ollama')
-        ):
-            return ''
-        consult_tokens = (
-            'consulta',
-            'consulta externa',
-            'consultar',
-            'usa ',
-            'utiliza ',
-            'revisa con',
-            'valida con',
-            'pregunta a',
-            'apoyate en',
-            'ap?yate en',
-            'razona con',
-            'piensa con',
-            'escala a',
-            'escalalo a',
-            'escalalo con',
-        )
-        has_consult_intent = any(token in command for token in consult_tokens)
-        if has_consult_intent:
-            for assistant in ('chatgpt', 'claude', 'codex', 'ollama'):
-                if assistant in command:
-                    return assistant
-        for assistant in ('chatgpt', 'claude', 'codex', 'ollama'):
-            if assistant not in command:
-                continue
-            task_like_external_request = (
-                any(token in command for token in ('revisa ', 'revisa', 'revisar', 'analiza', 'analizar', 'diagnostica', 'diagnosticar', 'arregla', 'corrige', 'abre ', 'inicia '))
-                and any(
-                    marker in command
-                    for marker in (
-                        f'con {assistant}',
-                        f'a {assistant}',
-                        f'usa {assistant}',
-                        f'utiliza {assistant}',
-                        f'usando {assistant}',
-                        f'por {assistant}',
-                        f'via {assistant}',
-                    )
-                )
-            )
-            if task_like_external_request:
-                return assistant
-        if (
-            any(token in command for token in ('codex', 'chatgpt', 'claude', 'ollama'))
-            and any(token in command for token in ('sabes', 'puedes', 'puedo', 'internamente', 'automatic', 'automatica', 'autom?tico', 'respondieron'))
-        ):
-            return ''
-        return ''
+        # Delegated to AssistantPreferenceResolver so the same parsing can be
+        # reused from non-UI entrypoints (orchestrator, chat bridge, CLI) and
+        # exercised in pure-Python tests without Qt.
+        return self._assistant_preference_resolver.resolve(message)
 
     def _is_general_chat_message(self, message: str) -> bool:
         command = ' '.join(str(message or '').lower().strip().split())
