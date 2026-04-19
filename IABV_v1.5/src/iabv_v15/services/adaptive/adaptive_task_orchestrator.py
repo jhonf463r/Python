@@ -1022,7 +1022,7 @@ class AdaptiveTaskOrchestrator:
         if service is None or builder is None:
             return None
         try:
-            state = service.current_state(refresh=True)
+            state = service.current_state(refresh=False)
             return builder.build(state)
         except Exception:
             return None

@@ -183,3 +183,21 @@ def test_export_control_master_digest_returns_json_dict() -> None:
         assert "rules_brief" in payload
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_orchestrator_digest_preserves_persisted_vision() -> None:
+    """Regression: the orchestrator helper must not drop fields like current_vision.
+
+    Previously the helper called current_state(refresh=True) which skipped the
+    persisted base state and left current_vision/current_tests_state/
+    evidence_links/metadata at their empty defaults.
+    """
+    root = _workspace("control_master_orchestrator_vision")
+    try:
+        boot = AppBootstrap(str(root))
+        boot.control_master_service.set_vision("Vision gobernable viva")
+        digest = boot.adaptive_task_orchestrator._control_master_digest()
+        assert digest is not None
+        assert digest.current_vision == "Vision gobernable viva"
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
