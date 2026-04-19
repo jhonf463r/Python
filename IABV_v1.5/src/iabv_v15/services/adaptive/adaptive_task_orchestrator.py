@@ -189,35 +189,27 @@ class AdaptiveTaskOrchestrator:
         payload['metadata'] = metadata
         if self.autonomous_evolution_service is None:
             return payload
-        # Verificar si hay una consulta expirada o fallida que necesite reintento
+        # Verificar si hay una consulta expirada que necesite reintento
         existing_status = existing.get('status')
         external_state_flags = list(existing.get('external_state_flags') or [])
         retry_count = int(existing.get('retry_count') or 0)
         max_retries = 3
-        # Determinar si necesita reintento:
-        # 1. awaiting_response con SESSION_EXPIRED (26% - browser_input_missing)
-        # 2. failed/blocked sin retry_exhausted (32%)
-        needs_retry = (
-            existing_status == 'awaiting_response' and 'session_expired' in external_state_flags
-        ) or (
-            existing_status in {'failed', 'blocked'} and not existing.get('retry_exhausted')
-        )
-        if needs_retry:
+        # Si está en awaiting_response pero expiró (SESSION_EXPIRED), permitir reintento
+        if existing_status == 'awaiting_response' and 'session_expired' in external_state_flags:
             if retry_count >= max_retries:
-                # Máximo de reintentos alcanzado, marcar como fallido permanentemente
+                # Máximo de reintentos alcanzado, marcar como fallido
                 existing['status'] = 'failed'
                 existing['retry_exhausted'] = True
-                existing['reason'] = f'Consulta fallida después de {max_retries} reintentos.'
+                existing['reason'] = f'Consulta expirada después de {max_retries} reintentos.'
                 metadata['autonomous_evolution'] = dict(existing)
                 payload['metadata'] = metadata
                 payload['assistant_guidance'] = f'La consulta externa no pudo completarse después de {max_retries} intentos. Recomiendo continuar localmente.'
                 return payload
             # Limpiar estado para reintento
-            previous_status = existing_status if existing_status in {'failed', 'blocked'} else 'session_expired'
-            payload = self._prepare_retry_for_expired_consultation(payload, existing, retry_count, previous_status)
+            payload = self._prepare_retry_for_expired_consultation(payload, existing, retry_count)
             decision_context = self._decision_context_from_payload(payload=payload, user_goal=user_goal)
-        elif existing_status in {'prepared', 'reused'} or existing.get('retry_exhausted'):
-            # Estados finales o agotados reintentos, no reintentar
+        elif existing_status in {'prepared', 'reused', 'failed'}:
+            # Estados finales, no reintentar
             return payload
         result = self.autonomous_evolution_service.plan_or_execute(
             adaptive_payload=payload,
@@ -226,7 +218,7 @@ class AdaptiveTaskOrchestrator:
             decision_context=decision_context,
         )
         # Incrementar contador de reintentos si es un reintento
-        if needs_retry:
+        if existing_status == 'awaiting_response' and 'session_expired' in external_state_flags:
             result['retry_count'] = retry_count + 1
             result['is_retry'] = True
         metadata['autonomous_evolution'] = dict(result)
@@ -245,30 +237,21 @@ class AdaptiveTaskOrchestrator:
         payload: dict[str, Any],
         existing_consultation: dict[str, Any],
         retry_count: int,
-        previous_status: str = 'session_expired',
     ) -> dict[str, Any]:
-        """Limpia el estado de una consulta expirada o fallida para permitir reintento."""
+        """Limpia el estado de una consulta expirada para permitir reintento."""
         new_payload = dict(payload)
         metadata = dict(new_payload.get('metadata') or {})
         # Limpiar flags de estado anterior
         metadata.pop('autonomous_evolution', None)
         metadata.pop('autonomous_evolution_response', None)
         metadata.pop('pending_issue_id', None)
-        # Limpiar también execution_state relacionado si existe
-        if 'execution_state' in metadata:
-            metadata.pop('execution_state', None)
         # Agregar metadata de reintento
-        reason = (
-            'Consulta externa fallida, reintentando.'
-            if previous_status in {'failed', 'blocked'}
-            else 'Consulta externa expirada, reintentando captura.'
-        )
         metadata['consultation_retry'] = {
             'previous_task_id': str(existing_consultation.get('task_id') or ''),
             'previous_result_id': str(existing_consultation.get('result_id') or ''),
             'retry_count': retry_count + 1,
-            'previous_status': previous_status,
-            'retry_reason': reason,
+            'previous_status': 'session_expired',
+            'retry_reason': 'Consulta externa expirada, reintentando captura.',
         }
         new_payload['metadata'] = metadata
         return new_payload
