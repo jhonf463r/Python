@@ -145,6 +145,10 @@ def test_add_objective_is_idempotent_on_same_id() -> None:
         assert node is not None
         assert node.title == "segunda version"
         assert node.status.value == "paused"
+        # The update path MUST refresh updated_at_utc so
+        # ObjectiveRepository.list_recent() (ORDER BY updated_at_utc DESC)
+        # surfaces just-edited objectives. See Devin Review finding on PR #23.
+        assert node.updated_at_utc > node.created_at_utc
     finally:
         shutil.rmtree(root, ignore_errors=True)
 

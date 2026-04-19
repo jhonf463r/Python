@@ -111,6 +111,7 @@ def cmd_add_objective(args: argparse.Namespace) -> int:
         ObjectiveNode,
         ObjectiveNodeKind,
         ObjectiveStatus,
+        utc_now,
     )
 
     boot = _bootstrap(args.workspace)
@@ -140,6 +141,7 @@ def cmd_add_objective(args: argparse.Namespace) -> int:
                 "parent_id": args.parent_id,
                 "root_id": args.root_id or existing.root_id or objective_id,
                 "tags": list(args.tag or []) or existing.tags,
+                "updated_at_utc": utc_now(),
             }
         )
         action = "updated"
