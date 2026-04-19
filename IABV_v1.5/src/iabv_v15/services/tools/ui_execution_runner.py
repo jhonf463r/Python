@@ -183,7 +183,11 @@ class UIExecutionRunner:
             launched = self._launch_target(launch_target, launch_mode=launch_mode, launch_env=launch_env)
             time.sleep(max(0.1, launch_wait_seconds))
             focused_title = self._wait_and_focus_any_window(hints, window_wait_seconds)
-            if focused_title:
+            if focused_title and not reingest_only:
+                # En reingest_only solo leemos la respuesta existente: pegar el
+                # prompt sobreescribiria el textarea y contaminaria la captura
+                # posterior por clipboard (Ctrl+A / Ctrl+C capturaria el prompt
+                # en vez de la respuesta del asistente). Devin Review PR #13.
                 self._paste_text(prompt_text)
                 prompt_pasted = True
                 if submit_after_paste:

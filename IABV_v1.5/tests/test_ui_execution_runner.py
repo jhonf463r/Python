@@ -400,6 +400,80 @@ def test_ui_execution_runner_propagates_verified_rollout_capture_metadata(monkey
         shutil.rmtree(root, ignore_errors=True)
 
 
+def test_ui_execution_runner_skips_paste_in_clipboard_reingest_only(monkeypatch) -> None:
+    """Regresion para Devin Review PR #13: en la rama clipboard (no browser_dom)
+    de capture_response_from_app, reingest_only=True debe saltar el _paste_text
+    para no sobreescribir la respuesta ya visible en el hilo del asistente.
+    """
+    root = _workspace('ui_execution_runner_reingest_only')
+    paste_calls: list[str] = []
+    try:
+        runner = UIExecutionRunner(str(root))
+        monkeypatch.setattr(runner, 'is_available', lambda: True)
+        monkeypatch.setattr(runner, '_launch_target', lambda *args, **kwargs: True)
+        monkeypatch.setattr(runner, '_wait_and_focus_any_window', lambda *args, **kwargs: 'ChatGPT')
+        monkeypatch.setattr(
+            runner,
+            '_paste_text',
+            lambda text, *args, **kwargs: paste_calls.append(str(text)),
+        )
+        monkeypatch.setattr(runner, '_send_virtual_key', lambda *args, **kwargs: None)
+        monkeypatch.setattr(runner, 'copy_active_window_text', lambda **kwargs: 'Respuesta ya visible.')
+        monkeypatch.setattr(runner, 'read_clipboard_text', lambda: '')
+
+        captured = runner.capture_response_from_app(
+            launch_target='chatgpt',
+            title_hints=['ChatGPT'],
+            prompt_text='Este prompt NO debe pegarse encima.',
+            launch_mode='desktop_app',
+            response_wait_seconds=0.3,
+            reingest_only=True,
+        )
+
+        assert paste_calls == [], (
+            'reingest_only debe saltar _paste_text para no contaminar la '
+            'ventana del asistente ni el capture posterior por clipboard.'
+        )
+        assert captured['prompt_pasted'] is False
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_ui_execution_runner_still_pastes_prompt_when_not_reingesting(monkeypatch) -> None:
+    """Contracontrol: el flujo normal (reingest_only=False) sigue pegando el
+    prompt. El fix de PR #13 no debe romper la consulta primera vez.
+    """
+    root = _workspace('ui_execution_runner_paste_normal')
+    paste_calls: list[str] = []
+    try:
+        runner = UIExecutionRunner(str(root))
+        monkeypatch.setattr(runner, 'is_available', lambda: True)
+        monkeypatch.setattr(runner, '_launch_target', lambda *args, **kwargs: True)
+        monkeypatch.setattr(runner, '_wait_and_focus_any_window', lambda *args, **kwargs: 'ChatGPT')
+        monkeypatch.setattr(
+            runner,
+            '_paste_text',
+            lambda text, *args, **kwargs: paste_calls.append(str(text)),
+        )
+        monkeypatch.setattr(runner, '_send_virtual_key', lambda *args, **kwargs: None)
+        monkeypatch.setattr(runner, 'copy_active_window_text', lambda **kwargs: 'ok')
+        monkeypatch.setattr(runner, 'read_clipboard_text', lambda: '')
+
+        captured = runner.capture_response_from_app(
+            launch_target='chatgpt',
+            title_hints=['ChatGPT'],
+            prompt_text='Consulta fresh que si debe pegarse.',
+            launch_mode='desktop_app',
+            response_wait_seconds=0.3,
+            reingest_only=False,
+        )
+
+        assert paste_calls == ['Consulta fresh que si debe pegarse.']
+        assert captured['prompt_pasted'] is True
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def test_ui_execution_runner_decodes_clipboard_fallback_without_charmap_crash(monkeypatch) -> None:
     root = _workspace('ui_execution_runner_clipboard_decode')
     try:
