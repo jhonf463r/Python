@@ -2358,6 +2358,91 @@ def test_control_center_chat_presentation_understands_messy_request_and_mentions
         _cleanup_bootstrap(bootstrap)
 
 
+def test_control_center_chat_presentation_prefers_local_llm_answer_over_canned_reply() -> None:
+    bootstrap = _make_bootstrap('test_control_center_local_llm_answer_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        viewmodel._last_user_goal = 'explicame en una sola frase que es la neuroplasticidad operativa en iabv'
+        llm_answer = 'La neuroplasticidad operativa es la capacidad del sistema para reorganizarse segun evidencia.'
+
+        viewmodel._apply_task_result(
+            'chat',
+            {
+                'summary': llm_answer,
+                'provider_name': 'Adaptive local orchestrator',
+                'role_title': 'Base de conocimiento',
+                'executor_model': 'qwen3:1.7b',
+                'confidence': '0.85',
+                'route_reason': 'Consulta local',
+                'sources': [],
+                'used_tools': [],
+                'follow_up_teachings': [],
+                'planner_used': False,
+                'chosen_pack': {'title': 'Consulta local con contexto'},
+                'adaptive_session': {
+                    'intent': {'intent_key': 'general.assistance'},
+                    'context': {'site_display_name': 'General'},
+                    'assistant_guidance': {'mode': 'ready_execute'},
+                },
+                'local_chat_llm': {
+                    'summary': llm_answer,
+                    'provider_name': 'Ollama',
+                    'available': True,
+                    'error': '',
+                },
+            },
+        )
+
+        last_message = viewmodel.get_chat_messages()[-1]
+        assert last_message['text'] == llm_answer
+        assert 'te leo. cuentame' not in last_message['text'].lower()
+        assert 'ollama' in last_message['meta'].lower()
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_control_center_chat_presentation_keeps_canned_reply_when_llm_unavailable() -> None:
+    bootstrap = _make_bootstrap('test_control_center_local_llm_unavailable_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        viewmodel._last_user_goal = 'q puedes hacer tu aca adentro con codex o chatgpt'
+
+        viewmodel._apply_task_result(
+            'chat',
+            {
+                'summary': 'Plantilla canned para meta-assistant.',
+                'provider_name': 'Adaptive local orchestrator',
+                'role_title': 'Base de conocimiento',
+                'executor_model': 'qwen3:1.7b',
+                'confidence': '0.70',
+                'route_reason': 'Consulta general',
+                'sources': [],
+                'used_tools': [],
+                'follow_up_teachings': [],
+                'planner_used': False,
+                'chosen_pack': {'title': 'Consulta local con contexto'},
+                'adaptive_session': {
+                    'intent': {'intent_key': 'general.assistance'},
+                    'context': {'site_display_name': 'General'},
+                    'assistant_guidance': {'mode': 'ready_execute'},
+                },
+                'local_chat_llm': {
+                    'summary': '',
+                    'provider_name': 'Ollama',
+                    'available': False,
+                    'error': 'unreachable',
+                },
+            },
+        )
+
+        text = viewmodel.get_chat_messages()[-1]['text'].lower()
+        assert 'puedo ayudarte' in text
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
 def test_control_center_chat_presentation_avoids_generic_general_reply_for_task_like_message() -> None:
     bootstrap = _make_bootstrap('test_control_center_task_like_general_reply_workspace')
     try:
