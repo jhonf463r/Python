@@ -41,7 +41,26 @@ from iabv_v15.services.adaptive.intent_understanding_service import IntentUnders
 from iabv_v15.services.adaptive.strategy_pack_registry import StrategyPackRegistry
 from iabv_v15.services.adaptive.task_context_assembler import TaskContextAssembler
 from iabv_v15.services.adaptive.task_outcome_recorder import TaskOutcomeRecorder
+from iabv_v15.services.llm.system_prompt_builder import SystemPromptBuilder
+from iabv_v15.services.llm.tool_calling_bridge import ToolCallingBridge
 from iabv_v15.services.roles.local_role_router import LocalRoleRouter
+
+
+_LOCAL_CHAT_PACK_IDS = frozenset({'knowledge.query', 'general.assistance'})
+_LOCAL_CHAT_INTENT_KEYS = frozenset({'knowledge.query', 'general.assistance'})
+_LOCAL_CHAT_ROLES = frozenset({TaskRole.KNOWLEDGE, TaskRole.ANALYTICS, TaskRole.RESEARCH})
+
+
+def _is_local_chat_flow(session: AdaptiveSession) -> bool:
+    pack_id = session.chosen_pack_id or ''
+    intent_key = session.intent.intent_key or ''
+    if pack_id in _LOCAL_CHAT_PACK_IDS:
+        return True
+    if intent_key in _LOCAL_CHAT_INTENT_KEYS:
+        return True
+    if session.intent.detected_role in _LOCAL_CHAT_ROLES and not pack_id:
+        return True
+    return False
 
 
 class AdaptiveTaskOrchestrator:
@@ -761,7 +780,9 @@ class AdaptiveTaskOrchestrator:
         decision_context_payload = dict(session.metadata.get('decision_context') or {})
         perception_snapshot_payload = dict(session.metadata.get('perception_snapshot') or session.context.metadata.get('perception_snapshot') or {})
         assistant_guidance = dict(session.metadata.get('assistant_guidance') or decision_context_payload.get('assistant_guidance') or self._build_assistant_guidance(session, pack))
-        summary = str(assistant_guidance.get('prompt') or self._render_summary(session))
+        llm_chat = self._maybe_invoke_local_chat_llm(session=session, request=request)
+        llm_summary = llm_chat.get('summary') if llm_chat else ''
+        summary = str(llm_summary or assistant_guidance.get('prompt') or self._render_summary(session))
         role_profile = next((item for item in self.role_router.role_profiles if item.role == session.intent.detected_role), self.role_router.role_profiles[0])
         report_kind = self._report_kind_for_role(session.intent.detected_role)
         guidance_checks = {
@@ -814,8 +835,162 @@ class AdaptiveTaskOrchestrator:
                 'world_model_summary': dict(perception_snapshot_payload.get('metadata', {}).get('world_model_summary') or decision_context_payload.get('metadata', {}).get('world_model_summary') or {}),
                 'portable_context_summary': dict(perception_snapshot_payload.get('metadata', {}).get('portable_context_summary') or decision_context_payload.get('metadata', {}).get('portable_context_summary') or {}),
                 'external_state_flags': list(perception_snapshot_payload.get('external_state_flags') or decision_context_payload.get('metadata', {}).get('external_state_flags') or []),
+                'local_chat_llm': dict(llm_chat) if llm_chat else {},
             },
         )
+
+    def _maybe_invoke_local_chat_llm(
+        self,
+        *,
+        session: AdaptiveSession,
+        request: InferenceRequest,
+    ) -> dict[str, Any] | None:
+        """Invoke the local Ollama provider for conversational chat flows.
+
+        Uses ``SystemPromptBuilder`` to give the LLM full system awareness and
+        ``ToolCallingBridge`` to allow iterative tool execution (max 5 loops).
+
+        Returns a dict with the captured ``summary`` plus metadata so the
+        caller can both use the answer and audit how it was produced. Returns
+        ``None`` if the flow does not qualify as local chat, the provider is
+        unavailable, or the call fails. Falling back to the templated
+        ``assistant_guidance`` keeps behaviour unchanged whenever the LLM
+        cannot be reached.
+        """
+        if session.intent.disposition.value == 'need_info':
+            return None
+        if not _is_local_chat_flow(session):
+            return None
+        provider = getattr(self.role_router, 'general_provider', None)
+        if provider is None:
+            return None
+        try:
+            health = provider.health_check()
+        except Exception as exc:
+            return {'summary': '', 'provider_name': getattr(provider, 'name', ''), 'available': False, 'error': str(exc)}
+        if not bool(getattr(health, 'available', False)):
+            return {'summary': '', 'provider_name': getattr(provider, 'name', ''), 'available': False, 'error': str(getattr(health, 'detail', '') or '')}
+
+        # --- Build system prompt with full system awareness ---
+        perception_payload = dict(
+            session.metadata.get('perception_snapshot')
+            or session.context.metadata.get('perception_snapshot')
+            or {},
+        )
+        world_model = self._world_model()
+        env_self_model = self._environment_self_model()
+        portable_context = self._portable_context_package()
+        tool_cards = self._tool_cards()
+        governance_snapshot = self._governance_for_chat(session)
+
+        prompt_builder = SystemPromptBuilder()
+        system_prompt = prompt_builder.build(
+            perception=None,
+            world_model=world_model,
+            env_self_model=env_self_model,
+            portable_context=portable_context,
+            tool_registry=tool_cards,
+            governance_rules=governance_snapshot,
+        )
+        system_prompt_hash = SystemPromptBuilder.prompt_hash(system_prompt)
+
+        enriched_request = self._inject_system_prompt(request, system_prompt)
+
+        try:
+            result = provider.answer_user(enriched_request)
+        except Exception as exc:
+            return {
+                'summary': '', 'provider_name': getattr(provider, 'name', ''),
+                'available': True, 'error': str(exc),
+                'system_prompt_hash': system_prompt_hash,
+                'tool_calls_made': [], 'iterations': 0,
+            }
+        initial_summary = str(getattr(result, 'summary', '') or '').strip()
+        if not initial_summary:
+            return {
+                'summary': '', 'provider_name': getattr(result, 'provider_name', '') or getattr(provider, 'name', ''),
+                'available': True, 'error': 'empty_summary',
+                'system_prompt_hash': system_prompt_hash,
+                'tool_calls_made': [], 'iterations': 0,
+            }
+
+        # --- Tool-calling loop ---
+        tool_executor = getattr(self, '_tool_operational_executor', None)
+        bridge = ToolCallingBridge(
+            tool_executor=tool_executor,
+            tool_registry=tool_cards,
+            governance_snapshot=governance_snapshot,
+        )
+        final_summary, tool_calls_made, iterations = bridge.run_tool_loop(
+            provider=provider,
+            request=enriched_request,
+            system_prompt=system_prompt,
+            initial_response=initial_summary,
+            session=session,
+        )
+        summary = final_summary or initial_summary
+        return {
+            'summary': summary,
+            'provider_name': str(getattr(result, 'provider_name', '') or getattr(provider, 'name', '')),
+            'available': True,
+            'error': '',
+            'system_prompt_hash': system_prompt_hash,
+            'tool_calls_made': tool_calls_made,
+            'iterations': iterations,
+        }
+
+    @staticmethod
+    def _inject_system_prompt(request: InferenceRequest, system_prompt: str) -> InferenceRequest:
+        """Clone the request injecting the system prompt override via metadata.
+
+        ``OpenAICompatLocalProvider`` reads ``metadata['system_prompt_override']``
+        to replace its default system instruction; this lets the LLM see the
+        full system awareness already on the first call without rewriting the
+        provider surface.
+        """
+        merged_metadata = dict(request.metadata or {})
+        merged_metadata['system_prompt_override'] = system_prompt
+        try:
+            return request.model_copy(update={'metadata': merged_metadata})
+        except Exception:
+            request.metadata = merged_metadata
+            return request
+
+    def _portable_context_package(self) -> Any:
+        service = getattr(self.context_assembler, 'portable_context_service', None)
+        if service is None or not hasattr(service, 'current_package'):
+            return None
+        try:
+            return service.current_package(
+                task_context=None,
+                environment_self_model=None,
+                world_model=None,
+            )
+        except Exception:
+            return None
+
+    def _tool_cards(self) -> list[Any]:
+        registry = getattr(self.role_router, '_tool_registry', None)
+        if registry is not None and hasattr(registry, 'list_cards'):
+            try:
+                return registry.list_cards()
+            except Exception:
+                pass
+        teach_service = getattr(self, '_tool_teach_service', None)
+        if teach_service is not None and hasattr(teach_service, 'registry'):
+            try:
+                return teach_service.registry.list_cards()
+            except Exception:
+                pass
+        return []
+
+    def _governance_for_chat(self, session: AdaptiveSession) -> dict[str, Any]:
+        if self.autonomy_governance_policy is None:
+            return {}
+        governance = dict(session.metadata.get('governance') or {})
+        if governance:
+            return governance
+        return {}
 
     def _build_decision_context(
         self,
