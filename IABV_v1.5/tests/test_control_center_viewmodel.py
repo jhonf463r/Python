@@ -3543,3 +3543,110 @@ def test_control_center_self_examination_phrase_has_priority_over_learning_phras
     finally:
         _cleanup_bootstrap(bootstrap)
 
+
+# Tests para señales evolutivas UI (Task B)
+
+def test_control_center_emits_credential_prompt_requested() -> None:
+    """Verifica que el ViewModel emite credentialPromptRequested."""
+    bootstrap = _make_bootstrap('test_cc_credential_signal')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        received = {'payload': None}
+
+        def on_credential_requested(payload):
+            received['payload'] = payload
+
+        viewmodel.credentialPromptRequested.connect(on_credential_requested)
+        test_payload = {'domain': 'example.com', 'reason': 'Login required', 'username_hint': 'user@example.com'}
+        viewmodel.credentialPromptRequested.emit(test_payload)
+
+        assert received['payload'] is not None
+        assert received['payload']['domain'] == 'example.com'
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_control_center_emits_clarification_requested() -> None:
+    """Verifica que el ViewModel emite clarificationRequested."""
+    bootstrap = _make_bootstrap('test_cc_clarification_signal')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        received = {'payload': None}
+
+        def on_clarification_requested(payload):
+            received['payload'] = payload
+
+        viewmodel.clarificationRequested.connect(on_clarification_requested)
+        test_payload = {'id': '123', 'question': 'Which option?', 'options': ['A', 'B'], 'context': 'Test'}
+        viewmodel.clarificationRequested.emit(test_payload)
+
+        assert received['payload'] is not None
+        assert received['payload']['question'] == 'Which option?'
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_control_center_emits_missing_dependency_requested() -> None:
+    """Verifica que el ViewModel emite missingDependencyRequested."""
+    bootstrap = _make_bootstrap('test_cc_dependency_signal')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        received = {'payload': None}
+
+        def on_dependency_requested(payload):
+            received['payload'] = payload
+
+        viewmodel.missingDependencyRequested.connect(on_dependency_requested)
+        test_payload = {'package_name': 'numpy', 'manager': 'pip', 'reason': 'Required for analysis'}
+        viewmodel.missingDependencyRequested.emit(test_payload)
+
+        assert received['payload'] is not None
+        assert received['payload']['package_name'] == 'numpy'
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_control_center_emits_background_activity_changed() -> None:
+    """Verifica que el ViewModel emite backgroundActivityChanged."""
+    bootstrap = _make_bootstrap('test_cc_activity_signal')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        received = {'payload': None}
+
+        def on_activity_changed(payload):
+            received['payload'] = payload
+
+        viewmodel.backgroundActivityChanged.connect(on_activity_changed)
+        test_payload = {'text': 'Processing...', 'progress': 50, 'status': 'running', 'details': ['Step 1']}
+        viewmodel.backgroundActivityChanged.emit(test_payload)
+
+        assert received['payload'] is not None
+        assert received['payload']['progress'] == 50
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_control_center_emits_provider_health_changed() -> None:
+    """Verifica que el ViewModel emite providerHealthChanged."""
+    bootstrap = _make_bootstrap('test_cc_health_signal')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        received = {'payload': None}
+
+        def on_health_changed(payload):
+            received['payload'] = payload
+
+        viewmodel.providerHealthChanged.connect(on_health_changed)
+        test_payload = [{'name': 'Ollama', 'status': 'ready', 'latency': 100}]
+        viewmodel.providerHealthChanged.emit(test_payload)
+
+        assert received['payload'] is not None
+        assert len(received['payload']) == 1
+    finally:
+        _cleanup_bootstrap(bootstrap)
+

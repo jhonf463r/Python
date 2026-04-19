@@ -762,21 +762,101 @@ Item {
                             }
                         }
 
-                        Label { text: "Providers"; color: textPrimary; font.pixelSize: 16; font.family: "Segoe UI" }
-                        Repeater {
-                            model: providerCardsModel
-                            delegate: Label {
-                                width: supportCol.width
-                                text: modelData.provider_name + " | " + modelData.status + " | " + (modelData.role || "")
-                                color: textSecondary
-                                wrapMode: Label.WordWrap
-                                font.pixelSize: 11
-                                font.family: "Segoe UI"
+                        // ToolHealthPanel integrado (Task B)
+                        ToolHealthPanel {
+                            id: toolHealthPanel
+                            width: parent.width
+                            providers: controlCenterViewModel ? controlCenterViewModel.providerCards : []
+                            onRotateToolRequested: {
+                                if (controlCenterViewModel) controlCenterViewModel.rotateToolRequested()
                             }
+                            onHelpRequested: {
+                                if (controlCenterViewModel) controlCenterViewModel.helpRequested()
+                            }
+                            onRefreshRequested: {
+                                if (controlCenterViewModel) controlCenterViewModel.refreshProviderHealth()
+                            }
+                        }
+
+                        // BackgroundActivityChip integrado (Task B)
+                        BackgroundActivityChip {
+                            id: backgroundChip
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            activityText: {
+                                if (!controlCenterViewModel) return ""
+                                var activity = controlCenterViewModel.backgroundActivity || {}
+                                return activity.text || ""
+                            }
+                            progress: {
+                                if (!controlCenterViewModel) return 0
+                                var activity = controlCenterViewModel.backgroundActivity || {}
+                                return activity.progress || 0
+                            }
+                            status: {
+                                if (!controlCenterViewModel) return "idle"
+                                var activity = controlCenterViewModel.backgroundActivity || {}
+                                return activity.status || "idle"
+                            }
+                            visible: status !== "idle" && activityText !== ""
                         }
                     }
                 }
             }
+        }
+    }
+
+    // Dialogos evolutivos (Task B)
+    CredentialPromptDialog {
+        id: credentialDialog
+        visible: false
+        onCredentialProvided: function(payload) {
+            if (controlCenterViewModel) controlCenterViewModel.onCredentialProvided(payload)
+        }
+        onDelegateToUser: function(payload) {
+            if (controlCenterViewModel) controlCenterViewModel.onCredentialDelegated(payload)
+        }
+    }
+
+    ClarificationDialog {
+        id: clarificationDialog
+        visible: false
+        onClarificationResponse: function(payload) {
+            if (controlCenterViewModel) controlCenterViewModel.onClarificationResponse(payload)
+        }
+    }
+
+    MissingDependencyDialog {
+        id: dependencyDialog
+        visible: false
+        onDependencyApproved: function(payload) {
+            if (controlCenterViewModel) controlCenterViewModel.onDependencyApproved(payload)
+        }
+        onDependencyRejected: function(payload) {
+            if (controlCenterViewModel) controlCenterViewModel.onDependencyRejected(payload)
+        }
+    }
+
+    // Conexiones de señales del ViewModel (Task B)
+    Connections {
+        target: controlCenterViewModel
+        function onCredentialPromptRequested(payload) {
+            credentialDialog.domain = payload.domain || ""
+            credentialDialog.reason = payload.reason || ""
+            credentialDialog.usernameHint = payload.username_hint || ""
+            credentialDialog.open()
+        }
+        function onClarificationRequested(payload) {
+            clarificationDialog.requestId = payload.id || ""
+            clarificationDialog.question = payload.question || ""
+            clarificationDialog.options = payload.options || []
+            clarificationDialog.context = payload.context || ""
+            clarificationDialog.open()
+        }
+        function onMissingDependencyRequested(payload) {
+            dependencyDialog.packageName = payload.package_name || ""
+            dependencyDialog.manager = payload.manager || ""
+            dependencyDialog.reason = payload.reason || ""
+            dependencyDialog.open()
         }
     }
 }

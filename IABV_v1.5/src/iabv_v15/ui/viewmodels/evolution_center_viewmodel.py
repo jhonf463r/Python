@@ -20,6 +20,13 @@ class EvolutionCenterViewModel(QObject):
     taskResolved = Signal(str, object)
     taskFailed = Signal(str, str)
 
+    # Señales evolutivas para diálogos UI (Task B)
+    credentialPromptRequested = Signal(dict)  # {domain, reason, username_hint}
+    clarificationRequested = Signal(dict)     # {id, question, options, context}
+    missingDependencyRequested = Signal(dict) # {package_name, manager, reason}
+    backgroundActivityChanged = Signal(dict)  # {text, progress, status, details}
+    providerHealthChanged = Signal(list)       # [ProviderHealth]
+
     def __init__(
         self,
         *,

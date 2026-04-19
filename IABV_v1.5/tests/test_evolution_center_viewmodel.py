@@ -479,3 +479,125 @@ def test_evolution_center_exposes_world_model() -> None:
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
 
+
+# Tests para señales evolutivas UI (Task B)
+
+def test_evolution_center_emits_credential_prompt_requested() -> None:
+    """Verifica que el ViewModel emite credentialPromptRequested."""
+    workspace = Path.cwd() / 'data' / f'test_ec_credential_signal_{uuid4().hex}'
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    bootstrap = AppBootstrap(str(workspace))
+    try:
+        viewmodel = bootstrap.evolution_center_viewmodel
+        assert viewmodel is not None
+        received = {'payload': None}
+
+        def on_credential_requested(payload):
+            received['payload'] = payload
+
+        viewmodel.credentialPromptRequested.connect(on_credential_requested)
+        test_payload = {'domain': 'api.example.com', 'reason': 'API key required', 'username_hint': 'api_user'}
+        viewmodel.credentialPromptRequested.emit(test_payload)
+
+        assert received['payload'] is not None
+        assert received['payload']['domain'] == 'api.example.com'
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_evolution_center_emits_clarification_requested() -> None:
+    """Verifica que el ViewModel emite clarificationRequested."""
+    workspace = Path.cwd() / 'data' / f'test_ec_clarification_signal_{uuid4().hex}'
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    bootstrap = AppBootstrap(str(workspace))
+    try:
+        viewmodel = bootstrap.evolution_center_viewmodel
+        assert viewmodel is not None
+        received = {'payload': None}
+
+        def on_clarification_requested(payload):
+            received['payload'] = payload
+
+        viewmodel.clarificationRequested.connect(on_clarification_requested)
+        test_payload = {'id': '456', 'question': 'Select severity?', 'options': ['Low', 'Medium', 'High'], 'context': 'Incident review'}
+        viewmodel.clarificationRequested.emit(test_payload)
+
+        assert received['payload'] is not None
+        assert received['payload']['question'] == 'Select severity?'
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_evolution_center_emits_missing_dependency_requested() -> None:
+    """Verifica que el ViewModel emite missingDependencyRequested."""
+    workspace = Path.cwd() / 'data' / f'test_ec_dependency_signal_{uuid4().hex}'
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    bootstrap = AppBootstrap(str(workspace))
+    try:
+        viewmodel = bootstrap.evolution_center_viewmodel
+        assert viewmodel is not None
+        received = {'payload': None}
+
+        def on_dependency_requested(payload):
+            received['payload'] = payload
+
+        viewmodel.missingDependencyRequested.connect(on_dependency_requested)
+        test_payload = {'package_name': 'pytest-asyncio', 'manager': 'pip', 'reason': 'Required for async tests'}
+        viewmodel.missingDependencyRequested.emit(test_payload)
+
+        assert received['payload'] is not None
+        assert received['payload']['package_name'] == 'pytest-asyncio'
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_evolution_center_emits_background_activity_changed() -> None:
+    """Verifica que el ViewModel emite backgroundActivityChanged."""
+    workspace = Path.cwd() / 'data' / f'test_ec_activity_signal_{uuid4().hex}'
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    bootstrap = AppBootstrap(str(workspace))
+    try:
+        viewmodel = bootstrap.evolution_center_viewmodel
+        assert viewmodel is not None
+        received = {'payload': None}
+
+        def on_activity_changed(payload):
+            received['payload'] = payload
+
+        viewmodel.backgroundActivityChanged.connect(on_activity_changed)
+        test_payload = {'text': 'Analyzing dossiers...', 'progress': 75, 'status': 'running', 'details': ['Step 2 of 3']}
+        viewmodel.backgroundActivityChanged.emit(test_payload)
+
+        assert received['payload'] is not None
+        assert received['payload']['progress'] == 75
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_evolution_center_emits_provider_health_changed() -> None:
+    """Verifica que el ViewModel emite providerHealthChanged."""
+    workspace = Path.cwd() / 'data' / f'test_ec_health_signal_{uuid4().hex}'
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    bootstrap = AppBootstrap(str(workspace))
+    try:
+        viewmodel = bootstrap.evolution_center_viewmodel
+        assert viewmodel is not None
+        received = {'payload': None}
+
+        def on_health_changed(payload):
+            received['payload'] = payload
+
+        viewmodel.providerHealthChanged.connect(on_health_changed)
+        test_payload = [{'name': 'Codex', 'status': 'ready', 'latency': 50}, {'name': 'Ollama', 'status': 'degraded', 'latency': 500}]
+        viewmodel.providerHealthChanged.emit(test_payload)
+
+        assert received['payload'] is not None
+        assert len(received['payload']) == 2
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+

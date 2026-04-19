@@ -891,9 +891,102 @@ Item {
                             font.family: bodyFontFamily
                             font.pixelSize: 11
                         }
+
+                        // ToolHealthPanel integrado (Task B)
+                        ToolHealthPanel {
+                            id: toolHealthPanel
+                            width: parent.width
+                            providers: evolutionCenterViewModel ? evolutionCenterViewModel.knownToolCards : []
+                            onRotateToolRequested: {
+                                if (evolutionCenterViewModel) evolutionCenterViewModel.rotateToolRequested()
+                            }
+                            onHelpRequested: {
+                                if (evolutionCenterViewModel) evolutionCenterViewModel.helpRequested()
+                            }
+                            onRefreshRequested: {
+                                if (evolutionCenterViewModel) evolutionCenterViewModel.refreshToolCards()
+                            }
+                        }
+
+                        // BackgroundActivityChip integrado (Task B)
+                        BackgroundActivityChip {
+                            id: backgroundChip
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            activityText: {
+                                if (!evolutionCenterViewModel) return ""
+                                var activity = evolutionCenterViewModel.backgroundActivity || {}
+                                return activity.text || ""
+                            }
+                            progress: {
+                                if (!evolutionCenterViewModel) return 0
+                                var activity = evolutionCenterViewModel.backgroundActivity || {}
+                                return activity.progress || 0
+                            }
+                            status: {
+                                if (!evolutionCenterViewModel) return "idle"
+                                var activity = evolutionCenterViewModel.backgroundActivity || {}
+                                return activity.status || "idle"
+                            }
+                            visible: status !== "idle" && activityText !== ""
+                        }
                     }
                 }
             }
+        }
+    }
+
+    // Dialogos evolutivos (Task B)
+    CredentialPromptDialog {
+        id: credentialDialog
+        visible: false
+        onCredentialProvided: function(payload) {
+            if (evolutionCenterViewModel) evolutionCenterViewModel.onCredentialProvided(payload)
+        }
+        onDelegateToUser: function(payload) {
+            if (evolutionCenterViewModel) evolutionCenterViewModel.onCredentialDelegated(payload)
+        }
+    }
+
+    ClarificationDialog {
+        id: clarificationDialog
+        visible: false
+        onClarificationResponse: function(payload) {
+            if (evolutionCenterViewModel) evolutionCenterViewModel.onClarificationResponse(payload)
+        }
+    }
+
+    MissingDependencyDialog {
+        id: dependencyDialog
+        visible: false
+        onDependencyApproved: function(payload) {
+            if (evolutionCenterViewModel) evolutionCenterViewModel.onDependencyApproved(payload)
+        }
+        onDependencyRejected: function(payload) {
+            if (evolutionCenterViewModel) evolutionCenterViewModel.onDependencyRejected(payload)
+        }
+    }
+
+    // Conexiones de señales del ViewModel (Task B)
+    Connections {
+        target: evolutionCenterViewModel
+        function onCredentialPromptRequested(payload) {
+            credentialDialog.domain = payload.domain || ""
+            credentialDialog.reason = payload.reason || ""
+            credentialDialog.usernameHint = payload.username_hint || ""
+            credentialDialog.open()
+        }
+        function onClarificationRequested(payload) {
+            clarificationDialog.requestId = payload.id || ""
+            clarificationDialog.question = payload.question || ""
+            clarificationDialog.options = payload.options || []
+            clarificationDialog.context = payload.context || ""
+            clarificationDialog.open()
+        }
+        function onMissingDependencyRequested(payload) {
+            dependencyDialog.packageName = payload.package_name || ""
+            dependencyDialog.manager = payload.manager || ""
+            dependencyDialog.reason = payload.reason || ""
+            dependencyDialog.open()
         }
     }
 }
