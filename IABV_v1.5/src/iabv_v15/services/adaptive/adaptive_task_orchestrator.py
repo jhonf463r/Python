@@ -181,6 +181,18 @@ class AdaptiveTaskOrchestrator:
                 },
             },
         )
+        # Opt-in Control Master link. When the consumer passes
+        # ``control_master_objective_id`` in the request metadata, carry
+        # it into the session so that downstream closers (e.g. the
+        # TaskOutcomeRecorder → ControlMasterService hook) can resolve a
+        # terminal session to an auto-close of the linked objective.
+        # Absent key leaves session metadata untouched so legacy callers
+        # see zero behaviour change.
+        control_master_objective_id = (request.metadata or {}).get(
+            'control_master_objective_id'
+        )
+        if control_master_objective_id:
+            session.metadata['control_master_objective_id'] = control_master_objective_id
         session.playbook.metadata['site_id'] = context.site_id or intent.site_hint or ''
         for checkpoint in approvals:
             checkpoint.session_id = session.session_id

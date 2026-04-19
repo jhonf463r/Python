@@ -733,6 +733,35 @@ def test_adaptive_orchestrator_emits_decision_context_and_memory_snapshot() -> N
     assert result.raw_output['ia_trace_summary']['comparison_scope_key'] == decision_context['metadata']['comparison_scope_key']
 
 
+def test_adaptive_orchestrator_propagates_control_master_objective_id() -> None:
+    """Opt-in Control Master link survives from request into session.
+
+    Downstream closers (``TaskOutcomeRecorder`` → ``ControlMasterService``)
+    read ``session.metadata["control_master_objective_id"]`` when a
+    session hits a terminal status to auto-close the linked objective.
+    For that loop to engage from a real user request, the orchestrator
+    has to carry the request-level hint into the session metadata.
+    Absent key must stay absent so legacy callers see no behaviour change.
+    """
+
+    orchestrator, _ = _orchestrator(_workspace('adaptive_cm_objective_propagation'))
+
+    _, _, session_with = orchestrator.handle_request(
+        InferenceRequest(
+            user_goal='analiza este caso tecnico',
+            auto_route=True,
+            enable_planning=True,
+            metadata={'control_master_objective_id': 'obj-super-sync-cli-export'},
+        )
+    )
+    assert session_with.metadata.get('control_master_objective_id') == 'obj-super-sync-cli-export'
+
+    _, _, session_without = orchestrator.handle_request(
+        InferenceRequest(user_goal='analiza este caso tecnico', auto_route=True, enable_planning=True)
+    )
+    assert 'control_master_objective_id' not in session_without.metadata
+
+
 def test_adaptive_orchestrator_governance_falls_back_local_on_session_expired() -> None:
     orchestrator, _ = _orchestrator(_workspace('adaptive_session_expired'))
 
