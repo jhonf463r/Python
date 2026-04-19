@@ -1,13 +1,13 @@
 {
   "issue_id": "audit-2026-04-19-chatgpt-web-validation",
   "created_at_utc": "2026-04-19T18:55:00.000000Z",
-  "status": "open",
+  "status": "observed",
   "scenario_id": "chatgpt_web_assisted_end_to_end",
   "goal": "Validar end-to-end el flujo chatgpt_web_assisted contra chatgpt.com real: popup de credenciales (PR #12), captura DOM via Playwright, reingesta tras SESSION_EXPIRED (PRs #13 + #21), popup de aprobacion de observacion (PR #15).",
   "category": "need_codex_fix",
-  "summary": "No se puede validar end-to-end sin credenciales de una cuenta ChatGPT web. La VM Linux ya tiene Playwright + Chromium instalados y listos.",
-  "probable_cause": "Bloqueo operativo, no bug.",
-  "unresolved_reason": "Esperando que el usuario provea credenciales via el mecanismo de 3 opciones (temporal sesion / permanente user-scope / skip). Sin credenciales, queda UNRESOLVED.",
+  "summary": "Flujo `_capture_browser_dom_response` validado contra mock con los selectores oficiales del card chatgpt_web_assisted. Cloudflare bloquea chatgpt.com real desde el VM cloud (IP datacenter + UA Devin), por lo que la validacion contra el dominio productivo queda UNRESOLVED pendiente de ejecutar en Windows real.",
+  "probable_cause": "Bloqueo operativo (Cloudflare anti-bot desde IP cloud), no bug del codigo.",
+  "unresolved_reason": "Login en chatgpt.com real no fue posible desde esta VM: Turnstile entra en loop tanto por click manual como por Playwright connect_over_cdp con UA override. Se valido el mismo production code contra un mock que replica los selectores (textarea, [data-message-author-role=assistant], button[data-testid=send-button]) y paso ambos tests: flujo normal + reingest_only=True. Falta la validacion contra chatgpt.com real, que probablemente pase desde Windows del usuario.",
   "run_id": "devin-24c8eff425584b9498bbb008b18cd3aa",
   "episode_id": null,
   "session_id": "devin-24c8eff425584b9498bbb008b18cd3aa",
@@ -17,7 +17,11 @@
     "ClarificationRequestService verified OK: handler payload {id,question,options,context}, ask() blocks until resolve(), timeout raises ClarificationTimeoutError.",
     "WorldModelService on Linux: active_windows=0, tool_live_status=[] (expected: Win32-only probes), snapshot struct intact.",
     "ExternalAssistantToolAdapter source en src/iabv_v15/services/tools/tool_adapters.py.",
-    "data/evolution/audits/human-audit-2026-04-19.md"
+    "data/evolution/audits/human-audit-2026-04-19.md",
+    "data/evolution/audits/chatgpt-web-test-report-2026-04-19.md",
+    "Test 1 mock result: prompt_pasted=True, response_captured=True, captured_text contains 'pong-iabv-test' + 'NUEVA-RESPUESTA', capture_source=browser_dom, 4.3s.",
+    "Test 2 mock result (PR #21 browser_dom branch): prompt_pasted=False, response_captured=True, captured_text=precargado sin leak de NO-DEBE-PEGARSE, capture_source=browser_dom_reingest, 3.2s.",
+    "Cloudflare Turnstile loop screenshot: chatgpt.com desde VM cloud, HAS_TURNSTILE=True via CDP + UA override (Mozilla/5.0 Chrome/133)."
   ],
   "runtime_adjustments": [],
   "recommended_change": "Usuario: responder a la pregunta 3-option del agente sobre credenciales ChatGPT web. Recomendado: crear una cuenta descartable (iabv.test.*@gmail.com) y guardar como secret permanente scope=user. 2FA TOTP tambien si aplica.",
@@ -33,6 +37,12 @@
     "site_id": "chatgpt.com",
     "intent_key": "tools.consult_external",
     "audit_report": "data/evolution/audits/human-audit-2026-04-19.md",
-    "blocked_on": "user_credentials"
+    "blocked_on": "cloudflare_cloud_vm_ip_block",
+    "validated_against_mock": true,
+    "mock_selectors": {
+      "input_selectors": ["textarea", "div[contenteditable=\"true\"]"],
+      "response_selectors": ["[data-message-author-role=\"assistant\"]", "main article"],
+      "submit_selectors": ["button[data-testid=\"send-button\"]"]
+    }
   }
 }

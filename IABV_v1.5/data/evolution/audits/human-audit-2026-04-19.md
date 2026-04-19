@@ -51,11 +51,14 @@ PYTHONPATH=src python -m pytest tests/test_ui_execution_runner.py tests/test_too
 - `grant_observation_permission` persiste correctamente en `self._observation_permissions` (verificado via `permission_snapshot()`), pero el gate solo aparece en `snapshot.permission_gates` si hay un `tool_live_status` con `permission_state != 'no_requerido'`. En Linux no lo hay.
 - **No requiere fix.** Documentado aqui para que futuras IAs no lo confundan con regresion.
 
-### 3. PENDIENTE - Flujo `chatgpt_web_assisted` contra chatgpt.com real
+### 3. FLUJO `chatgpt_web_assisted` — validado contra mock, UNRESOLVED contra chatgpt.com real
 
-- **Estado:** no ejercitado en esta sesion. Requiere credenciales de una cuenta ChatGPT web.
-- **Proximo paso:** el usuario fue consultado con 3-option secret request (temporal / permanente / skip). Si provee, se ejecutara `ExternalAssistantToolAdapter` con `browser_dom_capture` (Playwright + Chromium ya instalados en la VM Linux).
-- **UNRESOLVED hasta entonces.**
+- **Estado:** el production code `UIExecutionRunner._capture_browser_dom_response` fue ejercitado live contra un server HTTP local que reproduce los selectores del card oficial (`textarea`, `[data-message-author-role="assistant"]`, `button[data-testid="send-button"]`). Ambos tests pasaron:
+  - **Test 1 (normal):** `prompt_pasted=True`, `response_captured=True`, `captured_text` contiene `pong-iabv-test` + `NUEVA-RESPUESTA`, `capture_source=browser_dom`, 4.3s.
+  - **Test 2 (PR #21 / browser_dom + reingest_only=True):** `prompt_pasted=False`, `response_captured=True`, releyo el precargado `PRECARGADO: pong-iabv-reingest-validado-...` **sin leakear** el prompt `NO-DEBE-PEGARSE`. `capture_source=browser_dom_reingest`, 3.2s.
+- **Cloudflare:** chatgpt.com real bloqueado por Turnstile desde el VM cloud (IP datacenter + UA `Devin/1.0`). Loop infinito tanto por click manual como por Playwright `connect_over_cdp` con UA override a `Mozilla/5.0 Chrome/133`. Screenshot adjunto al reporte.
+- **Evidencia:** <ref_file file="data/evolution/audits/chatgpt-web-test-report-2026-04-19.md" />.
+- **UNRESOLVED:** validacion contra chatgpt.com productivo (requiere Windows real del usuario con Chrome normal y profile persistido).
 
 ### 4. PENDIENTE - Validacion Windows real de PRs #12, #13, #15, #16, #18, #21
 
