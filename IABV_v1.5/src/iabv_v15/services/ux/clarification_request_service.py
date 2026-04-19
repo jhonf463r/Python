@@ -54,8 +54,13 @@ class ClarificationRequestService:
             "options": list(options or []),
             "context": context or "",
         }
-        if handler is not None:
-            handler(payload)
+        if handler is None:
+            with self._lock:
+                self._pending.pop(request_id, None)
+            raise ClarificationTimeoutError(
+                f"Clarification {request_id} dropped: no handler registered"
+            )
+        handler(payload)
         try:
             if timeout_s is None:
                 return future.result()

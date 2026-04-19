@@ -63,6 +63,13 @@ def test_cancel_propagates_error_to_caller() -> None:
         service.ask(question="?", timeout_s=2.0)
 
 
+def test_ask_without_handler_raises_timeout_immediately() -> None:
+    service = ClarificationRequestService()
+    with pytest.raises(ClarificationTimeoutError):
+        service.ask(question="?", timeout_s=None)
+    assert service.pending_ids() == []
+
+
 def test_resolve_unknown_request_returns_false() -> None:
     service = ClarificationRequestService()
     assert service.resolve("does-not-exist", "anything") is False
