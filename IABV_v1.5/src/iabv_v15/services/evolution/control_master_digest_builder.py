@@ -38,6 +38,7 @@ class ControlMasterDigestBuilder:
         max_backlog: int = 5,
         max_risks: int = 5,
         max_decisions: int = 5,
+        max_unresolved: int = 5,
         max_chars: int = 2000,
     ) -> None:
         self.max_rules = max_rules
@@ -45,6 +46,7 @@ class ControlMasterDigestBuilder:
         self.max_backlog = max_backlog
         self.max_risks = max_risks
         self.max_decisions = max_decisions
+        self.max_unresolved = max_unresolved
         self.max_chars = max_chars
 
     def build(self, state: ControlMasterState) -> ControlMasterDigest:
@@ -97,7 +99,7 @@ class ControlMasterDigestBuilder:
             top_backlog=backlog_brief,
             current_risks=risks_brief,
             recent_decisions_brief=decisions_brief,
-            unresolved=list(state.unresolved_items)[: self.max_risks],
+            unresolved=list(state.unresolved_items)[: self.max_unresolved],
             tests_state_brief=tests_state_brief,
             source_state_id=state.state_id,
         )
@@ -175,7 +177,9 @@ def _truncate(digest: ControlMasterDigest, max_chars: int) -> ControlMasterDiges
     # Trim rules progressively (keep highest priority first).
     while digest.rules_brief and len(render_digest_markdown(digest)) > max_chars:
         digest = digest.model_copy(update={"rules_brief": digest.rules_brief[:-1]})
-    if digest.unresolved:
+    # Only drop unresolved items if we are still over budget -- they are
+    # important governance signals per AGENTS.md.
+    if digest.unresolved and len(render_digest_markdown(digest)) > max_chars:
         digest = digest.model_copy(update={"unresolved": digest.unresolved[:1]})
     # Last resort: hard-truncate the vision string.
     if len(render_digest_markdown(digest)) > max_chars and digest.current_vision:
