@@ -199,7 +199,17 @@ class ControlMasterService:
         if parent is None or parent.status != ObjectiveStatus.ACTIVE:
             return
         try:
-            children = list_children(parent_id)
+            # Explicit large limit: the default list_children limit (40)
+            # is a display cap in ObjectiveRepository, but here we need
+            # to see *every* child — missing any uncompleted sibling would
+            # incorrectly auto-close the parent.
+            children = list_children(parent_id, limit=10_000)
+        except TypeError:
+            # Legacy embedders whose list_children does not accept limit.
+            try:
+                children = list_children(parent_id)
+            except Exception:
+                return
         except Exception:
             return
         if not children:

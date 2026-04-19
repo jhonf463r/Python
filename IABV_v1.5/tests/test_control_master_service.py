@@ -377,6 +377,61 @@ def test_auto_close_walks_up_multiple_levels() -> None:
         shutil.rmtree(root, ignore_errors=True)
 
 
+def test_auto_close_passes_explicit_large_limit_to_list_children() -> None:
+    """ObjectiveRepository.list_children defaults to 40; auto-close needs ALL children.
+
+    Devin Review flagged that relying on the default limit could miss
+    uncompleted siblings on parents with >40 direct children. Assert the
+    service passes an explicit large limit.
+    """
+
+    root = _workspace()
+    try:
+        service, objectives = _build_service(root)
+        root_node = objectives.save(
+            ObjectiveNode(
+                objective_id="obj-big-root",
+                kind=ObjectiveNodeKind.OBJECTIVE,
+                title="big root",
+                status=ObjectiveStatus.ACTIVE,
+            )
+        )
+
+        observed: list[dict[str, object]] = []
+        original = objectives.list_children
+
+        def spy_list_children(parent_id: str, **kwargs: object) -> list[ObjectiveNode]:
+            observed.append({"parent_id": parent_id, **kwargs})
+            return original(parent_id, **kwargs)
+
+        object.__setattr__(objectives, "list_children", spy_list_children)
+
+        last = None
+        for i in range(3):
+            last = objectives.save(
+                ObjectiveNode(
+                    objective_id=f"obj-big-child-{i}",
+                    kind=ObjectiveNodeKind.OBJECTIVE,
+                    title=f"big child {i}",
+                    status=ObjectiveStatus.ACTIVE,
+                    parent_id=root_node.objective_id,
+                    root_id=root_node.objective_id,
+                )
+            )
+
+        for i in range(3):
+            service.mark_objective(f"obj-big-child-{i}", "completed")
+
+        assert objectives.get(root_node.objective_id).status == ObjectiveStatus.COMPLETED
+        # At least one call must have been made with an explicit limit that
+        # dwarfs the default 40 display cap.
+        assert any(
+            call.get("limit", 0) >= 1000 for call in observed
+        ), f"expected explicit large limit, saw: {observed}"
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def test_auto_close_is_safe_when_repository_has_no_list_children() -> None:
     """Legacy repositories without ``list_children`` must keep working."""
 
