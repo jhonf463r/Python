@@ -278,8 +278,17 @@ def list_repo_directory(
         )
 
     root = Path(workspace_root).resolve()
+    # Normalizar a forward slash para ser consistentes con read_repo_file
+    # (en Windows `Path.relative_to` devuelve backslashes; el contrato MCP
+    # expone siempre `/` y los clientes que comparan ambos tools no
+    # deberían ver formatos distintos).
+    path_field = (
+        str(resolved.relative_to(root)).replace(os.sep, "/")
+        if resolved != root
+        else ""
+    )
     return {
-        "path": str(resolved.relative_to(root)) if resolved != root else "",
+        "path": path_field,
         "entries": entries,
         "truncated": truncated,
         "total_listed": len(entries),
