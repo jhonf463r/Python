@@ -80,7 +80,7 @@ class ClarificationRequestService:
     def resolve(self, request_id: str, response: str) -> bool:
         """Llamada por la UI cuando el usuario contesta. True si se resolvio."""
         with self._lock:
-            future = self._pending.get(request_id)
+            future = self._pending.pop(request_id, None)
         if future is None or future.done():
             return False
         future.set_result(response)
@@ -88,7 +88,7 @@ class ClarificationRequestService:
 
     def cancel(self, request_id: str, reason: str = "cancelled") -> bool:
         with self._lock:
-            future = self._pending.get(request_id)
+            future = self._pending.pop(request_id, None)
         if future is None or future.done():
             return False
         future.set_exception(ClarificationCancelledError(reason))
