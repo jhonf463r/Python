@@ -143,9 +143,17 @@ cloudflared tunnel run --url http://127.0.0.1:8765 iabv-v15
 ## Gobernanza y límites
 
 - Las tools sólo consumen servicios ya existentes: no duplican contratos.
-- `AutonomyGovernancePolicy` sigue siendo la fuente de verdad; si el gate bloquea
-  una ruta, la tool respeta ese bloqueo (p.ej. `chatgpt_web_capture` devuelve
-  `error_message='browser_security_verification'` si Cloudflare bloquea).
+- **Gate explícito antes de rutas externas**: `site_exploration_explore` y
+  `chatgpt_web_capture` consultan `WorldModelSnapshot` via
+  `IABVMCPServer._governance_block_for_route` antes de invocar el servicio.
+  Si hay red caída, un `OperationalBlockRecord` activo para la ruta, o un
+  `ObservationPermissionGate` en estado `requerido` sin `granted=True`, la tool
+  devuelve `{"governance_blocked": true, "reason": "...", ...}` y NO ejecuta
+  el crawler ni el browser runner. Esto cumple AGENTS.md "Política Operativa
+  Actual" (consultar snapshot antes, bloquear si falta permiso o evidencia).
+- `AutonomyGovernancePolicy` sigue siendo la fuente de verdad: el gate del MCP
+  server lee los bloqueos que esa policy publica en el world model. No duplica
+  la lógica: sólo la respeta desde el borde.
 - `WorldModelService` continúa siendo la única vista viva del sistema; las
   tools lo consultan pero no lo modifican.
 - `PerceptionSnapshot` no se reemplaza; `orchestrator_preview` usa el flujo

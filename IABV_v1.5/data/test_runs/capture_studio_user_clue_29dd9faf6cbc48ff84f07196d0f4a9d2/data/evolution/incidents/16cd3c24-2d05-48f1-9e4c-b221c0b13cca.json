@@ -1,0 +1,19 @@
+{
+  "incident_id": "16cd3c24-2d05-48f1-9e4c-b221c0b13cca",
+  "created_at_utc": "2026-04-19T19:45:50.688004Z",
+  "updated_at_utc": "2026-04-19T19:45:50.688005Z",
+  "episode_id": "85e3014d-93f4-41cc-9d17-495d45120121",
+  "run_id": null,
+  "site_id": "generic_web",
+  "incident_kind": "navigation_stall",
+  "severity": "medium",
+  "status": "open",
+  "summary": "La pestana nueva se quedo cargando.",
+  "probable_cause": "Sin progreso visible en la nueva pestana.",
+  "detail": "",
+  "affected_url": "",
+  "recent_urls": [],
+  "evidence_ids": [],
+  "signal_ids": [],
+  "metadata": {}
+}

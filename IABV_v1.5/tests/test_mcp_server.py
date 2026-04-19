@@ -17,6 +17,9 @@ mcp = pytest.importorskip("mcp")
 
 from iabv_v15.domain.models import (  # noqa: E402
     EnvironmentSelfModel,
+    NetworkStatusSnapshot,
+    ObservationPermissionGate,
+    OperationalBlockRecord,
     PortableContextPackage,
     SelfExaminationSnapshot,
     WorldModelSnapshot,
@@ -129,11 +132,31 @@ class _FakeContainer:
         self.site_manual_repository = site_manual_repository
 
 
-def _build_container(**overrides: object) -> _FakeContainer:
-    snapshot = WorldModelSnapshot(
+def _default_snapshot(
+    *,
+    connected: bool = True,
+    blocks: list[OperationalBlockRecord] | None = None,
+    gates: list[ObservationPermissionGate] | None = None,
+) -> WorldModelSnapshot:
+    """Arma un WorldModelSnapshot controlable para los tests.
+
+    Por defecto la red está conectada y no hay bloqueos ni gates pendientes,
+    así las tools write-capable (site_exploration_explore / chatgpt_web_capture)
+    no se bloquean por governance. Los tests específicos de bloqueo pasan
+    overrides explícitos.
+    """
+
+    return WorldModelSnapshot(
         external_state_flags=[],
         environment=EnvironmentSelfModel(),
+        network_status=NetworkStatusSnapshot(connected=connected, status="ok" if connected else "offline"),
+        block_records=blocks or [],
+        permission_gates=gates or [],
     )
+
+
+def _build_container(**overrides: object) -> _FakeContainer:
+    snapshot = overrides.pop("_snapshot", None) or _default_snapshot()  # type: ignore[assignment]
     package = PortableContextPackage()
     review = SelfExaminationSnapshot()
     result = SiteExplorationResult(
@@ -323,3 +346,99 @@ def test_server_rejects_unknown_transport() -> None:
 def test_server_requires_container() -> None:
     with pytest.raises(ValueError, match="container"):
         IABVMCPServer(container=None)
+
+
+# ----------------------------------------------------------------------
+# Governance gate: las tools write-capable deben consultar WorldModelSnapshot
+# antes de actuar (AGENTS.md "Política Operativa Actual"). Estos tests cubren
+# el finding de Devin Review: red caída, bloqueo operativo activo o gate
+# `requerido` sin conceder deben resultar en `governance_blocked=True` y la
+# ruta externa NO debe ejecutarse.
+
+
+def test_site_exploration_blocked_when_network_offline() -> None:
+    wm = _FakeWorldModelService(_default_snapshot(connected=False))
+    svc = _FakeSiteExplorationService(
+        SiteExplorationResult(hostname="x", start_url="https://x", pages=[], success=True),
+    )
+    server = IABVMCPServer(_build_container(world_model_service=wm, site_exploration_service=svc))
+    payload = _call_tool(server, "site_exploration_explore", start_url="https://x")
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "network_unavailable"
+    assert svc.calls == []  # el servicio jamás se ejecutó
+
+
+def test_chatgpt_web_capture_blocked_when_permission_gate_required() -> None:
+    gate = ObservationPermissionGate(
+        scope="chatgpt_web",
+        assistant_kind="chatgpt_web",
+        title="Permiso de observación",
+        status="requerido",
+        granted=False,
+    )
+    wm = _FakeWorldModelService(_default_snapshot(gates=[gate]))
+    runner = _FakeUIExecutionRunner()
+    server = IABVMCPServer(_build_container(world_model_service=wm, ui_execution_runner=runner))
+    payload = _call_tool(server, "chatgpt_web_capture", prompt_text="hola")
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "permission_gate_required"
+    assert runner.calls == []  # el runner jamás se llamó
+
+
+def test_chatgpt_web_capture_blocked_when_operational_block_active() -> None:
+    block = OperationalBlockRecord(
+        block_type="cloudflare_turnstile",
+        assistant_kind="chatgpt_web",
+        title="Cloudflare bloquea la VM",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
+    runner = _FakeUIExecutionRunner()
+    server = IABVMCPServer(_build_container(world_model_service=wm, ui_execution_runner=runner))
+    payload = _call_tool(server, "chatgpt_web_capture", prompt_text="hola")
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "operational_block_active"
+    assert runner.calls == []
+
+
+def test_governance_allows_route_when_network_ok_and_no_blocks() -> None:
+    """Camino feliz: snapshot con red ok y sin bloqueos no debe bloquear."""
+
+    runner = _FakeUIExecutionRunner()
+    server = IABVMCPServer(_build_container(ui_execution_runner=runner))
+    payload = _call_tool(server, "chatgpt_web_capture", prompt_text="hola")
+    assert "governance_blocked" not in payload
+    assert runner.calls and runner.calls[0]["prompt_text"] == "hola"
+
+
+def test_governance_ignores_blocks_scoped_to_other_assistant_kinds() -> None:
+    """Un block_record para otro assistant_kind no debe bloquear esta ruta."""
+
+    unrelated = OperationalBlockRecord(
+        block_type="auth_missing",
+        assistant_kind="codex",  # otra ruta
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[unrelated]))
+    runner = _FakeUIExecutionRunner()
+    server = IABVMCPServer(_build_container(world_model_service=wm, ui_execution_runner=runner))
+    payload = _call_tool(server, "chatgpt_web_capture", prompt_text="hola")
+    assert "governance_blocked" not in payload
+    assert runner.calls  # sí se ejecutó porque el bloqueo no aplicaba
+
+
+def test_governance_ignores_permission_gates_already_granted() -> None:
+    """Un gate con granted=True no debe bloquear."""
+
+    gate = ObservationPermissionGate(
+        scope="chatgpt_web",
+        assistant_kind="chatgpt_web",
+        status="requerido",
+        granted=True,  # ya aprobado
+    )
+    wm = _FakeWorldModelService(_default_snapshot(gates=[gate]))
+    runner = _FakeUIExecutionRunner()
+    server = IABVMCPServer(_build_container(world_model_service=wm, ui_execution_runner=runner))
+    payload = _call_tool(server, "chatgpt_web_capture", prompt_text="hola")
+    assert "governance_blocked" not in payload
+    assert runner.calls

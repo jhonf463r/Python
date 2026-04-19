@@ -128,6 +128,128 @@ class IABVMCPServer:
         return svc
 
     # ------------------------------------------------------------------
+    # Gate de governance / world_model antes de rutas externas
+    #
+    # Política (AGENTS.md "Política Operativa Actual"):
+    #   1) consultar WorldModelSnapshot antes de una herramienta externa
+    #   2) verificar red, foco, hilo, cuota, permiso y bloqueo activo
+    #   3) si falta permiso o evidencia, bloquear la ruta y explicarlo
+    #
+    # Este helper implementa 1 y 2: lee el snapshot vivo del container,
+    # revisa bloqueos activos, red y gates de permiso relevantes. Si algo
+    # impide la ruta devuelve un payload `{"governance_blocked": True, ...}`
+    # para que la tool lo propague al cliente MCP SIN ejecutar el servicio.
+
+    def _governance_block_for_route(
+        self,
+        *,
+        assistant_kind: str,
+        requires_network: bool,
+        allow_offline_refresh: bool = False,
+    ) -> dict[str, Any] | None:
+        """Devuelve dict de bloqueo si la ruta no es viable, o None si lo es.
+
+        Args:
+            assistant_kind: etiqueta de ruta (`chatgpt_web`, `site_crawler`, etc.).
+                Se usa para filtrar gates/bloqueos específicos.
+            requires_network: si True, exige `network_status.connected`.
+            allow_offline_refresh: si True y no hay snapshot, intenta refresh.
+        """
+
+        wm_service = getattr(self.container, "world_model_service", None)
+        if wm_service is None:
+            # Sin world_model no podemos validar; fail-closed por seguridad.
+            return {
+                "governance_blocked": True,
+                "reason": "world_model_service_unavailable",
+                "detail": (
+                    "No se pudo consultar WorldModelSnapshot antes de usar una "
+                    "herramienta externa; la ruta queda bloqueada por defecto."
+                ),
+            }
+
+        snapshot = None
+        try:
+            snapshot = wm_service.current_model()
+        except Exception as exc:  # pragma: no cover - defensa
+            return {
+                "governance_blocked": True,
+                "reason": "world_model_read_failed",
+                "detail": str(exc),
+            }
+
+        if snapshot is None and allow_offline_refresh:
+            try:
+                snapshot = wm_service.request_refresh(reason="mcp_gate", full=False)
+            except Exception:  # pragma: no cover - defensa
+                snapshot = None
+
+        if snapshot is None:
+            return {
+                "governance_blocked": True,
+                "reason": "world_model_snapshot_missing",
+                "detail": "No hay WorldModelSnapshot disponible para decidir la ruta.",
+            }
+
+        # 1) red: si la ruta requiere red, bloquear si no hay conexión.
+        network = getattr(snapshot, "network_status", None)
+        if requires_network and network is not None and not getattr(network, "connected", False):
+            return {
+                "governance_blocked": True,
+                "reason": "network_unavailable",
+                "detail": (
+                    f"network_status.connected=False "
+                    f"(status={getattr(network, 'status', 'desconocido')!r}); "
+                    "no es seguro ejecutar la ruta externa."
+                ),
+                "network_status": _to_jsonable(network),
+            }
+
+        # 2) bloqueos operativos activos que apliquen a este assistant_kind
+        #    o sean globales ("*" / vacío).
+        blockers: list[dict[str, Any]] = []
+        for record in getattr(snapshot, "block_records", []) or []:
+            if getattr(record, "status", "active") != "active":
+                continue
+            scope = getattr(record, "assistant_kind", "") or ""
+            if scope in ("", "*", assistant_kind):
+                payload = _to_jsonable(record)
+                if isinstance(payload, dict):
+                    blockers.append(payload)
+        if blockers:
+            return {
+                "governance_blocked": True,
+                "reason": "operational_block_active",
+                "detail": "Hay bloqueos activos en WorldModelSnapshot para esta ruta.",
+                "blocks": blockers,
+            }
+
+        # 3) permission gates requeridos y no concedidos para este kind.
+        pending_gates: list[dict[str, Any]] = []
+        for gate in getattr(snapshot, "permission_gates", []) or []:
+            if getattr(gate, "status", "no_requerido") != "requerido":
+                continue
+            if getattr(gate, "granted", False):
+                continue
+            scope = getattr(gate, "assistant_kind", "") or ""
+            if scope in ("", "*", assistant_kind):
+                payload = _to_jsonable(gate)
+                if isinstance(payload, dict):
+                    pending_gates.append(payload)
+        if pending_gates:
+            return {
+                "governance_blocked": True,
+                "reason": "permission_gate_required",
+                "detail": (
+                    "Hay permission gates `requerido` sin conceder; "
+                    "aprueba el popup de clarificación antes de reintentar."
+                ),
+                "permission_gates": pending_gates,
+            }
+
+        return None
+
+    # ------------------------------------------------------------------
     # Registro de tools
 
     def _register_tools(self) -> None:
@@ -198,6 +320,12 @@ class IABVMCPServer:
                 max_pages: presupuesto de páginas a visitar (default 4).
                 priority_keywords: tokens que reordenan la cola BFS.
             """
+            block = self._governance_block_for_route(
+                assistant_kind="site_crawler",
+                requires_network=True,
+            )
+            if block is not None:
+                return block
             svc = self._site_exploration_service()
             result = svc.explore(
                 start_url=start_url,
@@ -267,6 +395,12 @@ class IABVMCPServer:
                 input_selectors / response_selectors / submit_selectors:
                     selectores del card (defaults = oficiales del ToolCard).
             """
+            block = self._governance_block_for_route(
+                assistant_kind="chatgpt_web",
+                requires_network=True,
+            )
+            if block is not None:
+                return block
             runner = self._ui_execution_runner()
             defaults_input = ["textarea", 'div[contenteditable="true"]']
             defaults_response = ['[data-message-author-role="assistant"]', "main article"]

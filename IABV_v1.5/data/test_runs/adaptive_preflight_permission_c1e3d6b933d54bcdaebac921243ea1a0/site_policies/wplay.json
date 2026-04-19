@@ -1,0 +1,36 @@
+{
+  "site_id": "wplay",
+  "display_name": "Wplay",
+  "domains": [
+    "wplay.co"
+  ],
+  "login_url": null,
+  "login_selector": "input[type='password']",
+  "logout_selector": "a[href*='logout'], button[class*='logout'], [data-test*='logout']",
+  "username_selectors": [
+    "input[type='email']",
+    "input[name*='user']",
+    "input[name*='document']"
+  ],
+  "sensitive_selectors": [
+    "input[type='password']",
+    "input[name*='password']",
+    "input[type='email']",
+    "input[name*='document']"
+  ],
+  "sensitive_names": [
+    "email",
+    "username",
+    "documento",
+    "password",
+    "token",
+    "session"
+  ],
+  "capture_network": true,
+  "capture_dom": true,
+  "capture_console": true,
+  "capture_storage": true,
+  "redact_emails": true,
+  "redact_tokens": true,
+  "notes": "Politica inicial para sesiones de login dinamico y aprendizaje seguro."
+}

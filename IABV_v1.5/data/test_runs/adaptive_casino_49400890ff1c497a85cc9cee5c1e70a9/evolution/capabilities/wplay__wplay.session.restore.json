@@ -1,0 +1,19 @@
+{
+  "capability_id": "wplay.session.restore",
+  "title": "Restauracion de sesion Wplay",
+  "status": "partial",
+  "score": 0.46,
+  "site_id": "wplay",
+  "evidence": [
+    "No hay evidencia suficiente de restauracion estable de sesion."
+  ],
+  "missing_signals": [
+    "Conviene validar si la sesion se restaura sin pedir login otra vez."
+  ],
+  "last_episode_id": "24f33977-3fa6-42b0-8ed6-55e8514fd625",
+  "suggested_next_step": "Probar restauracion de sesion o dejar la fase como login guiado con aprobacion.",
+  "metadata": {
+    "visual_alignment_score": 0.0,
+    "login_visual_completeness": 0.0
+  }
+}

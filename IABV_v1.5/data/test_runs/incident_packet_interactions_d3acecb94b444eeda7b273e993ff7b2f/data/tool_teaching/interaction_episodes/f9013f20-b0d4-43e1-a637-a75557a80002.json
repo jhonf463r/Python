@@ -1,0 +1,76 @@
+{
+  "interaction_episode_id": "f9013f20-b0d4-43e1-a637-a75557a80002",
+  "objective": "Abrir Wplay e iniciar sesion.",
+  "mode_used": "ui",
+  "environment": {
+    "tool_id": "playwright_browser"
+  },
+  "captured_metadata": {},
+  "actions": [
+    {
+      "step_id": "4c7fd3c7-820b-4504-92b5-51b610c5ef32",
+      "channel": "ui",
+      "operation": "click",
+      "target": "#submit",
+      "value_hint": "",
+      "expected_signal": "",
+      "confidence": 0.5,
+      "metadata": {},
+      "action_id": "2d00d081-dc47-4f88-9fc5-1f76cc8ea700",
+      "started_at_utc": null,
+      "finished_at_utc": null,
+      "destructive": false,
+      "requires_approval": false
+    }
+  ],
+  "result": {
+    "interaction_result_id": "b53b2706-66db-4a06-befe-0f9436f3d6a8",
+    "success": true,
+    "execution_state": {
+      "state": "observed",
+      "detail": "ok",
+      "executor_name": "",
+      "sandboxed": false,
+      "validated": false,
+      "approval_decision": "pending",
+      "destructive_blocked": false,
+      "metadata": {}
+    },
+    "summary": "ok",
+    "errors": [],
+    "confidence": 0.84,
+    "execution_ms": 0,
+    "rollback_state": null,
+    "extracted_data": {},
+    "artifacts": [],
+    "metadata": {}
+  },
+  "errors": [],
+  "evidence": [],
+  "learning_signals": [],
+  "confidence": 0.84,
+  "human_approval": false,
+  "policy_decision": {
+    "decision_id": "2ff9ab23-cfb9-4675-8f16-1caec10b814b",
+    "requires_human_approval": false,
+    "approval_decision": "skipped",
+    "blocked": false,
+    "rationale": "",
+    "confidence": 0.84,
+    "metadata": {}
+  },
+  "selector_name": "teaching_replay_bridge",
+  "selector_reason": "Patron equivalente ya observado.",
+  "pattern_id": "3b7f3bc4-3c37-480b-a28c-0abfb5a9a669",
+  "reused_pattern": true,
+  "tool_id": "playwright_browser",
+  "tool_type": "browser",
+  "task_id": null,
+  "result_id": null,
+  "site_id": "wplay",
+  "created_at_utc": "2026-04-19T19:44:15.004280Z",
+  "updated_at_utc": "2026-04-19T19:44:15.004282Z",
+  "metadata": {
+    "source": "teaching_session"
+  }
+}
