@@ -4,6 +4,7 @@ from typing import Any
 
 from iabv_v15.domain.models import (
     AdaptiveSession,
+    AdaptiveSessionStatus,
     AssistantConfigurationSnapshot,
     EvaluationRoute,
     ExperimentDomain,
@@ -18,6 +19,16 @@ from iabv_v15.infra.persistence.capability_repository import CapabilityRepositor
 from iabv_v15.services.lab.experiment_lab import ExperimentLab
 
 
+# Maps AdaptiveSession terminal status -> ControlMasterService.mark_objective
+# status string. Non-terminal statuses are not propagated so in-flight runs
+# don't flip objectives to 'active' over and over.
+_TERMINAL_STATUS_MAP: dict[AdaptiveSessionStatus, str] = {
+    AdaptiveSessionStatus.COMPLETED: "completed",
+    AdaptiveSessionStatus.ABORTED: "paused",
+    AdaptiveSessionStatus.FAILED: "blocked",
+}
+
+
 class TaskOutcomeRecorder:
     def __init__(
         self,
@@ -27,12 +38,14 @@ class TaskOutcomeRecorder:
         approval_checkpoint_repository: ApprovalCheckpointRepository,
         experiment_lab: ExperimentLab | None = None,
         adaptive_weight_layer: Any | None = None,
+        control_master_service: Any | None = None,
     ) -> None:
         self.adaptive_session_repository = adaptive_session_repository
         self.capability_repository = capability_repository
         self.approval_checkpoint_repository = approval_checkpoint_repository
         self.experiment_lab = experiment_lab
         self.adaptive_weight_layer = adaptive_weight_layer
+        self.control_master_service = control_master_service
 
     def record(self, session: AdaptiveSession, run_record: RunRecord | None = None) -> AdaptiveSession:
         if run_record is not None and self.experiment_lab is not None:
@@ -41,7 +54,54 @@ class TaskOutcomeRecorder:
             self.capability_repository.save_many(session.capability_readiness)
         if session.approval_checkpoints:
             self.approval_checkpoint_repository.save_many(session.approval_checkpoints)
-        return self.adaptive_session_repository.save(session)
+        saved = self.adaptive_session_repository.save(session)
+        self._propagate_to_control_master(saved)
+        return saved
+
+    def _propagate_to_control_master(self, session: AdaptiveSession) -> None:
+        """Close the learning loop: if the session opted in by tagging its
+        metadata with `control_master_objective_id` (string) or
+        `control_master_unresolved` (list[str]), mirror the outcome into the
+        ControlMasterService so any future session reading the digest sees
+        real progress without human intervention.
+
+        Silent no-op when the service wasn't wired (keeps unit tests and
+        legacy bootstraps working). Any failure here must NOT break outcome
+        recording.
+        """
+        service = self.control_master_service
+        if service is None:
+            return
+        metadata = session.metadata or {}
+        if not isinstance(metadata, dict):
+            return
+
+        objective_id = metadata.get("control_master_objective_id")
+        if isinstance(objective_id, str) and objective_id.strip():
+            mapped = _TERMINAL_STATUS_MAP.get(session.status)
+            if mapped is not None:
+                note = metadata.get("control_master_note") or ""
+                if not isinstance(note, str):
+                    note = str(note)
+                try:
+                    service.mark_objective(objective_id.strip(), mapped, note=note)
+                except Exception:  # noqa: BLE001 - learning loop must not break recorder
+                    pass
+
+        unresolved = metadata.get("control_master_unresolved")
+        if isinstance(unresolved, list):
+            evidence_raw = metadata.get("control_master_unresolved_evidence") or []
+            evidence = [str(e) for e in evidence_raw if str(e).strip()] if isinstance(evidence_raw, list) else []
+            for item in unresolved:
+                if not isinstance(item, str):
+                    continue
+                stripped = item.strip()
+                if not stripped:
+                    continue
+                try:
+                    service.mark_unresolved(stripped, evidence=list(evidence))
+                except Exception:  # noqa: BLE001
+                    pass
 
     def _record_learning(self, *, session: AdaptiveSession, run_record: RunRecord) -> AdaptiveSession:
         if self.experiment_lab is None:
