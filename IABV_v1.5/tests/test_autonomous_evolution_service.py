@@ -1114,6 +1114,30 @@ def test_request_observation_permission_helper_flags_approval_from_affirmative_a
             assert outcome['attempted'] is True
             assert outcome['approved'] is False, f'Answer {answer!r} should NOT count as approval'
 
+        # Regresion para Devin Review #15: la puntuacion en el primer token
+        # no debe bypasear el chequeo de negacion. "No, autorizo" tiene
+        # 'no,' como primer token; sin strip, el frozenset no lo reconoce
+        # y se interpretaba como aprobacion. Tambien validamos que un
+        # sufijo de puntuacion no rompa el match del set de aprobaciones.
+        for denied_answer in ('No, autorizo', 'No. Autorizo nada', 'no! autorizo', 'Cancelar.'):
+            service.clarification_request_service = _FakeClarificationService(answer=denied_answer)
+            outcome = service._request_observation_permission(
+                assessment=assessment, payload=payload, user_goal='consulta con puntuacion',
+            )
+            assert outcome['approved'] is False, (
+                f'Answer {denied_answer!r} should NOT count as approval: '
+                'punctuation must not bypass denial prefix.'
+            )
+
+        for approved_answer in ('Autorizo.', 'Apruebo!', 'Si,', '¿Si?', 'Ok,'):
+            service.clarification_request_service = _FakeClarificationService(answer=approved_answer)
+            outcome = service._request_observation_permission(
+                assessment=assessment, payload=payload, user_goal='consulta con puntuacion',
+            )
+            assert outcome['approved'] is True, (
+                f'Answer {approved_answer!r} should count as approval even with trailing punctuation.'
+            )
+
         # Sin servicio no se llega a consultar.
         service.clarification_request_service = None
         outcome = service._request_observation_permission(

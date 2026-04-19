@@ -214,3 +214,20 @@ def test_site_manual_repository_rejects_empty_hostname(tmp_path: Path) -> None:
 def test_site_manual_repository_load_missing_returns_none(tmp_path: Path) -> None:
     repo = SiteManualRepository(tmp_path / 'site_manuals')
     assert repo.load('does-not-exist.com') is None
+
+
+def test_normalize_url_preserves_explicit_port() -> None:
+    """Regresion para Devin Review #16: _normalize_url debe conservar el
+    port explicito. `parsed.hostname` lo pierde, asi que reconstruir con
+    solo hostname hacia que un crawl a localhost:3000 fuera a localhost:80.
+    """
+    service = SiteExplorationService()
+    assert service._normalize_url('http://localhost:8080/path') == 'http://localhost:8080/path'
+    assert service._normalize_url('https://staging.example.com:4443/api') == 'https://staging.example.com:4443/api'
+    # sin port, el fallback sigue igual
+    assert service._normalize_url('https://example.com/') == 'https://example.com/'
+    # ports no default con query string se conservan ambos
+    assert (
+        service._normalize_url('http://127.0.0.1:3000/search?q=1')
+        == 'http://127.0.0.1:3000/search?q=1'
+    )

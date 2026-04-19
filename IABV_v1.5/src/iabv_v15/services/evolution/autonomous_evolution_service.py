@@ -563,7 +563,10 @@ class AutonomousEvolutionService:
                 'raw_response': '',
             }
         normalized = str(raw or '').strip().lower()
-        tokens = normalized.split()
+        # strip punctuation comun para que "No, autorizo" no bypasee el
+        # chequeo de negacion y "autorizo." matchee el set de aprobacion.
+        tokens = [t.strip('.,;:!?¿¡()[]"\'') for t in normalized.split()]
+        tokens = [t for t in tokens if t]
         has_denial_prefix = bool(tokens) and tokens[0] in self._OBSERVATION_PERMISSION_DENIALS
         has_approval_token = (
             normalized in self._OBSERVATION_PERMISSION_APPROVALS
