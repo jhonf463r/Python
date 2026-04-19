@@ -30,3 +30,27 @@ Thumbs.db
 # Directorios de datos pesados
 data/app.sqlite
 data/**/*.sqlite
+
+# Pollution de test runs (directorios efímeros creados por pytest)
+.tmp_tests/
+.tmp_*/
+.tmp_*.log
+data/test_*_workspace/
+data/test_runs/
+
+# Runtime snapshots (se regeneran; AGENTS.md los trata como fuentes vivas,
+# no como artefactos versionados). Las copias latest.json/latest.md de
+# self_examination, portable_context y world_model se pueden seguir
+# versionando manualmente con -f cuando sirvan de evidencia histórica.
+data/logs/
+data/evolution/control_master/rules/
+data/evolution/control_master/latest.json
+data/evolution/control_master/latest.md
+data/evolution/environment_self_model/
+data/evolution/world_model/
+data/evolution/tool_discovery/
+data/evolution/tool_evolution/
+data/tool_teaching/external_assistants/
+data/tool_teaching/interaction_*/
+data/tool_teaching/cards/
+
