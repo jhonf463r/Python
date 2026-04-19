@@ -509,11 +509,19 @@ def run_pytest(
     if not root.exists() or not root.is_dir():
         raise AuditToolError("workspace_missing", f"workspace_root no válido: {root}")
 
-    python_exe = (
-        normalized_executable
-        or validate_pytest_executable(os.environ.get("IABV_PYTEST_PYTHON"))
-        or os.sys.executable  # type: ignore[attr-defined]
-    )
+    # Si `python_executable` vino por argumento ya pasó la validación.
+    # Si no, probamos la env var `IABV_PYTEST_PYTHON` con el mismo chequeo
+    # estricto pero tragándonos el error para poder caer a `sys.executable`
+    # (la env var es config del host, no input del MCP client, pero puede
+    # estar mal escrita y no queremos que eso rompa la batería completa).
+    python_exe = normalized_executable
+    if python_exe is None:
+        try:
+            python_exe = validate_pytest_executable(os.environ.get("IABV_PYTEST_PYTHON"))
+        except AuditToolError:
+            python_exe = None
+    if python_exe is None:
+        python_exe = os.sys.executable  # type: ignore[attr-defined]
     cmd: list[str] = [
         python_exe,
         "-m",

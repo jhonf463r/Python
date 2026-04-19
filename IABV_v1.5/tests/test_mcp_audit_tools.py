@@ -452,6 +452,29 @@ def test_run_pytest_rejects_invalid_python_executable(tmp_path: Path) -> None:
     assert runner.calls == []
 
 
+def test_run_pytest_falls_back_to_sys_executable_when_env_var_invalid(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Si `IABV_PYTEST_PYTHON` trae basura, `run_pytest` cae silenciosamente
+    a ``sys.executable`` en lugar de abortar con `invalid_python_executable`.
+
+    Regresión de la finding Devin Review
+    BUG_pr-review-job-650831194161419eba7d61e5be55a06e_0001:
+    el `or` chain original propagaba la `AuditToolError` de la validación
+    de la env var sin permitir el fallback.
+    """
+
+    import sys as _sys
+
+    monkeypatch.setenv("IABV_PYTEST_PYTHON", "/no/existe/python; rm -rf /")
+    runner = _StubRunner(
+        SubprocessResult(returncode=0, stdout="24 passed", stderr="", duration_s=0.1)
+    )
+    payload = run_pytest(tmp_path, runner=runner)
+    assert payload["returncode"] == 0
+    assert runner.calls[0]["cmd"][0] == _sys.executable
+
+
 # ----------------------------------------------------------------------
 # capture_ui_screenshot
 
