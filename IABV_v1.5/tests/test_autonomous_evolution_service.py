@@ -971,3 +971,154 @@ def test_autonomous_evolution_service_respects_explicit_chatgpt_family_under_tec
         assert 'IABV Codex' not in preview['context_pack_excerpt']
     finally:
         _cleanup_bootstrap(bootstrap)
+
+
+class _FakeClarificationService:
+    """Doble minimo del ClarificationRequestService para tests de PR-C.
+
+    No toca threading; registra la pregunta recibida y devuelve la respuesta
+    canned configurada en el constructor. Si `raise_exc` esta seteado, lo
+    lanza en ask() para simular timeout/cancelacion.
+    """
+
+    def __init__(self, *, answer: str | None = None, raise_exc: Exception | None = None) -> None:
+        self._answer = answer
+        self._raise_exc = raise_exc
+        self.asked: list[dict[str, object]] = []
+
+    def ask(self, *, question: str, options=None, context=None, timeout_s=None):
+        self.asked.append(
+            {
+                'question': question,
+                'options': list(options or []),
+                'context': context or '',
+                'timeout_s': timeout_s,
+            }
+        )
+        if self._raise_exc is not None:
+            raise self._raise_exc
+        return str(self._answer or '')
+
+
+def _permission_required_decision_context(*, assistant_kind: str = 'chatgpt') -> dict[str, object]:
+    return {
+        'governance': {
+            'should_consult': False,
+            'assistant_kind': assistant_kind,
+            'recommended_action': 'request_observation_permission',
+            'reason': 'Necesito permiso explicito para observar la ventana visible.',
+            'diagnostic_category': 'observation_permission_required',
+        },
+        'metadata': {},
+    }
+
+
+def test_plan_or_execute_requests_observation_permission_and_returns_noop_when_user_denies() -> None:
+    bootstrap = _make_bootstrap('test_autonomous_evolution_permission_denied_workspace')
+    try:
+        service = bootstrap.autonomous_evolution_service
+        fake = _FakeClarificationService(answer='No autorizo')
+        service.clarification_request_service = fake
+
+        result = service.plan_or_execute(
+            adaptive_payload={'session_id': 'adaptive-perm-1', 'metadata': {}},
+            user_goal='revisa este problema tecnico',
+            source='self_teach',
+            decision_context=_permission_required_decision_context(),
+        )
+
+        assert result['status'] == 'noop'
+        assert result['recommended_action'] == 'request_observation_permission'
+        assert 'no aprobo' in result['reason'].lower() or 'denegada' in result['reason'].lower() or 'chatgpt' in result['reason'].lower()
+        # Se le pregunto al usuario exactamente una vez, via clarification service.
+        assert len(fake.asked) == 1
+        assert 'chatgpt' in str(fake.asked[0]['question']).lower()
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_plan_or_execute_returns_noop_when_user_permission_times_out() -> None:
+    bootstrap = _make_bootstrap('test_autonomous_evolution_permission_timeout_workspace')
+    try:
+        from iabv_v15.services.ux.clarification_request_service import ClarificationTimeoutError
+
+        service = bootstrap.autonomous_evolution_service
+        fake = _FakeClarificationService(raise_exc=ClarificationTimeoutError('timeout'))
+        service.clarification_request_service = fake
+
+        result = service.plan_or_execute(
+            adaptive_payload={'session_id': 'adaptive-perm-2', 'metadata': {}},
+            user_goal='revisa otro problema',
+            source='self_teach',
+            decision_context=_permission_required_decision_context(),
+        )
+
+        assert result['status'] == 'noop'
+        # El gate sigue cerrado despues de un timeout.
+        assert result['recommended_action'] == 'request_observation_permission'
+        assert len(fake.asked) == 1
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_plan_or_execute_without_clarification_service_keeps_legacy_noop_for_observation_gate() -> None:
+    """Cuando el servicio no esta cableado (tests legacy o bootstrap parcial),
+    el flujo se comporta igual que antes: devuelve noop con el action del gate,
+    sin intentar preguntar."""
+    bootstrap = _make_bootstrap('test_autonomous_evolution_permission_no_service_workspace')
+    try:
+        service = bootstrap.autonomous_evolution_service
+        service.clarification_request_service = None
+
+        result = service.plan_or_execute(
+            adaptive_payload={'session_id': 'adaptive-perm-3', 'metadata': {}},
+            user_goal='revisa otro problema mas',
+            source='self_teach',
+            decision_context=_permission_required_decision_context(),
+        )
+
+        assert result['status'] == 'noop'
+        assert result['recommended_action'] == 'request_observation_permission'
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_request_observation_permission_helper_flags_approval_from_affirmative_answer() -> None:
+    """Cubrimos el helper directamente: respuestas afirmativas se interpretan
+    como aprobacion, sin importar mayusculas o espacios."""
+    bootstrap = _make_bootstrap('test_autonomous_evolution_permission_helper_workspace')
+    try:
+        service = bootstrap.autonomous_evolution_service
+        assessment = {
+            'should_consult': False,
+            'assistant_kind': 'chatgpt',
+            'action': 'request_observation_permission',
+            'reason': 'Necesito permiso.',
+            'diagnostic_category': 'observation_permission_required',
+        }
+        payload = {'session_id': 'adaptive-perm-4', 'metadata': {}}
+
+        for answer in ('Si', ' si ', 'Autorizo', 'Apruebo', 'OK', 'yes'):
+            service.clarification_request_service = _FakeClarificationService(answer=answer)
+            outcome = service._request_observation_permission(
+                assessment=assessment, payload=payload, user_goal='alguna consulta',
+            )
+            assert outcome['attempted'] is True, f'Answer {answer!r} should count as attempt'
+            assert outcome['approved'] is True, f'Answer {answer!r} should count as approval'
+
+        for answer in ('No', 'no autorizo', 'cancelar', ''):
+            service.clarification_request_service = _FakeClarificationService(answer=answer)
+            outcome = service._request_observation_permission(
+                assessment=assessment, payload=payload, user_goal='alguna consulta',
+            )
+            assert outcome['attempted'] is True
+            assert outcome['approved'] is False, f'Answer {answer!r} should NOT count as approval'
+
+        # Sin servicio no se llega a consultar.
+        service.clarification_request_service = None
+        outcome = service._request_observation_permission(
+            assessment=assessment, payload=payload, user_goal='alguna consulta',
+        )
+        assert outcome == {'attempted': False, 'approved': False, 'detail': '', 'raw_response': ''}
+    finally:
+        _cleanup_bootstrap(bootstrap)

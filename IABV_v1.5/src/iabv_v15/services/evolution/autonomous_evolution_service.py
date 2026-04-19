@@ -43,10 +43,42 @@ class AutonomousEvolutionService:
         self.tool_teach_service = tool_teach_service
         self.incident_packet_service = incident_packet_service
         self.pending_issue_repository = pending_issue_repository
+        # Servicios opcionales inyectados desde bootstrap como atributos. Se
+        # declaran aqui con valor por defecto None para que los llamadores
+        # puedan probar `self.xxx is not None` sin depender de setattr.
+        self.clarification_request_service = None
+        self.credential_broker = None
+        self.environment_bootstrap_service = None
+        self.provider_health_router = None
 
     def plan_or_execute(self, *, adaptive_payload: dict[str, Any], user_goal: str, source: str, decision_context: DecisionContext | dict[str, Any] | None = None) -> dict[str, Any]:
         payload = dict(adaptive_payload or {})
         assessment = self._assessment_from_decision_context(decision_context) or self._assess(payload=payload, user_goal=user_goal)
+        if assessment.get('action') == 'request_observation_permission' and not assessment.get('should_consult'):
+            permission = self._request_observation_permission(
+                assessment=assessment,
+                payload=payload,
+                user_goal=user_goal,
+            )
+            if permission.get('approved'):
+                # El usuario dio permiso explicito de observar. Se levanta el
+                # gate localmente para este intento y se anota en metadata
+                # para que el adapter/runner lo registren.
+                assessment = {
+                    **assessment,
+                    'should_consult': True,
+                    'action': f"consult_{str(assessment.get('assistant_kind') or '').strip().lower()}" if assessment.get('assistant_kind') else 'consult_external',
+                    'reason': permission.get('detail') or assessment.get('reason') or '',
+                }
+                metadata = dict(payload.get('metadata') or {})
+                metadata['observation_permission_granted'] = True
+                metadata['observation_permission_detail'] = permission.get('detail') or ''
+                payload['metadata'] = metadata
+            elif permission.get('attempted'):
+                # Se pidio el permiso pero fue denegado o expiro. Se reporta
+                # con mas detalle al llamador sin consultar.
+                denial_reason = permission.get('detail') or 'El usuario no aprobo la observacion externa.'
+                assessment = {**assessment, 'reason': denial_reason}
         if not assessment['should_consult']:
             return {
                 'status': 'noop',
@@ -466,6 +498,89 @@ class AutonomousEvolutionService:
                 'background_capture_mode': str(consultation.get('background_capture_mode') or ''),
             },
         )
+
+    # Palabras que el usuario puede responder al popup de permiso y que
+    # consideramos como aprobacion explicita. Se comparan en minusculas.
+    _OBSERVATION_PERMISSION_APPROVALS: frozenset[str] = frozenset({
+        'si', 'sí', 'yes', 'ok', 'okay', 'dale', 'adelante',
+        'aprobar', 'apruebo', 'aprobado', 'permiso',
+        'autorizo', 'autorizar', 'autorizado',
+        'conceder', 'concedo', 'concedido', 'allow', 'approve',
+    })
+    # Negaciones que invalidan la aprobacion aunque aparezca un token
+    # positivo despues (ej. "no autorizo", "no apruebo").
+    _OBSERVATION_PERMISSION_DENIALS: frozenset[str] = frozenset({
+        'no', 'nop', 'nope', 'cancelar', 'cancelo', 'cancel',
+        'deny', 'denegar', 'denegado', 'rechazo', 'rechazar', 'rechazado',
+        'nunca', 'niego', 'negar',
+    })
+
+    def _request_observation_permission(
+        self,
+        *,
+        assessment: dict[str, Any],
+        payload: dict[str, Any],
+        user_goal: str,
+    ) -> dict[str, Any]:
+        """Pide permiso explicito al usuario para observar la herramienta externa.
+
+        Consume `ClarificationRequestService.ask`, que emite
+        `clarificationRequested` hacia la UI (ControlCenter/EvolutionCenter)
+        y bloquea hasta recibir respuesta. Se respeta el contrato de
+        governance: si el usuario no aprueba, el gate sigue cerrado.
+
+        Devuelve un dict con:
+        - `attempted`: se llamo realmente al servicio (False si no existe).
+        - `approved`: el usuario respondio afirmativamente.
+        - `detail`: texto humano de la respuesta (para logs/UI).
+        - `raw_response`: la respuesta cruda del usuario (si hubo).
+        """
+        service = self.clarification_request_service
+        if service is None:
+            return {'attempted': False, 'approved': False, 'detail': '', 'raw_response': ''}
+        assistant_kind = str(assessment.get('assistant_kind') or '').strip().lower() or 'la herramienta externa'
+        reason = str(assessment.get('reason') or 'Necesito permiso explicito para observar el contenido visible antes de seguir con esta ruta.').strip()
+        question = f"¿Autorizas que IABV observe la ventana de {assistant_kind} para responder '{str(user_goal or '').strip()[:120]}'?"
+        context_lines: list[str] = [reason]
+        if payload.get('session_id'):
+            context_lines.append(f"Sesion: {payload.get('session_id')}")
+        timeout_s = None
+        config_timeout = getattr(self.config, 'observation_permission_timeout_s', None)
+        if isinstance(config_timeout, (int, float)) and float(config_timeout) > 0:
+            timeout_s = float(config_timeout)
+        try:
+            raw = service.ask(
+                question=question,
+                options=['Autorizo', 'No autorizo'],
+                context='\n'.join(context_lines),
+                timeout_s=timeout_s,
+            )
+        except Exception as exc:  # noqa: BLE001 - cubre Timeout, Cancelled o errores del handler
+            return {
+                'attempted': True,
+                'approved': False,
+                'detail': f'El permiso no fue resuelto: {type(exc).__name__}',
+                'raw_response': '',
+            }
+        normalized = str(raw or '').strip().lower()
+        tokens = normalized.split()
+        has_denial_prefix = bool(tokens) and tokens[0] in self._OBSERVATION_PERMISSION_DENIALS
+        has_approval_token = (
+            normalized in self._OBSERVATION_PERMISSION_APPROVALS
+            or any(token in self._OBSERVATION_PERMISSION_APPROVALS for token in tokens)
+        )
+        approved = has_approval_token and not has_denial_prefix
+        detail = (
+            f'El usuario aprobo observar {assistant_kind}.'
+            if approved
+            else f"El usuario no aprobo observar {assistant_kind} (respondio: '{raw}')."
+        )
+        return {
+            'attempted': True,
+            'approved': approved,
+            'detail': detail,
+            'raw_response': str(raw or ''),
+        }
 
     def _assessment_from_decision_context(self, decision_context: DecisionContext | dict[str, Any] | None) -> dict[str, Any]:
         if decision_context is None:
