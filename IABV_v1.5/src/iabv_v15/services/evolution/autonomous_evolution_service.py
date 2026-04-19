@@ -1624,6 +1624,11 @@ class AutonomousEvolutionService:
         project = dict(goal_context.get('project') or {})
         task = dict(goal_context.get('task') or {})
         assistant_kind = str(governance.get('assistant_kind') or metadata.get('explicit_assistant_preference') or '').strip().lower()
+        consultation_retry = dict(metadata.get('consultation_retry') or {})
+        reingest_existing_response = bool(
+            metadata.get('reingest_existing_response')
+            or consultation_retry.get('reingest_only')
+        )
         return {
             'objective_id': str(objective.get('objective_id') or ''),
             'objective_title': str(objective.get('title') or ''),
@@ -1638,6 +1643,7 @@ class AutonomousEvolutionService:
             'assistant_preference': assistant_kind,
             'assistant_kind': assistant_kind,
             'explicit_external_consultation': str(governance.get('diagnostic_category') or '').strip().lower() == 'explicit_external_consultation',
+            'reingest_existing_response': reingest_existing_response,
         }
 
 
