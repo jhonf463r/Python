@@ -1,5 +1,8 @@
 ﻿from __future__ import annotations
 
+import threading
+from typing import Callable, Optional
+
 from iabv_v15.domain.models import (
     AmbiguityLevel,
     ComplexityLevel,
@@ -13,11 +16,16 @@ from iabv_v15.domain.models import (
 from iabv_v15.services.providers.base import LLMProvider
 
 
+HealthHandler = Callable[[list[ProviderHealth]], None]
+
+
 class ProviderRouter:
     def __init__(self, local_provider: LLMProvider, fallback_local_provider: LLMProvider, cloud_provider: LLMProvider):
         self.local_provider = local_provider
         self.fallback_local_provider = fallback_local_provider
         self.cloud_provider = cloud_provider
+        self._health_handler: Optional[HealthHandler] = None
+        self._health_lock = threading.RLock()
 
     def decide(self, request: InferenceRequest) -> RouteDecision:
         if request.offline_only:
@@ -66,6 +74,33 @@ class ProviderRouter:
             self.fallback_local_provider.health_check(),
             self.cloud_provider.health_check(),
         ]
+
+    def register_health_handler(self, handler: HealthHandler | None) -> None:
+        """Registra el callback que emite providerHealthChanged en la UI.
+
+        El handler recibe la lista de ProviderHealth tal como la devuelve
+        health_snapshot(). Pasar None desengancha el handler activo. Siguiendo
+        el patron de CredentialBroker.register_prompt_handler, esto no cambia
+        la ruta ni dispara autonomia; solo media entre el estado observable
+        y la capa UI.
+        """
+        with self._health_lock:
+            self._health_handler = handler
+
+    def publish_health(self) -> list[ProviderHealth]:
+        """Toma un snapshot fresco y lo publica al handler si hay uno.
+
+        Devuelve el snapshot para que el llamador pueda usarlo directamente
+        (bootstrap, refresh manual, etc). Si el handler levanta una excepcion
+        se propaga al llamador; no silenciamos errores aqui para que la UI
+        pueda reportar el fallo en evidencia evolutiva.
+        """
+        snapshot = self.health_snapshot()
+        with self._health_lock:
+            handler = self._health_handler
+        if handler is not None:
+            handler(list(snapshot))
+        return snapshot
 
     def _execute_with_route(self, request: InferenceRequest, method_name: str) -> tuple[RouteDecision, InferenceResult]:
         route = self.decide(request)
