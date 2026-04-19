@@ -339,15 +339,17 @@ class UniversalPerceptionService:
     def _desktop_snapshot(self, *, max_age_seconds: float = 2.0) -> dict[str, list[dict[str, Any]]]:
         with self._desktop_probe_lock:
             cached_at = float(self._desktop_probe_cache.get("captured_at") or 0.0)
-            if cached_at and (time.monotonic() - cached_at) <= max(float(max_age_seconds), 0.0):
+            cached_windows = self._desktop_probe_cache.get("windows", [])
+            cached_processes = self._desktop_probe_cache.get("process_rows", [])
+            if (cached_windows or cached_processes) and cached_at and (time.monotonic() - cached_at) <= max(float(max_age_seconds), 0.0):
                 return {
-                    "process_rows": [dict(item) for item in self._desktop_probe_cache.get("process_rows", [])],
-                    "windows": [dict(item) for item in self._desktop_probe_cache.get("windows", [])],
+                    "process_rows": [dict(item) for item in cached_processes],
+                    "windows": [dict(item) for item in cached_windows],
                 }
         process_rows = [dict(item) for item in self._list_process_rows()]
         windows = [dict(item) for item in self._list_windows()]
         snapshot = {
-            "captured_at": time.monotonic(),
+            "captured_at": time.monotonic() if (process_rows or windows) else 0.0,
             "process_rows": process_rows,
             "windows": windows,
         }

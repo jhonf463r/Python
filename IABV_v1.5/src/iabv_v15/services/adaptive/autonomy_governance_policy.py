@@ -676,16 +676,16 @@ class AutonomyGovernancePolicy:
         if targeted.status == 'no_disponible' and explicit_assistant:
             return self._snapshot(
                 autonomy_level='guarded_local',
-                recommended_action='continue_local',
-                reason=f'No pude confirmar que {target_title} este disponible en este entorno antes de usarlo.',
+                recommended_action='attempt_external_with_fallback',
+                reason=f'No pude confirmar que {target_title} este disponible antes de usarlo; igual intento la ruta y, si falla, lo traigo humanizado.',
                 confidence=max(confidence, 0.76),
                 approval_required=False,
-                block_risky_action=True,
+                block_risky_action=False,
                 require_sandbox=False,
                 blockers=[*blockers, target_detail or 'La herramienta pedida no quedo confirmada como disponible.'],
                 diagnostic_category=diagnostic_category or 'assistant_unavailable',
                 external_state_flags=external_state_flags,
-                blocked_routes=[f'consult_{assistant_hint or "external"}'],
+                blocked_routes=[],
                 permission_gates=[item.model_dump(mode='json') for item in permission_gates],
             )
 
