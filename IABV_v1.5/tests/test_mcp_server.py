@@ -1042,6 +1042,60 @@ def test_audit_capability_returns_harness_unavailable_without_wiring() -> None:
     assert payload["error"] == "harness_unavailable"
 
 
+def test_audit_capability_runner_runs_off_event_loop() -> None:
+    """Regresión F3.1b: el runner de ``audit_capability`` debe ejecutarse
+    fuera del hilo del event loop.
+
+    ``browser_capture`` (y otros runners que tocan Playwright sync vía el
+    ``controller_factory``) explotan con ``Please use the Async API`` si
+    corren en el hilo del event loop de uvicorn. El handler MCP debe
+    despachar a través de ``_run_sync_off_event_loop`` para que el runner
+    vea un hilo sin loop activo.
+    """
+
+    import asyncio
+    import threading
+
+    from iabv_v15.services.evolution.capability_audit_harness import (
+        CapabilityAuditHarness,
+        CapabilityAuditResult,
+    )
+
+    captured: dict[str, Any] = {}
+
+    def _probe_runner(**_kwargs: Any) -> CapabilityAuditResult:
+        captured["thread"] = threading.get_ident()
+        try:
+            asyncio.get_running_loop()
+            captured["loop_visible"] = True
+        except RuntimeError:
+            captured["loop_visible"] = False
+        return CapabilityAuditResult(
+            capability_id="llm_local_ollama",
+            executed=True,
+            success=True,
+            output_preview="OK",
+        )
+
+    harness = CapabilityAuditHarness()
+    harness.register("llm_local_ollama", _probe_runner)
+    server = IABVMCPServer(_build_container(capability_audit_harness=harness))
+
+    async def _driver() -> object:
+        return _call_tool(
+            server, "audit_capability", capability_id="llm_local_ollama"
+        )
+
+    payload = asyncio.run(_driver())
+
+    assert isinstance(payload, dict)
+    assert payload.get("success") is True, payload
+    # Runner corrió en un hilo distinto al del event loop.
+    assert captured["thread"] != threading.get_ident()
+    # Y sin loop visible → Playwright sync podría arrancar si quisiera.
+    assert captured["loop_visible"] is False
+
+
 # ----------------------------------------------------------------------
 # Frente 3.3 — compare_perception_vs_ground_truth
 #
