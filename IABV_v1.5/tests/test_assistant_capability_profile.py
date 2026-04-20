@@ -49,7 +49,7 @@ def test_profile_serialization_round_trip() -> None:
 def test_registry_with_defaults_seeds_known_kinds() -> None:
     registry = AssistantCapabilityRegistry.with_defaults()
     known = set(registry.known_kinds())
-    assert known == {"codex", "chatgpt_web", "claude_web", "devin", "ollama_local"}
+    assert known == {"codex", "chatgpt_web", "claude_web", "devin", "ollama_local", "windsurf"}
 
     codex = registry.get("codex")
     assert codex is not None
@@ -72,6 +72,15 @@ def test_registry_with_defaults_seeds_known_kinds() -> None:
     assert ollama is not None
     assert ollama.cost_signal == "free_local"
     assert ollama.supports_function_calling is False
+
+    windsurf = registry.get("windsurf")
+    assert windsurf is not None
+    assert windsurf.optimal_frame == AssistantFrameKind.DIFF_AND_TESTS
+    assert AssistantStrength.CODE_GENERATION in windsurf.strengths
+    assert AssistantStrength.SHELL_EXECUTION in windsurf.strengths
+    assert windsurf.supports_shell is True
+    assert windsurf.supports_browser is False
+    assert "ide_context" in windsurf.native_tools
 
 
 def test_registry_get_returns_none_for_unknown() -> None:
@@ -103,7 +112,7 @@ def test_registry_returned_profiles_are_independent_copies() -> None:
 def test_registry_all_profiles_returns_copies() -> None:
     registry = AssistantCapabilityRegistry.with_defaults()
     profiles = registry.all_profiles()
-    assert len(profiles) == 5
+    assert len(profiles) == 6
     profiles[0].display_name = "mutated"
     # no afecta al registro original
     reloaded = registry.all_profiles()
