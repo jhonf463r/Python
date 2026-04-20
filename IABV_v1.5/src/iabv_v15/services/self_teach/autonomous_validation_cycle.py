@@ -200,9 +200,12 @@ class AutonomousValidationCycleService:
         for entry in entries:
             if str(entry.subject_key or '').strip() != subject_key:
                 continue
-            if entry.decision != 'promoted':
+            if entry.decision == 'promoted':
+                winner_kind = str(entry.candidate_assistant_kind or '').strip()
+            elif entry.decision == 'discarded':
+                winner_kind = str(entry.current_assistant_kind or '').strip()
+            else:
                 continue
-            winner_kind = str(entry.current_assistant_kind or '').strip()
             if not winner_kind:
                 continue
             matching_winners[winner_kind] = matching_winners.get(winner_kind, 0) + 1
@@ -211,7 +214,7 @@ class AutonomousValidationCycleService:
                 return (
                     f'scope_inertia_cooldown: {count} de las ultimas '
                     f'{len(entries)} decisiones para {subject_key} '
-                    f'promovieron {winner_kind}; forzando cooldown de '
+                    f'consolidaron {winner_kind}; forzando cooldown de '
                     f'exploracion hasta nueva evidencia.'
                 )
         return ''
