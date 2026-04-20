@@ -1195,6 +1195,61 @@ class IABVMCPServer:
             return result.model_dump(mode="json")
 
         # ------------------------------------------------------------
+        # PCS v1 — embodiment_manifest
+        #
+        # Contrato declarativo que IABV expone a cada IA externa que se
+        # conecte vía MCP. Una IA "encarnada" debe preferir las tools del
+        # cuerpo (world_model_snapshot, self_examination_current,
+        # run_pytest, read_repo_file, etc.) antes que las suyas cuando la
+        # pregunta cae en un sensor ya cubierto por IABV.
+        #
+        # En v1 es puramente declarativo (``handshake_required=False``):
+        # no bloquea a las IAs que lo ignoren; sólo las orienta. La
+        # detección de violaciones vive aparte en
+        # ``EmbodimentViolationDetector``. Esta tool NO requiere red, no
+        # consume estado y no pasa por governance gate (es un manifest
+        # fijo que describe la integración).
+
+        @mcp.tool()
+        def embodiment_manifest() -> dict[str, Any]:
+            """Devuelve el contrato de encarnamiento PCS para IAs externas.
+
+            Principio: si IABV tiene un sensor propio para esta pregunta,
+            usalo antes de recurrir a tools externas al cuerpo. El JSON
+            devuelto es estable y versionado por ``protocol``.
+            """
+
+            return {
+                "protocol": "PCS-v1",
+                "embodiment_principle": (
+                    "Si IABV tiene un sensor propio para esta pregunta, "
+                    "usalo antes de recurrir a tools externas al cuerpo."
+                ),
+                "sensor_before_question": [
+                    {"question": "¿estado de ventanas/foco?", "tool": "world_model_snapshot"},
+                    {"question": "¿salud del sistema?", "tool": "self_examination_current"},
+                    {"question": "¿tests pasan?", "tool": "run_pytest"},
+                    {"question": "¿contenido de archivo?", "tool": "read_repo_file"},
+                    {"question": "¿listar directorio?", "tool": "list_repo_directory"},
+                    {"question": "¿clipboard usuario?", "tool": "read_clipboard"},
+                    {"question": "¿ventanas abiertas?", "tool": "list_open_windows"},
+                    {"question": "¿procesos corriendo?", "tool": "list_running_processes"},
+                    {"question": "¿árbol QML UI?", "tool": "dump_qml_tree"},
+                    {"question": "¿login de asistente?", "tool": "probe_assistant_login"},
+                    {"question": "¿captura DOM de ChatGPT?", "tool": "chatgpt_web_capture"},
+                    {"question": "¿auditoría global?", "tool": "run_self_audit"},
+                    {"question": "¿contexto portable?", "tool": "portable_context_get"},
+                    {"question": "¿historia de git?", "tool": "git_status_and_log"},
+                ],
+                "violations_tracked": True,
+                "violation_reporting_channel": "operational_self_examination_service",
+                "session_scope_header": "X-IABV-Embodiment-Session",
+                "handshake_required": False,
+                "frame_translation_endpoint": "cognitive_frame_translate",
+                "capability_profiles_endpoint": "assistant_capabilities_list",
+            }
+
+        # ------------------------------------------------------------
         # Frente 2 — Self audit tool
         #
         # `run_self_audit` ejecuta el `SelfAuditService` y devuelve el
