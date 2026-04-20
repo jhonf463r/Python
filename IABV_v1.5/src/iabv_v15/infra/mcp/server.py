@@ -932,6 +932,106 @@ class IABVMCPServer:
             )
 
         # ------------------------------------------------------------
+        # PCS v1 — cognitive_frame_translate + assistant_capabilities_list
+        #
+        # Traduce determinísticamente un ``PerceptionSnapshot`` al frame
+        # cognitivo óptimo del asistente objetivo. Consume el
+        # ``CognitiveFrameTranslator`` y el ``UniversalPerceptionService``
+        # ya wireados en el bootstrap; no muta estado ni consume red.
+        #
+        # No pasa por governance gate: es read-only sobre perception vivo
+        # + registry declarativo. Si falta el translator o el perception
+        # service, degrada a ``{error: 'translator_unavailable', ...}`` o
+        # ``{error: 'perception_unavailable', ...}`` (fail-observable).
+
+        @mcp.tool()
+        def cognitive_frame_translate(
+            target_assistant_kind: str,
+            snapshot_hint: str = "",
+        ) -> dict[str, Any]:
+            """Renderiza el perception actual al frame óptimo del asistente.
+
+            Args:
+                target_assistant_kind: ``"codex"``, ``"claude_web"``,
+                    ``"devin"``, etc. Si es desconocido, cae a
+                    ``structured_qa`` (invariante del registry).
+                snapshot_hint: etiqueta libre que queda en ``metadata``
+                    para que otra sesión pueda correlacionar el render.
+
+            Returns:
+                ``CognitiveFramePayload`` serializado como dict, o un
+                payload ``{error: ..., detail: ...}`` si falta alguna
+                dependencia del container.
+            """
+
+            translator = getattr(self.container, "cognitive_frame_translator", None)
+            if translator is None:
+                return {
+                    "error": "translator_unavailable",
+                    "detail": (
+                        "AssistantCapabilityRegistry/CognitiveFrameTranslator no "
+                        "está wireado en el bootstrap."
+                    ),
+                    "target_assistant_kind": str(target_assistant_kind or ""),
+                }
+            perception_service = getattr(
+                self.container, "universal_perception_service", None
+            )
+            if perception_service is None:
+                return {
+                    "error": "perception_unavailable",
+                    "detail": "UniversalPerceptionService no está wireado.",
+                    "target_assistant_kind": str(target_assistant_kind or ""),
+                }
+            try:
+                perception = perception_service.current_snapshot()
+            except Exception as exc:  # pragma: no cover - defensive
+                return {
+                    "error": "perception_error",
+                    "detail": str(exc),
+                    "target_assistant_kind": str(target_assistant_kind or ""),
+                }
+            if perception is None:
+                return {
+                    "error": "perception_unavailable",
+                    "detail": "current_snapshot() devolvió None.",
+                    "target_assistant_kind": str(target_assistant_kind or ""),
+                }
+            payload = translator.translate(
+                perception=perception,
+                target_assistant_kind=str(target_assistant_kind or ""),
+            )
+            dumped = payload.model_dump(mode="json")
+            if snapshot_hint:
+                metadata = dumped.get("metadata") or {}
+                metadata["snapshot_hint"] = str(snapshot_hint)
+                dumped["metadata"] = metadata
+            return dumped
+
+        @mcp.tool()
+        def assistant_capabilities_list() -> dict[str, Any]:
+            """Devuelve los `AssistantCapabilityProfile` declarados (PCS v1).
+
+            Es read-only: cada perfil se serializa como dict y se incluye
+            el listado de ``known_kinds``. Si el registry no está wireado,
+            devuelve ``{error: 'registry_unavailable'}``.
+            """
+
+            registry = getattr(self.container, "assistant_capability_registry", None)
+            if registry is None:
+                return {
+                    "error": "registry_unavailable",
+                    "detail": "AssistantCapabilityRegistry no está wireado.",
+                    "profiles": [],
+                    "known_kinds": [],
+                }
+            profiles = registry.all_profiles()
+            return {
+                "known_kinds": registry.known_kinds(),
+                "profiles": [p.model_dump(mode="json") for p in profiles],
+            }
+
+        # ------------------------------------------------------------
         # Frente 2 — Self audit tool
         #
         # `run_self_audit` ejecuta el `SelfAuditService` y devuelve el
