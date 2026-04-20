@@ -50,6 +50,9 @@ from iabv_v15.infra.mcp.audit_tools.audit_capability import (  # noqa: E402,F401
     known_capability_ids,
     policy_for_capability,
 )
+from iabv_v15.infra.mcp.audit_tools.compare_perception_vs_ground_truth import (  # noqa: E402,F401
+    compare_perception_vs_ground_truth,
+)
 
 
 # ----------------------------------------------------------------------
@@ -844,6 +847,7 @@ __all__ = [
     "build_llm_local_ollama_runner",
     "build_ui_execution_runner",
     "capture_ui_screenshot",
+    "compare_perception_vs_ground_truth",
     "default_subprocess_runner",
     "git_status_and_log",
     "is_sensitive_path",

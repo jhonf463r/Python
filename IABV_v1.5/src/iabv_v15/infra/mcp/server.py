@@ -763,6 +763,60 @@ class IABVMCPServer:
             )
 
         # ------------------------------------------------------------
+        # Frente 3.3 — compare_perception_vs_ground_truth
+        #
+        # Contrasta lo que ``UniversalPerceptionService`` "ve" para una
+        # ventana objetivo contra el ``WorldModelSnapshot`` real. Pasa
+        # por ``assistant_kind='audit'`` (fail-closed ante bloqueos) y
+        # NO requiere red: todo el cotejo es local (perception local +
+        # WorldModel local).
+
+        @mcp.tool()
+        def compare_perception_vs_ground_truth(
+            window_title: str,
+            tool_id: str = "",
+            assistant_kind: str = "",
+            site_id: str = "",
+        ) -> dict[str, Any]:
+            """Compara la perception de IABV vs ground truth local.
+
+            Args:
+                window_title: título (o substring) de la ventana
+                    objetivo; obligatorio. Se matchea case-insensitive
+                    contra ``active_windows`` y ``focused_window`` del
+                    ``WorldModelSnapshot``.
+                tool_id, assistant_kind, site_id: pistas opcionales que
+                    se propagan a ``UniversalPerceptionService.build_signal``.
+
+            Returns:
+                ``{tool_id, window_title, perception_json, ground_truth_json,
+                mismatches, mismatch_count, severity_counts, evidence, error,
+                detail, duration_ms, checked_at_iso}`` en happy path, o
+                ``{error, detail, ...}`` ante fallo o bloqueo.
+            """
+
+            block = self._governance_block_for_route(
+                assistant_kind="audit",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
+            from iabv_v15.infra.mcp.audit_tools.compare_perception_vs_ground_truth import (
+                compare_perception_vs_ground_truth as _compare,
+            )
+
+            comparator = getattr(
+                self.container, "perception_ground_truth_comparator", None
+            )
+            return _compare(
+                window_title,
+                tool_id=str(tool_id or ""),
+                assistant_kind=str(assistant_kind or ""),
+                site_id=str(site_id or ""),
+                comparator=comparator,
+            )
+
+        # ------------------------------------------------------------
         # Frente 2 — Self audit tool
         #
         # `run_self_audit` ejecuta el `SelfAuditService` y devuelve el

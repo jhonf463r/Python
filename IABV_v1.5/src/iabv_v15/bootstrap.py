@@ -529,6 +529,39 @@ class AppBootstrap:
             "ui_execution",
             build_ui_execution_runner(_ui_executor),
         )
+
+        # Frente 3.3 — PerceptionGroundTruthComparator.
+        #
+        # Contrasta la perception que genera ``UniversalPerceptionService``
+        # contra el ``WorldModelSnapshot`` vigente. No duplica contratos,
+        # no consume red, no toca UI; sólo observa y compara. Es seguro
+        # tenerlo siempre wireado: si alguna dependencia está caída,
+        # degrada a ``ground_truth_unavailable``/``perception_error``.
+        try:
+            from iabv_v15.services.capture.perception_ground_truth_comparator import (
+                PerceptionGroundTruthComparator,
+            )
+
+            def _world_model_snapshot_provider() -> _Any:
+                svc = getattr(self, "world_model_service", None)
+                if svc is None:
+                    return None
+                try:
+                    return svc.current_model()
+                except Exception:  # pragma: no cover - defensive
+                    return None
+
+            self.perception_ground_truth_comparator = PerceptionGroundTruthComparator(
+                universal_perception_service=self.universal_perception_service,
+                world_model_provider=_world_model_snapshot_provider,
+                screenshot_provider=None,
+            )
+        except Exception:  # pragma: no cover - defensive
+            logger.exception(
+                "No se pudo wirear PerceptionGroundTruthComparator; la MCP tool reportará comparator_unavailable"
+            )
+            self.perception_ground_truth_comparator = None
+
         self.control_master_repository = ControlMasterRepository(self.evolution_storage)
         self.control_master_service = ControlMasterService(
             repository=self.control_master_repository,
