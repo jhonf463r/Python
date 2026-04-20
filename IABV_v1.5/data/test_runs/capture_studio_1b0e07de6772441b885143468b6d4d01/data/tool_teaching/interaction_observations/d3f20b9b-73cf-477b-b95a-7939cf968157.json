@@ -1,0 +1,25 @@
+{
+  "observation_id": "d3f20b9b-73cf-477b-b95a-7939cf968157",
+  "pattern_id": "579bd62a-f43d-498a-9f40-d4c075d82c54",
+  "task_id": "teaching:fb2ef47e-0f35-4db1-8412-1bbd6a505ecb",
+  "result_id": "92a9955b-aca4-4cbd-b31f-77ac11acf074",
+  "episode_id": "0fb5a295-ed9c-4519-91e7-0526aeeabd4f",
+  "success": true,
+  "channel": "ui",
+  "tool_id": "playwright_browser",
+  "tool_type": "browser",
+  "site_id": "wplay",
+  "summary": "Visible 1, relevantes 1, capturas 1, canales 3, login partial, acuerdo visual 0.00.",
+  "confidence": 0.6799999999999999,
+  "evidence_refs": [
+    "fb2ef47e-0f35-4db1-8412-1bbd6a505ecb",
+    "/home/ubuntu/repos/Python/IABV_v1.5/data/test_runs/capture_studio_1b0e07de6772441b885143468b6d4d01/data/screenshots/fb2ef47e-0f35-4db1-8412-1bbd6a505ecb/visible_step.png",
+    "visual_summary:fb2ef47e-0f35-4db1-8412-1bbd6a505ecb"
+  ],
+  "created_at_utc": "2026-04-20T01:52:50.497519Z",
+  "metadata": {
+    "learning_status": "insufficient",
+    "login_status": "partial",
+    "manual_correction_count": 0
+  }
+}

@@ -20,6 +20,10 @@ Audit tools (capa humana para que Devin observe la laptop del usuario):
   - capture_ui_screenshot: captura ventana IABV vía provider del container
                            (degrada explícito a `ui_not_running` si no hay)
   - git_status_and_log: read-only `git status --porcelain -b` + `git log`
+  - probe_assistant_login: comprueba si el usuario está logueado en un
+                           asistente externo (ChatGPT/Claude/Codex/Gemini)
+                           abriendo la URL declarada con Playwright; primer
+                           gate con `requires_network=True`
 
 Contratos que NO se rompen:
   - No decide rutas: sólo expone servicios existentes.
@@ -706,6 +710,64 @@ class IABVMCPServer:
             if block is not None:
                 return block
             return audit_tools_observation.dump_qml_tree(max_nodes=int(max_nodes))
+
+        # ------------------------------------------------------------
+        # Frente 3 — probe_assistant_login
+        #
+        # Primera tool de audit que requiere red: abre la URL declarada
+        # del asistente externo (chatgpt/claude/codex/gemini) y evalúa
+        # si el usuario está logueado. Pasa por `assistant_kind='audit'`
+        # + `requires_network=True` (fail-closed si la red no está
+        # disponible o hay un bloqueo activo).
+
+        @mcp.tool()
+        def probe_assistant_login(
+            assistant_kind: str,
+            use_browser_session: bool = True,
+            timeout_seconds: float = 10.0,
+            include_screenshot: bool = False,
+        ) -> dict[str, Any]:
+            """Verifica si el usuario está logueado en un asistente externo.
+
+            Abre la URL del provider (ChatGPT/Claude/Codex/Gemini) con
+            Playwright (contexto aislado ``program_chat`` si
+            ``use_browser_session=True``; CDP contra el Chrome del usuario si
+            ``False``) y evalúa una heurística de logueo por provider.
+
+            Args:
+                assistant_kind: uno de ``chatgpt``, ``claude``, ``codex``,
+                    ``gemini``.
+                use_browser_session: si True (default), usa un contexto
+                    aislado; si False, se conecta al Chrome del usuario vía
+                    CDP (``IABV_SHARED_CDP_URL``, default
+                    ``http://localhost:29229``).
+                timeout_seconds: tope duro de navegación + heurística.
+                include_screenshot: si True, incluye un PNG en base64 como
+                    evidencia adicional (default False para payloads
+                    chicos).
+
+            Returns:
+                ``{assistant_kind, logged_in, reason, evidence,
+                checked_at_iso, duration_ms}`` en happy path, o
+                ``{error, detail, assistant_kind, ...}`` ante fallo.
+            """
+
+            block = self._governance_block_for_route(
+                assistant_kind="audit",
+                requires_network=True,
+            )
+            if block is not None:
+                return block
+            from iabv_v15.infra.mcp.audit_tools.probe_assistant_login import (
+                probe_assistant_login as _probe,
+            )
+
+            return _probe(
+                assistant_kind,
+                use_browser_session=bool(use_browser_session),
+                timeout_seconds=float(timeout_seconds),
+                include_screenshot=bool(include_screenshot),
+            )
 
         # ------------------------------------------------------------
         # Frente 2 — Self audit tool

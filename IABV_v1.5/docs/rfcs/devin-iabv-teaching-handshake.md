@@ -1,10 +1,14 @@
 # RFC: Handshake Devin ↔ IABV para auditoría humana y auto-enseñanza
 
 - **Estado:** borrador (Frente 3 del plan Devin ↔ IABV v1.5)
+- **Última revisión:** 2026-04-19 — UNRESOLVED #1 (`run_self_audit`) y #2
+  (`data/evolution/self_audit/`) cerradas por PR #44
+  (`534ec7c8f978d31df148d00a7a86b0065785131c`).
 - **Alcance:** documentación. No implica cambios de código.
 - **Ubicación:** `IABV_v1.5/docs/rfcs/devin-iabv-teaching-handshake.md`
 - **Relacionados:** PR #38 (Frente 1: 5 audit tools + governance gate
-  `assistant_kind="audit"`), `IABV_v1.5/AGENTS.md`,
+  `assistant_kind="audit"`), PR #44 (Frente 2: `SelfAuditService` +
+  `run_self_audit`), `IABV_v1.5/AGENTS.md`,
   `src/iabv_v15/infra/mcp/server.py`,
   `src/iabv_v15/infra/mcp/audit_tools.py`,
   `src/iabv_v15/services/evolution/operational_self_examination_service.py`,
@@ -177,14 +181,21 @@ Todos los contratos son los ya expuestos por
   `{error: "not_a_git_repo"}`. Efectos: `git rev-parse`, `git status
   --porcelain -b`, `git log --pretty=...`, todos read-only, timeout 20 s.
   Governance gate: `assistant_kind="audit"`, `requires_network=False`.
-- **`run_self_audit(...)`** — UNRESOLVED. El operador menciona esta tool
-  como parte del handshake, pero no existe en
-  `IABVMCPServer._register_tools` al momento de redactar el RFC. El patrón
-  de llamada actual es encadenar `world_model_snapshot` +
-  `self_examination_current` + las 5 audit tools del Frente 1. Si en una
-  iteración futura se añade una tool agregadora, deberá pasar por el mismo
-  gate `assistant_kind="audit"`, mantener `requires_network=False` y no
-  introducir efectos escritores.
+- **`run_self_audit(reason: str | None = None)`** — input: motivo
+  opcional libre (se propaga a la traza y al markdown resultante). Output:
+  `SelfAuditSnapshot` serializado como `dict` JSON-safe con
+  `tool_checks`, `environment_match`, `pending_issues`,
+  `world_model_digest`, `summary_markdown` y `generated_at` (ISO 8601).
+  Efectos: agrega tool checks vía `ToolCard.dry_check`, compara
+  `EnvironmentSelfModel` vs `WorldModelSnapshot`, recolecta hallazgos de
+  autoexaminación y **persiste** los 3 artefactos descritos en la
+  sección 7 (`data/evolution/self_audit/latest.json`, `latest.md`,
+  `history/<ISO>.json`). Governance gate:
+  `assistant_kind="audit"`, `requires_network=False`; si el
+  `self_audit_service` no está disponible devuelve
+  `{"error": "self_audit_unavailable", ...}` en lugar de crashear.
+  Cerrada por PR #44
+  (`534ec7c8f978d31df148d00a7a86b0065785131c`).
 
 ## 6. Governance
 
@@ -241,12 +252,22 @@ UNRESOLVED):
 - **`data/evolution/self_examination/`** — incluye `latest.json` y
   `latest.md` del `OperationalSelfExaminationService`. Es la referencia
   humana para revisar qué vio el sistema en su última autoexaminación.
-- **`data/evolution/self_audit/...`** — ruta propuesta para archivar la
-  traza de ejecución de las audit tools (ej. `run_pytest` output_tail,
-  `git_status_and_log`, `capture_ui_screenshot` persistido fuera del
-  response). Hoy no existe en el repo; queda **UNRESOLVED** hasta que el
-  operador confirme si se persiste por separado o si se delega al
-  `pending_issue_repository`.
+- **`data/evolution/self_audit/`** — directorio materializado por
+  `SelfAuditService` (PR #44,
+  `534ec7c8f978d31df148d00a7a86b0065785131c`) con 3 artefactos por cada
+  corrida de `run_self_audit`:
+  - `latest.json` — `SelfAuditSnapshot` serializado: `tool_checks`
+    (lista de `ToolCheckResult` con `id`, `available`, `status`,
+    `reason`, `evidence`), `environment_match` (`matched`,
+    `mismatches`, `environment_digest`, `world_model_digest`),
+    `pending_issues` (hallazgos agregados de autoexaminación),
+    `world_model_digest`, `summary_markdown`, `reason`, `generated_at`.
+  - `latest.md` — versión humana del `summary_markdown`: lista
+    legible de tools chequeadas, estado del entorno y pending issues
+    consolidados, pensada para que el operador la abra sin parsear JSON.
+  - `history/<ISO>.json` — snapshot inmutable de cada corrida
+    archivado por timestamp UTC ISO 8601, útil para auditoría
+    retrospectiva y comparación entre corridas.
 - **`data/evolution/pending_issues/`** — destino habitual de hallazgos
   humanos y de propuestas resultantes del handshake cuando se convierten
   en acciones concretas.
@@ -394,20 +415,13 @@ que quedan fuera del alcance de este RFC:
   no hay `ui_screenshot_provider`; el wiring del provider real en
   `bootstrap.py` se valida en la laptop del usuario, no aquí.
 - **Botón QML "Auditarme ahora" del Frente 2.** Entrada de UI que dispara
-  el handshake desde `EvolutionCenterViewModel`; lo desarrolla el humano
-  en otra cuenta y pertenece al Frente 2.
+  el handshake desde `ControlCenterViewModel.runSelfAuditNow`; requiere
+  validación en Windows con UI IABV viva (PySide6 + QML real), fuera del
+  alcance de CI Linux.
 - **Disponibilidad real de mensajes/cuota en herramientas externas
   visibles.** Sin permiso explícito de observación, el handshake no puede
   confirmar cuota ni foco de ChatGPT web / otras tools; queda
   `UNRESOLVED` conforme a AGENTS.md.
-- **Tool agregadora `run_self_audit`.** No existe como tool MCP
-  registrada; el handshake usa composición de las 5 audit tools + lecturas
-  internas. Si una versión futura la introduce, deberá respetar el mismo
-  gate `assistant_kind="audit"` y no introducir efectos escritores.
-- **Directorio `data/evolution/self_audit/`.** Propuesto como destino de
-  trazas del handshake; todavía no existe en el repo. El operador decide
-  si se materializa como directorio propio o se reutiliza
-  `pending_issues/` + `portable_context/` + `self_examination/`.
 - **`EnvironmentSelfModel.runtime_profile.python_executable`.** El valor
   real depende del entorno Windows del operador; los tests no pueden
   validar que el intérprete resuelto server-side coincida con el esperado

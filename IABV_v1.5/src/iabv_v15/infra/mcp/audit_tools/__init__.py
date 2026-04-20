@@ -13,6 +13,11 @@ Esta capa concentra la lógica que NO depende de FastMCP:
 
 Los tests que consumen estos helpers no necesitan instanciar `IABVMCPServer`
 ni levantar el container; eso es parte del contrato "fácil de testear".
+
+El paquete contiene submódulos adicionales para tools nuevas (ej.
+``probe_assistant_login``); los helpers core viven en este ``__init__``
+para preservar la API pública existente (``audit_tools.run_pytest``,
+``audit_tools.AuditToolError``, etc.).
 """
 
 from __future__ import annotations
@@ -28,6 +33,14 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Protocol
+
+# Submódulos nuevos — importados acá para que sean accesibles como
+# ``audit_tools.probe_assistant_login`` y compañía sin forzar a los
+# callers a conocer la estructura interna del paquete.
+from iabv_v15.infra.mcp.audit_tools.probe_assistant_login import (  # noqa: E402,F401
+    known_assistant_kinds,
+    probe_assistant_login,
+)
 
 
 # ----------------------------------------------------------------------
@@ -820,7 +833,9 @@ __all__ = [
     "default_subprocess_runner",
     "git_status_and_log",
     "is_sensitive_path",
+    "known_assistant_kinds",
     "list_repo_directory",
+    "probe_assistant_login",
     "read_repo_file",
     "resolve_workspace_path",
     "run_pytest",
