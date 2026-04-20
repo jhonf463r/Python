@@ -1192,6 +1192,152 @@ class ExternalAssistantToolAdapter(ToolAdapter):
     tool_type = ToolType.CUSTOM
 
 
+class DevinApiToolAdapter:
+    """Adapter REST para Devin (Cognition AI) via API v3.
+
+    Crea una sesion remota con el prompt del task, hace polling hasta que
+    la sesion termine o se agote el timeout, y retorna el resultado en el
+    formato estandar de adapters.  No es otro cerebro: el
+    ``ToolTeachService`` decide cuando usarlo.
+    """
+
+    tool_type = ToolType.MCP_CLIENT
+
+    def __init__(
+        self,
+        api_key: str = '',
+        org_id: str = '',
+        timeout_seconds: float = 120.0,
+        poll_interval_seconds: float = 5.0,
+    ) -> None:
+        self.api_key = api_key
+        self.org_id = org_id
+        self.timeout_seconds = timeout_seconds
+        self.poll_interval_seconds = poll_interval_seconds
+
+    @property
+    def _base_url(self) -> str:
+        return f'https://api.devin.ai/v3/organizations/{self.org_id}/sessions'
+
+    def _headers(self) -> dict[str, str]:
+        return {
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json',
+        }
+
+    def is_available(self, card: ToolCard) -> bool:
+        if not self.api_key or not self.org_id:
+            return False
+        if httpx is None:
+            return False
+        try:
+            resp = httpx.get(
+                self._base_url,
+                headers=self._headers(),
+                params={'limit': '1'},
+                timeout=10.0,
+            )
+            return resp.status_code == 200
+        except Exception:
+            return False
+
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+        start = time.perf_counter()
+        if httpx is None:
+            return {
+                'success': False,
+                'output_text': '',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': 'httpx no esta instalado.',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {'sandbox': sandbox, 'tool_id': card.tool_id},
+            }
+        if not self.api_key or not self.org_id:
+            return {
+                'success': False,
+                'output_text': '',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': 'DEVIN_API_KEY o DEVIN_ORG_ID no configurados.',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {'sandbox': sandbox, 'tool_id': card.tool_id},
+            }
+
+        context_pack = str(task.metadata.get('context_pack') or '') if task.metadata else ''
+        prompt = str(task.objective or '')
+        if context_pack:
+            prompt = f'{prompt}\n\n--- context ---\n{context_pack}'
+
+        session_id = ''
+        session_url = ''
+        session_status = ''
+        structured_output = ''
+        error_message = ''
+        try:
+            create_resp = httpx.post(
+                self._base_url,
+                headers=self._headers(),
+                json={'prompt': prompt},
+                timeout=30.0,
+            )
+            if create_resp.status_code not in (200, 201):
+                error_message = f'Devin API create session HTTP {create_resp.status_code}: {create_resp.text[:500]}'
+                return {
+                    'success': False,
+                    'output_text': '',
+                    'extracted_data': {},
+                    'artifacts': [],
+                    'error_message': error_message,
+                    'execution_ms': int((time.perf_counter() - start) * 1000),
+                    'metadata': {'sandbox': sandbox, 'tool_id': card.tool_id},
+                }
+            body = create_resp.json()
+            session_id = str(body.get('session_id') or body.get('id') or '')
+            session_url = str(body.get('url') or body.get('session_url') or '')
+            if not session_url and session_id:
+                session_url = f'https://app.devin.ai/sessions/{session_id}'
+
+            deadline = time.perf_counter() + self.timeout_seconds
+            session_status = str(body.get('status') or 'running')
+            while session_status == 'running' and time.perf_counter() < deadline:
+                time.sleep(self.poll_interval_seconds)
+                poll_resp = httpx.get(
+                    f'{self._base_url}/{session_id}',
+                    headers=self._headers(),
+                    timeout=15.0,
+                )
+                if poll_resp.status_code == 200:
+                    poll_body = poll_resp.json()
+                    session_status = str(poll_body.get('status') or 'running')
+                    structured_output = str(
+                        poll_body.get('structured_output')
+                        or poll_body.get('result')
+                        or poll_body.get('output')
+                        or ''
+                    )
+                else:
+                    error_message = f'Devin API poll HTTP {poll_resp.status_code}'
+                    break
+        except Exception as exc:
+            error_message = f'{type(exc).__name__}: {exc}'
+
+        elapsed_ms = int((time.perf_counter() - start) * 1000)
+        return {
+            'success': session_status == 'finished',
+            'output_text': structured_output or '',
+            'extracted_data': {'session_id': session_id, 'session_url': session_url},
+            'artifacts': [],
+            'error_message': error_message or '',
+            'execution_ms': elapsed_ms,
+            'metadata': {
+                'sandbox': sandbox,
+                'tool_id': card.tool_id,
+                'devin_session_status': session_status,
+            },
+        }
+
+
 class SiteExplorerToolAdapter:
     """Adapter delgado sobre `SiteExplorationService`.
 

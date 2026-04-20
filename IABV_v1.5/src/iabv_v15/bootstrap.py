@@ -106,7 +106,7 @@ from iabv_v15.services.self_teach.sandbox_experiment_service import SandboxExper
 from iabv_v15.services.self_teach.self_teach_orchestrator import SelfTeachOrchestrator
 from iabv_v15.infra.persistence.site_manual_repository import SiteManualRepository
 from iabv_v15.services.tools.site_exploration_service import SiteExplorationService
-from iabv_v15.services.tools.tool_adapters import AiderToolAdapter, DesktopHumanToolAdapter, ExternalAssistantToolAdapter, MCPToolAdapter, OllamaToolAdapter, PlaywrightToolAdapter, ShellToolAdapter, SiteExplorerToolAdapter
+from iabv_v15.services.tools.tool_adapters import AiderToolAdapter, DevinApiToolAdapter, DesktopHumanToolAdapter, ExternalAssistantToolAdapter, MCPToolAdapter, OllamaToolAdapter, PlaywrightToolAdapter, ShellToolAdapter, SiteExplorerToolAdapter
 from iabv_v15.services.tools.tool_approval_policy import ToolApprovalPolicy
 from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
 from iabv_v15.services.tools.interaction_mode_selector import InteractionModeSelector
@@ -234,6 +234,10 @@ class AppBootstrap:
             'aider': AiderToolAdapter(),
             'mcp': MCPToolAdapter(),
             'external_assistant': ExternalAssistantToolAdapter(),
+            'devin_api': DevinApiToolAdapter(
+                api_key=os.environ.get('DEVIN_API_KEY', ''),
+                org_id=os.environ.get('DEVIN_ORG_ID', ''),
+            ),
             'site_explorer': SiteExplorerToolAdapter(
                 self.site_exploration_service,
                 self.site_manual_repository,
