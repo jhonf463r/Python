@@ -1008,17 +1008,35 @@ class IABVMCPServer:
                     ),
                     "target_assistant_kind": str(target_assistant_kind or ""),
                 }
-            perception_service = getattr(
-                self.container, "universal_perception_service", None
+            context_assembler = getattr(
+                self.container, "task_context_assembler", None
             )
-            if perception_service is None:
+            if context_assembler is None or not hasattr(
+                context_assembler, "build_perception_snapshot"
+            ):
                 return {
                     "error": "perception_unavailable",
-                    "detail": "UniversalPerceptionService no está wireado.",
+                    "detail": (
+                        "TaskContextAssembler.build_perception_snapshot no está "
+                        "wireado; no se puede producir PerceptionSnapshot."
+                    ),
                     "target_assistant_kind": str(target_assistant_kind or ""),
                 }
             try:
-                perception = perception_service.current_snapshot()
+                from iabv_v15.domain.models import InferenceRequest, TaskIntent
+
+                request = InferenceRequest(
+                    user_goal=str(snapshot_hint or "pcs_v1.cognitive_frame_translate"),
+                    metadata={"source": "cognitive_frame_translate"},
+                )
+                intent = TaskIntent(
+                    intent_key="pcs_v1.cognitive_frame_translate",
+                    title="PCS v1 cognitive frame translation",
+                    summary=str(snapshot_hint or ""),
+                )
+                perception = context_assembler.build_perception_snapshot(
+                    request=request, intent=intent
+                )
             except Exception as exc:  # pragma: no cover - defensive
                 return {
                     "error": "perception_error",
@@ -1028,7 +1046,7 @@ class IABVMCPServer:
             if perception is None:
                 return {
                     "error": "perception_unavailable",
-                    "detail": "current_snapshot() devolvió None.",
+                    "detail": "build_perception_snapshot() devolvió None.",
                     "target_assistant_kind": str(target_assistant_kind or ""),
                 }
             payload = translator.translate(
