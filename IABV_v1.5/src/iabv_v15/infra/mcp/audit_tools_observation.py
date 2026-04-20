@@ -53,29 +53,45 @@ _SENSITIVE_TOKEN_PATTERNS = (
     "password",
     "passwd",
     "api_key",
+    "api-key",
     "apikey",
     "private_key",
+    "private-key",
     "auth",
 )
 
 
 def _sanitize_cmdline(parts: list[str] | None) -> list[str]:
-    """Acorta args y redacta tokens sospechosos en cmdlines de procesos."""
+    """Acorta args y redacta tokens sospechosos en cmdlines de procesos.
+
+    Soporta las dos formas usuales:
+        * ``--token=sk-abc`` → ``--token=<redacted>`` (valor inline).
+        * ``--token sk-abc`` → ``<redacted>`` + ``<redacted>`` (el siguiente
+          arg se redacta incondicionalmente porque es el valor posicional
+          del flag sensible).
+    """
 
     if not parts:
         return []
     out: list[str] = []
+    redact_next = False
     for raw in parts[:50]:  # max 50 args por proceso
         if not isinstance(raw, str):
             continue
+        if redact_next:
+            out.append("<redacted>")
+            redact_next = False
+            continue
         lowered = raw.lower()
         if any(token in lowered for token in _SENSITIVE_TOKEN_PATTERNS):
-            # mantener el flag pero redactar el valor
             if "=" in raw:
                 key = raw.split("=", 1)[0]
                 out.append(f"{key}=<redacted>")
             else:
+                # `--token sk-abc`: redactar el flag y también el valor
+                # posicional que viene en la próxima iteración.
                 out.append("<redacted>")
+                redact_next = True
             continue
         if len(raw) > MAX_CMDLINE_CHARS:
             out.append(raw[:MAX_CMDLINE_CHARS] + "...<truncated>")

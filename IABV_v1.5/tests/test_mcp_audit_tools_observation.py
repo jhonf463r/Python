@@ -155,6 +155,19 @@ def test_list_running_processes_sanitizes_cmdline(monkeypatch: pytest.MonkeyPatc
             "create_time": 2000.0,
             "username": "faber",
         },
+        {
+            "pid": 300,
+            "ppid": 1,
+            "name": "curl",
+            "exe": "",
+            # Flag + valor posicional separado: el valor también debe redactarse.
+            # `--api-key <value>` (espacio-separado): el valor posicional
+            # debe quedar redactado independientemente de su contenido.
+            "cmdline": ["curl", "-H", "--api-key", "sk-abc123xyz", "https://api.example.com"],
+            "status": "running",
+            "create_time": 3000.0,
+            "username": "faber",
+        },
     ]
 
     class _FakeProc:
@@ -177,7 +190,7 @@ def test_list_running_processes_sanitizes_cmdline(monkeypatch: pytest.MonkeyPatc
     _install_fake_module(monkeypatch, "psutil", fake_psutil)
 
     result = obs.list_running_processes(limit=10)
-    assert result["count"] == 2
+    assert result["count"] == 3
     assert result["processes"][0]["pid"] == 100
     cmd0 = result["processes"][0]["cmdline"]
     assert "--token=<redacted>" in cmd0
@@ -185,6 +198,13 @@ def test_list_running_processes_sanitizes_cmdline(monkeypatch: pytest.MonkeyPatc
     cmd1 = result["processes"][1]["cmdline"]
     assert "--password=<redacted>" in cmd1
     assert not any("XYZ" in token for token in cmd1)
+    # Caso espacio-separado: --api-key sk-abc → flag y valor redactados,
+    # pero la URL posterior NO debe quedar redactada.
+    cmd2 = result["processes"][2]["cmdline"]
+    assert not any("sk-abc123xyz" in token for token in cmd2)
+    # Flag sensible se redacta y también el arg siguiente (redact_next).
+    assert cmd2.count("<redacted>") == 2
+    assert "https://api.example.com" in cmd2
 
 
 def test_list_running_processes_respects_limit(monkeypatch: pytest.MonkeyPatch) -> None:
