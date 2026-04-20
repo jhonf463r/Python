@@ -1335,10 +1335,10 @@ class ToolTeachService:
         goal: str,
     ) -> bool:
         episodes = self.memory.repository.list_interaction_episodes(tool_id=tool_id, mode_used=mode_used, site_id=site_id, limit=8) if site_id else self.memory.repository.list_interaction_episodes(tool_id=tool_id, mode_used=mode_used, limit=8)
-        goal_tokens = set(str(goal or '').lower().split())
+        goal_tokens = {t for t in str(goal or '').lower().split() if len(t) >= 3}
         signatures: Counter[str] = Counter()
         for episode in episodes:
-            objective_tokens = set(str(episode.objective or '').lower().split())
+            objective_tokens = {t for t in str(episode.objective or '').lower().split() if len(t) >= 3}
             if goal_tokens and objective_tokens and len(goal_tokens.intersection(objective_tokens)) == 0:
                 continue
             result = episode.result

@@ -1383,3 +1383,68 @@ def test_tool_teach_service_preview_summary_without_block_preserves_generic_fall
 
     assert 'fallback' in summary.lower()
     assert 'preferencia explicita' not in summary.lower()
+
+
+def test_tool_teach_service_repeated_blocked_failures_ignores_short_token_overlap() -> None:
+    """_tool_has_repeated_blocked_failures must NOT consider episodes whose
+    objectives share only short common words (en, de, la, el, un) with the
+    current goal.  Before the fix, raw .split() without a min-length filter
+    caused unrelated episodes to match via these ubiquitous tokens."""
+    from iabv_v15.domain.models import InteractionChannel, InteractionEpisode, InteractionResult
+    root = _workspace('tool_teach_blocked_short_tokens')
+    try:
+        service, repository = _service(root)
+
+        failed_result = InteractionResult(
+            success=False,
+            execution_state=ExecutionState(state='failed', detail='access denied'),
+        )
+        repository.save_interaction_episode(InteractionEpisode(
+            objective='en la web buscar manual de uso',
+            mode_used=InteractionChannel.BACKGROUND,
+            tool_id='shell_command',
+            result=failed_result,
+        ))
+        repository.save_interaction_episode(InteractionEpisode(
+            objective='de el servidor obtener log en produccion',
+            mode_used=InteractionChannel.BACKGROUND,
+            tool_id='shell_command',
+            result=failed_result,
+        ))
+
+        blocked = service._tool_has_repeated_blocked_failures(
+            tool_id='shell_command',
+            mode_used='background',
+            site_id=None,
+            goal='consulta de inferencia local en ambiente nuevo',
+        )
+        assert blocked is False, (
+            'Short tokens (en, de) must not cause spurious matches between '
+            'unrelated goals — the tool should NOT be blocked here'
+        )
+
+        repository.save_interaction_episode(InteractionEpisode(
+            objective='consulta inferencia local ambiente prueba',
+            mode_used=InteractionChannel.BACKGROUND,
+            tool_id='shell_command',
+            result=failed_result,
+        ))
+        repository.save_interaction_episode(InteractionEpisode(
+            objective='consulta inferencia local con otro contexto',
+            mode_used=InteractionChannel.BACKGROUND,
+            tool_id='shell_command',
+            result=failed_result,
+        ))
+
+        blocked_real = service._tool_has_repeated_blocked_failures(
+            tool_id='shell_command',
+            mode_used='background',
+            site_id=None,
+            goal='consulta de inferencia local en ambiente nuevo',
+        )
+        assert blocked_real is True, (
+            'Episodes with real meaningful token overlap (consulta, inferencia, '
+            'local, ambiente) must still trigger the blocked-failure protection'
+        )
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
