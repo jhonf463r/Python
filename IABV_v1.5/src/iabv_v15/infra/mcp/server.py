@@ -708,6 +708,61 @@ class IABVMCPServer:
             )
 
         # ------------------------------------------------------------
+        # Frente 3.2 — audit_capability
+        #
+        # Ejecuta el runner asociado a una capacidad (ver
+        # ``CapabilityAuditHarness``) y devuelve ``{executed, success,
+        # latency_ms, output_preview, error, evidence, policy}``. El gate
+        # de network se decide por capacidad: ``llm_external_*`` y
+        # ``browser_capture`` requieren red; ``llm_local_ollama`` y
+        # ``ui_execution`` no. En ``dry_run=True`` sólo se valida que
+        # haya runner registrado (no dispara el gate de red).
+
+        @mcp.tool()
+        def audit_capability(
+            capability_id: str,
+            dry_run: bool = False,
+        ) -> dict[str, Any]:
+            """Audita end-to-end una capacidad declarada (sonda sintética).
+
+            Pasa por ``assistant_kind='audit'``. ``requires_network`` se
+            determina dinámicamente desde la policy de la capacidad (ej.
+            ``llm_external_chatgpt`` → True; ``llm_local_ollama`` → False).
+
+            Args:
+                capability_id: uno de ``llm_local_ollama``,
+                    ``llm_external_chatgpt``, ``llm_external_claude``,
+                    ``browser_capture``, ``ui_execution`` (o cualquier otro
+                    registrado en ``CapabilityAuditHarness``).
+                dry_run: si True, solo valida que el runner exista sin
+                    ejecutarlo; útil para revisar cobertura sin consumir
+                    cuota externa.
+            """
+
+            from iabv_v15.infra.mcp.audit_tools.audit_capability import (
+                audit_capability as _audit_capability,
+                policy_for_capability as _policy_for_capability,
+            )
+
+            policy = _policy_for_capability(str(capability_id or "").strip())
+            # En dry_run no tocamos red, así que no exigimos el gate de red
+            # (pero sí el gate de audit). En modo real, respetamos
+            # policy.requires_network.
+            block = self._governance_block_for_route(
+                assistant_kind=str(policy.assistant_kind or "audit"),
+                requires_network=(False if bool(dry_run) else bool(policy.requires_network)),
+            )
+            if block is not None:
+                return block
+
+            harness = getattr(self.container, "capability_audit_harness", None)
+            return _audit_capability(
+                capability_id,
+                dry_run=bool(dry_run),
+                harness=harness,
+            )
+
+        # ------------------------------------------------------------
         # Frente 2 — Self audit tool
         #
         # `run_self_audit` ejecuta el `SelfAuditService` y devuelve el
