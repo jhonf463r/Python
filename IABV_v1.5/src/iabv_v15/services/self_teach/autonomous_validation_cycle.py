@@ -142,6 +142,7 @@ class AutonomousValidationCycleService:
             'unresolved_fields': list(resolved.unresolved_fields or []),
             'package_path': resolved.package_path,
             'markdown_path': resolved.markdown_path,
+            'pending_auto_probes': self._load_pending_auto_probes(),
         }
 
     def get_status(self) -> dict[str, Any]:
@@ -856,7 +857,47 @@ class AutonomousValidationCycleService:
         current_promoted = int((self._current_snapshot.metadata or {}).get('promoted_count') or 0)
         return max(decision_promoted, current_promoted)
 
+    _PENDING_AUTO_PROBES_CAP = 6
+
+    def _load_pending_auto_probes(self) -> list[dict[str, Any]]:
+        """Read structured probe requests emitted by OperationalSelfExamination.
+
+        El self-exam deja ``pending_auto_probes`` en
+        ``self_examination/latest.json`` cuando detecta findings HIGH con
+        confianza >= 0.85. Este ciclo de validación es el consumidor natural
+        porque ya tiene un tick periódico y ya surface decisiones al log y
+        a la UI. Al surfacear los probes en cada tick cerramos el loop P4:
+        el testigo ya no se pierde en silencio.
+
+        Sólo se consume la señal estructurada; la ejecución real del probe
+        sigue siendo responsabilidad del orquestador / ToolTeachService /
+        runner de pytest. Aquí no se decide ruta ni se dispara nada.
+        """
+        storage = self.storage
+        if storage is None:
+            return []
+        try:
+            if not storage.exists('self_examination/latest.json'):
+                return []
+            payload = storage.load_json('self_examination/latest.json')
+        except Exception:
+            return []
+        metadata = dict((payload or {}).get('metadata') or {})
+        raw_probes = metadata.get('pending_auto_probes')
+        if not isinstance(raw_probes, list):
+            return []
+        probes: list[dict[str, Any]] = []
+        for probe in raw_probes[: self._PENDING_AUTO_PROBES_CAP]:
+            if isinstance(probe, dict) and probe.get('finding_id'):
+                probes.append(dict(probe))
+        return probes
+
     def _store_snapshot(self, snapshot: AutonomousValidationSnapshot) -> AutonomousValidationSnapshot:
+        probes = self._load_pending_auto_probes()
+        if probes:
+            merged_metadata = dict(snapshot.metadata or {})
+            merged_metadata['pending_auto_probes'] = probes
+            snapshot = snapshot.model_copy(update={'metadata': merged_metadata})
         with self._lock:
             self._current_snapshot = snapshot
             return self._current_snapshot.model_copy(deep=True)
