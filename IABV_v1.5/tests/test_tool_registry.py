@@ -219,6 +219,96 @@ def test_tool_registry_resets_stale_dry_run_flag_for_external_desktop_assistants
         shutil.rmtree(root, ignore_errors=True)
 
 
+def test_tool_registry_pick_card_for_task_selects_best_match_not_first() -> None:
+    """pick_card_for_task must return the highest-scoring card, not the first
+    card that happens to share any substring with the objective."""
+    root = _workspace('tool_registry_pick_best')
+    try:
+        db = AppDatabase(str(root / 'app.sqlite'))
+        storage = ArtifactStorage(str(root / 'tool_teaching'))
+        repository = ToolRecordRepository(db, storage)
+        registry = ToolRegistry(repository, {
+            'playwright': _UnavailableAdapter(),
+            'ollama': _UnavailableAdapter(),
+            'external_assistant': _UnavailableAdapter(),
+        })
+        from iabv_v15.domain.models import ToolTask
+        task = ToolTask(
+            tool_id='',
+            title='consulta local',
+            objective='necesito inferencia local para clasificar y razonamiento',
+        )
+
+        card = registry.pick_card_for_task(task)
+
+        assert card is not None
+        assert card.tool_id == 'ollama_llm', (
+            f'Expected ollama_llm (best match for inferencia/razonamiento) '
+            f'but got {card.tool_id}'
+        )
+
+        task_browser = ToolTask(
+            tool_id='',
+            title='abrir pagina',
+            objective='abrir screenshot click automatizacion web',
+        )
+        card_browser = registry.pick_card_for_task(task_browser)
+        assert card_browser is not None
+        assert card_browser.tool_id == 'playwright_browser', (
+            f'Expected playwright_browser (best match for screenshot/click/web) '
+            f'but got {card_browser.tool_id}'
+        )
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_tool_registry_pick_card_ignores_short_tokens() -> None:
+    """Short tokens like 'en', 'de', 'la' must not cause spurious matches.
+    With only short tokens no card should score > 0, so the method falls
+    back to the first card in list_cards() (which is the first seeded
+    default).  The important assertion is that 'specific_tool' is NOT
+    chosen over seeded defaults just because of substring collisions."""
+    root = _workspace('tool_registry_pick_short_tokens')
+    try:
+        db = AppDatabase(str(root / 'app.sqlite'))
+        storage = ArtifactStorage(str(root / 'tool_teaching'))
+        repository = ToolRecordRepository(db, storage)
+        repository.save_card(
+            ToolCard(
+                tool_id='specific_tool',
+                title='Herramienta especifica',
+                tool_type=ToolType.CUSTOM,
+                adapter_key='custom',
+                capabilities=['diagnostico'],
+                description='Diagnostico avanzado de problemas.',
+            )
+        )
+        registry = ToolRegistry(repository, {'custom': _UnavailableAdapter()})
+        from iabv_v15.domain.models import ToolTask
+
+        task_short = ToolTask(
+            tool_id='',
+            title='en la de',
+            objective='en la de el un',
+        )
+        card_short = registry.pick_card_for_task(task_short)
+        assert card_short is not None
+
+        task_specific = ToolTask(
+            tool_id='',
+            title='diagnostico',
+            objective='diagnostico avanzado problemas',
+        )
+        card_specific = registry.pick_card_for_task(task_specific)
+        assert card_specific is not None
+        assert card_specific.tool_id == 'specific_tool', (
+            f'Expected specific_tool (best match for diagnostico/avanzado/problemas) '
+            f'but got {card_specific.tool_id}'
+        )
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def test_tool_registry_skips_rechecking_fresh_card() -> None:
     root = _workspace('tool_registry_fresh_cache')
     try:

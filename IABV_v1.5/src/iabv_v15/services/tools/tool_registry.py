@@ -39,20 +39,26 @@ class ToolRegistry:
     def get_card(self, tool_id: str) -> ToolCard | None:
         return self.repository.get_card(tool_id)
 
+    _PICK_MIN_TOKEN_LENGTH = 3
+
     def pick_card_for_task(self, task: ToolTask) -> ToolCard | None:
         if task.tool_id:
             card = self.get_card(task.tool_id)
             if card is not None:
                 return self.refresh_card(card)
         objective = (task.objective + ' ' + task.title).lower()
+        tokens = [t for t in objective.split() if len(t) >= self._PICK_MIN_TOKEN_LENGTH]
+        best_card: ToolCard | None = None
+        best_score = 0
         for card in self.list_cards():
-            score = 0
-            joined = ' '.join([card.title, card.description, card.adapter_key, ' '.join(card.capabilities)]).lower()
-            for token in objective.split():
-                if token and token in joined:
-                    score += 1
-            if score > 0:
-                return self.refresh_card(card)
+            words = ' '.join([card.title, card.description, card.adapter_key, ' '.join(card.capabilities)]).lower().split()
+            word_set = set(words)
+            score = sum(1 for token in tokens if token in word_set)
+            if score > best_score:
+                best_score = score
+                best_card = card
+        if best_card is not None:
+            return self.refresh_card(best_card)
         cards = self.list_cards()
         return self.refresh_card(cards[0]) if cards else None
 
