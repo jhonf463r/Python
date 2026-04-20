@@ -1268,6 +1268,22 @@ def test_synaptic_task_kind_mapping_is_empty_for_local_chat() -> None:
         assert _synaptic_task_kind_from_intent(intent) == ''
 
 
+def test_synaptic_task_kind_mapping_for_browser_search() -> None:
+    intent = TaskIntent(
+        intent_key='browser.search',
+        detected_role=TaskRole.KNOWLEDGE,
+    )
+    assert _synaptic_task_kind_from_intent(intent) == 'retrieval_augmented'
+
+
+def test_synaptic_task_kind_mapping_for_browser_navigate() -> None:
+    intent = TaskIntent(
+        intent_key='browser.navigate',
+        detected_role=TaskRole.KNOWLEDGE,
+    )
+    assert _synaptic_task_kind_from_intent(intent) == 'web_browsing'
+
+
 def test_orchestrator_injects_synaptic_route_for_code_generation_goal() -> None:
     orchestrator, _ = _orchestrator(_workspace('adaptive_h6_code_gen'))
     stub = _StubSynapticRouter(routing_enabled=True, selected_kind='codex')
