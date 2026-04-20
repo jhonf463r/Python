@@ -36,7 +36,7 @@ import os
 from dataclasses import asdict, is_dataclass
 from typing import Any
 
-from iabv_v15.infra.mcp import audit_tools
+from iabv_v15.infra.mcp import audit_tools, audit_tools_observation
 
 logger = logging.getLogger(__name__)
 
@@ -644,6 +644,68 @@ class IABVMCPServer:
                 )
             except audit_tools.AuditToolError as exc:
                 return exc.to_payload()
+
+        # ------------------------------------------------------------
+        # === F1.3 observation tools ===
+        #
+        # Read-only, cross-platform cuando es posible, degradan explícito a
+        # payloads `{error, detail}` si la dependencia nativa falta. Todas
+        # pasan por governance gate `assistant_kind='audit'`, sin red.
+
+        @mcp.tool()
+        def list_open_windows() -> dict[str, Any]:
+            """Lista ventanas top-level visibles (Windows, pywin32).
+
+            Fuera de Windows o sin pywin32 devuelve
+            ``{error: 'not_supported_platform' | 'dependency_missing'}``.
+            """
+
+            block = self._governance_block_for_route(
+                assistant_kind="audit",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
+            return audit_tools_observation.list_open_windows()
+
+        @mcp.tool()
+        def list_running_processes(limit: int = audit_tools_observation.MAX_PROCESSES_DEFAULT) -> dict[str, Any]:
+            """Lista procesos del sistema vía psutil (cross-platform).
+
+            `cmdline` viene sanitizado (redacta flags con tokens/secrets).
+            """
+
+            block = self._governance_block_for_route(
+                assistant_kind="audit",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
+            return audit_tools_observation.list_running_processes(limit=int(limit))
+
+        @mcp.tool()
+        def read_clipboard() -> dict[str, Any]:
+            """Lee texto del portapapeles (pyperclip con fallback tkinter)."""
+
+            block = self._governance_block_for_route(
+                assistant_kind="audit",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
+            return audit_tools_observation.read_clipboard()
+
+        @mcp.tool()
+        def dump_qml_tree(max_nodes: int = audit_tools_observation.MAX_QML_NODES) -> dict[str, Any]:
+            """Dumpa el árbol QObject/QQuickItem de la UI IABV si corre en este proceso."""
+
+            block = self._governance_block_for_route(
+                assistant_kind="audit",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
+            return audit_tools_observation.dump_qml_tree(max_nodes=int(max_nodes))
 
         # ------------------------------------------------------------
         # Frente 2 — Self audit tool
