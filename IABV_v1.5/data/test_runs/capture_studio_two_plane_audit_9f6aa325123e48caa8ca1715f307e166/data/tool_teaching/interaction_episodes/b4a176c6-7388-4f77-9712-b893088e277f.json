@@ -1,0 +1,269 @@
+{
+  "interaction_episode_id": "b4a176c6-7388-4f77-9712-b893088e277f",
+  "objective": "Iniciar sesion y llegar al panel principal.",
+  "mode_used": "ui",
+  "environment": {
+    "tool_id": "playwright_browser",
+    "tool_type": "browser",
+    "site_id": "wplay",
+    "display_name": "Wplay",
+    "expected_outcome": "Panel principal visible."
+  },
+  "captured_metadata": {
+    "episode_id": "f3230a72-184f-47c1-9201-627aed95a36a",
+    "step_count": 3,
+    "relevant_step_count": 2,
+    "capture_stats": {},
+    "visual_summary": {
+      "learning_coverage_score": 1.5,
+      "visual_alignment_score": 0.5,
+      "manual_correction_count": 0,
+      "critical_object_coverage": 1.0,
+      "login_visual_completeness": 1.0,
+      "known_count": 1,
+      "uncertain_count": 2,
+      "missing_count": 0,
+      "green_count": 1,
+      "orange_count": 2,
+      "red_count": 0,
+      "user_corrected_count": 0
+    }
+  },
+  "actions": [
+    {
+      "step_id": "27e054c5-9055-4cd2-a8f3-6ea0f8737b89",
+      "channel": "ui",
+      "operation": "click",
+      "target": "#submit-login",
+      "value_hint": "",
+      "expected_signal": "button",
+      "confidence": 0.92,
+      "metadata": {
+        "selector": "#submit-login",
+        "role": "button",
+        "capture_channel": "visible",
+        "has_screenshot": true
+      },
+      "action_id": "294770b1-622b-4c66-ae70-0a2744d9d206",
+      "started_at_utc": "2026-04-20T01:52:52.148977Z",
+      "finished_at_utc": "2026-04-20T01:52:52.148977Z",
+      "destructive": false,
+      "requires_approval": false
+    },
+    {
+      "step_id": "1f8fb39f-b5b9-4237-b1ce-b9b769ae00f3",
+      "channel": "background",
+      "operation": "scroll",
+      "target": "body",
+      "value_hint": "",
+      "expected_signal": "document",
+      "confidence": 0.68,
+      "metadata": {
+        "selector": "body",
+        "role": "document",
+        "capture_channel": "background",
+        "has_screenshot": false
+      },
+      "action_id": "3b3d552b-2f62-421f-a140-be02eabf6cec",
+      "started_at_utc": "2026-04-20T01:52:52.151774Z",
+      "finished_at_utc": "2026-04-20T01:52:52.151774Z",
+      "destructive": false,
+      "requires_approval": false
+    }
+  ],
+  "result": {
+    "interaction_result_id": "8a9a1488-a148-44cb-8b33-84ca1c3b35ec",
+    "success": true,
+    "execution_state": {
+      "state": "observed",
+      "detail": "Visible 1, relevantes 1, capturas 1, canales 3, login partial, acuerdo visual 0.00.",
+      "executor_name": "teaching_replay_bridge",
+      "sandboxed": true,
+      "validated": true,
+      "approval_decision": "skipped",
+      "destructive_blocked": false,
+      "metadata": {
+        "learning_status": "insufficient",
+        "login_status": "partial",
+        "episode_id": "f3230a72-184f-47c1-9201-627aed95a36a"
+      }
+    },
+    "summary": "Visible 1, relevantes 1, capturas 1, canales 3, login partial, acuerdo visual 0.00.",
+    "errors": [
+      "falta detectar un campo de correo o usuario",
+      "falta detectar un campo de contrasena",
+      "falta evidencia solida de que la sesion quedo autenticada"
+    ],
+    "confidence": 0.6799999999999999,
+    "execution_ms": 0,
+    "rollback_state": null,
+    "extracted_data": {
+      "learning_status": "insufficient",
+      "login_status": "partial",
+      "critical_object_coverage": 1.0,
+      "login_visual_completeness": 1.0
+    },
+    "artifacts": [
+      "f3230a72-184f-47c1-9201-627aed95a36a",
+      "/home/ubuntu/repos/Python/IABV_v1.5/data/test_runs/capture_studio_two_plane_audit_9f6aa325123e48caa8ca1715f307e166/data/screenshots/f3230a72-184f-47c1-9201-627aed95a36a/visible_step.png",
+      "visual_summary:f3230a72-184f-47c1-9201-627aed95a36a"
+    ],
+    "metadata": {
+      "source": "teaching_session",
+      "bundle_id": "f0ad9881-ab49-4a29-b5cb-5617abafd2d5"
+    }
+  },
+  "errors": [
+    "falta detectar un campo de correo o usuario",
+    "falta detectar un campo de contrasena",
+    "falta evidencia solida de que la sesion quedo autenticada"
+  ],
+  "evidence": [
+    {
+      "evidence_id": "f9576ba1-08af-438e-be0a-b6f01c6ce6c8",
+      "kind": "episode",
+      "label": "Episodio de ensenanza",
+      "ref_id": "f3230a72-184f-47c1-9201-627aed95a36a",
+      "path": null,
+      "metadata": {},
+      "confidence": 0.6799999999999999
+    },
+    {
+      "evidence_id": "97d5f7a7-1c08-478c-addf-dcc17c228e31",
+      "kind": "screenshot",
+      "label": "Captura guiada",
+      "ref_id": "/home/ubuntu/repos/Python/IABV_v1.5/data/test_runs/capture_studio_two_plane_audit_9f6aa325123e48caa8ca1715f307e166/data/screenshots/f3230a72-184f-47c1-9201-627aed95a36a/visible_step.png",
+      "path": "/home/ubuntu/repos/Python/IABV_v1.5/data/test_runs/capture_studio_two_plane_audit_9f6aa325123e48caa8ca1715f307e166/data/screenshots/f3230a72-184f-47c1-9201-627aed95a36a/visible_step.png",
+      "metadata": {},
+      "confidence": 0.7799999999999999
+    },
+    {
+      "evidence_id": "3a5bed1c-6bff-4661-adaa-bd40431e91aa",
+      "kind": "log",
+      "label": "Resumen visual de aprendizaje",
+      "ref_id": "visual_summary:f3230a72-184f-47c1-9201-627aed95a36a",
+      "path": null,
+      "metadata": {
+        "green_count": 1,
+        "orange_count": 2,
+        "red_count": 0
+      },
+      "confidence": 0.6799999999999999
+    }
+  ],
+  "learning_signals": [
+    {
+      "signal_id": "51416358-5863-46f7-8ce6-2511fb594fbf",
+      "label": "teaching:insufficient",
+      "channel": "ui",
+      "signal_type": "teaching_bundle",
+      "confidence": 0.6799999999999999,
+      "source": "interaction_learning_service",
+      "evidence_refs": [
+        "f3230a72-184f-47c1-9201-627aed95a36a",
+        "/home/ubuntu/repos/Python/IABV_v1.5/data/test_runs/capture_studio_two_plane_audit_9f6aa325123e48caa8ca1715f307e166/data/screenshots/f3230a72-184f-47c1-9201-627aed95a36a/visible_step.png",
+        "visual_summary:f3230a72-184f-47c1-9201-627aed95a36a"
+      ],
+      "metadata": {
+        "pattern_id": "d42473d0-7803-4388-a10c-893dbde7e2bd"
+      }
+    },
+    {
+      "signal_id": "ee9f8a8e-ea25-406a-98d7-f4474b7a2c80",
+      "label": "pattern:ui:playwright_browser",
+      "channel": "ui",
+      "signal_type": "pattern_reuse",
+      "confidence": 0.6799999999999999,
+      "source": "interaction_learning_service",
+      "evidence_refs": [],
+      "metadata": {
+        "pattern_id": "d42473d0-7803-4388-a10c-893dbde7e2bd"
+      }
+    },
+    {
+      "signal_id": "3ded2ec5-b392-477c-9696-3d066318ac05",
+      "label": "login:partial",
+      "channel": "ui",
+      "signal_type": "login_learning",
+      "confidence": 1.0,
+      "source": "interaction_learning_service",
+      "evidence_refs": [],
+      "metadata": {}
+    }
+  ],
+  "confidence": 0.6799999999999999,
+  "human_approval": false,
+  "policy_decision": {
+    "decision_id": "8af3f136-e346-4ca8-b452-13f19cfdbfe9",
+    "requires_human_approval": false,
+    "approval_decision": "skipped",
+    "blocked": false,
+    "rationale": "Ensenanza observada y consolidada para memoria universal.",
+    "confidence": 0.6799999999999999,
+    "metadata": {
+      "source": "teaching_session"
+    }
+  },
+  "selector_name": "teaching_replay_bridge",
+  "selector_reason": "Nueva ensenanza consolidada desde replay y learning bundle.",
+  "pattern_id": "d42473d0-7803-4388-a10c-893dbde7e2bd",
+  "reused_pattern": false,
+  "tool_id": "playwright_browser",
+  "tool_type": "browser",
+  "task_id": "teaching:f3230a72-184f-47c1-9201-627aed95a36a",
+  "result_id": "8a9a1488-a148-44cb-8b33-84ca1c3b35ec",
+  "site_id": "wplay",
+  "created_at_utc": "2026-04-20T01:52:52.156996Z",
+  "updated_at_utc": "2026-04-20T01:52:52.156996Z",
+  "metadata": {
+    "source": "teaching_session",
+    "teaching_episode_id": "f3230a72-184f-47c1-9201-627aed95a36a",
+    "bundle_id": "f0ad9881-ab49-4a29-b5cb-5617abafd2d5",
+    "expected_outcome": "Panel principal visible.",
+    "notes": "No compartir secretos.",
+    "display_name": "Wplay",
+    "learning_signals": [
+      {
+        "signal_id": "51416358-5863-46f7-8ce6-2511fb594fbf",
+        "label": "teaching:insufficient",
+        "channel": "ui",
+        "signal_type": "teaching_bundle",
+        "confidence": 0.6799999999999999,
+        "source": "interaction_learning_service",
+        "evidence_refs": [
+          "f3230a72-184f-47c1-9201-627aed95a36a",
+          "/home/ubuntu/repos/Python/IABV_v1.5/data/test_runs/capture_studio_two_plane_audit_9f6aa325123e48caa8ca1715f307e166/data/screenshots/f3230a72-184f-47c1-9201-627aed95a36a/visible_step.png",
+          "visual_summary:f3230a72-184f-47c1-9201-627aed95a36a"
+        ],
+        "metadata": {
+          "pattern_id": "d42473d0-7803-4388-a10c-893dbde7e2bd"
+        }
+      },
+      {
+        "signal_id": "ee9f8a8e-ea25-406a-98d7-f4474b7a2c80",
+        "label": "pattern:ui:playwright_browser",
+        "channel": "ui",
+        "signal_type": "pattern_reuse",
+        "confidence": 0.6799999999999999,
+        "source": "interaction_learning_service",
+        "evidence_refs": [],
+        "metadata": {
+          "pattern_id": "d42473d0-7803-4388-a10c-893dbde7e2bd"
+        }
+      },
+      {
+        "signal_id": "3ded2ec5-b392-477c-9696-3d066318ac05",
+        "label": "login:partial",
+        "channel": "ui",
+        "signal_type": "login_learning",
+        "confidence": 1.0,
+        "source": "interaction_learning_service",
+        "evidence_refs": [],
+        "metadata": {}
+      }
+    ],
+    "green_count": 1,
+    "orange_count": 2,
+    "red_count": 0
+  }
+}
