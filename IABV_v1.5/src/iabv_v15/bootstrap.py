@@ -572,6 +572,32 @@ class AppBootstrap:
             )
             self.perception_ground_truth_comparator = None
 
+        # PCS v1 — Protocolo Cognitivo Sináptico Inter-IA.
+        # Registro de capacidades + traductor de frame cognitivo. Son
+        # servicios puros (sin estado mutable compartido, sin red) que
+        # alimentan la tool MCP ``cognitive_frame_translate``. Si alguna
+        # dependencia fallara (no debería: ambos son puramente en memoria)
+        # degradamos a ``None`` para no romper el bootstrap.
+        try:
+            from iabv_v15.services.roles.assistant_capability_registry import (
+                AssistantCapabilityRegistry,
+            )
+            from iabv_v15.services.roles.cognitive_frame_translator import (
+                CognitiveFrameTranslator,
+            )
+
+            self.assistant_capability_registry = AssistantCapabilityRegistry.with_defaults()
+            self.cognitive_frame_translator = CognitiveFrameTranslator(
+                capability_registry=self.assistant_capability_registry,
+            )
+        except Exception:  # pragma: no cover - defensive
+            logger.exception(
+                "No se pudo wirear AssistantCapabilityRegistry/CognitiveFrameTranslator; "
+                "la tool MCP cognitive_frame_translate reportará translator_unavailable"
+            )
+            self.assistant_capability_registry = None
+            self.cognitive_frame_translator = None
+
         self.control_master_repository = ControlMasterRepository(self.evolution_storage)
         self.control_master_service = ControlMasterService(
             repository=self.control_master_repository,

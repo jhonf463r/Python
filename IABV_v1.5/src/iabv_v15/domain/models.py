@@ -2763,3 +2763,22 @@ class AssistantCapabilityProfile(BaseModel):
     confidence: float = 0.0
     unresolved_fields: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class CognitiveFramePayload(BaseModel):
+    """Renderización determinística de un `PerceptionSnapshot` para una IA.
+
+    Producto del `CognitiveFrameTranslator`: dado un perception + un
+    ``AssistantFrameKind``, devuelve un payload estructurado + texto plano
+    listo para inyectar como system/context prompt. No hace inferencia:
+    todo es format determinístico.
+    """
+
+    frame: AssistantFrameKind
+    target_assistant_kind: str
+    sections: list[dict[str, Any]] = Field(default_factory=list)
+    plain_text_rendering: str = ""
+    token_estimate: int = 0
+    evidence_refs: list[str] = Field(default_factory=list)
+    unresolved_fields: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)

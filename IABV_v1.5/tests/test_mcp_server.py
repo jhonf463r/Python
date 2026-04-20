@@ -224,6 +224,8 @@ def test_server_registers_core_tools() -> None:
         "compare_perception_vs_ground_truth",
         "embodiment_manifest",
         "embodiment_violations_current",
+        "cognitive_frame_translate",
+        "assistant_capabilities_list",
     }
     assert expected <= registered, f"faltan tools: {expected - registered}"
 
