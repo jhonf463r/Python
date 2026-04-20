@@ -3735,3 +3735,154 @@ def test_control_center_emits_provider_health_changed() -> None:
     finally:
         _cleanup_bootstrap(bootstrap)
 
+
+# ----------------------------------------------------------------------
+# Frente 2 — botón "Auditarme ahora"
+#
+# El slot `runSelfAuditNow(reason)` dispara `SelfAuditService.run(reason=...)`
+# en un hilo background y emite `selfAuditStarted` al arrancar y
+# `selfAuditCompleted(json)` / `selfAuditFailed(detail)` al terminar. La
+# property `lastSelfAuditSummary` se actualiza con el `summary_markdown`
+# del snapshot. Los tests usan un `SelfAuditService` fake (sincrónico) y
+# esperan al worker para evitar condiciones de carrera.
+
+
+class _FakeAuditServiceForVM:
+    def __init__(self, snapshot: object | None = None, *, raise_exc: Exception | None = None) -> None:
+        from datetime import datetime, timezone
+
+        from iabv_v15.domain.models import EnvironmentMatchResult, SelfAuditSnapshot
+
+        self._snapshot = snapshot or SelfAuditSnapshot(
+            generated_at=datetime(2025, 4, 19, 12, 0, 0, tzinfo=timezone.utc),
+            reason=None,
+            tool_checks=[],
+            environment_match=EnvironmentMatchResult(
+                matched=True,
+                mismatches=[],
+                environment_digest="env",
+                world_model_digest="wm",
+            ),
+            pending_issues=[],
+            world_model_digest={"available": True},
+            summary_markdown="# Auditoría VM — resumen de prueba",
+        )
+        self._raise_exc = raise_exc
+        self.calls: list[str | None] = []
+
+    def run(self, *, reason: str | None = None):
+        self.calls.append(reason)
+        if self._raise_exc is not None:
+            raise self._raise_exc
+        return self._snapshot
+
+
+def _wait_for(predicate, *, timeout_seconds: float = 5.0) -> bool:
+    import time
+
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        if predicate():
+            return True
+        time.sleep(0.02)
+    return predicate()
+
+
+def test_control_center_run_self_audit_emits_completed_and_updates_summary() -> None:
+    import json
+
+    bootstrap = _make_bootstrap('test_cc_self_audit_happy')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+
+        fake = _FakeAuditServiceForVM()
+        viewmodel.self_audit_service = fake
+
+        started = {'n': 0}
+        completed = {'payload': None}
+        failed = {'detail': None}
+
+        viewmodel.selfAuditStarted.connect(lambda: started.__setitem__('n', started['n'] + 1))
+        viewmodel.selfAuditCompleted.connect(lambda blob: completed.__setitem__('payload', blob))
+        viewmodel.selfAuditFailed.connect(lambda detail: failed.__setitem__('detail', detail))
+
+        viewmodel.runSelfAuditNow('ui_trigger')
+
+        assert _wait_for(lambda: completed['payload'] is not None)
+        assert started['n'] == 1
+        assert failed['detail'] is None
+        assert fake.calls == ['ui_trigger']
+        payload = json.loads(completed['payload'])
+        assert payload['summary_markdown'].startswith('# Auditoría VM')
+        assert viewmodel.get_last_self_audit_summary().startswith('# Auditoría VM')
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_control_center_run_self_audit_empty_reason_passes_none() -> None:
+    bootstrap = _make_bootstrap('test_cc_self_audit_empty_reason')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+
+        fake = _FakeAuditServiceForVM()
+        viewmodel.self_audit_service = fake
+
+        completed = {'n': 0}
+        viewmodel.selfAuditCompleted.connect(lambda _blob: completed.__setitem__('n', completed['n'] + 1))
+
+        viewmodel.runSelfAuditNow('')
+
+        assert _wait_for(lambda: completed['n'] == 1)
+        # Frente 2: `reason` vacío se normaliza a None antes de llamar el service.
+        assert fake.calls == [None]
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_control_center_run_self_audit_fails_gracefully_when_service_is_none() -> None:
+    bootstrap = _make_bootstrap('test_cc_self_audit_missing')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+
+        viewmodel.self_audit_service = None
+
+        failed = {'detail': None}
+        completed = {'n': 0}
+        viewmodel.selfAuditFailed.connect(lambda detail: failed.__setitem__('detail', detail))
+        viewmodel.selfAuditCompleted.connect(lambda _blob: completed.__setitem__('n', completed['n'] + 1))
+
+        viewmodel.runSelfAuditNow('probe')
+
+        assert failed['detail'] is not None
+        assert 'self_audit_service' in failed['detail']
+        # Sin service, el snapshot completado NUNCA se emite.
+        assert completed['n'] == 0
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_control_center_run_self_audit_emits_failed_on_service_exception() -> None:
+    bootstrap = _make_bootstrap('test_cc_self_audit_exception')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+
+        fake = _FakeAuditServiceForVM(raise_exc=RuntimeError('boom'))
+        viewmodel.self_audit_service = fake
+
+        failed = {'detail': None}
+        completed = {'n': 0}
+        viewmodel.selfAuditFailed.connect(lambda detail: failed.__setitem__('detail', detail))
+        viewmodel.selfAuditCompleted.connect(lambda _blob: completed.__setitem__('n', completed['n'] + 1))
+
+        viewmodel.runSelfAuditNow('will_fail')
+
+        assert _wait_for(lambda: failed['detail'] is not None)
+        assert 'boom' in failed['detail']
+        assert completed['n'] == 0
+    finally:
+        _cleanup_bootstrap(bootstrap)
+

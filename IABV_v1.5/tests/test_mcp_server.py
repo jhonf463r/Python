@@ -126,6 +126,7 @@ class _FakeContainer:
         ui_screenshot_provider: object | None = None,
         environment_self_model: object | None = None,
         config: object | None = None,
+        self_audit_service: object | None = None,
     ) -> None:
         self.world_model_service = world_model_service
         self.portable_context_service = portable_context_service
@@ -141,6 +142,7 @@ class _FakeContainer:
         self.ui_screenshot_provider = ui_screenshot_provider
         self.environment_self_model = environment_self_model
         self.config = config
+        self.self_audit_service = self_audit_service
 
 
 def _default_snapshot(
@@ -200,7 +202,7 @@ def _call_tool(server: IABVMCPServer, name: str, **kwargs: object) -> object:
     return tool.fn(**kwargs)
 
 
-def test_server_registers_six_core_tools() -> None:
+def test_server_registers_core_tools() -> None:
     server = IABVMCPServer(_build_container())
     registered = set(server.mcp._tool_manager._tools.keys())
     expected = {
@@ -210,6 +212,7 @@ def test_server_registers_six_core_tools() -> None:
         "portable_context_get",
         "self_examination_current",
         "chatgpt_web_capture",
+        "run_self_audit",
     }
     assert expected <= registered, f"faltan tools: {expected - registered}"
 
@@ -615,3 +618,172 @@ def test_pytest_python_executable_returns_none_when_no_candidates(monkeypatch) -
     monkeypatch.delenv("IABV_PYTEST_PYTHON", raising=False)
     server = IABVMCPServer(_build_container())
     assert server._pytest_python_executable() is None
+
+
+# ----------------------------------------------------------------------
+# Frente 2 — `run_self_audit`: ejecuta el SelfAuditService (read-only) con
+# governance gate `assistant_kind='audit'` (fail-closed). El snapshot se
+# serializa; si el service no está en el container, devuelve un payload
+# degradado `{"error": "self_audit_unavailable", ...}` en vez de crashear.
+from datetime import datetime, timezone  # noqa: E402
+
+from iabv_v15.domain.models import (  # noqa: E402
+    EnvironmentMatchResult,
+    SelfAuditSnapshot,
+    ToolCheckResult,
+)
+
+
+class _FakeSelfAuditService:
+    def __init__(self, snapshot: SelfAuditSnapshot | None = None, *, raise_exc: Exception | None = None) -> None:
+        self._snapshot = snapshot or _default_audit_snapshot()
+        self._raise_exc = raise_exc
+        self.calls: list[str | None] = []
+
+    def run(self, *, reason: str | None = None) -> SelfAuditSnapshot:
+        self.calls.append(reason)
+        if self._raise_exc is not None:
+            raise self._raise_exc
+        return self._snapshot
+
+
+def _default_audit_snapshot(*, reason: str | None = None) -> SelfAuditSnapshot:
+    return SelfAuditSnapshot(
+        generated_at=datetime(2025, 4, 19, 12, 0, 0, tzinfo=timezone.utc),
+        reason=reason,
+        tool_checks=[
+            ToolCheckResult(tool_id="codex", available=True, status="ready", reason=None, evidence={"adapter_key": "codex_cli"}),
+            ToolCheckResult(tool_id="chatgpt_web", available=False, status="missing", reason="adapter reported tool as not available", evidence={"adapter_key": "chatgpt_web"}),
+        ],
+        environment_match=EnvironmentMatchResult(
+            matched=True,
+            mismatches=[],
+            environment_digest="env-digest",
+            world_model_digest="wm-digest",
+        ),
+        pending_issues=["issue-1"],
+        world_model_digest={"available": True, "tool_live_ids": ["codex"], "network_connected": True},
+        summary_markdown="# Auditoría operativa — IABV v1.5\n- Tools OK: 1 / 2",
+    )
+
+
+def test_run_self_audit_registered_and_returns_serialized_snapshot() -> None:
+    audit = _FakeSelfAuditService(_default_audit_snapshot(reason="ok"))
+    server = IABVMCPServer(_build_container(self_audit_service=audit))
+    payload = _call_tool(server, "run_self_audit", reason="ok")
+
+    assert isinstance(payload, dict)
+    assert payload.get("reason") == "ok"
+    assert "tool_checks" in payload
+    assert len(payload["tool_checks"]) == 2
+    assert {c["tool_id"] for c in payload["tool_checks"]} == {"codex", "chatgpt_web"}
+    assert payload["environment_match"]["matched"] is True
+    assert payload["summary_markdown"].startswith("# Auditoría operativa")
+    assert payload["world_model_digest"]["available"] is True
+    # el reason se propaga al service con el mismo valor recibido por el tool.
+    assert audit.calls == ["ok"]
+
+
+def test_run_self_audit_without_reason_passes_none() -> None:
+    audit = _FakeSelfAuditService()
+    server = IABVMCPServer(_build_container(self_audit_service=audit))
+    payload = _call_tool(server, "run_self_audit")
+    assert isinstance(payload, dict)
+    assert audit.calls == [None]
+
+
+def test_run_self_audit_degrades_when_container_missing_service() -> None:
+    server = IABVMCPServer(_build_container(self_audit_service=None))
+    payload = _call_tool(server, "run_self_audit", reason="probe")
+
+    assert payload.get("error") == "self_audit_unavailable"
+    assert "container.self_audit_service" in payload.get("detail", "")
+
+
+def test_run_self_audit_serializes_datetime_as_isoformat() -> None:
+    audit = _FakeSelfAuditService()
+    server = IABVMCPServer(_build_container(self_audit_service=audit))
+    payload = _call_tool(server, "run_self_audit")
+    # _to_jsonable convierte datetime -> ISO 8601 con separador 'T'.
+    assert isinstance(payload["generated_at"], str)
+    assert payload["generated_at"] == "2025-04-19T12:00:00+00:00"
+
+
+def test_run_self_audit_blocked_by_operational_block_on_audit_kind() -> None:
+    block = OperationalBlockRecord(
+        block_type="observation_denied",
+        assistant_kind="audit",
+        title="Permiso denegado para autoauditoría",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
+    audit = _FakeSelfAuditService()
+    server = IABVMCPServer(_build_container(world_model_service=wm, self_audit_service=audit))
+    payload = _call_tool(server, "run_self_audit", reason="should_block")
+
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "operational_block_active"
+    # Gate fail-closed: el service NUNCA se ejecuta cuando governance bloquea.
+    assert audit.calls == []
+
+
+def test_run_self_audit_blocked_by_global_block_record() -> None:
+    block = OperationalBlockRecord(
+        block_type="system_paused",
+        assistant_kind="*",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
+    audit = _FakeSelfAuditService()
+    server = IABVMCPServer(_build_container(world_model_service=wm, self_audit_service=audit))
+    payload = _call_tool(server, "run_self_audit")
+
+    assert payload["governance_blocked"] is True
+    assert audit.calls == []
+
+
+def test_run_self_audit_blocked_by_permission_gate_for_audit() -> None:
+    gate = ObservationPermissionGate(
+        scope="audit",
+        assistant_kind="audit",
+        title="Permiso para autoauditoría",
+        status="requerido",
+        granted=False,
+    )
+    wm = _FakeWorldModelService(_default_snapshot(gates=[gate]))
+    audit = _FakeSelfAuditService()
+    server = IABVMCPServer(_build_container(world_model_service=wm, self_audit_service=audit))
+    payload = _call_tool(server, "run_self_audit")
+
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "permission_gate_required"
+    assert audit.calls == []
+
+
+def test_run_self_audit_ignores_blocks_scoped_to_other_assistant_kinds() -> None:
+    """Un block_record para otra ruta (p.ej. chatgpt_web) NO debe bloquear audit."""
+
+    other = OperationalBlockRecord(
+        block_type="cloudflare_turnstile",
+        assistant_kind="chatgpt_web",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[other]))
+    audit = _FakeSelfAuditService()
+    server = IABVMCPServer(_build_container(world_model_service=wm, self_audit_service=audit))
+    payload = _call_tool(server, "run_self_audit", reason="independent")
+
+    assert "governance_blocked" not in payload
+    assert audit.calls == ["independent"]
+
+
+def test_run_self_audit_does_not_require_network() -> None:
+    """La ruta `audit` es offline; red desconectada NO debe bloquear."""
+
+    wm = _FakeWorldModelService(_default_snapshot(connected=False))
+    audit = _FakeSelfAuditService()
+    server = IABVMCPServer(_build_container(world_model_service=wm, self_audit_service=audit))
+    payload = _call_tool(server, "run_self_audit")
+
+    assert "governance_blocked" not in payload
+    assert audit.calls == [None]

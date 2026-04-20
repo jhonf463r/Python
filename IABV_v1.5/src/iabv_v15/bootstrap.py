@@ -84,6 +84,7 @@ from iabv_v15.services.evolution.mcp_bridge_service import (
     build_mcp_bridge_service,
 )
 from iabv_v15.services.evolution.portable_context_service import PortableContextService
+from iabv_v15.services.evolution.self_audit_service import SelfAuditService
 from iabv_v15.services.evolution.tool_discovery_service import ToolDiscoveryService
 from iabv_v15.services.evolution.tool_evolution_monitor import ToolEvolutionMonitor
 from iabv_v15.services.evolution.autonomous_evolution_service import AutonomousEvolutionService
@@ -443,6 +444,14 @@ class AppBootstrap:
             tool_discovery_service=self.tool_discovery_service,
             tool_evolution_monitor=self.tool_evolution_monitor,
         )
+        self.self_audit_service = SelfAuditService(
+            tool_registry=self.tool_registry,
+            environment_self_model_provider=self.environment_self_awareness_service.current_model,
+            world_model_service=self.world_model_service,
+            operational_self_examination_service=self.operational_self_examination_service,
+            portable_context_service=self.portable_context_service,
+            workspace_root=self.config.workspace_root,
+        )
         self.control_master_repository = ControlMasterRepository(self.evolution_storage)
         self.control_master_service = ControlMasterService(
             repository=self.control_master_repository,
@@ -710,6 +719,7 @@ class AppBootstrap:
             mcp_bridge_service=self.mcp_bridge_service,
             control_master_service=self.control_master_service,
             control_master_digest_builder=self.control_master_digest_builder,
+            self_audit_service=self.self_audit_service,
         )
         self.capture_studio_viewmodel = CaptureStudioViewModel(
             config=self.config,
