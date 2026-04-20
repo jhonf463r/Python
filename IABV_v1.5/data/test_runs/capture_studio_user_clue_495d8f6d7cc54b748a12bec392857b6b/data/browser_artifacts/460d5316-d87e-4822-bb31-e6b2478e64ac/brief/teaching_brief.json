@@ -1,0 +1,16 @@
+{
+  "lesson_title": "Login guiado",
+  "target_label": "Google",
+  "start_url": "https://www.google.com",
+  "objective": "Abrir Google y capturar visible.",
+  "expected_outcome": "Google visible.",
+  "notes": "Prueba tecnica.",
+  "site_id": "generic_web",
+  "display_name": "Sitio web generico",
+  "capture_channels": {
+    "visible": true,
+    "background": true,
+    "api": true
+  },
+  "capture_mode": "browser_live"
+}

@@ -452,6 +452,83 @@ class AppBootstrap:
             portable_context_service=self.portable_context_service,
             workspace_root=self.config.workspace_root,
         )
+        # Frente 3.2 — CapabilityAuditHarness: registra runners para las 5
+        # capacidades iniciales usando piezas que ya existen en el bootstrap.
+        # Se hace acá, bien tarde en el wiring, para garantizar que todas las
+        # dependencias estén ya construidas. Si alguna falla (por ejemplo,
+        # Playwright no está instalado), se reporta por ``harness.run()`` con
+        # un error tipado; no rompemos el bootstrap.
+        from iabv_v15.services.evolution.capability_audit_harness import (
+            CapabilityAuditHarness,
+        )
+        from iabv_v15.infra.mcp.audit_tools.audit_capability import (
+            build_browser_capture_runner,
+            build_llm_external_runner,
+            build_llm_local_ollama_runner,
+            build_ui_execution_runner,
+        )
+
+        self.capability_audit_harness = CapabilityAuditHarness()
+        self.capability_audit_harness.register(
+            "llm_local_ollama",
+            build_llm_local_ollama_runner(self.general_provider),
+        )
+
+        from typing import Any as _Any
+
+        def _probe_login_closure(kind: str) -> dict[str, _Any]:
+            # Usa el entrypoint puro; el gate de governance lo aplica la MCP
+            # tool, no el harness. Acá sólo ejecutamos la sonda.
+            from iabv_v15.infra.mcp.audit_tools.probe_assistant_login import (
+                probe_assistant_login as _probe,
+            )
+
+            return _probe(kind, use_browser_session=True, timeout_seconds=10.0)
+
+        for _assistant_kind in ("chatgpt", "claude"):
+            self.capability_audit_harness.register(
+                f"llm_external_{_assistant_kind}",
+                build_llm_external_runner(
+                    _assistant_kind,
+                    probe_login=_probe_login_closure,
+                ),
+            )
+
+        def _browser_controller_factory() -> _Any:
+            # Reusa el controller existente de Browser Teach Mode
+            # (``BrowserSessionController``). Si Playwright no está
+            # instalado o el constructor falla, devolvemos None y el
+            # runner reporta ``playwright_unavailable``/``controller_init_failed``
+            # sin romper el bootstrap.
+            try:
+                from iabv_v15.services.capture.browser_session_controller import (
+                    BrowserSessionController,
+                )
+            except Exception:
+                return None
+            try:
+                return BrowserSessionController(headless=True)
+            except Exception:
+                return None
+
+        self.capability_audit_harness.register(
+            "browser_capture",
+            build_browser_capture_runner(_browser_controller_factory),
+        )
+
+        def _ui_executor(**_kwargs: _Any) -> dict[str, _Any]:
+            from iabv_v15.services.tools.ui_execution_runner import UIExecutionRunner
+
+            runner = UIExecutionRunner(workspace_root=str(self.config.workspace_root))
+            return {
+                "success": True,
+                "output_text": f"noop@{runner.__class__.__name__}",
+            }
+
+        self.capability_audit_harness.register(
+            "ui_execution",
+            build_ui_execution_runner(_ui_executor),
+        )
         self.control_master_repository = ControlMasterRepository(self.evolution_storage)
         self.control_master_service = ControlMasterService(
             repository=self.control_master_repository,

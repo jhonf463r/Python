@@ -34,7 +34,7 @@
   ],
   "parameter_schema": [
     {
-      "parameter_id": "d396bb02-a439-4972-bad0-20c287c99b80",
+      "parameter_id": "4dbeccb7-d258-49de-b8c4-ed7c74005440",
       "key": "tool_id",
       "label": "Herramienta",
       "description": "ToolCard preferida para esta tarea.",
@@ -46,7 +46,7 @@
       "options": []
     },
     {
-      "parameter_id": "ce14f953-2011-4fda-b50f-556ab85d6248",
+      "parameter_id": "f0bac085-bf41-4a2d-94d6-23f2296eccf6",
       "key": "execution_scope",
       "label": "Scope",
       "description": "Scope operativo de la tarea.",
@@ -79,6 +79,6 @@
     "need_codex_packet"
   ],
   "metadata": {
-    "updated_at_utc": "2026-04-10T22:14:51.599622+00:00"
+    "updated_at_utc": "2026-04-20T02:20:55.483842+00:00"
   }
 }

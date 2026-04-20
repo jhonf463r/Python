@@ -1,0 +1,9 @@
+{
+  "lesson_title": "Wplay login",
+  "target_label": "Wplay",
+  "start_url": "https://www.wplay.co/login",
+  "objective": "Abrir Wplay e iniciar sesion.",
+  "expected_outcome": "Sesion iniciada y panel visible.",
+  "site_id": "wplay",
+  "display_name": "Wplay"
+}

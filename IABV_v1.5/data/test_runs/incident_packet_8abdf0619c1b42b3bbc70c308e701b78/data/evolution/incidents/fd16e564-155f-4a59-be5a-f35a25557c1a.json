@@ -1,0 +1,19 @@
+{
+  "incident_id": "fd16e564-155f-4a59-be5a-f35a25557c1a",
+  "created_at_utc": "2026-04-20T02:02:42.768507Z",
+  "updated_at_utc": "2026-04-20T02:02:42.768511Z",
+  "episode_id": "episode-1",
+  "run_id": null,
+  "site_id": "generic_web",
+  "incident_kind": "navigation_stall",
+  "severity": "high",
+  "status": "open",
+  "summary": "La pestana nueva se quedo cargando sin progreso util.",
+  "probable_cause": "La navegacion quedo atascada al abrir una pestana nueva.",
+  "detail": "",
+  "affected_url": "https://www.google.com/search?q=mercadolibre",
+  "recent_urls": [],
+  "evidence_ids": [],
+  "signal_ids": [],
+  "metadata": {}
+}

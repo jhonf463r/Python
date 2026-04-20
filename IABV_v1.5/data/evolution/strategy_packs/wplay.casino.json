@@ -47,7 +47,7 @@
   ],
   "parameter_schema": [
     {
-      "parameter_id": "e6f13b4d-14e7-49f9-a26c-40a513745290",
+      "parameter_id": "0f87ab61-717d-4a60-9943-af5f163e68b2",
       "key": "bankroll_units",
       "label": "Bankroll base",
       "description": "Unidad base para la estrategia.",
@@ -59,7 +59,7 @@
       "options": []
     },
     {
-      "parameter_id": "ed5d6897-7694-4b72-bbb2-1efeb827082e",
+      "parameter_id": "1db79a01-c057-4a9d-b063-9d25ea339e7e",
       "key": "stop_gain_pct",
       "label": "Stop gain %",
       "description": "Corte de ganancia.",
@@ -71,7 +71,7 @@
       "options": []
     },
     {
-      "parameter_id": "8a90f79e-5f29-4913-aa5b-913770982a7e",
+      "parameter_id": "83ba489e-1860-467f-8336-185bfe9819de",
       "key": "stop_loss_pct",
       "label": "Stop loss %",
       "description": "Corte de perdida.",
@@ -83,7 +83,7 @@
       "options": []
     },
     {
-      "parameter_id": "d9d88c9c-3188-4161-93a0-246ca90bcf9f",
+      "parameter_id": "27ffd62e-baa6-49a0-a6a1-193c1d1e888c",
       "key": "table_hint",
       "label": "Mesa objetivo",
       "description": "Preferencia de mesa o juego.",
@@ -113,6 +113,6 @@
     "approval_pending"
   ],
   "metadata": {
-    "updated_at_utc": "2026-04-10T22:14:51.585053+00:00"
+    "updated_at_utc": "2026-04-20T02:20:55.480778+00:00"
   }
 }

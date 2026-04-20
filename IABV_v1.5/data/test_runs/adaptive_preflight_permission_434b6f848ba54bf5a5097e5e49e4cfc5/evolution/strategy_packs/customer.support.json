@@ -1,0 +1,42 @@
+{
+  "pack_id": "customer.support",
+  "title": "Soporte al cliente local",
+  "domain_kind": "customer",
+  "supported_intents": [
+    "customer.support"
+  ],
+  "required_capabilities": [
+    "customer.support.local"
+  ],
+  "required_context": [
+    "knowledge_hits",
+    "recent_runs"
+  ],
+  "available_algorithms": [
+    {
+      "algorithm_id": "templated_support",
+      "title": "Respuesta con plantilla local",
+      "summary": "Cruza conocimiento y trazas recientes para responder de forma operativa.",
+      "parameter_keys": [],
+      "success_signals": [],
+      "fallback_signals": [],
+      "notes": ""
+    }
+  ],
+  "parameter_schema": [],
+  "risk_level": "low",
+  "approval_policy": "never",
+  "execution_templates": [
+    "buscar conocimiento",
+    "responder"
+  ],
+  "success_signals": [
+    "respuesta con contexto"
+  ],
+  "fallback_signals": [
+    "need_more_knowledge"
+  ],
+  "metadata": {
+    "updated_at_utc": "2026-04-20T02:21:13.056327+00:00"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "pattern_id": "8b896137-cf9d-4dc0-b9fe-d035b904f725",
+  "signature": "sig-replay-wplay",
+  "title": "Replay login Wplay",
+  "channel": "ui",
+  "tool_id": "playwright_browser",
+  "tool_type": "browser",
+  "site_id": "wplay",
+  "operations": [],
+  "reusable": true,
+  "success_count": 2,
+  "failure_count": 0,
+  "last_task_id": null,
+  "last_result_id": null,
+  "created_at_utc": "2026-04-20T02:02:43.114267Z",
+  "updated_at_utc": "2026-04-20T02:02:43.114271Z",
+  "metadata": {}
+}

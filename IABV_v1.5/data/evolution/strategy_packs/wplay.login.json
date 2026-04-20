@@ -36,7 +36,7 @@
   ],
   "parameter_schema": [
     {
-      "parameter_id": "fc9763dd-1beb-4c2e-8fbd-d6211555c74f",
+      "parameter_id": "ce2e4349-8fe9-41ae-8f8c-398d5ea8008d",
       "key": "login_mode",
       "label": "Modo de login",
       "description": "Intento preferido antes de la fase guiada.",
@@ -51,7 +51,7 @@
       ]
     },
     {
-      "parameter_id": "7f26f776-a491-497e-97a1-5fd611c8e6cf",
+      "parameter_id": "ab46bda4-1f87-4de6-91d6-04e1ba9fd76b",
       "key": "wait_seconds",
       "label": "Espera maxima",
       "description": "Tiempo maximo de espera para verificar estado.",
@@ -80,6 +80,6 @@
     "need_reteach"
   ],
   "metadata": {
-    "updated_at_utc": "2026-04-10T22:14:51.572930+00:00"
+    "updated_at_utc": "2026-04-20T02:20:55.477759+00:00"
   }
 }

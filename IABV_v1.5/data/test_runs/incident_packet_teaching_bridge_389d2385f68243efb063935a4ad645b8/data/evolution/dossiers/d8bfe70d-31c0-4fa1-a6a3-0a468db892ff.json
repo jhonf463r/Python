@@ -1,0 +1,65 @@
+{
+  "dossier_id": "d8bfe70d-31c0-4fa1-a6a3-0a468db892ff",
+  "created_at_utc": "2026-04-20T01:54:22.017926Z",
+  "scope": "teaching",
+  "title": "Ensenanza de Wplay",
+  "summary": "Pasos: 13 | artefactos: 124 | visible: 12 | capturas: 9 | API guardada: 120 | replay: complete",
+  "run_id": null,
+  "episode_id": "episode-teach-bridge",
+  "status": "partial",
+  "severity": "high",
+  "issue_hint_text": "",
+  "detected_role": null,
+  "model_used": "",
+  "planner_used": false,
+  "tools_used": [],
+  "duration_ms": null,
+  "error_summary": "",
+  "stack_health": [],
+  "metrics": {
+    "visible_step_count": 12,
+    "artifact_count": 124,
+    "api_artifact_count": 120,
+    "replay_quality": "complete"
+  },
+  "evidence_refs": [],
+  "issue_candidates": [],
+  "improvement_proposals": [
+    {
+      "proposal_id": "d083b82d-4505-4632-a0b9-c463e34ec8a1",
+      "title": "Convertir demostracion en conocimiento reusable",
+      "rationale": "La ensenanza dejo suficiente evidencia para revision.",
+      "recommended_change": "Validar el replay y confirmar si la sesion debe pasar a tarea o conocimiento confirmado.",
+      "suggested_tests": [
+        "Replay guiado",
+        "Payload de entrenamiento"
+      ],
+      "tradeoffs": [],
+      "priority_score": 52
+    },
+    {
+      "proposal_id": "d4ee7d7c-7603-486e-886c-2a94f3cb80e6",
+      "title": "Reducir atraso del bridge",
+      "rationale": "La captura visible acumula retraso en el bridge.",
+      "recommended_change": "Ajustar sondeo, tamano de cola y ritmo de drenado sin volver a bloquear la pagina.",
+      "suggested_tests": [
+        "Captura con escritura rapida",
+        "Varias pestanas"
+      ],
+      "tradeoffs": [],
+      "priority_score": 82
+    }
+  ],
+  "self_checks": [],
+  "hidden_incidents": [],
+  "session_health": null,
+  "user_clues": [],
+  "incident_summary": "",
+  "scenario_run_id": null,
+  "probe_diagnosis": null,
+  "runtime_adjustments": [],
+  "pending_issue_id": null,
+  "next_action": "",
+  "codex_brief": "",
+  "metadata": {}
+}

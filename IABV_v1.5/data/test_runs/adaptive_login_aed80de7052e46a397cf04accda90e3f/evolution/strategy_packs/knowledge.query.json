@@ -1,0 +1,43 @@
+{
+  "pack_id": "knowledge.query",
+  "title": "Consulta local con contexto",
+  "domain_kind": "knowledge",
+  "supported_intents": [
+    "knowledge.query",
+    "general.assistance"
+  ],
+  "required_capabilities": [
+    "knowledge.query.local"
+  ],
+  "required_context": [
+    "knowledge_hits",
+    "recent_runs"
+  ],
+  "available_algorithms": [
+    {
+      "algorithm_id": "context_first_answer",
+      "title": "Respuesta local contextual",
+      "summary": "Usa memoria local, ejecuciones recientes y evidencia para responder sin preguntas genericas.",
+      "parameter_keys": [],
+      "success_signals": [],
+      "fallback_signals": [],
+      "notes": ""
+    }
+  ],
+  "parameter_schema": [],
+  "risk_level": "low",
+  "approval_policy": "never",
+  "execution_templates": [
+    "responder",
+    "proponer siguiente paso"
+  ],
+  "success_signals": [
+    "respuesta util"
+  ],
+  "fallback_signals": [
+    "need_context"
+  ],
+  "metadata": {
+    "updated_at_utc": "2026-04-20T01:49:31.569511+00:00"
+  }
+}

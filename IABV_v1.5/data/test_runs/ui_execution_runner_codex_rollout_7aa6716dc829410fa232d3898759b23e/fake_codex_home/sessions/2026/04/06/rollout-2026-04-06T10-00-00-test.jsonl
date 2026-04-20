@@ -1,0 +1,2 @@
+{"timestamp": "2026-04-06T10:00:00Z", "type": "response_item", "payload": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "Pending issue: issue-123\nDiagnostico breve: bridge lag"}]}}
+{"timestamp": "2026-04-06T10:00:05Z", "type": "response_item", "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "Causa raiz probable: El bridge visible acumula eventos. Cambio vertical recomendado: Ajustar drenado y sondeo."}]}}

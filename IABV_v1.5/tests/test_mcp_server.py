@@ -127,6 +127,7 @@ class _FakeContainer:
         environment_self_model: object | None = None,
         config: object | None = None,
         self_audit_service: object | None = None,
+        capability_audit_harness: object | None = None,
     ) -> None:
         self.world_model_service = world_model_service
         self.portable_context_service = portable_context_service
@@ -143,6 +144,7 @@ class _FakeContainer:
         self.environment_self_model = environment_self_model
         self.config = config
         self.self_audit_service = self_audit_service
+        self.capability_audit_harness = capability_audit_harness
 
 
 def _default_snapshot(
@@ -214,6 +216,7 @@ def test_server_registers_core_tools() -> None:
         "chatgpt_web_capture",
         "run_self_audit",
         "probe_assistant_login",
+        "audit_capability",
     }
     assert expected <= registered, f"faltan tools: {expected - registered}"
 
@@ -787,6 +790,7 @@ def test_run_self_audit_does_not_require_network() -> None:
     payload = _call_tool(server, "run_self_audit")
 
     assert "governance_blocked" not in payload
+    assert audit.calls == [None]
 
 
 # ----------------------------------------------------------------------
@@ -863,3 +867,123 @@ def test_probe_assistant_login_ignores_blocks_for_other_assistant_kinds() -> Non
     assert "governance_blocked" not in payload
     # Aun sin bloqueo, el core devuelve el error tipado (no abre browser).
     assert payload["error"] == "unknown_assistant_kind"
+
+
+# ----------------------------------------------------------------------
+# Frente 3.2 — audit_capability
+#
+# Esta tool tiene `requires_network` dinámico: se toma de la policy de
+# la capacidad. Verificamos que:
+#   - capacidades externas (llm_external_*, browser_capture) se bloquean
+#     con red caída;
+#   - capacidades locales (llm_local_ollama, ui_execution) NO se bloquean
+#     con red caída (policy.requires_network=False);
+#   - bloqueo por `assistant_kind='audit'` aplica igual que en probe_*;
+#   - `dry_run=True` evita el gate de red aun en capacidades externas;
+#   - sin harness wireado, la tool devuelve `harness_unavailable`;
+#   - con harness wireado, se delega al runner.
+
+
+def _audit_harness_with_ok_runner(capability_id: str = "llm_local_ollama") -> object:
+    from iabv_v15.services.evolution.capability_audit_harness import (
+        CapabilityAuditHarness,
+        CapabilityAuditResult,
+    )
+
+    h = CapabilityAuditHarness()
+    h.register(
+        capability_id,
+        lambda **_: CapabilityAuditResult(
+            capability_id=capability_id,
+            executed=True,
+            success=True,
+            output_preview="OK",
+        ),
+    )
+    return h
+
+
+def test_audit_capability_blocked_when_audit_block_active() -> None:
+    block = OperationalBlockRecord(
+        block_type="audit_paused",
+        assistant_kind="audit",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
+    server = IABVMCPServer(_build_container(world_model_service=wm))
+    payload = _call_tool(server, "audit_capability", capability_id="llm_local_ollama")
+
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "operational_block_active"
+
+
+def test_audit_capability_blocks_external_caps_when_network_offline() -> None:
+    """llm_external_chatgpt tiene `requires_network=True` → red caída bloquea."""
+
+    wm = _FakeWorldModelService(_default_snapshot(connected=False))
+    server = IABVMCPServer(_build_container(world_model_service=wm))
+    payload = _call_tool(
+        server, "audit_capability", capability_id="llm_external_chatgpt"
+    )
+
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "network_unavailable"
+
+
+def test_audit_capability_local_caps_not_blocked_by_offline_network() -> None:
+    """llm_local_ollama tiene `requires_network=False` → red caída no bloquea.
+
+    Sin harness wireado el core responde `harness_unavailable`, lo que
+    igual prueba que el gate DEJÓ pasar (no devolvió `governance_blocked`).
+    """
+
+    wm = _FakeWorldModelService(_default_snapshot(connected=False))
+    server = IABVMCPServer(_build_container(world_model_service=wm))
+    payload = _call_tool(server, "audit_capability", capability_id="llm_local_ollama")
+
+    assert "governance_blocked" not in payload
+    assert payload["error"] == "harness_unavailable"
+
+
+def test_audit_capability_dry_run_does_not_trigger_network_gate() -> None:
+    """Con `dry_run=True`, ni una capacidad externa exige red."""
+
+    wm = _FakeWorldModelService(_default_snapshot(connected=False))
+    harness = _audit_harness_with_ok_runner("llm_external_chatgpt")
+    server = IABVMCPServer(
+        _build_container(
+            world_model_service=wm,
+            capability_audit_harness=harness,
+        )
+    )
+    payload = _call_tool(
+        server,
+        "audit_capability",
+        capability_id="llm_external_chatgpt",
+        dry_run=True,
+    )
+    assert "governance_blocked" not in payload
+    assert payload["dry_run"] is True
+    assert payload["success"] is True
+
+
+def test_audit_capability_delegates_to_wired_harness() -> None:
+    harness = _audit_harness_with_ok_runner("llm_local_ollama")
+    server = IABVMCPServer(_build_container(capability_audit_harness=harness))
+    payload = _call_tool(server, "audit_capability", capability_id="llm_local_ollama")
+
+    assert "governance_blocked" not in payload
+    assert payload["executed"] is True
+    assert payload["success"] is True
+    assert payload["output_preview"] == "OK"
+
+
+def test_audit_capability_returns_harness_unavailable_without_wiring() -> None:
+    """Sin harness en el container, se reporta degradación controlada."""
+
+    server = IABVMCPServer(_build_container())
+    payload = _call_tool(
+        server, "audit_capability", capability_id="llm_local_ollama"
+    )
+    assert "governance_blocked" not in payload
+    assert payload["error"] == "harness_unavailable"

@@ -1,0 +1,15 @@
+{
+  "step_id": "ed92a296-4aaa-4914-9a4f-63ba4a2b0427",
+  "channel": "ui",
+  "operation": "click",
+  "target": "#submit",
+  "value_hint": "",
+  "expected_signal": "",
+  "confidence": 0.5,
+  "metadata": {},
+  "action_id": "221deebb-1a78-4c77-a7a5-d6d93873daf9",
+  "started_at_utc": null,
+  "finished_at_utc": null,
+  "destructive": false,
+  "requires_approval": false
+}

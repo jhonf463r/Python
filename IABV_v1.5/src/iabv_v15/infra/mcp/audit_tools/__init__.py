@@ -41,6 +41,15 @@ from iabv_v15.infra.mcp.audit_tools.probe_assistant_login import (  # noqa: E402
     known_assistant_kinds,
     probe_assistant_login,
 )
+from iabv_v15.infra.mcp.audit_tools.audit_capability import (  # noqa: E402,F401
+    audit_capability,
+    build_browser_capture_runner,
+    build_llm_external_runner,
+    build_llm_local_ollama_runner,
+    build_ui_execution_runner,
+    known_capability_ids,
+    policy_for_capability,
+)
 
 
 # ----------------------------------------------------------------------
@@ -829,12 +838,19 @@ __all__ = [
     "SubprocessResult",
     "SubprocessRunner",
     "UIScreenshotProvider",
+    "audit_capability",
+    "build_browser_capture_runner",
+    "build_llm_external_runner",
+    "build_llm_local_ollama_runner",
+    "build_ui_execution_runner",
     "capture_ui_screenshot",
     "default_subprocess_runner",
     "git_status_and_log",
     "is_sensitive_path",
     "known_assistant_kinds",
+    "known_capability_ids",
     "list_repo_directory",
+    "policy_for_capability",
     "probe_assistant_login",
     "read_repo_file",
     "resolve_workspace_path",
