@@ -35,14 +35,42 @@ Contratos que NO se rompen:
 
 from __future__ import annotations
 
+import asyncio
+import concurrent.futures
 import logging
 import os
 from dataclasses import asdict, is_dataclass
-from typing import Any
+from typing import Any, Callable, TypeVar
 
 from iabv_v15.infra.mcp import audit_tools, audit_tools_observation
 
 logger = logging.getLogger(__name__)
+
+_R = TypeVar("_R")
+
+
+def _run_sync_off_event_loop(
+    func: Callable[..., _R],
+    /,
+    *args: Any,
+    **kwargs: Any,
+) -> _R:
+    """Ejecuta ``func`` fuera del event loop activo, si hay uno.
+
+    FastMCP invoca tools sync directamente sobre el hilo del event loop de
+    uvicorn. Librerías como ``playwright.sync_api`` detectan ese loop y
+    refusan arrancar con ``Please use the Async API instead``. Este helper
+    despacha ``func`` a un ``ThreadPoolExecutor`` de un solo worker cuando
+    detecta un loop corriendo (ningún loop en el hilo worker → Playwright
+    sync OK), y la corre directo si no hay loop (tests y CLI).
+    """
+
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return func(*args, **kwargs)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        return executor.submit(func, *args, **kwargs).result()
 
 
 DEFAULT_SERVER_NAME = "iabv-v15"
@@ -762,7 +790,13 @@ class IABVMCPServer:
                 probe_assistant_login as _probe,
             )
 
-            return _probe(
+            # `_probe` usa Playwright sync API internamente. Si FastMCP nos
+            # ejecuta sobre el event loop de uvicorn, `sync_playwright().start()`
+            # falla con `Please use the Async API`. Despachamos a un worker
+            # thread sin loop para mantener el contrato sync de `_probe`
+            # (ejercitado por tests) y destrabar la invocación real desde MCP.
+            return _run_sync_off_event_loop(
+                _probe,
                 assistant_kind,
                 use_browser_session=bool(use_browser_session),
                 timeout_seconds=float(timeout_seconds),
