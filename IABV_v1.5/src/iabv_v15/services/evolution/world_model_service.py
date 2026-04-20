@@ -580,9 +580,15 @@ class WorldModelService:
         except Exception:
             return []
         selected: list[ToolCard] = []
+        non_assistant_allowlist = {
+            'playwright_browser',
+            'desktop_human_runner',
+            'shell_command',
+            'site_explorer_v1',
+        }
         for card in cards:
             assistant_kind = str(card.metadata.get('assistant_kind') or '').strip()
-            if assistant_kind or card.tool_id in {'playwright_browser', 'desktop_human_runner'}:
+            if assistant_kind or card.tool_id in non_assistant_allowlist:
                 selected.append(card)
         return selected
 
