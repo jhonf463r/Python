@@ -987,6 +987,45 @@ class IABVMCPServer:
             }
 
         # ------------------------------------------------------------
+        # PCS v1 — embodiment_violations_current
+        #
+        # Devuelve las violaciones de encarnamiento acumuladas por el
+        # ``EmbodimentViolationDetector``. En v1 el detector NO bloquea
+        # (``handshake_required=False`` en el manifest); esta tool es
+        # puramente read-only y fail-observable: si el container no
+        # expone el detector, devuelve ``{'error': 'detector_unavailable'}``
+        # en vez de crashear.
+
+        @mcp.tool()
+        def embodiment_violations_current(session_id: str = "") -> dict[str, Any]:
+            """Lista violaciones detectadas para una sesión o globalmente.
+
+            Args:
+                session_id: si se pasa, filtra al buffer de esa sesión;
+                    si queda vacío, devuelve el agregado global.
+            """
+
+            detector = getattr(self.container, "embodiment_violation_detector", None)
+            if detector is None or not hasattr(detector, "snapshot"):
+                return {
+                    "error": "detector_unavailable",
+                    "detail": (
+                        "container.embodiment_violation_detector no está disponible. "
+                        "Asegurate de construir el bootstrap completo."
+                    ),
+                    "session_id": session_id,
+                    "violations": [],
+                    "count": 0,
+                }
+            records = detector.snapshot(session_id=session_id or None)
+            violations = [_to_jsonable(record) for record in records]
+            return {
+                "session_id": session_id,
+                "violations": violations,
+                "count": len(violations),
+            }
+
+        # ------------------------------------------------------------
         # Frente 2 — Self audit tool
         #
         # `run_self_audit` ejecuta el `SelfAuditService` y devuelve el

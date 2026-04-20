@@ -75,6 +75,7 @@ from iabv_v15.services.evolution.hidden_incident_detector import HiddenIncidentD
 from iabv_v15.services.evolution.incident_packet_service import IncidentPacketService
 from iabv_v15.services.evolution.live_audit_supervisor import LiveAuditSupervisor
 from iabv_v15.services.evolution.operational_self_examination_service import OperationalSelfExaminationService
+from iabv_v15.services.evolution.embodiment_violation_detector import EmbodimentViolationDetector
 from iabv_v15.infra.persistence.control_master_repository import ControlMasterRepository
 from iabv_v15.services.evolution.control_master_digest_builder import ControlMasterDigestBuilder
 from iabv_v15.services.evolution.control_master_service import ControlMasterService
@@ -382,6 +383,15 @@ class AppBootstrap:
             world_model_service=self.world_model_service,
             autonomous_validation_cycle=self.autonomous_validation_cycle,
             adaptive_weight_layer=self.adaptive_weight_layer,
+        )
+        # PCS v1 — PR E. Detector read-only de violaciones de encarnamiento.
+        # handshake_required=False en el manifest → sólo reporta.
+        # Lo enchufamos al self_examination como provider para poblar
+        # ``metadata['embodiment_violations']`` del snapshot sin cambiar el
+        # contrato de SelfExaminationSnapshot.
+        self.embodiment_violation_detector = EmbodimentViolationDetector()
+        self.operational_self_examination_service.embodiment_violation_provider = (
+            self.embodiment_violation_detector
         )
         self.tool_evolution_monitor = ToolEvolutionMonitor(
             storage=self.evolution_storage,
