@@ -139,7 +139,7 @@ class LiveAuditSupervisor:
                 continue
             objective = str(episode.objective or '').lower()
             if goal_tokens and not goal_tokens.intersection(set(objective.split())) and len(goal_tokens) <= 4:
-                pass
+                continue
             findings = [str(item.get('kind') or '') for item in audit.get('findings') or [] if isinstance(item, dict)]
             decision = dict(audit.get('decision') or {})
             return {

@@ -28,6 +28,26 @@ from iabv_v15.services.evolution.live_audit_supervisor import LiveAuditSuperviso
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
+def _make_episode_with_audit(*, objective: str, decision_action: str, episode_id: str = '') -> InteractionEpisode:
+    return InteractionEpisode(
+        interaction_episode_id=episode_id or str(uuid4()),
+        objective=objective,
+        mode_used=InteractionChannel.UI,
+        confidence=0.5,
+        tool_id='playwright_browser',
+        tool_type=ToolType.BROWSER,
+        site_id='wplay',
+        metadata={
+            'live_audit': {
+                'audit_snapshot_id': f'audit-{uuid4().hex[:6]}',
+                'confidence': 0.75,
+                'findings': [{'kind': 'bridge_lag', 'title': 'Bridge lag'}],
+                'decision': {'action': decision_action, 'recommended_tool_id': 'codex_installed'},
+            }
+        },
+    )
+
+
 def _workspace(name: str) -> Path:
     base = REPO_ROOT / 'data' / 'test_runs'
     base.mkdir(parents=True, exist_ok=True)
@@ -182,5 +202,41 @@ def test_live_audit_supervisor_marks_external_capture_block_as_blocked_not_succe
         assert live_audit['decision']['action'] == 'continue_local'
         assert 'bloqueada o sin captura verificable' in live_audit['decision']['rationale']
         assert 'external_route_blocked' in [item['kind'] for item in live_audit['findings']]
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_latest_summary_filters_by_user_goal() -> None:
+    """R15-1: latest_summary must skip episodes whose objective doesn't match
+    user_goal when goal_tokens <= 4.  Before the fix, ``pass`` was used instead
+    of ``continue``, making the goal filter dead code."""
+    root = _workspace('live_audit_goal_filter')
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        repository = ToolRecordRepository(
+            AppDatabase(str(root / 'app.sqlite')),
+            ArtifactStorage(str(root / 'tool_teaching')),
+        )
+        supervisor = LiveAuditSupervisor(tool_record_repository=repository)
+
+        unrelated = _make_episode_with_audit(
+            objective='Configurar proxy de red',
+            decision_action='continue_local',
+        )
+        matching = _make_episode_with_audit(
+            objective='Abrir Wplay e iniciar sesion',
+            decision_action='consult_codex',
+        )
+        repository.save_interaction_episode(unrelated)
+        repository.save_interaction_episode(matching)
+
+        result = supervisor.latest_summary(user_goal='iniciar sesion Wplay')
+
+        assert result, 'Expected a non-empty summary for a matching episode'
+        assert result['decision_action'] == 'consult_codex', (
+            f"Expected 'consult_codex' from the matching episode, got '{result['decision_action']}' "
+            '(goal filter may be dead — pass vs continue)'
+        )
     finally:
         shutil.rmtree(root, ignore_errors=True)
