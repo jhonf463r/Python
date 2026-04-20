@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+from datetime import timedelta
 from typing import Any
 
 from iabv_v15.domain.models import (
@@ -306,23 +307,41 @@ class OperationalSelfExaminationService:
                 unresolved_fields=['UNRESOLVED:validation_cycle'],
             )
 
+    # Ventana de recurrencia real para "fallo repetido". Runs anteriores a
+    # este margen se consideran historia fria y no cuentan, evitando que un
+    # fallo viejo unico quede atrapado en `list_recent(limit=60)` como si
+    # fuera recurrencia.
+    _RECURRING_FAILURE_WINDOW = timedelta(hours=48)
+
     def _recurring_failure_findings(self, *, recent_runs: list[RunRecord]) -> list[SelfExaminationFinding]:
-        grouped: dict[str, list[RunRecord]] = defaultdict(list)
+        now = utc_now()
+        window_start = now - self._RECURRING_FAILURE_WINDOW
+        grouped: dict[str, dict[str, RunRecord]] = defaultdict(dict)
         for run in recent_runs:
-            if run.status not in {RunStatus.FAILED, RunStatus.PARTIAL}:
+            # Solo FAILED cuenta como fallo real; PARTIAL es "resuelto parcial",
+            # no es un fallo a repetir. Antes se agrupaban ambos y eso generaba
+            # falsos positivos tipo "Fallo repetido en general:training".
+            if run.status != RunStatus.FAILED:
                 continue
-            grouped[self._task_scope(run)].append(run)
+            if run.created_at_utc and run.created_at_utc < window_start:
+                continue
+            # Dedup defensivo por run_id: garantiza que un mismo run repetido
+            # en la lista (retry logging, etc.) no se cuente dos veces.
+            grouped[self._task_scope(run)].setdefault(run.run_id, run)
         findings: list[SelfExaminationFinding] = []
-        for scope, runs in grouped.items():
+        for scope, runs_by_id in grouped.items():
+            runs = list(runs_by_id.values())
             if len(runs) < 2:
                 continue
-            failed = sum(1 for run in runs if run.status == RunStatus.FAILED)
-            severity = IssueSeverity.HIGH if failed >= 2 else IssueSeverity.MEDIUM
+            severity = IssueSeverity.HIGH if len(runs) >= 3 else IssueSeverity.MEDIUM
             findings.append(
                 SelfExaminationFinding(
                     category='recurring_failure',
                     title=f'Fallo repetido en {scope}',
-                    summary=f'La clase de tarea {scope} acumula {len(runs)} corridas fallidas o parciales recientes.',
+                    summary=(
+                        f'La clase de tarea {scope} acumula {len(runs)} corridas fallidas '
+                        f'en las ultimas {int(self._RECURRING_FAILURE_WINDOW.total_seconds() // 3600)} horas.'
+                    ),
                     severity=severity,
                     confidence=min(0.92, 0.45 + len(runs) * 0.12),
                     recommendation=f'Revisar la ruta, el pack y la evidencia previa antes de repetir {scope}.',
@@ -330,8 +349,8 @@ class OperationalSelfExaminationService:
                     source_refs=['RunRepository'],
                     metadata={
                         'scope': scope,
-                        'failed_count': failed,
-                        'partial_count': len(runs) - failed,
+                        'failed_count': len(runs),
+                        'window_hours': int(self._RECURRING_FAILURE_WINDOW.total_seconds() // 3600),
                     },
                 )
             )
