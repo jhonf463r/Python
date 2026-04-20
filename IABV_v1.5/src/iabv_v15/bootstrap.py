@@ -688,6 +688,20 @@ class AppBootstrap:
                     daemon=True,
                 ).start()
 
+        # --- UIScreenshotProvider: permite que la tool MCP
+        # `capture_ui_screenshot` devuelva bytes reales cuando la UI está
+        # corriendo en este proceso (Qt) o cuando hay display server activo
+        # (mss). En headless CI / Linux sin display queda `None` y la tool
+        # degrada explícito a `ui_not_running`.
+        if getattr(self, 'ui_screenshot_provider', None) is None:
+            try:
+                from iabv_v15.infra.ui import build_ui_screenshot_provider
+
+                self.ui_screenshot_provider = build_ui_screenshot_provider()
+            except Exception:
+                logger.exception('No se pudo construir ui_screenshot_provider; dejando None')
+                self.ui_screenshot_provider = None
+
         self.control_center_viewmodel = ControlCenterViewModel(
             config=self.config,
             episode_repository=self.episode_repository,
