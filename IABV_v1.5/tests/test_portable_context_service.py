@@ -272,3 +272,69 @@ def test_portable_context_service_builds_and_persists_package_from_live_state() 
         assert 'UNRESOLVED' in package.assistant_brief
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_portable_context_service_infers_active_goal_from_recent_adaptive_session_when_no_objective_exists() -> None:
+    """H1: sin ObjectiveNode en el repo pero con un user_goal reciente
+    registrado via AdaptiveSessionRepository, el paquete portable debe
+    surfacear ese intent como active_title TENTATIVO y dejar marcas
+    explicitas de 'inferred_from_recent_session' en metadata para que
+    consumidores puedan distinguir un objetivo confirmado de uno
+    tentativo."""
+    from iabv_v15.domain.models import AdaptiveSession, TaskIntent
+
+    root = _workspace('portable_context_infer_goal')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        # Deliberadamente NO guardamos ObjectiveNode: asi simulamos el
+        # estado vivo del usuario donde GoalEngine aun no materializo
+        # un objetivo pero la UI si registro user_goal en una sesion.
+        session = AdaptiveSession(
+            user_goal='auditar todo mi programa y dejarlo probado',
+            intent=TaskIntent(
+                intent_key='general.assistance',
+                title='Auditoria general',
+            ),
+        )
+        bootstrap.adaptive_session_repository.save(session)
+
+        package = bootstrap.portable_context_service.current_package(refresh=True)
+
+        project_state = next(section for section in package.sections if section.section_id == 'project_state')
+        active_item = next(item for item in project_state.items if item.get('label') == 'Objetivo activo')
+        assert 'auditar todo mi programa' in str(active_item.get('value') or '').lower()
+        assert 'UNRESOLVED:active_goal_context' not in package.unresolved_fields
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_portable_context_service_keeps_unresolved_when_adaptive_session_is_stale() -> None:
+    """H1: proteccion contra stale. Si la sesion mas reciente es
+    anterior a la ventana de recencia, el servicio NO propaga su
+    user_goal como active_title y mantiene la marca UNRESOLVED.
+    Preferible admitir que no hay objetivo a inventar uno stale."""
+    from datetime import datetime, timedelta, timezone
+
+    from iabv_v15.domain.models import AdaptiveSession, TaskIntent
+
+    root = _workspace('portable_context_stale_session')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        stale_created_at = datetime.now(timezone.utc) - timedelta(days=10)
+        session = AdaptiveSession(
+            user_goal='intent stale que no debe propagarse',
+            intent=TaskIntent(intent_key='general.assistance', title='stale'),
+            created_at_utc=stale_created_at,
+            updated_at_utc=stale_created_at,
+        )
+        bootstrap.adaptive_session_repository.save(session)
+
+        package = bootstrap.portable_context_service.current_package(refresh=True)
+
+        project_state = next(section for section in package.sections if section.section_id == 'project_state')
+        active_item = next(item for item in project_state.items if item.get('label') == 'Objetivo activo')
+        assert 'intent stale' not in str(active_item.get('value') or '').lower()
+        assert 'sin objetivo activo confirmado' in str(active_item.get('value') or '').lower()
+        assert 'UNRESOLVED:active_goal_context' in package.unresolved_fields
+    finally:
+        shutil.rmtree(root, ignore_errors=True)

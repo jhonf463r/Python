@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from iabv_v15.domain.models import (
@@ -15,6 +16,14 @@ from iabv_v15.infra.persistence.storage import ArtifactStorage
 
 
 class PortableContextService:
+    # Ventana de recencia para el fallback de intencion de usuario (H1).
+    # Si la sesion adaptativa mas reciente supera esta antiguedad, el
+    # user_goal no se propaga como active_title tentativo; se prefiere
+    # dejar UNRESOLVED:active_goal_context antes que afirmar un objetivo
+    # stale.
+    _USER_GOAL_FALLBACK_FRESHNESS_HOURS = 72
+    _USER_GOAL_FALLBACK_MIN_LENGTH = 3
+
     def __init__(
         self,
         *,
@@ -32,6 +41,7 @@ class PortableContextService:
         tool_evolution_monitor: Any | None = None,
         task_context_assembler: Any | None = None,
         adaptive_task_orchestrator: Any | None = None,
+        adaptive_session_repository: Any | None = None,
     ) -> None:
         self.workspace_root = workspace_root
         self.storage = storage
@@ -47,6 +57,7 @@ class PortableContextService:
         self.tool_evolution_monitor = tool_evolution_monitor
         self.task_context_assembler = task_context_assembler
         self.adaptive_task_orchestrator = adaptive_task_orchestrator
+        self.adaptive_session_repository = adaptive_session_repository
         self._current_package: PortableContextPackage | None = None
 
     def current_package(
@@ -281,10 +292,26 @@ class PortableContextService:
         objective = self._latest_objective(kind=ObjectiveNodeKind.OBJECTIVE)
         project = self._latest_objective(kind=ObjectiveNodeKind.PROJECT)
         task = self._latest_objective(kind=ObjectiveNodeKind.TASK)
+        active_title = str((getattr(task, 'title', '') or getattr(project, 'title', '') or getattr(objective, 'title', '') or '')).strip()
+        active_objective_id = str((getattr(task, 'objective_id', '') or getattr(project, 'objective_id', '') or getattr(objective, 'objective_id', '') or ''))
+        site_id = str((getattr(task, 'site_id', '') or getattr(project, 'site_id', '') or getattr(objective, 'site_id', '') or ''))
+        fallback_metadata: dict[str, Any] = {}
+        if not active_title:
+            inferred = self._recent_user_goal_fallback()
+            if inferred is not None:
+                active_title = inferred['active_title']
+                site_id = site_id or inferred.get('site_id') or ''
+                fallback_metadata = {
+                    'source': 'inferred_from_recent_session',
+                    'session_id': inferred.get('session_id') or '',
+                    'inferred_from_session_created_at_utc': inferred.get('created_at_utc') or '',
+                    'inferred': True,
+                    'status': 'tentative',
+                }
         return {
-            'site_id': str((getattr(task, 'site_id', '') or getattr(project, 'site_id', '') or getattr(objective, 'site_id', '') or '')),
-            'active_title': str((getattr(task, 'title', '') or getattr(project, 'title', '') or getattr(objective, 'title', '') or '')),
-            'active_objective_id': str((getattr(task, 'objective_id', '') or getattr(project, 'objective_id', '') or getattr(objective, 'objective_id', '') or '')),
+            'site_id': site_id,
+            'active_title': active_title,
+            'active_objective_id': active_objective_id,
             'objective_id': str(getattr(objective, 'objective_id', '') or ''),
             'progress': float(getattr(task, 'progress', 0.0) or getattr(project, 'progress', 0.0) or getattr(objective, 'progress', 0.0) or 0.0),
             'confidence': float(getattr(task, 'confidence', 0.0) or getattr(project, 'confidence', 0.0) or getattr(objective, 'confidence', 0.0) or 0.0),
@@ -292,6 +319,61 @@ class PortableContextService:
             'objective': objective.model_dump(mode='json') if objective is not None else {},
             'project': project.model_dump(mode='json') if project is not None else {},
             'task': task.model_dump(mode='json') if task is not None else {},
+            'metadata': fallback_metadata,
+        }
+
+    def _recent_user_goal_fallback(self) -> dict[str, Any] | None:
+        """H1: si no hay objetivo activo declarado en objective_repository,
+        recupera el user_goal mas reciente de AdaptiveSessionRepository
+        y lo propaga como active_title TENTATIVO.
+
+        Motivacion: la UI ya registra cada intent del usuario en
+        AdaptiveSession.user_goal, pero esa senal no llegaba al
+        PortableContextPackage cuando el GoalEngine aun no habia
+        materializado un ObjectiveNode. Como resultado, el paquete
+        portable mostraba 'sin objetivo activo confirmado' aun cuando el
+        usuario habia expresado una intencion segundos antes, dejando al
+        orquestador y a los asistentes externos sin contexto.
+
+        Proteccion contra stale: si la sesion mas reciente fue creada
+        hace mas de ``_USER_GOAL_FALLBACK_FRESHNESS_HOURS`` horas o su
+        user_goal es trivialmente corto, NO se propaga y se mantiene la
+        marca UNRESOLVED:active_goal_context. Preferible admitir que no
+        hay objetivo a inventar uno stale.
+
+        La propagacion deja marcas explicitas en
+        ``goal_context['metadata']`` para que todo consumidor (UI,
+        cognitive_frame_translator, strategy_selector) pueda distinguir
+        un objetivo confirmado de uno inferido.
+        """
+        repository = self.adaptive_session_repository
+        if repository is None or not hasattr(repository, 'list_recent'):
+            return None
+        try:
+            recent_sessions = repository.list_recent(limit=1)
+        except Exception:
+            return None
+        if not recent_sessions:
+            return None
+        session = recent_sessions[0]
+        user_goal = str(getattr(session, 'user_goal', '') or '').strip()
+        if len(user_goal) < self._USER_GOAL_FALLBACK_MIN_LENGTH:
+            return None
+        created_at = getattr(session, 'created_at_utc', None)
+        if isinstance(created_at, datetime):
+            reference = created_at if created_at.tzinfo else created_at.replace(tzinfo=timezone.utc)
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=self._USER_GOAL_FALLBACK_FRESHNESS_HOURS)
+            if reference < cutoff:
+                return None
+            created_at_str = reference.isoformat()
+        else:
+            created_at_str = ''
+        site_id = str(getattr(getattr(session, 'context', None), 'site_id', '') or '')
+        return {
+            'active_title': user_goal,
+            'session_id': str(getattr(session, 'session_id', '') or ''),
+            'created_at_utc': created_at_str,
+            'site_id': site_id,
         }
 
     def _latest_objective(self, *, kind: ObjectiveNodeKind) -> Any | None:

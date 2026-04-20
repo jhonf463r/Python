@@ -453,6 +453,7 @@ class AppBootstrap:
             self_examination_service=self.operational_self_examination_service,
             tool_discovery_service=self.tool_discovery_service,
             tool_evolution_monitor=self.tool_evolution_monitor,
+            adaptive_session_repository=self.adaptive_session_repository,
         )
         self.self_audit_service = SelfAuditService(
             tool_registry=self.tool_registry,
