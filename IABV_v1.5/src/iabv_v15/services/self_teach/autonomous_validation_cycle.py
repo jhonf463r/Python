@@ -155,12 +155,77 @@ class AutonomousValidationCycleService:
             )
         self._wake_event.set()
 
+    # Ventana de decisiones recientes consideradas para detectar inercia
+    # de ruta. Un valor bajo reacciona rapido a loops; uno alto ignora
+    # senales debiles. 5 es suficiente para captar una rafaga de
+    # validaciones repetidas sin invalidar historial legitimo.
+    _SCOPE_INERTIA_WINDOW = 5
+    # Minimo de decisiones en la ventana que deben coincidir en
+    # (subject_key, candidate_assistant_kind) para disparar cooldown.
+    # 3 de 5 deja margen a una variacion puntual pero corta un patron
+    # sostenido.
+    _SCOPE_INERTIA_THRESHOLD = 3
+
+    def _scope_inertia_cooldown_reason(
+        self,
+        *,
+        proposal: ToolEvolutionProposal,
+    ) -> str:
+        """H2: cortar loops de validacion cuando el mismo scope ya
+        consumio ciclos con el mismo ganador.
+
+        Sin este freno, cuando el orquestador no tiene input nuevo del
+        usuario el ciclo sigue procesando challengers contra un scope
+        cuyo ganador ya esta consolidado, acumulando decisiones casi
+        identicas en el decision_log mientras StrategySelector
+        recomienda siempre lo mismo. Eso es exploitation pura, no
+        exploracion.
+
+        Este helper mira las ultimas ``_SCOPE_INERTIA_WINDOW`` decisiones
+        del log en memoria y, si ``_SCOPE_INERTIA_THRESHOLD`` o mas
+        comparten ``subject_key`` y ``current_assistant_kind`` (el
+        ganador vigente), devuelve una razon de cooldown. Ese cooldown
+        se aplica SOLO al nuevo candidato; no pausa el ciclo global ni
+        bloquea otros scopes. Tampoco decide ruta: solo aplaza esa
+        evaluacion puntual y deja la evidencia visible.
+        """
+        subject_key = str(proposal.subject_key or '').strip()
+        if not subject_key:
+            return ''
+        log = self._decision_log or ToolEvolutionDecisionLog()
+        entries = list(log.entries or [])[-self._SCOPE_INERTIA_WINDOW:]
+        if len(entries) < self._SCOPE_INERTIA_THRESHOLD:
+            return ''
+        matching_winners: dict[str, int] = {}
+        for entry in entries:
+            if str(entry.subject_key or '').strip() != subject_key:
+                continue
+            if entry.decision != 'promoted':
+                continue
+            winner_kind = str(entry.current_assistant_kind or '').strip()
+            if not winner_kind:
+                continue
+            matching_winners[winner_kind] = matching_winners.get(winner_kind, 0) + 1
+        for winner_kind, count in matching_winners.items():
+            if count >= self._SCOPE_INERTIA_THRESHOLD:
+                return (
+                    f'scope_inertia_cooldown: {count} de las ultimas '
+                    f'{len(entries)} decisiones para {subject_key} '
+                    f'promovieron {winner_kind}; forzando cooldown de '
+                    f'exploracion hasta nueva evidencia.'
+                )
+        return ''
+
     def run_once(self, *, reason: str = 'manual') -> AutonomousValidationSnapshot:
         monitor_status = self._current_tool_evolution_status()
         proposal_candidate = self._next_tool_evolution_candidate(monitor_status=monitor_status)
         environment_model = self._current_environment_model()
         world_model = self._current_world_model()
         paused_reason = self._pause_reason(environment_model=environment_model, world_model=world_model)
+        if not paused_reason and proposal_candidate is not None:
+            inertia_reason = self._scope_inertia_cooldown_reason(proposal=proposal_candidate[0])
+            if inertia_reason:
+                paused_reason = inertia_reason
         if paused_reason:
             if proposal_candidate is not None:
                 proposal, priority_score = proposal_candidate
