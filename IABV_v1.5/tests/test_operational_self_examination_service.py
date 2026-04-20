@@ -13,11 +13,13 @@ from iabv_v15.domain.models import (
     ExperimentRun,
     InferenceRequest,
     InferenceResult,
+    IssueSeverity,
     ReasoningMode,
     RoleRoute,
     RunRecord,
     RunStatus,
     SandboxExperiment,
+    SelfExaminationFinding,
     SelfExaminationSnapshot,
     TaskRole,
     ToolCapability,
@@ -484,5 +486,142 @@ def test_environment_self_awareness_marks_missing_sensors_as_not_available_inste
         assert 'battery_status' in sensors
         for entry in not_available:
             assert entry['reason'] == 'sensor_not_exposed_on_this_host'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_pending_auto_probes_emits_request_for_high_confidence_recurring_failure() -> None:
+    """Regression H4: self-exam must emit a concrete probe for HIGH+0.92 findings.
+
+    The symptom observed live: `Fallo repetido en general:training`, severity
+    HIGH, confidence 0.92, was surfaced as a finding but the recommendation
+    `Construir prueba reproducible del fallo` stayed with
+    ``last_feedback_status == 'no_evidence'`` because no component picked up
+    the testigo. Closing capa P4 means the self-exam itself has to leave a
+    structured probe request (scope, evidence_refs, suggested_tests) ready
+    for the orchestrator to dispatch.
+    """
+    root = _workspace('pending_auto_probes_recurring')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service: OperationalSelfExaminationService = bootstrap.operational_self_examination_service
+        findings = [
+            SelfExaminationFinding(
+                finding_id='finding-high-training',
+                category='recurring_failure',
+                title='Fallo repetido en general:training',
+                summary='La clase de tarea general:training acumula 7 corridas fallidas.',
+                severity=IssueSeverity.HIGH,
+                confidence=0.92,
+                recommendation='Revisar la ruta antes de repetir general:training.',
+                evidence_refs=['run-a', 'run-b', 'run-c', 'run-d'],
+                source_refs=['RunRepository'],
+                metadata={'scope': 'general:training', 'failed_count': 7, 'window_hours': 48},
+            ),
+            SelfExaminationFinding(
+                finding_id='finding-low',
+                category='recurring_failure',
+                title='Fallo repetido low-conf',
+                summary='Evidence todavia debil.',
+                severity=IssueSeverity.HIGH,
+                confidence=0.70,
+                recommendation='Observar.',
+                evidence_refs=['run-x'],
+                source_refs=['RunRepository'],
+                metadata={'scope': 'other:scope'},
+            ),
+            SelfExaminationFinding(
+                finding_id='finding-medium',
+                category='recurring_failure',
+                title='Fallo repetido medium-severity',
+                summary='Hay algo pero no es critico.',
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.95,
+                recommendation='Observar.',
+                evidence_refs=['run-y'],
+                source_refs=['RunRepository'],
+                metadata={'scope': 'medium:scope'},
+            ),
+        ]
+        probes = service._pending_auto_probes(findings=findings)
+        assert len(probes) == 1, (
+            'Only the HIGH + confidence >= 0.85 finding should produce an auto-probe; '
+            f'got: {probes}'
+        )
+        probe = probes[0]
+        assert probe['finding_id'] == 'finding-high-training'
+        assert probe['category'] == 'recurring_failure'
+        assert probe['scope'] == 'general:training'
+        assert probe['severity'] == IssueSeverity.HIGH.value
+        assert probe['status'] == 'requested'
+        assert probe['evidence_refs'][:3] == ['run-a', 'run-b', 'run-c']
+        # suggested_tests carries: pytest command + reproduce_run_ids + scope
+        tests = probe['suggested_tests']
+        assert any(t.startswith('pytest -q') for t in tests)
+        assert any(t.startswith('reproduce_run_ids=') for t in tests)
+        assert any(t == 'scope=general:training' for t in tests)
+        assert '0.92' in probe['trigger_reason']
+        assert '0.85' in probe['trigger_reason']
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_pending_auto_probes_returns_empty_when_no_high_confidence_finding() -> None:
+    """H4 guard: never emit spurious probes when findings are all low-conf."""
+    root = _workspace('pending_auto_probes_empty')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service: OperationalSelfExaminationService = bootstrap.operational_self_examination_service
+        findings = [
+            SelfExaminationFinding(
+                category='recurring_failure',
+                title='Low-conf',
+                summary='No hay evidencia suficiente.',
+                severity=IssueSeverity.HIGH,
+                confidence=0.50,
+                recommendation='Observar.',
+                evidence_refs=['run-1'],
+                source_refs=['RunRepository'],
+                metadata={'scope': 'weak:scope'},
+            ),
+        ]
+        assert service._pending_auto_probes(findings=findings) == []
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_build_review_persists_pending_auto_probes_and_surfaces_in_summary() -> None:
+    """End-to-end H4: build_review -> metadata.pending_auto_probes -> review_summary.
+
+    Drives the service through build_review() with a synthetic run history so
+    a HIGH + 0.92 finding is produced organically (not injected) and verifies
+    the probe reaches both ``SelfExaminationSnapshot.metadata`` and
+    ``review_summary()`` output.
+    """
+    root = _workspace('pending_auto_probes_e2e')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        # Inject 7 FAILED TRAINING runs inside the 48h window. ``_task_scope``
+        # returns ``general:training`` for these, so the service's organic
+        # ``_recurring_failure_findings`` yields a HIGH-severity finding with
+        # confidence clamped to 0.92 (``min(0.92, 0.45 + 7*0.12)``).
+        now = datetime.now(timezone.utc)
+        for index in range(7):
+            run = _build_run(
+                task_role=TaskRole.TRAINING,
+                status=RunStatus.FAILED,
+                created_at=now - timedelta(minutes=30 + index),
+            )
+            bootstrap.run_repository.record(run)
+        service: OperationalSelfExaminationService = bootstrap.operational_self_examination_service
+        snapshot = service.build_review()
+        probes = list((snapshot.metadata or {}).get('pending_auto_probes') or [])
+        assert probes, 'build_review must surface pending_auto_probes when HIGH+0.92 finding exists'
+        assert probes[0]['category'] == 'recurring_failure'
+        assert probes[0]['status'] == 'requested'
+        # review_summary must also expose the list so MCP/UI consumers see it.
+        summary = service.review_summary(snapshot)
+        assert summary['pending_auto_probes']
+        assert summary['pending_auto_probes'][0]['category'] == 'recurring_failure'
     finally:
         shutil.rmtree(root, ignore_errors=True)

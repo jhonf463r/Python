@@ -84,6 +84,10 @@ class OperationalSelfExaminationService:
             'unresolved_risks': list(resolved.unresolved_risks[:6]),
             'recommendation_feedback': list(metadata.get('recommendation_feedback') or [])[:6],
             'feedback_summary': dict(metadata.get('feedback_summary') or {}),
+            # H4 — surfacing explícito de los probe requests pendientes al
+            # summary para que la UI, el orquestador y los MCP consumers los
+            # vean sin tener que descender al ``metadata`` crudo.
+            'pending_auto_probes': list(metadata.get('pending_auto_probes') or [])[:6],
             'updated_at_utc': resolved.updated_at_utc.isoformat(),
             'package_path': resolved.package_path,
             'markdown_path': resolved.markdown_path,
@@ -187,6 +191,20 @@ class OperationalSelfExaminationService:
         }
         if embodiment_violations is not None:
             metadata_update['embodiment_violations'] = embodiment_violations
+        # H4 — cierre del loop de autoexaminacion real (capa P4). Cuando el
+        # self-exam detecta un hallazgo HIGH con alta confianza, la responsa-
+        # bilidad del servicio no es solo "quejarse" en recommended_adjustments:
+        # tambien debe dejar explicita la prueba reproducible concreta (scope,
+        # evidence_refs, suggested_tests) lista para que el orquestador o la
+        # UI la disparen. Antes esto se perdia en texto generico como
+        # "Construir prueba reproducible del fallo" con last_feedback_status
+        # == 'no_evidence', y ningun componente recogia ese testigo. No se
+        # inventa un cerebro nuevo: solo se estructura la senal de probe para
+        # que el AutonomousValidationCycle / ToolTeachService existentes la
+        # consuman.
+        metadata_update['pending_auto_probes'] = self._pending_auto_probes(
+            findings=list(review.findings)
+        )
         review = review.model_copy(
             update={
                 'assistant_brief': self._render_assistant_brief(review),
@@ -350,6 +368,97 @@ class OperationalSelfExaminationService:
     # fallo viejo unico quede atrapado en `list_recent(limit=60)` como si
     # fuera recurrencia.
     _RECURRING_FAILURE_WINDOW = timedelta(hours=48)
+
+    # Umbral para promover un hallazgo a auto-probe. Por debajo de 0.85 la
+    # evidencia del self-exam no es lo suficientemente fuerte como para
+    # pedirle al orquestador que gaste ciclos de validacion; por encima, el
+    # silencio de no generar probe concreto es peor (capa P4 se queda muda).
+    _AUTO_PROBE_CONFIDENCE_FLOOR = 0.85
+
+    def _pending_auto_probes(
+        self,
+        *,
+        findings: list[SelfExaminationFinding],
+    ) -> list[dict[str, Any]]:
+        """Derivar probe requests concretos para findings HIGH + alta confianza.
+
+        El servicio no ejecuta la prueba: sólo deja la tarjeta lista para que
+        el orquestador (``AdaptiveTaskOrchestrator``), la UI
+        (``EvolutionCenterViewModel``) o el ciclo de validación autónoma la
+        consuman. Respeta los contratos de las capas cerradas P1–P4: no crea
+        otro cerebro, ni duplica ``PerceptionSnapshot``, ni toma decisiones de
+        ruta por su cuenta.
+        """
+        probes: list[dict[str, Any]] = []
+        now = utc_now()
+        for finding in findings:
+            if getattr(finding.severity, 'value', str(finding.severity)) != IssueSeverity.HIGH.value:
+                continue
+            confidence = float(finding.confidence or 0.0)
+            if confidence < self._AUTO_PROBE_CONFIDENCE_FLOOR:
+                continue
+            suggested_tests = self._auto_probe_suggested_tests(finding=finding)
+            if not suggested_tests:
+                continue
+            metadata = dict(finding.metadata or {})
+            scope = str(metadata.get('scope') or metadata.get('pack_id') or metadata.get('block') or '').strip()
+            probes.append(
+                {
+                    'finding_id': finding.finding_id,
+                    'category': finding.category,
+                    'scope': scope,
+                    'title': finding.title,
+                    'severity': getattr(finding.severity, 'value', str(finding.severity)),
+                    'confidence': confidence,
+                    'evidence_refs': list(finding.evidence_refs[:4]),
+                    'source_refs': list(finding.source_refs[:4]),
+                    'suggested_tests': suggested_tests,
+                    'trigger_reason': (
+                        f'Finding HIGH \'{finding.category}\' con confianza '
+                        f'{confidence:.2f} >= {self._AUTO_PROBE_CONFIDENCE_FLOOR:.2f}; '
+                        f'autotests=0 no cierra el loop P4.'
+                    ),
+                    'requested_at_utc': now.isoformat(),
+                    'status': 'requested',
+                }
+            )
+        return probes[:6]
+
+    def _auto_probe_suggested_tests(
+        self,
+        *,
+        finding: SelfExaminationFinding,
+    ) -> list[str]:
+        """Sugerencia de prueba concreta por categoría de finding.
+
+        Las sugerencias son comandos/descripciones estables que el orquestador
+        puede mapear a un runner real. No se lanza nada desde aquí.
+        """
+        metadata = dict(finding.metadata or {})
+        category = str(finding.category or '').strip().lower()
+        if category == 'recurring_failure':
+            scope = str(metadata.get('scope') or '').strip()
+            tests = ['pytest -q -p no:cacheprovider tests/']
+            run_ids = [ref for ref in finding.evidence_refs[:3] if str(ref).strip()]
+            if run_ids:
+                tests.append(f"reproduce_run_ids={','.join(run_ids)}")
+            if scope:
+                tests.append(f'scope={scope}')
+            return tests
+        if category == 'repeated_stall':
+            pack_id = str(metadata.get('pack_id') or '').strip()
+            tests = ['revisar defaults y readiness del pack en sandbox']
+            if pack_id:
+                tests.append(f'pack_id={pack_id}')
+            return tests
+        if category == 'route_inertia':
+            return ['re-lanzar contendiente vs ganador en ExperimentLab']
+        if category == 'repeated_block':
+            block = str(metadata.get('block') or '').strip()
+            return [f'replay con block={block}'] if block else []
+        if category == 'weak_correction':
+            return ['recapturar escena con anotacion reforzada']
+        return []
 
     def _recurring_failure_findings(self, *, recent_runs: list[RunRecord]) -> list[SelfExaminationFinding]:
         now = utc_now()
