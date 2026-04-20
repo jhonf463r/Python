@@ -358,3 +358,80 @@ def test_world_model_service_prefers_live_codex_thread_over_stale_wrong_thread_h
         assert 'hilo correcto' in codex.detail.lower()
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_world_model_service_cards_to_probe_includes_shell_and_site_explorer() -> None:
+    """_cards_to_probe debe incluir shell_command y site_explorer_v1 además de assistants.
+
+    Antes sólo se probaban tools con `assistant_kind` o en un allowlist chico
+    (`playwright_browser`, `desktop_human_runner`). Esto producía mismatches en
+    `self_audit.environment_match` porque `EnvironmentSelfModel.available_tools`
+    sí los declaraba pero `WorldModelSnapshot.tool_live_status` no.
+    """
+    workspace = _workspace('world_model_cards_probe')
+    try:
+        cards = [
+            ToolCard(
+                tool_id='ollama_llm',
+                title='Ollama LLM',
+                tool_type=ToolType.LLM_LOCAL,
+                adapter_key='ollama',
+                available=True,
+                metadata={'assistant_kind': 'ollama'},
+            ),
+            ToolCard(
+                tool_id='shell_command',
+                title='Shell command',
+                tool_type=ToolType.SHELL,
+                adapter_key='shell',
+                available=True,
+                metadata={'launch_mode': 'cli'},
+            ),
+            ToolCard(
+                tool_id='site_explorer_v1',
+                title='Site explorer',
+                tool_type=ToolType.CUSTOM,
+                adapter_key='site_explorer',
+                available=True,
+                metadata={'launch_mode': 'library'},
+            ),
+            ToolCard(
+                tool_id='playwright_browser',
+                title='Playwright',
+                tool_type=ToolType.CUSTOM,
+                adapter_key='playwright',
+                available=True,
+                metadata={'launch_mode': 'library'},
+            ),
+        ]
+
+        class _FakeRegistry:
+            def list_cards(self) -> list[ToolCard]:
+                return list(cards)
+
+            def refresh_card(self, card: ToolCard) -> ToolCard:
+                return card
+
+        service = WorldModelService(
+            workspace_root=str(workspace),
+            evolution_dir=str(workspace / 'evolution'),
+            tool_registry=_FakeRegistry(),
+            auto_start=False,
+            bootstrap_scan=False,
+        )
+
+        selected = service._cards_to_probe()
+        selected_ids = {card.tool_id for card in selected}
+
+        assert 'ollama_llm' in selected_ids
+        assert 'playwright_browser' in selected_ids
+        assert 'shell_command' in selected_ids, (
+            'shell_command debe aparecer en tool_live_status para alinear con '
+            'EnvironmentSelfModel.available_tools'
+        )
+        assert 'site_explorer_v1' in selected_ids, (
+            'site_explorer_v1 debe aparecer en tool_live_status para alinear '
+            'con EnvironmentSelfModel.available_tools'
+        )
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
