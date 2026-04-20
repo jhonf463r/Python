@@ -63,6 +63,55 @@ def _normalize_kind(value: str) -> str:
     return (value or "").strip().lower()
 
 
+# H8 — Alias para variantes comunes de ``task_kind``.
+# El router ya matcheaba por substring (``code`` → ``code_generation`` +
+# ``code_review``), pero quedaban huecos donde el nombre usado en PCS v1 / UI
+# no comparte raíz con el strength. Este mapa los resuelve antes del match
+# por substring para evitar ``task_kind_unknown`` en requests razonables.
+# Los valores deben coincidir con ``AssistantStrength.value``; si no, el
+# match por substring toma el relevo como antes.
+_TASK_KIND_ALIASES: dict[str, str] = {
+    # Frame ``structured_qa`` se confunde con task_kind en el bridge MCP.
+    "structured_qa": "structured_reasoning",
+    "question_answering": "structured_reasoning",
+    "qa": "structured_reasoning",
+    "reasoning": "structured_reasoning",
+    # RAG / retrieval-augmented generation.
+    "rag": "retrieval_augmented",
+    "retrieval": "retrieval_augmented",
+    # Long-context / summarization.
+    "summarization": "long_context_synthesis",
+    "summarize": "long_context_synthesis",
+    "long_context": "long_context_synthesis",
+    # Visión / multimodal.
+    "vision": "multimodal_vision",
+    "image_understanding": "multimodal_vision",
+    "multimodal": "multimodal_vision",
+    # Matemáticas.
+    "math": "mathematical_reasoning",
+    "maths": "mathematical_reasoning",
+    # Shell / ejecución.
+    "shell": "shell_execution",
+    "bash": "shell_execution",
+    "execute_command": "shell_execution",
+    # Web browsing.
+    "web": "web_browsing",
+    "browse": "web_browsing",
+    "browsing": "web_browsing",
+    # Código (más específico que el match por substring).
+    "coding": "code_generation",
+    "programming": "code_generation",
+    # Escritura creativa.
+    "writing": "creative_writing",
+    "creative": "creative_writing",
+}
+
+
+def _resolve_task_kind_alias(key: str) -> str:
+    """Traduce ``key`` a un ``AssistantStrength.value`` canónico si aplica."""
+    return _TASK_KIND_ALIASES.get(key, key)
+
+
 def _relevant_strengths(task_kind: str) -> set[AssistantStrength]:
     """Conjunto de strengths que ``task_kind`` considera relevantes.
 
@@ -74,11 +123,15 @@ def _relevant_strengths(task_kind: str) -> set[AssistantStrength]:
     3. si queda vacío (task_kind no mapea a nada) → set vacío y el
        router devuelve fit_score=0.0 con ``unresolved_fields`` marcando
        que el task_kind es desconocido.
+
+    Antes de (1) se aplica ``_resolve_task_kind_alias`` para normalizar
+    variantes comunes (p. ej. ``structured_qa`` → ``structured_reasoning``).
     """
 
     key = _normalize_kind(task_kind)
     if not key:
         return set()
+    key = _resolve_task_kind_alias(key)
     for strength in AssistantStrength:
         if strength.value == key:
             return {strength}

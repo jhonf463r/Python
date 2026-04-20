@@ -258,3 +258,97 @@ def test_flag_variants_are_case_insensitive(
     for raw in ("false", "0", "off", ""):
         monkeypatch.setenv(_FEATURE_FLAG_ENV, raw)
         assert router.decide(task_kind="code_generation").routing_enabled is False
+
+
+# ---------------------------------------------------------------------------
+# H8 — task_kind aliases
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "alias,expected_strength",
+    [
+        # Frame ``structured_qa`` y variantes razonables de QA.
+        ("structured_qa", AssistantStrength.STRUCTURED_REASONING),
+        ("question_answering", AssistantStrength.STRUCTURED_REASONING),
+        ("qa", AssistantStrength.STRUCTURED_REASONING),
+        ("reasoning", AssistantStrength.STRUCTURED_REASONING),
+        # RAG / retrieval.
+        ("rag", AssistantStrength.RETRIEVAL_AUGMENTED),
+        ("retrieval", AssistantStrength.RETRIEVAL_AUGMENTED),
+        # Long-context / summarization.
+        ("summarization", AssistantStrength.LONG_CONTEXT_SYNTHESIS),
+        ("summarize", AssistantStrength.LONG_CONTEXT_SYNTHESIS),
+        ("long_context", AssistantStrength.LONG_CONTEXT_SYNTHESIS),
+        # Vision.
+        ("vision", AssistantStrength.MULTIMODAL_VISION),
+        ("multimodal", AssistantStrength.MULTIMODAL_VISION),
+        # Código.
+        ("coding", AssistantStrength.CODE_GENERATION),
+        ("programming", AssistantStrength.CODE_GENERATION),
+        # Shell y web.
+        ("shell", AssistantStrength.SHELL_EXECUTION),
+        ("bash", AssistantStrength.SHELL_EXECUTION),
+        ("web", AssistantStrength.WEB_BROWSING),
+        ("browse", AssistantStrength.WEB_BROWSING),
+        # Matemáticas.
+        ("math", AssistantStrength.MATHEMATICAL_REASONING),
+    ],
+)
+def test_task_kind_alias_resolves_to_canonical_strength(
+    monkeypatch: pytest.MonkeyPatch,
+    alias: str,
+    expected_strength: AssistantStrength,
+) -> None:
+    from iabv_v15.services.roles.synaptic_router import _relevant_strengths
+
+    assert expected_strength in _relevant_strengths(alias)
+
+
+def test_structured_qa_alias_no_longer_marks_task_kind_unknown(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Regresión H8: ``structured_qa`` dejó de caer en ``task_kind_unknown``.
+
+    En ronda 6 ``synaptic_route(task_kind='structured_qa')`` devolvía
+    ``task_kind_unknown`` en ``unresolved_fields``. Con el alias, ahora se
+    mapea a ``structured_reasoning`` y los assistants con ese strength
+    obtienen ``fit_score > 0``.
+    """
+    monkeypatch.setenv(_FEATURE_FLAG_ENV, "true")
+    router = _router_with()
+
+    decision = router.decide(task_kind="structured_qa")
+
+    assert "task_kind_unknown" not in decision.unresolved_fields
+    assert decision.routing_enabled is True
+    # Codex/Claude/ChatGPT tienen STRUCTURED_REASONING → alguno debe ganar.
+    assert decision.selected_assistant_kind in {"codex", "claude_web", "chatgpt_web"}
+    assert decision.fit_score > 0.0
+
+
+def test_uppercase_and_whitespace_on_alias_still_resolves() -> None:
+    from iabv_v15.services.roles.synaptic_router import _relevant_strengths
+
+    assert AssistantStrength.STRUCTURED_REASONING in _relevant_strengths("  Structured_QA  ")
+    assert AssistantStrength.CODE_GENERATION in _relevant_strengths("CODING")
+
+
+def test_alias_does_not_override_exact_strength_value() -> None:
+    # ``code_generation`` ya es un ``AssistantStrength.value`` exacto — el
+    # alias no debe introducirse ni reemplazar el path existente.
+    from iabv_v15.services.roles.synaptic_router import _relevant_strengths
+
+    result = _relevant_strengths("code_generation")
+    assert result == {AssistantStrength.CODE_GENERATION}
+
+
+def test_truly_unknown_task_kind_still_flags_unresolved(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Un valor que no está en aliases ni en strengths sigue cayendo en el
+    # path ``task_kind_unknown`` — el aliasing NO oculta errores reales.
+    monkeypatch.setenv(_FEATURE_FLAG_ENV, "true")
+    router = _router_with()
+    decision = router.decide(task_kind="xx_truly_nonsense_kind_xx")
+    assert "task_kind_unknown" in decision.unresolved_fields
