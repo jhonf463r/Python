@@ -1,0 +1,20 @@
+{
+  "step_id": "c2d622ca-a165-46f3-88d8-cb84748423b2",
+  "channel": "background",
+  "operation": "scroll",
+  "target": "body",
+  "value_hint": "",
+  "expected_signal": "document",
+  "confidence": 0.68,
+  "metadata": {
+    "selector": "body",
+    "role": "document",
+    "capture_channel": "background",
+    "has_screenshot": false
+  },
+  "action_id": "0933bb7e-f0f7-42fd-8cac-83588d83b315",
+  "started_at_utc": "2026-04-20T02:22:13.203062Z",
+  "finished_at_utc": "2026-04-20T02:22:13.203062Z",
+  "destructive": false,
+  "requires_approval": false
+}

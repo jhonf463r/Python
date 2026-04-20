@@ -1,0 +1,34 @@
+{
+  "recommendation_id": "77dbbe84-fbbd-4a44-9c5c-5fb9cea42d19",
+  "domain": "language",
+  "subject_key": "general",
+  "recommended_route": "fallback",
+  "recommended_assistant_kind": "",
+  "recommended_assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "",
+  "score": 0.0,
+  "confidence": 0.0,
+  "rationale": "Todavia no hay una corrida exitosa para recomendar una via; conviene evitar recomendaciones automaticas hasta tener evidencia mejor.",
+  "supporting_run_ids": [],
+  "metadata": {
+    "ranked_routes": [],
+    "ranked_configurations": [],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [],
+    "comparison_scope_keys": [
+      "general:resume-tecnicamente-una-tabla-hash"
+    ]
+  },
+  "created_at_utc": "2026-04-20T01:52:36.383518Z"
+}

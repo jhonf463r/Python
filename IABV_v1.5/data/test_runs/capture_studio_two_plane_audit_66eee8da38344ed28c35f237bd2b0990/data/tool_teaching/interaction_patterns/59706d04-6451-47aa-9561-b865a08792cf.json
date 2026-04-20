@@ -1,0 +1,57 @@
+{
+  "pattern_id": "59706d04-6451-47aa-9561-b865a08792cf",
+  "signature": "01a97e597cfed5cd67e5c29859ceb22f03b2be31",
+  "title": "Wplay",
+  "channel": "ui",
+  "tool_id": "playwright_browser",
+  "tool_type": "browser",
+  "site_id": "wplay",
+  "operations": [
+    {
+      "step_id": "bbb64a9e-7bb8-490c-a76a-6882288d181e",
+      "channel": "ui",
+      "operation": "click",
+      "target": "#submit-login",
+      "value_hint": "",
+      "expected_signal": "button",
+      "confidence": 0.92,
+      "metadata": {
+        "selector": "#submit-login",
+        "role": "button",
+        "capture_channel": "visible",
+        "has_screenshot": true
+      }
+    },
+    {
+      "step_id": "77f62176-b192-494d-be96-0473dd00aec3",
+      "channel": "background",
+      "operation": "scroll",
+      "target": "body",
+      "value_hint": "",
+      "expected_signal": "document",
+      "confidence": 0.68,
+      "metadata": {
+        "selector": "body",
+        "role": "document",
+        "capture_channel": "background",
+        "has_screenshot": false
+      }
+    }
+  ],
+  "reusable": true,
+  "success_count": 1,
+  "failure_count": 0,
+  "last_task_id": null,
+  "last_result_id": null,
+  "created_at_utc": "2026-04-20T02:01:01.557371Z",
+  "updated_at_utc": "2026-04-20T02:01:01.557371Z",
+  "metadata": {
+    "objective_excerpt": "Iniciar sesion y llegar al panel principal.",
+    "source": "teaching_session",
+    "learning_status": "insufficient",
+    "login_status": "partial",
+    "visual_alignment_score": 0.5,
+    "manual_correction_count": 0,
+    "last_interaction_episode_id": "e74511a6-fbd4-43df-82f6-7fce239f7d2a"
+  }
+}

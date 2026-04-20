@@ -40,6 +40,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable, Protocol
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -112,9 +113,18 @@ def _chatgpt_heuristic(page: _PageLike) -> HeuristicResult:
 def _claude_heuristic(page: _PageLike) -> HeuristicResult:
     final_url = str(getattr(page, "url", "") or "")
     lowered = final_url.lower()
-    if "/login" in lowered and "/chat/" not in lowered and "/chats/" not in lowered:
+    path = (urlparse(lowered).path or "").rstrip("/")
+    path_segments = [seg for seg in path.split("/") if seg]
+    if path.endswith("/login") and "/chat/" not in path and "/chats/" not in path:
         return HeuristicResult(logged_in=False, reason="login_page_detected")
-    if "/chat/new" in lowered or "/new" in lowered or "/chats/" in lowered or "/chat/" in lowered:
+    # Match por segmento exacto (no substring): evita que `/news` o
+    # `/newsletter` colisionen con la señal `/new`. Aceptamos:
+    #   * `/new`, `/new/...`
+    #   * `/chat`, `/chat/...`, `/chat/new/...`
+    #   * `/chats`, `/chats/...`
+    if path_segments and (
+        path_segments[0] in {"new", "chat", "chats"}
+    ):
         return HeuristicResult(
             logged_in=True,
             reason="chat_route_reached",
@@ -492,10 +502,15 @@ def _safe_screenshot(page: Any) -> str:
     if not raw:
         return ""
     if len(raw) > SCREENSHOT_MAX_BYTES:
-        # PNG es un binario estructurado (header + chunks + CRC): slicearlo
-        # a la mitad produce un archivo que ningún decoder sabe leer. En
-        # ese caso preferimos omitir la evidencia antes que devolver una
-        # imagen corrupta.
+        # Truncar bytes PNG rompe la firma IEND y produce una imagen
+        # indecodable. En vez de shipear basura, dropeamos el screenshot
+        # completo y dejamos que el caller note `screenshot_png_b64`
+        # vacío como señal de "demasiado grande".
+        logger.debug(
+            "probe_assistant_login screenshot %d bytes > %d (SCREENSHOT_MAX_BYTES); dropping",
+            len(raw),
+            SCREENSHOT_MAX_BYTES,
+        )
         return ""
     return base64.b64encode(raw).decode("ascii")
 

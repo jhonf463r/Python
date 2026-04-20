@@ -1,0 +1,285 @@
+{
+  "episode_id": "2f4cbfe8-5dc7-45f8-bfa7-8063a411c011",
+  "site_id": "generic_web",
+  "display_name": "Sitio web generico",
+  "bundle_id": "810e2a64-04ca-4c22-be8b-ef2075947e08",
+  "url": "https://www.google.com",
+  "capture_channels": [
+    "visible",
+    "background",
+    "api"
+  ],
+  "channel_counts": {
+    "background": 1
+  },
+  "action_counts": {
+    "teaching_brief": 1,
+    "click": 1,
+    "scroll": 1
+  },
+  "artifact_count": 1,
+  "step_count": 3,
+  "visible_step_count": 1,
+  "relevant_step_count": 1,
+  "screenshot_step_count": 1,
+  "capture_stats": {},
+  "redaction_summary": {
+    "redacted_steps": 1,
+    "redacted_network_fields": 2,
+    "stored_secrets": 1,
+    "warnings": []
+  },
+  "learning_readiness": {
+    "status": "insufficient",
+    "summary": "Visible 1, relevantes 1, capturas 1, canales 3, login partial, acuerdo visual 0.00.",
+    "learning_coverage_score": 1.5,
+    "visual_alignment_score": 0.5,
+    "critical_object_coverage": 1.0,
+    "login_visual_completeness": 1.0,
+    "manual_correction_count": 0,
+    "observer_agreement_score": 0.0,
+    "target_element_alignment": 0.0
+  },
+  "login_learning": {
+    "status": "partial",
+    "summary": "La ensenanza entiende partes importantes del login, pero todavia no conviene asumir ejecucion automatica completa.",
+    "signals": [
+      "envio de login detectado",
+      "objetos criticos visuales confirmados"
+    ],
+    "missing_signals": [
+      "falta detectar un campo de correo o usuario",
+      "falta detectar un campo de contrasena",
+      "falta evidencia solida de que la sesion quedo autenticada"
+    ],
+    "login_visual_completeness": 1.0,
+    "critical_object_coverage": 1.0,
+    "suggested_commands": [
+      "Abrir Sitio web generico",
+      "Abrir Sitio web generico e iniciar sesion"
+    ]
+  },
+  "suggested_commands": [
+    "Abrir Sitio web generico",
+    "Abrir Sitio web generico e iniciar sesion"
+  ],
+  "visual_summary": {
+    "learning_coverage_score": 1.5,
+    "visual_alignment_score": 0.5,
+    "manual_correction_count": 0,
+    "critical_object_coverage": 1.0,
+    "login_visual_completeness": 1.0,
+    "known_count": 1,
+    "uncertain_count": 2,
+    "missing_count": 0,
+    "green_count": 1,
+    "orange_count": 2,
+    "red_count": 0,
+    "user_corrected_count": 0
+  },
+  "visual_teaching_frames": [
+    {
+      "frame_id": "7c34d228-a2df-4286-a2f2-ba537e16bffe",
+      "episode_id": "2f4cbfe8-5dc7-45f8-bfa7-8063a411c011",
+      "step_id": "25690e6e-8324-48a0-b7dc-f3f8607705b9",
+      "objective": "Ingresar",
+      "mode_used": "ui",
+      "screenshot_ref": "/home/ubuntu/repos/Python/IABV_v1.5/data/test_runs/capture_studio_user_clue_e36cd6d225c0427ebedb868c4ad54d78/data/screenshots/2f4cbfe8-5dc7-45f8-bfa7-8063a411c011/visible_step.png",
+      "detected_objects": [],
+      "user_click": null,
+      "object_links": [],
+      "cross_check": {
+        "cross_check_id": "01a15546-9641-49d4-abfb-c2f66c4b1e30",
+        "status": "insufficient",
+        "matched": false,
+        "annotation_id": "",
+        "click_id": "",
+        "discrepancy": "missing_detected_object_or_click_trace",
+        "rationale": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+        "confidence": 0.24,
+        "metadata": {}
+      },
+      "notes": [],
+      "metadata": {
+        "action_type": "click",
+        "element_role": "button",
+        "selector": "#submit-login",
+        "channel": "visible",
+        "confidence_score": 0.86
+      }
+    },
+    {
+      "frame_id": "a971ae58-daf0-41b4-b817-d7b2f207f7d4",
+      "episode_id": "2f4cbfe8-5dc7-45f8-bfa7-8063a411c011",
+      "step_id": "3536a54d-340e-49f5-a657-309a4be9423f",
+      "objective": "body",
+      "mode_used": "ui",
+      "screenshot_ref": "",
+      "detected_objects": [],
+      "user_click": null,
+      "object_links": [],
+      "cross_check": {
+        "cross_check_id": "1c48548a-3bdc-435b-9af6-8f5d6070acd7",
+        "status": "insufficient",
+        "matched": false,
+        "annotation_id": "",
+        "click_id": "",
+        "discrepancy": "missing_detected_object_or_click_trace",
+        "rationale": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+        "confidence": 0.24,
+        "metadata": {}
+      },
+      "notes": [],
+      "metadata": {
+        "action_type": "scroll",
+        "element_role": "document",
+        "selector": "body",
+        "channel": "background",
+        "confidence_score": 0.45
+      }
+    }
+  ],
+  "teaching_evidence": [
+    {
+      "evidence_id": "f3dc9877-b344-4e9e-815a-a6c115ebc987",
+      "episode_id": "2f4cbfe8-5dc7-45f8-bfa7-8063a411c011",
+      "frame_id": "7c34d228-a2df-4286-a2f2-ba537e16bffe",
+      "summary": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+      "screenshot_ref": "/home/ubuntu/repos/Python/IABV_v1.5/data/test_runs/capture_studio_user_clue_e36cd6d225c0427ebedb868c4ad54d78/data/screenshots/2f4cbfe8-5dc7-45f8-bfa7-8063a411c011/visible_step.png",
+      "confidence": 0.24,
+      "metadata": {
+        "step_id": "25690e6e-8324-48a0-b7dc-f3f8607705b9",
+        "label": "Ingresar"
+      }
+    },
+    {
+      "evidence_id": "610076ca-d35f-446f-9da9-10f1950a8969",
+      "episode_id": "2f4cbfe8-5dc7-45f8-bfa7-8063a411c011",
+      "frame_id": "a971ae58-daf0-41b4-b817-d7b2f207f7d4",
+      "summary": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+      "screenshot_ref": "",
+      "confidence": 0.24,
+      "metadata": {
+        "step_id": "3536a54d-340e-49f5-a657-309a4be9423f",
+        "label": "body"
+      }
+    }
+  ],
+  "cross_check_summary": {
+    "frame_count": 2,
+    "confirmed_count": 0,
+    "doubtful_count": 0,
+    "insufficient_count": 2,
+    "observer_agreement_score": 0.0,
+    "target_element_alignment": 0.0,
+    "learning_status": "insufficient"
+  },
+  "teaching_episode": {
+    "teaching_episode_id": "ab4258f9-ce32-4b9a-b44c-9cc08ca6b141",
+    "episode_id": "2f4cbfe8-5dc7-45f8-bfa7-8063a411c011",
+    "objective": "Ensenanza guiada de Sitio web generico",
+    "mode_used": "ui",
+    "frames": [
+      {
+        "frame_id": "7c34d228-a2df-4286-a2f2-ba537e16bffe",
+        "episode_id": "2f4cbfe8-5dc7-45f8-bfa7-8063a411c011",
+        "step_id": "25690e6e-8324-48a0-b7dc-f3f8607705b9",
+        "objective": "Ingresar",
+        "mode_used": "ui",
+        "screenshot_ref": "/home/ubuntu/repos/Python/IABV_v1.5/data/test_runs/capture_studio_user_clue_e36cd6d225c0427ebedb868c4ad54d78/data/screenshots/2f4cbfe8-5dc7-45f8-bfa7-8063a411c011/visible_step.png",
+        "detected_objects": [],
+        "user_click": null,
+        "object_links": [],
+        "cross_check": {
+          "cross_check_id": "01a15546-9641-49d4-abfb-c2f66c4b1e30",
+          "status": "insufficient",
+          "matched": false,
+          "annotation_id": "",
+          "click_id": "",
+          "discrepancy": "missing_detected_object_or_click_trace",
+          "rationale": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+          "confidence": 0.24,
+          "metadata": {}
+        },
+        "notes": [],
+        "metadata": {
+          "action_type": "click",
+          "element_role": "button",
+          "selector": "#submit-login",
+          "channel": "visible",
+          "confidence_score": 0.86
+        }
+      },
+      {
+        "frame_id": "a971ae58-daf0-41b4-b817-d7b2f207f7d4",
+        "episode_id": "2f4cbfe8-5dc7-45f8-bfa7-8063a411c011",
+        "step_id": "3536a54d-340e-49f5-a657-309a4be9423f",
+        "objective": "body",
+        "mode_used": "ui",
+        "screenshot_ref": "",
+        "detected_objects": [],
+        "user_click": null,
+        "object_links": [],
+        "cross_check": {
+          "cross_check_id": "1c48548a-3bdc-435b-9af6-8f5d6070acd7",
+          "status": "insufficient",
+          "matched": false,
+          "annotation_id": "",
+          "click_id": "",
+          "discrepancy": "missing_detected_object_or_click_trace",
+          "rationale": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+          "confidence": 0.24,
+          "metadata": {}
+        },
+        "notes": [],
+        "metadata": {
+          "action_type": "scroll",
+          "element_role": "document",
+          "selector": "body",
+          "channel": "background",
+          "confidence_score": 0.45
+        }
+      }
+    ],
+    "evidence": [
+      {
+        "evidence_id": "f3dc9877-b344-4e9e-815a-a6c115ebc987",
+        "episode_id": "2f4cbfe8-5dc7-45f8-bfa7-8063a411c011",
+        "frame_id": "7c34d228-a2df-4286-a2f2-ba537e16bffe",
+        "summary": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+        "screenshot_ref": "/home/ubuntu/repos/Python/IABV_v1.5/data/test_runs/capture_studio_user_clue_e36cd6d225c0427ebedb868c4ad54d78/data/screenshots/2f4cbfe8-5dc7-45f8-bfa7-8063a411c011/visible_step.png",
+        "confidence": 0.24,
+        "metadata": {
+          "step_id": "25690e6e-8324-48a0-b7dc-f3f8607705b9",
+          "label": "Ingresar"
+        }
+      },
+      {
+        "evidence_id": "610076ca-d35f-446f-9da9-10f1950a8969",
+        "episode_id": "2f4cbfe8-5dc7-45f8-bfa7-8063a411c011",
+        "frame_id": "a971ae58-daf0-41b4-b817-d7b2f207f7d4",
+        "summary": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+        "screenshot_ref": "",
+        "confidence": 0.24,
+        "metadata": {
+          "step_id": "3536a54d-340e-49f5-a657-309a4be9423f",
+          "label": "body"
+        }
+      }
+    ],
+    "cross_check_summary": {
+      "frame_count": 2,
+      "confirmed_count": 0,
+      "doubtful_count": 0,
+      "insufficient_count": 2,
+      "observer_agreement_score": 0.0,
+      "target_element_alignment": 0.0,
+      "learning_status": "insufficient"
+    },
+    "learning_status": "insufficient",
+    "metadata": {
+      "site_id": "generic_web",
+      "display_name": "Sitio web generico"
+    }
+  }
+}

@@ -6,7 +6,7 @@
   "adapter_key": "desktop_human",
   "validation_status": "unvalidated",
   "local_first": true,
-  "available": true,
+  "available": false,
   "supports_sandbox": true,
   "supports_write": true,
   "requires_human_approval": true,
@@ -30,6 +30,6 @@
     "launch_mode": "desktop_real",
     "response_capture_mode": "local_evidence",
     "requires_manual_pasteback": false,
-    "updated_at_utc": "2026-04-10T22:14:51.340032+00:00"
+    "updated_at_utc": "2026-04-20T02:20:54.303171+00:00"
   }
 }

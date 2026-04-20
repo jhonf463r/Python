@@ -1,0 +1,14 @@
+{
+  "checkpoint_id": "524cd791-9007-4fce-a8df-09e10976e8e8",
+  "session_id": "39d0788b-968c-4a92-b530-b5086c9d3e2e",
+  "playbook_id": "1268ee9f-05a2-4bb2-ac6e-f1c09df4e0ef",
+  "title": "Aprobar fase critica",
+  "detail": "La siguiente fase toca login sensible, dinero o una accion operativa delicada.",
+  "decision": "pending",
+  "phase_key": "execute_sensitive",
+  "reason": "No se omiten checkpoints explicitos en acciones sensibles o monetarias.",
+  "risk_level": "high",
+  "created_at_utc": "2026-04-20T02:00:40.829973Z",
+  "decided_at_utc": null,
+  "metadata": {}
+}

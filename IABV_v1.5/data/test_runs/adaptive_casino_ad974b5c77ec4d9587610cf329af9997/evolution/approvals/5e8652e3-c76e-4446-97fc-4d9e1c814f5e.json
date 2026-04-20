@@ -1,0 +1,14 @@
+{
+  "checkpoint_id": "5e8652e3-c76e-4446-97fc-4d9e1c814f5e",
+  "session_id": "8e873eb4-fe7f-46d4-8ede-42177df31e17",
+  "playbook_id": "b4b72460-decf-4a6e-9d2d-57115a9485b9",
+  "title": "Aprobar estrategia",
+  "detail": "Se propone Conservadora con guardrails antes de pasar a la fase operativa.",
+  "decision": "pending",
+  "phase_key": "strategy",
+  "reason": "El flujo requiere confirmacion humana antes de seguir.",
+  "risk_level": "critical",
+  "created_at_utc": "2026-04-20T02:21:12.026300Z",
+  "decided_at_utc": null,
+  "metadata": {}
+}

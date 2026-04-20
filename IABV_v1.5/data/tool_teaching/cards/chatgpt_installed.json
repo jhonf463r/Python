@@ -6,7 +6,7 @@
   "adapter_key": "external_assistant",
   "validation_status": "unvalidated",
   "local_first": false,
-  "available": true,
+  "available": false,
   "supports_sandbox": true,
   "supports_write": false,
   "requires_human_approval": true,
@@ -48,6 +48,6 @@
     "submit_prompt_after_paste": true,
     "response_wait_seconds": 10.0,
     "dry_run_launch": false,
-    "updated_at_utc": "2026-04-10T22:14:51.452496+00:00"
+    "updated_at_utc": "2026-04-20T02:20:54.315321+00:00"
   }
 }

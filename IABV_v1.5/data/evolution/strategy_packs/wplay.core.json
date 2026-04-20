@@ -29,7 +29,7 @@
   ],
   "parameter_schema": [
     {
-      "parameter_id": "1caf43a8-f21e-4e32-9a2b-39f97141550f",
+      "parameter_id": "41e6bcaf-199a-43ea-8521-e622a4998c21",
       "key": "login_mode",
       "label": "Modo de sesion",
       "description": "Preferencia de restauracion o login guiado.",
@@ -60,6 +60,6 @@
     "need_reteach"
   ],
   "metadata": {
-    "updated_at_utc": "2026-04-10T22:14:51.555759+00:00"
+    "updated_at_utc": "2026-04-20T02:20:55.474646+00:00"
   }
 }

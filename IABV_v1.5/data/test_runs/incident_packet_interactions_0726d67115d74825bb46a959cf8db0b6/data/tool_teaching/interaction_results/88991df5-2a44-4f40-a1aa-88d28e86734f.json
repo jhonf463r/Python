@@ -1,0 +1,22 @@
+{
+  "interaction_result_id": "88991df5-2a44-4f40-a1aa-88d28e86734f",
+  "success": true,
+  "execution_state": {
+    "state": "observed",
+    "detail": "ok",
+    "executor_name": "",
+    "sandboxed": false,
+    "validated": false,
+    "approval_decision": "pending",
+    "destructive_blocked": false,
+    "metadata": {}
+  },
+  "summary": "ok",
+  "errors": [],
+  "confidence": 0.84,
+  "execution_ms": 0,
+  "rollback_state": null,
+  "extracted_data": {},
+  "artifacts": [],
+  "metadata": {}
+}

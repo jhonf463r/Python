@@ -1,0 +1,21 @@
+{
+  "capability_id": "wplay.login",
+  "title": "Login Wplay",
+  "status": "insufficient",
+  "score": 0.18,
+  "site_id": "wplay",
+  "evidence": [
+    "No encontre ensenanza reciente con login completo."
+  ],
+  "missing_signals": [
+    "Reforzar correo, contrasena, submit y evidencia visual del login."
+  ],
+  "last_episode_id": "562dc2b2-10ca-433b-b7ac-1d3a24721756",
+  "suggested_next_step": "Si ya esta ready_with_approval, aprobar la fase de login. Si no, corrige el replay o reensenalo.",
+  "metadata": {
+    "visual_alignment_score": 0.0,
+    "critical_object_coverage": 0.0,
+    "login_visual_completeness": 0.0,
+    "manual_correction_count": 0
+  }
+}

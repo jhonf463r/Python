@@ -1,0 +1,33 @@
+{
+  "recommendation_id": "73696105-0bb3-4ef0-aa28-aa8a369ec778",
+  "domain": "code",
+  "subject_key": "wplay",
+  "recommended_route": "language_understanding",
+  "recommended_assistant_kind": "claude",
+  "recommended_assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "extended",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "hist-claude-cfg",
+  "score": 0.91,
+  "confidence": 0.87,
+  "rationale": "Claude resolvio mejor este incidente tecnico repetido.",
+  "supporting_run_ids": [],
+  "metadata": {
+    "winning_trace_ids": [
+      "trace-win-1"
+    ],
+    "comparison_scope_keys": [
+      "wplay:bridge-lag"
+    ]
+  },
+  "created_at_utc": "2026-04-20T02:21:15.262985Z"
+}

@@ -1,0 +1,13 @@
+{
+  "episode_id": "e30c7980-9431-48b9-ba19-b7da63accdcf",
+  "title": "Sesion login legacy",
+  "created_at_utc": "2026-04-20T01:49:49.683692Z",
+  "updated_at_utc": "2026-04-20T01:49:49.686269Z",
+  "step_count": 1,
+  "source": "desktop",
+  "tags": [
+    "browser_teach",
+    "site:generic_web"
+  ],
+  "notes": "teach_url=https://example.com/login"
+}

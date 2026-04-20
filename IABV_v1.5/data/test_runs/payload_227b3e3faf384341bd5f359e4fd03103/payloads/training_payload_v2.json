@@ -1,0 +1,96 @@
+{
+  "spec": {
+    "version": 2,
+    "fields": [
+      "episodes",
+      "steps",
+      "artifacts",
+      "knowledge_items",
+      "run_records",
+      "capture_channels",
+      "site_context",
+      "redaction_summary",
+      "metadata"
+    ]
+  },
+  "payload": {
+    "version": 2,
+    "generated_at_utc": "2026-04-20T02:24:49.059439Z",
+    "workspace": "/home/ubuntu/repos/Python/IABV_v1.5/data/test_runs/payload_227b3e3faf384341bd5f359e4fd03103",
+    "episodes": [
+      {
+        "episode_id": "4f61514a-6103-40b6-b3a6-40c7117df36d",
+        "title": "Teach Session",
+        "created_at_utc": "2026-04-20T02:24:49.048579Z",
+        "updated_at_utc": "2026-04-20T02:24:49.051546Z",
+        "step_count": 1,
+        "source": "desktop",
+        "tags": [
+          "browser_teach"
+        ],
+        "notes": ""
+      }
+    ],
+    "steps": [
+      {
+        "step_id": "cd62a27c-5e45-41d0-816e-4c8f4139a00a",
+        "episode_id": "4f61514a-6103-40b6-b3a6-40c7117df36d",
+        "timestamp_utc": "2026-04-20T02:24:49.051260Z",
+        "action_type": "input",
+        "target": "#password",
+        "text_value": null,
+        "screenshot_path": null,
+        "metadata": {
+          "sensitive": true,
+          "masked_value": "[REDACTED]",
+          "vault_ref": {
+            "ref_id": "123"
+          }
+        }
+      }
+    ],
+    "artifacts": [
+      {
+        "artifact_id": "b7546cd9-294e-4c29-9836-056e4c86a164",
+        "episode_id": "4f61514a-6103-40b6-b3a6-40c7117df36d",
+        "kind": "dom_snapshot",
+        "path": "/home/ubuntu/repos/Python/IABV_v1.5/data/test_runs/payload_227b3e3faf384341bd5f359e4fd03103/artifacts/4f61514a-6103-40b6-b3a6-40c7117df36d/background/dom.json",
+        "created_at_utc": "2026-04-20T02:24:49.054033Z",
+        "metadata": {
+          "capture_channel": "background",
+          "redacted": true,
+          "site_id": "generic_web"
+        }
+      }
+    ],
+    "knowledge_items": [],
+    "run_records": [],
+    "capture_channels": [
+      "background"
+    ],
+    "site_context": {
+      "domains": [],
+      "site_ids": [
+        "generic_web"
+      ],
+      "episode_count": 1
+    },
+    "redaction_summary": {
+      "redacted_steps": 1,
+      "redacted_network_fields": 0,
+      "stored_secrets": 1,
+      "warnings": [
+        "Artifact dom_snapshot was stored redacted."
+      ]
+    },
+    "metadata": {
+      "source": "desktop-control-app",
+      "browser_teach_mode": true,
+      "artifact_count": 1
+    }
+  },
+  "meta": {
+    "saved_at": "2026-04-20T02:24:49.059563+00:00",
+    "snapshot_hash": "9fd6deb5c9816c7c090e0ad1cd14c76f5a85d77c"
+  }
+}

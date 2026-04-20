@@ -1,0 +1,20 @@
+{
+  "capability_id": "wplay.navigate.casino",
+  "title": "Navegacion hacia casino en Wplay",
+  "status": "partial",
+  "score": 0.56,
+  "site_id": "wplay",
+  "evidence": [
+    "navegacion hacia casino detectada"
+  ],
+  "missing_signals": [
+    "Hace falta una ensenanza con pasos claros hasta casino y evidencia visual consistente."
+  ],
+  "last_episode_id": "0c6cc165-0469-4512-9a52-af7a2aaa6d84",
+  "suggested_next_step": "Revisar o reforzar una ensenanza que llegue a casino antes de intentar la fase de juego.",
+  "metadata": {
+    "visual_alignment_score": 0.0,
+    "critical_object_coverage": 0.0,
+    "manual_correction_count": 0
+  }
+}

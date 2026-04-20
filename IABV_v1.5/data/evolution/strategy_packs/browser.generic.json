@@ -51,7 +51,7 @@
   ],
   "parameter_schema": [
     {
-      "parameter_id": "947f7808-b0fe-4094-a642-bd8d4c893bea",
+      "parameter_id": "7fc3821e-0091-49ce-8662-4278a65dde08",
       "key": "target_site",
       "label": "Sitio objetivo",
       "description": "Sitio o dominio sobre el que se trabajara.",
@@ -63,7 +63,7 @@
       "options": []
     },
     {
-      "parameter_id": "8b9f7e57-5ff8-4e53-8ac9-acc075dbeba5",
+      "parameter_id": "815e1623-18b1-4163-a261-356b1504f066",
       "key": "target_goal",
       "label": "Objetivo",
       "description": "Tarea puntual de la navegacion.",
@@ -91,6 +91,6 @@
     "sitio ambiguo"
   ],
   "metadata": {
-    "updated_at_utc": "2026-04-10T22:14:51.542270+00:00"
+    "updated_at_utc": "2026-04-20T02:20:55.470527+00:00"
   }
 }

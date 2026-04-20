@@ -32,7 +32,7 @@
   ],
   "parameter_schema": [
     {
-      "parameter_id": "c2244d4e-8e79-427a-8e03-70d882058d7f",
+      "parameter_id": "e73798b3-c89b-479c-bbff-fd2a1c015ecf",
       "key": "tool_id",
       "label": "Herramienta",
       "description": "ToolCard a validar en sandbox.",
@@ -58,6 +58,6 @@
     "sandbox_fail"
   ],
   "metadata": {
-    "updated_at_utc": "2026-04-10T22:14:51.614535+00:00"
+    "updated_at_utc": "2026-04-20T02:20:55.486629+00:00"
   }
 }

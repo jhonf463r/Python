@@ -364,6 +364,85 @@ def test_probe_includes_screenshot_when_requested() -> None:
     assert result["evidence"]["screenshot_png_b64"]  # non-empty
 
 
+def test_probe_drops_oversized_screenshot_instead_of_truncating() -> None:
+    """Regresión: si el screenshot excede ``SCREENSHOT_MAX_BYTES`` la tool
+    debe dropear el payload (no truncar bytes PNG → imagen corrupta
+    indecodable).
+    """
+
+    import sys
+
+    mod = sys.modules["iabv_v15.infra.mcp.audit_tools.probe_assistant_login"]
+    oversized = b"\x89PNG\r\n\x1a\n" + b"X" * (mod.SCREENSHOT_MAX_BYTES + 10)
+    page = _FakePage(
+        url="https://claude.ai/chat/new",
+        title="Claude",
+        screenshot_bytes=oversized,
+    )
+    controller = _FakeController(page)
+
+    result = probe_assistant_login(
+        "claude",
+        controller_factory=lambda: controller,
+        include_screenshot=True,
+        now_utc=_fixed_now(),
+    )
+
+    assert result["logged_in"] is True
+    # Dropped: la clave queda ausente (la tool sólo incluye
+    # ``screenshot_png_b64`` cuando pudo shipear bytes válidos).
+    assert "screenshot_png_b64" not in result["evidence"]
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://claude.ai/news",
+        "https://claude.ai/news/release-2026-04",
+        "https://claude.ai/newsletter",
+    ],
+)
+def test_claude_heuristic_does_not_match_news_as_logged_in(url: str) -> None:
+    """Regresión: el substring ``/new`` no debe matchear ``/news`` ni
+    ``/newsletter``.  El path debe resolverse por segmento.
+    """
+
+    page = _FakePage(url=url, title="Claude")
+    controller = _FakeController(page)
+
+    result = probe_assistant_login(
+        "claude",
+        controller_factory=lambda: controller,
+        now_utc=_fixed_now(),
+    )
+
+    assert result["logged_in"] is False
+    assert result["reason"] == "no_logged_in_marker"
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://claude.ai/new",
+        "https://claude.ai/new/",
+        "https://claude.ai/chat/new",
+        "https://claude.ai/chats/abc-123",
+    ],
+)
+def test_claude_heuristic_matches_real_chat_routes(url: str) -> None:
+    page = _FakePage(url=url, title="Claude")
+    controller = _FakeController(page)
+
+    result = probe_assistant_login(
+        "claude",
+        controller_factory=lambda: controller,
+        now_utc=_fixed_now(),
+    )
+
+    assert result["logged_in"] is True
+    assert result["reason"] == "chat_route_reached"
+
+
 def test_probe_shared_cdp_mode_uses_cdp_factory_default(monkeypatch: pytest.MonkeyPatch) -> None:
     # El paquete __init__ re-exporta ``probe_assistant_login`` como atributo
     # (shadow del submódulo a nivel de getattr), por eso resolvemos el módulo

@@ -1,0 +1,42 @@
+{
+  "pack_id": "analytics.strategy",
+  "title": "Analitica y estrategia",
+  "domain_kind": "analytics",
+  "supported_intents": [
+    "analytics.strategy"
+  ],
+  "required_capabilities": [
+    "analytics.report.local"
+  ],
+  "required_context": [
+    "recent_runs",
+    "knowledge_hits"
+  ],
+  "available_algorithms": [
+    {
+      "algorithm_id": "metrics_first_strategy",
+      "title": "Metricas primero",
+      "summary": "Prioriza datos reales y despues propone la estrategia o experimento.",
+      "parameter_keys": [],
+      "success_signals": [],
+      "fallback_signals": [],
+      "notes": ""
+    }
+  ],
+  "parameter_schema": [],
+  "risk_level": "low",
+  "approval_policy": "never",
+  "execution_templates": [
+    "leer metricas",
+    "proponer acciones"
+  ],
+  "success_signals": [
+    "metricas reales"
+  ],
+  "fallback_signals": [
+    "lack_of_data"
+  ],
+  "metadata": {
+    "updated_at_utc": "2026-04-20T02:01:02.900452+00:00"
+  }
+}

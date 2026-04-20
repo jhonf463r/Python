@@ -1,0 +1,32 @@
+{
+  "tool_id": "site_explorer_v1",
+  "title": "Site explorer v1",
+  "tool_type": "browser",
+  "description": "Explorador acotado de sitios: crawl BFS mismo dominio y manual persistido por hostname.",
+  "adapter_key": "site_explorer",
+  "validation_status": "unvalidated",
+  "local_first": true,
+  "available": true,
+  "supports_sandbox": true,
+  "supports_write": true,
+  "requires_human_approval": true,
+  "supports_rollback": false,
+  "capabilities": [
+    "open_url",
+    "explore_site",
+    "catalog_pages",
+    "persist_site_manual"
+  ],
+  "success_count": 0,
+  "failure_count": 0,
+  "last_result_id": null,
+  "last_validated_at_utc": null,
+  "metadata": {
+    "manual_root": "data/evolution/site_manuals/",
+    "default_max_pages": 6,
+    "same_domain_only": true,
+    "mutates_remote_state": false,
+    "llm_optional_summary": true,
+    "updated_at_utc": "2026-04-20T02:20:54.324041+00:00"
+  }
+}

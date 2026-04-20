@@ -1,0 +1,20 @@
+{
+  "step_id": "573ed03a-2a97-4d98-89a9-8bea394a5c94",
+  "channel": "ui",
+  "operation": "click",
+  "target": "#submit-login",
+  "value_hint": "",
+  "expected_signal": "button",
+  "confidence": 0.92,
+  "metadata": {
+    "selector": "#submit-login",
+    "role": "button",
+    "capture_channel": "visible",
+    "has_screenshot": true
+  },
+  "action_id": "5229759a-8e5f-4e50-9098-cb24f035a744",
+  "started_at_utc": "2026-04-20T01:52:50.472384Z",
+  "finished_at_utc": "2026-04-20T01:52:50.472384Z",
+  "destructive": false,
+  "requires_approval": false
+}
