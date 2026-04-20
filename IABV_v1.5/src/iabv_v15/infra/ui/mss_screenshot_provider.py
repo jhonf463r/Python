@@ -129,12 +129,30 @@ class MssScreenshotProvider:
             from PIL import Image  # type: ignore
 
             size = getattr(shot, "size", None)
-            raw = getattr(shot, "bgra", None) or getattr(shot, "rgb", None)
-            if size is None or raw is None:
+            if size is None:
+                return b""
+            # mss 10.x expone `.bgra` como `@property` que crea un `bytes`
+            # nuevo en cada acceso (`bytes(self.raw)` sobre un ctypes
+            # array). Por eso NO podemos usar `is` para decidir qué
+            # buffer tomamos — siempre daría False sobre ScreenShot
+            # reales. Resolvemos con una flag explícita.
+            raw = getattr(shot, "bgra", None)
+            is_bgra = raw is not None
+            if raw is None:
+                raw = getattr(shot, "rgb", None)
+            if raw is None:
                 return b""
             width, height = size
-            mode = "RGBA" if getattr(shot, "bgra", None) is raw else "RGB"
-            image = Image.frombytes(mode, (int(width), int(height)), bytes(raw), "raw", mode if mode == "RGB" else "BGRA")
+            if is_bgra:
+                mode = "RGBA"
+                image = Image.frombytes(
+                    mode, (int(width), int(height)), bytes(raw), "raw", "BGRA"
+                )
+            else:
+                mode = "RGB"
+                image = Image.frombytes(
+                    mode, (int(width), int(height)), bytes(raw), "raw", "RGB"
+                )
             buffer = io.BytesIO()
             image.save(buffer, format="PNG")
             return buffer.getvalue()
