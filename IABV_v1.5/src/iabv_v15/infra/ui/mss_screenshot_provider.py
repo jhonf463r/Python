@@ -108,11 +108,13 @@ class MssScreenshotProvider:
             if size is None or raw is None:
                 return b""
             width, height = size
-            buffer = io.BytesIO()
-            to_png(raw, (int(width), int(height)), output=buffer)
-            data = buffer.getvalue()
+            # mss.tools.to_png firma: `output: Path | str | None`. Si
+            # `output` es None devuelve los bytes PNG directo (mss v10+
+            # usa `open(output, "wb")` internamente, así que pasar un
+            # BytesIO levanta TypeError).
+            data = to_png(raw, (int(width), int(height)))
             if data:
-                return data
+                return bytes(data)
         except Exception as exc:  # pragma: no cover - fallback
             logger.debug("mss.tools.to_png falló: %r", exc)
 
