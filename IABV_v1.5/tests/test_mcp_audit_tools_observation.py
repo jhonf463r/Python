@@ -17,6 +17,32 @@ from iabv_v15.infra.mcp import audit_tools_observation as obs
 
 
 # ---------------------------------------------------------------------------
+# _sanitize_cmdline — tests unitarios puros
+
+def test_sanitize_cmdline_handles_non_string_between_flag_and_value() -> None:
+    """Regresión: si entre un flag sensible y su valor hay un non-string,
+    la redacción no debe propagarse al siguiente string legítimo.
+
+    Antes: ``["--token", 123, "https://api.example.com"]`` terminaba con
+    la URL redactada y el 123 silenciosamente descartado. Ahora el slot
+    posicional se consume con el non-string (se redacta in-place) y la
+    URL pasa intacta.
+    """
+
+    result = obs._sanitize_cmdline(["--token", 123, "https://api.example.com"])
+    # El valor real del token (123, non-string) se redacta in place.
+    # La URL posterior queda intacta.
+    assert result == ["<redacted>", "<redacted>", "https://api.example.com"]
+
+
+def test_sanitize_cmdline_space_separated_value_is_redacted() -> None:
+    """Caso base: flag sensible sin `=` → valor posicional redactado."""
+
+    result = obs._sanitize_cmdline(["--token", "sk-abc", "--flag", "ok"])
+    assert result == ["<redacted>", "<redacted>", "--flag", "ok"]
+
+
+# ---------------------------------------------------------------------------
 # Helpers: instalar/remover un módulo fake
 
 def _install_fake_module(monkeypatch: pytest.MonkeyPatch, name: str, module: ModuleType) -> None:

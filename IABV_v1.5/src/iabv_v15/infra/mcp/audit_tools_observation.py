@@ -77,6 +77,13 @@ def _sanitize_cmdline(parts: list[str] | None) -> list[str]:
     redact_next = False
     for raw in parts[:50]:  # max 50 args por proceso
         if not isinstance(raw, str):
+            # Un elemento no-string no puede coincidir con patrones
+            # sensibles, pero sí consume el "slot" del valor posicional
+            # si venimos de un flag sensible. Redactamos y reseteamos el
+            # flag para no propagar la redacción al siguiente string.
+            if redact_next:
+                out.append("<redacted>")
+                redact_next = False
             continue
         if redact_next:
             out.append("<redacted>")
