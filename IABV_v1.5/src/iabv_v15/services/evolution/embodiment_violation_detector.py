@@ -44,29 +44,38 @@ from iabv_v15.domain.models import (
 # ``embodiment_manifest`` gana nuevos sensores, este detector puede
 # extenderse sin depender del MCP server en runtime. Cubre las 14
 # entradas del manifest con ≥8 categorías heurísticas.
+#
+# ORDEN IMPORTA: el match es first-wins por substring. Las entradas más
+# específicas deben ir antes que las genéricas. Ejemplo crítico:
+# ``list_open_windows`` usa keywords como ``'ventanas abiertas'`` que
+# contienen la keyword corta ``'ventana'`` de ``world_model_snapshot``;
+# si world_model viene primero, list_open_windows queda inaccesible y
+# el detector marcaría SENSOR_BYPASS justo cuando el asistente usó la
+# tool correcta del manifest. Mantener las entradas específicas arriba.
 _SENSOR_TABLE: tuple[tuple[tuple[str, ...], str], ...] = (
-    # world_model_snapshot — ventanas, foco, pantalla, proceso visible.
+    # list_open_windows — ventanas abiertas (ANTES de world_model_snapshot,
+    # ver nota de ordering arriba).
+    (('ventanas abiertas', 'que ventanas', 'qué ventanas', 'listar ventanas', 'cuales ventanas', 'cuáles ventanas'), 'list_open_windows'),
+    # list_running_processes — procesos corriendo (específico antes que nada).
+    (('procesos corriendo', 'que procesos', 'qué procesos', 'listar procesos', 'proceso activo', 'procesos activos'), 'list_running_processes'),
+    # world_model_snapshot — ventanas/foco/pantalla/escritorio a nivel general.
     (('ventana', 'foco', 'pantalla', 'escritorio'), 'world_model_snapshot'),
     # self_examination_current — bloqueos, degradaciones, fallas del sistema.
     (('bloqueo', 'degrada', 'falla', 'error', 'salud del sistema', 'salud operativa'), 'self_examination_current'),
     # run_pytest — tests, suite, pytest.
-    (('test', 'pytest', 'suite', 'pruebas'), 'run_pytest'),
+    (('pytest', 'suite de pruebas', 'correr tests', 'corre tests', 'correr pruebas', 'pruebas pasan', 'tests pasan'), 'run_pytest'),
     # read_repo_file — contenido de archivo, leer archivo, código fuente.
     (('leer archivo', 'contenido del archivo', 'contenido de archivo', 'codigo fuente', 'código fuente', 'abrir archivo'), 'read_repo_file'),
     # list_repo_directory — listar directorio, ver carpeta.
     (('listar directorio', 'listar carpeta', 'ver carpeta', 'contenido de directorio', 'contenido del directorio', 'ls '), 'list_repo_directory'),
     # read_clipboard — clipboard del usuario.
     (('clipboard', 'portapapeles'), 'read_clipboard'),
-    # list_open_windows — ventanas abiertas.
-    (('ventanas abiertas', 'que ventanas', 'qué ventanas', 'listar ventanas'), 'list_open_windows'),
-    # list_running_processes — procesos corriendo.
-    (('proceso', 'procesos corriendo', 'que procesos', 'qué procesos'), 'list_running_processes'),
     # dump_qml_tree — arbol QML / UI.
     (('qml', 'arbol qml', 'árbol qml', 'arbol ui', 'árbol ui'), 'dump_qml_tree'),
+    # chatgpt_web_capture — captura DOM de ChatGPT (antes que probe login).
+    (('captura dom', 'dom de chatgpt', 'capturar chatgpt'), 'chatgpt_web_capture'),
     # probe_assistant_login — login/sesion/autenticacion de asistente.
     (('login', 'sesion', 'sesión', 'autenticad', 'logueado'), 'probe_assistant_login'),
-    # chatgpt_web_capture — captura DOM de ChatGPT.
-    (('chatgpt', 'captura dom', 'dom de chatgpt'), 'chatgpt_web_capture'),
     # run_self_audit — auditoría global.
     (('auditoria', 'auditoría', 'auditate', 'auditar'), 'run_self_audit'),
     # portable_context_get — contexto portable.

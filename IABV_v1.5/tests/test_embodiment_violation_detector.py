@@ -32,12 +32,49 @@ def test_record_and_detect_reports_violation_when_sensor_tool_not_used() -> None
     assert record.session_id == 'sess-A'
     assert record.assistant_kind == 'chatgpt'
     assert record.trace_id == 'trace-1'
-    assert record.expected_tool_id in {'world_model_snapshot', 'list_open_windows'}
+    # "¿qué ventanas están abiertas?" es la formulación canónica del
+    # manifest para list_open_windows; la entrada específica debe ganar
+    # frente al fallback genérico de world_model_snapshot.
+    assert record.expected_tool_id == 'list_open_windows'
     assert record.violation_kind == EmbodimentViolationKind.SENSOR_BYPASS
     assert record.severity == IssueSeverity.LOW
     assert 'web_search' in record.tool_ids_used
     assert record.matched_sensor, 'debe quedar registrada la keyword que disparó el match'
     assert any(ref.startswith('embodiment_manifest:') for ref in record.evidence_refs)
+
+
+def test_specific_sensors_win_over_generic_world_model_snapshot() -> None:
+    """Regresión: la keyword corta ``ventana`` de world_model_snapshot no
+    debe enmascarar las entradas específicas ``list_open_windows`` ni
+    ``list_running_processes``. El orden del ``_SENSOR_TABLE`` tiene que
+    mantener first-match-wins con las entradas específicas arriba."""
+
+    detector = EmbodimentViolationDetector()
+    detector.record_interaction(
+        session_id='sess-specific',
+        question_text='¿cuáles ventanas abiertas hay ahora?',
+        tool_ids_used=[],
+    )
+    detector.record_interaction(
+        session_id='sess-specific',
+        question_text='¿qué procesos corriendo tengo?',
+        tool_ids_used=[],
+    )
+    # world_model_snapshot sigue matcheando cuando la pregunta es
+    # genérica sobre ventanas/foco/pantalla (no "ventanas abiertas").
+    detector.record_interaction(
+        session_id='sess-specific',
+        question_text='¿en qué ventana estoy enfocado?',
+        tool_ids_used=[],
+    )
+
+    violations = detector.detect(session_id='sess-specific')
+    expected_tools = [v.expected_tool_id for v in violations]
+    assert expected_tools == [
+        'list_open_windows',
+        'list_running_processes',
+        'world_model_snapshot',
+    ]
 
 
 def test_detect_no_violation_when_expected_tool_was_used() -> None:
