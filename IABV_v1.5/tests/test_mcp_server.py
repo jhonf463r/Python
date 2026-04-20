@@ -872,6 +872,56 @@ def test_probe_assistant_login_ignores_blocks_for_other_assistant_kinds() -> Non
     assert payload["error"] == "unknown_assistant_kind"
 
 
+def test_run_sync_off_event_loop_direct_when_no_loop() -> None:
+    """Sin event loop, corre en el hilo actual (tests y CLI)."""
+
+    from iabv_v15.infra.mcp.server import _run_sync_off_event_loop
+
+    import threading
+
+    main_thread_id = threading.get_ident()
+    captured_thread_id: list[int] = []
+
+    def _op(x: int) -> int:
+        captured_thread_id.append(threading.get_ident())
+        return x * 2
+
+    result = _run_sync_off_event_loop(_op, 21)
+    assert result == 42
+    assert captured_thread_id == [main_thread_id]
+
+
+def test_run_sync_off_event_loop_thread_when_loop_running() -> None:
+    """Con event loop activo, despacha a un worker distinto al hilo del loop.
+
+    Regresión F3.1: Playwright sync API falla si se arranca en el hilo del
+    event loop de uvicorn. Este helper asegura que el trabajo corre en un
+    hilo sin loop corriendo.
+    """
+
+    import asyncio
+    import threading
+
+    from iabv_v15.infra.mcp.server import _run_sync_off_event_loop
+
+    def _op() -> dict[str, Any]:
+        try:
+            asyncio.get_running_loop()
+            loop_visible = True
+        except RuntimeError:
+            loop_visible = False
+        return {"thread": threading.get_ident(), "loop_visible": loop_visible}
+
+    async def _driver() -> dict[str, Any]:
+        return _run_sync_off_event_loop(_op)
+
+    result = asyncio.run(_driver())
+    # El hilo del driver (el loop) NO debe haber ejecutado _op.
+    assert result["thread"] != threading.get_ident()
+    # Sin loop corriendo en el worker → Playwright sync OK.
+    assert result["loop_visible"] is False
+
+
 # ----------------------------------------------------------------------
 # Frente 3.2 — audit_capability
 #
