@@ -128,6 +128,7 @@ class _FakeContainer:
         config: object | None = None,
         self_audit_service: object | None = None,
         capability_audit_harness: object | None = None,
+        perception_ground_truth_comparator: object | None = None,
     ) -> None:
         self.world_model_service = world_model_service
         self.portable_context_service = portable_context_service
@@ -145,6 +146,7 @@ class _FakeContainer:
         self.config = config
         self.self_audit_service = self_audit_service
         self.capability_audit_harness = capability_audit_harness
+        self.perception_ground_truth_comparator = perception_ground_truth_comparator
 
 
 def _default_snapshot(
@@ -217,6 +219,7 @@ def test_server_registers_core_tools() -> None:
         "run_self_audit",
         "probe_assistant_login",
         "audit_capability",
+        "compare_perception_vs_ground_truth",
     }
     assert expected <= registered, f"faltan tools: {expected - registered}"
 
@@ -987,3 +990,195 @@ def test_audit_capability_returns_harness_unavailable_without_wiring() -> None:
     )
     assert "governance_blocked" not in payload
     assert payload["error"] == "harness_unavailable"
+
+
+# ----------------------------------------------------------------------
+# Frente 3.3 — compare_perception_vs_ground_truth
+#
+# Esta tool es offline (``requires_network=False``), pero sí pasa por el
+# gate de ``assistant_kind='audit'``. Verificamos que:
+#   - bloqueo por audit paused aplica igual que en las otras audit tools;
+#   - red caída NO bloquea (no necesita internet);
+#   - sin comparator wireado, reporta ``comparator_unavailable``;
+#   - con comparator wireado, delega y devuelve el payload normalizado.
+
+
+class _FakeComparator:
+    """Comparator de prueba que captura args y devuelve un resultado fijo."""
+
+    def __init__(self, result: object | None = None, raise_exc: Exception | None = None) -> None:
+        self._result = result
+        self._raise = raise_exc
+        self.calls: list[dict[str, object]] = []
+
+    def compare(
+        self,
+        window_title: str,
+        *,
+        tool_id: str = "",
+        assistant_kind: str = "",
+        site_id: str = "",
+    ) -> object:
+        self.calls.append(
+            {
+                "window_title": window_title,
+                "tool_id": tool_id,
+                "assistant_kind": assistant_kind,
+                "site_id": site_id,
+            }
+        )
+        if self._raise is not None:
+            raise self._raise
+        return self._result
+
+
+def test_compare_perception_blocked_when_audit_block_active() -> None:
+    block = OperationalBlockRecord(
+        block_type="audit_paused",
+        assistant_kind="audit",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
+    server = IABVMCPServer(_build_container(world_model_service=wm))
+    payload = _call_tool(
+        server,
+        "compare_perception_vs_ground_truth",
+        window_title="ChatGPT",
+    )
+
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "operational_block_active"
+
+
+def test_compare_perception_does_not_require_network() -> None:
+    """`requires_network=False`: red caída NO debe bloquear la tool."""
+
+    wm = _FakeWorldModelService(_default_snapshot(connected=False))
+    comparator = _FakeComparator(
+        result={
+            "tool_id": "",
+            "window_title": "ChatGPT",
+            "perception_json": {},
+            "ground_truth_json": {},
+            "mismatches": [],
+            "evidence": {},
+            "error": None,
+            "detail": "",
+            "duration_ms": 3,
+        }
+    )
+    server = IABVMCPServer(
+        _build_container(
+            world_model_service=wm,
+            perception_ground_truth_comparator=comparator,
+        )
+    )
+    payload = _call_tool(
+        server,
+        "compare_perception_vs_ground_truth",
+        window_title="ChatGPT",
+    )
+
+    assert "governance_blocked" not in payload
+    assert comparator.calls == [
+        {"window_title": "ChatGPT", "tool_id": "", "assistant_kind": "", "site_id": ""}
+    ]
+
+
+def test_compare_perception_blocked_by_global_wildcard_block() -> None:
+    block = OperationalBlockRecord(
+        block_type="freeze_all",
+        assistant_kind="*",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
+    server = IABVMCPServer(_build_container(world_model_service=wm))
+    payload = _call_tool(
+        server,
+        "compare_perception_vs_ground_truth",
+        window_title="ChatGPT",
+    )
+
+    assert payload["governance_blocked"] is True
+
+
+def test_compare_perception_returns_comparator_unavailable_without_wiring() -> None:
+    """Sin comparator wireado, degradación tipada en vez de crash."""
+
+    server = IABVMCPServer(_build_container())
+    payload = _call_tool(
+        server,
+        "compare_perception_vs_ground_truth",
+        window_title="ChatGPT",
+    )
+
+    assert "governance_blocked" not in payload
+    assert payload["error"] == "comparator_unavailable"
+    assert payload["window_title"] == "ChatGPT"
+
+
+def test_compare_perception_invalid_title_short_circuits_before_comparator() -> None:
+    comparator = _FakeComparator(result={"mismatches": []})
+    server = IABVMCPServer(
+        _build_container(perception_ground_truth_comparator=comparator)
+    )
+    payload = _call_tool(
+        server,
+        "compare_perception_vs_ground_truth",
+        window_title="   ",
+    )
+
+    assert "governance_blocked" not in payload
+    assert payload["error"] == "invalid_window_title"
+    # El comparator no debe invocarse si el título es inválido.
+    assert comparator.calls == []
+
+
+def test_compare_perception_happy_path_delegates_and_normalizes() -> None:
+    """Con red ok, sin bloqueos y comparator wireado: delega y formatea."""
+
+    from iabv_v15.services.capture.perception_ground_truth_comparator import (
+        PerceptionGroundTruthComparison,
+        PerceptionMismatch,
+    )
+
+    result = PerceptionGroundTruthComparison(
+        tool_id="tool-x",
+        window_title="ChatGPT",
+        perception_json={"latest_title": "ChatGPT"},
+        ground_truth_json={"focused_window": {"title": "ChatGPT"}},
+        mismatches=[
+            PerceptionMismatch(
+                field="capture_available",
+                perceived=True,
+                actual=False,
+                severity="warning",
+                detail="no screenshot provider",
+            ),
+        ],
+        evidence={"ground_truth_window_matched": True},
+        duration_ms=11,
+    )
+    comparator = _FakeComparator(result=result)
+    server = IABVMCPServer(
+        _build_container(perception_ground_truth_comparator=comparator)
+    )
+    payload = _call_tool(
+        server,
+        "compare_perception_vs_ground_truth",
+        window_title="ChatGPT",
+        tool_id="tool-x",
+        assistant_kind="chatgpt_web",
+        site_id="chatgpt.com",
+    )
+
+    assert "governance_blocked" not in payload
+    assert payload["error"] is None
+    assert payload["tool_id"] == "tool-x"
+    assert payload["window_title"] == "ChatGPT"
+    assert payload["mismatch_count"] == 1
+    assert payload["severity_counts"] == {"critical": 0, "warning": 1, "info": 0}
+    assert payload["mismatches"][0]["field"] == "capture_available"
+    assert payload["duration_ms"] == 11
+    assert payload["checked_at_iso"]  # iso timestamp presente
+    assert comparator.calls[0]["site_id"] == "chatgpt.com"
