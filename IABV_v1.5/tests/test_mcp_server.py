@@ -222,6 +222,7 @@ def test_server_registers_core_tools() -> None:
         "probe_assistant_login",
         "audit_capability",
         "compare_perception_vs_ground_truth",
+        "embodiment_manifest",
     }
     assert expected <= registered, f"faltan tools: {expected - registered}"
 
