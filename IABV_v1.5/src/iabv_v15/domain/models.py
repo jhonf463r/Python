@@ -2665,3 +2665,63 @@ class SelfAuditSnapshot:
     pending_issues: list[str]
     world_model_digest: dict[str, Any]
     summary_markdown: str
+
+
+# ---------------------------------------------------------------------------
+# PCS v1 — Protocolo Cognitivo Sináptico Inter-IA
+#
+# Contratos declarativos que describen a cada IA externa (ChatGPT, Claude,
+# Codex, Devin, Ollama local, etc.) como una "neurona especializada" con
+# fortalezas, tools nativas y frame cognitivo óptimo. IABV usa estos
+# perfiles para decidir a quién consultar y en qué formato presentarle el
+# contexto, sin duplicar el cerebro ni el orquestador.
+
+
+class AssistantStrength(str, Enum):
+    CODE_GENERATION = "code_generation"
+    CODE_REVIEW = "code_review"
+    LONG_CONTEXT_SYNTHESIS = "long_context_synthesis"
+    SHELL_EXECUTION = "shell_execution"
+    WEB_BROWSING = "web_browsing"
+    MULTIMODAL_VISION = "multimodal_vision"
+    STRUCTURED_REASONING = "structured_reasoning"
+    CREATIVE_WRITING = "creative_writing"
+    MATHEMATICAL_REASONING = "mathematical_reasoning"
+    RETRIEVAL_AUGMENTED = "retrieval_augmented"
+
+
+class AssistantFrameKind(str, Enum):
+    """Frame cognitivo óptimo para presentar contexto a esta IA."""
+
+    DIFF_AND_TESTS = "diff_and_tests"        # Codex / GPT-4o para código
+    LONG_NARRATIVE = "long_narrative"        # Claude (contexto largo)
+    TASK_LIST_AND_PR = "task_list_and_pr"    # Devin
+    STRUCTURED_QA = "structured_qa"          # ChatGPT general
+    JSON_TOOL_CALLS = "json_tool_calls"      # agentes con function calling
+
+
+class AssistantCapabilityProfile(BaseModel):
+    """Perfil declarativo de una IA externa consumible por PCS v1.
+
+    Se usa para que `SynapticRouter` decida a quién consultar y para que
+    `CognitiveFrameTranslator` elija el frame óptimo del contexto. Es
+    puramente descriptivo: no dispara ninguna acción por sí mismo.
+    """
+
+    assistant_kind: str
+    display_name: str = ""
+    strengths: list[AssistantStrength] = Field(default_factory=list)
+    native_tools: list[str] = Field(default_factory=list)
+    optimal_frame: AssistantFrameKind = AssistantFrameKind.STRUCTURED_QA
+    max_context_tokens: int = 0
+    avg_latency_ms: int = 0
+    cost_signal: str = "unknown"
+    supports_function_calling: bool = False
+    supports_vision: bool = False
+    supports_browser: bool = False
+    supports_shell: bool = False
+    known_limitations: list[str] = Field(default_factory=list)
+    evidence_refs: list[str] = Field(default_factory=list)
+    confidence: float = 0.0
+    unresolved_fields: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
