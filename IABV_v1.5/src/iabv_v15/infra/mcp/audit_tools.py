@@ -23,6 +23,7 @@ import os
 import re
 import stat
 import subprocess
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -530,7 +531,7 @@ def run_pytest(
         except AuditToolError:
             python_exe = None
     if python_exe is None:
-        python_exe = os.sys.executable  # type: ignore[attr-defined]
+        python_exe = sys.executable
     cmd: list[str] = [
         python_exe,
         "-m",
@@ -823,6 +824,7 @@ __all__ = [
     "read_repo_file",
     "resolve_workspace_path",
     "run_pytest",
+    "validate_pytest_executable",
     "validate_pytest_keyword",
     "validate_pytest_suite",
 ]
