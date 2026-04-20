@@ -48,6 +48,8 @@ SUPPORTED_TRANSPORTS = {"stdio", "sse", "streamable-http"}
 def _to_jsonable(value: Any) -> Any:
     """Convierte dataclasses, pydantic models y contenedores anidados a JSON."""
 
+    from datetime import date, datetime
+
     if value is None:
         return None
     if hasattr(value, "model_dump"):
@@ -55,6 +57,12 @@ def _to_jsonable(value: Any) -> Any:
             return value.model_dump(mode="json")
         except TypeError:
             return value.model_dump()
+    if isinstance(value, datetime):
+        # ISO 8601 con separador 'T' (asdict sobre dataclasses frozen deja los
+        # datetime sin serializar; `str(dt)` usa espacio en vez de 'T').
+        return value.isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
     if is_dataclass(value):
         return {k: _to_jsonable(v) for k, v in asdict(value).items()}
     if isinstance(value, dict):

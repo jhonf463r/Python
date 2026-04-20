@@ -704,9 +704,9 @@ def test_run_self_audit_serializes_datetime_as_isoformat() -> None:
     audit = _FakeSelfAuditService()
     server = IABVMCPServer(_build_container(self_audit_service=audit))
     payload = _call_tool(server, "run_self_audit")
-    # _to_jsonable convierte datetime -> str ISO.
+    # _to_jsonable convierte datetime -> ISO 8601 con separador 'T'.
     assert isinstance(payload["generated_at"], str)
-    assert payload["generated_at"].startswith("2025-04-19")
+    assert payload["generated_at"] == "2025-04-19T12:00:00+00:00"
 
 
 def test_run_self_audit_blocked_by_operational_block_on_audit_kind() -> None:
