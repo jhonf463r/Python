@@ -247,6 +247,48 @@ def test_probe_rejects_unknown_kind() -> None:
     assert "chatgpt" in result["detail"]
 
 
+@pytest.mark.parametrize(
+    ("alias", "canonical"),
+    [
+        ("chatgpt_web", "chatgpt"),
+        ("claude_web", "claude"),
+        ("codex_web", "codex"),
+        ("gemini_web", "gemini"),
+        ("openai_chatgpt", "chatgpt"),
+        ("anthropic_claude", "claude"),
+        ("google_gemini", "gemini"),
+    ],
+)
+def test_probe_resolves_pcs_v1_aliases_to_canonical_kind(alias: str, canonical: str) -> None:
+    # El controller_factory devuelve None => playwright_unavailable; lo usamos
+    # sólo para confirmar que el alias fue aceptado y el caller llegó a la
+    # etapa del factory (no fue rechazado por ``unknown_assistant_kind``).
+    result = probe_assistant_login(
+        alias,
+        controller_factory=lambda: None,
+        now_utc=_fixed_now(),
+    )
+    assert result["error"] == "playwright_unavailable"
+    # La respuesta de playwright_unavailable usa la clave canónica resuelta;
+    # el alias fue aceptado correctamente si el caller llegó hasta el factory.
+    assert result["assistant_kind"] == canonical
+    # Sanity: la canónica es la que habría disparado la heurística.
+    from iabv_v15.infra.mcp.audit_tools.probe_assistant_login import (
+        _resolve_assistant_kind,
+    )
+
+    assert _resolve_assistant_kind(alias) == canonical
+
+
+def test_probe_unknown_kind_lists_aliases_in_detail() -> None:
+    result = probe_assistant_login("totally_bogus_assistant")
+    assert result["error"] == "unknown_assistant_kind"
+    # Deben aparecer tanto kinds canónicos como aliases comunes.
+    assert "chatgpt" in result["detail"]
+    assert "chatgpt_web" in result["detail"]
+    assert "claude_web" in result["detail"]
+
+
 def test_probe_returns_playwright_unavailable_when_factory_returns_none() -> None:
     result = probe_assistant_login(
         "chatgpt",

@@ -188,6 +188,33 @@ PROVIDER_HEURISTICS: dict[str, _ProviderHeuristic] = {
 }
 
 
+# Aliases entre naming de capability profiles (PCS v1) y heurísticas de login.
+# ``chatgpt_web``/``claude_web`` son los ``assistant_kind`` del
+# ``AssistantCapabilityRegistry``; ``chatgpt``/``claude`` son las claves de
+# heurística históricas. Los aceptamos como equivalentes para que el caller
+# MCP no tenga que conocer ambas convenciones.
+_ASSISTANT_KIND_ALIASES: dict[str, str] = {
+    "chatgpt_web": "chatgpt",
+    "claude_web": "claude",
+    "codex_web": "codex",
+    "gemini_web": "gemini",
+    "openai_chatgpt": "chatgpt",
+    "anthropic_claude": "claude",
+    "google_gemini": "gemini",
+}
+
+
+def _resolve_assistant_kind(kind: str) -> str:
+    """Resuelve ``kind`` a una clave canónica de ``PROVIDER_HEURISTICS``.
+
+    Acepta alias comunes (``chatgpt_web`` → ``chatgpt``, etc.). Si no
+    encuentra match, devuelve ``kind`` sin cambios para que el validador
+    upstream emita ``unknown_assistant_kind`` con la lista completa.
+    """
+
+    return _ASSISTANT_KIND_ALIASES.get(kind, kind)
+
+
 def known_assistant_kinds() -> tuple[str, ...]:
     """Kinds aceptados por la tool (orden estable para docs/tests)."""
 
@@ -318,21 +345,23 @@ def probe_assistant_login(
         assistant_kind, ...}`` en caso de fallo.
     """
 
-    kind = (assistant_kind or "").strip().lower()
-    if not kind:
+    raw_kind = (assistant_kind or "").strip().lower()
+    if not raw_kind:
         return {
             "error": "invalid_assistant_kind",
             "detail": "assistant_kind no puede ser vacío",
             "assistant_kind": assistant_kind,
         }
+    kind = _resolve_assistant_kind(raw_kind)
     if kind not in PROVIDER_HEURISTICS:
+        valid_kinds = list(known_assistant_kinds()) + sorted(_ASSISTANT_KIND_ALIASES)
         return {
             "error": "unknown_assistant_kind",
             "detail": (
-                f"assistant_kind={kind!r} no soportado; válidos: "
-                f"{', '.join(known_assistant_kinds())}"
+                f"assistant_kind={raw_kind!r} no soportado; válidos: "
+                f"{', '.join(valid_kinds)}"
             ),
-            "assistant_kind": kind,
+            "assistant_kind": raw_kind,
         }
 
     heuristic = PROVIDER_HEURISTICS[kind]
