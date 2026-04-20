@@ -60,10 +60,13 @@ class MssScreenshotProvider:
 
     def _capture_impl(self, region: str) -> bytes:
         factory = self._mss_factory or self._default_factory
-        if factory is None:
+        # `_default_factory` es un bound method (siempre truthy), así que
+        # el None check sobre `factory` era dead code. Validamos sobre el
+        # context manager real que la factory devuelve.
+        ctx = factory()
+        if ctx is None:
             return b""
-
-        with factory() as sct:
+        with ctx as sct:
             monitor = self._resolve_monitor(sct, region)
             if monitor is None:
                 return b""
@@ -104,7 +107,11 @@ class MssScreenshotProvider:
             from mss.tools import to_png  # type: ignore
 
             size = getattr(shot, "size", None)
-            raw = getattr(shot, "rgb", None) or getattr(shot, "bgra", None)
+            # `mss.tools.to_png` espera BGRA (4 bytes/pixel). `.rgb` ya
+            # viene convertido (3 bytes/pixel) y produciría un byte-count
+            # mismatch. Por eso preferimos `.bgra` y sólo caemos a `.rgb`
+            # si el backend no expone el buffer BGRA.
+            raw = getattr(shot, "bgra", None) or getattr(shot, "rgb", None)
             if size is None or raw is None:
                 return b""
             width, height = size
