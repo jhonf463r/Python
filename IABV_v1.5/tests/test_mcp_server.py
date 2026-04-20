@@ -11,6 +11,8 @@ Verifica que el adaptador:
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 mcp = pytest.importorskip("mcp")
@@ -1093,6 +1095,91 @@ def test_audit_capability_runner_runs_off_event_loop() -> None:
     # Runner corrió en un hilo distinto al del event loop.
     assert captured["thread"] != threading.get_ident()
     # Y sin loop visible → Playwright sync podría arrancar si quisiera.
+    assert captured["loop_visible"] is False
+
+
+def test_chatgpt_web_capture_runs_off_event_loop() -> None:
+    """Regresión F3.1c: ``chatgpt_web_capture`` debe despachar al worker sin loop.
+
+    ``UIExecutionRunner._capture_browser_dom_response`` arranca Playwright
+    sync vía ``BrowserSessionController``; si corre sobre el event loop de
+    uvicorn explota con ``Please use the Async API``. Verificamos que el
+    handler MCP despacha a ``_run_sync_off_event_loop`` y el runner ve
+    un hilo sin loop activo.
+    """
+
+    import asyncio
+    import threading
+
+    captured: dict[str, Any] = {}
+
+    class _ProbeRunner:
+        def _capture_browser_dom_response(self, **kwargs: Any) -> dict[str, Any]:
+            captured["thread"] = threading.get_ident()
+            try:
+                asyncio.get_running_loop()
+                captured["loop_visible"] = True
+            except RuntimeError:
+                captured["loop_visible"] = False
+            return {
+                "launched": True,
+                "prompt_pasted": True,
+                "response_captured": True,
+                "captured_text": "ACK",
+                "capture_source": "browser_dom",
+            }
+
+    server = IABVMCPServer(_build_container(ui_execution_runner=_ProbeRunner()))
+
+    async def _driver() -> object:
+        return _call_tool(server, "chatgpt_web_capture", prompt_text="ping")
+
+    payload = asyncio.run(_driver())
+
+    assert isinstance(payload, dict)
+    assert payload.get("captured_text") == "ACK", payload
+    assert captured["thread"] != threading.get_ident()
+    assert captured["loop_visible"] is False
+
+
+def test_site_exploration_explore_runs_off_event_loop() -> None:
+    """Regresión F3.1c: ``site_exploration_explore`` tambi\u00e9n debe despachar
+    fuera del event loop porque ``SiteExplorationService`` usa Playwright sync."""
+
+    import asyncio
+    import threading
+
+    captured: dict[str, Any] = {}
+
+    class _ProbeService:
+        def explore(self, **kwargs: Any) -> SiteExplorationResult:
+            captured["thread"] = threading.get_ident()
+            try:
+                asyncio.get_running_loop()
+                captured["loop_visible"] = True
+            except RuntimeError:
+                captured["loop_visible"] = False
+            return SiteExplorationResult(
+                hostname="example.com",
+                start_url="https://example.com",
+                pages=[SitePageSnapshot(url="https://example.com", title="Example")],
+                success=True,
+            )
+
+    server = IABVMCPServer(_build_container(site_exploration_service=_ProbeService()))
+
+    async def _driver() -> object:
+        return _call_tool(
+            server,
+            "site_exploration_explore",
+            start_url="https://example.com",
+            max_pages=1,
+        )
+
+    payload = asyncio.run(_driver())
+
+    assert isinstance(payload, dict)
+    assert captured["thread"] != threading.get_ident()
     assert captured["loop_visible"] is False
 
 

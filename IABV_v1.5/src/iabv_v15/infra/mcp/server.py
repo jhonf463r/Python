@@ -454,7 +454,12 @@ class IABVMCPServer:
             if block is not None:
                 return block
             svc = self._site_exploration_service()
-            result = svc.explore(
+            # `SiteExplorationService.explore` usa `BrowserSessionController`
+            # (Playwright sync). Si corre sobre el event loop de uvicorn,
+            # `sync_playwright()` explota con `Please use the Async API`.
+            # Mismo patrón que PR #59/#60: despachar al thread pool sin loop.
+            result = _run_sync_off_event_loop(
+                svc.explore,
                 start_url=start_url,
                 max_pages=max_pages,
                 priority_keywords=priority_keywords or [],
@@ -533,7 +538,12 @@ class IABVMCPServer:
             defaults_response = ['[data-message-author-role="assistant"]', "main article"]
             defaults_submit = ['button[data-testid="send-button"]']
             profile_dir = browser_profile_dir or ""
-            result = runner._capture_browser_dom_response(
+            # `UIExecutionRunner._capture_browser_dom_response` usa Playwright
+            # sync vía `BrowserSessionController`. Si corre sobre el event
+            # loop de uvicorn (caso FastMCP streamable-http), explota con
+            # `Please use the Async API`. Mismo patrón que PR #59/#60.
+            result = _run_sync_off_event_loop(
+                runner._capture_browser_dom_response,
                 launch_target=launch_target,
                 prompt_text=prompt_text,
                 response_wait_seconds=float(response_wait_seconds),
