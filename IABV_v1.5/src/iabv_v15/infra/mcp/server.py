@@ -852,7 +852,16 @@ class IABVMCPServer:
                 return block
 
             harness = getattr(self.container, "capability_audit_harness", None)
-            return _audit_capability(
+            # Los runners de `audit_capability` (en particular
+            # `browser_capture` y los que usan `probe_assistant_login`)
+            # pueden invocar Playwright sync internamente. FastMCP nos
+            # ejecuta sobre el event loop de uvicorn → `sync_playwright()`
+            # explota con `Please use the Async API`. Mismo tratamiento
+            # que `probe_assistant_login` (PR #59): despachar al thread
+            # pool sin loop. Para runners puros (ollama httpx, ui_execution)
+            # el overhead es mínimo y mantiene el contrato sync del harness.
+            return _run_sync_off_event_loop(
+                _audit_capability,
                 capability_id,
                 dry_run=bool(dry_run),
                 harness=harness,
