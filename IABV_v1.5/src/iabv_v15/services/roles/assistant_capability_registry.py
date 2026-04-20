@@ -135,6 +135,33 @@ def _seed_profiles() -> list[AssistantCapabilityProfile]:
             unresolved_fields=unresolved,
         ),
         AssistantCapabilityProfile(
+            assistant_kind="windsurf",
+            display_name="Windsurf (Codeium IDE agent)",
+            strengths=[
+                AssistantStrength.CODE_GENERATION,
+                AssistantStrength.CODE_REVIEW,
+                AssistantStrength.STRUCTURED_REASONING,
+                AssistantStrength.SHELL_EXECUTION,
+            ],
+            native_tools=["shell", "file_edit", "apply_patch", "ide_context"],
+            optimal_frame=AssistantFrameKind.DIFF_AND_TESTS,
+            max_context_tokens=200_000,
+            avg_latency_ms=5_000,
+            cost_signal="medium",
+            supports_function_calling=True,
+            supports_vision=False,
+            supports_browser=False,
+            supports_shell=True,
+            known_limitations=[
+                "Opera dentro del IDE; el usuario debe tener Windsurf abierto.",
+                "No expone browsing web nativo ni visión en el producto actual.",
+                "Cuota depende del plan de Codeium.",
+            ],
+            evidence_refs=evidence,
+            confidence=0.7,
+            unresolved_fields=unresolved,
+        ),
+        AssistantCapabilityProfile(
             assistant_kind="ollama_local",
             display_name="Ollama local (llama3/mistral/qwen)",
             strengths=[
