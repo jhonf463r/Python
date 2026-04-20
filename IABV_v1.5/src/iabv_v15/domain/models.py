@@ -2668,6 +2668,44 @@ class SelfAuditSnapshot:
 
 
 # ---------------------------------------------------------------------------
+# PCS v1 — Embodiment Violation Records
+# ---------------------------------------------------------------------------
+#
+# Contratos para `EmbodimentViolationDetector` (PR E de PCS v1). Una
+# "violación" ocurre cuando la pregunta del usuario matchea un sensor
+# propio de IABV (según el mapeo declarado por `embodiment_manifest`)
+# pero el asistente externo no llamó a la tool del cuerpo correspondiente
+# y usó rutas externas. En v1 el detector NO bloquea
+# (`handshake_required=False` en el manifest); sólo reporta para
+# alimentar `metadata['embodiment_violations']` del snapshot de
+# autoexaminación y para consulta read-only vía MCP.
+
+
+class EmbodimentViolationKind(str, Enum):
+    SENSOR_BYPASS = 'sensor_bypass'
+    TOOL_MISUSE = 'tool_misuse'
+    MISSED_OBSERVATION = 'missed_observation'
+
+
+class EmbodimentViolationRecord(BaseModel):
+    violation_id: str = Field(default_factory=lambda: str(uuid4()))
+    detected_at_utc: datetime = Field(default_factory=utc_now)
+    session_id: str = ''
+    assistant_kind: str = ''
+    trace_id: str = ''
+    question_text: str = ''
+    matched_sensor: str = ''
+    expected_tool_id: str = ''
+    tool_ids_used: list[str] = Field(default_factory=list)
+    violation_kind: EmbodimentViolationKind = EmbodimentViolationKind.SENSOR_BYPASS
+    severity: IssueSeverity = IssueSeverity.LOW
+    reasoning: str = ''
+    evidence_refs: list[str] = Field(default_factory=list)
+    unresolved_fields: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# ---------------------------------------------------------------------------
 # PCS v1 — Protocolo Cognitivo Sináptico Inter-IA
 #
 # Contratos declarativos que describen a cada IA externa (ChatGPT, Claude,

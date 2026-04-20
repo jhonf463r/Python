@@ -45,6 +45,11 @@ class OperationalSelfExaminationService:
         self.world_model_service = world_model_service
         self.autonomous_validation_cycle = autonomous_validation_cycle
         self.adaptive_weight_layer = adaptive_weight_layer
+        # PCS v1 — hook opcional. Si un provider con ``snapshot()`` está
+        # presente, `_persist_review` incluye las violaciones de
+        # encarnamiento en ``metadata['embodiment_violations']`` sin
+        # cambiar el contrato del SelfExaminationSnapshot.
+        self.embodiment_violation_provider: Any | None = None
         self._current_review: SelfExaminationSnapshot | None = None
 
     def current_review(
@@ -167,23 +172,27 @@ class OperationalSelfExaminationService:
         return self._persist_review(review)
 
     def _persist_review(self, review: SelfExaminationSnapshot) -> SelfExaminationSnapshot:
+        embodiment_violations = self._collect_embodiment_violations()
+        metadata_update: dict[str, Any] = {
+            **dict(review.metadata or {}),
+            'workspace_root': self.workspace_root,
+            'source_refs': [
+                'RunRepository',
+                'AdaptiveSessionRepository',
+                'ExperimentLab',
+                'EvolutionReviewService',
+                'WorldModelSnapshot',
+                'AutonomousValidationSnapshot',
+            ],
+        }
+        if embodiment_violations is not None:
+            metadata_update['embodiment_violations'] = embodiment_violations
         review = review.model_copy(
             update={
                 'assistant_brief': self._render_assistant_brief(review),
                 'package_path': str(self.storage.resolve('self_examination/latest.json')),
                 'markdown_path': str(self.storage.resolve('self_examination/latest.md')),
-                'metadata': {
-                    **dict(review.metadata or {}),
-                    'workspace_root': self.workspace_root,
-                    'source_refs': [
-                        'RunRepository',
-                        'AdaptiveSessionRepository',
-                        'ExperimentLab',
-                        'EvolutionReviewService',
-                        'WorldModelSnapshot',
-                        'AutonomousValidationSnapshot',
-                    ],
-                },
+                'metadata': metadata_update,
             }
         )
         archive_json_rel = f'self_examination/history/{review.review_id}.json'
@@ -203,6 +212,35 @@ class OperationalSelfExaminationService:
         )
         self.storage.save_json_atomic(latest_json_rel, review.model_dump(mode='json'))
         return review
+
+    def _collect_embodiment_violations(self) -> list[dict[str, Any]] | None:
+        """Serializa el snapshot del provider de encarnamiento (si hay).
+
+        Fail-observable: si el provider no está, devuelve ``None`` y el
+        caller omite la clave de metadata. Si el provider falla en
+        runtime, se come la excepción y se devuelve ``None`` — PCS v1
+        declara ``handshake_required=False`` y no debe romper la
+        autoexaminación.
+        """
+
+        provider = getattr(self, 'embodiment_violation_provider', None)
+        if provider is None or not hasattr(provider, 'snapshot'):
+            return None
+        try:
+            records = list(provider.snapshot() or [])
+        except Exception:
+            return None
+        serialized: list[dict[str, Any]] = []
+        for record in records:
+            if hasattr(record, 'model_dump'):
+                try:
+                    serialized.append(record.model_dump(mode='json'))
+                    continue
+                except Exception:
+                    pass
+            if isinstance(record, dict):
+                serialized.append(record)
+        return serialized
 
     def _load_latest_review(self) -> SelfExaminationSnapshot | None:
         try:
