@@ -404,7 +404,8 @@ class IntentUnderstandingService:
             hypotheses.append(IntentHypothesis(intent_key='wplay.login', title='Login Wplay', confidence=0.74, rationale='Si la sesion no se restaura, el siguiente paso sera login guiado.'))
             return finalize(intent, hypotheses)
 
-        if self._contains_any(text, ['abre', 'abrir', 've a', 'buscar', 'busca', 'navega']) and (site_hint is not None or self._contains_any(text, ['google', 'mercadolibre', 'mercado libre'])):
+        _WEB_CONTEXT_TOKENS = ['google', 'mercadolibre', 'mercado libre', 'en internet', 'en la web', 'en linea', 'online', 'en la red']
+        if self._contains_any(text, ['abre', 'abrir', 've a', 'buscar', 'busca', 'navega']) and (site_hint is not None or self._contains_any(text, _WEB_CONTEXT_TOKENS)):
             target_title = 'Busqueda web guiada' if self._contains_any(text, ['buscar', 'busca']) else 'Navegacion web guiada'
             intent_key = 'browser.search' if self._contains_any(text, ['buscar', 'busca']) else 'browser.navigate'
             reasoning = ['hay un verbo operativo de navegador']
@@ -478,7 +479,7 @@ class IntentUnderstandingService:
             )
             return finalize(intent, hypotheses)
 
-        if self._contains_any(text, ['investiga', 'investigar', 'compar', 'benchmark', 'analiza a fondo', 'tendencia']) or str(analysis.get('primary_intent') or '') == 'research.local':
+        if self._contains_any(text, ['investiga', 'investigar', 'compar', 'benchmark', 'analiza a fondo', 'tendencia', 'resumi', 'resumir', 'resume ', 'sintetiza', 'sintetizar', 'condensa', 'condensar', 'consolida', 'consolidar', 'recopila', 'recopilar']) or str(analysis.get('primary_intent') or '') == 'research.local':
             intent = build(
                 intent_key='research.local',
                 title='Investigacion local',
@@ -636,11 +637,12 @@ class IntentUnderstandingService:
             register('wplay.login', 5.0, 'flujo Wplay orientado a login')
         if site_hint == 'wplay' and self._contains_any(text, ['abre', 'abrir', 'pagina', 'p?gina', 'entra', 'ingresa', 've a']):
             register('wplay.core', 4.0, 'flujo Wplay orientado a navegacion base')
-        if self._contains_any(text, ['abre', 'abrir', 've a', 'buscar', 'busca', 'navega']) and (site_hint is not None or self._contains_any(text, ['google', 'mercadolibre', 'mercado libre'])):
+        _WEB_CTX = ['google', 'mercadolibre', 'mercado libre', 'en internet', 'en la web', 'en linea', 'online', 'en la red']
+        if self._contains_any(text, ['abre', 'abrir', 've a', 'buscar', 'busca', 'navega']) and (site_hint is not None or self._contains_any(text, _WEB_CTX)):
             register(
                 'browser.search' if self._contains_any(text, ['buscar', 'busca']) else 'browser.navigate',
                 3.5,
-                'mensaje operativo de navegador sobre sitio conocido',
+                'mensaje operativo de navegador sobre sitio conocido o internet',
             )
         if self._is_project_prompt(text):
             project_score = 4.0
@@ -653,8 +655,8 @@ class IntentUnderstandingService:
             register('analytics.strategy', 4.0, 'mensaje de analitica o marketing')
         if self._contains_any(text, ['cliente', 'soporte', 'respuesta al cliente', 'pedido', 'producto', 'formas de pago', 'horario']):
             register('customer.support', 4.0, 'mensaje de soporte o atencion al cliente')
-        if self._contains_any(text, ['investiga', 'investigar', 'compar', 'benchmark', 'analiza a fondo', 'tendencia']):
-            register('research.local', 4.0, 'mensaje de investigacion o comparacion')
+        if self._contains_any(text, ['investiga', 'investigar', 'compar', 'benchmark', 'analiza a fondo', 'tendencia', 'resumi', 'resumir', 'resume ', 'sintetiza', 'sintetizar', 'condensa', 'condensar', 'consolida', 'consolidar', 'recopila', 'recopilar']):
+            register('research.local', 4.0, 'mensaje de investigacion, comparacion o sintesis')
         if self._contains_any(text, ['conocimiento', 'base de conocimiento', 'documentacion', 'documentaciÃ³n', 'memoria', 'consulta', 'que sabes', 'quÃ© sabes']):
             register('knowledge.query', 3.0, 'mensaje de memoria o base local')
         if context_carried_from_history and site_hint:

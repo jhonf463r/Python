@@ -207,3 +207,45 @@ def test_intent_classifier_does_not_flag_code_generation_on_plain_question() -> 
     # Saludo conversacional: no debe levantar la flag ni enrutar a project.
     assert intent.intent_key != 'project.evolution'
     assert intent.metadata.get('code_generation_prompt') is None
+
+
+# ---------------------------------------------------------------------------
+# R8-1: "buscá en internet" debe rutear a browser.search sin site_hint
+# ---------------------------------------------------------------------------
+
+
+def test_intent_classifier_routes_busca_en_internet_to_browser_search() -> None:
+    intent_key, _, domain = _classify_goal('busca en internet la ultima version de Python')
+    assert intent_key == 'browser.search', f'expected browser.search, got {intent_key}'
+    assert domain == 'browser'
+
+
+def test_intent_classifier_routes_busca_en_la_web_to_browser_search() -> None:
+    intent_key, _, _ = _classify_goal('busca en la web cuanto cuesta el hosting en AWS')
+    assert intent_key == 'browser.search'
+
+
+def test_intent_classifier_routes_busca_online_to_browser_search() -> None:
+    intent_key, _, _ = _classify_goal('busca online las novedades de Python 3.13')
+    assert intent_key == 'browser.search'
+
+
+# ---------------------------------------------------------------------------
+# R8-2: frases de resumen/síntesis deben rutear a research.local
+# ---------------------------------------------------------------------------
+
+
+def test_intent_classifier_routes_resumi_archivos_to_research_local() -> None:
+    intent_key, role, _ = _classify_goal('resumi 30 archivos de documentacion en uno solo')
+    assert intent_key == 'research.local', f'expected research.local, got {intent_key}'
+    assert role == 'research'
+
+
+def test_intent_classifier_routes_sintetiza_to_research_local() -> None:
+    intent_key, _, _ = _classify_goal('sintetiza los hallazgos del ultimo sprint en un reporte')
+    assert intent_key == 'research.local'
+
+
+def test_intent_classifier_routes_consolida_to_research_local() -> None:
+    intent_key, _, _ = _classify_goal('consolida toda la evidencia de las pruebas en un solo documento')
+    assert intent_key == 'research.local'
