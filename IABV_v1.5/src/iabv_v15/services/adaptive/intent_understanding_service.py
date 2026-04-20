@@ -55,6 +55,68 @@ class IntentUnderstandingService:
         'desvios',
         'ambig',
     ]
+    # Patrones fuertes de generacion/modificacion de codigo que deben rutear a
+    # ``project.evolution`` (TaskRole.PROJECT_EVOLUTION) en vez de caer al
+    # fallback conversacional ``general.assistance``. Incluye verbos de
+    # generacion, artefactos de codigo tipicos y solicitudes de tests.
+    CODE_GENERATION_PATTERNS = [
+        'genera un parche',
+        'genera parche',
+        'generar parche',
+        'un parche',
+        ' parche ',
+        'pequeno parche',
+        'pequeno cambio',
+        'patch ',
+        'escribe codigo',
+        'escribir codigo',
+        'escribe una funcion',
+        'escribir una funcion',
+        'escribe un metodo',
+        'escribir un metodo',
+        'implementa una funcion',
+        'implementar una funcion',
+        'implementa un metodo',
+        'implementar un metodo',
+        'crea una funcion',
+        'crear una funcion',
+        'crea un metodo',
+        'crear un metodo',
+        'refactoriza',
+        'refactorizar',
+        'refactor',
+        'tests unitarios',
+        'test unitario',
+        'tests unitario',
+        'pruebas unitarias',
+        'prueba unitaria',
+        'unit tests',
+        'unit test',
+        'pytest',
+        'migra a ',
+        'migrar a ',
+        'migra el ',
+        'migrar el ',
+        'agrega un test',
+        'agregar un test',
+        'anade un test',
+        'anadir un test',
+        'commitea',
+        'commitear',
+        'abre un pr',
+        'abrir un pr',
+        'manda un pr',
+        'mandar un pr refactor',
+        'fix en ',
+        'fixea',
+        'fixear',
+        'corrige el codigo',
+        'corregir el codigo',
+        'implementa la clase',
+        'implementar la clase',
+        'implementa el metodo',
+        'implementar el metodo',
+    ]
     ACTION_REQUEST_PATTERNS = [
         'necesito',
         'quiero',
@@ -364,7 +426,10 @@ class IntentUnderstandingService:
 
         if self._is_project_prompt(text) or str(analysis.get('primary_intent') or '') == 'project.evolution':
             disposition = IntentDisposition.PLAN_THEN_EXECUTE if request.deep_reasoning or len(text.split()) >= 12 else IntentDisposition.ANSWER_NOW
+            code_generation_match = self._is_code_generation_prompt(text)
             reasoning = ['consulta relacionada con codigo o arquitectura']
+            if code_generation_match:
+                reasoning.append('patrones explicitos de generacion o modificacion de codigo detectados')
             if bool(analysis.get('compound')):
                 reasoning.append('mensaje compuesto con intencion principal y subintenciones detectadas')
             if bool(analysis.get('context_carried_from_history')):
@@ -382,6 +447,7 @@ class IntentUnderstandingService:
                 summary='Revisar evidencia del repo, fallos y mejoras verticales priorizadas.',
                 multi_step=disposition == IntentDisposition.PLAN_THEN_EXECUTE,
                 reasoning=reasoning,
+                metadata={'code_generation_prompt': code_generation_match} if code_generation_match else None,
             )
             return finalize(intent, hypotheses)
 
@@ -864,6 +930,17 @@ class IntentUnderstandingService:
             ],
         )
 
+    def _is_code_generation_prompt(self, text: str) -> bool:
+        """Detecta pedidos explicitos de generacion/modificacion de codigo.
+
+        Cubre goals que antes caian al fallback ``general.assistance`` por
+        no contener las palabras fuertes (``codigo``/``bug``/``refactor``)
+        pese a ser peticiones claras de trabajo tecnico: ``genera un parche``,
+        ``escribe tests unitarios``, ``implementa una funcion``, etc.
+        """
+
+        return self._contains_any(text, self.CODE_GENERATION_PATTERNS)
+
     def _is_project_prompt(self, text: str) -> bool:
         strong_project_terms = self._contains_any(
             text,
@@ -879,7 +956,12 @@ class IntentUnderstandingService:
             + ['por que', 'porque', 'diagnostico', 'diagnosticar', 'decide', 'prioriza'],
         )
         architecture_request = 'arquitectura' in text and action_signals
-        return strong_project_terms or (conversational_issue_terms and action_signals) or architecture_request
+        return (
+            strong_project_terms
+            or self._is_code_generation_prompt(text)
+            or (conversational_issue_terms and action_signals)
+            or architecture_request
+        )
 
     def _is_self_awareness_prompt(self, text: str) -> bool:
         if not text:

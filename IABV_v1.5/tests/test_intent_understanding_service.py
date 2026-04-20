@@ -142,3 +142,68 @@ def test_intent_understanding_service_uses_conversation_history_for_site_continu
     assert intent.site_hint == 'wplay'
     assert analysis.get('context_carried_from_history') is True
     assert analysis.get('primary_intent') in {'wplay.login', 'project.evolution'}
+
+
+# ---------------------------------------------------------------------------
+# H5 - Code generation prompts deben rutear a project.evolution, no al
+# fallback ``general.assistance``.
+
+
+def _classify_goal(goal: str) -> tuple[str, str, str]:
+    service = IntentUnderstandingService()
+    intent, _ = service.classify(InferenceRequest(user_goal=goal))
+    return intent.intent_key, intent.detected_role.value, intent.domain_hint
+
+
+def test_intent_classifier_routes_generate_patch_to_project_evolution() -> None:
+    intent_key, role, domain = _classify_goal('Genera un parche pequeno con tests unitarios')
+    assert intent_key == 'project.evolution', f'expected project.evolution, got {intent_key}'
+    assert role == 'project_evolution'
+    assert domain == 'project'
+
+
+def test_intent_classifier_routes_unit_tests_request_to_project_evolution() -> None:
+    intent_key, _, _ = _classify_goal('Agrega pruebas unitarias al servicio')
+    assert intent_key == 'project.evolution'
+
+
+def test_intent_classifier_routes_write_function_to_project_evolution() -> None:
+    intent_key, _, _ = _classify_goal('Escribe una funcion que normalice los scopes')
+    assert intent_key == 'project.evolution'
+
+
+def test_intent_classifier_routes_refactor_to_project_evolution() -> None:
+    intent_key, _, _ = _classify_goal('Refactoriza el modulo de sesiones adaptativas')
+    assert intent_key == 'project.evolution'
+
+
+def test_intent_classifier_routes_implement_method_to_project_evolution() -> None:
+    intent_key, _, _ = _classify_goal('Implementa un metodo para serializar el snapshot')
+    assert intent_key == 'project.evolution'
+
+
+def test_intent_classifier_flags_code_generation_prompt_metadata() -> None:
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='Genera un parche pequeno con tests unitarios para el normalizador')
+    )
+
+    assert intent.intent_key == 'project.evolution'
+    assert intent.metadata.get('code_generation_prompt') is True
+    assert any(
+        'generacion o modificacion de codigo' in reason
+        for reason in intent.reasoning
+    ), intent.reasoning
+
+
+def test_intent_classifier_does_not_flag_code_generation_on_plain_question() -> None:
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='hola que sabes hacer')
+    )
+
+    # Saludo conversacional: no debe levantar la flag ni enrutar a project.
+    assert intent.intent_key != 'project.evolution'
+    assert intent.metadata.get('code_generation_prompt') is None
