@@ -358,6 +358,42 @@ def test_llm_local_ollama_runner_reports_empty_response() -> None:
     assert result.error == "empty_response"
 
 
+def test_llm_local_ollama_runner_passes_real_inference_request() -> None:
+    """Regresión: el runner debe pasar un ``InferenceRequest`` real, no un
+    ``SimpleNamespace`` con strings. `OpenAICompatLocalProvider._build_user_payload`
+    accede a `.value` en `task_role`, `complexity`, `ambiguity` y
+    `allowed_tools`; si el runner pasa strings, rompe con
+    `AttributeError: 'str' object has no attribute 'value'`.
+    """
+    from iabv_v15.domain.models import (
+        AmbiguityLevel,
+        ComplexityLevel,
+        InferenceRequest,
+        TaskRole,
+    )
+
+    provider = _FakeProvider(health=_FakeHealth(available=True), summary="OK")
+    runner = build_llm_local_ollama_runner(provider)
+    runner()
+
+    assert provider.calls, "runner no invocó answer_user"
+    request = provider.calls[0]
+    assert isinstance(request, InferenceRequest), (
+        f"runner debe pasar InferenceRequest real, no {type(request).__name__}"
+    )
+    # Los enums deben exponer `.value` (el provider real lo requiere).
+    assert isinstance(request.task_role, TaskRole)
+    assert request.task_role.value
+    assert isinstance(request.complexity, ComplexityLevel)
+    assert request.complexity.value
+    assert isinstance(request.ambiguity, AmbiguityLevel)
+    assert request.ambiguity.value
+    # `allowed_tools` puede estar vacío, pero debe ser iterable de enums
+    # con `.value` (no strings).
+    for tool in request.allowed_tools:
+        assert hasattr(tool, "value")
+
+
 # ---------------------------------------------------------------------------
 # Runner: llm_external_*
 
