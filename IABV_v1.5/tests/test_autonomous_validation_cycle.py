@@ -438,3 +438,119 @@ def test_autonomous_validation_cycle_transitions_from_bootstrapping_within_two_t
             assert 'UNRESOLVED:autonomous_validation_cycle' not in after_first.unresolved_fields
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def _write_self_exam_probe(storage: ArtifactStorage, probes: list[dict]) -> None:
+    """Minimal fixture: deja un self_examination/latest.json con el shape que
+    produce OperationalSelfExaminationService (sólo los campos relevantes
+    para este test)."""
+    payload = {
+        'snapshot_id': 'snap-test',
+        'status': 'needs_attention',
+        'updated_at_utc': '2026-04-20T12:00:00+00:00',
+        'findings': [],
+        'recommended_adjustments': [],
+        'metadata': {'pending_auto_probes': probes},
+    }
+    storage.save_json_atomic('self_examination/latest.json', payload)
+
+
+def test_autonomous_validation_cycle_surfaces_pending_auto_probes_from_self_exam() -> None:
+    root = _workspace('autonomous_validation_cycle_probes')
+    try:
+        lab, repository, storage = _lab(root)
+        _write_self_exam_probe(
+            storage,
+            probes=[
+                {
+                    'finding_id': 'finding-recurring-1',
+                    'category': 'recurring_failure',
+                    'scope': 'general:training',
+                    'title': 'Fallo repetido en general:training',
+                    'severity': 'high',
+                    'confidence': 0.92,
+                    'evidence_refs': ['run-a', 'run-b', 'run-c'],
+                    'source_refs': [],
+                    'suggested_tests': [
+                        'pytest -q -p no:cacheprovider tests/',
+                        'reproduce_run_ids=run-a,run-b,run-c',
+                        'scope=general:training',
+                    ],
+                    'trigger_reason': "Finding HIGH 'recurring_failure' con confianza 0.92 >= 0.85; autotests=0 no cierra el loop P4.",
+                    'requested_at_utc': '2026-04-20T12:00:00+00:00',
+                    'status': 'requested',
+                }
+            ],
+        )
+        sandbox = _SandboxStub(
+            SandboxExperiment(
+                subject_key='noop',
+                sandbox_subject_key='sandbox:noop',
+                domain=ExperimentDomain.CODE,
+                candidate_route=EvaluationRoute.CODE_AGENT,
+                candidate_assistant_kind='codex',
+                candidate_config_signature='codex-plan',
+                promote_to_primary=False,
+                verdict=SandboxExperimentVerdict.VALID,
+            )
+        )
+        cycle = AutonomousValidationCycleService(
+            experiment_lab=lab,
+            experiment_lab_repository=repository,
+            sandbox_experiment_service=sandbox,
+            world_model_service=_StaticService(WorldModelSnapshot()),
+            environment_self_awareness_service=_StaticService(EnvironmentSelfModel(scan_status='ready')),
+            tool_evolution_monitor=_StaticMonitor(ToolEvolutionStatus(summary='sin propuestas', proposals=[])),
+            storage=storage,
+            auto_start=False,
+        )
+
+        snapshot = cycle.run_once(reason='manual')
+
+        probes_in_snapshot = list((snapshot.metadata or {}).get('pending_auto_probes') or [])
+        assert probes_in_snapshot, 'run_once must surface pending_auto_probes on snapshot.metadata'
+        assert probes_in_snapshot[0]['finding_id'] == 'finding-recurring-1'
+        assert probes_in_snapshot[0]['status'] == 'requested'
+
+        summary_probes = list(cycle.decision_log_summary().get('pending_auto_probes') or [])
+        assert summary_probes, 'decision_log_summary must expose pending_auto_probes for MCP/UI consumers'
+        assert summary_probes[0]['finding_id'] == 'finding-recurring-1'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_autonomous_validation_cycle_returns_empty_probes_when_self_exam_absent() -> None:
+    root = _workspace('autonomous_validation_cycle_probes_missing')
+    try:
+        lab, repository, storage = _lab(root)
+        # No write to self_examination/latest.json — aislado, fail-observable.
+        sandbox = _SandboxStub(
+            SandboxExperiment(
+                subject_key='noop',
+                sandbox_subject_key='sandbox:noop',
+                domain=ExperimentDomain.CODE,
+                candidate_route=EvaluationRoute.CODE_AGENT,
+                candidate_assistant_kind='codex',
+                candidate_config_signature='codex-plan',
+                promote_to_primary=False,
+                verdict=SandboxExperimentVerdict.VALID,
+            )
+        )
+        cycle = AutonomousValidationCycleService(
+            experiment_lab=lab,
+            experiment_lab_repository=repository,
+            sandbox_experiment_service=sandbox,
+            world_model_service=_StaticService(WorldModelSnapshot()),
+            environment_self_awareness_service=_StaticService(EnvironmentSelfModel(scan_status='ready')),
+            tool_evolution_monitor=_StaticMonitor(ToolEvolutionStatus(summary='sin propuestas', proposals=[])),
+            storage=storage,
+            auto_start=False,
+        )
+
+        snapshot = cycle.run_once(reason='manual')
+
+        # snapshot.metadata no debe tener pending_auto_probes cuando no hay señal.
+        assert 'pending_auto_probes' not in (snapshot.metadata or {})
+        assert cycle.decision_log_summary().get('pending_auto_probes') == []
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
