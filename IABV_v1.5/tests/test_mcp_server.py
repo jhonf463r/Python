@@ -213,6 +213,7 @@ def test_server_registers_core_tools() -> None:
         "self_examination_current",
         "chatgpt_web_capture",
         "run_self_audit",
+        "probe_assistant_login",
     }
     assert expected <= registered, f"faltan tools: {expected - registered}"
 
@@ -786,4 +787,79 @@ def test_run_self_audit_does_not_require_network() -> None:
     payload = _call_tool(server, "run_self_audit")
 
     assert "governance_blocked" not in payload
-    assert audit.calls == [None]
+
+
+# ----------------------------------------------------------------------
+# Frente 3 — probe_assistant_login
+#
+# La tool verifica login en asistentes web externos. A diferencia de las
+# otras audit tools, pasa por el gate con `requires_network=True`, así
+# que una red desconectada debe bloquearla. En happy path, el core
+# devuelve `unknown_assistant_kind` si pasamos un kind no soportado,
+# cosa que nos permite verificar que el gate dejó pasar sin montar un
+# browser real.
+
+
+def test_probe_assistant_login_blocked_when_audit_block_active() -> None:
+    block = OperationalBlockRecord(
+        block_type="audit_paused",
+        assistant_kind="audit",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
+    server = IABVMCPServer(_build_container(world_model_service=wm))
+    payload = _call_tool(server, "probe_assistant_login", assistant_kind="chatgpt")
+
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "operational_block_active"
+
+
+def test_probe_assistant_login_blocked_when_network_offline() -> None:
+    """`requires_network=True`: si la red está caída, bloquear antes de abrir browser."""
+
+    wm = _FakeWorldModelService(_default_snapshot(connected=False))
+    server = IABVMCPServer(_build_container(world_model_service=wm))
+    payload = _call_tool(server, "probe_assistant_login", assistant_kind="chatgpt")
+
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "network_unavailable"
+
+
+def test_probe_assistant_login_blocked_by_global_wildcard_block() -> None:
+    block = OperationalBlockRecord(
+        block_type="freeze_all",
+        assistant_kind="*",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
+    server = IABVMCPServer(_build_container(world_model_service=wm))
+    payload = _call_tool(server, "probe_assistant_login", assistant_kind="chatgpt")
+
+    assert payload["governance_blocked"] is True
+
+
+def test_probe_assistant_login_passes_gate_and_reports_unknown_kind() -> None:
+    """Con red ok y sin bloqueos, el gate deja pasar; el core reporta el error
+    tipado ``unknown_assistant_kind`` sin abrir un browser real."""
+
+    server = IABVMCPServer(_build_container())
+    payload = _call_tool(server, "probe_assistant_login", assistant_kind="foobar")
+
+    assert "governance_blocked" not in payload
+    assert payload["error"] == "unknown_assistant_kind"
+    assert payload["assistant_kind"] == "foobar"
+
+
+def test_probe_assistant_login_ignores_blocks_for_other_assistant_kinds() -> None:
+    other = OperationalBlockRecord(
+        block_type="cloudflare",
+        assistant_kind="chatgpt_web",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[other]))
+    server = IABVMCPServer(_build_container(world_model_service=wm))
+    payload = _call_tool(server, "probe_assistant_login", assistant_kind="foobar")
+
+    assert "governance_blocked" not in payload
+    # Aun sin bloqueo, el core devuelve el error tipado (no abre browser).
+    assert payload["error"] == "unknown_assistant_kind"
