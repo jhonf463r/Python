@@ -267,6 +267,40 @@ class IABVMCPServer:
     # impide la ruta devuelve un payload `{"governance_blocked": True, ...}`
     # para que la tool lo propague al cliente MCP SIN ejecutar el servicio.
 
+    def _load_candidate_traces_for_scope(self, scope_key: str) -> list[Any]:
+        """Best-effort: pide al ExperimentLab wireado los traces del scope.
+
+        El contrato de `ExperimentLab` wireado en este bootstrap no
+        garantiza un selector nativo por ``comparison_scope_key``; para
+        mantener esta tool puramente read-only y fail-observable,
+        intentamos un set acotado de nombres conocidos sin inventar
+        contratos nuevos. Si ninguno está disponible, devolvemos lista
+        vacía para que la tool reporte ``no_candidates``.
+
+        Usamos ``getattr`` sólo para el discovery del método opcional en
+        `ExperimentLab`; la decisión es explícita: si el resultado no es
+        iterable devolvemos ``[]``.
+        """
+
+        lab = getattr(self.container, "experiment_lab", None)
+        if lab is None or not scope_key:
+            return []
+        for method_name in (
+            "list_candidate_traces_for_scope",
+            "list_ia_traces_for_scope",
+            "traces_for_scope",
+        ):
+            candidate = getattr(lab, method_name, None)
+            if candidate is None:
+                continue
+            try:
+                maybe_traces = candidate(scope_key)
+            except Exception:  # pragma: no cover - defensive
+                continue
+            if isinstance(maybe_traces, list):
+                return maybe_traces
+        return []
+
     def _governance_block_for_route(
         self,
         *,
@@ -1030,6 +1064,135 @@ class IABVMCPServer:
                 "known_kinds": registry.known_kinds(),
                 "profiles": [p.model_dump(mode="json") for p in profiles],
             }
+
+        # ------------------------------------------------------------
+        # PCS v1 — synaptic_route + consensus_fuse (Piezas 4 y 5)
+        #
+        # Ambas son read-only, sin governance gate y fail-observable:
+        # si falta la dependencia wireada en el bootstrap devolvemos
+        # ``{error: '*_unavailable', detail: ...}`` en vez de crashear.
+        #
+        # ``synaptic_route`` devuelve un `SynapticRoutingDecision` con
+        # scoring (fit, weight, availability) sin ejecutar la ruta.
+        # Respeta el feature flag ``SYNAPTIC_ROUTING`` (default off):
+        # con flag off la decisión viene con ``routing_enabled=False``
+        # y ``selected_assistant_kind=''``.
+        #
+        # ``consensus_fuse`` fusiona candidate_traces del `ExperimentLab`
+        # para un ``comparison_scope_key`` dado; si no hay mecanismo para
+        # leer traces por scope en el lab wireado (o la lista resulta
+        # vacía), retorna fail-observable con ``no_candidates``. No
+        # muta los traces de entrada.
+
+        @mcp.tool()
+        def synaptic_route(
+            task_kind: str,
+            candidate_assistant_kinds: str = "",
+        ) -> dict[str, Any]:
+            """Calcula la preferencia sináptica (PCS v1) para un task_kind.
+
+            Read-only, sin governance gate. No ejecuta la ruta: sólo
+            devuelve una `SynapticRoutingDecision` con scoring (fit,
+            weight, availability) para el task_kind y los candidatos
+            dados. ``LocalRoleRouter`` sigue siendo el decisor
+            operativo; esta tool es un adaptador informativo.
+
+            Args:
+                task_kind: clasificación libre de la tarea (e.g.
+                    ``"code_generation"``, ``"long_context_synthesis"``).
+                    Si no mapea a un `AssistantStrength`, el fit_score es
+                    ``0.0`` y ``unresolved_fields`` incluye
+                    ``"task_kind_unknown"``.
+                candidate_assistant_kinds: kinds separados por coma; si
+                    está vacío se usan todos los kinds del registry.
+
+            Returns:
+                ``SynapticRoutingDecision`` serializado como dict, o
+                ``{error: 'router_unavailable', ...}`` si el router no
+                está wireado. Si el feature flag ``SYNAPTIC_ROUTING`` no
+                está activo, la decisión viene con
+                ``routing_enabled=False`` y ``selected_assistant_kind=''``.
+            """
+
+            router = getattr(self.container, "synaptic_router", None)
+            if router is None:
+                return {
+                    "error": "router_unavailable",
+                    "detail": (
+                        "SynapticRouter no está wireado en el bootstrap. "
+                        "Revisa el wiring de PCS v1 (Pieza 4)."
+                    ),
+                    "selected_assistant_kind": "",
+                    "routing_enabled": False,
+                }
+            kinds = [
+                s.strip()
+                for s in str(candidate_assistant_kinds or "").split(",")
+                if s.strip()
+            ] or None
+            decision = router.decide(
+                task_kind=str(task_kind or ""),
+                candidate_assistant_kinds=kinds,
+            )
+            return decision.model_dump(mode="json")
+
+        @mcp.tool()
+        def consensus_fuse(
+            scope_key: str = "",
+            strategy: str = "weighted_vote",
+        ) -> dict[str, Any]:
+            """Fusiona candidate_traces del ExperimentLab por scope_key.
+
+            Read-only, sin governance gate. No muta los traces de
+            entrada. Estrategias soportadas: ``"weighted_vote"``
+            (default), ``"highest_confidence"``, ``"first_success"``.
+
+            La lectura de traces del `ExperimentLab` es best-effort: si
+            el lab no expone un selector por ``comparison_scope_key``
+            (o devuelve lista vacía), la tool devuelve
+            ``{error: 'no_candidates', ...}`` — fail-observable.
+
+            Args:
+                scope_key: ``comparison_scope_key`` a consultar.
+                strategy: estrategia de fusión (ver arriba). Valor
+                    desconocido degrada a unresolved con
+                    ``unknown_strategy``.
+
+            Returns:
+                ``ConsensusResult`` serializado como dict, o un
+                ``{error: 'consensus_unavailable' | 'no_candidates', ...}``
+                fail-observable.
+            """
+
+            service = getattr(self.container, "consensus_fusion_service", None)
+            if service is None:
+                return {
+                    "error": "consensus_unavailable",
+                    "detail": (
+                        "ConsensusFusionService no está wireado en el "
+                        "bootstrap. Revisa el wiring de PCS v1 (Pieza 5)."
+                    ),
+                    "strategy_used": str(strategy or ""),
+                }
+            scope_key_clean = str(scope_key or "").strip()
+            candidate_traces = self._load_candidate_traces_for_scope(scope_key_clean)
+            if not candidate_traces:
+                return {
+                    "error": "no_candidates",
+                    "detail": (
+                        "No hay candidate_traces accesibles para el "
+                        "comparison_scope_key indicado. El ExperimentLab "
+                        "wireado no expone selector por scope_key o la "
+                        "lista está vacía."
+                    ),
+                    "comparison_scope_key": scope_key_clean,
+                    "strategy_used": str(strategy or ""),
+                }
+            result = service.fuse(
+                candidate_traces=candidate_traces,
+                strategy=str(strategy or "weighted_vote"),
+            )
+            return result.model_dump(mode="json")
 
         # ------------------------------------------------------------
         # PCS v1 — embodiment_manifest

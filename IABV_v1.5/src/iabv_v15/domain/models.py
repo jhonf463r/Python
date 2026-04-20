@@ -2744,3 +2744,51 @@ class CognitiveFramePayload(BaseModel):
     evidence_refs: list[str] = Field(default_factory=list)
     unresolved_fields: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class SynapticRoutingDecision(BaseModel):
+    """Decisión del `SynapticRouter` (PCS v1 — Pieza 4).
+
+    Producto puramente descriptivo de la decisión de routing inter-IA. No
+    ejecuta la ruta, no modifica estado vivo; el orquestador actual sigue
+    siendo `LocalRoleRouter`. Este adaptador sólo devuelve la preferencia
+    calculada para que otra capa la consuma (tool MCP, UI, etc.).
+
+    ``alternatives`` se serializa como ``list[dict[str, Any]]`` con claves
+    ``{'assistant_kind': str, 'score': float}`` para mantener
+    compatibilidad con JSON plano.
+    """
+
+    selected_assistant_kind: str = ""
+    alternatives: list[dict[str, Any]] = Field(default_factory=list)
+    fit_score: float = 0.0
+    weight_score: float = 0.0
+    availability_score: float = 0.0
+    total_score: float = 0.0
+    routing_enabled: bool = False
+    reason: str = ""
+    evidence_refs: list[str] = Field(default_factory=list)
+    unresolved_fields: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ConsensusResult(BaseModel):
+    """Resultado de la fusión de consenso (PCS v1 — Pieza 5).
+
+    Producto del `ConsensusFusionService`: dada una lista de
+    ``IATraceEntry`` del mismo ``comparison_scope_key``, devuelve un
+    ganador según la estrategia pedida (``weighted_vote``,
+    ``highest_confidence`` o ``first_success``). No muta los traces de
+    entrada; la decisión es puramente descriptiva.
+    """
+
+    comparison_scope_key: str = ""
+    winning_trace_id: str = ""
+    winning_assistant_kind: str = ""
+    winning_label: str = ""
+    strategy_used: str = ""
+    confidence: float = 0.0
+    reasoning: str = ""
+    considered_trace_ids: list[str] = Field(default_factory=list)
+    unresolved_fields: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
