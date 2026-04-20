@@ -280,3 +280,161 @@ def test_autonomous_validation_cycle_marks_deferred_when_environment_is_not_safe
         assert proposal.proposal_key in summary['in_validation']
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_autonomous_validation_cycle_initial_snapshot_is_bootstrapping_without_unresolved() -> None:
+    root = _workspace('autonomous_validation_cycle_bootstrapping')
+    try:
+        lab, repository, storage = _lab(root)
+        sandbox = _SandboxStub(
+            SandboxExperiment(
+                subject_key='noop',
+                sandbox_subject_key='sandbox:noop',
+                domain=ExperimentDomain.CODE,
+                candidate_route=EvaluationRoute.CODE_AGENT,
+                candidate_assistant_kind='codex',
+                candidate_config_signature='codex-plan',
+                promote_to_primary=False,
+                verdict=SandboxExperimentVerdict.VALID,
+            )
+        )
+        cycle = AutonomousValidationCycleService(
+            experiment_lab=lab,
+            experiment_lab_repository=repository,
+            sandbox_experiment_service=sandbox,
+            world_model_service=_StaticService(WorldModelSnapshot()),
+            environment_self_awareness_service=_StaticService(EnvironmentSelfModel(scan_status='ready')),
+            tool_evolution_monitor=_StaticMonitor(ToolEvolutionStatus(summary='sin propuestas', proposals=[])),
+            storage=storage,
+            auto_start=False,
+        )
+
+        snapshot = cycle.current_snapshot()
+        assert snapshot.status == 'bootstrapping'
+        assert snapshot.unresolved_fields == []
+        assert 'UNRESOLVED:autonomous_validation_cycle' not in snapshot.unresolved_fields
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_autonomous_validation_cycle_transitions_to_idle_empty_when_no_proposals() -> None:
+    root = _workspace('autonomous_validation_cycle_idle_empty')
+    try:
+        lab, repository, storage = _lab(root)
+        sandbox = _SandboxStub(
+            SandboxExperiment(
+                subject_key='noop',
+                sandbox_subject_key='sandbox:noop',
+                domain=ExperimentDomain.CODE,
+                candidate_route=EvaluationRoute.CODE_AGENT,
+                candidate_assistant_kind='codex',
+                candidate_config_signature='codex-plan',
+                promote_to_primary=False,
+                verdict=SandboxExperimentVerdict.VALID,
+            )
+        )
+        cycle = AutonomousValidationCycleService(
+            experiment_lab=lab,
+            experiment_lab_repository=repository,
+            sandbox_experiment_service=sandbox,
+            world_model_service=_StaticService(WorldModelSnapshot()),
+            environment_self_awareness_service=_StaticService(EnvironmentSelfModel(scan_status='ready')),
+            tool_evolution_monitor=_StaticMonitor(ToolEvolutionStatus(summary='sin propuestas', proposals=[])),
+            storage=storage,
+            auto_start=False,
+        )
+
+        snapshot = cycle.run_once(reason='manual')
+
+        assert snapshot.status == 'idle_empty'
+        assert snapshot.unresolved_fields == []
+        assert sandbox.calls == 0
+        assert snapshot.summary
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_autonomous_validation_cycle_records_error_snapshot_when_run_once_raises() -> None:
+    root = _workspace('autonomous_validation_cycle_error')
+    try:
+        lab, repository, storage = _lab(root)
+        sandbox = _SandboxStub(
+            SandboxExperiment(
+                subject_key='noop',
+                sandbox_subject_key='sandbox:noop',
+                domain=ExperimentDomain.CODE,
+                candidate_route=EvaluationRoute.CODE_AGENT,
+                candidate_assistant_kind='codex',
+                candidate_config_signature='codex-plan',
+                promote_to_primary=False,
+                verdict=SandboxExperimentVerdict.VALID,
+            )
+        )
+
+        class _BrokenMonitor:
+            def current_status(self, *, refresh: bool = False) -> ToolEvolutionStatus:
+                raise RuntimeError('boom')
+
+        cycle = AutonomousValidationCycleService(
+            experiment_lab=lab,
+            experiment_lab_repository=repository,
+            sandbox_experiment_service=sandbox,
+            world_model_service=_StaticService(WorldModelSnapshot()),
+            environment_self_awareness_service=_StaticService(EnvironmentSelfModel(scan_status='ready')),
+            tool_evolution_monitor=_BrokenMonitor(),
+            storage=storage,
+            auto_start=False,
+        )
+
+        def _break(*_args, **_kwargs):
+            raise RuntimeError('boom en run_once')
+
+        cycle.run_once = _break  # type: ignore[method-assign]
+        cycle._safe_tick(reason='bootstrap_validation')
+
+        snapshot = cycle.current_snapshot()
+        assert snapshot.status == 'error'
+        assert 'UNRESOLVED:autonomous_validation_cycle_error' in snapshot.unresolved_fields
+        assert 'boom' in snapshot.summary
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_autonomous_validation_cycle_transitions_from_bootstrapping_within_two_ticks() -> None:
+    root = _workspace('autonomous_validation_cycle_transitions')
+    try:
+        lab, repository, storage = _lab(root)
+        sandbox = _SandboxStub(
+            SandboxExperiment(
+                subject_key='noop',
+                sandbox_subject_key='sandbox:noop',
+                domain=ExperimentDomain.CODE,
+                candidate_route=EvaluationRoute.CODE_AGENT,
+                candidate_assistant_kind='codex',
+                candidate_config_signature='codex-plan',
+                promote_to_primary=False,
+                verdict=SandboxExperimentVerdict.VALID,
+            )
+        )
+        cycle = AutonomousValidationCycleService(
+            experiment_lab=lab,
+            experiment_lab_repository=repository,
+            sandbox_experiment_service=sandbox,
+            world_model_service=_StaticService(WorldModelSnapshot()),
+            environment_self_awareness_service=_StaticService(EnvironmentSelfModel(scan_status='ready')),
+            tool_evolution_monitor=_StaticMonitor(ToolEvolutionStatus(summary='sin propuestas', proposals=[])),
+            storage=storage,
+            auto_start=False,
+        )
+
+        initial = cycle.current_snapshot()
+        assert initial.status == 'bootstrapping'
+
+        cycle._safe_tick(reason='bootstrap_validation')
+        after_first = cycle.current_snapshot()
+        assert after_first.status in {'idle_empty', 'validating', 'error'}
+        assert after_first.status != 'bootstrapping'
+        if after_first.status != 'error':
+            assert 'UNRESOLVED:autonomous_validation_cycle' not in after_first.unresolved_fields
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
