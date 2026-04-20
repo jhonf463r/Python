@@ -62,6 +62,10 @@ _INTENT_TO_TASK_KIND: dict[str, str] = {
     'research.external_consultation': 'long_context_synthesis',
     'research.local': 'long_context_synthesis',
     'analytics.strategy': 'structured_reasoning',
+    # Flujos de navegación web: piden comparar candidatos por ``web_browsing``
+    # (ChatGPT / Devin ganan; Codex / Ollama quedan atrás sin browser nativo).
+    'browser.search': 'retrieval_augmented',
+    'browser.navigate': 'web_browsing',
 }
 
 _ROLE_TO_TASK_KIND: dict[TaskRole, str] = {
