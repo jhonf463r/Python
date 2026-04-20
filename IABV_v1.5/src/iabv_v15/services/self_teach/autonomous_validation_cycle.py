@@ -52,9 +52,8 @@ class AutonomousValidationCycleService:
         self._thread: threading.Thread | None = None
         self._decision_log = self._load_decision_log() or ToolEvolutionDecisionLog()
         self._current_snapshot = AutonomousValidationSnapshot(
-            status='idle',
-            summary='Sin validacion autonoma reciente.',
-            unresolved_fields=['UNRESOLVED:autonomous_validation_cycle'],
+            status='bootstrapping',
+            summary='Ciclo de validacion autonoma iniciando; a la espera del primer tick.',
         )
         if self._auto_start:
             self.start()
@@ -276,13 +275,26 @@ class AutonomousValidationCycleService:
             )
         recommendation = self._next_candidate()
         if recommendation is None:
+            pending = self._pending_candidate_count(monitor_status=monitor_status)
+            if pending > 0:
+                status = 'validating'
+                summary = (
+                    'Hay propuestas pendientes de validacion pero todavia no son '
+                    'candidatas accionables para sandbox en este tick.'
+                )
+            else:
+                status = 'idle_empty'
+                summary = (
+                    'No hay propuestas ni recomendaciones candidatas para validar; '
+                    'el ciclo autonomo esta al dia.'
+                )
             return self._store_snapshot(
                 AutonomousValidationSnapshot(
                     cycle_id=self._current_snapshot.cycle_id,
                     last_checked_at_utc=datetime.now(timezone.utc),
-                    status='idle',
-                    summary='No encontre una recomendacion candidata que valga la pena validar ahora.',
-                    pending_candidates=0,
+                    status=status,
+                    summary=summary,
+                    pending_candidates=pending,
                     promoted_count=self._promoted_count(),
                     last_experiment_id=str(self._current_snapshot.last_experiment_id or ''),
                     metadata={'reason': reason},
@@ -321,13 +333,37 @@ class AutonomousValidationCycleService:
         )
 
     def _monitor_loop(self) -> None:
+        self._safe_tick(reason='bootstrap_validation')
         while not self._stop_event.wait(self.interval_seconds):
-            try:
-                self.run_once(reason='scheduled_validation')
-            except Exception:
-                pass
+            self._safe_tick(reason='scheduled_validation')
             self._wake_event.wait(timeout=0.05)
             self._wake_event.clear()
+
+    def _safe_tick(self, *, reason: str) -> None:
+        try:
+            self.run_once(reason=reason)
+        except Exception as exc:
+            self._store_error_snapshot(reason=reason, exc=exc)
+
+    def _store_error_snapshot(self, *, reason: str, exc: BaseException) -> None:
+        with self._lock:
+            previous = self._current_snapshot
+        self._store_snapshot(
+            AutonomousValidationSnapshot(
+                cycle_id=previous.cycle_id,
+                last_checked_at_utc=datetime.now(timezone.utc),
+                status='error',
+                summary=f'Fallo el ciclo de validacion autonoma: {exc!r}',
+                pending_candidates=previous.pending_candidates,
+                promoted_count=previous.promoted_count,
+                last_experiment_id=str(previous.last_experiment_id or ''),
+                unresolved_fields=['UNRESOLVED:autonomous_validation_cycle_error'],
+                metadata={
+                    'reason': reason,
+                    'error': repr(exc),
+                },
+            )
+        )
 
     def _current_environment_model(self) -> EnvironmentSelfModel | None:
         service = self.environment_self_awareness_service
