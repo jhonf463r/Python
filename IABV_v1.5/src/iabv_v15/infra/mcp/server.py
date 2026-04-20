@@ -1307,6 +1307,71 @@ class IABVMCPServer:
             }
 
         # ------------------------------------------------------------
+        # PCS v1 — record_embodiment_interaction
+        #
+        # Permite que una IA externa reporte qué pregunta respondió y
+        # qué tools del cuerpo usó (o no). Sin este endpoint el
+        # ``EmbodimentViolationDetector`` queda inerte desde MCP: nadie
+        # le alimenta interacciones y ``embodiment_violations_current``
+        # siempre devuelve lista vacía.
+        #
+        # Write-only, sin governance gate: registrar una interacción no
+        # muta estado operativo ni toca red; sólo acumula en el buffer
+        # del detector para posterior evaluación read-only.
+
+        @mcp.tool()
+        def record_embodiment_interaction(
+            session_id: str,
+            question_text: str,
+            tool_ids_used: str = "",
+            assistant_kind: str = "",
+            trace_id: str = "",
+        ) -> dict[str, Any]:
+            """Registra una interacción pregunta→tools para detección de violaciones.
+
+            Cada IA externa que consume ``embodiment_manifest`` debería llamar
+            esta tool después de responder una pregunta, reportando qué tools
+            del cuerpo usó. El detector evalúa lazily en ``embodiment_violations_current``.
+
+            Args:
+                session_id: identificador de sesión de la IA externa.
+                question_text: la pregunta que el usuario hizo.
+                tool_ids_used: lista de tool IDs separados por coma
+                    (e.g. ``"world_model_snapshot,read_repo_file"``).
+                    Vacío si no usó ninguna tool del cuerpo.
+                assistant_kind: tipo de asistente (``"codex"``, ``"chatgpt_web"``, etc.).
+                trace_id: ID de traza para correlación.
+            """
+
+            detector = getattr(self.container, "embodiment_violation_detector", None)
+            if detector is None or not hasattr(detector, "record_interaction"):
+                return {
+                    "error": "detector_unavailable",
+                    "detail": (
+                        "container.embodiment_violation_detector no está disponible. "
+                        "Asegurate de construir el bootstrap completo."
+                    ),
+                    "recorded": False,
+                }
+            tool_list = [
+                tid.strip()
+                for tid in str(tool_ids_used or "").split(",")
+                if tid.strip()
+            ]
+            detector.record_interaction(
+                session_id=str(session_id or ""),
+                question_text=str(question_text or ""),
+                tool_ids_used=tool_list,
+                assistant_kind=str(assistant_kind or ""),
+                trace_id=str(trace_id or ""),
+            )
+            return {
+                "recorded": True,
+                "session_id": str(session_id or ""),
+                "tool_ids_used": tool_list,
+            }
+
+        # ------------------------------------------------------------
         # Frente 2 — Self audit tool
         #
         # `run_self_audit` ejecuta el `SelfAuditService` y devuelve el

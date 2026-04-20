@@ -69,3 +69,105 @@ def test_embodiment_manifest_is_deterministic() -> None:
     first = _manifest()
     second = _manifest()
     assert first == second, "el manifest debe ser estable entre llamadas"
+
+
+# ------------------------------------------------------------------
+# record_embodiment_interaction — PCS v1 write endpoint
+# ------------------------------------------------------------------
+
+def test_record_embodiment_interaction_records_and_detects_violation() -> None:
+    from iabv_v15.services.evolution.embodiment_violation_detector import (
+        EmbodimentViolationDetector,
+    )
+    container = _build_container()
+    container.embodiment_violation_detector = EmbodimentViolationDetector()
+    server = IABVMCPServer(container)
+
+    result = _call_tool(
+        server,
+        "record_embodiment_interaction",
+        session_id="sess-mcp-1",
+        question_text="¿qué ventanas están abiertas ahora?",
+        tool_ids_used="web_search",
+        assistant_kind="chatgpt",
+        trace_id="trace-42",
+    )
+
+    assert result["recorded"] is True
+    assert result["session_id"] == "sess-mcp-1"
+    assert result["tool_ids_used"] == ["web_search"]
+
+    violations = _call_tool(
+        server,
+        "embodiment_violations_current",
+        session_id="sess-mcp-1",
+    )
+    assert violations["count"] == 1
+    record = violations["violations"][0]
+    assert record["expected_tool_id"] == "list_open_windows"
+    assert record["violation_kind"] == "sensor_bypass"
+
+
+def test_record_embodiment_interaction_no_violation_when_correct_tool_used() -> None:
+    from iabv_v15.services.evolution.embodiment_violation_detector import (
+        EmbodimentViolationDetector,
+    )
+    container = _build_container()
+    container.embodiment_violation_detector = EmbodimentViolationDetector()
+    server = IABVMCPServer(container)
+
+    _call_tool(
+        server,
+        "record_embodiment_interaction",
+        session_id="sess-ok",
+        question_text="¿qué ventanas están abiertas ahora?",
+        tool_ids_used="list_open_windows",
+    )
+
+    violations = _call_tool(
+        server,
+        "embodiment_violations_current",
+        session_id="sess-ok",
+    )
+    assert violations["count"] == 0
+
+
+def test_record_embodiment_interaction_parses_comma_separated_tools() -> None:
+    from iabv_v15.services.evolution.embodiment_violation_detector import (
+        EmbodimentViolationDetector,
+    )
+    container = _build_container()
+    container.embodiment_violation_detector = EmbodimentViolationDetector()
+    server = IABVMCPServer(container)
+
+    result = _call_tool(
+        server,
+        "record_embodiment_interaction",
+        session_id="sess-multi",
+        question_text="¿tests pasan?",
+        tool_ids_used="run_pytest, read_repo_file",
+    )
+
+    assert result["tool_ids_used"] == ["run_pytest", "read_repo_file"]
+
+    violations = _call_tool(
+        server,
+        "embodiment_violations_current",
+        session_id="sess-multi",
+    )
+    assert violations["count"] == 0
+
+
+def test_record_embodiment_interaction_fails_gracefully_without_detector() -> None:
+    container = _build_container()
+    server = IABVMCPServer(container)
+
+    result = _call_tool(
+        server,
+        "record_embodiment_interaction",
+        session_id="sess-no-det",
+        question_text="¿qué ventanas?",
+    )
+
+    assert result["recorded"] is False
+    assert result["error"] == "detector_unavailable"

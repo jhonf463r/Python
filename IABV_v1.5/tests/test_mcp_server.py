@@ -149,6 +149,7 @@ class _FakeContainer:
         self.self_audit_service = self_audit_service
         self.capability_audit_harness = capability_audit_harness
         self.perception_ground_truth_comparator = perception_ground_truth_comparator
+        self.embodiment_violation_detector = None
 
 
 def _default_snapshot(
@@ -224,6 +225,7 @@ def test_server_registers_core_tools() -> None:
         "compare_perception_vs_ground_truth",
         "embodiment_manifest",
         "embodiment_violations_current",
+        "record_embodiment_interaction",
         "cognitive_frame_translate",
         "assistant_capabilities_list",
         "synaptic_route",
