@@ -169,3 +169,57 @@ def test_tool_discovery_service_detects_candidate_and_reconciles_promoted_signal
         assert Path(promoted.markdown_path).exists()
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_tool_discovery_service_infers_baseline_from_runs_without_recommendation() -> None:
+    """R14-1: _recommendation_from_runs must access probe.metrics.total_score,
+    not probe.score.total_score (ExperimentRun has no 'score' attribute)."""
+    root = _workspace('tool_discovery_run_baseline')
+    try:
+        lab, repository, storage = _lab(root)
+        lab.record_outcome(
+            domain=ExperimentDomain.CODE,
+            objective='Diagnosticar fallo de login',
+            subject_key='app:login-fail',
+            route=EvaluationRoute.LANGUAGE_UNDERSTANDING,
+            candidate_label='chatgpt_web_assisted',
+            success=False,
+            observed_summary='Diagnostico parcial sin cierre.',
+            precision=0.35,
+            robustness=0.30,
+            execution_ms=1500,
+            metadata={
+                'assistant_kind': 'chatgpt',
+                'config_signature': 'chatgpt-browser',
+            },
+        )
+        registry = _RegistryStub(
+            [
+                ToolCard(
+                    tool_id='codex_installed',
+                    title='Codex instalado',
+                    tool_type=ToolType.CUSTOM,
+                    description='Consulta tecnica guiada con Codex.',
+                    adapter_key='external_assistant',
+                    capabilities=['llm_query', 'consult_external', 'code_assistance'],
+                    metadata={
+                        'assistant_kind': 'codex',
+                        'launch_mode': 'desktop_app',
+                        'prompt_template_id': 'codex_consult_v1',
+                    },
+                )
+            ]
+        )
+        service = ToolDiscoveryService(
+            storage=storage,
+            tool_registry=registry,
+            experiment_lab_repository=repository,
+        )
+        status = service.build_status(subject_key='app:login-fail')
+        assert isinstance(status, ToolDiscoveryStatus)
+        assert status.signals, 'Expected at least one discovery signal from run-inferred baseline'
+        signal = status.signals[0]
+        assert signal.assistant_kind == 'codex'
+        assert signal.status == 'detected'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
