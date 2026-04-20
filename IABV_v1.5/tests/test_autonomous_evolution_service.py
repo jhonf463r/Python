@@ -1146,3 +1146,88 @@ def test_request_observation_permission_helper_flags_approval_from_affirmative_a
         assert outcome == {'attempted': False, 'approved': False, 'detail': '', 'raw_response': ''}
     finally:
         _cleanup_bootstrap(bootstrap)
+
+
+
+def test_ensure_pending_issue_drops_live_audit_summary_from_text_fallbacks() -> None:
+    """Regression H3: LiveAudit summary must not leak into CodexPendingIssue fields.
+
+    When `probe_diagnosis` is empty and the caller-provided `reason` is actually
+    a LiveAudit summary (shape "{lead} Decision: {action}. Confianza 0.NN.")
+    the backlog used to record that same string as summary, probable_cause and
+    recommended_change at once, producing three identical non-actionable lines.
+    The fix sanitizes `reason` before using it as text fallback so summary
+    lands on the generic placeholder and the other fields stay empty.
+    """
+    bootstrap = _make_bootstrap('test_autonomous_evolution_service_h3_workspace')
+    try:
+        service = bootstrap.autonomous_evolution_service
+        payload = {
+            'session_id': 'adaptive-h3',
+            'probe_diagnosis': {},
+            'context': {'live_audit': {'audit_snapshot_id': 'snap-h3'}},
+            'metadata': {},
+        }
+        issue = service._ensure_pending_issue(
+            payload=payload,
+            user_goal='sesion de prueba h3',
+            assistant_kind='codex',
+            source='self_teach',
+            reason='Sin hallazgos. Decision: continue_local. Confianza 0.66.',
+        )
+        assert issue is not None
+        # The live-audit-shaped reason must NOT leak into any Codex text field.
+        assert 'Confianza 0.66' not in issue.summary
+        assert 'Confianza 0.66' not in issue.probable_cause
+        assert 'Confianza 0.66' not in issue.recommended_change
+        assert 'Confianza 0.66' not in issue.unresolved_reason
+        # Summary falls back to the generic placeholder so Codex sees a clear
+        # "no diagnostico" marker instead of an operational audit line.
+        assert issue.summary == 'Consulta evolutiva autonoma requerida.'
+        # Fields that had no real diagnosis must stay empty instead of
+        # duplicating the summary, so the three-identical-lines pattern is
+        # gone.
+        assert issue.probable_cause == ''
+        assert issue.recommended_change == ''
+        assert issue.unresolved_reason == ''
+        # Live audit context is still preserved via evidence_refs so Codex can
+        # pull the full snapshot when triaging the backlog.
+        assert 'snap-h3' in issue.evidence_refs
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+
+def test_ensure_pending_issue_preserves_real_diagnosis_and_reason() -> None:
+    """H3 guard does not regress non-live-audit reasons.
+
+    A `reason` that is a legitimate technical description must still flow into
+    the text fallbacks when the diagnosis omits individual fields. Only the
+    LiveAudit summary shape is stripped.
+    """
+    bootstrap = _make_bootstrap('test_autonomous_evolution_service_h3_positive_workspace')
+    try:
+        service = bootstrap.autonomous_evolution_service
+        payload = {
+            'session_id': 'adaptive-h3-positive',
+            'probe_diagnosis': {
+                'category': 'need_codex_fix',
+                'summary': 'El bridge deja la cola visible a medias.',
+            },
+            'metadata': {},
+        }
+        issue = service._ensure_pending_issue(
+            payload=payload,
+            user_goal='sesion de prueba h3 positive',
+            assistant_kind='codex',
+            source='self_teach',
+            reason='El render queda congelado al reabrir la pestana.',
+        )
+        assert issue is not None
+        assert issue.summary == 'El bridge deja la cola visible a medias.'
+        # probable_cause is taken from the caller-provided reason because it
+        # does not match the LiveAudit pattern.
+        assert issue.probable_cause == 'El render queda congelado al reabrir la pestana.'
+        assert issue.recommended_change == 'El render queda congelado al reabrir la pestana.'
+    finally:
+        _cleanup_bootstrap(bootstrap)

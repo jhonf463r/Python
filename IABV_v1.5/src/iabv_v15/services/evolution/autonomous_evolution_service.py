@@ -27,6 +27,29 @@ from iabv_v15.services.evolution.incident_packet_service import IncidentPacketSe
 from iabv_v15.services.tools.tool_teach_service import ToolTeachService
 
 
+_LIVE_AUDIT_SUMMARY_PATTERN = re.compile(
+    r"Decision:\s*[\w\-]+\.\s*Confianza\s+\d+\.\d+\.\s*$",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_live_audit_summary(text: str) -> bool:
+    """Return True if text matches LiveAuditSupervisor.summarize_snapshot output.
+
+    LiveAuditSupervisor produces strings shaped as
+    "{lead} Decision: {action}. Confianza 0.NN." which are useful for a live
+    operational dashboard but useless as the `summary`/`probable_cause` of a
+    CodexPendingIssue: they describe the live audit decision, not the technical
+    problem the backlog item should drive to resolution. This guard lets the
+    pending-issue builders reject those strings and fall back to explicit
+    placeholders instead of propagating the audit summary into three identical
+    Codex fields with no actionable content.
+    """
+    if not text:
+        return False
+    return bool(_LIVE_AUDIT_SUMMARY_PATTERN.search(text.strip()))
+
+
 class AutonomousEvolutionService:
     FILE_SCOPE_PATTERN = re.compile(r"(?:src|tests)[\/][\w./-]+\.py", re.IGNORECASE)
     SECTION_LINE_PATTERN = re.compile(r"(?:^|\n)\s*(?:-\s*)?(?P<label>[A-Za-z0-9_ /.-]+?)\s*:\s*(?P<value>.+)", re.IGNORECASE)
@@ -871,8 +894,17 @@ class AutonomousEvolutionService:
                 return existing
         diagnosis = dict(payload.get('probe_diagnosis') or {})
         category = self._pending_category(diagnosis.get('category'), assistant_kind)
-        summary = str(diagnosis.get('summary') or reason or 'Consulta evolutiva autonoma requerida.').strip()
-        probable_cause = str(diagnosis.get('probable_cause') or reason or '').strip()
+        # The incoming `reason` may be a LiveAudit summary like
+        # "Sin hallazgos. Decision: continue_local. Confianza 0.66." which is
+        # meaningful as an operational audit line but worthless as the summary
+        # or probable_cause of a CodexPendingIssue. Drop it from the text
+        # fallback path so the backlog is not polluted with three identical
+        # fields carrying the same non-actionable audit line. The live audit
+        # context is still preserved through `audit_snapshot_id` in
+        # `evidence_refs` and through the incident packet built later.
+        reason_for_text = '' if _looks_like_live_audit_summary(reason) else reason
+        summary = str(diagnosis.get('summary') or reason_for_text or 'Consulta evolutiva autonoma requerida.').strip()
+        probable_cause = str(diagnosis.get('probable_cause') or reason_for_text or '').strip()
         runtime_adjustments = list(payload.get('runtime_adjustments') or [])
         evidence = [str(item) for item in (payload.get('evidence_refs') or []) if str(item).strip()]
         live_audit = self._live_audit(payload)
@@ -887,13 +919,13 @@ class AutonomousEvolutionService:
             category=category,
             summary=summary,
             probable_cause=probable_cause,
-            unresolved_reason=str(diagnosis.get('recommended_action') or reason or '').strip(),
+            unresolved_reason=str(diagnosis.get('recommended_action') or reason_for_text or '').strip(),
             run_id=str(payload.get('run_id') or '') or None,
             episode_id=str(payload.get('episode_id') or self._episode_id(payload) or '') or None,
             session_id=str(payload.get('session_id') or '') or None,
             evidence_refs=evidence[:8],
             runtime_adjustments=[item if hasattr(item, 'model_dump') else item for item in runtime_adjustments],
-            recommended_change=str(diagnosis.get('recommended_action') or reason or '').strip(),
+            recommended_change=str(diagnosis.get('recommended_action') or reason_for_text or '').strip(),
             suggested_tests=self._suggested_tests(payload, user_goal),
             metadata={
                 'autonomous_evolution': True,
