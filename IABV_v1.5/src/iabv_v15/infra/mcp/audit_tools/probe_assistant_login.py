@@ -492,7 +492,11 @@ def _safe_screenshot(page: Any) -> str:
     if not raw:
         return ""
     if len(raw) > SCREENSHOT_MAX_BYTES:
-        raw = raw[:SCREENSHOT_MAX_BYTES]
+        # PNG es un binario estructurado (header + chunks + CRC): slicearlo
+        # a la mitad produce un archivo que ningún decoder sabe leer. En
+        # ese caso preferimos omitir la evidencia antes que devolver una
+        # imagen corrupta.
+        return ""
     return base64.b64encode(raw).decode("ascii")
 
 

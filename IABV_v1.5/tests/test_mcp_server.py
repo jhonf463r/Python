@@ -790,6 +790,7 @@ def test_run_self_audit_does_not_require_network() -> None:
     payload = _call_tool(server, "run_self_audit")
 
     assert "governance_blocked" not in payload
+    assert audit.calls == [None]
 
 
 # ----------------------------------------------------------------------
