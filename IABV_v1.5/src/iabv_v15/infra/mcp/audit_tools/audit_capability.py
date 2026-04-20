@@ -200,16 +200,16 @@ def build_llm_local_ollama_runner(
                 evidence={"reason": str(getattr(health, "reason", "") or "desconocido")},
             )
 
-        # Construcción minimal de un InferenceRequest; se usa ``SimpleNamespace``
-        # para no obligar a este módulo a importar ``domain.models`` (que arrastra
-        # pydantic + capas pesadas). El provider real acepta cualquier objeto con
-        # atributos ``user_goal/prompt/offline_only/metadata``.
-        from types import SimpleNamespace
+        # El provider real (OpenAICompatLocalProvider) accede a `.value` en
+        # varios campos del request (`task_role`, `complexity`, `ambiguity`,
+        # `allowed_tools`). Un `SimpleNamespace` con strings sueltos rompe
+        # con `AttributeError: 'str' object has no attribute 'value'`. Usamos
+        # el contrato real `InferenceRequest` con defaults seguros.
+        from iabv_v15.domain.models import InferenceRequest
 
-        request = SimpleNamespace(
+        request = InferenceRequest(
             user_goal="capability_audit",
             prompt=prompt,
-            task_role="auditor",
             offline_only=True,
             metadata={"scope": "capability_audit", "assistant_kind": "ollama"},
         )
