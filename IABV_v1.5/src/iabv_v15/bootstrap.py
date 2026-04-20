@@ -780,6 +780,7 @@ class AppBootstrap:
             unified_memory_layer=self.unified_memory_layer,
             goal_engine=self.goal_engine,
             autonomy_governance_policy=self.autonomy_governance_policy,
+            synaptic_router=self.synaptic_router,
         )
         self.portable_context_service.task_context_assembler = self.task_context_assembler
         self.portable_context_service.adaptive_task_orchestrator = self.adaptive_task_orchestrator

@@ -23,6 +23,7 @@ from iabv_v15.domain.models import (
     RoleRoute,
     RunRecord,
     RunStatus,
+    SynapticRoutingDecision,
     TaskContext,
     TaskIntent,
     TaskOutcome,
@@ -49,6 +50,53 @@ from iabv_v15.services.roles.local_role_router import LocalRoleRouter
 _LOCAL_CHAT_PACK_IDS = frozenset({'knowledge.query', 'general.assistance'})
 _LOCAL_CHAT_INTENT_KEYS = frozenset({'knowledge.query', 'general.assistance'})
 _LOCAL_CHAT_ROLES = frozenset({TaskRole.KNOWLEDGE, TaskRole.ANALYTICS, TaskRole.RESEARCH})
+
+
+# --- H6: intent -> synaptic task_kind mapping ---------------------------------
+# Mapea (intent_key, detected_role, metadata flags) a un ``task_kind`` reconocido
+# por ``SynapticRouter``. Strictly descriptive: se usa SOLO para pedirle al
+# router un ranking informativo; ``LocalRoleRouter`` sigue siendo quien decide
+# la ruta operativa. Si no hay mapeo, devolvemos '' y el router no se consulta.
+_INTENT_TO_TASK_KIND: dict[str, str] = {
+    'project.evolution': 'code_review',
+    'research.external_consultation': 'long_context_synthesis',
+    'research.local': 'long_context_synthesis',
+    'analytics.strategy': 'structured_reasoning',
+}
+
+_ROLE_TO_TASK_KIND: dict[TaskRole, str] = {
+    TaskRole.PROJECT_EVOLUTION: 'code_review',
+    TaskRole.RESEARCH: 'long_context_synthesis',
+    TaskRole.ANALYTICS: 'structured_reasoning',
+}
+
+
+def _synaptic_task_kind_from_intent(intent: TaskIntent | None) -> str:
+    """Resuelve el ``task_kind`` para sondear ``SynapticRouter``.
+
+    Reglas:
+    - ``project.evolution`` con ``metadata.code_generation_prompt=True`` (H5)
+      se rutea como ``code_generation``.
+    - Los demás mapeos siguen ``_INTENT_TO_TASK_KIND`` / ``_ROLE_TO_TASK_KIND``.
+    - Intents conversacionales o locales-first (``general.assistance``,
+      ``system.self_awareness``, ``knowledge.query``) devuelven ``''`` para
+      que el router NO sea consultado (preserva principio local-first).
+    """
+    if intent is None:
+        return ''
+    intent_key = str(getattr(intent, 'intent_key', '') or '')
+    metadata = getattr(intent, 'metadata', None) or {}
+    if intent_key == 'project.evolution':
+        if isinstance(metadata, dict) and metadata.get('code_generation_prompt'):
+            return 'code_generation'
+        return _INTENT_TO_TASK_KIND.get(intent_key, 'code_review')
+    mapped = _INTENT_TO_TASK_KIND.get(intent_key, '')
+    if mapped:
+        return mapped
+    role = getattr(intent, 'detected_role', None)
+    if role in _ROLE_TO_TASK_KIND:
+        return _ROLE_TO_TASK_KIND[role]
+    return ''
 
 
 def _is_local_chat_flow(session: AdaptiveSession) -> bool:
@@ -81,6 +129,7 @@ class AdaptiveTaskOrchestrator:
         unified_memory_layer: Any | None = None,
         goal_engine: GoalEngine | None = None,
         autonomy_governance_policy: AutonomyGovernancePolicy | None = None,
+        synaptic_router: Any | None = None,
     ) -> None:
         self.role_router = role_router
         self.adaptive_session_repository = adaptive_session_repository
@@ -96,8 +145,53 @@ class AdaptiveTaskOrchestrator:
         self.unified_memory_layer = unified_memory_layer
         self.goal_engine = goal_engine
         self.autonomy_governance_policy = autonomy_governance_policy
+        # H6 — SynapticRouter opcional (PCS v1 Pieza 4). NO reemplaza a
+        # ``LocalRoleRouter``; solo expone un ranking descriptivo de IAs
+        # externas candidatas en ``DecisionContext.metadata.synaptic_route``.
+        self.synaptic_router = synaptic_router
         self.control_master_service: Any | None = None
         self.control_master_digest_builder: Any | None = None
+
+    def _maybe_synaptic_decision(self, intent: TaskIntent | None) -> SynapticRoutingDecision | None:
+        """Consulta ``SynapticRouter.decide`` si el intent es external-worthy.
+
+        Retorna ``None`` cuando no hay router wireado o el intent no mapea a un
+        ``task_kind`` external-worthy (p. ej. ``general.assistance`` o
+        ``knowledge.query`` que son local-first). Cuando hay ruteo, devuelve el
+        ``SynapticRoutingDecision`` tal cual — el router ya maneja el flag
+        ``SYNAPTIC_ROUTING`` y reporta ``routing_enabled=False`` cuando está
+        apagado, así que los consumidores siempre ven evidencia observable.
+        """
+        if self.synaptic_router is None:
+            return None
+        task_kind = _synaptic_task_kind_from_intent(intent)
+        if not task_kind:
+            return None
+        try:
+            return self.synaptic_router.decide(task_kind=task_kind)
+        except Exception:  # pragma: no cover - defensive: router debe ser fail-observable
+            return None
+
+    @staticmethod
+    def _inject_synaptic_into_decision_context(
+        decision_context: DecisionContext | None,
+        synaptic_decision: SynapticRoutingDecision | None,
+    ) -> None:
+        """Deposita el resultado del router en ``decision_context.metadata``.
+
+        No muta ``route_decision`` ni ``governance`` — la ruta operativa la
+        sigue eligiendo ``LocalRoleRouter``. El payload queda bajo la clave
+        ``synaptic_route`` para que UI / MCP / portable_context lo vean.
+        """
+        if decision_context is None or synaptic_decision is None:
+            return
+        try:
+            payload = synaptic_decision.model_dump(mode='json')
+        except Exception:  # pragma: no cover - defensive
+            return
+        metadata = dict(decision_context.metadata or {})
+        metadata['synaptic_route'] = payload
+        decision_context.metadata = metadata
 
     def build_decision_context_preview(self, request: InferenceRequest) -> DecisionContext:
         # Usar clasificación con schema para mejor comprensión semántica
@@ -111,6 +205,8 @@ class AdaptiveTaskOrchestrator:
         perception = self.context_assembler.build_perception_snapshot(
             request, intent, route_decision=route_decision, intent_schema=intent_schema
         )
+        synaptic_decision = self._maybe_synaptic_decision(intent)
+        self._inject_synaptic_into_decision_context(perception.decision_context, synaptic_decision)
         return perception.decision_context
 
     def handle_request(self, request: InferenceRequest) -> tuple[RoleRoute, InferenceResult, AdaptiveSession]:
@@ -126,6 +222,8 @@ class AdaptiveTaskOrchestrator:
         perception = self.context_assembler.build_perception_snapshot(
             request, intent, route_decision=route_decision, intent_schema=intent_schema
         )
+        synaptic_decision = self._maybe_synaptic_decision(intent)
+        self._inject_synaptic_into_decision_context(perception.decision_context, synaptic_decision)
         context = perception.task_context
 
         # Extraer análisis conversacional del schema (más preciso que keywords)
