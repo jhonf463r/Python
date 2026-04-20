@@ -385,3 +385,104 @@ def test_recurring_failure_dedupes_repeated_run_ids_defensively() -> None:
     )
 
     assert findings == []
+
+
+def test_dedupe_adjustments_collapses_equivalent_pendiente_codex_entries() -> None:
+    service = OperationalSelfExaminationService.__new__(OperationalSelfExaminationService)
+    items = [
+        {
+            'title': 'Pendiente Codex: ',
+            'recommended_change': 'Ya existe un patron equivalente Decision: continue_local. Confianza 0.96.',
+            'category': 'backlog',
+            'severity': 'medium',
+            'confidence': 0.45,
+            'evidence_refs': ['evidence-a'],
+            'source_refs': ['EvolutionReviewService'],
+            'metadata': {},
+            'feedback_key': 'backlog:pendiente_codex',
+        },
+        {
+            'title': 'Pendiente Codex: ',
+            'recommended_change': 'Sin hallazgos. Decision: continue_local. Confianza 0.66.',
+            'category': 'backlog',
+            'severity': 'medium',
+            'confidence': 0.66,
+            'evidence_refs': ['evidence-b'],
+            'source_refs': ['EvolutionReviewService'],
+            'metadata': {},
+            'feedback_key': 'backlog:pendiente_codex',
+        },
+        {
+            'title': 'Ruta debil: codex por code_agent',
+            'recommended_change': 'Exigir validacion adicional.',
+            'category': 'inertial_route',
+            'severity': 'medium',
+            'confidence': 0.8,
+            'evidence_refs': [],
+            'source_refs': ['ExperimentLab'],
+            'metadata': {},
+            'feedback_key': 'inertial_route:codex',
+        },
+    ]
+
+    deduped = OperationalSelfExaminationService._dedupe_adjustments(service, items)
+    assert len(deduped) == 2
+    pendiente_codex = next(item for item in deduped if item['title'] == 'Pendiente Codex: ')
+    assert pendiente_codex['metadata']['duplicate_count'] == 2
+    assert 'duplicate_variants' in pendiente_codex['metadata']
+    assert len(pendiente_codex['metadata']['duplicate_variants']) == 2
+    assert set(pendiente_codex['evidence_refs']) == {'evidence-a', 'evidence-b'}
+    assert pendiente_codex['confidence'] == 0.66
+
+    inertial = next(item for item in deduped if item['category'] == 'inertial_route')
+    assert inertial['metadata']['duplicate_count'] == 1
+
+
+def test_environment_self_awareness_marks_missing_sensors_as_not_available_instead_of_unresolved() -> None:
+    from iabv_v15.services.evolution.environment_self_awareness_service import (
+        EnvironmentSelfAwarenessService,
+    )
+
+    root = _workspace('environment_sensors_not_available')
+    try:
+        evolution_dir = root / 'evolution'
+        evolution_dir.mkdir(parents=True, exist_ok=True)
+        service = EnvironmentSelfAwarenessService(
+            workspace_root=str(root),
+            evolution_dir=str(evolution_dir),
+            auto_start=False,
+            bootstrap_scan=False,
+        )
+
+        hardware = {
+            'hostname': 'test-host',
+            'cpu_temperature_c': None,
+            'gpu_name': None,
+            'gpu_temperature_c': None,
+            'battery_percent': None,
+            'battery_status': None,
+            'current_clock_mhz': None,
+            'max_clock_mhz': None,
+        }
+        service._memory_snapshot = lambda: {}  # type: ignore[method-assign]
+        service._disk_snapshot = lambda: {}  # type: ignore[method-assign]
+        service._cpu_snapshot = lambda *, full: {}  # type: ignore[method-assign]
+        service._gpu_snapshot = lambda *, full: {}  # type: ignore[method-assign]
+        service._battery_snapshot = lambda *, full: {}  # type: ignore[method-assign]
+        service._detect_throttling = lambda *, cpu_info, gpu_info: False  # type: ignore[method-assign]
+
+        _, unresolved = service._scan_hardware(full=False)
+
+        assert 'UNRESOLVED:cpu_temperature' not in unresolved
+        assert 'UNRESOLVED:battery_status' not in unresolved
+        assert 'UNRESOLVED:cpu_frequency' not in unresolved
+
+        hardware_snapshot, _ = service._scan_hardware(full=False)
+        not_available = hardware_snapshot.get('sensors_not_available') or []
+        sensors = {entry['sensor'] for entry in not_available}
+        assert 'cpu_temperature' in sensors
+        assert 'battery_status' in sensors
+        for entry in not_available:
+            assert entry['reason'] == 'sensor_not_exposed_on_this_host'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)

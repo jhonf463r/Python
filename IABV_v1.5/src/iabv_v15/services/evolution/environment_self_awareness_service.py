@@ -273,14 +273,37 @@ class EnvironmentSelfAwarenessService:
             'battery_status': battery_info.get('status'),
             'throttling_detected': self._detect_throttling(cpu_info=cpu_info, gpu_info=gpu_info),
         }
+        sensors_not_available: list[dict[str, str]] = []
+        is_windows = os.name == 'nt'
+        # cpu_temperature: no hay una fuente confiable y universal para leer la
+        # temperatura de CPU desde Python estandar. Si viene None, no es "falla
+        # del sensor" sino que el host no lo expone por esta via.
         if hardware.get('cpu_temperature_c') is None:
-            unresolved.append('UNRESOLVED:cpu_temperature')
+            sensors_not_available.append(
+                {'sensor': 'cpu_temperature', 'reason': 'sensor_not_exposed_on_this_host'}
+            )
+        # gpu_temperature si ya reportamos gpu_name: hay GPU NVIDIA pero la
+        # query fallo -> sigue siendo UNRESOLVED real.
         if hardware.get('gpu_name') and hardware.get('gpu_temperature_c') is None:
             unresolved.append('UNRESOLVED:gpu_temperature')
+        # battery: hardware opcional (desktops no tienen bateria). Si la query
+        # no devuelve nada, lo tratamos como "no expuesto" en vez de UNRESOLVED.
         if hardware.get('battery_percent') is None:
-            unresolved.append('UNRESOLVED:battery_status')
+            sensors_not_available.append(
+                {'sensor': 'battery_status', 'reason': 'sensor_not_exposed_on_this_host'}
+            )
+        # cpu_frequency: Win32_Processor expone CurrentClockSpeed/MaxClockSpeed
+        # en Windows. Si estamos en Windows y no llego dato, si cuenta como
+        # UNRESOLVED real. Si no es Windows, es "no expuesto".
         if hardware.get('current_clock_mhz') is None or hardware.get('max_clock_mhz') is None:
-            unresolved.append('UNRESOLVED:cpu_frequency')
+            if is_windows:
+                unresolved.append('UNRESOLVED:cpu_frequency')
+            else:
+                sensors_not_available.append(
+                    {'sensor': 'cpu_frequency', 'reason': 'sensor_not_exposed_on_this_host'}
+                )
+        if sensors_not_available:
+            hardware['sensors_not_available'] = sensors_not_available
         return hardware, unresolved
 
     def _scan_runtime(self, *, full: bool) -> tuple[dict[str, Any], list[str]]:

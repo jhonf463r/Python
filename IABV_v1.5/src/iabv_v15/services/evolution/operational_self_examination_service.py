@@ -657,7 +657,59 @@ class OperationalSelfExaminationService:
                     ),
                 }
             )
-        return items[:6]
+        return self._dedupe_adjustments(items)[:6]
+
+    def _adjustment_group_key(self, item: dict[str, Any]) -> tuple[str, str, str]:
+        """Clave de agrupacion para colapsar ajustes recomendados duplicados.
+
+        Usa ``(fuente_principal, categoria, titulo)``: distintos "recommended_change"
+        con el mismo titulo/categoria/fuente se consideran variantes del mismo
+        patron y se colapsan con ``duplicate_count``.
+        """
+        sources = list(item.get('source_refs') or [])
+        primary_source = str(sources[0]) if sources else ''
+        category = str(item.get('category') or '').strip().lower()
+        title = str(item.get('title') or '').strip().lower()
+        return primary_source, category, title
+
+    def _dedupe_adjustments(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        seen: dict[tuple[str, str, str], dict[str, Any]] = {}
+        order: list[tuple[str, str, str]] = []
+        for item in items:
+            key = self._adjustment_group_key(item)
+            if key in seen:
+                existing = seen[key]
+                metadata = dict(existing.get('metadata') or {})
+                metadata['duplicate_count'] = int(metadata.get('duplicate_count') or 1) + 1
+                variants = list(metadata.get('duplicate_variants') or [])
+                variant = str(item.get('recommended_change') or '').strip()
+                if variant and variant not in variants and len(variants) < 4:
+                    variants.append(variant)
+                if variants:
+                    metadata['duplicate_variants'] = variants
+                existing['metadata'] = metadata
+                existing_refs = list(existing.get('evidence_refs') or [])
+                for ref in item.get('evidence_refs') or []:
+                    if ref not in existing_refs and len(existing_refs) < 4:
+                        existing_refs.append(ref)
+                existing['evidence_refs'] = existing_refs
+                if float(item.get('confidence') or 0.0) > float(existing.get('confidence') or 0.0):
+                    existing['confidence'] = item.get('confidence')
+                    recommended_change = str(item.get('recommended_change') or '').strip()
+                    if recommended_change:
+                        existing['recommended_change'] = recommended_change
+            else:
+                clone = dict(item)
+                metadata = dict(item.get('metadata') or {})
+                metadata['duplicate_count'] = 1
+                variant = str(item.get('recommended_change') or '').strip()
+                if variant:
+                    metadata['duplicate_variants'] = [variant]
+                clone['metadata'] = metadata
+                clone['evidence_refs'] = list(item.get('evidence_refs') or [])
+                seen[key] = clone
+                order.append(key)
+        return [seen[key] for key in order]
 
     def _recommendation_feedback(
         self,
