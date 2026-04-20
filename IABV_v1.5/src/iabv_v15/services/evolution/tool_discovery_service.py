@@ -248,7 +248,7 @@ class ToolDiscoveryService:
             recommended_route=probe.route,
             recommended_assistant_kind=assistant_kind,
             recommended_config_signature=config_signature,
-            score=float(probe.score.total_score or 0.0),
+            score=float(probe.metrics.total_score or 0.0),
             confidence=0.52,
             rationale='Baseline inferida desde la corrida mas reciente disponible.',
             supporting_run_ids=[probe.run_id],
