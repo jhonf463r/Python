@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 import shutil
 from pathlib import Path
 from uuid import uuid4
@@ -11,12 +11,23 @@ from iabv_v15.domain.models import (
     ExperimentMetric,
     ExperimentRecommendation,
     ExperimentRun,
+    InferenceRequest,
+    InferenceResult,
+    ReasoningMode,
+    RoleRoute,
+    RunRecord,
+    RunStatus,
     SandboxExperiment,
     SelfExaminationSnapshot,
+    TaskRole,
+    ToolCapability,
     ToolLiveStatus,
     WindowObservation,
     WorldModelSnapshot,
     utc_now,
+)
+from iabv_v15.services.evolution.operational_self_examination_service import (
+    OperationalSelfExaminationService,
 )
 
 
@@ -226,3 +237,151 @@ def test_operational_self_examination_service_feedback_classifies_previous_adjus
         assert any(item.get('repeat_policy') == 'require_new_evidence' for item in review.recommended_adjustments if item.get('last_feedback_status') == 'false_improvement')
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def _build_run(
+    *,
+    task_role: TaskRole,
+    status: RunStatus,
+    created_at: datetime,
+    run_id: str | None = None,
+    site_hint: str = '',
+) -> RunRecord:
+    request = InferenceRequest(
+        user_goal='goal',
+        task_role=task_role,
+        site_hint=site_hint,
+    )
+    result = InferenceResult(
+        request_id=request.request_id,
+        provider_name='Ollama',
+        reasoning_mode=ReasoningMode.LOCAL,
+        summary='ok' if status == RunStatus.SUCCESS else 'fallo',
+        inferred_task='goal',
+        confidence=0.5,
+    )
+    route = RoleRoute(
+        task_role=task_role,
+        role_title='stub',
+        provider_name='Ollama',
+        model_profile_id='general-qwen',
+        model_name='qwen3:8b',
+        tool_chain=[ToolCapability.ANALYTICS],
+        reason='stub',
+    )
+    kwargs: dict[str, object] = {
+        'request': request,
+        'result': result,
+        'route': route,
+        'status': status,
+        'created_at_utc': created_at,
+    }
+    if run_id is not None:
+        kwargs['run_id'] = run_id
+    return RunRecord(**kwargs)
+
+
+def test_recurring_failure_ignores_partial_runs_so_no_false_fallo_repetido_training() -> None:
+    service = OperationalSelfExaminationService.__new__(OperationalSelfExaminationService)
+    now = datetime.now(timezone.utc)
+    runs: list[RunRecord] = []
+    # Fixture de 40 dossiers mixtos: 32 SUCCESS + 8 PARTIAL, todos en
+    # TaskRole.TRAINING. Ninguno FAILED. El heuristico anterior agrupaba
+    # FAILED+PARTIAL bajo "Fallo repetido" y generaba el falso positivo
+    # "Fallo repetido en general:training" con solo PARTIAL.
+    for _ in range(32):
+        runs.append(
+            _build_run(
+                task_role=TaskRole.TRAINING,
+                status=RunStatus.SUCCESS,
+                created_at=now,
+            )
+        )
+    for _ in range(8):
+        runs.append(
+            _build_run(
+                task_role=TaskRole.TRAINING,
+                status=RunStatus.PARTIAL,
+                created_at=now,
+            )
+        )
+
+    findings = OperationalSelfExaminationService._recurring_failure_findings(
+        service, recent_runs=runs
+    )
+
+    assert findings == []
+
+
+def test_recurring_failure_flags_two_distinct_failed_runs_in_window() -> None:
+    service = OperationalSelfExaminationService.__new__(OperationalSelfExaminationService)
+    now = datetime.now(timezone.utc)
+    runs = [
+        _build_run(
+            task_role=TaskRole.TRAINING,
+            status=RunStatus.FAILED,
+            created_at=now,
+            run_id='run-failed-1',
+        ),
+        _build_run(
+            task_role=TaskRole.TRAINING,
+            status=RunStatus.FAILED,
+            created_at=now,
+            run_id='run-failed-2',
+        ),
+    ]
+
+    findings = OperationalSelfExaminationService._recurring_failure_findings(
+        service, recent_runs=runs
+    )
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert 'general:training' in finding.title
+    assert finding.category == 'recurring_failure'
+    assert finding.metadata['failed_count'] == 2
+    assert finding.metadata['window_hours'] == 48
+
+
+def test_recurring_failure_ignores_stale_runs_outside_window() -> None:
+    service = OperationalSelfExaminationService.__new__(OperationalSelfExaminationService)
+    now = datetime.now(timezone.utc)
+    stale = now - timedelta(days=7)
+    runs = [
+        _build_run(
+            task_role=TaskRole.TRAINING,
+            status=RunStatus.FAILED,
+            created_at=stale,
+            run_id='run-old-1',
+        ),
+        _build_run(
+            task_role=TaskRole.TRAINING,
+            status=RunStatus.FAILED,
+            created_at=stale,
+            run_id='run-old-2',
+        ),
+    ]
+
+    findings = OperationalSelfExaminationService._recurring_failure_findings(
+        service, recent_runs=runs
+    )
+
+    assert findings == []
+
+
+def test_recurring_failure_dedupes_repeated_run_ids_defensively() -> None:
+    service = OperationalSelfExaminationService.__new__(OperationalSelfExaminationService)
+    now = datetime.now(timezone.utc)
+    repeated = _build_run(
+        task_role=TaskRole.TRAINING,
+        status=RunStatus.FAILED,
+        created_at=now,
+        run_id='single-fail',
+    )
+    runs = [repeated, repeated, repeated]
+
+    findings = OperationalSelfExaminationService._recurring_failure_findings(
+        service, recent_runs=runs
+    )
+
+    assert findings == []
