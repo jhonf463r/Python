@@ -1189,3 +1189,151 @@ def test_prepare_retry_is_idempotent_and_does_not_mutate_input_payload() -> None
     assert 'autonomous_evolution' not in new_payload['metadata']
     assert 'pending_issue_id' not in new_payload['metadata']
     assert new_payload['metadata']['reingest_existing_response'] is True
+
+
+# ---------------------------------------------------------------------------
+# H6 — SynapticRouter integration in AdaptiveTaskOrchestrator
+# ---------------------------------------------------------------------------
+# Los tests siguientes verifican que el ranking inter-IA del ``SynapticRouter``
+# (PCS v1) sea visible en ``DecisionContext.metadata.synaptic_route`` cuando el
+# intent es external-worthy, y que NO se inyecte en flujos local-first. La ruta
+# operativa sigue siendo de ``LocalRoleRouter`` — la inyección es puramente
+# descriptiva.
+
+
+from iabv_v15.domain.models import SynapticRoutingDecision, TaskIntent
+from iabv_v15.services.adaptive.adaptive_task_orchestrator import (
+    _synaptic_task_kind_from_intent,
+)
+
+
+class _StubSynapticRouter:
+    """Router sintético que registra las task_kinds consultadas."""
+
+    def __init__(self, *, routing_enabled: bool = True, selected_kind: str = 'codex') -> None:
+        self.routing_enabled = routing_enabled
+        self.selected_kind = selected_kind
+        self.calls: list[str] = []
+
+    def decide(self, *, task_kind: str, candidate_assistant_kinds: list[str] | None = None) -> SynapticRoutingDecision:
+        self.calls.append(task_kind)
+        return SynapticRoutingDecision(
+            selected_assistant_kind=self.selected_kind if self.routing_enabled else '',
+            alternatives=[{'assistant_kind': 'devin', 'score': 0.42}],
+            fit_score=0.6 if self.routing_enabled else 0.0,
+            weight_score=0.1,
+            availability_score=0.3,
+            total_score=0.55 if self.routing_enabled else 0.0,
+            routing_enabled=self.routing_enabled,
+            reason='stub' if self.routing_enabled else 'SYNAPTIC_ROUTING feature flag off',
+            unresolved_fields=['adaptive_history_empty'],
+            metadata={'task_kind': task_kind},
+        )
+
+
+def test_synaptic_task_kind_mapping_for_code_generation_intent() -> None:
+    intent = TaskIntent(
+        intent_key='project.evolution',
+        detected_role=TaskRole.PROJECT_EVOLUTION,
+        metadata={'code_generation_prompt': True},
+    )
+    assert _synaptic_task_kind_from_intent(intent) == 'code_generation'
+
+
+def test_synaptic_task_kind_mapping_defaults_project_to_code_review() -> None:
+    intent = TaskIntent(
+        intent_key='project.evolution',
+        detected_role=TaskRole.PROJECT_EVOLUTION,
+        metadata={},
+    )
+    assert _synaptic_task_kind_from_intent(intent) == 'code_review'
+
+
+def test_synaptic_task_kind_mapping_for_external_research() -> None:
+    intent = TaskIntent(
+        intent_key='research.external_consultation',
+        detected_role=TaskRole.RESEARCH,
+    )
+    assert _synaptic_task_kind_from_intent(intent) == 'long_context_synthesis'
+
+
+def test_synaptic_task_kind_mapping_is_empty_for_local_chat() -> None:
+    # general.assistance y knowledge.query son local-first: el router NO se
+    # consulta y el orquestador debe saltar la inyección.
+    for intent_key, role in (
+        ('general.assistance', TaskRole.KNOWLEDGE),
+        ('knowledge.query', TaskRole.KNOWLEDGE),
+    ):
+        intent = TaskIntent(intent_key=intent_key, detected_role=role)
+        assert _synaptic_task_kind_from_intent(intent) == ''
+
+
+def test_orchestrator_injects_synaptic_route_for_code_generation_goal() -> None:
+    orchestrator, _ = _orchestrator(_workspace('adaptive_h6_code_gen'))
+    stub = _StubSynapticRouter(routing_enabled=True, selected_kind='codex')
+    orchestrator.synaptic_router = stub
+
+    request = InferenceRequest(
+        user_goal='genera un parche pequeño con tests unitarios para el router',
+        auto_route=True,
+    )
+    decision = orchestrator.build_decision_context_preview(request)
+
+    assert stub.calls, 'SynapticRouter debió ser consultado para un goal de código'
+    assert stub.calls[0] == 'code_generation'
+    assert 'synaptic_route' in decision.metadata
+    payload = decision.metadata['synaptic_route']
+    assert payload['routing_enabled'] is True
+    assert payload['selected_assistant_kind'] == 'codex'
+    assert payload['metadata']['task_kind'] == 'code_generation'
+    # La ruta operativa interna NO la reemplaza el router sináptico.
+    assert decision.route_decision.detected_role == TaskRole.PROJECT_EVOLUTION
+
+
+def test_orchestrator_skips_synaptic_route_for_conversational_goal() -> None:
+    orchestrator, _ = _orchestrator(_workspace('adaptive_h6_conversational'))
+    stub = _StubSynapticRouter()
+    orchestrator.synaptic_router = stub
+
+    request = InferenceRequest(user_goal='hola, como estas?', auto_route=True)
+    decision = orchestrator.build_decision_context_preview(request)
+
+    assert stub.calls == [], 'No debe consultarse SynapticRouter en flujos local-first'
+    assert 'synaptic_route' not in decision.metadata
+
+
+def test_orchestrator_without_synaptic_router_keeps_metadata_clean() -> None:
+    # Backward compat: cuando ``synaptic_router=None`` (bootstrap legacy o
+    # sandbox sin PCS v1), ``DecisionContext.metadata`` no debe contener la
+    # clave ``synaptic_route``.
+    orchestrator, _ = _orchestrator(_workspace('adaptive_h6_no_router'))
+    assert orchestrator.synaptic_router is None
+
+    request = InferenceRequest(
+        user_goal='genera un parche pequeño con tests unitarios',
+        auto_route=True,
+    )
+    decision = orchestrator.build_decision_context_preview(request)
+
+    assert 'synaptic_route' not in decision.metadata
+
+
+def test_orchestrator_propagates_routing_disabled_flag() -> None:
+    # Cuando SYNAPTIC_ROUTING=off, el router devuelve ``routing_enabled=False``
+    # y el orquestador debe inyectar igual el payload observable (fail-observable)
+    # para que UI/MCP vean el motivo.
+    orchestrator, _ = _orchestrator(_workspace('adaptive_h6_flag_off'))
+    stub = _StubSynapticRouter(routing_enabled=False)
+    orchestrator.synaptic_router = stub
+
+    request = InferenceRequest(
+        user_goal='genera un parche con tests',
+        auto_route=True,
+    )
+    decision = orchestrator.build_decision_context_preview(request)
+
+    assert stub.calls == ['code_generation']
+    payload = decision.metadata.get('synaptic_route')
+    assert payload is not None
+    assert payload['routing_enabled'] is False
+    assert 'feature flag off' in payload['reason'].lower()
