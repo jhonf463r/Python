@@ -9,6 +9,7 @@ from iabv_v15.domain.models import (
     ExperimentDomain,
     ExperimentRecommendation,
     ExperimentRun,
+    IATraceEntry,
 )
 from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
 from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
@@ -134,6 +135,48 @@ class ExperimentLab:
         recommendation = self.strategy_selector.recommend(domain=domain, subject_key=subject_key, candidate_runs=[], historical_runs=runs)
         self.repository.save_recommendation(recommendation)
         return recommendation
+
+    def list_candidate_traces_for_scope(self, scope_key: str) -> list[IATraceEntry]:
+        """Return `IATraceEntry` objects whose `comparison_scope_key` matches.
+
+        Scans recent runs across all domains and converts those whose
+        metadata ``comparison_scope_key`` equals *scope_key* into
+        ``IATraceEntry`` instances suitable for ``ConsensusFusionService.fuse``.
+
+        Returns an empty list when no matches are found (fail-observable
+        at the caller level).
+        """
+        if not scope_key:
+            return []
+        all_runs = self.repository.list_runs(limit=100)
+        traces: list[IATraceEntry] = []
+        for run in all_runs:
+            run_scope = str((run.metadata or {}).get('comparison_scope_key') or '')
+            if run_scope != scope_key:
+                continue
+            traces.append(IATraceEntry(
+                trace_id=str((run.metadata or {}).get('trace_id') or run.run_id),
+                assistant_kind=run.assistant_kind,
+                config_signature=run.config_signature,
+                comparison_scope_key=run_scope,
+                route=run.route.value,
+                result_label=str((run.metadata or {}).get('result_label') or ('pass' if run.success else 'fail')),
+                success=run.success,
+                execution_ms=int(run.metrics.execution_ms) if run.metrics else 0,
+                confidence=float(run.metrics.total_score) if run.metrics else 0.0,
+                evidence_refs=list(run.evidence_refs or []),
+                outcome_summary=str((run.metadata or {}).get('outcome_summary') or run.observed_summary or '')[:240],
+                proposal_summary=str((run.metadata or {}).get('proposal_summary') or '')[:240],
+                source_trace_ids=list((run.metadata or {}).get('source_trace_ids') or []),
+                assistant_configuration=run.assistant_configuration,
+                metadata={
+                    'from_experiment_run': run.run_id,
+                    'domain': run.domain.value,
+                    'subject_key': run.subject_key,
+                    'suite_name': run.suite_name,
+                },
+            ))
+        return traces
 
     def record_outcome(
         self,

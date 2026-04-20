@@ -337,3 +337,87 @@ def test_experiment_lab_adaptive_weights_penalize_blocked_and_fallback_routes() 
         assert recommendation.metadata['adaptive_learning_summary']['reasons']
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_list_candidate_traces_for_scope_returns_matching_traces() -> None:
+    root = _workspace('lab_scope_selector')
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        lab = _lab(root)
+        lab.record_outcome(
+            domain=ExperimentDomain.CODE,
+            objective='Fix bug',
+            subject_key='code:review',
+            route=EvaluationRoute.CODE_AGENT,
+            candidate_label='codex_run',
+            success=True,
+            observed_summary='Fixed correctly.',
+            precision=0.9,
+            metadata={
+                'assistant_kind': 'codex',
+                'comparison_scope_key': 'code_review:codex_vs_claude',
+            },
+        )
+        lab.record_outcome(
+            domain=ExperimentDomain.CODE,
+            objective='Fix bug',
+            subject_key='code:review',
+            route=EvaluationRoute.CODE_AGENT,
+            candidate_label='claude_run',
+            success=True,
+            observed_summary='Also fixed.',
+            precision=0.85,
+            metadata={
+                'assistant_kind': 'claude_web',
+                'comparison_scope_key': 'code_review:codex_vs_claude',
+            },
+        )
+        lab.record_outcome(
+            domain=ExperimentDomain.CODE,
+            objective='Other task',
+            subject_key='code:other',
+            route=EvaluationRoute.FALLBACK,
+            candidate_label='other',
+            success=False,
+            observed_summary='Unrelated.',
+            metadata={
+                'comparison_scope_key': 'unrelated_scope',
+            },
+        )
+
+        traces = lab.list_candidate_traces_for_scope('code_review:codex_vs_claude')
+
+        assert len(traces) == 2
+        kinds = sorted(t.assistant_kind for t in traces)
+        assert kinds == ['claude_web', 'codex']
+        for trace in traces:
+            assert trace.comparison_scope_key == 'code_review:codex_vs_claude'
+            assert trace.success is True
+            assert trace.confidence > 0.0
+            assert trace.metadata.get('from_experiment_run')
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_list_candidate_traces_for_scope_returns_empty_for_no_match() -> None:
+    root = _workspace('lab_scope_no_match')
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        lab = _lab(root)
+        traces = lab.list_candidate_traces_for_scope('nonexistent_scope')
+        assert traces == []
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_list_candidate_traces_for_scope_empty_key_returns_empty() -> None:
+    root = _workspace('lab_scope_empty_key')
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        lab = _lab(root)
+        assert lab.list_candidate_traces_for_scope('') == []
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
