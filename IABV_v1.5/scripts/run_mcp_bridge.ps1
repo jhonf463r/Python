@@ -91,11 +91,21 @@ $env:IABV_MCP_NAME = $serverName
 $env:FASTMCP_HOST = $bindHost
 $env:FASTMCP_PORT = $bindPort
 
-# Lanza el MCP server en background (una sola ventana para ver logs)
-Write-Host "Arrancando MCP server..." -ForegroundColor Yellow
-$serverProcess = Start-Process -PassThru -NoNewWindow -FilePath $pythonBin `
-    -ArgumentList @('-m', 'iabv_v15.infra.mcp.server') `
-    -WorkingDirectory $workspaceRoot
+# Lanza el MCP server en background (una sola ventana para ver logs).
+# Si IABV_MCP_HOT_RELOAD=1, se envuelve en scripts\mcp_hot_reload.py para que
+# se reinicie solo al cambiar archivos en src/iabv_v15/ (util post git pull).
+if ($env:IABV_MCP_HOT_RELOAD -eq '1') {
+    Write-Host "Arrancando MCP server (hot-reload ON)..." -ForegroundColor Yellow
+    $hotReloadScript = Join-Path $workspaceRoot 'scripts\mcp_hot_reload.py'
+    $serverProcess = Start-Process -PassThru -NoNewWindow -FilePath $pythonBin `
+        -ArgumentList @($hotReloadScript) `
+        -WorkingDirectory $workspaceRoot
+} else {
+    Write-Host "Arrancando MCP server..." -ForegroundColor Yellow
+    $serverProcess = Start-Process -PassThru -NoNewWindow -FilePath $pythonBin `
+        -ArgumentList @('-m', 'iabv_v15.infra.mcp.server') `
+        -WorkingDirectory $workspaceRoot
+}
 
 Start-Sleep -Seconds 3
 if ($serverProcess.HasExited) {
