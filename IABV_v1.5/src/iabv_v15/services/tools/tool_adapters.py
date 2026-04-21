@@ -1193,15 +1193,24 @@ class ExternalAssistantToolAdapter(ToolAdapter):
 
 
 class DevinApiToolAdapter:
-    """Adapter REST para Devin (Cognition AI) via API v3.
+    """Adapter REST para Devin (Cognition AI) via API v1.
 
     Crea una sesion remota con el prompt del task, hace polling hasta que
     la sesion termine o se agote el timeout, y retorna el resultado en el
     formato estandar de adapters.  No es otro cerebro: el
     ``ToolTeachService`` decide cuando usarlo.
+
+    Endpoints reales de la API (v1):
+      POST https://api.devin.ai/v1/sessions        -> crear sesion
+      GET  https://api.devin.ai/v1/session/{id}    -> poll estado
+
+    El Bearer token identifica la organizacion; ``org_id`` se conserva
+    solo por compatibilidad con el constructor previo pero no se usa en
+    las llamadas reales.
     """
 
     tool_type = ToolType.MCP_CLIENT
+    BASE_URL = 'https://api.devin.ai/v1'
 
     def __init__(
         self,
@@ -1211,13 +1220,16 @@ class DevinApiToolAdapter:
         poll_interval_seconds: float = 5.0,
     ) -> None:
         self.api_key = api_key
-        self.org_id = org_id
+        self.org_id = org_id  # kept for backwards compat; unused in v1 API.
         self.timeout_seconds = timeout_seconds
         self.poll_interval_seconds = poll_interval_seconds
 
     @property
-    def _base_url(self) -> str:
-        return f'https://api.devin.ai/v3/organizations/{self.org_id}/sessions'
+    def _sessions_url(self) -> str:
+        return f'{self.BASE_URL}/sessions'
+
+    def _session_detail_url(self, session_id: str) -> str:
+        return f'{self.BASE_URL}/session/{session_id}'
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -1226,13 +1238,13 @@ class DevinApiToolAdapter:
         }
 
     def is_available(self, card: ToolCard) -> bool:
-        if not self.api_key or not self.org_id:
+        if not self.api_key:
             return False
         if httpx is None:
             return False
         try:
             resp = httpx.get(
-                self._base_url,
+                self._sessions_url,
                 headers=self._headers(),
                 params={'limit': '1'},
                 timeout=10.0,
@@ -1253,13 +1265,13 @@ class DevinApiToolAdapter:
                 'execution_ms': int((time.perf_counter() - start) * 1000),
                 'metadata': {'sandbox': sandbox, 'tool_id': card.tool_id},
             }
-        if not self.api_key or not self.org_id:
+        if not self.api_key:
             return {
                 'success': False,
                 'output_text': '',
                 'extracted_data': {},
                 'artifacts': [],
-                'error_message': 'DEVIN_API_KEY o DEVIN_ORG_ID no configurados.',
+                'error_message': 'DEVIN_API_KEY no configurado.',
                 'execution_ms': int((time.perf_counter() - start) * 1000),
                 'metadata': {'sandbox': sandbox, 'tool_id': card.tool_id},
             }
@@ -1276,7 +1288,7 @@ class DevinApiToolAdapter:
         error_message = ''
         try:
             create_resp = httpx.post(
-                self._base_url,
+                self._sessions_url,
                 headers=self._headers(),
                 json={'prompt': prompt},
                 timeout=30.0,
@@ -1303,7 +1315,7 @@ class DevinApiToolAdapter:
             while session_status == 'running' and time.perf_counter() < deadline:
                 time.sleep(self.poll_interval_seconds)
                 poll_resp = httpx.get(
-                    f'{self._base_url}/{session_id}',
+                    self._session_detail_url(session_id),
                     headers=self._headers(),
                     timeout=15.0,
                 )
