@@ -144,6 +144,17 @@ def resolve_workspace_path(workspace_root: str | os.PathLike[str], relative_path
     if not text:
         raise AuditToolError("invalid_path", "relative_path vacío")
 
+    # Rechaza paths que empiezan con separador POSIX ("/foo") o Windows ("\\foo"),
+    # incluso cuando `Path.is_absolute()` devuelve False. En Windows un path como
+    # "/etc/passwd" no se considera absoluto por la API estándar (no tiene drive
+    # letter), pero a efectos de seguridad sigue siendo un intento de escape del
+    # workspace y debe tratarse como "absolute_path_forbidden" igual que en POSIX.
+    if text.startswith(("/", "\\")):
+        raise AuditToolError(
+            "absolute_path_forbidden",
+            f"relative_path debe ser relativo al workspace_root; recibido: {text!r}",
+        )
+
     candidate = Path(text)
     if candidate.is_absolute():
         raise AuditToolError(
