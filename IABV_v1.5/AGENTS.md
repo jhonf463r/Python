@@ -180,6 +180,40 @@ si una herramienta esta utilizable:
 - Varias suites de UI siguen siendo lentas en Windows; no es una falla funcional, pero si una deuda de rendimiento de pruebas.
 - Si alguna conclusion depende solo de historial stale y contradice observacion viva, debe prevalecer la observacion viva.
 
+## Autonomia De Operacion (Reduccion De Trabajo Manual)
+Objetivo: que el usuario solo intervenga cuando hay decision real, no
+rutina. Mientras la tarea sea ``implementar + pushear + mergear + audit``,
+la ejecuta el agente en su VM sin pedir click en GitHub.
+
+Reglas de auto-merge (usar ``scripts/auto_merge_devin_pr.py``):
+- Rama obligatoria: ``devin/*`` o ``iabv-auto/*``. Otro prefijo requiere
+  aprobacion explicita del usuario.
+- El PR debe tener ``mergeable_state`` distinto de ``blocked`` / ``dirty``
+  / ``behind``.
+- Checks registradas deben concluir ``success`` / ``skipped`` / ``neutral``
+  (si no hay checks, el repo IABV lo permite; queda registrado).
+- ``--force`` solo se usa cuando el usuario pidio explicitamente saltear
+  salvaguardas; el agente no se auto-concede force.
+
+Aprobacion humana obligatoria (no auto-mergear) cuando:
+- El PR toca ``main`` via merge directo (fast-forward sin PR).
+- Cambia policies, contratos ``domain/models.py``, o capas cerradas
+  P1-P4 (``world_model``, neuroplasticidad, contexto portable, auto-
+  examinacion) mas alla de lo trivial.
+- Implica migracion destructiva de ``data/`` o borra evidencia historica.
+- Toca la politica de ``AutonomyGovernancePolicy``.
+- Agrega dependencias nuevas pesadas (ej: ``watchdog``, modelos grandes).
+
+Infra de arranque operativo para el usuario:
+- ``scripts/iabv_secrets.template.ps1``: template de secretos locales.
+- ``scripts/setup_iabv_profile.ps1``: one-shot que deja ``$PROFILE`` y
+  ``~/.iabv_secrets.ps1`` configurados; se corre una sola vez por maquina.
+- ``scripts/start_iabv.ps1``: un comando para cargar secretos, validar
+  shape y arrancar MCP + tunnel via ``run_mcp_bridge.ps1``.
+- ``scripts/mcp_hot_reload.py``: wrapper opcional (``IABV_MCP_HOT_RELOAD=1``)
+  que reinicia el MCP al detectar cambios en ``src/iabv_v15/*.py``. Sin
+  dependencias externas; polling de mtimes.
+
 ## Forma De Trabajo En Sesiones Nuevas
 1. lee este archivo primero
 2. inspecciona `bootstrap.py` y los archivos del slice relevante
