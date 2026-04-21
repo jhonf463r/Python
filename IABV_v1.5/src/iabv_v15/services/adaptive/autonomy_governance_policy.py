@@ -36,6 +36,206 @@ class AutonomyGovernancePolicy:
 
         return True, None
 
+    # --- Reglas Nivel 1 para auto-merge gobernado de PRs via GitHubApiToolAdapter.
+    # El control fino lo siguen haciendo los ToolAdapters y GitHub (CI, branch
+    # protection), pero este metodo deja explicita la decision de politica para
+    # que el orquestador y ExperimentLab puedan auditarla.
+
+    _GITHUB_MERGE_MAX_TOTAL_LINES = 200
+    _GITHUB_MERGE_MAX_FILES_CHANGED = 15
+    _GITHUB_MERGE_SENSITIVE_PATH_PREFIXES = (
+        'src/iabv_v15/bootstrap',
+        'src/iabv_v15/domain/models',
+        'src/iabv_v15/services/adaptive/autonomy_governance_policy',
+        'src/iabv_v15/services/adaptive/adaptive_task_orchestrator',
+        'src/iabv_v15/infra/persistence',
+        '.github/workflows',
+        'AGENTS.md',
+    )
+
+    def allow_github_merge(
+        self,
+        *,
+        pr_metadata: dict[str, Any] | None = None,
+    ) -> tuple[bool, str | None]:
+        """Gate for automated PR merge via ``GitHubApiToolAdapter.merge_pr``.
+
+        Returns ``(allowed, reason_if_blocked)``. Default is to **block**
+        (requires human approval) unless ``pr_metadata`` demonstrates every
+        Nivel-1 precondition holds:
+
+        - CI status = ``success``.
+        - No review marked ``CHANGES_REQUESTED``.
+        - Not a draft PR.
+        - Diff under ``_GITHUB_MERGE_MAX_TOTAL_LINES`` total (added + deleted).
+        - Touches <= ``_GITHUB_MERGE_MAX_FILES_CHANGED`` files.
+        - Does not touch sensitive paths (bootstrap, domain contracts, policy
+          itself, workflows, AGENTS.md, or tests).
+
+        Any missing or None field in ``pr_metadata`` is treated as "unknown"
+        and blocks the merge — the system must refuse to act on partial
+        evidence rather than optimistically approve.
+
+        The adapter or caller is expected to pass a dict shaped like::
+
+            {
+                'pull_number': int,
+                'ci_status': 'success' | 'pending' | 'failure',
+                'reviews': [{'state': 'APPROVED' | 'CHANGES_REQUESTED' | ...}],
+                'draft': bool,
+                'additions': int,
+                'deletions': int,
+                'changed_files': int,
+                'changed_paths': [str],
+            }
+
+        This keeps governance declarative and auditable from
+        ``ExperimentLab`` without embedding GitHub REST semantics in the
+        policy. Override in tests or replace at runtime to impose additional
+        guards (maintenance windows, frozen-branch rules, etc.).
+        """
+
+        if not isinstance(pr_metadata, dict) or not pr_metadata:
+            return False, 'pr_metadata ausente: sin evidencia no se auto-mergea.'
+
+        if bool(pr_metadata.get('draft')):
+            return False, 'PR en estado draft: no se auto-mergea.'
+
+        ci_status = str(pr_metadata.get('ci_status') or '').strip().lower()
+        if ci_status != 'success':
+            return False, f"CI no esta en verde (ci_status={ci_status or 'desconocido'})."
+
+        reviews = pr_metadata.get('reviews')
+        if reviews is None:
+            return False, 'reviews ausente: sin evidencia de revisiones no se auto-mergea.'
+        if not isinstance(reviews, list):
+            return False, 'reviews no es una lista.'
+        for review in reviews:
+            if not isinstance(review, dict):
+                continue
+            state = str(review.get('state') or '').strip().upper()
+            if state == 'CHANGES_REQUESTED':
+                return False, 'Hay un review con changes_requested: debe resolverse antes de mergear.'
+
+        additions = pr_metadata.get('additions')
+        deletions = pr_metadata.get('deletions')
+        if not isinstance(additions, int) or not isinstance(deletions, int):
+            return False, 'Diff size desconocido (additions/deletions faltantes).'
+        total_lines = additions + deletions
+        if total_lines > self._GITHUB_MERGE_MAX_TOTAL_LINES:
+            return False, (
+                f'Diff demasiado grande ({total_lines} lineas > '
+                f'{self._GITHUB_MERGE_MAX_TOTAL_LINES}): requiere revision humana.'
+            )
+
+        changed_files = pr_metadata.get('changed_files')
+        if not isinstance(changed_files, int):
+            return False, 'changed_files desconocido.'
+        if changed_files > self._GITHUB_MERGE_MAX_FILES_CHANGED:
+            return False, (
+                f'Demasiados archivos tocados ({changed_files} > '
+                f'{self._GITHUB_MERGE_MAX_FILES_CHANGED}): requiere revision humana.'
+            )
+
+        changed_paths = pr_metadata.get('changed_paths')
+        if changed_paths is None:
+            return False, 'changed_paths ausente: sin evidencia de rutas no se auto-mergea.'
+        if not isinstance(changed_paths, list):
+            return False, 'changed_paths no es una lista.'
+        for raw_path in changed_paths:
+            path = str(raw_path or '').strip().lstrip('/').replace('\\', '/')
+            if not path:
+                continue
+            if path.startswith('tests/') or '/tests/' in f'/{path}':
+                return False, f'Toca archivo de tests ({path}): no se auto-mergea sin revision humana.'
+            for prefix in self._GITHUB_MERGE_SENSITIVE_PATH_PREFIXES:
+                if path.startswith(prefix):
+                    return False, f'Toca ruta sensible ({path}): requiere aprobacion humana.'
+
+        return True, None
+
+    # --- Reglas Nivel 1 para apertura automatica de PRs via GitHubRemoteService.
+    # A diferencia de `allow_github_merge`, aqui decidimos si IABV puede EMPEZAR
+    # a publicar una rama. El criterio es por PATRON DE RAMA + tamano de diff:
+    #
+    #   * main / master         : push directo bloqueado, siempre.
+    #   * iabv-auto/*           : IABV abrio la rama por su cuenta -> puede abrir
+    #                             PR sin preguntar si el diff esta acotado.
+    #   * devin/*               : rama de una sesion Devin asistida -> requiere
+    #                             aprobacion humana (la sesion es auditada, pero
+    #                             el salto a "PR publico" es decision humana).
+    #   * otros patrones        : bloqueado por defecto; debe aprobarse caso a caso.
+    #
+    # `allow_github_pr_open` decide SI la apertura es auto-aprobada. Si devuelve
+    # `(False, reason)` el caller debe pedir aprobacion humana via
+    # `HumanApprovalBroker` antes de llamar a `GitHubApiToolAdapter.create_pr`.
+
+    _GITHUB_PR_OPEN_AUTO_MAX_LINES = 200
+
+    def allow_github_pr_open(
+        self,
+        *,
+        branch: str,
+        base: str = 'main',
+        diff_lines: int | None = None,
+    ) -> tuple[bool, str | None]:
+        """Gate for ``GitHubRemoteService.publish_branch_as_pr``.
+
+        Returns ``(auto_approved, reason_if_needs_human)``.
+
+        - ``auto_approved=True`` -> IABV puede llamar ``create_pr`` sin
+          pasar por ``HumanApprovalBroker``.
+        - ``auto_approved=False`` -> el caller debe solicitar aprobacion
+          humana (razon explicita en el segundo valor) antes de crear el PR.
+
+        Reglas:
+        - Base distinto de ``main`` / ``master`` -> bloquea auto (requiere
+          aprobacion): no auto-aprobamos PRs hacia ramas arbitrarias.
+        - Rama ``main``/``master``/``HEAD``/vacia -> bloquea siempre (no es
+          un head valido para un PR).
+        - Rama ``iabv-auto/*`` -> auto si ``diff_lines`` conocido y
+          ``<= _GITHUB_PR_OPEN_AUTO_MAX_LINES``. Si falta el dato o excede,
+          requiere humano.
+        - Rama ``devin/*`` -> requiere humano siempre.
+        - Otros patrones -> requiere humano siempre.
+        """
+
+        head = str(branch or '').strip()
+        base_name = str(base or '').strip().lower()
+        if not head:
+            return False, 'branch vacio: no se puede abrir un PR sin head.'
+        head_lower = head.lower()
+        if head_lower in {'main', 'master', 'head'}:
+            return False, f'branch {head!r}: no se puede abrir un PR contra si mismo.'
+        if base_name not in {'main', 'master'}:
+            return False, (
+                f'base {base!r} no es main/master: requiere aprobacion humana '
+                'antes de auto-publicar.'
+            )
+
+        if head_lower.startswith('iabv-auto/'):
+            if not isinstance(diff_lines, int):
+                return False, 'diff_lines desconocido: sin evidencia de tamano no se auto-publica.'
+            if diff_lines < 0:
+                return False, 'diff_lines negativo: evidencia invalida.'
+            if diff_lines > self._GITHUB_PR_OPEN_AUTO_MAX_LINES:
+                return False, (
+                    f'Diff demasiado grande ({diff_lines} lineas > '
+                    f'{self._GITHUB_PR_OPEN_AUTO_MAX_LINES}): requiere revision humana.'
+                )
+            return True, None
+
+        if head_lower.startswith('devin/'):
+            return False, (
+                f'branch devin/* ({head}): rama asistida, la apertura del PR '
+                'requiere aprobacion humana explicita.'
+            )
+
+        return False, (
+            f'branch {head!r}: patron no reconocido para auto-apertura; '
+            'requiere aprobacion humana.'
+        )
+
     def evaluate(
         self,
         *,
@@ -126,7 +326,7 @@ class AutonomyGovernancePolicy:
             or (len(normalized_goal.split()) <= 4 and any(normalized_goal.startswith(prefix) for prefix in ('hola', 'buenas', 'buenos dias', 'buenas tardes', 'buenas noches')))
         )
         meta_assistant_prompt = (
-            any(token in normalized_goal for token in ('codex', 'chatgpt', 'claude', 'ollama', 'ia', 'ias'))
+            any(token in normalized_goal for token in ('codex', 'chatgpt', 'claude', 'ollama', 'devin', 'windsurf', 'ia', 'ias'))
             and any(token in normalized_goal for token in ('sabes', 'puedes', 'puedo', 'internamente', 'automatic', 'automatica', 'automático', 'respondieron'))
         )
         conversational_intent = (
@@ -375,7 +575,7 @@ class AutonomyGovernancePolicy:
         if not normalized_goal:
             return ''
         if (
-            any(token in normalized_goal for token in ('codex', 'chatgpt', 'claude', 'ollama'))
+            any(token in normalized_goal for token in ('codex', 'chatgpt', 'claude', 'ollama', 'devin', 'windsurf'))
             and any(token in normalized_goal for token in ('sabes', 'puedes', 'puedo', 'internamente', 'automatic', 'automatica', 'autom?tico', 'respondieron'))
         ):
             return ''
@@ -398,7 +598,7 @@ class AutonomyGovernancePolicy:
         )
         if not any(token in normalized_goal for token in consult_verbs):
             return ''
-        for assistant in ('chatgpt', 'claude', 'codex', 'ollama'):
+        for assistant in ('chatgpt', 'claude', 'codex', 'ollama', 'devin', 'windsurf'):
             if assistant in normalized_goal:
                 return assistant
         return ''
@@ -410,6 +610,8 @@ class AutonomyGovernancePolicy:
             'chatgpt': 'consult_chatgpt',
             'claude': 'consult_claude',
             'ollama': 'consult_ollama',
+            'devin': 'consult_devin',
+            'windsurf': 'consult_windsurf',
         }.get(assistant, 'consult_chatgpt')
 
     def _snapshot(

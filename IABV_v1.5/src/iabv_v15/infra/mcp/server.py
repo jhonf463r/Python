@@ -130,7 +130,35 @@ class IABVMCPServer:
         self.name = name
         if mcp is None:
             from mcp.server.fastmcp import FastMCP  # lazy import
-            mcp = FastMCP(name)
+
+            fastmcp_kwargs: dict[str, Any] = {}
+            # MCP Python SDK >= 1.x introdujo DNS rebinding protection en
+            # ``streamable-http`` que rechaza cualquier Host distinto a
+            # localhost con ``HTTP/2 421 Invalid Host header`` (issue
+            # modelcontextprotocol/python-sdk#1798). En nuestro flujo de
+            # audit live el MCP se expone detras de un quick-tunnel de
+            # cloudflared, asi que el Host llega como
+            # ``*.trycloudflare.com`` y el server devolveria 421. Para
+            # permitir el audit real desde afuera, inyectamos
+            # ``TransportSecuritySettings`` con hosts/origenes abiertos
+            # cuando la proteccion esta disponible en la version
+            # instalada. Si la dependencia no expone el simbolo (versiones
+            # viejas) seguimos con el constructor por defecto.
+            try:
+                from mcp.server.transport_security import TransportSecuritySettings
+
+                fastmcp_kwargs["transport_security"] = TransportSecuritySettings(
+                    enable_dns_rebinding_protection=False,
+                    allowed_hosts=["*"],
+                    allowed_origins=["*"],
+                )
+            except Exception:
+                # Compatibilidad hacia atras: versiones sin
+                # ``TransportSecuritySettings`` tampoco aplican la
+                # proteccion, asi que no hace falta configurar nada.
+                pass
+
+            mcp = FastMCP(name, **fastmcp_kwargs)
         self.mcp = mcp
         self._register_tools()
 
@@ -1413,6 +1441,76 @@ class IABVMCPServer:
                 }
             snapshot = service.run(reason=reason)
             return _to_jsonable(snapshot) or {}
+
+        # ------------------------------------------------------------
+        # F2.1 — GitHubRemoteService expuesto como MCP tool
+        #
+        # Permite que el chat (via tool_calling_bridge) o un cliente MCP
+        # (audit live en laptop) pida a IABV abrir un PR desde una rama
+        # local. Pasa por ``AutonomyGovernancePolicy.allow_github_pr_open``
+        # y por ``HumanApprovalBroker`` cuando la policy lo exige. La
+        # evidencia JSON se persiste en ``data/evolution/pr_history/``.
+
+        @mcp.tool()
+        def github_remote_publish_branch_as_pr(
+            branch: str,
+            title: str,
+            body: str = "",
+            base: str = "main",
+            diff_lines: int | None = None,
+            draft: bool = False,
+            remote: str = "origin",
+        ) -> dict[str, Any]:
+            """Empuja ``branch`` a ``remote`` y abre un PR hacia ``base``.
+
+            Orquesta policy -> aprobacion humana (si aplica) -> git push ->
+            GitHub API ``create_pr`` -> evidencia en disco.
+
+            Args:
+                branch: rama local a publicar. Debe existir en el checkout.
+                title: titulo del PR (obligatorio).
+                body: cuerpo del PR en Markdown.
+                base: rama base (default ``main``).
+                diff_lines: numero total de lineas agregadas+eliminadas.
+                    Requerido para auto-aprobar ramas ``iabv-auto/*`` por la
+                    policy. Si no se pasa, la policy exige humano.
+                draft: si True, crea el PR en modo draft.
+                remote: nombre del remote para el push (default ``origin``).
+            """
+
+            service = getattr(self.container, "github_remote_service", None)
+            if service is None:
+                return {
+                    "error": "github_remote_unavailable",
+                    "detail": (
+                        "container.github_remote_service no esta disponible. "
+                        "Revisa bootstrap.py (necesita GITHUB_TOKEN + "
+                        "GitHubApiToolAdapter operativo)."
+                    ),
+                }
+            result = service.publish_branch_as_pr(
+                branch=branch,
+                title=title,
+                body=body,
+                base=base,
+                diff_lines=diff_lines,
+                draft=bool(draft),
+                remote=remote,
+            )
+            return {
+                "success": result.success,
+                "branch": result.branch,
+                "base": result.base,
+                "pushed": result.pushed,
+                "pr_number": result.pr_number,
+                "pr_url": result.pr_url,
+                "http_status": result.http_status,
+                "blocked_by_policy": result.blocked_by_policy,
+                "required_approval": result.required_approval,
+                "approval_granted": result.approval_granted,
+                "error": result.error,
+                "evidence_path": result.evidence_path,
+            }
 
     # ------------------------------------------------------------------
     # Ciclo de vida

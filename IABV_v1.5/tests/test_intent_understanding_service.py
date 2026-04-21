@@ -207,3 +207,46 @@ def test_intent_classifier_does_not_flag_code_generation_on_plain_question() -> 
     # Saludo conversacional: no debe levantar la flag ni enrutar a project.
     assert intent.intent_key != 'project.evolution'
     assert intent.metadata.get('code_generation_prompt') is None
+
+
+# ---------------------------------------------------------------------------
+# R21 - devin/windsurf deben rutear igual que chatgpt/claude/codex/ollama
+# cuando el usuario los menciona explicitamente como asistente externo.
+
+
+def test_intent_understanding_service_detects_explicit_devin_consultation() -> None:
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='consulta con Devin la revision del parche actual.')
+    )
+
+    assert intent.intent_key == 'research.external_consultation'
+    assert intent.detected_role == TaskRole.RESEARCH
+    assert intent.metadata.get('explicit_external_consultation') is True
+    assert 'Devin' in intent.title
+
+
+def test_intent_understanding_service_detects_explicit_windsurf_consultation() -> None:
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='apoyate en Windsurf para terminar el refactor del adapter.')
+    )
+
+    assert intent.intent_key == 'research.external_consultation'
+    assert intent.detected_role == TaskRole.RESEARCH
+    assert intent.metadata.get('explicit_external_consultation') is True
+    assert 'Windsurf' in intent.title
+
+
+def test_intent_understanding_service_flags_meta_assistant_prompt_for_devin_windsurf() -> None:
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='sabes consultar automaticamente a devin y a windsurf?')
+    )
+
+    # No es una consulta dirigida, es pregunta meta sobre capacidades -> local.
+    assert intent.intent_key in {'general.assistance', 'knowledge.query', 'system.self_awareness'}
+    assert intent.metadata.get('meta_assistant_prompt') is True

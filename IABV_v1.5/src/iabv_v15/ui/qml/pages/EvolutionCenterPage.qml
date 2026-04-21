@@ -23,6 +23,14 @@ Item {
     property string latestToolStatus: evolutionCenterViewModel ? evolutionCenterViewModel.latestToolStatus : ""
     property string incidentFilter: evolutionCenterViewModel ? evolutionCenterViewModel.incidentFilter : "all"
     property var statusCards: healthSnapshot.status_cards || []
+    // Gap #107: "que necesita IABV del humano ahora".
+    property var proactiveDashboard: evolutionCenterViewModel ? evolutionCenterViewModel.proactiveDashboard : ({})
+    property string proactiveDashboardBrief: evolutionCenterViewModel ? evolutionCenterViewModel.proactiveDashboardBrief : ""
+    property var proactiveEntries: proactiveDashboard.entries || []
+    property int proactivePendingCount: proactiveDashboard.pending_attention_count || 0
+    property int proactivePoliciesCount: proactiveDashboard.learned_policies_count || 0
+    // F1.3: evidencia visual de la UI de IABV (UIScreenshotService).
+    property var recentUiScreenshots: evolutionCenterViewModel ? evolutionCenterViewModel.recentUiScreenshots : []
 
     GlassPanel {
         anchors.fill: parent
@@ -139,6 +147,180 @@ Item {
                                             maximumLineCount: 2
                                             elide: Label.ElideRight
                                         }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Panel F1.3: evidencia visual reciente (UIScreenshotService).
+                // Consume `recentUiScreenshots` del ViewModel. Se oculta cuando
+                // no hay capturas para no ensuciar la UI. Solo lista metadatos:
+                // el QML no decide rutas ni carga PNGs (AGENTS.md: el VM/QML no
+                // inventa datos; el servicio persiste la foto en disco).
+                Rectangle {
+                    id: uiScreenshotsPanel
+                    width: parent.width
+                    radius: 18
+                    color: "#22313a"
+                    border.width: 1
+                    border.color: borderSoft
+                    visible: recentUiScreenshots && recentUiScreenshots.length > 0
+                    implicitHeight: uiScreenshotsCol.implicitHeight + 24
+
+                    Column {
+                        id: uiScreenshotsCol
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 8
+
+                        Label {
+                            text: "Capturas UI recientes (" + (recentUiScreenshots ? recentUiScreenshots.length : 0) + ")"
+                            color: textPrimary
+                            font.family: titleFontFamily
+                            font.pixelSize: 16
+                            font.bold: true
+                        }
+                        Label {
+                            text: "Evidencia visual persistida en data/evolution/ui_snapshots/."
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 11
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+                        Repeater {
+                            model: (recentUiScreenshots || []).slice(0, 5)
+                            delegate: Rectangle {
+                                width: uiScreenshotsCol.width
+                                radius: 10
+                                color: "#2a3640"
+                                border.width: 1
+                                border.color: modelData.success ? borderSoft : "#c77a3a"
+                                implicitHeight: uiShotEntryCol.implicitHeight + 16
+
+                                Column {
+                                    id: uiShotEntryCol
+                                    anchors.fill: parent
+                                    anchors.margins: 10
+                                    spacing: 3
+
+                                    Label {
+                                        text: (modelData.source || "(sin source)") +
+                                              "  \u2022  " +
+                                              (modelData.width || 0) + "x" + (modelData.height || 0) +
+                                              (modelData.success ? "" : "  \u2022  captura fallida")
+                                        color: textPrimary
+                                        font.family: titleFontFamily
+                                        font.pixelSize: 13
+                                        font.bold: true
+                                        wrapMode: Label.WordWrap
+                                        width: parent.width
+                                    }
+                                    Label {
+                                        text: modelData.path || ""
+                                        color: textSecondary
+                                        font.family: bodyFontFamily
+                                        font.pixelSize: 11
+                                        elide: Label.ElideMiddle
+                                        width: parent.width
+                                        visible: (modelData.path || "").length > 0
+                                    }
+                                    Label {
+                                        text: {
+                                            var scope = modelData.scope || {};
+                                            var parts = [];
+                                            for (var k in scope) {
+                                                parts.push(k + "=" + scope[k]);
+                                            }
+                                            return parts.join("  \u2022  ");
+                                        }
+                                        color: textSecondary
+                                        font.family: bodyFontFamily
+                                        font.pixelSize: 11
+                                        wrapMode: Label.WordWrap
+                                        width: parent.width
+                                        visible: text.length > 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Panel: "Que necesita IABV del humano ahora" (Gap #107).
+                // Consume `proactiveDashboard` del ViewModel. Se oculta cuando
+                // no hay pending ni politicas aprendidas (no ensucia UI).
+                Rectangle {
+                    id: proactivePanel
+                    width: parent.width
+                    radius: 18
+                    color: proactivePendingCount > 0 ? "#3a2a2a" : "#22313a"
+                    border.width: 1
+                    border.color: proactivePendingCount > 0 ? "#b5651d" : borderSoft
+                    visible: proactivePendingCount > 0 || proactivePoliciesCount > 0
+                    implicitHeight: proactiveCol.implicitHeight + 24
+
+                    Column {
+                        id: proactiveCol
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 8
+
+                        Label {
+                            text: proactivePendingCount > 0
+                                ? ("IABV necesita del humano (" + proactivePendingCount + ")")
+                                : "IABV no requiere atencion ahora"
+                            color: textPrimary
+                            font.family: titleFontFamily
+                            font.pixelSize: 16
+                            font.bold: true
+                        }
+                        Label {
+                            text: proactiveDashboardBrief
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 12
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                            visible: proactiveDashboardBrief.length > 0
+                        }
+                        Repeater {
+                            model: proactiveEntries.slice(0, 5)
+                            delegate: Rectangle {
+                                width: proactiveCol.width
+                                radius: 10
+                                color: "#2a3640"
+                                border.width: 1
+                                border.color: modelData.severity === "critical"
+                                    ? "#c77a3a"
+                                    : (modelData.severity === "attention" ? "#b5a53a" : borderSoft)
+                                implicitHeight: entryCol.implicitHeight + 16
+
+                                Column {
+                                    id: entryCol
+                                    anchors.fill: parent
+                                    anchors.margins: 10
+                                    spacing: 3
+
+                                    Label {
+                                        text: modelData.title
+                                        color: textPrimary
+                                        font.family: titleFontFamily
+                                        font.pixelSize: 13
+                                        font.bold: true
+                                        wrapMode: Label.WordWrap
+                                        width: parent.width
+                                    }
+                                    Label {
+                                        text: modelData.detail
+                                        color: textSecondary
+                                        font.family: bodyFontFamily
+                                        font.pixelSize: 11
+                                        wrapMode: Label.WordWrap
+                                        width: parent.width
+                                        visible: modelData.detail.length > 0
                                     }
                                 }
                             }

@@ -362,6 +362,12 @@ class AppConfig(BaseModel):
     default_task_role: TaskRole = TaskRole.TRAINING
     autonomous_evolution_enabled: bool = True
     autonomous_external_launch: bool = True
+    # Flag del ``SynapticRouter`` (PCS v1). Cuando queda en ``None`` el router
+    # lee el env var ``SYNAPTIC_ROUTING`` / ``IABV_SYNAPTIC_ROUTING_ENABLED``
+    # como antes. Cuando se setea explícitamente (``True``/``False``) tiene
+    # precedencia sobre el env var. Default ``None`` preserva comportamiento
+    # previo.
+    synaptic_routing_enabled: bool | None = None
 
 
 class ThemeConfig(BaseModel):

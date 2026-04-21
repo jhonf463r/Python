@@ -26,9 +26,23 @@ Heurísticas por provider (inspiradas por el RFC
   o URL sin ``/auth/login``;
 - ``claude`` → ``claude.ai``: URL no redirige a ``/login``; ``/chat/new``
   o ``/new`` es señal de logueado;
-- ``codex`` → ``codex.openai.com``: similar a chatgpt;
+- ``codex`` → ``chatgpt.com/codex``: actualmente Codex vive bajo el dominio
+  de ChatGPT (hosted under OpenAI), por lo que la heurística apunta ahí;
 - ``gemini`` → ``gemini.google.com``: presencia de
   ``[aria-label="Conversaciones"]`` o ``[data-test-id="conversations"]``.
+
+Asistentes **no-web** (``devin``, ``windsurf``, ``ollama``): no exponen una
+página de login navegable con Playwright — se validan por otros medios
+(API token, proceso local, IDE plugin). Para estos, la tool retorna un
+payload estructurado con ``logged_in=null`` y ``reason="not_applicable_web_login"``
+junto con un ``check_hint`` explicando cómo validar disponibilidad real.
+
+Detección de Cloudflare challenge:
+  Varios providers (``chatgpt``, ``claude``) sirven un interstitial de
+  Cloudflare cuando el cliente parece automatizado. En ese caso la página
+  navegada NO es la de la app — ni login ni logueado. Retornamos
+  ``logged_in=null``, ``reason="cloudflare_challenge"`` e ``indeterminate=True``
+  para que el consumidor no interprete como "deslogueado".
 """
 
 from __future__ import annotations
@@ -183,9 +197,115 @@ def _gemini_heuristic(page: _PageLike) -> HeuristicResult:
 PROVIDER_HEURISTICS: dict[str, _ProviderHeuristic] = {
     "chatgpt": _ProviderHeuristic(web_url="https://chatgpt.com/", check=_chatgpt_heuristic),
     "claude": _ProviderHeuristic(web_url="https://claude.ai/", check=_claude_heuristic),
-    "codex": _ProviderHeuristic(web_url="https://codex.openai.com/", check=_codex_heuristic),
+    "codex": _ProviderHeuristic(web_url="https://chatgpt.com/codex", check=_codex_heuristic),
     "gemini": _ProviderHeuristic(web_url="https://gemini.google.com/", check=_gemini_heuristic),
 }
+
+
+# ---------------------------------------------------------------------------
+# Asistentes no-web: no tienen página de login navegable. Se validan por API
+# token (devin), proceso local (ollama) o IDE plugin (windsurf). Mantenemos
+# el contrato de ``probe_assistant_login`` pero devolvemos una respuesta
+# explícita ``not_applicable_web_login`` — nunca ``unknown_assistant_kind``,
+# para que el caller distinga "kind no soportado por la tool" de "kind válido
+# pero no navegable".
+
+
+@dataclass(frozen=True)
+class _NonWebAssistant:
+    """Describe cómo validar un asistente sin UI web navegable."""
+
+    check_hint: str
+    detail: str
+
+
+NON_WEB_ASSISTANT_KINDS: dict[str, _NonWebAssistant] = {
+    "devin": _NonWebAssistant(
+        check_hint=(
+            "Validá disponibilidad con `DEVIN_API_KEY` via "
+            "`GET https://api.devin.ai/v1/sessions` (ver DevinApiToolAdapter)."
+        ),
+        detail=(
+            "Devin es un agente cloud con login federado (Google/GitHub). No "
+            "existe una página de login navegable con Playwright sin 2FA; la "
+            "validez de la sesión se mide por API token operativo."
+        ),
+    ),
+    "windsurf": _NonWebAssistant(
+        check_hint=(
+            "Validá presencia del IDE con detección de proceso "
+            "(`windsurf.exe` / `Windsurf`) o presencia de la extensión "
+            "instalada; no hay URL pública de login."
+        ),
+        detail=(
+            "Windsurf es un IDE (fork de VS Code). La 'sesión logueada' vive "
+            "dentro del proceso del IDE; no se audita navegando una URL."
+        ),
+    ),
+    "ollama": _NonWebAssistant(
+        check_hint=(
+            "Validá el daemon local con "
+            "`GET http://127.0.0.1:11434/v1/models`; si responde, Ollama está "
+            "operativo (no hay concepto de 'login' en Ollama)."
+        ),
+        detail=(
+            "Ollama es un runtime local de LLMs. No tiene cuenta, login ni "
+            "dominio web; su disponibilidad se mide por HTTP 200 del daemon."
+        ),
+    ),
+}
+
+
+# ---------------------------------------------------------------------------
+# Cloudflare challenge detection
+#
+# Markers que aparecen cuando Cloudflare sirve un interstitial en vez del
+# contenido real de la app. Si detectamos uno, retornamos ``indeterminate``
+# para no falsear ``logged_in=False``.
+
+CLOUDFLARE_CHALLENGE_TITLE_MARKERS: tuple[str, ...] = (
+    "just a moment",
+    "un momento",
+    "please wait",
+    "attention required",
+    "checking your browser",
+    "verifying you are human",
+)
+
+CLOUDFLARE_CHALLENGE_DOM_SELECTORS: tuple[str, ...] = (
+    "#challenge-form",
+    "#cf-challenge-running",
+    "div#cf-wrapper",
+    ".cf-turnstile",
+    'iframe[src*="challenges.cloudflare.com"]',
+    'iframe[title*="challenge" i]',
+)
+
+
+def _detect_cloudflare_challenge(page: Any) -> str | None:
+    """Retorna ``marker`` si la página es un challenge de Cloudflare, si no None.
+
+    Prioriza el title (rápido, robusto a i18n); fallback a selectores DOM
+    conocidos. No propaga excepciones — cualquier fallo deja ``None``.
+    """
+
+    try:
+        title = _safe_title(page)
+    except Exception:
+        title = ""
+    lowered_title = title.lower().strip()
+    for marker in CLOUDFLARE_CHALLENGE_TITLE_MARKERS:
+        if marker in lowered_title:
+            return f"title:{marker}"
+
+    for selector in CLOUDFLARE_CHALLENGE_DOM_SELECTORS:
+        try:
+            node = page.query_selector(selector)
+        except Exception:
+            node = None
+        if node is not None:
+            return f"dom:{selector}"
+    return None
 
 
 # Aliases entre naming de capability profiles (PCS v1) y heurísticas de login.
@@ -201,6 +321,12 @@ _ASSISTANT_KIND_ALIASES: dict[str, str] = {
     "openai_chatgpt": "chatgpt",
     "anthropic_claude": "claude",
     "google_gemini": "gemini",
+    # Asistentes no-web (ver ``NON_WEB_ASSISTANT_KINDS``).
+    "devin_cloud": "devin",
+    "devin_api": "devin",
+    "windsurf_ide": "windsurf",
+    "ollama_local": "ollama",
+    "llm_local_ollama": "ollama",
 }
 
 
@@ -216,9 +342,14 @@ def _resolve_assistant_kind(kind: str) -> str:
 
 
 def known_assistant_kinds() -> tuple[str, ...]:
-    """Kinds aceptados por la tool (orden estable para docs/tests)."""
+    """Kinds aceptados por la tool (orden estable para docs/tests).
 
-    return tuple(PROVIDER_HEURISTICS.keys())
+    Incluye los providers web (``PROVIDER_HEURISTICS``) y los asistentes
+    no-web (``NON_WEB_ASSISTANT_KINDS``). Ambos son respuestas válidas;
+    la forma del payload difiere pero el contrato `known kind` es el mismo.
+    """
+
+    return tuple(PROVIDER_HEURISTICS.keys()) + tuple(NON_WEB_ASSISTANT_KINDS.keys())
 
 
 # ---------------------------------------------------------------------------
@@ -353,7 +484,7 @@ def probe_assistant_login(
             "assistant_kind": assistant_kind,
         }
     kind = _resolve_assistant_kind(raw_kind)
-    if kind not in PROVIDER_HEURISTICS:
+    if kind not in PROVIDER_HEURISTICS and kind not in NON_WEB_ASSISTANT_KINDS:
         valid_kinds = list(known_assistant_kinds()) + sorted(_ASSISTANT_KIND_ALIASES)
         return {
             "error": "unknown_assistant_kind",
@@ -364,9 +495,28 @@ def probe_assistant_login(
             "assistant_kind": raw_kind,
         }
 
-    heuristic = PROVIDER_HEURISTICS[kind]
     checked_at_iso = now_utc().isoformat()
     started_at = clock()
+
+    # Asistentes no-web: devolvemos payload estructurado sin Playwright.
+    if kind in NON_WEB_ASSISTANT_KINDS:
+        info = NON_WEB_ASSISTANT_KINDS[kind]
+        return {
+            "assistant_kind": kind,
+            "logged_in": None,
+            "indeterminate": True,
+            "reason": "not_applicable_web_login",
+            "detail": info.detail,
+            "check_hint": info.check_hint,
+            "evidence": {
+                "url_target": None,
+                "mode": "non_web",
+            },
+            "checked_at_iso": checked_at_iso,
+            "duration_ms": int((clock() - started_at) * 1000),
+        }
+
+    heuristic = PROVIDER_HEURISTICS[kind]
 
     if controller_factory is None:
         controller_factory = (
@@ -454,6 +604,37 @@ def probe_assistant_login(
                 "partial_evidence": partial_evidence,
             }
 
+        # Detectar Cloudflare challenge ANTES de correr la heurística:
+        # si la página está tapada por un interstitial, el heurístico
+        # reportaría ``no_logged_in_marker`` sin base (falso negativo).
+        challenge_marker = _detect_cloudflare_challenge(page)
+        if challenge_marker is not None:
+            duration_ms = int((clock() - started_at) * 1000)
+            evidence: dict[str, Any] = {
+                "url_final": _safe_url(page),
+                "url_target": heuristic.web_url,
+                "page_title": _safe_title(page),
+                "challenge_marker": challenge_marker,
+                "mode": "isolated" if use_browser_session else "shared_cdp",
+            }
+            if include_screenshot:
+                shot_b64 = _safe_screenshot(page)
+                if shot_b64:
+                    evidence["screenshot_png_b64"] = shot_b64
+            return {
+                "assistant_kind": kind,
+                "logged_in": None,
+                "indeterminate": True,
+                "reason": "cloudflare_challenge",
+                "detail": (
+                    "La navegación recibió un interstitial de Cloudflare; "
+                    "no se puede determinar logueo hasta resolver el challenge."
+                ),
+                "evidence": evidence,
+                "checked_at_iso": checked_at_iso,
+                "duration_ms": duration_ms,
+            }
+
         try:
             result = heuristic.check(page)
         except Exception as exc:
@@ -468,7 +649,7 @@ def probe_assistant_login(
             }
 
         duration_ms = int((clock() - started_at) * 1000)
-        evidence: dict[str, Any] = {
+        evidence = {
             "url_final": _safe_url(page),
             "url_target": heuristic.web_url,
             "page_title": _safe_title(page),

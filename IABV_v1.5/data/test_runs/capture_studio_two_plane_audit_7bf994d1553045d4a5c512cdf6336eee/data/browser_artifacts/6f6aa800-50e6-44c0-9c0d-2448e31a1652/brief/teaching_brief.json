@@ -1,0 +1,16 @@
+{
+  "lesson_title": "Login guiado",
+  "target_label": "Wplay",
+  "start_url": "https://wplay.co",
+  "objective": "Iniciar sesion y llegar al panel principal.",
+  "expected_outcome": "Panel principal visible.",
+  "notes": "No compartir secretos.",
+  "site_id": "wplay",
+  "display_name": "Wplay",
+  "capture_channels": {
+    "visible": true,
+    "background": true,
+    "api": true
+  },
+  "capture_mode": "browser_live"
+}

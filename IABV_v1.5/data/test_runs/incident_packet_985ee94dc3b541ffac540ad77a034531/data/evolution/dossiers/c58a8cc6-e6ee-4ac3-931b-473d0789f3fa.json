@@ -1,0 +1,61 @@
+{
+  "dossier_id": "c58a8cc6-e6ee-4ac3-931b-473d0789f3fa",
+  "created_at_utc": "2026-04-21T01:08:45.953002Z",
+  "scope": "teaching",
+  "title": "Sesion con varias pestanas",
+  "summary": "La sesion dejo un incidente de navegacion visible para Codex.",
+  "run_id": null,
+  "episode_id": "episode-1",
+  "status": "partial",
+  "severity": "high",
+  "issue_hint_text": "navigation_stall",
+  "detected_role": null,
+  "model_used": "",
+  "planner_used": false,
+  "tools_used": [],
+  "duration_ms": null,
+  "error_summary": "",
+  "stack_health": [],
+  "metrics": {},
+  "evidence_refs": [],
+  "issue_candidates": [
+    {
+      "issue_id": "25fc3827-8bd1-4602-b524-a97aee18befc",
+      "title": "Navegacion atascada",
+      "summary": "La pestana nueva no avanzo.",
+      "probable_cause": "La sesion multitab no reporto progreso visible.",
+      "severity": "high",
+      "issue_hint": "navigation_stall",
+      "repeated_count": 1,
+      "evidence_ids": []
+    }
+  ],
+  "improvement_proposals": [
+    {
+      "proposal_id": "79c8c03f-4846-4f68-a913-2673235a7587",
+      "title": "Revisar navegacion multitab",
+      "rationale": "La pestana nueva se atoro.",
+      "recommended_change": "Instrumentar mejor la pestana activa y el progreso visible.",
+      "suggested_tests": [
+        "Abrir 3-4 pestanas",
+        "Buscar en la ultima pestana"
+      ],
+      "tradeoffs": [
+        "Mas observabilidad puede anadir algo de ruido local."
+      ],
+      "priority_score": 90
+    }
+  ],
+  "self_checks": [],
+  "hidden_incidents": [],
+  "session_health": null,
+  "user_clues": [],
+  "incident_summary": "",
+  "scenario_run_id": null,
+  "probe_diagnosis": null,
+  "runtime_adjustments": [],
+  "pending_issue_id": null,
+  "next_action": "",
+  "codex_brief": "",
+  "metadata": {}
+}

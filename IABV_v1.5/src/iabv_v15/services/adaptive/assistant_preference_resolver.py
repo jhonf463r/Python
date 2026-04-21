@@ -22,7 +22,7 @@ class AssistantPreferenceResolver:
     expresses an explicit preference for that assistant, or `''` otherwise.
     """
 
-    _ASSISTANT_FAMILIES: tuple[str, ...] = ('chatgpt', 'claude', 'codex', 'ollama')
+    _ASSISTANT_FAMILIES: tuple[str, ...] = ('chatgpt', 'claude', 'codex', 'ollama', 'devin', 'windsurf')
 
     _META_PROMPT_PREFIXES: tuple[str, ...] = ('sabes ', 'puedes ', 'puedo ')
 

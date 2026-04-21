@@ -601,3 +601,158 @@ def test_evolution_center_emits_provider_health_changed() -> None:
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
 
+
+
+def test_evolution_center_exposes_proactive_dashboard_from_service() -> None:
+    """Gap #107 wiring: si bootstrap setea `proactive_dashboard_service` en el
+    VM, `refresh()` debe poblar `proactiveDashboard` con la snapshot
+    serializada a dict y `proactiveDashboardBrief` con el resumen humano.
+    """
+    import threading
+    import time as _time
+
+    os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+    workspace = _workspace('test_evolution_center_proactive_dashboard')
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    request_thread: threading.Thread | None = None
+    broker = None
+    try:
+        bootstrap = AppBootstrap(str(workspace))
+        bootstrap._build_ui_objects()
+        vm = bootstrap.evolution_center_viewmodel
+        assert vm is not None
+        assert vm.proactive_dashboard_service is not None, (
+            'bootstrap debe wirear el servicio en el VM (regresion del PR #107)'
+        )
+
+        broker = bootstrap.human_approval_broker
+        # Handler no resolvente: el request quedara "pending" hasta que
+        # cancelemos manualmente al final del test.
+        broker.register_prompt_handler(lambda _payload: None)
+
+        def _fire_request() -> None:
+            try:
+                broker.request(
+                    kind='login_required',
+                    reason='wplay requiere login humano',
+                    scope={'assistant': 'wplay', 'domain': 'wplay.com'},
+                    timeout_s=5.0,
+                )
+            except Exception:
+                pass
+
+        request_thread = threading.Thread(target=_fire_request, daemon=True)
+        request_thread.start()
+
+        # Esperamos que el broker registre el pending.
+        for _ in range(200):
+            if broker.pending_count() >= 1:
+                break
+            _time.sleep(0.01)
+        assert broker.pending_count() == 1, 'broker no registro el pending en tiempo razonable'
+
+        vm.refresh()
+
+        dashboard = vm.get_proactive_dashboard()
+        assert isinstance(dashboard, dict)
+        assert dashboard['pending_attention_count'] == 1
+        assert dashboard['entries'], 'debe haber al menos un entry serializado'
+        approval_entries = [e for e in dashboard['entries'] if e['kind'] == 'approval_request']
+        assert approval_entries, 'debe haber un approval_request entre los entries'
+        entry = approval_entries[0]
+        assert entry['severity'] == 'critical', 'login_required mapea a severity=critical'
+        assert 'wplay' in entry['title'].lower()
+        assert entry['scope']['assistant'] == 'wplay'
+
+        brief = vm.get_proactive_dashboard_brief()
+        assert '1 pendiente' in brief
+
+        proactive_prop = vm.proactiveDashboard
+        assert proactive_prop['pending_attention_count'] == 1
+    finally:
+        # cleanup: cancelamos la request para liberar el thread, sino queda
+        # bloqueado hasta timeout_s (5s) y deja leak entre tests.
+        if broker is not None:
+            for pending in list(broker.pending_requests()):
+                broker.cancel(pending['id'])
+        if request_thread is not None:
+            request_thread.join(timeout=2.0)
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_evolution_center_proactive_dashboard_empty_when_service_not_wired() -> None:
+    """Si el servicio no esta seteado, `proactiveDashboard` debe ser `{}`
+    y no levantar excepcion. Respeta AGENTS.md: el VM no inventa datos.
+    """
+    os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+    workspace = _workspace('test_evolution_center_no_dashboard_service')
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    try:
+        bootstrap = AppBootstrap(str(workspace))
+        bootstrap._build_ui_objects()
+        vm = bootstrap.evolution_center_viewmodel
+        assert vm is not None
+        # Simulamos entorno sin wiring: el VM debe aguantar sin romper.
+        vm.proactive_dashboard_service = None
+        vm.refresh()
+        assert vm.get_proactive_dashboard() == {}
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_evolution_center_exposes_recent_ui_screenshots_from_service() -> None:
+    """F1.1: cuando `UIScreenshotService` esta wired, el VM debe exponer
+    los records recientes serializados como dicts.
+    """
+    from iabv_v15.services.capture.ui_screenshot_service import (
+        NoopUIScreenshotProvider,
+        UIScreenshotService,
+    )
+
+    os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+    workspace = _workspace('test_evolution_center_ui_screenshots')
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    try:
+        bootstrap = AppBootstrap(str(workspace))
+        bootstrap._build_ui_objects()
+        vm = bootstrap.evolution_center_viewmodel
+        assert vm is not None
+
+        storage = workspace / 'ui_snapshots'
+        service = UIScreenshotService(
+            storage_dir=storage,
+            provider=NoopUIScreenshotProvider(),
+        )
+        service.capture(source='vm_wiring_test', scope={'surface': 'evolution_center'})
+        vm.ui_screenshot_service = service
+        vm.refresh()
+
+        records = vm.get_recent_ui_screenshots()
+        assert isinstance(records, list)
+        assert len(records) == 1
+        assert records[0]['source'] == 'vm_wiring_test'
+        assert records[0]['scope'] == {'surface': 'evolution_center'}
+        assert records[0]['success'] is True
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_evolution_center_recent_ui_screenshots_empty_when_service_not_wired() -> None:
+    """F1.1: sin wiring, `recentUiScreenshots` debe ser `[]` y no romper."""
+    os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+    workspace = _workspace('test_evolution_center_no_ui_screenshot_service')
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    try:
+        bootstrap = AppBootstrap(str(workspace))
+        bootstrap._build_ui_objects()
+        vm = bootstrap.evolution_center_viewmodel
+        assert vm is not None
+        vm.ui_screenshot_service = None
+        vm.refresh()
+        assert vm.get_recent_ui_screenshots() == []
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)

@@ -1321,7 +1321,7 @@ class ToolTeachService:
 
     def _assistant_family_for_tool_id(self, tool_id: str) -> str:
         normalized = str(tool_id or '').strip().lower()
-        for family in ('chatgpt', 'claude', 'codex', 'ollama'):
+        for family in ('chatgpt', 'claude', 'codex', 'ollama', 'devin'):
             if normalized.startswith(family):
                 return family
         return normalized.split('_', 1)[0]
@@ -1639,10 +1639,12 @@ class ToolTeachService:
             # only considers codex (preferred family) or the local route,
             # never a cross-family assisted web route the user did not ask for.
             tool_ids = ['codex_installed']
+        elif assistant == 'devin':
+            tool_ids = ['devin_api']
         elif assistant in {'ollama', 'local', 'local_first'}:
             tool_ids = ['ollama_llm']
         else:
-            tool_ids = ['codex_installed', 'chatgpt_installed', 'chatgpt_web_assisted', 'claude_installed', 'claude_web_assisted']
+            tool_ids = ['codex_installed', 'chatgpt_installed', 'chatgpt_web_assisted', 'claude_installed', 'claude_web_assisted', 'devin_api']
         if allow_local_automatic_consultation and 'ollama_llm' not in tool_ids:
             tool_ids.append('ollama_llm')
         return tool_ids
@@ -1669,6 +1671,7 @@ class ToolTeachService:
             'codex': 'codex_installed',
             'claude': 'claude_web_assisted',
             'chatgpt': 'chatgpt_web_assisted',
+            'devin': 'devin_api',
         }.get(assistant, '')
         if explicit_family:
             preferred_tool_id = explicit_family

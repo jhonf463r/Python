@@ -1192,6 +1192,597 @@ class ExternalAssistantToolAdapter(ToolAdapter):
     tool_type = ToolType.CUSTOM
 
 
+class DevinApiToolAdapter:
+    """Adapter REST para Devin (Cognition AI) via API v1.
+
+    Crea una sesion remota con el prompt del task, hace polling hasta que
+    la sesion termine o se agote el timeout, y retorna el resultado en el
+    formato estandar de adapters.  No es otro cerebro: el
+    ``ToolTeachService`` decide cuando usarlo.
+
+    Endpoints reales de la API (v1):
+      POST https://api.devin.ai/v1/sessions        -> crear sesion
+      GET  https://api.devin.ai/v1/session/{id}    -> poll estado
+
+    El Bearer token identifica la organizacion; ``org_id`` se conserva
+    solo por compatibilidad con el constructor previo pero no se usa en
+    las llamadas reales.
+    """
+
+    tool_type = ToolType.MCP_CLIENT
+    BASE_URL = 'https://api.devin.ai/v1'
+
+    def __init__(
+        self,
+        api_key: str = '',
+        org_id: str = '',
+        timeout_seconds: float = 120.0,
+        poll_interval_seconds: float = 5.0,
+    ) -> None:
+        self.api_key = api_key
+        self.org_id = org_id  # kept for backwards compat; unused in v1 API.
+        self.timeout_seconds = timeout_seconds
+        self.poll_interval_seconds = poll_interval_seconds
+
+    @property
+    def _sessions_url(self) -> str:
+        return f'{self.BASE_URL}/sessions'
+
+    def _session_detail_url(self, session_id: str) -> str:
+        return f'{self.BASE_URL}/session/{session_id}'
+
+    def _headers(self) -> dict[str, str]:
+        return {
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json',
+        }
+
+    def is_available(self, card: ToolCard) -> bool:
+        if not self.api_key:
+            return False
+        if httpx is None:
+            return False
+        try:
+            resp = httpx.get(
+                self._sessions_url,
+                headers=self._headers(),
+                params={'limit': '1'},
+                timeout=10.0,
+            )
+            return resp.status_code == 200
+        except Exception:
+            return False
+
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+        start = time.perf_counter()
+        if httpx is None:
+            return {
+                'success': False,
+                'output_text': '',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': 'httpx no esta instalado.',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {'sandbox': sandbox, 'tool_id': card.tool_id},
+            }
+        if not self.api_key:
+            return {
+                'success': False,
+                'output_text': '',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': 'DEVIN_API_KEY no configurado.',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {'sandbox': sandbox, 'tool_id': card.tool_id},
+            }
+
+        context_pack = str(task.metadata.get('context_pack') or '') if task.metadata else ''
+        prompt = str(task.objective or '')
+        if context_pack:
+            prompt = f'{prompt}\n\n--- context ---\n{context_pack}'
+
+        session_id = ''
+        session_url = ''
+        session_status = ''
+        structured_output = ''
+        error_message = ''
+        try:
+            create_resp = httpx.post(
+                self._sessions_url,
+                headers=self._headers(),
+                json={'prompt': prompt},
+                timeout=30.0,
+            )
+            if create_resp.status_code not in (200, 201):
+                error_message = f'Devin API create session HTTP {create_resp.status_code}: {create_resp.text[:500]}'
+                return {
+                    'success': False,
+                    'output_text': '',
+                    'extracted_data': {},
+                    'artifacts': [],
+                    'error_message': error_message,
+                    'execution_ms': int((time.perf_counter() - start) * 1000),
+                    'metadata': {'sandbox': sandbox, 'tool_id': card.tool_id},
+                }
+            body = create_resp.json()
+            session_id = str(body.get('session_id') or body.get('id') or '')
+            session_url = str(body.get('url') or body.get('session_url') or '')
+            if not session_url and session_id:
+                session_url = f'https://app.devin.ai/sessions/{session_id}'
+
+            deadline = time.perf_counter() + self.timeout_seconds
+            session_status = str(body.get('status') or 'running')
+            while session_status == 'running' and time.perf_counter() < deadline:
+                time.sleep(self.poll_interval_seconds)
+                poll_resp = httpx.get(
+                    self._session_detail_url(session_id),
+                    headers=self._headers(),
+                    timeout=15.0,
+                )
+                if poll_resp.status_code == 200:
+                    poll_body = poll_resp.json()
+                    session_status = str(poll_body.get('status') or 'running')
+                    structured_output = str(
+                        poll_body.get('structured_output')
+                        or poll_body.get('result')
+                        or poll_body.get('output')
+                        or ''
+                    )
+                else:
+                    error_message = f'Devin API poll HTTP {poll_resp.status_code}'
+                    break
+        except Exception as exc:
+            error_message = f'{type(exc).__name__}: {exc}'
+
+        elapsed_ms = int((time.perf_counter() - start) * 1000)
+        return {
+            'success': session_status == 'finished',
+            'output_text': structured_output or '',
+            'extracted_data': {'session_id': session_id, 'session_url': session_url},
+            'artifacts': [],
+            'error_message': error_message or '',
+            'execution_ms': elapsed_ms,
+            'metadata': {
+                'sandbox': sandbox,
+                'tool_id': card.tool_id,
+                'devin_session_status': session_status,
+            },
+        }
+
+
+class GitHubApiToolAdapter:
+    """Adapter REST para la API de GitHub, scoped a un repo concreto.
+
+    Permite que IABV opere sobre un repo sin que el humano tenga que salir
+    del programa: crear PRs, habilitar auto-merge, mergear, leer PRs,
+    comentar issues, listar issues.  El token va como ``Bearer`` (acepta
+    tanto classic PAT como fine-grained PAT).
+
+    No es otro cerebro: la ruta se decide antes (ToolTeachService,
+    AutonomyGovernancePolicy).  Este adapter solo ejecuta la accion
+    declarada por el ``ToolTask``.
+
+    Accion solicitada via ``task.metadata['github_action']``.  Parametros
+    en ``task.metadata['github_params']`` (dict).  Acciones soportadas:
+
+      * ``read_pr``           params: {pull_number}
+      * ``create_pr``         params: {title, body, head, base}
+      * ``merge_pr``          params: {pull_number, merge_method?}
+      * ``enable_auto_merge`` params: {pull_number, merge_method?}
+      * ``comment_issue``     params: {issue_number, body}
+      * ``list_issues``       params: {state?}
+      * ``list_prs``          params: {state?}
+
+    Con ``sandbox=True`` el adapter NO toca la red: devuelve el plan
+    (endpoint, metodo, payload) sin ejecutarlo, para que sandbox /
+    AutonomousValidationCycle puedan evaluarlo antes.
+    """
+
+    tool_type = ToolType.MCP_CLIENT
+    BASE_URL = 'https://api.github.com'
+    GRAPHQL_URL = 'https://api.github.com/graphql'
+
+    SUPPORTED_ACTIONS = frozenset(
+        {
+            'read_pr',
+            'create_pr',
+            'merge_pr',
+            'enable_auto_merge',
+            'comment_issue',
+            'list_issues',
+            'list_prs',
+        }
+    )
+
+    def __init__(
+        self,
+        token: str = '',
+        repo: str = '',
+        timeout_seconds: float = 30.0,
+    ) -> None:
+        self.token = token
+        self.repo = repo  # formato "owner/name", p.ej. "jhonf463r/Python"
+        self.timeout_seconds = timeout_seconds
+
+    def _headers(self) -> dict[str, str]:
+        return {
+            'Authorization': f'Bearer {self.token}',
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+        }
+
+    def is_available(self, card: ToolCard) -> bool:
+        if not self.token or not self.repo:
+            return False
+        if httpx is None:
+            return False
+        try:
+            # Ping liviano: metadata del repo autenticada.  Si el token no
+            # tiene scope a este repo, GitHub devuelve 404 (no 401) aunque
+            # el token sea valido; es la unica forma de detectar falta de
+            # scope a nivel fino-grained.
+            resp = httpx.get(
+                f'{self.BASE_URL}/repos/{self.repo}',
+                headers=self._headers(),
+                timeout=10.0,
+            )
+            return resp.status_code == 200
+        except Exception:
+            return False
+
+    def _plan(self, action: str, method: str, url: str, payload: Any = None) -> dict[str, Any]:
+        plan: dict[str, Any] = {'action': action, 'method': method, 'url': url}
+        if payload is not None:
+            plan['payload'] = payload
+        return plan
+
+    def _response(
+        self,
+        *,
+        success: bool,
+        output_text: str,
+        extracted_data: dict[str, Any],
+        sandbox: bool,
+        tool_id: str,
+        start: float,
+        error_message: str = '',
+        http_status: int | None = None,
+        action: str = '',
+    ) -> dict[str, Any]:
+        return {
+            'success': success,
+            'output_text': output_text,
+            'extracted_data': extracted_data,
+            'artifacts': [],
+            'error_message': error_message,
+            'execution_ms': int((time.perf_counter() - start) * 1000),
+            'metadata': {
+                'sandbox': sandbox,
+                'tool_id': tool_id,
+                'github_action': action,
+                'github_http_status': http_status,
+            },
+        }
+
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+        start = time.perf_counter()
+        try:
+            return self._run_action(card, task, sandbox=sandbox, start=start)
+        except Exception as exc:  # noqa: BLE001
+            return self._response(
+                success=False,
+                output_text='',
+                extracted_data={},
+                sandbox=sandbox,
+                tool_id=card.tool_id,
+                start=start,
+                error_message=f'{type(exc).__name__}: {exc}',
+            )
+
+    def _run_action(
+        self,
+        card: ToolCard,
+        task: ToolTask,
+        *,
+        sandbox: bool,
+        start: float,
+    ) -> dict[str, Any]:
+        if httpx is None:
+            return self._response(
+                success=False,
+                output_text='',
+                extracted_data={},
+                sandbox=sandbox,
+                tool_id=card.tool_id,
+                start=start,
+                error_message='httpx no esta instalado.',
+            )
+        if not self.token or not self.repo:
+            return self._response(
+                success=False,
+                output_text='',
+                extracted_data={},
+                sandbox=sandbox,
+                tool_id=card.tool_id,
+                start=start,
+                error_message='GITHUB_TOKEN_IABV o GITHUB_REPO no configurados.',
+            )
+
+        metadata = task.metadata or {}
+        action = str(metadata.get('github_action') or '').strip()
+        params = metadata.get('github_params') or {}
+        if not isinstance(params, dict):
+            params = {}
+
+        if action not in self.SUPPORTED_ACTIONS:
+            return self._response(
+                success=False,
+                output_text='',
+                extracted_data={},
+                sandbox=sandbox,
+                tool_id=card.tool_id,
+                start=start,
+                error_message=(
+                    f"github_action '{action}' no soportado. "
+                    f'Soportados: {sorted(self.SUPPORTED_ACTIONS)}.'
+                ),
+                action=action,
+            )
+
+        repo_url = f'{self.BASE_URL}/repos/{self.repo}'
+
+        # --- read_pr -----------------------------------------------------
+        if action == 'read_pr':
+            pn = params.get('pull_number')
+            if not isinstance(pn, int):
+                return self._response(
+                    success=False, output_text='', extracted_data={},
+                    sandbox=sandbox, tool_id=card.tool_id, start=start,
+                    error_message='read_pr requiere pull_number (int).',
+                    action=action,
+                )
+            url = f'{repo_url}/pulls/{pn}'
+            if sandbox:
+                return self._response(
+                    success=True, output_text='dry-run: read_pr',
+                    extracted_data={'plan': self._plan(action, 'GET', url)},
+                    sandbox=True, tool_id=card.tool_id, start=start,
+                    action=action,
+                )
+            resp = httpx.get(url, headers=self._headers(), timeout=self.timeout_seconds)
+            data = resp.json() if resp.status_code == 200 else {}
+            return self._response(
+                success=resp.status_code == 200,
+                output_text=str(data.get('title', '')),
+                extracted_data=data,
+                sandbox=False, tool_id=card.tool_id, start=start,
+                http_status=resp.status_code,
+                error_message='' if resp.status_code == 200 else f'HTTP {resp.status_code}: {resp.text[:500]}',
+                action=action,
+            )
+
+        # --- create_pr ---------------------------------------------------
+        if action == 'create_pr':
+            missing = [k for k in ('title', 'head', 'base') if not params.get(k)]
+            if missing:
+                return self._response(
+                    success=False, output_text='', extracted_data={},
+                    sandbox=sandbox, tool_id=card.tool_id, start=start,
+                    error_message=f'create_pr falta: {missing}',
+                    action=action,
+                )
+            payload = {
+                'title': str(params['title']),
+                'head': str(params['head']),
+                'base': str(params['base']),
+                'body': str(params.get('body') or ''),
+            }
+            url = f'{repo_url}/pulls'
+            if sandbox:
+                return self._response(
+                    success=True, output_text='dry-run: create_pr',
+                    extracted_data={'plan': self._plan(action, 'POST', url, payload)},
+                    sandbox=True, tool_id=card.tool_id, start=start,
+                    action=action,
+                )
+            resp = httpx.post(url, headers=self._headers(), json=payload, timeout=self.timeout_seconds)
+            data = resp.json() if resp.status_code in (200, 201) else {}
+            return self._response(
+                success=resp.status_code in (200, 201),
+                output_text=str(data.get('html_url', '')),
+                extracted_data=data,
+                sandbox=False, tool_id=card.tool_id, start=start,
+                http_status=resp.status_code,
+                error_message='' if resp.status_code in (200, 201) else f'HTTP {resp.status_code}: {resp.text[:500]}',
+                action=action,
+            )
+
+        # --- merge_pr ----------------------------------------------------
+        if action == 'merge_pr':
+            pn = params.get('pull_number')
+            if not isinstance(pn, int):
+                return self._response(
+                    success=False, output_text='', extracted_data={},
+                    sandbox=sandbox, tool_id=card.tool_id, start=start,
+                    error_message='merge_pr requiere pull_number (int).',
+                    action=action,
+                )
+            merge_method = str(params.get('merge_method') or 'squash').lower()
+            if merge_method not in ('merge', 'squash', 'rebase'):
+                merge_method = 'squash'
+            payload = {'merge_method': merge_method}
+            url = f'{repo_url}/pulls/{pn}/merge'
+            if sandbox:
+                return self._response(
+                    success=True, output_text='dry-run: merge_pr',
+                    extracted_data={'plan': self._plan(action, 'PUT', url, payload)},
+                    sandbox=True, tool_id=card.tool_id, start=start,
+                    action=action,
+                )
+            resp = httpx.put(url, headers=self._headers(), json=payload, timeout=self.timeout_seconds)
+            data = resp.json() if resp.status_code == 200 else {}
+            merged = resp.status_code == 200 and bool(data.get('merged'))
+            if resp.status_code != 200:
+                err_msg = f'HTTP {resp.status_code}: {resp.text[:500]}'
+            elif not data.get('merged'):
+                err_msg = (
+                    f"merge_pr devolvio HTTP 200 pero merged={data.get('merged')!r}"
+                    f" (mensaje GitHub: {str(data.get('message') or '')[:200]})"
+                )
+            else:
+                err_msg = ''
+            return self._response(
+                success=merged,
+                output_text=str(data.get('sha', '')),
+                extracted_data=data,
+                sandbox=False, tool_id=card.tool_id, start=start,
+                http_status=resp.status_code,
+                error_message=err_msg,
+                action=action,
+            )
+
+        # --- enable_auto_merge (GraphQL) --------------------------------
+        if action == 'enable_auto_merge':
+            pn = params.get('pull_number')
+            if not isinstance(pn, int):
+                return self._response(
+                    success=False, output_text='', extracted_data={},
+                    sandbox=sandbox, tool_id=card.tool_id, start=start,
+                    error_message='enable_auto_merge requiere pull_number (int).',
+                    action=action,
+                )
+            merge_method = str(params.get('merge_method') or 'squash').upper()
+            if merge_method not in ('MERGE', 'SQUASH', 'REBASE'):
+                merge_method = 'SQUASH'
+            # Paso 1: obtener node_id del PR (GraphQL necesita ids, no numeros).
+            rest_url = f'{repo_url}/pulls/{pn}'
+            if sandbox:
+                return self._response(
+                    success=True, output_text='dry-run: enable_auto_merge',
+                    extracted_data={
+                        'plan': self._plan(
+                            action, 'POST', self.GRAPHQL_URL,
+                            {'pull_number': pn, 'merge_method': merge_method},
+                        ),
+                    },
+                    sandbox=True, tool_id=card.tool_id, start=start,
+                    action=action,
+                )
+            pr_resp = httpx.get(rest_url, headers=self._headers(), timeout=self.timeout_seconds)
+            if pr_resp.status_code != 200:
+                return self._response(
+                    success=False, output_text='', extracted_data={},
+                    sandbox=False, tool_id=card.tool_id, start=start,
+                    http_status=pr_resp.status_code,
+                    error_message=f'enable_auto_merge lookup HTTP {pr_resp.status_code}: {pr_resp.text[:500]}',
+                    action=action,
+                )
+            node_id = str(pr_resp.json().get('node_id') or '')
+            if not node_id:
+                return self._response(
+                    success=False, output_text='', extracted_data={},
+                    sandbox=False, tool_id=card.tool_id, start=start,
+                    error_message='PR sin node_id (respuesta GitHub inesperada).',
+                    action=action,
+                )
+            query = (
+                'mutation($id:ID!,$m:PullRequestMergeMethod!){'
+                'enablePullRequestAutoMerge(input:{pullRequestId:$id,mergeMethod:$m}){'
+                'pullRequest{number autoMergeRequest{enabledAt mergeMethod}}}}'
+            )
+            gql_body = {
+                'query': query,
+                'variables': {'id': node_id, 'm': merge_method},
+            }
+            gql_resp = httpx.post(
+                self.GRAPHQL_URL, headers=self._headers(), json=gql_body,
+                timeout=self.timeout_seconds,
+            )
+            gql_data = gql_resp.json() if gql_resp.status_code == 200 else {}
+            errors = gql_data.get('errors') or []
+            ok = gql_resp.status_code == 200 and not errors
+            return self._response(
+                success=ok,
+                output_text=f'auto-merge enabled on PR #{pn}' if ok else '',
+                extracted_data=gql_data,
+                sandbox=False, tool_id=card.tool_id, start=start,
+                http_status=gql_resp.status_code,
+                error_message='' if ok else f'GraphQL errors: {errors or gql_resp.text[:500]}',
+                action=action,
+            )
+
+        # --- comment_issue ----------------------------------------------
+        if action == 'comment_issue':
+            ino = params.get('issue_number')
+            body = params.get('body')
+            if not isinstance(ino, int) or not body:
+                return self._response(
+                    success=False, output_text='', extracted_data={},
+                    sandbox=sandbox, tool_id=card.tool_id, start=start,
+                    error_message='comment_issue requiere issue_number (int) y body (str).',
+                    action=action,
+                )
+            payload = {'body': str(body)}
+            url = f'{repo_url}/issues/{ino}/comments'
+            if sandbox:
+                return self._response(
+                    success=True, output_text='dry-run: comment_issue',
+                    extracted_data={'plan': self._plan(action, 'POST', url, payload)},
+                    sandbox=True, tool_id=card.tool_id, start=start,
+                    action=action,
+                )
+            resp = httpx.post(url, headers=self._headers(), json=payload, timeout=self.timeout_seconds)
+            data = resp.json() if resp.status_code == 201 else {}
+            return self._response(
+                success=resp.status_code == 201,
+                output_text=str(data.get('html_url', '')),
+                extracted_data=data,
+                sandbox=False, tool_id=card.tool_id, start=start,
+                http_status=resp.status_code,
+                error_message='' if resp.status_code == 201 else f'HTTP {resp.status_code}: {resp.text[:500]}',
+                action=action,
+            )
+
+        # --- list_issues / list_prs -------------------------------------
+        if action in ('list_issues', 'list_prs'):
+            state = str(params.get('state') or 'open')
+            if state not in ('open', 'closed', 'all'):
+                state = 'open'
+            suffix = 'issues' if action == 'list_issues' else 'pulls'
+            url = f'{repo_url}/{suffix}'
+            if sandbox:
+                return self._response(
+                    success=True, output_text=f'dry-run: {action}',
+                    extracted_data={'plan': self._plan(action, 'GET', url, {'state': state})},
+                    sandbox=True, tool_id=card.tool_id, start=start,
+                    action=action,
+                )
+            resp = httpx.get(
+                url, headers=self._headers(),
+                params={'state': state, 'per_page': 50},
+                timeout=self.timeout_seconds,
+            )
+            items = resp.json() if resp.status_code == 200 else []
+            if not isinstance(items, list):
+                items = []
+            return self._response(
+                success=resp.status_code == 200,
+                output_text=f'{len(items)} {suffix}',
+                extracted_data={'items': items, 'count': len(items)},
+                sandbox=False, tool_id=card.tool_id, start=start,
+                http_status=resp.status_code,
+                error_message='' if resp.status_code == 200 else f'HTTP {resp.status_code}: {resp.text[:500]}',
+                action=action,
+            )
+
+        # Should be unreachable (SUPPORTED_ACTIONS gate above).
+        return self._response(  # pragma: no cover
+            success=False, output_text='', extracted_data={},
+            sandbox=sandbox, tool_id=card.tool_id, start=start,
+            error_message=f'accion no enrutada: {action}', action=action,
+        )
+
+
 class SiteExplorerToolAdapter:
     """Adapter delgado sobre `SiteExplorationService`.
 

@@ -11,6 +11,61 @@ from iabv_v15.infra.config import load_app_config, load_theme_config
 from iabv_v15.infra.logging import configure_logging
 
 logger = logging.getLogger(__name__)
+
+
+def _devin_create_session(adapter, prompt: str) -> str:
+    """Crea una sesion en Devin via `DevinApiToolAdapter`.
+
+    Devuelve ``session_id`` o string vacio si falla. No raises: errores
+    se registran como log warning y el briefing marca UNRESOLVED en
+    lugar de fingir exito.
+    """
+    if adapter is None or not getattr(adapter, 'api_key', ''):
+        return ''
+    try:
+        import httpx  # local import: evitar imponer dep en tests headless
+    except Exception:
+        return ''
+    try:
+        resp = httpx.post(
+            adapter._sessions_url,
+            headers=adapter._headers(),
+            json={'prompt': str(prompt or '')},
+            timeout=30.0,
+        )
+        if resp.status_code not in (200, 201):
+            logger.warning('devin create session http=%s', resp.status_code)
+            return ''
+        body = resp.json()
+        return str(body.get('session_id') or body.get('id') or '')
+    except Exception as exc:
+        logger.warning('devin create session failed: %s', exc)
+        return ''
+
+
+def _devin_send_message(adapter, session_id: str, content: str) -> bool:
+    """Envia un mensaje a una sesion Devin. True si la API respondio 2xx."""
+    if adapter is None or not getattr(adapter, 'api_key', ''):
+        return False
+    if not session_id:
+        return False
+    try:
+        import httpx
+    except Exception:
+        return False
+    try:
+        resp = httpx.post(
+            f'{adapter.BASE_URL}/session/{session_id}/message',
+            headers=adapter._headers(),
+            json={'message': str(content or '')},
+            timeout=30.0,
+        )
+        return 200 <= resp.status_code < 300
+    except Exception as exc:
+        logger.warning('devin send message failed: %s', exc)
+        return False
+
+
 from iabv_v15.infra.persistence.adaptive_session_repository import AdaptiveSessionRepository
 from iabv_v15.infra.persistence.approval_checkpoint_repository import ApprovalCheckpointRepository
 from iabv_v15.infra.persistence.capability_repository import CapabilityRepository
@@ -84,8 +139,23 @@ from iabv_v15.services.evolution.mcp_bridge_service import (
     MCPBridgeService,
     build_mcp_bridge_service,
 )
+from iabv_v15.services.evolution.consensus_interpretation_service import (
+    ConsensusInterpretationService,
+)
+from iabv_v15.services.evolution.intent_scoped_briefing_service import (
+    IntentScopedBriefingService,
+)
 from iabv_v15.services.evolution.portable_context_service import PortableContextService
 from iabv_v15.services.evolution.self_audit_service import SelfAuditService
+from iabv_v15.services.evolution.session_start_briefing_service import (
+    SessionStartBriefingService,
+)
+from iabv_v15.services.security.approval_memory import ApprovalMemory
+from iabv_v15.services.security.human_approval_broker import HumanApprovalBroker
+from iabv_v15.services.security.proactive_dashboard_service import (
+    ProactiveDashboardService,
+)
+from iabv_v15.services.capture.ui_screenshot_service import UIScreenshotService
 from iabv_v15.services.evolution.tool_discovery_service import ToolDiscoveryService
 from iabv_v15.services.evolution.tool_evolution_monitor import ToolEvolutionMonitor
 from iabv_v15.services.evolution.autonomous_evolution_service import AutonomousEvolutionService
@@ -106,7 +176,7 @@ from iabv_v15.services.self_teach.sandbox_experiment_service import SandboxExper
 from iabv_v15.services.self_teach.self_teach_orchestrator import SelfTeachOrchestrator
 from iabv_v15.infra.persistence.site_manual_repository import SiteManualRepository
 from iabv_v15.services.tools.site_exploration_service import SiteExplorationService
-from iabv_v15.services.tools.tool_adapters import AiderToolAdapter, DesktopHumanToolAdapter, ExternalAssistantToolAdapter, MCPToolAdapter, OllamaToolAdapter, PlaywrightToolAdapter, ShellToolAdapter, SiteExplorerToolAdapter
+from iabv_v15.services.tools.tool_adapters import AiderToolAdapter, DevinApiToolAdapter, DesktopHumanToolAdapter, ExternalAssistantToolAdapter, GitHubApiToolAdapter, MCPToolAdapter, OllamaToolAdapter, PlaywrightToolAdapter, ShellToolAdapter, SiteExplorerToolAdapter
 from iabv_v15.services.tools.tool_approval_policy import ToolApprovalPolicy
 from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
 from iabv_v15.services.tools.interaction_mode_selector import InteractionModeSelector
@@ -234,6 +304,17 @@ class AppBootstrap:
             'aider': AiderToolAdapter(),
             'mcp': MCPToolAdapter(),
             'external_assistant': ExternalAssistantToolAdapter(),
+            'devin_api': DevinApiToolAdapter(
+                api_key=os.environ.get('DEVIN_API_KEY', ''),
+                # DEVIN_ORG_ID ya no es requerido por v1; se mantiene para compat.
+                org_id=os.environ.get('DEVIN_ORG_ID', ''),
+            ),
+            'github_api': GitHubApiToolAdapter(
+                token=os.environ.get('GITHUB_TOKEN_IABV', ''),
+                # repo scoped: evita que un token amplio haga cosas en
+                # repos no deseados; default al propio repo del proyecto.
+                repo=os.environ.get('GITHUB_REPO', 'jhonf463r/Python'),
+            ),
             'site_explorer': SiteExplorerToolAdapter(
                 self.site_exploration_service,
                 self.site_manual_repository,
@@ -455,6 +536,71 @@ class AppBootstrap:
             tool_evolution_monitor=self.tool_evolution_monitor,
             adaptive_session_repository=self.adaptive_session_repository,
         )
+        # --- Security & evolution broker stack (PR #101-#106) ---
+        # Wiring minimo de los servicios que cierran el loop "el programa
+        # pide lo que necesita del humano y aprende de las aprobaciones".
+        # Cada servicio respeta las capas cerradas (P1-P4): no duplican
+        # WorldModel/PortableContext, no deciden rutas, no crean otro cerebro.
+        self.human_approval_broker = HumanApprovalBroker()
+        self.approval_memory = ApprovalMemory(
+            storage_path=Path(self.config.evolution_dir) / 'approvals' / 'policies.json',
+        )
+        self.proactive_dashboard_service = ProactiveDashboardService(
+            broker=self.human_approval_broker,
+            memory=self.approval_memory,
+        )
+        # F1.1: captura de snapshots UI de IABV persistida con retention.
+        # No es otro cerebro ni orquestador; solo evidencia visual para
+        # que ExecutionDossier / briefings / revision humana puedan citar.
+        self.ui_screenshot_service = UIScreenshotService(
+            storage_dir=Path(self.config.evolution_dir) / 'ui_snapshots',
+        )
+        # F1.2: cuando IABV necesita presencia humana, dejamos una foto del
+        # estado de la UI para que la revision posterior pueda reconstruir
+        # que estaba viendo el usuario. Best-effort; el broker sigue
+        # funcionando si la captura falla.
+        self.human_approval_broker.set_ui_screenshot_capturer(
+            self.ui_screenshot_service
+        )
+        # Devin API adapter es opcional (requiere DEVIN_API_KEY). Si no esta
+        # disponible, el briefing sigue siendo util como dato estructurado; las
+        # callables devuelven strings vacios y el servicio marca UNRESOLVED en
+        # lugar de fingir exito.
+        _devin_api_adapter = self.tool_adapters.get('devin_api')
+        self.session_start_briefing_service = SessionStartBriefingService(
+            portable_context_service=self.portable_context_service,
+            session_creator=(
+                (lambda prompt: _devin_create_session(_devin_api_adapter, prompt))
+                if _devin_api_adapter is not None
+                else None
+            ),
+            message_sender=(
+                (lambda sid, content: _devin_send_message(_devin_api_adapter, sid, content))
+                if _devin_api_adapter is not None
+                else None
+            ),
+        )
+        self.intent_scoped_briefing_service = IntentScopedBriefingService(
+            session_start_briefing_service=self.session_start_briefing_service,
+        )
+        self.consensus_interpretation_service = ConsensusInterpretationService(
+            interpreters={},
+            human_approval_broker=self.human_approval_broker,
+        )
+        # F2.1 GitHubRemoteService: permite que IABV abra sus propios PRs via
+        # GitHubApiToolAdapter respetando AutonomyGovernancePolicy
+        # (``iabv-auto/*`` auto si diff < 200; ``devin/*`` requiere humano;
+        # main/master como head bloqueado siempre). Deja evidencia en
+        # ``data/evolution/pr_history/`` para auditoria posterior. No decide
+        # rutas: consume policy + broker + adapter ya existentes.
+        from iabv_v15.services.tools.github_remote_service import GitHubRemoteService
+        self.github_remote_service = GitHubRemoteService(
+            repo_root=self.config.workspace_root,
+            adapter=self.tool_adapters['github_api'],
+            governance_policy=self.autonomy_governance_policy,
+            approval_broker=self.human_approval_broker,
+            evidence_dir=Path(self.config.evolution_dir) / 'pr_history',
+        )
         self.self_audit_service = SelfAuditService(
             tool_registry=self.tool_registry,
             environment_self_model_provider=self.environment_self_awareness_service.current_model,
@@ -474,9 +620,13 @@ class AppBootstrap:
         )
         from iabv_v15.infra.mcp.audit_tools.audit_capability import (
             build_browser_capture_runner,
+            build_domain_capability_runner,
             build_llm_external_runner,
             build_llm_local_ollama_runner,
             build_ui_execution_runner,
+        )
+        from iabv_v15.services.evolution.capability_audit_harness import (
+            DOMAIN_CAPABILITY_IDS,
         )
 
         self.capability_audit_harness = CapabilityAuditHarness()
@@ -540,6 +690,41 @@ class AppBootstrap:
             "ui_execution",
             build_ui_execution_runner(_ui_executor),
         )
+
+        # Frente 3.2b — Capacidades de dominio (Wplay + browser).
+        #
+        # El runner no ejecuta sondas externas ni consume red; lee el snapshot
+        # persistido por ``CapabilityReadinessService`` vía ``capability_repository``
+        # y reporta estado (``capability_pack_not_captured`` / ``partial`` / ``ready``).
+        # Esto cierra el gap que quedaba: ``audit_capability`` respondía
+        # ``capability_not_registered`` para ``wplay.login`` y afines, y el
+        # diagnóstico estructurado de PR #110 no tenía contraparte física.
+        _capability_site_map: dict[str, str | None] = {
+            "wplay.login": "wplay",
+            "wplay.session.restore": "wplay",
+            "wplay.navigate.casino": "wplay",
+            "browser.search.google": "google",
+            "browser.generic.navigation": None,
+        }
+
+        def _readiness_provider(capability_id: str, site_id: str | None) -> _Any:
+            repo = getattr(self, "capability_repository", None)
+            if repo is None:
+                return None
+            try:
+                return repo.get(capability_id, site_id)
+            except Exception:
+                return None
+
+        for _domain_capability_id in DOMAIN_CAPABILITY_IDS:
+            self.capability_audit_harness.register(
+                _domain_capability_id,
+                build_domain_capability_runner(
+                    _domain_capability_id,
+                    site_id=_capability_site_map.get(_domain_capability_id),
+                    readiness_provider=_readiness_provider,
+                ),
+            )
 
         # Frente 3.3 — PerceptionGroundTruthComparator.
         #
@@ -632,6 +817,9 @@ class AppBootstrap:
                     capability_registry=self.assistant_capability_registry,
                     adaptive_weight_layer=self.adaptive_weight_layer,
                     world_model_provider=_synaptic_world_model_provider,
+                    enabled_override=getattr(
+                        self.config, "synaptic_routing_enabled", None
+                    ),
                 )
             self.consensus_fusion_service = ConsensusFusionService(
                 adaptive_weight_layer=self.adaptive_weight_layer,
@@ -975,6 +1163,16 @@ class AppBootstrap:
             control_master_service=self.control_master_service,
             control_master_digest_builder=self.control_master_digest_builder,
         )
+        # Hook proactivo: el EvolutionCenter puede consultar el dashboard
+        # para mostrar "que necesita del humano" al arrancar, sin romper
+        # el contrato del ViewModel (attribute set, no constructor arg).
+        self.evolution_center_viewmodel.proactive_dashboard_service = self.proactive_dashboard_service
+        self.evolution_center_viewmodel.human_approval_broker = self.human_approval_broker
+        self.evolution_center_viewmodel.approval_memory = self.approval_memory
+        # F1.1: el VM expone snapshots recientes como Property; el servicio
+        # persiste a disco y el VM solo lee la foto (AGENTS.md: el VM no
+        # decide rutas ni inventa datos).
+        self.evolution_center_viewmodel.ui_screenshot_service = self.ui_screenshot_service
         self.knowledge_base_viewmodel = KnowledgeBaseViewModel(self.knowledge_repository)
         self.provider_settings_viewmodel = ProviderSettingsViewModel(self.provider_configs, self.role_router, self.embedding_service)
         self.run_history_viewmodel = RunHistoryViewModel(self.run_repository, self.execution_dossier_repository)

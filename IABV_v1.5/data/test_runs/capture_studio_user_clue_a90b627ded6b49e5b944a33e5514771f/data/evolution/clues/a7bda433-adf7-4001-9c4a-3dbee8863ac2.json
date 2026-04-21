@@ -1,0 +1,10 @@
+{
+  "clue_id": "a7bda433-adf7-4001-9c4a-3dbee8863ac2",
+  "created_at_utc": "2026-04-21T01:06:30.624294Z",
+  "text": "Se congelo al abrir otra pestana.",
+  "episode_id": "041ba14a-2f96-49a7-83f6-a03dd6dc926e",
+  "run_id": null,
+  "linked_incident_id": "261356f1-7efa-4ef9-b81a-fe5bc8b5fe4c",
+  "site_id": "generic_web",
+  "metadata": {}
+}

@@ -1,0 +1,84 @@
+{
+  "pack_id": "tools.local_first",
+  "title": "Tool Teaching local-first",
+  "domain_kind": "tools",
+  "supported_intents": [
+    "tools.local_workflow"
+  ],
+  "required_capabilities": [
+    "tools.local.registry",
+    "tools.local.execution"
+  ],
+  "required_context": [
+    "recent_runs"
+  ],
+  "available_algorithms": [
+    {
+      "algorithm_id": "sandbox_then_execute",
+      "title": "Sandbox y ejecucion local",
+      "summary": "Selecciona una herramienta local, valida primero en sandbox y luego ejecuta con trazabilidad.",
+      "parameter_keys": [
+        "tool_id",
+        "execution_scope"
+      ],
+      "success_signals": [
+        "sandbox_pass",
+        "tool_executed"
+      ],
+      "fallback_signals": [
+        "adapter_missing",
+        "sandbox_fail"
+      ],
+      "notes": ""
+    }
+  ],
+  "parameter_schema": [
+    {
+      "parameter_id": "a516fa9c-6ab4-47a4-afcc-88eef6c60b07",
+      "key": "tool_id",
+      "label": "Herramienta",
+      "description": "ToolCard preferida para esta tarea.",
+      "value": null,
+      "default_value": "",
+      "kind": "text",
+      "editable": true,
+      "required": false,
+      "options": []
+    },
+    {
+      "parameter_id": "b42e62e1-d21d-4ae3-add0-ba2f248d5368",
+      "key": "execution_scope",
+      "label": "Scope",
+      "description": "Scope operativo de la tarea.",
+      "value": null,
+      "default_value": "read_only",
+      "kind": "choice",
+      "editable": true,
+      "required": false,
+      "options": [
+        "read_only",
+        "write",
+        "destructive"
+      ]
+    }
+  ],
+  "risk_level": "medium",
+  "approval_policy": "phased",
+  "execution_templates": [
+    "seleccionar herramienta",
+    "correr sandbox",
+    "pedir aprobacion si hace falta",
+    "ejecutar y registrar"
+  ],
+  "success_signals": [
+    "tool_ready",
+    "tool_executed"
+  ],
+  "fallback_signals": [
+    "sandbox_fail",
+    "need_codex_packet"
+  ],
+  "metadata": {
+    "updated_at_utc": "2026-04-21T01:06:05.777944+00:00"
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "pack_id": "wplay.casino",
+  "title": "Casino Wplay por fases",
+  "domain_kind": "wplay",
+  "supported_intents": [
+    "wplay.casino"
+  ],
+  "required_capabilities": [
+    "wplay.login",
+    "wplay.navigate.casino",
+    "wplay.session.restore"
+  ],
+  "required_context": [
+    "recent_teachings",
+    "recent_incidents",
+    "adaptive_sessions"
+  ],
+  "available_algorithms": [
+    {
+      "algorithm_id": "conservative_session_guard",
+      "title": "Conservadora con guardrails",
+      "summary": "Entra a la sesion, valida limites y propone una estrategia conservadora editable antes de cualquier accion critica.",
+      "parameter_keys": [
+        "bankroll_units",
+        "stop_gain_pct",
+        "stop_loss_pct",
+        "table_hint"
+      ],
+      "success_signals": [],
+      "fallback_signals": [],
+      "notes": ""
+    },
+    {
+      "algorithm_id": "fibonacci_controlada",
+      "title": "Fibonacci controlada",
+      "summary": "Plantea una variante progresiva limitada, con topes claros y aprobacion humana obligatoria.",
+      "parameter_keys": [
+        "bankroll_units",
+        "stop_gain_pct",
+        "stop_loss_pct",
+        "table_hint"
+      ],
+      "success_signals": [],
+      "fallback_signals": [],
+      "notes": ""
+    }
+  ],
+  "parameter_schema": [
+    {
+      "parameter_id": "a2097b6e-f9b8-4208-9ab6-152e4a73a15e",
+      "key": "bankroll_units",
+      "label": "Bankroll base",
+      "description": "Unidad base para la estrategia.",
+      "value": null,
+      "default_value": 100,
+      "kind": "number",
+      "editable": true,
+      "required": false,
+      "options": []
+    },
+    {
+      "parameter_id": "65310cb6-73f6-4d89-88c5-47ae67d83b48",
+      "key": "stop_gain_pct",
+      "label": "Stop gain %",
+      "description": "Corte de ganancia.",
+      "value": null,
+      "default_value": 10,
+      "kind": "number",
+      "editable": true,
+      "required": false,
+      "options": []
+    },
+    {
+      "parameter_id": "95d5d2cb-eb39-45ef-9261-f64048fc8448",
+      "key": "stop_loss_pct",
+      "label": "Stop loss %",
+      "description": "Corte de perdida.",
+      "value": null,
+      "default_value": 5,
+      "kind": "number",
+      "editable": true,
+      "required": false,
+      "options": []
+    },
+    {
+      "parameter_id": "336994ab-0883-4eb7-a6b2-4af744032236",
+      "key": "table_hint",
+      "label": "Mesa objetivo",
+      "description": "Preferencia de mesa o juego.",
+      "value": null,
+      "default_value": "ruleta",
+      "kind": "text",
+      "editable": true,
+      "required": false,
+      "options": []
+    }
+  ],
+  "risk_level": "critical",
+  "approval_policy": "phased",
+  "execution_templates": [
+    "login",
+    "navegar a casino",
+    "configurar estrategia",
+    "pedir aprobacion critica",
+    "ejecutar fase"
+  ],
+  "success_signals": [
+    "casino_ready",
+    "strategy_approved"
+  ],
+  "fallback_signals": [
+    "missing_capability",
+    "approval_pending"
+  ],
+  "metadata": {
+    "updated_at_utc": "2026-04-21T01:07:07.593837+00:00"
+  }
+}
