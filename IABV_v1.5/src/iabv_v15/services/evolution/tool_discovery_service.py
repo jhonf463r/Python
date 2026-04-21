@@ -217,14 +217,18 @@ class ToolDiscoveryService:
         registry = self.tool_registry
         if registry is None or not hasattr(registry, 'list_cards'):
             return []
-        cards: list[ToolCard] = []
         try:
-            for card in registry.list_cards():
-                refreshed = registry.refresh_card(card) if hasattr(registry, 'refresh_card') else card
-                if bool(getattr(refreshed, 'available', False)):
-                    cards.append(refreshed)
+            raw_cards = list(registry.list_cards())
         except Exception:
             return []
+        cards: list[ToolCard] = []
+        for card in raw_cards:
+            try:
+                refreshed = registry.refresh_card(card) if hasattr(registry, 'refresh_card') else card
+                if refreshed.available:
+                    cards.append(refreshed)
+            except Exception:
+                continue
         return cards
 
     def _current_world_model(self) -> Any | None:

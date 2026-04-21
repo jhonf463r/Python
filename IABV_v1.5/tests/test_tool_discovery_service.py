@@ -223,3 +223,59 @@ def test_tool_discovery_service_infers_baseline_from_runs_without_recommendation
         assert signal.status == 'detected'
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_tool_discovery_service_available_cards_survives_single_card_refresh_failure() -> None:
+    """R14-2: _available_cards must not discard already-collected cards when
+    refresh_card raises for a later card.  Before the fix, the entire for-loop
+    was wrapped in a single try/except that returned [] on any exception,
+    losing all previously collected healthy cards."""
+    root = _workspace('tool_discovery_refresh_failure')
+    try:
+        _lab_unused, repository, storage = _lab(root)
+
+        good_card = ToolCard(
+            tool_id='codex_installed',
+            title='Codex instalado',
+            tool_type=ToolType.CUSTOM,
+            description='Consulta tecnica guiada con Codex.',
+            adapter_key='external_assistant',
+            capabilities=['llm_query', 'consult_external', 'code_assistance'],
+            available=True,
+            metadata={'assistant_kind': 'codex'},
+        )
+        bad_card = ToolCard(
+            tool_id='broken_tool',
+            title='Broken tool',
+            tool_type=ToolType.CUSTOM,
+            description='This tool explodes on refresh.',
+            adapter_key='broken_adapter',
+            available=True,
+        )
+
+        class _BrokenRefreshRegistry:
+            def __init__(self, cards: list[ToolCard]) -> None:
+                self._cards = cards
+
+            def list_cards(self) -> list[ToolCard]:
+                return list(self._cards)
+
+            def refresh_card(self, card: ToolCard) -> ToolCard:
+                if card.tool_id == 'broken_tool':
+                    raise RuntimeError('adapter crashed during availability check')
+                return card
+
+        registry = _BrokenRefreshRegistry([good_card, bad_card])
+        service = ToolDiscoveryService(
+            storage=storage,
+            tool_registry=registry,
+            experiment_lab_repository=repository,
+        )
+        cards = service._available_cards()
+        assert len(cards) == 1, (
+            f'Expected 1 healthy card after broken refresh, got {len(cards)}. '
+            'Before the fix, a single refresh failure discarded all cards.'
+        )
+        assert cards[0].tool_id == 'codex_installed'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
