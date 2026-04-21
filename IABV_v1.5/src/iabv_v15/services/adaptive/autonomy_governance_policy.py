@@ -126,7 +126,7 @@ class AutonomyGovernancePolicy:
             or (len(normalized_goal.split()) <= 4 and any(normalized_goal.startswith(prefix) for prefix in ('hola', 'buenas', 'buenos dias', 'buenas tardes', 'buenas noches')))
         )
         meta_assistant_prompt = (
-            any(token in normalized_goal for token in ('codex', 'chatgpt', 'claude', 'ollama', 'ia', 'ias'))
+            any(token in normalized_goal for token in ('codex', 'chatgpt', 'claude', 'ollama', 'devin', 'windsurf', 'ia', 'ias'))
             and any(token in normalized_goal for token in ('sabes', 'puedes', 'puedo', 'internamente', 'automatic', 'automatica', 'automático', 'respondieron'))
         )
         conversational_intent = (
@@ -375,7 +375,7 @@ class AutonomyGovernancePolicy:
         if not normalized_goal:
             return ''
         if (
-            any(token in normalized_goal for token in ('codex', 'chatgpt', 'claude', 'ollama'))
+            any(token in normalized_goal for token in ('codex', 'chatgpt', 'claude', 'ollama', 'devin', 'windsurf'))
             and any(token in normalized_goal for token in ('sabes', 'puedes', 'puedo', 'internamente', 'automatic', 'automatica', 'autom?tico', 'respondieron'))
         ):
             return ''
@@ -398,7 +398,7 @@ class AutonomyGovernancePolicy:
         )
         if not any(token in normalized_goal for token in consult_verbs):
             return ''
-        for assistant in ('chatgpt', 'claude', 'codex', 'ollama'):
+        for assistant in ('chatgpt', 'claude', 'codex', 'ollama', 'devin', 'windsurf'):
             if assistant in normalized_goal:
                 return assistant
         return ''
@@ -410,6 +410,8 @@ class AutonomyGovernancePolicy:
             'chatgpt': 'consult_chatgpt',
             'claude': 'consult_claude',
             'ollama': 'consult_ollama',
+            'devin': 'consult_devin',
+            'windsurf': 'consult_windsurf',
         }.get(assistant, 'consult_chatgpt')
 
     def _snapshot(
