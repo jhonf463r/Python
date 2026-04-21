@@ -16,7 +16,7 @@ from iabv_v15.domain.models import (
     ToolEvolutionProposal,
     ToolEvolutionStatus,
     WorldModelSnapshot,
-)
+)  # noqa: F401  (ProposalValidationResult used as type hint in _maybe_publish_promotion)
 from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 from iabv_v15.services.lab.experiment_lab import ExperimentLab
@@ -36,6 +36,7 @@ class AutonomousValidationCycleService:
         storage: ArtifactStorage | None = None,
         auto_start: bool | None = None,
         interval_seconds: float = 180.0,
+        promotion_pr_publisher: Any | None = None,
     ) -> None:
         self.experiment_lab = experiment_lab
         self.experiment_lab_repository = experiment_lab_repository
@@ -44,6 +45,11 @@ class AutonomousValidationCycleService:
         self.environment_self_awareness_service = environment_self_awareness_service
         self.tool_evolution_monitor = tool_evolution_monitor
         self.storage = storage
+        # F2.3 (thin): cuando se promueve un candidato, este publisher abre un
+        # PR documental en una rama ``iabv-auto/*``. El ciclo no decide nada
+        # distinto por tenerlo; solo delega la traza en git. Cualquier fallo
+        # del publisher se captura y no rompe el ciclo de validacion.
+        self.promotion_pr_publisher = promotion_pr_publisher
         self.interval_seconds = max(float(interval_seconds), 60.0)
         self._auto_start = (not self._in_test_mode()) if auto_start is None else bool(auto_start)
         self._lock = threading.RLock()
@@ -57,6 +63,16 @@ class AutonomousValidationCycleService:
         )
         if self._auto_start:
             self.start()
+
+    def set_promotion_pr_publisher(self, publisher: Any | None) -> None:
+        """Wire (o des-wire) el publisher de PRs documentales de promocion.
+
+        Expuesto como metodo para permitir que ``bootstrap`` arme el
+        publisher despues de crear el ciclo (el publisher depende de
+        ``GitHubRemoteService`` que se construye mas tarde en el wiring).
+        """
+
+        self.promotion_pr_publisher = publisher
 
     def start(self) -> None:
         if self._thread is not None and self._thread.is_alive():
@@ -317,6 +333,22 @@ class AutonomousValidationCycleService:
                     )
                 )
             result = self._result_from_experiment(proposal=proposal, experiment=experiment, priority_score=priority_score)
+            promotion_meta = self._maybe_publish_promotion(
+                experiment=experiment,
+                proposal=proposal,
+                result=result,
+            )
+            snapshot_metadata = {
+                'reason': reason,
+                'decision_source': 'tool_evolution_monitor',
+                'proposal_key': proposal.proposal_key,
+                'proposal_kind': proposal.proposal_kind,
+                'decision': result.decision,
+                'winner': result.winner,
+                'priority_score': round(priority_score, 4),
+            }
+            if promotion_meta:
+                snapshot_metadata['promotion_pr'] = promotion_meta
             return self._store_snapshot(
                 AutonomousValidationSnapshot(
                     cycle_id=self._current_snapshot.cycle_id,
@@ -328,15 +360,7 @@ class AutonomousValidationCycleService:
                     last_experiment_id=experiment.experiment_id,
                     current_experiment=experiment,
                     unresolved_fields=[] if result.decision != 'unresolved' else ['UNRESOLVED:tool_evolution_validation'],
-                    metadata={
-                        'reason': reason,
-                        'decision_source': 'tool_evolution_monitor',
-                        'proposal_key': proposal.proposal_key,
-                        'proposal_kind': proposal.proposal_kind,
-                        'decision': result.decision,
-                        'winner': result.winner,
-                        'priority_score': round(priority_score, 4),
-                    },
+                    metadata=snapshot_metadata,
                 )
             )
         recommendation = self._next_candidate()
@@ -378,6 +402,19 @@ class AutonomousValidationCycleService:
             status = 'unresolved'
         elif experiment.promote_to_primary:
             status = 'promoted'
+        promotion_meta = self._maybe_publish_promotion(
+            experiment=experiment,
+            proposal=None,
+            result=None,
+        )
+        snapshot_metadata = {
+            'reason': reason,
+            'promoted_count': promoted_count,
+            'last_subject_key': experiment.subject_key,
+            'last_verdict': experiment.verdict.value,
+        }
+        if promotion_meta:
+            snapshot_metadata['promotion_pr'] = promotion_meta
         return self._store_snapshot(
             AutonomousValidationSnapshot(
                 cycle_id=self._current_snapshot.cycle_id,
@@ -389,12 +426,7 @@ class AutonomousValidationCycleService:
                 last_experiment_id=experiment.experiment_id,
                 current_experiment=experiment,
                 unresolved_fields=[] if experiment.verdict != SandboxExperimentVerdict.UNRESOLVED else ['UNRESOLVED:sandbox_validation'],
-                metadata={
-                    'reason': reason,
-                    'promoted_count': promoted_count,
-                    'last_subject_key': experiment.subject_key,
-                    'last_verdict': experiment.verdict.value,
-                },
+                metadata=snapshot_metadata,
             )
         )
 
@@ -636,6 +668,91 @@ class AutonomousValidationCycleService:
                 'validation_verdict': experiment.verdict.value,
             },
         )
+
+    def _maybe_publish_promotion(
+        self,
+        *,
+        experiment: SandboxExperiment,
+        proposal: ToolEvolutionProposal | None,
+        result: ProposalValidationResult | None,
+    ) -> dict[str, Any] | None:
+        """F2.3 (thin): si se promueve, abre un PR documental en iabv-auto/*.
+
+        El ciclo no debe caer por fallos de publicacion: cualquier error se
+        captura y solo queda en el metadata de la snapshot. Si no hay
+        publisher wireado o el experimento no promueve, retorna ``None``
+        sin tocar nada.
+        """
+
+        if self.promotion_pr_publisher is None:
+            return None
+        if experiment is None or not bool(getattr(experiment, 'promote_to_primary', False)):
+            return None
+        subject_key = str(
+            (result.subject_key if result is not None else None)
+            or (proposal.subject_key if proposal is not None else None)
+            or experiment.subject_key
+            or 'unknown'
+        )
+        current_route = str(
+            (proposal.current_route.value if proposal is not None and proposal.current_route is not None else None)
+            or experiment.baseline_route.value
+        )
+        current_assistant_kind = str(
+            (proposal.current_assistant_kind if proposal is not None else None)
+            or experiment.baseline_assistant_kind
+            or ''
+        )
+        candidate_route = str(
+            (proposal.candidate_route.value if proposal is not None and proposal.candidate_route is not None else None)
+            or experiment.candidate_route.value
+        )
+        candidate_assistant_kind = str(
+            (proposal.candidate_assistant_kind if proposal is not None else None)
+            or experiment.candidate_assistant_kind
+            or ''
+        )
+        proposal_kind = str(proposal.proposal_kind if proposal is not None else '') or ''
+        proposal_id = str(proposal.proposal_id if proposal is not None else '') or ''
+        metrics = dict(result.metrics) if (result is not None and getattr(result, 'metrics', None)) else {}
+        metrics.setdefault('evidence_strength', float(getattr(experiment, 'evidence_strength', 0.0) or 0.0))
+        evidence_refs = list(result.evidence_refs) if (result is not None and getattr(result, 'evidence_refs', None)) else []
+        if not evidence_refs and getattr(experiment, 'supporting_run_ids', None):
+            evidence_refs = list(experiment.supporting_run_ids)
+        try:
+            publish_result = self.promotion_pr_publisher.publish_promotion(
+                subject_key=subject_key,
+                proposal_kind=proposal_kind,
+                current_route=current_route,
+                current_assistant_kind=current_assistant_kind,
+                candidate_route=candidate_route,
+                candidate_assistant_kind=candidate_assistant_kind,
+                verdict=str(experiment.verdict.value if experiment.verdict is not None else ''),
+                summary=str(getattr(experiment, 'summary', '') or ''),
+                metrics=metrics,
+                evidence_refs=evidence_refs,
+                sandbox_experiment_id=str(getattr(experiment, 'experiment_id', '') or ''),
+                proposal_id=proposal_id,
+            )
+        except Exception as exc:  # pragma: no cover - defensivo
+            return {
+                'success': False,
+                'error': repr(exc),
+                'subject_key': subject_key,
+            }
+        return {
+            'success': bool(getattr(publish_result, 'success', False)),
+            'subject_key': subject_key,
+            'branch': str(getattr(publish_result, 'branch', '') or ''),
+            'pr_number': getattr(publish_result, 'pr_number', None),
+            'pr_url': str(getattr(publish_result, 'pr_url', '') or ''),
+            'markdown_path': str(getattr(publish_result, 'markdown_path', '') or ''),
+            'evidence_path': str(getattr(publish_result, 'evidence_path', '') or ''),
+            'blocked_by_policy': bool(getattr(publish_result, 'blocked_by_policy', False)),
+            'required_approval': bool(getattr(publish_result, 'required_approval', False)),
+            'skipped': bool(getattr(publish_result, 'skipped', False)),
+            'error': str(getattr(publish_result, 'error', '') or ''),
+        }
 
     def _record_proposal_validation_result(
         self,

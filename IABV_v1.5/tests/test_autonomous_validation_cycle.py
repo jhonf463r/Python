@@ -709,3 +709,153 @@ def test_autonomous_validation_cycle_returns_empty_probes_when_self_exam_absent(
         assert cycle.decision_log_summary().get('pending_auto_probes') == []
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+class _RecordingPromotionPublisher:
+    """Fake publisher: registra llamadas y devuelve un resultado fijo."""
+
+    def __init__(self, *, success: bool = True, error: str = '') -> None:
+        self.calls: list[dict] = []
+        self._success = success
+        self._error = error
+
+    def publish_promotion(self, **kwargs):
+        self.calls.append(dict(kwargs))
+        from types import SimpleNamespace
+        return SimpleNamespace(
+            success=self._success,
+            subject_key=str(kwargs.get('subject_key') or ''),
+            branch='iabv-auto/promote-fake-123',
+            markdown_path='/fake/md',
+            evidence_path='/fake/ev',
+            pr_number=42 if self._success else None,
+            pr_url='https://example/pr/42' if self._success else '',
+            blocked_by_policy=False,
+            required_approval=False,
+            skipped=False,
+            error=self._error,
+        )
+
+
+def test_autonomous_validation_cycle_invokes_promotion_publisher_on_promote() -> None:
+    """F2.3: cuando se promueve, se dispara el publisher con el sujeto correcto."""
+
+    root = _workspace('autonomous_validation_cycle_f23_publisher')
+    try:
+        lab, repository, storage = _lab(root)
+        proposal = _proposal()
+        sandbox = _SandboxStub(
+            SandboxExperiment(
+                subject_key=proposal.subject_key,
+                sandbox_subject_key=f'sandbox:{proposal.subject_key}',
+                domain=proposal.domain,
+                baseline_route=proposal.current_route,
+                baseline_assistant_kind=proposal.current_assistant_kind,
+                baseline_config_signature=proposal.current_config_signature,
+                candidate_route=proposal.candidate_route,
+                candidate_assistant_kind=proposal.candidate_assistant_kind,
+                candidate_config_signature=proposal.candidate_config_signature,
+                promote_to_primary=True,
+                verdict=SandboxExperimentVerdict.VALID,
+                summary='Codex gano en sandbox.',
+                supporting_run_ids=['run-a', 'run-b'],
+                evidence_strength=0.7,
+            )
+        )
+        publisher = _RecordingPromotionPublisher(success=True)
+        cycle = AutonomousValidationCycleService(
+            experiment_lab=lab,
+            experiment_lab_repository=repository,
+            sandbox_experiment_service=sandbox,
+            world_model_service=_StaticService(WorldModelSnapshot()),
+            environment_self_awareness_service=_StaticService(EnvironmentSelfModel(scan_status='ready')),
+            tool_evolution_monitor=_StaticMonitor(_status(proposal)),
+            storage=storage,
+            auto_start=False,
+            promotion_pr_publisher=publisher,
+        )
+
+        snapshot = cycle.run_once(reason='manual')
+
+        assert snapshot.status == 'promoted'
+        assert publisher.calls, 'publish_promotion debe haberse llamado al promover'
+        call = publisher.calls[0]
+        assert call['subject_key'] == proposal.subject_key
+        assert call['verdict'] == SandboxExperimentVerdict.VALID.value
+        assert call['candidate_assistant_kind'] == 'codex'
+        assert call['current_assistant_kind'] == 'chatgpt'
+        promo_meta = (snapshot.metadata or {}).get('promotion_pr')
+        assert promo_meta is not None
+        assert promo_meta['success'] is True
+        assert promo_meta['pr_number'] == 42
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_autonomous_validation_cycle_skips_publisher_when_not_promoted() -> None:
+    """F2.3: si no hay promocion, el publisher no se toca."""
+
+    root = _workspace('autonomous_validation_cycle_f23_nopromote')
+    try:
+        lab, repository, storage = _lab(root)
+        proposal = _proposal()
+        sandbox = _SandboxStub(
+            SandboxExperiment(
+                subject_key=proposal.subject_key,
+                sandbox_subject_key=f'sandbox:{proposal.subject_key}',
+                domain=proposal.domain,
+                candidate_route=proposal.candidate_route,
+                candidate_assistant_kind=proposal.candidate_assistant_kind,
+                candidate_config_signature=proposal.candidate_config_signature,
+                promote_to_primary=False,
+                verdict=SandboxExperimentVerdict.DOUBTFUL,
+                summary='No alcanza diferencia suficiente.',
+            )
+        )
+        publisher = _RecordingPromotionPublisher(success=True)
+        cycle = AutonomousValidationCycleService(
+            experiment_lab=lab,
+            experiment_lab_repository=repository,
+            sandbox_experiment_service=sandbox,
+            world_model_service=_StaticService(WorldModelSnapshot()),
+            environment_self_awareness_service=_StaticService(EnvironmentSelfModel(scan_status='ready')),
+            tool_evolution_monitor=_StaticMonitor(_status(proposal)),
+            storage=storage,
+            auto_start=False,
+            promotion_pr_publisher=publisher,
+        )
+
+        snapshot = cycle.run_once(reason='manual')
+
+        assert snapshot.status != 'promoted'
+        assert not publisher.calls, 'publish_promotion NO debe llamarse sin promocion'
+        assert 'promotion_pr' not in (snapshot.metadata or {})
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_autonomous_validation_cycle_set_promotion_publisher_method() -> None:
+    """F2.3: set_promotion_pr_publisher debe wirear despues de __init__."""
+
+    root = _workspace('autonomous_validation_cycle_f23_setter')
+    try:
+        lab, repository, storage = _lab(root)
+        cycle = AutonomousValidationCycleService(
+            experiment_lab=lab,
+            experiment_lab_repository=repository,
+            sandbox_experiment_service=_SandboxStub(
+                SandboxExperiment(subject_key='x', promote_to_primary=False)
+            ),
+            world_model_service=_StaticService(WorldModelSnapshot()),
+            environment_self_awareness_service=_StaticService(EnvironmentSelfModel(scan_status='ready')),
+            storage=storage,
+            auto_start=False,
+        )
+        assert cycle.promotion_pr_publisher is None
+        publisher = _RecordingPromotionPublisher(success=True)
+        cycle.set_promotion_pr_publisher(publisher)
+        assert cycle.promotion_pr_publisher is publisher
+        cycle.set_promotion_pr_publisher(None)
+        assert cycle.promotion_pr_publisher is None
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
