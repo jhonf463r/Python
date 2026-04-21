@@ -62,6 +62,8 @@ if (-not $env:DEVIN_API_KEY) {
 if ($issues.Count -gt 0) {
     Write-Warn "Problemas detectados:"
     foreach ($i in $issues) { Write-Warn "  - $i" }
+    Write-Warn "Tip: rotacion asistida sin copy-paste con"
+    Write-Warn "     powershell -ExecutionPolicy Bypass -File scripts\rotate_tokens.ps1"
     Write-Warn "Podés arrancar igual (los adapters reportaran 'missing' en run_self_audit)."
 }
 

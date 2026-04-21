@@ -213,6 +213,11 @@ Infra de arranque operativo para el usuario:
 - ``scripts/mcp_hot_reload.py``: wrapper opcional (``IABV_MCP_HOT_RELOAD=1``)
   que reinicia el MCP al detectar cambios en ``src/iabv_v15/*.py``. Sin
   dependencias externas; polling de mtimes.
+- ``scripts/rotate_tokens.ps1``: rotacion asistida sin copy-paste. Usa
+  ``gh auth login --web`` (device-flow) para obtener el PAT de GitHub y
+  ``Read-Host -AsSecureString`` para pegar la Devin API key una vez.
+  Escribe ambos valores a ``$HOME\.iabv_secrets.ps1`` solo despues de
+  validarlos con HTTP 200 contra los endpoints reales.
 
 ## Forma De Trabajo En Sesiones Nuevas
 1. lee este archivo primero
