@@ -742,7 +742,7 @@ class EvolutionCenterViewModel(QObject):
     selfExaminationBrief = Property(str, get_self_examination_brief, notify=dataChanged)
     proactiveDashboard = Property(dict, get_proactive_dashboard, notify=dataChanged)
     proactiveDashboardBrief = Property(str, get_proactive_dashboard_brief, notify=dataChanged)
-    recentUiScreenshots = Property('QVariantList', get_recent_ui_screenshots, notify=dataChanged)
+    recentUiScreenshots = Property(list, get_recent_ui_screenshots, notify=dataChanged)
     latestToolStatus = Property(str, get_latest_tool_status, notify=dataChanged)
     selectedDossier = Property(dict, get_selected_dossier, notify=dataChanged)
     selectedIncident = Property(dict, get_selected_incident, notify=dataChanged)
