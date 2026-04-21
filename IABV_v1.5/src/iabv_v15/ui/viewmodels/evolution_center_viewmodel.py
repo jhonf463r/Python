@@ -1,7 +1,7 @@
 ﻿from __future__ import annotations
 
 import threading
-from typing import Any
+from typing import Any, Mapping
 
 from iabv_v15.domain.models import InferenceRequest, IncidentQuery, RunStatus, TaskRole
 from iabv_v15.infra.persistence.execution_dossier_repository import ExecutionDossierRepository
@@ -47,6 +47,7 @@ class EvolutionCenterViewModel(QObject):
         self_examination_service: Any | None = None,
         control_master_service: Any | None = None,
         control_master_digest_builder: Any | None = None,
+        github_remote_service: Any | None = None,
     ) -> None:
         super().__init__()
         self.dossier_repository = dossier_repository
@@ -66,6 +67,11 @@ class EvolutionCenterViewModel(QObject):
         self.self_examination_service = self_examination_service
         self.control_master_service = control_master_service
         self.control_master_digest_builder = control_master_digest_builder
+        # F2.2: el VM no decide rutas ni abre PRs por su cuenta; solo dispara
+        # el servicio ya existente (``GitHubRemoteService``) y expone el
+        # resultado como Property para que la UI lo muestre. Queda ``None``
+        # cuando el servicio no fue wireado (ej. tests headless).
+        self.github_remote_service = github_remote_service
         self._control_master_digest: dict[str, Any] = {}
         self._control_master_brief = 'Todavia no he consultado el control maestro desde esta vista.'
         self._working = False
@@ -98,6 +104,8 @@ class EvolutionCenterViewModel(QObject):
         self.ui_screenshot_service: Any | None = None
         self._recent_ui_screenshots: list[dict[str, Any]] = []
         self._latest_tool_status = 'Todavia no he probado ninguna herramienta desde esta vista.'
+        self._publish_pr_status = 'Todavia no he publicado ningun PR desde esta vista.'
+        self._publish_pr_result: dict[str, Any] = {}
         self._selected_dossier: dict[str, Any] = {}
         self._selected_incident: dict[str, Any] = {}
         self._pinned_dossier_selection = False
@@ -180,6 +188,12 @@ class EvolutionCenterViewModel(QObject):
 
     def get_latest_tool_status(self) -> str:
         return self._latest_tool_status
+
+    def get_publish_pr_status(self) -> str:
+        return self._publish_pr_status
+
+    def get_publish_pr_result(self) -> dict[str, Any]:
+        return self._publish_pr_result
 
     def get_selected_dossier(self) -> dict[str, Any]:
         return self._selected_dossier
@@ -544,6 +558,98 @@ class EvolutionCenterViewModel(QObject):
         self._status_text = 'Auditoria base de herramientas completada.'
         self.refresh()
 
+    @Slot(str, str, str, str, int, bool)
+    def publishBranchAsPR(
+        self,
+        branch: str,
+        title: str,
+        body: str,
+        base: str,
+        diff_lines: int,
+        draft: bool,
+    ) -> None:
+        """F2.2: dispara ``GitHubRemoteService.publish_branch_as_pr`` en un thread.
+
+        El VM no valida politica ni decide la ruta: la policy la aplica el
+        propio servicio (``AutonomyGovernancePolicy.allow_github_pr_open``).
+        Aca solo sanitizamos argumentos basicos y delegamos. El resultado
+        llega via ``taskResolved('publish_pr', ...)`` y se refleja en
+        ``publishPrStatus`` / ``publishPrResult`` como Property.
+        """
+
+        if self._working:
+            return
+        if self.github_remote_service is None:
+            self._publish_pr_status = (
+                'El servicio GitHubRemoteService no esta disponible en esta sesion.'
+            )
+            self.dataChanged.emit()
+            return
+        branch = (branch or '').strip()
+        title = (title or '').strip()
+        base = (base or 'main').strip() or 'main'
+        if not branch:
+            self._publish_pr_status = 'Falta el nombre de la rama para publicar el PR.'
+            self.dataChanged.emit()
+            return
+        if not title:
+            self._publish_pr_status = 'Falta el titulo del PR.'
+            self.dataChanged.emit()
+            return
+        normalized_diff: int | None = int(diff_lines) if diff_lines and diff_lines > 0 else None
+        self._working = True
+        self._status_text = f'Publicando rama "{branch}" como PR contra "{base}"...'
+        self._publish_pr_status = f'Publicando rama "{branch}" como PR contra "{base}"...'
+        self._publish_pr_result = {}
+        self.dataChanged.emit()
+
+        service = self.github_remote_service
+
+        def worker() -> None:
+            try:
+                result = service.publish_branch_as_pr(
+                    branch=branch,
+                    title=title,
+                    body=body or '',
+                    base=base,
+                    diff_lines=normalized_diff,
+                    draft=bool(draft),
+                )
+                payload = self._serialize_publish_result(result)
+                self.taskResolved.emit('publish_pr', payload)
+            except Exception as exc:  # pragma: no cover - defensivo
+                self.taskFailed.emit('publish_pr', str(exc))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    @staticmethod
+    def _serialize_publish_result(result: Any) -> dict[str, Any]:
+        """Convierte un ``PublishResult`` (dataclass) o dict en dict JSON-friendly."""
+
+        if isinstance(result, dict):
+            return dict(result)
+        payload: dict[str, Any] = {}
+        for field in (
+            'success',
+            'branch',
+            'base',
+            'pr_number',
+            'pr_url',
+            'http_status',
+            'pushed',
+            'blocked_by_policy',
+            'required_approval',
+            'approval_granted',
+            'error',
+            'evidence_path',
+        ):
+            if hasattr(result, field):
+                payload[field] = getattr(result, field)
+        extra = getattr(result, 'extra', None)
+        if isinstance(extra, Mapping):
+            payload['extra'] = dict(extra)
+        return payload
+
     @Slot()
     def copyLatestToolStatus(self) -> None:
         text = self._latest_tool_status or 'Todavia no he probado ninguna herramienta desde esta vista.'
@@ -711,6 +817,14 @@ class EvolutionCenterViewModel(QObject):
             self._working = False
             self.refresh()
             return
+        if task_name == 'publish_pr':
+            data = dict(payload) if isinstance(payload, Mapping) else {}
+            self._publish_pr_result = data
+            self._publish_pr_status = self._format_publish_pr_status(data)
+            self._status_text = self._publish_pr_status
+            self._working = False
+            self.dataChanged.emit()
+            return
         self._working = False
         self.dataChanged.emit()
 
@@ -718,7 +832,27 @@ class EvolutionCenterViewModel(QObject):
     def _apply_failure(self, task_name: str, message: str) -> None:
         self._working = False
         self._status_text = f'No pude completar {task_name}: {message}'
+        if task_name == 'publish_pr':
+            self._publish_pr_status = f'No pude publicar el PR: {message}'
+            self._publish_pr_result = {'success': False, 'error': message}
         self.dataChanged.emit()
+
+    @staticmethod
+    def _format_publish_pr_status(data: Mapping[str, Any]) -> str:
+        branch = data.get('branch') or '<sin-rama>'
+        if data.get('success'):
+            pr_number = data.get('pr_number')
+            pr_url = data.get('pr_url') or ''
+            if pr_number:
+                return f'PR #{pr_number} abierto para "{branch}". {pr_url}'.strip()
+            return f'PR abierto para "{branch}". {pr_url}'.strip()
+        if data.get('blocked_by_policy'):
+            reason = data.get('error') or 'policy rechazo la apertura del PR'
+            return f'Policy bloqueo la apertura del PR: {reason}'
+        if data.get('required_approval') and not data.get('approval_granted'):
+            return f'Se requiere aprobacion humana para publicar "{branch}" como PR.'
+        error = data.get('error') or 'error desconocido'
+        return f'No pude publicar "{branch}" como PR: {error}'
 
     working = Property(bool, get_working, notify=dataChanged)
     statusText = Property(str, get_status_text, notify=dataChanged)
@@ -744,6 +878,8 @@ class EvolutionCenterViewModel(QObject):
     proactiveDashboardBrief = Property(str, get_proactive_dashboard_brief, notify=dataChanged)
     recentUiScreenshots = Property(list, get_recent_ui_screenshots, notify=dataChanged)
     latestToolStatus = Property(str, get_latest_tool_status, notify=dataChanged)
+    publishPrStatus = Property(str, get_publish_pr_status, notify=dataChanged)
+    publishPrResult = Property('QVariant', get_publish_pr_result, notify=dataChanged)
     selectedDossier = Property(dict, get_selected_dossier, notify=dataChanged)
     selectedIncident = Property(dict, get_selected_incident, notify=dataChanged)
     evidencePreview = Property(str, get_evidence_preview, notify=dataChanged)

@@ -1202,6 +1202,7 @@ class AppBootstrap:
             self_examination_service=self.operational_self_examination_service,
             control_master_service=self.control_master_service,
             control_master_digest_builder=self.control_master_digest_builder,
+            github_remote_service=self.github_remote_service,
         )
         # Hook proactivo: el EvolutionCenter puede consultar el dashboard
         # para mostrar "que necesita del humano" al arrancar, sin romper
