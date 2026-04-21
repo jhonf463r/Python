@@ -205,6 +205,12 @@ Aprobacion humana obligatoria (no auto-mergear) cuando:
 - Agrega dependencias nuevas pesadas (ej: ``watchdog``, modelos grandes).
 
 Infra de arranque operativo para el usuario:
+- ``scripts/iabv_bootstrap.ps1``: **entry point zero-touch** para maquinas
+  / cuentas nuevas. Instala ``gh`` y ``cloudflared`` portable (sin winget,
+  sin admin) en ``$HOME\.iabv\tools``, corre ``setup_iabv_profile.ps1``,
+  corre ``rotate_tokens.ps1`` y arranca ``start_iabv.ps1``. Unico paso
+  manual: click "Authorize" en el browser durante el device-flow de GitHub.
+  Flags: ``-Force``, ``-NoStart``, ``-SkipInstalls``, ``-PrintTunnelUrl``.
 - ``scripts/iabv_secrets.template.ps1``: template de secretos locales.
 - ``scripts/setup_iabv_profile.ps1``: one-shot que deja ``$PROFILE`` y
   ``~/.iabv_secrets.ps1`` configurados; se corre una sola vez por maquina.
@@ -217,7 +223,10 @@ Infra de arranque operativo para el usuario:
   ``gh auth login --web`` (device-flow) para obtener el PAT de GitHub y
   ``Read-Host -AsSecureString`` para pegar la Devin API key una vez.
   Escribe ambos valores a ``$HOME\.iabv_secrets.ps1`` solo despues de
-  validarlos con HTTP 200 contra los endpoints reales.
+  validarlos con HTTP 200 contra los endpoints reales. Nota: ``gh auth
+  status`` escribe a stderr cuando no hay login; el script baja
+  ``$ErrorActionPreference`` localmente alrededor de esa llamada para no
+  matarse antes de leer el exit code.
 
 ## Forma De Trabajo En Sesiones Nuevas
 1. lee este archivo primero

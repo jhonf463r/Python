@@ -100,11 +100,21 @@ if ($SkipGitHub) {
     }
     Write-Ok "gh disponible: $($ghCmd.Source)"
 
-    # Chequeo si hace falta login.
+    # Chequeo si hace falta login. `gh auth status` escribe a stderr cuando no
+    # hay login, lo cual con $ErrorActionPreference='Stop' dispara un terminating
+    # error antes de que podamos leer $LASTEXITCODE. Bajamos el preference
+    # localmente y leemos solo el exit code.
     $needsLogin = $ForceGitHub
     if (-not $needsLogin) {
-        & gh auth status --hostname github.com *> $null
-        if ($LASTEXITCODE -ne 0) { $needsLogin = $true }
+        $prevEAP = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            & gh auth status --hostname github.com *> $null
+            $ghStatusExit = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $prevEAP
+        }
+        if ($ghStatusExit -ne 0) { $needsLogin = $true }
     }
 
     if ($needsLogin) {
