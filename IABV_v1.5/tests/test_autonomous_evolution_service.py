@@ -914,6 +914,91 @@ def test_autonomous_evolution_context_pack_includes_query_id_marker() -> None:
     finally:
         _cleanup_bootstrap(bootstrap)
 
+
+def test_context_pack_injects_bridge_metrics_for_wplay_bridge_lag() -> None:
+    bootstrap = _make_bootstrap('test_autonomous_evolution_bridge_metrics_workspace')
+    try:
+        payload = {
+            'intent': {'title': 'Abrir Wplay e iniciar sesion', 'intent_key': 'wplay.login', 'site_hint': 'wplay'},
+            'context': {
+                'site_id': 'wplay',
+                'session_readiness': {'dominant_incident': 'bridge_lag'},
+                'recent_incidents': [
+                    {
+                        'incident_kind': 'bridge_lag',
+                        'summary': 'La captura visible acumula retraso en el bridge.',
+                        'probable_cause': 'La cola de eventos crecio o hubo ciclos sin progreso visible.',
+                        'detail': 'Cola: 92 | ciclos sin progreso: 5',
+                        'affected_url': 'https://www.wplay.co/casino',
+                        'recent_urls': [
+                            'https://www.wplay.co/login',
+                            'https://www.wplay.co/',
+                            'https://www.wplay.co/casino',
+                        ],
+                        'metadata': {'queue_depth': 92, 'poll_without_progress_count': 5},
+                    }
+                ],
+                'live_audit': {'summary': 'Bridge lag persistente.'},
+            },
+            'probe_diagnosis': {'category': 'need_teaching', 'summary': 'Hace falta una ensenanza mas clara del hueco.'},
+            'metadata': {},
+        }
+        query = bootstrap.autonomous_evolution_service._build_incident_query(
+            payload=payload, pending_issue_id='issue-bridge-1'
+        )
+        context_pack = bootstrap.autonomous_evolution_service._build_context_pack(
+            assistant_kind='chatgpt',
+            payload=payload,
+            user_goal='explica por que Wplay no queda aprendido',
+            pending_issue_id='issue-bridge-1',
+            query=query,
+        )
+
+        # Antes del fix, ninguno de estos valores llegaba al prompt externo:
+        assert 'Metricas del incidente:' in context_pack
+        assert 'queue_depth=92' in context_pack
+        assert 'poll_without_progress_count=5' in context_pack
+        assert 'URL afectada: https://www.wplay.co/casino' in context_pack
+        assert 'URLs recientes:' in context_pack
+        assert 'https://www.wplay.co/login' in context_pack
+        assert 'Detalle del incidente: Cola: 92 | ciclos sin progreso: 5' in context_pack
+        assert 'Causa probable registrada:' in context_pack
+        # La linea de cierre del resumen sigue presente despues de las metricas:
+        assert 'Si identificas que este caso ya requiere parche tecnico' in context_pack
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_context_pack_omits_incident_evidence_when_no_recent_incidents() -> None:
+    bootstrap = _make_bootstrap('test_autonomous_evolution_no_incident_evidence_workspace')
+    try:
+        payload = {
+            'intent': {'title': 'Consulta general', 'intent_key': 'research.external_consultation'},
+            'context': {'site_id': '', 'recent_incidents': []},
+            'probe_diagnosis': {'category': 'need_teaching', 'summary': 'Sin evidencia adicional.'},
+            'metadata': {},
+        }
+        query = bootstrap.autonomous_evolution_service._build_incident_query(
+            payload=payload, pending_issue_id='issue-empty'
+        )
+        context_pack = bootstrap.autonomous_evolution_service._build_context_pack(
+            assistant_kind='chatgpt',
+            payload=payload,
+            user_goal='explicar caso generico',
+            pending_issue_id='issue-empty',
+            query=query,
+        )
+
+        # Sin incidentes -> no se inventan lineas de metricas ni urls
+        assert 'Metricas del incidente:' not in context_pack
+        assert 'URL afectada:' not in context_pack
+        assert 'URLs recientes:' not in context_pack
+        # Y el fallback de 'sin evidencia adicional' sigue funcionando
+        assert 'sin evidencia adicional' in context_pack
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
 def test_autonomous_evolution_service_respects_explicit_chatgpt_family_under_technical_pressure() -> None:
     bootstrap = _make_bootstrap('test_autonomous_evolution_service_explicit_chatgpt_family_workspace')
     try:

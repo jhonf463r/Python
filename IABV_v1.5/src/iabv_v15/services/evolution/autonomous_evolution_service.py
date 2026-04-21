@@ -986,9 +986,10 @@ class AutonomousEvolutionService:
                     f"Diagnostico actual: {str((payload.get('probe_diagnosis') or {}).get('summary') or live_audit.get('summary') or user_goal).strip()}",
                     f"Incidente dominante: {self._incident_kind(payload) or 'n/d'}",
                     f"Evidencia util: {', '.join(list((payload.get('evidence_refs') or []))[:4]) or 'sin evidencia adicional'}",
-                    'Si identificas que este caso ya requiere parche tecnico o cambio de repo, dilo explicitamente en el cambio recomendado.',
                 ]
             )
+            lines.extend(self._incident_evidence_lines(payload))
+            lines.append('Si identificas que este caso ya requiere parche tecnico o cambio de repo, dilo explicitamente en el cambio recomendado.')
             if packet.strip():
                 lines.append('Paquete tecnico complementario:')
                 lines.append(packet.strip())
@@ -1688,6 +1689,53 @@ class AutonomousEvolutionService:
         context = dict(payload.get('context') or {})
         intent = dict(payload.get('intent') or {})
         return str(context.get('site_id') or intent.get('site_hint') or '').strip()
+
+    def _incident_evidence_lines(self, payload: dict[str, Any]) -> list[str]:
+        """Extrae metricas concretas y urls del incidente dominante para el prompt externo.
+
+        Antes, el resumen solo listaba `evidence_refs` (ids), dejando al asistente sin senales
+        medibles (queue_depth, poll sin progreso, url afectada, etc.). Esta helper recupera esos
+        campos del primer `recent_incident` que matchea el incidente dominante para que la salida
+        no quede como "sin evidencia adicional".
+        """
+        context = dict(payload.get('context') or {})
+        recent = list(context.get('recent_incidents') or [])
+        if not recent:
+            return []
+        dominant = self._incident_kind(payload)
+        incident: dict[str, Any] | None = None
+        if dominant:
+            for item in recent:
+                if isinstance(item, dict) and str(item.get('incident_kind') or '').strip() == dominant:
+                    incident = item
+                    break
+        if incident is None:
+            first = recent[0]
+            incident = first if isinstance(first, dict) else None
+        if not incident:
+            return []
+        lines: list[str] = []
+        metadata = dict(incident.get('metadata') or {})
+        if metadata:
+            parts = []
+            for key in ('queue_depth', 'poll_without_progress_count', 'active_navigation_stall_seconds', 'heartbeat_count', 'max_unobserved_tab_age', 'finalize_elapsed_ms'):
+                if key in metadata and metadata.get(key) is not None:
+                    parts.append(f"{key}={metadata.get(key)}")
+            if parts:
+                lines.append(f"Metricas del incidente: {', '.join(parts)}")
+        affected_url = str(incident.get('affected_url') or '').strip()
+        if affected_url:
+            lines.append(f"URL afectada: {affected_url}")
+        recent_urls = [str(url).strip() for url in (incident.get('recent_urls') or []) if str(url).strip()]
+        if recent_urls:
+            lines.append(f"URLs recientes: {', '.join(recent_urls[:3])}")
+        detail = str(incident.get('detail') or '').strip()
+        if detail:
+            lines.append(f"Detalle del incidente: {detail}")
+        probable_cause = str(incident.get('probable_cause') or '').strip()
+        if probable_cause:
+            lines.append(f"Causa probable registrada: {probable_cause}")
+        return lines
 
     def _incident_kind(self, payload: dict[str, Any]) -> str:
         if payload.get('incident_kind'):
