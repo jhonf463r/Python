@@ -13,6 +13,21 @@ def _env_flag(name: str, default: bool) -> bool:
     return raw.strip().lower() in {'1', 'true', 'yes', 'on', 'si'}
 
 
+def _env_optional_flag(*names: str) -> bool | None:
+    """Devuelve ``True``/``False`` si alguna env está seteada; ``None`` si ninguna.
+
+    Usado por flags donde ``None`` significa "sin preferencia configurada, que
+    el servicio decida por sí mismo" (p. ej. el ``SynapticRouter`` sigue usando
+    su env propio como lectura en caliente cuando el override es ``None``).
+    """
+    for name in names:
+        raw = os.getenv(name)
+        if raw is None:
+            continue
+        return raw.strip().lower() in {'1', 'true', 'yes', 'on', 'si'}
+    return None
+
+
 def load_app_config(workspace_root: str | None = None) -> AppConfig:
     root = Path(workspace_root or Path.cwd()).resolve()
     data_dir = root / 'data'
@@ -48,6 +63,10 @@ def load_app_config(workspace_root: str | None = None) -> AppConfig:
         default_task_role=TaskRole(default_role),
         autonomous_evolution_enabled=_env_flag('IABV_AUTONOMOUS_EVOLUTION', True),
         autonomous_external_launch=_env_flag('IABV_AUTONOMOUS_EXTERNAL_LAUNCH', True),
+        synaptic_routing_enabled=_env_optional_flag(
+            'IABV_SYNAPTIC_ROUTING_ENABLED',
+            'SYNAPTIC_ROUTING',
+        ),
     )
 
 

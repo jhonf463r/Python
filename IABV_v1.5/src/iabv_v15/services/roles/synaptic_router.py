@@ -51,12 +51,31 @@ _AVAILABILITY_WHEN_UNKNOWN = 0.3
 _AVAILABILITY_WHEN_UNAVAILABLE = 0.0
 
 _FEATURE_FLAG_ENV = "SYNAPTIC_ROUTING"
+# Alias explícito con prefijo IABV_ para coherencia con el resto de flags del
+# repo (``IABV_AUTONOMOUS_EVOLUTION``, ``IABV_AUTONOMOUS_EXTERNAL_LAUNCH``…).
+# Si cualquiera de los dos está en "true" el flag se considera ON.
+_FEATURE_FLAG_ENV_ALIAS = "IABV_SYNAPTIC_ROUTING_ENABLED"
+
+_TRUTHY_FLAG_VALUES = {"1", "true", "yes", "on", "si"}
 
 
 def _feature_flag_enabled() -> bool:
-    """Lectura en caliente del flag; así los tests lo pueden togglear."""
+    """Lectura en caliente del flag; así los tests lo pueden togglear.
 
-    return os.environ.get(_FEATURE_FLAG_ENV, "false").strip().lower() == "true"
+    Soporta dos nombres de env:
+      * ``SYNAPTIC_ROUTING`` (nombre histórico),
+      * ``IABV_SYNAPTIC_ROUTING_ENABLED`` (alias con prefijo coherente).
+    Ambos aceptan ``"1"``/``"true"``/``"yes"``/``"on"``/``"si"`` (case-insensitive).
+    Si ambos están definidos, cualquiera encendido → ``True``.
+    """
+
+    for name in (_FEATURE_FLAG_ENV, _FEATURE_FLAG_ENV_ALIAS):
+        raw = os.environ.get(name)
+        if raw is None:
+            continue
+        if raw.strip().lower() in _TRUTHY_FLAG_VALUES:
+            return True
+    return False
 
 
 def _normalize_kind(value: str) -> str:
@@ -226,10 +245,22 @@ class SynapticRouter:
         capability_registry: AssistantCapabilityRegistry,
         adaptive_weight_layer: AdaptiveWeightLayer,
         world_model_provider: Callable[[], WorldModelSnapshot | None],
+        enabled_override: bool | None = None,
     ) -> None:
         self._registry = capability_registry
         self._weight_layer = adaptive_weight_layer
         self._world_model_provider = world_model_provider
+        # ``enabled_override`` viene de configuración persistente (``AppConfig``)
+        # y tiene precedencia sobre el env var salvo que esté en ``None`` (no
+        # configurado). Esto permite al usuario encender el router desde
+        # ``config`` sin exportar variables de entorno cada sesión, pero sigue
+        # dejando al env var como escape hatch en pruebas / sesiones efímeras.
+        self._enabled_override = enabled_override
+
+    def _routing_enabled(self) -> bool:
+        if self._enabled_override is not None:
+            return bool(self._enabled_override)
+        return _feature_flag_enabled()
 
     def decide(
         self,
@@ -238,7 +269,7 @@ class SynapticRouter:
         candidate_assistant_kinds: list[str] | None = None,
     ) -> SynapticRoutingDecision:
         task_kind_clean = (task_kind or "").strip()
-        routing_enabled = _feature_flag_enabled()
+        routing_enabled = self._routing_enabled()
 
         candidates = self._resolve_candidates(candidate_assistant_kinds)
         profiles = [

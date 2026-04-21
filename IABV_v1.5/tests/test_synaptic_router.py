@@ -22,6 +22,8 @@ from iabv_v15.services.roles.assistant_capability_registry import (
 from iabv_v15.services.roles.synaptic_router import (
     SynapticRouter,
     _FEATURE_FLAG_ENV,
+    _FEATURE_FLAG_ENV_ALIAS,
+    _feature_flag_enabled,
 )
 
 
@@ -352,3 +354,113 @@ def test_truly_unknown_task_kind_still_flags_unresolved(
     router = _router_with()
     decision = router.decide(task_kind="xx_truly_nonsense_kind_xx")
     assert "task_kind_unknown" in decision.unresolved_fields
+
+
+# ---------------------------------------------------------------------------
+# PR #4 — override explícito desde ``AppConfig`` + alias de env
+# ---------------------------------------------------------------------------
+
+
+def test_enabled_override_true_wins_over_env_off(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cuando ``enabled_override=True`` el router ignora el env var apagado."""
+    monkeypatch.delenv(_FEATURE_FLAG_ENV, raising=False)
+    monkeypatch.delenv(_FEATURE_FLAG_ENV_ALIAS, raising=False)
+    router = SynapticRouter(
+        capability_registry=_registry_with_profiles(),
+        adaptive_weight_layer=AdaptiveWeightLayer(),
+        world_model_provider=_empty_world_model,
+        enabled_override=True,
+    )
+    decision = router.decide(task_kind="code_generation")
+    assert decision.routing_enabled is True
+    assert decision.selected_assistant_kind == "codex"
+
+
+def test_enabled_override_false_wins_over_env_on(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``enabled_override=False`` desactiva aun con env var encendido."""
+    monkeypatch.setenv(_FEATURE_FLAG_ENV, "true")
+    router = SynapticRouter(
+        capability_registry=_registry_with_profiles(),
+        adaptive_weight_layer=AdaptiveWeightLayer(),
+        world_model_provider=_empty_world_model,
+        enabled_override=False,
+    )
+    decision = router.decide(task_kind="code_generation")
+    assert decision.routing_enabled is False
+    assert decision.selected_assistant_kind == ""
+
+
+def test_enabled_override_none_falls_back_to_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``enabled_override=None`` (default) preserva comportamiento previo."""
+    monkeypatch.setenv(_FEATURE_FLAG_ENV, "true")
+    router = _router_with()  # sin override explícito
+    decision = router.decide(task_kind="code_generation")
+    assert decision.routing_enabled is True
+
+
+def test_alias_env_var_turns_flag_on(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``IABV_SYNAPTIC_ROUTING_ENABLED=true`` también enciende el flag."""
+    monkeypatch.delenv(_FEATURE_FLAG_ENV, raising=False)
+    monkeypatch.setenv(_FEATURE_FLAG_ENV_ALIAS, "true")
+    assert _feature_flag_enabled() is True
+    router = _router_with()
+    decision = router.decide(task_kind="code_generation")
+    assert decision.routing_enabled is True
+
+
+def test_alias_env_var_accepts_common_truthy_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Alias acepta ``1``/``yes``/``on``/``si`` además de ``true``."""
+    monkeypatch.delenv(_FEATURE_FLAG_ENV, raising=False)
+    for truthy in ("1", "yes", "YES", "on", "Si", "true"):
+        monkeypatch.setenv(_FEATURE_FLAG_ENV_ALIAS, truthy)
+        assert _feature_flag_enabled() is True, f"value {truthy!r} should be truthy"
+
+
+def test_flag_off_when_both_envs_unset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv(_FEATURE_FLAG_ENV, raising=False)
+    monkeypatch.delenv(_FEATURE_FLAG_ENV_ALIAS, raising=False)
+    assert _feature_flag_enabled() is False
+
+
+def test_primary_env_on_dominates_alias_off(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Si uno de los dos envs está ``on``, el flag es ``on`` (OR lógico)."""
+    monkeypatch.setenv(_FEATURE_FLAG_ENV, "true")
+    monkeypatch.setenv(_FEATURE_FLAG_ENV_ALIAS, "false")
+    assert _feature_flag_enabled() is True
+
+
+def test_config_loader_exposes_synaptic_routing_enabled(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    """``load_app_config`` propaga el env var al ``AppConfig.synaptic_routing_enabled``."""
+    from iabv_v15.infra.config import load_app_config
+
+    # Caso 1: ninguno seteado → None (default).
+    monkeypatch.delenv(_FEATURE_FLAG_ENV, raising=False)
+    monkeypatch.delenv(_FEATURE_FLAG_ENV_ALIAS, raising=False)
+    cfg = load_app_config(str(tmp_path))
+    assert cfg.synaptic_routing_enabled is None
+
+    # Caso 2: alias explicit on.
+    monkeypatch.setenv(_FEATURE_FLAG_ENV_ALIAS, "1")
+    cfg = load_app_config(str(tmp_path))
+    assert cfg.synaptic_routing_enabled is True
+
+    # Caso 3: alias explicit off.
+    monkeypatch.setenv(_FEATURE_FLAG_ENV_ALIAS, "false")
+    cfg = load_app_config(str(tmp_path))
+    assert cfg.synaptic_routing_enabled is False

@@ -750,6 +750,9 @@ class AppBootstrap:
                     capability_registry=self.assistant_capability_registry,
                     adaptive_weight_layer=self.adaptive_weight_layer,
                     world_model_provider=_synaptic_world_model_provider,
+                    enabled_override=getattr(
+                        self.config, "synaptic_routing_enabled", None
+                    ),
                 )
             self.consensus_fusion_service = ConsensusFusionService(
                 adaptive_weight_layer=self.adaptive_weight_layer,
