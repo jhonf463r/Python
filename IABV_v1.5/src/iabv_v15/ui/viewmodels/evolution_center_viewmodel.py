@@ -86,6 +86,13 @@ class EvolutionCenterViewModel(QObject):
         self._tool_evolution_panel: dict[str, Any] = {}
         self._self_examination: dict[str, Any] = {}
         self._self_examination_brief = 'Todavia no he generado una autoexaminacion operativa desde esta vista.'
+        self._proactive_dashboard: dict[str, Any] = {}
+        self._proactive_dashboard_brief = 'Todavia no he consultado que necesita IABV del humano ahora.'
+        # Hook opcional: bootstrap setea este atributo despues del ctor.
+        # El VM no lo invoca si sigue siendo None.
+        self.proactive_dashboard_service: Any | None = None
+        self.human_approval_broker: Any | None = None
+        self.approval_memory: Any | None = None
         self._latest_tool_status = 'Todavia no he probado ninguna herramienta desde esta vista.'
         self._selected_dossier: dict[str, Any] = {}
         self._selected_incident: dict[str, Any] = {}
@@ -157,6 +164,12 @@ class EvolutionCenterViewModel(QObject):
 
     def get_self_examination_brief(self) -> str:
         return self._self_examination_brief
+
+    def get_proactive_dashboard(self) -> dict[str, Any]:
+        return self._proactive_dashboard
+
+    def get_proactive_dashboard_brief(self) -> str:
+        return self._proactive_dashboard_brief
 
     def get_latest_tool_status(self) -> str:
         return self._latest_tool_status
@@ -233,6 +246,11 @@ class EvolutionCenterViewModel(QObject):
         self._tool_evolution_panel = self._build_tool_evolution_panel(portable_context=portable_context, autonomous_validation=autonomous_validation)
         self._self_examination = self_examination
         self._self_examination_brief = str(self_examination.get('assistant_brief') or '').strip() or self._self_examination_brief
+        proactive_dashboard = self._build_proactive_dashboard()
+        self._proactive_dashboard = proactive_dashboard
+        dashboard_brief = self._format_proactive_dashboard_brief(proactive_dashboard)
+        if dashboard_brief:
+            self._proactive_dashboard_brief = dashboard_brief
         self._control_master_digest = control_master_digest
         control_master_brief = self._format_control_master_brief(control_master_digest)
         if control_master_brief:
@@ -262,6 +280,67 @@ class EvolutionCenterViewModel(QObject):
         if validation_summary:
             self._status_text = f'{self._status_text} | Validacion autonoma: {validation_summary}'
         self.dataChanged.emit()
+
+    def _build_proactive_dashboard(self) -> dict[str, Any]:
+        """Consulta `ProactiveDashboardService` si esta wired; caso contrario
+        devuelve `{}`. Serializa entries a dicts para consumo desde QML.
+
+        Respeta AGENTS.md: el VM no decide rutas, solo expone la foto que
+        produce el servicio. Si el servicio no esta wired no inventa datos.
+        """
+        service = getattr(self, 'proactive_dashboard_service', None)
+        if service is None:
+            return {}
+        try:
+            snapshot = service.snapshot()
+        except Exception:
+            return {}
+        entries: list[dict[str, Any]] = []
+        for entry in getattr(snapshot, 'entries', ()) or ():
+            entries.append(
+                {
+                    'entry_id': getattr(entry, 'entry_id', ''),
+                    'kind': getattr(entry, 'kind', ''),
+                    'title': getattr(entry, 'title', ''),
+                    'detail': getattr(entry, 'detail', ''),
+                    'severity': getattr(entry, 'severity', 'info'),
+                    'scope': dict(getattr(entry, 'scope', {}) or {}),
+                    'actionable': bool(getattr(entry, 'actionable', False)),
+                    'created_at_epoch': float(getattr(entry, 'created_at_epoch', 0.0) or 0.0),
+                }
+            )
+        return {
+            'generated_at_epoch': float(getattr(snapshot, 'generated_at_epoch', 0.0) or 0.0),
+            'pending_attention_count': int(getattr(snapshot, 'pending_attention_count', 0) or 0),
+            'learned_policies_count': int(getattr(snapshot, 'learned_policies_count', 0) or 0),
+            'entries': entries,
+        }
+
+    @staticmethod
+    def _format_proactive_dashboard_brief(dashboard: dict[str, Any]) -> str:
+        if not dashboard:
+            return ''
+        pending = int(dashboard.get('pending_attention_count') or 0)
+        policies = int(dashboard.get('learned_policies_count') or 0)
+        entries = list(dashboard.get('entries') or [])
+        if pending == 0 and policies == 0:
+            return 'IABV no requiere nada del humano ahora mismo.'
+        parts: list[str] = []
+        if pending:
+            parts.append(f'{pending} pendiente(s) de atencion')
+            top = next(
+                (
+                    e
+                    for e in entries
+                    if str(e.get('kind') or '') == 'approval_request'
+                ),
+                None,
+            )
+            if top and top.get('title'):
+                parts.append(f'proximo: {top["title"]}')
+        if policies:
+            parts.append(f'{policies} politica(s) aprendida(s)')
+        return ' | '.join(parts)
 
     @staticmethod
     def _format_control_master_brief(digest: dict[str, Any]) -> str:
@@ -629,6 +708,8 @@ class EvolutionCenterViewModel(QObject):
     toolEvolutionPanel = Property(dict, get_tool_evolution_panel, notify=dataChanged)
     selfExamination = Property(dict, get_self_examination, notify=dataChanged)
     selfExaminationBrief = Property(str, get_self_examination_brief, notify=dataChanged)
+    proactiveDashboard = Property(dict, get_proactive_dashboard, notify=dataChanged)
+    proactiveDashboardBrief = Property(str, get_proactive_dashboard_brief, notify=dataChanged)
     latestToolStatus = Property(str, get_latest_tool_status, notify=dataChanged)
     selectedDossier = Property(dict, get_selected_dossier, notify=dataChanged)
     selectedIncident = Property(dict, get_selected_incident, notify=dataChanged)

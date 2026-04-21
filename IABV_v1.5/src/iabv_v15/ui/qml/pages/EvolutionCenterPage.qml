@@ -23,6 +23,12 @@ Item {
     property string latestToolStatus: evolutionCenterViewModel ? evolutionCenterViewModel.latestToolStatus : ""
     property string incidentFilter: evolutionCenterViewModel ? evolutionCenterViewModel.incidentFilter : "all"
     property var statusCards: healthSnapshot.status_cards || []
+    // Gap #107: "que necesita IABV del humano ahora".
+    property var proactiveDashboard: evolutionCenterViewModel ? evolutionCenterViewModel.proactiveDashboard : ({})
+    property string proactiveDashboardBrief: evolutionCenterViewModel ? evolutionCenterViewModel.proactiveDashboardBrief : ""
+    property var proactiveEntries: proactiveDashboard.entries || []
+    property int proactivePendingCount: proactiveDashboard.pending_attention_count || 0
+    property int proactivePoliciesCount: proactiveDashboard.learned_policies_count || 0
 
     GlassPanel {
         anchors.fill: parent
@@ -139,6 +145,85 @@ Item {
                                             maximumLineCount: 2
                                             elide: Label.ElideRight
                                         }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Panel: "Que necesita IABV del humano ahora" (Gap #107).
+                // Consume `proactiveDashboard` del ViewModel. Se oculta cuando
+                // no hay pending ni politicas aprendidas (no ensucia UI).
+                Rectangle {
+                    id: proactivePanel
+                    width: parent.width
+                    radius: 18
+                    color: proactivePendingCount > 0 ? "#3a2a2a" : "#22313a"
+                    border.width: 1
+                    border.color: proactivePendingCount > 0 ? "#b5651d" : borderSoft
+                    visible: proactivePendingCount > 0 || proactivePoliciesCount > 0
+                    implicitHeight: proactiveCol.implicitHeight + 24
+
+                    Column {
+                        id: proactiveCol
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 8
+
+                        Label {
+                            text: proactivePendingCount > 0
+                                ? ("IABV necesita del humano (" + proactivePendingCount + ")")
+                                : "IABV no requiere atencion ahora"
+                            color: textPrimary
+                            font.family: titleFontFamily
+                            font.pixelSize: 16
+                            font.bold: true
+                        }
+                        Label {
+                            text: proactiveDashboardBrief
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 12
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                            visible: proactiveDashboardBrief.length > 0
+                        }
+                        Repeater {
+                            model: proactiveEntries.slice(0, 5)
+                            delegate: Rectangle {
+                                width: proactiveCol.width
+                                radius: 10
+                                color: "#2a3640"
+                                border.width: 1
+                                border.color: modelData.severity === "critical"
+                                    ? "#c77a3a"
+                                    : (modelData.severity === "attention" ? "#b5a53a" : borderSoft)
+                                implicitHeight: entryCol.implicitHeight + 16
+
+                                Column {
+                                    id: entryCol
+                                    anchors.fill: parent
+                                    anchors.margins: 10
+                                    spacing: 3
+
+                                    Label {
+                                        text: modelData.title
+                                        color: textPrimary
+                                        font.family: titleFontFamily
+                                        font.pixelSize: 13
+                                        font.bold: true
+                                        wrapMode: Label.WordWrap
+                                        width: parent.width
+                                    }
+                                    Label {
+                                        text: modelData.detail
+                                        color: textSecondary
+                                        font.family: bodyFontFamily
+                                        font.pixelSize: 11
+                                        wrapMode: Label.WordWrap
+                                        width: parent.width
+                                        visible: modelData.detail.length > 0
                                     }
                                 }
                             }
