@@ -50,9 +50,14 @@ class TestDevinApiAdapterIsAvailable:
         adapter = DevinApiToolAdapter(api_key='', org_id='org-123')
         assert adapter.is_available(_make_card()) is False
 
-    def test_unavailable_without_org_id(self) -> None:
+    def test_available_without_org_id(self) -> None:
+        # v1 API no usa org_id; Bearer identifica la org.
         adapter = DevinApiToolAdapter(api_key='cog_xxx', org_id='')
-        assert adapter.is_available(_make_card()) is False
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        with patch('iabv_v15.services.tools.tool_adapters.httpx') as mock_httpx:
+            mock_httpx.get.return_value = mock_response
+            assert adapter.is_available(_make_card()) is True
 
     def test_available_with_credentials_and_successful_api(self) -> None:
         adapter = DevinApiToolAdapter(api_key='cog_xxx', org_id='org-123')
@@ -63,7 +68,8 @@ class TestDevinApiAdapterIsAvailable:
             assert adapter.is_available(_make_card()) is True
             mock_httpx.get.assert_called_once()
             call_args = mock_httpx.get.call_args
-            assert 'org-123' in call_args[0][0]
+            # v1 endpoint real: /v1/sessions (Bearer token identifica la org).
+            assert call_args[0][0] == 'https://api.devin.ai/v1/sessions'
 
     def test_unavailable_when_api_returns_error(self) -> None:
         adapter = DevinApiToolAdapter(api_key='cog_xxx', org_id='org-123')
@@ -89,7 +95,7 @@ class TestDevinApiAdapterRun:
         adapter = DevinApiToolAdapter(api_key='', org_id='')
         result = adapter.run(_make_card(), _make_task())
         assert result['success'] is False
-        assert 'no configurados' in result['error_message']
+        assert 'no configurado' in result['error_message']
 
     def test_run_creates_session_and_polls(self) -> None:
         adapter = DevinApiToolAdapter(
@@ -123,9 +129,13 @@ class TestDevinApiAdapterRun:
 
         mock_httpx.post.assert_called_once()
         post_call = mock_httpx.post.call_args
-        assert 'org-123' in post_call[0][0]
+        assert post_call[0][0] == 'https://api.devin.ai/v1/sessions'
         body = post_call[1]['json']
         assert 'Fix bug #42' in body['prompt']
+
+        # poll usa /v1/session/{id} (singular, sin 's').
+        get_call = mock_httpx.get.call_args
+        assert get_call[0][0] == 'https://api.devin.ai/v1/session/sess-abc'
 
     def test_run_appends_context_pack_to_prompt(self) -> None:
         adapter = DevinApiToolAdapter(

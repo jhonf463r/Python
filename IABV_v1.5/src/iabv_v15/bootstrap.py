@@ -236,6 +236,7 @@ class AppBootstrap:
             'external_assistant': ExternalAssistantToolAdapter(),
             'devin_api': DevinApiToolAdapter(
                 api_key=os.environ.get('DEVIN_API_KEY', ''),
+                # DEVIN_ORG_ID ya no es requerido por v1; se mantiene para compat.
                 org_id=os.environ.get('DEVIN_ORG_ID', ''),
             ),
             'site_explorer': SiteExplorerToolAdapter(
