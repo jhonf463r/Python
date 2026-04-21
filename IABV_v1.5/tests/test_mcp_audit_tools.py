@@ -54,6 +54,22 @@ def test_resolve_workspace_path_rejects_absolute(tmp_path: Path) -> None:
     assert exc.value.code == "absolute_path_forbidden"
 
 
+def test_resolve_workspace_path_rejects_leading_slash_on_windows_like(tmp_path: Path) -> None:
+    """En Windows ``Path("/etc/passwd").is_absolute()`` devuelve False porque
+    el path no trae drive letter; aun así, el guard debe tratarlo como intento
+    de escape del workspace y devolver ``absolute_path_forbidden``.
+    """
+    # Simulamos el comportamiento en ambas plataformas: un path que arranca con
+    # "/" o "\" debe rechazarse igualmente con el mismo error code.
+    for candidate in ("/etc/passwd", "/usr/bin/python", "\\windows\\system32"):
+        with pytest.raises(AuditToolError) as exc:
+            resolve_workspace_path(tmp_path, candidate)
+        assert exc.value.code == "absolute_path_forbidden", (
+            f"expected 'absolute_path_forbidden' for {candidate!r}, "
+            f"got {exc.value.code!r}"
+        )
+
+
 def test_resolve_workspace_path_rejects_parent_traversal(tmp_path: Path) -> None:
     with pytest.raises(AuditToolError) as exc:
         resolve_workspace_path(tmp_path, "../outside")
