@@ -1353,3 +1353,61 @@ def test_orchestrator_propagates_routing_disabled_flag() -> None:
     assert payload is not None
     assert payload['routing_enabled'] is False
     assert 'feature flag off' in payload['reason'].lower()
+
+
+def test_enrich_assistant_guidance_maps_devin_correctly() -> None:
+    """R16-1: _enrich_assistant_guidance must map assistant_kind='devin' to
+    consult_devin, not fall through to consult_chatgpt."""
+    orchestrator, _ = _orchestrator(_workspace('adaptive_r16_devin_guidance'))
+    session = _minimal_session()
+    governance = {
+        'should_consult': True,
+        'assistant_kind': 'devin',
+        'should_replan': False,
+        'research_needed': False,
+    }
+    result = orchestrator._enrich_assistant_guidance(
+        session=session,
+        assistant_guidance={'actions': []},
+        governance=governance,
+    )
+    actions = result.get('actions', [])
+    action_ids = [item.get('action') for item in actions]
+    assert 'consult_devin' in action_ids, (
+        f"Expected 'consult_devin' in actions but got {action_ids} "
+        '(devin may be falling through to consult_chatgpt)'
+    )
+    assert 'consult_chatgpt' not in action_ids
+
+
+def test_enrich_assistant_guidance_maps_windsurf_correctly() -> None:
+    """R16-1: _enrich_assistant_guidance must map assistant_kind='windsurf' to
+    consult_windsurf, not fall through to consult_chatgpt."""
+    orchestrator, _ = _orchestrator(_workspace('adaptive_r16_windsurf_guidance'))
+    session = _minimal_session()
+    governance = {
+        'should_consult': True,
+        'assistant_kind': 'windsurf',
+        'should_replan': False,
+        'research_needed': False,
+    }
+    result = orchestrator._enrich_assistant_guidance(
+        session=session,
+        assistant_guidance={'actions': []},
+        governance=governance,
+    )
+    actions = result.get('actions', [])
+    action_ids = [item.get('action') for item in actions]
+    assert 'consult_windsurf' in action_ids, (
+        f"Expected 'consult_windsurf' in actions but got {action_ids}"
+    )
+    assert 'consult_chatgpt' not in action_ids
+
+
+def _minimal_session():
+    """Create an AdaptiveSession with minimal required fields for unit tests."""
+    from iabv_v15.domain.models import AdaptiveSession, TaskIntent
+    return AdaptiveSession(
+        user_goal='Test goal',
+        intent=TaskIntent(title='Test', intent_key='general.assistance'),
+    )
