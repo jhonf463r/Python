@@ -121,6 +121,7 @@ def _fixed_now(iso: str = "2026-04-20T01:23:45.678901+00:00") -> callable:
 
 
 from iabv_v15.infra.mcp.audit_tools.probe_assistant_login import (  # noqa: E402
+    NON_WEB_ASSISTANT_KINDS,
     PROVIDER_HEURISTICS,
     known_assistant_kinds,
     probe_assistant_login,
@@ -148,7 +149,7 @@ from iabv_v15.infra.mcp.audit_tools.probe_assistant_login import (  # noqa: E402
         ),
         (
             "codex",
-            "https://codex.openai.com/",
+            "https://chatgpt.com/codex",
             {'nav[aria-label*="history"]': True},
             "session_list_visible",
         ),
@@ -194,7 +195,7 @@ def test_probe_reports_logged_in_happy_path(
     [
         ("chatgpt", "https://chatgpt.com/auth/login"),
         ("claude", "https://claude.ai/login"),
-        ("codex", "https://codex.openai.com/auth/login"),
+        ("codex", "https://chatgpt.com/codex/auth/login"),
         ("gemini", "https://accounts.google.com/signin?continue=..."),
     ],
 )
@@ -500,4 +501,151 @@ def test_probe_shared_cdp_mode_uses_cdp_factory_default(monkeypatch: pytest.Monk
 
 
 def test_known_assistant_kinds_is_stable() -> None:
-    assert known_assistant_kinds() == ("chatgpt", "claude", "codex", "gemini")
+    # Incluye providers web primero, luego asistentes no-web. El orden
+    # es estable para que docs/tests puedan chequearlo por posición.
+    assert known_assistant_kinds() == (
+        "chatgpt",
+        "claude",
+        "codex",
+        "gemini",
+        "devin",
+        "windsurf",
+        "ollama",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Cloudflare challenge detection
+
+
+@pytest.mark.parametrize(
+    "page_title",
+    [
+        "Just a moment…",
+        "Un momento…",
+        "Please wait...",
+        "Attention Required! | Cloudflare",
+        "Checking your browser before accessing chatgpt.com",
+    ],
+)
+def test_probe_detects_cloudflare_challenge_by_title(page_title: str) -> None:
+    """Si la página devuelve un interstitial de Cloudflare por título,
+    el probe retorna ``logged_in=None`` + ``indeterminate=True`` en vez
+    de falsear ``logged_in=False``."""
+    page = _FakePage(
+        url="https://chatgpt.com/",
+        title=page_title,
+        markers={'nav[aria-label*="history"]': False},
+    )
+    controller = _FakeController(page)
+
+    result = probe_assistant_login(
+        "chatgpt",
+        controller_factory=lambda: controller,
+        now_utc=_fixed_now(),
+    )
+
+    assert result["assistant_kind"] == "chatgpt"
+    assert result["logged_in"] is None
+    assert result["indeterminate"] is True
+    assert result["reason"] == "cloudflare_challenge"
+    assert "page_title" in result["evidence"]
+    assert result["evidence"]["page_title"] == page_title
+    assert "challenge_marker" in result["evidence"]
+    assert result["evidence"]["challenge_marker"].startswith("title:")
+
+
+def test_probe_detects_cloudflare_challenge_by_dom_selector() -> None:
+    """Fallback de DOM: si falta título pero hay ``#challenge-form``,
+    igual marcamos ``cloudflare_challenge``."""
+    page = _FakePage(
+        url="https://claude.ai/",
+        title="",
+        markers={"#challenge-form": True},
+    )
+    controller = _FakeController(page)
+
+    result = probe_assistant_login(
+        "claude",
+        controller_factory=lambda: controller,
+        now_utc=_fixed_now(),
+    )
+
+    assert result["logged_in"] is None
+    assert result["reason"] == "cloudflare_challenge"
+    assert result["evidence"]["challenge_marker"] == "dom:#challenge-form"
+
+
+def test_probe_does_not_trip_cloudflare_on_normal_title() -> None:
+    """Un título normal (sin marker Cloudflare) no debe disparar el
+    branch de ``cloudflare_challenge``."""
+    page = _FakePage(
+        url="https://chatgpt.com/",
+        title="ChatGPT",
+        markers={'nav[aria-label*="history"]': True},
+    )
+    controller = _FakeController(page)
+
+    result = probe_assistant_login(
+        "chatgpt",
+        controller_factory=lambda: controller,
+        now_utc=_fixed_now(),
+    )
+
+    assert result["logged_in"] is True
+    assert result["reason"] == "nav_history_visible"
+    assert "indeterminate" not in result
+
+
+# ---------------------------------------------------------------------------
+# Asistentes no-web (devin, windsurf, ollama)
+
+
+@pytest.mark.parametrize("kind", ["devin", "windsurf", "ollama"])
+def test_probe_non_web_assistant_returns_not_applicable(kind: str) -> None:
+    """Los asistentes no-web deben retornar payload estructurado con
+    ``logged_in=None`` y ``reason=not_applicable_web_login`` en vez de
+    ``unknown_assistant_kind``. No se debe invocar Playwright."""
+    result = probe_assistant_login(kind, now_utc=_fixed_now())
+
+    assert result["assistant_kind"] == kind
+    assert result["logged_in"] is None
+    assert result["indeterminate"] is True
+    assert result["reason"] == "not_applicable_web_login"
+    assert "check_hint" in result
+    assert result["evidence"]["mode"] == "non_web"
+    assert result["evidence"]["url_target"] is None
+    assert "error" not in result
+
+
+@pytest.mark.parametrize(
+    ("alias", "canonical"),
+    [
+        ("devin_cloud", "devin"),
+        ("devin_api", "devin"),
+        ("windsurf_ide", "windsurf"),
+        ("ollama_local", "ollama"),
+        ("llm_local_ollama", "ollama"),
+    ],
+)
+def test_probe_resolves_non_web_aliases(alias: str, canonical: str) -> None:
+    result = probe_assistant_login(alias, now_utc=_fixed_now())
+    assert result["assistant_kind"] == canonical
+    assert result["reason"] == "not_applicable_web_login"
+
+
+def test_non_web_assistant_kinds_contract_is_stable() -> None:
+    # Cambiar estas claves rompe el contrato público del MCP audit.
+    assert set(NON_WEB_ASSISTANT_KINDS.keys()) == {"devin", "windsurf", "ollama"}
+    for info in NON_WEB_ASSISTANT_KINDS.values():
+        assert info.check_hint and info.detail  # sin placeholders vacíos
+
+
+# ---------------------------------------------------------------------------
+# Codex URL sanity (regresión del DNS roto de ``codex.openai.com``)
+
+
+def test_codex_provider_points_to_chatgpt_subpath() -> None:
+    """Codex dejó de resolver en ``codex.openai.com``; hoy vive bajo
+    ``chatgpt.com/codex``. Evitamos reintroducir la URL rota."""
+    assert PROVIDER_HEURISTICS["codex"].web_url == "https://chatgpt.com/codex"
