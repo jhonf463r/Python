@@ -1454,6 +1454,27 @@ class GitHubApiToolAdapter:
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         start = time.perf_counter()
+        try:
+            return self._run_action(card, task, sandbox=sandbox, start=start)
+        except Exception as exc:  # noqa: BLE001
+            return self._response(
+                success=False,
+                output_text='',
+                extracted_data={},
+                sandbox=sandbox,
+                tool_id=card.tool_id,
+                start=start,
+                error_message=f'{type(exc).__name__}: {exc}',
+            )
+
+    def _run_action(
+        self,
+        card: ToolCard,
+        task: ToolTask,
+        *,
+        sandbox: bool,
+        start: float,
+    ) -> dict[str, Any]:
         if httpx is None:
             return self._response(
                 success=False,
