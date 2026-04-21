@@ -234,7 +234,7 @@ from iabv_v15.services.self_teach.sandbox_experiment_service import SandboxExper
 from iabv_v15.services.self_teach.self_teach_orchestrator import SelfTeachOrchestrator
 from iabv_v15.infra.persistence.site_manual_repository import SiteManualRepository
 from iabv_v15.services.tools.site_exploration_service import SiteExplorationService
-from iabv_v15.services.tools.tool_adapters import AiderToolAdapter, DevinApiToolAdapter, DesktopHumanToolAdapter, ExternalAssistantToolAdapter, GitHubApiToolAdapter, MCPToolAdapter, OllamaToolAdapter, PlaywrightToolAdapter, ShellToolAdapter, SiteExplorerToolAdapter
+from iabv_v15.services.tools.tool_adapters import AiderToolAdapter, DevinApiToolAdapter, DesktopHumanToolAdapter, ExternalAssistantToolAdapter, GitHubApiToolAdapter, LocalCliToolAdapter, MCPToolAdapter, OllamaToolAdapter, PlaywrightToolAdapter, ShellToolAdapter, SiteExplorerToolAdapter
 from iabv_v15.services.tools.tool_approval_policy import ToolApprovalPolicy
 from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
 from iabv_v15.services.tools.interaction_mode_selector import InteractionModeSelector
@@ -392,6 +392,12 @@ class AppBootstrap:
                 self.site_exploration_service,
                 self.site_manual_repository,
             ),
+            # Adapter read-only compartido por los ToolCards de CLIs locales
+            # (``gh_cli``, ``cloudflared_cli``, ``git_cli``, ``winget_cli``).
+            # Un solo adapter registrado bajo ``local_cli`` atiende a los 4
+            # cards; cada card declara en su ``metadata`` el nombre del
+            # binario, los ``allowed_verbs`` y rutas Windows tipicas.
+            'local_cli': LocalCliToolAdapter(),
         }
         self.tool_validator = ToolValidator()
         self.tool_sandbox = ToolSandbox(self.tool_validator)
