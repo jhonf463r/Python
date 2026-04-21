@@ -37,12 +37,29 @@ import time
 import uuid
 from concurrent.futures import Future, TimeoutError as FutureTimeoutError
 from dataclasses import dataclass, field
-from typing import Callable, Mapping, Optional
+from typing import Callable, Mapping, Optional, Protocol
 
 
 PromptHandler = Callable[[dict], None]
 PreApprover = Callable[["ApprovalRequest"], Optional["ApprovalResult"]]
 PostResolveHandler = Callable[["ApprovalRequest", "ApprovalResult"], None]
+
+
+class _UIScreenshotCapturer(Protocol):
+    """Minimo contrato que el broker necesita para capturar evidencia visual.
+
+    Coincide con `UIScreenshotService.capture` pero se define como Protocol
+    para no introducir dependencia dura (el servicio de captura vive en
+    `services.capture` y no debe importarse aqui para evitar ciclos).
+    """
+
+    def capture(
+        self,
+        *,
+        source: str,
+        scope: Mapping[str, str] | None = None,
+        session_id: str | None = None,
+    ) -> object: ...
 
 
 # Reason codes estables. No inventar mas; ampliarlos si un caso real lo exige.
@@ -117,6 +134,7 @@ class HumanApprovalBroker:
         self._lock = threading.RLock()
         self._pending: dict[str, _PendingEntry] = {}
         self._clock = clock or time.time
+        self._ui_screenshot_capturer: Optional[_UIScreenshotCapturer] = None
 
     # ---- wiring ------------------------------------------------------
 
@@ -133,6 +151,19 @@ class HumanApprovalBroker:
         """
         with self._lock:
             self._pre_approver = pre_approver
+
+    def set_ui_screenshot_capturer(
+        self, capturer: Optional[_UIScreenshotCapturer]
+    ) -> None:
+        """Registra un servicio que guarde evidencia visual del prompt.
+
+        AGENTS.md: no es otro cerebro ni decisor; solo deja un PNG en
+        `data/evolution/ui_snapshots/` cada vez que IABV pide algo al humano,
+        para que la revision posterior pueda reconstruir que estaba en pantalla
+        en ese momento. Opcional; el broker sigue funcionando sin el.
+        """
+        with self._lock:
+            self._ui_screenshot_capturer = capturer
 
     def register_post_resolve_handler(self, handler: PostResolveHandler) -> None:
         """Observador invocado cuando una solicitud se resuelve (cualquier via).
@@ -200,6 +231,7 @@ class HumanApprovalBroker:
             handler = self._prompt_handler
 
         prompt_payload = self._build_prompt_payload(request)
+        self._capture_ui_snapshot(request)
         if handler is None:
             # Sin UI conectada no hay forma de pedir aprobacion: resolvemos
             # como timed_out inmediato para que el consumer no quede bloqueado.
@@ -330,6 +362,39 @@ class HumanApprovalBroker:
             payload=normalised_payload,
             payload_keys=payload_keys,
         )
+
+    def _capture_ui_snapshot(self, request: ApprovalRequest) -> None:
+        """Best-effort: nunca interrumpe el flujo de aprobacion.
+
+        Se dispara solo despues del pre_approver: si ApprovalMemory ya
+        resolvio la solicitud automaticamente no hay UI que fotografiar
+        (no hubo presencia humana). Si el capturer falla, solo se loggea.
+        """
+        with self._lock:
+            capturer = self._ui_screenshot_capturer
+        if capturer is None:
+            return
+        try:
+            scope = {
+                "trigger": "human_approval_request",
+                "request_id": request.request_id,
+                "approval_kind": request.kind,
+                "sensitive": "1" if request.sensitive else "0",
+            }
+            for key, value in request.scope.items():
+                if not isinstance(key, str) or not isinstance(value, str):
+                    continue
+                if key in scope:
+                    continue
+                scope[f"req.{key}"] = value
+            capturer.capture(source="approval_broker", scope=scope)
+        except Exception:
+            # Evidencia visual es "nice to have"; nunca debe tumbar al consumer.
+            import logging
+            logging.getLogger(__name__).exception(
+                "ui_screenshot capturer failed for approval request %s",
+                request.request_id,
+            )
 
     def _finalise_without_handler(self, request: ApprovalRequest) -> None:
         with self._lock:

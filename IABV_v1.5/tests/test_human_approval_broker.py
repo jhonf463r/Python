@@ -335,3 +335,133 @@ def test_broken_post_resolve_handler_does_not_break_request():
     assert result.approved is True
     # Observador bueno igual recibio el resultado pese al otro handler roto.
     assert len(ok_observed) == 1
+
+
+# ---- F1.2: UI screenshot capturer --------------------------------------
+
+
+class _FakeCapturer:
+    """Capturer in-memory para los tests de wiring (no toca disco).
+
+    Registra cada llamada a `capture` asi el test puede verificar scope y
+    source sin requerir un UIScreenshotService completo.
+    """
+
+    def __init__(self, raise_exc: Exception | None = None) -> None:
+        self.calls: list[dict] = []
+        self._raise_exc = raise_exc
+
+    def capture(
+        self,
+        *,
+        source: str,
+        scope=None,
+        session_id: str | None = None,
+    ) -> object:
+        self.calls.append(
+            {
+                "source": source,
+                "scope": dict(scope or {}),
+                "session_id": session_id,
+            }
+        )
+        if self._raise_exc is not None:
+            raise self._raise_exc
+        return object()
+
+
+def test_capturer_is_called_when_human_prompt_is_emitted():
+    broker = HumanApprovalBroker()
+    broker.register_prompt_handler(lambda payload: None)
+    capturer = _FakeCapturer()
+    broker.set_ui_screenshot_capturer(capturer)
+
+    worker = _start_approve_later(broker, payload={"token": "gh_pat"})
+    broker.request(
+        kind=KIND_CREDENTIAL_REQUEST,
+        reason="need token",
+        scope={"repo": "jhonf463r/Python"},
+        payload_schema=("token",),
+        sensitive=True,
+        timeout_s=2.0,
+    )
+    worker.join(timeout=2.0)
+
+    assert len(capturer.calls) == 1
+    call = capturer.calls[0]
+    assert call["source"] == "approval_broker"
+    scope = call["scope"]
+    assert scope["trigger"] == "human_approval_request"
+    assert scope["approval_kind"] == KIND_CREDENTIAL_REQUEST
+    assert scope["sensitive"] == "1"
+    assert "request_id" in scope
+    # El scope del request se proyecta con prefijo req.*
+    assert scope["req.repo"] == "jhonf463r/Python"
+
+
+def test_capturer_not_called_when_pre_approver_auto_resolves():
+    """ApprovalMemory auto-resolve no requiere presencia humana -> no captura."""
+    broker = HumanApprovalBroker()
+    broker.register_prompt_handler(lambda payload: None)
+    capturer = _FakeCapturer()
+    broker.set_ui_screenshot_capturer(capturer)
+
+    def pre(req: ApprovalRequest) -> ApprovalResult:
+        return ApprovalResult(
+            request_id=req.request_id,
+            approved=True,
+            auto_resolved=True,
+        )
+
+    broker.set_pre_approver(pre)
+
+    result = broker.request(
+        kind=KIND_MERGE_PR,
+        reason="pre-approved by memory",
+        scope={"repo": "jhonf463r/Python"},
+        timeout_s=1.0,
+    )
+
+    assert result.approved is True
+    assert result.auto_resolved is True
+    assert capturer.calls == []
+
+
+def test_capturer_exception_does_not_break_approval_flow():
+    broker = HumanApprovalBroker()
+    broker.register_prompt_handler(lambda payload: None)
+    capturer = _FakeCapturer(raise_exc=RuntimeError("provider blew up"))
+    broker.set_ui_screenshot_capturer(capturer)
+
+    worker = _start_approve_later(broker)
+    result = broker.request(
+        kind=KIND_LOGIN_REQUIRED,
+        reason="need login",
+        scope={"assistant": "chatgpt"},
+        timeout_s=2.0,
+    )
+    worker.join(timeout=2.0)
+
+    assert result.approved is True
+    # Se intento capturar aunque haya explotado.
+    assert len(capturer.calls) == 1
+
+
+def test_capturer_unset_is_safe():
+    """Sin capturer registrado el broker sigue emitiendo prompts normales."""
+    broker = HumanApprovalBroker()
+    broker.register_prompt_handler(lambda payload: None)
+    # set a capturer and then clear it:
+    broker.set_ui_screenshot_capturer(_FakeCapturer())
+    broker.set_ui_screenshot_capturer(None)
+
+    worker = _start_reject_later(broker)
+    result = broker.request(
+        kind=KIND_PERCEPTION_MISMATCH,
+        reason="ambiguous",
+        scope={"window": "chrome"},
+        timeout_s=2.0,
+    )
+    worker.join(timeout=2.0)
+
+    assert result.rejected is True

@@ -555,6 +555,13 @@ class AppBootstrap:
         self.ui_screenshot_service = UIScreenshotService(
             storage_dir=Path(self.config.evolution_dir) / 'ui_snapshots',
         )
+        # F1.2: cuando IABV necesita presencia humana, dejamos una foto del
+        # estado de la UI para que la revision posterior pueda reconstruir
+        # que estaba viendo el usuario. Best-effort; el broker sigue
+        # funcionando si la captura falla.
+        self.human_approval_broker.set_ui_screenshot_capturer(
+            self.ui_screenshot_service
+        )
         # Devin API adapter es opcional (requiere DEVIN_API_KEY). Si no esta
         # disponible, el briefing sigue siendo util como dato estructurado; las
         # callables devuelven strings vacios y el servicio marca UNRESOLVED en
