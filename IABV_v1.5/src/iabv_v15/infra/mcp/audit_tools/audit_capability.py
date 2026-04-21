@@ -501,9 +501,134 @@ def build_ui_execution_runner(
     return _run
 
 
+def build_domain_capability_runner(
+    capability_id: str,
+    *,
+    site_id: str | None = None,
+    readiness_provider: Callable[[str, str | None], Any | None],
+    clock: Callable[[], float] = time.monotonic,
+) -> Callable[..., CapabilityAuditResult]:
+    """Runner para capacidades de dominio (``wplay.*``, ``browser.search.google``,
+    ``browser.generic.navigation``).
+
+    A diferencia de los runners de infraestructura (Ollama, ChatGPT, browser_capture,
+    ui_execution) que ejecutan una sonda sintética, las capacidades de dominio se
+    miden por **evidencia aprendida**: el runner consulta a ``readiness_provider``
+    y reporta el ``CapabilityStatus`` del último snapshot persistido por
+    ``CapabilityReadinessService``.
+
+    Contrato del ``readiness_provider``:
+
+    * Recibe ``(capability_id, site_id)``.
+    * Devuelve el objeto ``CapabilityReadiness`` más reciente o ``None`` si nunca
+      se capturó evidencia para esa capacidad.
+    * No debe lanzar; si lanza, el runner lo captura y reporta
+      ``error="readiness_provider_raised"``.
+
+    Semántica del resultado:
+
+    * ``None`` o status ``INSUFFICIENT`` → ``error="capability_pack_not_captured"``
+      con pista explícita: falta TeachingStudio capture y registro en el
+      ``capability_runner_registry`` para emitir ``UniversalPerceptionSignal``.
+    * ``PARTIAL`` → ``error="capability_status_partial"`` + evidencia de qué
+      señales faltan.
+    * ``READY`` / ``READY_WITH_APPROVAL`` → ``success=True`` con preview del título
+      y score actual.
+
+    Este runner es el complemento físico del diagnóstico estructurado de
+    ``PendingIssueService`` y ``ResultComparator``: cuando ambos apunten al
+    mismo ``capability_id`` el operador sabe exactamente qué pieza instalar
+    (capture + runner) para desbloquear el escenario.
+    """
+
+    def _run(**_kwargs: Any) -> CapabilityAuditResult:
+        started = clock()
+        try:
+            readiness = readiness_provider(capability_id, site_id)
+        except Exception as exc:
+            return CapabilityAuditResult(
+                capability_id=capability_id,
+                executed=True,
+                success=False,
+                latency_ms=int(max(0.0, clock() - started) * 1000),
+                error="readiness_provider_raised",
+                evidence={"exception": f"{type(exc).__name__}: {exc}"},
+            )
+        elapsed_ms = int(max(0.0, clock() - started) * 1000)
+
+        if readiness is None:
+            return CapabilityAuditResult(
+                capability_id=capability_id,
+                executed=True,
+                success=False,
+                latency_ms=elapsed_ms,
+                error="capability_pack_not_captured",
+                output_preview="",
+                evidence={
+                    "site_id": site_id or "",
+                    "requires": (
+                        f"TeachingStudio capture + runner registrado para "
+                        f"'{capability_id}'; sin evidencia previa el pack "
+                        "sensible no puede emitir UniversalPerceptionSignal."
+                    ),
+                },
+            )
+
+        status_value = str(getattr(getattr(readiness, "status", None), "value", "") or "")
+        title = str(getattr(readiness, "title", "") or capability_id)
+        score = float(getattr(readiness, "score", 0.0) or 0.0)
+        evidence_items = list(getattr(readiness, "evidence", []) or [])
+        missing_signals = list(getattr(readiness, "missing_signals", []) or [])
+        suggested = str(getattr(readiness, "suggested_next_step", "") or "")
+        last_episode = str(getattr(readiness, "last_episode_id", "") or "")
+
+        base_evidence: dict[str, Any] = {
+            "site_id": site_id or getattr(readiness, "site_id", "") or "",
+            "status": status_value,
+            "score": score,
+            "evidence_preview": evidence_items[:4],
+            "missing_signals": missing_signals[:4],
+            "suggested_next_step": suggested,
+            "last_episode_id": last_episode,
+        }
+
+        if status_value in {"ready", "ready_with_approval"}:
+            return CapabilityAuditResult(
+                capability_id=capability_id,
+                executed=True,
+                success=True,
+                latency_ms=elapsed_ms,
+                output_preview=title,
+                evidence=base_evidence,
+            )
+        if status_value == "partial":
+            return CapabilityAuditResult(
+                capability_id=capability_id,
+                executed=True,
+                success=False,
+                latency_ms=elapsed_ms,
+                output_preview=title,
+                error="capability_status_partial",
+                evidence=base_evidence,
+            )
+        # INSUFFICIENT o valor desconocido: tratamos como pack no capturado.
+        return CapabilityAuditResult(
+            capability_id=capability_id,
+            executed=True,
+            success=False,
+            latency_ms=elapsed_ms,
+            output_preview=title,
+            error="capability_pack_not_captured",
+            evidence=base_evidence,
+        )
+
+    return _run
+
+
 __all__ = [
     "audit_capability",
     "build_browser_capture_runner",
+    "build_domain_capability_runner",
     "build_llm_external_runner",
     "build_llm_local_ollama_runner",
     "build_ui_execution_runner",

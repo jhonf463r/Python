@@ -592,9 +592,13 @@ class AppBootstrap:
         )
         from iabv_v15.infra.mcp.audit_tools.audit_capability import (
             build_browser_capture_runner,
+            build_domain_capability_runner,
             build_llm_external_runner,
             build_llm_local_ollama_runner,
             build_ui_execution_runner,
+        )
+        from iabv_v15.services.evolution.capability_audit_harness import (
+            DOMAIN_CAPABILITY_IDS,
         )
 
         self.capability_audit_harness = CapabilityAuditHarness()
@@ -658,6 +662,41 @@ class AppBootstrap:
             "ui_execution",
             build_ui_execution_runner(_ui_executor),
         )
+
+        # Frente 3.2b — Capacidades de dominio (Wplay + browser).
+        #
+        # El runner no ejecuta sondas externas ni consume red; lee el snapshot
+        # persistido por ``CapabilityReadinessService`` vía ``capability_repository``
+        # y reporta estado (``capability_pack_not_captured`` / ``partial`` / ``ready``).
+        # Esto cierra el gap que quedaba: ``audit_capability`` respondía
+        # ``capability_not_registered`` para ``wplay.login`` y afines, y el
+        # diagnóstico estructurado de PR #110 no tenía contraparte física.
+        _capability_site_map: dict[str, str | None] = {
+            "wplay.login": "wplay",
+            "wplay.session.restore": "wplay",
+            "wplay.navigate.casino": "wplay",
+            "browser.search.google": "google",
+            "browser.generic.navigation": None,
+        }
+
+        def _readiness_provider(capability_id: str, site_id: str | None) -> _Any:
+            repo = getattr(self, "capability_repository", None)
+            if repo is None:
+                return None
+            try:
+                return repo.get(capability_id, site_id)
+            except Exception:
+                return None
+
+        for _domain_capability_id in DOMAIN_CAPABILITY_IDS:
+            self.capability_audit_harness.register(
+                _domain_capability_id,
+                build_domain_capability_runner(
+                    _domain_capability_id,
+                    site_id=_capability_site_map.get(_domain_capability_id),
+                    readiness_provider=_readiness_provider,
+                ),
+            )
 
         # Frente 3.3 — PerceptionGroundTruthComparator.
         #
