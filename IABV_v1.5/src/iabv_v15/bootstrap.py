@@ -641,6 +641,29 @@ class AppBootstrap:
             approval_broker=self.human_approval_broker,
             evidence_dir=Path(self.config.evolution_dir) / 'pr_history',
         )
+        # F2.3 (thin): cuando ``AutonomousValidationCycleService`` promueve un
+        # candidato, ``PromotionPrPublisher`` escribe un markdown de traza en
+        # ``data/evolution/promoted/`` y abre un PR documental contra ``main``
+        # usando la rama ``iabv-auto/promote-<subject>-<ts>``. La policy
+        # existente auto-aprueba (``iabv-auto/*`` con diff <= 200) salvo que
+        # se configure lo contrario. Se deja en OFF por defecto via
+        # ``IABV_AUTO_PROMOTION_PR_ENABLED`` para no abrir PRs no deseados en
+        # instalaciones donde el ciclo arranca sin supervision.
+        from iabv_v15.services.self_teach.promotion_pr_publisher import (
+            PromotionPrPublisher,
+        )
+        _promo_enabled = str(
+            os.environ.get('IABV_AUTO_PROMOTION_PR_ENABLED', '0') or '0'
+        ).strip().lower() in {'1', 'true', 'yes', 'on'}
+        self.promotion_pr_publisher = PromotionPrPublisher(
+            repo_root=self.config.workspace_root,
+            github_remote_service=self.github_remote_service,
+            output_dir=Path(self.config.evolution_dir) / 'promoted',
+            enabled=_promo_enabled,
+        )
+        self.autonomous_validation_cycle.set_promotion_pr_publisher(
+            self.promotion_pr_publisher
+        )
         self.self_audit_service = SelfAuditService(
             tool_registry=self.tool_registry,
             environment_self_model_provider=self.environment_self_awareness_service.current_model,
