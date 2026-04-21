@@ -96,7 +96,7 @@ def checks_are_green(check_runs: list[dict[str, Any]]) -> tuple[bool, str]:
         if status != "completed":
             return False, f"check pendiente: {run.get('name')} [{status}]"
         conclusion = run.get("conclusion")
-        if conclusion not in ("success", "skipped", "neutral", None):
+        if conclusion not in ("success", "skipped", "neutral"):
             return False, f"check fallo: {run.get('name')} [{conclusion}]"
     return True, "all-green"
 
