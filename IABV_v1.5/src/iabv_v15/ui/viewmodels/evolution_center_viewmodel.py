@@ -93,6 +93,10 @@ class EvolutionCenterViewModel(QObject):
         self.proactive_dashboard_service: Any | None = None
         self.human_approval_broker: Any | None = None
         self.approval_memory: Any | None = None
+        # F1.1: captura de snapshots UI persistida. Setea bootstrap; el VM
+        # solo lee la foto (list_recent) y no persiste nada por su cuenta.
+        self.ui_screenshot_service: Any | None = None
+        self._recent_ui_screenshots: list[dict[str, Any]] = []
         self._latest_tool_status = 'Todavia no he probado ninguna herramienta desde esta vista.'
         self._selected_dossier: dict[str, Any] = {}
         self._selected_incident: dict[str, Any] = {}
@@ -170,6 +174,9 @@ class EvolutionCenterViewModel(QObject):
 
     def get_proactive_dashboard_brief(self) -> str:
         return self._proactive_dashboard_brief
+
+    def get_recent_ui_screenshots(self) -> list[dict[str, Any]]:
+        return self._recent_ui_screenshots
 
     def get_latest_tool_status(self) -> str:
         return self._latest_tool_status
@@ -251,6 +258,7 @@ class EvolutionCenterViewModel(QObject):
         dashboard_brief = self._format_proactive_dashboard_brief(proactive_dashboard)
         if dashboard_brief:
             self._proactive_dashboard_brief = dashboard_brief
+        self._recent_ui_screenshots = self._build_recent_ui_screenshots()
         self._control_master_digest = control_master_digest
         control_master_brief = self._format_control_master_brief(control_master_digest)
         if control_master_brief:
@@ -341,6 +349,30 @@ class EvolutionCenterViewModel(QObject):
         if policies:
             parts.append(f'{policies} politica(s) aprendida(s)')
         return ' | '.join(parts)
+
+    def _build_recent_ui_screenshots(self) -> list[dict[str, Any]]:
+        """Consulta `UIScreenshotService.list_recent` si esta wired.
+
+        Devuelve lista serializable a QML. Tolera ausencia del servicio y
+        cualquier excepcion (devuelve []). El VM no captura ni elimina;
+        solo expone la foto del servicio (contrato AGENTS.md).
+        """
+        service = getattr(self, 'ui_screenshot_service', None)
+        if service is None:
+            return []
+        try:
+            records = service.list_recent(limit=10)
+        except Exception:
+            return []
+        payload: list[dict[str, Any]] = []
+        for record in records or ():
+            try:
+                as_dict = record.as_dict() if hasattr(record, 'as_dict') else dict(record)
+            except Exception:
+                continue
+            if isinstance(as_dict, dict):
+                payload.append(as_dict)
+        return payload
 
     @staticmethod
     def _format_control_master_brief(digest: dict[str, Any]) -> str:
@@ -710,6 +742,7 @@ class EvolutionCenterViewModel(QObject):
     selfExaminationBrief = Property(str, get_self_examination_brief, notify=dataChanged)
     proactiveDashboard = Property(dict, get_proactive_dashboard, notify=dataChanged)
     proactiveDashboardBrief = Property(str, get_proactive_dashboard_brief, notify=dataChanged)
+    recentUiScreenshots = Property(list, get_recent_ui_screenshots, notify=dataChanged)
     latestToolStatus = Property(str, get_latest_tool_status, notify=dataChanged)
     selectedDossier = Property(dict, get_selected_dossier, notify=dataChanged)
     selectedIncident = Property(dict, get_selected_incident, notify=dataChanged)
