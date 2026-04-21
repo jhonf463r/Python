@@ -328,10 +328,16 @@ class UIExecutionRunner:
             title = action.target or str(action.parameters.get('window_title') or '')
             if not title:
                 raise RuntimeError('No recibi titulo de ventana para enfocar.')
-            if not self._focus_window(title):
+            bring_to_foreground = bool(
+                action.parameters.get('bring_to_foreground')
+                or action.parameters.get('requires_human')
+                or action.parameters.get('human_presence_required')
+            )
+            if not self._focus_window(title, bring_to_foreground=bring_to_foreground):
                 raise RuntimeError(f'No encontre una ventana compatible con: {title}')
             time.sleep(0.2)
-            return f'focus_window: {title}'
+            mode = 'foreground' if bring_to_foreground else 'background'
+            return f'focus_window: {title} ({mode})'
         if action.action_type in {ToolActionType.CLICK, ToolActionType.CLICK_POINT}:
             x, y = self._resolve_xy(action)
             self._user32.SetCursorPos(int(x), int(y))
@@ -644,13 +650,19 @@ class UIExecutionRunner:
             return True
         return os.name == 'nt' and not resolved.exists() and not any(token in str(target) for token in ('\\', '/', ':'))
 
-    def _wait_and_focus_any_window(self, titles: list[str], timeout_seconds: float) -> str:
+    def _wait_and_focus_any_window(
+        self,
+        titles: list[str],
+        timeout_seconds: float,
+        *,
+        bring_to_foreground: bool = False,
+    ) -> str:
         if not titles:
             return ''
         deadline = time.monotonic() + max(0.2, timeout_seconds)
         while time.monotonic() < deadline:
             for title in titles:
-                if self._focus_window(title):
+                if self._focus_window(title, bring_to_foreground=bring_to_foreground):
                     return title
             time.sleep(0.2)
         return ''
@@ -1136,13 +1148,30 @@ class UIExecutionRunner:
             time.sleep(0.2)
         return False
 
-    def _focus_window(self, title: str) -> bool:
+    # ShowWindow cmdShow constants (Win32):
+    #   SW_SHOW (5)     -> activate + show; pulls window to foreground
+    #   SW_SHOWNA (8)   -> show in current state without activating (background-safe)
+    _SW_SHOW = 5
+    _SW_SHOWNA = 8
+
+    def _focus_window(self, title: str, *, bring_to_foreground: bool = False) -> bool:
+        """Locate and surface a window by title.
+
+        By default (``bring_to_foreground=False``) the window is shown without
+        being activated (``SW_SHOWNA``) so automated probes/audits do not steal
+        focus from the human. Callers that legitimately need the user's
+        attention (login required, manual validation) must opt in with
+        ``bring_to_foreground=True`` to trigger ``SetForegroundWindow``.
+        """
         hwnd = self._find_window(title)
         if hwnd is None or self._user32 is None:
             return False
         try:
-            self._user32.ShowWindow(hwnd, 5)
-            self._user32.SetForegroundWindow(hwnd)
+            if bring_to_foreground:
+                self._user32.ShowWindow(hwnd, self._SW_SHOW)
+                self._user32.SetForegroundWindow(hwnd)
+            else:
+                self._user32.ShowWindow(hwnd, self._SW_SHOWNA)
             return True
         except Exception:
             return False

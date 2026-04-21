@@ -460,3 +460,141 @@ def test_ui_execution_runner_sets_clipboard_via_stdin_safe_command(monkeypatch) 
         assert calls[0]['input'] == 'texto seguro'.encode('utf-8')
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+class _FakeUser32:
+    """Minimal stub recording ShowWindow/SetForegroundWindow calls for focus tests."""
+
+    def __init__(self, hwnd: int = 42) -> None:
+        self._hwnd = hwnd
+        self.show_window_calls: list[tuple[int, int]] = []
+        self.set_foreground_calls: list[int] = []
+
+    # find_window machinery is patched separately in tests
+    def ShowWindow(self, hwnd: int, cmd_show: int) -> bool:
+        self.show_window_calls.append((int(hwnd), int(cmd_show)))
+        return True
+
+    def SetForegroundWindow(self, hwnd: int) -> bool:
+        self.set_foreground_calls.append(int(hwnd))
+        return True
+
+
+def _runner_with_fake_focus(root: Path, fake: _FakeUser32) -> UIExecutionRunner:
+    runner = UIExecutionRunner(str(root))
+    runner._user32 = fake  # type: ignore[assignment]
+    runner._find_window = lambda title: fake._hwnd  # type: ignore[assignment]
+    return runner
+
+
+def test_focus_window_background_by_default_does_not_call_set_foreground() -> None:
+    """Probes/audits must surface windows without stealing foreground focus.
+
+    Regression: the program previously forced ChatGPT/Claude/Codex windows to
+    the foreground during every audit. Default must be background-safe
+    (SW_SHOWNA, no SetForegroundWindow).
+    """
+    root = _workspace('focus_window_background_default')
+    try:
+        fake = _FakeUser32()
+        runner = _runner_with_fake_focus(root, fake)
+
+        assert runner._focus_window('chatgpt') is True
+
+        assert fake.show_window_calls == [(42, UIExecutionRunner._SW_SHOWNA)]
+        assert fake.set_foreground_calls == []
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_focus_window_foreground_opt_in_activates_and_raises_window() -> None:
+    """When the caller explicitly requires human attention, the window is activated."""
+    root = _workspace('focus_window_foreground_opt_in')
+    try:
+        fake = _FakeUser32()
+        runner = _runner_with_fake_focus(root, fake)
+
+        assert runner._focus_window('chatgpt', bring_to_foreground=True) is True
+
+        assert fake.show_window_calls == [(42, UIExecutionRunner._SW_SHOW)]
+        assert fake.set_foreground_calls == [42]
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_focus_window_action_defaults_to_background() -> None:
+    """FOCUS_WINDOW action without explicit flag keeps windows in background."""
+    root = _workspace('focus_window_action_default')
+    try:
+        fake = _FakeUser32()
+        runner = _runner_with_fake_focus(root, fake)
+        card = ToolCard(
+            tool_id='desktop_human_runner',
+            title='Desktop human runner',
+            tool_type=ToolType.CUSTOM,
+            adapter_key='desktop_human',
+            metadata={'workspace_root': str(root)},
+        )
+        action = ToolAction(
+            action_type=ToolActionType.FOCUS_WINDOW,
+            label='Enfocar ventana',
+            target='chatgpt',
+        )
+
+        result = runner._perform_real_action(action, card=card)
+
+        assert 'background' in result
+        assert fake.show_window_calls == [(42, UIExecutionRunner._SW_SHOWNA)]
+        assert fake.set_foreground_calls == []
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_focus_window_action_with_requires_human_raises_to_foreground() -> None:
+    """FOCUS_WINDOW with requires_human=True activates the window for human attention."""
+    root = _workspace('focus_window_action_requires_human')
+    try:
+        fake = _FakeUser32()
+        runner = _runner_with_fake_focus(root, fake)
+        card = ToolCard(
+            tool_id='desktop_human_runner',
+            title='Desktop human runner',
+            tool_type=ToolType.CUSTOM,
+            adapter_key='desktop_human',
+            metadata={'workspace_root': str(root)},
+        )
+        action = ToolAction(
+            action_type=ToolActionType.FOCUS_WINDOW,
+            label='Enfocar ventana login',
+            target='chatgpt',
+            parameters={'requires_human': True},
+        )
+
+        result = runner._perform_real_action(action, card=card)
+
+        assert 'foreground' in result
+        assert fake.show_window_calls == [(42, UIExecutionRunner._SW_SHOW)]
+        assert fake.set_foreground_calls == [42]
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_wait_and_focus_any_window_propagates_foreground_flag() -> None:
+    """_wait_and_focus_any_window must honor the background-by-default contract."""
+    root = _workspace('wait_focus_any_window_propagates')
+    try:
+        fake = _FakeUser32()
+        runner = _runner_with_fake_focus(root, fake)
+
+        runner._wait_and_focus_any_window(['claude'], timeout_seconds=0.01)
+        runner._wait_and_focus_any_window(['codex'], timeout_seconds=0.01, bring_to_foreground=True)
+
+        # first call: background (SW_SHOWNA, no SetForegroundWindow)
+        # second call: foreground (SW_SHOW + SetForegroundWindow)
+        assert fake.show_window_calls == [
+            (42, UIExecutionRunner._SW_SHOWNA),
+            (42, UIExecutionRunner._SW_SHOW),
+        ]
+        assert fake.set_foreground_calls == [42]
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
