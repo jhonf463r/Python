@@ -11,6 +11,61 @@ from iabv_v15.infra.config import load_app_config, load_theme_config
 from iabv_v15.infra.logging import configure_logging
 
 logger = logging.getLogger(__name__)
+
+
+def _devin_create_session(adapter, prompt: str) -> str:
+    """Crea una sesion en Devin via `DevinApiToolAdapter`.
+
+    Devuelve ``session_id`` o string vacio si falla. No raises: errores
+    se registran como log warning y el briefing marca UNRESOLVED en
+    lugar de fingir exito.
+    """
+    if adapter is None or not getattr(adapter, 'api_key', ''):
+        return ''
+    try:
+        import httpx  # local import: evitar imponer dep en tests headless
+    except Exception:
+        return ''
+    try:
+        resp = httpx.post(
+            adapter._sessions_url,
+            headers=adapter._headers(),
+            json={'prompt': str(prompt or '')},
+            timeout=30.0,
+        )
+        if resp.status_code not in (200, 201):
+            logger.warning('devin create session http=%s', resp.status_code)
+            return ''
+        body = resp.json()
+        return str(body.get('session_id') or body.get('id') or '')
+    except Exception as exc:
+        logger.warning('devin create session failed: %s', exc)
+        return ''
+
+
+def _devin_send_message(adapter, session_id: str, content: str) -> bool:
+    """Envia un mensaje a una sesion Devin. True si la API respondio 2xx."""
+    if adapter is None or not getattr(adapter, 'api_key', ''):
+        return False
+    if not session_id:
+        return False
+    try:
+        import httpx
+    except Exception:
+        return False
+    try:
+        resp = httpx.post(
+            f'{adapter.BASE_URL}/session/{session_id}/message',
+            headers=adapter._headers(),
+            json={'message': str(content or '')},
+            timeout=30.0,
+        )
+        return 200 <= resp.status_code < 300
+    except Exception as exc:
+        logger.warning('devin send message failed: %s', exc)
+        return False
+
+
 from iabv_v15.infra.persistence.adaptive_session_repository import AdaptiveSessionRepository
 from iabv_v15.infra.persistence.approval_checkpoint_repository import ApprovalCheckpointRepository
 from iabv_v15.infra.persistence.capability_repository import CapabilityRepository
@@ -84,8 +139,22 @@ from iabv_v15.services.evolution.mcp_bridge_service import (
     MCPBridgeService,
     build_mcp_bridge_service,
 )
+from iabv_v15.services.evolution.consensus_interpretation_service import (
+    ConsensusInterpretationService,
+)
+from iabv_v15.services.evolution.intent_scoped_briefing_service import (
+    IntentScopedBriefingService,
+)
 from iabv_v15.services.evolution.portable_context_service import PortableContextService
 from iabv_v15.services.evolution.self_audit_service import SelfAuditService
+from iabv_v15.services.evolution.session_start_briefing_service import (
+    SessionStartBriefingService,
+)
+from iabv_v15.services.security.approval_memory import ApprovalMemory
+from iabv_v15.services.security.human_approval_broker import HumanApprovalBroker
+from iabv_v15.services.security.proactive_dashboard_service import (
+    ProactiveDashboardService,
+)
 from iabv_v15.services.evolution.tool_discovery_service import ToolDiscoveryService
 from iabv_v15.services.evolution.tool_evolution_monitor import ToolEvolutionMonitor
 from iabv_v15.services.evolution.autonomous_evolution_service import AutonomousEvolutionService
@@ -465,6 +534,44 @@ class AppBootstrap:
             tool_discovery_service=self.tool_discovery_service,
             tool_evolution_monitor=self.tool_evolution_monitor,
             adaptive_session_repository=self.adaptive_session_repository,
+        )
+        # --- Security & evolution broker stack (PR #101-#106) ---
+        # Wiring minimo de los servicios que cierran el loop "el programa
+        # pide lo que necesita del humano y aprende de las aprobaciones".
+        # Cada servicio respeta las capas cerradas (P1-P4): no duplican
+        # WorldModel/PortableContext, no deciden rutas, no crean otro cerebro.
+        self.human_approval_broker = HumanApprovalBroker()
+        self.approval_memory = ApprovalMemory(
+            storage_path=Path(self.config.evolution_dir) / 'approvals' / 'policies.json',
+        )
+        self.proactive_dashboard_service = ProactiveDashboardService(
+            broker=self.human_approval_broker,
+            memory=self.approval_memory,
+        )
+        # Devin API adapter es opcional (requiere DEVIN_API_KEY). Si no esta
+        # disponible, el briefing sigue siendo util como dato estructurado; las
+        # callables devuelven strings vacios y el servicio marca UNRESOLVED en
+        # lugar de fingir exito.
+        _devin_api_adapter = self.tool_adapters.get('devin_api')
+        self.session_start_briefing_service = SessionStartBriefingService(
+            portable_context_service=self.portable_context_service,
+            session_creator=(
+                (lambda prompt: _devin_create_session(_devin_api_adapter, prompt))
+                if _devin_api_adapter is not None
+                else None
+            ),
+            message_sender=(
+                (lambda sid, content: _devin_send_message(_devin_api_adapter, sid, content))
+                if _devin_api_adapter is not None
+                else None
+            ),
+        )
+        self.intent_scoped_briefing_service = IntentScopedBriefingService(
+            session_start_briefing_service=self.session_start_briefing_service,
+        )
+        self.consensus_interpretation_service = ConsensusInterpretationService(
+            interpreters={},
+            human_approval_broker=self.human_approval_broker,
         )
         self.self_audit_service = SelfAuditService(
             tool_registry=self.tool_registry,
@@ -986,6 +1093,12 @@ class AppBootstrap:
             control_master_service=self.control_master_service,
             control_master_digest_builder=self.control_master_digest_builder,
         )
+        # Hook proactivo: el EvolutionCenter puede consultar el dashboard
+        # para mostrar "que necesita del humano" al arrancar, sin romper
+        # el contrato del ViewModel (attribute set, no constructor arg).
+        self.evolution_center_viewmodel.proactive_dashboard_service = self.proactive_dashboard_service
+        self.evolution_center_viewmodel.human_approval_broker = self.human_approval_broker
+        self.evolution_center_viewmodel.approval_memory = self.approval_memory
         self.knowledge_base_viewmodel = KnowledgeBaseViewModel(self.knowledge_repository)
         self.provider_settings_viewmodel = ProviderSettingsViewModel(self.provider_configs, self.role_router, self.embedding_service)
         self.run_history_viewmodel = RunHistoryViewModel(self.run_repository, self.execution_dossier_repository)
