@@ -35,6 +35,18 @@ DEFAULT_CAPABILITY_IDS: tuple[str, ...] = (
     "ui_execution",
 )
 
+# Capacidades de dominio (Wplay + browser) que dependen de evidencia aprendida
+# por TeachingStudio + CapabilityReadinessService. El runner NO ejecuta una
+# sonda sintética; consulta el snapshot persistido y reporta estado. Si nunca
+# se capturó, reporta ``capability_pack_not_captured``.
+DOMAIN_CAPABILITY_IDS: tuple[str, ...] = (
+    "wplay.login",
+    "wplay.session.restore",
+    "wplay.navigate.casino",
+    "browser.search.google",
+    "browser.generic.navigation",
+)
+
 
 @dataclass(frozen=True)
 class CapabilityAuditPolicy:
@@ -54,13 +66,20 @@ class CapabilityAuditPolicy:
     consumes_quota: bool = False
 
 
-# Políticas por defecto para las 5 capacidades iniciales.
+# Políticas por defecto para las 5 capacidades iniciales + capacidades de dominio.
+# Las de dominio no consumen red al sondear (sólo leen el snapshot persistido
+# de CapabilityReadinessService), así que ``requires_network=False``.
 DEFAULT_POLICIES: dict[str, CapabilityAuditPolicy] = {
     "llm_local_ollama": CapabilityAuditPolicy(requires_network=False),
     "llm_external_chatgpt": CapabilityAuditPolicy(requires_network=True, consumes_quota=True),
     "llm_external_claude": CapabilityAuditPolicy(requires_network=True, consumes_quota=True),
     "browser_capture": CapabilityAuditPolicy(requires_network=True),
     "ui_execution": CapabilityAuditPolicy(requires_network=False),
+    "wplay.login": CapabilityAuditPolicy(requires_network=False),
+    "wplay.session.restore": CapabilityAuditPolicy(requires_network=False),
+    "wplay.navigate.casino": CapabilityAuditPolicy(requires_network=False),
+    "browser.search.google": CapabilityAuditPolicy(requires_network=False),
+    "browser.generic.navigation": CapabilityAuditPolicy(requires_network=False),
 }
 
 
@@ -287,4 +306,5 @@ __all__ = [
     "CapabilityRunner",
     "DEFAULT_CAPABILITY_IDS",
     "DEFAULT_POLICIES",
+    "DOMAIN_CAPABILITY_IDS",
 ]

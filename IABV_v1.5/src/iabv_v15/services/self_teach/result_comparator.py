@@ -88,9 +88,44 @@ class ResultComparator:
             confidence = 0.83
         elif weak_capabilities or low_visual:
             category = DiagnosticCategory.NEED_TEACHING
-            summary = 'La app aun no tiene suficiente evidencia reciente para ejecutar esta tarea con confianza.'
-            cause = 'Todavia faltan pasos visibles, cobertura visual o una ensenanza mas limpia del flujo.'
-            confidence = 0.78
+            # Distinguir "falta de captura / runner no corrió" (INSUFFICIENT
+            # sin evidencia) vs. "captura débil" (PARTIAL con algún marker). En
+            # el primer caso el placeholder genérico no ayuda a nadie: el
+            # caller recibe "Todavia faltan pasos visibles" cuando el problema
+            # real es que NO hay ningún signal todavía (probablemente el
+            # capability runner no está registrado o no se ejecutó).
+            insufficient_items = [
+                item
+                for item in weak_capabilities
+                if item.status == CapabilityStatus.INSUFFICIENT
+            ]
+            evidence_present = bool(
+                session.evidence_refs
+                or any((item.evidence or []) for item in weak_capabilities)
+            )
+            if insufficient_items and not evidence_present and not low_visual:
+                lead = insufficient_items[0]
+                missing_ids = ", ".join(
+                    item.capability_id for item in insufficient_items[:3]
+                )
+                summary = (
+                    "La app no tiene ningún signal reciente para las "
+                    "capacidades requeridas; el runner o la captura nunca "
+                    "llegaron a emitir evidencia."
+                )
+                cause = (
+                    f"Capacidades en estado INSUFFICIENT sin evidencia "
+                    f"reciente ({missing_ids}). Probablemente el capability "
+                    f"runner de '{lead.capability_id}' no está registrado, "
+                    f"o el TeachingStudio no capturó el microflujo todavía. "
+                    f"Sin runner + captura previos, el pack sensible no "
+                    f"puede emitir UniversalPerceptionSignal."
+                )
+                confidence = 0.82
+            else:
+                summary = 'La app aun no tiene suficiente evidencia reciente para ejecutar esta tarea con confianza.'
+                cause = 'Todavia faltan pasos visibles, cobertura visual o una ensenanza mas limpia del flujo.'
+                confidence = 0.78
         elif missing_adapter:
             category = DiagnosticCategory.NEED_ADAPTER
             summary = 'La intencion y el plan ya estan bien, pero sigue faltando el adaptador operativo que ejecute la fase real.'
