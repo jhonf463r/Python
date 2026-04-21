@@ -1454,7 +1454,42 @@ class IABVMCPServer:
         if transport not in SUPPORTED_TRANSPORTS:
             raise ValueError(f"transport '{transport}' no soportado. Usa {sorted(SUPPORTED_TRANSPORTS)}")
         logger.info("IABV MCP server starting (transport=%s, name=%s)", transport, self.name)
+        self._log_github_api_adapter_status()
         self.mcp.run(transport=transport)
+
+    def _log_github_api_adapter_status(self) -> None:
+        """Diagnostica si ``github_api`` esta listo para ``github_remote_*``.
+
+        Si falta el token de GitHub, ``GitHubRemoteService`` puede pushear
+        la rama pero ``create_pr`` falla. Emitimos un log explicito al
+        arrancar asi el usuario no se entera solo cuando ya intento abrir
+        un PR autonomo y vio un 401.
+        """
+
+        adapters = getattr(self.container, "tool_adapters", None) or {}
+        adapter = adapters.get("github_api") if isinstance(adapters, dict) else None
+        token = getattr(adapter, "token", "") if adapter is not None else ""
+        repo = getattr(adapter, "repo", "") if adapter is not None else ""
+        if adapter is None:
+            logger.warning(
+                "github_api adapter no esta wired; github_remote_publish_branch_as_pr "
+                "solo podra pushear, no crear el PR."
+            )
+            return
+        if not token:
+            logger.warning(
+                "github_api sin token. Exporta uno de: "
+                "GITHUB_TOKEN_IABV (preferido), IABV_GITHUB_TOKEN, "
+                "GITHUB_TOKEN, GH_TOKEN. Sin token, github_api aparece "
+                "como 'missing' en run_self_audit y los PRs autonomos "
+                "fallan en create_pr."
+            )
+            return
+        logger.info(
+            "github_api adapter listo (repo=%s, token_len=%s).",
+            repo or "<no-repo>",
+            len(token),
+        )
 
 
 def create_server(container: Any | None = None, *, name: str = DEFAULT_SERVER_NAME) -> IABVMCPServer:

@@ -13,6 +13,36 @@ from iabv_v15.infra.logging import configure_logging
 logger = logging.getLogger(__name__)
 
 
+_GITHUB_TOKEN_ENV_VARS: tuple[str, ...] = (
+    'GITHUB_TOKEN_IABV',
+    'IABV_GITHUB_TOKEN',
+    'GITHUB_TOKEN',
+    'GH_TOKEN',
+)
+
+
+def _resolve_github_token(environ: dict[str, str] | None = None) -> str:
+    """Resuelve el PAT de GitHub para ``GitHubApiToolAdapter``.
+
+    Prioridad (orden): ``GITHUB_TOKEN_IABV``, ``IABV_GITHUB_TOKEN``,
+    ``GITHUB_TOKEN``, ``GH_TOKEN``. Devuelve string vacio si ninguno
+    tiene valor no-vacio. Aceptar varios nombres evita que el usuario
+    tenga que duplicar su PAT en la laptop: ``gh`` CLI y muchas CIs ya
+    exportan ``GITHUB_TOKEN`` por default, y antes el adapter quedaba
+    inservible ("missing" en ``run_self_audit``) aunque el token
+    estuviera disponible.
+    """
+
+    env = environ if environ is not None else os.environ
+    for name in _GITHUB_TOKEN_ENV_VARS:
+        value = env.get(name)
+        if value:
+            stripped = value.strip()
+            if stripped:
+                return stripped
+    return ''
+
+
 def _devin_create_session(adapter, prompt: str) -> str:
     """Crea una sesion en Devin via `DevinApiToolAdapter`.
 
@@ -310,7 +340,17 @@ class AppBootstrap:
                 org_id=os.environ.get('DEVIN_ORG_ID', ''),
             ),
             'github_api': GitHubApiToolAdapter(
-                token=os.environ.get('GITHUB_TOKEN_IABV', ''),
+                # El nombre primario historico es ``GITHUB_TOKEN_IABV``, pero
+                # aceptamos fallbacks comunes (``IABV_GITHUB_TOKEN``,
+                # ``GITHUB_TOKEN``, ``GH_TOKEN``) porque cuando el usuario
+                # arranca el MCP en su laptop ya tiene un PAT cargado como
+                # ``GITHUB_TOKEN`` para el ``gh`` CLI y no quiere duplicarlo
+                # a mano. Sin esta cadena, ``is_available`` devuelve False y
+                # ``run_self_audit`` reporta ``github_api [missing]`` aunque
+                # el token este disponible en el entorno. El orden preserva
+                # la intencion original: el scope dedicado a IABV gana si
+                # existe; si no, se cae al global.
+                token=_resolve_github_token(os.environ),
                 # repo scoped: evita que un token amplio haga cosas en
                 # repos no deseados; default al propio repo del proyecto.
                 repo=os.environ.get('GITHUB_REPO', 'jhonf463r/Python'),

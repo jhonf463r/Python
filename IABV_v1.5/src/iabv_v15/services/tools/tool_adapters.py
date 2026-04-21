@@ -1505,7 +1505,11 @@ class GitHubApiToolAdapter:
                 sandbox=sandbox,
                 tool_id=card.tool_id,
                 start=start,
-                error_message='GITHUB_TOKEN_IABV o GITHUB_REPO no configurados.',
+                error_message=(
+                    'GitHub token o GITHUB_REPO no configurados. '
+                    'Exporta GITHUB_TOKEN_IABV (preferido) o, en su '
+                    'defecto, IABV_GITHUB_TOKEN / GITHUB_TOKEN / GH_TOKEN.'
+                ),
             )
 
         metadata = task.metadata or {}
