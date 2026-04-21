@@ -1570,7 +1570,7 @@ class AutonomousEvolutionService:
     ) -> ExperimentDomain:
         technical_incidents = {'bridge_lag', 'navigation_stall', 'session_restore_weak', 'visual_alignment_weak', 'critical_object_missing'}
         technical_categories = {'need_codex_fix', 'need_adapter'}
-        if assistant_kind == 'codex' or diagnostic_category in technical_categories or incident_kind in technical_incidents or response_kind in {'code_fix', 'runtime_tuning'}:
+        if assistant_kind in {'codex', 'devin', 'windsurf'} or diagnostic_category in technical_categories or incident_kind in technical_incidents or response_kind in {'code_fix', 'runtime_tuning'}:
             return ExperimentDomain.CODE
         return ExperimentDomain.LANGUAGE
 
@@ -1578,7 +1578,7 @@ class AutonomousEvolutionService:
         tool_id = str(consultation.get('selected_tool_id') or consultation.get('tool_id') or '').strip()
         if tool_id in {'chatgpt_web_assisted', 'claude_web_assisted'}:
             return EvaluationRoute.UI
-        if assistant_kind == 'codex':
+        if assistant_kind in {'codex', 'devin', 'windsurf'}:
             return EvaluationRoute.CODE_AGENT
         if assistant_kind == 'ollama':
             return EvaluationRoute.LOCAL

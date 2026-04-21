@@ -1198,6 +1198,83 @@ def test_ensure_pending_issue_drops_live_audit_summary_from_text_fallbacks() -> 
 
 
 
+def test_consultation_evaluation_route_maps_devin_and_windsurf_to_code_agent() -> None:
+    """R19: devin and windsurf must map to CODE_AGENT, not FALLBACK.
+
+    Before this fix, _consultation_evaluation_route only handled codex as a
+    code agent. When governance recommended devin or windsurf, the route fell
+    through to FALLBACK, polluting ExperimentLab learning data with the wrong
+    evaluation route.
+    """
+    bootstrap = _make_bootstrap('test_autonomous_evolution_service_r19_route_workspace')
+    try:
+        service = bootstrap.autonomous_evolution_service
+
+        devin_route = service._consultation_evaluation_route(
+            assistant_kind='devin',
+            consultation={'selected_tool_id': 'devin_api'},
+        )
+        assert devin_route == EvaluationRoute.CODE_AGENT, (
+            f"devin mapped to {devin_route} instead of CODE_AGENT"
+        )
+
+        windsurf_route = service._consultation_evaluation_route(
+            assistant_kind='windsurf',
+            consultation={'selected_tool_id': 'windsurf_installed'},
+        )
+        assert windsurf_route == EvaluationRoute.CODE_AGENT, (
+            f"windsurf mapped to {windsurf_route} instead of CODE_AGENT"
+        )
+
+        # Existing mappings must still work
+        codex_route = service._consultation_evaluation_route(
+            assistant_kind='codex',
+            consultation={'selected_tool_id': 'codex_installed'},
+        )
+        assert codex_route == EvaluationRoute.CODE_AGENT
+
+        ollama_route = service._consultation_evaluation_route(
+            assistant_kind='ollama',
+            consultation={'selected_tool_id': 'ollama_llm'},
+        )
+        assert ollama_route == EvaluationRoute.LOCAL
+
+        chatgpt_route = service._consultation_evaluation_route(
+            assistant_kind='chatgpt',
+            consultation={'selected_tool_id': 'chatgpt_installed'},
+        )
+        assert chatgpt_route == EvaluationRoute.LANGUAGE_UNDERSTANDING
+
+        claude_route = service._consultation_evaluation_route(
+            assistant_kind='claude',
+            consultation={'selected_tool_id': 'claude_installed'},
+        )
+        assert claude_route == EvaluationRoute.LANGUAGE_UNDERSTANDING
+
+        # _consultation_experiment_domain must also classify devin/windsurf as CODE
+        devin_domain = service._consultation_experiment_domain(
+            assistant_kind='devin',
+            diagnostic_category='',
+            incident_kind='',
+            response_kind='explanation',
+        )
+        assert devin_domain == ExperimentDomain.CODE, (
+            f"devin domain mapped to {devin_domain} instead of CODE"
+        )
+
+        windsurf_domain = service._consultation_experiment_domain(
+            assistant_kind='windsurf',
+            diagnostic_category='',
+            incident_kind='',
+            response_kind='explanation',
+        )
+        assert windsurf_domain == ExperimentDomain.CODE, (
+            f"windsurf domain mapped to {windsurf_domain} instead of CODE"
+        )
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
 def test_ensure_pending_issue_preserves_real_diagnosis_and_reason() -> None:
     """H3 guard does not regress non-live-audit reasons.
 
