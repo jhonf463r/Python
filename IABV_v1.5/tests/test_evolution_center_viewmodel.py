@@ -756,3 +756,175 @@ def test_evolution_center_recent_ui_screenshots_empty_when_service_not_wired() -
         assert vm.get_recent_ui_screenshots() == []
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_evolution_center_publish_branch_as_pr_delegates_to_service() -> None:
+    """F2.2: el slot dispara el servicio en un thread y expone el resultado."""
+    import threading as _threading
+    from dataclasses import dataclass, field
+    from typing import Any as _Any, Mapping as _Mapping
+
+    @dataclass(frozen=True)
+    class _FakePublishResult:
+        success: bool = True
+        branch: str = ''
+        base: str = 'main'
+        pr_number: int | None = None
+        pr_url: str = ''
+        http_status: int | None = 201
+        pushed: bool = True
+        blocked_by_policy: bool = False
+        required_approval: bool = False
+        approval_granted: bool = False
+        error: str = ''
+        evidence_path: str = ''
+        extra: _Mapping[str, _Any] = field(default_factory=dict)
+
+    class _FakeGitHubRemoteService:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, _Any]] = []
+            self._done = _threading.Event()
+
+        def publish_branch_as_pr(self, **kwargs: _Any) -> _FakePublishResult:
+            self.calls.append(kwargs)
+            try:
+                return _FakePublishResult(
+                    success=True,
+                    branch=kwargs.get('branch', ''),
+                    base=kwargs.get('base', 'main'),
+                    pr_number=42,
+                    pr_url='https://github.com/jhonf463r/Python/pull/42',
+                    pushed=True,
+                )
+            finally:
+                self._done.set()
+
+        def wait(self, timeout: float = 5.0) -> bool:
+            return self._done.wait(timeout)
+
+    os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+    workspace = _workspace('test_evolution_center_publish_pr')
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    try:
+        bootstrap = AppBootstrap(str(workspace))
+        bootstrap._build_ui_objects()
+        vm = bootstrap.evolution_center_viewmodel
+        assert vm is not None
+        fake = _FakeGitHubRemoteService()
+        vm.github_remote_service = fake
+
+        vm.publishBranchAsPR(
+            'iabv-auto/test-f2-2',
+            'Test F2.2 PR',
+            'body here',
+            'main',
+            25,
+            False,
+        )
+        assert fake.wait(timeout=5.0), 'publish_branch_as_pr no fue invocado'
+
+        # Esperar a que el worker emita taskResolved y _apply_result corra.
+        # Qt Slots invocados desde un thread no-Qt se despachan via QueuedConnection;
+        # en modo offscreen el loop no corre, asi que invocamos _apply_result a mano
+        # con el payload serializado para validar el flujo de estado del VM.
+        assert len(fake.calls) == 1
+        call = fake.calls[0]
+        assert call['branch'] == 'iabv-auto/test-f2-2'
+        assert call['title'] == 'Test F2.2 PR'
+        assert call['body'] == 'body here'
+        assert call['base'] == 'main'
+        assert call['diff_lines'] == 25
+        assert call['draft'] is False
+
+        payload = vm._serialize_publish_result(
+            type(
+                '_R',
+                (),
+                dict(
+                    success=True,
+                    branch='iabv-auto/test-f2-2',
+                    base='main',
+                    pr_number=42,
+                    pr_url='https://github.com/jhonf463r/Python/pull/42',
+                    http_status=201,
+                    pushed=True,
+                    blocked_by_policy=False,
+                    required_approval=False,
+                    approval_granted=False,
+                    error='',
+                    evidence_path='',
+                ),
+            )(),
+        )
+        vm._apply_result('publish_pr', payload)
+        assert vm.get_publish_pr_result()['pr_number'] == 42
+        assert 'PR #42' in vm.get_publish_pr_status()
+        assert vm.get_working() is False
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_evolution_center_publish_branch_as_pr_requires_branch_and_title() -> None:
+    """F2.2: sin rama o titulo validos, el slot no invoca el servicio."""
+    import threading as _threading
+    from typing import Any as _Any
+
+    class _SpyService:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def publish_branch_as_pr(self, **kwargs: _Any) -> None:
+            self.calls += 1
+
+    os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+    workspace = _workspace('test_evolution_center_publish_pr_validation')
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    try:
+        bootstrap = AppBootstrap(str(workspace))
+        bootstrap._build_ui_objects()
+        vm = bootstrap.evolution_center_viewmodel
+        spy = _SpyService()
+        vm.github_remote_service = spy
+
+        vm.publishBranchAsPR('', 'titulo', 'body', 'main', 0, False)
+        assert 'Falta el nombre de la rama' in vm.get_publish_pr_status()
+
+        vm.publishBranchAsPR('iabv-auto/x', '  ', 'body', 'main', 0, False)
+        assert 'Falta el titulo' in vm.get_publish_pr_status()
+        assert spy.calls == 0
+
+        vm.github_remote_service = None
+        vm.publishBranchAsPR('iabv-auto/x', 'titulo', 'body', 'main', 0, False)
+        assert 'GitHubRemoteService' in vm.get_publish_pr_status()
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_evolution_center_publish_pr_status_formatter() -> None:
+    """F2.2: formateador de status cubre los caminos success / blocked / approval / error."""
+    os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+    workspace = _workspace('test_evolution_center_publish_pr_format')
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    try:
+        bootstrap = AppBootstrap(str(workspace))
+        bootstrap._build_ui_objects()
+        vm = bootstrap.evolution_center_viewmodel
+        fmt = vm._format_publish_pr_status
+
+        ok = fmt({'success': True, 'branch': 'iabv-auto/ok', 'pr_number': 7, 'pr_url': 'https://github.com/x/y/pull/7'})
+        assert 'PR #7' in ok
+        assert 'iabv-auto/ok' in ok
+
+        blocked = fmt({'success': False, 'blocked_by_policy': True, 'branch': 'devin/x', 'error': 'requires human approval'})
+        assert 'Policy bloqueo' in blocked
+
+        awaiting = fmt({'success': False, 'required_approval': True, 'approval_granted': False, 'branch': 'devin/x'})
+        assert 'aprobacion humana' in awaiting
+
+        err = fmt({'success': False, 'branch': 'iabv-auto/x', 'error': 'push failed'})
+        assert 'push failed' in err
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)

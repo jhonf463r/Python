@@ -82,6 +82,71 @@ Item {
                         text: "Ejecutar autodiagnostico"
                         onClicked: if (evolutionCenterViewModel) evolutionCenterViewModel.runDeepSelfCheck()
                     }
+                    AppButton {
+                        text: "Publicar cambio como PR"
+                        onClicked: publishPrDialog.open()
+                    }
+                }
+
+                // F2.2: panel de estado de publicacion de PR. Muestra la ultima
+                // salida de ``GitHubRemoteService.publish_branch_as_pr`` que
+                // dispara el slot ``publishBranchAsPR``. No es una vista de
+                // decision: solo refleja lo que el servicio reporto.
+                Rectangle {
+                    width: parent.width
+                    radius: 14
+                    color: "#1c2a33"
+                    border.width: 1
+                    border.color: borderSoft
+                    implicitHeight: publishPrColumn.implicitHeight + 24
+                    visible: evolutionCenterViewModel !== null
+
+                    Column {
+                        id: publishPrColumn
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 6
+
+                        Label {
+                            text: "Publicacion de PR autonoma"
+                            color: textPrimary
+                            font.family: titleFontFamily
+                            font.pixelSize: 16
+                            font.bold: true
+                        }
+                        Label {
+                            text: evolutionCenterViewModel ? evolutionCenterViewModel.publishPrStatus : ""
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 12
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+                        Label {
+                            id: publishPrEvidence
+                            function _prResult() {
+                                if (!evolutionCenterViewModel) return ({})
+                                return evolutionCenterViewModel.publishPrResult || ({})
+                            }
+                            visible: {
+                                var r = _prResult()
+                                return r && (r.evidence_path || r.pr_url)
+                            }
+                            text: {
+                                var r = _prResult()
+                                if (!r) return ""
+                                var parts = []
+                                if (r.pr_url) parts.push("URL: " + r.pr_url)
+                                if (r.evidence_path) parts.push("Evidencia: " + r.evidence_path)
+                                return parts.join("\n")
+                            }
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 11
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+                    }
                 }
 
                 Rectangle {
@@ -1134,6 +1199,98 @@ Item {
         visible: false
         onClarificationResponse: function(payload) {
             if (evolutionCenterViewModel) evolutionCenterViewModel.onClarificationResponse(payload)
+        }
+    }
+
+    // F2.2: dialogo modal para publicar una rama como PR via GitHubRemoteService.
+    // No hace validacion de policy ni decide rutas: solo recoge los campos y
+    // delega al slot del VM. La policy se evalua en el servicio.
+    Dialog {
+        id: publishPrDialog
+        title: "Publicar cambio como PR"
+        modal: true
+        focus: true
+        standardButtons: Dialog.Cancel | Dialog.Ok
+        anchors.centerIn: parent
+        width: Math.min(560, parent.width - 40)
+        property alias branchText: publishPrBranch.text
+        property alias titleText: publishPrTitle.text
+        property alias bodyText: publishPrBody.text
+        property alias baseText: publishPrBase.text
+        property alias diffLinesText: publishPrDiff.text
+        property alias draftChecked: publishPrDraft.checked
+
+        contentItem: Column {
+            spacing: 8
+            width: parent.width
+
+            Label {
+                text: "Rama local (debe existir y estar pusheada en remote)"
+                color: textSecondary
+                font.pixelSize: 12
+                wrapMode: Label.WordWrap
+                width: parent.width
+            }
+            TextField {
+                id: publishPrBranch
+                placeholderText: "iabv-auto/mi-cambio"
+                width: parent.width
+            }
+            Label { text: "Titulo del PR"; color: textSecondary; font.pixelSize: 12 }
+            TextField {
+                id: publishPrTitle
+                placeholderText: "feat: ..."
+                width: parent.width
+            }
+            Label { text: "Cuerpo (markdown, opcional)"; color: textSecondary; font.pixelSize: 12 }
+            TextArea {
+                id: publishPrBody
+                width: parent.width
+                height: 90
+                wrapMode: TextArea.Wrap
+            }
+            Row {
+                spacing: 10
+                width: parent.width
+                Column {
+                    spacing: 4
+                    Label { text: "Base"; color: textSecondary; font.pixelSize: 12 }
+                    TextField {
+                        id: publishPrBase
+                        text: "main"
+                        width: 140
+                    }
+                }
+                Column {
+                    spacing: 4
+                    Label { text: "Diff lines (opcional)"; color: textSecondary; font.pixelSize: 12 }
+                    TextField {
+                        id: publishPrDiff
+                        placeholderText: "0"
+                        inputMethodHints: Qt.ImhDigitsOnly
+                        width: 140
+                    }
+                }
+                CheckBox {
+                    id: publishPrDraft
+                    text: "Draft"
+                    checked: false
+                }
+            }
+        }
+
+        onAccepted: {
+            if (!evolutionCenterViewModel) return
+            var diff = parseInt(publishPrDiff.text, 10)
+            if (isNaN(diff) || diff < 0) diff = 0
+            evolutionCenterViewModel.publishBranchAsPR(
+                publishPrBranch.text,
+                publishPrTitle.text,
+                publishPrBody.text,
+                publishPrBase.text,
+                diff,
+                publishPrDraft.checked
+            )
         }
     }
 
