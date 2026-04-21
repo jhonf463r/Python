@@ -1,0 +1,19 @@
+{
+  "incident_id": "5a07b677-103b-4e19-8e75-2f56622de3ad",
+  "created_at_utc": "2026-04-21T01:43:52.965756Z",
+  "updated_at_utc": "2026-04-21T01:43:52.965758Z",
+  "episode_id": null,
+  "run_id": null,
+  "site_id": "wplay",
+  "incident_kind": "bridge_lag",
+  "severity": "medium",
+  "status": "open",
+  "summary": "Bridge atrasado durante captura de Wplay.",
+  "probable_cause": "",
+  "detail": "",
+  "affected_url": "",
+  "recent_urls": [],
+  "evidence_ids": [],
+  "signal_ids": [],
+  "metadata": {}
+}

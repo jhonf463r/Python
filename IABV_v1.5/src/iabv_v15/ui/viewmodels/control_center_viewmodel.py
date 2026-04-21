@@ -1162,6 +1162,8 @@ class ControlCenterViewModel(QObject):
             'chatgpt': 'ChatGPT',
             'claude': 'Claude',
             'ollama': 'Ollama',
+            'devin': 'Devin (Cognition AI)',
+            'windsurf': 'Windsurf',
         }.get(str(assistant_kind or '').strip().lower(), 'Asistente externo')
 
     def _assistant_kind_from_tool_id(self, tool_id: str) -> str:
@@ -1174,6 +1176,10 @@ class ControlCenterViewModel(QObject):
             return 'chatgpt'
         if normalized.startswith('ollama'):
             return 'ollama'
+        if normalized.startswith('devin'):
+            return 'devin'
+        if normalized.startswith('windsurf'):
+            return 'windsurf'
         return ''
 
     def _contains_internal_chat_terms(self, text: str) -> bool:
@@ -4743,6 +4749,10 @@ class ControlCenterViewModel(QObject):
             return self._run_external_consultation('claude', announce=announce)
         if action == 'consult_ollama':
             return self._run_external_consultation('ollama', announce=announce)
+        if action == 'consult_devin':
+            return self._run_external_consultation('devin', announce=announce)
+        if action == 'consult_windsurf':
+            return self._run_external_consultation('windsurf', announce=announce)
         if action == 'approve_observation_permission':
             return self._grant_pending_observation_permission(announce=announce)
         if action == 'run_self_test':
@@ -4848,6 +4858,14 @@ class ControlCenterViewModel(QObject):
             return self._run_external_consultation('codex', announce=True)
         if 'consultar chatgpt' in command or 'consulta chatgpt' in command or 'usar chatgpt' in command:
             return self._run_external_consultation('chatgpt', announce=True)
+        if 'consultar claude' in command or 'consulta claude' in command or 'usar claude' in command:
+            return self._run_external_consultation('claude', announce=True)
+        if 'consultar ollama' in command or 'consulta ollama' in command or 'usar ollama' in command:
+            return self._run_external_consultation('ollama', announce=True)
+        if 'consultar devin' in command or 'consulta devin' in command or 'usar devin' in command:
+            return self._run_external_consultation('devin', announce=True)
+        if 'consultar windsurf' in command or 'consulta windsurf' in command or 'usar windsurf' in command:
+            return self._run_external_consultation('windsurf', announce=True)
         if 'copiar paquete' in command:
             self.copyDevelopmentPacket()
             self._append_message('assistant', 'IABV', 'Paquete para Codex copiado al portapapeles.', 'Accion avanzada ejecutada por chat.')

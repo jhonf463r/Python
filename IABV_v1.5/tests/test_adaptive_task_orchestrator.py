@@ -1353,3 +1353,75 @@ def test_orchestrator_propagates_routing_disabled_flag() -> None:
     assert payload is not None
     assert payload['routing_enabled'] is False
     assert 'feature flag off' in payload['reason'].lower()
+
+
+def test_enrich_assistant_guidance_routes_devin_to_consult_devin() -> None:
+    # R21b: governance emits assistant_kind='devin' + should_consult=True, the
+    # orchestrator must produce a 'consult_devin' action (not fall through to
+    # consult_chatgpt). Regresion directa del hallazgo RED en PR #95.
+    orchestrator, _ = _orchestrator(_workspace('adaptive_enrich_devin'))
+
+    guidance = orchestrator._enrich_assistant_guidance(
+        session=None,  # _enrich_assistant_guidance no usa session en la rama consult
+        assistant_guidance={'actions': []},
+        governance={'should_consult': True, 'assistant_kind': 'devin'},
+    )
+
+    actions = guidance.get('actions') or []
+    assert any(item.get('action') == 'consult_devin' for item in actions), f'esperaba consult_devin en actions: {actions}'
+    # Y no debe haberse colado consult_chatgpt como fallback erroneo
+    assert not any(item.get('action') == 'consult_chatgpt' for item in actions), f'fallback incorrecto a ChatGPT: {actions}'
+    # Label debe mencionar Devin (Cognition AI)
+    devin_entry = next(item for item in actions if item.get('action') == 'consult_devin')
+    assert 'Devin' in devin_entry.get('label', '')
+
+
+def test_enrich_assistant_guidance_routes_windsurf_to_consult_windsurf() -> None:
+    # R21b: gobernanza emite assistant_kind='windsurf', el enricher debe
+    # producir 'consult_windsurf' y no caer a consult_chatgpt.
+    orchestrator, _ = _orchestrator(_workspace('adaptive_enrich_windsurf'))
+
+    guidance = orchestrator._enrich_assistant_guidance(
+        session=None,
+        assistant_guidance={'actions': []},
+        governance={'should_consult': True, 'assistant_kind': 'windsurf'},
+    )
+
+    actions = guidance.get('actions') or []
+    assert any(item.get('action') == 'consult_windsurf' for item in actions), f'esperaba consult_windsurf en actions: {actions}'
+    assert not any(item.get('action') == 'consult_chatgpt' for item in actions), f'fallback incorrecto a ChatGPT: {actions}'
+    windsurf_entry = next(item for item in actions if item.get('action') == 'consult_windsurf')
+    assert 'Windsurf' in windsurf_entry.get('label', '')
+
+
+def test_enrich_assistant_guidance_unknown_assistant_still_falls_back_to_chatgpt() -> None:
+    # Backward-compat: asistente desconocido sigue cayendo a consult_chatgpt
+    # (contrato previo: nunca dejar un should_consult sin accion visible).
+    orchestrator, _ = _orchestrator(_workspace('adaptive_enrich_unknown'))
+
+    guidance = orchestrator._enrich_assistant_guidance(
+        session=None,
+        assistant_guidance={'actions': []},
+        governance={'should_consult': True, 'assistant_kind': 'some-new-llm'},
+    )
+
+    actions = guidance.get('actions') or []
+    assert any(item.get('action') == 'consult_chatgpt' for item in actions)
+
+
+def test_enrich_assistant_guidance_codex_claude_ollama_unchanged() -> None:
+    # Regresion: las ramas previas (codex/claude/ollama) siguen funcionando.
+    orchestrator, _ = _orchestrator(_workspace('adaptive_enrich_preexisting'))
+
+    for kind, expected_action in (
+        ('codex', 'consult_codex'),
+        ('claude', 'consult_claude'),
+        ('ollama', 'consult_ollama'),
+    ):
+        guidance = orchestrator._enrich_assistant_guidance(
+            session=None,
+            assistant_guidance={'actions': []},
+            governance={'should_consult': True, 'assistant_kind': kind},
+        )
+        actions = guidance.get('actions') or []
+        assert any(item.get('action') == expected_action for item in actions), f'{kind} -> {expected_action} fallo: {actions}'

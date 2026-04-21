@@ -1,0 +1,14 @@
+{
+  "checkpoint_id": "50a5b149-493f-4253-b471-ef0b9105a490",
+  "session_id": "802a0e4a-cd02-4ec8-9866-d56637bdca88",
+  "playbook_id": "05dc406d-cf7a-4a19-aef5-a9f419ac7816",
+  "title": "Aprobar estrategia",
+  "detail": "Se propone Sesion Wplay con guardrails antes de pasar a la fase operativa.",
+  "decision": "pending",
+  "phase_key": "strategy",
+  "reason": "El flujo requiere confirmacion humana antes de seguir.",
+  "risk_level": "high",
+  "created_at_utc": "2026-04-21T01:43:50.037378Z",
+  "decided_at_utc": null,
+  "metadata": {}
+}

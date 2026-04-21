@@ -847,6 +847,14 @@ class AdaptiveTaskOrchestrator:
                 consult_action = 'consult_ollama'
                 consult_label = 'Consultar Ollama'
                 consult_detail = 'Resolver la consulta con la via local automatica antes de escalar a otra IA.'
+            elif assistant_kind == 'devin':
+                consult_action = 'consult_devin'
+                consult_label = 'Consultar Devin (Cognition AI)'
+                consult_detail = 'Delegar la siguiente iteracion a una sesion de Devin via API oficial.'
+            elif assistant_kind == 'windsurf':
+                consult_action = 'consult_windsurf'
+                consult_label = 'Consultar Windsurf'
+                consult_detail = 'Contrastar la estrategia con una sesion dedicada de Windsurf.'
             else:
                 consult_action = 'consult_chatgpt'
                 consult_label = 'Consultar ChatGPT'
