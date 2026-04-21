@@ -86,6 +86,18 @@ def test_checks_are_green_blocks_on_failure(auto_merge):
     assert "tests" in reason
 
 
+def test_checks_are_green_blocks_on_completed_with_null_conclusion(auto_merge):
+    # Per AGENTS.md policy a completed check must have success/skipped/neutral.
+    # A null conclusion in completed state is an anomalous response and must
+    # not be treated as green.
+    runs = [
+        {"name": "weird", "status": "completed", "conclusion": None},
+    ]
+    ok, reason = auto_merge.checks_are_green(runs)
+    assert ok is False
+    assert "weird" in reason
+
+
 def test_resolve_token_prefers_iabv(auto_merge, monkeypatch):
     monkeypatch.setenv("GITHUB_TOKEN_IABV", "first")
     monkeypatch.setenv("IABV_GITHUB_TOKEN", "second")
