@@ -1,0 +1,12 @@
+{
+  "profile_id": "wplay_teach",
+  "site_id": "wplay",
+  "mode": "cloned_profile",
+  "user_data_dir": "/home/ubuntu/jhonf463r-Python/IABV_v1.5/data/test_runs/profile_clone_95fc31a0610a41b7b7ad2108d3e7ce3a/profiles/wplay_teach",
+  "storage_state_path": "/home/ubuntu/jhonf463r-Python/IABV_v1.5/data/test_runs/profile_clone_95fc31a0610a41b7b7ad2108d3e7ce3a/states/wplay.json",
+  "source_user_data_dir": "/home/ubuntu/jhonf463r-Python/IABV_v1.5/data/test_runs/profile_clone_95fc31a0610a41b7b7ad2108d3e7ce3a/chrome_user_data",
+  "source_profile_dir": "Default",
+  "warning": "",
+  "healthy": false,
+  "health_detail": "Clon incompleto detectado. Conviene recrearlo como perfil IA fresco."
+}

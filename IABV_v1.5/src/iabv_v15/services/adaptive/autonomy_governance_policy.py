@@ -105,14 +105,17 @@ class AutonomyGovernancePolicy:
         if ci_status != 'success':
             return False, f"CI no esta en verde (ci_status={ci_status or 'desconocido'})."
 
-        reviews = pr_metadata.get('reviews') or []
-        if isinstance(reviews, list):
-            for review in reviews:
-                if not isinstance(review, dict):
-                    continue
-                state = str(review.get('state') or '').strip().upper()
-                if state == 'CHANGES_REQUESTED':
-                    return False, 'Hay un review con changes_requested: debe resolverse antes de mergear.'
+        reviews = pr_metadata.get('reviews')
+        if reviews is None:
+            return False, 'reviews ausente: sin evidencia de revisiones no se auto-mergea.'
+        if not isinstance(reviews, list):
+            return False, 'reviews no es una lista.'
+        for review in reviews:
+            if not isinstance(review, dict):
+                continue
+            state = str(review.get('state') or '').strip().upper()
+            if state == 'CHANGES_REQUESTED':
+                return False, 'Hay un review con changes_requested: debe resolverse antes de mergear.'
 
         additions = pr_metadata.get('additions')
         deletions = pr_metadata.get('deletions')
@@ -134,7 +137,9 @@ class AutonomyGovernancePolicy:
                 f'{self._GITHUB_MERGE_MAX_FILES_CHANGED}): requiere revision humana.'
             )
 
-        changed_paths = pr_metadata.get('changed_paths') or []
+        changed_paths = pr_metadata.get('changed_paths')
+        if changed_paths is None:
+            return False, 'changed_paths ausente: sin evidencia de rutas no se auto-mergea.'
         if not isinstance(changed_paths, list):
             return False, 'changed_paths no es una lista.'
         for raw_path in changed_paths:

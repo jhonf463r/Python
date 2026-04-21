@@ -1,0 +1,26 @@
+{
+  "recommendation_id": "33d84ee8-fc49-483d-ac80-31c145d01723",
+  "domain": "language",
+  "subject_key": "general",
+  "recommended_route": "language_understanding",
+  "recommended_assistant_kind": "",
+  "recommended_assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "",
+  "score": 0.82,
+  "confidence": 0.88,
+  "rationale": "La comprension de lenguaje local resuelve mejor este tipo de consultas.",
+  "supporting_run_ids": [],
+  "metadata": {},
+  "created_at_utc": "2026-04-21T01:06:09.831070Z"
+}

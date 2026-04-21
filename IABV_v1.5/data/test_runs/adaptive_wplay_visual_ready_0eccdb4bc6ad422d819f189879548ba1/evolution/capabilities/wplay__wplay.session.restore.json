@@ -1,0 +1,17 @@
+{
+  "capability_id": "wplay.session.restore",
+  "title": "Restauracion de sesion Wplay",
+  "status": "ready_with_approval",
+  "score": 0.76,
+  "site_id": "wplay",
+  "evidence": [
+    "Storage state y evidencias de login reutilizables detectadas."
+  ],
+  "missing_signals": [],
+  "last_episode_id": "60f9ae4a-34f8-4815-87b1-c1ff3f84debe",
+  "suggested_next_step": "Probar restauracion de sesion o dejar la fase como login guiado con aprobacion.",
+  "metadata": {
+    "visual_alignment_score": 1.0,
+    "login_visual_completeness": 1.0
+  }
+}

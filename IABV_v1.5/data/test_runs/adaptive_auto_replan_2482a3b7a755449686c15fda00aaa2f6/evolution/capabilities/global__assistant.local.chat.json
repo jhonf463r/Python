@@ -1,0 +1,14 @@
+{
+  "capability_id": "assistant.local.chat",
+  "title": "Chat adaptativo local",
+  "status": "ready",
+  "score": 0.9,
+  "site_id": null,
+  "evidence": [
+    "La capacidad depende principalmente del stack local y del contexto ya disponible."
+  ],
+  "missing_signals": [],
+  "last_episode_id": null,
+  "suggested_next_step": "Seguir con la estrategia propuesta.",
+  "metadata": {}
+}

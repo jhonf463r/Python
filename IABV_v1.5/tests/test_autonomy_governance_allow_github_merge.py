@@ -139,6 +139,94 @@ def test_allow_github_merge_blocks_missing_additions_field() -> None:
     assert reason is not None and 'Diff size' in reason
 
 
+def test_allow_github_merge_blocks_missing_reviews_field() -> None:
+    # El contrato dice: campo ausente => bloqueo. Si el caller no pasa
+    # reviews no podemos decir que no hay changes_requested.
+    policy = AutonomyGovernancePolicy()
+    meta = _ok_metadata()
+    meta.pop('reviews')
+
+    allowed, reason = policy.allow_github_merge(pr_metadata=meta)
+
+    assert allowed is False
+    assert reason is not None and 'reviews' in reason.lower()
+
+
+def test_allow_github_merge_blocks_reviews_explicit_none() -> None:
+    policy = AutonomyGovernancePolicy()
+    meta = _ok_metadata()
+    meta['reviews'] = None
+
+    allowed, reason = policy.allow_github_merge(pr_metadata=meta)
+
+    assert allowed is False
+    assert reason is not None and 'reviews' in reason.lower()
+
+
+def test_allow_github_merge_blocks_reviews_wrong_type() -> None:
+    policy = AutonomyGovernancePolicy()
+    meta = _ok_metadata()
+    meta['reviews'] = 'APPROVED'
+
+    allowed, reason = policy.allow_github_merge(pr_metadata=meta)
+
+    assert allowed is False
+    assert reason is not None
+
+
+def test_allow_github_merge_accepts_empty_reviews_list() -> None:
+    # Lista vacia es evidencia explicita de "cero reviews existentes"
+    # (distinto de ausente). El resto de los gates deciden.
+    policy = AutonomyGovernancePolicy()
+    meta = _ok_metadata()
+    meta['reviews'] = []
+
+    allowed, reason = policy.allow_github_merge(pr_metadata=meta)
+
+    assert allowed is True
+    assert reason is None
+
+
+def test_allow_github_merge_blocks_missing_changed_paths_field() -> None:
+    # El red finding original: sin changed_paths no podiamos verificar rutas
+    # sensibles ni tests => habia que bloquear, no permitir silenciosamente.
+    policy = AutonomyGovernancePolicy()
+    meta = _ok_metadata()
+    meta.pop('changed_paths')
+
+    allowed, reason = policy.allow_github_merge(pr_metadata=meta)
+
+    assert allowed is False
+    assert reason is not None and 'changed_paths' in reason.lower()
+
+
+def test_allow_github_merge_blocks_changed_paths_explicit_none() -> None:
+    policy = AutonomyGovernancePolicy()
+    meta = _ok_metadata()
+    meta['changed_paths'] = None
+
+    allowed, reason = policy.allow_github_merge(pr_metadata=meta)
+
+    assert allowed is False
+    assert reason is not None and 'changed_paths' in reason.lower()
+
+
+def test_allow_github_merge_accepts_empty_changed_paths_list() -> None:
+    # Lista vacia es evidencia explicita (p.ej. PR con solo merge commit).
+    # Puede parecer raro, pero es estado valido y no cambia rutas sensibles.
+    policy = AutonomyGovernancePolicy()
+    meta = _ok_metadata()
+    meta['changed_paths'] = []
+    meta['changed_files'] = 0
+    meta['additions'] = 0
+    meta['deletions'] = 0
+
+    allowed, reason = policy.allow_github_merge(pr_metadata=meta)
+
+    assert allowed is True
+    assert reason is None
+
+
 def test_allow_github_merge_blocks_sensitive_path_bootstrap() -> None:
     policy = AutonomyGovernancePolicy()
     meta = _ok_metadata()

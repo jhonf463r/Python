@@ -1,0 +1,12 @@
+{
+  "profile_id": "iabv_ai_test",
+  "site_id": "test",
+  "mode": "fresh_profile",
+  "user_data_dir": "/home/ubuntu/jhonf463r-Python/IABV_v1.5/data/test_runs/profile_recreate_af609912dca942bda0bb4e64832c97fb/profiles/iabv_ai_test",
+  "storage_state_path": "/home/ubuntu/jhonf463r-Python/IABV_v1.5/data/test_runs/profile_recreate_af609912dca942bda0bb4e64832c97fb/states/test.json",
+  "source_user_data_dir": null,
+  "source_profile_dir": null,
+  "warning": "",
+  "healthy": true,
+  "health_detail": "Perfil IA fresco y vacio. Abrelo una vez para iniciar sesion manualmente."
+}
