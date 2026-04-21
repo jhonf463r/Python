@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections import Counter
 from dataclasses import dataclass
 
@@ -266,12 +267,13 @@ class InteractionModeSelector:
 
     def _desired_modes(self, request: InferenceRequest) -> list[InteractionMode]:
         text = request.user_goal.lower()
+        words = set(re.split(r'\W+', text)) - {''}
         modes: list[InteractionMode] = []
-        if any(token in text for token in ['http://', 'https://', 'pagina', 'p?gina', 'url', 'click', 'clic', 'playwright', 'captura']):
+        if 'http://' in text or 'https://' in text or words & {'pagina', 'página', 'url', 'click', 'clic', 'playwright', 'captura'}:
             modes.append(InteractionMode.UI)
-        if any(token in text for token in ['mcp', 'api', 'endpoint', 'post ', 'get ', 'graphql']):
+        if words & {'mcp', 'api', 'endpoint', 'graphql'} or 'post ' in text or 'get ' in text:
             modes.append(InteractionMode.API)
-        if any(token in text for token in ['shell', 'powershell', 'comando', 'script', 'fondo', 'background', 'aider', 'codigo', 'c?digo']):
+        if words & {'shell', 'powershell', 'comando', 'script', 'fondo', 'background', 'aider', 'codigo', 'código'}:
             modes.append(InteractionMode.BACKGROUND)
         if not modes:
             modes.append(InteractionMode.BACKGROUND)

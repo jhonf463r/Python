@@ -1015,19 +1015,22 @@ class ToolTeachService:
 
     def _suggest_tool_id(self, goal: str) -> str:
         text = goal.lower()
-        if 'playwright' in text or 'pagina' in text or 'url' in text or self._extract_url(goal):
+        words = set(re.split(r'\W+', text)) - {''}
+        if words & {'playwright', 'pagina', 'página', 'url'} or self._extract_url(goal):
             return 'playwright_browser'
-        if 'aider' in text or 'edita' in text or 'patch' in text or 'codigo' in text:
+        if words & {'aider', 'edita', 'patch', 'codigo', 'código'}:
             return 'aider_coder'
-        if 'mcp' in text or 'api' in text:
+        if words & {'mcp', 'api'}:
             return 'mcp_client'
-        if 'codex' in text:
+        if 'codex' in words:
             return 'codex_installed'
-        if 'chatgpt' in text:
+        if 'chatgpt' in words:
             return 'chatgpt_installed'
-        if 'claude' in text:
+        if 'claude' in words:
             return 'claude_installed'
-        if 'powershell' in text or 'comando' in text or 'shell' in text or 'script' in text:
+        if 'devin' in words:
+            return 'devin_api'
+        if words & {'powershell', 'comando', 'shell', 'script'}:
             return 'shell_command'
         return 'ollama_llm'
 

@@ -324,3 +324,59 @@ def test_selector_avoids_repeatedly_blocked_external_tool_when_same_family_alter
         assert selection.selected_tool_id != 'chatgpt_web_assisted'
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_desired_modes_no_false_positive_on_substring():
+    """R17: 'api' inside 'rapido' must NOT trigger API mode;
+    'url' inside 'burlar' must NOT trigger UI mode."""
+    from iabv_v15.domain.models import InteractionMode
+    root = _workspace('mode_substr')
+    try:
+        repo = _repository(root)
+        registry = ToolRegistry(repo, {})
+        selector = InteractionModeSelector(registry, repo)
+
+        # 'rapido' contains 'api' as substring — should NOT select API
+        req_rapido = InferenceRequest(user_goal='Necesito algo rapido por favor')
+        modes_rapido = selector._desired_modes(req_rapido)
+        assert InteractionMode.API not in modes_rapido, (
+            f"'rapido' triggered API mode via substring 'api': {modes_rapido}"
+        )
+
+        # 'burlar' contains 'url' as substring — when a BACKGROUND keyword is
+        # present the fallback doesn't fire, so UI should NOT appear.
+        req_burlar = InferenceRequest(user_goal='No quiero burlar el script')
+        modes_burlar = selector._desired_modes(req_burlar)
+        assert InteractionMode.UI not in modes_burlar, (
+            f"'burlar' triggered UI mode via substring 'url': {modes_burlar}"
+        )
+
+        # Actual 'api' as word should still trigger API
+        req_api = InferenceRequest(user_goal='Llama la api de pagos')
+        modes_api = selector._desired_modes(req_api)
+        assert InteractionMode.API in modes_api
+
+        # Actual 'url' as word should still trigger UI
+        req_url = InferenceRequest(user_goal='Abre la url del sitio')
+        modes_url = selector._desired_modes(req_url)
+        assert InteractionMode.UI in modes_url
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_desired_modes_accepts_accented_tokens():
+    """R17: 'página' and 'código' with accents must be recognized."""
+    from iabv_v15.domain.models import InteractionMode
+    root = _workspace('mode_accent')
+    try:
+        repo = _repository(root)
+        registry = ToolRegistry(repo, {})
+        selector = InteractionModeSelector(registry, repo)
+
+        req_pagina = InferenceRequest(user_goal='Abre la página de login')
+        assert InteractionMode.UI in selector._desired_modes(req_pagina)
+
+        req_codigo = InferenceRequest(user_goal='Edita el código fuente')
+        assert InteractionMode.BACKGROUND in selector._desired_modes(req_codigo)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)

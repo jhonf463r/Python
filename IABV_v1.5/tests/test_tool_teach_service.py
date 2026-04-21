@@ -1383,3 +1383,30 @@ def test_tool_teach_service_preview_summary_without_block_preserves_generic_fall
 
     assert 'fallback' in summary.lower()
     assert 'preferencia explicita' not in summary.lower()
+
+
+def test_suggest_tool_id_no_false_positive_on_substring() -> None:
+    """R17: 'api' inside 'rapido' must NOT suggest mcp_client;
+    'url' inside 'burlar' must NOT suggest playwright_browser."""
+    root = _workspace('suggest_substr')
+    try:
+        service, _ = _service(root)
+
+        assert service._suggest_tool_id('Necesito algo rapido') != 'mcp_client', (
+            "'rapido' falsely matched 'api' substring"
+        )
+        assert service._suggest_tool_id('No quiero burlar') != 'playwright_browser', (
+            "'burlar' falsely matched 'url' substring"
+        )
+        # 'dispatch' contains 'patch' — should NOT suggest aider_coder
+        assert service._suggest_tool_id('El dispatch del evento') != 'aider_coder', (
+            "'dispatch' falsely matched 'patch' substring"
+        )
+
+        # Real words should still work
+        assert service._suggest_tool_id('Llama la api de pagos') == 'mcp_client'
+        assert service._suggest_tool_id('Abre la url del sitio') == 'playwright_browser'
+        assert service._suggest_tool_id('Aplica el patch de seguridad') == 'aider_coder'
+        assert service._suggest_tool_id('Consulta devin sobre el bug') == 'devin_api'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
