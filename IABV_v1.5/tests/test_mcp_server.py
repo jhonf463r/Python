@@ -149,6 +149,8 @@ class _FakeContainer:
         self.self_audit_service = self_audit_service
         self.capability_audit_harness = capability_audit_harness
         self.perception_ground_truth_comparator = perception_ground_truth_comparator
+        # F2.1 — se inyecta solo cuando el test lo pide.
+        self.github_remote_service: object | None = None
 
 
 def _default_snapshot(
@@ -1379,3 +1381,85 @@ def test_compare_perception_happy_path_delegates_and_normalizes() -> None:
     assert payload["duration_ms"] == 11
     assert payload["checked_at_iso"]  # iso timestamp presente
     assert comparator.calls[0]["site_id"] == "chatgpt.com"
+
+
+# ---------------------------------------------------------------------------
+# F2.1 — github_remote_publish_branch_as_pr
+# ---------------------------------------------------------------------------
+
+
+class _FakeGithubRemoteService:
+    """Doble de GitHubRemoteService para el test del MCP tool."""
+
+    def __init__(self, result: object) -> None:
+        self._result = result
+        self.calls: list[dict[str, object]] = []
+
+    def publish_branch_as_pr(self, **kwargs: object) -> object:
+        self.calls.append(kwargs)
+        return self._result
+
+
+def test_github_remote_publish_branch_as_pr_delegates_and_serializes() -> None:
+    # Simulamos PublishResult usando SimpleNamespace para evitar importar
+    # el servicio real (el test se concentra en el adaptador MCP, no en la
+    # logica del servicio, que ya cubre test_github_remote_service.py).
+    result = SimpleNamespace(
+        success=True,
+        branch="iabv-auto/feature-x",
+        base="main",
+        pushed=True,
+        pr_number=321,
+        pr_url="https://github.com/acme/repo/pull/321",
+        http_status=201,
+        blocked_by_policy=False,
+        required_approval=False,
+        approval_granted=None,
+        error=None,
+        evidence_path="/tmp/evidence.json",
+    )
+    svc = _FakeGithubRemoteService(result)
+    container = _build_container()
+    container.github_remote_service = svc
+
+    server = IABVMCPServer(container)
+    payload = _call_tool(
+        server,
+        "github_remote_publish_branch_as_pr",
+        branch="iabv-auto/feature-x",
+        title="feat: algo",
+        body="body",
+        base="main",
+        diff_lines=42,
+        draft=False,
+        remote="origin",
+    )
+
+    assert payload["success"] is True
+    assert payload["pr_number"] == 321
+    assert payload["pr_url"] == "https://github.com/acme/repo/pull/321"
+    assert payload["blocked_by_policy"] is False
+    assert svc.calls == [
+        {
+            "branch": "iabv-auto/feature-x",
+            "title": "feat: algo",
+            "body": "body",
+            "base": "main",
+            "diff_lines": 42,
+            "draft": False,
+            "remote": "origin",
+        }
+    ]
+
+
+def test_github_remote_publish_branch_as_pr_returns_unavailable_without_service() -> None:
+    container = _build_container()
+    container.github_remote_service = None
+    server = IABVMCPServer(container)
+    payload = _call_tool(
+        server,
+        "github_remote_publish_branch_as_pr",
+        branch="devin/foo",
+        title="feat: x",
+    )
+    assert payload["error"] == "github_remote_unavailable"
