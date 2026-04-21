@@ -399,6 +399,7 @@ class ToolRegistry:
                 adapter_key='github_api',
                 available=True,
                 supports_sandbox=True,
+                supports_write=True,
                 requires_human_approval=True,
                 capabilities=[
                     'github_read_pr',

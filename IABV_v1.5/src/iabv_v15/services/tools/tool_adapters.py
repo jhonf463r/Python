@@ -1609,13 +1609,23 @@ class GitHubApiToolAdapter:
                 )
             resp = httpx.put(url, headers=self._headers(), json=payload, timeout=self.timeout_seconds)
             data = resp.json() if resp.status_code == 200 else {}
+            merged = resp.status_code == 200 and bool(data.get('merged'))
+            if resp.status_code != 200:
+                err_msg = f'HTTP {resp.status_code}: {resp.text[:500]}'
+            elif not data.get('merged'):
+                err_msg = (
+                    f"merge_pr devolvio HTTP 200 pero merged={data.get('merged')!r}"
+                    f" (mensaje GitHub: {str(data.get('message') or '')[:200]})"
+                )
+            else:
+                err_msg = ''
             return self._response(
-                success=resp.status_code == 200 and bool(data.get('merged')),
+                success=merged,
                 output_text=str(data.get('sha', '')),
                 extracted_data=data,
                 sandbox=False, tool_id=card.tool_id, start=start,
                 http_status=resp.status_code,
-                error_message='' if resp.status_code == 200 else f'HTTP {resp.status_code}: {resp.text[:500]}',
+                error_message=err_msg,
                 action=action,
             )
 
