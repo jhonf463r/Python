@@ -154,6 +154,88 @@ class AutonomyGovernancePolicy:
 
         return True, None
 
+    # --- Reglas Nivel 1 para apertura automatica de PRs via GitHubRemoteService.
+    # A diferencia de `allow_github_merge`, aqui decidimos si IABV puede EMPEZAR
+    # a publicar una rama. El criterio es por PATRON DE RAMA + tamano de diff:
+    #
+    #   * main / master         : push directo bloqueado, siempre.
+    #   * iabv-auto/*           : IABV abrio la rama por su cuenta -> puede abrir
+    #                             PR sin preguntar si el diff esta acotado.
+    #   * devin/*               : rama de una sesion Devin asistida -> requiere
+    #                             aprobacion humana (la sesion es auditada, pero
+    #                             el salto a "PR publico" es decision humana).
+    #   * otros patrones        : bloqueado por defecto; debe aprobarse caso a caso.
+    #
+    # `allow_github_pr_open` decide SI la apertura es auto-aprobada. Si devuelve
+    # `(False, reason)` el caller debe pedir aprobacion humana via
+    # `HumanApprovalBroker` antes de llamar a `GitHubApiToolAdapter.create_pr`.
+
+    _GITHUB_PR_OPEN_AUTO_MAX_LINES = 200
+
+    def allow_github_pr_open(
+        self,
+        *,
+        branch: str,
+        base: str = 'main',
+        diff_lines: int | None = None,
+    ) -> tuple[bool, str | None]:
+        """Gate for ``GitHubRemoteService.publish_branch_as_pr``.
+
+        Returns ``(auto_approved, reason_if_needs_human)``.
+
+        - ``auto_approved=True`` -> IABV puede llamar ``create_pr`` sin
+          pasar por ``HumanApprovalBroker``.
+        - ``auto_approved=False`` -> el caller debe solicitar aprobacion
+          humana (razon explicita en el segundo valor) antes de crear el PR.
+
+        Reglas:
+        - Base distinto de ``main`` / ``master`` -> bloquea auto (requiere
+          aprobacion): no auto-aprobamos PRs hacia ramas arbitrarias.
+        - Rama ``main``/``master``/``HEAD``/vacia -> bloquea siempre (no es
+          un head valido para un PR).
+        - Rama ``iabv-auto/*`` -> auto si ``diff_lines`` conocido y
+          ``<= _GITHUB_PR_OPEN_AUTO_MAX_LINES``. Si falta el dato o excede,
+          requiere humano.
+        - Rama ``devin/*`` -> requiere humano siempre.
+        - Otros patrones -> requiere humano siempre.
+        """
+
+        head = str(branch or '').strip()
+        base_name = str(base or '').strip().lower()
+        if not head:
+            return False, 'branch vacio: no se puede abrir un PR sin head.'
+        head_lower = head.lower()
+        if head_lower in {'main', 'master', 'head'}:
+            return False, f'branch {head!r}: no se puede abrir un PR contra si mismo.'
+        if base_name not in {'main', 'master'}:
+            return False, (
+                f'base {base!r} no es main/master: requiere aprobacion humana '
+                'antes de auto-publicar.'
+            )
+
+        if head_lower.startswith('iabv-auto/'):
+            if not isinstance(diff_lines, int):
+                return False, 'diff_lines desconocido: sin evidencia de tamano no se auto-publica.'
+            if diff_lines < 0:
+                return False, 'diff_lines negativo: evidencia invalida.'
+            if diff_lines > self._GITHUB_PR_OPEN_AUTO_MAX_LINES:
+                return False, (
+                    f'Diff demasiado grande ({diff_lines} lineas > '
+                    f'{self._GITHUB_PR_OPEN_AUTO_MAX_LINES}): requiere revision humana.'
+                )
+            return True, None
+
+        if head_lower.startswith('devin/'):
+            return False, (
+                f'branch devin/* ({head}): rama asistida, la apertura del PR '
+                'requiere aprobacion humana explicita.'
+            )
+
+        return False, (
+            f'branch {head!r}: patron no reconocido para auto-apertura; '
+            'requiere aprobacion humana.'
+        )
+
     def evaluate(
         self,
         *,

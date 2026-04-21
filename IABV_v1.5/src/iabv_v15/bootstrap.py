@@ -587,6 +587,20 @@ class AppBootstrap:
             interpreters={},
             human_approval_broker=self.human_approval_broker,
         )
+        # F2.1 GitHubRemoteService: permite que IABV abra sus propios PRs via
+        # GitHubApiToolAdapter respetando AutonomyGovernancePolicy
+        # (``iabv-auto/*`` auto si diff < 200; ``devin/*`` requiere humano;
+        # main/master como head bloqueado siempre). Deja evidencia en
+        # ``data/evolution/pr_history/`` para auditoria posterior. No decide
+        # rutas: consume policy + broker + adapter ya existentes.
+        from iabv_v15.services.tools.github_remote_service import GitHubRemoteService
+        self.github_remote_service = GitHubRemoteService(
+            repo_root=self.config.workspace_root,
+            adapter=self.tool_adapters['github_api'],
+            governance_policy=self.autonomy_governance_policy,
+            approval_broker=self.human_approval_broker,
+            evidence_dir=Path(self.config.evolution_dir) / 'pr_history',
+        )
         self.self_audit_service = SelfAuditService(
             tool_registry=self.tool_registry,
             environment_self_model_provider=self.environment_self_awareness_service.current_model,
