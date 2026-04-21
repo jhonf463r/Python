@@ -700,3 +700,59 @@ def test_evolution_center_proactive_dashboard_empty_when_service_not_wired() -> 
         assert vm.get_proactive_dashboard() == {}
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_evolution_center_exposes_recent_ui_screenshots_from_service() -> None:
+    """F1.1: cuando `UIScreenshotService` esta wired, el VM debe exponer
+    los records recientes serializados como dicts.
+    """
+    from iabv_v15.services.capture.ui_screenshot_service import (
+        NoopUIScreenshotProvider,
+        UIScreenshotService,
+    )
+
+    os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+    workspace = _workspace('test_evolution_center_ui_screenshots')
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    try:
+        bootstrap = AppBootstrap(str(workspace))
+        bootstrap._build_ui_objects()
+        vm = bootstrap.evolution_center_viewmodel
+        assert vm is not None
+
+        storage = workspace / 'ui_snapshots'
+        service = UIScreenshotService(
+            storage_dir=storage,
+            provider=NoopUIScreenshotProvider(),
+        )
+        service.capture(source='vm_wiring_test', scope={'surface': 'evolution_center'})
+        vm.ui_screenshot_service = service
+        vm.refresh()
+
+        records = vm.get_recent_ui_screenshots()
+        assert isinstance(records, list)
+        assert len(records) == 1
+        assert records[0]['source'] == 'vm_wiring_test'
+        assert records[0]['scope'] == {'surface': 'evolution_center'}
+        assert records[0]['success'] is True
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_evolution_center_recent_ui_screenshots_empty_when_service_not_wired() -> None:
+    """F1.1: sin wiring, `recentUiScreenshots` debe ser `[]` y no romper."""
+    os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+    workspace = _workspace('test_evolution_center_no_ui_screenshot_service')
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    try:
+        bootstrap = AppBootstrap(str(workspace))
+        bootstrap._build_ui_objects()
+        vm = bootstrap.evolution_center_viewmodel
+        assert vm is not None
+        vm.ui_screenshot_service = None
+        vm.refresh()
+        assert vm.get_recent_ui_screenshots() == []
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)

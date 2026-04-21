@@ -155,6 +155,7 @@ from iabv_v15.services.security.human_approval_broker import HumanApprovalBroker
 from iabv_v15.services.security.proactive_dashboard_service import (
     ProactiveDashboardService,
 )
+from iabv_v15.services.capture.ui_screenshot_service import UIScreenshotService
 from iabv_v15.services.evolution.tool_discovery_service import ToolDiscoveryService
 from iabv_v15.services.evolution.tool_evolution_monitor import ToolEvolutionMonitor
 from iabv_v15.services.evolution.autonomous_evolution_service import AutonomousEvolutionService
@@ -547,6 +548,12 @@ class AppBootstrap:
         self.proactive_dashboard_service = ProactiveDashboardService(
             broker=self.human_approval_broker,
             memory=self.approval_memory,
+        )
+        # F1.1: captura de snapshots UI de IABV persistida con retention.
+        # No es otro cerebro ni orquestador; solo evidencia visual para
+        # que ExecutionDossier / briefings / revision humana puedan citar.
+        self.ui_screenshot_service = UIScreenshotService(
+            storage_dir=Path(self.config.evolution_dir) / 'ui_snapshots',
         )
         # Devin API adapter es opcional (requiere DEVIN_API_KEY). Si no esta
         # disponible, el briefing sigue siendo util como dato estructurado; las
@@ -1141,6 +1148,10 @@ class AppBootstrap:
         self.evolution_center_viewmodel.proactive_dashboard_service = self.proactive_dashboard_service
         self.evolution_center_viewmodel.human_approval_broker = self.human_approval_broker
         self.evolution_center_viewmodel.approval_memory = self.approval_memory
+        # F1.1: el VM expone snapshots recientes como Property; el servicio
+        # persiste a disco y el VM solo lee la foto (AGENTS.md: el VM no
+        # decide rutas ni inventa datos).
+        self.evolution_center_viewmodel.ui_screenshot_service = self.ui_screenshot_service
         self.knowledge_base_viewmodel = KnowledgeBaseViewModel(self.knowledge_repository)
         self.provider_settings_viewmodel = ProviderSettingsViewModel(self.provider_configs, self.role_router, self.embedding_service)
         self.run_history_viewmodel = RunHistoryViewModel(self.run_repository, self.execution_dossier_repository)
