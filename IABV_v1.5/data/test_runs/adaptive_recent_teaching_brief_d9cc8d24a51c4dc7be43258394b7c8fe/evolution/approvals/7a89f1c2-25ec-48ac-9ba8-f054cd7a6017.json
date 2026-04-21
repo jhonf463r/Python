@@ -1,0 +1,14 @@
+{
+  "checkpoint_id": "7a89f1c2-25ec-48ac-9ba8-f054cd7a6017",
+  "session_id": "39003fd9-09d8-4544-a4c5-a44baf3ea436",
+  "playbook_id": "a689ff0d-40b6-4aa1-b602-68fed0fd0ad8",
+  "title": "Aprobar estrategia",
+  "detail": "Se propone Restaurar sesion y login guiado antes de pasar a la fase operativa.",
+  "decision": "pending",
+  "phase_key": "strategy",
+  "reason": "El flujo requiere confirmacion humana antes de seguir.",
+  "risk_level": "high",
+  "created_at_utc": "2026-04-21T01:07:02.741248Z",
+  "decided_at_utc": null,
+  "metadata": {}
+}

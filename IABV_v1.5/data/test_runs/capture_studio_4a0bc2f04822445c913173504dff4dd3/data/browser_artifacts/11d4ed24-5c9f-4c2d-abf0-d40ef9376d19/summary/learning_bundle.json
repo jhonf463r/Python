@@ -1,0 +1,518 @@
+{
+  "episode_id": "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+  "site_id": "wplay",
+  "display_name": "Wplay",
+  "bundle_id": "eb7ea7aa-da18-40df-b315-8d7cd2f11361",
+  "url": "https://wplay.co",
+  "capture_channels": [
+    "visible",
+    "background",
+    "api"
+  ],
+  "channel_counts": {
+    "background": 1
+  },
+  "action_counts": {
+    "teaching_brief": 1,
+    "click": 1,
+    "scroll": 1
+  },
+  "artifact_count": 1,
+  "step_count": 3,
+  "visible_step_count": 1,
+  "relevant_step_count": 1,
+  "screenshot_step_count": 1,
+  "capture_stats": {},
+  "redaction_summary": {
+    "redacted_steps": 1,
+    "redacted_network_fields": 2,
+    "stored_secrets": 1,
+    "warnings": []
+  },
+  "learning_readiness": {
+    "status": "insufficient",
+    "summary": "Visible 1, relevantes 1, capturas 1, canales 3, login partial, acuerdo visual 0.00.",
+    "learning_coverage_score": 1.5,
+    "visual_alignment_score": 0.5,
+    "critical_object_coverage": 1.0,
+    "login_visual_completeness": 1.0,
+    "manual_correction_count": 0,
+    "observer_agreement_score": 0.0,
+    "target_element_alignment": 0.0
+  },
+  "login_learning": {
+    "status": "partial",
+    "summary": "La ensenanza entiende partes importantes del login, pero todavia no conviene asumir ejecucion automatica completa.",
+    "signals": [
+      "envio de login detectado",
+      "objetos criticos visuales confirmados"
+    ],
+    "missing_signals": [
+      "falta detectar un campo de correo o usuario",
+      "falta detectar un campo de contrasena",
+      "falta evidencia solida de que la sesion quedo autenticada"
+    ],
+    "login_visual_completeness": 1.0,
+    "critical_object_coverage": 1.0,
+    "suggested_commands": [
+      "Abrir Wplay",
+      "Abrir Wplay e iniciar sesion"
+    ]
+  },
+  "suggested_commands": [
+    "Abrir Wplay",
+    "Abrir Wplay e iniciar sesion"
+  ],
+  "visual_summary": {
+    "learning_coverage_score": 1.5,
+    "visual_alignment_score": 0.5,
+    "manual_correction_count": 0,
+    "critical_object_coverage": 1.0,
+    "login_visual_completeness": 1.0,
+    "known_count": 1,
+    "uncertain_count": 2,
+    "missing_count": 0,
+    "green_count": 1,
+    "orange_count": 2,
+    "red_count": 0,
+    "user_corrected_count": 0
+  },
+  "visual_teaching_frames": [
+    {
+      "frame_id": "350204fe-a591-444b-91a1-b08353240fea",
+      "episode_id": "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+      "step_id": "6034f87f-abc4-4887-abe4-e0c7b5ebc1a2",
+      "objective": "Ingresar",
+      "mode_used": "ui",
+      "screenshot_ref": "/home/ubuntu/jhonf463r-Python/IABV_v1.5/data/test_runs/capture_studio_4a0bc2f04822445c913173504dff4dd3/data/screenshots/11d4ed24-5c9f-4c2d-abf0-d40ef9376d19/visible_step.png",
+      "detected_objects": [],
+      "user_click": null,
+      "object_links": [],
+      "cross_check": {
+        "cross_check_id": "547e5fc3-a2de-4da9-8ed0-16153863e7e6",
+        "status": "insufficient",
+        "matched": false,
+        "annotation_id": "",
+        "click_id": "",
+        "discrepancy": "missing_detected_object_or_click_trace",
+        "rationale": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+        "confidence": 0.24,
+        "metadata": {}
+      },
+      "notes": [],
+      "metadata": {
+        "action_type": "click",
+        "element_role": "button",
+        "selector": "#submit-login",
+        "channel": "visible",
+        "confidence_score": 0.86
+      }
+    },
+    {
+      "frame_id": "079d5c2a-c59b-4f7e-a005-24a697c5917e",
+      "episode_id": "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+      "step_id": "3f561296-bdad-48d3-83f7-89e7e9e0c190",
+      "objective": "body",
+      "mode_used": "ui",
+      "screenshot_ref": "",
+      "detected_objects": [],
+      "user_click": null,
+      "object_links": [],
+      "cross_check": {
+        "cross_check_id": "ed9c32c2-1c71-4ab1-83be-aa71b7a8e0ab",
+        "status": "insufficient",
+        "matched": false,
+        "annotation_id": "",
+        "click_id": "",
+        "discrepancy": "missing_detected_object_or_click_trace",
+        "rationale": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+        "confidence": 0.24,
+        "metadata": {}
+      },
+      "notes": [],
+      "metadata": {
+        "action_type": "scroll",
+        "element_role": "document",
+        "selector": "body",
+        "channel": "background",
+        "confidence_score": 0.45
+      }
+    }
+  ],
+  "teaching_evidence": [
+    {
+      "evidence_id": "c21a4cbe-762e-40c1-b8cf-b4e804fc4cc5",
+      "episode_id": "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+      "frame_id": "350204fe-a591-444b-91a1-b08353240fea",
+      "summary": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+      "screenshot_ref": "/home/ubuntu/jhonf463r-Python/IABV_v1.5/data/test_runs/capture_studio_4a0bc2f04822445c913173504dff4dd3/data/screenshots/11d4ed24-5c9f-4c2d-abf0-d40ef9376d19/visible_step.png",
+      "confidence": 0.24,
+      "metadata": {
+        "step_id": "6034f87f-abc4-4887-abe4-e0c7b5ebc1a2",
+        "label": "Ingresar"
+      }
+    },
+    {
+      "evidence_id": "2897e48a-b827-44ca-9520-5f5439069ef0",
+      "episode_id": "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+      "frame_id": "079d5c2a-c59b-4f7e-a005-24a697c5917e",
+      "summary": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+      "screenshot_ref": "",
+      "confidence": 0.24,
+      "metadata": {
+        "step_id": "3f561296-bdad-48d3-83f7-89e7e9e0c190",
+        "label": "body"
+      }
+    }
+  ],
+  "cross_check_summary": {
+    "frame_count": 2,
+    "confirmed_count": 0,
+    "doubtful_count": 0,
+    "insufficient_count": 2,
+    "observer_agreement_score": 0.0,
+    "target_element_alignment": 0.0,
+    "learning_status": "insufficient"
+  },
+  "teaching_episode": {
+    "teaching_episode_id": "48d5e23d-aa6c-4f8d-9aeb-88b04bb64ff7",
+    "episode_id": "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+    "objective": "Ensenanza guiada de Wplay",
+    "mode_used": "ui",
+    "frames": [
+      {
+        "frame_id": "350204fe-a591-444b-91a1-b08353240fea",
+        "episode_id": "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+        "step_id": "6034f87f-abc4-4887-abe4-e0c7b5ebc1a2",
+        "objective": "Ingresar",
+        "mode_used": "ui",
+        "screenshot_ref": "/home/ubuntu/jhonf463r-Python/IABV_v1.5/data/test_runs/capture_studio_4a0bc2f04822445c913173504dff4dd3/data/screenshots/11d4ed24-5c9f-4c2d-abf0-d40ef9376d19/visible_step.png",
+        "detected_objects": [],
+        "user_click": null,
+        "object_links": [],
+        "cross_check": {
+          "cross_check_id": "547e5fc3-a2de-4da9-8ed0-16153863e7e6",
+          "status": "insufficient",
+          "matched": false,
+          "annotation_id": "",
+          "click_id": "",
+          "discrepancy": "missing_detected_object_or_click_trace",
+          "rationale": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+          "confidence": 0.24,
+          "metadata": {}
+        },
+        "notes": [],
+        "metadata": {
+          "action_type": "click",
+          "element_role": "button",
+          "selector": "#submit-login",
+          "channel": "visible",
+          "confidence_score": 0.86
+        }
+      },
+      {
+        "frame_id": "079d5c2a-c59b-4f7e-a005-24a697c5917e",
+        "episode_id": "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+        "step_id": "3f561296-bdad-48d3-83f7-89e7e9e0c190",
+        "objective": "body",
+        "mode_used": "ui",
+        "screenshot_ref": "",
+        "detected_objects": [],
+        "user_click": null,
+        "object_links": [],
+        "cross_check": {
+          "cross_check_id": "ed9c32c2-1c71-4ab1-83be-aa71b7a8e0ab",
+          "status": "insufficient",
+          "matched": false,
+          "annotation_id": "",
+          "click_id": "",
+          "discrepancy": "missing_detected_object_or_click_trace",
+          "rationale": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+          "confidence": 0.24,
+          "metadata": {}
+        },
+        "notes": [],
+        "metadata": {
+          "action_type": "scroll",
+          "element_role": "document",
+          "selector": "body",
+          "channel": "background",
+          "confidence_score": 0.45
+        }
+      }
+    ],
+    "evidence": [
+      {
+        "evidence_id": "c21a4cbe-762e-40c1-b8cf-b4e804fc4cc5",
+        "episode_id": "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+        "frame_id": "350204fe-a591-444b-91a1-b08353240fea",
+        "summary": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+        "screenshot_ref": "/home/ubuntu/jhonf463r-Python/IABV_v1.5/data/test_runs/capture_studio_4a0bc2f04822445c913173504dff4dd3/data/screenshots/11d4ed24-5c9f-4c2d-abf0-d40ef9376d19/visible_step.png",
+        "confidence": 0.24,
+        "metadata": {
+          "step_id": "6034f87f-abc4-4887-abe4-e0c7b5ebc1a2",
+          "label": "Ingresar"
+        }
+      },
+      {
+        "evidence_id": "2897e48a-b827-44ca-9520-5f5439069ef0",
+        "episode_id": "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+        "frame_id": "079d5c2a-c59b-4f7e-a005-24a697c5917e",
+        "summary": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+        "screenshot_ref": "",
+        "confidence": 0.24,
+        "metadata": {
+          "step_id": "3f561296-bdad-48d3-83f7-89e7e9e0c190",
+          "label": "body"
+        }
+      }
+    ],
+    "cross_check_summary": {
+      "frame_count": 2,
+      "confirmed_count": 0,
+      "doubtful_count": 0,
+      "insufficient_count": 2,
+      "observer_agreement_score": 0.0,
+      "target_element_alignment": 0.0,
+      "learning_status": "insufficient"
+    },
+    "learning_status": "insufficient",
+    "metadata": {
+      "site_id": "wplay",
+      "display_name": "Wplay"
+    }
+  },
+  "metadata": {
+    "live_audit": {
+      "audit_snapshot_id": "9a99ec28-1899-477a-9963-53e3c57487df",
+      "objective": "Iniciar sesion y llegar al panel principal.",
+      "session_or_episode_id": "6ffaa805-4caf-40f5-baf2-04808d560e92",
+      "mode_used": "ui",
+      "evidence": [
+        "eb7ea7aa-da18-40df-b315-8d7cd2f11361",
+        "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+        "/home/ubuntu/jhonf463r-Python/IABV_v1.5/data/test_runs/capture_studio_4a0bc2f04822445c913173504dff4dd3/data/screenshots/11d4ed24-5c9f-4c2d-abf0-d40ef9376d19/visible_step.png",
+        "visual_summary:11d4ed24-5c9f-4c2d-abf0-d40ef9376d19"
+      ],
+      "findings": [],
+      "decision": {
+        "decision_id": "ac274d94-0831-4525-a56c-91f199357791",
+        "action": "continue_local",
+        "rationale": "La ensenanza tiene suficiente coherencia para seguir por la via local y reutilizar el patron observado.",
+        "confidence": 0.7,
+        "recommended_tool_id": "playwright_browser",
+        "approval_required": false,
+        "metadata": {}
+      },
+      "confidence": 0.68,
+      "auto_safe_action": "",
+      "human_approval": false,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 1.0,
+        "target_element_alignment": 0.5,
+        "progress_visibility_score": 0.0,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.4,
+        "learning_consolidation_score": 0.5767
+      },
+      "metadata": {
+        "mirror_mode": "teaching_session",
+        "site_id": "wplay",
+        "display_name": "Wplay",
+        "replay_status": "",
+        "unresolved": true,
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "9a99ec28-1899-477a-9963-53e3c57487df",
+    "audit_decision": "continue_local",
+    "audit_summary": "Sin hallazgos relevantes. Decision: continue_local. Confianza 0.68.",
+    "interaction_episode_id": "6ffaa805-4caf-40f5-baf2-04808d560e92",
+    "interaction_pattern_id": "3e21a53b-e444-41d6-8ca9-9edca94694fe",
+    "interaction_selector_reason": "Nueva ensenanza consolidada desde replay y learning bundle.",
+    "interaction_reused_pattern": false,
+    "teaching_episode": {
+      "teaching_episode_id": "48d5e23d-aa6c-4f8d-9aeb-88b04bb64ff7",
+      "episode_id": "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+      "objective": "Ensenanza guiada de Wplay",
+      "mode_used": "ui",
+      "frames": [
+        {
+          "frame_id": "350204fe-a591-444b-91a1-b08353240fea",
+          "episode_id": "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+          "step_id": "6034f87f-abc4-4887-abe4-e0c7b5ebc1a2",
+          "objective": "Ingresar",
+          "mode_used": "ui",
+          "screenshot_ref": "/home/ubuntu/jhonf463r-Python/IABV_v1.5/data/test_runs/capture_studio_4a0bc2f04822445c913173504dff4dd3/data/screenshots/11d4ed24-5c9f-4c2d-abf0-d40ef9376d19/visible_step.png",
+          "detected_objects": [],
+          "user_click": null,
+          "object_links": [],
+          "cross_check": {
+            "cross_check_id": "547e5fc3-a2de-4da9-8ed0-16153863e7e6",
+            "status": "insufficient",
+            "matched": false,
+            "annotation_id": "",
+            "click_id": "",
+            "discrepancy": "missing_detected_object_or_click_trace",
+            "rationale": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+            "confidence": 0.24,
+            "metadata": {}
+          },
+          "notes": [],
+          "metadata": {
+            "action_type": "click",
+            "element_role": "button",
+            "selector": "#submit-login",
+            "channel": "visible",
+            "confidence_score": 0.86
+          }
+        },
+        {
+          "frame_id": "079d5c2a-c59b-4f7e-a005-24a697c5917e",
+          "episode_id": "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+          "step_id": "3f561296-bdad-48d3-83f7-89e7e9e0c190",
+          "objective": "body",
+          "mode_used": "ui",
+          "screenshot_ref": "",
+          "detected_objects": [],
+          "user_click": null,
+          "object_links": [],
+          "cross_check": {
+            "cross_check_id": "ed9c32c2-1c71-4ab1-83be-aa71b7a8e0ab",
+            "status": "insufficient",
+            "matched": false,
+            "annotation_id": "",
+            "click_id": "",
+            "discrepancy": "missing_detected_object_or_click_trace",
+            "rationale": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+            "confidence": 0.24,
+            "metadata": {}
+          },
+          "notes": [],
+          "metadata": {
+            "action_type": "scroll",
+            "element_role": "document",
+            "selector": "body",
+            "channel": "background",
+            "confidence_score": 0.45
+          }
+        }
+      ],
+      "evidence": [
+        {
+          "evidence_id": "c21a4cbe-762e-40c1-b8cf-b4e804fc4cc5",
+          "episode_id": "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+          "frame_id": "350204fe-a591-444b-91a1-b08353240fea",
+          "summary": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+          "screenshot_ref": "/home/ubuntu/jhonf463r-Python/IABV_v1.5/data/test_runs/capture_studio_4a0bc2f04822445c913173504dff4dd3/data/screenshots/11d4ed24-5c9f-4c2d-abf0-d40ef9376d19/visible_step.png",
+          "confidence": 0.24,
+          "metadata": {
+            "step_id": "6034f87f-abc4-4887-abe4-e0c7b5ebc1a2",
+            "label": "Ingresar"
+          }
+        },
+        {
+          "evidence_id": "2897e48a-b827-44ca-9520-5f5439069ef0",
+          "episode_id": "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+          "frame_id": "079d5c2a-c59b-4f7e-a005-24a697c5917e",
+          "summary": "No pude construir el objeto detectado y el clic humano en el mismo frame.",
+          "screenshot_ref": "",
+          "confidence": 0.24,
+          "metadata": {
+            "step_id": "3f561296-bdad-48d3-83f7-89e7e9e0c190",
+            "label": "body"
+          }
+        }
+      ],
+      "cross_check_summary": {
+        "frame_count": 2,
+        "confirmed_count": 0,
+        "doubtful_count": 0,
+        "insufficient_count": 2,
+        "observer_agreement_score": 0.0,
+        "target_element_alignment": 0.0,
+        "learning_status": "insufficient"
+      },
+      "learning_status": "insufficient",
+      "metadata": {
+        "site_id": "wplay",
+        "display_name": "Wplay"
+      }
+    },
+    "cross_check_summary": {
+      "frame_count": 2,
+      "confirmed_count": 0,
+      "doubtful_count": 0,
+      "insufficient_count": 2,
+      "observer_agreement_score": 0.0,
+      "target_element_alignment": 0.0,
+      "learning_status": "insufficient"
+    },
+    "visual_teaching_frame_count": 2
+  },
+  "live_audit": {
+    "audit_snapshot_id": "9a99ec28-1899-477a-9963-53e3c57487df",
+    "objective": "Iniciar sesion y llegar al panel principal.",
+    "session_or_episode_id": "6ffaa805-4caf-40f5-baf2-04808d560e92",
+    "mode_used": "ui",
+    "evidence": [
+      "eb7ea7aa-da18-40df-b315-8d7cd2f11361",
+      "11d4ed24-5c9f-4c2d-abf0-d40ef9376d19",
+      "/home/ubuntu/jhonf463r-Python/IABV_v1.5/data/test_runs/capture_studio_4a0bc2f04822445c913173504dff4dd3/data/screenshots/11d4ed24-5c9f-4c2d-abf0-d40ef9376d19/visible_step.png",
+      "visual_summary:11d4ed24-5c9f-4c2d-abf0-d40ef9376d19"
+    ],
+    "findings": [],
+    "decision": {
+      "decision_id": "ac274d94-0831-4525-a56c-91f199357791",
+      "action": "continue_local",
+      "rationale": "La ensenanza tiene suficiente coherencia para seguir por la via local y reutilizar el patron observado.",
+      "confidence": 0.7,
+      "recommended_tool_id": "playwright_browser",
+      "approval_required": false,
+      "metadata": {}
+    },
+    "confidence": 0.68,
+    "auto_safe_action": "",
+    "human_approval": false,
+    "reused_pattern": false,
+    "metrics": {
+      "semantic_action_alignment": 1.0,
+      "target_element_alignment": 0.5,
+      "progress_visibility_score": 0.0,
+      "bridge_drain_health": 1.0,
+      "observer_agreement_score": 0.4,
+      "learning_consolidation_score": 0.5767
+    },
+    "metadata": {
+      "mirror_mode": "teaching_session",
+      "site_id": "wplay",
+      "display_name": "Wplay",
+      "replay_status": "",
+      "unresolved": true,
+      "goal_context": {
+        "objective_id": "",
+        "status": "",
+        "progress": 0.0,
+        "blocker": ""
+      }
+    }
+  },
+  "audit_snapshot_id": "9a99ec28-1899-477a-9963-53e3c57487df",
+  "audit_decision": "continue_local",
+  "audit_findings": [],
+  "interaction_episode_id": "6ffaa805-4caf-40f5-baf2-04808d560e92",
+  "interaction_pattern_id": "3e21a53b-e444-41d6-8ca9-9edca94694fe",
+  "interaction_confidence": 0.6799999999999999,
+  "reused_interaction_pattern": false,
+  "interaction_learning_signals": [
+    "teaching:insufficient",
+    "pattern:ui:playwright_browser",
+    "login:partial"
+  ]
+}

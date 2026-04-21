@@ -1,0 +1,85 @@
+{
+  "pack_id": "wplay.login",
+  "title": "Login Wplay",
+  "domain_kind": "wplay",
+  "supported_intents": [
+    "wplay.login"
+  ],
+  "required_capabilities": [
+    "wplay.login",
+    "wplay.session.restore"
+  ],
+  "required_context": [
+    "recent_teachings",
+    "recent_incidents",
+    "adaptive_sessions"
+  ],
+  "available_algorithms": [
+    {
+      "algorithm_id": "restore_or_guided_login",
+      "title": "Restaurar sesion y login guiado",
+      "summary": "Primero intenta aprovechar la sesion conocida y, si no alcanza, prepara login guiado con aprobacion.",
+      "parameter_keys": [
+        "login_mode",
+        "wait_seconds"
+      ],
+      "success_signals": [
+        "login_ready",
+        "session_restored"
+      ],
+      "fallback_signals": [
+        "session_restore_weak",
+        "login_partial"
+      ],
+      "notes": ""
+    }
+  ],
+  "parameter_schema": [
+    {
+      "parameter_id": "742a448c-d5a9-47db-ae1a-d4806d22418b",
+      "key": "login_mode",
+      "label": "Modo de login",
+      "description": "Intento preferido antes de la fase guiada.",
+      "value": null,
+      "default_value": "restore_then_guided",
+      "kind": "choice",
+      "editable": true,
+      "required": false,
+      "options": [
+        "restore_then_guided",
+        "guided_only"
+      ]
+    },
+    {
+      "parameter_id": "6be85b3e-fec3-42dd-a1b6-ac5d54c6b312",
+      "key": "wait_seconds",
+      "label": "Espera maxima",
+      "description": "Tiempo maximo de espera para verificar estado.",
+      "value": null,
+      "default_value": 18,
+      "kind": "number",
+      "editable": true,
+      "required": false,
+      "options": []
+    }
+  ],
+  "risk_level": "high",
+  "approval_policy": "phased",
+  "execution_templates": [
+    "restaurar sesion",
+    "abrir Wplay",
+    "verificar autenticacion",
+    "pedir aprobacion si toca login guiado"
+  ],
+  "success_signals": [
+    "sesion autenticada",
+    "ruta de login lista"
+  ],
+  "fallback_signals": [
+    "session_restore_weak",
+    "need_reteach"
+  ],
+  "metadata": {
+    "updated_at_utc": "2026-04-21T01:26:33.071200+00:00"
+  }
+}

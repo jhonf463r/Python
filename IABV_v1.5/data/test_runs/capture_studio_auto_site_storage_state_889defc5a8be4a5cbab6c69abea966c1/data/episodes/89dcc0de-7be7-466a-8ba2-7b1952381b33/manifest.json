@@ -1,0 +1,13 @@
+{
+  "episode_id": "89dcc0de-7be7-466a-8ba2-7b1952381b33",
+  "title": "Login guiado",
+  "created_at_utc": "2026-04-21T01:07:26.160235Z",
+  "updated_at_utc": "2026-04-21T01:07:26.162922Z",
+  "step_count": 1,
+  "source": "desktop",
+  "tags": [
+    "target:Wplay",
+    "teach_mode:browser"
+  ],
+  "notes": "teach_url=https://www.wplay.co/casino-en-vivo"
+}
