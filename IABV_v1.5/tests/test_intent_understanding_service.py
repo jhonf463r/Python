@@ -207,3 +207,35 @@ def test_intent_classifier_does_not_flag_code_generation_on_plain_question() -> 
     # Saludo conversacional: no debe levantar la flag ni enrutar a project.
     assert intent.intent_key != 'project.evolution'
     assert intent.metadata.get('code_generation_prompt') is None
+
+def test_intent_understanding_service_detects_explicit_devin_consultation() -> None:
+    service = IntentUnderstandingService()
+
+    intent, hypotheses = service.classify(
+        InferenceRequest(user_goal='consulta con Devin el diseno del modulo de autonomia')
+    )
+
+    assert intent.intent_key == 'research.external_consultation'
+    assert intent.detected_role == TaskRole.RESEARCH
+    assert intent.disposition.value == 'plan_then_execute'
+    assert intent.metadata.get('explicit_external_consultation') is True
+    assert any(item.intent_key == 'knowledge.query' for item in hypotheses)
+
+
+def test_intent_understanding_service_detects_explicit_windsurf_consultation() -> None:
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='consulta con Windsurf el plan de refactor del orquestador')
+    )
+
+    assert intent.intent_key == 'research.external_consultation'
+    assert intent.detected_role == TaskRole.RESEARCH
+    assert intent.metadata.get('explicit_external_consultation') is True
+
+
+def test_intent_understanding_requested_external_assistant_maps_devin_and_windsurf() -> None:
+    service = IntentUnderstandingService()
+
+    assert service._requested_external_assistant('consulta con devin este incidente') == 'devin'
+    assert service._requested_external_assistant('pregunta a windsurf sobre la arquitectura') == 'windsurf'

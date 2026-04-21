@@ -307,6 +307,8 @@ class IntentUnderstandingService:
                 'chatgpt': 'ChatGPT',
                 'claude': 'Claude',
                 'ollama': 'Ollama local',
+                'devin': 'Devin',
+                'windsurf': 'Windsurf',
             }.get(explicit_assistant, explicit_assistant.title())
             reasoning = ['el usuario pidio una consulta externa dirigida']
             if site_hint:
@@ -1106,6 +1108,10 @@ class IntentUnderstandingService:
             return 'claude'
         if 'codex' in normalized:
             return 'codex'
+        if 'devin' in normalized:
+            return 'devin'
+        if 'windsurf' in normalized:
+            return 'windsurf'
         if 'ollama' in normalized:
             return 'ollama'
         return ''
