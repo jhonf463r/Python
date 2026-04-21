@@ -187,6 +187,67 @@ def test_windows_default_paths_expand_userprofile_token(tmp_path: Path, monkeypa
     assert adapter.is_available(card) is True
 
 
+def test_run_preserves_quoted_arguments_via_shlex(tmp_path: Path) -> None:
+    # Captura los argv reales pasados al subprocess para verificar que un
+    # arg con espacios entre comillas llega como un solo token y no se
+    # parte en dos. Es la regresion que motivo el fix de shlex.split.
+    capture = tmp_path / 'argv.txt'
+    stub = tmp_path / 'probe_cli'
+    stub.write_text(
+        '#!/bin/sh\nprintf "%s\\n" "$@" > "' + str(capture) + '"\n',
+        encoding='utf-8',
+    )
+    stub.chmod(stub.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+    card = _card(metadata={
+        'command_name': 'probe_cli',
+        'executable_path': str(stub),
+        'allowed_verbs': ['log'],
+    })
+    adapter = LocalCliToolAdapter()
+    result = adapter.run(card, _task('log --format="%H %s"'))
+    assert result['success'] is True, result
+    captured = capture.read_text(encoding='utf-8').splitlines()
+    assert captured == ['log', '--format=%H %s']
+
+
+def test_run_blocks_malformed_shlex_input(tmp_path: Path) -> None:
+    stub = tmp_path / 'probe_cli'
+    stub.write_text('#!/bin/sh\nexit 0\n', encoding='utf-8')
+    stub.chmod(stub.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+    card = _card(metadata={
+        'command_name': 'probe_cli',
+        'executable_path': str(stub),
+        'allowed_verbs': ['log'],
+    })
+    adapter = LocalCliToolAdapter()
+    # Comilla sin cerrar → shlex.split lanza ValueError → adapter bloquea.
+    result = adapter.run(card, _task('log --format="unterminated'))
+    assert result['success'] is False
+    assert result['metadata']['blocked'] is True
+    assert 'args malformados' in result['error_message']
+
+
+def test_cloudflared_card_does_not_whitelist_update_verb(tmp_path: Path) -> None:
+    from iabv_v15.infra.persistence.database import AppDatabase
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
+    from iabv_v15.services.tools.tool_registry import ToolRegistry
+
+    db = AppDatabase(str(tmp_path / 'app.sqlite'))
+    storage = ArtifactStorage(str(tmp_path / 'tool_teaching'))
+    repository = ToolRecordRepository(db, storage)
+    registry = ToolRegistry(repository, {'local_cli': LocalCliToolAdapter()})
+    registry._seed_defaults()
+
+    cards_by_id = {c.tool_id: c for c in repository.list_cards()}
+    card = cards_by_id['cloudflared_cli']
+    allowed = [v.lower() for v in card.metadata.get('allowed_verbs') or []]
+    assert 'update' not in allowed, (
+        "'update' muta el binario en disco; debe quedar fuera del allowlist "
+        "read-only y solo pasar por ToolApprovalPolicy cuando haga falta."
+    )
+
+
 def test_seed_defaults_registers_four_local_cli_cards(tmp_path: Path) -> None:
     from iabv_v15.infra.persistence.database import AppDatabase
     from iabv_v15.infra.persistence.storage import ArtifactStorage

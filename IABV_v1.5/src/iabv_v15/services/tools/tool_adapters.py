@@ -3,8 +3,10 @@
 import glob
 import os
 import re
+import shlex
 import shutil
 import subprocess
+import sys
 import time
 import webbrowser
 from datetime import datetime, timezone
@@ -1977,7 +1979,22 @@ class LocalCliToolAdapter:
                 blocked=True,
             )
 
-        cmd_list = [executable, *args_text.split()]
+        # shlex preserva comillas: ``log --format="%H %s"`` queda como
+        # ``['log', '--format=%H %s']`` en lugar de mis-tokenizar. En Windows
+        # respetamos quoting estilo cmd.exe (``posix=False``) para que rutas
+        # con espacios no se rompan al llegar al subprocess.
+        try:
+            tokens = shlex.split(args_text, posix=(sys.platform != 'win32'))
+        except ValueError as exc:
+            return self._fail(
+                start,
+                f'args malformados: {exc}',
+                sandbox=sandbox,
+                executable=executable,
+                args=args_text,
+                blocked=True,
+            )
+        cmd_list = [executable, *tokens]
         try:
             completed = subprocess.run(
                 cmd_list,

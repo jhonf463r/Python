@@ -483,9 +483,9 @@ class ToolRegistry:
                     ],
                     'version_command': '--version',
                     'allowed_verbs': [
-                        '--version', 'version', 'tunnel', 'access', 'update', 'help',
+                        '--version', 'version', 'tunnel', 'access', 'help',
                     ],
-                    'notes': 'Verbos de inspeccion (tunnel list, tunnel info) quedan permitidos; arranque real del tunnel sigue corriendo via run_mcp_bridge.ps1.',
+                    'notes': 'Verbos de inspeccion (tunnel list, tunnel info) quedan permitidos; arranque real del tunnel sigue corriendo via run_mcp_bridge.ps1. `cloudflared update` queda fuera del allowlist por read-only: pasa por ToolApprovalPolicy si hace falta.',
                 },
             ),
             ToolCard(
