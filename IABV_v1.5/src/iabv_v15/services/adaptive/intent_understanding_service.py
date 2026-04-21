@@ -244,7 +244,7 @@ class IntentUnderstandingService:
                 domain_hint='general',
                 summary='Responder de forma util y corta sobre capacidades operativas del sistema.',
                 reasoning=['saludo o consulta general sobre capacidades'],
-                metadata={'conversational_prompt': True, 'meta_assistant_prompt': self._contains_any(text, ['codex', 'chatgpt', 'claude', 'ollama', 'ia', 'ias'])},
+                metadata={'conversational_prompt': True, 'meta_assistant_prompt': self._contains_any(text, ['codex', 'chatgpt', 'claude', 'ollama', 'devin', 'windsurf', 'ia', 'ias'])},
             )
             hypotheses.append(IntentHypothesis(intent_key='knowledge.query', title='Consulta local', confidence=0.44, rationale='Pregunta abierta sin sitio especifico.'))
             return finalize(intent, hypotheses)
@@ -262,7 +262,7 @@ class IntentUnderstandingService:
                 metadata={
                     'conversational_prompt': True,
                     'self_awareness_prompt': True,
-                    'meta_assistant_prompt': self._contains_any(text, ['codex', 'chatgpt', 'claude', 'ollama', 'ia', 'ias']),
+                    'meta_assistant_prompt': self._contains_any(text, ['codex', 'chatgpt', 'claude', 'ollama', 'devin', 'windsurf', 'ia', 'ias']),
                 },
             )
             hypotheses.append(
@@ -307,6 +307,8 @@ class IntentUnderstandingService:
                 'chatgpt': 'ChatGPT',
                 'claude': 'Claude',
                 'ollama': 'Ollama local',
+                'devin': 'Devin (Cognition AI)',
+                'windsurf': 'Windsurf',
             }.get(explicit_assistant, explicit_assistant.title())
             reasoning = ['el usuario pidio una consulta externa dirigida']
             if site_hint:
@@ -502,7 +504,7 @@ class IntentUnderstandingService:
                 domain_hint='knowledge',
                 summary='Responder desde conocimiento, memoria local y ejecuciones recientes sin preguntas genericas.',
                 reasoning=['consulta de memoria o base de conocimiento'],
-                metadata={'conversational_prompt': True, 'meta_assistant_prompt': self._contains_any(text, ['codex', 'chatgpt', 'claude', 'ollama', 'ia', 'ias'])},
+                metadata={'conversational_prompt': True, 'meta_assistant_prompt': self._contains_any(text, ['codex', 'chatgpt', 'claude', 'ollama', 'devin', 'windsurf', 'ia', 'ias'])},
             )
             return finalize(intent, hypotheses)
 
@@ -1108,5 +1110,9 @@ class IntentUnderstandingService:
             return 'codex'
         if 'ollama' in normalized:
             return 'ollama'
+        if 'devin' in normalized:
+            return 'devin'
+        if 'windsurf' in normalized:
+            return 'windsurf'
         return ''
 

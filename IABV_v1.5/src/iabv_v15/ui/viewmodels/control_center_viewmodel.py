@@ -672,7 +672,7 @@ class ControlCenterViewModel(QObject):
         if self._explicit_assistant_preference(command):
             return False
         meta_assistant_prompt = (
-            any(token in command for token in ('codex', 'chatgpt', 'claude', 'ollama', 'ia', 'ias'))
+            any(token in command for token in ('codex', 'chatgpt', 'claude', 'ollama', 'devin', 'windsurf', 'ia', 'ias'))
             and any(token in command for token in ('sabes', 'puedes', 'puedo', 'internamente', 'automatic', 'automatica', 'autom?tico', 'respondieron'))
         )
         if meta_assistant_prompt:

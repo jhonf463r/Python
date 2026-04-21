@@ -255,7 +255,7 @@ class SandboxExperimentService:
             if probe and probe not in blockers:
                 blockers.append(probe)
         network_status = str(world_model.network_status.status or '').strip().lower()
-        if assistant_kind in {'chatgpt', 'claude'} and network_status == 'desconectado':
+        if assistant_kind in {'chatgpt', 'claude', 'devin', 'windsurf'} and network_status == 'desconectado':
             blockers.append('network_disconnected')
         if environment_model is not None and recommendation.recommended_route == EvaluationRoute.LOCAL:
             for risk in getattr(environment_model, 'risk_signals', []) or []:
