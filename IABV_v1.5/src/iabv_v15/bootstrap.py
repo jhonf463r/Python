@@ -20,6 +20,34 @@ _GITHUB_TOKEN_ENV_VARS: tuple[str, ...] = (
     'GH_TOKEN',
 )
 
+# Los nombres aceptados para el API key de Devin (Cognition AI). El primario
+# historico era ``DEVIN_API_KEY`` (leido sin fallback), pero eso obligaba a
+# duplicar el valor si el usuario ya tenia otro nombre en su entorno. Con este
+# fallback, ``run_self_audit`` deja de reportar ``devin_api [missing]`` cuando
+# el valor esta disponible bajo un alias comun.
+_DEVIN_API_KEY_ENV_VARS: tuple[str, ...] = (
+    'DEVIN_API_KEY_IABV',
+    'IABV_DEVIN_API_KEY',
+    'DEVIN_API_KEY',
+)
+
+
+def _resolve_devin_api_key(environ: dict[str, str] | None = None) -> str:
+    """Resuelve el API key de Devin para ``DevinApiToolAdapter``.
+
+    Prioridad (orden): ``DEVIN_API_KEY_IABV``, ``IABV_DEVIN_API_KEY``,
+    ``DEVIN_API_KEY``. Devuelve string vacio si ninguno tiene valor no-vacio.
+    """
+
+    env = environ if environ is not None else os.environ
+    for name in _DEVIN_API_KEY_ENV_VARS:
+        value = env.get(name)
+        if value:
+            stripped = value.strip()
+            if stripped:
+                return stripped
+    return ''
+
 
 def _resolve_github_token(environ: dict[str, str] | None = None) -> str:
     """Resuelve el PAT de GitHub para ``GitHubApiToolAdapter``.
@@ -335,7 +363,12 @@ class AppBootstrap:
             'mcp': MCPToolAdapter(),
             'external_assistant': ExternalAssistantToolAdapter(),
             'devin_api': DevinApiToolAdapter(
-                api_key=os.environ.get('DEVIN_API_KEY', ''),
+                # Igual que con ``GITHUB_TOKEN_IABV``, aceptamos varios alias
+                # (``DEVIN_API_KEY_IABV`` preferido) para no forzar al usuario
+                # a duplicar el valor si ya lo tiene cargado bajo otro nombre.
+                # Si nada esta disponible, ``is_available`` devuelve False y
+                # ``run_self_audit`` reporta ``devin_api [missing]``.
+                api_key=_resolve_devin_api_key(os.environ),
                 # DEVIN_ORG_ID ya no es requerido por v1; se mantiene para compat.
                 org_id=os.environ.get('DEVIN_ORG_ID', ''),
             ),
