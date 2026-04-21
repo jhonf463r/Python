@@ -1455,7 +1455,41 @@ class IABVMCPServer:
             raise ValueError(f"transport '{transport}' no soportado. Usa {sorted(SUPPORTED_TRANSPORTS)}")
         logger.info("IABV MCP server starting (transport=%s, name=%s)", transport, self.name)
         self._log_github_api_adapter_status()
+        self._log_devin_api_adapter_status()
         self.mcp.run(transport=transport)
+
+    def _log_devin_api_adapter_status(self) -> None:
+        """Diagnostica si ``devin_api`` esta listo para delegar a Devin.
+
+        Mismo patron que ``_log_github_api_adapter_status``: si no hay API
+        key resuelto, avisamos al arrancar con la lista exacta de env vars
+        aceptados, asi el usuario no se entera solo cuando ya trato de
+        delegar una tarea a Devin y vio ``devin_api [missing]`` en el
+        audit.
+        """
+
+        adapters = getattr(self.container, "tool_adapters", None) or {}
+        adapter = adapters.get("devin_api") if isinstance(adapters, dict) else None
+        api_key = getattr(adapter, "api_key", "") if adapter is not None else ""
+        if adapter is None:
+            logger.warning(
+                "devin_api adapter no esta wired; el chat cross-IA "
+                "con Devin no podra delegar sesiones."
+            )
+            return
+        if not api_key:
+            logger.warning(
+                "devin_api sin token. Exporta uno de: "
+                "DEVIN_API_KEY_IABV (preferido), IABV_DEVIN_API_KEY, "
+                "DEVIN_API_KEY. Sin token, devin_api aparece como "
+                "'missing' en run_self_audit y la delegacion a Devin "
+                "falla en is_available."
+            )
+            return
+        logger.info(
+            "devin_api adapter listo (api_key_len=%s).",
+            len(api_key),
+        )
 
     def _log_github_api_adapter_status(self) -> None:
         """Diagnostica si ``github_api`` esta listo para ``github_remote_*``.
