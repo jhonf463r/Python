@@ -1030,10 +1030,27 @@ class MCPToolAdapter:
             return False
         if httpx is None:
             return False
+        base = server_url.rstrip('/')
         try:
             with httpx.Client(timeout=3.0) as client:
-                resp = client.get(server_url.rstrip('/') + '/health')
-                return resp.is_success
+                resp = client.post(
+                    base + '/mcp',
+                    json={
+                        'jsonrpc': '2.0',
+                        'id': 'probe',
+                        'method': 'initialize',
+                        'params': {
+                            'protocolVersion': '2025-03-26',
+                            'capabilities': {},
+                            'clientInfo': {'name': 'iabv-probe', 'version': '1.0'},
+                        },
+                    },
+                    headers={
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json, text/event-stream',
+                    },
+                )
+                return resp.status_code < 400
         except Exception:
             return False
 
@@ -1055,7 +1072,23 @@ class MCPToolAdapter:
         try:
             with httpx.Client(timeout=self.timeout_seconds) as client:
                 if sandbox:
-                    response = client.get(server_url.rstrip('/') + '/health')
+                    response = client.post(
+                        server_url.rstrip('/') + '/mcp',
+                        json={
+                            'jsonrpc': '2.0',
+                            'id': 'sandbox-probe',
+                            'method': 'initialize',
+                            'params': {
+                                'protocolVersion': '2025-03-26',
+                                'capabilities': {},
+                                'clientInfo': {'name': 'iabv-sandbox', 'version': '1.0'},
+                            },
+                        },
+                        headers={
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json, text/event-stream',
+                        },
+                    )
                 else:
                     payload = {'goal': task.objective, 'actions': [action.model_dump(mode='json') for action in task.actions]}
                     response = client.post(server_url.rstrip('/') + '/tool', json=payload)
