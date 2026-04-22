@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 from collections import Counter, defaultdict
 from datetime import timedelta
+from pathlib import Path
 from typing import Any
 
 from iabv_v15.domain.models import (
@@ -130,6 +132,7 @@ class OperationalSelfExaminationService:
         )
         findings.extend(self._weak_correction_findings(scenario_runs=scenario_runs))
         findings.extend(self._token_rotation_findings())
+        findings.extend(self._chat_research_backlog_findings())
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -814,6 +817,133 @@ class OperationalSelfExaminationService:
                         'days_until_projected_expiry': pred.get('days_until_projected_expiry'),
                         'projected_expiry_at': pred.get('projected_expiry_at'),
                         'rotations_observed': pred.get('rotations_observed'),
+                    },
+                )
+            )
+        return findings
+
+    def _chat_research_backlog_findings(self) -> list[SelfExaminationFinding]:
+        """Consume ``data/chat_research_backlog/<session>.jsonl`` y produce
+        hallazgos de ``research_gap`` por cada ``kind`` unico con entradas
+        ``status='open'``.
+
+        ``ChatCapabilityIngestionService`` (capa chat) persiste capacidades
+        declaradas por el usuario (GPU, modelos locales, cuentas, runtimes)
+        como tareas de investigacion pendientes. Sin este hook, el dato se
+        escribia pero nadie lo consumia. OSES es el lugar natural para
+        surfacearlo: las capacidades declaradas son gaps de investigacion
+        reales hasta que se midan contra el StrategySelector / ExperimentLab.
+
+        Agrupamos por ``kind`` para evitar ruido: si el usuario menciono
+        "gpu" 10 veces en distintas sesiones, es un solo ``research_gap``,
+        no diez. Solo se ignoran entradas con ``status`` distinto de
+        ``'open'`` (ej: ya investigadas, archivadas). Si el directorio no
+        existe o no hay entradas abiertas, devuelve lista vacia sin
+        inventar observacion.
+        """
+
+        backlog_dir = Path(self.workspace_root) / 'data' / 'chat_research_backlog'
+        if not backlog_dir.exists() or not backlog_dir.is_dir():
+            return []
+
+        try:
+            files = sorted(backlog_dir.glob('*.jsonl'))
+        except OSError:
+            return []
+        if not files:
+            return []
+
+        # Agrupacion por ``kind``: nos quedamos con la entrada mas reciente
+        # por kind para tener la evidencia mas actual sin duplicar findings.
+        per_kind: dict[str, dict[str, Any]] = {}
+        per_kind_count: Counter[str] = Counter()
+        per_kind_sessions: dict[str, set[str]] = defaultdict(set)
+        for path in files:
+            try:
+                with path.open('r', encoding='utf-8') as handle:
+                    for line in handle:
+                        stripped = line.strip()
+                        if not stripped:
+                            continue
+                        try:
+                            record = json.loads(stripped)
+                        except json.JSONDecodeError:
+                            continue
+                        if not isinstance(record, dict):
+                            continue
+                        if str(record.get('status') or 'open') != 'open':
+                            continue
+                        kind = str(record.get('kind') or '').strip()
+                        if not kind:
+                            continue
+                        per_kind_count[kind] += 1
+                        session_id = str(record.get('session_id') or '').strip()
+                        if session_id:
+                            per_kind_sessions[kind].add(session_id)
+                        existing = per_kind.get(kind)
+                        if existing is None:
+                            per_kind[kind] = record
+                            continue
+                        # Conservar la entrada con ``detected_at_utc`` mas
+                        # reciente (comparacion lexicografica de ISO-8601 UTC
+                        # es equivalente a temporal).
+                        if str(record.get('detected_at_utc') or '') > str(existing.get('detected_at_utc') or ''):
+                            per_kind[kind] = record
+            except OSError:
+                continue
+
+        if not per_kind:
+            return []
+
+        findings: list[SelfExaminationFinding] = []
+        for kind, entry in per_kind.items():
+            label = str(entry.get('label') or kind).strip()
+            hint = str(entry.get('research_hint') or '').strip()
+            matched_text = str(entry.get('matched_text') or '').strip()
+            occurrences = per_kind_count[kind]
+            sessions = sorted(per_kind_sessions[kind])
+            detected_at = str(entry.get('detected_at_utc') or '').strip()
+
+            summary_parts = [
+                f'El usuario declaro "{label}"'
+                + (f' (detectado como "{matched_text}")' if matched_text else '')
+                + ' en el chat, pero el sistema aun no valido su impacto.',
+            ]
+            if hint:
+                summary_parts.append(f'Investigacion pendiente: {hint}')
+            if occurrences > 1:
+                summary_parts.append(
+                    f'La mencion aparece {occurrences} veces en el backlog '
+                    f'({len(sessions)} sesiones).'
+                )
+            summary = ' '.join(summary_parts)
+
+            evidence_refs: list[str] = []
+            if detected_at:
+                evidence_refs.append(f'detected_at_utc={detected_at}')
+            if sessions:
+                evidence_refs.append('sessions=' + ','.join(sessions[:4]))
+
+            findings.append(
+                SelfExaminationFinding(
+                    category='research_gap',
+                    title=f'Capacidad declarada sin validar: {label}',
+                    summary=summary,
+                    severity=IssueSeverity.MEDIUM,
+                    confidence=0.6,
+                    recommendation=hint or (
+                        'Validar la capacidad declarada contra ExperimentLab / '
+                        'StrategySelector y registrar resultado real.'
+                    ),
+                    evidence_refs=evidence_refs,
+                    source_refs=['ChatCapabilityIngestionService', 'chat_research_backlog'],
+                    metadata={
+                        'kind': kind,
+                        'label': label,
+                        'matched_text': matched_text,
+                        'occurrences': occurrences,
+                        'sessions': sessions,
+                        'latest_detected_at_utc': detected_at,
                     },
                 )
             )
