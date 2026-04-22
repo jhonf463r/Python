@@ -585,6 +585,13 @@ class WorldModelService:
             'desktop_human_runner',
             'shell_command',
             'site_explorer_v1',
+            'cloudflared_cli',
+            'gh_cli',
+            'git_cli',
+            'github_api',
+            'mcp_client',
+            'winget_cli',
+            'aider_coder',
         }
         for card in cards:
             assistant_kind = str(card.metadata.get('assistant_kind') or '').strip()

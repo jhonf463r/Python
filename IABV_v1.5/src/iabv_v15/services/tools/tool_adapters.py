@@ -165,9 +165,7 @@ class ToolAdapter:
         capture_attempt_utc = datetime.now(timezone.utc).isoformat() if (clipboard_capture or browser_dom_capture or background_capture_mode == 'codex_rollout') else str(task.metadata.get('last_capture_attempt_utc') or '')
         consultation_metadata = self._consultation_runtime_metadata(card=card, task=task, capture_attempt_utc=capture_attempt_utc)
         if sandbox:
-            available = bool(launch_target) or direct_capture or (
-                launch_mode == 'desktop_app' and os.name == 'nt' and self._detect_running_process(card)
-            )
+            available = bool(launch_target) or direct_capture
             return {
                 'success': available,
                 'output_text': 'Asistente externo listo para consulta guiada.' if available else 'No pude validar la via externa solicitada.',

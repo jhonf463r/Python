@@ -1382,6 +1382,46 @@ class IABVMCPServer:
             return _to_jsonable(snapshot) or {}
 
         # ------------------------------------------------------------
+        # F1.7 — PerceptionCrossValidator expuesto como MCP tool
+        #
+        # Cruza datos de multiples fuentes de percepcion (procesos vs
+        # tool availability, WorldModel vs ToolRegistry, ventanas vs
+        # focused_window) para detectar inconsistencias que sensores
+        # individuales no ven.  Read-only; no modifica estado.
+
+        @mcp.tool()
+        def cross_validate_perception() -> dict[str, Any]:
+            """Cruza datos de multiples fuentes de percepcion para detectar inconsistencias.
+
+            Compara:
+            - Procesos corriendo vs tool availability (detecta tools instalados
+              pero reportados como missing)
+            - ToolRegistry vs WorldModel tool_live_status (detecta tools
+              invisibles para el WorldModel)
+            - Ventanas activas vs focused_window (detecta anomalias de foco)
+
+            Pasa por governance gate ``assistant_kind='audit'`` (fail-closed).
+            No requiere red: todo el cotejo es local.
+            """
+            block = self._governance_block_for_route(
+                assistant_kind="audit",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
+            validator = getattr(self.container, "perception_cross_validator", None)
+            if validator is None:
+                return {
+                    "error": "cross_validator_unavailable",
+                    "detail": (
+                        "container.perception_cross_validator no está disponible. "
+                        "Revisa bootstrap.py: el wiring de PerceptionCrossValidator "
+                        "puede haber degradado."
+                    ),
+                }
+            return validator.run_cross_validation()
+
+        # ------------------------------------------------------------
         # F2.1 — GitHubRemoteService expuesto como MCP tool
         #
         # Permite que el chat (via tool_calling_bridge) o un cliente MCP
