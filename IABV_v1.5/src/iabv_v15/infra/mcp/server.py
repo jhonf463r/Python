@@ -1009,6 +1009,7 @@ class IABVMCPServer:
         @mcp.tool()
         def cognitive_frame_translate(
             target_assistant_kind: str,
+            user_goal: str = "",
             snapshot_hint: str = "",
         ) -> dict[str, Any]:
             """Renderiza el perception actual al frame óptimo del asistente.
@@ -1017,6 +1018,8 @@ class IABVMCPServer:
                 target_assistant_kind: ``"codex"``, ``"claude_web"``,
                     ``"devin"``, etc. Si es desconocido, cae a
                     ``structured_qa`` (invariante del registry).
+                user_goal: objetivo del usuario en lenguaje natural.
+                    Si se omite, se usa ``snapshot_hint`` como fallback.
                 snapshot_hint: etiqueta libre que queda en ``metadata``
                     para que otra sesión pueda correlacionar el render.
 
@@ -1053,14 +1056,15 @@ class IABVMCPServer:
             try:
                 from iabv_v15.domain.models import InferenceRequest, TaskIntent
 
+                effective_goal = str(user_goal or snapshot_hint or "")
                 request = InferenceRequest(
-                    user_goal=str(snapshot_hint or "pcs_v1.cognitive_frame_translate"),
+                    user_goal=effective_goal,
                     metadata={"source": "cognitive_frame_translate"},
                 )
                 intent = TaskIntent(
                     intent_key="pcs_v1.cognitive_frame_translate",
                     title="PCS v1 cognitive frame translation",
-                    summary=str(snapshot_hint or ""),
+                    summary=effective_goal,
                 )
                 perception = context_assembler.build_perception_snapshot(
                     request=request, intent=intent
