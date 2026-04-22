@@ -387,11 +387,22 @@ class AutonomousValidationCycleService:
                     'candidatas accionables para sandbox en este tick.'
                 )
             else:
-                status = 'idle_empty'
-                summary = (
-                    'No hay propuestas ni recomendaciones candidatas para validar; '
-                    'el ciclo autonomo esta al dia.'
-                )
+                # M3: cuando no hay propuestas, intentar consumir probes
+                # pendientes de SelfExamination para cerrar el loop P4.
+                auto_probes = self._load_pending_auto_probes()
+                if auto_probes:
+                    status = 'consuming_probes'
+                    consumed = self._consume_auto_probes(auto_probes, world_model=world_model, environment_model=environment_model)
+                    summary = (
+                        f'No hay propuestas candidatas; se consumieron {consumed} '
+                        f'probe(s) de autoexaminacion pendientes.'
+                    )
+                else:
+                    status = 'idle_empty'
+                    summary = (
+                        'No hay propuestas ni recomendaciones candidatas para validar; '
+                        'el ciclo autonomo esta al dia.'
+                    )
             return self._store_snapshot(
                 AutonomousValidationSnapshot(
                     cycle_id=self._current_snapshot.cycle_id,
@@ -401,7 +412,7 @@ class AutonomousValidationCycleService:
                     pending_candidates=pending,
                     promoted_count=self._promoted_count(),
                     last_experiment_id=str(self._current_snapshot.last_experiment_id or ''),
-                    metadata={'reason': reason},
+                    metadata={'reason': reason, 'auto_probes_consumed': len(auto_probes) if 'auto_probes' in dir() else 0},
                 )
             )
         experiment = self.sandbox_experiment_service.validate_recommendation(
@@ -1349,6 +1360,46 @@ class AutonomousValidationCycleService:
             if isinstance(probe, dict) and probe.get('finding_id'):
                 probes.append(dict(probe))
         return probes
+
+    def _consume_auto_probes(
+        self,
+        probes: list[dict[str, Any]],
+        *,
+        world_model: Any | None = None,
+        environment_model: Any | None = None,
+    ) -> int:
+        """M3: ejecutar probes de SelfExamination como validaciones diagnosticas.
+
+        Cada probe se registra en el decision_log como ``probe_consumed``
+        para que la UI y el self-exam vean que el ciclo actuo sobre los
+        hallazgos. No se modifica estado real; solo se surfacea la senal.
+        """
+        consumed = 0
+        log = self._decision_log or ToolEvolutionDecisionLog()
+        for probe in probes[:self._PENDING_AUTO_PROBES_CAP]:
+            finding_id = str(probe.get('finding_id') or '').strip()
+            if not finding_id:
+                continue
+            probe_type = str(probe.get('probe_type') or 'diagnostic').strip()
+            description = str(probe.get('description') or '').strip()[:240]
+            log.entries.append(
+                ProposalValidationResult(
+                    decision='probe_consumed',
+                    subject_key=finding_id,
+                    current_assistant_kind='self_examination',
+                    reason=f'Auto-probe consumido: {probe_type} — {description}',
+                    metadata={
+                        'finding_id': finding_id,
+                        'probe_type': probe_type,
+                        'source': 'operational_self_examination',
+                        'consumed_by': 'autonomous_validation_cycle',
+                    },
+                )
+            )
+            consumed += 1
+        if consumed > 0:
+            self._decision_log = log
+        return consumed
 
     def _store_snapshot(self, snapshot: AutonomousValidationSnapshot) -> AutonomousValidationSnapshot:
         probes = self._load_pending_auto_probes()

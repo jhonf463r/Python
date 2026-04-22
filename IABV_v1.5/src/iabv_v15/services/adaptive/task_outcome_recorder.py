@@ -28,6 +28,10 @@ _TERMINAL_STATUS_MAP: dict[AdaptiveSessionStatus, str] = {
     AdaptiveSessionStatus.FAILED: "blocked",
 }
 
+# M2: umbral de confianza por debajo del cual se intenta re-clasificar
+# el intent post-ejecucion si la sesion fallo.
+_INTENT_CORRECTION_CONFIDENCE_THRESHOLD = 0.75
+
 
 class TaskOutcomeRecorder:
     def __init__(
@@ -39,6 +43,7 @@ class TaskOutcomeRecorder:
         experiment_lab: ExperimentLab | None = None,
         adaptive_weight_layer: Any | None = None,
         control_master_service: Any | None = None,
+        intent_understanding_service: Any | None = None,
     ) -> None:
         self.adaptive_session_repository = adaptive_session_repository
         self.capability_repository = capability_repository
@@ -46,10 +51,12 @@ class TaskOutcomeRecorder:
         self.experiment_lab = experiment_lab
         self.adaptive_weight_layer = adaptive_weight_layer
         self.control_master_service = control_master_service
+        self.intent_understanding_service = intent_understanding_service
 
     def record(self, session: AdaptiveSession, run_record: RunRecord | None = None) -> AdaptiveSession:
         if run_record is not None and self.experiment_lab is not None:
             session = self._record_learning(session=session, run_record=run_record)
+            self._check_intent_correction(session=session, run_record=run_record)
         if session.capability_readiness:
             self.capability_repository.save_many(session.capability_readiness)
         if session.approval_checkpoints:
@@ -470,3 +477,77 @@ class TaskOutcomeRecorder:
 
     def _compact_summary(self, text: str, *, limit: int = 240) -> str:
         return ' '.join(str(text or '').split())[:limit]
+
+    # ------------------------------------------------------------------
+    # M2: Intent correction loop
+    # ------------------------------------------------------------------
+
+    def _check_intent_correction(self, *, session: AdaptiveSession, run_record: RunRecord) -> None:
+        """Re-classify intent post-execution when a low-confidence intent led to failure.
+
+        If the re-classification produces a different intent_key, record
+        an ``intent_mismatch`` event in ExperimentLab so that
+        StrategySelector can learn from the misrouting over time.
+        """
+        service = self.intent_understanding_service
+        if service is None or self.experiment_lab is None:
+            return
+        if run_record.status == RunStatus.SUCCESS:
+            return
+        original_confidence = float(session.intent.confidence or 0.0)
+        if original_confidence >= _INTENT_CORRECTION_CONFIDENCE_THRESHOLD:
+            return
+        try:
+            from iabv_v15.domain.models import InferenceRequest
+            recheck_request = InferenceRequest(
+                user_goal=session.user_goal,
+                goal_parameters=dict(session.metadata.get('goal_parameters') or {}),
+                conversation_context=list(session.metadata.get('conversation_context') or []),
+                metadata={'intent_correction_recheck': True},
+            )
+            new_intent, _ = service.classify(recheck_request)
+        except Exception:
+            return
+        if new_intent.intent_key == session.intent.intent_key:
+            return
+        # M4: registrar el fallo del patron original para confidence decay
+        try:
+            from iabv_v15.services.adaptive.intent_understanding_service import IntentUnderstandingService
+            IntentUnderstandingService.register_pattern_failure(session.intent.intent_key)
+        except Exception:
+            pass
+        session.metadata['intent_correction'] = {
+            'original_intent_key': session.intent.intent_key,
+            'original_confidence': original_confidence,
+            'corrected_intent_key': new_intent.intent_key,
+            'corrected_confidence': float(new_intent.confidence or 0.0),
+            'run_status': run_record.status.value,
+        }
+        try:
+            self.experiment_lab.record_outcome(
+                domain=ExperimentDomain.LANGUAGE,
+                objective=f'intent_correction:{session.user_goal[:120]}',
+                subject_key=f'intent_mismatch:{session.intent.intent_key}',
+                route=EvaluationRoute.LOCAL,
+                candidate_label='intent_correction',
+                candidate_id=session.session_id,
+                success=False,
+                observed_summary=f'Intent original {session.intent.intent_key} (conf={original_confidence:.2f}) fallo; re-clasificacion sugiere {new_intent.intent_key} (conf={new_intent.confidence:.2f})',
+                expected_summary=session.user_goal[:240],
+                precision=0.3,
+                robustness=0.4,
+                reuse_score=0.0,
+                user_progress=0.1,
+                execution_ms=0,
+                evidence_refs=[session.session_id],
+                metadata={
+                    'learning_source': 'intent_correction',
+                    'original_intent_key': session.intent.intent_key,
+                    'corrected_intent_key': new_intent.intent_key,
+                    'blocked': False,
+                    'external_state_flags': [],
+                },
+                suite_name='intent_correction',
+            )
+        except Exception:
+            pass

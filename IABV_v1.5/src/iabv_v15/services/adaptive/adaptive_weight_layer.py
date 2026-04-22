@@ -106,6 +106,7 @@ class AdaptiveWeightLayer:
             'reuse_ratio': round(reuse_ratio, 4),
             'average_score': round(average_score, 4),
             'average_latency_ms': average_latency_ms,
+            'time_bucket_latency_cap': self._time_bucket_latency_cap(ordered_runs),
             'recency_score': round(recency_score, 4),
             'trend_score': round(trend_score, 4),
             'adaptive_weight': round(adaptive_weight, 4),
@@ -178,6 +179,23 @@ class AdaptiveWeightLayer:
         if 18 <= hour < 23:
             return 'evening'
         return 'night'
+
+    def _time_bucket_latency_cap(self, runs: list[ExperimentRun]) -> float:
+        """M6: cap de latency_penalty proporcional al time_bucket dominante.
+
+        En horarios nocturnos/vespertinos el usuario tiende a ser mas
+        impaciente; el cap se reduce para penalizar mas la latencia alta.
+        En la manana se tolera mas latencia (batch work).
+        """
+        if not runs:
+            return 0.12
+        bucket = self._time_bucket(runs[-1].created_at_utc)
+        return {
+            'morning': 0.14,
+            'afternoon': 0.12,
+            'evening': 0.09,
+            'night': 0.08,
+        }.get(bucket, 0.12)
 
     def _top_values(self, values: list[str]) -> list[str]:
         counts: dict[str, int] = {}

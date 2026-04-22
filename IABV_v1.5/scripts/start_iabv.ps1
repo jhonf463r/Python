@@ -221,6 +221,19 @@ if ($StartUI) {
     }
 }
 
+# M7: limpiar directorios pytest-cache-files huerfanos que se acumulan
+# en el workspace con el tiempo. Son seguros de borrar.
+$pytestCacheDirs = Get-ChildItem -Path $workspace -Recurse -Directory -Filter 'pytest-cache-files' -ErrorAction SilentlyContinue
+if ($pytestCacheDirs) {
+    $count = ($pytestCacheDirs | Measure-Object).Count
+    foreach ($d in $pytestCacheDirs) {
+        Remove-Item -Path $d.FullName -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    Write-Info "[cleanup] Eliminados $count directorio(s) pytest-cache-files."
+} else {
+    Write-Info "[cleanup] Sin directorios pytest-cache-files pendientes."
+}
+
 Write-Info ""
 Write-Info "Libera puerto :$McpPort (kill MCP zombi) ..."
 Stop-McpZombies -Port $McpPort

@@ -55,6 +55,7 @@ class GoalEngine:
                 metadata={
                     'source': 'transient_chat_goal',
                     'persistent': False,
+                    'minimal_hierarchy': True,
                     'intent_key': session.intent.intent_key,
                     'site_id': session.context.site_id or session.intent.site_hint or request.site_hint or '',
                 },
