@@ -1447,6 +1447,62 @@ class IABVMCPServer:
                 "evidence_path": result.evidence_path,
             }
 
+        # ------------------------------------------------------------
+        # self_auto_merge — el programa mergea sus propios PRs devin/*
+        #
+        # Motivacion: el usuario pidio dejar de hacer click en "Merge" en
+        # GitHub cada vez que una IA cierra una mejora. Esta tool reusa la
+        # misma logica que ``scripts/auto_merge_devin_pr.py`` con las
+        # mismas salvaguardas (rama devin/*|iabv-auto/*, mergeable_state
+        # no bloqueado, checks verdes). El gate de governance usa
+        # ``assistant_kind="self_auto_merge"`` y ``requires_network=True``
+        # para que el usuario pueda bloquearla globalmente sin tocar
+        # codigo (``OperationalBlockRecord`` o ``permission_gate``).
+
+        @mcp.tool()
+        def self_auto_merge(
+            pr_number: int,
+            repo: str | None = None,
+            method: str = "squash",
+        ) -> dict[str, Any]:
+            """Auto-mergea un PR ``devin/*`` / ``iabv-auto/*`` desde el programa.
+
+            Usa el mismo criterio que el CLI ``scripts/auto_merge_devin_pr.py``:
+            solo mergea ramas seguras, ``mergeable_state`` fuera de
+            ``blocked/dirty/behind`` y checks verdes. ``force`` NO esta
+            expuesto aqui: si hace falta saltear salvaguardas, usar el CLI
+            con justificacion explicita del humano.
+
+            Args:
+                pr_number: numero del PR a mergear.
+                repo: ``owner/repo`` (default ``jhonf463r/Python``).
+                method: ``squash`` / ``merge`` / ``rebase``.
+
+            Returns:
+                ``MergeResult.to_dict()``. Campos clave: ``status``
+                (``merged``/``already_merged``/``closed``/``blocked``/
+                ``missing_token``/``http_error``), ``reason``, ``detail``,
+                ``merge_sha``, ``branch_safe``.
+            """
+
+            block = self._governance_block_for_route(
+                assistant_kind="self_auto_merge",
+                requires_network=True,
+            )
+            if block is not None:
+                return block
+
+            from iabv_v15.infra.mcp.self_auto_merge import auto_merge as _auto_merge
+
+            target_repo = (repo or "jhonf463r/Python").strip() or "jhonf463r/Python"
+            result = _auto_merge(
+                target_repo,
+                int(pr_number),
+                method=method,
+                force=False,
+            )
+            return result.to_dict()
+
     # ------------------------------------------------------------------
     # Ciclo de vida
 

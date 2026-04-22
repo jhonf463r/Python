@@ -1463,3 +1463,105 @@ def test_github_remote_publish_branch_as_pr_returns_unavailable_without_service(
         title="feat: x",
     )
     assert payload["error"] == "github_remote_unavailable"
+
+
+# ---------------------------------------------------------------------------
+# self_auto_merge MCP tool
+# ---------------------------------------------------------------------------
+
+
+def test_self_auto_merge_delegates_to_module_and_returns_dict(monkeypatch) -> None:
+    from iabv_v15.infra.mcp import self_auto_merge as _saam
+
+    captured: dict[str, object] = {}
+
+    def _fake(repo, pr_number, *, method, force):
+        captured["repo"] = repo
+        captured["pr_number"] = pr_number
+        captured["method"] = method
+        captured["force"] = force
+        return _saam.MergeResult(
+            status="merged",
+            pr_number=pr_number,
+            repo=repo,
+            branch="devin/1-x",
+            title="feat: x",
+            mergeable_state="clean",
+            method=method,
+            reason="ok",
+            detail="ok",
+            merge_sha="abc",
+            branch_safe=True,
+        )
+
+    monkeypatch.setattr(_saam, "auto_merge", _fake)
+
+    container = _build_container()
+    server = IABVMCPServer(container)
+
+    payload = _call_tool(
+        server,
+        "self_auto_merge",
+        pr_number=77,
+        repo="foo/bar",
+        method="squash",
+    )
+
+    assert isinstance(payload, dict)
+    assert payload["status"] == "merged"
+    assert payload["merge_sha"] == "abc"
+    assert payload["branch"] == "devin/1-x"
+    assert payload["method"] == "squash"
+    # force no se expone al MCP; siempre False
+    assert captured == {
+        "repo": "foo/bar",
+        "pr_number": 77,
+        "method": "squash",
+        "force": False,
+    }
+
+
+def test_self_auto_merge_defaults_repo_when_none(monkeypatch) -> None:
+    from iabv_v15.infra.mcp import self_auto_merge as _saam
+
+    captured: dict[str, object] = {}
+
+    def _fake(repo, pr_number, *, method, force):
+        captured["repo"] = repo
+        return _saam.MergeResult(
+            status="blocked",
+            pr_number=pr_number,
+            repo=repo,
+            method=method,
+            reason="branch_not_safe",
+            detail="rama feature/x no segura",
+        )
+
+    monkeypatch.setattr(_saam, "auto_merge", _fake)
+
+    container = _build_container()
+    server = IABVMCPServer(container)
+
+    payload = _call_tool(server, "self_auto_merge", pr_number=1)
+
+    assert captured["repo"] == "jhonf463r/Python"
+    assert payload["status"] == "blocked"
+
+
+def test_self_auto_merge_returns_governance_block_when_network_down() -> None:
+    """Si world_model dice red caida, la tool bloquea antes de llamar a GitHub."""
+
+    # Snapshot con red desconectada.
+    snapshot = _default_snapshot()
+    snapshot = snapshot.__class__(
+        **{
+            **{k: getattr(snapshot, k) for k in snapshot.__dataclass_fields__},
+            "network_status": NetworkStatusSnapshot(connected=False, status="offline"),
+        }
+    )
+    container = _build_container(_snapshot=snapshot)
+    server = IABVMCPServer(container)
+
+    payload = _call_tool(server, "self_auto_merge", pr_number=5)
+    assert payload.get("governance_blocked") is True
+    assert payload.get("reason") == "network_unavailable"
