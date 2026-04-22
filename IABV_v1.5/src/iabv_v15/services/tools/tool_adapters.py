@@ -981,15 +981,22 @@ class AiderToolAdapter:
             pass
         return False
 
+    @staticmethod
+    def _aider_command() -> list[str]:
+        if shutil.which('aider') is not None:
+            return ['aider']
+        return [sys.executable, '-m', 'aider']
+
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         start = time.perf_counter()
+        base_cmd = self._aider_command()
         try:
             if sandbox:
-                completed = subprocess.run(['aider', '--version'], capture_output=True, text=True, check=False)
+                completed = subprocess.run([*base_cmd, '--version'], capture_output=True, text=True, check=False)
             else:
                 prompt = next((action.value for action in task.actions if action.value), task.objective)
                 completed = subprocess.run(
-                    ['aider', '--no-auto-commits', '--message', prompt],
+                    [*base_cmd, '--no-auto-commits', '--message', prompt],
                     capture_output=True,
                     text=True,
                     check=False,
@@ -1024,7 +1031,17 @@ class MCPToolAdapter:
         self.timeout_seconds = timeout_seconds
 
     def is_available(self, card: ToolCard) -> bool:
-        return bool(card.metadata.get('server_url'))
+        server_url = str(card.metadata.get('server_url') or '').strip()
+        if not server_url:
+            return False
+        if httpx is None:
+            return False
+        try:
+            with httpx.Client(timeout=3.0) as client:
+                resp = client.get(server_url.rstrip('/') + '/health')
+                return resp.is_success
+        except Exception:
+            return False
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         start = time.perf_counter()
