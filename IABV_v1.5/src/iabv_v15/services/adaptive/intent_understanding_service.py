@@ -1,6 +1,8 @@
 ﻿from __future__ import annotations
 
 import re
+import threading
+import time
 from typing import Any
 
 from iabv_v15.domain.models import InferenceRequest, IntentDisposition, IntentHypothesis, IntentSchema, TaskIntent, TaskRole
@@ -8,13 +10,14 @@ from iabv_v15.domain.models import InferenceRequest, IntentDisposition, IntentHy
 
 class IntentUnderstandingService:
     # M4: registro de fallos por patron para confidence decay.
-    # Diccionario compartido entre instancias (class-level) que acumula
-    # cuantas veces un intent_key clasificado llevo a fallo post-ejecucion.
-    # TaskOutcomeRecorder llama register_pattern_failure() cuando detecta
-    # un mismatch. El decay se aplica en classify() via _confidence_decay().
-    _pattern_failure_counts: dict[str, int] = {}
+    # Stores (count, first_failure_epoch) per intent_key so entries
+    # older than _FAILURE_EXPIRY_SECONDS auto-expire, preventing
+    # permanent penalty from transient issues.
+    _pattern_failure_counts: dict[str, tuple[int, float]] = {}
+    _pattern_failure_lock = threading.Lock()
     _DECAY_PER_FAILURE = 0.03
     _MAX_DECAY = 0.15
+    _FAILURE_EXPIRY_SECONDS = 7200.0  # 2 hours
 
     SITE_ALIASES = {
         'wplay': ['wplay', 'w play'],
@@ -197,13 +200,37 @@ class IntentUnderstandingService:
 
     @classmethod
     def register_pattern_failure(cls, intent_key: str) -> None:
-        """M4: registrar un fallo para un intent_key especifico."""
-        cls._pattern_failure_counts[intent_key] = cls._pattern_failure_counts.get(intent_key, 0) + 1
+        """M4: registrar un fallo para un intent_key especifico (thread-safe)."""
+        now = time.monotonic()
+        with cls._pattern_failure_lock:
+            existing = cls._pattern_failure_counts.get(intent_key)
+            if existing is not None:
+                count, first_ts = existing
+                if (now - first_ts) > cls._FAILURE_EXPIRY_SECONDS:
+                    cls._pattern_failure_counts[intent_key] = (1, now)
+                else:
+                    cls._pattern_failure_counts[intent_key] = (count + 1, first_ts)
+            else:
+                cls._pattern_failure_counts[intent_key] = (1, now)
+
+    @classmethod
+    def reset_pattern_failures(cls) -> None:
+        """Clear all accumulated pattern failures (useful for test teardown)."""
+        with cls._pattern_failure_lock:
+            cls._pattern_failure_counts.clear()
 
     def _confidence_decay(self, intent_key: str) -> float:
-        """M4: retorna el decay acumulado para un intent_key."""
-        failures = self._pattern_failure_counts.get(intent_key, 0)
-        return min(failures * self._DECAY_PER_FAILURE, self._MAX_DECAY)
+        """M4: retorna el decay acumulado para un intent_key (with expiry)."""
+        now = time.monotonic()
+        with self._pattern_failure_lock:
+            existing = self._pattern_failure_counts.get(intent_key)
+            if existing is None:
+                return 0.0
+            count, first_ts = existing
+            if (now - first_ts) > self._FAILURE_EXPIRY_SECONDS:
+                del self._pattern_failure_counts[intent_key]
+                return 0.0
+        return min(count * self._DECAY_PER_FAILURE, self._MAX_DECAY)
 
     def classify(self, request: InferenceRequest) -> tuple[TaskIntent, list[IntentHypothesis]]:
         text = self._normalize(request.user_goal)

@@ -1378,10 +1378,16 @@ class AutonomousValidationCycleService:
         Sigue el patron de ``_append_decision_log``: hold ``self._lock``,
         build a new entries list (no in-place mutation), y persistir.
         """
+        already_consumed: set[str] = set()
+        with self._lock:
+            log = self._decision_log or ToolEvolutionDecisionLog()
+            for entry in (log.entries or []):
+                if entry.decision == 'probe_consumed':
+                    already_consumed.add(str(entry.subject_key or ''))
         new_entries: list[ProposalValidationResult] = []
         for probe in probes[:self._PENDING_AUTO_PROBES_CAP]:
             finding_id = str(probe.get('finding_id') or '').strip()
-            if not finding_id:
+            if not finding_id or finding_id in already_consumed:
                 continue
             probe_type = str(probe.get('probe_type') or 'diagnostic').strip()
             description = str(probe.get('description') or '').strip()[:240]
