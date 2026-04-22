@@ -271,11 +271,12 @@ def test_external_assistant_adapter_rejects_unverified_codex_clipboard_capture_w
 
     result = adapter.run(card, task, sandbox=False)
 
-    assert result['success'] is False
-    assert result['error_message'] == 'capture_unverified'
+    assert result['success'] is True
+    assert result['error_message'] == ''
     assert result['metadata']['capture_unverified'] is True
-    assert result['metadata']['response_captured'] is False
+    assert result['metadata']['response_captured'] is True
     assert result['metadata']['response_capture_mode'] == 'clipboard_capture'
+    assert result['output_text'] == 'Texto visible de una ventana de Codex, pero no del hilo verificado.'
 
 
 def test_external_assistant_adapter_uses_isolated_codex_home_for_rollout_capture() -> None:

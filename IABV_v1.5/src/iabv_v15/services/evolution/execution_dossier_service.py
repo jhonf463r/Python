@@ -349,13 +349,32 @@ class ExecutionDossierService:
     def _issues_for_run(self, run_record: RunRecord, self_checks: list[Any]) -> list[IssueCandidate]:
         issues: list[IssueCandidate] = []
         if run_record.status == RunStatus.FAILED:
+            route = run_record.route
+            provider_name = ''
+            if hasattr(route, 'provider_name'):
+                provider_name = str(route.provider_name or '').strip().lower()
+            elif hasattr(route, 'primary_provider'):
+                provider_name = str(route.primary_provider or '').strip().lower()
+            error_category = str(run_record.error_summary or run_record.result.error_summary or '').strip().lower()[:60]
+            hint_parts = ['failure']
+            if provider_name:
+                hint_parts.append(provider_name)
+            if 'timeout' in error_category:
+                hint_parts.append('timeout')
+            elif 'connection' in error_category or 'network' in error_category:
+                hint_parts.append('network')
+            elif 'auth' in error_category or 'permission' in error_category or '403' in error_category or '401' in error_category:
+                hint_parts.append('auth')
+            elif 'rate' in error_category or 'limit' in error_category or 'quota' in error_category:
+                hint_parts.append('rate_limit')
+            specific_hint = '_'.join(hint_parts)
             issues.append(
                 IssueCandidate(
                     title='Ejecucion fallida',
                     summary=run_record.error_summary or run_record.result.error_summary or 'La corrida termino con error.',
                     probable_cause='Fallo en provider, routing o herramienta local.',
                     severity=IssueSeverity.HIGH,
-                    issue_hint='latest_failure',
+                    issue_hint=specific_hint,
                 )
             )
         elif run_record.status == RunStatus.PARTIAL or run_record.result.used_fallback:
@@ -440,7 +459,7 @@ class ExecutionDossierService:
     def _proposals_for_issues(self, issues: list[IssueCandidate], improvement_hints: list[str]) -> list[ImprovementProposal]:
         proposals: list[ImprovementProposal] = []
         for issue in issues:
-            if issue.issue_hint == 'latest_failure':
+            if issue.issue_hint.startswith('failure'):
                 proposals.append(
                     ImprovementProposal(
                         title='Construir prueba reproducible del fallo',

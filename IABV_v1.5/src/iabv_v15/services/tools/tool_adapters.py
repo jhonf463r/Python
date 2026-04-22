@@ -346,10 +346,12 @@ class ToolAdapter:
                             captured['capture_source'] = 'clipboard_fallback'
                 if captured.get('response_captured'):
                     capture_source = str(captured.get('capture_source') or response_capture_mode).strip().lower() or response_capture_mode
+                    captured_text = str(captured.get('captured_text') or '').strip()
                     if background_capture_mode == 'codex_rollout' and capture_source != 'session_rollout':
+                        has_text = bool(captured_text)
                         return {
-                            'success': False,
-                            'output_text': '',
+                            'success': has_text,
+                            'output_text': captured_text if has_text else '',
                             'extracted_data': {
                                 'assistant_kind': assistant_kind,
                                 'launch_target': launch_target,
@@ -357,7 +359,7 @@ class ToolAdapter:
                                 'focused_title': str(captured.get('focused_title') or ''),
                             },
                             'artifacts': [],
-                            'error_message': 'capture_unverified',
+                            'error_message': '' if has_text else 'capture_unverified',
                             'execution_ms': int((time.perf_counter() - start) * 1000),
                             'metadata': {
                                 'sandbox': sandbox,
@@ -368,7 +370,7 @@ class ToolAdapter:
                                 'manual_pasteback_required': False,
                                 'prepared_prompt': prompt_text,
                                 'prompt_preview': prompt_preview,
-                                'response_captured': False,
+                                'response_captured': has_text,
                                 'launched': bool(captured.get('launched')),
                                 'auto_capture_attempted': True,
                                 'auto_capture_reason': 'capture_unverified',
@@ -378,7 +380,7 @@ class ToolAdapter:
                                 'isolated_session': isolated_session,
                                 **consultation_metadata,
                                 'capture_source': capture_source,
-                                'thread_verification': '',
+                                'thread_verification': 'unverified',
                                 'capture_unverified': True,
                                 'used_fallback_capture': bool(captured.get('used_fallback_capture')),
                                 'rollout_path': str(captured.get('rollout_path') or ''),
@@ -386,9 +388,10 @@ class ToolAdapter:
                             },
                         }
                     if capture_source == 'session_rollout' and not bool(captured.get('thread_verified')):
+                        has_text = bool(captured_text)
                         return {
-                            'success': False,
-                            'output_text': '',
+                            'success': has_text,
+                            'output_text': captured_text if has_text else '',
                             'extracted_data': {
                                 'assistant_kind': assistant_kind,
                                 'launch_target': launch_target,
@@ -396,7 +399,7 @@ class ToolAdapter:
                                 'focused_title': str(captured.get('focused_title') or ''),
                             },
                             'artifacts': [],
-                            'error_message': 'wrong_thread',
+                            'error_message': '' if has_text else 'wrong_thread',
                             'execution_ms': int((time.perf_counter() - start) * 1000),
                             'metadata': {
                                 'sandbox': sandbox,
@@ -407,7 +410,7 @@ class ToolAdapter:
                                 'manual_pasteback_required': False,
                                 'prepared_prompt': prompt_text,
                                 'prompt_preview': prompt_preview,
-                                'response_captured': False,
+                                'response_captured': has_text,
                                 'launched': bool(captured.get('launched')),
                                 'auto_capture_attempted': True,
                                 'auto_capture_reason': 'wrong_thread',
