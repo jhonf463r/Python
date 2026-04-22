@@ -131,23 +131,31 @@ class TokenRotationLedger:
 
         kind = _KIND_PROBE_OK if ok else _KIND_PROBE_FAILED
         ts = _coerce_dt(observed_at or self._clock())
-        if ok:
-            previous = self._last_event_kind(token_name)
-            if previous == _KIND_PROBE_FAILED:
-                self._append_event(
-                    token_name=token_name,
-                    kind=_KIND_ROTATED,
-                    observed_at=ts,
-                    reason='implicit_rotation_after_failure',
-                    metadata={'trigger': 'probe_ok_after_probe_failed'},
-                )
-        return self._append_event(
-            token_name=token_name,
-            kind=kind,
-            observed_at=ts,
-            reason=reason,
-            metadata=metadata,
-        )
+        # La lectura del ultimo evento y el append van bajo el mismo lock:
+        # dos probe_ok concurrentes posteriores a un probe_failed no deben
+        # insertar dos ``rotated`` duplicados (TOCTOU).
+        with self._lock:
+            events_to_append: list[dict[str, Any]] = []
+            if ok:
+                last_kind = self._last_event_kind_unlocked(token_name)
+                if last_kind == _KIND_PROBE_FAILED:
+                    events_to_append.append(
+                        {
+                            'kind': _KIND_ROTATED,
+                            'observed_at': ts.isoformat(),
+                            'reason': 'implicit_rotation_after_failure',
+                            'metadata': {'trigger': 'probe_ok_after_probe_failed'},
+                        }
+                    )
+            probe_event = {
+                'kind': kind,
+                'observed_at': ts.isoformat(),
+                'reason': reason or None,
+                'metadata': dict(metadata or {}),
+            }
+            events_to_append.append(probe_event)
+            self._append_events_unlocked(token_name, events_to_append)
+        return probe_event
 
     def record_rotation(
         self,
@@ -285,6 +293,12 @@ class TokenRotationLedger:
     # ------------------------------------------------------------------
 
     def _last_event_kind(self, token_name: str) -> str | None:
+        """Wrapper publico que toma el lock. Usar ``_last_event_kind_unlocked``
+        cuando ya se tiene el lock (e.g. ``record_probe``)."""
+        with self._lock:
+            return self._last_event_kind_unlocked(token_name)
+
+    def _last_event_kind_unlocked(self, token_name: str) -> str | None:
         data = self._load()
         bucket = data.get('tokens', {}).get(token_name)
         if not bucket:
@@ -293,6 +307,26 @@ class TokenRotationLedger:
         if not events:
             return None
         return str(events[-1].get('kind') or '') or None
+
+    def _append_events_unlocked(
+        self,
+        token_name: str,
+        new_events: list[dict[str, Any]],
+    ) -> None:
+        """Append N eventos al bucket de ``token_name`` bajo el lock ya
+        adquirido por el caller. Un solo load + write por batch."""
+        if not new_events:
+            return
+        data = self._load()
+        bucket = data.setdefault('tokens', {}).setdefault(
+            token_name, {'events': []}
+        )
+        events = bucket['events']
+        events.extend(new_events)
+        if len(events) > _MAX_EVENTS_PER_TOKEN:
+            del events[: len(events) - _MAX_EVENTS_PER_TOKEN]
+        data['updated_at'] = self._clock().isoformat()
+        self._write(data)
 
     def _append_event(
         self,
@@ -313,17 +347,7 @@ class TokenRotationLedger:
             'metadata': dict(metadata or {}),
         }
         with self._lock:
-            data = self._load()
-            bucket = data.setdefault('tokens', {}).setdefault(
-                token_name, {'events': []}
-            )
-            events = bucket['events']
-            events.append(event)
-            if len(events) > _MAX_EVENTS_PER_TOKEN:
-                # Rolling window: descartamos los mas viejos.
-                del events[: len(events) - _MAX_EVENTS_PER_TOKEN]
-            data['updated_at'] = self._clock().isoformat()
-            self._write(data)
+            self._append_events_unlocked(token_name, [event])
         return event
 
     def _load(self) -> dict[str, Any]:

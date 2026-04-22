@@ -765,7 +765,7 @@ class OperationalSelfExaminationService:
                 days_txt = f'{days:.1f}d' if isinstance(days, (int, float)) else 'pronto'
                 title = f'Rotacion proactiva de {token_name} ({days_txt})'
                 summary = (
-                    f'Por el promedio observado ({pred.get("avg_interval_days"):.1f} dias '
+                    f'Por el promedio observado ({pred.get("avg_interval_days") or 0:.1f} dias '
                     f'entre rotaciones pasadas, {pred.get("rotations_observed")} muestras) '
                     f'el token {token_name} expirara en {days_txt}. Rotar antes evita 401.'
                 )
