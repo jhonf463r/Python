@@ -91,6 +91,23 @@ $env:IABV_MCP_NAME = $serverName
 $env:FASTMCP_HOST = $bindHost
 $env:FASTMCP_PORT = $bindPort
 
+# Inyecta los CLIs portable de iabv_bootstrap.ps1 al PATH del MCP server.
+# Sin esto, el proceso python hijo no hereda los directorios que el $PROFILE
+# del usuario agrega interactivamente, y LocalCliToolAdapter reporta gh/
+# cloudflared/git/winget como 'missing' aun cuando la shell del usuario los ve.
+$iabvToolsRoot = $env:IABV_TOOLS_ROOT
+if (-not $iabvToolsRoot) { $iabvToolsRoot = Join-Path $HOME '.iabv\tools' }
+if (Test-Path $iabvToolsRoot) {
+    $iabvPathCandidates = @(
+        (Join-Path $iabvToolsRoot 'gh\bin'),
+        (Join-Path $iabvToolsRoot 'cloudflared')
+    ) | Where-Object { Test-Path $_ }
+    if ($iabvPathCandidates) {
+        $env:PATH = ($iabvPathCandidates -join ';') + ';' + $env:PATH
+        Write-Host ("Tools en PATH: " + ($iabvPathCandidates -join '; ')) -ForegroundColor DarkGray
+    }
+}
+
 # Lanza el MCP server en background (una sola ventana para ver logs).
 # Si IABV_MCP_HOT_RELOAD=1, se envuelve en scripts\mcp_hot_reload.py para que
 # se reinicie solo al cambiar archivos en src/iabv_v15/ (util post git pull).
