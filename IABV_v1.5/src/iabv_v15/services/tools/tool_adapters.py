@@ -151,8 +151,10 @@ class ToolAdapter:
         prompt_text = next((action.value for action in task.actions if action.action_type == ToolActionType.LLM_QUERY and action.value), task.objective)
         prompt_preview = prompt_text[:400]
         launch_target = str(card.metadata.get('web_url') or '') if launch_mode == 'web_assisted' else self._resolve_launch_target(card)
+        process_detected_running = False
         if not launch_target and launch_mode == 'desktop_app' and os.name == 'nt' and self._detect_running_process(card):
             launch_target = str(card.metadata.get('command_name') or assistant_kind)
+            process_detected_running = True
         clipboard_capture = response_capture_mode == 'clipboard_capture' and launch_mode == 'desktop_app'
         browser_dom_capture = response_capture_mode in {'dom_capture', 'browser_dom'} and launch_mode == 'web_assisted'
         background_capture_mode = str(card.metadata.get('background_capture_mode') or task.metadata.get('background_capture_mode') or '').strip().lower()
@@ -610,6 +612,8 @@ class ToolAdapter:
                     }
             launched = False
             if dry_run:
+                launched = True
+            elif process_detected_running:
                 launched = True
             elif launch_mode == 'web_assisted':
                 launched = bool(webbrowser.open(str(launch_target)))
