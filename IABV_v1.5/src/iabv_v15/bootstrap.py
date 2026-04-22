@@ -503,6 +503,8 @@ class AppBootstrap:
             world_model_service=self.world_model_service,
             environment_self_awareness_service=self.environment_self_awareness_service,
             storage=self.evolution_storage,
+            tool_registry=self.tool_registry,
+            research_backlog_root=self.config.data_dir,
         )
         self.tool_discovery_service = ToolDiscoveryService(
             storage=self.evolution_storage,
