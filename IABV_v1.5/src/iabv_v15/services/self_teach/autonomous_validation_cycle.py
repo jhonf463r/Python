@@ -503,7 +503,7 @@ class AutonomousValidationCycleService:
 
         if self.world_model_service is not None:
             try:
-                wm = self.world_model_service.current_snapshot()
+                wm = self.world_model_service.current_model()
                 if wm is not None:
                     ia_status: dict[str, str] = {}
                     for tool_status in (wm.tool_live_status or []):

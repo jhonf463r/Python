@@ -668,6 +668,10 @@ class AdaptiveTaskOrchestrator:
         capabilities = self.capability_service.evaluate(intent, context)
         context.capability_snapshot = capabilities
         perception.task_context.capability_snapshot = capabilities
+        if sub_intents:
+            ctx_meta = dict(context.metadata or {})
+            ctx_meta['sub_intents'] = sub_intents
+            context.metadata = ctx_meta
         pack = self.strategy_pack_registry.resolve_pack(intent, context)
         strategy_candidates = self.strategy_pack_registry.build_candidates(
             pack=pack,
