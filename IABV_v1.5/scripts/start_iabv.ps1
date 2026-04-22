@@ -17,6 +17,14 @@
 #   -Quiet                  Menos output en consola.
 #   -StartUI                Ademas de MCP+tunel, lanza ControlCenter
 #                           (python -m iabv_v15 app) en proceso aparte.
+#   -AutoPull               Corre 'git pull --ff-only' en el workspace antes
+#                           de cualquier otra cosa (default ON). Si hubo
+#                           commits nuevos, invoca summarize_updates para
+#                           imprimir un resumen humano en espanol de los
+#                           cambios. Si el pull falla o hay divergencia,
+#                           aborta con mensaje claro (NO fuerza merge).
+#   -NoAutoPull             Desactiva el auto-pull (p.ej. cuando ya lo
+#                           corriste a mano o estas en una rama intencional).
 #
 # Si falta algun secreto, el script te dice exactamente cual y sale sin
 # arrancar el MCP, para no confundir con un 401/403 en los logs runtime.
@@ -42,8 +50,14 @@ param(
     [switch]$HotReload,
     [switch]$Quiet,
     [switch]$StartUI,
-    [int]$McpPort = 8000
+    [int]$McpPort = 8000,
+    [switch]$AutoPull = $true,
+    [switch]$NoAutoPull
 )
+
+if ($NoAutoPull) {
+    $AutoPull = $false
+}
 
 $ErrorActionPreference = 'Stop'
 
@@ -59,6 +73,61 @@ $secretsPath = Join-Path $HOME '.iabv_secrets.ps1'
 
 Write-Info "=== IABV v1.5 start ==="
 Write-Info "Secrets : $secretsPath"
+
+# --- Auto pull (default ON) -------------------------------------------------
+# Mantiene el workspace sincronizado con origin/main antes de arrancar el MCP,
+# para que el usuario no termine corriendo una version vieja despues de que
+# Devin mergeo fixes automaticos. Solo fast-forward: si hay divergencia real,
+# abortamos en vez de resolver a ciegas.
+if ($AutoPull) {
+    $repoRoot = $null
+    try {
+        $repoRoot = (& git -C $PSScriptRoot rev-parse --show-toplevel 2>$null).Trim()
+    } catch {
+        $repoRoot = $null
+    }
+    if (-not $repoRoot) {
+        Write-Warn "[auto-pull] No pude resolver la raiz del repo git desde $PSScriptRoot; salto pull."
+    } else {
+        Write-Info "Auto-pull : git pull --ff-only en $repoRoot"
+        $oldSha = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
+        & git -C $repoRoot pull --ff-only
+        $pullExit = $LASTEXITCODE
+        if ($pullExit -ne 0) {
+            Write-Err "[auto-pull] git pull --ff-only fallo (exit $pullExit)."
+            Write-Err "  Probablemente hay divergencia local (commits sin pushear o rama reescrita)."
+            Write-Err "  Resolvelo a mano o corre con -NoAutoPull si sabes lo que haces."
+            exit 1
+        }
+        $newSha = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
+        if ($oldSha -and $newSha -and $oldSha -ne $newSha) {
+            Write-Info "Cambios   : $oldSha -> $newSha"
+            $iabvRoot = Split-Path -Parent $PSScriptRoot
+            $srcPath  = Join-Path $iabvRoot 'src'
+            $prevPy   = $env:PYTHONPATH
+            try {
+                if ($env:PYTHONPATH) {
+                    $env:PYTHONPATH = "$srcPath;$env:PYTHONPATH"
+                } else {
+                    $env:PYTHONPATH = $srcPath
+                }
+                & python -m iabv_v15.scripts.summarize_updates $oldSha $newSha
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Warn "[auto-pull] summarize_updates salio con exit $LASTEXITCODE (seguimos igual)."
+                }
+            } catch {
+                Write-Warn "[auto-pull] No pude correr summarize_updates: $_"
+            } finally {
+                $env:PYTHONPATH = $prevPy
+            }
+        } else {
+            Write-Info "Sin cambios nuevos (HEAD ya estaba actualizado)."
+        }
+    }
+} else {
+    Write-Info "Auto-pull : OFF (-NoAutoPull activo)."
+}
+# ---------------------------------------------------------------------------
 
 if (Test-Path $secretsPath) {
     . $secretsPath
