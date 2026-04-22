@@ -1064,7 +1064,20 @@ class ControlCenterViewModel(QObject):
         self._evolution_area_cards = area_cards
         self._evolution_blockers = blockers
     def _assistant_tool_ids(self) -> list[str]:
-        return ['ollama_llm', 'codex_installed', 'chatgpt_installed', 'chatgpt_web_assisted', 'claude_installed', 'claude_web_assisted']
+        # devin_api y github_api son adapters activos (API REST) que el usuario
+        # tambien entiende como "IAs con las que me conecto". Dejarlos fuera hacia
+        # que el chat respondiera "no tengo conexion con Devin" aun cuando el
+        # adapter estaba vivo y respondiendo 200 OK.
+        return [
+            'ollama_llm',
+            'devin_api',
+            'github_api',
+            'codex_installed',
+            'chatgpt_installed',
+            'chatgpt_web_assisted',
+            'claude_installed',
+            'claude_web_assisted',
+        ]
 
     def _tool_registry(self):
         return getattr(self.tool_teach_service, 'registry', None)
@@ -1122,6 +1135,8 @@ class ControlCenterViewModel(QObject):
                 'codex': 'Correccion tecnica y codigo',
                 'chatgpt': 'Investigacion explicativa',
                 'claude': 'Analisis y contraste externo',
+                'devin': 'Sesion autonoma remota via API',
+                'github': 'Operaciones GitHub nativas via API',
             }.get(assistant_kind, 'Asistente externo')
             cards.append(
                 {
@@ -1134,6 +1149,57 @@ class ControlCenterViewModel(QObject):
                 }
             )
         return cards
+
+    def _aggregate_assistant_entries(self, cards: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        # Cuando un asistente tiene dos variantes (ej: claude app + claude web)
+        # y una esta lista pero la otra no, el chat no debe repetir "Claude no
+        # esta disponible". Colapsamos por assistant_kind y nos quedamos con la
+        # mejor variante segun prioridad de status.
+        priority = {
+            'listo automatico': 5,
+            'sesion aislada': 4,
+            'web preparada': 3,
+            'listo guiado': 2,
+            'no disponible': 0,
+        }
+
+        def rank(status: str) -> int:
+            normalized = status.strip().lower()
+            for key, value in priority.items():
+                if key in normalized:
+                    return value
+            return 1
+
+        friendly_kind_titles = {
+            'ollama': 'Ollama local',
+            'codex': 'Codex',
+            'chatgpt': 'ChatGPT',
+            'claude': 'Claude',
+            'devin': 'Devin',
+            'github': 'GitHub',
+        }
+
+        grouped: dict[str, dict[str, Any]] = {}
+        order: list[str] = []
+        for card in cards:
+            if not isinstance(card, dict):
+                continue
+            kind_raw = str(card.get('assistant_kind') or '').strip().lower()
+            key = kind_raw or str(card.get('name') or card.get('tool_id') or id(card))
+            if key not in order:
+                order.append(key)
+            current = grouped.get(key)
+            if current is None or rank(str(card.get('status') or '')) > rank(str(current.get('status') or '')):
+                merged = dict(card)
+                friendly = friendly_kind_titles.get(kind_raw)
+                if friendly and kind_raw:
+                    # Solo re-etiquetamos cuando hay mas de una variante del mismo
+                    # kind; si es unico respetamos el titulo original del card.
+                    variants_for_kind = [c for c in cards if isinstance(c, dict) and str(c.get('assistant_kind') or '').strip().lower() == kind_raw]
+                    if len(variants_for_kind) > 1:
+                        merged['name'] = friendly
+                grouped[key] = merged
+        return [grouped[key] for key in order if key in grouped]
 
     def _startup_readiness_text(self, *, validating_local_stack: bool = False) -> str:
         goal_context = self._goal_context_for_display(self._current_site_id() or None)
@@ -1592,8 +1658,9 @@ class ControlCenterViewModel(QObject):
         cpu_usage = self._format_percent(hardware.get('cpu_usage_percent'))
         notifications = [str(item).strip() for item in (environment.notifications or []) if str(item).strip()]
         unresolved = [str(item).replace('UNRESOLVED:', '').strip() for item in (environment.unresolved_fields or []) if str(item).strip()]
+        aggregated_cards = self._aggregate_assistant_entries(assistant_cards)
         assistant_states: list[str] = []
-        for card in assistant_cards:
+        for card in aggregated_cards:
             name = str(card.get('name') or '').strip()
             status = str(card.get('status') or '').strip().lower()
             if not name:
