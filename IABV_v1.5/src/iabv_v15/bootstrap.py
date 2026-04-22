@@ -2,6 +2,7 @@
 
 import logging
 import os
+import re
 import threading
 from pathlib import Path
 import sys
@@ -11,6 +12,57 @@ from iabv_v15.infra.config import load_app_config, load_theme_config
 from iabv_v15.infra.logging import configure_logging
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Auto-carga de secretos desde ~/.iabv_secrets.ps1
+# ---------------------------------------------------------------------------
+# Cuando el usuario arranca la app directamente (python -m iabv_v15) sin
+# haber cargado start_iabv.ps1 antes, los env vars de tokens quedan vacios
+# y todos los tool adapters reportan "missing". Esta funcion parsea el
+# archivo PowerShell de secretos y los inyecta en os.environ SOLO si no
+# estan ya seteados (los valores de entorno explicitos siempre ganan).
+#
+# Patron reconocido:  $env:NOMBRE = 'valor'   o   $env:NOMBRE = "valor"
+# Se ignoran lineas comentadas (#), placeholders con REEMPLAZAR, y valores
+# vacios.
+
+_PS1_ENV_RE = re.compile(
+    r"""^\s*\$env:([A-Za-z_][A-Za-z0-9_]*)\s*=\s*['"](.+?)['"]\s*$"""
+)
+
+
+def _auto_load_secrets() -> int:
+    """Carga secretos desde ``~/.iabv_secrets.ps1`` si existe.
+
+    Retorna la cantidad de variables inyectadas en ``os.environ``.
+    No sobreescribe variables que ya tengan valor en el entorno.
+    """
+    secrets_path = Path.home() / '.iabv_secrets.ps1'
+    if not secrets_path.is_file():
+        return 0
+    injected = 0
+    try:
+        for line in secrets_path.read_text(encoding='utf-8').splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith('#'):
+                continue
+            m = _PS1_ENV_RE.match(stripped)
+            if not m:
+                continue
+            name, value = m.group(1), m.group(2)
+            if 'REEMPLAZAR' in value:
+                continue
+            if not value.strip():
+                continue
+            if name not in os.environ or not os.environ[name].strip():
+                os.environ[name] = value
+                injected += 1
+    except Exception as exc:
+        logger.warning('auto_load_secrets: no pude leer %s: %s', secrets_path, exc)
+    if injected:
+        logger.info('auto_load_secrets: %d variables cargadas desde %s', injected, secrets_path)
+    return injected
 
 
 _GITHUB_TOKEN_ENV_VARS: tuple[str, ...] = (
@@ -279,6 +331,9 @@ from iabv_v15.ui.viewmodels.run_history_viewmodel import RunHistoryViewModel
 
 class AppBootstrap:
     def __init__(self, workspace_root: str | None = None) -> None:
+        # Auto-cargar secretos ANTES de leer config (que consulta os.environ).
+        _auto_load_secrets()
+
         self.config = load_app_config(workspace_root)
         self.theme = load_theme_config()
         self._ensure_directories()
@@ -404,6 +459,7 @@ class AppBootstrap:
         self.tool_validator = ToolValidator()
         self.tool_sandbox = ToolSandbox(self.tool_validator)
         self.tool_registry = ToolRegistry(self.tool_record_repository, self.tool_adapters)
+        self._log_tool_availability()
         self.universal_perception_service = UniversalPerceptionService(tool_registry=self.tool_registry)
         self.environment_self_awareness_service = EnvironmentSelfAwarenessService(
             workspace_root=self.config.workspace_root,
@@ -1113,6 +1169,28 @@ class AppBootstrap:
         self.knowledge_base_viewmodel = None
         self.provider_settings_viewmodel = None
         self.run_history_viewmodel = None
+
+    def _log_tool_availability(self) -> None:
+        """Log de arranque: muestra que herramientas estan conectadas."""
+        cards = self.tool_registry.list_cards()
+        if not cards:
+            logger.info('tool_availability: sin tools registradas')
+            return
+        ready = []
+        missing = []
+        for card in cards:
+            refreshed = self.tool_registry.refresh_card(card, force=True)
+            if refreshed.available:
+                ready.append(refreshed.tool_id)
+            else:
+                missing.append(refreshed.tool_id)
+        logger.info(
+            'tool_availability: %d/%d listas — ready=[%s]%s',
+            len(ready),
+            len(cards),
+            ', '.join(sorted(ready)),
+            f' | missing=[{", ".join(sorted(missing))}]' if missing else '',
+        )
 
     def _ensure_directories(self) -> None:
         for path in (
