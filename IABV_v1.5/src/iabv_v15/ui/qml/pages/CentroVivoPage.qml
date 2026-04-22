@@ -271,8 +271,8 @@ Item {
                                             text: (modelData.status || "—") + (modelData.category ? (" · " + modelData.category) : "")
                                             color: {
                                                 var s = modelData.status || ""
-                                                if (s === "ready") return accentGreen
-                                                if (s === "degraded") return accentAmber
+                                                if (s === "ready" || s === "listo" || s === "abierto" || s === "disponible") return accentGreen
+                                                if (s === "degraded" || s === "lento" || s === "limitado") return accentAmber
                                                 return textSecondary
                                             }
                                             font.family: bodyFontFamily
