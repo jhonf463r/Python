@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 import glob
+import logging
 import os
 import re
 import shlex
@@ -13,6 +14,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
 
 try:
     import httpx
@@ -106,14 +109,44 @@ class ToolAdapter:
             return True
         if launch_mode == 'web_assisted':
             return bool(str(card.metadata.get('web_url') or '').strip())
+        if launch_mode == 'desktop_app' and os.name == 'nt':
+            return self._multi_source_detect(card)
         if self._resolve_launch_target(card):
             return True
-        if launch_mode == 'desktop_app' and os.name == 'nt':
-            return self._detect_running_process(card)
         return False
 
+    def _multi_source_detect(self, card: ToolCard) -> bool:
+        """Multi-source availability check for desktop apps.
+
+        Never declares a tool missing based on a single source.  Checks
+        filesystem paths, running processes, and visible window titles.
+        If ANY source confirms presence the tool is considered available.
+        Disagreements between sources are logged so the meta-cognition
+        layer can learn from them.
+        """
+        sources: dict[str, bool] = {}
+        sources['filesystem'] = bool(self._resolve_launch_target(card))
+        sources['process'] = self._detect_running_process(card)
+        sources['window'] = self._detect_by_window_title(card)
+
+        positives = [s for s, v in sources.items() if v]
+        negatives = [s for s, v in sources.items() if not v]
+
+        if positives and negatives:
+            logger.info(
+                'multi_source_disagreement: %s — positives=%s negatives=%s'
+                ' | La herramienta existe segun %s pero no segun %s.'
+                ' Declarando available=True (optimistic).',
+                card.tool_id,
+                positives,
+                negatives,
+                positives,
+                negatives,
+            )
+        return bool(positives)
+
     def _detect_running_process(self, card: ToolCard) -> bool:
-        """Fallback: detect desktop apps by running process (e.g. MSIX installs)."""
+        """Detect desktop apps by running process (e.g. MSIX installs)."""
         keywords: list[str] = []
         for field in ('command_name', 'assistant_kind'):
             val = str(card.metadata.get(field) or '').strip().lower()
@@ -136,6 +169,51 @@ class ToolAdapter:
                 for kw in keywords:
                     if kw in name or kw in exe:
                         return True
+        except Exception:
+            pass
+        return False
+
+    def _detect_by_window_title(self, card: ToolCard) -> bool:
+        """Detect desktop apps by matching visible window titles.
+
+        Third source of truth: even if the filesystem and process list
+        miss an app, an open window whose title contains the tool's
+        display name or assistant_kind confirms it is present.
+        """
+        if os.name != 'nt':
+            return False
+        keywords: list[str] = []
+        assistant_kind = str(card.metadata.get('assistant_kind') or '').strip().lower()
+        if assistant_kind:
+            keywords.append(assistant_kind)
+        title_lower = card.title.lower() if card.title else ''
+        if title_lower and title_lower not in keywords:
+            keywords.append(title_lower)
+        if not keywords:
+            return False
+        try:
+            import ctypes
+            user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+            EnumWindows = user32.EnumWindows
+            GetWindowTextW = user32.GetWindowTextW
+            IsWindowVisible = user32.IsWindowVisible
+            titles: list[str] = []
+
+            @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)  # type: ignore[misc]
+            def _enum_cb(hwnd: Any, _lparam: Any) -> bool:
+                if IsWindowVisible(hwnd):
+                    buf = ctypes.create_unicode_buffer(512)
+                    GetWindowTextW(hwnd, buf, 512)
+                    t = buf.value.strip()
+                    if t:
+                        titles.append(t.lower())
+                return True
+
+            EnumWindows(_enum_cb, 0)
+            all_titles = ' '.join(titles)
+            for kw in keywords:
+                if kw in all_titles:
+                    return True
         except Exception:
             pass
         return False
