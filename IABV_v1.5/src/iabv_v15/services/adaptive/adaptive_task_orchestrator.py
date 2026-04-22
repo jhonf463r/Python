@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 
+import concurrent.futures
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from typing import Any
@@ -8,10 +9,14 @@ from iabv_v15.domain.models import (
     AdaptiveSession,
     AdaptiveSessionStatus,
     ApprovalCheckpoint,
+    AssistantConfigurationSnapshot,
     CapabilityReadiness,
     ClarificationItem,
     DecisionContext,
     EnvironmentSelfModel,
+    EvaluationRoute,
+    ExperimentDomain,
+    ExperimentRun,
     GoalContext,
     InferenceRequest,
     InferenceResult,
@@ -134,6 +139,7 @@ class AdaptiveTaskOrchestrator:
         goal_engine: GoalEngine | None = None,
         autonomy_governance_policy: AutonomyGovernancePolicy | None = None,
         synaptic_router: Any | None = None,
+        experiment_lab: Any | None = None,
     ) -> None:
         self.role_router = role_router
         self.adaptive_session_repository = adaptive_session_repository
@@ -153,6 +159,11 @@ class AdaptiveTaskOrchestrator:
         # ``LocalRoleRouter``; solo expone un ranking descriptivo de IAs
         # externas candidatas en ``DecisionContext.metadata.synaptic_route``.
         self.synaptic_router = synaptic_router
+        # ExperimentLab opcional — cuando esta wireado, el cotejo en paralelo
+        # registra evidencia via ``register_comparison`` (si existe) o via
+        # ``ExperimentRun`` persistidos en su repositorio. Es puramente
+        # descriptivo; nunca decide ruta operativa.
+        self.experiment_lab = experiment_lab
         self.control_master_service: Any | None = None
         self.control_master_digest_builder: Any | None = None
 
@@ -197,6 +208,310 @@ class AdaptiveTaskOrchestrator:
         metadata['synaptic_route'] = payload
         decision_context.metadata = metadata
 
+    _PARALLEL_IA_COMPARISON_TIMEOUT_S = 30.0
+    _PARALLEL_IA_COMPARISON_MAX_WORKERS = 2
+
+    @staticmethod
+    def _ranked_candidates_from_synaptic(
+        synaptic_decision: SynapticRoutingDecision | None,
+    ) -> list[dict[str, Any]]:
+        """Extrae los top candidatos del ``SynapticRoutingDecision``.
+
+        Prefiere ``ranked_candidates`` si existe como atributo (forma futura);
+        si no, arma la lista desde ``selected_assistant_kind`` + ``alternatives``
+        preservando el orden descendente ya calculado por el router.
+        Devuelve dicts con al menos ``{'assistant_kind': str, 'score': float}``.
+        """
+        if synaptic_decision is None:
+            return []
+        ranked = getattr(synaptic_decision, 'ranked_candidates', None)
+        if isinstance(ranked, list) and ranked:
+            out: list[dict[str, Any]] = []
+            for item in ranked:
+                if isinstance(item, dict):
+                    kind = str(item.get('assistant_kind') or '').strip().lower()
+                    if not kind:
+                        continue
+                    score = float(item.get('score') or item.get('total_score') or 0.0)
+                    out.append({'assistant_kind': kind, 'score': score, **{k: v for k, v in item.items() if k not in {'assistant_kind', 'score'}}})
+            if out:
+                return out
+        selected = str(getattr(synaptic_decision, 'selected_assistant_kind', '') or '').strip().lower()
+        total_score = float(getattr(synaptic_decision, 'total_score', 0.0) or 0.0)
+        alternatives = list(getattr(synaptic_decision, 'alternatives', None) or [])
+        candidates: list[dict[str, Any]] = []
+        if selected:
+            candidates.append({'assistant_kind': selected, 'score': total_score})
+        seen = {selected} if selected else set()
+        for alt in alternatives:
+            if not isinstance(alt, dict):
+                continue
+            kind = str(alt.get('assistant_kind') or '').strip().lower()
+            if not kind or kind in seen:
+                continue
+            seen.add(kind)
+            candidates.append({'assistant_kind': kind, 'score': float(alt.get('score') or 0.0)})
+        return candidates
+
+    def _parallel_comparison_allowed(self) -> tuple[bool, str | None]:
+        policy = self.autonomy_governance_policy
+        if policy is None:
+            return True, None
+        gate = getattr(policy, 'allow_parallel_ia_comparison', None)
+        if not callable(gate):
+            return True, None
+        try:
+            allowed, reason = gate()
+        except Exception:  # pragma: no cover - fail-closed por seguridad
+            return False, 'governance_check_failed'
+        return bool(allowed), reason
+
+    def _build_parallel_comparison_payload(
+        self,
+        *,
+        request: InferenceRequest,
+        candidate: dict[str, Any],
+        synaptic_decision: SynapticRoutingDecision | None,
+    ) -> dict[str, Any]:
+        """Arma un ``adaptive_payload`` minimo para ``plan_or_execute``.
+
+        Copia los parametros del request y marca el ``assistant_kind`` del
+        candidato en metadata para que ``AutonomousEvolutionService`` lo
+        considere al planear la consulta externa.
+        """
+
+        payload_metadata: dict[str, Any] = {
+            'user_goal': request.user_goal,
+            'goal_parameters': dict(request.goal_parameters or {}),
+            'assistant_kind': str(candidate.get('assistant_kind') or ''),
+            'parallel_ia_comparison': True,
+        }
+        if synaptic_decision is not None:
+            try:
+                payload_metadata['synaptic_route'] = synaptic_decision.model_dump(mode='json')
+            except Exception:
+                pass
+        return {
+            'user_goal': request.user_goal,
+            'metadata': payload_metadata,
+        }
+
+    def _run_single_ia_consultation(
+        self,
+        *,
+        request: InferenceRequest,
+        candidate: dict[str, Any],
+        synaptic_decision: SynapticRoutingDecision | None,
+        decision_context: DecisionContext | None,
+    ) -> dict[str, Any]:
+        service = self.autonomous_evolution_service
+        if service is None:
+            return {
+                'assistant_kind': str(candidate.get('assistant_kind') or ''),
+                'status': 'unavailable',
+                'reason': 'autonomous_evolution_service_not_wired',
+            }
+        payload = self._build_parallel_comparison_payload(
+            request=request, candidate=candidate, synaptic_decision=synaptic_decision
+        )
+        result = service.plan_or_execute(
+            adaptive_payload=payload,
+            user_goal=request.user_goal,
+            source='parallel_ia_comparison',
+            decision_context=decision_context,
+        )
+        result_dict = dict(result or {})
+        result_dict.setdefault('assistant_kind', str(candidate.get('assistant_kind') or ''))
+        result_dict['candidate_score'] = float(candidate.get('score') or 0.0)
+        return result_dict
+
+    @staticmethod
+    def _consultation_confidence(result: dict[str, Any]) -> float:
+        validation = result.get('response_validation')
+        if isinstance(validation, dict):
+            conf = validation.get('confidence')
+            if isinstance(conf, (int, float)):
+                return float(conf)
+        for key in ('confidence', 'response_confidence'):
+            value = result.get(key)
+            if isinstance(value, (int, float)):
+                return float(value)
+        return 0.0
+
+    @classmethod
+    def _rank_consultation_result(cls, result: dict[str, Any]) -> tuple[int, int, float, float]:
+        """Ordena resultados por (completion, has_response, confidence, score)."""
+        status = str(result.get('status') or '').strip().lower()
+        completion_rank = {
+            'completed': 4,
+            'prepared': 3,
+            'reused': 3,
+            'awaiting_response': 2,
+            'blocked': 1,
+            'failed': 0,
+            'unavailable': 0,
+        }.get(status, 1)
+        has_response = 1 if (
+            result.get('response_validation')
+            or result.get('adoption_plan')
+            or result.get('response_ingested_at_utc')
+            or result.get('response_source')
+        ) else 0
+        confidence = cls._consultation_confidence(result)
+        candidate_score = float(result.get('candidate_score') or 0.0)
+        return (completion_rank, has_response, confidence, candidate_score)
+
+    def _register_parallel_results(
+        self,
+        *,
+        request: InferenceRequest,
+        candidates: list[dict[str, Any]],
+        results: list[dict[str, Any]],
+    ) -> None:
+        lab = self.experiment_lab
+        if lab is None:
+            return
+        register = getattr(lab, 'register_comparison', None)
+        if callable(register):
+            try:
+                register(
+                    request_id=getattr(request, 'request_id', ''),
+                    user_goal=request.user_goal,
+                    candidates=list(candidates),
+                    results=list(results),
+                )
+                return
+            except Exception:  # pragma: no cover - defensive
+                pass
+        repository = getattr(lab, 'repository', None)
+        save_run = getattr(repository, 'save_run', None) if repository is not None else None
+        if not callable(save_run):
+            return
+        for candidate, result in zip(candidates, results):
+            assistant_kind = str(candidate.get('assistant_kind') or '').strip().lower()
+            try:
+                run = ExperimentRun(
+                    domain=ExperimentDomain.LANGUAGE,
+                    suite_name='parallel_ia_comparison',
+                    objective=request.user_goal or 'parallel_ia_comparison',
+                    subject_key=assistant_kind or 'unknown',
+                    route=EvaluationRoute.LANGUAGE_UNDERSTANDING,
+                    assistant_kind=assistant_kind,
+                    assistant_configuration=AssistantConfigurationSnapshot(),
+                    candidate_label=f'parallel:{assistant_kind}' if assistant_kind else 'parallel:unknown',
+                    success=bool(result.get('response_validation')) or str(result.get('status') or '').lower() in {'completed', 'prepared'},
+                    observed_summary=str(result.get('detail') or result.get('response_summary') or result.get('status') or '')[:240],
+                    metadata={
+                        'status': str(result.get('status') or ''),
+                        'candidate_score': float(candidate.get('score') or 0.0),
+                        'confidence': self._consultation_confidence(result),
+                        'source': 'parallel_ia_comparison',
+                    },
+                )
+                save_run(run)
+            except Exception:  # pragma: no cover - defensive: nunca romper comparacion por registro
+                continue
+
+    def _parallel_ia_comparison(
+        self,
+        session: AdaptiveSession | None,
+        request: InferenceRequest,
+        synaptic_decision: SynapticRoutingDecision | None,
+        *,
+        decision_context: DecisionContext | None = None,
+    ) -> dict[str, Any] | None:
+        """Consulta en paralelo las top-2 IAs rankeadas por ``SynapticRouter``.
+
+        No reemplaza al orquestador ni decide ruta operativa: prepara las dos
+        consultas candidatas con ``AutonomousEvolutionService.plan_or_execute``
+        simultaneamente, registra evidencia en ``ExperimentLab`` cuando esta
+        disponible, y devuelve el mejor resultado (por status de completion y
+        confianza) para que ``handle_request`` lo anote en la sesion.
+
+        Retorna ``None`` si no hay al menos dos candidatos, si falta el
+        ``AutonomousEvolutionService`` o si el pool no logra producir ningun
+        resultado (todos los futuros fallan o exceden el timeout global).
+        """
+
+        if synaptic_decision is None:
+            return None
+        candidates = self._ranked_candidates_from_synaptic(synaptic_decision)
+        if len(candidates) < 2:
+            return None
+        if self.autonomous_evolution_service is None:
+            return None
+        top_two = candidates[:2]
+        results: list[dict[str, Any]] = []
+        timed_out: list[str] = []
+        failed: list[dict[str, Any]] = []
+        pool = concurrent.futures.ThreadPoolExecutor(
+            max_workers=self._PARALLEL_IA_COMPARISON_MAX_WORKERS
+        )
+        try:
+            future_to_candidate = {
+                pool.submit(
+                    self._run_single_ia_consultation,
+                    request=request,
+                    candidate=candidate,
+                    synaptic_decision=synaptic_decision,
+                    decision_context=decision_context,
+                ): candidate
+                for candidate in top_two
+            }
+            try:
+                for future in concurrent.futures.as_completed(
+                    future_to_candidate, timeout=self._PARALLEL_IA_COMPARISON_TIMEOUT_S
+                ):
+                    candidate = future_to_candidate[future]
+                    try:
+                        results.append(future.result(timeout=self._PARALLEL_IA_COMPARISON_TIMEOUT_S))
+                    except concurrent.futures.TimeoutError:
+                        timed_out.append(str(candidate.get('assistant_kind') or ''))
+                        future.cancel()
+                    except Exception as exc:
+                        failed.append({
+                            'assistant_kind': str(candidate.get('assistant_kind') or ''),
+                            'error': type(exc).__name__,
+                            'detail': str(exc)[:240],
+                        })
+            except (concurrent.futures.TimeoutError, TimeoutError):
+                # Timeout global del pool: los futuros pendientes quedan
+                # registrados como ``timed_out`` en el ciclo de abajo.
+                pass
+            completed_kinds = {str(r.get('assistant_kind') or '') for r in results}
+            failed_kinds = {str(f.get('assistant_kind') or '') for f in failed}
+            for future, candidate in future_to_candidate.items():
+                kind = str(candidate.get('assistant_kind') or '')
+                if future.done():
+                    continue
+                future.cancel()
+                if kind not in completed_kinds and kind not in failed_kinds and kind not in timed_out:
+                    timed_out.append(kind)
+        finally:
+            # ``wait=False``: no bloqueamos la respuesta del orquestador a que
+            # un hilo lento termine. ``cancel_futures=True`` evita que un
+            # futuro pendiente se ejecute ademas.
+            pool.shutdown(wait=False, cancel_futures=True)
+        if not results:
+            return {
+                'status': 'no_results',
+                'candidates': top_two,
+                'timed_out': timed_out,
+                'failed': failed,
+            }
+        self._register_parallel_results(
+            request=request, candidates=top_two, results=results
+        )
+        best = max(results, key=self._rank_consultation_result)
+        return {
+            'status': 'compared',
+            'candidates': top_two,
+            'results': results,
+            'best': best,
+            'timed_out': timed_out,
+            'failed': failed,
+        }
+
     def build_decision_context_preview(self, request: InferenceRequest) -> DecisionContext:
         # Usar clasificación con schema para mejor comprensión semántica
         intent, intent_schema = self.intent_service.classify_with_schema(
@@ -229,6 +544,32 @@ class AdaptiveTaskOrchestrator:
         synaptic_decision = self._maybe_synaptic_decision(intent)
         self._inject_synaptic_into_decision_context(perception.decision_context, synaptic_decision)
         context = perception.task_context
+
+        # PR I — cotejo en paralelo de las top-2 IAs rankeadas por el
+        # ``SynapticRouter`` cuando la politica lo permite y existen al menos
+        # dos candidatos. El resultado es puramente descriptivo; queda en
+        # ``session.metadata['parallel_ia_comparison']`` para que downstream
+        # (UI, portable context, experiment_lab) lo observe. Si la politica
+        # bloquea o solo hay un candidato, el flujo cae al camino de IA unica.
+        parallel_comparison_result: dict[str, Any] | None = None
+        parallel_comparison_block_reason: str | None = None
+        if synaptic_decision is not None:
+            ranked_candidates = self._ranked_candidates_from_synaptic(synaptic_decision)
+            if len(ranked_candidates) >= 2:
+                allowed, block_reason = self._parallel_comparison_allowed()
+                if allowed:
+                    parallel_comparison_result = self._parallel_ia_comparison(
+                        None,
+                        request,
+                        synaptic_decision,
+                        decision_context=perception.decision_context,
+                    )
+                    if parallel_comparison_result:
+                        metadata = dict(perception.decision_context.metadata or {})
+                        metadata['parallel_ia_comparison'] = parallel_comparison_result
+                        perception.decision_context.metadata = metadata
+                else:
+                    parallel_comparison_block_reason = block_reason or 'blocked_by_governance'
 
         # Extraer análisis conversacional del schema (más preciso que keywords)
         ambiguity_score = intent_schema.ambiguity_score if intent_schema else 0.0
@@ -297,6 +638,10 @@ class AdaptiveTaskOrchestrator:
         )
         if control_master_objective_id:
             session.metadata['control_master_objective_id'] = control_master_objective_id
+        if parallel_comparison_result is not None:
+            session.metadata['parallel_ia_comparison'] = parallel_comparison_result
+        elif parallel_comparison_block_reason:
+            session.metadata['parallel_ia_comparison_blocked'] = parallel_comparison_block_reason
         session.playbook.metadata['site_id'] = context.site_id or intent.site_hint or ''
         for checkpoint in approvals:
             checkpoint.session_id = session.session_id

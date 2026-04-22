@@ -25,6 +25,26 @@ class AutonomyGovernancePolicy:
         'critical_object_missing',
     }
 
+    def __init__(self, *, allow_parallel_comparison: bool = True) -> None:
+        # Flag que habilita el cotejo en paralelo de IAs externas sobre el mismo
+        # ``SynapticRoutingDecision``. Por defecto encendido: la politica es
+        # descriptiva y el cotejo no ejecuta rutas operativas, solo prepara /
+        # compara consultas via ``AutonomousEvolutionService``. Los tests o el
+        # bootstrap pueden apagarlo para forzar ruta IA unica.
+        self.allow_parallel_comparison = bool(allow_parallel_comparison)
+
+    def allow_parallel_ia_comparison(self) -> tuple[bool, str | None]:
+        """Gate para ``AdaptiveTaskOrchestrator._parallel_ia_comparison``.
+
+        Retorna ``(allowed, reason_if_blocked)``. Si ``allow_parallel_comparison``
+        esta apagado, bloquea y deja el motivo; el orquestador debe entonces
+        caer al camino de IA unica (comportamiento previo) sin romper.
+        """
+
+        if not self.allow_parallel_comparison:
+            return False, 'parallel_ia_comparison deshabilitado por politica.'
+        return True, None
+
     def allow_git_sync(self) -> tuple[bool, str | None]:
         """Gate for infrastructure-level git sync (``GitSyncService``).
 
