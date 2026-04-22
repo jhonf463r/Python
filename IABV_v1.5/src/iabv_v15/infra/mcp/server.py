@@ -1056,7 +1056,7 @@ class IABVMCPServer:
             try:
                 from iabv_v15.domain.models import InferenceRequest, TaskIntent
 
-                effective_goal = str(user_goal or snapshot_hint or "")
+                effective_goal = str(user_goal or snapshot_hint or "cognitive_frame_translation")
                 request = InferenceRequest(
                     user_goal=effective_goal,
                     metadata={"source": "cognitive_frame_translate"},
