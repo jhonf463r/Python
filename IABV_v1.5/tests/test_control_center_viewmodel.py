@@ -3965,3 +3965,94 @@ def test_send_chat_does_not_register_capability_without_possession_marker() -> N
         assert entries == []
     finally:
         _cleanup_bootstrap(bootstrap)
+
+
+def test_assistant_tool_ids_exposes_devin_and_github_api() -> None:
+    bootstrap = _make_bootstrap('test_assistant_tool_ids_devin_github_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        tool_ids = viewmodel._assistant_tool_ids()
+        assert 'devin_api' in tool_ids, (
+            'devin_api debe estar en la lista de asistentes del chat; sin esto el '
+            'chat responde "no tengo conexion con Devin" aun cuando el adapter vive.'
+        )
+        assert 'github_api' in tool_ids, (
+            'github_api es un adapter activo consumible por chat; debe aparecer en la lista de asistentes.'
+        )
+        assert 'ollama_llm' in tool_ids
+        assert 'codex_installed' in tool_ids
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_aggregate_assistant_entries_collapses_claude_dual_cards() -> None:
+    bootstrap = _make_bootstrap('test_aggregate_claude_dual_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        raw_cards = [
+            {'name': 'Ollama local', 'status': 'listo automatico', 'assistant_kind': 'ollama', 'tool_id': 'ollama_llm'},
+            {'name': 'Devin (Cognition AI)', 'status': 'listo automatico', 'assistant_kind': 'devin', 'tool_id': 'devin_api'},
+            {'name': 'Claude instalado', 'status': 'no disponible', 'assistant_kind': 'claude', 'tool_id': 'claude_installed'},
+            {'name': 'Claude web asistido', 'status': 'listo guiado', 'assistant_kind': 'claude', 'tool_id': 'claude_web_assisted'},
+        ]
+        aggregated = viewmodel._aggregate_assistant_entries(raw_cards)
+        kinds = [str(card.get('assistant_kind')) for card in aggregated]
+        assert kinds.count('claude') == 1, 'Las dos variantes de Claude deben colapsar a una sola entrada.'
+        claude_entry = next(card for card in aggregated if str(card.get('assistant_kind')) == 'claude')
+        assert 'listo' in str(claude_entry.get('status') or '').lower()
+        assert claude_entry.get('status') != 'no disponible'
+        # Con variantes multiples, el nombre debe ser el friendly kind title
+        assert 'Claude' in str(claude_entry.get('name') or '')
+        devin_entry = next(card for card in aggregated if str(card.get('assistant_kind')) == 'devin')
+        assert 'listo' in str(devin_entry.get('status') or '').lower()
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_aggregate_assistant_entries_preserves_unique_variant_title() -> None:
+    bootstrap = _make_bootstrap('test_aggregate_single_variant_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        # Solo una variante de Claude -> respeta el titulo original del card
+        raw_cards = [
+            {'name': 'Claude web asistido', 'status': 'listo guiado', 'assistant_kind': 'claude', 'tool_id': 'claude_web_assisted'},
+        ]
+        aggregated = viewmodel._aggregate_assistant_entries(raw_cards)
+        assert len(aggregated) == 1
+        assert aggregated[0]['name'] == 'Claude web asistido'
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_self_awareness_reply_assistants_focus_mentions_devin_when_ready() -> None:
+    bootstrap = _make_bootstrap('test_self_awareness_assistants_mentions_devin_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        viewmodel._current_environment_self_model = lambda: EnvironmentSelfModel(  # type: ignore[method-assign]
+            known_environment=True,
+            scan_status='ready',
+            hardware_profile={},
+            runtime_profile={},
+            available_tools=[{'title': 'Ollama local'}, {'title': 'Devin (Cognition AI)'}],
+            missing_tools=[],
+            ai_capacity={'local_runtime': {'models': [{'name': 'qwen3:8b'}]}},
+        )
+        viewmodel._assistant_tool_cards = lambda: [  # type: ignore[method-assign]
+            {'name': 'Ollama local', 'status': 'listo automatico', 'assistant_kind': 'ollama'},
+            {'name': 'Devin (Cognition AI)', 'status': 'listo automatico', 'assistant_kind': 'devin'},
+            {'name': 'Claude instalado', 'status': 'no disponible', 'assistant_kind': 'claude'},
+            {'name': 'Claude web asistido', 'status': 'listo guiado', 'assistant_kind': 'claude'},
+        ]
+        response, meta = viewmodel._self_awareness_reply('con que IAs te conectas?')
+        lowered = response.lower()
+        assert 'devin' in lowered, 'El chat debe mencionar Devin cuando el adapter esta listo.'
+        assert 'ollama' in lowered
+        # No debe aparecer "claude no esta disponible" porque Claude web esta ready
+        assert 'no esta disponible' not in lowered or 'claude no esta disponible' not in lowered
+        assert 'Conexiones reales' in meta or 'conexiones' in meta.lower()
+    finally:
+        _cleanup_bootstrap(bootstrap)
