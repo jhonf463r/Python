@@ -131,6 +131,15 @@ class AdaptivePlannerService:
                 },
             )
         )
+        # P2: multi-IA parallel steps when compound intent detected
+        multi_ia_steps = self._multi_ia_parallel_steps(
+            intent=intent,
+            context=context,
+            preferred_route=preferred_route,
+            recommended_tool_id=recommended_tool_id,
+        )
+        steps.extend(multi_ia_steps)
+
         steps.extend(
             [
                 PlaybookStep(
@@ -353,3 +362,101 @@ class AdaptivePlannerService:
         if reusable_patterns:
             parts.append('Actualizar el episodio o patron universal relacionado si la ejecucion confirma el flujo.')
         return ' '.join(parts)
+
+    # ------------------------------------------------------------------
+    # P2: Playbook multi-IA con sub-intents
+    # ------------------------------------------------------------------
+
+    _SUB_INTENT_TO_IA: dict[str, str] = {
+        'project.evolution': 'codex',
+        'code.review': 'codex',
+        'code.generation': 'codex',
+        'knowledge.query': 'chatgpt',
+        'general.assistance': 'chatgpt',
+        'system.self_awareness': 'ollama',
+        'research.investigation': 'chatgpt',
+        'tool.execution': 'ollama',
+    }
+
+    def _multi_ia_parallel_steps(
+        self,
+        *,
+        intent: TaskIntent,
+        context: TaskContext,
+        preferred_route: str,
+        recommended_tool_id: str,
+    ) -> list[PlaybookStep]:
+        """Generate parallel playbook steps when compound intent is detected.
+
+        When ``IntentUnderstandingService`` detects multiple sub-intents
+        (``sub_intents`` in the schema analysis), decompose the execute
+        phase into parallel steps where different IAs handle different
+        aspects based on their strengths.
+
+        Only emits steps when there are 2+ sub-intents and the experiment
+        insights suggest different IAs for different aspects.  Falls back
+        to an empty list (no change to playbook) when decomposition is
+        not warranted.
+        """
+        sub_intents = list(context.metadata.get('sub_intents') or [])
+        if len(sub_intents) < 2:
+            return []
+
+        composite = None
+        for insight in (context.experiment_insights or []):
+            comp = insight.get('composite_recommendation') if isinstance(insight, dict) else None
+            if isinstance(comp, dict) and comp.get('primary') and comp.get('secondary'):
+                composite = comp
+                break
+
+        steps: list[PlaybookStep] = []
+        assigned_ias: list[str] = []
+
+        for idx, sub_intent in enumerate(sub_intents[:3]):
+            sub_key = str(sub_intent).strip().lower()
+            if composite is not None and idx == 0:
+                ia = str(composite['primary'].get('assistant_kind') or 'primary')
+            elif composite is not None and idx == 1:
+                ia = str(composite['secondary'].get('assistant_kind') or 'secondary')
+            else:
+                ia = self._SUB_INTENT_TO_IA.get(sub_key, '')
+            if not ia:
+                ia = 'auto'
+            assigned_ias.append(ia)
+            steps.append(
+                PlaybookStep(
+                    phase_key=f'parallel_ia_{idx}',
+                    title=f'Sub-tarea {idx + 1}: {sub_key} → {ia}',
+                    description=f'Aspecto "{sub_key}" asignado a {ia} para ejecucion paralela.',
+                    status=RunStatus.PARTIAL,
+                    detail=f'IA asignada: {ia} | Sub-intent: {sub_key} | Ruta preferida: {preferred_route}',
+                    metadata={
+                        'sub_intent': sub_key,
+                        'assigned_ia': ia,
+                        'parallel_group': 'multi_ia_decomposition',
+                        'preferred_route': preferred_route,
+                        'recommended_tool_id': recommended_tool_id,
+                    },
+                )
+            )
+
+        if steps:
+            consolidation_detail = (
+                f'Consolidar resultados de {len(steps)} sub-tareas paralelas '
+                f'({", ".join(assigned_ias)}). Verificar coherencia y combinar.'
+            )
+            steps.append(
+                PlaybookStep(
+                    phase_key='consolidate_multi_ia',
+                    title='Consolidar resultados multi-IA',
+                    description=consolidation_detail,
+                    status=RunStatus.PARTIAL,
+                    detail=consolidation_detail,
+                    metadata={
+                        'parallel_group': 'multi_ia_decomposition',
+                        'ia_count': len(assigned_ias),
+                        'assigned_ias': assigned_ias,
+                    },
+                )
+            )
+        return steps
