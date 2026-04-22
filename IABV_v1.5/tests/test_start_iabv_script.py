@@ -1,6 +1,6 @@
 """Static checks for ``scripts/start_iabv.ps1``.
 
-Cubre dos contratos que viven en el mismo script:
+Cubre tres contratos que viven en el mismo script:
 
 - Flag ``-StartUI`` (issue #136 / PR #140): spawnea la ventana
   ControlCenter via ``python -m iabv_v15 app`` en un proceso aparte no
@@ -8,6 +8,8 @@ Cubre dos contratos que viven en el mismo script:
 - Capa 2.1.1 (PR #132 + PR #133): el entry point tambien debe limpiar
   zombis en el puerto antes de delegar en ``run_mcp_bridge.ps1``, via la
   utilidad compartida ``_mcp_port_utils.ps1``.
+- Flags ``-AutoPull`` / ``-NoAutoPull`` (issue #139 / PR #141): auto
+  ``git pull --ff-only`` con resumen humano, sin forzar merges.
 
 No lanzamos PowerShell (no esta garantizado en CI Linux). Validamos que el
 script existe y que contiene los fragmentos necesarios.
@@ -153,3 +155,92 @@ def test_start_does_not_require_admin(start_iabv_src: str) -> None:
     """El script no deberia invocar elevacion."""
     for token in ("Start-Process.*-Verb RunAs", "RequireAdministrator", "elevate"):
         assert token.lower() not in start_iabv_src.lower(), token
+
+
+# ---------------------------------------------------------------------------
+# -AutoPull / -NoAutoPull (issue #139 / PR #141)
+# ---------------------------------------------------------------------------
+
+
+import re  # noqa: E402
+
+
+@pytest.fixture(scope="module")
+def script_text() -> str:
+    assert _SCRIPT_PATH.exists(), f"no existe {_SCRIPT_PATH}"
+    return _SCRIPT_PATH.read_text(encoding="utf-8")
+
+
+def test_declares_autopull_switch_default_on(script_text: str) -> None:
+    # El default debe ser ON: '[switch]$AutoPull = $true'
+    assert re.search(r"\[switch\]\s*\$AutoPull\s*=\s*\$true", script_text), (
+        "se espera que -AutoPull este declarado y por defecto en $true"
+    )
+
+
+def test_declares_noautopull_switch(script_text: str) -> None:
+    assert re.search(r"\[switch\]\s*\$NoAutoPull", script_text), (
+        "se espera que exista el switch -NoAutoPull para desactivar el auto-pull"
+    )
+
+
+def test_noautopull_disables_autopull(script_text: str) -> None:
+    # Debe existir una rama explicita que apague AutoPull cuando
+    # NoAutoPull esta presente.
+    pattern = re.compile(
+        r"if\s*\(\s*\$NoAutoPull\s*\)\s*\{[^}]*\$AutoPull\s*=\s*\$false",
+        re.DOTALL,
+    )
+    assert pattern.search(script_text), (
+        "-NoAutoPull debe forzar \\$AutoPull = \\$false para que el pull no corra"
+    )
+
+
+def test_pull_lives_inside_autopull_branch(script_text: str) -> None:
+    """El ``git pull --ff-only`` solo debe ocurrir si ``$AutoPull`` es true.
+
+    Verificamos por orden de aparicion (mas robusto que intentar parsear
+    llaves balanceadas de PowerShell con regex):
+
+    1. Debe aparecer ``if ($AutoPull)`` antes de ``git pull --ff-only``.
+    2. Debe aparecer el branch ``else`` (del mismo if) despues del pull
+       (el else reporta 'Auto-pull : OFF').
+    3. No debe haber NINGUN ``git pull --ff-only`` fuera de ese rango.
+    """
+
+    if_pos = script_text.find("if ($AutoPull)")
+    assert if_pos != -1, "se espera un bloque 'if ($AutoPull)'"
+
+    # Buscamos la INVOCACION real del pull (lineas que empiezan con '& git'
+    # o '& git -C ... pull --ff-only'), no las menciones en comentarios.
+    invocation_pattern = re.compile(
+        r"^[ \t]*&\s*git\b[^\n]*\bpull\s+--ff-only", re.MULTILINE
+    )
+    invocations = [m.start() for m in invocation_pattern.finditer(script_text)]
+    assert len(invocations) == 1, (
+        f"se espera exactamente una invocacion real de git pull --ff-only, "
+        f"se encontraron {len(invocations)}"
+    )
+    pull_pos = invocations[0]
+    assert pull_pos > if_pos, "la invocacion del pull debe estar despues del if"
+
+    # El ``else`` con el mensaje OFF indica el cierre del if principal.
+    off_pos = script_text.find("Auto-pull : OFF", pull_pos)
+    assert off_pos != -1, "se espera un else que reporte 'Auto-pull : OFF'"
+    assert off_pos > pull_pos
+
+
+def test_aborts_on_pull_failure_without_forcing(script_text: str) -> None:
+    # Si el pull falla, abortamos. No hay rastro de --force ni reset --hard.
+    assert re.search(r"git pull --ff-only", script_text), "debe usar --ff-only"
+    assert "exit 1" in script_text, "debe abortar con exit 1 cuando el pull falla"
+    assert "--force" not in script_text, "NO debe forzar merges"
+    assert "reset --hard" not in script_text, "NO debe resetear a la fuerza"
+
+
+def test_invokes_summarize_updates_module(script_text: str) -> None:
+    assert "iabv_v15.scripts.summarize_updates" in script_text, (
+        "cuando hay commits nuevos, debe invocar python -m iabv_v15.scripts.summarize_updates"
+    )
+    # Y debe pasarle old y new SHA (variables $oldSha y $newSha).
+    assert "$oldSha" in script_text and "$newSha" in script_text
