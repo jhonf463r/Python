@@ -246,6 +246,94 @@ def test_prompt_self_examination_falls_back_when_none() -> None:
     assert 'No disponible en esta sesion' in prompt
 
 
+def test_meta_cognition_includes_installed_programs_detection() -> None:
+    """Meta-cognition section teaches the LLM to detect installed programs."""
+    builder = SystemPromptBuilder()
+    prompt = builder.build(
+        perception=None,
+        world_model=None,
+        env_self_model=None,
+        portable_context=None,
+        tool_registry=None,
+    )
+    assert 'programas instalados' in prompt.lower() or 'Deteccion de programas' in prompt
+    assert 'pip install' in prompt or 'winget install' in prompt
+    assert 'Rutas alternativas' in prompt
+    assert 'claude_web_assisted' in prompt
+
+
+def test_tools_section_shows_install_hints_for_missing_tools() -> None:
+    """When a tool is unavailable, show install hint and web alternative."""
+    builder = SystemPromptBuilder()
+    cards = [
+        ToolCard(
+            tool_id='claude_installed',
+            title='Claude instalado',
+            tool_type=ToolType.CUSTOM,
+            description='Claude desktop app',
+            adapter_key='external_assistant',
+            available=False,
+            capabilities=['llm_query'],
+        ),
+        ToolCard(
+            tool_id='claude_web_assisted',
+            title='Claude web',
+            tool_type=ToolType.LLM_WEB_UI,
+            description='Claude via browser',
+            adapter_key='external_assistant',
+            available=True,
+            capabilities=['llm_query'],
+        ),
+        ToolCard(
+            tool_id='aider_coder',
+            title='Aider coder',
+            tool_type=ToolType.CODE_EDITOR,
+            description='Aider code editor',
+            adapter_key='aider',
+            available=False,
+            capabilities=['edit_code'],
+        ),
+    ]
+    prompt = builder.build(
+        perception=None,
+        world_model=None,
+        env_self_model=None,
+        portable_context=None,
+        tool_registry=cards,
+    )
+    assert 'no disponible' in prompt
+    assert 'claude.ai/download' in prompt
+    assert 'pip install aider-chat' in prompt
+    assert 'claude_web_assisted' in prompt
+    assert 'Ruta alternativa lista' in prompt
+
+
+def test_tools_section_no_hints_for_available_tools() -> None:
+    """Available tools should NOT show install hints."""
+    builder = SystemPromptBuilder()
+    cards = [
+        ToolCard(
+            tool_id='ollama_llm',
+            title='Ollama',
+            tool_type=ToolType.LLM_LOCAL,
+            description='Local LLM',
+            adapter_key='ollama',
+            available=True,
+            capabilities=['llm_query'],
+        ),
+    ]
+    prompt = builder.build(
+        perception=None,
+        world_model=None,
+        env_self_model=None,
+        portable_context=None,
+        tool_registry=cards,
+    )
+    assert 'disponible' in prompt
+    assert 'Instalar' not in prompt
+    assert 'Ruta alternativa' not in prompt
+
+
 def test_prompt_identity_mentions_control_maestro() -> None:
     """Identity section now identifies as the Control Maestro brain."""
     builder = SystemPromptBuilder()

@@ -1175,12 +1175,19 @@ class AppBootstrap:
         self.provider_settings_viewmodel = None
         self.run_history_viewmodel = None
 
+    _TOOL_INSTALL_GUIDANCE: dict[str, str] = {
+        'aider_coder': 'pip install aider-chat',
+        'claude_installed': 'Descargar Claude Desktop desde https://claude.ai/download',
+        'mcp_client': 'Iniciar MCP server (default: http://127.0.0.1:8000) o ajustar server_url en metadata',
+    }
+
     def _log_tool_availability(self) -> None:
         """Log de arranque: muestra que herramientas estan conectadas.
 
         Ademas, estampa ``last_validated_at_utc`` en las tools que pasan
         el probe de startup para que la confianza base suba por encima
         del minimo (0.26).  Solo toca cards cuyo campo era ``None``.
+        Diagnostica por que cada tool faltante no esta disponible.
         """
         from datetime import datetime, timezone
 
@@ -1202,6 +1209,13 @@ class AppBootstrap:
                     self.tool_registry.repository.save_card(stamped)
             else:
                 missing.append(refreshed.tool_id)
+                guidance = self._TOOL_INSTALL_GUIDANCE.get(refreshed.tool_id, '')
+                logger.info(
+                    'tool_missing: %s — adapter=%s%s',
+                    refreshed.tool_id,
+                    refreshed.adapter_key,
+                    f' | fix: {guidance}' if guidance else '',
+                )
         logger.info(
             'tool_availability: %d/%d listas — ready=[%s]%s',
             len(ready),

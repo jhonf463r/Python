@@ -14,6 +14,7 @@ class ToolRegistry:
         'executable_path',
         'workspace_root',
         'updated_at_utc',
+        'server_url',
     }
     # In-process availability TTL. The cache is invalidated automatically
     # whenever the adapter registration status changes or when the
@@ -212,11 +213,14 @@ class ToolRegistry:
                 tool_id='mcp_client',
                 title='MCP client',
                 tool_type=ToolType.MCP_CLIENT,
-                description='Cliente MCP extensible para conectores o servidores futuros.',
+                description='Cliente MCP para auto-inspeccion y conectores externos.',
                 adapter_key='mcp',
                 supports_sandbox=True,
                 requires_human_approval=True,
                 capabilities=['mcp_call'],
+                metadata={
+                    'server_url': 'http://127.0.0.1:8000',
+                },
             ),
             ToolCard(
                 tool_id='codex_installed',
@@ -340,11 +344,15 @@ class ToolRegistry:
                     'command_aliases': ['Claude', 'claude.exe', 'Anthropic'],
                     'windows_default_paths': [
                         r'{localappdata}\Programs\Claude\Claude.exe',
+                        r'{localappdata}\Programs\claude-desktop\Claude.exe',
                         r'{localappdata}\Anthropic\Claude.exe',
                         r'{localappdata}\Anthropic\*\Claude.exe',
                         r'{localappdata}\Microsoft\WindowsApps\Claude.exe',
+                        r'{appdata}\Claude\Claude.exe',
+                        r'{appdata}\Anthropic\Claude.exe',
                         r'{programfiles}\Claude\Claude.exe',
                         r'{programfilesx86}\Claude\Claude.exe',
+                        r'{userprofile}\scoop\apps\claude\current\Claude.exe',
                     ],
                     'prompt_template_id': 'claude_consult_v1',
                     'response_capture_mode': 'clipboard_capture',
