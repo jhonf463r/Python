@@ -15,15 +15,33 @@
 #   -SkipHealthChecks       No pega a GitHub/Devin API antes de arrancar.
 #   -HotReload              Exporta IABV_MCP_HOT_RELOAD=1 para el server.
 #   -Quiet                  Menos output en consola.
+#   -StartUI                Ademas de MCP+tunel, lanza ControlCenter
+#                           (python -m iabv_v15 app) en proceso aparte.
 #
 # Si falta algun secreto, el script te dice exactamente cual y sale sin
 # arrancar el MCP, para no confundir con un 401/403 en los logs runtime.
 
+<#
+.SYNOPSIS
+    Arranca IABV v1.5 end-to-end (MCP + tunel + opcionalmente la UI).
+.PARAMETER SkipHealthChecks
+    Omite los pings HTTP rapidos contra GitHub/Devin API antes de arrancar.
+.PARAMETER HotReload
+    Exporta IABV_MCP_HOT_RELOAD=1 para que el server se reinicie ante cambios
+    en src/iabv_v15/*.py.
+.PARAMETER Quiet
+    Menos output en consola.
+.PARAMETER StartUI
+    Ademas de MCP+tunel, lanza la ventana ControlCenter (python -m iabv_v15 app)
+    en un proceso aparte no bloqueante. Si la UI falla en arrancar, se loguea
+    el error pero NO se mata el MCP (el MCP sigue vivo).
+#>
 [CmdletBinding()]
 param(
     [switch]$SkipHealthChecks,
     [switch]$HotReload,
-    [switch]$Quiet
+    [switch]$Quiet,
+    [switch]$StartUI
 )
 
 $ErrorActionPreference = 'Stop'
@@ -104,6 +122,29 @@ $bridge = Join-Path $PSScriptRoot 'run_mcp_bridge.ps1'
 if (-not (Test-Path $bridge)) {
     Write-Err "No encontre $bridge. Abortando."
     exit 1
+}
+
+# Lanzar la UI (ControlCenter/Qt) en paralelo si el usuario lo pidio.
+# Lo hacemos ANTES del `& ... $bridge` porque esa invocacion es bloqueante:
+# la UI arranca en su propio proceso via Start-Process y corre en paralelo
+# con MCP+tunel. Si falla, lo logueamos pero seguimos arrancando el MCP
+# (contrato explicito: la UI no puede tumbar el MCP).
+if ($StartUI) {
+    Write-Info ""
+    Write-Info "Lanzando ControlCenter UI (python -m iabv_v15 app) en proceso aparte..."
+    try {
+        $pythonExe = 'python'
+        if ($env:IABV_PYTHON) { $pythonExe = $env:IABV_PYTHON }
+        $uiProc = Start-Process -FilePath $pythonExe `
+            -ArgumentList '-m','iabv_v15','app' `
+            -PassThru `
+            -WindowStyle Normal
+        Write-Info "  UI PID     : $($uiProc.Id)"
+    } catch {
+        Write-Warn "[warn] No se pudo lanzar la UI con -StartUI: $_"
+        Write-Warn "       El MCP sigue vivo. Podes lanzar la UI manual con:"
+        Write-Warn "         python -m iabv_v15 app"
+    }
 }
 
 Write-Info ""
