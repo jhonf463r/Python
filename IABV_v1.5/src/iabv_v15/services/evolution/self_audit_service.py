@@ -58,6 +58,7 @@ class SelfAuditService:
         clock: Callable[[], datetime] | None = None,
         storage_root: Path | str | None = None,
         workspace_root: Path | str | None = None,
+        token_rotation_ledger: Any | None = None,
     ) -> None:
         self.tool_registry = tool_registry
         self._environment_provider = environment_self_model_provider
@@ -65,6 +66,11 @@ class SelfAuditService:
         self.operational_self_examination_service = operational_self_examination_service
         self.portable_context_service = portable_context_service
         self._clock = clock or (lambda: datetime.now(timezone.utc))
+        # Capa 2.2 — dep opcional. Cada ``run()`` alimenta el ledger con
+        # probe_ok / probe_failed por los tool_ids auth-bearing para que
+        # ``OperationalSelfExaminationService`` pueda proyectar rotaciones
+        # proactivas sin que el usuario lo note.
+        self.token_rotation_ledger: Any | None = token_rotation_ledger
         resolved_root: Path | None
         if storage_root is not None:
             resolved_root = Path(storage_root)
@@ -109,7 +115,44 @@ class SelfAuditService:
             summary_markdown=summary_markdown,
         )
         self._persist(snapshot)
+        self._feed_token_rotation_ledger(tool_checks=tool_checks, observed_at=generated_at)
         return snapshot
+
+    # ------------------------------------------------------------------
+    # Capa 2.2 — feed de TokenRotationLedger
+    #
+    # Solo los tool_ids auth-bearing cuentan para rotacion de tokens.
+    # ``github_api``/``devin_api`` ya persisten 200 OK o 401 en su
+    # ``ToolCheckResult`` cuando ``is_available`` corre contra el
+    # endpoint real. El feed es best-effort: si el ledger falta o tira
+    # excepcion, el audit no se rompe.
+    _AUTH_BEARING_TOOL_IDS: frozenset[str] = frozenset({'github_api', 'devin_api'})
+
+    def _feed_token_rotation_ledger(
+        self,
+        *,
+        tool_checks: list[ToolCheckResult],
+        observed_at: datetime,
+    ) -> None:
+        ledger = getattr(self, 'token_rotation_ledger', None)
+        if ledger is None or not hasattr(ledger, 'record_probe'):
+            return
+        for check in tool_checks:
+            tool_id = str(getattr(check, 'tool_id', '') or '').strip()
+            if tool_id not in self._AUTH_BEARING_TOOL_IDS:
+                continue
+            try:
+                ledger.record_probe(
+                    tool_id,
+                    ok=bool(getattr(check, 'available', False)),
+                    reason=str(getattr(check, 'reason', '') or '') or None,
+                    observed_at=observed_at,
+                    metadata={'status': str(getattr(check, 'status', '') or '')},
+                )
+            except Exception as exc:  # pragma: no cover - defensa
+                logger.warning(
+                    'TokenRotationLedger feed fallo para %s: %s', tool_id, exc
+                )
 
     # ------------------------------------------------------------------
     # Tool checks

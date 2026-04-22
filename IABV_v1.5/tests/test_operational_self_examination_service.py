@@ -625,3 +625,181 @@ def test_build_review_persists_pending_auto_probes_and_surfaces_in_summary() -> 
         assert summary['pending_auto_probes'][0]['category'] == 'recurring_failure'
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# Capa 2.2 — _token_rotation_findings
+# ---------------------------------------------------------------------------
+
+
+class _StubLedger:
+    """Double del TokenRotationLedger con ``predictions()`` controlable.
+
+    Emula solo la porcion de la API que consume OSES. Mantener esto como
+    stub explicito (en vez de instanciar el ledger real) evita depender de
+    la persistencia y deja la logica de findings como unico SUT.
+    """
+
+    def __init__(self, predictions: list[dict]) -> None:
+        self._predictions = predictions
+
+    def predictions(self) -> list[dict]:
+        return list(self._predictions)
+
+
+def test_token_rotation_findings_emits_high_when_token_expired_live() -> None:
+    root = _workspace('token_rotation_expired')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service: OperationalSelfExaminationService = (
+            bootstrap.operational_self_examination_service
+        )
+        service.token_rotation_ledger = _StubLedger([
+            {
+                'token_name': 'github_api',
+                'last_probe_ok_at': '2026-03-20T12:00:00+00:00',
+                'last_probe_failed_at': '2026-04-21T00:00:00+00:00',
+                'last_rotation_at': None,
+                'rotations_observed': 0,
+                'avg_interval_days': None,
+                'projected_expiry_at': None,
+                'days_until_projected_expiry': None,
+                'stale': False,
+                'expired_live': True,
+                'proactive_due': False,
+            },
+        ])
+        findings = service._token_rotation_findings()
+        assert len(findings) == 1
+        f = findings[0]
+        assert f.category == 'token_rotation'
+        assert f.severity == IssueSeverity.HIGH
+        assert 'expirado' in f.title.lower()
+        assert 'rotate_tokens.ps1' in (f.recommendation or '')
+        assert f.metadata.get('token_name') == 'github_api'
+        assert f.metadata.get('expired_live') is True
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_token_rotation_findings_emits_high_on_proactive_due() -> None:
+    root = _workspace('token_rotation_proactive')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service: OperationalSelfExaminationService = (
+            bootstrap.operational_self_examination_service
+        )
+        service.token_rotation_ledger = _StubLedger([
+            {
+                'token_name': 'devin_api',
+                'last_probe_ok_at': '2026-04-20T12:00:00+00:00',
+                'last_probe_failed_at': None,
+                'last_rotation_at': '2026-03-22T12:00:00+00:00',
+                'rotations_observed': 2,
+                'avg_interval_days': 30.0,
+                'projected_expiry_at': '2026-04-21T12:00:00+00:00',
+                'days_until_projected_expiry': 1.0,
+                'stale': False,
+                'expired_live': False,
+                'proactive_due': True,
+            },
+        ])
+        findings = service._token_rotation_findings()
+        assert len(findings) == 1
+        f = findings[0]
+        assert f.severity == IssueSeverity.HIGH
+        assert 'proactiva' in f.title.lower()
+        assert f.metadata.get('proactive_due') is True
+        # Evidencia visible para el orquestador.
+        assert '2026-04-20T12:00:00+00:00' in f.evidence_refs
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_token_rotation_findings_emits_medium_on_stale_only() -> None:
+    root = _workspace('token_rotation_stale')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service: OperationalSelfExaminationService = (
+            bootstrap.operational_self_examination_service
+        )
+        service.token_rotation_ledger = _StubLedger([
+            {
+                'token_name': 'github_api',
+                'last_probe_ok_at': '2026-04-10T12:00:00+00:00',
+                'last_probe_failed_at': None,
+                'last_rotation_at': None,
+                'rotations_observed': 0,
+                'avg_interval_days': None,
+                'projected_expiry_at': None,
+                'days_until_projected_expiry': None,
+                'stale': True,
+                'expired_live': False,
+                'proactive_due': False,
+            },
+        ])
+        findings = service._token_rotation_findings()
+        assert len(findings) == 1
+        f = findings[0]
+        assert f.severity == IssueSeverity.MEDIUM
+        assert 'stale' in f.title.lower()
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_token_rotation_findings_no_ops_when_no_signal() -> None:
+    root = _workspace('token_rotation_no_signal')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service: OperationalSelfExaminationService = (
+            bootstrap.operational_self_examination_service
+        )
+        service.token_rotation_ledger = _StubLedger([
+            {
+                'token_name': 'github_api',
+                'stale': False,
+                'expired_live': False,
+                'proactive_due': False,
+            },
+        ])
+        assert service._token_rotation_findings() == []
+        # Ledger ausente tampoco rompe.
+        service.token_rotation_ledger = None
+        assert service._token_rotation_findings() == []
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_build_review_promotes_expired_token_finding_to_auto_probe() -> None:
+    """End-to-end capa 2.2: finding HIGH -> pending_auto_probes con rotate_tokens.ps1."""
+    root = _workspace('token_rotation_auto_probe')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service: OperationalSelfExaminationService = (
+            bootstrap.operational_self_examination_service
+        )
+        service.token_rotation_ledger = _StubLedger([
+            {
+                'token_name': 'github_api',
+                'last_probe_ok_at': '2026-03-20T12:00:00+00:00',
+                'last_probe_failed_at': '2026-04-21T00:00:00+00:00',
+                'last_rotation_at': None,
+                'rotations_observed': 0,
+                'avg_interval_days': None,
+                'projected_expiry_at': None,
+                'days_until_projected_expiry': None,
+                'stale': False,
+                'expired_live': True,
+                'proactive_due': False,
+            },
+        ])
+        snapshot = service.build_review()
+        probes = list((snapshot.metadata or {}).get('pending_auto_probes') or [])
+        token_probes = [p for p in probes if p.get('category') == 'token_rotation']
+        assert token_probes, 'HIGH token_rotation finding must surface as auto-probe'
+        probe = token_probes[0]
+        tests = probe.get('suggested_tests') or []
+        assert any('rotate_tokens.ps1' in t for t in tests)
+        assert any('token_name=github_api' in t for t in tests)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
