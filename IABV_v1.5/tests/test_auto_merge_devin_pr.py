@@ -1,7 +1,9 @@
-"""Tests para ``scripts/auto_merge_devin_pr.py``.
+"""Tests para el CLI ``scripts/auto_merge_devin_pr.py``.
 
-Cubren la parte pura (politica de ramas seguras, semantica de checks).
-No hacemos HTTP real; las partes que pegan a GitHub quedan fuera.
+La logica pura (rama segura, evaluacion de checks, resolucion de token)
+vive en ``iabv_v15.infra.mcp.self_auto_merge``; aca cubrimos que el CLI
+sigue exponiendo las mismas funciones para compatibilidad y que el
+``main`` resuelve correctamente los codigos de salida segun el resultado.
 """
 
 from __future__ import annotations
@@ -9,6 +11,7 @@ from __future__ import annotations
 import importlib.util
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -87,9 +90,6 @@ def test_checks_are_green_blocks_on_failure(auto_merge):
 
 
 def test_checks_are_green_blocks_on_completed_with_null_conclusion(auto_merge):
-    # Per AGENTS.md policy a completed check must have success/skipped/neutral.
-    # A null conclusion in completed state is an anomalous response and must
-    # not be treated as green.
     runs = [
         {"name": "weird", "status": "completed", "conclusion": None},
     ]
@@ -103,7 +103,7 @@ def test_resolve_token_prefers_iabv(auto_merge, monkeypatch):
     monkeypatch.setenv("IABV_GITHUB_TOKEN", "second")
     monkeypatch.setenv("GITHUB_TOKEN", "third")
     monkeypatch.setenv("GH_TOKEN", "fourth")
-    assert auto_merge._resolve_token() == "first"
+    assert auto_merge.resolve_token() == "first"
 
 
 def test_resolve_token_falls_through_to_gh_token(auto_merge, monkeypatch):
@@ -111,17 +111,63 @@ def test_resolve_token_falls_through_to_gh_token(auto_merge, monkeypatch):
     monkeypatch.delenv("IABV_GITHUB_TOKEN", raising=False)
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
     monkeypatch.setenv("GH_TOKEN", "fallback")
-    assert auto_merge._resolve_token() == "fallback"
+    assert auto_merge.resolve_token() == "fallback"
 
 
-def test_resolve_token_raises_when_all_empty(auto_merge, monkeypatch):
+def test_resolve_token_returns_none_when_all_empty(auto_merge, monkeypatch):
     for name in ("GITHUB_TOKEN_IABV", "IABV_GITHUB_TOKEN", "GITHUB_TOKEN", "GH_TOKEN"):
         monkeypatch.delenv(name, raising=False)
-    with pytest.raises(SystemExit):
-        auto_merge._resolve_token()
+    assert auto_merge.resolve_token() is None
 
 
 def test_resolve_token_ignores_whitespace_only(auto_merge, monkeypatch):
     monkeypatch.setenv("GITHUB_TOKEN_IABV", "   ")
     monkeypatch.setenv("GITHUB_TOKEN", "real")
-    assert auto_merge._resolve_token() == "real"
+    assert auto_merge.resolve_token() == "real"
+
+
+def test_main_returns_3_when_no_token(auto_merge, monkeypatch, capsys):
+    for name in ("GITHUB_TOKEN_IABV", "IABV_GITHUB_TOKEN", "GITHUB_TOKEN", "GH_TOKEN"):
+        monkeypatch.delenv(name, raising=False)
+    code = auto_merge.main(["123", "--repo", "foo/bar"])
+    captured = capsys.readouterr()
+    assert code == 3
+    assert "no encontre un token" in captured.err.lower() or "no encontre" in captured.err
+
+
+def test_main_invokes_auto_merge_with_args(auto_merge, monkeypatch):
+    """main() delega a la funcion del modulo compartido con los args del CLI."""
+
+    captured: dict[str, Any] = {}
+
+    def fake_auto_merge(repo, pr_number, *, method, force, token):
+        captured["repo"] = repo
+        captured["pr_number"] = pr_number
+        captured["method"] = method
+        captured["force"] = force
+        captured["token"] = token
+        return auto_merge.MergeResult(
+            status="merged",
+            pr_number=pr_number,
+            repo=repo,
+            branch="devin/foo",
+            title="t",
+            mergeable_state="clean",
+            method=method,
+            reason="ok",
+            detail="ok",
+            merge_sha="deadbeef",
+        )
+
+    monkeypatch.setattr(auto_merge, "auto_merge", fake_auto_merge)
+    monkeypatch.setenv("GITHUB_TOKEN_IABV", "tok")
+
+    code = auto_merge.main(["42", "--repo", "foo/bar", "--method", "squash"])
+    assert code == 0
+    assert captured == {
+        "repo": "foo/bar",
+        "pr_number": 42,
+        "method": "squash",
+        "force": False,
+        "token": "tok",
+    }
