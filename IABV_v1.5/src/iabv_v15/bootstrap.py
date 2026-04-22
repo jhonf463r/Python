@@ -987,6 +987,7 @@ class AppBootstrap:
                     capability_registry=self.assistant_capability_registry,
                     adaptive_weight_layer=self.adaptive_weight_layer,
                     world_model_provider=_synaptic_world_model_provider,
+                    experiment_lab_repository=self.experiment_lab_repository,
                     enabled_override=getattr(
                         self.config, "synaptic_routing_enabled", None
                     ),

@@ -25,11 +25,12 @@ Contratos que respeta:
 from __future__ import annotations
 
 import os
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from iabv_v15.domain.models import (
     AssistantCapabilityProfile,
     AssistantStrength,
+    ExperimentRun,
     SynapticRoutingDecision,
     WorldModelSnapshot,
 )
@@ -37,6 +38,11 @@ from iabv_v15.services.adaptive.adaptive_weight_layer import AdaptiveWeightLayer
 from iabv_v15.services.roles.assistant_capability_registry import (
     AssistantCapabilityRegistry,
 )
+
+if TYPE_CHECKING:
+    from iabv_v15.infra.persistence.experiment_lab_repository import (
+        ExperimentLabRepository,
+    )
 
 # Pesos del score total (0.5 / 0.3 / 0.2 según spec PCS v1). Expuestos
 # como constantes en vez de números mágicos para que los tests puedan
@@ -245,11 +251,13 @@ class SynapticRouter:
         capability_registry: AssistantCapabilityRegistry,
         adaptive_weight_layer: AdaptiveWeightLayer,
         world_model_provider: Callable[[], WorldModelSnapshot | None],
+        experiment_lab_repository: ExperimentLabRepository | None = None,
         enabled_override: bool | None = None,
     ) -> None:
         self._registry = capability_registry
         self._weight_layer = adaptive_weight_layer
         self._world_model_provider = world_model_provider
+        self._experiment_lab_repository = experiment_lab_repository
         # ``enabled_override`` viene de configuración persistente (``AppConfig``)
         # y tiene precedencia sobre el env var salvo que esté en ``None`` (no
         # configurado). Esto permite al usuario encender el router desde
@@ -434,6 +442,23 @@ class SynapticRouter:
 
     def _safe_weights(self) -> dict[tuple[object, str, str], dict[str, Any]]:
         try:
-            return self._weight_layer.suggest(grouped_runs={})
+            grouped = self._load_grouped_runs()
+            return self._weight_layer.suggest(grouped_runs=grouped)
         except Exception:  # pragma: no cover - defensive
             return {}
+
+    def _load_grouped_runs(
+        self, *, limit_per_query: int = 50,
+    ) -> dict[tuple[object, str, str], list[ExperimentRun]]:
+        repo = self._experiment_lab_repository
+        if repo is None:
+            return {}
+        try:
+            runs = repo.list_runs(limit=limit_per_query)
+        except Exception:
+            return {}
+        grouped: dict[tuple[object, str, str], list[ExperimentRun]] = {}
+        for run in runs:
+            key = (run.domain, str(run.route or ''), str(run.assistant_kind or ''))
+            grouped.setdefault(key, []).append(run)
+        return grouped
