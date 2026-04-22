@@ -535,6 +535,20 @@ class AutonomousValidationCycleService:
         except Exception:
             pass
 
+        if self.storage is not None:
+            try:
+                if self.storage.exists('self_examination/latest.json'):
+                    se_payload = self.storage.load_json('self_examination/latest.json')
+                    se_meta = dict((se_payload or {}).get('metadata') or {})
+                    proposals = list(se_meta.get('solution_proposals') or [])
+                    sync_data['active_proposals'] = [
+                        {'type': p.get('type', ''), 'title': p.get('title', '')}
+                        for p in proposals[:4]
+                        if isinstance(p, dict)
+                    ]
+            except Exception:
+                pass
+
         with self._lock:
             current_snapshot = self._current_snapshot
             metadata = dict(current_snapshot.metadata or {})

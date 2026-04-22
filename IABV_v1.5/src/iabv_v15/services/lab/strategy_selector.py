@@ -275,6 +275,9 @@ class StrategySelector:
                     existing['best_route'] = route.value if hasattr(route, 'value') else str(route)
                 existing['total_runs'] += count
                 existing['successful_runs'] += len(successful)
+                existing['success_rate'] = round(
+                    existing['successful_runs'] / max(existing['total_runs'], 1), 4,
+                )
             route_val = route.value if hasattr(route, 'value') else str(route)
             kind_stats[kind]['aspects'].add(route_val)
 
