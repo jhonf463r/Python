@@ -273,6 +273,7 @@ from iabv_v15.ui.viewmodels.dashboard_viewmodel import DashboardViewModel
 from iabv_v15.ui.viewmodels.evolution_center_viewmodel import EvolutionCenterViewModel
 from iabv_v15.ui.viewmodels.knowledge_base_viewmodel import KnowledgeBaseViewModel
 from iabv_v15.ui.viewmodels.provider_settings_viewmodel import ProviderSettingsViewModel
+from iabv_v15.ui.viewmodels.centro_vivo_viewmodel import CentroVivoViewModel
 from iabv_v15.ui.viewmodels.run_history_viewmodel import RunHistoryViewModel
 
 
@@ -1306,6 +1307,16 @@ class AppBootstrap:
         self.knowledge_base_viewmodel = KnowledgeBaseViewModel(self.knowledge_repository)
         self.provider_settings_viewmodel = ProviderSettingsViewModel(self.provider_configs, self.role_router, self.embedding_service)
         self.run_history_viewmodel = RunHistoryViewModel(self.run_repository, self.execution_dossier_repository)
+        self.centro_vivo_viewmodel = CentroVivoViewModel(
+            adaptive_session_repository=self.adaptive_session_repository,
+            experiment_lab_repository=self.experiment_lab_repository,
+            tool_record_repository=self.tool_record_repository,
+            world_model_service=self.world_model_service,
+            self_examination_service=self.operational_self_examination_service,
+            portable_context_service=self.portable_context_service,
+            evolution_review_service=self.evolution_review_service,
+            data_root=self.config.data_dir,
+        )
 
         # --- Task A: conectar handlers de backend a senales de ambos ViewModels ---
         # Los servicios backend emiten via handler registrado; el handler reemite por
@@ -1428,6 +1439,7 @@ class AppBootstrap:
         context.setContextProperty('knowledgeBaseViewModel', self.knowledge_base_viewmodel)
         context.setContextProperty('providerSettingsViewModel', self.provider_settings_viewmodel)
         context.setContextProperty('runHistoryViewModel', self.run_history_viewmodel)
+        context.setContextProperty('centroVivoViewModel', self.centro_vivo_viewmodel)
 
         main_qml = Path(__file__).resolve().parent / 'ui' / 'qml' / 'Main.qml'
         engine.load(QUrl.fromLocalFile(str(main_qml)))
