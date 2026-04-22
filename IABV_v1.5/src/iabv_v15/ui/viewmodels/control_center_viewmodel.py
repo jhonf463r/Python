@@ -2405,14 +2405,60 @@ class ControlCenterViewModel(QObject):
 
     def _answer_general_chat(self, message: str) -> None:
         self._last_user_goal = message
-        self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._general_conversation_payload(message=message))
-        reply = self._general_chat_reply(message)
-        self._append_message('assistant', 'IABV', reply, 'Conversacion general.')
-        self._latest_response_text = reply
-        self._latest_response_meta = 'Conversacion general.'
-        self._busy_label = 'Respuesta lista.'
+        self._working = True
+        self._busy_label = 'Consultando al modelo local con contexto del sistema vivo.'
+        self._set_autonomy_activity_override(
+            visible=True,
+            title='Respondiendo con contexto vivo',
+            status='active',
+            stage='consultando LLM local',
+            progress=0.2,
+            detail='El modelo local esta recibiendo el world model, las herramientas disponibles y la governance para responder con datos reales.',
+            tool='ollama_llm',
+            next_step='Generar respuesta informada por el estado vivo del sistema.',
+            learning_note='Esta via usa SystemPromptBuilder para que el LLM vea tools, world model y governance.',
+            mode='local',
+        )
         self.dataChanged.emit()
+
+        def worker() -> None:
+            try:
+                request = self._build_request(message)
+                record = self.inference_service.infer_task(request)
+                adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
+                self.taskResolved.emit(
+                    'chat',
+                    {
+                        'summary': record.result.summary,
+                        'provider_name': record.result.provider_name,
+                        'reasoning_mode': record.result.reasoning_mode.value,
+                        'confidence': f'{record.result.confidence:.2f}',
+                        'route_reason': record.route.reason,
+                        'report_kind': record.result.report_kind.value,
+                        'role_title': self._role_title_from_task(record.result.detected_role or record.route.task_role),
+                        'sources': record.result.sources,
+                        'follow_up_teachings': record.result.follow_up_teachings,
+                        'used_tools': [tool.value for tool in record.result.used_tools],
+                        'planner_used': record.result.planner_used,
+                        'executor_model': record.result.executor_model or record.route.model_name,
+                        'chosen_pack': record.result.chosen_pack,
+                        'adaptive_session': adaptive_session,
+                        'assistant_guidance': (record.result.raw_output or {}).get('assistant_guidance') if isinstance(record.result.raw_output, dict) else None,
+                        'local_chat_llm': (record.result.raw_output or {}).get('local_chat_llm') if isinstance(record.result.raw_output, dict) else None,
+                    },
+                )
+            except Exception:
+                fallback = self._general_chat_reply(message)
+                self._append_message('assistant', 'IABV', fallback, 'Conversacion general (fallback local).')
+                self._latest_response_text = fallback
+                self._latest_response_meta = 'Conversacion general (fallback local).'
+                self._working = False
+                self._busy_label = 'Respuesta lista.'
+                self._clear_autonomy_activity_override()
+                self.dataChanged.emit()
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def _human_hardware_notice(self, governance: dict[str, Any] | None) -> str:
         governance = dict(governance or {})
