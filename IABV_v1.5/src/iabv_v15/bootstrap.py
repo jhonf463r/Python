@@ -1056,6 +1056,7 @@ class AppBootstrap:
             experiment_lab=self.experiment_lab,
             adaptive_weight_layer=self.adaptive_weight_layer,
             control_master_service=self.control_master_service,
+            intent_understanding_service=self.intent_understanding_service,
         )
         self.scenario_registry = ScenarioRegistry()
         self.execution_probe_service = ExecutionProbeService(

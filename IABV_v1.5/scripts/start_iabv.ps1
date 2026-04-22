@@ -223,7 +223,8 @@ if ($StartUI) {
 
 # M7: limpiar directorios pytest-cache-files huerfanos que se acumulan
 # en el workspace con el tiempo. Son seguros de borrar.
-$pytestCacheDirs = Get-ChildItem -Path $workspace -Recurse -Directory -Filter 'pytest-cache-files' -ErrorAction SilentlyContinue
+$iabvWorkspace = Split-Path -Parent $PSScriptRoot
+$pytestCacheDirs = Get-ChildItem -Path $iabvWorkspace -Recurse -Directory -Filter 'pytest-cache-files' -ErrorAction SilentlyContinue
 if ($pytestCacheDirs) {
     $count = ($pytestCacheDirs | Measure-Object).Count
     foreach ($d in $pytestCacheDirs) {
