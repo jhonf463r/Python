@@ -964,12 +964,6 @@ class AiderToolAdapter:
         if shutil.which('aider') is not None:
             return True
         try:
-            import importlib.util
-            if importlib.util.find_spec('aider') is not None:
-                return True
-        except Exception:
-            pass
-        try:
             completed = subprocess.run(
                 [sys.executable, '-m', 'aider', '--version'],
                 capture_output=True, text=True, check=False,

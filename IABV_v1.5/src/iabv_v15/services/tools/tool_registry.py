@@ -14,6 +14,7 @@ class ToolRegistry:
         'executable_path',
         'workspace_root',
         'updated_at_utc',
+        'server_url',
     }
     # In-process availability TTL. The cache is invalidated automatically
     # whenever the adapter registration status changes or when the
