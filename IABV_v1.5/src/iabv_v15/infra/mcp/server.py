@@ -547,8 +547,39 @@ class IABVMCPServer:
                 max_age_seconds: ventana de frescura aceptable cuando refresh=False.
             """
             svc = self._portable_context_service()
-            package = svc.current_package(refresh=bool(refresh), max_age_seconds=int(max_age_seconds))
-            return _to_jsonable(package) or {}
+            # When the caller does NOT request a refresh, prefer the
+            # persisted package on disk even if it is older than
+            # max_age_seconds.  The persisted file (latest.json) is the
+            # authoritative rich snapshot; rebuilding without an active
+            # task_context produces empty sections because there is no
+            # live orchestration cycle feeding the builder.
+            effective_max_age = int(max_age_seconds)
+            if not refresh:
+                effective_max_age = max(effective_max_age, 86400)
+            package = svc.current_package(
+                refresh=bool(refresh),
+                max_age_seconds=effective_max_age,
+            )
+            result = _to_jsonable(package) or {}
+            # Fallback: if the returned package has empty sections but a
+            # richer version exists on disk, load and return that instead.
+            sections = result.get("sections") or []
+            total_chars = sum(
+                len(str(s.get("plain_text") or s.get("items") or ""))
+                for s in sections
+            )
+            if sections and total_chars == 0:
+                loaded = svc._load_latest_package()
+                if loaded is not None:
+                    loaded_dump = _to_jsonable(loaded) or {}
+                    loaded_sections = loaded_dump.get("sections") or []
+                    loaded_chars = sum(
+                        len(str(s.get("plain_text") or s.get("items") or ""))
+                        for s in loaded_sections
+                    )
+                    if loaded_chars > total_chars:
+                        result = loaded_dump
+            return result
 
         @mcp.tool()
         def self_examination_current(refresh: bool = False) -> dict[str, Any]:
@@ -560,7 +591,36 @@ class IABVMCPServer:
             svc = self._self_examination_service()
             review = svc.current_review(refresh=bool(refresh))
             summary = svc.review_summary(review)
-            return {"review": _to_jsonable(review), "summary": _to_jsonable(summary)}
+            result = {"review": _to_jsonable(review), "summary": _to_jsonable(summary)}
+
+            # Enrich recurring_issues and recommended_adjustments with
+            # consumer-expected field aliases so that MCP clients
+            # looking for ``pattern``, ``count``, ``recommendation``
+            # (recurring_issues) and ``status``, ``adjustment``,
+            # ``evidence_count`` (recommended_adjustments) find real
+            # values instead of None.
+            summary_dict = result.get("summary")
+            if isinstance(summary_dict, dict):
+                for issue in summary_dict.get("recurring_issues") or []:
+                    if isinstance(issue, dict):
+                        if "pattern" not in issue:
+                            issue["pattern"] = issue.get("title") or ""
+                        if "count" not in issue:
+                            refs = issue.get("evidence_refs") or []
+                            issue["count"] = len(refs) if refs else 1
+                        if "recommendation" not in issue:
+                            issue["recommendation"] = issue.get("summary") or ""
+                for adj in summary_dict.get("recommended_adjustments") or []:
+                    if isinstance(adj, dict):
+                        if "adjustment" not in adj:
+                            adj["adjustment"] = adj.get("recommended_change") or ""
+                        if "status" not in adj:
+                            adj["status"] = adj.get("severity") or "pending"
+                        if "evidence_count" not in adj:
+                            refs = adj.get("evidence_refs") or []
+                            adj["evidence_count"] = len(refs)
+
+            return result
 
         @mcp.tool()
         def chatgpt_web_capture(
@@ -1051,7 +1111,65 @@ class IABVMCPServer:
                     "target_assistant_kind": str(target_assistant_kind or ""),
                 }
             try:
-                from iabv_v15.domain.models import InferenceRequest, TaskIntent
+                from iabv_v15.domain.models import (
+                    InferenceRequest,
+                    RuntimeSignal,
+                    SessionHealthSnapshot,
+                    TaskIntent,
+                )
+
+                # -- Gather runtime_signals from WorldModelService ----------
+                runtime_signals: list[RuntimeSignal] = []
+                try:
+                    wm_svc = getattr(self.container, "world_model_service", None)
+                    if wm_svc is not None:
+                        wm_snap = wm_svc.current_model()
+                        if wm_snap is not None:
+                            net = getattr(wm_snap, "network_status", None)
+                            if net is not None:
+                                runtime_signals.append(
+                                    RuntimeSignal(
+                                        signal_kind="network_status",
+                                        summary=(
+                                            f"connected={getattr(net, 'connected', False)}, "
+                                            f"latency_ms={getattr(net, 'latency_ms', -1)}"
+                                        ),
+                                        metadata=_to_jsonable(net) or {},
+                                    )
+                                )
+                            tool_count = len(wm_snap.tool_live_status or [])
+                            if tool_count:
+                                runtime_signals.append(
+                                    RuntimeSignal(
+                                        signal_kind="tool_live_count",
+                                        summary=f"{tool_count} tools con live status",
+                                    )
+                                )
+                except Exception:
+                    pass
+
+                # -- Build session_health from OSES -------------------------
+                session_health: SessionHealthSnapshot | None = None
+                try:
+                    oses = getattr(
+                        self.container,
+                        "operational_self_examination_service",
+                        None,
+                    )
+                    if oses is not None:
+                        review = oses.current_review(refresh=False)
+                        if review is not None:
+                            session_health = SessionHealthSnapshot(
+                                health_label=review.status or "unknown",
+                                health_flags=[
+                                    f.title
+                                    for f in (review.findings or [])[:3]
+                                    if f.title
+                                ],
+                                status=review.status or "idle",
+                            )
+                except Exception:
+                    pass
 
                 request = InferenceRequest(
                     user_goal=str(snapshot_hint or "pcs_v1.cognitive_frame_translate"),
@@ -1063,7 +1181,10 @@ class IABVMCPServer:
                     summary=str(snapshot_hint or ""),
                 )
                 perception = context_assembler.build_perception_snapshot(
-                    request=request, intent=intent
+                    request=request,
+                    intent=intent,
+                    runtime_signals=runtime_signals or None,
+                    session_health=session_health,
                 )
             except Exception as exc:  # pragma: no cover - defensive
                 return {
