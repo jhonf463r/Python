@@ -1979,12 +1979,16 @@ class LocalCliToolAdapter:
                 blocked=True,
             )
 
-        # shlex preserva comillas: ``log --format="%H %s"`` queda como
-        # ``['log', '--format=%H %s']`` en lugar de mis-tokenizar. En Windows
-        # respetamos quoting estilo cmd.exe (``posix=False``) para que rutas
-        # con espacios no se rompan al llegar al subprocess.
+        # shlex.split(posix=True) preserva comillas dobles correctamente en
+        # ambos sistemas: ``log --format="%H %s"`` -> ``['log', '--format=%H %s']``.
+        # Usar posix=False romperia esto en Windows (el token quedaria partido
+        # en tres) — verificado empiricamente. Los args que recibe este adapter
+        # son declarados por ToolCards nuestras (no rutas libres del usuario),
+        # asi que el riesgo de backslashes conflictivos con el escape POSIX es
+        # nulo; si apareciera, hay que escapar con `\\\\` o single-quotes como
+        # en cualquier CLI tipo git.
         try:
-            tokens = shlex.split(args_text, posix=(sys.platform != 'win32'))
+            tokens = shlex.split(args_text)
         except ValueError as exc:
             return self._fail(
                 start,
