@@ -1809,6 +1809,35 @@ class AdaptiveTaskOrchestrator:
             return False
         return float(world_model.confidence or 0.0) <= 0.05
 
+    _BLOCK_CORRECTIVE_GUIDANCE: dict[str, str] = {
+        'wrong_thread': (
+            'Codex esta en un hilo incorrecto. Accion: abrir un hilo nuevo '
+            'en Codex CLI o desktop antes de reintentar la consulta.'
+        ),
+        'capture_unverified': (
+            'No se pudo verificar la captura de la herramienta. Accion: '
+            'confirmar que la ventana esta visible y enfocable en el escritorio.'
+        ),
+        'awaiting_response': (
+            'La herramienta esta esperando una respuesta pendiente. Accion: '
+            'verificar la sesion web, completar o cancelar la interaccion '
+            'pendiente antes de iniciar una nueva.'
+        ),
+        'no_disponible': (
+            'La herramienta no esta disponible en el escritorio. Accion: '
+            'verificar que la aplicacion este instalada y corriendo, o usar '
+            'una ruta alternativa via ToolRegistry.'
+        ),
+        'session_expired': (
+            'La sesion de la herramienta expiro. Accion: refrescar la sesion '
+            'web o re-autenticar antes de reintentar.'
+        ),
+        'permission_denied': (
+            'Falta permiso para observar la herramienta. Accion: pedir '
+            'permiso explicito al usuario antes de acceder.'
+        ),
+    }
+
     def _world_model_summary(self, world_model: WorldModelSnapshot | None) -> dict[str, Any]:
         model = world_model if isinstance(world_model, WorldModelSnapshot) else WorldModelSnapshot()
         by_assistant = {
@@ -1816,7 +1845,8 @@ class AdaptiveTaskOrchestrator:
             for item in model.tool_live_status
             if str(item.assistant_kind or '').strip()
         }
-        return {
+        corrective = self._corrective_guidance_for_blocks(model)
+        summary: dict[str, Any] = {
             'focused_window': str((model.focused_window.title if model.focused_window is not None else '') or ''),
             'network_status': str(model.network_status.status or ''),
             'detected_blocks': list(model.detected_blocks or []),
@@ -1849,6 +1879,32 @@ class AdaptiveTaskOrchestrator:
             'ollama_status': self._tool_world_summary(by_assistant.get('ollama')),
             'last_updated': model.last_updated.isoformat() if model.last_updated is not None else '',
         }
+        if corrective:
+            summary['corrective_guidance'] = corrective
+        return summary
+
+    @classmethod
+    def _corrective_guidance_for_blocks(
+        cls, model: WorldModelSnapshot,
+    ) -> list[dict[str, str]]:
+        """Produce guia correctiva especifica para cada bloqueo detectado."""
+        guidance: list[dict[str, str]] = []
+        seen: set[str] = set()
+        for block in (model.block_records or [])[:10]:
+            block_type = str(block.block_type or '').strip().lower()
+            assistant = str(block.assistant_kind or '').strip()
+            key = f'{block_type}:{assistant}'
+            if key in seen or not block_type:
+                continue
+            seen.add(key)
+            action = cls._BLOCK_CORRECTIVE_GUIDANCE.get(block_type)
+            if action:
+                guidance.append({
+                    'block_type': block_type,
+                    'assistant_kind': assistant,
+                    'action': action,
+                })
+        return guidance
 
     def _tool_world_summary(self, tool: Any) -> dict[str, Any]:
         return {

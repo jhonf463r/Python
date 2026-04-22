@@ -1176,17 +1176,30 @@ class AppBootstrap:
         self.run_history_viewmodel = None
 
     def _log_tool_availability(self) -> None:
-        """Log de arranque: muestra que herramientas estan conectadas."""
+        """Log de arranque: muestra que herramientas estan conectadas.
+
+        Ademas, estampa ``last_validated_at_utc`` en las tools que pasan
+        el probe de startup para que la confianza base suba por encima
+        del minimo (0.26).  Solo toca cards cuyo campo era ``None``.
+        """
+        from datetime import datetime, timezone
+
         cards = self.tool_registry.list_cards()
         if not cards:
             logger.info('tool_availability: sin tools registradas')
             return
         ready = []
         missing = []
+        now = datetime.now(timezone.utc)
         for card in cards:
             refreshed = self.tool_registry.refresh_card(card, force=True)
             if refreshed.available:
                 ready.append(refreshed.tool_id)
+                if refreshed.last_validated_at_utc is None:
+                    stamped = refreshed.model_copy(
+                        update={'last_validated_at_utc': now},
+                    )
+                    self.tool_registry.repository.save_card(stamped)
             else:
                 missing.append(refreshed.tool_id)
         logger.info(
