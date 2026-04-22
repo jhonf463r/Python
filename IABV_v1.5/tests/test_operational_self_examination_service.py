@@ -835,5 +835,8 @@ def test_build_review_promotes_expired_token_finding_to_auto_probe() -> None:
         tests = probe.get('suggested_tests') or []
         assert any('rotate_tokens.ps1' in t for t in tests)
         assert any('token_name=github_api' in t for t in tests)
+        # scope debe caer en token_name (no dejarlo vacio): asi el
+        # AdaptiveTaskOrchestrator / UI pueden agrupar por token.
+        assert probe.get('scope') == 'github_api'
     finally:
         shutil.rmtree(root, ignore_errors=True)

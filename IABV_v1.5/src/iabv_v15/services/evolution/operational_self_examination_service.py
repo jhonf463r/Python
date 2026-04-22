@@ -409,7 +409,13 @@ class OperationalSelfExaminationService:
             if not suggested_tests:
                 continue
             metadata = dict(finding.metadata or {})
-            scope = str(metadata.get('scope') or metadata.get('pack_id') or metadata.get('block') or '').strip()
+            scope = str(
+                metadata.get('scope')
+                or metadata.get('pack_id')
+                or metadata.get('block')
+                or metadata.get('token_name')
+                or ''
+            ).strip()
             probes.append(
                 {
                     'finding_id': finding.finding_id,
