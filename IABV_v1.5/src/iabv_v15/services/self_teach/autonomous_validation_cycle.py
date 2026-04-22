@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import json
 import os
 import threading
+from pathlib import Path
 from typing import Any
 
 from iabv_v15.domain.models import (
     AutonomousValidationSnapshot,
     EnvironmentSelfModel,
+    EvaluationRoute,
+    ExperimentDomain,
     ExperimentRecommendation,
     ProposalValidationResult,
     SandboxExperiment,
@@ -37,6 +41,9 @@ class AutonomousValidationCycleService:
         auto_start: bool | None = None,
         interval_seconds: float = 180.0,
         promotion_pr_publisher: Any | None = None,
+        tool_registry: Any | None = None,
+        autonomy_governance_policy: Any | None = None,
+        research_backlog_root: str | Path | None = None,
     ) -> None:
         self.experiment_lab = experiment_lab
         self.experiment_lab_repository = experiment_lab_repository
@@ -50,6 +57,13 @@ class AutonomousValidationCycleService:
         # distinto por tenerlo; solo delega la traza en git. Cualquier fallo
         # del publisher se captura y no rompe el ciclo de validacion.
         self.promotion_pr_publisher = promotion_pr_publisher
+        # Auto-research wiring (PR J): el ciclo lee backlog abierto y lanza
+        # sandbox experiments sobre ``research_backlog_root`` / teaching gaps
+        # del repositorio. ``tool_registry`` y ``autonomy_governance_policy``
+        # son opcionales: si faltan, el filtro correspondiente no bloquea.
+        self.tool_registry = tool_registry
+        self.autonomy_governance_policy = autonomy_governance_policy
+        self.research_backlog_root = Path(research_backlog_root) if research_backlog_root else None
         self.interval_seconds = max(float(interval_seconds), 60.0)
         self._auto_start = (not self._in_test_mode()) if auto_start is None else bool(auto_start)
         self._lock = threading.RLock()
@@ -442,6 +456,333 @@ class AutonomousValidationCycleService:
             self.run_once(reason=reason)
         except Exception as exc:
             self._store_error_snapshot(reason=reason, exc=exc)
+        # PR J: despues del review de candidatos existentes, el ciclo intenta
+        # auto-iniciar investigacion sobre backlog abierto. Cualquier fallo
+        # queda aislado para no romper el loop de validacion.
+        try:
+            self._auto_research_pass(reason=reason)
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------
+    # PR J: Auto-iniciar investigacion desde backlog
+    # ------------------------------------------------------------------
+    _AUTO_RESEARCH_MAX_PER_SCAN = 3
+    _AUTO_RESEARCH_MAX_PER_TICK = 1
+    _AUTO_RESEARCH_CAPABILITY_TOOLS: dict[str, tuple[str, ...]] = {
+        'hardware_gpu': (),
+        'local_model': ('ollama',),
+        'external_account': (),
+        'local_runtime': (),
+    }
+
+    def _auto_research_enabled(self) -> bool:
+        raw = os.getenv('IABV_AUTO_RESEARCH_ENABLED', '1').strip().lower()
+        return raw not in {'', '0', 'false', 'no', 'off'}
+
+    def _auto_research_pass(self, *, reason: str) -> list[SandboxExperiment]:
+        """Scan backlog and initiate at most ``_AUTO_RESEARCH_MAX_PER_TICK`` experiments.
+
+        Devuelve la lista de experimentos sandbox iniciados. No decide rutas
+        por su cuenta: delega en ``sandbox_experiment_service`` la evaluacion
+        efectiva. El sandbox permanece aislado del sistema vivo.
+        """
+        if not self._auto_research_enabled():
+            return []
+        initiated: list[SandboxExperiment] = []
+        items = self._scan_research_backlog()
+        for item in items:
+            if len(initiated) >= self._AUTO_RESEARCH_MAX_PER_TICK:
+                break
+            experiment = self._auto_initiate_research(item)
+            if experiment is not None:
+                initiated.append(experiment)
+        return initiated
+
+    def _scan_research_backlog(self) -> list[dict[str, Any]]:
+        """Return top ``_AUTO_RESEARCH_MAX_PER_SCAN`` actionable research items.
+
+        Orden de prioridad: TeachingGaps primero (mayor score), luego entries
+        del backlog de capacidades (mas recientes primero). Cada item es
+        filtrado por disponibilidad de herramientas, policy de gobernanza y
+        ausencia de investigacion activa para el mismo subject_key.
+        """
+        if not self._auto_research_enabled():
+            return []
+        actionable: list[dict[str, Any]] = []
+        for gap in self._open_teaching_gaps():
+            if self._research_item_is_actionable(gap):
+                actionable.append(gap)
+            if len(actionable) >= self._AUTO_RESEARCH_MAX_PER_SCAN:
+                return actionable[: self._AUTO_RESEARCH_MAX_PER_SCAN]
+        for entry in self._open_capability_entries():
+            if self._research_item_is_actionable(entry):
+                actionable.append(entry)
+            if len(actionable) >= self._AUTO_RESEARCH_MAX_PER_SCAN:
+                break
+        return actionable[: self._AUTO_RESEARCH_MAX_PER_SCAN]
+
+    def _open_teaching_gaps(self) -> list[dict[str, Any]]:
+        """Read open teaching gaps from ``experiment_lab_repository``.
+
+        El repo actual no expone ``list_teaching_gaps``; este helper lo
+        invoca con duck-typing para que PR H pueda agregar la lectura sin
+        acoplar este servicio a una firma concreta. Si el metodo no existe,
+        devuelve lista vacia.
+        """
+        repo = self.experiment_lab_repository
+        reader = getattr(repo, 'list_teaching_gaps', None)
+        if not callable(reader):
+            return []
+        try:
+            try:
+                raw = list(reader(status='open') or [])
+            except TypeError:
+                raw = [
+                    gap
+                    for gap in (reader() or [])
+                    if str(self._gap_attr(gap, 'status') or 'open').lower() == 'open'
+                ]
+        except Exception:
+            return []
+        items: list[dict[str, Any]] = []
+        for gap in raw:
+            subject_key = str(
+                self._gap_attr(gap, 'subject_key')
+                or self._gap_attr(gap, 'label')
+                or 'teaching_gap'
+            ).strip()
+            hypothesis = str(
+                self._gap_attr(gap, 'hypothesis')
+                or self._gap_attr(gap, 'reason')
+                or ''
+            ).strip()
+            priority = float(self._gap_attr(gap, 'priority') or self._gap_attr(gap, 'score') or 0.0)
+            required_tools = list(self._gap_attr(gap, 'required_tools') or [])
+            items.append(
+                {
+                    'source': 'teaching_gap',
+                    'subject_key': f'teaching_gap:{subject_key}' if not subject_key.startswith('teaching_gap:') else subject_key,
+                    'label': str(self._gap_attr(gap, 'label') or subject_key),
+                    'hypothesis': hypothesis,
+                    'required_tools': [str(t) for t in required_tools if t],
+                    'priority': priority,
+                    'raw': gap,
+                }
+            )
+        items.sort(key=lambda it: float(it.get('priority') or 0.0), reverse=True)
+        return items
+
+    @staticmethod
+    def _gap_attr(gap: Any, key: str) -> Any:
+        if isinstance(gap, dict):
+            return gap.get(key)
+        return getattr(gap, key, None)
+
+    def _open_capability_entries(self) -> list[dict[str, Any]]:
+        """Read ``status='open'`` entries from ``data/chat_research_backlog/*.jsonl``."""
+        root = self.research_backlog_root
+        if root is None:
+            return []
+        backlog_dir = Path(root) / 'chat_research_backlog'
+        if not backlog_dir.exists():
+            return []
+        collected: list[dict[str, Any]] = []
+        for path in sorted(backlog_dir.glob('*.jsonl')):
+            try:
+                with path.open('r', encoding='utf-8') as handle:
+                    for line in handle:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            payload = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+                        if str(payload.get('status') or 'open').lower() != 'open':
+                            continue
+                        kind = str(payload.get('kind') or '').strip()
+                        matched = str(payload.get('matched_text') or '').strip().lower()
+                        subject_key = f'capability:{kind}:{matched}' if matched else f'capability:{kind}'
+                        collected.append(
+                            {
+                                'source': 'capability_research',
+                                'subject_key': subject_key,
+                                'label': str(payload.get('label') or ''),
+                                'hypothesis': str(payload.get('research_hint') or ''),
+                                'kind': kind,
+                                'matched_text': str(payload.get('matched_text') or ''),
+                                'required_tools': list(
+                                    self._AUTO_RESEARCH_CAPABILITY_TOOLS.get(kind, ())
+                                ),
+                                'session_id': str(payload.get('session_id') or ''),
+                                'detected_at_utc': str(payload.get('detected_at_utc') or ''),
+                                'backlog_path': str(path),
+                            }
+                        )
+            except OSError:
+                continue
+        collected.sort(key=lambda it: str(it.get('detected_at_utc') or ''), reverse=True)
+        return collected
+
+    def _research_item_is_actionable(self, item: dict[str, Any]) -> bool:
+        required = [str(t) for t in (item.get('required_tools') or []) if str(t).strip()]
+        if required and not self._required_tools_available(required):
+            return False
+        if self._governance_blocks_auto_research():
+            return False
+        subject_key = str(item.get('subject_key') or '').strip()
+        if not subject_key:
+            return False
+        if self._has_active_investigation(subject_key):
+            return False
+        return True
+
+    def _required_tools_available(self, required: list[str]) -> bool:
+        registry = self.tool_registry
+        if registry is None:
+            # Without a registry we cannot verify; bloquea por precaucion solo
+            # cuando el item declara herramientas requeridas explicitamente.
+            return False
+        available: set[str] = set()
+        try:
+            cards = list(registry.list_cards() or [])
+        except Exception:
+            return False
+        for card in cards:
+            if not bool(getattr(card, 'available', False)):
+                continue
+            for key in (getattr(card, 'tool_id', None), getattr(card, 'adapter_key', None)):
+                if key:
+                    available.add(str(key).lower())
+            for cap in getattr(card, 'capabilities', None) or []:
+                if cap:
+                    available.add(str(cap).lower())
+        for needed in required:
+            if str(needed).lower() not in available:
+                return False
+        return True
+
+    def _governance_blocks_auto_research(self) -> bool:
+        policy = self.autonomy_governance_policy
+        if policy is None:
+            return False
+        for name in ('allow_auto_research', 'allows_auto_research', 'should_allow_auto_research'):
+            check = getattr(policy, name, None)
+            if callable(check):
+                try:
+                    return not bool(check())
+                except Exception:
+                    return True
+        return False
+
+    def _has_active_investigation(self, subject_key: str) -> bool:
+        sandbox_key = f'sandbox:{subject_key}'
+        try:
+            recent_runs = self.experiment_lab_repository.list_runs(
+                subject_key=sandbox_key, limit=5
+            )
+        except Exception:
+            return False
+        for run in recent_runs:
+            metadata = dict(getattr(run, 'metadata', None) or {})
+            source = str(metadata.get('learning_source') or '')
+            if source in {'auto_research_initiation', 'sandbox_experiment'}:
+                return True
+        return False
+
+    def _auto_initiate_research(self, item: dict[str, Any]) -> SandboxExperiment | None:
+        subject_key = str(item.get('subject_key') or '').strip()
+        if not subject_key:
+            return None
+        hypothesis = str(item.get('hypothesis') or '').strip() or (
+            f'Investigar {item.get("label") or subject_key}'
+        )
+        recommendation = ExperimentRecommendation(
+            domain=ExperimentDomain.LANGUAGE,
+            subject_key=subject_key,
+            recommended_route=EvaluationRoute.FALLBACK,
+            recommended_assistant_kind='auto_research',
+            recommended_config_signature=f'auto_research:{item.get("source", "")}',
+            rationale=hypothesis,
+            confidence=0.4,
+            metadata={
+                'auto_research_source': item.get('source'),
+                'auto_research_label': item.get('label'),
+                'auto_research_hypothesis': hypothesis,
+                'auto_research_kind': item.get('kind'),
+                'auto_research_matched_text': item.get('matched_text'),
+                'auto_research_session_id': item.get('session_id'),
+            },
+        )
+        try:
+            experiment = self.sandbox_experiment_service.validate_recommendation(
+                recommendation,
+                world_model=self._current_world_model(),
+                environment_model=self._current_environment_model(),
+                reason=f'auto_research:{item.get("source", "")}',
+            )
+        except Exception:
+            return None
+        if item.get('source') == 'capability_research':
+            self._mark_capability_entry_in_progress(item)
+        elif item.get('source') == 'teaching_gap':
+            self._mark_teaching_gap_in_progress(item)
+        return experiment
+
+    def _mark_capability_entry_in_progress(self, item: dict[str, Any]) -> None:
+        path_str = item.get('backlog_path')
+        if not path_str:
+            return
+        path = Path(str(path_str))
+        if not path.exists():
+            return
+        try:
+            lines = path.read_text(encoding='utf-8').splitlines()
+        except OSError:
+            return
+        session_id = str(item.get('session_id') or '')
+        kind = str(item.get('kind') or '')
+        matched_text = str(item.get('matched_text') or '')
+        detected_at_utc = str(item.get('detected_at_utc') or '')
+        new_lines: list[str] = []
+        updated = False
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                new_lines.append(line)
+                continue
+            try:
+                payload = json.loads(stripped)
+            except json.JSONDecodeError:
+                new_lines.append(line)
+                continue
+            if (
+                not updated
+                and str(payload.get('session_id') or '') == session_id
+                and str(payload.get('kind') or '') == kind
+                and str(payload.get('matched_text') or '') == matched_text
+                and str(payload.get('detected_at_utc') or '') == detected_at_utc
+                and str(payload.get('status') or 'open') == 'open'
+            ):
+                payload['status'] = 'in_progress'
+                updated = True
+            new_lines.append(json.dumps(payload, ensure_ascii=False))
+        if updated:
+            try:
+                path.write_text('\n'.join(new_lines) + '\n', encoding='utf-8')
+            except OSError:
+                pass
+
+    def _mark_teaching_gap_in_progress(self, item: dict[str, Any]) -> None:
+        repo = self.experiment_lab_repository
+        updater = getattr(repo, 'update_teaching_gap_status', None)
+        if not callable(updater):
+            return
+        try:
+            updater(item.get('raw'), status='in_progress')
+        except Exception:
+            return
 
     def _store_error_snapshot(self, *, reason: str, exc: BaseException) -> None:
         with self._lock:
