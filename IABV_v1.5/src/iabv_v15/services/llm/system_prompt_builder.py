@@ -136,7 +136,7 @@ class SystemPromptBuilder:
     _TOOL_INSTALL_HINTS: dict[str, str] = {
         'aider_coder': 'Instalar: pip install aider-chat',
         'claude_installed': 'Instalar: https://claude.ai/download (alternativa: claude_web_assisted)',
-        'mcp_client': 'Configurar server_url en metadata (default: http://127.0.0.1:8000)',
+        'mcp_client': 'Iniciar MCP server (default: http://127.0.0.1:8000) o ajustar server_url en metadata',
     }
 
     _TOOL_WEB_ALTERNATIVES: dict[str, str] = {
