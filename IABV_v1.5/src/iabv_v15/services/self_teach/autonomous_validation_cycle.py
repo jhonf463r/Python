@@ -1373,16 +1373,18 @@ class AutonomousValidationCycleService:
         Cada probe se registra en el decision_log como ``probe_consumed``
         para que la UI y el self-exam vean que el ciclo actuo sobre los
         hallazgos. No se modifica estado real; solo se surfacea la senal.
+
+        Sigue el patron de ``_append_decision_log``: hold ``self._lock``,
+        build a new entries list (no in-place mutation), y persistir.
         """
-        consumed = 0
-        log = self._decision_log or ToolEvolutionDecisionLog()
+        new_entries: list[ProposalValidationResult] = []
         for probe in probes[:self._PENDING_AUTO_PROBES_CAP]:
             finding_id = str(probe.get('finding_id') or '').strip()
             if not finding_id:
                 continue
             probe_type = str(probe.get('probe_type') or 'diagnostic').strip()
             description = str(probe.get('description') or '').strip()[:240]
-            log.entries.append(
+            new_entries.append(
                 ProposalValidationResult(
                     decision='probe_consumed',
                     subject_key=finding_id,
@@ -1396,10 +1398,24 @@ class AutonomousValidationCycleService:
                     },
                 )
             )
-            consumed += 1
-        if consumed > 0:
-            self._decision_log = log
-        return consumed
+        if not new_entries:
+            return 0
+        with self._lock:
+            log = self._decision_log or ToolEvolutionDecisionLog()
+            entries = [*list(log.entries or []), *new_entries]
+            updated = ToolEvolutionDecisionLog(
+                log_id=log.log_id,
+                updated_at_utc=datetime.now(timezone.utc),
+                entries=entries[-40:],
+                summary_by_tool=self._summary_by_tool(entries),
+                summary_by_problem=self._summary_by_problem(entries),
+                metadata={
+                    'last_decision': 'probe_consumed',
+                    'probe_consumed_count': len(new_entries),
+                },
+            )
+            self._decision_log = self._persist_decision_log(updated)
+        return len(new_entries)
 
     def _store_snapshot(self, snapshot: AutonomousValidationSnapshot) -> AutonomousValidationSnapshot:
         probes = self._load_pending_auto_probes()

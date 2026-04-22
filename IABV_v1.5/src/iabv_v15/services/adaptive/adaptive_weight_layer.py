@@ -70,7 +70,8 @@ class AdaptiveWeightLayer:
         reuse_ratio = reuse_count / max(sample_count, 1)
         recency_score = self._recency_score(ordered_runs)
         trend_score = self._trend_score(ordered_runs)
-        latency_penalty = min(0.12, average_latency_ms / 4500.0 * 0.12)
+        latency_cap = self._time_bucket_latency_cap(ordered_runs)
+        latency_penalty = min(latency_cap, average_latency_ms / 4500.0 * latency_cap)
         adaptive_weight = (
             success_rate * 0.18
             + reuse_ratio * 0.08
@@ -106,7 +107,7 @@ class AdaptiveWeightLayer:
             'reuse_ratio': round(reuse_ratio, 4),
             'average_score': round(average_score, 4),
             'average_latency_ms': average_latency_ms,
-            'time_bucket_latency_cap': self._time_bucket_latency_cap(ordered_runs),
+            'time_bucket_latency_cap': latency_cap,
             'recency_score': round(recency_score, 4),
             'trend_score': round(trend_score, 4),
             'adaptive_weight': round(adaptive_weight, 4),
