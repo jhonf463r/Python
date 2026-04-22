@@ -34,6 +34,7 @@ class OperationalSelfExaminationService:
         world_model_service: Any | None = None,
         autonomous_validation_cycle: Any | None = None,
         adaptive_weight_layer: Any | None = None,
+        token_rotation_ledger: Any | None = None,
     ) -> None:
         self.workspace_root = workspace_root
         self.storage = storage
@@ -45,6 +46,12 @@ class OperationalSelfExaminationService:
         self.world_model_service = world_model_service
         self.autonomous_validation_cycle = autonomous_validation_cycle
         self.adaptive_weight_layer = adaptive_weight_layer
+        # Capa 2.2 — dep opcional. Si se pasa un ``TokenRotationLedger``,
+        # ``_token_rotation_findings`` produce hallazgos proactivos sobre
+        # PATs de GitHub / Devin API a punto de expirar. Es lo unico que
+        # permite cerrar el loop "detectar el patron de expiracion antes
+        # de que el user lo note" sin inventar observacion nueva.
+        self.token_rotation_ledger: Any | None = token_rotation_ledger
         # PCS v1 — hook opcional. Si un provider con ``snapshot()`` está
         # presente, `_persist_review` incluye las violaciones de
         # encarnamiento en ``metadata['embodiment_violations']`` sin
@@ -122,6 +129,7 @@ class OperationalSelfExaminationService:
             )
         )
         findings.extend(self._weak_correction_findings(scenario_runs=scenario_runs))
+        findings.extend(self._token_rotation_findings())
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -401,7 +409,13 @@ class OperationalSelfExaminationService:
             if not suggested_tests:
                 continue
             metadata = dict(finding.metadata or {})
-            scope = str(metadata.get('scope') or metadata.get('pack_id') or metadata.get('block') or '').strip()
+            scope = str(
+                metadata.get('scope')
+                or metadata.get('pack_id')
+                or metadata.get('block')
+                or metadata.get('token_name')
+                or ''
+            ).strip()
             probes.append(
                 {
                     'finding_id': finding.finding_id,
@@ -458,6 +472,12 @@ class OperationalSelfExaminationService:
             return [f'replay con block={block}'] if block else []
         if category == 'weak_correction':
             return ['recapturar escena con anotacion reforzada']
+        if category == 'token_rotation':
+            token_name = str(metadata.get('token_name') or '').strip()
+            tests: list[str] = ['powershell -ExecutionPolicy Bypass -File scripts\\rotate_tokens.ps1']
+            if token_name:
+                tests.append(f'token_name={token_name}')
+            return tests
         return []
 
     def _recurring_failure_findings(self, *, recent_runs: list[RunRecord]) -> list[SelfExaminationFinding]:
@@ -695,6 +715,105 @@ class OperationalSelfExaminationService:
                     metadata={
                         'scenario_id': scenario_id,
                         'occurrences': len(weak_runs),
+                    },
+                )
+            )
+        return findings
+
+    def _token_rotation_findings(self) -> list[SelfExaminationFinding]:
+        """Hallazgos proactivos sobre rotacion de tokens (capa 2.2).
+
+        Lee el ``TokenRotationLedger`` inyectado por ``bootstrap``. Si no
+        hay ledger o todavia no hay eventos registrados, devuelve lista
+        vacia (NO inventa observacion). Reglas:
+
+        - ``expired_live`` en la ultima observacion -> HIGH, recomienda
+          ``scripts/rotate_tokens.ps1`` ya.
+        - ``proactive_due`` (projected_expiry <= lead_time y al menos una
+          rotacion previa) -> HIGH: cerrar el loop antes del 401.
+        - ``stale`` (sin probe OK reciente) pero sin 401 observado ->
+          MEDIUM: quizas el sistema dejo de mirar, quizas el token ya
+          no se usa; pide un probe explicito.
+        """
+        ledger = getattr(self, 'token_rotation_ledger', None)
+        if ledger is None or not hasattr(ledger, 'predictions'):
+            return []
+        try:
+            predictions = list(ledger.predictions() or [])
+        except Exception:
+            return []
+        findings: list[SelfExaminationFinding] = []
+        for pred in predictions:
+            if not isinstance(pred, dict):
+                continue
+            token_name = str(pred.get('token_name') or '').strip()
+            if not token_name:
+                continue
+            expired = bool(pred.get('expired_live'))
+            proactive = bool(pred.get('proactive_due'))
+            stale = bool(pred.get('stale'))
+            if not (expired or proactive or stale):
+                continue
+
+            if expired:
+                severity = IssueSeverity.HIGH
+                confidence = 0.93
+                title = f'Token {token_name} expirado: rotar ya'
+                summary = (
+                    f'La ultima observacion del token {token_name} fue un probe fallido '
+                    f'(probe_failed). El sistema dejo de autenticar contra su endpoint '
+                    f'y cualquier ruta externa dependiente esta rota hasta rotar.'
+                )
+            elif proactive:
+                severity = IssueSeverity.HIGH
+                confidence = 0.87
+                days = pred.get('days_until_projected_expiry')
+                days_txt = f'{days:.1f}d' if isinstance(days, (int, float)) else 'pronto'
+                title = f'Rotacion proactiva de {token_name} ({days_txt})'
+                summary = (
+                    f'Por el promedio observado ({pred.get("avg_interval_days") or 0:.1f} dias '
+                    f'entre rotaciones pasadas, {pred.get("rotations_observed")} muestras) '
+                    f'el token {token_name} expirara en {days_txt}. Rotar antes evita 401.'
+                )
+            else:  # stale
+                severity = IssueSeverity.MEDIUM
+                confidence = 0.6
+                title = f'Observabilidad stale en {token_name}'
+                summary = (
+                    f'No hay un probe OK reciente del token {token_name}. No implica '
+                    f'caducidad real, pero el sistema perdio la senal. Falta probe '
+                    f'contra el endpoint autenticado para reestablecer observabilidad.'
+                )
+
+            findings.append(
+                SelfExaminationFinding(
+                    category='token_rotation',
+                    title=title,
+                    summary=summary,
+                    severity=severity,
+                    confidence=confidence,
+                    recommendation=(
+                        'Ejecutar scripts/rotate_tokens.ps1 (device-flow de GitHub + '
+                        'prompt seguro de Devin API key). Es idempotente y solo actualiza '
+                        '~/.iabv_secrets.ps1 cuando el probe post-rotacion da 200 OK.'
+                    ),
+                    evidence_refs=[
+                        ref for ref in (
+                            pred.get('last_probe_ok_at'),
+                            pred.get('last_probe_failed_at'),
+                            pred.get('last_rotation_at'),
+                        ) if ref
+                    ],
+                    source_refs=['TokenRotationLedger'],
+                    metadata={
+                        'token_name': token_name,
+                        'expired_live': expired,
+                        'proactive_due': proactive,
+                        'stale': stale,
+                        'avg_interval_days': pred.get('avg_interval_days'),
+                        'days_until_projected_expiry': pred.get('days_until_projected_expiry'),
+                        'projected_expiry_at': pred.get('projected_expiry_at'),
+                        'rotations_observed': pred.get('rotations_observed'),
                     },
                 )
             )
@@ -1226,6 +1345,12 @@ class OperationalSelfExaminationService:
         if category_value == 'weak_correction':
             scenario_id = str(metadata.get('scenario_id') or title).strip().lower()
             return f'{category_value}:{scenario_id}'
+        if category_value == 'token_rotation':
+            # ``title`` incluye dias proyectados (``(3.0d)``) que cambian en
+            # cada review. ``token_name`` es estable y esta en metadata de
+            # expired/proactive/stale por igual.
+            token_name = str(metadata.get('token_name') or title).strip().lower()
+            return f'{category_value}:{token_name}'
         return f'{category_value}:{str(title or "").strip().lower()}'
 
     def _matching_runs_for_adjustment(

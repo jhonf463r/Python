@@ -205,6 +205,7 @@ from iabv_v15.services.evolution.intent_scoped_briefing_service import (
 )
 from iabv_v15.services.evolution.portable_context_service import PortableContextService
 from iabv_v15.services.evolution.self_audit_service import SelfAuditService
+from iabv_v15.services.evolution.token_rotation_ledger import TokenRotationLedger
 from iabv_v15.services.evolution.session_start_briefing_service import (
     SessionStartBriefingService,
 )
@@ -532,6 +533,12 @@ class AppBootstrap:
             pending_issue_repository=self.pending_issue_repository,
             scenario_run_repository=self.scenario_run_repository,
         )
+        # Capa 2.2 — ledger de rotacion de tokens. Persiste probe_ok /
+        # probe_failed / rotated por PAT (github_api, devin_api) para que
+        # ``OperationalSelfExaminationService`` pueda emitir findings
+        # proactivos antes de que el usuario note el 401. Es un ledger
+        # append-only read-only sobre el sistema vivo: no dispara nada.
+        self.token_rotation_ledger = TokenRotationLedger(self.config.workspace_root)
         self.operational_self_examination_service = OperationalSelfExaminationService(
             workspace_root=self.config.workspace_root,
             storage=self.evolution_storage,
@@ -543,6 +550,7 @@ class AppBootstrap:
             world_model_service=self.world_model_service,
             autonomous_validation_cycle=self.autonomous_validation_cycle,
             adaptive_weight_layer=self.adaptive_weight_layer,
+            token_rotation_ledger=self.token_rotation_ledger,
         )
         # PCS v1 — PR E. Detector read-only de violaciones de encarnamiento.
         # handshake_required=False en el manifest → sólo reporta.
@@ -710,6 +718,7 @@ class AppBootstrap:
             operational_self_examination_service=self.operational_self_examination_service,
             portable_context_service=self.portable_context_service,
             workspace_root=self.config.workspace_root,
+            token_rotation_ledger=self.token_rotation_ledger,
         )
         # Frente 3.2 — CapabilityAuditHarness: registra runners para las 5
         # capacidades iniciales usando piezas que ya existen en el bootstrap.
