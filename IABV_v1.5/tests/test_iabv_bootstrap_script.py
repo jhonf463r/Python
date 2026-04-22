@@ -48,10 +48,48 @@ def test_script_exists(bootstrap_src: str) -> None:
         "Add-ToProfilePath",
         # No asume admin.
         "$HOME\\.iabv\\tools",
+        # Capa 2.1.1: kill de MCP zombi antes de relanzar.
+        "Stop-McpZombies",
+        "Get-NetTCPConnection",
+        "Stop-Process",
+        "[int]$McpPort",
     ],
 )
 def test_bootstrap_contains_expected_fragment(bootstrap_src: str, fragment: str) -> None:
     assert fragment in bootstrap_src, f"Falta fragmento esperado: {fragment!r}"
+
+
+def test_bootstrap_kills_mcp_zombie_before_start(bootstrap_src: str) -> None:
+    """Capa 2.1.1: el bootstrap debe limpiar procesos que aun esten escuchando
+    el puerto del MCP antes de spawnear uno nuevo. El orden importa: primero
+    matar zombies, despues arrancar start_iabv.ps1."""
+    assert "Stop-McpZombies -Port $McpPort" in bootstrap_src
+    kill_idx = bootstrap_src.index("Stop-McpZombies -Port $McpPort")
+    # rindex: la invocacion real a start_iabv.ps1 es la ultima mencion
+    # (en el header/comentarios aparece antes, como documentacion).
+    start_idx = bootstrap_src.rindex("start_iabv.ps1")
+    assert kill_idx < start_idx, (
+        "Stop-McpZombies debe ejecutarse antes de arrancar start_iabv.ps1"
+    )
+
+
+def test_bootstrap_zombie_kill_is_idempotent(bootstrap_src: str) -> None:
+    """Si el puerto esta libre, la funcion no debe fallar ni matar nada."""
+    # Buscamos el mensaje "puerto libre" y el ErrorAction SilentlyContinue
+    # sobre Get-NetTCPConnection (ambos indican manejo idempotente).
+    assert "Puerto :$Port libre" in bootstrap_src
+    assert "Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue" in bootstrap_src
+
+
+def test_bootstrap_zombie_kill_does_not_use_reserved_pids_var(bootstrap_src: str) -> None:
+    """$pids es variable automatica en PowerShell; reasignarla puede romper
+    comportamiento. El script debe usar un nombre propio."""
+    # Miramos solo la seccion de Stop-McpZombies para no tocar futuros usos.
+    start = bootstrap_src.index("function Stop-McpZombies")
+    end = bootstrap_src.index("function Add-ToProfilePath", start)
+    section = bootstrap_src[start:end]
+    assert "$pids = " not in section, "No uses $pids (variable automatica); usa $zombiePids"
+    assert "$zombiePids" in section
 
 
 def test_bootstrap_references_only_official_hosts(bootstrap_src: str) -> None:
