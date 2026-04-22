@@ -1024,18 +1024,35 @@ class MCPToolAdapter:
     def __init__(self, timeout_seconds: float = 10.0) -> None:
         self.timeout_seconds = timeout_seconds
 
+    def _probe_server(self, server_url: str) -> bool:
+        """Check if the MCP server is reachable.
+
+        The IABV MCP server (FastMCP streamable-http) does not expose a
+        ``/health`` endpoint.  Any HTTP response (even 404/405) from the
+        base URL proves the server is alive; only connection-level errors
+        (timeout, refused) mean it is down.
+        """
+        if httpx is None:
+            return False
+        base = server_url.rstrip('/')
+        try:
+            with httpx.Client(timeout=3.0) as client:
+                resp = client.get(base + '/mcp')
+                return True
+        except Exception:
+            pass
+        try:
+            with httpx.Client(timeout=3.0) as client:
+                resp = client.get(base)
+                return True
+        except Exception:
+            return False
+
     def is_available(self, card: ToolCard) -> bool:
         server_url = str(card.metadata.get('server_url') or '').strip()
         if not server_url:
             return False
-        if httpx is None:
-            return False
-        try:
-            with httpx.Client(timeout=3.0) as client:
-                resp = client.get(server_url.rstrip('/') + '/health')
-                return resp.is_success
-        except Exception:
-            return False
+        return self._probe_server(server_url)
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         start = time.perf_counter()
@@ -1055,7 +1072,17 @@ class MCPToolAdapter:
         try:
             with httpx.Client(timeout=self.timeout_seconds) as client:
                 if sandbox:
-                    response = client.get(server_url.rstrip('/') + '/health')
+                    alive = self._probe_server(server_url)
+                    response_text = 'MCP server reachable' if alive else 'MCP server unreachable'
+                    return {
+                        'success': alive,
+                        'output_text': response_text,
+                        'extracted_data': {'server_alive': alive},
+                        'artifacts': [],
+                        'error_message': '' if alive else 'MCP server no responde.',
+                        'execution_ms': int((time.perf_counter() - start) * 1000),
+                        'metadata': {'sandbox': sandbox},
+                    }
                 else:
                     payload = {'goal': task.objective, 'actions': [action.model_dump(mode='json') for action in task.actions]}
                     response = client.post(server_url.rstrip('/') + '/tool', json=payload)

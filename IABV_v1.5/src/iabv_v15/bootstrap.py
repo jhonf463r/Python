@@ -1178,7 +1178,7 @@ class AppBootstrap:
     _TOOL_INSTALL_GUIDANCE: dict[str, str] = {
         'aider_coder': 'pip install aider-chat',
         'claude_installed': 'Descargar Claude Desktop desde https://claude.ai/download',
-        'mcp_client': 'Iniciar MCP server (default: http://127.0.0.1:8000) o ajustar server_url en metadata',
+        'mcp_client': 'Verificar MCP server activo en http://127.0.0.1:8000 (arrancar con start_iabv.ps1) o ajustar server_url',
     }
 
     def _log_tool_availability(self) -> None:
