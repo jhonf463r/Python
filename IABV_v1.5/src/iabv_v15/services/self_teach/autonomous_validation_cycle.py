@@ -403,7 +403,7 @@ class AutonomousValidationCycleService:
                         'No hay propuestas ni recomendaciones candidatas para validar; '
                         'el ciclo autonomo esta al dia.'
                     )
-            probes_consumed = len(auto_probes) if 'auto_probes' in locals() else 0
+            probes_consumed = consumed if 'consumed' in locals() else 0
             return self._store_snapshot(
                 AutonomousValidationSnapshot(
                     cycle_id=self._current_snapshot.cycle_id,
@@ -1404,12 +1404,14 @@ class AutonomousValidationCycleService:
         with self._lock:
             log = self._decision_log or ToolEvolutionDecisionLog()
             entries = [*list(log.entries or []), *new_entries]
+            unresolved_fields = ['UNRESOLVED:tool_evolution_decision'] if any(item.decision == 'unresolved' for item in entries) else []
             updated = ToolEvolutionDecisionLog(
                 log_id=log.log_id,
                 updated_at_utc=datetime.now(timezone.utc),
                 entries=entries[-40:],
                 summary_by_tool=self._summary_by_tool(entries),
                 summary_by_problem=self._summary_by_problem(entries),
+                unresolved_fields=unresolved_fields,
                 metadata={
                     'last_decision': 'probe_consumed',
                     'probe_consumed_count': len(new_entries),
