@@ -1268,18 +1268,24 @@ class WorldModelService:
             score += 0.08
         if history.get('browser_security_verification'):
             score += 0.08
-        history_state = str(history.get('history_state') or '')
+        history_state = str(history.get('state') or '')
         if history_state == 'executed':
             score += 0.12
         elif history_state in ('awaiting_response', 'failed'):
             score += 0.04
-        if history.get('last_verified_at'):
+        if history.get('latest_success'):
             score += 0.06
         total_uses = card.success_count + card.failure_count
         if total_uses > 0:
             success_ratio = card.success_count / total_uses
             score += min(0.14, 0.14 * success_ratio * min(total_uses, 10) / 10)
-        score -= min(0.2, 0.06 * len(signal.unresolved_fields or []))
+        launch_mode = str(card.metadata.get('launch_mode') or '').strip().lower()
+        non_visual = launch_mode in ('local_cli', 'api', 'local_provider', '')
+        unresolved = [
+            field for field in (signal.unresolved_fields or [])
+            if not (non_visual and field == 'UNRESOLVED:visual_snapshot')
+        ]
+        score -= min(0.2, 0.06 * len(unresolved))
         return round(max(0.0, min(0.94, score)), 3)
 
     def _changes_from_previous(
