@@ -17,7 +17,9 @@
 #   6. Corre scripts\rotate_tokens.ps1 si detecta tokens placeholder o
 #      invalidos. Si gh no esta logueado, dispara device-flow (click
 #      "Authorize" en el browser = unico paso manual).
-#   7. Arranca scripts\start_iabv.ps1 (MCP + tunnel cloudflared) salvo
+#   7. Antes de arrancar, detecta y mata cualquier MCP zombi previo que
+#      siga ocupando el puerto 8000 (capa 2.1.1: relanzado idempotente).
+#   8. Arranca scripts\start_iabv.ps1 (MCP + tunnel cloudflared) salvo
 #      que pases -NoStart.
 #
 # Flags:
@@ -26,6 +28,8 @@
 #   -SkipInstalls    Omite instalar gh/cloudflared (asume que ya estan).
 #   -PrintTunnelUrl  Al arrancar, intenta capturar la URL trycloudflare
 #                    y la imprime al final para compartir con Devin.
+#   -McpPort         Puerto local que ocupa el MCP (default 8000). Usado
+#                    para limpiar procesos zombi antes de relanzar.
 #
 # Seguridad:
 #   - Todos los binarios bajan de dominios oficiales (github.com/cli,
@@ -39,7 +43,8 @@ param(
     [switch]$Force,
     [switch]$NoStart,
     [switch]$SkipInstalls,
-    [switch]$PrintTunnelUrl
+    [switch]$PrintTunnelUrl,
+    [int]$McpPort = 8000
 )
 
 $ErrorActionPreference = 'Stop'
@@ -157,6 +162,45 @@ function Add-ToSessionPath([string]$Dir) {
     }
 }
 
+function Stop-McpZombies {
+    # Capa 2.1.1: antes de spawnear un MCP nuevo, libera el puerto si quedo
+    # un proceso zombi de una sesion previa (ej. cerraste la consola sin
+    # Ctrl+C). Idempotente: si no hay nadie escuchando, no hace nada.
+    param(
+        [Parameter(Mandatory)][int]$Port
+    )
+    $listeners = $null
+    try {
+        $listeners = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+    } catch {
+        # Get-NetTCPConnection no existe en todas las ediciones de Windows.
+        # Fallback silencioso: no hay nada que matar que podamos ver.
+        Write-Info "Get-NetTCPConnection no disponible; omitiendo kill de zombies en :$Port."
+        return
+    }
+    if (-not $listeners) {
+        Write-Info "Puerto :$Port libre (no hay MCP zombi)."
+        return
+    }
+    # Deduplica por PID: varias conexiones pueden apuntar al mismo proceso.
+    # Nota: $pids es variable automatica en PowerShell; usamos otro nombre.
+    $zombiePids = $listeners | Select-Object -ExpandProperty OwningProcess -Unique
+    foreach ($zombiePid in $zombiePids) {
+        if (-not $zombiePid -or $zombiePid -le 0) { continue }
+        try {
+            $proc = Get-Process -Id $zombiePid -ErrorAction SilentlyContinue
+            $name = if ($proc) { $proc.ProcessName } else { '<desconocido>' }
+            Write-Warn2 "Matando MCP zombi en :$Port (PID=$zombiePid, name=$name)..."
+            Stop-Process -Id $zombiePid -Force -ErrorAction Stop
+            Write-Ok "PID $zombiePid terminado."
+        } catch {
+            Write-Warn2 "No pude matar PID $zombiePid (: ${_}). Continuando."
+        }
+    }
+    # Gracia corta para que Windows libere el socket en TIME_WAIT.
+    Start-Sleep -Seconds 2
+}
+
 function Add-ToProfilePath([string]$Dir) {
     $profilePath = $PROFILE
     $profileDir = Split-Path -Parent $profilePath
@@ -238,6 +282,9 @@ if ($NoStart) {
     Write-Info "Para arrancar: scripts\start_iabv.ps1"
     exit 0
 }
+
+Write-Section "Libera puerto :$McpPort (kill MCP zombi)"
+Stop-McpZombies -Port $McpPort
 
 Write-Section 'Arrancando MCP + tunnel'
 if ($PrintTunnelUrl) {
