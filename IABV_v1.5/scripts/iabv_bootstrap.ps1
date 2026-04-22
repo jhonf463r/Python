@@ -162,44 +162,9 @@ function Add-ToSessionPath([string]$Dir) {
     }
 }
 
-function Stop-McpZombies {
-    # Capa 2.1.1: antes de spawnear un MCP nuevo, libera el puerto si quedo
-    # un proceso zombi de una sesion previa (ej. cerraste la consola sin
-    # Ctrl+C). Idempotente: si no hay nadie escuchando, no hace nada.
-    param(
-        [Parameter(Mandatory)][int]$Port
-    )
-    $listeners = $null
-    try {
-        $listeners = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
-    } catch {
-        # Get-NetTCPConnection no existe en todas las ediciones de Windows.
-        # Fallback silencioso: no hay nada que matar que podamos ver.
-        Write-Info "Get-NetTCPConnection no disponible; omitiendo kill de zombies en :$Port."
-        return
-    }
-    if (-not $listeners) {
-        Write-Info "Puerto :$Port libre (no hay MCP zombi)."
-        return
-    }
-    # Deduplica por PID: varias conexiones pueden apuntar al mismo proceso.
-    # Nota: $pids es variable automatica en PowerShell; usamos otro nombre.
-    $zombiePids = $listeners | Select-Object -ExpandProperty OwningProcess -Unique
-    foreach ($zombiePid in $zombiePids) {
-        if (-not $zombiePid -or $zombiePid -le 0) { continue }
-        try {
-            $proc = Get-Process -Id $zombiePid -ErrorAction SilentlyContinue
-            $name = if ($proc) { $proc.ProcessName } else { '<desconocido>' }
-            Write-Warn2 "Matando MCP zombi en :$Port (PID=$zombiePid, name=$name)..."
-            Stop-Process -Id $zombiePid -Force -ErrorAction Stop
-            Write-Ok "PID $zombiePid terminado."
-        } catch {
-            Write-Warn2 "No pude matar PID $zombiePid (: ${_}). Continuando."
-        }
-    }
-    # Gracia corta para que Windows libere el socket en TIME_WAIT.
-    Start-Sleep -Seconds 2
-}
+# Capa 2.1.1: Stop-McpZombies vive en _mcp_port_utils.ps1 (compartido con
+# start_iabv.ps1). Dot-source lo hace disponible aca.
+. (Join-Path $PSScriptRoot '_mcp_port_utils.ps1')
 
 function Add-ToProfilePath([string]$Dir) {
     $profilePath = $PROFILE
