@@ -992,13 +992,20 @@ class OperationalSelfExaminationService:
             issue_hint = str(issue.get('issue_hint') or '').strip()
             if not issue_hint:
                 continue
+            count = int(issue.get('count') or 0)
+            severity = IssueSeverity.HIGH if count >= 5 else IssueSeverity.MEDIUM if count >= 2 else IssueSeverity.LOW
+            confidence = min(0.80, 0.30 + count * 0.07)
             items.append(
                 {
                     'title': issue_hint,
                     'category': 'project_health_repeat',
-                    'summary': f'El issue {issue_hint} reaparece {int(issue.get("count") or 0)} veces en la capa evolutiva.',
-                    'severity': IssueSeverity.MEDIUM.value,
-                    'confidence': 0.68,
+                    'summary': (
+                        f'El issue {issue_hint} reaparece {count} veces en la '
+                        f'capa evolutiva. Requiere accion correctiva si persiste '
+                        f'en corridas recientes.'
+                    ),
+                    'severity': severity.value,
+                    'confidence': round(confidence, 2),
                     'evidence_refs': [],
                     'source_refs': ['EvolutionReviewService'],
                 }
