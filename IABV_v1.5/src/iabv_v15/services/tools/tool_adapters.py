@@ -151,6 +151,8 @@ class ToolAdapter:
         prompt_text = next((action.value for action in task.actions if action.action_type == ToolActionType.LLM_QUERY and action.value), task.objective)
         prompt_preview = prompt_text[:400]
         launch_target = str(card.metadata.get('web_url') or '') if launch_mode == 'web_assisted' else self._resolve_launch_target(card)
+        if not launch_target and launch_mode == 'desktop_app' and os.name == 'nt' and self._detect_running_process(card):
+            launch_target = str(card.metadata.get('command_name') or assistant_kind)
         clipboard_capture = response_capture_mode == 'clipboard_capture' and launch_mode == 'desktop_app'
         browser_dom_capture = response_capture_mode in {'dom_capture', 'browser_dom'} and launch_mode == 'web_assisted'
         background_capture_mode = str(card.metadata.get('background_capture_mode') or task.metadata.get('background_capture_mode') or '').strip().lower()
@@ -161,7 +163,9 @@ class ToolAdapter:
         capture_attempt_utc = datetime.now(timezone.utc).isoformat() if (clipboard_capture or browser_dom_capture or background_capture_mode == 'codex_rollout') else str(task.metadata.get('last_capture_attempt_utc') or '')
         consultation_metadata = self._consultation_runtime_metadata(card=card, task=task, capture_attempt_utc=capture_attempt_utc)
         if sandbox:
-            available = bool(launch_target) or direct_capture
+            available = bool(launch_target) or direct_capture or (
+                launch_mode == 'desktop_app' and os.name == 'nt' and self._detect_running_process(card)
+            )
             return {
                 'success': available,
                 'output_text': 'Asistente externo listo para consulta guiada.' if available else 'No pude validar la via externa solicitada.',
