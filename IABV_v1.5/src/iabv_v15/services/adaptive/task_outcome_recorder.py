@@ -501,6 +501,7 @@ class TaskOutcomeRecorder:
             from iabv_v15.domain.models import InferenceRequest
             recheck_request = InferenceRequest(
                 user_goal=session.user_goal,
+                site_hint=session.intent.site_hint or session.context.site_id,
                 goal_parameters=dict(session.metadata.get('goal_parameters') or {}),
                 conversation_context=list(session.metadata.get('conversation_context') or []),
                 metadata={'intent_correction_recheck': True},
