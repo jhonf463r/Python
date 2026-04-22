@@ -1069,6 +1069,7 @@ class IABVMCPServer:
         @mcp.tool()
         def cognitive_frame_translate(
             target_assistant_kind: str,
+            user_goal: str = "",
             snapshot_hint: str = "",
         ) -> dict[str, Any]:
             """Renderiza el perception actual al frame óptimo del asistente.
@@ -1077,6 +1078,8 @@ class IABVMCPServer:
                 target_assistant_kind: ``"codex"``, ``"claude_web"``,
                     ``"devin"``, etc. Si es desconocido, cae a
                     ``structured_qa`` (invariante del registry).
+                user_goal: objetivo del usuario en lenguaje natural.
+                    Si se omite, se usa ``snapshot_hint`` como fallback.
                 snapshot_hint: etiqueta libre que queda en ``metadata``
                     para que otra sesión pueda correlacionar el render.
 
@@ -1171,14 +1174,15 @@ class IABVMCPServer:
                 except Exception:
                     pass
 
+                effective_goal = str(user_goal or snapshot_hint or "cognitive_frame_translation")
                 request = InferenceRequest(
-                    user_goal=str(snapshot_hint or "pcs_v1.cognitive_frame_translate"),
+                    user_goal=effective_goal,
                     metadata={"source": "cognitive_frame_translate"},
                 )
                 intent = TaskIntent(
                     intent_key="pcs_v1.cognitive_frame_translate",
                     title="PCS v1 cognitive frame translation",
-                    summary=str(snapshot_hint or ""),
+                    summary=effective_goal,
                 )
                 perception = context_assembler.build_perception_snapshot(
                     request=request,
@@ -1497,6 +1501,46 @@ class IABVMCPServer:
                 }
             snapshot = service.run(reason=reason)
             return _to_jsonable(snapshot) or {}
+
+        # ------------------------------------------------------------
+        # F1.7 — PerceptionCrossValidator expuesto como MCP tool
+        #
+        # Cruza datos de multiples fuentes de percepcion (procesos vs
+        # tool availability, WorldModel vs ToolRegistry, ventanas vs
+        # focused_window) para detectar inconsistencias que sensores
+        # individuales no ven.  Read-only; no modifica estado.
+
+        @mcp.tool()
+        def cross_validate_perception() -> dict[str, Any]:
+            """Cruza datos de multiples fuentes de percepcion para detectar inconsistencias.
+
+            Compara:
+            - Procesos corriendo vs tool availability (detecta tools instalados
+              pero reportados como missing)
+            - ToolRegistry vs WorldModel tool_live_status (detecta tools
+              invisibles para el WorldModel)
+            - Ventanas activas vs focused_window (detecta anomalias de foco)
+
+            Pasa por governance gate ``assistant_kind='audit'`` (fail-closed).
+            No requiere red: todo el cotejo es local.
+            """
+            block = self._governance_block_for_route(
+                assistant_kind="audit",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
+            validator = getattr(self.container, "perception_cross_validator", None)
+            if validator is None:
+                return {
+                    "error": "cross_validator_unavailable",
+                    "detail": (
+                        "container.perception_cross_validator no está disponible. "
+                        "Revisa bootstrap.py: el wiring de PerceptionCrossValidator "
+                        "puede haber degradado."
+                    ),
+                }
+            return validator.run_cross_validation()
 
         # ------------------------------------------------------------
         # F2.1 — GitHubRemoteService expuesto como MCP tool

@@ -106,7 +106,39 @@ class ToolAdapter:
             return True
         if launch_mode == 'web_assisted':
             return bool(str(card.metadata.get('web_url') or '').strip())
-        return bool(self._resolve_launch_target(card))
+        if self._resolve_launch_target(card):
+            return True
+        if launch_mode == 'desktop_app' and os.name == 'nt':
+            return self._detect_running_process(card)
+        return False
+
+    def _detect_running_process(self, card: ToolCard) -> bool:
+        """Fallback: detect desktop apps by running process (e.g. MSIX installs)."""
+        keywords: list[str] = []
+        for field in ('command_name', 'assistant_kind'):
+            val = str(card.metadata.get(field) or '').strip().lower()
+            if val:
+                keywords.append(val)
+        for alias in card.metadata.get('command_aliases') or []:
+            val = str(alias or '').strip().lower()
+            if val:
+                keywords.append(val)
+        if not keywords:
+            return False
+        try:
+            import psutil
+            for proc in psutil.process_iter(['name', 'exe']):
+                try:
+                    name = str(proc.info.get('name') or '').lower()
+                    exe = str(proc.info.get('exe') or '').lower()
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+                for kw in keywords:
+                    if kw in name or kw in exe:
+                        return True
+        except Exception:
+            pass
+        return False
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         start = time.perf_counter()
@@ -119,6 +151,10 @@ class ToolAdapter:
         prompt_text = next((action.value for action in task.actions if action.action_type == ToolActionType.LLM_QUERY and action.value), task.objective)
         prompt_preview = prompt_text[:400]
         launch_target = str(card.metadata.get('web_url') or '') if launch_mode == 'web_assisted' else self._resolve_launch_target(card)
+        process_detected_running = False
+        if not launch_target and launch_mode == 'desktop_app' and os.name == 'nt' and self._detect_running_process(card):
+            launch_target = str(card.metadata.get('command_name') or assistant_kind)
+            process_detected_running = True
         clipboard_capture = response_capture_mode == 'clipboard_capture' and launch_mode == 'desktop_app'
         browser_dom_capture = response_capture_mode in {'dom_capture', 'browser_dom'} and launch_mode == 'web_assisted'
         background_capture_mode = str(card.metadata.get('background_capture_mode') or task.metadata.get('background_capture_mode') or '').strip().lower()
@@ -574,6 +610,8 @@ class ToolAdapter:
                     }
             launched = False
             if dry_run:
+                launched = True
+            elif process_detected_running:
                 launched = True
             elif launch_mode == 'web_assisted':
                 launched = bool(webbrowser.open(str(launch_target)))

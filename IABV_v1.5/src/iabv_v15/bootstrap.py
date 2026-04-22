@@ -575,6 +575,11 @@ class AppBootstrap:
         self.environment_self_awareness_service.request_refresh(reason='role_router_ready', full=False)
         self.world_model_service.role_router = self.role_router
         self.world_model_service.request_refresh(reason='role_router_ready', full=False)
+        from iabv_v15.services.evolution.perception_cross_validator import PerceptionCrossValidator
+        self.perception_cross_validator = PerceptionCrossValidator(
+            world_model_service=self.world_model_service,
+            tool_registry=self.tool_registry,
+        )
         self.self_check_orchestrator = SelfCheckOrchestrator(
             role_router=self.role_router,
             embedding_service=self.embedding_service,
