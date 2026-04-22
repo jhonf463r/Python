@@ -272,6 +272,88 @@ class AutonomousEvolutionService:
         return dict(consultation_state)
 
 
+    def reingest_existing_session(
+        self,
+        *,
+        existing_consultation: dict[str, Any],
+        adaptive_payload: dict[str, Any],
+        user_goal: str,
+        source: str,
+    ) -> dict[str, Any]:
+        """Fuerza una re-ingesta de la sesion abierta antes de relanzar.
+
+        Cuando la consulta anterior quedo en ``session_expired`` pero la
+        sesion aislada sigue abierta con una respuesta visible, este metodo
+        ejecuta una captura liviana (``reingest_only=True``) sin pasar por
+        el assessment completo de ``plan_or_execute``.  Si la captura obtiene
+        texto util, lo ingiere directamente y devuelve el resultado con
+        ``pre_capture_ingested=True``.  Si no hay texto util, devuelve
+        ``pre_capture_ingested=False`` para que el llamador siga con el
+        reintento normal.
+        """
+        tool_id = str(existing_consultation.get('selected_tool_id') or '').strip()
+        assistant_kind = str(existing_consultation.get('assistant_kind') or '').strip().lower()
+        if not tool_id or not assistant_kind:
+            return {'pre_capture_ingested': False, 'reason': 'no_tool_or_assistant'}
+
+        goal_parameters = {
+            'reingest_existing_response': True,
+            'tool_id': tool_id,
+            'assistant_kind': assistant_kind,
+            'response_capture_mode': str(existing_consultation.get('response_capture_mode') or ''),
+            'session_scope': str(existing_consultation.get('session_scope') or ''),
+            'session_label': str(existing_consultation.get('session_label') or ''),
+            'session_profile_dir': str(existing_consultation.get('session_profile_dir') or ''),
+            'thread_key': str(existing_consultation.get('thread_key') or ''),
+            'thread_title': str(existing_consultation.get('thread_title') or ''),
+            'isolated_session_required': bool(existing_consultation.get('isolated_session')),
+        }
+        try:
+            task, result, _preview = self.tool_teach_service.execute_external_consultation(
+                user_goal=user_goal,
+                assistant_preference=assistant_kind,
+                context_pack='',
+                site_id=str(existing_consultation.get('site_id') or '') or None,
+                diagnostic_category=str(existing_consultation.get('diagnostic_category') or ''),
+                incident_kind=str(existing_consultation.get('incident_kind') or ''),
+                approved=True,
+                launch_dry_run=False,
+                allow_local_automatic_consultation=False,
+                goal_parameters=goal_parameters,
+            )
+        except Exception:
+            return {'pre_capture_ingested': False, 'reason': 'capture_exception'}
+
+        response_captured = bool(result.execution_state.metadata.get('response_captured'))
+        captured_text = str(result.output_text or '').strip()
+        if not response_captured or not captured_text:
+            return {
+                'pre_capture_ingested': False,
+                'reason': str(result.error_message or 'no_response_text'),
+                'task_id': task.task_id,
+                'result_id': result.result_id,
+            }
+
+        payload = dict(adaptive_payload or {})
+        metadata = dict(payload.get('metadata') or {})
+        metadata['autonomous_evolution'] = dict(existing_consultation)
+        payload['metadata'] = metadata
+        if existing_consultation.get('pending_issue_id'):
+            payload['pending_issue_id'] = existing_consultation['pending_issue_id']
+        ingested = self.ingest_consult_response(
+            adaptive_payload=payload,
+            user_goal=user_goal,
+            response_text=captured_text,
+            source=f'{source}_pre_capture',
+        )
+        ingested['pre_capture_ingested'] = True
+        ingested['pre_capture_task_id'] = task.task_id
+        ingested['pre_capture_result_id'] = result.result_id
+        ingested['pre_capture_source'] = str(
+            result.execution_state.metadata.get('capture_source') or 'reingest'
+        )
+        return ingested
+
     def preview_plan(self, *, adaptive_payload: dict[str, Any], user_goal: str, source: str, decision_context: DecisionContext | dict[str, Any] | None = None) -> dict[str, Any]:
         payload = dict(adaptive_payload or {})
         assessment = self._assessment_from_decision_context(decision_context) or self._assess(payload=payload, user_goal=user_goal)

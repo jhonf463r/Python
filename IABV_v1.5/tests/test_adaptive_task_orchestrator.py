@@ -1192,6 +1192,193 @@ def test_prepare_retry_is_idempotent_and_does_not_mutate_input_payload() -> None
 
 
 # ---------------------------------------------------------------------------
+# PR-B — Pre-captura forzada en _prepare_retry_for_expired_consultation
+# ---------------------------------------------------------------------------
+# Cuando la consulta expiro y la sesion aislada aun tiene una respuesta
+# visible, ``_prepare_retry_for_expired_consultation`` debe intentar una
+# captura inmediata (dom_capture / clipboard_capture) ANTES de relanzar el
+# pipeline completo de ``plan_or_execute``.
+
+
+class _StubEvolutionServiceForReingest:
+    """Stub minimo de AutonomousEvolutionService para tests de pre-captura."""
+
+    def __init__(self, *, captured_text: str = '', should_fail: bool = False) -> None:
+        self.captured_text = captured_text
+        self.should_fail = should_fail
+        self.reingest_calls: list[dict] = []
+        self.ingest_calls: list[dict] = []
+
+    def reingest_existing_session(
+        self, *, existing_consultation, adaptive_payload, user_goal, source,
+    ):
+        self.reingest_calls.append({
+            'existing_consultation': existing_consultation,
+            'user_goal': user_goal,
+            'source': source,
+        })
+        if self.should_fail:
+            raise RuntimeError('capture_failed')
+        if not self.captured_text:
+            return {'pre_capture_ingested': False, 'reason': 'no_response_text'}
+        return {
+            'pre_capture_ingested': True,
+            'detail': self.captured_text,
+            'outcome_summary': f'Respuesta capturada: {self.captured_text[:80]}',
+            'status': 'ingested',
+            'pre_capture_task_id': 'task-pre',
+            'pre_capture_result_id': 'result-pre',
+            'pre_capture_source': 'browser_dom_reingest',
+        }
+
+    def ingest_consult_response(self, *, adaptive_payload, user_goal, response_text, source):
+        self.ingest_calls.append({
+            'user_goal': user_goal,
+            'response_text': response_text,
+            'source': source,
+        })
+        return {
+            'status': 'ingested',
+            'detail': response_text,
+            'assistant_kind': 'chatgpt',
+            'pending_issue_id': 'issue-reingest',
+        }
+
+
+def test_prepare_retry_forces_pre_capture_for_session_expired() -> None:
+    """Cuando previous_status es session_expired y se pasa user_goal, el
+    metodo debe llamar a reingest_existing_session y, si captura texto,
+    marcar capture_completed_before_retry=True."""
+    orchestrator, _ = _orchestrator(_workspace('retry_pre_capture_ok'))
+    stub = _StubEvolutionServiceForReingest(captured_text='Respuesta del DOM abierto.')
+    orchestrator.autonomous_evolution_service = stub
+
+    existing = {
+        'task_id': 'task-old', 'result_id': 'result-old',
+        'selected_tool_id': 'chatgpt_web_assisted',
+        'assistant_kind': 'chatgpt',
+        'response_capture_mode': 'dom_capture',
+    }
+    payload = {'metadata': {'pending_issue_id': 'issue-42'}}
+
+    new_payload = orchestrator._prepare_retry_for_expired_consultation(
+        payload=payload,
+        existing_consultation=existing,
+        retry_count=0,
+        previous_status='session_expired',
+        user_goal='resolver error en login',
+        source='test',
+    )
+
+    assert len(stub.reingest_calls) == 1
+    assert stub.reingest_calls[0]['user_goal'] == 'resolver error en login'
+    assert new_payload['metadata']['capture_completed_before_retry'] is True
+    assert 'Respuesta del DOM abierto' in (new_payload['metadata'].get('pre_captured_response') or '')
+    assert new_payload['metadata']['reingest_existing_response'] is True
+
+
+def test_prepare_retry_falls_through_when_pre_capture_returns_nothing() -> None:
+    """Si reingest_existing_session no obtiene texto, no se marca
+    capture_completed_before_retry y el flujo normal de plan_or_execute sigue."""
+    orchestrator, _ = _orchestrator(_workspace('retry_pre_capture_empty'))
+    stub = _StubEvolutionServiceForReingest(captured_text='')
+    orchestrator.autonomous_evolution_service = stub
+
+    existing = {
+        'task_id': 'task-1', 'result_id': 'result-1',
+        'selected_tool_id': 'chatgpt_web_assisted',
+        'assistant_kind': 'chatgpt',
+    }
+
+    new_payload = orchestrator._prepare_retry_for_expired_consultation(
+        payload={'metadata': {}},
+        existing_consultation=existing,
+        retry_count=0,
+        previous_status='session_expired',
+        user_goal='diagnosticar lentitud',
+        source='test',
+    )
+
+    assert len(stub.reingest_calls) == 1
+    assert new_payload['metadata'].get('capture_completed_before_retry') is not True
+    assert new_payload['metadata']['reingest_existing_response'] is True
+
+
+def test_prepare_retry_survives_pre_capture_exception() -> None:
+    """Si reingest_existing_session lanza excepcion, el metodo no debe
+    propagarla: simplemente omite la pre-captura y sigue con el retry normal."""
+    orchestrator, _ = _orchestrator(_workspace('retry_pre_capture_exc'))
+    stub = _StubEvolutionServiceForReingest(should_fail=True)
+    orchestrator.autonomous_evolution_service = stub
+
+    existing = {
+        'task_id': 'task-x', 'result_id': 'result-x',
+        'selected_tool_id': 'chatgpt_web_assisted',
+        'assistant_kind': 'chatgpt',
+    }
+
+    new_payload = orchestrator._prepare_retry_for_expired_consultation(
+        payload={'metadata': {}},
+        existing_consultation=existing,
+        retry_count=1,
+        previous_status='session_expired',
+        user_goal='fix crash',
+        source='test',
+    )
+
+    assert len(stub.reingest_calls) == 1
+    assert new_payload['metadata'].get('capture_completed_before_retry') is not True
+    assert new_payload['metadata']['reingest_existing_response'] is True
+
+
+def test_prepare_retry_no_pre_capture_for_failed_or_blocked() -> None:
+    """Para failed/blocked, NO se debe intentar pre-captura: el flujo debe
+    ser el completo (launch + paste + submit)."""
+    orchestrator, _ = _orchestrator(_workspace('retry_no_pre_capture'))
+    stub = _StubEvolutionServiceForReingest(captured_text='Should not be called')
+    orchestrator.autonomous_evolution_service = stub
+
+    existing = {
+        'task_id': 'task-f', 'result_id': 'result-f',
+        'selected_tool_id': 'chatgpt_web_assisted',
+        'assistant_kind': 'chatgpt',
+    }
+
+    for status in ('failed', 'blocked'):
+        new_payload = orchestrator._prepare_retry_for_expired_consultation(
+            payload={'metadata': {}},
+            existing_consultation=existing,
+            retry_count=0,
+            previous_status=status,
+            user_goal='fix something',
+            source='test',
+        )
+        assert new_payload['metadata'].get('capture_completed_before_retry') is not True
+        assert new_payload['metadata'].get('reingest_existing_response') is None
+
+    assert len(stub.reingest_calls) == 0
+
+
+def test_prepare_retry_no_pre_capture_without_user_goal() -> None:
+    """Sin user_goal (llamada legacy sin keyword args), la pre-captura no
+    se intenta y el comportamiento es identico al original."""
+    orchestrator, _ = _orchestrator(_workspace('retry_no_goal'))
+    stub = _StubEvolutionServiceForReingest(captured_text='ignored')
+    orchestrator.autonomous_evolution_service = stub
+
+    new_payload = orchestrator._prepare_retry_for_expired_consultation(
+        payload={'metadata': {}},
+        existing_consultation={'task_id': 't', 'result_id': 'r'},
+        retry_count=0,
+        previous_status='session_expired',
+    )
+
+    assert len(stub.reingest_calls) == 0
+    assert new_payload['metadata'].get('capture_completed_before_retry') is not True
+    assert new_payload['metadata']['reingest_existing_response'] is True
+
+
+# ---------------------------------------------------------------------------
 # H6 — SynapticRouter integration in AdaptiveTaskOrchestrator
 # ---------------------------------------------------------------------------
 # Los tests siguientes verifican que el ranking inter-IA del ``SynapticRouter``
