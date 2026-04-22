@@ -1,7 +1,8 @@
 """Tests for SystemPromptBuilder.
 
 Verifies that the builder includes live state data (windows, tool cards)
-in the generated system prompt with priority-based truncation.
+in the generated system prompt with priority-based truncation, meta-cognition
+instructions, and self-examination findings.
 """
 
 from __future__ import annotations
@@ -9,6 +10,9 @@ from __future__ import annotations
 from iabv_v15.domain.models import (
     ControlMasterDigest,
     EnvironmentSelfModel,
+    IssueSeverity,
+    SelfExaminationFinding,
+    SelfExaminationSnapshot,
     ToolCard,
     ToolType,
     WindowObservation,
@@ -155,3 +159,107 @@ def test_prompt_falls_back_when_no_digest() -> None:
     )
     assert 'Control Maestro' in prompt
     assert 'No disponible en esta sesion' in prompt
+
+
+def test_prompt_includes_meta_cognition_section() -> None:
+    """Meta-cognition section is always present and teaches second-order reasoning."""
+    builder = SystemPromptBuilder()
+    prompt = builder.build(
+        perception=None,
+        world_model=None,
+        env_self_model=None,
+        portable_context=None,
+        tool_registry=None,
+    )
+    assert 'Meta-cognicion' in prompt
+    assert 'segundo orden' in prompt
+    assert 'Autoconciencia operativa' in prompt
+    assert 'desajustes' in prompt
+    assert 'Coordinacion entre IAs' in prompt
+    assert 'Evolucion autonoma' in prompt
+
+
+def test_prompt_includes_self_examination_findings() -> None:
+    """Self-examination snapshot with findings renders in the prompt."""
+    builder = SystemPromptBuilder()
+    snapshot = SelfExaminationSnapshot(
+        summary='4 hallazgos detectados, 2 mejoras validadas.',
+        findings=[
+            SelfExaminationFinding(
+                title='Tool confidence baja',
+                summary='La mayoria de tools tienen confianza 0.26 porque last_verified_at es null.',
+                severity=IssueSeverity.MEDIUM,
+                recommendation='Ejecutar uso real de cada tool para subir confianza.',
+            ),
+            SelfExaminationFinding(
+                title='latest_failure recurrente',
+                summary='OSES detecta 7 repeticiones del patron latest_failure en la capa evolutiva.',
+                severity=IssueSeverity.HIGH,
+                recommendation='Investigar causa raiz del fallo recurrente.',
+            ),
+        ],
+        recurring_issues=[
+            {'title': 'latest_failure', 'count': 7},
+        ],
+        recommended_adjustments=[
+            {'title': 'Subir confianza de tools via uso real'},
+        ],
+        validated_improvements=[
+            {'title': 'Ollama 100% exito en language_understanding'},
+            {'title': 'WorldModel detecta ventanas via Win32'},
+        ],
+        unresolved_risks=[
+            'Codex capture_unverified + wrong_thread',
+            'ChatGPT web awaiting_response',
+        ],
+    )
+    prompt = builder.build(
+        perception=None,
+        world_model=None,
+        env_self_model=None,
+        portable_context=None,
+        tool_registry=None,
+        self_examination=snapshot,
+    )
+    assert 'Autoexaminacion operativa' in prompt
+    assert 'Tool confidence baja' in prompt
+    assert 'latest_failure recurrente' in prompt
+    assert 'Ejecutar uso real' in prompt
+    assert 'latest_failure' in prompt
+    assert 'x7' in prompt
+    assert 'Subir confianza' in prompt
+    assert 'Mejoras validadas: 2' in prompt
+    assert 'Codex capture_unverified' in prompt
+
+
+def test_prompt_self_examination_falls_back_when_none() -> None:
+    """Without self-examination data, the section shows a fallback message."""
+    builder = SystemPromptBuilder()
+    prompt = builder.build(
+        perception=None,
+        world_model=None,
+        env_self_model=None,
+        portable_context=None,
+        tool_registry=None,
+    )
+    assert 'Autoexaminacion operativa' in prompt
+    assert 'No disponible en esta sesion' in prompt
+
+
+def test_prompt_identity_mentions_control_maestro() -> None:
+    """Identity section now identifies as the Control Maestro brain."""
+    builder = SystemPromptBuilder()
+    prompt = builder.build(
+        perception=None,
+        world_model=None,
+        env_self_model=None,
+        portable_context=None,
+        tool_registry=None,
+    )
+    assert 'cerebro local' in prompt
+    assert 'Control Maestro' in prompt
+    assert 'Devin' in prompt
+    assert 'Codex' in prompt
+    assert 'Claude' in prompt
+    assert 'ChatGPT' in prompt
+    assert 'Ollama' in prompt
