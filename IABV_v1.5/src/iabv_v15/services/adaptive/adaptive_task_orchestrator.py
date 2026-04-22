@@ -808,10 +808,7 @@ class AdaptiveTaskOrchestrator:
                     )
                     if pre_capture.get('pre_capture_ingested'):
                         metadata['capture_completed_before_retry'] = True
-                        metadata['pre_capture_result'] = {
-                            k: v for k, v in pre_capture.items()
-                            if isinstance(v, (str, int, float, bool, type(None)))
-                        }
+                        metadata['pre_capture_result'] = dict(pre_capture)
                 except Exception:
                     pass
         else:
