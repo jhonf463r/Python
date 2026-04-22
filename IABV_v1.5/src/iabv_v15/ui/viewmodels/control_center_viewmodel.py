@@ -447,7 +447,7 @@ class ControlCenterViewModel(QObject):
             },
             'available_actions': [],
             'detected_blocks': external_state_flags,
-            'confidence': 0.45 if capture_available else 0.1,
+            'confidence': 0.55 if capture_available else 0.25,
             'unresolved_fields': unresolved_fields,
             'metadata': {
                 'lane_summary': lane_summary,
@@ -4303,7 +4303,25 @@ class ControlCenterViewModel(QObject):
         metadata = dict(payload.get('metadata') or {})
         existing = dict(metadata.get('autonomous_evolution') or {})
         if existing.get('status') in {'prepared', 'reused', 'awaiting_response', 'failed'}:
-            return existing
+            if existing.get('status') == 'awaiting_response':
+                started_at = str(existing.get('started_at_utc') or existing.get('created_at_utc') or '').strip()
+                if started_at:
+                    try:
+                        from datetime import datetime, timezone
+                        started = datetime.fromisoformat(started_at.replace('Z', '+00:00'))
+                        age_seconds = (datetime.now(timezone.utc) - started).total_seconds()
+                        if age_seconds > 120:
+                            existing = {**existing, 'status': 'stale_awaiting', 'stale_since_seconds': int(age_seconds)}
+                            metadata['autonomous_evolution'] = existing
+                            payload['metadata'] = metadata
+                    except (ValueError, TypeError):
+                        pass
+                else:
+                    existing = {**existing, 'status': 'stale_awaiting', 'stale_since_seconds': -1}
+                    metadata['autonomous_evolution'] = existing
+                    payload['metadata'] = metadata
+            if existing.get('status') != 'stale_awaiting':
+                return existing
         user_goal = self._last_user_goal or str(payload.get('user_goal') or (payload.get('intent') or {}).get('title') or 'caso actual')
         intent = dict(payload.get('intent') or {})
         intent_key = str(intent.get('intent_key') or '').strip()

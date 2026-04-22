@@ -565,10 +565,25 @@ class WorldModelService:
             status = 'listo'
             detail = 'La herramienta esta registrada y se puede intentar abrir.'
             session_status = 'desconocida'
+        elif window_open:
+            status = 'listo'
+            detail = 'Ventana detectada pero el registry aun no confirma disponibilidad; puede estar pendiente de refresh.'
+            session_status = 'desconocida'
         else:
-            status = 'no_disponible'
-            detail = 'La herramienta no quedo confirmada como disponible en esta laptop.'
-            session_status = 'no_disponible'
+            installed_hint = bool(
+                card.metadata.get('install_path')
+                or card.metadata.get('launch_target')
+                or card.metadata.get('web_url')
+                or card.success_count > 0
+            )
+            if installed_hint:
+                status = 'listo'
+                detail = 'La herramienta esta registrada pero la confirmacion de disponibilidad esta pendiente.'
+                session_status = 'desconocida'
+            else:
+                status = 'no_disponible'
+                detail = 'La herramienta no quedo confirmada como disponible en esta laptop.'
+                session_status = 'no_disponible'
         return status, detail, session_status, messages_status
 
     def _cards_to_probe(self) -> list[ToolCard]:
@@ -1260,8 +1275,12 @@ class WorldModelService:
             score += 0.04
         if history.get('last_verified_at'):
             score += 0.06
+        total_uses = card.success_count + card.failure_count
+        if total_uses > 0:
+            success_ratio = card.success_count / total_uses
+            score += min(0.14, 0.14 * success_ratio * min(total_uses, 10) / 10)
         score -= min(0.2, 0.06 * len(signal.unresolved_fields or []))
-        return round(max(0.0, min(0.9, score)), 3)
+        return round(max(0.0, min(0.94, score)), 3)
 
     def _changes_from_previous(
         self,
