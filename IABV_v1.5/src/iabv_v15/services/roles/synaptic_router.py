@@ -459,6 +459,6 @@ class SynapticRouter:
             return {}
         grouped: dict[tuple[object, str, str], list[ExperimentRun]] = {}
         for run in runs:
-            key = (run.domain, str(run.route or ''), str(run.assistant_kind or ''))
+            key = (run.route, str(run.assistant_kind or '').strip().lower(), str(run.config_signature or '').strip())
             grouped.setdefault(key, []).append(run)
         return grouped
