@@ -335,7 +335,8 @@ class IntentUnderstandingService:
             )
             return finalize(intent, hypotheses)
 
-        if self._is_tool_prompt(text, request.goal_parameters) or str(analysis.get('primary_intent') or '') in {'tools.local_workflow', 'tools.sandbox'}:
+        _has_web_verb = self._contains_any(text, ['buscar', 'busca', 'navega', 'abre', 'abrir', 've a']) and self._contains_any(text, ['internet', 'web', 'en linea', 'online', 'pagina', 'sitio', 'url', 'http', 'google', 'mercadolibre', 'mercado libre'])
+        if not _has_web_verb and (self._is_tool_prompt(text, request.goal_parameters) or str(analysis.get('primary_intent') or '') in {'tools.local_workflow', 'tools.sandbox'}):
             sandbox_only = self._contains_any(text, ['sandbox', 'probar herramienta', 'probar tool', 'validar herramienta'])
             intent = build(
                 intent_key='tools.sandbox' if sandbox_only else 'tools.local_workflow',
@@ -406,12 +407,18 @@ class IntentUnderstandingService:
             hypotheses.append(IntentHypothesis(intent_key='wplay.login', title='Login Wplay', confidence=0.74, rationale='Si la sesion no se restaura, el siguiente paso sera login guiado.'))
             return finalize(intent, hypotheses)
 
-        if self._contains_any(text, ['abre', 'abrir', 've a', 'buscar', 'busca', 'navega']) and (site_hint is not None or self._contains_any(text, ['google', 'mercadolibre', 'mercado libre'])):
+        _web_context_detected = self._contains_any(text, [
+            'internet', 'web', 'en linea', 'online',
+            'pagina', 'sitio', 'url', 'http',
+        ])
+        if self._contains_any(text, ['abre', 'abrir', 've a', 'buscar', 'busca', 'navega']) and (site_hint is not None or self._contains_any(text, ['google', 'mercadolibre', 'mercado libre']) or _web_context_detected):
             target_title = 'Busqueda web guiada' if self._contains_any(text, ['buscar', 'busca']) else 'Navegacion web guiada'
             intent_key = 'browser.search' if self._contains_any(text, ['buscar', 'busca']) else 'browser.navigate'
             reasoning = ['hay un verbo operativo de navegador']
             if site_hint:
                 reasoning.append(f'sitio detectado: {site_hint}')
+            if _web_context_detected:
+                reasoning.append('contexto web explicito (internet/web/online/pagina/sitio)')
             intent = build(
                 intent_key=intent_key,
                 title=target_title,
@@ -638,11 +645,12 @@ class IntentUnderstandingService:
             register('wplay.login', 5.0, 'flujo Wplay orientado a login')
         if site_hint == 'wplay' and self._contains_any(text, ['abre', 'abrir', 'pagina', 'p?gina', 'entra', 'ingresa', 've a']):
             register('wplay.core', 4.0, 'flujo Wplay orientado a navegacion base')
-        if self._contains_any(text, ['abre', 'abrir', 've a', 'buscar', 'busca', 'navega']) and (site_hint is not None or self._contains_any(text, ['google', 'mercadolibre', 'mercado libre'])):
+        _web_ctx = self._contains_any(text, ['internet', 'web', 'en linea', 'online', 'pagina', 'sitio', 'url', 'http'])
+        if self._contains_any(text, ['abre', 'abrir', 've a', 'buscar', 'busca', 'navega']) and (site_hint is not None or self._contains_any(text, ['google', 'mercadolibre', 'mercado libre']) or _web_ctx):
             register(
                 'browser.search' if self._contains_any(text, ['buscar', 'busca']) else 'browser.navigate',
                 3.5,
-                'mensaje operativo de navegador sobre sitio conocido',
+                'mensaje operativo de navegador sobre sitio conocido o contexto web explicito',
             )
         if self._is_project_prompt(text):
             project_score = 4.0
@@ -1004,12 +1012,39 @@ class IntentUnderstandingService:
             'quÃ© tienes disponible',
             'que puedes usar ahora',
             'quÃ© puedes usar ahora',
+            'como te sientes',
+            'como te va',
+            'que problemas ves',
+            'que problemas detectas',
+            'que desajustes ves',
+            'que desajustes detectas',
+            'tu propio funcionamiento',
+            'tu funcionamiento',
+            'como funciones',
+            'como funcionas',
+            'como estas funcionando',
+            'diagnosticate',
+            'autodiagnostico',
+            'autodiagnosticarte',
+            'examinate',
+            'autoexaminate',
         )
         if any(phrase in text for phrase in direct_phrases):
             return True
         word_tokens = set(re.findall(r'[a-z0-9_]+', text))
-        asks_system_state = any(token in word_tokens for token in ('entorno', 'arquitectura', 'herramienta', 'herramientas', 'ias', 'ia', 'estado', 'conexiones'))
-        asks_directly = any(token in text for token in ('conoces', 'sabes', 'tienes', 'disponibles', 'te conectas', 'te puedes conectar', 'puedes usar', 'consciente', 'que tan bien', 'como estas', 'como estÃ¡s'))
+        asks_system_state = any(token in word_tokens for token in (
+            'entorno', 'arquitectura', 'herramienta', 'herramientas',
+            'ias', 'ia', 'estado', 'conexiones',
+            'funcionamiento', 'desajustes', 'problemas', 'degradacion',
+            'diagnostico', 'autoexaminacion', 'salud',
+        ))
+        asks_directly = any(token in text for token in (
+            'conoces', 'sabes', 'tienes', 'disponibles',
+            'te conectas', 'te puedes conectar', 'puedes usar',
+            'consciente', 'que tan bien', 'como estas', 'como estÃ¡s',
+            'como te sientes', 'que problemas', 'que desajustes',
+            'detectas', 'funcionando', 'tu propio',
+        ))
         return asks_system_state and asks_directly
 
     def _is_evolution_status_prompt(self, text: str) -> bool:

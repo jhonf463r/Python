@@ -1246,6 +1246,13 @@ class WorldModelService:
             score += 0.08
         if history.get('browser_security_verification'):
             score += 0.08
+        history_state = str(history.get('history_state') or '')
+        if history_state == 'executed':
+            score += 0.12
+        elif history_state in ('awaiting_response', 'failed'):
+            score += 0.04
+        if history.get('last_verified_at'):
+            score += 0.06
         score -= min(0.2, 0.06 * len(signal.unresolved_fields or []))
         return round(max(0.0, min(0.9, score)), 3)
 
