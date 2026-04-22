@@ -1339,6 +1339,12 @@ class OperationalSelfExaminationService:
         if category_value == 'weak_correction':
             scenario_id = str(metadata.get('scenario_id') or title).strip().lower()
             return f'{category_value}:{scenario_id}'
+        if category_value == 'token_rotation':
+            # ``title`` incluye dias proyectados (``(3.0d)``) que cambian en
+            # cada review. ``token_name`` es estable y esta en metadata de
+            # expired/proactive/stale por igual.
+            token_name = str(metadata.get('token_name') or title).strip().lower()
+            return f'{category_value}:{token_name}'
         return f'{category_value}:{str(title or "").strip().lower()}'
 
     def _matching_runs_for_adjustment(

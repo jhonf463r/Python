@@ -770,6 +770,40 @@ def test_token_rotation_findings_no_ops_when_no_signal() -> None:
         shutil.rmtree(root, ignore_errors=True)
 
 
+def test_token_rotation_feedback_key_is_stable_across_days_projection() -> None:
+    """``_adjustment_feedback_key`` debe ignorar ``days_txt`` del title.
+
+    Si el key dependiera del title completo, cada review devolveria un key
+    distinto (``...(3.0d)`` vs ``...(2.0d)``), y ``_recommendation_feedback``
+    nunca encontraria al finding previo -> siempre ``no_evidence``.
+    """
+    root = _workspace('token_rotation_feedback_key')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service: OperationalSelfExaminationService = (
+            bootstrap.operational_self_examination_service
+        )
+        key_yesterday = service._adjustment_feedback_key(
+            category='token_rotation',
+            title='Rotacion proactiva de github_api (3.0d)',
+            metadata={'token_name': 'github_api'},
+        )
+        key_today = service._adjustment_feedback_key(
+            category='token_rotation',
+            title='Rotacion proactiva de github_api (2.0d)',
+            metadata={'token_name': 'github_api'},
+        )
+        key_expired = service._adjustment_feedback_key(
+            category='token_rotation',
+            title='Token github_api expirado: rotar ya',
+            metadata={'token_name': 'github_api'},
+        )
+        assert key_yesterday == key_today == key_expired
+        assert 'github_api' in key_today
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def test_build_review_promotes_expired_token_finding_to_auto_probe() -> None:
     """End-to-end capa 2.2: finding HIGH -> pending_auto_probes con rotate_tokens.ps1."""
     root = _workspace('token_rotation_auto_probe')
