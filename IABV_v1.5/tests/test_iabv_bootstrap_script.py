@@ -48,10 +48,10 @@ def test_script_exists(bootstrap_src: str) -> None:
         "Add-ToProfilePath",
         # No asume admin.
         "$HOME\\.iabv\\tools",
-        # Capa 2.1.1: kill de MCP zombi antes de relanzar.
+        # Capa 2.1.1: kill de MCP zombi antes de relanzar. La logica vive
+        # en _mcp_port_utils.ps1 (dot-sourced); aca solo el flag + la llamada.
         "Stop-McpZombies",
-        "Get-NetTCPConnection",
-        "Stop-Process",
+        "_mcp_port_utils.ps1",
         "[int]$McpPort",
     ],
 )
@@ -73,23 +73,14 @@ def test_bootstrap_kills_mcp_zombie_before_start(bootstrap_src: str) -> None:
     )
 
 
-def test_bootstrap_zombie_kill_is_idempotent(bootstrap_src: str) -> None:
-    """Si el puerto esta libre, la funcion no debe fallar ni matar nada."""
-    # Buscamos el mensaje "puerto libre" y el ErrorAction SilentlyContinue
-    # sobre Get-NetTCPConnection (ambos indican manejo idempotente).
-    assert "Puerto :$Port libre" in bootstrap_src
-    assert "Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue" in bootstrap_src
-
-
-def test_bootstrap_zombie_kill_does_not_use_reserved_pids_var(bootstrap_src: str) -> None:
-    """$pids es variable automatica en PowerShell; reasignarla puede romper
-    comportamiento. El script debe usar un nombre propio."""
-    # Miramos solo la seccion de Stop-McpZombies para no tocar futuros usos.
-    start = bootstrap_src.index("function Stop-McpZombies")
-    end = bootstrap_src.index("function Add-ToProfilePath", start)
-    section = bootstrap_src[start:end]
-    assert "$pids = " not in section, "No uses $pids (variable automatica); usa $zombiePids"
-    assert "$zombiePids" in section
+def test_bootstrap_dot_sources_port_utils(bootstrap_src: str) -> None:
+    """Capa 2.1.1: la logica real vive en _mcp_port_utils.ps1 para no
+    duplicarse con start_iabv.ps1. El bootstrap la importa via dot-source."""
+    assert ". (Join-Path $PSScriptRoot '_mcp_port_utils.ps1')" in bootstrap_src
+    # No duplicamos la implementacion en el bootstrap.
+    assert "function Stop-McpZombies" not in bootstrap_src, (
+        "No redefinir Stop-McpZombies en bootstrap; usar _mcp_port_utils.ps1"
+    )
 
 
 def test_bootstrap_references_only_official_hosts(bootstrap_src: str) -> None:

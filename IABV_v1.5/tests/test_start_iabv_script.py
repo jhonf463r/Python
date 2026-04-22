@@ -1,10 +1,16 @@
 """Static checks for ``scripts/start_iabv.ps1``.
 
+Cubre dos contratos que viven en el mismo script:
+
+- Flag ``-StartUI`` (issue #136 / PR #140): spawnea la ventana
+  ControlCenter via ``python -m iabv_v15 app`` en un proceso aparte no
+  bloqueante, sin matar el MCP si la UI falla.
+- Capa 2.1.1 (PR #132 + PR #133): el entry point tambien debe limpiar
+  zombis en el puerto antes de delegar en ``run_mcp_bridge.ps1``, via la
+  utilidad compartida ``_mcp_port_utils.ps1``.
+
 No lanzamos PowerShell (no esta garantizado en CI Linux). Validamos que el
-script existe y que contiene los fragmentos necesarios para cumplir el
-contrato del flag ``-StartUI`` (issue #136): spawnear la ventana
-ControlCenter via ``python -m iabv_v15 app`` en un proceso aparte no
-bloqueante, sin matar el MCP si la UI falla.
+script existe y que contiene los fragmentos necesarios.
 """
 
 from __future__ import annotations
@@ -25,6 +31,11 @@ def start_iabv_src() -> str:
 
 def test_script_exists(start_iabv_src: str) -> None:
     assert len(start_iabv_src) > 0
+
+
+# ---------------------------------------------------------------------------
+# -StartUI flag (issue #136 / PR #140)
+# ---------------------------------------------------------------------------
 
 
 def test_declares_start_ui_switch(start_iabv_src: str) -> None:
@@ -99,3 +110,46 @@ def test_start_ui_documented_in_header(start_iabv_src: str) -> None:
     assert "-StartUI" in header, (
         "El flag -StartUI debe aparecer tambien en el header de ayuda rapida"
     )
+
+
+# ---------------------------------------------------------------------------
+# Capa 2.1.1: kill MCP zombi antes del bridge (PR #132 + PR #133)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "fragment",
+    [
+        # Capa 2.1.1 aca tambien.
+        "[int]$McpPort",
+        "Stop-McpZombies -Port $McpPort",
+        ". (Join-Path $PSScriptRoot '_mcp_port_utils.ps1')",
+    ],
+)
+def test_start_contains_mcp_port_fragment(
+    start_iabv_src: str, fragment: str
+) -> None:
+    assert fragment in start_iabv_src, f"Falta fragmento esperado: {fragment!r}"
+
+
+def test_start_kills_mcp_zombie_before_bridge(start_iabv_src: str) -> None:
+    """El kill debe correr ANTES de spawnear el bridge; si no, el nuevo MCP
+    falla por puerto ocupado y el kill ya no sirve."""
+    kill_idx = start_iabv_src.index("Stop-McpZombies -Port $McpPort")
+    # La invocacion real al bridge es la linea que empieza con "& powershell".
+    bridge_idx = start_iabv_src.rindex("& powershell -ExecutionPolicy Bypass -File $bridge")
+    assert kill_idx < bridge_idx, (
+        "Stop-McpZombies debe ejecutarse antes del bridge"
+    )
+
+
+def test_start_does_not_redefine_stop_mcp_zombies(start_iabv_src: str) -> None:
+    """No duplicar la implementacion: debe venir del dot-source de
+    _mcp_port_utils.ps1 (misma utilidad que usa iabv_bootstrap.ps1)."""
+    assert "function Stop-McpZombies" not in start_iabv_src
+
+
+def test_start_does_not_require_admin(start_iabv_src: str) -> None:
+    """El script no deberia invocar elevacion."""
+    for token in ("Start-Process.*-Verb RunAs", "RequireAdministrator", "elevate"):
+        assert token.lower() not in start_iabv_src.lower(), token

@@ -41,7 +41,8 @@ param(
     [switch]$SkipHealthChecks,
     [switch]$HotReload,
     [switch]$Quiet,
-    [switch]$StartUI
+    [switch]$StartUI,
+    [int]$McpPort = 8000
 )
 
 $ErrorActionPreference = 'Stop'
@@ -49,6 +50,10 @@ $ErrorActionPreference = 'Stop'
 function Write-Info($msg) { if (-not $Quiet) { Write-Host $msg -ForegroundColor Cyan } }
 function Write-Warn($msg) { Write-Host $msg -ForegroundColor Yellow }
 function Write-Err ($msg) { Write-Host $msg -ForegroundColor Red }
+
+# Capa 2.1.1: libera el puerto del MCP antes de arrancar si quedo un zombi.
+# Importamos la utilidad compartida con iabv_bootstrap.ps1.
+. (Join-Path $PSScriptRoot '_mcp_port_utils.ps1')
 
 $secretsPath = Join-Path $HOME '.iabv_secrets.ps1'
 
@@ -146,6 +151,10 @@ if ($StartUI) {
         Write-Warn "         python -m iabv_v15 app"
     }
 }
+
+Write-Info ""
+Write-Info "Libera puerto :$McpPort (kill MCP zombi) ..."
+Stop-McpZombies -Port $McpPort
 
 Write-Info ""
 Write-Info "Arrancando MCP + Cloudflare tunnel via $bridge ..."
