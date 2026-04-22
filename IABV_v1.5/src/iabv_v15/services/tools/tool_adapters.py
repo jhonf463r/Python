@@ -858,6 +858,7 @@ class ToolAdapter:
     def _expand_candidate_paths(self, candidate: str) -> list[str]:
         replacements = {
             '{localappdata}': os.environ.get('LOCALAPPDATA', ''),
+            '{appdata}': os.environ.get('APPDATA', ''),
             '{programfiles}': os.environ.get('ProgramFiles', ''),
             '{programfilesx86}': os.environ.get('ProgramFiles(x86)', ''),
             '{userprofile}': os.environ.get('USERPROFILE', ''),
@@ -960,7 +961,25 @@ class AiderToolAdapter:
     tool_type = ToolType.CODE_EDITOR
 
     def is_available(self, card: ToolCard) -> bool:
-        return shutil.which('aider') is not None
+        if shutil.which('aider') is not None:
+            return True
+        try:
+            import importlib.util
+            if importlib.util.find_spec('aider') is not None:
+                return True
+        except Exception:
+            pass
+        try:
+            completed = subprocess.run(
+                [sys.executable, '-m', 'aider', '--version'],
+                capture_output=True, text=True, check=False,
+                timeout=5,
+            )
+            if completed.returncode == 0:
+                return True
+        except Exception:
+            pass
+        return False
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         start = time.perf_counter()
@@ -2082,6 +2101,7 @@ class LocalCliToolAdapter:
     def _expand_candidate_paths(self, candidate: str) -> list[str]:
         replacements = {
             '{localappdata}': os.environ.get('LOCALAPPDATA', ''),
+            '{appdata}': os.environ.get('APPDATA', ''),
             '{programfiles}': os.environ.get('ProgramFiles', ''),
             '{programfilesx86}': os.environ.get('ProgramFiles(x86)', ''),
             '{userprofile}': os.environ.get('USERPROFILE', ''),

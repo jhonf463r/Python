@@ -133,8 +133,20 @@ class SystemPromptBuilder:
                 parts.append(f'- {section.title}: {section.summary[:200]}')
         return '\n'.join(parts)
 
-    @staticmethod
-    def _section_tools(cards: list[ToolCard] | None) -> str:
+    _TOOL_INSTALL_HINTS: dict[str, str] = {
+        'aider_coder': 'Instalar: pip install aider-chat',
+        'claude_installed': 'Instalar: https://claude.ai/download (alternativa: claude_web_assisted)',
+        'mcp_client': 'Configurar server_url en metadata (default: http://127.0.0.1:8000)',
+    }
+
+    _TOOL_WEB_ALTERNATIVES: dict[str, str] = {
+        'claude_installed': 'claude_web_assisted',
+        'codex_installed': 'codex_web_assisted',
+        'chatgpt_installed': 'chatgpt_web_assisted',
+    }
+
+    @classmethod
+    def _section_tools(cls, cards: list[ToolCard] | None) -> str:
         if not cards:
             return '## Herramientas disponibles\nNinguna registrada.'
         parts: list[str] = ['## Herramientas disponibles']
@@ -142,6 +154,7 @@ class SystemPromptBuilder:
             'Puedes invocar herramientas usando el formato: '
             '<tool_call name="TOOL_ID" args=\'{"key": "value"}\'/>\n'
         )
+        available_ids = {c.tool_id for c in cards if c.available}
         for card in cards:
             available_tag = 'disponible' if card.available else 'no disponible'
             approval_tag = ' (requiere aprobacion)' if card.requires_human_approval else ''
@@ -151,6 +164,13 @@ class SystemPromptBuilder:
             )
             if card.capabilities:
                 parts.append(f'  Capacidades: {", ".join(card.capabilities[:6])}')
+            if not card.available:
+                hint = cls._TOOL_INSTALL_HINTS.get(card.tool_id)
+                if hint:
+                    parts.append(f'  → {hint}')
+                alt = cls._TOOL_WEB_ALTERNATIVES.get(card.tool_id, '')
+                if alt and alt in available_ids:
+                    parts.append(f'  → Ruta alternativa lista: {alt}')
         return '\n'.join(parts)
 
     @staticmethod
@@ -198,22 +218,35 @@ class SystemPromptBuilder:
             'herramientas estan disponibles, cuales fallan, que patrones se '
             'repiten. Usa la seccion de autoexaminacion para detectar '
             'degradaciones.\n'
-            '2. **Razonamiento de segundo orden**: no solo respondas la '
+            '2. **Deteccion de programas instalados**: no te limites a '
+            'verificar si una tool esta "disponible" en el ToolRegistry. '
+            'Revisa activamente que programas estan instalados en el sistema '
+            '(via WorldModel, ventanas abiertas, procesos, rutas conocidas). '
+            'Si un programa esta instalado pero no conectado, indica COMO '
+            'conectarlo. Si no esta instalado, sugiere el comando de '
+            'instalacion concreto (ej: pip install, winget install, URL de '
+            'descarga).\n'
+            '3. **Rutas alternativas**: cada herramienta puede tener multiples '
+            'rutas (desktop app, web asistida, API, CLI). Si la ruta desktop '
+            'no esta disponible, usa la ruta web. No declares una herramienta '
+            'como "no disponible" si tiene una ruta alternativa funcionando. '
+            'Ejemplo: si claude_installed no esta, usa claude_web_assisted.\n'
+            '4. **Razonamiento de segundo orden**: no solo respondas la '
             'pregunta literal — preguntate si el enfoque actual es el '
             'correcto o si hay una ruta mejor que no se ha considerado.\n'
-            '3. **Deteccion proactiva de desajustes**: si detectas que algo '
+            '5. **Deteccion proactiva de desajustes**: si detectas que algo '
             'no funciona como deberia (tool con confianza baja, fallo '
             'recurrente, ruta bloqueada), reportalo como desajuste aunque '
             'nadie lo haya preguntado.\n'
-            '4. **Coordinacion entre IAs**: cuando una tarea puede beneficiarse '
+            '6. **Coordinacion entre IAs**: cuando una tarea puede beneficiarse '
             'de comparar rutas (Devin vs Codex vs Claude), propone la '
             'comparacion via ExperimentLab. No asumas que una sola IA '
             'es siempre la mejor.\n'
-            '5. **Evolucion autonoma**: propone mejoras concretas basadas en '
+            '7. **Evolucion autonoma**: propone mejoras concretas basadas en '
             'evidencia real — no esperes instrucciones para cada ajuste. '
             'Si la evidencia muestra que una ruta falla consistentemente, '
             'recomienda el cambio.\n'
-            '6. **Persistencia**: no abandones un problema sin evidencia de '
+            '8. **Persistencia**: no abandones un problema sin evidencia de '
             'que se resolvio. Si un desajuste persiste, escalalo con datos.'
         )
 
