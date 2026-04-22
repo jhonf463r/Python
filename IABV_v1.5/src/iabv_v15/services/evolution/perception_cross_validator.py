@@ -2,6 +2,10 @@
 
 Compares processes vs tool availability, windows vs WorldModel, and
 network status to detect inconsistencies that individual sensors miss.
+
+When inconsistencies are found, the validator can auto-correct by
+invalidating stale availability caches and triggering re-checks.
+This embodies the principle: never trust a single source of truth.
 """
 
 from __future__ import annotations
@@ -15,7 +19,13 @@ logger = logging.getLogger(__name__)
 
 
 class PerceptionCrossValidator:
-    """Lightweight cross-validator for meta-cognition consistency."""
+    """Cross-validator for meta-cognition consistency.
+
+    Design principle: the ground truth is the *union* of all sensors,
+    not any single one.  If filesystem says "missing" but process list
+    says "running", the tool IS available — and the validator logs
+    the disagreement so the system learns over time.
+    """
 
     def __init__(
         self,
@@ -27,12 +37,24 @@ class PerceptionCrossValidator:
         self.tool_registry = tool_registry
 
     def run_cross_validation(self) -> dict[str, Any]:
-        """Execute full cross-validation and return structured results."""
+        """Execute full cross-validation and return structured results.
+
+        When inconsistencies are found, attempts auto-correction by
+        invalidating the availability cache for affected tools and
+        triggering a refresh.  Returns both inconsistencies and any
+        corrections applied.
+        """
         inconsistencies: list[dict[str, Any]] = []
+        auto_corrections: list[dict[str, Any]] = []
         checks_passed: list[str] = []
         checked_at = datetime.now(timezone.utc).isoformat()
 
-        inconsistencies.extend(self._cross_tools_vs_processes())
+        proc_inconsistencies = self._cross_tools_vs_processes()
+        inconsistencies.extend(proc_inconsistencies)
+
+        corrections = self._auto_correct_availability(proc_inconsistencies)
+        auto_corrections.extend(corrections)
+
         inconsistencies.extend(self._cross_audit_vs_worldmodel())
         inconsistencies.extend(self._cross_windows_consistency())
 
@@ -46,13 +68,72 @@ class PerceptionCrossValidator:
         return {
             'checked_at': checked_at,
             'inconsistencies': inconsistencies,
+            'auto_corrections': auto_corrections,
             'checks_passed': checks_passed,
             'total_inconsistencies': len(inconsistencies),
+            'total_auto_corrections': len(auto_corrections),
             'total_checks': 3,
+            'learning': (
+                'Cuando las fuentes discrepan (filesystem vs procesos vs ventanas), '
+                'la fuente positiva prevalece. Un solo sensor negativo NO es '
+                'suficiente para declarar missing. Esta validacion cruzada se '
+                'ejecuta automaticamente para detectar y corregir percepciones '
+                'erroneas antes de que afecten decisiones.'
+            ),
         }
 
+    def _auto_correct_availability(
+        self, proc_inconsistencies: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Invalidate cache and force refresh for tools with process evidence.
+
+        Read-only with respect to tool state: only invalidates the
+        in-process availability cache so the next refresh picks up
+        the multi-source detection result.  Does not mutate the
+        ToolCard directly.
+        """
+        corrections: list[dict[str, Any]] = []
+        if self.tool_registry is None:
+            return corrections
+
+        for inc in proc_inconsistencies:
+            tool_id = inc.get('tool_id', '')
+            if not tool_id:
+                continue
+            try:
+                self.tool_registry.invalidate_availability_cache(tool_id)
+                card = self.tool_registry.get_card(tool_id)
+                if card is not None:
+                    refreshed = self.tool_registry.refresh_card(card, force=True)
+                    corrections.append({
+                        'tool_id': tool_id,
+                        'action': 'cache_invalidated_and_refreshed',
+                        'new_available': refreshed.available,
+                        'reason': (
+                            f'Proceso detectado pero registry decia unavailable. '
+                            f'Cache invalidado y refresh forzado. Nuevo estado: '
+                            f'available={refreshed.available}.'
+                        ),
+                    })
+                    logger.info(
+                        'auto_correction: %s — cache invalidated, '
+                        'refreshed available=%s (was unavailable)',
+                        tool_id,
+                        refreshed.available,
+                    )
+            except Exception as exc:
+                logger.warning(
+                    'auto_correction_failed: %s — %s', tool_id, exc,
+                )
+        return corrections
+
     def _cross_tools_vs_processes(self) -> list[dict[str, Any]]:
-        """Compare running processes against tool availability status."""
+        """Compare running processes against tool availability status.
+
+        Also checks window titles as a third source — if a tool has
+        a visible window, it is definitely running even if the process
+        name doesn't match expected keywords.
+        """
         inconsistencies: list[dict[str, Any]] = []
         if self.tool_registry is None:
             return inconsistencies
@@ -83,6 +164,9 @@ class PerceptionCrossValidator:
 
         all_proc_text = ' '.join(proc_names) + ' ' + ' '.join(proc_exes)
 
+        window_titles = self._enumerate_window_titles()
+        all_window_text = ' '.join(window_titles)
+
         try:
             cards = self.tool_registry.list_cards()
         except Exception:
@@ -104,23 +188,62 @@ class PerceptionCrossValidator:
                 val = str(alias or '').strip().lower()
                 if val:
                     keywords.append(val)
+            title_lower = (card.title or '').lower()
+            if title_lower and title_lower not in keywords:
+                keywords.append(title_lower)
 
-            found = [kw for kw in keywords if kw in all_proc_text]
+            found_in_process = [kw for kw in keywords if kw in all_proc_text]
+            found_in_window = [kw for kw in keywords if kw in all_window_text]
+            found = list(set(found_in_process + found_in_window))
+
             if found:
+                sources = []
+                if found_in_process:
+                    sources.append(f'procesos({", ".join(found_in_process)})')
+                if found_in_window:
+                    sources.append(f'ventanas({", ".join(found_in_window)})')
                 inconsistencies.append({
                     'check': 'tools_vs_processes',
                     'severity': 'high',
                     'tool_id': card.tool_id,
                     'expected': f'{card.tool_id} reported as unavailable',
-                    'actual': f'Process matching {found} is running',
+                    'actual': f'Detected via: {", ".join(sources)}',
+                    'sources_positive': sources,
+                    'sources_negative': ['filesystem/registry'],
                     'detail': (
-                        f'Tool registry says {card.tool_id} is unavailable but a '
-                        f'matching process ({", ".join(found)}) is currently running. '
-                        f'The detection logic may not cover this install method.'
+                        f'Tool registry says {card.tool_id} is unavailable but '
+                        f'multiple sources confirm presence: {", ".join(sources)}. '
+                        f'The detection logic may not cover this install method. '
+                        f'Auto-correction will invalidate the cache and re-check.'
                     ),
                 })
 
         return inconsistencies
+
+    @staticmethod
+    def _enumerate_window_titles() -> list[str]:
+        """Enumerate visible window titles on Windows."""
+        if os.name != 'nt':
+            return []
+        try:
+            import ctypes
+            user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+            titles: list[str] = []
+
+            @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)  # type: ignore[misc]
+            def _enum_cb(hwnd: Any, _lparam: Any) -> bool:
+                if user32.IsWindowVisible(hwnd):
+                    buf = ctypes.create_unicode_buffer(512)
+                    user32.GetWindowTextW(hwnd, buf, 512)
+                    t = buf.value.strip()
+                    if t:
+                        titles.append(t.lower())
+                return True
+
+            user32.EnumWindows(_enum_cb, 0)
+            return titles
+        except Exception:
+            return []
 
     def _cross_audit_vs_worldmodel(self) -> list[dict[str, Any]]:
         """Compare self-audit tool status against WorldModel tool_live_status."""
