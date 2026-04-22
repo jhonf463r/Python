@@ -1,9 +1,17 @@
 ﻿from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 import re
 import threading
+import uuid
 from typing import Any
+
+
+def _generate_chat_session_id() -> str:
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')
+    suffix = uuid.uuid4().hex[:6]
+    return f'{stamp}-{suffix}'
 
 from iabv_v15.domain.models import (
     AmbiguityLevel,
@@ -95,6 +103,7 @@ class ControlCenterViewModel(QObject):
         control_master_service: Any | None = None,
         control_master_digest_builder: Any | None = None,
         self_audit_service: Any | None = None,
+        chat_capability_ingestion_service: Any | None = None,
     ) -> None:
         super().__init__()
         self.config = config
@@ -133,6 +142,15 @@ class ControlCenterViewModel(QObject):
         self.self_audit_service = self_audit_service
         self._last_self_audit_summary = ''
         self._self_audit_running = False
+
+        # Servicio que escucha cada mensaje del usuario en busca de capacidades
+        # declaradas (GPU, modelos locales, cuentas externas, runtimes). Cuando
+        # detecta algo lo persiste en data/chat_research_backlog/<session>.jsonl
+        # para que OSES y ExperimentLab lo consuman despues. Es OPCIONAL: si no
+        # esta inyectado, sendChat funciona igual (comportamiento legacy).
+        self.chat_capability_ingestion_service = chat_capability_ingestion_service
+        self._chat_session_id = _generate_chat_session_id()
+        self._pending_capability_notice: list[str] = []
 
         self._selected_role = config.default_task_role.value
         self._auto_route_enabled = True
@@ -4861,12 +4879,71 @@ class ControlCenterViewModel(QObject):
             return True
         return False
 
+    def _ingest_chat_capabilities(self, message: str) -> list[dict[str, str]]:
+        """Delega en ChatCapabilityIngestionService si esta disponible.
+
+        Devuelve la lista de notas cortas (con clave 'label' y 'hint') para que
+        el chat pueda mostrarle al usuario "anotado: ..." en la siguiente
+        respuesta. Si el service no esta inyectado (tests antiguos o bootstrap
+        minimo), es no-op silencioso.
+        """
+        service = getattr(self, 'chat_capability_ingestion_service', None)
+        if service is None:
+            return []
+        try:
+            entries = service.ingest(message, session_id=self._chat_session_id)
+        except Exception:
+            return []
+        notices: list[dict[str, str]] = []
+        for entry in entries:
+            notices.append({
+                'kind': getattr(entry, 'kind', ''),
+                'label': getattr(entry, 'label', ''),
+                'matched_text': getattr(entry, 'matched_text', ''),
+                'research_hint': getattr(entry, 'research_hint', ''),
+            })
+        if notices:
+            self._pending_capability_notice.extend(notices)
+            summary = self._format_capability_notice(notices)
+            if summary:
+                self._append_message(
+                    'assistant',
+                    'IABV',
+                    summary,
+                    'Anotado en backlog de investigacion automatica.',
+                )
+        return notices
+
+    def _format_capability_notice(self, notices: list[dict[str, str]]) -> str:
+        if not notices:
+            return ''
+        lines = [
+            'Anote lo que mencionaste como area de investigacion (no lo pierdo en memoria):'
+        ]
+        for item in notices[:5]:
+            matched = str(item.get('matched_text') or '').strip()
+            label = str(item.get('label') or '').strip()
+            hint = str(item.get('research_hint') or '').strip()
+            if matched and label:
+                lines.append(f"- {label}: '{matched}'. Plan: {hint}")
+            elif label:
+                lines.append(f"- {label}. Plan: {hint}")
+        if len(notices) > 5:
+            lines.append(f"(+{len(notices) - 5} mas en backlog)")
+        return '\n'.join(lines)
+
     @Slot(str)
     def sendChat(self, text: str) -> None:
         message = text.strip()
         if not message or self._working:
             return
         self._append_message('user', 'Tu', message, self._routing_mode_label())
+        # Escucha pasiva de capacidades declaradas (GPU, modelos, cuentas, runtimes).
+        # Persiste detecciones a data/chat_research_backlog/*.jsonl para que OSES
+        # y ExperimentLab las consuman despues como areas de investigacion. No
+        # modifica el ruteo; solo anota y avisa al usuario en una linea corta
+        # para que sepa que su dato quedo registrado (antes se perdian en memoria).
+        self._ingest_chat_capabilities(message)
         # Actualizar packet en background sin bloquear UI
         threading.Thread(target=self._refresh_development_packet, args=(message,), daemon=True).start()
         if self._try_handle_chat_command(message):

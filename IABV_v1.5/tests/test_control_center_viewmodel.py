@@ -3886,3 +3886,82 @@ def test_control_center_run_self_audit_emits_failed_on_service_exception() -> No
     finally:
         _cleanup_bootstrap(bootstrap)
 
+
+
+def test_send_chat_ingests_capability_mention_when_service_available() -> None:
+    bootstrap = _make_bootstrap('test_send_chat_ingests_capability_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        service = viewmodel.chat_capability_ingestion_service
+        assert service is not None, 'bootstrap debe inyectar el service'
+
+        viewmodel.sendChat('tengo una GPU RTX 4060 y quiero probar modelos locales')
+        _drain_ui(viewmodel)
+
+        entries = service.list_entries(session_id=viewmodel._chat_session_id)
+        kinds = [entry.kind for entry in entries]
+        assert 'hardware_gpu' in kinds
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_send_chat_shows_capability_notice_in_chat() -> None:
+    bootstrap = _make_bootstrap('test_send_chat_shows_notice_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+
+        viewmodel.sendChat('tengo gpu y instale qwen3 local')
+        _drain_ui(viewmodel)
+
+        messages = viewmodel._chat_messages
+        notice_messages = [
+            msg for msg in messages
+            if isinstance(msg, dict)
+            and 'area de investigacion' in str(msg.get('text') or '').lower()
+        ]
+        assert notice_messages, 'el chat debe avisar al usuario que anoto la capacidad'
+        combined = ' '.join(str(msg.get('text') or '') for msg in notice_messages)
+        assert 'gpu' in combined.lower() or 'GPU' in combined
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_send_chat_does_not_break_when_ingestion_service_missing() -> None:
+    bootstrap = _make_bootstrap('test_send_chat_no_service_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        # Simulamos el escenario de tests antiguos / bootstrap minimo donde
+        # el service no esta inyectado. sendChat debe funcionar igual.
+        viewmodel.chat_capability_ingestion_service = None
+
+        viewmodel.sendChat('tengo gpu pero no quiero que se rompa')
+        _drain_ui(viewmodel)
+
+        # Se registro al menos el mensaje del usuario; no hubo excepcion.
+        user_messages = [
+            msg for msg in viewmodel._chat_messages
+            if isinstance(msg, dict) and msg.get('role') == 'user'
+        ]
+        assert user_messages
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_send_chat_does_not_register_capability_without_possession_marker() -> None:
+    bootstrap = _make_bootstrap('test_send_chat_no_marker_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        service = viewmodel.chat_capability_ingestion_service
+        assert service is not None
+
+        viewmodel.sendChat('la gpu en general es cara y rinde bien')
+        _drain_ui(viewmodel)
+
+        entries = service.list_entries(session_id=viewmodel._chat_session_id)
+        assert entries == []
+    finally:
+        _cleanup_bootstrap(bootstrap)
