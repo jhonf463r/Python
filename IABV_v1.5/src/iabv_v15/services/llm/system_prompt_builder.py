@@ -141,7 +141,6 @@ class SystemPromptBuilder:
 
     _TOOL_WEB_ALTERNATIVES: dict[str, str] = {
         'claude_installed': 'claude_web_assisted',
-        'codex_installed': 'codex_web_assisted',
         'chatgpt_installed': 'chatgpt_web_assisted',
     }
 
