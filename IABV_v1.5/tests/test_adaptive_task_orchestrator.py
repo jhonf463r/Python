@@ -1273,7 +1273,9 @@ def test_prepare_retry_forces_pre_capture_for_session_expired() -> None:
     assert len(stub.reingest_calls) == 1
     assert stub.reingest_calls[0]['user_goal'] == 'resolver error en login'
     assert new_payload['metadata']['capture_completed_before_retry'] is True
-    assert 'Respuesta del DOM abierto' in (new_payload['metadata'].get('pre_captured_response') or '')
+    pre_result = new_payload['metadata'].get('pre_capture_result') or {}
+    assert pre_result.get('pre_capture_ingested') is True
+    assert pre_result.get('detail') == 'Respuesta del DOM abierto.'
     assert new_payload['metadata']['reingest_existing_response'] is True
 
 

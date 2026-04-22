@@ -702,20 +702,13 @@ class AdaptiveTaskOrchestrator:
                 user_goal=user_goal, source=source,
             )
             metadata = dict(payload.get('metadata') or {})
-            # Si la pre-captura ya obtuvo la respuesta, ingerir directamente
-            # sin pasar por plan_or_execute.
+            # Si la pre-captura ya obtuvo la respuesta, usar el resultado
+            # que reingest_existing_session ya ingirio — NO re-ingerir.
             if metadata.get('capture_completed_before_retry'):
-                pre_captured = str(metadata.get('pre_captured_response') or '').strip()
-                if pre_captured:
-                    ingested = self.ingest_external_response(
-                        payload,
-                        user_goal=user_goal,
-                        response_text=pre_captured,
-                        source=f'{source}_pre_capture',
-                    )
+                ingested = dict(metadata.get('pre_capture_result') or {})
+                if ingested.get('pre_capture_ingested'):
                     ingested['retry_count'] = retry_count + 1
                     ingested['is_retry'] = True
-                    ingested['pre_capture_ingested'] = True
                     metadata['autonomous_evolution'] = dict(ingested)
                     metadata['autonomous_evolution_response'] = dict(ingested)
                     payload['metadata'] = metadata
@@ -764,9 +757,10 @@ class AdaptiveTaskOrchestrator:
         interactuo con la sesion aislada del asistente y dejo una respuesta en
         el hilo) se fuerza una re-ingesta inmediata del DOM/clipboard
         **antes** de relanzar el pipeline completo.  Si la captura obtiene
-        texto util, se almacena en ``metadata['pre_captured_response']`` y se
-        marca ``capture_completed_before_retry=True`` para que el llamador
-        pueda ingerir la respuesta directamente sin pasar por
+        texto util, se almacena el resultado ya ingerido en
+        ``metadata['pre_capture_result']`` y se marca
+        ``capture_completed_before_retry=True`` para que el llamador use
+        el resultado directamente sin re-ingerir ni pasar por
         ``plan_or_execute``.
 
         Cuando la consulta fallo o fue bloqueada por una razon distinta, el
@@ -813,11 +807,6 @@ class AdaptiveTaskOrchestrator:
                         source=source or 'retry',
                     )
                     if pre_capture.get('pre_capture_ingested'):
-                        metadata['pre_captured_response'] = str(
-                            pre_capture.get('detail')
-                            or pre_capture.get('outcome_summary')
-                            or ''
-                        ).strip()
                         metadata['capture_completed_before_retry'] = True
                         metadata['pre_capture_result'] = {
                             k: v for k, v in pre_capture.items()
