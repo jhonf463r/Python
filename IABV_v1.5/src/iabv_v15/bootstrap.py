@@ -1195,6 +1195,23 @@ class AppBootstrap:
                 logger.exception('No se pudo construir ui_screenshot_provider; dejando None')
                 self.ui_screenshot_provider = None
 
+        # ChatCapabilityIngestionService: escucha pasiva del chat. Cuando el
+        # usuario declara una capacidad (tengo GPU, instale qwen3, cuento con
+        # Docker) escribe un entry append-only a
+        # data/chat_research_backlog/<session>.jsonl. No decide rutas; solo
+        # persiste para que OSES / ExperimentLab lo consuman en capas superiores.
+        try:
+            from iabv_v15.services.chat.capability_ingestion import (
+                ChatCapabilityIngestionService,
+            )
+
+            self.chat_capability_ingestion_service = ChatCapabilityIngestionService(
+                data_root=self.config.data_dir,
+            )
+        except Exception:
+            logger.exception('No se pudo construir ChatCapabilityIngestionService; dejando None')
+            self.chat_capability_ingestion_service = None
+
         self.control_center_viewmodel = ControlCenterViewModel(
             config=self.config,
             episode_repository=self.episode_repository,
@@ -1227,6 +1244,7 @@ class AppBootstrap:
             control_master_service=self.control_master_service,
             control_master_digest_builder=self.control_master_digest_builder,
             self_audit_service=self.self_audit_service,
+            chat_capability_ingestion_service=self.chat_capability_ingestion_service,
         )
         self.capture_studio_viewmodel = CaptureStudioViewModel(
             config=self.config,
