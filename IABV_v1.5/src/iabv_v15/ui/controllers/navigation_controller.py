@@ -16,6 +16,7 @@ class NavigationController(QObject):
             {'key': 'knowledge', 'title': 'Base de Conocimiento', 'subtitle': 'Tareas confirmadas y memoria consultable'},
             {'key': 'providers', 'title': 'Stack Local', 'subtitle': 'Ollama, LM Studio, embeddings y salud tecnica'},
             {'key': 'runs', 'title': 'Historial de Ejecuciones', 'subtitle': 'Trazas por rol, reportes, severidad y dossier asociado'},
+            {'key': 'centro_vivo', 'title': 'Centro Vivo', 'subtitle': 'Tablero operativo unificado: cola, IAs, heuristica, metricas y hallazgos'},
         ]
         self._current_route = 'dashboard'
 

@@ -21,7 +21,8 @@ ApplicationWindow {
         { key: "evolution", title: "Centro Evolutivo", subtitle: "Autodiagnostico, dossiers y backlog priorizado" },
         { key: "knowledge", title: "Base de Conocimiento", subtitle: "Tareas confirmadas y memoria consultable" },
         { key: "providers", title: "Stack Local", subtitle: "Ollama, LM Studio, embeddings y salud tecnica" },
-        { key: "runs", title: "Historial de Ejecuciones", subtitle: "Trazas por rol, severidad y dossiers" }
+        { key: "runs", title: "Historial de Ejecuciones", subtitle: "Trazas por rol, severidad y dossiers" },
+        { key: "centro_vivo", title: "Centro Vivo", subtitle: "Tablero operativo unificado: cola, IAs, heuristica, metricas y hallazgos" }
     ]
     property string activeRoute: navigationController ? navigationController.currentRoute : "dashboard"
     property string appTitleText: mainWindowBridge ? mainWindowBridge.appTitle : "IABV v1.5"
@@ -43,6 +44,7 @@ ApplicationWindow {
         if (route === "evolution") return Qt.resolvedUrl("pages/EvolutionCenterPage.qml")
         if (route === "providers") return Qt.resolvedUrl("pages/ProviderSettingsPage.qml")
         if (route === "runs") return Qt.resolvedUrl("pages/RunHistoryPage.qml")
+        if (route === "centro_vivo") return Qt.resolvedUrl("pages/CentroVivoPage.qml")
         return Qt.resolvedUrl("pages/DashboardPage.qml")
     }
 
