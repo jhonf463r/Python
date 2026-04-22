@@ -403,6 +403,7 @@ class AutonomousValidationCycleService:
                         'No hay propuestas ni recomendaciones candidatas para validar; '
                         'el ciclo autonomo esta al dia.'
                     )
+            probes_consumed = len(auto_probes) if 'auto_probes' in locals() else 0
             return self._store_snapshot(
                 AutonomousValidationSnapshot(
                     cycle_id=self._current_snapshot.cycle_id,
@@ -412,7 +413,7 @@ class AutonomousValidationCycleService:
                     pending_candidates=pending,
                     promoted_count=self._promoted_count(),
                     last_experiment_id=str(self._current_snapshot.last_experiment_id or ''),
-                    metadata={'reason': reason, 'auto_probes_consumed': len(auto_probes) if 'auto_probes' in dir() else 0},
+                    metadata={'reason': reason, 'auto_probes_consumed': probes_consumed},
                 )
             )
         experiment = self.sandbox_experiment_service.validate_recommendation(
