@@ -1144,6 +1144,8 @@ class AppBootstrap:
         self.portable_context_service.adaptive_task_orchestrator = self.adaptive_task_orchestrator
         self.adaptive_task_orchestrator.control_master_service = self.control_master_service
         self.adaptive_task_orchestrator.control_master_digest_builder = self.control_master_digest_builder
+        self.adaptive_task_orchestrator._tool_teach_service = self.tool_teach_service
+        self.adaptive_task_orchestrator._tool_operational_executor = self.operational_executor
         self._seed_control_master_from_agents_md()
         self.inference_service = InferenceService(
             self.role_router,
