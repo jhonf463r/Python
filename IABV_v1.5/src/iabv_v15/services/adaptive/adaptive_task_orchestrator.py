@@ -387,8 +387,8 @@ class AdaptiveTaskOrchestrator:
         primary = ranked[0]
         secondaries = ranked[1:]
 
-        consolidated_validation: dict[str, Any] = dict(primary.get('response_validation') or {})
-        consolidated_adoption: dict[str, Any] = dict(primary.get('adoption_plan') or {})
+        consolidated_validation: dict[str, Any] = {k: (list(v) if isinstance(v, list) else v) for k, v in (primary.get('response_validation') or {}).items()}
+        consolidated_adoption: dict[str, Any] = {k: (list(v) if isinstance(v, list) else v) for k, v in (primary.get('adoption_plan') or {}).items()}
         secondary_contributions: list[dict[str, Any]] = []
 
         for sec in secondaries:
