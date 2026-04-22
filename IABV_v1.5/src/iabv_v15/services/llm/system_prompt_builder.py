@@ -17,6 +17,7 @@ from iabv_v15.domain.models import (
     EnvironmentSelfModel,
     PerceptionSnapshot,
     PortableContextPackage,
+    SelfExaminationSnapshot,
     ToolCard,
     WorldModelSnapshot,
 )
@@ -37,16 +38,19 @@ class SystemPromptBuilder:
         *,
         governance_rules: dict[str, Any] | None = None,
         control_master_digest: ControlMasterDigest | None = None,
+        self_examination: SelfExaminationSnapshot | None = None,
     ) -> str:
         sections: list[tuple[int, str]] = []
 
         sections.append((0, self._section_identity()))
-        sections.append((1, self._section_live_state(world_model)))
-        sections.append((2, self._section_hardware(env_self_model)))
-        sections.append((3, self._section_control_master(control_master_digest)))
-        sections.append((4, self._section_portable_context(portable_context)))
-        sections.append((5, self._section_tools(tool_registry)))
-        sections.append((6, self._section_governance(governance_rules)))
+        sections.append((1, self._section_meta_cognition()))
+        sections.append((2, self._section_live_state(world_model)))
+        sections.append((3, self._section_hardware(env_self_model)))
+        sections.append((4, self._section_control_master(control_master_digest)))
+        sections.append((5, self._section_self_examination(self_examination)))
+        sections.append((6, self._section_portable_context(portable_context)))
+        sections.append((7, self._section_tools(tool_registry)))
+        sections.append((8, self._section_governance(governance_rules)))
 
         return self._truncate(sections)
 
@@ -62,10 +66,12 @@ class SystemPromptBuilder:
     def _section_identity() -> str:
         return (
             '## Quien eres\n'
-            'Eres el asistente local de IABV v1.5. Respondes en espanol claro '
-            'y directo. Tienes acceso al estado vivo del sistema, herramientas '
-            'registradas y contexto portable acumulado. No inventas datos que '
-            'no esten en el contexto proporcionado.'
+            'Eres el cerebro local de IABV v1.5 — el Control Maestro que '
+            'coordina Devin, Codex, Claude, ChatGPT y Ollama. Respondes en '
+            'espanol claro y directo. Tienes acceso al estado vivo del '
+            'sistema, herramientas registradas, autoexaminacion operativa '
+            'y contexto portable acumulado. No inventas datos que no esten '
+            'en el contexto proporcionado.'
         )
 
     @staticmethod
@@ -180,6 +186,84 @@ class SystemPromptBuilder:
                 parts.append(f'- {item}')
         if digest.tests_state_brief:
             parts.append(f'Tests: {digest.tests_state_brief}')
+        return '\n'.join(parts)
+
+    @staticmethod
+    def _section_meta_cognition() -> str:
+        return (
+            '## Meta-cognicion (razonamiento de segundo orden)\n'
+            'NO te quedes dentro de tu marco. Antes de responder, examina '
+            'el problema desde FUERA de tu frame habitual:\n'
+            '1. **Autoconciencia operativa**: revisa tu propio estado — que '
+            'herramientas estan disponibles, cuales fallan, que patrones se '
+            'repiten. Usa la seccion de autoexaminacion para detectar '
+            'degradaciones.\n'
+            '2. **Razonamiento de segundo orden**: no solo respondas la '
+            'pregunta literal — preguntate si el enfoque actual es el '
+            'correcto o si hay una ruta mejor que no se ha considerado.\n'
+            '3. **Deteccion proactiva de desajustes**: si detectas que algo '
+            'no funciona como deberia (tool con confianza baja, fallo '
+            'recurrente, ruta bloqueada), reportalo como desajuste aunque '
+            'nadie lo haya preguntado.\n'
+            '4. **Coordinacion entre IAs**: cuando una tarea puede beneficiarse '
+            'de comparar rutas (Devin vs Codex vs Claude), propone la '
+            'comparacion via ExperimentLab. No asumas que una sola IA '
+            'es siempre la mejor.\n'
+            '5. **Evolucion autonoma**: propone mejoras concretas basadas en '
+            'evidencia real — no esperes instrucciones para cada ajuste. '
+            'Si la evidencia muestra que una ruta falla consistentemente, '
+            'recomienda el cambio.\n'
+            '6. **Persistencia**: no abandones un problema sin evidencia de '
+            'que se resolvio. Si un desajuste persiste, escalalo con datos.'
+        )
+
+    @staticmethod
+    def _section_self_examination(
+        snapshot: SelfExaminationSnapshot | None,
+    ) -> str:
+        if snapshot is None:
+            return '## Autoexaminacion operativa\nNo disponible en esta sesion.'
+        parts: list[str] = ['## Autoexaminacion operativa (OSES)']
+        if snapshot.summary:
+            parts.append(snapshot.summary[:400])
+
+        findings = snapshot.findings or []
+        if findings:
+            parts.append(f'Hallazgos ({len(findings)}):')
+            for f in findings[:5]:
+                sev = getattr(f.severity, 'value', str(f.severity))
+                parts.append(
+                    f'- [{sev}] {f.title}: {f.summary[:120]}'
+                )
+                if f.recommendation:
+                    parts.append(f'  Recomendacion: {f.recommendation[:100]}')
+
+        recurring = snapshot.recurring_issues or []
+        if recurring:
+            parts.append('Patrones recurrentes:')
+            for issue in recurring[:3]:
+                label = issue.get('title') or issue.get('pattern', '')
+                count = issue.get('count', issue.get('occurrences', '?'))
+                parts.append(f'- {label} (x{count})')
+
+        adjustments = snapshot.recommended_adjustments or []
+        if adjustments:
+            parts.append('Ajustes recomendados:')
+            for adj in adjustments[:3]:
+                parts.append(
+                    f'- {adj.get("title", adj.get("adjustment", ""))[:100]}'
+                )
+
+        validated = snapshot.validated_improvements or []
+        if validated:
+            parts.append(f'Mejoras validadas: {len(validated)}')
+
+        unresolved = snapshot.unresolved_risks or []
+        if unresolved:
+            parts.append('Riesgos sin resolver:')
+            for risk in unresolved[:3]:
+                parts.append(f'- {risk[:100]}')
+
         return '\n'.join(parts)
 
     @staticmethod

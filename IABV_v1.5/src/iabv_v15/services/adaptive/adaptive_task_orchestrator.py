@@ -166,6 +166,7 @@ class AdaptiveTaskOrchestrator:
         self.experiment_lab = experiment_lab
         self.control_master_service: Any | None = None
         self.control_master_digest_builder: Any | None = None
+        self.self_examination_service: Any | None = None
 
     def _maybe_synaptic_decision(self, intent: TaskIntent | None) -> SynapticRoutingDecision | None:
         """Consulta ``SynapticRouter.decide`` si el intent es external-worthy.
@@ -1364,6 +1365,7 @@ class AdaptiveTaskOrchestrator:
         governance_snapshot = self._governance_for_chat(session)
 
         control_master_digest = self._control_master_digest()
+        self_examination = self._self_examination_snapshot()
 
         prompt_builder = SystemPromptBuilder()
         system_prompt = prompt_builder.build(
@@ -1374,6 +1376,7 @@ class AdaptiveTaskOrchestrator:
             tool_registry=tool_cards,
             governance_rules=governance_snapshot,
             control_master_digest=control_master_digest,
+            self_examination=self_examination,
         )
         system_prompt_hash = SystemPromptBuilder.prompt_hash(system_prompt)
 
@@ -1483,6 +1486,15 @@ class AdaptiveTaskOrchestrator:
         try:
             state = service.current_state(refresh=False)
             return builder.build(state)
+        except Exception:
+            return None
+
+    def _self_examination_snapshot(self) -> Any:
+        service = self.self_examination_service
+        if service is None or not hasattr(service, 'current_review'):
+            return None
+        try:
+            return service.current_review(refresh=False, max_age_seconds=600)
         except Exception:
             return None
 
