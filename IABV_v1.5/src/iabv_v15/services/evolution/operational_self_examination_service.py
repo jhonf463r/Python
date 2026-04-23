@@ -20,6 +20,13 @@ from iabv_v15.domain.models import (
     utc_now,
 )
 from iabv_v15.infra.persistence.storage import ArtifactStorage
+from iabv_v15.services.evolution.efficiency_audit_mixin import (
+    tool_efficiency_findings,
+    needs_custom_model_findings,
+    account_exhaustion_findings,
+    external_tool_misdiagnosis_findings,
+    heuristic_perturbation_findings,
+)
 
 
 class OperationalSelfExaminationService:
@@ -37,6 +44,8 @@ class OperationalSelfExaminationService:
         autonomous_validation_cycle: Any | None = None,
         adaptive_weight_layer: Any | None = None,
         token_rotation_ledger: Any | None = None,
+        account_ledger_service: Any | None = None,
+        system_backlog_service: Any | None = None,
     ) -> None:
         self.workspace_root = workspace_root
         self.storage = storage
@@ -54,6 +63,8 @@ class OperationalSelfExaminationService:
         # permite cerrar el loop "detectar el patron de expiracion antes
         # de que el user lo note" sin inventar observacion nueva.
         self.token_rotation_ledger: Any | None = token_rotation_ledger
+        self.account_ledger_service: Any | None = account_ledger_service
+        self.system_backlog_service: Any | None = system_backlog_service
         # PCS v1 — hook opcional. Si un provider con ``snapshot()`` está
         # presente, `_persist_review` incluye las violaciones de
         # encarnamiento en ``metadata['embodiment_violations']`` sin
@@ -132,6 +143,14 @@ class OperationalSelfExaminationService:
         )
         findings.extend(self._weak_correction_findings(scenario_runs=scenario_runs))
         findings.extend(self._token_rotation_findings())
+        findings.extend(tool_efficiency_findings(experiment_runs))
+        findings.extend(needs_custom_model_findings(experiment_runs))
+        findings.extend(account_exhaustion_findings(self.account_ledger_service))
+        findings.extend(external_tool_misdiagnosis_findings(self.account_ledger_service))
+        findings.extend(heuristic_perturbation_findings(
+            experiment_runs,
+            adaptive_weight_layer=self.adaptive_weight_layer,
+        ))
         findings.extend(self._chat_research_backlog_findings())
         # Cognitive meta-patterns: fijación, incubación, atractores, ensambles
         findings.extend(
@@ -206,7 +225,23 @@ class OperationalSelfExaminationService:
                 'solution_proposals': solution_proposals[:4],
             },
         )
-        return self._persist_review(review)
+        review = self._persist_review(review)
+        if self.system_backlog_service:
+            try:
+                finding_dicts = [
+                    {
+                        'category': f.category,
+                        'title': f.title,
+                        'summary': f.summary,
+                        'severity': f.severity,
+                        'recommendation': f.recommendation,
+                    }
+                    for f in review.findings
+                ]
+                self.system_backlog_service.ingest_from_findings(finding_dicts)
+            except Exception:
+                pass
+        return review
 
     def _persist_review(self, review: SelfExaminationSnapshot) -> SelfExaminationSnapshot:
         embodiment_violations = self._collect_embodiment_violations()

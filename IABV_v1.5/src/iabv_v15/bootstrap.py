@@ -258,6 +258,8 @@ from iabv_v15.services.evolution.intent_scoped_briefing_service import (
 from iabv_v15.services.evolution.portable_context_service import PortableContextService
 from iabv_v15.services.evolution.self_audit_service import SelfAuditService
 from iabv_v15.services.evolution.token_rotation_ledger import TokenRotationLedger
+from iabv_v15.services.evolution.account_ledger_service import AccountLedgerService
+from iabv_v15.services.evolution.system_backlog_service import SystemBacklogService
 from iabv_v15.services.evolution.session_start_briefing_service import (
     SessionStartBriefingService,
 )
@@ -603,6 +605,8 @@ class AppBootstrap:
         # proactivos antes de que el usuario note el 401. Es un ledger
         # append-only read-only sobre el sistema vivo: no dispara nada.
         self.token_rotation_ledger = TokenRotationLedger(self.config.workspace_root)
+        self.account_ledger_service = AccountLedgerService(self.config.workspace_root)
+        self.system_backlog_service = SystemBacklogService(self.config.workspace_root)
         self.operational_self_examination_service = OperationalSelfExaminationService(
             workspace_root=self.config.workspace_root,
             storage=self.evolution_storage,
@@ -615,6 +619,8 @@ class AppBootstrap:
             autonomous_validation_cycle=self.autonomous_validation_cycle,
             adaptive_weight_layer=self.adaptive_weight_layer,
             token_rotation_ledger=self.token_rotation_ledger,
+            account_ledger_service=self.account_ledger_service,
+            system_backlog_service=self.system_backlog_service,
         )
         # PCS v1 — PR E. Detector read-only de violaciones de encarnamiento.
         # handshake_required=False en el manifest → sólo reporta.
@@ -633,6 +639,7 @@ class AppBootstrap:
             tool_discovery_service=self.tool_discovery_service,
         )
         self.autonomous_validation_cycle.tool_evolution_monitor = self.tool_evolution_monitor
+        self.autonomous_validation_cycle.system_backlog_service = self.system_backlog_service
         self.incident_packet_service = IncidentPacketService(
             dossier_repository=self.execution_dossier_repository,
             hidden_incident_repository=self.hidden_incident_repository,
