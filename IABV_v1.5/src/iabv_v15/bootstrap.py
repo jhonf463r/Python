@@ -1153,6 +1153,7 @@ class AppBootstrap:
         self.adaptive_task_orchestrator.control_master_digest_builder = self.control_master_digest_builder
         self.adaptive_task_orchestrator.self_examination_service = self.operational_self_examination_service
         self.adaptive_task_orchestrator.validation_cycle_service = self.autonomous_validation_cycle
+        self.autonomous_validation_cycle.git_sync_service = self.git_sync_service
         self.adaptive_task_orchestrator._tool_teach_service = self.tool_teach_service
         self.adaptive_task_orchestrator._tool_operational_executor = self.operational_executor
         self._seed_control_master_from_agents_md()
