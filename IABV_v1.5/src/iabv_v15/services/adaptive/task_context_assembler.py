@@ -1037,7 +1037,8 @@ class TaskContextAssembler:
         except Exception:
             return {}
         experiment = snapshot.current_experiment
-        return {
+        sync_pulse = dict((snapshot.metadata or {}).get('sync_pulse') or {})
+        result: dict[str, Any] = {
             'status': str(snapshot.status or ''),
             'summary': str(snapshot.summary or ''),
             'paused_reason': str(snapshot.paused_reason or ''),
@@ -1050,6 +1051,12 @@ class TaskContextAssembler:
             'verdict': getattr((experiment.verdict if experiment is not None else None), 'value', str((experiment.verdict if experiment is not None else '') or '')),
             'promote_to_primary': bool(experiment.promote_to_primary) if experiment is not None else False,
         }
+        if sync_pulse:
+            result['ia_availability'] = sync_pulse.get('ia_availability') or {}
+            result['top_recommendations'] = sync_pulse.get('top_recommendations') or []
+            result['active_proposals'] = sync_pulse.get('active_proposals') or []
+            result['coordination_status'] = str(sync_pulse.get('coordination_status') or '')
+        return result
 
     def _route_for_trace(self, *, tool_id: str, assistant_kind: str) -> str:
         resolved_tool_id = str(tool_id or '').strip().lower()

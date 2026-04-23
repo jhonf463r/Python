@@ -289,10 +289,13 @@ class GoalEngine:
     def _apply_session_progress(self, node: ObjectiveNode, *, session: AdaptiveSession, level: str) -> ObjectiveNode:
         status, progress, blocker = self._progress_from_session(session)
         live_audit = dict(session.context.live_audit or {})
+        learning = dict(session.metadata.get('adaptive_learning') or {})
+        learning_confidence = self._confidence_from_learning(learning)
         confidence = max(
             float(node.confidence or 0.0),
             float(session.intent.confidence or 0.0),
             float(live_audit.get('confidence') or 0.0),
+            learning_confidence,
         )
         evidence = self._merge_refs(node.evidence_refs, session.evidence_refs)
         if session.pending_issue_id:
@@ -402,6 +405,31 @@ class GoalEngine:
         if weak_capabilities:
             return ObjectiveStatus.BLOCKED, 0.32, weak_capabilities[0].suggested_next_step or weak_capabilities[0].title
         return ObjectiveStatus.ACTIVE, 0.22, ''
+
+    @staticmethod
+    def _confidence_from_learning(learning: dict[str, Any]) -> float:
+        """Extract confidence from adaptive_learning records deposited by TaskOutcomeRecorder.
+
+        When the learning loop closes, the recorder leaves records with
+        ``weighted_score`` and ``success_rate`` from the ExperimentLab.
+        This method reads those records and derives a confidence signal
+        so that the goal hierarchy reflects actual learning quality.
+        """
+        records = learning.get('records')
+        if not isinstance(records, list) or not records:
+            return 0.0
+        scores: list[float] = []
+        for record in records:
+            if not isinstance(record, dict):
+                continue
+            weight_snapshot = record.get('weight_snapshot')
+            if isinstance(weight_snapshot, dict):
+                success_rate = float(weight_snapshot.get('success_rate') or 0.0)
+                weighted_score = float(weight_snapshot.get('weighted_score') or 0.0)
+                scores.append(min(0.95, success_rate * 0.5 + weighted_score * 0.5))
+        if not scores:
+            return 0.0
+        return round(max(scores), 4)
 
     def _rollup_progress(self, nodes: list[ObjectiveNode]) -> float:
         if not nodes:
