@@ -44,6 +44,7 @@ class AutonomousValidationCycleService:
         tool_registry: Any | None = None,
         autonomy_governance_policy: Any | None = None,
         research_backlog_root: str | Path | None = None,
+        git_sync_service: Any | None = None,
     ) -> None:
         self.experiment_lab = experiment_lab
         self.experiment_lab_repository = experiment_lab_repository
@@ -52,6 +53,7 @@ class AutonomousValidationCycleService:
         self.environment_self_awareness_service = environment_self_awareness_service
         self.tool_evolution_monitor = tool_evolution_monitor
         self.storage = storage
+        self.git_sync_service = git_sync_service
         # F2.3 (thin): cuando se promueve un candidato, este publisher abre un
         # PR documental en una rama ``iabv-auto/*``. El ciclo no decide nada
         # distinto por tenerlo; solo delega la traza en git. Cualquier fallo
@@ -600,11 +602,92 @@ class AutonomousValidationCycleService:
         else:
             sync_data['coordination_status'] = 'synced'
 
+        # E: Auto-pull gobernado — si hay commits nuevos en origin/main,
+        # sincronizar automáticamente para aplicar auto-modificaciones.
+        git_sync_status = self._maybe_git_auto_sync()
+        if git_sync_status:
+            sync_data['git_sync'] = git_sync_status
+
         with self._lock:
             current_snapshot = self._current_snapshot
             metadata = dict(current_snapshot.metadata or {})
             metadata['sync_pulse'] = sync_data
             self._current_snapshot = current_snapshot.model_copy(update={'metadata': metadata})
+
+    def _maybe_git_auto_sync(self) -> dict[str, Any] | None:
+        """Check for remote updates and auto-pull when safe.
+
+        Reasoning: if the system auto-modified itself (created a PR that was
+        merged), those changes exist in origin/main but not locally. The
+        system must be aware of this gap and close it autonomously —
+        just like a living organism integrates new DNA after replication.
+
+        Returns a status dict for the sync_pulse, or None if no git_sync_service.
+        """
+        service = self.git_sync_service
+        if service is None:
+            return None
+
+        try:
+            status = service.check()
+        except Exception:
+            return {'state': 'check_failed', 'reason': 'git fetch error'}
+
+        result: dict[str, Any] = {
+            'state': 'up_to_date' if not status.has_new_commits else 'behind',
+            'commits_behind': status.commits_behind,
+            'commits_ahead': status.commits_ahead,
+            'tree_dirty': status.tree_dirty,
+            'can_sync': status.can_sync,
+        }
+
+        if not status.has_new_commits:
+            return result
+
+        if not status.can_sync:
+            result['state'] = 'blocked'
+            result['block_reason'] = status.block_reason
+            return result
+
+        # Auto-sync: pull the new commits
+        try:
+            sync_result = service.sync()
+        except Exception:
+            result['state'] = 'sync_failed'
+            return result
+
+        if sync_result.applied:
+            result['state'] = 'updated'
+            result['commits_applied'] = sync_result.commits_applied
+            result['new_head'] = sync_result.new_head
+            # Signal hot-reload by touching a marker file.
+            # mcp_hot_reload.py watches src/iabv_v15/*.py mtimes —
+            # a git pull that changes .py files will trigger reload naturally.
+            # For extra safety, log the event so the system knows WHY it updated.
+            if self.storage is not None:
+                try:
+                    self.storage.save_json('git_sync/last_auto_pull.json', {
+                        'timestamp_utc': datetime.now(timezone.utc).isoformat(),
+                        'commits_applied': sync_result.commits_applied,
+                        'new_head': sync_result.new_head,
+                        'reason': 'auto_evolution_sync',
+                        'detail': (
+                            f'Detecté {sync_result.commits_applied} commit(s) nuevos en origin/main. '
+                            f'Auto-pull aplicado para integrar auto-modificaciones. '
+                            f'HEAD ahora en {sync_result.new_head or "unknown"}.'
+                        ),
+                    })
+                except Exception:
+                    pass
+        elif sync_result.pull_error:
+            result['state'] = 'pull_failed'
+            result['error'] = sync_result.pull_error
+        elif sync_result.blocked_reasons:
+            result['state'] = 'blocked'
+            result['can_sync'] = False
+            result['block_reason'] = ' | '.join(sync_result.blocked_reasons)
+
+        return result
 
     # ------------------------------------------------------------------
     # PR J: Auto-iniciar investigacion desde backlog
