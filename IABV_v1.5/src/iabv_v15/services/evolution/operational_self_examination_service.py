@@ -1628,7 +1628,7 @@ class OperationalSelfExaminationService:
                 kind = str(entry.get('proposal_kind') or entry.get('proposal_key') or '').strip()
                 candidate = str(entry.get('candidate_assistant_kind') or '').strip().lower()
                 current = str(entry.get('current_assistant_kind') or '').strip().lower()
-                if kind and candidate:
+                if kind and candidate and current:
                     tried.add(f'route_substitution:{current}:{candidate}')
                 if kind and candidate and current:
                     tried.add(f'collaborative_execution:{candidate}:{current}')

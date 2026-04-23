@@ -73,6 +73,7 @@ class AutonomousValidationCycleService:
         self._wake_event = threading.Event()
         self._thread: threading.Thread | None = None
         self._decision_log = self._load_decision_log() or ToolEvolutionDecisionLog()
+        self._auto_executed_keys: set[str] = set()
         self._current_snapshot = AutonomousValidationSnapshot(
             status='bootstrapping',
             summary='Ciclo de validacion autonoma iniciando; a la espera del primer tick.',
@@ -721,6 +722,7 @@ class AutonomousValidationCycleService:
             p for p in (sync_data.get('actionable_proposals') or [])
             if isinstance(p, dict)
             and float(p.get('estimated_confidence') or 0.0) >= self._AUTO_EXEC_MIN_CONFIDENCE
+            and str(p.get('title') or '') not in self._auto_executed_keys
         ]
         if not actionable:
             return
@@ -731,6 +733,10 @@ class AutonomousValidationCycleService:
             exec_result = auto_exec_method(actionable)
         except Exception:
             exec_result = None
+        for p in actionable:
+            title = str(p.get('title') or '')
+            if title:
+                self._auto_executed_keys.add(title)
         if exec_result and self.storage is not None:
             try:
                 self.storage.save_json('sync_pulse/last_auto_execution.json', {
