@@ -3106,6 +3106,33 @@ class ControlCenterViewModel(QObject):
                     mode='external',
                 )
             if auto_status == 'awaiting_response':
+                stale = False
+                started_at = str(autonomous.get('started_at_utc') or autonomous.get('created_at_utc') or '').strip()
+                if started_at:
+                    try:
+                        from datetime import datetime, timezone
+                        started = datetime.fromisoformat(started_at.replace('Z', '+00:00'))
+                        age_seconds = (datetime.now(timezone.utc) - started).total_seconds()
+                        stale = age_seconds > 120
+                    except (ValueError, TypeError):
+                        stale = True
+                else:
+                    stale = True
+                if stale:
+                    return self._activity_payload(
+                        visible=True,
+                        title='Consulta externa caducada',
+                        status='warning',
+                        stage='respuesta no recibida a tiempo',
+                        progress=1.0,
+                        detail=f'La consulta con {assistant_title} lleva mas de 2 minutos sin respuesta util. El sistema puede re-evaluar en la proxima interaccion.',
+                        tool=f"{assistant_title}{f' via {tool_id}' if tool_id else ''}",
+                        next_step='Escribe tu siguiente consulta y el sistema decidira si reintenta o usa otra via.',
+                        human_help='Si la app externa tiene respuesta visible, usa Ingerir respuesta. Si no, simplemente continua.',
+                        learning_note='La consulta caduco sin evidencia util; no se consolida aprendizaje.',
+                        mode='external',
+                        waiting=False,
+                    )
                 isolated_session = bool(autonomous.get('isolated_session'))
                 login_required = bool(autonomous.get('assistant_login_required'))
                 session_label = str(autonomous.get('session_label') or '').strip()

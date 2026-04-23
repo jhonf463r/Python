@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
@@ -1922,6 +1923,7 @@ def test_control_center_autonomy_activity_shows_waiting_external_consultation() 
                         'selected_tool_id': 'codex_installed',
                         'response_capture_mode': 'clipboard_capture',
                         'detail': 'Estoy observando la respuesta de Codex para capturarla automaticamente.',
+                        'started_at_utc': datetime.now(timezone.utc).isoformat(),
                     },
                 },
             }

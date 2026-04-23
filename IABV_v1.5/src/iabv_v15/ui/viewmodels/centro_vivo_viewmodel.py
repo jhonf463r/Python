@@ -286,9 +286,9 @@ class CentroVivoViewModel(QObject):
             'window_count': len(windows),
             'focus_window': focus,
             'tool_count': len(tools),
-            'tools_ready': sum(1 for t in tools if (t.get('status') or t.get('live_status', '')) == 'ready'),
-            'tools_degraded': sum(1 for t in tools if (t.get('status') or t.get('live_status', '')) == 'degraded'),
-            'network_connected': bool(network.get('connected', False)),
+            'tools_ready': sum(1 for t in tools if (t.get('status') or t.get('live_status', '')) in ('listo', 'abierto', 'disponible', 'ready')),
+            'tools_degraded': sum(1 for t in tools if (t.get('status') or t.get('live_status', '')) in ('lento', 'limitado', 'degraded')),
+            'network_connected': bool(network.get('connected', False) or str(network.get('status', '')).strip() in ('conectado', 'lento')),
             'active_blockages': dumped.get('active_blockages', []),
         }
 
