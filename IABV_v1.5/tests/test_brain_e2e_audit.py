@@ -388,11 +388,11 @@ def test_g2_intent_correction_includes_conversation_history() -> None:
     recorder._check_intent_correction(session=session, run_record=run_record)
 
     recheck_calls = [r for r in captured_requests if r.metadata.get('intent_correction_recheck')]
-    if recheck_calls:
-        recheck = recheck_calls[0]
-        assert recheck.metadata.get('conversation_history') == conversation_history, (
-            'Recheck request should include conversation_history from session metadata'
-        )
+    assert recheck_calls, 'Expected _check_intent_correction to trigger a recheck classify call'
+    recheck = recheck_calls[0]
+    assert recheck.metadata.get('conversation_history') == conversation_history, (
+        'Recheck request should include conversation_history from session metadata'
+    )
 
 
 # ---------------------------------------------------------------
