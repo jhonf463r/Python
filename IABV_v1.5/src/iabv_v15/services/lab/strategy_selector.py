@@ -264,7 +264,7 @@ class StrategySelector:
                     'best_score': round(weighted, 4),
                     'total_runs': count,
                     'successful_runs': len(successful),
-                    'success_rate': round(success_rate, 4),
+                    'success_rate': round(len(successful) / max(count, 1), 4),
                     'best_route': route.value if hasattr(route, 'value') else str(route),
                     'aspects': set(),
                 }
