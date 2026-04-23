@@ -1,12 +1,24 @@
 ﻿from __future__ import annotations
 
 import re
+import threading
+import time
 from typing import Any
 
 from iabv_v15.domain.models import InferenceRequest, IntentDisposition, IntentHypothesis, IntentSchema, TaskIntent, TaskRole
 
 
 class IntentUnderstandingService:
+    # M4: registro de fallos por patron para confidence decay.
+    # Stores (count, first_failure_epoch) per intent_key so entries
+    # older than _FAILURE_EXPIRY_SECONDS auto-expire, preventing
+    # permanent penalty from transient issues.
+    _pattern_failure_counts: dict[str, tuple[int, float]] = {}
+    _pattern_failure_lock = threading.Lock()
+    _DECAY_PER_FAILURE = 0.03
+    _MAX_DECAY = 0.15
+    _FAILURE_EXPIRY_SECONDS = 7200.0  # 2 hours
+
     SITE_ALIASES = {
         'wplay': ['wplay', 'w play'],
         'mercadolibre': ['mercadolibre', 'mercado libre'],
@@ -54,6 +66,30 @@ class IntentUnderstandingService:
         'desv?a',
         'desvios',
         'ambig',
+        'genera un ',
+        'generar un ',
+        'genera el ',
+        'generar el ',
+        'genera la ',
+        'generar la ',
+        'crea un ',
+        'crear un ',
+        'crea el ',
+        'crear el ',
+        'crea la ',
+        'crear la ',
+        'genera codigo',
+        'generar codigo',
+        'implementa ',
+        'implementar ',
+        'analiza los log',
+        'analizar los log',
+        'analiza el log',
+        'analizar el log',
+        'analiza el codigo',
+        'analizar el codigo',
+        'revisa el codigo',
+        'revisar el codigo',
     ]
     # Patrones fuertes de generacion/modificacion de codigo que deben rutear a
     # ``project.evolution`` (TaskRole.PROJECT_EVOLUTION) en vez de caer al
@@ -82,6 +118,16 @@ class IntentUnderstandingService:
         'crear una funcion',
         'crea un metodo',
         'crear un metodo',
+        'genera un script',
+        'generar un script',
+        'genera un modulo',
+        'generar un modulo',
+        'genera una clase',
+        'generar una clase',
+        'genera un servicio',
+        'generar un servicio',
+        'genera un archivo',
+        'generar un archivo',
         'refactoriza',
         'refactorizar',
         'refactor',
@@ -152,6 +198,40 @@ class IntentUnderstandingService:
         'prioriza',
     ]
 
+    @classmethod
+    def register_pattern_failure(cls, intent_key: str) -> None:
+        """M4: registrar un fallo para un intent_key especifico (thread-safe)."""
+        now = time.monotonic()
+        with cls._pattern_failure_lock:
+            existing = cls._pattern_failure_counts.get(intent_key)
+            if existing is not None:
+                count, first_ts = existing
+                if (now - first_ts) > cls._FAILURE_EXPIRY_SECONDS:
+                    cls._pattern_failure_counts[intent_key] = (1, now)
+                else:
+                    cls._pattern_failure_counts[intent_key] = (count + 1, first_ts)
+            else:
+                cls._pattern_failure_counts[intent_key] = (1, now)
+
+    @classmethod
+    def reset_pattern_failures(cls) -> None:
+        """Clear all accumulated pattern failures (useful for test teardown)."""
+        with cls._pattern_failure_lock:
+            cls._pattern_failure_counts.clear()
+
+    def _confidence_decay(self, intent_key: str) -> float:
+        """M4: retorna el decay acumulado para un intent_key (with expiry)."""
+        now = time.monotonic()
+        with self._pattern_failure_lock:
+            existing = self._pattern_failure_counts.get(intent_key)
+            if existing is None:
+                return 0.0
+            count, first_ts = existing
+            if (now - first_ts) > self._FAILURE_EXPIRY_SECONDS:
+                del self._pattern_failure_counts[intent_key]
+                return 0.0
+        return min(count * self._DECAY_PER_FAILURE, self._MAX_DECAY)
+
     def classify(self, request: InferenceRequest) -> tuple[TaskIntent, list[IntentHypothesis]]:
         text = self._normalize(request.user_goal)
         conversation_text = self._conversation_context_text(request.conversation_context)
@@ -195,6 +275,12 @@ class IntentUnderstandingService:
             reasoning: list[str] | None = None,
             metadata: dict[str, Any] | None = None,
         ) -> TaskIntent:
+            decay = self._confidence_decay(intent_key)
+            adjusted_confidence = max(0.1, confidence - decay)
+            merged_metadata = {**analysis_metadata, **(metadata or {})}
+            if decay > 0:
+                merged_metadata['confidence_decay'] = round(decay, 4)
+                merged_metadata['original_confidence'] = confidence
             return TaskIntent(
                 disposition=disposition,
                 intent_key=intent_key,
@@ -203,13 +289,13 @@ class IntentUnderstandingService:
                 detected_role=detected_role,
                 site_hint=site_hint,
                 domain_hint=domain_hint,
-                confidence=confidence,
+                confidence=adjusted_confidence,
                 sensitive=sensitive,
                 monetary=monetary,
                 multi_step=multi_step,
                 missing_requirements=missing_requirements or [],
                 reasoning=reasoning or [],
-                metadata={**analysis_metadata, **(metadata or {})},
+                metadata=merged_metadata,
             )
 
         def finalize(intent: TaskIntent, current_hypotheses: list[IntentHypothesis]) -> tuple[TaskIntent, list[IntentHypothesis]]:
@@ -1127,6 +1213,11 @@ class IntentUnderstandingService:
             'apoyate en',
             'ap?yate en',
             'pregunta a',
+            'preguntale',
+            'preg?ntale',
+            'pidele a',
+            'p?dele a',
+            'dile a',
             'valida con',
             'revisa con',
             'escala a',
@@ -1135,7 +1226,15 @@ class IntentUnderstandingService:
             'razona con',
             'piensa con',
         )
-        if not any(verb in normalized for verb in consult_verbs):
+        # M1-fix: reconocer frases compuestas "abre X y preguntale/pidele"
+        # donde el verbo de navegacion precede al verbo de consulta.
+        compound_consult = False
+        if self._contains_any(normalized, ['abre ', 'abrir ']):
+            for assistant in ('chatgpt', 'claude', 'codex', 'devin', 'windsurf', 'ollama'):
+                if assistant in normalized and self._contains_any(normalized, ['pregunta', 'pidele', 'dile', 'consultale', 'cons?ltale']):
+                    compound_consult = True
+                    break
+        if not compound_consult and not any(verb in normalized for verb in consult_verbs):
             return ''
         if 'chatgpt' in normalized:
             return 'chatgpt'

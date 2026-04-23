@@ -1259,10 +1259,24 @@ class OperationalSelfExaminationService:
         experiment_runs: list[ExperimentRun],
     ) -> list[dict[str, Any]]:
         items: list[dict[str, Any]] = []
+        seen_feedback_keys: set[str] = set()
         for recommendation in recommendations[:4]:
             if float(recommendation.confidence or 0.0) < 0.75 and float(recommendation.score or 0.0) < 0.75:
                 continue
             adaptive = dict((recommendation.metadata or {}).get('adaptive_learning_summary') or {})
+            feedback_key = self._adjustment_feedback_key(
+                category='inertial_route',
+                title=f'{recommendation.recommended_assistant_kind or "ruta"} por {recommendation.recommended_route.value}',
+                metadata={
+                    'assistant_kind': recommendation.recommended_assistant_kind,
+                    'route': recommendation.recommended_route.value,
+                    'config_signature': recommendation.recommended_config_signature,
+                    'subject_key': recommendation.subject_key,
+                },
+            )
+            if feedback_key in seen_feedback_keys:
+                continue
+            seen_feedback_keys.add(feedback_key)
             items.append(
                 {
                     'title': f'{recommendation.recommended_assistant_kind or "ruta"} por {recommendation.recommended_route.value}',
@@ -1275,16 +1289,7 @@ class OperationalSelfExaminationService:
                     'reasons': list(adaptive.get('reasons') or []),
                     'source_refs': ['ExperimentLab', 'StrategySelector'],
                     'evidence_refs': list(recommendation.supporting_run_ids[:4]),
-                    'feedback_key': self._adjustment_feedback_key(
-                        category='inertial_route',
-                        title=f'{recommendation.recommended_assistant_kind or "ruta"} por {recommendation.recommended_route.value}',
-                        metadata={
-                            'assistant_kind': recommendation.recommended_assistant_kind,
-                            'route': recommendation.recommended_route.value,
-                            'config_signature': recommendation.recommended_config_signature,
-                            'subject_key': recommendation.subject_key,
-                        },
-                    ),
+                    'feedback_key': feedback_key,
                 }
             )
         current_experiment = validation.current_experiment
