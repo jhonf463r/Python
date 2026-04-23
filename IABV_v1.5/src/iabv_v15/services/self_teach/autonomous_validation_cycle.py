@@ -572,8 +572,8 @@ class AutonomousValidationCycleService:
                             'title': p.get('title', ''),
                             'action_plan': p.get('action_plan'),
                             'estimated_confidence': float(p.get('estimated_confidence') or 0.0),
-                            'primary_ia': str((p.get('action_plan') or {}).get('primary_ia') or '') if isinstance(p.get('action_plan'), dict) else '',
-                            'secondary_ia': str((p.get('action_plan') or {}).get('secondary_ia') or '') if isinstance(p.get('action_plan'), dict) else '',
+                            'primary_ia': str((p.get('action_plan') or [{}])[0].get('ia') or '') if isinstance(p.get('action_plan'), list) and p.get('action_plan') else '',
+                            'secondary_ia': str((p.get('action_plan') or [{}])[1].get('ia') or '') if isinstance(p.get('action_plan'), list) and len(p.get('action_plan') or []) >= 2 else '',
                         }
                         for p in proposals[:4]
                         if isinstance(p, dict)
