@@ -567,12 +567,38 @@ class AutonomousValidationCycleService:
                     se_meta = dict((se_payload or {}).get('metadata') or {})
                     proposals = list(se_meta.get('solution_proposals') or [])
                     sync_data['active_proposals'] = [
-                        {'type': p.get('type', ''), 'title': p.get('title', '')}
+                        {
+                            'type': p.get('type', ''),
+                            'title': p.get('title', ''),
+                            'action_plan': p.get('action_plan'),
+                            'estimated_confidence': float(p.get('estimated_confidence') or 0.0),
+                            'primary_ia': str((p.get('action_plan') or [{}])[0].get('ia') or '') if isinstance(p.get('action_plan'), list) and p.get('action_plan') else '',
+                            'secondary_ia': str((p.get('action_plan') or [{}])[1].get('ia') or '') if isinstance(p.get('action_plan'), list) and len(p.get('action_plan') or []) >= 2 else '',
+                        }
                         for p in proposals[:4]
                         if isinstance(p, dict)
                     ]
             except Exception:
                 pass
+
+        # Determine coordination_status based on actionability
+        available_ias = [
+            k for k, v in (sync_data.get('ia_availability') or {}).items()
+            if v == 'available'
+        ]
+        actionable_proposals = [
+            p for p in sync_data.get('active_proposals', [])
+            if isinstance(p, dict) and float(p.get('estimated_confidence') or 0.0) >= 0.5
+            and p.get('primary_ia') in available_ias
+        ]
+        if actionable_proposals and len(available_ias) >= 2:
+            sync_data['coordination_status'] = 'action_ready'
+            sync_data['actionable_proposals'] = actionable_proposals[:2]
+            sync_data['available_ia_count'] = len(available_ias)
+        elif sync_data.get('active_proposals'):
+            sync_data['coordination_status'] = 'proposals_pending'
+        else:
+            sync_data['coordination_status'] = 'synced'
 
         with self._lock:
             current_snapshot = self._current_snapshot

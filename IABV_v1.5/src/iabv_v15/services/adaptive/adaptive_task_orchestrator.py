@@ -167,6 +167,7 @@ class AdaptiveTaskOrchestrator:
         self.control_master_service: Any | None = None
         self.control_master_digest_builder: Any | None = None
         self.self_examination_service: Any | None = None
+        self.validation_cycle_service: Any | None = None
 
     def _maybe_synaptic_decision(self, intent: TaskIntent | None) -> SynapticRoutingDecision | None:
         """Consulta ``SynapticRouter.decide`` si el intent es external-worthy.
@@ -451,6 +452,222 @@ class AdaptiveTaskOrchestrator:
             },
         }
 
+    # ------------------------------------------------------------------
+    # B: Leer sync_pulse del ciclo de validación para inyectar en el flujo
+    # ------------------------------------------------------------------
+
+    def _read_sync_pulse(self) -> dict[str, Any]:
+        """Read the latest sync_pulse from the validation cycle service.
+
+        Returns the sync_pulse dict if the validation cycle service is
+        wired and has a current snapshot with sync data.  Otherwise
+        returns an empty dict.  This is purely descriptive — it provides
+        the orchestrator with a coordinated view of IA availability,
+        top recommendations, and actionable proposals from the heartbeat.
+        """
+        service = self.validation_cycle_service
+        if service is None:
+            return {}
+        try:
+            snapshot = service.current_snapshot()
+            return dict((snapshot.metadata or {}).get('sync_pulse') or {})
+        except Exception:
+            return {}
+
+    def _inject_sync_coordination_into_context(
+        self,
+        context: TaskContext,
+        sync_pulse: dict[str, Any],
+    ) -> None:
+        """Inject sync_pulse coordination data into TaskContext.metadata.
+
+        When the sync_pulse has ``coordination_status == 'action_ready'``,
+        deposit the actionable proposals and top recommendations so that
+        downstream consumers (P2 playbook, P6 guidance) can use them to
+        coordinate multi-IA execution.
+        """
+        if not sync_pulse:
+            return
+        coordination_status = str(sync_pulse.get('coordination_status') or '')
+        if coordination_status not in {'action_ready', 'proposals_pending'}:
+            return
+        ctx_meta = dict(context.metadata or {})
+        ctx_meta['sync_coordination'] = {
+            'coordination_status': coordination_status,
+            'top_recommendations': list(sync_pulse.get('top_recommendations') or []),
+            'actionable_proposals': list(sync_pulse.get('actionable_proposals') or []),
+            'active_proposals': list(sync_pulse.get('active_proposals') or []),
+            'ia_availability': dict(sync_pulse.get('ia_availability') or {}),
+            'available_ia_count': int(sync_pulse.get('available_ia_count') or 0),
+        }
+        context.metadata = ctx_meta
+
+    # ------------------------------------------------------------------
+    # C: Consulta encadenada multi-IA (IA-A analiza → IA-B planifica)
+    # ------------------------------------------------------------------
+
+    def _chained_ia_consultation(
+        self,
+        *,
+        request: InferenceRequest,
+        primary_result: dict[str, Any],
+        secondary_candidate: dict[str, Any],
+        synaptic_decision: SynapticRoutingDecision | None,
+        decision_context: DecisionContext | None,
+    ) -> dict[str, Any] | None:
+        """Chain a follow-up IA consultation using the primary result as context.
+
+        When the primary IA produces a partial or analysis-only result,
+        feed its output to a secondary IA for planning or execution.
+        This enables iterative reasoning: IA-A comprehends/analyzes,
+        IA-B plans/documents, creating a coordinated output.
+
+        Returns the chained result dict or ``None`` if chaining is not
+        warranted or fails.
+        """
+        if self.autonomous_evolution_service is None:
+            return None
+        primary_confidence = self._consultation_confidence(primary_result)
+        if primary_confidence < 0.3:
+            return None
+        primary_kind = str(primary_result.get('assistant_kind') or '')
+        secondary_kind = str(secondary_candidate.get('assistant_kind') or '')
+        if not primary_kind or not secondary_kind or primary_kind == secondary_kind:
+            return None
+        primary_summary = str(
+            primary_result.get('detail')
+            or primary_result.get('response_summary')
+            or primary_result.get('observed_summary')
+            or ''
+        )[:500]
+        if not primary_summary.strip():
+            return None
+        chained_goal = (
+            f"Basándote en el análisis de {primary_kind}: «{primary_summary}» — "
+            f"complementa con tu perspectiva de {secondary_kind}."
+        )
+        payload = {
+            'user_goal': chained_goal,
+            'site_hint': request.site_hint or '',
+            'metadata': {
+                'user_goal': chained_goal,
+                'goal_parameters': dict(request.goal_parameters or {}),
+                'assistant_kind': secondary_kind,
+                'chained_consultation': True,
+                'primary_ia': primary_kind,
+                'primary_confidence': primary_confidence,
+                'primary_summary': primary_summary,
+                'site_hint': request.site_hint or '',
+            },
+        }
+        try:
+            result = self.autonomous_evolution_service.plan_or_execute(
+                adaptive_payload=payload,
+                user_goal=chained_goal,
+                source='chained_ia_consultation',
+                decision_context=decision_context,
+            )
+            result_dict = dict(result or {})
+            result_dict.setdefault('assistant_kind', secondary_kind)
+            result_dict['chained_from'] = primary_kind
+            result_dict['chain_type'] = 'iterative_reasoning'
+            return result_dict
+        except Exception:
+            return None
+
+    # ------------------------------------------------------------------
+    # D: Auto-ejecución de planes coordinados desde govern_adaptive_payload
+    # ------------------------------------------------------------------
+
+    def _maybe_auto_execute_coordinated_plan(
+        self,
+        *,
+        payload: dict[str, Any],
+        decision_context: DecisionContext,
+        user_goal: str,
+    ) -> dict[str, Any] | None:
+        """Check if a coordinated plan should be auto-executed.
+
+        Reads the ``assistant_guidance`` actions from the decision context.
+        If an ``execute_coordinated_plan`` action exists with sufficient
+        evidence, initiate the coordinated consultation by calling
+        ``plan_or_execute`` with the plan's primary IA, then chaining
+        to the secondary IA if the primary succeeds.
+
+        Returns the enriched payload with coordinated results, or ``None``
+        if no plan qualifies for auto-execution.
+        """
+        if self.autonomous_evolution_service is None:
+            return None
+        guidance = decision_context.assistant_guidance or {}
+        actions = list(guidance.get('actions') or [])
+        coordinated_action = None
+        for action in actions:
+            if isinstance(action, dict) and action.get('action') == 'execute_coordinated_plan':
+                coordinated_action = action
+                break
+        if coordinated_action is None:
+            return None
+        sync_pulse = self._read_sync_pulse()
+        actionable = list(sync_pulse.get('actionable_proposals') or [])
+        if not actionable:
+            return None
+        best_proposal = actionable[0]
+        primary_ia = str(best_proposal.get('primary_ia') or '')
+        secondary_ia = str(best_proposal.get('secondary_ia') or '')
+        if not primary_ia:
+            return None
+        primary_payload = {
+            'user_goal': user_goal,
+            'site_hint': '',
+            'metadata': {
+                'user_goal': user_goal,
+                'assistant_kind': primary_ia,
+                'coordinated_plan': True,
+                'plan_title': str(best_proposal.get('title') or ''),
+                'plan_type': str(best_proposal.get('type') or ''),
+            },
+        }
+        try:
+            primary_result = self.autonomous_evolution_service.plan_or_execute(
+                adaptive_payload=primary_payload,
+                user_goal=user_goal,
+                source='coordinated_plan_primary',
+                decision_context=decision_context,
+            )
+        except Exception:
+            return None
+        primary_dict = dict(primary_result or {})
+        primary_dict.setdefault('assistant_kind', primary_ia)
+        chained_result = None
+        if secondary_ia and self._has_external_response(primary_dict):
+            request = InferenceRequest(
+                user_goal=user_goal,
+                task_role=None,
+                auto_route=False,
+            )
+            chained_result = self._chained_ia_consultation(
+                request=request,
+                primary_result=primary_dict,
+                secondary_candidate={'assistant_kind': secondary_ia},
+                synaptic_decision=None,
+                decision_context=decision_context,
+            )
+        enriched_payload = dict(payload)
+        metadata = dict(enriched_payload.get('metadata') or {})
+        metadata['coordinated_execution'] = {
+            'primary': primary_dict,
+            'chained': dict(chained_result) if chained_result else None,
+            'plan_title': str(best_proposal.get('title') or ''),
+            'coordination_status': 'executed',
+        }
+        if self._has_external_response(primary_dict):
+            metadata['autonomous_evolution'] = primary_dict
+            metadata['autonomous_evolution_response'] = primary_dict
+            enriched_payload['assistant_guidance'] = self._guidance_for_external_response(primary_dict)
+        enriched_payload['metadata'] = metadata
+        return enriched_payload
+
     def _register_parallel_results(
         self,
         *,
@@ -594,12 +811,29 @@ class AdaptiveTaskOrchestrator:
         )
         best = max(results, key=self._rank_consultation_result)
         synthesis = self._synthesize_parallel_results(results) if len(results) >= 2 else {}
+        # C: Chained consultation — when synthesis shows complementary IAs,
+        # feed primary output to secondary for iterative reasoning.
+        chained_result: dict[str, Any] | None = None
+        if len(results) >= 2 and synthesis:
+            primary_info = synthesis.get('primary') or {}
+            secondaries = synthesis.get('secondary_contributions') or []
+            if secondaries:
+                secondary_kind = str(secondaries[0].get('assistant_kind') or '')
+                if secondary_kind and secondary_kind != str(primary_info.get('assistant_kind') or ''):
+                    chained_result = self._chained_ia_consultation(
+                        request=request,
+                        primary_result=best,
+                        secondary_candidate={'assistant_kind': secondary_kind},
+                        synaptic_decision=synaptic_decision,
+                        decision_context=decision_context,
+                    )
         return {
             'status': 'compared',
             'candidates': top_two,
             'results': results,
             'best': best,
             'synthesis': synthesis,
+            'chained_result': chained_result,
             'timed_out': timed_out,
             'failed': failed,
         }
@@ -636,6 +870,13 @@ class AdaptiveTaskOrchestrator:
         synaptic_decision = self._maybe_synaptic_decision(intent)
         self._inject_synaptic_into_decision_context(perception.decision_context, synaptic_decision)
         context = perception.task_context
+
+        # B: Inyectar datos de sync_pulse del heartbeat en el contexto
+        # para que P2 (playbook multi-IA) y P6 (guidance coordinado) puedan
+        # usar las proposals activas y recomendaciones del pulso.
+        sync_pulse = self._read_sync_pulse()
+        if sync_pulse:
+            self._inject_sync_coordination_into_context(context, sync_pulse)
 
         # PR I — cotejo en paralelo de las top-2 IAs rankeadas por el
         # ``SynapticRouter`` cuando la politica lo permite y existen al menos
@@ -815,6 +1056,17 @@ class AdaptiveTaskOrchestrator:
         elif existing_status in {'prepared', 'reused'} or existing.get('retry_exhausted'):
             # Estados finales o agotados reintentos, no reintentar
             return payload
+        # D: Auto-ejecución de planes coordinados — si el decision_context
+        # tiene un execute_coordinated_plan y hay proposals accionables,
+        # ejecutar la cadena multi-IA en vez de la consulta simple.
+        if not needs_retry:
+            coordinated_payload = self._maybe_auto_execute_coordinated_plan(
+                payload=payload,
+                decision_context=decision_context,
+                user_goal=user_goal,
+            )
+            if coordinated_payload is not None:
+                return coordinated_payload
         result = self.autonomous_evolution_service.plan_or_execute(
             adaptive_payload=payload,
             user_goal=user_goal,
@@ -1370,11 +1622,21 @@ class AdaptiveTaskOrchestrator:
         """
         composite = None
         for insight in (session.context.experiment_insights or []):
-            comp = (insight.get('composite_recommendation') if isinstance(insight, dict) else None)
+            comp = ((insight.get('metadata') or {}).get('composite_recommendation') if isinstance(insight, dict) else None)
             if isinstance(comp, dict) and comp.get('primary') and comp.get('secondary'):
                 composite = comp
                 break
         if composite is None:
+            # Also check sync_coordination from heartbeat (improvement B)
+            sync_coord = dict(session.context.metadata.get('sync_coordination') or {})
+            actionable = list(sync_coord.get('actionable_proposals') or [])
+            for ap in actionable:
+                if isinstance(ap, dict) and ap.get('primary_ia') and ap.get('secondary_ia'):
+                    primary_ia = str(ap.get('primary_ia') or '')
+                    secondary_ia = str(ap.get('secondary_ia') or '')
+                    label = f"Plan coordinado ({primary_ia} + {secondary_ia})"
+                    detail = str(ap.get('title') or 'Propuesta del heartbeat con IAs disponibles')
+                    return self._guidance_action('execute_coordinated_plan', label, detail)
             perception_meta = dict(session.metadata.get('perception_snapshot') or {})
             self_exam_meta = dict(perception_meta.get('metadata') or session.context.metadata.get('self_examination') or {})
             proposals = list(self_exam_meta.get('solution_proposals') or [])

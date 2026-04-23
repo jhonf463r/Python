@@ -404,7 +404,7 @@ class AdaptivePlannerService:
 
         composite = None
         for insight in (context.experiment_insights or []):
-            comp = insight.get('composite_recommendation') if isinstance(insight, dict) else None
+            comp = (insight.get('metadata') or {}).get('composite_recommendation') if isinstance(insight, dict) else None
             if isinstance(comp, dict) and comp.get('primary') and comp.get('secondary'):
                 composite = comp
                 break
