@@ -668,6 +668,83 @@ class AdaptiveTaskOrchestrator:
         enriched_payload['metadata'] = metadata
         return enriched_payload
 
+    # ------------------------------------------------------------------
+    # G1: Auto-ejecución proactiva desde sync_pulse
+    # ------------------------------------------------------------------
+
+    def auto_execute_from_sync_pulse(
+        self,
+        proposals: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
+        """G1: Execute high-confidence proposals without user request.
+
+        Called by ``AutonomousValidationCycleService._maybe_auto_execute_proposals``
+        when the heartbeat determines ``action_ready``.  Uses the existing
+        orchestrator as mediator — no new brain.  Delegates to
+        ``autonomous_evolution_service.plan_or_execute`` for the primary IA,
+        then chains to secondary IA if the primary yields a usable response.
+
+        Returns an execution summary dict, or ``None`` if nothing qualified.
+        """
+        if self.autonomous_evolution_service is None:
+            return None
+        high_confidence = [
+            p for p in proposals
+            if isinstance(p, dict)
+            and float(p.get('estimated_confidence') or 0.0) >= 0.6
+        ]
+        if not high_confidence:
+            return None
+        best = high_confidence[0]
+        primary_ia = str(best.get('primary_ia') or '')
+        if not primary_ia:
+            return None
+        user_goal = str(best.get('title') or 'Ejecutar propuesta coordinada')
+        primary_payload = {
+            'user_goal': user_goal,
+            'site_hint': '',
+            'metadata': {
+                'user_goal': user_goal,
+                'assistant_kind': primary_ia,
+                'auto_executed_from_pulse': True,
+                'proposal_type': str(best.get('type') or ''),
+                'proposal_title': str(best.get('title') or ''),
+            },
+        }
+        try:
+            primary_result = self.autonomous_evolution_service.plan_or_execute(
+                adaptive_payload=primary_payload,
+                user_goal=user_goal,
+                source='auto_execute_from_sync_pulse',
+                decision_context=None,
+            )
+        except Exception:
+            return None
+        primary_dict = dict(primary_result or {})
+        primary_dict.setdefault('assistant_kind', primary_ia)
+        secondary_ia = str(best.get('secondary_ia') or '')
+        chained_result = None
+        if secondary_ia and self._has_external_response(primary_dict):
+            request = InferenceRequest(
+                user_goal=user_goal,
+                task_role=None,
+                auto_route=False,
+            )
+            chained_result = self._chained_ia_consultation(
+                request=request,
+                primary_result=primary_dict,
+                secondary_candidate={'assistant_kind': secondary_ia},
+                synaptic_decision=None,
+                decision_context=None,
+            )
+        return {
+            'executed': True,
+            'proposal': best,
+            'primary_result': primary_dict,
+            'chained_result': dict(chained_result) if chained_result else None,
+            'coordination_status': 'auto_executed',
+        }
+
     def _register_parallel_results(
         self,
         *,
