@@ -133,6 +133,16 @@ class OperationalSelfExaminationService:
         findings.extend(self._weak_correction_findings(scenario_runs=scenario_runs))
         findings.extend(self._token_rotation_findings())
         findings.extend(self._chat_research_backlog_findings())
+        # Cognitive meta-patterns: fijación, incubación, atractores, ensambles
+        findings.extend(
+            self._cognitive_fixation_findings(
+                experiment_runs=experiment_runs,
+                recommendations=recommendations,
+            )
+        )
+        findings.extend(self._cognitive_incubation_findings(experiment_runs=experiment_runs))
+        findings.extend(self._neural_attractor_findings(experiment_runs=experiment_runs))
+        findings.extend(self._neural_ensemble_findings(experiment_runs=experiment_runs))
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -1354,6 +1364,282 @@ class OperationalSelfExaminationService:
         return items[:4]
 
     # ------------------------------------------------------------------
+    # Cognitive meta-patterns
+    # ------------------------------------------------------------------
+
+    def _cognitive_fixation_findings(
+        self,
+        *,
+        experiment_runs: list[ExperimentRun],
+        recommendations: list[ExperimentRecommendation],
+    ) -> list[SelfExaminationFinding]:
+        """Detect cognitive fixation: the system choosing the same IA/route
+        repeatedly despite availability of better alternatives.
+
+        Cognitive fixation occurs when the orchestrator "locks on" to a
+        familiar route even when evidence shows declining performance.
+        This goes beyond route_inertia (which is about the decision log)
+        by examining the actual experiment outcomes for persistent bias.
+        """
+        findings: list[SelfExaminationFinding] = []
+        if len(experiment_runs) < 5:
+            return findings
+        kind_counts: dict[str, int] = defaultdict(int)
+        kind_recent_failures: dict[str, int] = defaultdict(int)
+        recent_runs = experiment_runs[-10:]
+        for run in recent_runs:
+            kind = str(run.assistant_kind or '').strip().lower()
+            if not kind:
+                continue
+            kind_counts[kind] += 1
+            if not bool(run.success):
+                kind_recent_failures[kind] += 1
+        dominant_kind = max(kind_counts, key=kind_counts.get, default='')  # type: ignore[arg-type]
+        if not dominant_kind:
+            return findings
+        dominant_ratio = kind_counts[dominant_kind] / len(recent_runs)
+        dominant_failure_rate = kind_recent_failures.get(dominant_kind, 0) / max(kind_counts[dominant_kind], 1)
+        better_alternatives = [
+            rec for rec in recommendations
+            if str(rec.recommended_assistant_kind or '').strip().lower() != dominant_kind
+            and float(rec.confidence or 0.0) > 0.6
+        ]
+        if dominant_ratio >= 0.7 and dominant_failure_rate >= 0.4 and better_alternatives:
+            findings.append(SelfExaminationFinding(
+                title=f'Fijación cognitiva en {dominant_kind}',
+                description=(
+                    f'El sistema sigue eligiendo {dominant_kind} en {dominant_ratio:.0%} de los últimos runs '
+                    f'a pesar de una tasa de fallo de {dominant_failure_rate:.0%}. '
+                    f'Hay {len(better_alternatives)} alternativa(s) recomendada(s) con mayor confianza.'
+                ),
+                severity=IssueSeverity.HIGH,
+                category='cognitive_fixation',
+                metadata={
+                    'dominant_kind': dominant_kind,
+                    'dominant_ratio': round(dominant_ratio, 4),
+                    'failure_rate': round(dominant_failure_rate, 4),
+                    'alternative_count': len(better_alternatives),
+                    'best_alternative': str(better_alternatives[0].recommended_assistant_kind or ''),
+                },
+            ))
+        return findings
+
+    def _cognitive_incubation_findings(
+        self,
+        *,
+        experiment_runs: list[ExperimentRun],
+    ) -> list[SelfExaminationFinding]:
+        """Detect when cognitive incubation could help: problems that failed
+        multiple times recently but might benefit from a "cooling period."
+
+        Incubation is the cognitive phenomenon where stepping away from a
+        problem allows subconscious processing to find a solution.  Here
+        we detect subject_keys with 3+ consecutive failures and suggest
+        deferring them to let the system gather new evidence or context.
+        """
+        findings: list[SelfExaminationFinding] = []
+        if len(experiment_runs) < 3:
+            return findings
+        subject_recent_failures: dict[str, int] = defaultdict(int)
+        subject_total: dict[str, int] = defaultdict(int)
+        for run in experiment_runs[-15:]:
+            sk = str(run.subject_key or '').strip()
+            if not sk:
+                continue
+            subject_total[sk] += 1
+            if not bool(run.success):
+                subject_recent_failures[sk] += 1
+            else:
+                subject_recent_failures[sk] = 0
+        for sk, consecutive_fails in subject_recent_failures.items():
+            if consecutive_fails >= 3 and subject_total.get(sk, 0) >= 3:
+                findings.append(SelfExaminationFinding(
+                    title=f'Incubación cognitiva sugerida para {sk}',
+                    description=(
+                        f'El problema {sk} acumula {consecutive_fails} fallos consecutivos recientes. '
+                        f'Postergar este subject_key por 1-2 ciclos para acumular contexto o '
+                        f'permitir que el AdaptiveWeightLayer recalcule con datos frescos.'
+                    ),
+                    severity=IssueSeverity.MEDIUM,
+                    category='cognitive_incubation',
+                    metadata={
+                        'subject_key': sk,
+                        'consecutive_failures': consecutive_fails,
+                        'total_runs': subject_total.get(sk, 0),
+                    },
+                ))
+        return findings[:2]
+
+    def _neural_attractor_findings(
+        self,
+        *,
+        experiment_runs: list[ExperimentRun],
+    ) -> list[SelfExaminationFinding]:
+        """Detect neural attractors: stable configurations the system
+        converges toward naturally.
+
+        An attractor is a (route, assistant_kind, config) combination
+        that consistently produces good results.  Identifying attractors
+        helps the system consciously reinforce what works instead of
+        drifting.  If no attractor exists, that itself is a finding.
+        """
+        findings: list[SelfExaminationFinding] = []
+        if len(experiment_runs) < 4:
+            return findings
+        config_success: dict[str, list[float]] = defaultdict(list)
+        config_total: dict[str, int] = defaultdict(int)
+        for run in experiment_runs:
+            kind = str(run.assistant_kind or '').strip().lower()
+            route = str(run.route.value if run.route else '')
+            if not kind:
+                continue
+            key = f'{kind}:{route}'
+            config_total[key] += 1
+            if bool(run.success):
+                config_success[key].append(float(run.metrics.total_score or 0.0))
+        attractors: list[tuple[str, float, int]] = []
+        for key, scores in config_success.items():
+            total = config_total.get(key, len(scores))
+            if total < 3:
+                continue
+            success_rate = len(scores) / max(total, 1)
+            avg_score = sum(scores) / max(len(scores), 1)
+            if success_rate >= 0.75 and avg_score >= 0.5:
+                attractors.append((key, avg_score, total))
+        if attractors:
+            attractors.sort(key=lambda t: (t[1], t[2]), reverse=True)
+            best = attractors[0]
+            findings.append(SelfExaminationFinding(
+                title=f'Atractor neuronal identificado: {best[0]}',
+                description=(
+                    f'La configuración {best[0]} converge a resultados positivos consistentemente '
+                    f'(score {best[1]:.2f}, {best[2]} runs). Este atractor debe ser reforzado '
+                    f'como ruta preferente para tareas compatibles.'
+                ),
+                severity=IssueSeverity.LOW,
+                category='neural_attractor',
+                metadata={
+                    'attractor_key': best[0],
+                    'avg_score': round(best[1], 4),
+                    'total_runs': best[2],
+                    'all_attractors': [{'key': a[0], 'score': round(a[1], 4), 'runs': a[2]} for a in attractors[:3]],
+                },
+            ))
+        elif len(experiment_runs) >= 8:
+            findings.append(SelfExaminationFinding(
+                title='Sin atractor neuronal estable',
+                description=(
+                    'No se detecta ninguna configuración (IA+ruta) que converja consistentemente '
+                    'a resultados positivos. El sistema opera sin preferencia estable, lo que '
+                    'puede indicar exploración excesiva o datos insuficientes.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                category='neural_attractor',
+                metadata={'experiment_count': len(experiment_runs)},
+            ))
+        return findings[:1]
+
+    def _neural_ensemble_findings(
+        self,
+        *,
+        experiment_runs: list[ExperimentRun],
+    ) -> list[SelfExaminationFinding]:
+        """Detect neural ensembles: groups of IAs that work well together.
+
+        A neural ensemble is the activation of multiple "neurons" (services/IAs)
+        working in concert.  Here we identify pairs of assistant_kinds that,
+        when used on the same subject_key, produce consistently better
+        outcomes than either alone.
+        """
+        findings: list[SelfExaminationFinding] = []
+        if len(experiment_runs) < 6:
+            return findings
+        subject_kind_scores: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
+        for run in experiment_runs:
+            sk = str(run.subject_key or '').strip()
+            kind = str(run.assistant_kind or '').strip().lower()
+            if not sk or not kind:
+                continue
+            score = float(run.metrics.total_score or 0.0) if bool(run.success) else 0.0
+            subject_kind_scores[sk][kind].append(score)
+        ensembles: list[tuple[str, str, str, float]] = []
+        for sk, kinds_map in subject_kind_scores.items():
+            active_kinds = [k for k, scores in kinds_map.items() if len(scores) >= 2]
+            if len(active_kinds) < 2:
+                continue
+            for i, k1 in enumerate(active_kinds):
+                for k2 in active_kinds[i + 1:]:
+                    avg1 = sum(kinds_map[k1]) / max(len(kinds_map[k1]), 1)
+                    avg2 = sum(kinds_map[k2]) / max(len(kinds_map[k2]), 1)
+                    combined = (avg1 + avg2) / 2
+                    if combined > 0.4:
+                        ensembles.append((sk, k1, k2, round(combined, 4)))
+        if ensembles:
+            ensembles.sort(key=lambda t: t[3], reverse=True)
+            best = ensembles[0]
+            findings.append(SelfExaminationFinding(
+                title=f'Ensamble neuronal detectado: {best[1]} + {best[2]}',
+                description=(
+                    f'Para el problema {best[0]}, la combinación {best[1]} + {best[2]} '
+                    f'produce un score combinado de {best[3]:.2f}. Este ensamble debe '
+                    f'ser considerado para planes coordinados futuros en tareas similares.'
+                ),
+                severity=IssueSeverity.LOW,
+                category='neural_ensemble',
+                metadata={
+                    'subject_key': best[0],
+                    'ensemble_pair': [best[1], best[2]],
+                    'combined_score': best[3],
+                    'all_ensembles': [{'subject': e[0], 'pair': [e[1], e[2]], 'score': e[3]} for e in ensembles[:3]],
+                },
+            ))
+        return findings[:1]
+
+    # ------------------------------------------------------------------
+    # G2: Leer feedback de validación para filtrar propuestas ya intentadas
+    # ------------------------------------------------------------------
+
+    def _load_tried_proposal_keys(self) -> set[str]:
+        """G2: Load proposal keys that have already been validated.
+
+        Reads the JSONL file written by ``AutonomousValidationCycleService._persist_validation_feedback``
+        and returns a set of synthetic keys for proposals that were
+        ``discarded`` or ``unresolved`` — so ``_solution_proposals`` avoids
+        re-proposing the same strategy.  Proposals that were ``promoted``
+        are NOT filtered (they succeeded and may be proposed again for
+        different contexts).
+        """
+        tried: set[str] = set()
+        try:
+            feedback_path = Path(self.workspace_root) / 'data' / 'evolution' / 'validation_feedback' / 'history.jsonl'
+            if not feedback_path.is_file():
+                return tried
+            for line in feedback_path.read_text(encoding='utf-8').splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                except (json.JSONDecodeError, ValueError):
+                    continue
+                decision = str(entry.get('decision') or '')
+                if decision not in {'discarded', 'unresolved'}:
+                    continue
+                kind = str(entry.get('proposal_kind') or entry.get('proposal_key') or '').strip()
+                candidate = str(entry.get('candidate_assistant_kind') or '').strip().lower()
+                current = str(entry.get('current_assistant_kind') or '').strip().lower()
+                if kind and candidate and current:
+                    tried.add(f'route_substitution:{current}:{candidate}')
+                if kind and candidate and current:
+                    tried.add(f'collaborative_execution:{candidate}:{current}')
+                    tried.add(f'collaborative_execution:{current}:{candidate}')
+                    tried.add(f'validated_collaboration:{candidate}:{current}')
+                    tried.add(f'validated_collaboration:{current}:{candidate}')
+        except Exception:
+            pass
+        return tried
+
+    # ------------------------------------------------------------------
     # P3: Propuestas proactivas de solución
     # ------------------------------------------------------------------
 
@@ -1372,19 +1658,54 @@ class OperationalSelfExaminationService:
         specify which IAs should handle which aspects and with what
         estimated confidence.  Proposals are purely descriptive — the
         orchestrator or UI decides whether to act on them.
+
+        G2: reads validation feedback to filter out proposals already tried.
+        G3: uses ``AdaptiveWeightLayer.suggest()`` for weighted profiles
+        when available, instead of computing crude averages.
         """
         proposals: list[dict[str, Any]] = []
 
+        # G2: load validation feedback to skip already-tried proposals
+        tried_keys = self._load_tried_proposal_keys()
+
+        # G3: use AdaptiveWeightLayer for weighted profiles when available
         kind_success: dict[str, list[float]] = defaultdict(list)
         kind_failures: dict[str, int] = defaultdict(int)
-        for run in experiment_runs:
-            kind = str(run.assistant_kind or '').strip().lower()
-            if not kind:
-                continue
-            if bool(run.success):
-                kind_success[kind].append(float(run.metrics.total_score or 0.0))
-            else:
-                kind_failures[kind] += 1
+        kind_weighted_scores: dict[str, float] = {}
+
+        if self.adaptive_weight_layer is not None and experiment_runs:
+            grouped: dict[tuple[object, str, str], list[ExperimentRun]] = defaultdict(list)
+            for run in experiment_runs:
+                kind = str(run.assistant_kind or '').strip().lower()
+                if not kind:
+                    continue
+                key = (run.route, kind, str(run.config_signature or ''))
+                grouped[key].append(run)
+                if bool(run.success):
+                    kind_success[kind].append(float(run.metrics.total_score or 0.0))
+                else:
+                    kind_failures[kind] += 1
+            profiles = self.adaptive_weight_layer.suggest(grouped_runs=grouped)
+            for key, profile in profiles.items():
+                kind = str(key[1]).strip().lower()
+                if kind and kind not in kind_weighted_scores:
+                    kind_weighted_scores[kind] = float(profile.get('weighted_score') or 0.0)
+        else:
+            for run in experiment_runs:
+                kind = str(run.assistant_kind or '').strip().lower()
+                if not kind:
+                    continue
+                if bool(run.success):
+                    kind_success[kind].append(float(run.metrics.total_score or 0.0))
+                else:
+                    kind_failures[kind] += 1
+
+        def _kind_score(kind: str) -> float:
+            """G3: prefer weighted score from AdaptiveWeightLayer."""
+            if kind in kind_weighted_scores:
+                return kind_weighted_scores[kind]
+            scores = kind_success.get(kind, [])
+            return sum(scores) / max(len(scores), 1) if scores else 0.0
 
         recurring_failure_kinds: set[str] = set()
         for finding in findings:
@@ -1398,7 +1719,7 @@ class OperationalSelfExaminationService:
             fail_count = kind_failures.get(failing_kind, 0)
             alternatives = sorted(
                 (
-                    (k, sum(scores) / max(len(scores), 1), len(scores))
+                    (k, _kind_score(k), len(scores))
                     for k, scores in kind_success.items()
                     if k != failing_kind and len(scores) >= 2
                 ),
@@ -1408,12 +1729,16 @@ class OperationalSelfExaminationService:
             if not alternatives:
                 continue
             best_alt, best_score, best_count = alternatives[0]
+            proposal_key = f'route_substitution:{failing_kind}:{best_alt}'
+            # G2: skip proposals already tried and discarded
+            if proposal_key in tried_keys:
+                continue
             proposals.append({
                 'type': 'route_substitution',
                 'title': f'Sustituir {failing_kind} por {best_alt} en tareas con fallos recurrentes',
                 'description': (
                     f'{failing_kind} tiene {fail_count} fallos recientes. '
-                    f'{best_alt} tiene score promedio {best_score:.2f} con {best_count} éxitos.'
+                    f'{best_alt} tiene score {"ponderado" if best_alt in kind_weighted_scores else "promedio"} {best_score:.2f} con {best_count} éxitos.'
                 ),
                 'action_plan': [
                     {'step': 1, 'ia': best_alt, 'action': 'Asumir tareas que fallaban con ' + failing_kind},
@@ -1425,20 +1750,21 @@ class OperationalSelfExaminationService:
 
         if len(kind_success) >= 2:
             sorted_kinds = sorted(
-                ((k, sum(v) / max(len(v), 1), len(v)) for k, v in kind_success.items() if len(v) >= 2),
+                ((k, _kind_score(k), len(v)) for k, v in kind_success.items() if len(v) >= 2),
                 key=lambda t: (t[1], t[2]),
                 reverse=True,
             )
             if len(sorted_kinds) >= 2:
                 primary_kind, primary_score, primary_runs = sorted_kinds[0]
                 secondary_kind, secondary_score, secondary_runs = sorted_kinds[1]
-                if primary_score > 0.3 and secondary_score > 0.3:
+                collab_key = f'collaborative_execution:{primary_kind}:{secondary_kind}'
+                if primary_score > 0.3 and secondary_score > 0.3 and collab_key not in tried_keys:
                     proposals.append({
                         'type': 'collaborative_execution',
                         'title': f'Plan coordinado: {primary_kind} + {secondary_kind}',
                         'description': (
-                            f'{primary_kind} (score {primary_score:.2f}, {primary_runs} éxitos) '
-                            f'y {secondary_kind} (score {secondary_score:.2f}, {secondary_runs} éxitos) '
+                            f'{primary_kind} (score {"ponderado" if primary_kind in kind_weighted_scores else "promedio"} {primary_score:.2f}, {primary_runs} éxitos) '
+                            f'y {secondary_kind} (score {"ponderado" if secondary_kind in kind_weighted_scores else "promedio"} {secondary_score:.2f}, {secondary_runs} éxitos) '
                             f'pueden trabajar en conjunto: uno investiga, el otro implementa.'
                         ),
                         'action_plan': [
@@ -1459,23 +1785,25 @@ class OperationalSelfExaminationService:
             if rec_kind and rec_confidence >= 0.75:
                 complementary = [
                     k for k, scores in kind_success.items()
-                    if k != rec_kind and len(scores) >= 2 and (sum(scores) / len(scores)) > 0.4
+                    if k != rec_kind and len(scores) >= 2 and _kind_score(k) > 0.4
                 ]
                 if complementary:
-                    proposals.append({
-                        'type': 'validated_collaboration',
-                        'title': f'Extender éxito validado de {rec_kind} con {complementary[0]}',
-                        'description': (
-                            f'{rec_kind} fue validado con confianza {rec_confidence:.2f}. '
-                            f'Combinar con {complementary[0]} para cubrir aspectos complementarios.'
-                        ),
-                        'action_plan': [
-                            {'step': 1, 'ia': rec_kind, 'action': str(improvement.get('summary') or 'Aplicar mejora validada')},
-                            {'step': 2, 'ia': complementary[0], 'action': 'Complementar con fortalezas propias'},
-                        ],
-                        'estimated_confidence': round(min(1.0, rec_confidence * 0.8 + 0.15), 4),
-                        'evidence_refs': list(improvement.get('evidence_refs') or [])[:4],
-                    })
+                    vc_key = f'validated_collaboration:{rec_kind}:{complementary[0]}'
+                    if vc_key not in tried_keys:
+                        proposals.append({
+                            'type': 'validated_collaboration',
+                            'title': f'Extender éxito validado de {rec_kind} con {complementary[0]}',
+                            'description': (
+                                f'{rec_kind} fue validado con confianza {rec_confidence:.2f}. '
+                                f'Combinar con {complementary[0]} para cubrir aspectos complementarios.'
+                            ),
+                            'action_plan': [
+                                {'step': 1, 'ia': rec_kind, 'action': str(improvement.get('summary') or 'Aplicar mejora validada')},
+                                {'step': 2, 'ia': complementary[0], 'action': 'Complementar con fortalezas propias'},
+                            ],
+                            'estimated_confidence': round(min(1.0, rec_confidence * 0.8 + 0.15), 4),
+                            'evidence_refs': list(improvement.get('evidence_refs') or [])[:4],
+                        })
 
         return proposals[:4]
 

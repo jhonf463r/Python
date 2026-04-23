@@ -73,6 +73,7 @@ class AutonomousValidationCycleService:
         self._wake_event = threading.Event()
         self._thread: threading.Thread | None = None
         self._decision_log = self._load_decision_log() or ToolEvolutionDecisionLog()
+        self._auto_executed_keys: set[str] = set()
         self._current_snapshot = AutonomousValidationSnapshot(
             status='bootstrapping',
             summary='Ciclo de validacion autonoma iniciando; a la espera del primer tick.',
@@ -614,6 +615,12 @@ class AutonomousValidationCycleService:
             metadata['sync_pulse'] = sync_data
             self._current_snapshot = current_snapshot.model_copy(update={'metadata': metadata})
 
+        # G1: Auto-ejecución proactiva de propuestas — cuando el heartbeat
+        # detecta ``action_ready`` y hay propuestas con confianza >= 0.6,
+        # iniciar la ejecución coordinada sin esperar request del usuario.
+        # Esto cierra el loop: introspección → acción autónoma.
+        self._maybe_auto_execute_proposals(sync_data)
+
     def _maybe_git_auto_sync(self) -> dict[str, Any] | None:
         """Check for remote updates and auto-pull when safe.
 
@@ -688,6 +695,113 @@ class AutonomousValidationCycleService:
             result['block_reason'] = ' | '.join(sync_result.blocked_reasons)
 
         return result
+
+    # ------------------------------------------------------------------
+    # G1: Auto-ejecución proactiva de propuestas
+    # ------------------------------------------------------------------
+
+    _AUTO_EXEC_MIN_CONFIDENCE = 0.6
+
+    def _maybe_auto_execute_proposals(self, sync_data: dict[str, Any]) -> None:
+        """G1: Execute actionable proposals proactively from sync_pulse.
+
+        When ``coordination_status == 'action_ready'`` and at least one
+        proposal has ``estimated_confidence >= 0.6``, delegate execution
+        to the orchestrator without waiting for a user request.  Uses the
+        existing orchestrator as mediator — no new brain is created.
+
+        Results are deposited back into the snapshot metadata so the
+        portable context and UI can see what was auto-executed.
+        """
+        if str(sync_data.get('coordination_status') or '') != 'action_ready':
+            return
+        orchestrator = getattr(self, 'adaptive_task_orchestrator', None)
+        if orchestrator is None:
+            return
+        actionable = [
+            p for p in (sync_data.get('actionable_proposals') or [])
+            if isinstance(p, dict)
+            and float(p.get('estimated_confidence') or 0.0) >= self._AUTO_EXEC_MIN_CONFIDENCE
+            and str(p.get('title') or '') not in self._auto_executed_keys
+        ]
+        if not actionable:
+            return
+        auto_exec_method = getattr(orchestrator, 'auto_execute_from_sync_pulse', None)
+        if not callable(auto_exec_method):
+            return
+        try:
+            exec_result = auto_exec_method(actionable)
+        except Exception:
+            exec_result = None
+        for p in actionable:
+            title = str(p.get('title') or '')
+            if title:
+                self._auto_executed_keys.add(title)
+        if exec_result and self.storage is not None:
+            try:
+                self.storage.save_json('sync_pulse/last_auto_execution.json', {
+                    'timestamp_utc': datetime.now(timezone.utc).isoformat(),
+                    'proposals_executed': len(actionable),
+                    'result_status': str(exec_result.get('coordination_status') or 'unknown'),
+                    'proposal_titles': [str(p.get('title') or '') for p in actionable[:2]],
+                })
+            except Exception:
+                pass
+        with self._lock:
+            current_snapshot = self._current_snapshot
+            metadata = dict(current_snapshot.metadata or {})
+            pulse = dict(metadata.get('sync_pulse') or {})
+            pulse['auto_execution'] = {
+                'executed': bool(exec_result),
+                'proposals_count': len(actionable),
+                'status': str((exec_result or {}).get('coordination_status') or 'no_result'),
+            }
+            metadata['sync_pulse'] = pulse
+            self._current_snapshot = current_snapshot.model_copy(update={'metadata': metadata})
+
+    # ------------------------------------------------------------------
+    # G2: Persistir feedback de validación para SelfExamination
+    # ------------------------------------------------------------------
+
+    def _persist_validation_feedback(
+        self,
+        *,
+        proposal_key: str,
+        proposal_kind: str,
+        subject_key: str,
+        decision: str,
+        winner: str,
+        reason: str,
+        candidate_assistant_kind: str = '',
+        current_assistant_kind: str = '',
+    ) -> None:
+        """G2: Persist validation result so SelfExamination filters future proposals.
+
+        Writes each validation outcome to a JSONL file that
+        ``OperationalSelfExaminationService`` reads when generating
+        ``_solution_proposals()``.  This prevents re-proposing strategies
+        that have already been tried and failed or found unresolved.
+        """
+        if self.storage is None:
+            return
+        entry = {
+            'timestamp_utc': datetime.now(timezone.utc).isoformat(),
+            'proposal_key': proposal_key,
+            'proposal_kind': proposal_kind,
+            'subject_key': subject_key,
+            'decision': decision,
+            'winner': winner,
+            'reason': reason,
+            'candidate_assistant_kind': candidate_assistant_kind,
+            'current_assistant_kind': current_assistant_kind,
+        }
+        try:
+            feedback_path = Path(self.storage.root) / 'validation_feedback' / 'history.jsonl'
+            feedback_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(feedback_path, 'a', encoding='utf-8') as fh:
+                fh.write(json.dumps(entry, ensure_ascii=False) + '\n')
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # PR J: Auto-iniciar investigacion desde backlog
@@ -1215,7 +1329,7 @@ class AutonomousValidationCycleService:
             decision = 'discarded'
             winner = 'current_tool'
             reason = experiment.summary or 'La herramienta actual se mantiene porque la propuesta no supero la linea base.'
-        return self._record_proposal_validation_result(
+        result = self._record_proposal_validation_result(
             proposal=proposal,
             decision=decision,
             winner=winner,
@@ -1234,6 +1348,18 @@ class AutonomousValidationCycleService:
                 'validation_verdict': experiment.verdict.value,
             },
         )
+        # G2: persist feedback so SelfExamination can filter future proposals
+        self._persist_validation_feedback(
+            proposal_key=proposal.proposal_key,
+            proposal_kind=proposal.proposal_kind,
+            subject_key=proposal.subject_key,
+            decision=decision,
+            winner=winner,
+            reason=reason,
+            candidate_assistant_kind=str(proposal.candidate_assistant_kind or ''),
+            current_assistant_kind=str(proposal.current_assistant_kind or ''),
+        )
+        return result
 
     def _maybe_publish_promotion(
         self,
