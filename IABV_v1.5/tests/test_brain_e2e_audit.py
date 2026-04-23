@@ -13,7 +13,6 @@ G6: Validation learning summary propagates sync_pulse data
 """
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 from uuid import uuid4
 
