@@ -697,7 +697,25 @@ class AdaptiveTaskOrchestrator:
                 return payload
             # Limpiar estado para reintento
             previous_status = existing_status if existing_status in {'failed', 'blocked'} else 'session_expired'
-            payload = self._prepare_retry_for_expired_consultation(payload, existing, retry_count, previous_status)
+            payload = self._prepare_retry_for_expired_consultation(
+                payload, existing, retry_count, previous_status,
+                user_goal=user_goal, source=source,
+            )
+            metadata = dict(payload.get('metadata') or {})
+            # Si la pre-captura ya obtuvo la respuesta, usar el resultado
+            # que reingest_existing_session ya ingirio — NO re-ingerir.
+            if metadata.get('capture_completed_before_retry'):
+                ingested = dict(metadata.get('pre_capture_result') or {})
+                if ingested.get('pre_capture_ingested'):
+                    ingested['retry_count'] = retry_count + 1
+                    ingested['is_retry'] = True
+                    metadata['autonomous_evolution'] = dict(ingested)
+                    metadata['autonomous_evolution_response'] = dict(ingested)
+                    payload['metadata'] = metadata
+                    payload['assistant_guidance'] = self._guidance_for_external_response(ingested)
+                    if ingested.get('pending_issue_id'):
+                        payload['pending_issue_id'] = ingested['pending_issue_id']
+                    return payload
             decision_context = self._decision_context_from_payload(payload=payload, user_goal=user_goal)
         elif existing_status in {'prepared', 'reused'} or existing.get('retry_exhausted'):
             # Estados finales o agotados reintentos, no reintentar
@@ -729,16 +747,24 @@ class AdaptiveTaskOrchestrator:
         existing_consultation: dict[str, Any],
         retry_count: int,
         previous_status: str = 'session_expired',
+        *,
+        user_goal: str = '',
+        source: str = '',
     ) -> dict[str, Any]:
         """Limpia el estado de una consulta expirada o fallida para permitir reintento.
 
-        Cuando la consulta anterior quedo en `session_expired` (el usuario ya
+        Cuando la consulta anterior quedo en ``session_expired`` (el usuario ya
         interactuo con la sesion aislada del asistente y dejo una respuesta en
-        el hilo) el reintento no relanza la pagina ni re-pega el prompt: marca
-        `reingest_existing_response=True` para que el runner solo lea la
-        respuesta actual del DOM abierto. En cambio, cuando la consulta fallo o
-        fue bloqueada por una razon distinta, el reintento hace el flujo
-        completo (launch + paste + submit) como antes.
+        el hilo) se fuerza una re-ingesta inmediata del DOM/clipboard
+        **antes** de relanzar el pipeline completo.  Si la captura obtiene
+        texto util, se almacena el resultado ya ingerido en
+        ``metadata['pre_capture_result']`` y se marca
+        ``capture_completed_before_retry=True`` para que el llamador use
+        el resultado directamente sin re-ingerir ni pasar por
+        ``plan_or_execute``.
+
+        Cuando la consulta fallo o fue bloqueada por una razon distinta, el
+        reintento hace el flujo completo (launch + paste + submit) como antes.
         """
         new_payload = dict(payload)
         metadata = dict(new_payload.get('metadata') or {})
@@ -768,6 +794,23 @@ class AdaptiveTaskOrchestrator:
         # re-pegado del prompt y solo leer la respuesta ya visible.
         if is_session_expired:
             metadata['reingest_existing_response'] = True
+            # --- PR-B: forzar re-ingesta antes de relanzar ---
+            # Intentar captura inmediata del DOM/clipboard de la sesion
+            # abierta.  Si hay texto util, se ingiere aqui mismo y el
+            # llamador puede saltear plan_or_execute.
+            if self.autonomous_evolution_service is not None and user_goal:
+                try:
+                    pre_capture = self.autonomous_evolution_service.reingest_existing_session(
+                        existing_consultation=existing_consultation,
+                        adaptive_payload=new_payload,
+                        user_goal=user_goal,
+                        source=source or 'retry',
+                    )
+                    if pre_capture.get('pre_capture_ingested'):
+                        metadata['capture_completed_before_retry'] = True
+                        metadata['pre_capture_result'] = dict(pre_capture)
+                except Exception:
+                    pass
         else:
             metadata.pop('reingest_existing_response', None)
         new_payload['metadata'] = metadata
