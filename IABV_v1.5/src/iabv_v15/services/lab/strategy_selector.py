@@ -148,6 +148,11 @@ class StrategySelector:
         if best_profile.get('reasons'):
             rationale += f" Ajuste adaptativo: {'; '.join(str(item) for item in best_profile.get('reasons')[:2])}."
         confidence = min(1.0, 0.42 + sample_count * 0.1 + weighted_score * 0.22 + max(adaptive_weight, 0.0) * 0.3)
+        composite_recommendation = self._build_composite_recommendation(
+            ranked_configurations=ranked_configurations,
+            adaptive_profiles=adaptive_profiles,
+            grouped_runs=grouped_runs,
+        )
         return ExperimentRecommendation(
             domain=domain,
             subject_key=subject_key,
@@ -213,5 +218,111 @@ class StrategySelector:
                     'top_time_buckets': list(best_profile.get('top_time_buckets') or []),
                     'reasons': list(best_profile.get('reasons') or []),
                 },
+                'composite_recommendation': composite_recommendation,
             },
         )
+
+    # ------------------------------------------------------------------
+    # P5: Recomendaciones compuestas multi-IA
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _build_composite_recommendation(
+        *,
+        ranked_configurations: list[tuple[Any, ...]],
+        adaptive_profiles: dict[tuple[Any, str, str], dict[str, Any]],
+        grouped_runs: dict[tuple[Any, str, str], list[ExperimentRun]],
+    ) -> dict[str, Any] | None:
+        """Build a composite recommendation when 2+ IAs are complementary.
+
+        Detects when different ``assistant_kind`` values have successful runs
+        in overlapping ``subject_key`` domains, and emits a coordinated
+        recommendation showing the primary IA plus a secondary IA whose
+        strengths complement the primary.
+
+        Only emits when each IA has >= 3 successful runs to ensure evidence
+        quality.  Returns ``None`` when there is insufficient evidence or
+        only one viable IA.
+        """
+        if len(ranked_configurations) < 2:
+            return None
+
+        _MIN_RUNS_FOR_COMPOSITE = 3
+        kind_stats: dict[str, dict[str, Any]] = {}
+        for route, assistant_kind, config_sig, score, count, reuse, adaptive, weighted in ranked_configurations:
+            kind = str(assistant_kind or '').strip().lower()
+            if not kind:
+                continue
+            key = (route, assistant_kind, config_sig)
+            runs = grouped_runs.get(key, [])
+            successful = [r for r in runs if bool(r.success)]
+            profile = adaptive_profiles.get(key, {}) or {}
+            success_rate = float(profile.get('success_rate') or 0.0)
+            if kind not in kind_stats:
+                kind_stats[kind] = {
+                    'assistant_kind': kind,
+                    'best_score': round(weighted, 4),
+                    'total_runs': count,
+                    'successful_runs': len(successful),
+                    'success_rate': round(success_rate, 4),
+                    'best_route': route.value if hasattr(route, 'value') else str(route),
+                    'aspects': set(),
+                }
+            else:
+                existing = kind_stats[kind]
+                if weighted > existing['best_score']:
+                    existing['best_score'] = round(weighted, 4)
+                    existing['best_route'] = route.value if hasattr(route, 'value') else str(route)
+                existing['total_runs'] += count
+                existing['successful_runs'] += len(successful)
+                existing['success_rate'] = round(
+                    existing['successful_runs'] / max(existing['total_runs'], 1), 4,
+                )
+            route_val = route.value if hasattr(route, 'value') else str(route)
+            kind_stats[kind]['aspects'].add(route_val)
+
+        viable = {
+            k: v for k, v in kind_stats.items()
+            if v['successful_runs'] >= _MIN_RUNS_FOR_COMPOSITE
+        }
+        if len(viable) < 2:
+            return None
+
+        ranked_kinds = sorted(
+            viable.values(),
+            key=lambda v: (v['best_score'], v['successful_runs']),
+            reverse=True,
+        )
+        primary = ranked_kinds[0]
+        secondary = ranked_kinds[1]
+
+        primary_aspects = primary['aspects']
+        secondary_aspects = secondary['aspects']
+        complementary_aspects = secondary_aspects - primary_aspects
+        overlapping_aspects = primary_aspects & secondary_aspects
+
+        composite_confidence = round(
+            min(1.0, 0.5 + primary['success_rate'] * 0.25 + secondary['success_rate'] * 0.25),
+            4,
+        )
+
+        return {
+            'primary': {
+                'assistant_kind': primary['assistant_kind'],
+                'aspect': primary['best_route'],
+                'score': primary['best_score'],
+                'success_rate': primary['success_rate'],
+                'runs': primary['total_runs'],
+            },
+            'secondary': {
+                'assistant_kind': secondary['assistant_kind'],
+                'aspect': secondary['best_route'],
+                'score': secondary['best_score'],
+                'success_rate': secondary['success_rate'],
+                'runs': secondary['total_runs'],
+            },
+            'composite_confidence': composite_confidence,
+            'complementary_aspects': sorted(complementary_aspects),
+            'overlapping_aspects': sorted(overlapping_aspects),
+            'viable_ia_count': len(viable),
+        }

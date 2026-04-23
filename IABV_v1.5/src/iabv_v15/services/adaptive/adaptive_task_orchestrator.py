@@ -362,6 +362,91 @@ class AdaptiveTaskOrchestrator:
         candidate_score = float(result.get('candidate_score') or 0.0)
         return (completion_rank, has_response, confidence, candidate_score)
 
+    # ------------------------------------------------------------------
+    # P1: Síntesis de respuestas paralelas
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def _synthesize_parallel_results(cls, results: list[dict[str, Any]]) -> dict[str, Any]:
+        """Merge the strengths of multiple IA consultation results.
+
+        Instead of picking a single winner, build a ``consolidated_proposal``
+        that combines the best validation, adoption plan, and detail from
+        each result.  The ``primary`` is still the highest-ranked result
+        (by ``_rank_consultation_result``), but the consolidated dict
+        carries complementary insights from the secondary results so that
+        downstream consumers (guidance, portable context, UI) see the
+        full picture.
+
+        Returns a dict with ``primary``, ``secondary_contributions``, and
+        ``consolidated_proposal`` keys.
+        """
+        if not results:
+            return {}
+        ranked = sorted(results, key=cls._rank_consultation_result, reverse=True)
+        primary = ranked[0]
+        secondaries = ranked[1:]
+
+        consolidated_validation: dict[str, Any] = {k: (list(v) if isinstance(v, list) else v) for k, v in (primary.get('response_validation') or {}).items()}
+        consolidated_adoption: dict[str, Any] = {k: (list(v) if isinstance(v, list) else v) for k, v in (primary.get('adoption_plan') or {}).items()}
+        secondary_contributions: list[dict[str, Any]] = []
+
+        for sec in secondaries:
+            sec_kind = str(sec.get('assistant_kind') or '')
+            sec_confidence = cls._consultation_confidence(sec)
+            sec_validation = sec.get('response_validation')
+            sec_adoption = sec.get('adoption_plan')
+            contribution: dict[str, Any] = {
+                'assistant_kind': sec_kind,
+                'confidence': sec_confidence,
+                'status': str(sec.get('status') or ''),
+            }
+            if isinstance(sec_validation, dict) and sec_confidence > 0.0:
+                for key in ('key_findings', 'recommendations', 'risks', 'alternatives'):
+                    sec_items = sec_validation.get(key)
+                    if isinstance(sec_items, list) and sec_items:
+                        existing = consolidated_validation.get(key)
+                        if isinstance(existing, list):
+                            seen = {str(item) for item in existing}
+                            for item in sec_items[:3]:
+                                if str(item) not in seen:
+                                    existing.append(item)
+                                    seen.add(str(item))
+                        else:
+                            consolidated_validation[key] = list(sec_items[:3])
+                        contribution[key] = sec_items[:2]
+            if isinstance(sec_adoption, dict):
+                for key in ('steps', 'preconditions', 'rollback_plan'):
+                    sec_val = sec_adoption.get(key)
+                    if sec_val and not consolidated_adoption.get(key):
+                        consolidated_adoption[key] = sec_val
+                        contribution[f'adoption_{key}'] = True
+            if sec.get('detail') and not primary.get('detail'):
+                contribution['detail_contributed'] = True
+            secondary_contributions.append(contribution)
+
+        primary_confidence = cls._consultation_confidence(primary)
+        avg_confidence = (
+            (primary_confidence + sum(cls._consultation_confidence(s) for s in secondaries))
+            / len(results)
+        ) if results else 0.0
+
+        return {
+            'primary': {
+                'assistant_kind': str(primary.get('assistant_kind') or ''),
+                'confidence': primary_confidence,
+                'status': str(primary.get('status') or ''),
+            },
+            'secondary_contributions': secondary_contributions,
+            'consolidated_proposal': {
+                'response_validation': consolidated_validation if consolidated_validation else None,
+                'adoption_plan': consolidated_adoption if consolidated_adoption else None,
+                'detail': str(primary.get('detail') or primary.get('response_summary') or ''),
+                'composite_confidence': round(avg_confidence, 4),
+                'source_count': len(results),
+            },
+        }
+
     def _register_parallel_results(
         self,
         *,
@@ -504,11 +589,13 @@ class AdaptiveTaskOrchestrator:
             request=request, candidates=top_two, results=results
         )
         best = max(results, key=self._rank_consultation_result)
+        synthesis = self._synthesize_parallel_results(results) if len(results) >= 2 else {}
         return {
             'status': 'compared',
             'candidates': top_two,
             'results': results,
             'best': best,
+            'synthesis': synthesis,
             'timed_out': timed_out,
             'failed': failed,
         }
@@ -581,6 +668,10 @@ class AdaptiveTaskOrchestrator:
         capabilities = self.capability_service.evaluate(intent, context)
         context.capability_snapshot = capabilities
         perception.task_context.capability_snapshot = capabilities
+        if sub_intents:
+            ctx_meta = dict(context.metadata or {})
+            ctx_meta['sub_intents'] = sub_intents
+            context.metadata = ctx_meta
         pack = self.strategy_pack_registry.resolve_pack(intent, context)
         strategy_candidates = self.strategy_pack_registry.build_candidates(
             pack=pack,
@@ -1246,9 +1337,64 @@ class AdaptiveTaskOrchestrator:
             actions.append(self._guidance_action('open_evolution_center', 'Ver evolutivo', 'Revisar el progreso, los bloqueos y la evidencia antes de repetir la ruta.'))
         if bool(governance.get('research_needed')) and not any(item.get('action') == 'audit_autonomy' for item in actions):
             actions.append(self._guidance_action('audit_autonomy', 'Auditar autonomia', 'Comprobar si la investigacion externa sigue siendo la mejor via.'))
-        guidance['actions'] = actions[:4]
+        # P6: coordinated plan from composite recommendation or solution proposals
+        coordinated = self._maybe_coordinated_plan_action(session=session, governance=governance)
+        if coordinated is not None and not any(item.get('action') == 'execute_coordinated_plan' for item in actions):
+            actions.insert(0, coordinated)
+        guidance['actions'] = actions[:5]
         guidance['governance'] = dict(governance)
         return guidance
+
+    # ------------------------------------------------------------------
+    # P6: Guidance coordinado multi-IA
+    # ------------------------------------------------------------------
+
+    def _maybe_coordinated_plan_action(
+        self,
+        *,
+        session: AdaptiveSession,
+        governance: dict[str, Any],
+    ) -> dict[str, str] | None:
+        """Build a coordinated plan guidance action when evidence supports it.
+
+        Checks for ``composite_recommendation`` from StrategySelector (P5)
+        or ``solution_proposals`` from SelfExamination (P3).  If either
+        provides a multi-IA plan with sufficient confidence, emit a single
+        ``execute_coordinated_plan`` action with the steps.
+        """
+        composite = None
+        for insight in (session.context.experiment_insights or []):
+            comp = (insight.get('composite_recommendation') if isinstance(insight, dict) else None)
+            if isinstance(comp, dict) and comp.get('primary') and comp.get('secondary'):
+                composite = comp
+                break
+        if composite is None:
+            perception_meta = dict(session.metadata.get('perception_snapshot') or {})
+            self_exam_meta = dict(perception_meta.get('metadata') or session.context.metadata.get('self_examination') or {})
+            proposals = list(self_exam_meta.get('solution_proposals') or [])
+            for prop in proposals:
+                if isinstance(prop, dict) and prop.get('action_plan') and float(prop.get('estimated_confidence') or 0.0) >= 0.5:
+                    steps_str = ' → '.join(
+                        f"{step.get('ia', '?')}: {step.get('action', '?')}"
+                        for step in prop['action_plan'][:3]
+                        if isinstance(step, dict)
+                    )
+                    return self._guidance_action(
+                        'execute_coordinated_plan',
+                        str(prop.get('title') or 'Plan coordinado'),
+                        steps_str or str(prop.get('description') or ''),
+                    )
+            return None
+        primary = composite['primary']
+        secondary = composite['secondary']
+        label = f"Plan coordinado ({primary.get('assistant_kind', '?')} + {secondary.get('assistant_kind', '?')})"
+        detail = (
+            f"1) {primary.get('assistant_kind', '?')}: {primary.get('aspect', 'principal')} "
+            f"(score {float(primary.get('score') or 0.0):.2f}), "
+            f"2) {secondary.get('assistant_kind', '?')}: {secondary.get('aspect', 'complementario')} "
+            f"(score {float(secondary.get('score') or 0.0):.2f})"
+        )
+        return self._guidance_action('execute_coordinated_plan', label, detail)
 
     def _derive_session_status(self, *, intent, playbook, approvals: list[ApprovalCheckpoint]) -> AdaptiveSessionStatus:
         if intent.disposition.value == 'need_info':

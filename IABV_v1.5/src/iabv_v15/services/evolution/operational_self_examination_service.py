@@ -169,6 +169,12 @@ class OperationalSelfExaminationService:
             recurring_issues=recurring_issues,
             feedback_summary=feedback_summary,
         )
+        solution_proposals = self._solution_proposals(
+            findings=findings,
+            recommendations=recommendations,
+            experiment_runs=experiment_runs,
+            validated_improvements=validated_improvements,
+        )
         review = SelfExaminationSnapshot(
             created_at_utc=now,
             updated_at_utc=now,
@@ -182,6 +188,7 @@ class OperationalSelfExaminationService:
             metadata={
                 'recommendation_feedback': recommendation_feedback[:6],
                 'feedback_summary': feedback_summary,
+                'solution_proposals': solution_proposals[:4],
             },
         )
         return self._persist_review(review)
@@ -1345,6 +1352,132 @@ class OperationalSelfExaminationService:
                 }
             )
         return items[:4]
+
+    # ------------------------------------------------------------------
+    # P3: Propuestas proactivas de solución
+    # ------------------------------------------------------------------
+
+    def _solution_proposals(
+        self,
+        *,
+        findings: list[SelfExaminationFinding],
+        recommendations: list[ExperimentRecommendation],
+        experiment_runs: list[ExperimentRun],
+        validated_improvements: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Generate actionable solution proposals from findings and evidence.
+
+        When self-examination detects recurring patterns (failures, blocks,
+        inertia), this method converts them into concrete proposals that
+        specify which IAs should handle which aspects and with what
+        estimated confidence.  Proposals are purely descriptive — the
+        orchestrator or UI decides whether to act on them.
+        """
+        proposals: list[dict[str, Any]] = []
+
+        kind_success: dict[str, list[float]] = defaultdict(list)
+        kind_failures: dict[str, int] = defaultdict(int)
+        for run in experiment_runs:
+            kind = str(run.assistant_kind or '').strip().lower()
+            if not kind:
+                continue
+            if bool(run.success):
+                kind_success[kind].append(float(run.metrics.total_score or 0.0))
+            else:
+                kind_failures[kind] += 1
+
+        recurring_failure_kinds: set[str] = set()
+        for finding in findings:
+            if finding.severity in {IssueSeverity.HIGH, IssueSeverity.MEDIUM}:
+                metadata = dict(finding.metadata or {})
+                kind = str(metadata.get('assistant_kind') or '').strip().lower()
+                if kind and kind_failures.get(kind, 0) >= 2:
+                    recurring_failure_kinds.add(kind)
+
+        for failing_kind in recurring_failure_kinds:
+            fail_count = kind_failures.get(failing_kind, 0)
+            alternatives = sorted(
+                (
+                    (k, sum(scores) / max(len(scores), 1), len(scores))
+                    for k, scores in kind_success.items()
+                    if k != failing_kind and len(scores) >= 2
+                ),
+                key=lambda t: (t[1], t[2]),
+                reverse=True,
+            )
+            if not alternatives:
+                continue
+            best_alt, best_score, best_count = alternatives[0]
+            proposals.append({
+                'type': 'route_substitution',
+                'title': f'Sustituir {failing_kind} por {best_alt} en tareas con fallos recurrentes',
+                'description': (
+                    f'{failing_kind} tiene {fail_count} fallos recientes. '
+                    f'{best_alt} tiene score promedio {best_score:.2f} con {best_count} éxitos.'
+                ),
+                'action_plan': [
+                    {'step': 1, 'ia': best_alt, 'action': 'Asumir tareas que fallaban con ' + failing_kind},
+                    {'step': 2, 'ia': failing_kind, 'action': 'Reducir prioridad hasta evidencia de mejora'},
+                ],
+                'estimated_confidence': round(min(1.0, 0.5 + best_score * 0.3), 4),
+                'evidence_refs': [f'failures:{failing_kind}:{fail_count}', f'success:{best_alt}:{best_count}'],
+            })
+
+        if len(kind_success) >= 2:
+            sorted_kinds = sorted(
+                ((k, sum(v) / max(len(v), 1), len(v)) for k, v in kind_success.items() if len(v) >= 2),
+                key=lambda t: (t[1], t[2]),
+                reverse=True,
+            )
+            if len(sorted_kinds) >= 2:
+                primary_kind, primary_score, primary_runs = sorted_kinds[0]
+                secondary_kind, secondary_score, secondary_runs = sorted_kinds[1]
+                if primary_score > 0.3 and secondary_score > 0.3:
+                    proposals.append({
+                        'type': 'collaborative_execution',
+                        'title': f'Plan coordinado: {primary_kind} + {secondary_kind}',
+                        'description': (
+                            f'{primary_kind} (score {primary_score:.2f}, {primary_runs} éxitos) '
+                            f'y {secondary_kind} (score {secondary_score:.2f}, {secondary_runs} éxitos) '
+                            f'pueden trabajar en conjunto: uno investiga, el otro implementa.'
+                        ),
+                        'action_plan': [
+                            {'step': 1, 'ia': primary_kind, 'action': 'Investigar y proponer solución'},
+                            {'step': 2, 'ia': secondary_kind, 'action': 'Validar y complementar propuesta'},
+                            {'step': 3, 'ia': 'orchestrator', 'action': 'Consolidar y ejecutar plan final'},
+                        ],
+                        'estimated_confidence': round(
+                            min(1.0, 0.4 + primary_score * 0.2 + secondary_score * 0.2 + min(primary_runs, secondary_runs) * 0.02),
+                            4,
+                        ),
+                        'evidence_refs': [f'success:{primary_kind}:{primary_runs}', f'success:{secondary_kind}:{secondary_runs}'],
+                    })
+
+        for improvement in validated_improvements[:2]:
+            rec_kind = str(improvement.get('recommended_assistant_kind') or '').strip().lower()
+            rec_confidence = float(improvement.get('confidence') or 0.0)
+            if rec_kind and rec_confidence >= 0.75:
+                complementary = [
+                    k for k, scores in kind_success.items()
+                    if k != rec_kind and len(scores) >= 2 and (sum(scores) / len(scores)) > 0.4
+                ]
+                if complementary:
+                    proposals.append({
+                        'type': 'validated_collaboration',
+                        'title': f'Extender éxito validado de {rec_kind} con {complementary[0]}',
+                        'description': (
+                            f'{rec_kind} fue validado con confianza {rec_confidence:.2f}. '
+                            f'Combinar con {complementary[0]} para cubrir aspectos complementarios.'
+                        ),
+                        'action_plan': [
+                            {'step': 1, 'ia': rec_kind, 'action': str(improvement.get('summary') or 'Aplicar mejora validada')},
+                            {'step': 2, 'ia': complementary[0], 'action': 'Complementar con fortalezas propias'},
+                        ],
+                        'estimated_confidence': round(min(1.0, rec_confidence * 0.8 + 0.15), 4),
+                        'evidence_refs': list(improvement.get('evidence_refs') or [])[:4],
+                    })
+
+        return proposals[:4]
 
     def _unresolved_risks(
         self,

@@ -458,8 +458,12 @@ class AutonomousValidationCycleService:
 
     def _monitor_loop(self) -> None:
         self._safe_tick(reason='bootstrap_validation')
+        tick_count = 0
         while not self._stop_event.wait(self.interval_seconds):
             self._safe_tick(reason='scheduled_validation')
+            tick_count += 1
+            if tick_count % self._SYNC_PULSE_EVERY_N_TICKS == 0:
+                self._safe_sync_pulse()
             self._wake_event.wait(timeout=0.05)
             self._wake_event.clear()
 
@@ -475,6 +479,93 @@ class AutonomousValidationCycleService:
             self._auto_research_pass(reason=reason)
         except Exception:
             pass
+
+    # ------------------------------------------------------------------
+    # P4: Heartbeat de sincronización
+    # ------------------------------------------------------------------
+
+    _SYNC_PULSE_EVERY_N_TICKS = 3
+
+    def _safe_sync_pulse(self) -> None:
+        try:
+            self._sync_pulse()
+        except Exception:
+            pass
+
+    def _sync_pulse(self) -> None:
+        """Periodic synchronization pulse across services.
+
+        Every ``_SYNC_PULSE_EVERY_N_TICKS`` ticks, read the latest state
+        from self-examination, strategy recommendations, and world model
+        availability.  Consolidate into a ``sync_snapshot`` deposited in
+        the decision log so downstream consumers (orchestrator, portable
+        context, UI) see a coordinated view of all services.
+
+        This is purely descriptive — no routes are decided here.  The
+        pulse enables the "living organism" effect where all services
+        synchronize their knowledge periodically.
+        """
+        sync_data: dict[str, Any] = {
+            'timestamp_utc': datetime.now(timezone.utc).isoformat(),
+            'ia_availability': {},
+            'top_recommendations': [],
+            'active_proposals': [],
+            'coordination_status': 'synced',
+        }
+
+        if self.world_model_service is not None:
+            try:
+                wm = self.world_model_service.current_model()
+                if wm is not None:
+                    ia_status: dict[str, str] = {}
+                    for tool_status in (wm.tool_live_status or []):
+                        kind = str(tool_status.assistant_kind or '').strip().lower()
+                        if kind:
+                            ia_status[kind] = 'available' if tool_status.available else 'unavailable'
+                    sync_data['ia_availability'] = ia_status
+            except Exception:
+                sync_data['ia_availability'] = {'status': 'UNRESOLVED:world_model_read_failed'}
+
+        try:
+            recent_runs = list(self.experiment_lab_repository.list_runs(limit=20))
+            if recent_runs:
+                kind_scores: dict[str, list[float]] = {}
+                for run in recent_runs:
+                    kind = str(run.assistant_kind or '').strip().lower()
+                    if kind and bool(run.success):
+                        kind_scores.setdefault(kind, []).append(float(run.metrics.total_score or 0.0))
+                top_recs = sorted(
+                    (
+                        {'assistant_kind': k, 'avg_score': round(sum(v) / max(len(v), 1), 4), 'runs': len(v)}
+                        for k, v in kind_scores.items()
+                        if len(v) >= 2
+                    ),
+                    key=lambda x: (x['avg_score'], x['runs']),
+                    reverse=True,
+                )[:3]
+                sync_data['top_recommendations'] = top_recs
+        except Exception:
+            pass
+
+        if self.storage is not None:
+            try:
+                if self.storage.exists('self_examination/latest.json'):
+                    se_payload = self.storage.load_json('self_examination/latest.json')
+                    se_meta = dict((se_payload or {}).get('metadata') or {})
+                    proposals = list(se_meta.get('solution_proposals') or [])
+                    sync_data['active_proposals'] = [
+                        {'type': p.get('type', ''), 'title': p.get('title', '')}
+                        for p in proposals[:4]
+                        if isinstance(p, dict)
+                    ]
+            except Exception:
+                pass
+
+        with self._lock:
+            current_snapshot = self._current_snapshot
+            metadata = dict(current_snapshot.metadata or {})
+            metadata['sync_pulse'] = sync_data
+            self._current_snapshot = current_snapshot.model_copy(update={'metadata': metadata})
 
     # ------------------------------------------------------------------
     # PR J: Auto-iniciar investigacion desde backlog
