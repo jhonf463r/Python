@@ -504,7 +504,10 @@ class TaskOutcomeRecorder:
                 site_hint=session.intent.site_hint or session.context.site_id,
                 goal_parameters=dict(session.metadata.get('goal_parameters') or {}),
                 conversation_context=list(session.metadata.get('conversation_context') or []),
-                metadata={'intent_correction_recheck': True},
+                metadata={
+                    'intent_correction_recheck': True,
+                    'conversation_history': list(session.metadata.get('conversation_history') or []),
+                },
             )
             new_intent, _ = service.classify(recheck_request)
         except Exception:

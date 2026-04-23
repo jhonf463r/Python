@@ -529,18 +529,31 @@ class AutonomousValidationCycleService:
         try:
             recent_runs = list(self.experiment_lab_repository.list_runs(limit=20))
             if recent_runs:
-                kind_scores: dict[str, list[float]] = {}
+                kind_success_scores: dict[str, list[float]] = {}
+                kind_total_counts: dict[str, int] = {}
                 for run in recent_runs:
                     kind = str(run.assistant_kind or '').strip().lower()
-                    if kind and bool(run.success):
-                        kind_scores.setdefault(kind, []).append(float(run.metrics.total_score or 0.0))
+                    if not kind:
+                        continue
+                    kind_total_counts[kind] = kind_total_counts.get(kind, 0) + 1
+                    if bool(run.success):
+                        kind_success_scores.setdefault(kind, []).append(float(run.metrics.total_score or 0.0))
                 top_recs = sorted(
                     (
-                        {'assistant_kind': k, 'avg_score': round(sum(v) / max(len(v), 1), 4), 'runs': len(v)}
-                        for k, v in kind_scores.items()
+                        {
+                            'assistant_kind': k,
+                            'avg_score': round(sum(v) / max(len(v), 1), 4),
+                            'runs': len(v),
+                            'total_runs': kind_total_counts.get(k, len(v)),
+                            'success_rate': round(len(v) / max(kind_total_counts.get(k, 1), 1), 4),
+                        }
+                        for k, v in kind_success_scores.items()
                         if len(v) >= 2
                     ),
-                    key=lambda x: (x['avg_score'], x['runs']),
+                    key=lambda x: (
+                        x['avg_score'] * x['success_rate'],
+                        x['runs'],
+                    ),
                     reverse=True,
                 )[:3]
                 sync_data['top_recommendations'] = top_recs

@@ -286,6 +286,9 @@ class AdaptiveTaskOrchestrator:
             'goal_parameters': dict(request.goal_parameters or {}),
             'assistant_kind': str(candidate.get('assistant_kind') or ''),
             'parallel_ia_comparison': True,
+            'site_hint': request.site_hint or '',
+            'task_role': request.task_role.value if request.task_role is not None else '',
+            'conversation_history': list(request.metadata.get('conversation_history') or []),
         }
         if synaptic_decision is not None:
             try:
@@ -294,6 +297,7 @@ class AdaptiveTaskOrchestrator:
                 pass
         return {
             'user_goal': request.user_goal,
+            'site_hint': request.site_hint or '',
             'metadata': payload_metadata,
         }
 
@@ -1279,6 +1283,7 @@ class AdaptiveTaskOrchestrator:
 
     def _request_from_session(self, session: AdaptiveSession) -> InferenceRequest:
         goal_parameters = {**dict(session.metadata.get('goal_parameters') or {}), **self._goal_parameters(session.context.goal_context)}
+        conversation_history = list(session.metadata.get('conversation_history') or [])
         return InferenceRequest(
             user_goal=session.user_goal,
             prompt=session.user_goal,
@@ -1292,6 +1297,7 @@ class AdaptiveTaskOrchestrator:
             metadata={
                 'decision_source': 'adaptive_session_refresh',
                 'session_id': session.session_id,
+                'conversation_history': conversation_history,
             },
         )
 
