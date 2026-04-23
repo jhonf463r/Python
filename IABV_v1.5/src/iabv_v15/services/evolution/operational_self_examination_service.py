@@ -143,6 +143,11 @@ class OperationalSelfExaminationService:
         findings.extend(self._cognitive_incubation_findings(experiment_runs=experiment_runs))
         findings.extend(self._neural_attractor_findings(experiment_runs=experiment_runs))
         findings.extend(self._neural_ensemble_findings(experiment_runs=experiment_runs))
+        # Loop-closure introspection: the system checks its own mechanisms
+        findings.extend(self._loop_closure_findings(
+            findings_so_far=findings,
+            experiment_runs=experiment_runs,
+        ))
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -1594,6 +1599,129 @@ class OperationalSelfExaminationService:
                 },
             ))
         return findings[:1]
+
+    # ------------------------------------------------------------------
+    # Loop-closure introspection: the system audits its own mechanisms
+    # ------------------------------------------------------------------
+
+    def _loop_closure_findings(
+        self,
+        *,
+        findings_so_far: list[SelfExaminationFinding],
+        experiment_runs: list[ExperimentRun],
+    ) -> list[SelfExaminationFinding]:
+        """Introspect whether G1, G2, G3 and cognitive mechanisms are active.
+
+        This is the system's self-awareness of its own architecture: it
+        checks that the introspective loop is actually closed by verifying
+        each mechanism is wired and producing output.  If a gap is detected,
+        a finding with severity HIGH is emitted so the user (or the system
+        itself) can act.
+        """
+        results: list[SelfExaminationFinding] = []
+        checks: list[dict[str, Any]] = []
+
+        # --- G1: auto-execution wire ---
+        validation_cycle = self.autonomous_validation_cycle
+        g1_wired = False
+        g1_has_executed = False
+        if validation_cycle is not None:
+            orchestrator = getattr(validation_cycle, 'adaptive_task_orchestrator', None)
+            g1_wired = orchestrator is not None
+            executed_keys = getattr(validation_cycle, '_auto_executed_keys', None)
+            if isinstance(executed_keys, set):
+                g1_has_executed = len(executed_keys) > 0
+        checks.append({
+            'mechanism': 'G1_auto_execution',
+            'wired': g1_wired,
+            'active': g1_has_executed,
+            'detail': 'orchestrator wired' if g1_wired else 'orchestrator NOT connected to validation_cycle',
+        })
+
+        # --- G2: validation feedback persistence ---
+        feedback_path = Path(self.workspace_root) / 'data' / 'evolution' / 'validation_feedback' / 'history.jsonl'
+        g2_file_exists = feedback_path.is_file()
+        g2_entry_count = 0
+        if g2_file_exists:
+            try:
+                g2_entry_count = sum(1 for line in feedback_path.read_text(encoding='utf-8').splitlines() if line.strip())
+            except Exception:
+                pass
+        checks.append({
+            'mechanism': 'G2_feedback_persistence',
+            'wired': True,
+            'active': g2_file_exists and g2_entry_count > 0,
+            'detail': f'{g2_entry_count} entries' if g2_file_exists else 'history.jsonl not yet created (fires after first validation)',
+        })
+
+        # --- G3: AdaptiveWeightLayer connected ---
+        g3_wired = self.adaptive_weight_layer is not None
+        g3_has_suggest = g3_wired and callable(getattr(self.adaptive_weight_layer, 'suggest', None))
+        checks.append({
+            'mechanism': 'G3_weight_layer',
+            'wired': g3_wired,
+            'active': g3_has_suggest,
+            'detail': 'suggest() available' if g3_has_suggest else ('layer connected but no suggest()' if g3_wired else 'AdaptiveWeightLayer NOT connected'),
+        })
+
+        # --- Cognitive mechanisms: check if findings were generated ---
+        cognitive_categories = {'cognitive_fixation', 'cognitive_incubation', 'neural_attractor', 'neural_ensemble'}
+        found_categories = {f.category for f in findings_so_far if f.category in cognitive_categories}
+        checks.append({
+            'mechanism': 'cognitive_findings',
+            'wired': True,
+            'active': len(found_categories) > 0,
+            'detail': f'active categories: {sorted(found_categories)}' if found_categories else f'none active (need >= 5 experiment runs, have {len(experiment_runs)})',
+        })
+
+        # --- Summary ---
+        wired_count = sum(1 for c in checks if c['wired'])
+        active_count = sum(1 for c in checks if c['active'])
+        total = len(checks)
+        all_wired = wired_count == total
+        all_active = active_count == total
+
+        if all_wired and all_active:
+            results.append(SelfExaminationFinding(
+                title='Loop introspectivo cerrado: todos los mecanismos activos',
+                description=(
+                    f'G1 (auto-ejecución), G2 (feedback persistence), G3 (weight layer) y '
+                    f'mecanismos cognitivos están wired y produciendo output. '
+                    f'El sistema se auto-observa y actúa sin intervención manual.'
+                ),
+                severity=IssueSeverity.LOW,
+                category='loop_closure',
+                metadata={
+                    'checks': checks,
+                    'wired': wired_count,
+                    'active': active_count,
+                    'total': total,
+                    'closed': True,
+                },
+            ))
+        else:
+            gaps = [c for c in checks if not c['wired'] or not c['active']]
+            gap_names = [c['mechanism'] for c in gaps]
+            results.append(SelfExaminationFinding(
+                title=f'Loop introspectivo abierto: {len(gaps)} mecanismo(s) inactivo(s)',
+                description=(
+                    f'Mecanismos con gaps: {", ".join(gap_names)}. '
+                    f'{wired_count}/{total} wired, {active_count}/{total} activos. '
+                    + '; '.join(f"{c['mechanism']}: {c['detail']}" for c in gaps)
+                ),
+                severity=IssueSeverity.HIGH if not all_wired else IssueSeverity.MEDIUM,
+                category='loop_closure',
+                metadata={
+                    'checks': checks,
+                    'wired': wired_count,
+                    'active': active_count,
+                    'total': total,
+                    'closed': False,
+                    'gap_mechanisms': gap_names,
+                },
+            ))
+
+        return results[:1]
 
     # ------------------------------------------------------------------
     # G2: Leer feedback de validación para filtrar propuestas ya intentadas
