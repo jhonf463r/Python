@@ -682,6 +682,10 @@ class AutonomousValidationCycleService:
         elif sync_result.pull_error:
             result['state'] = 'pull_failed'
             result['error'] = sync_result.pull_error
+        elif sync_result.blocked_reasons:
+            result['state'] = 'blocked'
+            result['can_sync'] = False
+            result['block_reason'] = ' | '.join(sync_result.blocked_reasons)
 
         return result
 
