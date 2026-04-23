@@ -341,10 +341,14 @@ class AccountLedgerService:
                     acct.messages_used = 0
                     acct.status = 'active'
                 if acct.account_id == current_active_id:
-                    # Marcar la actual como agotada
-                    acct.status = 'exhausted'
-                    self._update_account_unlocked(data, acct)
-                    continue
+                    if acct.is_exhausted:
+                        acct.status = 'exhausted'
+                        self._update_account_unlocked(data, acct)
+                        continue
+                    else:
+                        # La cuenta actual sigue viable
+                        self._save_unlocked(data)
+                        return acct
                 if not acct.is_exhausted:
                     candidates.append(acct)
 
@@ -502,8 +506,9 @@ class AccountLedgerService:
             hours_left = float('inf')
             exhaustion_at = None
 
+        rotation_threshold = max(5, int(acct.messages_limit * 0.15))
         should_rotate_soon = (
-            remaining <= 5
+            remaining <= rotation_threshold
             or (hours_left < 2.0 and remaining < 20)
         )
 

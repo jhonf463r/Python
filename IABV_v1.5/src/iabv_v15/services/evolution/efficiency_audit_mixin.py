@@ -338,10 +338,8 @@ def heuristic_perturbation_findings(
     """
     findings: list[SelfExaminationFinding] = []
 
-    if not adaptive_weight_layer:
-        return findings
-
     # Analizar runs recientes para detectar convergencia
+    # (AWL es opcional — la deteccion de dominancia funciona sin el)
     by_ia: dict[str, list[Any]] = defaultdict(list)
     for run in experiment_runs:
         ia = _get_ia_name(run)

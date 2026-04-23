@@ -260,6 +260,8 @@ from iabv_v15.services.evolution.self_audit_service import SelfAuditService
 from iabv_v15.services.evolution.token_rotation_ledger import TokenRotationLedger
 from iabv_v15.services.evolution.account_ledger_service import AccountLedgerService
 from iabv_v15.services.evolution.system_backlog_service import SystemBacklogService
+from iabv_v15.services.evolution.account_ledger_service import AccountLedgerService
+from iabv_v15.services.evolution.system_backlog_service import SystemBacklogService
 from iabv_v15.services.evolution.session_start_briefing_service import (
     SessionStartBriefingService,
 )
@@ -640,6 +642,7 @@ class AppBootstrap:
         )
         self.autonomous_validation_cycle.tool_evolution_monitor = self.tool_evolution_monitor
         self.autonomous_validation_cycle.system_backlog_service = self.system_backlog_service
+        self.autonomous_validation_cycle.system_backlog_service = self.system_backlog_service
         self.incident_packet_service = IncidentPacketService(
             dossier_repository=self.execution_dossier_repository,
             hidden_incident_repository=self.hidden_incident_repository,
@@ -790,6 +793,8 @@ class AppBootstrap:
             portable_context_service=self.portable_context_service,
             workspace_root=self.config.workspace_root,
             token_rotation_ledger=self.token_rotation_ledger,
+            account_ledger_service=self.account_ledger_service,
+            system_backlog_service=self.system_backlog_service,
         )
         # Frente 3.2 — CapabilityAuditHarness: registra runners para las 5
         # capacidades iniciales usando piezas que ya existen en el bootstrap.

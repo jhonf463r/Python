@@ -27,6 +27,13 @@ from iabv_v15.services.evolution.efficiency_audit_mixin import (
     external_tool_misdiagnosis_findings,
     heuristic_perturbation_findings,
 )
+from iabv_v15.services.evolution.efficiency_audit_mixin import (
+    tool_efficiency_findings,
+    needs_custom_model_findings,
+    account_exhaustion_findings,
+    external_tool_misdiagnosis_findings,
+    heuristic_perturbation_findings,
+)
 
 
 class OperationalSelfExaminationService:
@@ -63,6 +70,8 @@ class OperationalSelfExaminationService:
         # permite cerrar el loop "detectar el patron de expiracion antes
         # de que el user lo note" sin inventar observacion nueva.
         self.token_rotation_ledger: Any | None = token_rotation_ledger
+        self.account_ledger_service: Any | None = account_ledger_service
+        self.system_backlog_service: Any | None = system_backlog_service
         self.account_ledger_service: Any | None = account_ledger_service
         self.system_backlog_service: Any | None = system_backlog_service
         # PCS v1 — hook opcional. Si un provider con ``snapshot()`` está

@@ -43,6 +43,7 @@ from dataclasses import asdict, is_dataclass
 from typing import Any, Callable, TypeVar
 
 from iabv_v15.infra.mcp import audit_tools, audit_tools_observation
+from iabv_v15.infra.mcp import self_update_tools
 
 logger = logging.getLogger(__name__)
 
@@ -1499,6 +1500,10 @@ class IABVMCPServer:
                         "puede haber degradado."
                     ),
                 }
+
+# Auto-update tools registration
+self_update_tools.register(mcp, container)
+
             snapshot = service.run(reason=reason)
             return _to_jsonable(snapshot) or {}
 
