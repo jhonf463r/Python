@@ -5119,8 +5119,6 @@ class ControlCenterViewModel(QObject):
             lines.append(f"(+{len(notices) - 5} mas en backlog)")
         return '\n'.join(lines)
 
-    @Slot(str)
-
     # ── Frente 4: Chat avanzado — métodos ──────────────────────────
     @Slot(str, str, int, str)
     def attachFile(self, name: str, path: str, size: int, file_type: str) -> None:
