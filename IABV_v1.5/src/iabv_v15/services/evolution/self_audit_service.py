@@ -331,6 +331,24 @@ class SelfAuditService:
             'affected_files': ['tool_adapters.py'],
         },
         {
+            'id': 'GPU_MODEL_BENCHMARK_RTX4050',
+            'category': 'hardware',
+            'severity': 'info',
+            'title': 'GPU Benchmark: RTX 4050 Laptop (6GB VRAM)',
+            'description': (
+                'Benchmark 2026-04-23 en RTX 4050 Laptop (6GB VRAM, driver 576.02): '
+                'gemma3:4b = 57.4 tok/s (MEJOR, 4.35GB VRAM, cabe completo en GPU), '
+                'qwen2.5-coder:7b = 37.4 tok/s (bueno para codigo, cabe en GPU), '
+                'qwen3:8b = ~25 tok/s (parcialmente CPU, 5.23GB), '
+                'gpt-oss:20b = 15.6 tok/s (mayormente CPU, 13.8GB NO cabe). '
+                'Embeddings (embeddinggemma, qwen3-embedding:0.6b) corren en CPU. '
+                'Config optima: OLLAMA_FLASH_ATTENTION=1, OLLAMA_NUM_PARALLEL=1, '
+                'OLLAMA_MAX_LOADED_MODELS=2, OLLAMA_GPU_OVERHEAD=256.'
+            ),
+            'first_seen': '2026-04-23',
+            'affected_files': ['infra/config.py', 'scripts/start_iabv.ps1'],
+        },
+        {
             'id': 'THREADPOOL_UI_BLOCK',
             'category': 'python',
             'severity': 'error',

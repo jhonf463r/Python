@@ -240,5 +240,16 @@ Write-Info "Libera puerto :$McpPort (kill MCP zombi) ..."
 Stop-McpZombies -Port $McpPort
 
 Write-Info ""
-Write-Info "Arrancando MCP + Cloudflare tunnel via $bridge ..."
+Write-Info "# Ollama GPU optimization (RTX 4050 Laptop, 6GB VRAM)
+# FLASH_ATTENTION: acelera inferencia en GPUs Ampere+
+# NUM_PARALLEL: 1 = no duplicar modelo en VRAM
+# MAX_LOADED_MODELS: max 2 modelos en GPU simultaneamente
+# GPU_OVERHEAD: reducir VRAM reservada para overhead
+if (-not $env:OLLAMA_FLASH_ATTENTION) { $env:OLLAMA_FLASH_ATTENTION = "1" }
+if (-not $env:OLLAMA_NUM_PARALLEL) { $env:OLLAMA_NUM_PARALLEL = "1" }
+if (-not $env:OLLAMA_MAX_LOADED_MODELS) { $env:OLLAMA_MAX_LOADED_MODELS = "2" }
+if (-not $env:OLLAMA_GPU_OVERHEAD) { $env:OLLAMA_GPU_OVERHEAD = "256" }
+Write-Host "[gpu] Ollama optimizado: FLASH_ATTENTION=$($env:OLLAMA_FLASH_ATTENTION), NUM_PARALLEL=$($env:OLLAMA_NUM_PARALLEL), MAX_LOADED=$($env:OLLAMA_MAX_LOADED_MODELS), GPU_OVERHEAD=$($env:OLLAMA_GPU_OVERHEAD)"
+
+Arrancando MCP + Cloudflare tunnel via $bridge ..."
 & powershell -ExecutionPolicy Bypass -File $bridge

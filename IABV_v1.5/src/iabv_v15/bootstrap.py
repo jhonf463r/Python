@@ -260,8 +260,6 @@ from iabv_v15.services.evolution.self_audit_service import SelfAuditService
 from iabv_v15.services.evolution.token_rotation_ledger import TokenRotationLedger
 from iabv_v15.services.evolution.account_ledger_service import AccountLedgerService
 from iabv_v15.services.evolution.system_backlog_service import SystemBacklogService
-from iabv_v15.services.evolution.account_ledger_service import AccountLedgerService
-from iabv_v15.services.evolution.system_backlog_service import SystemBacklogService
 from iabv_v15.services.evolution.session_start_briefing_service import (
     SessionStartBriefingService,
 )
@@ -405,6 +403,7 @@ class AppBootstrap:
         self.provider_configs = [
             ProviderConfig(name='Ollama', kind=ProviderKind.LOCAL, base_url=self.config.ollama_base_url, model=self.config.ollama_model),
             ProviderConfig(name='Ollama Vision', kind=ProviderKind.LOCAL, base_url=self.config.ollama_base_url, model=self.config.ollama_visual_model),
+            ProviderConfig(name='Ollama Code', kind=ProviderKind.LOCAL, base_url=self.config.ollama_base_url, model=os.getenv('IABV_OLLAMA_CODE_MODEL', 'qwen2.5-coder:7b')),
             ProviderConfig(name='LM Studio', kind=ProviderKind.LOCAL, base_url=self.config.lm_studio_base_url, model=self.config.lm_studio_model, optional=True),
         ]
 
@@ -642,7 +641,6 @@ class AppBootstrap:
         )
         self.autonomous_validation_cycle.tool_evolution_monitor = self.tool_evolution_monitor
         self.autonomous_validation_cycle.system_backlog_service = self.system_backlog_service
-        self.autonomous_validation_cycle.system_backlog_service = self.system_backlog_service
         self.incident_packet_service = IncidentPacketService(
             dossier_repository=self.execution_dossier_repository,
             hidden_incident_repository=self.hidden_incident_repository,
@@ -793,8 +791,6 @@ class AppBootstrap:
             portable_context_service=self.portable_context_service,
             workspace_root=self.config.workspace_root,
             token_rotation_ledger=self.token_rotation_ledger,
-            account_ledger_service=self.account_ledger_service,
-            system_backlog_service=self.system_backlog_service,
         )
         # Frente 3.2 — CapabilityAuditHarness: registra runners para las 5
         # capacidades iniciales usando piezas que ya existen en el bootstrap.
