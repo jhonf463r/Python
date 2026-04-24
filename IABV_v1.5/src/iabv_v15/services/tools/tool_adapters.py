@@ -143,6 +143,11 @@ class ToolAdapter:
                 positives,
                 negatives,
             )
+            card.detection_evidence = {
+                'positives': positives,
+                'negatives': negatives,
+                'resolution': 'optimistic_positive',
+            }
         return bool(positives)
 
     def _detect_running_process(self, card: ToolCard) -> bool:
