@@ -309,6 +309,7 @@ class ControlCenterViewModel(QObject):
         self._chat_messages.append(msg)
         self._chat_messages = self._chat_messages[-30:]
         self._refresh_contextual_suggestions()
+        self._validate_ui_reflects_reality()
 
     def _count_payloads(self) -> int:
         payload_dir = Path(self.config.payloads_dir)
@@ -4141,14 +4142,16 @@ class ControlCenterViewModel(QObject):
         if role == 'auto':
             self._auto_route_enabled = True
             self._busy_label = 'Modo automatico restaurado. La consola detectara intencion, pack y aprobaciones.'
-            self._refresh_development_packet()
+            import threading as _th
+            _th.Thread(target=self._refresh_development_packet, daemon=True).start()
             self.dataChanged.emit()
             return
         if role in valid_roles:
             self._selected_role = role
             self._auto_route_enabled = False
             self._busy_label = f'Rol forzado a {self._selected_role_title()}.'
-            self._refresh_development_packet()
+            import threading as _th
+            _th.Thread(target=self._refresh_development_packet, daemon=True).start()
             self.dataChanged.emit()
 
     @Slot()
@@ -5249,6 +5252,71 @@ class ControlCenterViewModel(QObject):
         except Exception:
             pass
 
+
+    # ── Auto-validación de interfaz ──────────────────────────
+    def _validate_ui_reflects_reality(self) -> dict[str, Any]:
+        """Cruza la percepción del sistema con la realidad para detectar inconsistencias.
+        El sistema debe ser capaz de verificar que lo que muestra en su interfaz
+        corresponde a lo que realmente tiene/sabe."""
+        findings: list[dict[str, str]] = []
+        
+        # Verificar que los mensajes del chat tienen la estructura esperada
+        for i, msg in enumerate(self._chat_messages):
+            if 'status' not in msg:
+                findings.append({
+                    'severity': 'info',
+                    'description': f'Mensaje {i} sin campo status — se asume complete',
+                    'auto_fix': 'applied',
+                })
+                msg['status'] = 'complete'
+            if 'timestamp' not in msg:
+                from datetime import datetime, timezone
+                msg['timestamp'] = datetime.now(timezone.utc).strftime('%H:%M')
+        
+        # Verificar consistencia de live_status
+        if self._working and self._live_status == 'idle':
+            findings.append({
+                'severity': 'warning',
+                'description': 'ViewModel._working=True pero _live_status=idle — desincronizado',
+                'auto_fix': 'applied',
+            })
+            self._set_live_status('processing')
+        elif not self._working and self._live_status == 'processing':
+            findings.append({
+                'severity': 'warning',
+                'description': 'ViewModel._working=False pero _live_status=processing — desincronizado',
+                'auto_fix': 'applied',
+            })
+            self._set_live_status('idle')
+        
+        # Verificar que attached_files es consistente
+        if self._attached_files:
+            for f in self._attached_files:
+                if not all(k in f for k in ('name', 'path', 'size', 'type')):
+                    findings.append({
+                        'severity': 'error',
+                        'description': f'Archivo adjunto con campos faltantes: {f}',
+                        'auto_fix': 'none',
+                    })
+        
+        # Verificar que contextual_suggestions se actualizaron
+        if not self._contextual_suggestions:
+            self._refresh_contextual_suggestions()
+            findings.append({
+                'severity': 'info',
+                'description': 'Sugerencias contextuales estaban vacias — refrescadas',
+                'auto_fix': 'applied',
+            })
+        
+        return {
+            'valid': len([f for f in findings if f['severity'] == 'error']) == 0,
+            'findings': findings,
+            'chat_messages_count': len(self._chat_messages),
+            'attached_files_count': len(self._attached_files),
+            'live_status': self._live_status,
+            'suggestions_count': len(self._contextual_suggestions),
+        }
+
     def sendChat(self, text: str) -> None:
         message = text.strip()
         if not message or self._working:
@@ -5264,12 +5332,20 @@ class ControlCenterViewModel(QObject):
         # y ExperimentLab las consuman despues como areas de investigacion. No
         # modifica el ruteo; solo anota y avisa al usuario en una linea corta
         # para que sepa que su dato quedo registrado (antes se perdian en memoria).
-        self._ingest_chat_capabilities(message)
+        # Ingerir capabilities en background para no bloquear UI
+        threading.Thread(target=self._ingest_chat_capabilities, args=(message,), daemon=True).start()
         # Actualizar packet en background sin bloquear UI
         threading.Thread(target=self._refresh_development_packet, args=(message,), daemon=True).start()
         if self._try_handle_chat_command(message):
             return
-        shortcut_analysis = self._chat_shortcut_analysis(message)
+        # _chat_shortcut_analysis puede llamar a LLM — ejecutar con timeout
+        try:
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(self._chat_shortcut_analysis, message)
+                shortcut_analysis = future.result(timeout=3)
+        except (concurrent.futures.TimeoutError, Exception):
+            shortcut_analysis = {}
         allow_chat_shortcuts = not bool(shortcut_analysis.get('mixed_actionable')) and not bool(shortcut_analysis.get('requires_clarification'))
         if allow_chat_shortcuts and self._is_world_model_question(message):
             self._answer_world_model_question(message)
