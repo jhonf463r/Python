@@ -1795,8 +1795,11 @@ class IABVMCPServer:
                         }
                     current_branch = branch
 
+                # --rebase=false tolerates diverging branches
+                # (e.g. local auto-merge commits that diverge from remote).
+                # --ff-only would fail with "Diverging branches can't".
                 result = _sp.run(
-                    ["git", "pull", "--ff-only"],
+                    ["git", "pull", "--rebase=false"],
                     capture_output=True, text=True, timeout=60,
                     cwd=ws, check=False,
                 )
