@@ -135,6 +135,205 @@ class GpuModelBenchmarkService:
                 continue
         return gpus
 
+    def query_gpu_processes(self) -> list[dict[str, Any]]:
+        """Query nvidia-smi for processes using NVIDIA GPU compute."""
+        nvidia = shutil.which('nvidia-smi')
+        if not nvidia:
+            return []
+        try:
+            result = subprocess.run(
+                [nvidia, '--query-compute-apps=pid,name,used_memory',
+                 '--format=csv,noheader,nounits'],
+                capture_output=True, text=True, timeout=5,
+                encoding='utf-8', errors='ignore', check=False,
+            )
+        except Exception:
+            return []
+        if result.returncode != 0:
+            return []
+        procs: list[dict[str, Any]] = []
+        for line in result.stdout.strip().splitlines():
+            parts = [p.strip() for p in line.split(',')]
+            if len(parts) >= 3:
+                procs.append({
+                    'pid': parts[0],
+                    'process_name': parts[1],
+                    'vram_used_mb': parts[2],
+                })
+        return procs
+
+    def query_ollama_ps(self) -> list[dict[str, Any]]:
+        """Query ``ollama ps`` to check what models are loaded and where."""
+        ollama = shutil.which('ollama') or ''
+        if not ollama:
+            return []
+        try:
+            result = subprocess.run(
+                [ollama, 'ps'],
+                capture_output=True, text=True, timeout=_LIST_TIMEOUT_SECONDS,
+                encoding='utf-8', errors='ignore', check=False,
+            )
+        except Exception:
+            return []
+        if result.returncode != 0:
+            return []
+        models: list[dict[str, Any]] = []
+        for line in result.stdout.splitlines()[1:]:
+            parts = [p for p in line.split() if p]
+            if len(parts) >= 4:
+                models.append({
+                    'name': parts[0],
+                    'id': parts[1] if len(parts) > 1 else '',
+                    'size': parts[2] if len(parts) > 2 else '',
+                    'processor': parts[3] if len(parts) > 3 else 'unknown',
+                })
+        return models
+
+    def _collect_truth_sources(self) -> dict[str, Any]:
+        """Collect data from all available truth sources about GPU state."""
+        return {
+            'nvidia_smi_gpus': self.query_all_gpus(),
+            'nvidia_smi_processes': self.query_gpu_processes(),
+            'ollama_ps': self.query_ollama_ps(),
+        }
+
+    def _cross_reference_sources(
+        self,
+        *,
+        ollama_report: dict[str, Any],
+        gpu_samples: list[list[dict[str, Any]]],
+        truth_before: dict[str, Any],
+        truth_after: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Cross-reference multiple truth sources to detect discrepancies.
+
+        Compares what Ollama claims (tok/s, eval_count) against:
+        - nvidia-smi GPU utilization during inference
+        - nvidia-smi compute process list
+        - ollama ps (GPU vs CPU loading)
+        """
+        gpu_analysis = self._analyze_gpu_usage(gpu_samples)
+        findings: list[dict[str, str]] = []
+
+        ollama_tps = ollama_report.get('tokens_per_second', 0)
+        gpu_used = gpu_analysis.get('gpu_actually_used', False)
+
+        # Finding 1: Ollama claims good tok/s but GPU shows no activity
+        if ollama_tps > 10 and not gpu_used:
+            findings.append({
+                'type': 'discrepancy',
+                'severity': 'HIGH',
+                'source_a': 'ollama_api',
+                'source_b': 'nvidia_smi',
+                'detail': (
+                    f'Ollama reporta {ollama_tps:.1f} tok/s pero nvidia-smi '
+                    f'muestra <5% utilizacion GPU. Inferencia probablemente '
+                    f'ejecutandose en CPU, no en GPU NVIDIA.'
+                ),
+            })
+
+        # Finding 2: ollama ps says model is on CPU
+        ollama_ps_after = truth_after.get('ollama_ps', [])
+        for m in ollama_ps_after:
+            proc = str(m.get('processor', '')).lower()
+            if 'cpu' in proc or proc == '0%':
+                findings.append({
+                    'type': 'discrepancy',
+                    'severity': 'HIGH',
+                    'source_a': 'ollama_ps',
+                    'source_b': 'expected_gpu',
+                    'detail': (
+                        f'ollama ps muestra modelo {m.get("name", "?")} '
+                        f'cargado en processor={proc}. Deberia estar en GPU.'
+                    ),
+                })
+            elif 'gpu' in proc or '%' in proc:
+                gpu_pct = proc.replace('gpu', '').replace('%', '').strip()
+                findings.append({
+                    'type': 'confirmation',
+                    'severity': 'INFO',
+                    'source_a': 'ollama_ps',
+                    'source_b': 'nvidia_smi',
+                    'detail': (
+                        f'ollama ps confirma modelo {m.get("name", "?")} '
+                        f'en GPU (processor={proc}).'
+                    ),
+                })
+
+        # Finding 3: nvidia-smi processes — is ollama actually using GPU compute?
+        procs_after = truth_after.get('nvidia_smi_processes', [])
+        ollama_on_gpu = any(
+            'ollama' in str(p.get('process_name', '')).lower()
+            for p in procs_after
+        )
+        if procs_after and not ollama_on_gpu:
+            findings.append({
+                'type': 'discrepancy',
+                'severity': 'MEDIUM',
+                'source_a': 'nvidia_smi_processes',
+                'source_b': 'expected_ollama',
+                'detail': (
+                    'nvidia-smi --query-compute-apps no muestra ningun '
+                    'proceso de Ollama usando GPU compute.'
+                ),
+            })
+        elif ollama_on_gpu:
+            findings.append({
+                'type': 'confirmation',
+                'severity': 'INFO',
+                'source_a': 'nvidia_smi_processes',
+                'source_b': 'ollama',
+                'detail': 'Proceso ollama encontrado en GPU compute apps.',
+            })
+
+        # Finding 4: VRAM usage change
+        gpus_before = truth_before.get('nvidia_smi_gpus', [])
+        gpus_after = truth_after.get('nvidia_smi_gpus', [])
+        for ga in gpus_after:
+            idx = ga['index']
+            gb = next((g for g in gpus_before if g['index'] == idx), None)
+            if gb:
+                vram_delta = ga['memory_used_mb'] - gb['memory_used_mb']
+                if vram_delta > 100:
+                    findings.append({
+                        'type': 'confirmation',
+                        'severity': 'INFO',
+                        'source_a': 'nvidia_smi_vram',
+                        'source_b': 'before_after_delta',
+                        'detail': (
+                            f'GPU{idx} ({ga["name"]}): VRAM aumento '
+                            f'{vram_delta}MB durante inferencia '
+                            f'({gb["memory_used_mb"]}MB -> {ga["memory_used_mb"]}MB).'
+                        ),
+                    })
+
+        # Overall calibration verdict
+        confirmations = sum(1 for f in findings if f['type'] == 'confirmation')
+        discrepancies = sum(1 for f in findings if f['type'] == 'discrepancy')
+        high_discrepancies = sum(
+            1 for f in findings
+            if f['type'] == 'discrepancy' and f['severity'] == 'HIGH'
+        )
+
+        calibrated = discrepancies == 0 or (confirmations > discrepancies)
+
+        return {
+            'calibrated': calibrated,
+            'confirmations': confirmations,
+            'discrepancies': discrepancies,
+            'high_severity_discrepancies': high_discrepancies,
+            'findings': findings,
+            'gpu_analysis': gpu_analysis,
+            'verdict': (
+                'CALIBRADO: todas las fuentes coinciden'
+                if calibrated and discrepancies == 0
+                else f'PARCIALMENTE CALIBRADO: {confirmations} confirmaciones vs {discrepancies} discrepancias'
+                if calibrated
+                else f'NO CALIBRADO: {high_discrepancies} discrepancias graves detectadas — '
+                     f'el sistema puede estar confiando en datos incorrectos'
+            ),
+        }
+
     def _sample_gpu_during(
         self,
         target_fn: Any,
@@ -260,7 +459,7 @@ class GpuModelBenchmarkService:
         results: list[dict[str, Any]] = []
         all_gpu_samples: list[list[dict[str, Any]]] = []
 
-        gpu_before = self.query_all_gpus()
+        truth_before = self._collect_truth_sources()
 
         for prompt_spec in prompts:
             prompt = prompt_spec['prompt']
@@ -304,8 +503,14 @@ class GpuModelBenchmarkService:
         avg_quality = sum(r['quality_score'] for r in results) / max(len(results), 1)
         avg_latency = sum(r['elapsed_ms'] for r in results) / max(len(results), 1)
 
-        gpu_after = self.query_all_gpus()
-        overall_gpu = self._analyze_gpu_usage(all_gpu_samples)
+        truth_after = self._collect_truth_sources()
+
+        cross_ref = self._cross_reference_sources(
+            ollama_report={'tokens_per_second': avg_tps, 'model': model_name},
+            gpu_samples=all_gpu_samples,
+            truth_before=truth_before,
+            truth_after=truth_after,
+        )
 
         return {
             'model_name': model_name,
@@ -315,9 +520,10 @@ class GpuModelBenchmarkService:
             'prompt_count': len(results),
             'details': results,
             'gpu_ground_truth': {
-                'before': gpu_before,
-                'after': gpu_after,
-                'during_inference': overall_gpu,
+                'truth_sources_before': truth_before,
+                'truth_sources_after': truth_after,
+                'during_inference': cross_ref.get('gpu_analysis', {}),
+                'cross_reference': cross_ref,
             },
         }
 
@@ -409,21 +615,14 @@ class GpuModelBenchmarkService:
 
         gpu_findings: list[dict[str, str]] = []
         for r in benchmark_results:
-            gt = r.get('gpu_ground_truth', {}).get('during_inference', {})
-            if gt.get('discrepancy'):
+            cross_ref = r.get('gpu_ground_truth', {}).get('cross_reference', {})
+            for finding in cross_ref.get('findings', []):
                 gpu_findings.append({
                     'model': r['model_name'],
-                    'finding': gt['discrepancy'],
-                    'severity': 'HIGH',
-                })
-            if gt.get('gpu_actually_used') and gt.get('active_gpu_index') is not None:
-                gpu_findings.append({
-                    'model': r['model_name'],
-                    'finding': (
-                        f'Inferencia ejecutada en GPU{gt["active_gpu_index"]} '
-                        f'({gt.get("active_gpu_name", "?")})'
-                    ),
-                    'severity': 'INFO',
+                    'finding': finding.get('detail', ''),
+                    'severity': finding.get('severity', 'INFO'),
+                    'type': finding.get('type', 'unknown'),
+                    'sources': f'{finding.get("source_a", "?")} vs {finding.get("source_b", "?")}',
                 })
 
         return {
@@ -438,6 +637,7 @@ class GpuModelBenchmarkService:
                     'tokens_per_second': r['avg_tokens_per_second'],
                     'quality_score': r['avg_quality_score'],
                     'latency_ms': r['avg_latency_ms'],
+                    'calibration_verdict': r.get('gpu_ground_truth', {}).get('cross_reference', {}).get('verdict', 'unknown'),
                     'gpu_ground_truth': r.get('gpu_ground_truth', {}).get('during_inference', {}),
                 }
                 for r in ranked
