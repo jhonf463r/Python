@@ -278,7 +278,9 @@ class OperationalSelfExaminationService:
         self.storage.save_json_atomic(latest_json_rel, review.model_dump(mode='json'))
         # Persist metacognitive error ledger AFTER all findings are written,
         # so _metacognitive_calibration_findings reads only previous cycles.
-        self._persist_metacognitive_ledger_from_findings(review.findings)
+        self._persist_metacognitive_ledger_from_findings(
+            review.findings, review_id=review.review_id,
+        )
         return review
 
     def _collect_embodiment_violations(self) -> list[dict[str, Any]] | None:
@@ -2076,6 +2078,8 @@ class OperationalSelfExaminationService:
     def _persist_metacognitive_ledger_from_findings(
         self,
         findings: list[SelfExaminationFinding],
+        *,
+        review_id: str = '',
     ) -> None:
         """Extract metacognitive errors from findings and persist to ledger.
 
@@ -2085,7 +2089,6 @@ class OperationalSelfExaminationService:
         """
         false_positives: list[str] = []
         false_negatives: list[str] = []
-        review_id = ''
         for finding in findings:
             meta = dict(finding.metadata or {})
             if finding.category == 'metacognitive_false_positive':
