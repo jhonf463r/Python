@@ -148,6 +148,20 @@ class OperationalSelfExaminationService:
             findings_so_far=findings,
             experiment_runs=experiment_runs,
         ))
+        # Metacognitive error detection: the system audits its own introspection
+        findings.extend(self._metacognitive_accuracy_findings(
+            previous_review=previous_review,
+            current_findings=findings,
+            experiment_runs=experiment_runs,
+        ))
+        findings.extend(self._introspection_blind_spot_findings(
+            experiment_runs=experiment_runs,
+            findings_so_far=findings,
+        ))
+        findings.extend(self._metacognitive_calibration_findings(
+            previous_review=previous_review,
+            experiment_runs=experiment_runs,
+        ))
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -1722,6 +1736,398 @@ class OperationalSelfExaminationService:
             ))
 
         return results[:1]
+
+    # ------------------------------------------------------------------
+    # Metacognitive error detection: the system audits its own
+    # introspection quality and learns from its metacognitive mistakes
+    # ------------------------------------------------------------------
+
+    def _metacognitive_accuracy_findings(
+        self,
+        *,
+        previous_review: SelfExaminationSnapshot | None,
+        current_findings: list[SelfExaminationFinding],
+        experiment_runs: list[ExperimentRun],
+    ) -> list[SelfExaminationFinding]:
+        """Detect metacognitive errors: false positives and false negatives.
+
+        A *false positive* is a previous finding that predicted a problem
+        but subsequent evidence shows no degradation occurred — the system
+        "cried wolf."  A *false negative* is a new failure pattern that
+        appeared without any prior finding warning about it — a blind spot
+        in the introspective loop.
+
+        Tracking these errors lets the system learn which of its own
+        diagnostic categories are reliable and which need recalibration.
+        """
+        results: list[SelfExaminationFinding] = []
+        if previous_review is None or not experiment_runs:
+            return results
+
+        reviewed_after = previous_review.updated_at_utc
+        post_runs = [
+            run for run in experiment_runs
+            if getattr(run, 'created_at_utc', None) is not None
+            and run.created_at_utc > reviewed_after
+        ]
+        if len(post_runs) < 3:
+            return results
+
+        # --- False positives: previous HIGH findings without subsequent failures ---
+        false_positives: list[str] = []
+        for prev_finding in (previous_review.findings or []):
+            if prev_finding.severity != IssueSeverity.HIGH:
+                continue
+            meta = dict(prev_finding.metadata or {})
+            dominant_kind = str(meta.get('dominant_kind') or meta.get('assistant_kind') or '').strip().lower()
+            subject_key = str(meta.get('subject_key') or '').strip()
+
+            related_runs: list[ExperimentRun] = []
+            for run in post_runs:
+                run_kind = str(run.assistant_kind or '').strip().lower()
+                run_subject = str(run.subject_key or '').strip()
+                if dominant_kind and run_kind == dominant_kind:
+                    related_runs.append(run)
+                elif subject_key and run_subject == subject_key:
+                    related_runs.append(run)
+
+            if len(related_runs) >= 3:
+                post_success_rate = sum(1 for r in related_runs if r.success) / len(related_runs)
+                if post_success_rate >= 0.75:
+                    false_positives.append(
+                        f'{prev_finding.category}:{prev_finding.title} '
+                        f'(success_rate posterior {post_success_rate:.0%})'
+                    )
+
+        if false_positives:
+            results.append(SelfExaminationFinding(
+                title=f'Falsos positivos metacognitivos: {len(false_positives)} hallazgo(s) sin confirmar',
+                summary=(
+                    f'La introspección previa emitió {len(false_positives)} hallazgo(s) HIGH que la '
+                    f'evidencia posterior no confirmó. El sistema sobreestimó riesgos que no se '
+                    f'materializaron: {"; ".join(false_positives[:3])}.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                category='metacognitive_false_positive',
+                confidence=min(0.85, 0.5 + len(false_positives) * 0.1),
+                recommendation=(
+                    'Recalibrar los umbrales de severidad para estas categorías. '
+                    'Exigir más evidencia antes de emitir hallazgos HIGH en ellas.'
+                ),
+                metadata={
+                    'false_positives': false_positives[:6],
+                    'post_run_count': len(post_runs),
+                },
+            ))
+
+        # --- False negatives: failures without prior warning ---
+        current_finding_scopes: set[str] = set()
+        for finding in (previous_review.findings or []):
+            meta = dict(finding.metadata or {})
+            scope_key = str(meta.get('dominant_kind') or meta.get('subject_key') or finding.category or '').strip().lower()
+            if scope_key:
+                current_finding_scopes.add(scope_key)
+
+        failure_kinds: Counter[str] = Counter()
+        for run in post_runs:
+            if not run.success:
+                kind = str(run.assistant_kind or '').strip().lower()
+                if kind:
+                    failure_kinds[kind] += 1
+
+        false_negatives: list[str] = []
+        for kind, fail_count in failure_kinds.items():
+            if fail_count >= 3 and kind not in current_finding_scopes:
+                kind_total = sum(1 for r in post_runs if str(r.assistant_kind or '').strip().lower() == kind)
+                fail_rate = fail_count / max(kind_total, 1)
+                if fail_rate >= 0.5:
+                    false_negatives.append(f'{kind} ({fail_count} fallos, {fail_rate:.0%} tasa)')
+
+        if false_negatives:
+            results.append(SelfExaminationFinding(
+                title=f'Puntos ciegos metacognitivos: {len(false_negatives)} fallo(s) no anticipado(s)',
+                summary=(
+                    f'Aparecieron {len(false_negatives)} patrón(es) de fallo que la introspección '
+                    f'previa no detectó ni anticipó: {"; ".join(false_negatives[:3])}. '
+                    f'Esto indica áreas donde la autoexaminación no está mirando.'
+                ),
+                severity=IssueSeverity.HIGH,
+                category='metacognitive_false_negative',
+                confidence=min(0.90, 0.55 + len(false_negatives) * 0.12),
+                recommendation=(
+                    'Ampliar la cobertura introspectiva para incluir estas rutas/IAs. '
+                    'Considerar agregar monitores específicos para los patrones no detectados.'
+                ),
+                metadata={
+                    'false_negatives': false_negatives[:6],
+                    'post_run_count': len(post_runs),
+                },
+            ))
+
+        # --- Persist metacognitive error ledger for learning ---
+        if false_positives or false_negatives:
+            self._persist_metacognitive_ledger(
+                false_positives=false_positives,
+                false_negatives=false_negatives,
+                review_id=previous_review.review_id,
+            )
+
+        return results[:2]
+
+    def _introspection_blind_spot_findings(
+        self,
+        *,
+        experiment_runs: list[ExperimentRun],
+        findings_so_far: list[SelfExaminationFinding],
+    ) -> list[SelfExaminationFinding]:
+        """Detect areas the system's introspection never examines.
+
+        A blind spot is a route/assistant_kind combination that has
+        experiment runs (operational evidence) but has NEVER been
+        flagged by any introspective finding.  This means the system
+        is operating in those areas but not reflecting on them.
+        """
+        results: list[SelfExaminationFinding] = []
+        if len(experiment_runs) < 5:
+            return results
+
+        kind_run_counts: Counter[str] = Counter()
+        kind_failure_counts: Counter[str] = Counter()
+        for run in experiment_runs:
+            kind = str(run.assistant_kind or '').strip().lower()
+            if not kind:
+                continue
+            kind_run_counts[kind] += 1
+            if not run.success:
+                kind_failure_counts[kind] += 1
+
+        examined_kinds: set[str] = set()
+        for finding in findings_so_far:
+            meta = dict(finding.metadata or {})
+            for key in ('dominant_kind', 'assistant_kind', 'attractor_key'):
+                val = str(meta.get(key) or '').strip().lower()
+                if val:
+                    examined_kinds.add(val.split(':')[0])
+            if finding.category in {'cognitive_fixation', 'cognitive_incubation',
+                                     'neural_attractor', 'neural_ensemble'}:
+                for key_val in meta.values():
+                    if isinstance(key_val, str):
+                        examined_kinds.add(key_val.strip().lower().split(':')[0])
+
+        blind_spots: list[str] = []
+        for kind, count in kind_run_counts.most_common():
+            if count >= 3 and kind not in examined_kinds:
+                fail_rate = kind_failure_counts.get(kind, 0) / max(count, 1)
+                blind_spots.append(f'{kind} ({count} runs, {fail_rate:.0%} fallos)')
+
+        if blind_spots:
+            results.append(SelfExaminationFinding(
+                title=f'Puntos ciegos introspectivos: {len(blind_spots)} IA(s) sin examinar',
+                summary=(
+                    f'El sistema tiene actividad operativa en {len(blind_spots)} IA(s) que '
+                    f'nunca aparecen en hallazgos introspectivos: {"; ".join(blind_spots[:4])}. '
+                    f'La autoexaminación no cubre estas áreas, lo que puede ocultar patrones '
+                    f'de degradación silenciosa.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                category='introspection_blind_spot',
+                confidence=min(0.80, 0.45 + len(blind_spots) * 0.1),
+                recommendation=(
+                    'Incluir estas IAs en los ciclos de análisis cognitivo (fijación, '
+                    'incubación, atractores). Monitorear su tasa de fallo activamente.'
+                ),
+                metadata={
+                    'blind_spots': blind_spots[:8],
+                    'examined_kinds': sorted(examined_kinds),
+                    'total_kinds': len(kind_run_counts),
+                },
+            ))
+        return results[:1]
+
+    def _metacognitive_calibration_findings(
+        self,
+        *,
+        previous_review: SelfExaminationSnapshot | None,
+        experiment_runs: list[ExperimentRun],
+    ) -> list[SelfExaminationFinding]:
+        """Measure how well the system's confidence predicts reality.
+
+        Compares the confidence scores emitted in previous findings against
+        the actual outcomes that followed.  Systematic overconfidence
+        (high confidence but poor outcomes) or underconfidence (low
+        confidence but good outcomes) are metacognitive calibration errors
+        that the system should learn to correct.
+        """
+        results: list[SelfExaminationFinding] = []
+        if previous_review is None or not experiment_runs:
+            return results
+
+        reviewed_after = previous_review.updated_at_utc
+        post_runs = [
+            run for run in experiment_runs
+            if getattr(run, 'created_at_utc', None) is not None
+            and run.created_at_utc > reviewed_after
+        ]
+        if len(post_runs) < 3:
+            return results
+
+        post_success_rate = sum(1 for r in post_runs if r.success) / max(len(post_runs), 1)
+
+        calibrated_findings = [
+            f for f in (previous_review.findings or [])
+            if f.confidence > 0.0
+        ]
+        if not calibrated_findings:
+            return results
+
+        avg_confidence = sum(f.confidence for f in calibrated_findings) / len(calibrated_findings)
+        high_severity_count = sum(1 for f in calibrated_findings if f.severity in {IssueSeverity.HIGH, IssueSeverity.CRITICAL})
+        high_severity_ratio = high_severity_count / max(len(calibrated_findings), 1)
+
+        # Overconfidence: system predicts problems with high confidence
+        # but outcomes are actually good
+        if avg_confidence >= 0.65 and high_severity_ratio >= 0.5 and post_success_rate >= 0.75:
+            calibration_gap = avg_confidence - (1.0 - post_success_rate)
+            results.append(SelfExaminationFinding(
+                title='Sobreconfianza metacognitiva detectada',
+                summary=(
+                    f'La introspección previa emitió hallazgos con confianza promedio '
+                    f'{avg_confidence:.2f} y {high_severity_ratio:.0%} de severidad alta, '
+                    f'pero la tasa de éxito posterior fue {post_success_rate:.0%}. '
+                    f'El sistema sobreestima sus propios problemas (brecha de calibración: '
+                    f'{calibration_gap:.2f}).'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                category='metacognitive_overconfidence',
+                confidence=min(0.85, 0.5 + calibration_gap * 0.3),
+                recommendation=(
+                    'Reducir la sensibilidad de los umbrales de severidad HIGH. '
+                    'Exigir mayor evidencia antes de elevar hallazgos. '
+                    'El sistema debe confiar más en su propia capacidad operativa.'
+                ),
+                metadata={
+                    'avg_finding_confidence': round(avg_confidence, 4),
+                    'high_severity_ratio': round(high_severity_ratio, 4),
+                    'post_success_rate': round(post_success_rate, 4),
+                    'calibration_gap': round(calibration_gap, 4),
+                    'finding_count': len(calibrated_findings),
+                    'post_run_count': len(post_runs),
+                },
+            ))
+
+        # Underconfidence: system predicts everything is fine with low
+        # confidence and low severity but outcomes are bad
+        if avg_confidence < 0.45 and high_severity_ratio < 0.2 and post_success_rate < 0.5:
+            calibration_gap = (1.0 - post_success_rate) - avg_confidence
+            results.append(SelfExaminationFinding(
+                title='Subconfianza metacognitiva detectada',
+                summary=(
+                    f'La introspección previa fue tibia (confianza promedio {avg_confidence:.2f}, '
+                    f'solo {high_severity_ratio:.0%} severidad alta) pero la tasa de éxito '
+                    f'posterior fue baja ({post_success_rate:.0%}). El sistema subestima '
+                    f'sus propios problemas (brecha de calibración: {calibration_gap:.2f}).'
+                ),
+                severity=IssueSeverity.HIGH,
+                category='metacognitive_underconfidence',
+                confidence=min(0.90, 0.55 + calibration_gap * 0.3),
+                recommendation=(
+                    'Aumentar la sensibilidad de detección para fallos repetidos. '
+                    'El sistema debe ser más agresivo al señalar riesgos operativos. '
+                    'Revisar si los hallazgos actuales cubren los patrones reales de fallo.'
+                ),
+                metadata={
+                    'avg_finding_confidence': round(avg_confidence, 4),
+                    'high_severity_ratio': round(high_severity_ratio, 4),
+                    'post_success_rate': round(post_success_rate, 4),
+                    'calibration_gap': round(calibration_gap, 4),
+                    'finding_count': len(calibrated_findings),
+                    'post_run_count': len(post_runs),
+                },
+            ))
+
+        # Historical calibration: load ledger to detect persistent patterns
+        ledger = self._load_metacognitive_ledger()
+        if ledger:
+            total_fp = sum(len(entry.get('false_positives') or []) for entry in ledger)
+            total_fn = sum(len(entry.get('false_negatives') or []) for entry in ledger)
+            if total_fp + total_fn >= 4:
+                dominant_error = 'falsos positivos' if total_fp > total_fn else 'falsos negativos'
+                results.append(SelfExaminationFinding(
+                    title=f'Patrón metacognitivo persistente: tendencia a {dominant_error}',
+                    summary=(
+                        f'El ledger metacognitivo acumula {total_fp} falso(s) positivo(s) y '
+                        f'{total_fn} falso(s) negativo(s) en {len(ledger)} ciclo(s). '
+                        f'La tendencia dominante es hacia {dominant_error}, lo que indica '
+                        f'un sesgo sistemático en la autoexaminación.'
+                    ),
+                    severity=IssueSeverity.HIGH,
+                    category='metacognitive_persistent_bias',
+                    confidence=min(0.92, 0.5 + (total_fp + total_fn) * 0.04),
+                    recommendation=(
+                        f'Recalibrar umbrales de detección para compensar el sesgo hacia {dominant_error}. '
+                        f'Si el sesgo es hacia falsos positivos, elevar los mínimos de evidencia. '
+                        f'Si es hacia falsos negativos, ampliar la cobertura de monitoreo.'
+                    ),
+                    metadata={
+                        'total_false_positives': total_fp,
+                        'total_false_negatives': total_fn,
+                        'ledger_entries': len(ledger),
+                        'dominant_error': dominant_error,
+                    },
+                ))
+
+        return results[:2]
+
+    def _persist_metacognitive_ledger(
+        self,
+        *,
+        false_positives: list[str],
+        false_negatives: list[str],
+        review_id: str,
+    ) -> None:
+        """Append a metacognitive error entry to the learning ledger.
+
+        The ledger persists across reviews so the system can detect
+        *persistent* metacognitive biases (e.g. always producing false
+        positives in a certain category).
+        """
+        ledger_rel = 'self_examination/metacognitive_ledger.jsonl'
+        entry = json.dumps({
+            'review_id': review_id,
+            'timestamp': utc_now().isoformat(),
+            'false_positives': false_positives[:8],
+            'false_negatives': false_negatives[:8],
+        }, ensure_ascii=False)
+        try:
+            existing = ''
+            if self.storage.exists(ledger_rel):
+                existing = self.storage.load_bytes(ledger_rel).decode('utf-8')
+            lines = [line for line in existing.splitlines() if line.strip()]
+            lines = lines[-19:]
+            lines.append(entry)
+            self.storage.save_bytes(ledger_rel, ('\n'.join(lines) + '\n').encode('utf-8'))
+        except Exception:
+            pass
+
+    def _load_metacognitive_ledger(self) -> list[dict[str, Any]]:
+        """Load the metacognitive error ledger for persistent bias detection."""
+        ledger_rel = 'self_examination/metacognitive_ledger.jsonl'
+        entries: list[dict[str, Any]] = []
+        try:
+            if not self.storage.exists(ledger_rel):
+                return entries
+            raw = self.storage.load_bytes(ledger_rel).decode('utf-8')
+            for line in raw.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entries.append(json.loads(line))
+                except (json.JSONDecodeError, ValueError):
+                    continue
+        except Exception:
+            pass
+        return entries
 
     # ------------------------------------------------------------------
     # G2: Leer feedback de validación para filtrar propuestas ya intentadas

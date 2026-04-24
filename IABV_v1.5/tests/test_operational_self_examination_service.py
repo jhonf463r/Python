@@ -840,3 +840,357 @@ def test_build_review_promotes_expired_token_finding_to_auto_probe() -> None:
         assert probe.get('scope') == 'github_api'
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+# ------------------------------------------------------------------
+# Metacognitive error detection tests
+# ------------------------------------------------------------------
+
+
+def _make_experiment_run(
+    *,
+    assistant_kind: str = 'codex',
+    success: bool = True,
+    subject_key: str = 'general',
+    route: EvaluationRoute = EvaluationRoute.CODE_AGENT,
+    created_offset_hours: float = 0.0,
+    score: float = 0.7,
+) -> ExperimentRun:
+    return ExperimentRun(
+        domain=ExperimentDomain.CODE,
+        suite_name='test',
+        objective='test',
+        subject_key=subject_key,
+        route=route,
+        assistant_kind=assistant_kind,
+        success=success,
+        metrics=ExperimentMetric(total_score=score, precision=score),
+        created_at_utc=utc_now() - timedelta(hours=created_offset_hours),
+    )
+
+
+def test_metacognitive_accuracy_detects_false_positives() -> None:
+    """Previous HIGH finding not confirmed by subsequent good runs = false positive."""
+    root = _workspace('metacognitive_fp')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service = bootstrap.operational_self_examination_service
+
+        previous_review = SelfExaminationSnapshot(
+            updated_at_utc=utc_now() - timedelta(hours=3),
+            findings=[
+                SelfExaminationFinding(
+                    title='Fijación cognitiva en codex',
+                    category='cognitive_fixation',
+                    severity=IssueSeverity.HIGH,
+                    confidence=0.78,
+                    metadata={'dominant_kind': 'codex'},
+                ),
+            ],
+        )
+        post_runs = [
+            _make_experiment_run(assistant_kind='codex', success=True, created_offset_hours=1.0)
+            for _ in range(5)
+        ]
+        findings = service._metacognitive_accuracy_findings(
+            previous_review=previous_review,
+            current_findings=[],
+            experiment_runs=post_runs,
+        )
+        assert len(findings) >= 1
+        fp_finding = next((f for f in findings if f.category == 'metacognitive_false_positive'), None)
+        assert fp_finding is not None
+        assert 'codex' in fp_finding.summary.lower()
+        assert fp_finding.severity == IssueSeverity.MEDIUM
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_metacognitive_accuracy_detects_false_negatives() -> None:
+    """Failures without any prior warning = false negative."""
+    root = _workspace('metacognitive_fn')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service = bootstrap.operational_self_examination_service
+
+        previous_review = SelfExaminationSnapshot(
+            updated_at_utc=utc_now() - timedelta(hours=3),
+            findings=[
+                SelfExaminationFinding(
+                    title='Algo sobre codex',
+                    category='inertial_route',
+                    severity=IssueSeverity.MEDIUM,
+                    metadata={'dominant_kind': 'codex'},
+                ),
+            ],
+        )
+        post_runs = [
+            _make_experiment_run(assistant_kind='claude', success=False, created_offset_hours=1.0)
+            for _ in range(4)
+        ]
+        findings = service._metacognitive_accuracy_findings(
+            previous_review=previous_review,
+            current_findings=[],
+            experiment_runs=post_runs,
+        )
+        fn_finding = next((f for f in findings if f.category == 'metacognitive_false_negative'), None)
+        assert fn_finding is not None
+        assert 'claude' in fn_finding.summary.lower()
+        assert fn_finding.severity == IssueSeverity.HIGH
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_metacognitive_accuracy_no_findings_without_previous_review() -> None:
+    """Without a previous review, no metacognitive errors can be detected."""
+    root = _workspace('metacognitive_no_prev')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service = bootstrap.operational_self_examination_service
+        runs = [_make_experiment_run() for _ in range(5)]
+        findings = service._metacognitive_accuracy_findings(
+            previous_review=None,
+            current_findings=[],
+            experiment_runs=runs,
+        )
+        assert findings == []
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_introspection_blind_spot_detects_unexamined_kinds() -> None:
+    """IAs with runs but no findings = blind spots."""
+    root = _workspace('introspection_blind_spot')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service = bootstrap.operational_self_examination_service
+
+        runs = [
+            _make_experiment_run(assistant_kind='codex', success=True, created_offset_hours=float(i))
+            for i in range(3)
+        ] + [
+            _make_experiment_run(assistant_kind='gemini', success=False, created_offset_hours=float(i))
+            for i in range(4)
+        ]
+        existing_findings = [
+            SelfExaminationFinding(
+                title='Fijación en codex',
+                category='cognitive_fixation',
+                metadata={'dominant_kind': 'codex'},
+            ),
+        ]
+        findings = service._introspection_blind_spot_findings(
+            experiment_runs=runs,
+            findings_so_far=existing_findings,
+        )
+        assert len(findings) == 1
+        assert findings[0].category == 'introspection_blind_spot'
+        assert 'gemini' in findings[0].summary.lower()
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_introspection_blind_spot_no_findings_when_all_covered() -> None:
+    """No blind spots when all kinds have findings."""
+    root = _workspace('introspection_no_blind')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service = bootstrap.operational_self_examination_service
+
+        runs = [
+            _make_experiment_run(assistant_kind='codex', created_offset_hours=float(i))
+            for i in range(4)
+        ]
+        existing_findings = [
+            SelfExaminationFinding(
+                title='Atractor en codex',
+                category='neural_attractor',
+                metadata={'attractor_key': 'codex:code_agent'},
+            ),
+        ]
+        findings = service._introspection_blind_spot_findings(
+            experiment_runs=runs,
+            findings_so_far=existing_findings,
+        )
+        assert findings == []
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_metacognitive_calibration_detects_overconfidence() -> None:
+    """High confidence + high severity but good post outcomes = overconfidence."""
+    root = _workspace('metacognitive_overconfidence')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service = bootstrap.operational_self_examination_service
+
+        previous_review = SelfExaminationSnapshot(
+            updated_at_utc=utc_now() - timedelta(hours=3),
+            findings=[
+                SelfExaminationFinding(
+                    title='Problema grave detectado',
+                    category='recurring_failure',
+                    severity=IssueSeverity.HIGH,
+                    confidence=0.82,
+                ),
+                SelfExaminationFinding(
+                    title='Otro problema grave',
+                    category='repeated_block',
+                    severity=IssueSeverity.HIGH,
+                    confidence=0.75,
+                ),
+            ],
+        )
+        post_runs = [
+            _make_experiment_run(success=True, created_offset_hours=1.0)
+            for _ in range(6)
+        ]
+        findings = service._metacognitive_calibration_findings(
+            previous_review=previous_review,
+            experiment_runs=post_runs,
+        )
+        overconf = next((f for f in findings if f.category == 'metacognitive_overconfidence'), None)
+        assert overconf is not None
+        assert overconf.severity == IssueSeverity.MEDIUM
+        assert float(overconf.metadata.get('post_success_rate', 0)) >= 0.75
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_metacognitive_calibration_detects_underconfidence() -> None:
+    """Low confidence + low severity but bad post outcomes = underconfidence."""
+    root = _workspace('metacognitive_underconfidence')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service = bootstrap.operational_self_examination_service
+
+        previous_review = SelfExaminationSnapshot(
+            updated_at_utc=utc_now() - timedelta(hours=3),
+            findings=[
+                SelfExaminationFinding(
+                    title='Observación menor',
+                    category='neural_attractor',
+                    severity=IssueSeverity.LOW,
+                    confidence=0.35,
+                ),
+                SelfExaminationFinding(
+                    title='Otro tema menor',
+                    category='loop_closure',
+                    severity=IssueSeverity.LOW,
+                    confidence=0.40,
+                ),
+            ],
+        )
+        post_runs = [
+            _make_experiment_run(success=False, created_offset_hours=1.0)
+            for _ in range(5)
+        ]
+        findings = service._metacognitive_calibration_findings(
+            previous_review=previous_review,
+            experiment_runs=post_runs,
+        )
+        underconf = next((f for f in findings if f.category == 'metacognitive_underconfidence'), None)
+        assert underconf is not None
+        assert underconf.severity == IssueSeverity.HIGH
+        assert float(underconf.metadata.get('post_success_rate', 0)) < 0.5
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_metacognitive_ledger_persistence_and_bias_detection() -> None:
+    """Metacognitive ledger persists errors and detects persistent bias."""
+    root = _workspace('metacognitive_ledger')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service = bootstrap.operational_self_examination_service
+
+        for i in range(3):
+            service._persist_metacognitive_ledger(
+                false_positives=[f'fp_{i}_a', f'fp_{i}_b'],
+                false_negatives=[],
+                review_id=f'review-{i}',
+            )
+
+        ledger = service._load_metacognitive_ledger()
+        assert len(ledger) == 3
+        total_fp = sum(len(e.get('false_positives', [])) for e in ledger)
+        assert total_fp == 6
+
+        previous_review = SelfExaminationSnapshot(
+            updated_at_utc=utc_now() - timedelta(hours=3),
+            findings=[
+                SelfExaminationFinding(
+                    title='Hallazgo con confianza',
+                    category='test',
+                    severity=IssueSeverity.MEDIUM,
+                    confidence=0.60,
+                ),
+            ],
+        )
+        post_runs = [
+            _make_experiment_run(success=True, created_offset_hours=1.0)
+            for _ in range(4)
+        ]
+        findings = service._metacognitive_calibration_findings(
+            previous_review=previous_review,
+            experiment_runs=post_runs,
+        )
+        bias_finding = next((f for f in findings if f.category == 'metacognitive_persistent_bias'), None)
+        assert bias_finding is not None
+        assert 'falsos positivos' in bias_finding.summary
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_build_review_includes_metacognitive_findings_in_full_cycle() -> None:
+    """End-to-end: build_review includes metacognitive findings when
+    previous review exists and enough experiment data is available."""
+    root = _workspace('metacognitive_e2e')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service = bootstrap.operational_self_examination_service
+
+        previous_review = SelfExaminationSnapshot(
+            updated_at_utc=utc_now() - timedelta(hours=4),
+            findings=[
+                SelfExaminationFinding(
+                    title='Fijación cognitiva en chatgpt',
+                    category='cognitive_fixation',
+                    severity=IssueSeverity.HIGH,
+                    confidence=0.80,
+                    metadata={'dominant_kind': 'chatgpt'},
+                ),
+            ],
+        )
+        payload = previous_review.model_dump(mode='json')
+        service.storage.save_json_atomic('self_examination/latest.json', payload)
+
+        for _ in range(5):
+            bootstrap.experiment_lab.record_outcome(
+                domain=ExperimentDomain.CODE,
+                objective='Test metacognition',
+                subject_key='general',
+                route=EvaluationRoute.CODE_AGENT,
+                candidate_label='chatgpt',
+                success=True,
+                observed_summary='Success after previous HIGH finding.',
+                precision=0.85,
+                robustness=0.80,
+                execution_ms=1200,
+                metadata={'assistant_kind': 'chatgpt', 'config_signature': 'web'},
+            )
+
+        review = service.build_review()
+
+        all_categories = {f.category for f in review.findings}
+        has_metacognitive = any(
+            cat.startswith('metacognitive_') or cat == 'introspection_blind_spot'
+            for cat in all_categories
+        )
+        assert review.summary
+        assert review.findings
+        assert has_metacognitive, (
+            f'Expected metacognitive findings in categories, got: {all_categories}'
+        )
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
