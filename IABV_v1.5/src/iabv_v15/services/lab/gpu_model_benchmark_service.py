@@ -258,6 +258,57 @@ class GpuModelBenchmarkService:
                     continue
         return entries
 
+    def query_task_manager_counters(self) -> dict[str, Any]:
+        """Query Windows Performance Counters — the SAME data Task Manager shows.
+
+        Reads GPU Engine utilization via PowerShell ``Get-Counter``, which is
+        the exact source that feeds the Task Manager GPU graphs.  This is an
+        independent truth source separate from nvidia-smi.
+        """
+        if os.name != 'nt':
+            return {'available': False, 'reason': 'not Windows'}
+        ps_cmd = (
+            'Get-Counter -Counter '
+            '"\\GPU Engine(*)\\Utilization Percentage" '
+            '-ErrorAction SilentlyContinue | '
+            'Select-Object -ExpandProperty CounterSamples | '
+            'Where-Object { $_.CookedValue -gt 0 } | '
+            'Select-Object -Property Path, CookedValue | '
+            'ConvertTo-Json -Compress'
+        )
+        try:
+            r = subprocess.run(
+                ['powershell', '-NoProfile', '-Command', ps_cmd],
+                capture_output=True, text=True, timeout=15,
+                encoding='utf-8', errors='ignore', check=False,
+            )
+        except Exception as exc:
+            return {'available': True, 'error': str(exc), 'total_util': 0.0}
+        if r.returncode != 0 or not r.stdout.strip():
+            return {'available': True, 'active_engines': [], 'total_util': 0.0}
+        try:
+            import json as _json
+            data = _json.loads(r.stdout)
+            if isinstance(data, dict):
+                data = [data]
+            engines: list[dict[str, Any]] = []
+            total_util = 0.0
+            for sample in data:
+                value = sample.get('CookedValue', 0.0)
+                total_util += value
+                engines.append({
+                    'path': sample.get('Path', ''),
+                    'util_pct': round(value, 2),
+                })
+            return {
+                'available': True,
+                'active_engines': engines,
+                'total_util': round(total_util, 2),
+                'engine_count': len(engines),
+            }
+        except Exception as exc:
+            return {'available': True, 'error': str(exc), 'total_util': 0.0}
+
     def auto_diagnose_and_fix_gpu(self) -> dict[str, Any]:
         """Auto-diagnose GPU configuration and attempt to fix issues.
 
@@ -389,6 +440,7 @@ class GpuModelBenchmarkService:
             'ollama_ps': self.query_ollama_ps(),
             'cuda_visible_devices': os.environ.get('CUDA_VISIBLE_DEVICES', ''),
             'windows_gpu_counters': self.query_windows_gpu_counters(),
+            'task_manager_counters': self.query_task_manager_counters(),
         }
 
     def _cross_reference_sources(
@@ -525,6 +577,47 @@ class GpuModelBenchmarkService:
                     })
             except ValueError:
                 pass
+
+        # Finding 6: Task Manager Performance Counters cross-reference
+        tm_after = truth_after.get('task_manager_counters', {})
+        if tm_after.get('available'):
+            tm_total = tm_after.get('total_util', 0.0)
+            tm_engines = tm_after.get('engine_count', 0)
+            if gpu_used and tm_total < 1.0:
+                findings.append({
+                    'type': 'discrepancy',
+                    'severity': 'MEDIUM',
+                    'source_a': 'task_manager_counters',
+                    'source_b': 'nvidia_smi',
+                    'detail': (
+                        f'nvidia-smi muestra GPU activa pero Task Manager '
+                        f'Performance Counters reportan {tm_total:.1f}% total. '
+                        f'Posible desincronizacion temporal.'
+                    ),
+                })
+            elif not gpu_used and tm_total > 5.0:
+                findings.append({
+                    'type': 'discrepancy',
+                    'severity': 'MEDIUM',
+                    'source_a': 'task_manager_counters',
+                    'source_b': 'nvidia_smi',
+                    'detail': (
+                        f'Task Manager muestra {tm_total:.1f}% GPU '
+                        f'({tm_engines} engines) pero nvidia-smi no detecta '
+                        f'actividad. Fuentes no coinciden.'
+                    ),
+                })
+            elif gpu_used and tm_total > 1.0:
+                findings.append({
+                    'type': 'confirmation',
+                    'severity': 'INFO',
+                    'source_a': 'task_manager_counters',
+                    'source_b': 'nvidia_smi',
+                    'detail': (
+                        f'Task Manager confirma GPU activa: {tm_total:.1f}% '
+                        f'total ({tm_engines} engines). Coincide con nvidia-smi.'
+                    ),
+                })
 
         # Overall calibration verdict
         confirmations = sum(1 for f in findings if f['type'] == 'confirmation')
