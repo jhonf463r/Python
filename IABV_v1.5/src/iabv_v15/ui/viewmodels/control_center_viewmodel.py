@@ -5191,6 +5191,14 @@ class ControlCenterViewModel(QObject):
                 sections.append('')
 
                 # 1. Full self code analysis (includes syntax, slots, routing, tests, perf)
+                branch_count = 0
+                branches: list = []
+                syntax: dict = {}
+                mcp: dict = {}
+                perf: dict = {}
+                slots: dict = {}
+                routing: dict = {}
+                tests: dict = {}
                 try:
                     from iabv_v15.services.self_code_analysis import full_self_analysis_report
                     report = full_self_analysis_report(ws)
