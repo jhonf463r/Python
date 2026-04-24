@@ -1666,6 +1666,66 @@ class IABVMCPServer:
             return _to_jsonable(full_system_metacognition_report())
 
         # ------------------------------------------------------------
+        # self_code_analysis — el programa analiza su propio código
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def self_code_analysis() -> dict[str, Any]:
+            """Auto-análisis COMPLETO del código: sintaxis, ramas pendientes, MCP tools, rendimiento, threading.
+
+            Metacognición: el programa examina su propio código fuente para
+            detectar errores de sintaxis, ramas sin mergear, problemas de
+            indentación en tools MCP, llamadas bloqueantes en UI, y otros
+            patrones que degradan rendimiento o funcionalidad.
+            """
+            from iabv_v15.services.self_code_analysis import full_self_analysis_report
+            ws = self._workspace_root()
+            return _to_jsonable(full_self_analysis_report(ws))
+
+        @mcp.tool()
+        def self_merge_branch(
+            branch: str,
+        ) -> dict[str, Any]:
+            """Mergear una rama pendiente a la rama actual.
+
+            Metacognición: el programa detecta ramas con mejoras no integradas
+            y puede auto-mergearlas para mantener su código actualizado.
+
+            Args:
+                branch: nombre de la rama a mergear (ej: 'origin/iabv-auto/...')
+            """
+            gate = self._governance_block_for_route('self_modify')
+            if gate:
+                return _to_jsonable(gate)
+
+            import re as _re
+            if _re.search(r'[;&|`$\n]|--force|\.\.', branch):
+                return _to_jsonable({'ok': False, 'error': 'branch name rejected (unsafe chars)'})
+
+            ws = self._workspace_root()
+            try:
+                merge_result = subprocess.run(
+                    ['git', '-C', ws, 'merge', '--no-edit', branch],
+                    capture_output=True, text=True, timeout=60,
+                )
+                if merge_result.returncode != 0:
+                    # Abort the merge on conflict
+                    subprocess.run(['git', '-C', ws, 'merge', '--abort'],
+                                   capture_output=True, timeout=10)
+                    return _to_jsonable({
+                        'ok': False,
+                        'error': 'merge conflict — aborted',
+                        'details': merge_result.stderr.strip()[:500],
+                    })
+                return _to_jsonable({
+                    'ok': True,
+                    'merged': branch,
+                    'output': merge_result.stdout.strip()[:500],
+                })
+            except Exception as exc:
+                return _to_jsonable({'ok': False, 'error': str(exc)})
+
+        # ------------------------------------------------------------
         # self_update — el programa se actualiza a sí mismo (git pull)
         #
         # Metacognición: el programa puede aplicar sus propias mejoras
