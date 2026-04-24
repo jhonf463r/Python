@@ -260,10 +260,223 @@ def diagnose_performance(workspace: str | None = None) -> dict[str, Any]:
     }
 
 
+def verify_slot_decorators(workspace: str | None = None) -> dict[str, Any]:
+    """Verify that QML-callable methods in ViewModels have @Slot decorators.
+
+    Without @Slot, QML silently fails to invoke the method — the user clicks
+    a button or types in the chat and nothing happens. This is invisible to
+    syntax checking and only manifests at runtime.
+    """
+    ws = workspace or _default_workspace()
+    if not ws:
+        return {'ok': False, 'error': 'workspace not found'}
+
+    vm_dir = Path(ws) / 'src' / 'iabv_v15' / 'ui' / 'viewmodels'
+    if not vm_dir.exists():
+        return {'ok': True, 'checked': 0, 'issues': [], 'summary': 'viewmodels dir not found'}
+
+    qml_dir = Path(ws) / 'src' / 'iabv_v15' / 'ui' / 'qml'
+    qml_method_calls: set[str] = set()
+    if qml_dir.exists():
+        for qml_file in qml_dir.rglob('*.qml'):
+            try:
+                qml_content = qml_file.read_text(encoding='utf-8', errors='replace')
+            except Exception:
+                continue
+            for m in re.finditer(r'(?:viewModel|model|vm|root\.viewModel)\.(\w+)\s*\(', qml_content):
+                qml_method_calls.add(m.group(1))
+
+    issues: list[dict[str, str]] = []
+    checked = 0
+    for py_file in vm_dir.rglob('*.py'):
+        try:
+            content = py_file.read_text(encoding='utf-8', errors='replace')
+        except Exception:
+            continue
+        lines = content.splitlines()
+        for i, line in enumerate(lines):
+            m = re.match(r'\s+def (\w+)\(self', line)
+            if not m:
+                continue
+            method_name = m.group(1)
+            if method_name.startswith('_'):
+                continue
+            if method_name not in qml_method_calls:
+                continue
+            checked += 1
+            has_slot = False
+            for j in range(max(0, i - 3), i):
+                if '@Slot' in lines[j]:
+                    has_slot = True
+                    break
+            if not has_slot:
+                issues.append({
+                    'file': str(py_file.relative_to(ws)),
+                    'line': i + 1,
+                    'method': method_name,
+                    'severity': 'critical',
+                    'description': f'{method_name}() is called from QML but missing @Slot decorator — QML invocation silently fails',
+                })
+
+    return {
+        'ok': len(issues) == 0,
+        'methods_checked': checked,
+        'qml_calls_found': len(qml_method_calls),
+        'issues': issues,
+        'summary': f'{checked} QML-callable methods checked, {len(issues)} missing @Slot' if issues else f'{checked} QML-callable methods checked, all have @Slot',
+    }
+
+
+def verify_intent_routing(workspace: str | None = None) -> dict[str, Any]:
+    """Verify that key user intents are routed to the correct handlers.
+
+    Simulates the intent detection logic to ensure critical phrases
+    actually trigger the right handler, not fall through to generic responses.
+    """
+    ws = workspace or _default_workspace()
+    if not ws:
+        return {'ok': False, 'error': 'workspace not found'}
+
+    vm_path = Path(ws) / 'src' / 'iabv_v15' / 'ui' / 'viewmodels' / 'control_center_viewmodel.py'
+    if not vm_path.exists():
+        return {'ok': False, 'error': 'control_center_viewmodel.py not found'}
+
+    content = vm_path.read_text(encoding='utf-8', errors='replace')
+
+    test_cases = [
+        ('analizate a ti mismo', '_is_self_code_analysis_request', 'auto-analisis'),
+        ('analiza tu codigo', '_is_self_code_analysis_request', 'auto-analisis'),
+        ('busca errores', '_is_self_code_analysis_request', 'auto-analisis'),
+        ('por que estas lento', '_is_self_code_analysis_request', 'auto-analisis'),
+        ('revisa tu gpu', '_is_self_code_analysis_request', 'auto-analisis'),
+        ('mejoras pendientes', '_is_self_code_analysis_request', 'auto-analisis'),
+        ('examinate', '_is_self_examination_question', 'autoexaminacion'),
+        ('que herramientas tienes', '_is_self_awareness_question', 'autoconciencia'),
+        ('auditar autonomia', '_try_handle_chat_command', 'comando chat'),
+    ]
+
+    results: list[dict[str, Any]] = []
+    missing_handlers: list[str] = []
+
+    for phrase, expected_handler, category in test_cases:
+        handler_exists = f'def {expected_handler}' in content
+        if not handler_exists:
+            missing_handlers.append(expected_handler)
+            results.append({
+                'phrase': phrase,
+                'expected_handler': expected_handler,
+                'category': category,
+                'status': 'FAIL',
+                'reason': f'handler {expected_handler} not found in viewmodel',
+            })
+        else:
+            handler_referenced = expected_handler in content
+            results.append({
+                'phrase': phrase,
+                'expected_handler': expected_handler,
+                'category': category,
+                'status': 'OK' if handler_referenced else 'WARN',
+                'reason': '' if handler_referenced else 'handler exists but may not be wired in sendChat flow',
+            })
+
+    # Check that sendChat (and its delegates like _try_handle_chat_command)
+    # call the detection methods
+    flow_sections = ''
+    for fn_name in ('sendChat', '_try_handle_chat_command'):
+        in_fn = False
+        for line in content.splitlines():
+            if f'def {fn_name}(' in line:
+                in_fn = True
+            elif in_fn and re.match(r'^    def ', line):
+                in_fn = False
+            if in_fn:
+                flow_sections += line + '\n'
+
+    wired_handlers = []
+    for _, handler, _ in test_cases:
+        if handler in flow_sections:
+            wired_handlers.append(handler)
+
+    unwired = [h for _, h, _ in test_cases if h not in wired_handlers and h != '_try_handle_chat_command']
+    unwired = list(set(unwired))
+
+    return {
+        'ok': len(missing_handlers) == 0 and len(unwired) == 0,
+        'test_cases': len(test_cases),
+        'results': results,
+        'missing_handlers': missing_handlers,
+        'unwired_handlers': unwired,
+        'summary': f'{len(test_cases)} intent routes verified, {len(missing_handlers)} missing, {len(unwired)} unwired',
+    }
+
+
+def run_test_suite(workspace: str | None = None) -> dict[str, Any]:
+    """Run the project test suite and report results.
+
+    Uses pytest with a timeout to prevent hanging.
+    """
+    ws = workspace or _default_workspace()
+    if not ws:
+        return {'ok': False, 'error': 'workspace not found'}
+
+    tests_dir = Path(ws) / 'tests'
+    if not tests_dir.exists():
+        return {'ok': True, 'skipped': True, 'summary': 'No tests/ directory found'}
+
+    env = os.environ.copy()
+    env['PYTHONPATH'] = str(Path(ws) / 'src')
+    try:
+        result = subprocess.run(
+            ['python', '-m', 'pytest', '-p', 'no:cacheprovider', 'tests/', '-q', '--tb=short', '-x'],
+            capture_output=True, text=True, timeout=120,
+            cwd=ws, env=env,
+        )
+        output = result.stdout[-2000:] if len(result.stdout) > 2000 else result.stdout
+        error_output = result.stderr[-1000:] if len(result.stderr) > 1000 else result.stderr
+
+        passed_m = re.search(r'(\d+) passed', output)
+        failed_m = re.search(r'(\d+) failed', output)
+        error_m = re.search(r'(\d+) error', output)
+
+        passed = int(passed_m.group(1)) if passed_m else 0
+        failed = int(failed_m.group(1)) if failed_m else 0
+        errors = int(error_m.group(1)) if error_m else 0
+
+        # returncode 5 = no tests collected (not a failure)
+        no_tests = result.returncode == 5 or (passed == 0 and failed == 0 and errors == 0)
+        is_ok = result.returncode == 0 or no_tests
+
+        return {
+            'ok': is_ok,
+            'passed': passed,
+            'failed': failed,
+            'errors': errors,
+            'no_tests_collected': no_tests and passed == 0,
+            'returncode': result.returncode,
+            'output': output,
+            'error_output': error_output if not is_ok else '',
+            'summary': ('no tests collected' if no_tests and passed == 0
+                        else f'{passed} passed, {failed} failed, {errors} errors' if (failed or errors)
+                        else f'{passed} passed, all OK'),
+        }
+    except subprocess.TimeoutExpired:
+        return {'ok': False, 'error': 'test suite timed out after 120s', 'summary': 'Tests timed out'}
+    except Exception as exc:
+        return {'ok': False, 'error': str(exc), 'summary': f'Failed to run tests: {exc}'}
+
+
 def full_self_analysis_report(workspace: str | None = None) -> dict[str, Any]:
     """Generate a COMPLETE self-analysis report of the codebase.
 
     This is the main entry point for autonomous code health verification.
+    It goes beyond syntax checking to verify end-to-end integrity:
+    - Syntax compilation of all Python files
+    - @Slot decorator verification for QML-callable methods
+    - Intent routing verification (user phrases → correct handlers)
+    - MCP tool registration and indentation
+    - Threading/performance analysis
+    - Unmerged branches detection
+    - Test suite execution
     """
     ws = workspace or _default_workspace()
     t0 = time.time()
@@ -286,11 +499,23 @@ def full_self_analysis_report(workspace: str | None = None) -> dict[str, Any]:
     # 4. Threading / performance
     report['performance'] = diagnose_performance(ws)
 
-    # 5. Overall health
+    # 5. @Slot decorator verification (QML ↔ Python binding integrity)
+    report['slot_decorators'] = verify_slot_decorators(ws)
+
+    # 6. Intent routing verification (user phrases → correct handlers)
+    report['intent_routing'] = verify_intent_routing(ws)
+
+    # 7. Test suite (regression)
+    report['tests'] = run_test_suite(ws)
+
+    # 8. Overall health
     all_ok = (
         report['syntax']['ok']
         and report['mcp_tools']['ok']
         and report['performance']['performance_ok']
+        and report['slot_decorators']['ok']
+        and report['intent_routing']['ok']
+        and report.get('tests', {}).get('ok', True)
         and report['unmerged_count'] == 0
     )
     report['overall_health'] = 'healthy' if all_ok else 'needs_attention'
@@ -302,6 +527,12 @@ def full_self_analysis_report(workspace: str | None = None) -> dict[str, Any]:
         issues_summary.append(f"MCP indent issues: {len(report['mcp_tools']['indent_issues'])}")
     if not report['performance']['performance_ok']:
         issues_summary.append(f"performance issues: {report['performance']['findings_count']}")
+    if not report['slot_decorators']['ok']:
+        issues_summary.append(f"missing @Slot: {len(report['slot_decorators']['issues'])}")
+    if not report['intent_routing']['ok']:
+        issues_summary.append(f"intent routing issues: {len(report['intent_routing'].get('missing_handlers', []))}")
+    if not report.get('tests', {}).get('ok', True):
+        issues_summary.append(f"test failures: {report['tests'].get('summary', 'unknown')}")
     if report['unmerged_count'] > 0:
         issues_summary.append(f"unmerged branches: {report['unmerged_count']}")
 

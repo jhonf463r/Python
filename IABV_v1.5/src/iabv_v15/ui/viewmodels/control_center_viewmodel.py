@@ -5143,43 +5143,78 @@ class ControlCenterViewModel(QObject):
                     ws = os.getcwd()
                 sections: list[str] = []
 
-                # 1. Self code analysis
+                # 1. Full self code analysis (includes syntax, slots, routing, tests, perf)
                 try:
                     from iabv_v15.services.self_code_analysis import full_self_analysis_report
                     report = full_self_analysis_report(ws)
                     syntax = report.get('syntax', {})
                     mcp = report.get('mcp_tools', {})
                     perf = report.get('performance', {})
-                    threading_info = report.get('threading', {})
-                    branches = report.get('unmerged_branches', {})
-                    branch_count = branches.get('count', 0) if isinstance(branches, dict) else 0
+                    slots = report.get('slot_decorators', {})
+                    routing = report.get('intent_routing', {})
+                    tests = report.get('tests', {})
+                    branches = report.get('unmerged_branches', [])
+                    branch_count = len(branches) if isinstance(branches, list) else 0
 
-                    sections.append('ANALISIS DE CODIGO')
+                    sections.append('== ANALISIS DE CODIGO ==')
                     sections.append(f"Salud general: {report.get('overall_health', 'desconocido')}")
                     sections.append(f"Sintaxis: {syntax.get('summary', 'sin datos')}")
                     sections.append(f"MCP Tools: {mcp.get('summary', 'sin datos')}")
                     sections.append(f"Rendimiento: {perf.get('summary', 'sin datos')}")
-                    if threading_info.get('issues'):
-                        sections.append(f"Threading: {len(threading_info['issues'])} problemas detectados")
-                        for issue in threading_info['issues'][:5]:
-                            sections.append(f"  - {issue.get('file', '?')}: {issue.get('description', '?')}")
+
+                    sections.append('')
+                    sections.append('== INTEGRIDAD QML-PYTHON ==')
+                    sections.append(f"@Slot decorators: {slots.get('summary', 'sin datos')}")
+                    if slots.get('issues'):
+                        for si in slots['issues'][:5]:
+                            sections.append(f"  CRITICO: {si.get('method', '?')}() sin @Slot — QML no puede invocarlo")
+
+                    sections.append('')
+                    sections.append('== ROUTING DE INTENCION ==')
+                    sections.append(f"Rutas verificadas: {routing.get('summary', 'sin datos')}")
+                    if routing.get('missing_handlers'):
+                        for mh in routing['missing_handlers']:
+                            sections.append(f"  FALTA: handler {mh} no existe")
+                    if routing.get('unwired_handlers'):
+                        for uh in routing['unwired_handlers']:
+                            sections.append(f"  DESCONECTADO: handler {uh} existe pero no esta wired en sendChat")
+                    routing_results = routing.get('results', [])
+                    for rr in routing_results:
+                        status = rr.get('status', '?')
+                        phrase = rr.get('phrase', '?')
+                        if status != 'OK':
+                            sections.append(f"  {status}: '{phrase}' -> {rr.get('reason', '?')}")
+
+                    sections.append('')
+                    sections.append('== TESTS ==')
+                    if tests.get('skipped'):
+                        sections.append('Tests: no hay directorio tests/')
+                    elif tests.get('ok'):
+                        sections.append(f"Tests: {tests.get('summary', 'OK')}")
                     else:
-                        sections.append('Threading: sin problemas detectados')
+                        sections.append(f"Tests: FALLARON — {tests.get('summary', 'error')}")
+                        test_output = tests.get('output', '')
+                        if test_output:
+                            for line in test_output.splitlines()[-10:]:
+                                sections.append(f"  {line}")
+
                     if branch_count > 0:
-                        sections.append(f"Ramas sin mergear: {branch_count}")
-                        top_branches = branches.get('top_branches', [])[:5]
-                        for b in top_branches:
-                            bname = b.get('name', '?') if isinstance(b, dict) else str(b)
-                            sections.append(f"  - {bname}")
+                        sections.append('')
+                        sections.append(f'== RAMAS SIN MERGEAR: {branch_count} ==')
+                        for b in branches[:5]:
+                            bname = b.get('branch', '?') if isinstance(b, dict) else str(b)
+                            commits = b.get('commits_ahead', 0) if isinstance(b, dict) else 0
+                            sections.append(f"  - {bname} ({commits} commits)")
                 except Exception as exc:
                     sections.append(f'Error en self_code_analysis: {exc}')
 
                 # 2. GPU metacognition
+                gpu_issues: list[str] = []
                 try:
                     from iabv_v15.services.gpu_metacognition import gpu_metacognition_report
                     gpu = gpu_metacognition_report()
                     sections.append('')
-                    sections.append('GPU')
+                    sections.append('== GPU ==')
                     gpu_count = gpu.get('nvidia_count', 0) + gpu.get('intel_igpu_count', 0)
                     sections.append(f"GPUs detectadas: {gpu_count}")
                     ollama = gpu.get('ollama_state', {})
@@ -5198,29 +5233,34 @@ class ControlCenterViewModel(QObject):
                 except Exception as exc:
                     sections.append(f'Error en gpu_metacognition: {exc}')
 
-                # 3. Resumen ejecutivo
+                # 3. Resumen ejecutivo con transparencia total
                 sections.append('')
-                sections.append('RESUMEN')
-                all_ok = True
+                sections.append('== VEREDICTO ==')
                 issues_found: list[str] = []
                 if syntax.get('errors'):
-                    all_ok = False
                     issues_found.append(f"{len(syntax['errors'])} errores de sintaxis")
+                if not slots.get('ok', True):
+                    issues_found.append(f"{len(slots.get('issues', []))} metodos sin @Slot (QML roto)")
+                if not routing.get('ok', True):
+                    issues_found.append('routing de intencion incompleto')
+                if not tests.get('ok', True) and not tests.get('skipped'):
+                    issues_found.append(f"tests fallaron: {tests.get('summary', '?')}")
                 if branch_count > 10:
                     issues_found.append(f"{branch_count} ramas sin mergear (deuda tecnica)")
-                if threading_info.get('issues'):
-                    all_ok = False
-                    issues_found.append(f"{len(threading_info['issues'])} problemas de threading")
                 if gpu_issues:
                     issues_found.append(f"{len(gpu_issues)} issues de GPU")
+                perf_findings = perf.get('findings', [])
+                if perf_findings:
+                    issues_found.append(f"{len(perf_findings)} problemas de rendimiento")
                 if issues_found:
-                    sections.append('Issues encontrados: ' + ', '.join(issues_found))
+                    sections.append('Issues encontrados:')
+                    for iss in issues_found:
+                        sections.append(f'  - {iss}')
+                    sections.append('Estado: NECESITA ATENCION')
                 else:
-                    sections.append('No se encontraron problemas criticos.')
-                if all_ok and not issues_found:
-                    sections.append('Estado: codigo saludable, listo para produccion.')
-                else:
-                    sections.append('Estado: necesita atencion. Revisa los issues arriba.')
+                    sections.append('No se encontraron problemas.')
+                    sections.append('Estado: codigo verificado, listo para produccion.')
+                sections.append(f"Tiempo de analisis: {report.get('elapsed_seconds', '?')}s")
 
                 reply = '\n'.join(sections)
                 self._append_message(
