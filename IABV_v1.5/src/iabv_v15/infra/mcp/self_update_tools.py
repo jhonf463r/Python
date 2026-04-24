@@ -142,18 +142,25 @@ def register(mcp: Any, workspace_root: str | Path) -> None:
                                 f'Eliminar la declaracion explicita del signal.'
                             )
 
-                # ── Python: detectar asignacion directa a modelos Pydantic ──
+                # ── Python: detectar anti-patrones aprendidos ──
                 if fpath.endswith('.py'):
                     for i, line in enumerate(text.splitlines(), 1):
-                        # card.some_field = ... donde card es tipo known Pydantic
+                        stripped = line.strip()
+                        # Detectar ThreadPoolExecutor en archivos de UI
+                        if 'viewmodel' in fpath.lower() or 'view_model' in fpath.lower():
+                            if 'with concurrent.futures.ThreadPoolExecutor' in stripped:
+                                errors.append(
+                                    f'THREADPOOL_UI_BLOCK: {fpath}:{i} usa '
+                                    f'"with ThreadPoolExecutor" en ViewModel — '
+                                    f'pool.shutdown(wait=True) bloquea la UI. '
+                                    f'Usar threading.Thread + threading.Event.'
+                                )
+                        # Detectar asignacion directa a modelos Pydantic
                         if 'card.' in line and '=' in line and 'card.metadata' not in line:
-                            # Heuristica: si asigna a un campo que no es metadata
-                            stripped = line.strip()
                             if (_re.match(r'card\.(?!metadata)[a-z_]+\s*=', stripped)
                                     and 'getattr' not in stripped
                                     and '#' not in stripped.split('=')[0]):
-                                # Solo warning, no bloquea
-                                pass
+                                pass  # Solo warning
 
             return errors
 

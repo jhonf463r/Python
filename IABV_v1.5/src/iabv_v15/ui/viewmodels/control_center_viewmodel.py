@@ -5319,8 +5319,21 @@ class ControlCenterViewModel(QObject):
 
     def sendChat(self, text: str) -> None:
         message = text.strip()
-        if not message or self._working:
+        if not message:
             return
+        # Safety: si _working quedo stuck de una llamada anterior (>60s),
+        # resetearlo para no bloquear al usuario permanentemente.
+        # APRENDIDO: _working puede quedar en True si worker() lanza excepcion
+        # no capturada o si el signal taskFailed no se emite correctamente.
+        if self._working:
+            import time
+            elapsed = time.time() - getattr(self, '_working_since', 0)
+            if elapsed < 60:
+                return
+            # Reset forzado: _working stuck por mas de 60 segundos
+            self._working = False
+            self._set_live_status('idle')
+            self._clear_autonomy_activity_override()
         user_attachments = list(self._attached_files) if self._attached_files else None
         self._append_message('user', 'Tu', message, self._routing_mode_label(),
                             attachments=user_attachments)
@@ -5339,13 +5352,23 @@ class ControlCenterViewModel(QObject):
         if self._try_handle_chat_command(message):
             return
         # _chat_shortcut_analysis puede llamar a LLM — ejecutar con timeout
-        try:
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                future = pool.submit(self._chat_shortcut_analysis, message)
-                shortcut_analysis = future.result(timeout=3)
-        except (concurrent.futures.TimeoutError, Exception):
-            shortcut_analysis = {}
+        # APRENDIDO: NO usar 'with ThreadPoolExecutor' en hilo de UI porque
+        # pool.shutdown(wait=True) bloquea al salir del with aunque el timeout
+        # se haya cumplido. Usar Thread + Event en su lugar.
+        shortcut_analysis = {}
+        _sa_result: dict[str, Any] = {}
+        _sa_done = threading.Event()
+        def _sa_worker() -> None:
+            try:
+                _sa_result.update(self._chat_shortcut_analysis(message))
+            except Exception:
+                pass
+            finally:
+                _sa_done.set()
+        _sa_thread = threading.Thread(target=_sa_worker, daemon=True)
+        _sa_thread.start()
+        if _sa_done.wait(timeout=3):
+            shortcut_analysis = _sa_result
         allow_chat_shortcuts = not bool(shortcut_analysis.get('mixed_actionable')) and not bool(shortcut_analysis.get('requires_clarification'))
         if allow_chat_shortcuts and self._is_world_model_question(message):
             self._answer_world_model_question(message)
@@ -5370,7 +5393,9 @@ class ControlCenterViewModel(QObject):
             self._last_user_goal = message
             self._run_external_consultation(explicit_assistant, announce=True)
             return
+        import time as _time
         self._working = True
+        self._working_since = _time.time()
         self._busy_label = 'Estoy entendiendo tu mensaje y preparando la mejor respuesta.'
         self._set_autonomy_activity_override(
             visible=True,

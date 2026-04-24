@@ -331,6 +331,36 @@ class SelfAuditService:
             'affected_files': ['tool_adapters.py'],
         },
         {
+            'id': 'THREADPOOL_UI_BLOCK',
+            'category': 'python',
+            'severity': 'error',
+            'title': 'Python: with ThreadPoolExecutor bloquea hilo de UI al salir',
+            'description': (
+                'Usar "with ThreadPoolExecutor() as pool" en el hilo principal de '
+                'la UI causa que pool.shutdown(wait=True) bloquee al salir del with, '
+                'incluso si future.result(timeout=N) ya lanzo TimeoutError. '
+                'Solucion: usar threading.Thread + threading.Event para timeout '
+                'sin bloquear el hilo de UI al finalizar.'
+            ),
+            'first_seen': '2026-04-23',
+            'affected_files': ['control_center_viewmodel.py'],
+        },
+        {
+            'id': 'WORKING_FLAG_STUCK',
+            'category': 'ui',
+            'severity': 'error',
+            'title': 'UI: _working=True puede quedar stuck si worker() falla',
+            'description': (
+                'Si el worker thread de sendChat lanza una excepcion no capturada '
+                'o si el signal taskFailed/taskResolved no se emite correctamente, '
+                '_working queda en True y el chat rechaza todos los mensajes. '
+                'Solucion: agregar timeout de seguridad que resetee _working si '
+                'lleva mas de 60 segundos en True.'
+            ),
+            'first_seen': '2026-04-23',
+            'affected_files': ['control_center_viewmodel.py'],
+        },
+        {
             'id': 'COMPONENTS_NOT_INTEGRATED',
             'category': 'ui',
             'severity': 'warning',

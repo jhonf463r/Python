@@ -44,6 +44,29 @@ class AutonomyActivityProjector:
         activity = dict(autonomy_activity or {})
         tasks = [task for task in self.tool_record_repository.list_tasks(limit=36) if self._is_assistant_task(task)]
         latest_results = {task.task_id: self._latest_result(task.task_id) for task in tasks}
+        # Limpiar tareas estancadas: si un task tiene resultado failed/blocked
+        # por mas de 5 minutos, marcarlo como resuelto para que no bloquee la UI
+        import datetime as _dt
+        now = _dt.datetime.now(_dt.timezone.utc)
+        cleaned_tasks = []
+        for task in tasks:
+            result = latest_results.get(task.task_id)
+            if result is not None:
+                exec_state = getattr(result, 'execution_state', None)
+                state = str(getattr(exec_state, 'state', '') or '').strip().lower()
+                updated_at = getattr(result, 'updated_at', None) or getattr(task, 'updated_at', None)
+                if state in {'failed', 'blocked', 'adapter_missing'}:
+                    if updated_at and hasattr(updated_at, 'tzinfo'):
+                        try:
+                            age = (now - updated_at).total_seconds()
+                        except Exception:
+                            age = 999
+                    else:
+                        age = 999
+                    if age > 300:  # 5 minutos
+                        continue  # No mostrar en la UI
+            cleaned_tasks.append(task)
+        tasks = cleaned_tasks
         tasks.sort(key=lambda item: self._sort_key(item, latest_results.get(item.task_id)), reverse=True)
         assistant_session_cards = self._assistant_session_cards(tasks, latest_results)
         live_work_items = [self._work_item(task, latest_results.get(task.task_id)) for task in tasks[:6]]
