@@ -321,3 +321,56 @@ class TestCudaVisibleDevicesDetection:
         cuda_findings = [f for f in result['findings']
                          if f.get('source_a') == 'CUDA_VISIBLE_DEVICES']
         assert len(cuda_findings) == 0
+
+
+# ---------------------------------------------------------------------------
+# auto_diagnose_and_fix_gpu
+# ---------------------------------------------------------------------------
+
+class TestAutoDiagnoseAndFixGpu:
+    """Verify auto-diagnosis detects and fixes GPU misconfiguration."""
+
+    def test_detects_and_fixes_cuda_vis_misconfiguration(self):
+        import os
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        fake_gpus = [{'index': 0, 'name': 'RTX 4050', 'utilization_pct': 0,
+                      'memory_used_mb': 0, 'memory_total_mb': 6141, 'temperature_c': 30}]
+        with patch.object(svc, 'query_all_gpus', return_value=fake_gpus), \
+             patch.object(svc, 'query_gpu_processes', return_value=[]), \
+             patch.object(svc, 'query_ollama_ps', return_value=[]), \
+             patch.object(svc, 'query_windows_gpu_counters', return_value=[]), \
+             patch.dict(os.environ, {'CUDA_VISIBLE_DEVICES': '1'}):
+            report = svc.auto_diagnose_and_fix_gpu()
+        assert any(f['severity'] == 'HIGH' for f in report['findings'])
+        assert len(report['actions_taken']) >= 1
+        assert 'CUDA_VISIBLE_DEVICES' in report['actions_taken'][0]
+
+    def test_detects_model_on_cpu_with_gpu_available(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        fake_gpus = [{'index': 0, 'name': 'RTX 4050', 'utilization_pct': 0,
+                      'memory_used_mb': 0, 'memory_total_mb': 6141, 'temperature_c': 30}]
+        fake_ollama = [{'name': 'gemma3:4b', 'id': 'abc', 'size': '4.1 GB', 'processor': '100% CPU'}]
+        with patch.object(svc, 'query_all_gpus', return_value=fake_gpus), \
+             patch.object(svc, 'query_gpu_processes', return_value=[]), \
+             patch.object(svc, 'query_ollama_ps', return_value=fake_ollama), \
+             patch.object(svc, 'query_windows_gpu_counters', return_value=[]), \
+             patch.dict('os.environ', {}, clear=False):
+            report = svc.auto_diagnose_and_fix_gpu()
+        cpu_findings = [f for f in report['findings'] if f['type'] == 'suboptimal']
+        assert len(cpu_findings) >= 1
+        assert 'CPU' in cpu_findings[0]['detail']
+
+    def test_clean_config_reports_no_issues(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        fake_gpus = [{'index': 0, 'name': 'RTX 4050', 'utilization_pct': 30,
+                      'memory_used_mb': 3000, 'memory_total_mb': 6141, 'temperature_c': 40}]
+        fake_ollama = [{'name': 'gemma3:4b', 'id': 'abc', 'size': '4.1 GB', 'processor': '100% GPU'}]
+        fake_procs = [{'pid': '1234', 'process_name': 'ollama_llama_server', 'vram_used_mb': '3000'}]
+        with patch.object(svc, 'query_all_gpus', return_value=fake_gpus), \
+             patch.object(svc, 'query_gpu_processes', return_value=fake_procs), \
+             patch.object(svc, 'query_ollama_ps', return_value=fake_ollama), \
+             patch.object(svc, 'query_windows_gpu_counters', return_value=[]), \
+             patch.dict('os.environ', {}, clear=False):
+            report = svc.auto_diagnose_and_fix_gpu()
+        assert report['verdict'] == 'GPU configurada correctamente'
+        assert len(report['findings']) == 0

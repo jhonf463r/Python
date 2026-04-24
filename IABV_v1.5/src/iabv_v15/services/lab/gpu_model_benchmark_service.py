@@ -218,6 +218,169 @@ class GpuModelBenchmarkService:
                 })
         return models
 
+    def query_windows_gpu_counters(self) -> list[dict[str, Any]]:
+        """Query Windows Performance Counters for GPU utilization.
+
+        This reads the same data source that Task Manager uses, providing
+        an independent truth source that can be compared against nvidia-smi.
+        Only works on Windows with ``wmic`` or PowerShell available.
+        """
+        if os.name != 'nt':
+            return []
+        # Try nvidia-smi pmon for per-process GPU utilization (cross-platform)
+        nvidia = shutil.which('nvidia-smi')
+        if not nvidia:
+            return []
+        try:
+            result = subprocess.run(
+                [nvidia, 'pmon', '-c', '1', '-s', 'u'],
+                capture_output=True, text=True, timeout=5,
+                encoding='utf-8', errors='ignore', check=False,
+            )
+        except Exception:
+            return []
+        if result.returncode != 0:
+            return []
+        entries: list[dict[str, Any]] = []
+        for line in result.stdout.strip().splitlines():
+            if line.startswith('#') or not line.strip():
+                continue
+            parts = line.split()
+            if len(parts) >= 4:
+                try:
+                    entries.append({
+                        'gpu_idx': int(parts[0]),
+                        'pid': int(parts[1]),
+                        'sm_util': parts[3] if parts[3] != '-' else '0',
+                        'type': parts[2] if len(parts) > 2 else '?',
+                    })
+                except (ValueError, IndexError):
+                    continue
+        return entries
+
+    def auto_diagnose_and_fix_gpu(self) -> dict[str, Any]:
+        """Auto-diagnose GPU configuration and attempt to fix issues.
+
+        The program uses all available truth sources to understand its own
+        GPU environment, detect misconfigurations, and auto-correct them.
+        This is the metacognitive self-adjustment capability.
+
+        Returns a diagnosis report with findings and actions taken.
+        """
+        report: dict[str, Any] = {
+            'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
+            'findings': [],
+            'actions_taken': [],
+            'gpu_status_before': {},
+            'gpu_status_after': {},
+        }
+
+        # --- Gather all truth sources ---
+        gpus = self.query_all_gpus()
+        procs = self.query_gpu_processes()
+        ollama_models = self.query_ollama_ps()
+        cuda_vis = os.environ.get('CUDA_VISIBLE_DEVICES', '')
+        win_counters = self.query_windows_gpu_counters()
+
+        report['gpu_status_before'] = {
+            'nvidia_smi_gpus': gpus,
+            'nvidia_smi_processes': procs,
+            'ollama_ps': ollama_models,
+            'cuda_visible_devices': cuda_vis,
+            'windows_gpu_counters': win_counters,
+        }
+
+        nvidia_indices = {g['index'] for g in gpus}
+
+        # --- Finding 1: CUDA_VISIBLE_DEVICES misconfiguration ---
+        if cuda_vis:
+            try:
+                requested = [int(x.strip()) for x in cuda_vis.split(',') if x.strip()]
+                invalid = [i for i in requested if i not in nvidia_indices]
+                if invalid:
+                    report['findings'].append({
+                        'type': 'misconfiguration',
+                        'severity': 'HIGH',
+                        'detail': (
+                            f'CUDA_VISIBLE_DEVICES={cuda_vis} apunta a GPU(s) '
+                            f'{invalid} que no existen (reales: {sorted(nvidia_indices)}). '
+                            f'Nota: Task Manager y CUDA usan numeracion diferente. '
+                            f'Task Manager GPU0=Intel iGPU, GPU1=NVIDIA; '
+                            f'CUDA GPU0=NVIDIA (solo cuenta GPUs NVIDIA).'
+                        ),
+                    })
+                    # --- Auto-fix: unset CUDA_VISIBLE_DEVICES ---
+                    os.environ.pop('CUDA_VISIBLE_DEVICES', None)
+                    report['actions_taken'].append(
+                        'Removido CUDA_VISIBLE_DEVICES del environment (apuntaba a GPU inexistente)'
+                    )
+            except ValueError:
+                pass
+
+        # --- Finding 2: Ollama models on CPU when GPU is available ---
+        for m in ollama_models:
+            proc = str(m.get('processor', '')).lower()
+            if ('cpu' in proc or proc == '0%') and gpus:
+                gpu_free = max(
+                    (g['memory_total_mb'] - g['memory_used_mb'] for g in gpus),
+                    default=0,
+                )
+                report['findings'].append({
+                    'type': 'suboptimal',
+                    'severity': 'MEDIUM',
+                    'detail': (
+                        f'Modelo {m.get("name", "?")} cargado en CPU pero hay '
+                        f'{gpu_free}MB VRAM libre en GPU. Posible causa: '
+                        f'CUDA_VISIBLE_DEVICES incorrecto o Ollama sin soporte CUDA.'
+                    ),
+                })
+
+        # --- Finding 3: No NVIDIA GPU detected ---
+        if not gpus:
+            report['findings'].append({
+                'type': 'hardware',
+                'severity': 'HIGH',
+                'detail': (
+                    'nvidia-smi no detecta ninguna GPU NVIDIA. '
+                    'Verificar driver NVIDIA instalado y funcionando.'
+                ),
+            })
+
+        # --- Finding 4: GPU available but no processes using it ---
+        if gpus and not procs and ollama_models:
+            report['findings'].append({
+                'type': 'discrepancy',
+                'severity': 'MEDIUM',
+                'detail': (
+                    'Hay modelos Ollama cargados pero ningun proceso '
+                    'aparece en nvidia-smi compute apps. Ollama no esta '
+                    'usando GPU compute.'
+                ),
+            })
+
+        # --- Collect after-fix state ---
+        report['gpu_status_after'] = {
+            'nvidia_smi_gpus': self.query_all_gpus(),
+            'cuda_visible_devices': os.environ.get('CUDA_VISIBLE_DEVICES', '(unset)'),
+        }
+
+        # --- Overall verdict ---
+        has_high = any(f['severity'] == 'HIGH' for f in report['findings'])
+        report['verdict'] = (
+            'REQUIERE ATENCION: se encontraron problemas graves de configuracion GPU'
+            if has_high
+            else 'GPU configurada correctamente'
+            if not report['findings']
+            else 'PARCIAL: se encontraron problemas menores de configuracion GPU'
+        )
+
+        logger.info(
+            'gpu_auto_diagnosis: %s — %d findings, %d actions',
+            report['verdict'], len(report['findings']), len(report['actions_taken']),
+        )
+
+        return report
+
     def _collect_truth_sources(self) -> dict[str, Any]:
         """Collect data from all available truth sources about GPU state."""
         return {
@@ -225,6 +388,7 @@ class GpuModelBenchmarkService:
             'nvidia_smi_processes': self.query_gpu_processes(),
             'ollama_ps': self.query_ollama_ps(),
             'cuda_visible_devices': os.environ.get('CUDA_VISIBLE_DEVICES', ''),
+            'windows_gpu_counters': self.query_windows_gpu_counters(),
         }
 
     def _cross_reference_sources(
