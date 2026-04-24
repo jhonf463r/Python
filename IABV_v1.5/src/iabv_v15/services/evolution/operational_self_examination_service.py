@@ -1970,12 +1970,45 @@ class OperationalSelfExaminationService:
 
         post_success_rate = sum(1 for r in post_runs if r.success) / max(len(post_runs), 1)
 
+        # Historical calibration: load ledger to detect persistent patterns.
+        # Runs independently of calibrated_findings — only needs the ledger.
+        ledger = self._load_metacognitive_ledger()
+        if ledger:
+            total_fp = sum(len(entry.get('false_positives') or []) for entry in ledger)
+            total_fn = sum(len(entry.get('false_negatives') or []) for entry in ledger)
+            if total_fp + total_fn >= 4:
+                dominant_error = 'falsos positivos' if total_fp > total_fn else 'falsos negativos'
+                results.append(SelfExaminationFinding(
+                    title=f'Patrón metacognitivo persistente: tendencia a {dominant_error}',
+                    summary=(
+                        f'El ledger metacognitivo acumula {total_fp} falso(s) positivo(s) y '
+                        f'{total_fn} falso(s) negativo(s) en {len(ledger)} ciclo(s). '
+                        f'La tendencia dominante es hacia {dominant_error}, lo que indica '
+                        f'un sesgo sistemático en la autoexaminación.'
+                    ),
+                    severity=IssueSeverity.HIGH,
+                    category='metacognitive_persistent_bias',
+                    confidence=min(0.92, 0.5 + (total_fp + total_fn) * 0.04),
+                    recommendation=(
+                        f'Recalibrar umbrales de detección para compensar el sesgo hacia {dominant_error}. '
+                        f'Si el sesgo es hacia falsos positivos, elevar los mínimos de evidencia. '
+                        f'Si es hacia falsos negativos, ampliar la cobertura de monitoreo.'
+                    ),
+                    metadata={
+                        'total_false_positives': total_fp,
+                        'total_false_negatives': total_fn,
+                        'ledger_entries': len(ledger),
+                        'dominant_error': dominant_error,
+                    },
+                ))
+
+        # Overconfidence / underconfidence checks require calibrated findings
         calibrated_findings = [
             f for f in (previous_review.findings or [])
             if f.confidence > 0.0
         ]
         if not calibrated_findings:
-            return results
+            return results[:2]
 
         avg_confidence = sum(f.confidence for f in calibrated_findings) / len(calibrated_findings)
         high_severity_count = sum(1 for f in calibrated_findings if f.severity in {IssueSeverity.HIGH, IssueSeverity.CRITICAL})
@@ -2041,37 +2074,6 @@ class OperationalSelfExaminationService:
                     'post_run_count': len(post_runs),
                 },
             ))
-
-        # Historical calibration: load ledger to detect persistent patterns
-        ledger = self._load_metacognitive_ledger()
-        if ledger:
-            total_fp = sum(len(entry.get('false_positives') or []) for entry in ledger)
-            total_fn = sum(len(entry.get('false_negatives') or []) for entry in ledger)
-            if total_fp + total_fn >= 4:
-                dominant_error = 'falsos positivos' if total_fp > total_fn else 'falsos negativos'
-                results.append(SelfExaminationFinding(
-                    title=f'Patrón metacognitivo persistente: tendencia a {dominant_error}',
-                    summary=(
-                        f'El ledger metacognitivo acumula {total_fp} falso(s) positivo(s) y '
-                        f'{total_fn} falso(s) negativo(s) en {len(ledger)} ciclo(s). '
-                        f'La tendencia dominante es hacia {dominant_error}, lo que indica '
-                        f'un sesgo sistemático en la autoexaminación.'
-                    ),
-                    severity=IssueSeverity.HIGH,
-                    category='metacognitive_persistent_bias',
-                    confidence=min(0.92, 0.5 + (total_fp + total_fn) * 0.04),
-                    recommendation=(
-                        f'Recalibrar umbrales de detección para compensar el sesgo hacia {dominant_error}. '
-                        f'Si el sesgo es hacia falsos positivos, elevar los mínimos de evidencia. '
-                        f'Si es hacia falsos negativos, ampliar la cobertura de monitoreo.'
-                    ),
-                    metadata={
-                        'total_false_positives': total_fp,
-                        'total_false_negatives': total_fn,
-                        'ledger_entries': len(ledger),
-                        'dominant_error': dominant_error,
-                    },
-                ))
 
         return results[:2]
 
