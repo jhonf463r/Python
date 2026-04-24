@@ -68,6 +68,15 @@ class ControlCenterViewModel(QObject):
     selfAuditCompleted = Signal(str)  # JSON serializado del SelfAuditSnapshot
     selfAuditFailed = Signal(str)     # detalle textual del fallo
 
+    # Señales avanzadas del chat (Frente 4 — UI Chat Avanzada)
+    fileAttached = Signal(dict)           # {name, path, size, type}
+    fileDetached = Signal(str)            # path del archivo removido
+    chatSearchResults = Signal(list)      # lista de mensajes filtrados
+    contextualSuggestionsChanged = Signal(list)  # sugerencias contextuales
+    liveStatusChanged = Signal(str)       # "idle"|"processing"|"streaming"|"error"
+    codeApplyRequested = Signal(str, str) # (code, language)
+    chatDownloadRequested = Signal(str, str)  # (content, filename)
+
     def __init__(
         self,
         *,
@@ -167,6 +176,10 @@ class ControlCenterViewModel(QObject):
         self._legacy_cards = self._build_legacy_cards()
         self._role_cards = [profile.model_dump(mode='json') for profile in self.role_router.role_profiles]
         self._chat_messages: list[dict[str, str]] = []
+        self._attached_files: list[dict[str, Any]] = []
+        self._live_status: str = 'idle'
+        self._contextual_suggestions: list[dict[str, Any]] = []
+        self._chat_search_query: str = ''
         self._pbt_state: dict[str, Any] = {}
         self._pbt_candidates: list[dict[str, Any]] = []
         self._diagnostic_text = 'Diagnostico pendiente. La consola revisa el stack local automaticamente y puedes pedirme ajustes o aprobaciones por chat.'
@@ -280,9 +293,22 @@ class ControlCenterViewModel(QObject):
             'idle': 'inactivo',
         }.get(status, status)
 
-    def _append_message(self, role: str, speaker: str, text: str, meta: str = '') -> None:
-        self._chat_messages.append({'role': role, 'speaker': speaker, 'text': text, 'meta': meta})
-        self._chat_messages = self._chat_messages[-18:]
+    def _append_message(self, role: str, speaker: str, text: str, meta: str = '',
+                        *, attachments: list[dict[str, Any]] | None = None,
+                        code_blocks: list[dict[str, Any]] | None = None,
+                        status: str = 'complete',
+                        reasoning: str = '') -> None:
+        msg: dict[str, Any] = {'role': role, 'speaker': speaker, 'text': text, 'meta': meta,
+                               'status': status, 'timestamp': datetime.now(timezone.utc).strftime('%H:%M')}
+        if attachments:
+            msg['attachments'] = attachments
+        if code_blocks:
+            msg['codeBlocks'] = code_blocks
+        if reasoning:
+            msg['reasoning'] = reasoning
+        self._chat_messages.append(msg)
+        self._chat_messages = self._chat_messages[-30:]
+        self._refresh_contextual_suggestions()
 
     def _count_payloads(self) -> int:
         payload_dir = Path(self.config.payloads_dir)
@@ -5091,11 +5117,148 @@ class ControlCenterViewModel(QObject):
         return '\n'.join(lines)
 
     @Slot(str)
+
+    # ── Frente 4: Chat avanzado — métodos ──────────────────────────
+    @Slot(str, str, int, str)
+    def attachFile(self, name: str, path: str, size: int, file_type: str) -> None:
+        entry = {'name': name, 'path': path, 'size': size, 'type': file_type}
+        self._attached_files.append(entry)
+        self.fileAttached.emit(entry)
+        self.dataChanged.emit()
+
+    @Slot(str)
+    def detachFile(self, path: str) -> None:
+        self._attached_files = [f for f in self._attached_files if f['path'] != path]
+        self.fileDetached.emit(path)
+        self.dataChanged.emit()
+
+    @Slot()
+    def clearAttachedFiles(self) -> None:
+        self._attached_files.clear()
+        self.dataChanged.emit()
+
+    @Property(list, notify=dataChanged)
+    def attachedFiles(self) -> list[dict[str, Any]]:
+        return list(self._attached_files)
+
+    @Property(int, notify=dataChanged)
+    def attachedFileCount(self) -> int:
+        return len(self._attached_files)
+
+    @Slot(str)
+    def searchChatHistory(self, query: str) -> None:
+        self._chat_search_query = query.strip().lower()
+        if not self._chat_search_query:
+            self.chatSearchResults.emit(self._chat_messages)
+            return
+        filtered = [
+            msg for msg in self._chat_messages
+            if self._chat_search_query in (msg.get('text', '') or '').lower()
+            or self._chat_search_query in (msg.get('speaker', '') or '').lower()
+        ]
+        self.chatSearchResults.emit(filtered)
+
+    @Property(str, notify=dataChanged)
+    def liveStatus(self) -> str:
+        return self._live_status
+
+    def _set_live_status(self, status: str) -> None:
+        if self._live_status != status:
+            self._live_status = status
+            self.liveStatusChanged.emit(status)
+            self.dataChanged.emit()
+
+    @Property(list, notify=dataChanged)
+    def contextualSuggestions(self) -> list[dict[str, Any]]:
+        return list(self._contextual_suggestions)
+
+    def _refresh_contextual_suggestions(self) -> None:
+        suggestions: list[dict[str, Any]] = []
+        if hasattr(self, '_efficiency_audit_service'):
+            suggestions.append({
+                'text': 'Ejecutar auditoria de eficiencia',
+                'category': 'audit',
+                'icon': '\U0001f50d',
+                'action': 'run_efficiency_audit',
+                'priority': 3,
+            })
+        if self._chat_messages and len(self._chat_messages) > 2:
+            suggestions.append({
+                'text': 'Revisar self-examination',
+                'category': 'diagnostic',
+                'icon': '\U0001f9e0',
+                'action': 'show_self_examination',
+                'priority': 2,
+            })
+        suggestions.append({
+            'text': 'Mostrar estado del mundo',
+            'category': 'command',
+            'icon': '\U0001f30d',
+            'action': 'world_model',
+            'priority': 1,
+        })
+        suggestions.append({
+            'text': 'Ver evolucion del sistema',
+            'category': 'evolution',
+            'icon': '\U0001f4c8',
+            'action': 'show_evolution',
+            'priority': 1,
+        })
+        if self._attached_files:
+            suggestions.append({
+                'text': f'Procesar {len(self._attached_files)} archivo(s) adjunto(s)',
+                'category': 'command',
+                'icon': '\U0001f4ce',
+                'action': 'process_attachments',
+                'priority': 5,
+            })
+        self._contextual_suggestions = suggestions
+        self.contextualSuggestionsChanged.emit(suggestions)
+
+    @Slot(str, str)
+    def handleSuggestionAction(self, action: str, text: str) -> None:
+        action_map = {
+            'run_efficiency_audit': 'Ejecutar auditoria de eficiencia',
+            'show_self_examination': 'mostrar self examination',
+            'world_model': 'mostrar estado del mundo',
+            'show_evolution': 'mostrar evolucion',
+            'process_attachments': 'procesar archivos adjuntos',
+        }
+        message = action_map.get(action, text)
+        self.sendChat(message)
+
+    @Slot(str, str)
+    def applyCode(self, code: str, language: str) -> None:
+        self.codeApplyRequested.emit(code, language)
+        self._append_message('system', 'IABV', f'Codigo {language} recibido para aplicar ({len(code)} chars).')
+        self.dataChanged.emit()
+
+    @Slot(str, str)
+    def downloadChat(self, content: str, filename: str) -> None:
+        self.chatDownloadRequested.emit(content, filename)
+        self._append_message('system', 'IABV', f'Descarga preparada: {filename}')
+        self.dataChanged.emit()
+
+    @Slot(str)
+    def copyToClipboard(self, text: str) -> None:
+        try:
+            from iabv_v15.ui.qt import QGuiApplication
+            clipboard = QGuiApplication.instance().clipboard()
+            if clipboard:
+                clipboard.setText(text)
+        except Exception:
+            pass
+
     def sendChat(self, text: str) -> None:
         message = text.strip()
         if not message or self._working:
             return
-        self._append_message('user', 'Tu', message, self._routing_mode_label())
+        user_attachments = list(self._attached_files) if self._attached_files else None
+        self._append_message('user', 'Tu', message, self._routing_mode_label(),
+                            attachments=user_attachments)
+        if self._attached_files:
+            self._attached_files.clear()
+        self._set_live_status('processing')
         # Escucha pasiva de capacidades declaradas (GPU, modelos, cuentas, runtimes).
         # Persiste detecciones a data/chat_research_backlog/*.jsonl para que OSES
         # y ExperimentLab las consuman despues como areas de investigacion. No
