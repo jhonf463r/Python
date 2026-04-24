@@ -1635,6 +1635,27 @@ class IABVMCPServer:
             }
 
         # ------------------------------------------------------------
+        # gpu_metacognition_check — verificación real de GPU
+        #
+        # Metacognición: el programa verifica qué GPU está usando
+        # realmente cruzando nvidia-smi, ollama ps y wmic.
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def gpu_metacognition_check() -> dict[str, Any]:
+            """Verificación metacognitiva de GPU (cross-validation).
+
+            Cruza nvidia-smi, ollama ps, y detección de hardware para
+            verificar que Ollama realmente usa la GPU correcta y que
+            los modelos caben 100% en VRAM.
+
+            Returns:
+                dict con gpus_detected, ollama_state, issues, recommendations.
+            """
+            from iabv_v15.services.gpu_metacognition import gpu_metacognition_report
+            return _to_jsonable(gpu_metacognition_report())
+
+        # ------------------------------------------------------------
         # self_update — el programa se actualiza a sí mismo (git pull)
         #
         # Metacognición: el programa puede aplicar sus propias mejoras
