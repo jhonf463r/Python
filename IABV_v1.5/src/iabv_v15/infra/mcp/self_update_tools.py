@@ -366,38 +366,115 @@ def register(mcp: Any, workspace_root: str | Path) -> None:
             except Exception as e:
                 result['pull_result'] = {'model': pull_model, 'error': str(e)[:200]}
 
-        # 5. Benchmark if requested
+        # 5. Benchmark REAL — test ALL chat models with nvidia-smi monitoring
         if benchmark:
-            prompt = 'Responde en una linea: cual es la capital de Colombia?'
-            for model_info in result['ollama_models'][:5]:
-                model_name = model_info['name']
+            import threading as _threading
+
+            prompt = 'Responde en una linea: cual es la capital de Colombia y cuantos habitantes tiene?'
+            chat_models = [m for m in result['ollama_models'] if 'embedding' not in m['name'].lower() and 'embed' not in m['name'].lower()]
+            chat_models.sort(key=lambda m: m['size_gb'])
+
+            def _gpu_snap():
                 try:
-                    with httpx.Client(timeout=60) as client:
+                    nv = subprocess.run(
+                        ['nvidia-smi', '--query-gpu=memory.used,memory.free,utilization.gpu,temperature.gpu',
+                         '--format=csv,noheader,nounits'],
+                        capture_output=True, text=True, timeout=5)
+                    if nv.returncode == 0:
+                        p = [x.strip() for x in nv.stdout.strip().split(',')]
+                        return {'vram_used': int(p[0]), 'vram_free': int(p[1]), 'util': int(p[2]), 'temp': int(p[3])}
+                except Exception:
+                    pass
+                return {}
+
+            def _unload_all():
+                try:
+                    with httpx.Client(timeout=10) as c:
+                        ps_data = c.get(f'{ollama_base}/api/ps').json().get('models', [])
+                        for m in ps_data:
+                            n = m.get('name', '')
+                            if n:
+                                c.post(f'{ollama_base}/api/generate', json={'model': n, 'keep_alive': 0}, timeout=10)
+                    _time.sleep(2)
+                except Exception:
+                    pass
+
+            for model_info in chat_models:
+                model_name = model_info['name']
+                _unload_all()
+                baseline = _gpu_snap()
+
+                gpu_samples = []
+                stop_ev = _threading.Event()
+                def _monitor():
+                    while not stop_ev.is_set():
+                        gpu_samples.append(_gpu_snap())
+                        stop_ev.wait(0.3)
+                mon = _threading.Thread(target=_monitor, daemon=True)
+                mon.start()
+
+                try:
+                    with httpx.Client(timeout=180) as client:
                         start = _time.time()
                         gen = client.post(f'{ollama_base}/api/generate',
                             json={'model': model_name, 'prompt': prompt, 'stream': False},
-                            timeout=60)
+                            timeout=180)
                         elapsed = round(_time.time() - start, 2)
-                        if gen.status_code == 200:
-                            data = gen.json()
-                            result['benchmark_results'].append({
-                                'model': model_name,
-                                'time_seconds': elapsed,
-                                'eval_count': data.get('eval_count', 0),
-                                'eval_duration_ns': data.get('eval_duration', 0),
-                                'tokens_per_second': round(data.get('eval_count', 0) / (data.get('eval_duration', 1) / 1e9), 1) if data.get('eval_duration') else 0,
-                                'response': data.get('response', '')[:100],
-                                'gpu_layers': 'check /api/ps for details',
-                            })
-                        else:
-                            result['benchmark_results'].append({
-                                'model': model_name, 'error': f'HTTP {gen.status_code}', 'time_seconds': elapsed,
-                            })
+
+                    stop_ev.set()
+                    mon.join(timeout=2)
+
+                    # GPU during inference
+                    max_vram = max((s.get('vram_used', 0) for s in gpu_samples), default=0)
+                    max_util = max((s.get('util', 0) for s in gpu_samples), default=0)
+                    avg_util = round(sum(s.get('util', 0) for s in gpu_samples) / max(len(gpu_samples), 1), 1)
+                    max_temp = max((s.get('temp', 0) for s in gpu_samples), default=0)
+
+                    # Check if model is on GPU
+                    using_gpu = False
+                    vram_model_gb = 0.0
+                    try:
+                        with httpx.Client(timeout=10) as c2:
+                            ps2 = c2.get(f'{ollama_base}/api/ps').json().get('models', [])
+                            for rm in ps2:
+                                if rm.get('name', '').startswith(model_name.split(':')[0]):
+                                    vram_model_gb = round(rm.get('size_vram', 0) / 1e9, 2)
+                                    using_gpu = rm.get('size_vram', 0) > 0
+                    except Exception:
+                        pass
+
+                    if gen.status_code == 200:
+                        data = gen.json()
+                        eval_count = data.get('eval_count', 0)
+                        eval_dur = data.get('eval_duration', 0)
+                        tps = round(eval_count / (eval_dur / 1e9), 1) if eval_dur else 0
+                        result['benchmark_results'].append({
+                            'model': model_name,
+                            'size_gb': model_info['size_gb'],
+                            'time_seconds': elapsed,
+                            'eval_count': eval_count,
+                            'tokens_per_second': tps,
+                            'response': data.get('response', '')[:150],
+                            'gpu_using_gpu': using_gpu,
+                            'gpu_vram_model_gb': vram_model_gb,
+                            'gpu_baseline_vram_mb': baseline.get('vram_used', 0),
+                            'gpu_max_vram_mb': max_vram,
+                            'gpu_max_util_pct': max_util,
+                            'gpu_avg_util_pct': avg_util,
+                            'gpu_max_temp_c': max_temp,
+                            'gpu_samples': len(gpu_samples),
+                        })
+                    else:
+                        stop_ev.set()
+                        result['benchmark_results'].append({
+                            'model': model_name, 'error': f'HTTP {gen.status_code}', 'time_seconds': elapsed,
+                        })
                 except Exception as e:
+                    stop_ev.set()
                     result['benchmark_results'].append({
                         'model': model_name, 'error': str(e)[:200],
                     })
 
         return json.dumps(result, indent=2, default=str)
 
-    logger.info('self_update_tools: 5 tools registered (write_repo_file, apply_text_patch, self_update_and_test, git_commit_and_push, gpu_diagnostics_and_benchmark)')
+    logger.info('self_update_tools: 5 tools registered (write_repo_file, apply_text_patch, self_update_and_test, git_commit_and_push, gpu_diagnostics_and_benchmark [REAL])')
