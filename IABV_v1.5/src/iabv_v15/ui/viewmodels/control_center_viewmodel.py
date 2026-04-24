@@ -5144,10 +5144,13 @@ class ControlCenterViewModel(QObject):
                 sections: list[str] = []
 
                 # 0. Auto-update: git pull antes de analizar
+                # Usa --rebase=false para tolerar divergencias locales
+                # (ej: commits de auto-merge previos que divergen del remoto).
+                # --ff-only falla en ese caso con "Diverging branches can't".
                 import subprocess as _sp
                 try:
                     pull_result = _sp.run(
-                        ['git', '-C', ws, 'pull', '--ff-only'],
+                        ['git', '-C', ws, 'pull', '--rebase=false'],
                         capture_output=True, text=True, timeout=30,
                     )
                     pull_out = pull_result.stdout.strip()
@@ -5157,12 +5160,31 @@ class ControlCenterViewModel(QObject):
                             sections.append('Ya estoy actualizado (git pull: up to date)')
                         else:
                             sections.append('== AUTO-UPDATE ==')
-                            sections.append(f'Me actualice exitosamente:')
+                            sections.append('Me actualice exitosamente:')
                             for line in pull_out.splitlines()[-5:]:
                                 sections.append(f'  {line}')
                     else:
-                        sections.append('== AUTO-UPDATE ==')
-                        sections.append(f'Error al actualizar: {pull_result.stderr.strip()[:200]}')
+                        # Fallback: fetch + merge para casos extremos
+                        _sp.run(
+                            ['git', '-C', ws, 'fetch', 'origin'],
+                            capture_output=True, text=True, timeout=30,
+                        )
+                        merge_r = _sp.run(
+                            ['git', '-C', ws, 'merge', '--no-edit', '-X', 'theirs',
+                             'origin/' + _sp.run(
+                                 ['git', '-C', ws, 'rev-parse', '--abbrev-ref', 'HEAD'],
+                                 capture_output=True, text=True, timeout=5,
+                             ).stdout.strip()],
+                            capture_output=True, text=True, timeout=30,
+                        )
+                        if merge_r.returncode == 0:
+                            sections.append('== AUTO-UPDATE ==')
+                            sections.append('Me actualice via fetch+merge (divergencia local resuelta):')
+                            for line in merge_r.stdout.strip().splitlines()[-5:]:
+                                sections.append(f'  {line}')
+                        else:
+                            sections.append('== AUTO-UPDATE ==')
+                            sections.append(f'Error al actualizar: {pull_result.stderr.strip()[:200]}')
                 except Exception as pull_exc:
                     sections.append('== AUTO-UPDATE ==')
                     sections.append(f'No pude actualizarme: {pull_exc}')
@@ -5267,7 +5289,7 @@ class ControlCenterViewModel(QObject):
                 sections.append('== DIAGNOSTICO DE TRABAJO EN VIVO ==')
                 try:
                     stalled_items: list[str] = []
-                    # Check adaptive sessions for stalled work
+                    # A) In-memory: check adaptive orchestrator sessions
                     if hasattr(self, 'adaptive_orchestrator'):
                         sessions = getattr(self.adaptive_orchestrator, '_sessions', {})
                         for sid, session in sessions.items():
@@ -5279,13 +5301,35 @@ class ControlCenterViewModel(QObject):
                                     stalled_items.append(
                                         f"Sesion {sid[:12]}... estancada en {int(progress*100)}% por {int(elapsed)}s — posible bloqueo"
                                     )
-                    # Check for visible browser consultations that should be background
+                    # B) On-disk: scan adaptive_sessions dir for non-completed sessions
+                    import json as _json
+                    from pathlib import Path as _Path
+                    sessions_dir = _Path(ws) / 'data' / 'evolution' / 'adaptive_sessions'
+                    if sessions_dir.exists():
+                        terminal_states = {'completed', 'failed', 'cancelled', 'noop'}
+                        disk_stalled = 0
+                        for sf in sessions_dir.glob('*.json'):
+                            try:
+                                sd = _json.loads(sf.read_text(encoding='utf-8', errors='replace'))
+                                s_status = str(sd.get('status', '')).lower()
+                                if s_status and s_status not in terminal_states:
+                                    disk_stalled += 1
+                                    if disk_stalled <= 5:
+                                        s_goal = str(sd.get('user_goal', ''))[:60]
+                                        stalled_items.append(
+                                            f"Sesion {sf.stem[:12]}... status={s_status} — '{s_goal}'"
+                                        )
+                            except Exception:
+                                continue
+                        if disk_stalled > 5:
+                            stalled_items.append(f"... y {disk_stalled - 5} sesiones mas no terminadas")
+                    # C) Check for visible browser consultations that should be background
                     if hasattr(self, '_consultation_history'):
                         for ch in list(self._consultation_history or [])[-5:]:
                             if ch.get('tool_id') in ('chatgpt_web_assisted', 'claude_web_assisted'):
                                 if ch.get('status') in ('prepared', 'awaiting_response'):
                                     stalled_items.append(
-                                        f"Consulta externa {ch.get('tool_id', '?')} abierta en browser visible — deberia ser background"
+                                        f"Consulta externa {ch.get('tool_id', '?')} abierta — deberia correr en background (headless)"
                                     )
                     if stalled_items:
                         for si_item in stalled_items:

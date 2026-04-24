@@ -651,7 +651,7 @@ class IABVMCPServer:
             response_wait_seconds: float = 45.0,
             reingest_only: bool = False,
             browser_profile_dir: str | None = None,
-            browser_headless: bool = False,
+            browser_headless: bool = True,
             input_selectors: list[str] | None = None,
             response_selectors: list[str] | None = None,
             submit_selectors: list[str] | None = None,
@@ -667,7 +667,7 @@ class IABVMCPServer:
                 response_wait_seconds: tope de espera de respuesta estable.
                 reingest_only: si True, sólo relee DOM sin pegar prompt.
                 browser_profile_dir: ruta del perfil persistente (opcional).
-                browser_headless: si True, corre sin ventana visible.
+                browser_headless: si True, corre sin ventana visible (default).
                 input_selectors / response_selectors / submit_selectors:
                     selectores del card (defaults = oficiales del ToolCard).
             """
