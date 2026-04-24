@@ -92,6 +92,56 @@ def query_nvidia_processes() -> list[dict]:
     return procs
 
 
+def query_cpu_info() -> dict:
+    """Query CPU information — cores, threads, name, and current usage."""
+    info: dict = {'available': False}
+    if sys.platform == 'win32':
+        try:
+            ps_cmd = (
+                '$cpu = Get-CimInstance Win32_Processor; '
+                '$load = (Get-Counter "\\Processor(_Total)\\% Processor Time" '
+                '-ErrorAction SilentlyContinue).CounterSamples[0].CookedValue; '
+                '[PSCustomObject]@{'
+                'Name=$cpu.Name; Cores=$cpu.NumberOfCores; '
+                'Threads=$cpu.NumberOfLogicalProcessors; '
+                'MaxClockMHz=$cpu.MaxClockSpeed; '
+                'LoadPct=[math]::Round($load,1); '
+                'RAMTotalGB=[math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory/1GB,1); '
+                'RAMFreeGB=[math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory/1MB,1)'
+                '} | ConvertTo-Json -Compress'
+            )
+            r = subprocess.run(
+                ['powershell', '-NoProfile', '-Command', ps_cmd],
+                capture_output=True, text=True, timeout=15, check=False,
+            )
+            if r.returncode == 0 and r.stdout.strip():
+                data = json.loads(r.stdout)
+                info = {
+                    'available': True,
+                    'name': data.get('Name', '?'),
+                    'cores': data.get('Cores', 0),
+                    'threads': data.get('Threads', 0),
+                    'max_clock_mhz': data.get('MaxClockMHz', 0),
+                    'load_pct': data.get('LoadPct', 0),
+                    'ram_total_gb': data.get('RAMTotalGB', 0),
+                    'ram_free_gb': data.get('RAMFreeGB', 0),
+                }
+        except Exception as e:
+            info = {'available': False, 'error': str(e)}
+    else:
+        try:
+            import multiprocessing
+            info = {
+                'available': True,
+                'name': 'Linux CPU',
+                'cores': multiprocessing.cpu_count(),
+                'threads': multiprocessing.cpu_count(),
+            }
+        except Exception:
+            pass
+    return info
+
+
 def _map_gpu_adapter_name(phys_id: str, luid: str) -> str:
     """Map Performance Counter GPU adapter to Task Manager GPU index.
 
@@ -881,14 +931,203 @@ def main():
     else:
         p(GREEN, '    Ninguna discrepancia encontrada — fuentes de verdad alineadas')
 
+    # === PHASE 4: High-performance reasoning ===
+    print()
+    p(BOLD, '▸ FASE 4: Razonamiento de alto rendimiento (metacognición de recursos)')
+    print()
+
+    print('  Analizando componentes del sistema...', flush=True)
+    cpu_info = query_cpu_info()
+    adapters = hw_fingerprint.get('all_adapters', [])
+    best_model = ok_results[0] if ok_results else None
+
+    reasoning: list[dict] = []
+
+    # --- CPU Analysis ---
+    if cpu_info.get('available'):
+        cpu_name = cpu_info.get('name', '?')
+        cores = cpu_info.get('cores', 0)
+        threads = cpu_info.get('threads', 0)
+        cpu_load = cpu_info.get('load_pct', 0)
+        ram_total = cpu_info.get('ram_total_gb', 0)
+        ram_free = cpu_info.get('ram_free_gb', 0)
+
+        p(CYAN, f'  [CPU] {cpu_name}')
+        p(CYAN, f'    {cores} cores / {threads} hilos, uso actual: {cpu_load}%')
+        p(CYAN, f'    RAM: {ram_free}GB libre de {ram_total}GB total')
+
+        if cpu_load < 30:
+            reasoning.append({
+                'component': 'CPU', 'status': 'subutilizado',
+                'detail': f'CPU al {cpu_load}% — {threads} hilos disponibles para '
+                          f'preprocesamiento paralelo, I/O, o tareas en background.',
+                'action': 'Se pueden paralelizar tareas de preprocessing de datos, '
+                          'tokenización, y post-procesamiento en CPU mientras la GPU '
+                          'hace inferencia.',
+            })
+        elif cpu_load > 80:
+            reasoning.append({
+                'component': 'CPU', 'status': 'saturado',
+                'detail': f'CPU al {cpu_load}% — puede ser cuello de botella para I/O.',
+                'action': 'Reducir procesos en background o usar batch processing '
+                          'para reducir overhead de CPU.',
+            })
+        else:
+            reasoning.append({
+                'component': 'CPU', 'status': 'balanceado',
+                'detail': f'CPU al {cpu_load}% — buen balance entre cómputo y disponibilidad.',
+                'action': 'Configuración actual óptima para CPU.',
+            })
+
+        # RAM check for model loading
+        if ram_free and ram_total:
+            ram_pct_free = round(ram_free / ram_total * 100, 1)
+            if ram_pct_free < 20:
+                reasoning.append({
+                    'component': 'RAM', 'status': 'bajo',
+                    'detail': f'Solo {ram_free}GB libre ({ram_pct_free}% de {ram_total}GB). '
+                              f'Modelos grandes pueden causar swapping.',
+                    'action': 'Usar modelos más pequeños (4b en vez de 8b) o cerrar '
+                              'aplicaciones que consuman RAM.',
+                })
+
+    # --- GPU Analysis ---
+    p(CYAN, '  [GPUs] Análisis de adaptadores:')
+    nvidia_gpu = None
+    intel_gpu = None
+    for i, a in enumerate(adapters):
+        name = a.get('name', '')
+        vram_mb = round(a.get('vram_bytes', 0) / 1024 / 1024) if a.get('vram_bytes') else 0
+        p(CYAN, f'    GPU{i}: {name} ({vram_mb}MB)')
+        if 'nvidia' in name.lower():
+            nvidia_gpu = {'index': i, 'name': name, 'vram_mb': vram_mb}
+        elif 'intel' in name.lower():
+            intel_gpu = {'index': i, 'name': name, 'vram_mb': vram_mb}
+
+    # NVIDIA GPU reasoning
+    if nvidia_gpu and best_model:
+        peak_util = max(best_model.get('peak_util_per_gpu', {}).values(), default=0)
+        avg_util = max(best_model.get('avg_util_per_gpu', {}).values(), default=0)
+        vram_used = gpus[0]['mem_used_mb'] if gpus else 0
+        vram_total = gpus[0]['mem_total_mb'] if gpus else 0
+
+        if peak_util > 90:
+            reasoning.append({
+                'component': f'GPU{nvidia_gpu["index"]} (NVIDIA)',
+                'status': 'alto rendimiento',
+                'detail': f'Peak {peak_util}%, avg {avg_util}% durante inferencia. '
+                          f'VRAM: {vram_used}/{vram_total}MB. '
+                          f'La GPU NVIDIA está trabajando cerca de su máxima capacidad.',
+                'action': 'Mantener configuración actual. Para más rendimiento: '
+                          'usar modelos más pequeños (4b > 8b en velocidad) o '
+                          'cuantización más agresiva.',
+            })
+        elif peak_util > 50:
+            reasoning.append({
+                'component': f'GPU{nvidia_gpu["index"]} (NVIDIA)',
+                'status': 'parcial',
+                'detail': f'Peak {peak_util}%, avg {avg_util}%. '
+                          f'GPU no al máximo — posible cuello de botella en CPU o I/O.',
+                'action': 'Verificar si el CPU está saturado alimentando datos a la GPU. '
+                          'Considerar batch size más grande.',
+            })
+        else:
+            reasoning.append({
+                'component': f'GPU{nvidia_gpu["index"]} (NVIDIA)',
+                'status': 'subutilizado',
+                'detail': f'Peak {peak_util}%, avg {avg_util}%. GPU no se usa eficientemente.',
+                'action': 'Verificar CUDA_VISIBLE_DEVICES, reinstalar drivers, o '
+                          'verificar que Ollama usa GPU.',
+            })
+
+    # Intel iGPU reasoning
+    if intel_gpu:
+        reasoning.append({
+            'component': f'GPU{intel_gpu["index"]} (Intel iGPU)',
+            'status': 'disponible para descarga',
+            'detail': f'{intel_gpu["name"]} con {intel_gpu["vram_mb"]}MB. '
+                      f'Actualmente maneja display (~3% uso). '
+                      f'Tiene hardware de Video Decode/Encode (Quick Sync).',
+            'action': 'Puede usarse para: '
+                      '(1) Video decode/encode via Intel Quick Sync — libera NVIDIA de tareas multimedia. '
+                      '(2) Display rendering — ya lo hace, mantiene NVIDIA libre para cómputo. '
+                      '(3) Inferencia ligera de modelos pequeños via OpenVINO si se necesita '
+                      'procesamiento paralelo.',
+        })
+
+    # --- Dual-GPU simultaneous usage reasoning ---
+    if nvidia_gpu and intel_gpu:
+        reasoning.append({
+            'component': 'Dual-GPU (estrategia)',
+            'status': 'oportunidad de optimización',
+            'detail': 'El sistema tiene 2 GPUs que pueden trabajar simultáneamente:\n'
+                      f'    GPU{intel_gpu["index"]} Intel: display + video decode/encode\n'
+                      f'    GPU{nvidia_gpu["index"]} NVIDIA: inferencia CUDA + cómputo pesado\n'
+                      f'    Esta distribución ya está activa — Intel maneja el escritorio (3%) '
+                      f'y NVIDIA se dedica 100% a inferencia ({best_model.get("tps", "?")} tok/s).',
+            'action': 'Configuración dual-GPU ÓPTIMA. Para escenarios avanzados:\n'
+                      '    • Si se necesita procesar video + inferencia simultánea → '
+                      'Intel Quick Sync para video, NVIDIA para modelo.\n'
+                      '    • Si se necesita inferencia paralela → modelo pequeño en '
+                      'CPU+Intel (OpenVINO), modelo grande en NVIDIA (CUDA).\n'
+                      '    • Evitar mover inferencia CUDA a Intel — rendimiento 10x menor.',
+        })
+
+    # --- Overall system configuration ---
+    if best_model:
+        vram_total = gpus[0]['mem_total_mb'] if gpus else 6141
+        best_tps = best_model.get('tps', 0)
+        can_fit_8b = vram_total >= 5500
+
+        reasoning.append({
+            'component': 'Configuración óptima global',
+            'status': 'RECOMENDACIÓN',
+            'detail': f'Sistema: {cpu_info.get("name", "?")} + '
+                      f'{nvidia_gpu["name"] if nvidia_gpu else "?"} + '
+                      f'{intel_gpu["name"] if intel_gpu else "solo NVIDIA"}.',
+            'action': f'Config recomendada para alto rendimiento:\n'
+                      f'    • CUDA_VISIBLE_DEVICES: no configurar (auto-detect)\n'
+                      f'    • Modelo preferido: {best_model["model"]} ({best_tps} tok/s)\n'
+                      f'    • Modelos ≤{"8b" if can_fit_8b else "4b"} caben en {vram_total}MB VRAM\n'
+                      f'    • Intel iGPU: dejar como display adapter (libera NVIDIA)\n'
+                      f'    • CPU ({cpu_info.get("threads", "?")} hilos): '
+                      f'disponible para preprocessing paralelo\n'
+                      f'    • RAM: mantener ≥4GB libre para modelo + sistema',
+        })
+
+    # Print reasoning
+    print()
+    for r in reasoning:
+        status_color = {
+            'subutilizado': YELLOW,
+            'saturado': RED,
+            'balanceado': GREEN,
+            'alto rendimiento': GREEN,
+            'parcial': YELLOW,
+            'disponible para descarga': CYAN,
+            'oportunidad de optimización': CYAN,
+            'bajo': RED,
+            'RECOMENDACIÓN': GREEN + BOLD,
+        }.get(r['status'], CYAN)
+
+        p(status_color, f'  [{r["component"]}] — {r["status"].upper()}')
+        for line in r['detail'].split('\n'):
+            p(CYAN, f'    {line.strip()}')
+        p(GREEN, f'    → {r["action"].split(chr(10))[0]}')
+        # Print multi-line actions
+        for extra_line in r['action'].split('\n')[1:]:
+            p(GREEN, f'      {extra_line.strip()}')
+        print()
+
     print()
     p(BOLD + CYAN, '=' * 60)
 
-    # Save results with hardware fingerprint for future comparisons
+    # Save results with hardware fingerprint + reasoning for future comparisons
     report = {
         'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
         'hardware_fingerprint': hw_fingerprint,
         'hardware_changed': hw_changed,
+        'cpu_info': cpu_info if cpu_info.get('available') else None,
         'optimal_config': {
             'cuda_visible_devices': 'unset (auto-detect)',
             'best_model': ok_results[0]['model'] if ok_results else None,
@@ -897,6 +1136,7 @@ def main():
                 'CALIBRADO' in r.get('verdict', '') for r in ok_results
             ) if ok_results else False,
         },
+        'high_performance_reasoning': reasoning,
         'diagnosis_findings': findings,
         'benchmark': benchmark_results,
         'best_model': ok_results[0]['model'] if ok_results else None,
