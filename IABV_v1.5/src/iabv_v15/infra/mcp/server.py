@@ -623,6 +623,22 @@ class IABVMCPServer:
             return result
 
         @mcp.tool()
+        def gpu_model_benchmark(models: list[str] | None = None) -> dict[str, Any]:
+            """Ejecuta benchmark de modelos Ollama locales y registra en ExperimentLab.
+
+            Descubre los modelos instalados, ejecuta prompts estandarizados,
+            mide tokens/segundo y calidad, y devuelve un ranking con la
+            recomendacion del ExperimentLab sobre cual modelo rinde mejor
+            en el hardware actual.
+
+            Si ``models`` se omite, benchmarkea todos los modelos instalados.
+            """
+            svc = getattr(self.container, "gpu_model_benchmark_service", None)
+            if svc is None:
+                return {"error": "gpu_model_benchmark_service no disponible en el container"}
+            return _run_sync(svc.run_full_benchmark, models=models or None)
+
+        @mcp.tool()
         def chatgpt_web_capture(
             prompt_text: str,
             launch_target: str = "https://chatgpt.com/",

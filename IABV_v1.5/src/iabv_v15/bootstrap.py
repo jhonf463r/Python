@@ -301,6 +301,7 @@ from iabv_v15.services.tools.tool_validator import ToolValidator
 from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
 from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
 from iabv_v15.services.lab.experiment_lab import ExperimentLab
+from iabv_v15.services.lab.gpu_model_benchmark_service import GpuModelBenchmarkService
 from iabv_v15.services.lab.strategy_selector import StrategySelector
 from iabv_v15.services.knowledge.knowledge_service import KnowledgeService
 from iabv_v15.services.knowledge.unified_memory_layer import UnifiedMemoryLayer
@@ -490,6 +491,9 @@ class AppBootstrap:
             registry=self.algorithm_benchmark_registry,
             scoring_engine=self.decision_scoring_engine,
             strategy_selector=self.lab_strategy_selector,
+        )
+        self.gpu_model_benchmark_service = GpuModelBenchmarkService(
+            experiment_lab=self.experiment_lab,
         )
         self.live_audit_supervisor = LiveAuditSupervisor(
             tool_record_repository=self.tool_record_repository,

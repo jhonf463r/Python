@@ -1979,6 +1979,7 @@ class ExperimentDomain(str, Enum):
     OBJECT_DETECTION = "object_detection"
     LANGUAGE = "language"
     CODE = "code"
+    INFERENCE_BENCHMARK = "inference_benchmark"
 
 
 class EvaluationRoute(str, Enum):
