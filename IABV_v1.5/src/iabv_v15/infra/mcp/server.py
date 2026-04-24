@@ -642,7 +642,7 @@ class IABVMCPServer:
             svc = getattr(self.container, "gpu_model_benchmark_service", None)
             if svc is None:
                 return {"error": "gpu_model_benchmark_service no disponible en el container"}
-            return _run_sync_off_event_loop(svc.run_full_benchmark, models=models or None)
+            return _run_sync_off_event_loop(svc.run_full_benchmark, models=models)
 
         @mcp.tool()
         def chatgpt_web_capture(
