@@ -264,6 +264,9 @@ class GpuModelBenchmarkService:
         Reads GPU Engine utilization via PowerShell ``Get-Counter``, which is
         the exact source that feeds the Task Manager GPU graphs.  This is an
         independent truth source separate from nvidia-smi.
+
+        Parses engine types (3D, Compute, Copy, VideoDecode, VideoEncode)
+        per GPU adapter to show exactly what the user sees in Task Manager.
         """
         if os.name != 'nt':
             return {'available': False, 'reason': 'not Windows'}
@@ -285,26 +288,48 @@ class GpuModelBenchmarkService:
         except Exception as exc:
             return {'available': True, 'error': str(exc), 'total_util': 0.0}
         if r.returncode != 0 or not r.stdout.strip():
-            return {'available': True, 'active_engines': [], 'total_util': 0.0}
+            return {'available': True, 'active_engines': [], 'total_util': 0.0,
+                    'by_engine_type': {}, 'by_gpu': {}}
         try:
             import json as _json
+            import re as _re
             data = _json.loads(r.stdout)
             if isinstance(data, dict):
                 data = [data]
             engines: list[dict[str, Any]] = []
             total_util = 0.0
+            by_type: dict[str, float] = {}
+            by_gpu: dict[str, float] = {}
             for sample in data:
+                path = sample.get('Path', '')
                 value = sample.get('CookedValue', 0.0)
                 total_util += value
+                # Parse engine type from path like:
+                # \\...\gpu engine(engtype_3d)\utilization percentage
+                # \\...\gpu engine(engtype_compute)\utilization percentage
+                eng_match = _re.search(r'engtype_(\w+)', path, _re.IGNORECASE)
+                engine_type = eng_match.group(1) if eng_match else 'unknown'
+                by_type[engine_type] = by_type.get(engine_type, 0) + value
+                # Parse GPU adapter from path (phys_N or luid_...)
+                gpu_match = _re.search(r'phys_(\d+)', path, _re.IGNORECASE)
+                gpu_id = f'GPU{gpu_match.group(1)}' if gpu_match else 'unknown'
+                by_gpu[gpu_id] = by_gpu.get(gpu_id, 0) + value
                 engines.append({
-                    'path': sample.get('Path', ''),
+                    'path': path,
                     'util_pct': round(value, 2),
+                    'engine_type': engine_type,
+                    'gpu': gpu_id,
                 })
+            # Round aggregated values
+            by_type = {k: round(v, 2) for k, v in by_type.items()}
+            by_gpu = {k: round(v, 2) for k, v in by_gpu.items()}
             return {
                 'available': True,
                 'active_engines': engines,
                 'total_util': round(total_util, 2),
                 'engine_count': len(engines),
+                'by_engine_type': by_type,
+                'by_gpu': by_gpu,
             }
         except Exception as exc:
             return {'available': True, 'error': str(exc), 'total_util': 0.0}
@@ -583,6 +608,14 @@ class GpuModelBenchmarkService:
         if tm_after.get('available'):
             tm_total = tm_after.get('total_util', 0.0)
             tm_engines = tm_after.get('engine_count', 0)
+            by_type = tm_after.get('by_engine_type', {})
+            by_gpu = tm_after.get('by_gpu', {})
+            engine_detail = ', '.join(
+                f'{k}={v:.1f}%' for k, v in sorted(by_type.items(), key=lambda x: -x[1])
+            ) if by_type else 'sin actividad'
+            gpu_detail = ', '.join(
+                f'{k}={v:.1f}%' for k, v in sorted(by_gpu.items(), key=lambda x: -x[1])
+            ) if by_gpu else ''
             if gpu_used and tm_total < 1.0:
                 findings.append({
                     'type': 'discrepancy',
@@ -591,7 +624,8 @@ class GpuModelBenchmarkService:
                     'source_b': 'nvidia_smi',
                     'detail': (
                         f'nvidia-smi muestra GPU activa pero Task Manager '
-                        f'Performance Counters reportan {tm_total:.1f}% total. '
+                        f'Performance Counters reportan {tm_total:.1f}% total '
+                        f'(engines: {engine_detail}). '
                         f'Posible desincronizacion temporal.'
                     ),
                 })
@@ -603,7 +637,7 @@ class GpuModelBenchmarkService:
                     'source_b': 'nvidia_smi',
                     'detail': (
                         f'Task Manager muestra {tm_total:.1f}% GPU '
-                        f'({tm_engines} engines) pero nvidia-smi no detecta '
+                        f'(engines: {engine_detail}) pero nvidia-smi no detecta '
                         f'actividad. Fuentes no coinciden.'
                     ),
                 })
@@ -614,8 +648,10 @@ class GpuModelBenchmarkService:
                     'source_a': 'task_manager_counters',
                     'source_b': 'nvidia_smi',
                     'detail': (
-                        f'Task Manager confirma GPU activa: {tm_total:.1f}% '
-                        f'total ({tm_engines} engines). Coincide con nvidia-smi.'
+                        f'Task Manager confirma GPU activa: {tm_total:.1f}% total. '
+                        f'Engines: {engine_detail}. '
+                        f'{gpu_detail}. '
+                        f'Coincide con nvidia-smi.'
                     ),
                 })
 

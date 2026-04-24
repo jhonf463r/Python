@@ -98,11 +98,13 @@ def query_task_manager_gpu() -> dict:
     This reads GPU Engine utilization counters via PowerShell, which is the
     exact source that feeds the Task Manager GPU graphs. This provides an
     independent truth source separate from nvidia-smi.
+
+    Parses individual engine types (3D, Compute, Copy, VideoDecode, VideoEncode)
+    per GPU adapter — so the program sees exactly what the user sees in Task Manager.
     """
     if sys.platform != 'win32':
         return {'available': False, 'reason': 'not Windows'}
     try:
-        # Read GPU utilization from Performance Counters (same as Task Manager)
         ps_cmd = (
             'Get-Counter -Counter '
             '"\\GPU Engine(*)\\Utilization Percentage" '
@@ -117,28 +119,48 @@ def query_task_manager_gpu() -> dict:
             capture_output=True, text=True, timeout=15, check=False,
         )
         if r.returncode != 0 or not r.stdout.strip():
-            return {'available': True, 'active_engines': [], 'total_util': 0.0}
+            return {'available': True, 'active_engines': [], 'total_util': 0.0,
+                    'by_engine_type': {}, 'by_gpu': {}}
 
         data = json.loads(r.stdout)
         if isinstance(data, dict):
             data = [data]
 
+        import re as _re
         engines = []
         total_util = 0.0
+        by_type: dict[str, float] = {}
+        by_gpu: dict[str, float] = {}
         for sample in data:
             path = sample.get('Path', '')
             value = sample.get('CookedValue', 0.0)
             total_util += value
-            engines.append({'path': path, 'util_pct': round(value, 2)})
+            # Parse engine type: engtype_3d, engtype_compute, engtype_copy, etc.
+            eng_match = _re.search(r'engtype_(\w+)', path, _re.IGNORECASE)
+            engine_type = eng_match.group(1) if eng_match else 'unknown'
+            by_type[engine_type] = by_type.get(engine_type, 0) + value
+            # Parse GPU adapter: phys_N
+            gpu_match = _re.search(r'phys_(\d+)', path, _re.IGNORECASE)
+            gpu_id = f'GPU{gpu_match.group(1)}' if gpu_match else 'unknown'
+            by_gpu[gpu_id] = by_gpu.get(gpu_id, 0) + value
+            engines.append({
+                'path': path, 'util_pct': round(value, 2),
+                'engine_type': engine_type, 'gpu': gpu_id,
+            })
 
+        by_type = {k: round(v, 2) for k, v in by_type.items()}
+        by_gpu = {k: round(v, 2) for k, v in by_gpu.items()}
         return {
             'available': True,
             'active_engines': engines,
             'total_util': round(total_util, 2),
             'engine_count': len(engines),
+            'by_engine_type': by_type,
+            'by_gpu': by_gpu,
         }
     except Exception as e:
-        return {'available': True, 'error': str(e), 'active_engines': [], 'total_util': 0.0}
+        return {'available': True, 'error': str(e), 'active_engines': [],
+                'total_util': 0.0, 'by_engine_type': {}, 'by_gpu': {}}
 
 
 def query_ollama_ps() -> str:
@@ -289,15 +311,33 @@ def main():
     if not ollama_models:
         p(YELLOW, '    (ningún modelo cargado)')
 
-    # Source 4: Task Manager (Windows Performance Counters)
+    # Source 4: Task Manager (Windows Performance Counters) — per engine breakdown
     task_mgr = query_task_manager_gpu()
     if task_mgr.get('available'):
         active = task_mgr.get('active_engines', [])
         total = task_mgr.get('total_util', 0)
+        by_type = task_mgr.get('by_engine_type', {})
+        by_gpu = task_mgr.get('by_gpu', {})
         p(CYAN, f'  [Task Manager GPU Counters] {len(active)} engine(s) activo(s), '
               f'utilización total: {total:.1f}%')
-        for eng in active[:5]:
-            p(CYAN, f'    {eng["path"]}: {eng["util_pct"]}%')
+        if by_gpu:
+            p(CYAN, '    Por GPU (lo que ves en Task Manager):')
+            for gid, val in sorted(by_gpu.items()):
+                color = GREEN if val > 1 else YELLOW
+                p(color, f'      {gid}: {val:.1f}%')
+        if by_type:
+            p(CYAN, '    Por tipo de engine:')
+            for etype, val in sorted(by_type.items(), key=lambda x: -x[1]):
+                label = {
+                    '3D': '3D (CUDA compute / inferencia)',
+                    'Compute': 'Compute (CUDA kernels)',
+                    'Copy': 'Copy (transferencia memoria)',
+                    'VideoDecode': 'Video Decode',
+                    'VideoEncode': 'Video Encode',
+                    'VideoProcessing': 'Video Processing',
+                }.get(etype, etype)
+                color = GREEN if val > 1 else YELLOW
+                p(color, f'      {label}: {val:.1f}%')
         if not active:
             p(YELLOW, '    (sin actividad GPU según Performance Counters)')
     else:
@@ -579,12 +619,23 @@ def main():
             p(CYAN, f'    → [nvidia-smi]         Peak GPU: {result.get("peak_util_per_gpu", {})} Avg: {result.get("avg_util_per_gpu", {})}')
             p(CYAN, f'    → [ollama ps]           processor: {model_proc}')
             p(CYAN, f'    → [nvidia compute apps] {[pr["name"] for pr in procs_after]}')
-            # Task Manager cross-reference
+            # Task Manager cross-reference with per-engine detail
             if tm.get('available'):
                 tm_util = tm.get('total_util', 0)
-                tm_engines = tm.get('engine_count', 0)
+                tm_by_type = tm.get('by_engine_type', {})
+                tm_by_gpu = tm.get('by_gpu', {})
                 tm_color = GREEN if tm_util > 1 else RED
-                p(tm_color, f'    → [Task Manager]        {tm_engines} engine(s), {tm_util:.1f}% total')
+                engine_str = ', '.join(
+                    f'{k}={v:.1f}%' for k, v in sorted(tm_by_type.items(), key=lambda x: -x[1])
+                ) if tm_by_type else 'sin actividad'
+                gpu_str = ', '.join(
+                    f'{k}={v:.1f}%' for k, v in sorted(tm_by_gpu.items())
+                ) if tm_by_gpu else ''
+                p(tm_color, f'    → [Task Manager]        total={tm_util:.1f}%')
+                if tm_by_type:
+                    p(tm_color, f'                            Engines: {engine_str}')
+                if tm_by_gpu:
+                    p(tm_color, f'                            GPUs: {gpu_str}')
         else:
             p(RED, f'    → ERROR: {result.get("error", "?")}')
 
