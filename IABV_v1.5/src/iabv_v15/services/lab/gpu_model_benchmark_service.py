@@ -163,7 +163,16 @@ class GpuModelBenchmarkService:
         return procs
 
     def query_ollama_ps(self) -> list[dict[str, Any]]:
-        """Query ``ollama ps`` to check what models are loaded and where."""
+        """Query ``ollama ps`` to check what models are loaded and where.
+
+        ``ollama ps`` outputs fixed-width columns::
+
+            NAME           ID            SIZE    PROCESSOR    UNTIL
+            gemma3:4b      abc123def456  4.1 GB  100% GPU     4 minutes from now
+
+        SIZE and PROCESSOR contain spaces, so simple ``.split()`` breaks.
+        We parse by header column positions instead.
+        """
         ollama = shutil.which('ollama') or ''
         if not ollama:
             return []
@@ -177,15 +186,34 @@ class GpuModelBenchmarkService:
             return []
         if result.returncode != 0:
             return []
+        lines = result.stdout.splitlines()
+        if not lines:
+            return []
+
+        header = lines[0]
+        col_names = ['NAME', 'ID', 'SIZE', 'PROCESSOR', 'UNTIL']
+        col_starts: list[int] = []
+        for cn in col_names:
+            pos = header.find(cn)
+            col_starts.append(pos if pos >= 0 else -1)
+
         models: list[dict[str, Any]] = []
-        for line in result.stdout.splitlines()[1:]:
-            parts = [p for p in line.split() if p]
-            if len(parts) >= 4:
+        for line in lines[1:]:
+            if not line.strip():
+                continue
+            vals: dict[str, str] = {}
+            for i, cn in enumerate(col_names):
+                start = col_starts[i]
+                if start < 0:
+                    continue
+                end = col_starts[i + 1] if i + 1 < len(col_starts) and col_starts[i + 1] >= 0 else len(line)
+                vals[cn.lower()] = line[start:end].strip()
+            if vals.get('name'):
                 models.append({
-                    'name': parts[0],
-                    'id': parts[1] if len(parts) > 1 else '',
-                    'size': parts[2] if len(parts) > 2 else '',
-                    'processor': parts[3] if len(parts) > 3 else 'unknown',
+                    'name': vals.get('name', ''),
+                    'id': vals.get('id', ''),
+                    'size': vals.get('size', ''),
+                    'processor': vals.get('processor', 'unknown'),
                 })
         return models
 

@@ -222,3 +222,54 @@ class TestInferenceBenchmarkSuite:
             candidate=fast,
         )
         assert result_fast['precision'] > result_slow['precision']
+
+
+# ---------------------------------------------------------------------------
+# ollama ps column-position parsing
+# ---------------------------------------------------------------------------
+
+class TestQueryOllamaPs:
+    """Verify that query_ollama_ps correctly parses multi-word columns."""
+
+    def test_parses_multiword_size_and_processor(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        ollama_output = (
+            "NAME           ID              SIZE      PROCESSOR    UNTIL              \n"
+            "gemma3:4b      abc123def456    4.1 GB    100% GPU     4 minutes from now \n"
+        )
+        with patch('shutil.which', return_value='/usr/bin/ollama'), \
+             patch('subprocess.run') as mock_run:
+            mock_run.return_value = MagicMock(
+                returncode=0,
+                stdout=ollama_output,
+            )
+            result = svc.query_ollama_ps()
+        assert len(result) == 1
+        assert result[0]['name'] == 'gemma3:4b'
+        assert result[0]['id'] == 'abc123def456'
+        assert result[0]['size'] == '4.1 GB'
+        assert '100%' in result[0]['processor']
+        assert 'GPU' in result[0]['processor']
+
+    def test_parses_cpu_processor(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        ollama_output = (
+            "NAME           ID              SIZE      PROCESSOR    UNTIL              \n"
+            "qwen3:8b       def456ghi789    5.2 GB    CPU          3 minutes from now \n"
+        )
+        with patch('shutil.which', return_value='/usr/bin/ollama'), \
+             patch('subprocess.run') as mock_run:
+            mock_run.return_value = MagicMock(
+                returncode=0,
+                stdout=ollama_output,
+            )
+            result = svc.query_ollama_ps()
+        assert len(result) == 1
+        assert result[0]['processor'].upper() == 'CPU'
+
+    def test_empty_output(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        with patch('shutil.which', return_value='/usr/bin/ollama'), \
+             patch('subprocess.run') as mock_run:
+            mock_run.return_value = MagicMock(returncode=0, stdout='')
+            assert svc.query_ollama_ps() == []
