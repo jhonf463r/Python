@@ -276,6 +276,9 @@ class OperationalSelfExaminationService:
             }
         )
         self.storage.save_json_atomic(latest_json_rel, review.model_dump(mode='json'))
+        # Persist metacognitive error ledger AFTER all findings are written,
+        # so _metacognitive_calibration_findings reads only previous cycles.
+        self._persist_metacognitive_ledger_from_findings(review.findings)
         return review
 
     def _collect_embodiment_violations(self) -> list[dict[str, Any]] | None:
@@ -1864,14 +1867,6 @@ class OperationalSelfExaminationService:
                 },
             ))
 
-        # --- Persist metacognitive error ledger for learning ---
-        if false_positives or false_negatives:
-            self._persist_metacognitive_ledger(
-                false_positives=false_positives,
-                false_negatives=false_negatives,
-                review_id=previous_review.review_id,
-            )
-
         return results[:2]
 
     def _introspection_blind_spot_findings(
@@ -2077,6 +2072,32 @@ class OperationalSelfExaminationService:
                 ))
 
         return results[:2]
+
+    def _persist_metacognitive_ledger_from_findings(
+        self,
+        findings: list[SelfExaminationFinding],
+    ) -> None:
+        """Extract metacognitive errors from findings and persist to ledger.
+
+        Called from ``_persist_review`` (after all findings are finalized)
+        so that ``_metacognitive_calibration_findings`` only reads
+        *previous* cycles during the same ``build_review()`` call.
+        """
+        false_positives: list[str] = []
+        false_negatives: list[str] = []
+        review_id = ''
+        for finding in findings:
+            meta = dict(finding.metadata or {})
+            if finding.category == 'metacognitive_false_positive':
+                false_positives = list(meta.get('false_positives') or [])
+            elif finding.category == 'metacognitive_false_negative':
+                false_negatives = list(meta.get('false_negatives') or [])
+        if false_positives or false_negatives:
+            self._persist_metacognitive_ledger(
+                false_positives=false_positives,
+                false_negatives=false_negatives,
+                review_id=review_id,
+            )
 
     def _persist_metacognitive_ledger(
         self,
