@@ -633,6 +633,12 @@ class IABVMCPServer:
 
             Si ``models`` se omite, benchmarkea todos los modelos instalados.
             """
+            block = self._governance_block_for_route(
+                assistant_kind="gpu_benchmark",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
             svc = getattr(self.container, "gpu_model_benchmark_service", None)
             if svc is None:
                 return {"error": "gpu_model_benchmark_service no disponible en el container"}
