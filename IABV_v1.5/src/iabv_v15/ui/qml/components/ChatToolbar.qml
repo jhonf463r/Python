@@ -55,7 +55,6 @@ Rectangle {
     signal providerSwitchClicked()
     signal keyInputRequested()
     signal clearAttachments()
-    signal searchQueryChanged(string query)
 
     readonly property color textSecondary: "#d1d8df"
     readonly property color accentColor: "#4fc3f7"
