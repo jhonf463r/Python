@@ -280,6 +280,137 @@ def main():
         p(GREEN + BOLD, '  DIAGNÓSTICO: GPU configurada correctamente')
     print()
 
+    # === PHASE 1.5: Auto-remediation ===
+    needs_ollama_restart = False
+
+    # Fix 1: Remove CUDA_VISIBLE_DEVICES from Windows system environment
+    if any(f['type'] == 'misconfiguration' and 'CUDA_VISIBLE_DEVICES' in f.get('detail', '')
+           for f in findings):
+        p(BOLD, '▸ FASE 1.5: Auto-corrección del entorno')
+        print()
+        if sys.platform == 'win32':
+            p(YELLOW, '  Limpiando CUDA_VISIBLE_DEVICES del sistema Windows...')
+            for scope in ['User', 'Machine']:
+                try:
+                    subprocess.run(
+                        ['powershell', '-Command',
+                         f'[Environment]::SetEnvironmentVariable("CUDA_VISIBLE_DEVICES", $null, "{scope}")'],
+                        capture_output=True, text=True, timeout=10, check=False,
+                    )
+                    p(GREEN, f'    → Removido de {scope} environment')
+                except Exception as e:
+                    p(YELLOW, f'    → No se pudo limpiar {scope}: {e}')
+            needs_ollama_restart = True
+
+    # Fix 2: If any model is on CPU with GPU available, restart Ollama
+    any_on_cpu = any(f['type'] == 'discrepancy' and 'CPU' in f.get('detail', '')
+                     for f in findings)
+    if any_on_cpu or needs_ollama_restart:
+        if not needs_ollama_restart:
+            p(BOLD, '▸ FASE 1.5: Auto-corrección de Ollama')
+            print()
+        p(YELLOW, '  Reiniciando Ollama para aplicar configuración GPU...')
+
+        # Kill all Ollama processes
+        ollama_exe = shutil.which('ollama')
+        if sys.platform == 'win32':
+            subprocess.run(['taskkill', '/f', '/im', 'ollama.exe'],
+                           capture_output=True, timeout=10, check=False)
+        else:
+            subprocess.run(['pkill', '-f', 'ollama'], capture_output=True, timeout=10, check=False)
+        p(CYAN, '    → Procesos Ollama terminados')
+        time.sleep(3)
+
+        # Verify port is free
+        if sys.platform == 'win32':
+            r = subprocess.run(['netstat', '-ano'], capture_output=True, text=True, timeout=5, check=False)
+            if '11434' in r.stdout:
+                p(YELLOW, '    → Puerto 11434 aún ocupado, esperando...')
+                time.sleep(5)
+                # Try killing whatever is on the port
+                for line in r.stdout.splitlines():
+                    if '11434' in line and 'LISTENING' in line:
+                        parts = line.split()
+                        if parts:
+                            pid = parts[-1]
+                            subprocess.run(['taskkill', '/f', '/pid', pid],
+                                           capture_output=True, timeout=5, check=False)
+
+        # Start Ollama serve in background (clean environment)
+        env = os.environ.copy()
+        env.pop('CUDA_VISIBLE_DEVICES', None)
+        p(CYAN, '    → Arrancando ollama serve (sin CUDA_VISIBLE_DEVICES)...')
+        try:
+            if ollama_exe:
+                subprocess.Popen(
+                    [ollama_exe, 'serve'],
+                    env=env,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=subprocess.DETACHED_PROCESS if sys.platform == 'win32' else 0,
+                )
+                p(GREEN, '    → Ollama serve arrancado en background')
+                p(CYAN, '    → Esperando 8 segundos para que inicie...')
+                time.sleep(8)
+            else:
+                p(RED, '    → ollama no encontrado en PATH')
+        except Exception as e:
+            p(RED, f'    → Error arrancando ollama: {e}')
+
+        # Verify: warm up a model and check if it's on GPU now
+        p(CYAN, '    → Verificando: cargando modelo de prueba...')
+        try:
+            payload = json.dumps({
+                'model': 'gemma3:4b', 'prompt': 'hola', 'stream': False,
+                'options': {'num_predict': 5},
+            }).encode()
+            req = urllib.request.Request(
+                'http://127.0.0.1:11434/api/generate',
+                data=payload,
+                headers={'Content-Type': 'application/json'},
+            )
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                json.loads(resp.read())
+            p(GREEN, '    → Modelo cargado exitosamente')
+        except Exception as e:
+            p(RED, f'    → Error cargando modelo: {e}')
+
+        # Re-check ollama ps
+        time.sleep(2)
+        ollama_raw_after = query_ollama_ps()
+        ollama_models_after = parse_ollama_ps_processor(ollama_raw_after)
+        gpu_after_fix = query_nvidia_smi()
+        procs_after_fix = query_nvidia_processes()
+
+        p(CYAN, '  Verificación post-fix:')
+        for m in ollama_models_after:
+            processor = m.get('processor', '?')
+            color = GREEN if 'gpu' in processor.lower() else RED
+            p(color, f'    [ollama ps] {m.get("name", "?")} → processor={processor}')
+        for g in gpu_after_fix:
+            p(CYAN, f'    [nvidia-smi] GPU{g["index"]}: {g["util_pct"]}% util, '
+                  f'{g["mem_used_mb"]}MB/{g["mem_total_mb"]}MB VRAM')
+        for pr in procs_after_fix:
+            p(GREEN, f'    [nvidia compute] PID {pr["pid"]}: {pr["name"]} ({pr["vram_mb"]}MB)')
+
+        # Update findings with post-fix status
+        any_gpu_now = any('gpu' in m.get('processor', '').lower() for m in ollama_models_after)
+        if any_gpu_now:
+            findings.append({
+                'type': 'auto_fix_success', 'severity': 'INFO',
+                'detail': 'Después del reinicio de Ollama, modelo(s) ahora en GPU. '
+                          'El sistema se auto-corrigió exitosamente.',
+            })
+            p(GREEN + BOLD, '  ✓ AUTO-CORRECCIÓN EXITOSA: modelos ahora en GPU')
+        else:
+            findings.append({
+                'type': 'auto_fix_partial', 'severity': 'MEDIUM',
+                'detail': 'Después del reinicio de Ollama, modelos siguen en CPU. '
+                          'Puede requerir reinstalación de Ollama con soporte CUDA.',
+            })
+            p(YELLOW, '  ⚠ Modelos siguen en CPU — puede requerir reinstalación de Ollama')
+        print()
+
     # === PHASE 2: Benchmark ===
     p(BOLD, '▸ FASE 2: Benchmark con monitoreo GPU en tiempo real')
     p(BOLD, '  (Observa Task Manager → GPU1 mientras corre)')
@@ -300,10 +431,14 @@ def main():
     except Exception:
         available = ['gemma3:4b']
 
-    # Filter: only test models that fit in 6GB VRAM
-    test_models = [m for m in available if any(k in m for k in ['gemma3', 'qwen2.5-coder', 'qwen3'])]
+    # Filter: only test generative models that fit in 6GB VRAM (skip embedding models)
+    test_models = [
+        m for m in available
+        if any(k in m for k in ['gemma3', 'qwen2.5-coder', 'qwen3'])
+        and 'embedding' not in m.lower()
+    ]
     if not test_models:
-        test_models = available[:3]
+        test_models = [m for m in available if 'embedding' not in m.lower()][:3]
 
     p(CYAN, f'  Modelos a probar: {test_models}')
     print()
