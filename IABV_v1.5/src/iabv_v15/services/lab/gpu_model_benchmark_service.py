@@ -258,6 +258,35 @@ class GpuModelBenchmarkService:
                     continue
         return entries
 
+    def _map_gpu_adapter_name(self, phys_id: str) -> str:
+        """Map Performance Counter phys_N to Task Manager GPU index via WMI."""
+        if not hasattr(self, '_adapter_cache'):
+            self._adapter_cache: dict[str, str] = {}
+            if os.name == 'nt':
+                try:
+                    r = subprocess.run(
+                        ['powershell', '-NoProfile', '-Command',
+                         'Get-CimInstance Win32_VideoController | '
+                         'Select-Object -Property DeviceID, Name | '
+                         'ConvertTo-Json -Compress'],
+                        capture_output=True, text=True, timeout=10,
+                        encoding='utf-8', errors='ignore', check=False,
+                    )
+                    if r.returncode == 0 and r.stdout.strip():
+                        import json as _json
+                        adapters = _json.loads(r.stdout)
+                        if isinstance(adapters, dict):
+                            adapters = [adapters]
+                        for i, a in enumerate(adapters):
+                            name = a.get('Name', '')
+                            if 'nvidia' in name.lower():
+                                self._adapter_cache['nvidia'] = f'GPU{i}'
+                except Exception:
+                    pass
+        if self._adapter_cache.get('nvidia'):
+            return self._adapter_cache['nvidia']
+        return f'GPU{phys_id}'
+
     def query_task_manager_counters(self) -> dict[str, Any]:
         """Query Windows Performance Counters — the SAME data Task Manager shows.
 
@@ -267,6 +296,8 @@ class GpuModelBenchmarkService:
 
         Parses engine types (3D, Compute, Copy, VideoDecode, VideoEncode)
         per GPU adapter to show exactly what the user sees in Task Manager.
+
+        Uses MAX (not SUM) per engine type to avoid exceeding 100%.
         """
         if os.name != 'nt':
             return {'available': False, 'reason': 'not Windows'}
@@ -297,36 +328,32 @@ class GpuModelBenchmarkService:
             if isinstance(data, dict):
                 data = [data]
             engines: list[dict[str, Any]] = []
-            total_util = 0.0
             by_type: dict[str, float] = {}
             by_gpu: dict[str, float] = {}
             for sample in data:
                 path = sample.get('Path', '')
                 value = sample.get('CookedValue', 0.0)
-                total_util += value
-                # Parse engine type from path like:
-                # \\...\gpu engine(engtype_3d)\utilization percentage
-                # \\...\gpu engine(engtype_compute)\utilization percentage
                 eng_match = _re.search(r'engtype_(\w+)', path, _re.IGNORECASE)
                 engine_type = eng_match.group(1) if eng_match else 'unknown'
-                by_type[engine_type] = by_type.get(engine_type, 0) + value
-                # Parse GPU adapter from path (phys_N or luid_...)
+                # MAX per type (not sum) — multiple instances exist
+                by_type[engine_type] = max(by_type.get(engine_type, 0), value)
                 gpu_match = _re.search(r'phys_(\d+)', path, _re.IGNORECASE)
-                gpu_id = f'GPU{gpu_match.group(1)}' if gpu_match else 'unknown'
-                by_gpu[gpu_id] = by_gpu.get(gpu_id, 0) + value
+                phys_id = gpu_match.group(1) if gpu_match else '0'
+                gpu_id = self._map_gpu_adapter_name(phys_id)
+                by_gpu[gpu_id] = max(by_gpu.get(gpu_id, 0), value)
                 engines.append({
                     'path': path,
                     'util_pct': round(value, 2),
                     'engine_type': engine_type,
                     'gpu': gpu_id,
                 })
-            # Round aggregated values
             by_type = {k: round(v, 2) for k, v in by_type.items()}
             by_gpu = {k: round(v, 2) for k, v in by_gpu.items()}
+            total_util = round(max(by_gpu.values()) if by_gpu else 0, 2)
             return {
                 'available': True,
                 'active_engines': engines,
-                'total_util': round(total_util, 2),
+                'total_util': total_util,
                 'engine_count': len(engines),
                 'by_engine_type': by_type,
                 'by_gpu': by_gpu,

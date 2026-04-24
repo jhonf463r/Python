@@ -92,6 +92,44 @@ def query_nvidia_processes() -> list[dict]:
     return procs
 
 
+def _map_gpu_adapter_name(phys_id: str, luid: str) -> str:
+    """Map Performance Counter GPU adapter to Task Manager GPU index.
+
+    Task Manager enumerates ALL display adapters (Intel iGPU = GPU0,
+    NVIDIA = GPU1). But Performance Counters use phys_N per vendor.
+    We query WMI to get the real adapter order matching Task Manager.
+    Falls back to phys_N if WMI is unavailable.
+    """
+    if not hasattr(_map_gpu_adapter_name, '_cache'):
+        _map_gpu_adapter_name._cache = {}
+        try:
+            r = subprocess.run(
+                ['powershell', '-NoProfile', '-Command',
+                 'Get-CimInstance Win32_VideoController | '
+                 'Select-Object -Property DeviceID, Name | '
+                 'ConvertTo-Json -Compress'],
+                capture_output=True, text=True, timeout=10, check=False,
+            )
+            if r.returncode == 0 and r.stdout.strip():
+                adapters = json.loads(r.stdout)
+                if isinstance(adapters, dict):
+                    adapters = [adapters]
+                for i, a in enumerate(adapters):
+                    name = a.get('Name', '')
+                    if 'nvidia' in name.lower():
+                        _map_gpu_adapter_name._cache['nvidia'] = f'GPU{i}'
+                    elif 'intel' in name.lower():
+                        _map_gpu_adapter_name._cache['intel'] = f'GPU{i}'
+        except Exception:
+            pass
+
+    # NVIDIA engines typically use phys_0 even when Task Manager shows GPU1
+    # Try to detect by LUID pattern or fall back to adapter mapping
+    if _map_gpu_adapter_name._cache.get('nvidia'):
+        return _map_gpu_adapter_name._cache['nvidia']
+    return f'GPU{phys_id}'
+
+
 def query_task_manager_gpu() -> dict:
     """Query Windows Performance Counters — the SAME data Task Manager shows.
 
@@ -101,6 +139,8 @@ def query_task_manager_gpu() -> dict:
 
     Parses individual engine types (3D, Compute, Copy, VideoDecode, VideoEncode)
     per GPU adapter — so the program sees exactly what the user sees in Task Manager.
+
+    Uses MAX (not SUM) per engine type to avoid exceeding 100%.
     """
     if sys.platform != 'win32':
         return {'available': False, 'reason': 'not Windows'}
@@ -128,21 +168,24 @@ def query_task_manager_gpu() -> dict:
 
         import re as _re
         engines = []
-        total_util = 0.0
+        # Use MAX per engine type (not sum) — multiple instances exist
         by_type: dict[str, float] = {}
         by_gpu: dict[str, float] = {}
         for sample in data:
             path = sample.get('Path', '')
             value = sample.get('CookedValue', 0.0)
-            total_util += value
             # Parse engine type: engtype_3d, engtype_compute, engtype_copy, etc.
             eng_match = _re.search(r'engtype_(\w+)', path, _re.IGNORECASE)
             engine_type = eng_match.group(1) if eng_match else 'unknown'
-            by_type[engine_type] = by_type.get(engine_type, 0) + value
-            # Parse GPU adapter: phys_N
+            # Take MAX per type (each instance is 0-100%)
+            by_type[engine_type] = max(by_type.get(engine_type, 0), value)
+            # Parse GPU adapter: phys_N and luid
             gpu_match = _re.search(r'phys_(\d+)', path, _re.IGNORECASE)
-            gpu_id = f'GPU{gpu_match.group(1)}' if gpu_match else 'unknown'
-            by_gpu[gpu_id] = by_gpu.get(gpu_id, 0) + value
+            luid_match = _re.search(r'luid_(0x[\da-fA-F_]+)', path, _re.IGNORECASE)
+            phys_id = gpu_match.group(1) if gpu_match else '0'
+            luid = luid_match.group(1) if luid_match else ''
+            gpu_id = _map_gpu_adapter_name(phys_id, luid)
+            by_gpu[gpu_id] = max(by_gpu.get(gpu_id, 0), value)
             engines.append({
                 'path': path, 'util_pct': round(value, 2),
                 'engine_type': engine_type, 'gpu': gpu_id,
@@ -150,10 +193,11 @@ def query_task_manager_gpu() -> dict:
 
         by_type = {k: round(v, 2) for k, v in by_type.items()}
         by_gpu = {k: round(v, 2) for k, v in by_gpu.items()}
+        total_util = round(max(by_gpu.values()) if by_gpu else 0, 2)
         return {
             'available': True,
             'active_engines': engines,
-            'total_util': round(total_util, 2),
+            'total_util': total_util,
             'engine_count': len(engines),
             'by_engine_type': by_type,
             'by_gpu': by_gpu,
@@ -309,6 +353,96 @@ def run_inference(model: str, prompt: str, num_predict: int = 256) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Hardware fingerprint — detect new hardware and auto-recalibrate
+# ---------------------------------------------------------------------------
+
+def _build_hardware_fingerprint(gpus: list[dict]) -> dict:
+    """Build a fingerprint of the current GPU hardware."""
+    gpu_info = []
+    for g in gpus:
+        gpu_info.append({
+            'name': g.get('name', ''),
+            'mem_total_mb': g.get('mem_total_mb', 0),
+            'driver': g.get('driver', ''),
+        })
+    # Also detect Intel iGPU via WMI (not visible in nvidia-smi)
+    all_adapters = []
+    if sys.platform == 'win32':
+        try:
+            r = subprocess.run(
+                ['powershell', '-NoProfile', '-Command',
+                 'Get-CimInstance Win32_VideoController | '
+                 'Select-Object -Property Name, AdapterRAM, DriverVersion | '
+                 'ConvertTo-Json -Compress'],
+                capture_output=True, text=True, timeout=10, check=False,
+            )
+            if r.returncode == 0 and r.stdout.strip():
+                adapters = json.loads(r.stdout)
+                if isinstance(adapters, dict):
+                    adapters = [adapters]
+                for a in adapters:
+                    all_adapters.append({
+                        'name': a.get('Name', ''),
+                        'vram_bytes': a.get('AdapterRAM', 0),
+                        'driver': a.get('DriverVersion', ''),
+                    })
+        except Exception:
+            pass
+
+    return {
+        'nvidia_gpus': gpu_info,
+        'all_adapters': all_adapters,
+        'gpu_count': len(gpu_info),
+        'adapter_count': len(all_adapters),
+    }
+
+
+def _fingerprint_changed(current: dict, saved: dict) -> tuple[bool, list[str]]:
+    """Compare current hardware fingerprint vs saved one."""
+    changes = []
+    if not saved:
+        return True, ['primera ejecución — sin perfil guardado']
+
+    saved_fp = saved.get('hardware_fingerprint', {})
+    if not saved_fp:
+        return True, ['perfil anterior sin fingerprint']
+
+    # Compare NVIDIA GPU count
+    if current.get('gpu_count', 0) != saved_fp.get('gpu_count', 0):
+        changes.append(f'GPU count: {saved_fp.get("gpu_count")} → {current.get("gpu_count")}')
+
+    # Compare GPU names
+    cur_names = [g['name'] for g in current.get('nvidia_gpus', [])]
+    saved_names = [g['name'] for g in saved_fp.get('nvidia_gpus', [])]
+    if cur_names != saved_names:
+        changes.append(f'GPUs: {saved_names} → {cur_names}')
+
+    # Compare VRAM
+    cur_vram = [g['mem_total_mb'] for g in current.get('nvidia_gpus', [])]
+    saved_vram = [g['mem_total_mb'] for g in saved_fp.get('nvidia_gpus', [])]
+    if cur_vram != saved_vram:
+        changes.append(f'VRAM: {saved_vram}MB → {cur_vram}MB')
+
+    # Compare all adapters (detects iGPU changes)
+    cur_adapters = [a['name'] for a in current.get('all_adapters', [])]
+    saved_adapters = [a['name'] for a in saved_fp.get('all_adapters', [])]
+    if cur_adapters != saved_adapters:
+        changes.append(f'Adaptadores: {saved_adapters} → {cur_adapters}')
+
+    return len(changes) > 0, changes
+
+
+def _load_saved_report() -> dict:
+    """Load the last saved GPU benchmark report."""
+    report_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'gpu_benchmark_report.json')
+    try:
+        with open(report_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -318,12 +452,39 @@ def main():
     p(BOLD + CYAN, '=' * 60)
     print()
 
+    # === PHASE 0: Hardware fingerprint — detect new environment ===
+    gpus = query_nvidia_smi()
+    hw_fingerprint = _build_hardware_fingerprint(gpus)
+    saved_report = _load_saved_report()
+    hw_changed, hw_reasons = _fingerprint_changed(hw_fingerprint, saved_report)
+
+    if hw_changed:
+        p(BOLD + YELLOW, '▸ FASE 0: Detección de entorno')
+        print()
+        p(YELLOW, '  ⚠ ENTORNO NUEVO O CAMBIADO detectado:')
+        for reason in hw_reasons:
+            p(YELLOW, f'    → {reason}')
+        if hw_fingerprint.get('all_adapters'):
+            p(CYAN, '  Adaptadores GPU detectados (todos):')
+            for i, a in enumerate(hw_fingerprint['all_adapters']):
+                vram_mb = round(a.get('vram_bytes', 0) / 1024 / 1024) if a.get('vram_bytes') else '?'
+                p(CYAN, f'    GPU{i}: {a["name"]} — {vram_mb}MB VRAM, driver {a.get("driver", "?")}')
+        p(GREEN, '  → Ejecutando benchmark completo para calibrar este entorno...')
+        print()
+    else:
+        p(BOLD + GREEN, '▸ FASE 0: Detección de entorno')
+        print()
+        p(GREEN, f'  ✓ Mismo hardware que último benchmark ({saved_report.get("timestamp", "?")})')
+        p(GREEN, f'  ✓ Mejor modelo conocido: {saved_report.get("best_model", "?")} '
+              f'({saved_report.get("best_tps", "?")} tok/s)')
+        p(GREEN, '  → Ejecutando verificación rápida + benchmark para confirmar calibración...')
+        print()
+
     # === PHASE 1: Auto-diagnosis ===
     p(BOLD, '▸ FASE 1: Auto-diagnóstico GPU (cruce de fuentes)')
     print()
 
     cuda_vis = os.environ.get('CUDA_VISIBLE_DEVICES', '')
-    gpus = query_nvidia_smi()
     procs = query_nvidia_processes()
     ollama_raw = query_ollama_ps()
     ollama_models = parse_ollama_ps_processor(ollama_raw)
@@ -716,9 +877,19 @@ def main():
     print()
     p(BOLD + CYAN, '=' * 60)
 
-    # Save results
+    # Save results with hardware fingerprint for future comparisons
     report = {
         'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
+        'hardware_fingerprint': hw_fingerprint,
+        'hardware_changed': hw_changed,
+        'optimal_config': {
+            'cuda_visible_devices': 'unset (auto-detect)',
+            'best_model': ok_results[0]['model'] if ok_results else None,
+            'best_tps': ok_results[0]['tps'] if ok_results else None,
+            'all_models_calibrated': all(
+                'CALIBRADO' in r.get('verdict', '') for r in ok_results
+            ) if ok_results else False,
+        },
         'diagnosis_findings': findings,
         'benchmark': benchmark_results,
         'best_model': ok_results[0]['model'] if ok_results else None,
