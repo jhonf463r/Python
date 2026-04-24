@@ -202,7 +202,7 @@ def parse_ollama_ps_processor(ps_output: str) -> list[dict]:
 
 
 def run_inference(model: str, prompt: str, num_predict: int = 256) -> dict:
-    """Run Ollama inference and sample nvidia-smi during execution."""
+    """Run Ollama inference and sample nvidia-smi + Task Manager during execution."""
     payload = json.dumps({
         'model': model, 'prompt': prompt, 'stream': False,
         'options': {'num_predict': num_predict},
@@ -214,19 +214,37 @@ def run_inference(model: str, prompt: str, num_predict: int = 256) -> dict:
     )
 
     samples: list[dict] = []
+    tm_samples: list[dict] = []
     stop = threading.Event()
 
     def sampler():
+        """Sample nvidia-smi every 0.3s during inference."""
         while not stop.is_set():
             gpus = query_nvidia_smi()
-            samples.append({
-                't': round(time.time(), 2),
-                'gpus': gpus,
-            })
+            samples.append({'t': round(time.time(), 2), 'gpus': gpus})
             stop.wait(0.3)
 
-    t = threading.Thread(target=sampler, daemon=True)
-    t.start()
+    def tm_sampler():
+        """Sample Task Manager Performance Counters every 2s during inference.
+
+        This runs slower than nvidia-smi because Get-Counter takes ~1-2s.
+        But it captures the SAME data the user sees in Task Manager.
+        """
+        while not stop.is_set():
+            tm = query_task_manager_gpu()
+            if tm.get('available'):
+                tm_samples.append({
+                    't': round(time.time(), 2),
+                    'total_util': tm.get('total_util', 0),
+                    'by_engine_type': tm.get('by_engine_type', {}),
+                    'by_gpu': tm.get('by_gpu', {}),
+                })
+            stop.wait(2)
+
+    t1 = threading.Thread(target=sampler, daemon=True)
+    t2 = threading.Thread(target=tm_sampler, daemon=True)
+    t1.start()
+    t2.start()
 
     start = time.perf_counter()
     try:
@@ -241,9 +259,10 @@ def run_inference(model: str, prompt: str, num_predict: int = 256) -> dict:
         result = {'ok': False, 'error': str(ex)}
 
     stop.set()
-    t.join(2)
+    t1.join(2)
+    t2.join(3)
 
-    # Analyze GPU samples
+    # Analyze nvidia-smi GPU samples
     peak_utils = {}
     avg_utils = {}
     for s in samples:
@@ -261,9 +280,31 @@ def run_inference(model: str, prompt: str, num_predict: int = 256) -> dict:
     result['peak_util_per_gpu'] = peak_utils
     result['avg_util_per_gpu'] = avg_utils
 
-    # Also sample Task Manager counters (independent truth source)
-    task_mgr_after = query_task_manager_gpu()
-    result['task_manager'] = task_mgr_after
+    # Analyze Task Manager samples (captured DURING inference)
+    if tm_samples:
+        peak_tm_total = max(s['total_util'] for s in tm_samples)
+        avg_tm_total = round(sum(s['total_util'] for s in tm_samples) / len(tm_samples), 2)
+        # Merge all engine types across samples — take peak per type
+        all_types: dict[str, float] = {}
+        all_gpus: dict[str, float] = {}
+        for s in tm_samples:
+            for k, v in s.get('by_engine_type', {}).items():
+                all_types[k] = max(all_types.get(k, 0), v)
+            for k, v in s.get('by_gpu', {}).items():
+                all_gpus[k] = max(all_gpus.get(k, 0), v)
+        result['task_manager'] = {
+            'available': True,
+            'samples_count': len(tm_samples),
+            'peak_total_util': round(peak_tm_total, 2),
+            'avg_total_util': avg_tm_total,
+            'peak_by_engine_type': {k: round(v, 2) for k, v in all_types.items()},
+            'peak_by_gpu': {k: round(v, 2) for k, v in all_gpus.items()},
+            'total_util': round(peak_tm_total, 2),
+            'by_engine_type': {k: round(v, 2) for k, v in all_types.items()},
+            'by_gpu': {k: round(v, 2) for k, v in all_gpus.items()},
+        }
+    else:
+        result['task_manager'] = query_task_manager_gpu()
     return result
 
 
@@ -586,9 +627,10 @@ def main():
             ollama_says_gpu = 'gpu' in model_proc.lower()
             ollama_in_compute = any('ollama' in p.get('name', '').lower() for p in procs_after)
 
-            # Source 4: Task Manager Performance Counters
+            # Source 4: Task Manager Performance Counters (peak from continuous sampling)
             tm = result.get('task_manager', {})
-            tm_active = tm.get('total_util', 0) > 1.0 if tm.get('available') else None
+            tm_peak_util = tm.get('peak_total_util', tm.get('total_util', 0))
+            tm_active = tm_peak_util > 1.0 if tm.get('available') else None
 
             # Count agreements (4 sources now)
             sources = {
@@ -619,23 +661,25 @@ def main():
             p(CYAN, f'    → [nvidia-smi]         Peak GPU: {result.get("peak_util_per_gpu", {})} Avg: {result.get("avg_util_per_gpu", {})}')
             p(CYAN, f'    → [ollama ps]           processor: {model_proc}')
             p(CYAN, f'    → [nvidia compute apps] {[pr["name"] for pr in procs_after]}')
-            # Task Manager cross-reference with per-engine detail
+            # Task Manager cross-reference with per-engine detail (sampled DURING inference)
             if tm.get('available'):
-                tm_util = tm.get('total_util', 0)
-                tm_by_type = tm.get('by_engine_type', {})
-                tm_by_gpu = tm.get('by_gpu', {})
-                tm_color = GREEN if tm_util > 1 else RED
+                tm_peak = tm.get('peak_total_util', tm.get('total_util', 0))
+                tm_avg = tm.get('avg_total_util', tm_peak)
+                tm_n = tm.get('samples_count', 1)
+                tm_by_type = tm.get('peak_by_engine_type', tm.get('by_engine_type', {}))
+                tm_by_gpu = tm.get('peak_by_gpu', tm.get('by_gpu', {}))
+                tm_color = GREEN if tm_peak > 1 else RED
                 engine_str = ', '.join(
                     f'{k}={v:.1f}%' for k, v in sorted(tm_by_type.items(), key=lambda x: -x[1])
                 ) if tm_by_type else 'sin actividad'
                 gpu_str = ', '.join(
                     f'{k}={v:.1f}%' for k, v in sorted(tm_by_gpu.items())
                 ) if tm_by_gpu else ''
-                p(tm_color, f'    → [Task Manager]        total={tm_util:.1f}%')
+                p(tm_color, f'    → [Task Manager]        peak={tm_peak:.1f}% avg={tm_avg:.1f}% ({tm_n} muestras)')
                 if tm_by_type:
-                    p(tm_color, f'                            Engines: {engine_str}')
+                    p(tm_color, f'                            Engines (peak): {engine_str}')
                 if tm_by_gpu:
-                    p(tm_color, f'                            GPUs: {gpu_str}')
+                    p(tm_color, f'                            GPUs (peak): {gpu_str}')
         else:
             p(RED, f'    → ERROR: {result.get("error", "?")}')
 
