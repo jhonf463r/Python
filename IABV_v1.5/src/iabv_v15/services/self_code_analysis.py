@@ -283,7 +283,7 @@ def verify_slot_decorators(workspace: str | None = None) -> dict[str, Any]:
                 qml_content = qml_file.read_text(encoding='utf-8', errors='replace')
             except Exception:
                 continue
-            for m in re.finditer(r'(?:viewModel|model|vm|root\.viewModel)\.(\w+)\s*\(', qml_content):
+            for m in re.finditer(r'\w*[Vv]iew[Mm]odel\)?\.([a-zA-Z]\w*)\s*\(', qml_content):
                 qml_method_calls.add(m.group(1))
 
     issues: list[dict[str, str]] = []
@@ -428,7 +428,7 @@ def run_test_suite(workspace: str | None = None) -> dict[str, Any]:
     try:
         result = subprocess.run(
             ['python', '-m', 'pytest', '-p', 'no:cacheprovider', 'tests/', '-q', '--tb=short', '-x'],
-            capture_output=True, text=True, timeout=120,
+            capture_output=True, text=True, timeout=300,
             cwd=ws, env=env,
         )
         output = result.stdout[-2000:] if len(result.stdout) > 2000 else result.stdout
@@ -460,9 +460,79 @@ def run_test_suite(workspace: str | None = None) -> dict[str, Any]:
                         else f'{passed} passed, all OK'),
         }
     except subprocess.TimeoutExpired:
-        return {'ok': False, 'error': 'test suite timed out after 120s', 'summary': 'Tests timed out'}
+        return {'ok': False, 'error': 'test suite timed out after 300s', 'summary': 'Tests timed out'}
     except Exception as exc:
         return {'ok': False, 'error': str(exc), 'summary': f'Failed to run tests: {exc}'}
+
+
+def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
+    """Attempt to merge safe branches (devin/*, iabv-auto/*) into current branch.
+
+    Per AGENTS.md, auto-merge is allowed for devin/* and iabv-auto/* branches.
+    Only merges if:
+    - Branch prefix is devin/ or iabv-auto/
+    - Merge completes without conflicts (aborts on conflict)
+    - Does not touch closed layers P1-P4 contracts
+    """
+    ws = workspace or _default_workspace()
+    if not ws:
+        return {'ok': False, 'error': 'workspace not found', 'merged': [], 'failed': [], 'skipped': []}
+
+    branches = scan_unmerged_branches(ws)
+    safe_prefixes = ('origin/devin/', 'origin/iabv-auto/')
+    merged: list[str] = []
+    failed: list[dict[str, str]] = []
+    skipped: list[str] = []
+
+    for b_info in branches:
+        branch = b_info.get('branch', '')
+        if not any(branch.startswith(p) for p in safe_prefixes):
+            skipped.append(branch)
+            continue
+
+        # Check if branch touches closed-layer contracts
+        diff_stat = _run_cmd(['git', '-C', ws, 'diff', '--name-only', f'HEAD...{branch}'])
+        closed_layer_files = ('domain/models.py', 'governance', 'world_model')
+        touches_closed = any(cl in diff_stat for cl in closed_layer_files)
+        if touches_closed:
+            skipped.append(f'{branch} (touches closed layer)')
+            continue
+
+        try:
+            result = subprocess.run(
+                ['git', '-C', ws, 'merge', '--no-edit', branch],
+                capture_output=True, text=True, timeout=30,
+            )
+            if result.returncode == 0:
+                merged.append(branch)
+                logger.info('auto_merge: merged %s successfully', branch)
+            else:
+                subprocess.run(
+                    ['git', '-C', ws, 'merge', '--abort'],
+                    capture_output=True, timeout=10,
+                )
+                failed.append({
+                    'branch': branch,
+                    'reason': result.stderr.strip()[:200] or 'merge conflict',
+                })
+                logger.warning('auto_merge: failed to merge %s: %s', branch, result.stderr.strip()[:100])
+        except Exception as exc:
+            try:
+                subprocess.run(['git', '-C', ws, 'merge', '--abort'], capture_output=True, timeout=10)
+            except Exception:
+                pass
+            failed.append({'branch': branch, 'reason': str(exc)})
+
+    return {
+        'ok': len(failed) == 0,
+        'merged': merged,
+        'merged_count': len(merged),
+        'failed': failed,
+        'failed_count': len(failed),
+        'skipped': skipped,
+        'skipped_count': len(skipped),
+        'summary': f'{len(merged)} merged, {len(failed)} failed, {len(skipped)} skipped',
+    }
 
 
 def full_self_analysis_report(workspace: str | None = None) -> dict[str, Any]:

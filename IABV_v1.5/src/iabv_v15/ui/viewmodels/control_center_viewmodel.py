@@ -5258,7 +5258,44 @@ class ControlCenterViewModel(QObject):
                 except Exception as exc:
                     sections.append(f'Error en gpu_metacognition: {exc}')
 
-                # 3. Resumen ejecutivo con transparencia total
+                # 3. Auto-correccion: mergear ramas seguras si hay muchas pendientes
+                merge_result: dict = {}
+                if branch_count > 5:
+                    sections.append('')
+                    sections.append('== AUTO-CORRECCION: RAMAS PENDIENTES ==')
+                    try:
+                        from iabv_v15.services.self_code_analysis import auto_merge_safe_branches
+                        merge_result = auto_merge_safe_branches(ws)
+                        if merge_result.get('merged'):
+                            sections.append(f"Mergee {len(merge_result['merged'])} ramas exitosamente:")
+                            for mb in merge_result['merged'][:10]:
+                                sections.append(f"  + {mb}")
+                        if merge_result.get('failed'):
+                            sections.append(f"{len(merge_result['failed'])} ramas con conflictos (no mergeadas):")
+                            for fb in merge_result['failed'][:5]:
+                                sections.append(f"  x {fb.get('branch', '?')}: {fb.get('reason', '?')[:80]}")
+                        if merge_result.get('skipped_count', 0) > 0:
+                            sections.append(f"{merge_result['skipped_count']} ramas omitidas (prefijo no seguro o tocan capas cerradas)")
+                        sections.append(f"Resumen merge: {merge_result.get('summary', 'n/a')}")
+                    except Exception as merge_exc:
+                        sections.append(f'Error en auto-merge: {merge_exc}')
+
+                # 4. Re-verificacion si hubo cambios
+                if branch_count > 5 and merge_result.get('merged'):
+                    sections.append('')
+                    sections.append('== RE-VERIFICACION POST-MERGE ==')
+                    try:
+                        from iabv_v15.services.self_code_analysis import verify_python_syntax
+                        re_syntax = verify_python_syntax(ws)
+                        sections.append(f"Sintaxis post-merge: {re_syntax.get('summary', 'sin datos')}")
+                        if not re_syntax.get('ok'):
+                            sections.append('ALERTA: el merge introdujo errores de sintaxis')
+                            for err in re_syntax.get('errors', [])[:3]:
+                                sections.append(f"  - {err.get('file', '?')}: {err.get('error', '?')[:100]}")
+                    except Exception as rev_exc:
+                        sections.append(f'Error en re-verificacion: {rev_exc}')
+
+                # 5. Veredicto final con transparencia total
                 sections.append('')
                 sections.append('== VEREDICTO ==')
                 issues_found: list[str] = []
@@ -5270,8 +5307,9 @@ class ControlCenterViewModel(QObject):
                     issues_found.append('routing de intencion incompleto')
                 if not tests.get('ok', True) and not tests.get('skipped'):
                     issues_found.append(f"tests fallaron: {tests.get('summary', '?')}")
-                if branch_count > 10:
-                    issues_found.append(f"{branch_count} ramas sin mergear (deuda tecnica)")
+                remaining_branches = branch_count - len(merge_result.get('merged', [])) if branch_count > 5 else branch_count
+                if remaining_branches > 10:
+                    issues_found.append(f"{remaining_branches} ramas sin mergear (deuda tecnica)")
                 if gpu_issues:
                     issues_found.append(f"{len(gpu_issues)} issues de GPU")
                 perf_findings = perf.get('findings', [])
@@ -5290,7 +5328,7 @@ class ControlCenterViewModel(QObject):
                 reply = '\n'.join(sections)
                 self._append_message(
                     'assistant', 'IABV', reply,
-                    'Metacognicion: auto-analisis completo.',
+                    'Metacognicion: auto-analisis + auto-correccion completo.',
                 )
 
             except Exception as exc:
