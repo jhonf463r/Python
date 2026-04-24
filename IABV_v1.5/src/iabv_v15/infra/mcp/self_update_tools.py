@@ -510,4 +510,22 @@ def register(mcp: Any, workspace_root: str | Path) -> None:
 
         return json.dumps(result, indent=2, default=str)
 
-    logger.info('self_update_tools: 5 tools registered (write_repo_file, apply_text_patch, self_update_and_test, git_commit_and_push, gpu_diagnostics_and_benchmark [REAL])')
+    @mcp.tool()
+    def gpu_introspect() -> str:
+        """Introspeccion GPU: detecta GPUs fisicas, verifica cual usa Ollama,
+        descarga modelos que no caben, y reporta problemas.
+
+        Usa ollama ps (verdad absoluta) + nvidia-smi -L (GPUs fisicas).
+        NO confiar solo en nvidia-smi utilization (reporta picos falsos).
+        """
+        try:
+            from iabv_v15.services.gpu_health_service import gpu_metacognition_report
+            ollama_base = workspace_root / 'src'  # dummy
+            # Use standard Ollama URL
+            report = gpu_metacognition_report('http://127.0.0.1:11434')
+            return report
+        except Exception as e:
+            import traceback
+            return f'Error en introspeccion GPU: {e}\n{traceback.format_exc()}'
+
+    logger.info('self_update_tools: 6 tools registered (write_repo_file, apply_text_patch, self_update_and_test, git_commit_and_push, gpu_diagnostics_and_benchmark, gpu_introspect)')

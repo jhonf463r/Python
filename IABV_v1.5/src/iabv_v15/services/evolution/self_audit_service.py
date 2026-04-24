@@ -331,6 +331,25 @@ class SelfAuditService:
             'affected_files': ['tool_adapters.py'],
         },
         {
+            'id': 'GPU_METACOGNITION_REQUIRED',
+            'category': 'metacognition',
+            'severity': 'critical',
+            'title': 'El programa DEBE verificar que GPU usa Ollama realmente',
+            'description': (
+                'En laptops con 2 GPUs (Intel integrada + NVIDIA discreta), Ollama puede '
+                'usar la GPU equivocada. El programa debe: '
+                '1) Detectar GPUs fisicas con nvidia-smi -L, '
+                '2) Verificar con ollama ps que el modelo corre 100% GPU (no CPU/GPU split), '
+                '3) Si un modelo dice "61%/39% CPU/GPU" = NO CABE en GPU, descargar automaticamente, '
+                '4) Si el disco llega a 100% durante inferencia = modelo NO esta en GPU, '
+                '5) NUNCA reportar "GPU activa" basandose solo en nvidia-smi utilization — '
+                'cruzar SIEMPRE con ollama ps y con lo que el usuario ve en Task Manager. '
+                'Servicio: gpu_health_service.introspect_gpu()'
+            ),
+            'first_seen': '2026-04-23',
+            'affected_files': ['services/gpu_health_service.py'],
+        },
+        {
             'id': 'NVIDIA_SMI_UNRELIABLE',
             'category': 'hardware',
             'severity': 'high',
