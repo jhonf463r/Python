@@ -153,9 +153,11 @@ class PerceptionCrossValidator:
             return inconsistencies
 
         for card in cards:
-            detection = getattr(card, 'detection_evidence', None)
+            detection = None
+            if hasattr(card, 'metadata') and isinstance(card.metadata, dict):
+                detection = card.metadata.get('detection_evidence')
             if detection is None:
-                detection = getattr(card, '_detection_evidence', None)
+                detection = getattr(card, 'detection_evidence', None)
             if detection is None:
                 continue
             
