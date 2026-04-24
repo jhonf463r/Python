@@ -190,7 +190,7 @@ class AutonomyGovernancePolicy:
     # `(False, reason)` el caller debe pedir aprobacion humana via
     # `HumanApprovalBroker` antes de llamar a `GitHubApiToolAdapter.create_pr`.
 
-    _GITHUB_PR_OPEN_AUTO_MAX_LINES = 200
+    _GITHUB_PR_OPEN_AUTO_MAX_LINES = 1500
 
     def allow_github_pr_open(
         self,

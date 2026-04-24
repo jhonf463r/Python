@@ -299,6 +299,18 @@ class SelfAuditService:
     # Pending issues (self-examination live + portable_context package)
 
     def _collect_pending_issues(self) -> list[str]:
+        # Include UI validation issues from ControlCenterViewModel
+        try:
+            from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+            # Check if any ControlCenterViewModel instances have validation issues
+            # This is a static check - does the class have _validate_ui_reflects_reality
+            if hasattr(ControlCenterViewModel, '_validate_ui_reflects_reality'):
+                pass  # Method exists - good
+            else:
+                return ['UI: ControlCenterViewModel no tiene _validate_ui_reflects_reality - la interfaz no se auto-valida']
+        except ImportError:
+            pass
+
         items: list[str] = []
         seen: set[str] = set()
 

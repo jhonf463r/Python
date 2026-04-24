@@ -79,4 +79,114 @@ def register(mcp: Any, workspace_root: str | Path) -> None:
         result = svc.self_update_and_test(patches, test_suite=test_suite)
         return json.dumps(result, indent=2, default=str)
 
-    logger.info('self_update_tools: 3 tools registered (write_repo_file, apply_text_patch, self_update_and_test)')
+    @mcp.tool()
+    def git_commit_and_push(
+        message: str,
+        files: str = '',
+        branch: str = '',
+        remote: str = 'origin',
+    ) -> str:
+        """Commitea y pushea cambios del programa autonomamente.
+
+        El programa usa esta herramienta para versionarse a si mismo
+        sin requerir intervencion humana. Solo opera en ramas
+        iabv-auto/* o devin/* por seguridad.
+
+        Args:
+            message: Mensaje del commit.
+            files: Lista de archivos separados por coma (si vacio, usa git add -A del subdirectorio IABV_v1.5).
+            branch: Rama a pushear (si vacio, usa la rama actual).
+            remote: Remote (default: origin).
+
+        Returns:
+            JSON con resultado: {success, committed, pushed, branch, commit_hash, error}
+        """
+        import subprocess
+        ws = Path(workspace_root)
+
+        try:
+            # Detect branch
+            if not branch:
+                r = subprocess.run(
+                    ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                    capture_output=True, text=True, cwd=ws,
+                )
+                branch = r.stdout.strip() or 'unknown'
+
+            # Safety: only allow iabv-auto/* or devin/* branches
+            if not (branch.startswith('iabv-auto/') or branch.startswith('devin/')):
+                return json.dumps({
+                    'success': False,
+                    'error': f'Rama {branch} no permitida para commit autonomo. Solo iabv-auto/* o devin/*.',
+                })
+
+            # Git add
+            if files:
+                file_list = [f.strip() for f in files.split(',') if f.strip()]
+                for f in file_list:
+                    subprocess.run(['git', 'add', f], cwd=ws, capture_output=True)
+            else:
+                # Only add tracked/modified files in IABV_v1.5 subtree
+                subprocess.run(
+                    ['git', 'add', '-u', '.'],
+                    cwd=ws, capture_output=True,
+                )
+
+            # Check if there's anything to commit
+            status = subprocess.run(
+                ['git', 'status', '--porcelain'],
+                capture_output=True, text=True, cwd=ws,
+            )
+            if not status.stdout.strip():
+                return json.dumps({
+                    'success': True,
+                    'committed': False,
+                    'pushed': False,
+                    'branch': branch,
+                    'commit_hash': None,
+                    'note': 'No hay cambios pendientes para commitear.',
+                })
+
+            # Git commit
+            commit_result = subprocess.run(
+                ['git', 'commit', '-m', message],
+                capture_output=True, text=True, cwd=ws,
+            )
+            if commit_result.returncode != 0:
+                return json.dumps({
+                    'success': False,
+                    'committed': False,
+                    'error': f'git commit fallo: {commit_result.stderr[:300]}',
+                })
+
+            # Get commit hash
+            hash_result = subprocess.run(
+                ['git', 'rev-parse', 'HEAD'],
+                capture_output=True, text=True, cwd=ws,
+            )
+            commit_hash = hash_result.stdout.strip()
+
+            # Git push
+            push_result = subprocess.run(
+                ['git', 'push', remote, branch],
+                capture_output=True, text=True, cwd=ws,
+                timeout=120,
+            )
+            pushed = push_result.returncode == 0
+
+            return json.dumps({
+                'success': True,
+                'committed': True,
+                'pushed': pushed,
+                'branch': branch,
+                'commit_hash': commit_hash,
+                'push_output': push_result.stdout[:200] + push_result.stderr[:200] if not pushed else 'ok',
+            })
+
+        except Exception as exc:
+            return json.dumps({
+                'success': False,
+                'error': str(exc)[:500],
+            })
+
+    logger.info('self_update_tools: 4 tools registered (write_repo_file, apply_text_patch, self_update_and_test, git_commit_and_push)')

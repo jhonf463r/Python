@@ -65,6 +65,13 @@ class PerceptionCrossValidator:
         if not any(i['check'] == 'windows_consistency' for i in inconsistencies):
             checks_passed.append('windows_consistency')
 
+        # Incluir boot-time disagreements capturados por tool_adapters
+        boot_disagreements = self._collect_boot_disagreements()
+        inconsistencies.extend(boot_disagreements)
+
+        if not any(i['check'] == 'boot_disagreements' for i in inconsistencies):
+            checks_passed.append('boot_disagreements')
+
         return {
             'checked_at': checked_at,
             'inconsistencies': inconsistencies,
@@ -72,13 +79,14 @@ class PerceptionCrossValidator:
             'checks_passed': checks_passed,
             'total_inconsistencies': len(inconsistencies),
             'total_auto_corrections': len(auto_corrections),
-            'total_checks': 3,
+            'total_checks': 4,
             'learning': (
                 'Cuando las fuentes discrepan (filesystem vs procesos vs ventanas), '
                 'la fuente positiva prevalece. Un solo sensor negativo NO es '
                 'suficiente para declarar missing. Esta validacion cruzada se '
                 'ejecuta automaticamente para detectar y corregir percepciones '
-                'erroneas antes de que afecten decisiones.'
+                'erroneas antes de que afecten decisiones. Los disagreements '
+                'del boot se preservan como evidencia de que el cruce funciona.'
             ),
         }
 
@@ -126,6 +134,50 @@ class PerceptionCrossValidator:
                     'auto_correction_failed: %s — %s', tool_id, exc,
                 )
         return corrections
+
+    def _collect_boot_disagreements(self) -> list[dict[str, Any]]:
+        """Recoge los multi_source_disagreement capturados durante el boot.
+        
+        Los tool_adapters guardan evidencia cuando diferentes fuentes de
+        deteccion (filesystem, process, window) no coinciden. Esta informacion
+        es valiosa para la auditoria y para demostrar que el cruce de
+        informacion funciona.
+        """
+        inconsistencies: list[dict[str, Any]] = []
+        if self.tool_registry is None:
+            return inconsistencies
+
+        try:
+            cards = list(self.tool_registry.all_cards())
+        except Exception:
+            return inconsistencies
+
+        for card in cards:
+            detection = getattr(card, 'detection_evidence', None)
+            if detection is None:
+                detection = getattr(card, '_detection_evidence', None)
+            if detection is None:
+                continue
+            
+            positives = detection.get('positives', [])
+            negatives = detection.get('negatives', [])
+            
+            if positives and negatives:
+                inconsistencies.append({
+                    'check': 'boot_disagreements',
+                    'tool_id': card.tool_id if hasattr(card, 'tool_id') else str(card),
+                    'expected': f'todas las fuentes coinciden',
+                    'actual': f'positives={positives}, negatives={negatives}',
+                    'severity': 'info',
+                    'description': (
+                        f'Boot-time disagreement: {card.tool_id if hasattr(card, "tool_id") else card} '
+                        f'detectado por {positives} pero NO por {negatives}. '
+                        f'Resolucion: available=True (optimistic).'
+                    ),
+                    'auto_resolution': 'optimistic_positive',
+                })
+
+        return inconsistencies
 
     def _cross_tools_vs_processes(self) -> list[dict[str, Any]]:
         """Compare running processes against tool availability status.
