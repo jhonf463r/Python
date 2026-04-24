@@ -1656,20 +1656,23 @@ class IABVMCPServer:
             return _to_jsonable(gpu_metacognition_report())
 
         # ------------------------------------------------------------
+        # full_system_metacognition_scan — inventario completo del sistema
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def full_system_metacognition_scan() -> dict[str, Any]:
+            """Escaneo COMPLETO del sistema: navegadores, programas, modelos IA, configuraciones optimas."""
+            from iabv_v15.services.full_system_metacognition import full_system_metacognition_report
+            return _to_jsonable(full_system_metacognition_report())
+
+        # ------------------------------------------------------------
         # self_update — el programa se actualiza a sí mismo (git pull)
         #
         # Metacognición: el programa puede aplicar sus propias mejoras
         # sin requerir intervención manual del usuario.
         # ------------------------------------------------------------
 
-        
-    @mcp.tool()
-    def full_system_metacognition_scan() -> dict[str, Any]:
-        """Escaneo COMPLETO del sistema: navegadores, programas, modelos IA, configuraciones optimas."""
-        from iabv_v15.services.full_system_metacognition import full_system_metacognition_report
-        return _to_jsonable(full_system_metacognition_report())
-
-    @mcp.tool()
+        @mcp.tool()
         def self_update(
             branch: str | None = None,
         ) -> dict[str, Any]:
