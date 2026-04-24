@@ -336,14 +336,14 @@ class SelfAuditService:
             'severity': 'info',
             'title': 'GPU Benchmark: RTX 4050 Laptop (6GB VRAM)',
             'description': (
-                'Benchmark 2026-04-23 en RTX 4050 Laptop (6GB VRAM, driver 576.02): '
-                'gemma3:4b = 57.4 tok/s (MEJOR, 4.35GB VRAM, cabe completo en GPU), '
-                'qwen2.5-coder:7b = 37.4 tok/s (bueno para codigo, cabe en GPU), '
-                'qwen3:8b = ~25 tok/s (parcialmente CPU, 5.23GB), '
-                'gpt-oss:20b = 15.6 tok/s (mayormente CPU, 13.8GB NO cabe). '
-                'Embeddings (embeddinggemma, qwen3-embedding:0.6b) corren en CPU. '
-                'Config optima: OLLAMA_FLASH_ATTENTION=1, OLLAMA_NUM_PARALLEL=1, '
-                'OLLAMA_MAX_LOADED_MODELS=2, OLLAMA_GPU_OVERHEAD=256.'
+                'TEST REAL 2026-04-23 con nvidia-smi en RTX 4050 Laptop (6GB VRAM, driver 576.02): '
+                'gemma3:4b = 53.0 tok/s (MEJOR, 4.35GB VRAM, GPU 44% peak, 36C) CONFIRMADO GPU=SI, '
+                'qwen2.5-coder:7b = 34.8 tok/s (4.92GB VRAM, GPU 96% peak, 36C) CONFIRMADO GPU=SI, '
+                'qwen3:8b = 33.0 tok/s (5.95GB VRAM, GPU 97% peak, 36C) CONFIRMADO GPU=SI — cabe justo, '
+                'gpt-oss:20b = 15.3 tok/s (5.56GB VRAM parcial, GPU 67% peak, 36C) CONFIRMADO GPU=SI parcial. '
+                'TODOS los modelos usan GPU. Auto-deteccion: _auto_detect_best_ollama_model() '
+                'lee data/gpu_benchmark_real.json si existe, sino usa nvidia-smi para estimar. '
+                'Config: OLLAMA_FLASH_ATTENTION=1, OLLAMA_NUM_PARALLEL=1, OLLAMA_GPU_OVERHEAD=256.'
             ),
             'first_seen': '2026-04-23',
             'affected_files': ['infra/config.py', 'scripts/start_iabv.ps1'],
