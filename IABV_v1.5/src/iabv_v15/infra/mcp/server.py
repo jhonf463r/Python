@@ -1662,7 +1662,14 @@ class IABVMCPServer:
         # sin requerir intervención manual del usuario.
         # ------------------------------------------------------------
 
-        @mcp.tool()
+        
+    @mcp.tool()
+    def full_system_metacognition_scan() -> dict[str, Any]:
+        """Escaneo COMPLETO del sistema: navegadores, programas, modelos IA, configuraciones optimas."""
+        from iabv_v15.services.full_system_metacognition import full_system_metacognition_report
+        return _to_jsonable(full_system_metacognition_report())
+
+    @mcp.tool()
         def self_update(
             branch: str | None = None,
         ) -> dict[str, Any]:
@@ -1851,6 +1858,20 @@ class IABVMCPServer:
     def run(self, transport: str = "stdio") -> None:
         if transport not in SUPPORTED_TRANSPORTS:
             raise ValueError(f"transport '{transport}' no soportado. Usa {sorted(SUPPORTED_TRANSPORTS)}")
+        
+        # Register self-update (write) tools for autonomous self-modification
+        try:
+            from iabv_v15.infra.mcp.self_update_tools import register_self_update_tools
+            _n_write_tools = register_self_update_tools(
+                mcp=mcp,
+                workspace_root_fn=self._workspace_root,
+                governance_fn=self._governance_block_for_route,
+                to_jsonable_fn=_to_jsonable,
+            )
+            logger.info("self_update_tools: %d write tools registered", _n_write_tools)
+        except Exception as _sut_exc:
+            logger.warning("self_update_tools: failed to register: %s", _sut_exc)
+
         logger.info("IABV MCP server starting (transport=%s, name=%s)", transport, self.name)
         self._log_github_api_adapter_status()
         self._log_devin_api_adapter_status()
