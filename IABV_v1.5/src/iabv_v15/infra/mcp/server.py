@@ -1866,7 +1866,7 @@ class IABVMCPServer:
         try:
             from iabv_v15.infra.mcp.self_update_tools import register_self_update_tools
             _n_write_tools = register_self_update_tools(
-                mcp=mcp,
+                mcp=self.mcp,
                 workspace_root_fn=self._workspace_root,
                 governance_fn=self._governance_block_for_route,
                 to_jsonable_fn=_to_jsonable,
