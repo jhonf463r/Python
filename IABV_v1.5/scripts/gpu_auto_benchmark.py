@@ -485,9 +485,14 @@ def main():
     print()
 
     cuda_vis = os.environ.get('CUDA_VISIBLE_DEVICES', '')
+    print('  Consultando nvidia-smi procesos...', end=' ', flush=True)
     procs = query_nvidia_processes()
+    print(f'{len(procs)} encontrado(s)', flush=True)
+    print('  Consultando ollama ps...', end=' ', flush=True)
     ollama_raw = query_ollama_ps()
     ollama_models = parse_ollama_ps_processor(ollama_raw)
+    print(f'{len(ollama_models)} modelo(s)', flush=True)
+    print(flush=True)
 
     findings = []
 
@@ -514,7 +519,9 @@ def main():
         p(YELLOW, '    (ningún modelo cargado)')
 
     # Source 4: Task Manager (Windows Performance Counters) — per engine breakdown
+    print('  Consultando Task Manager Performance Counters...', end=' ', flush=True)
     task_mgr = query_task_manager_gpu()
+    print('OK', flush=True)
     if task_mgr.get('available'):
         active = task_mgr.get('active_engines', [])
         total = task_mgr.get('total_util', 0)
