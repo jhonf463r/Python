@@ -220,6 +220,11 @@ class OperationalSelfExaminationService:
                 'solution_proposals': solution_proposals[:4],
             },
         )
+        # Persist metacognitive ledger from the FULL findings list (before
+        # truncation to 8) so MEDIUM-severity entries are not lost.
+        self._persist_metacognitive_ledger_from_findings(
+            findings, review_id=review.review_id,
+        )
         return self._persist_review(review)
 
     def _persist_review(self, review: SelfExaminationSnapshot) -> SelfExaminationSnapshot:
@@ -276,11 +281,6 @@ class OperationalSelfExaminationService:
             }
         )
         self.storage.save_json_atomic(latest_json_rel, review.model_dump(mode='json'))
-        # Persist metacognitive error ledger AFTER all findings are written,
-        # so _metacognitive_calibration_findings reads only previous cycles.
-        self._persist_metacognitive_ledger_from_findings(
-            review.findings, review_id=review.review_id,
-        )
         return review
 
     def _collect_embodiment_violations(self) -> list[dict[str, Any]] | None:
