@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import shutil
 import subprocess
 import threading
@@ -223,6 +224,7 @@ class GpuModelBenchmarkService:
             'nvidia_smi_gpus': self.query_all_gpus(),
             'nvidia_smi_processes': self.query_gpu_processes(),
             'ollama_ps': self.query_ollama_ps(),
+            'cuda_visible_devices': os.environ.get('CUDA_VISIBLE_DEVICES', ''),
         }
 
     def _cross_reference_sources(
@@ -334,6 +336,31 @@ class GpuModelBenchmarkService:
                             f'({gb["memory_used_mb"]}MB -> {ga["memory_used_mb"]}MB).'
                         ),
                     })
+
+        # Finding 5: CUDA_VISIBLE_DEVICES misconfiguration
+        cuda_vis = truth_before.get('cuda_visible_devices', '')
+        nvidia_gpus = truth_before.get('nvidia_smi_gpus', [])
+        if cuda_vis:
+            nvidia_indices = {g['index'] for g in nvidia_gpus}
+            try:
+                requested = [int(x.strip()) for x in cuda_vis.split(',') if x.strip()]
+                invalid = [i for i in requested if i not in nvidia_indices]
+                if invalid:
+                    findings.append({
+                        'type': 'discrepancy',
+                        'severity': 'HIGH',
+                        'source_a': 'CUDA_VISIBLE_DEVICES',
+                        'source_b': 'nvidia_smi',
+                        'detail': (
+                            f'CUDA_VISIBLE_DEVICES={cuda_vis} apunta a '
+                            f'GPU(s) {invalid} que no existen en nvidia-smi '
+                            f'(indices reales: {sorted(nvidia_indices)}). '
+                            f'Esto fuerza CPU fallback. Solucion: unset '
+                            f'CUDA_VISIBLE_DEVICES o usar indice correcto.'
+                        ),
+                    })
+            except ValueError:
+                pass
 
         # Overall calibration verdict
         confirmations = sum(1 for f in findings if f['type'] == 'confirmation')

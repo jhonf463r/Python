@@ -273,3 +273,51 @@ class TestQueryOllamaPs:
              patch('subprocess.run') as mock_run:
             mock_run.return_value = MagicMock(returncode=0, stdout='')
             assert svc.query_ollama_ps() == []
+
+
+# ---------------------------------------------------------------------------
+# CUDA_VISIBLE_DEVICES misconfiguration detection
+# ---------------------------------------------------------------------------
+
+class TestCudaVisibleDevicesDetection:
+    """Verify cross-reference detects invalid CUDA_VISIBLE_DEVICES."""
+
+    def test_detects_invalid_gpu_index(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        truth_before = {
+            'nvidia_smi_gpus': [{'index': 0, 'name': 'RTX 4050', 'utilization_pct': 0,
+                                 'memory_used_mb': 0, 'memory_total_mb': 6141, 'temperature_c': 30}],
+            'nvidia_smi_processes': [],
+            'ollama_ps': [],
+            'cuda_visible_devices': '1',
+        }
+        result = svc._cross_reference_sources(
+            ollama_report={'tokens_per_second': 50, 'model': 'gemma3:4b'},
+            gpu_samples=[],
+            truth_before=truth_before,
+            truth_after=truth_before,
+        )
+        cuda_findings = [f for f in result['findings']
+                         if f.get('source_a') == 'CUDA_VISIBLE_DEVICES']
+        assert len(cuda_findings) == 1
+        assert cuda_findings[0]['severity'] == 'HIGH'
+        assert '[1]' in cuda_findings[0]['detail']
+
+    def test_no_finding_when_cuda_vis_correct(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        truth = {
+            'nvidia_smi_gpus': [{'index': 0, 'name': 'RTX 4050', 'utilization_pct': 50,
+                                 'memory_used_mb': 3000, 'memory_total_mb': 6141, 'temperature_c': 40}],
+            'nvidia_smi_processes': [],
+            'ollama_ps': [],
+            'cuda_visible_devices': '0',
+        }
+        result = svc._cross_reference_sources(
+            ollama_report={'tokens_per_second': 50, 'model': 'gemma3:4b'},
+            gpu_samples=[[{'index': 0, 'name': 'RTX 4050', 'utilization_pct': 50, 'memory_used_mb': 3000, 'memory_total_mb': 6141, 'temperature_c': 40}]],
+            truth_before=truth,
+            truth_after=truth,
+        )
+        cuda_findings = [f for f in result['findings']
+                         if f.get('source_a') == 'CUDA_VISIBLE_DEVICES']
+        assert len(cuda_findings) == 0
