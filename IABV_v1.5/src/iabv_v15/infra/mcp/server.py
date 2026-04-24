@@ -1694,23 +1694,27 @@ class IABVMCPServer:
             Args:
                 branch: nombre de la rama a mergear (ej: 'origin/iabv-auto/...')
             """
-            gate = self._governance_block_for_route('self_modify')
+            gate = self._governance_block_for_route(
+                assistant_kind='self_modify',
+                requires_network=False,
+            )
             if gate:
                 return _to_jsonable(gate)
 
             import re as _re
+            import subprocess as _sp
             if _re.search(r'[;&|`$\n]|--force|\.\.', branch):
                 return _to_jsonable({'ok': False, 'error': 'branch name rejected (unsafe chars)'})
 
             ws = self._workspace_root()
             try:
-                merge_result = subprocess.run(
+                merge_result = _sp.run(
                     ['git', '-C', ws, 'merge', '--no-edit', branch],
                     capture_output=True, text=True, timeout=60,
                 )
                 if merge_result.returncode != 0:
                     # Abort the merge on conflict
-                    subprocess.run(['git', '-C', ws, 'merge', '--abort'],
+                    _sp.run(['git', '-C', ws, 'merge', '--abort'],
                                    capture_output=True, timeout=10)
                     return _to_jsonable({
                         'ok': False,

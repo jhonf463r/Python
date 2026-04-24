@@ -5315,6 +5315,7 @@ class ControlCenterViewModel(QObject):
             'suggestions_count': len(self._contextual_suggestions),
         }
 
+    @Slot(str)
     def sendChat(self, text: str) -> None:
         message = text.strip()
         if not message:
