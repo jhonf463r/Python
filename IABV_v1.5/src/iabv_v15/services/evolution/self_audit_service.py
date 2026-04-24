@@ -331,6 +331,24 @@ class SelfAuditService:
             'affected_files': ['tool_adapters.py'],
         },
         {
+            'id': 'NVIDIA_SMI_UNRELIABLE',
+            'category': 'hardware',
+            'severity': 'high',
+            'title': 'nvidia-smi reporta picos falsos — usar ollama ps',
+            'description': (
+                'nvidia-smi captura utilizacion GPU en milisegundos, que no refleja '
+                'el uso real visible en el Administrador de Tareas de Windows (promedia por segundo). '
+                'Durante benchmarks con carga/descarga de modelos, nvidia-smi puede reportar 86-98% '
+                'GPU mientras el usuario ve <15% en Task Manager y disco al 100%. '
+                'LA VERDAD ABSOLUTA es `ollama ps` que muestra el % real CPU/GPU: '
+                '"100% GPU" = modelo cabe en VRAM, "61%/39% CPU/GPU" = modelo NO cabe. '
+                'Regla: NUNCA confiar solo en nvidia-smi para reportar uso de GPU. '
+                'Siempre cruzar con ollama ps y con lo que el usuario ve.'
+            ),
+            'first_seen': '2026-04-23',
+            'affected_files': ['services/gpu_health_service.py', 'infra/mcp/self_update_tools.py'],
+        },
+        {
             'id': 'GPU_MODEL_BENCHMARK_RTX4050',
             'category': 'hardware',
             'severity': 'info',

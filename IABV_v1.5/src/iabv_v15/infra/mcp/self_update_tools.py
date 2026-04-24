@@ -430,18 +430,48 @@ def register(mcp: Any, workspace_root: str | Path) -> None:
                     avg_util = round(sum(s.get('util', 0) for s in gpu_samples) / max(len(gpu_samples), 1), 1)
                     max_temp = max((s.get('temp', 0) for s in gpu_samples), default=0)
 
-                    # Check if model is on GPU
+                    # Check if model is on GPU — usar ollama ps (verdad absoluta)
                     using_gpu = False
                     vram_model_gb = 0.0
+                    gpu_percent = 0
+                    cpu_percent = 0
                     try:
-                        with httpx.Client(timeout=10) as c2:
-                            ps2 = c2.get(f'{ollama_base}/api/ps').json().get('models', [])
-                            for rm in ps2:
-                                if rm.get('name', '').startswith(model_name.split(':')[0]):
-                                    vram_model_gb = round(rm.get('size_vram', 0) / 1e9, 2)
-                                    using_gpu = rm.get('size_vram', 0) > 0
+                        ps_cmd = subprocess.run(['ollama', 'ps'], capture_output=True, text=True, timeout=10)
+                        if ps_cmd.returncode == 0:
+                            import re as _re
+                            for ps_line in ps_cmd.stdout.splitlines()[1:]:
+                                if model_name.split(':')[0] in ps_line:
+                                    if '100% GPU' in ps_line:
+                                        gpu_percent = 100
+                                        cpu_percent = 0
+                                        using_gpu = True
+                                    elif '100% CPU' in ps_line:
+                                        gpu_percent = 0
+                                        cpu_percent = 100
+                                        using_gpu = False
+                                    else:
+                                        m = _re.search(r'(\d+)%/(\d+)%\s+CPU/GPU', ps_line)
+                                        if m:
+                                            cpu_percent = int(m.group(1))
+                                            gpu_percent = int(m.group(2))
+                                            using_gpu = gpu_percent > 50
                     except Exception:
                         pass
+                    # Fallback: API
+                    if gpu_percent == 0:
+                        try:
+                            with httpx.Client(timeout=10) as c2:
+                                ps2 = c2.get(f'{ollama_base}/api/ps').json().get('models', [])
+                                for rm in ps2:
+                                    if rm.get('name', '').startswith(model_name.split(':')[0]):
+                                        vram_model_gb = round(rm.get('size_vram', 0) / 1e9, 2)
+                                        total_size = rm.get('size', 0)
+                                        if total_size > 0:
+                                            gpu_percent = int((rm.get('size_vram', 0) / total_size) * 100)
+                                            cpu_percent = 100 - gpu_percent
+                                        using_gpu = rm.get('size_vram', 0) > 0
+                        except Exception:
+                            pass
 
                     if gen.status_code == 200:
                         data = gen.json()
@@ -456,7 +486,10 @@ def register(mcp: Any, workspace_root: str | Path) -> None:
                             'tokens_per_second': tps,
                             'response': data.get('response', '')[:150],
                             'gpu_using_gpu': using_gpu,
+                            'gpu_percent': gpu_percent,
+                            'cpu_percent': cpu_percent,
                             'gpu_vram_model_gb': vram_model_gb,
+                            'fits_100pct_gpu': gpu_percent == 100,
                             'gpu_baseline_vram_mb': baseline.get('vram_used', 0),
                             'gpu_max_vram_mb': max_vram,
                             'gpu_max_util_pct': max_util,
