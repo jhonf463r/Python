@@ -5197,6 +5197,10 @@ class ControlCenterViewModel(QObject):
                     sections.append('')
                     sections.append('== ROUTING DE INTENCION ==')
                     sections.append(f"Rutas verificadas: {routing.get('summary', 'sin datos')}")
+                    if routing.get('ius_metacognition_intent'):
+                        sections.append('IntentUnderstandingService: system.metacognition intent PRESENTE')
+                    else:
+                        sections.append('IntentUnderstandingService: FALTA system.metacognition intent (el cerebro no puede clasificar peticiones de auto-analisis)')
                     if routing.get('missing_handlers'):
                         for mh in routing['missing_handlers']:
                             sections.append(f"  FALTA: handler {mh} no existe")

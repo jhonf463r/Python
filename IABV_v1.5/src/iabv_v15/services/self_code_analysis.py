@@ -355,6 +355,16 @@ def verify_intent_routing(workspace: str | None = None) -> dict[str, Any]:
         ('auditar autonomia', '_try_handle_chat_command', 'comando chat'),
     ]
 
+    # Also verify IntentUnderstandingService has metacognition intent
+    ius_path = Path(ws) / 'src' / 'iabv_v15' / 'services' / 'adaptive' / 'intent_understanding_service.py'
+    ius_has_metacognition = False
+    if ius_path.exists():
+        ius_content = ius_path.read_text(encoding='utf-8', errors='replace')
+        ius_has_metacognition = (
+            'system.metacognition' in ius_content
+            and '_is_metacognition_prompt' in ius_content
+        )
+
     results: list[dict[str, Any]] = []
     missing_handlers: list[str] = []
 
@@ -401,12 +411,16 @@ def verify_intent_routing(workspace: str | None = None) -> dict[str, Any]:
     unwired = list(set(unwired))
 
     return {
-        'ok': len(missing_handlers) == 0 and len(unwired) == 0,
+        'ok': len(missing_handlers) == 0 and len(unwired) == 0 and ius_has_metacognition,
         'test_cases': len(test_cases),
         'results': results,
         'missing_handlers': missing_handlers,
         'unwired_handlers': unwired,
-        'summary': f'{len(test_cases)} intent routes verified, {len(missing_handlers)} missing, {len(unwired)} unwired',
+        'ius_metacognition_intent': ius_has_metacognition,
+        'summary': (
+            f'{len(test_cases)} intent routes verified, {len(missing_handlers)} missing, {len(unwired)} unwired'
+            + ('' if ius_has_metacognition else ', IntentUnderstandingService missing system.metacognition')
+        ),
     }
 
 
