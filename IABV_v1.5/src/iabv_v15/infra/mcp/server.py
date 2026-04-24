@@ -1667,9 +1667,15 @@ class IABVMCPServer:
             if block is not None:
                 return block
 
-            # Sanitize branch name
-            if branch and not _re.match(r'^[\w./-]+$', branch):
-                return {"status": "error", "detail": "invalid branch name"}
+            # Sanitize branch name — reject git flags (--force),
+            # directory traversal (..), and shell metacharacters.
+            if branch:
+                if branch.startswith('-'):
+                    return {"status": "error", "detail": "branch name cannot start with '-' (git flag injection)"}
+                if '..' in branch:
+                    return {"status": "error", "detail": "branch name cannot contain '..' (directory traversal)"}
+                if not _re.match(r'^[a-zA-Z0-9][\w./-]*$', branch):
+                    return {"status": "error", "detail": "invalid branch name"}
 
             ws = self._workspace_root()
             try:
