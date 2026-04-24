@@ -275,4 +275,129 @@ def register(mcp: Any, workspace_root: str | Path) -> None:
                 'error': str(exc)[:500],
             })
 
-    logger.info('self_update_tools: 4 tools registered (write_repo_file, apply_text_patch, self_update_and_test, git_commit_and_push)')
+    @mcp.tool()
+    def gpu_diagnostics_and_benchmark(
+        benchmark: bool = False,
+        pull_model: str = '',
+    ) -> str:
+        """Diagnostica GPU, modelos Ollama, y opcionalmente benchmarkea.
+
+        Args:
+            benchmark: Si True, corre un benchmark rapido de los modelos instalados.
+            pull_model: Si se indica, descarga un modelo nuevo de Ollama (ej: 'llama3.2:3b').
+
+        Returns:
+            JSON con gpu_info, ollama_models, running_models, y benchmark_results.
+        """
+        import subprocess
+        import time as _time
+        import httpx
+
+        result: dict = {'gpu_info': {}, 'ollama_models': [], 'running_models': [], 'benchmark_results': []}
+
+        # 1. GPU detection via nvidia-smi
+        try:
+            nv = subprocess.run(
+                ['nvidia-smi', '--query-gpu=name,memory.total,memory.used,memory.free,utilization.gpu,driver_version',
+                 '--format=csv,noheader,nounits'],
+                capture_output=True, text=True, timeout=10,
+            )
+            if nv.returncode == 0:
+                parts = [p.strip() for p in nv.stdout.strip().split(',')]
+                if len(parts) >= 6:
+                    result['gpu_info'] = {
+                        'name': parts[0],
+                        'memory_total_mb': int(parts[1]),
+                        'memory_used_mb': int(parts[2]),
+                        'memory_free_mb': int(parts[3]),
+                        'utilization_pct': int(parts[4]),
+                        'driver_version': parts[5],
+                        'detected': True,
+                    }
+                else:
+                    result['gpu_info'] = {'detected': True, 'raw': nv.stdout.strip()}
+            else:
+                result['gpu_info'] = {'detected': False, 'error': nv.stderr.strip()[:200]}
+        except Exception as e:
+            result['gpu_info'] = {'detected': False, 'error': str(e)[:200]}
+
+        # 2. Ollama models (via REST API, not /v1)
+        ollama_base = 'http://127.0.0.1:11434'
+        try:
+            with httpx.Client(timeout=10) as client:
+                tags = client.get(f'{ollama_base}/api/tags')
+                if tags.status_code == 200:
+                    models = tags.json().get('models', [])
+                    for m in models:
+                        result['ollama_models'].append({
+                            'name': m.get('name', ''),
+                            'size_gb': round(m.get('size', 0) / 1e9, 2),
+                            'modified': m.get('modified_at', '')[:19],
+                            'family': m.get('details', {}).get('family', ''),
+                            'parameter_size': m.get('details', {}).get('parameter_size', ''),
+                            'quantization': m.get('details', {}).get('quantization_level', ''),
+                        })
+        except Exception as e:
+            result['ollama_models_error'] = str(e)[:200]
+
+        # 3. Currently running models (GPU layers info)
+        try:
+            with httpx.Client(timeout=10) as client:
+                ps = client.get(f'{ollama_base}/api/ps')
+                if ps.status_code == 200:
+                    running = ps.json().get('models', [])
+                    for m in running:
+                        result['running_models'].append({
+                            'name': m.get('name', ''),
+                            'size_gb': round(m.get('size', 0) / 1e9, 2),
+                            'size_vram_gb': round(m.get('size_vram', 0) / 1e9, 2),
+                            'digest': m.get('digest', '')[:12],
+                            'gpu_layers': 'using_gpu' if m.get('size_vram', 0) > 0 else 'cpu_only',
+                        })
+        except Exception as e:
+            result['running_models_error'] = str(e)[:200]
+
+        # 4. Pull model if requested
+        if pull_model:
+            try:
+                with httpx.Client(timeout=300) as client:
+                    pull_resp = client.post(f'{ollama_base}/api/pull', json={'name': pull_model, 'stream': False})
+                    result['pull_result'] = {'model': pull_model, 'status': pull_resp.json().get('status', 'unknown')}
+            except Exception as e:
+                result['pull_result'] = {'model': pull_model, 'error': str(e)[:200]}
+
+        # 5. Benchmark if requested
+        if benchmark:
+            prompt = 'Responde en una linea: cual es la capital de Colombia?'
+            for model_info in result['ollama_models'][:5]:
+                model_name = model_info['name']
+                try:
+                    with httpx.Client(timeout=60) as client:
+                        start = _time.time()
+                        gen = client.post(f'{ollama_base}/api/generate',
+                            json={'model': model_name, 'prompt': prompt, 'stream': False},
+                            timeout=60)
+                        elapsed = round(_time.time() - start, 2)
+                        if gen.status_code == 200:
+                            data = gen.json()
+                            result['benchmark_results'].append({
+                                'model': model_name,
+                                'time_seconds': elapsed,
+                                'eval_count': data.get('eval_count', 0),
+                                'eval_duration_ns': data.get('eval_duration', 0),
+                                'tokens_per_second': round(data.get('eval_count', 0) / (data.get('eval_duration', 1) / 1e9), 1) if data.get('eval_duration') else 0,
+                                'response': data.get('response', '')[:100],
+                                'gpu_layers': 'check /api/ps for details',
+                            })
+                        else:
+                            result['benchmark_results'].append({
+                                'model': model_name, 'error': f'HTTP {gen.status_code}', 'time_seconds': elapsed,
+                            })
+                except Exception as e:
+                    result['benchmark_results'].append({
+                        'model': model_name, 'error': str(e)[:200],
+                    })
+
+        return json.dumps(result, indent=2, default=str)
+
+    logger.info('self_update_tools: 5 tools registered (write_repo_file, apply_text_patch, self_update_and_test, git_commit_and_push, gpu_diagnostics_and_benchmark)')
