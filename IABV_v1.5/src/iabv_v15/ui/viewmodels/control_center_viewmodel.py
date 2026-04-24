@@ -5262,6 +5262,39 @@ class ControlCenterViewModel(QObject):
                 except Exception as exc:
                     sections.append(f'Error en gpu_metacognition: {exc}')
 
+                # 2.5 Diagnostico de trabajo en vivo y consultas externas
+                sections.append('')
+                sections.append('== DIAGNOSTICO DE TRABAJO EN VIVO ==')
+                try:
+                    stalled_items: list[str] = []
+                    # Check adaptive sessions for stalled work
+                    if hasattr(self, 'adaptive_orchestrator'):
+                        sessions = getattr(self.adaptive_orchestrator, '_sessions', {})
+                        for sid, session in sessions.items():
+                            progress = getattr(session, 'progress', 0)
+                            status = getattr(session, 'status', 'unknown')
+                            if status == 'active' and 0 < progress < 1.0:
+                                elapsed = getattr(session, 'elapsed_seconds', 0)
+                                if elapsed > 120:
+                                    stalled_items.append(
+                                        f"Sesion {sid[:12]}... estancada en {int(progress*100)}% por {int(elapsed)}s — posible bloqueo"
+                                    )
+                    # Check for visible browser consultations that should be background
+                    if hasattr(self, '_consultation_history'):
+                        for ch in list(self._consultation_history or [])[-5:]:
+                            if ch.get('tool_id') in ('chatgpt_web_assisted', 'claude_web_assisted'):
+                                if ch.get('status') in ('prepared', 'awaiting_response'):
+                                    stalled_items.append(
+                                        f"Consulta externa {ch.get('tool_id', '?')} abierta en browser visible — deberia ser background"
+                                    )
+                    if stalled_items:
+                        for si_item in stalled_items:
+                            sections.append(f"  ALERTA: {si_item}")
+                    else:
+                        sections.append('Sin trabajo estancado ni consultas externas visibles.')
+                except Exception as work_exc:
+                    sections.append(f'Error al diagnosticar trabajo en vivo: {work_exc}')
+
                 # 3. Auto-correccion: mergear ramas seguras si hay muchas pendientes
                 merge_result: dict = {}
                 if branch_count > 5:
@@ -5271,11 +5304,15 @@ class ControlCenterViewModel(QObject):
                         from iabv_v15.services.self_code_analysis import auto_merge_safe_branches
                         merge_result = auto_merge_safe_branches(ws)
                         if merge_result.get('merged'):
-                            sections.append(f"Mergee {len(merge_result['merged'])} ramas exitosamente:")
+                            sections.append(f"Mergee {len(merge_result['merged'])} ramas limpiamente:")
                             for mb in merge_result['merged'][:10]:
                                 sections.append(f"  + {mb}")
+                        if merge_result.get('merged_with_theirs'):
+                            sections.append(f"Mergee {len(merge_result['merged_with_theirs'])} ramas resolviendo conflictos (version mas reciente gana):")
+                            for mb in merge_result['merged_with_theirs'][:10]:
+                                sections.append(f"  ~ {mb}")
                         if merge_result.get('failed'):
-                            sections.append(f"{len(merge_result['failed'])} ramas con conflictos (no mergeadas):")
+                            sections.append(f"{len(merge_result['failed'])} ramas que no se pudieron mergear:")
                             for fb in merge_result['failed'][:5]:
                                 sections.append(f"  x {fb.get('branch', '?')}: {fb.get('reason', '?')[:80]}")
                         if merge_result.get('skipped_count', 0) > 0:
@@ -5285,7 +5322,7 @@ class ControlCenterViewModel(QObject):
                         sections.append(f'Error en auto-merge: {merge_exc}')
 
                 # 4. Re-verificacion si hubo cambios
-                if branch_count > 5 and merge_result.get('merged'):
+                if branch_count > 5 and (merge_result.get('merged') or merge_result.get('merged_with_theirs')):
                     sections.append('')
                     sections.append('== RE-VERIFICACION POST-MERGE ==')
                     try:
@@ -5311,7 +5348,7 @@ class ControlCenterViewModel(QObject):
                     issues_found.append('routing de intencion incompleto')
                 if not tests.get('ok', True) and not tests.get('skipped'):
                     issues_found.append(f"tests fallaron: {tests.get('summary', '?')}")
-                remaining_branches = branch_count - len(merge_result.get('merged', [])) if branch_count > 5 else branch_count
+                remaining_branches = branch_count - merge_result.get('total_merged', len(merge_result.get('merged', []))) if branch_count > 5 else branch_count
                 if remaining_branches > 10:
                     issues_found.append(f"{remaining_branches} ramas sin mergear (deuda tecnica)")
                 if gpu_issues:

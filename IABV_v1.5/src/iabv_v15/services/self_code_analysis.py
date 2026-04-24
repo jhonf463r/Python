@@ -483,10 +483,9 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
     """Attempt to merge safe branches (devin/*, iabv-auto/*) into current branch.
 
     Per AGENTS.md, auto-merge is allowed for devin/* and iabv-auto/* branches.
-    Only merges if:
-    - Branch prefix is devin/ or iabv-auto/
-    - Merge completes without conflicts (aborts on conflict)
-    - Does not touch closed layers P1-P4 contracts
+    Strategy: first try clean merge; if conflicts, retry with -X theirs
+    (take the branch's version — the most recent changes win).
+    Only skips branches that touch closed layers P1-P4 contracts.
     """
     ws = workspace or _default_workspace()
     if not ws:
@@ -495,6 +494,7 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
     branches = scan_unmerged_branches(ws)
     safe_prefixes = ('origin/devin/', 'origin/iabv-auto/')
     merged: list[str] = []
+    merged_with_theirs: list[str] = []
     failed: list[dict[str, str]] = []
     skipped: list[str] = []
 
@@ -505,7 +505,10 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
             continue
 
         # Check if branch touches closed-layer contracts
-        diff_stat = _run_cmd(['git', '-C', ws, 'diff', '--name-only', f'HEAD...{branch}'])
+        try:
+            diff_stat = _run_cmd(['git', '-C', ws, 'diff', '--name-only', f'HEAD...{branch}'])
+        except Exception:
+            diff_stat = ''
         closed_layer_files = ('domain/models.py', 'governance', 'world_model')
         touches_closed = any(cl in diff_stat for cl in closed_layer_files)
         if touches_closed:
@@ -513,6 +516,7 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
             continue
 
         try:
+            # First try clean merge
             result = subprocess.run(
                 ['git', '-C', ws, 'merge', '--no-edit', branch],
                 capture_output=True, text=True, timeout=30,
@@ -521,15 +525,28 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
                 merged.append(branch)
                 logger.info('auto_merge: merged %s successfully', branch)
             else:
+                # Conflict — abort and retry with -X theirs (take most recent)
                 subprocess.run(
                     ['git', '-C', ws, 'merge', '--abort'],
                     capture_output=True, timeout=10,
                 )
-                failed.append({
-                    'branch': branch,
-                    'reason': result.stderr.strip()[:200] or 'merge conflict',
-                })
-                logger.warning('auto_merge: failed to merge %s: %s', branch, result.stderr.strip()[:100])
+                result2 = subprocess.run(
+                    ['git', '-C', ws, 'merge', '--no-edit', '-X', 'theirs', branch],
+                    capture_output=True, text=True, timeout=30,
+                )
+                if result2.returncode == 0:
+                    merged_with_theirs.append(branch)
+                    logger.info('auto_merge: merged %s with -X theirs', branch)
+                else:
+                    subprocess.run(
+                        ['git', '-C', ws, 'merge', '--abort'],
+                        capture_output=True, timeout=10,
+                    )
+                    failed.append({
+                        'branch': branch,
+                        'reason': result2.stderr.strip()[:200] or 'merge failed even with -X theirs',
+                    })
+                    logger.warning('auto_merge: failed %s even with -X theirs', branch)
         except Exception as exc:
             try:
                 subprocess.run(['git', '-C', ws, 'merge', '--abort'], capture_output=True, timeout=10)
@@ -537,15 +554,19 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
                 pass
             failed.append({'branch': branch, 'reason': str(exc)})
 
+    total_merged = len(merged) + len(merged_with_theirs)
     return {
         'ok': len(failed) == 0,
         'merged': merged,
         'merged_count': len(merged),
+        'merged_with_theirs': merged_with_theirs,
+        'merged_with_theirs_count': len(merged_with_theirs),
+        'total_merged': total_merged,
         'failed': failed,
         'failed_count': len(failed),
         'skipped': skipped,
         'skipped_count': len(skipped),
-        'summary': f'{len(merged)} merged, {len(failed)} failed, {len(skipped)} skipped',
+        'summary': f'{total_merged} merged ({len(merged)} clean, {len(merged_with_theirs)} con conflictos resueltos), {len(failed)} failed, {len(skipped)} skipped',
     }
 
 
