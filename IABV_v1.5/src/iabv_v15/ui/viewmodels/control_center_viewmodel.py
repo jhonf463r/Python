@@ -68,6 +68,15 @@ class ControlCenterViewModel(QObject):
     selfAuditCompleted = Signal(str)  # JSON serializado del SelfAuditSnapshot
     selfAuditFailed = Signal(str)     # detalle textual del fallo
 
+    # Señales avanzadas del chat (Frente 4 — UI Chat Avanzada)
+    fileAttached = Signal(dict)           # {name, path, size, type}
+    fileDetached = Signal(str)            # path del archivo removido
+    chatSearchResults = Signal(list)      # lista de mensajes filtrados
+    contextualSuggestionsChanged = Signal(list)  # sugerencias contextuales
+    liveStatusChanged = Signal(str)       # "idle"|"processing"|"streaming"|"error"
+    codeApplyRequested = Signal(str, str) # (code, language)
+    chatDownloadRequested = Signal(str, str)  # (content, filename)
+
     def __init__(
         self,
         *,
@@ -167,6 +176,10 @@ class ControlCenterViewModel(QObject):
         self._legacy_cards = self._build_legacy_cards()
         self._role_cards = [profile.model_dump(mode='json') for profile in self.role_router.role_profiles]
         self._chat_messages: list[dict[str, str]] = []
+        self._attached_files: list[dict[str, Any]] = []
+        self._live_status: str = 'idle'
+        self._contextual_suggestions: list[dict[str, Any]] = []
+        self._chat_search_query: str = ''
         self._pbt_state: dict[str, Any] = {}
         self._pbt_candidates: list[dict[str, Any]] = []
         self._diagnostic_text = 'Diagnostico pendiente. La consola revisa el stack local automaticamente y puedes pedirme ajustes o aprobaciones por chat.'
@@ -280,9 +293,23 @@ class ControlCenterViewModel(QObject):
             'idle': 'inactivo',
         }.get(status, status)
 
-    def _append_message(self, role: str, speaker: str, text: str, meta: str = '') -> None:
-        self._chat_messages.append({'role': role, 'speaker': speaker, 'text': text, 'meta': meta})
-        self._chat_messages = self._chat_messages[-18:]
+    def _append_message(self, role: str, speaker: str, text: str, meta: str = '',
+                        *, attachments: list[dict[str, Any]] | None = None,
+                        code_blocks: list[dict[str, Any]] | None = None,
+                        status: str = 'complete',
+                        reasoning: str = '') -> None:
+        msg: dict[str, Any] = {'role': role, 'speaker': speaker, 'text': text, 'meta': meta,
+                               'status': status, 'timestamp': datetime.now(timezone.utc).strftime('%H:%M')}
+        if attachments:
+            msg['attachments'] = attachments
+        if code_blocks:
+            msg['codeBlocks'] = code_blocks
+        if reasoning:
+            msg['reasoning'] = reasoning
+        self._chat_messages.append(msg)
+        self._chat_messages = self._chat_messages[-30:]
+        self._refresh_contextual_suggestions()
+        self._validate_ui_reflects_reality()
 
     def _count_payloads(self) -> int:
         payload_dir = Path(self.config.payloads_dir)
@@ -4115,14 +4142,16 @@ class ControlCenterViewModel(QObject):
         if role == 'auto':
             self._auto_route_enabled = True
             self._busy_label = 'Modo automatico restaurado. La consola detectara intencion, pack y aprobaciones.'
-            self._refresh_development_packet()
+            import threading as _th
+            _th.Thread(target=self._refresh_development_packet, daemon=True).start()
             self.dataChanged.emit()
             return
         if role in valid_roles:
             self._selected_role = role
             self._auto_route_enabled = False
             self._busy_label = f'Rol forzado a {self._selected_role_title()}.'
-            self._refresh_development_packet()
+            import threading as _th
+            _th.Thread(target=self._refresh_development_packet, daemon=True).start()
             self.dataChanged.emit()
 
     @Slot()
@@ -5091,22 +5120,255 @@ class ControlCenterViewModel(QObject):
         return '\n'.join(lines)
 
     @Slot(str)
+
+    # ── Frente 4: Chat avanzado — métodos ──────────────────────────
+    @Slot(str, str, int, str)
+    def attachFile(self, name: str, path: str, size: int, file_type: str) -> None:
+        entry = {'name': name, 'path': path, 'size': size, 'type': file_type}
+        self._attached_files.append(entry)
+        self.fileAttached.emit(entry)
+        self.dataChanged.emit()
+
+    @Slot(str)
+    def detachFile(self, path: str) -> None:
+        self._attached_files = [f for f in self._attached_files if f['path'] != path]
+        self.fileDetached.emit(path)
+        self.dataChanged.emit()
+
+    @Slot()
+    def clearAttachedFiles(self) -> None:
+        self._attached_files.clear()
+        self.dataChanged.emit()
+
+    @Property(list, notify=dataChanged)
+    def attachedFiles(self) -> list[dict[str, Any]]:
+        return list(self._attached_files)
+
+    @Property(int, notify=dataChanged)
+    def attachedFileCount(self) -> int:
+        return len(self._attached_files)
+
+    @Slot(str)
+    def searchChatHistory(self, query: str) -> None:
+        self._chat_search_query = query.strip().lower()
+        if not self._chat_search_query:
+            self.chatSearchResults.emit(self._chat_messages)
+            return
+        filtered = [
+            msg for msg in self._chat_messages
+            if self._chat_search_query in (msg.get('text', '') or '').lower()
+            or self._chat_search_query in (msg.get('speaker', '') or '').lower()
+        ]
+        self.chatSearchResults.emit(filtered)
+
+    @Property(str, notify=dataChanged)
+    def liveStatus(self) -> str:
+        return self._live_status
+
+    def _set_live_status(self, status: str) -> None:
+        if self._live_status != status:
+            self._live_status = status
+            self.liveStatusChanged.emit(status)
+            self.dataChanged.emit()
+
+    @Property(list, notify=dataChanged)
+    def contextualSuggestions(self) -> list[dict[str, Any]]:
+        return list(self._contextual_suggestions)
+
+    def _refresh_contextual_suggestions(self) -> None:
+        suggestions: list[dict[str, Any]] = []
+        if hasattr(self, '_efficiency_audit_service'):
+            suggestions.append({
+                'text': 'Ejecutar auditoria de eficiencia',
+                'category': 'audit',
+                'icon': '\U0001f50d',
+                'action': 'run_efficiency_audit',
+                'priority': 3,
+            })
+        if self._chat_messages and len(self._chat_messages) > 2:
+            suggestions.append({
+                'text': 'Revisar self-examination',
+                'category': 'diagnostic',
+                'icon': '\U0001f9e0',
+                'action': 'show_self_examination',
+                'priority': 2,
+            })
+        suggestions.append({
+            'text': 'Mostrar estado del mundo',
+            'category': 'command',
+            'icon': '\U0001f30d',
+            'action': 'world_model',
+            'priority': 1,
+        })
+        suggestions.append({
+            'text': 'Ver evolucion del sistema',
+            'category': 'evolution',
+            'icon': '\U0001f4c8',
+            'action': 'show_evolution',
+            'priority': 1,
+        })
+        if self._attached_files:
+            suggestions.append({
+                'text': f'Procesar {len(self._attached_files)} archivo(s) adjunto(s)',
+                'category': 'command',
+                'icon': '\U0001f4ce',
+                'action': 'process_attachments',
+                'priority': 5,
+            })
+        self._contextual_suggestions = suggestions
+        self.contextualSuggestionsChanged.emit(suggestions)
+
+    @Slot(str, str)
+    def handleSuggestionAction(self, action: str, text: str) -> None:
+        action_map = {
+            'run_efficiency_audit': 'Ejecutar auditoria de eficiencia',
+            'show_self_examination': 'mostrar self examination',
+            'world_model': 'mostrar estado del mundo',
+            'show_evolution': 'mostrar evolucion',
+            'process_attachments': 'procesar archivos adjuntos',
+        }
+        message = action_map.get(action, text)
+        self.sendChat(message)
+
+    @Slot(str, str)
+    def applyCode(self, code: str, language: str) -> None:
+        self.codeApplyRequested.emit(code, language)
+        self._append_message('system', 'IABV', f'Codigo {language} recibido para aplicar ({len(code)} chars).')
+        self.dataChanged.emit()
+
+    @Slot(str, str)
+    def downloadChat(self, content: str, filename: str) -> None:
+        self.chatDownloadRequested.emit(content, filename)
+        self._append_message('system', 'IABV', f'Descarga preparada: {filename}')
+        self.dataChanged.emit()
+
+    @Slot(str)
+    def copyToClipboard(self, text: str) -> None:
+        try:
+            from iabv_v15.ui.qt import QGuiApplication
+            clipboard = QGuiApplication.instance().clipboard()
+            if clipboard:
+                clipboard.setText(text)
+        except Exception:
+            pass
+
+
+    # ── Auto-validación de interfaz ──────────────────────────
+    def _validate_ui_reflects_reality(self) -> dict[str, Any]:
+        """Cruza la percepción del sistema con la realidad para detectar inconsistencias.
+        El sistema debe ser capaz de verificar que lo que muestra en su interfaz
+        corresponde a lo que realmente tiene/sabe."""
+        findings: list[dict[str, str]] = []
+        
+        # Verificar que los mensajes del chat tienen la estructura esperada
+        for i, msg in enumerate(self._chat_messages):
+            if 'status' not in msg:
+                findings.append({
+                    'severity': 'info',
+                    'description': f'Mensaje {i} sin campo status — se asume complete',
+                    'auto_fix': 'applied',
+                })
+                msg['status'] = 'complete'
+            if 'timestamp' not in msg:
+                from datetime import datetime, timezone
+                msg['timestamp'] = datetime.now(timezone.utc).strftime('%H:%M')
+        
+        # Verificar consistencia de live_status
+        if self._working and self._live_status == 'idle':
+            findings.append({
+                'severity': 'warning',
+                'description': 'ViewModel._working=True pero _live_status=idle — desincronizado',
+                'auto_fix': 'applied',
+            })
+            self._set_live_status('processing')
+        elif not self._working and self._live_status == 'processing':
+            findings.append({
+                'severity': 'warning',
+                'description': 'ViewModel._working=False pero _live_status=processing — desincronizado',
+                'auto_fix': 'applied',
+            })
+            self._set_live_status('idle')
+        
+        # Verificar que attached_files es consistente
+        if self._attached_files:
+            for f in self._attached_files:
+                if not all(k in f for k in ('name', 'path', 'size', 'type')):
+                    findings.append({
+                        'severity': 'error',
+                        'description': f'Archivo adjunto con campos faltantes: {f}',
+                        'auto_fix': 'none',
+                    })
+        
+        # Verificar que contextual_suggestions se actualizaron
+        if not self._contextual_suggestions:
+            self._refresh_contextual_suggestions()
+            findings.append({
+                'severity': 'info',
+                'description': 'Sugerencias contextuales estaban vacias — refrescadas',
+                'auto_fix': 'applied',
+            })
+        
+        return {
+            'valid': len([f for f in findings if f['severity'] == 'error']) == 0,
+            'findings': findings,
+            'chat_messages_count': len(self._chat_messages),
+            'attached_files_count': len(self._attached_files),
+            'live_status': self._live_status,
+            'suggestions_count': len(self._contextual_suggestions),
+        }
+
     def sendChat(self, text: str) -> None:
         message = text.strip()
-        if not message or self._working:
+        if not message:
             return
-        self._append_message('user', 'Tu', message, self._routing_mode_label())
+        # Safety: si _working quedo stuck de una llamada anterior (>60s),
+        # resetearlo para no bloquear al usuario permanentemente.
+        # APRENDIDO: _working puede quedar en True si worker() lanza excepcion
+        # no capturada o si el signal taskFailed no se emite correctamente.
+        if self._working:
+            import time
+            elapsed = time.time() - getattr(self, '_working_since', 0)
+            if elapsed < 60:
+                return
+            # Reset forzado: _working stuck por mas de 60 segundos
+            self._working = False
+            self._set_live_status('idle')
+            self._clear_autonomy_activity_override()
+        user_attachments = list(self._attached_files) if self._attached_files else None
+        self._append_message('user', 'Tu', message, self._routing_mode_label(),
+                            attachments=user_attachments)
+        if self._attached_files:
+            self._attached_files.clear()
+        self._set_live_status('processing')
         # Escucha pasiva de capacidades declaradas (GPU, modelos, cuentas, runtimes).
         # Persiste detecciones a data/chat_research_backlog/*.jsonl para que OSES
         # y ExperimentLab las consuman despues como areas de investigacion. No
         # modifica el ruteo; solo anota y avisa al usuario en una linea corta
         # para que sepa que su dato quedo registrado (antes se perdian en memoria).
-        self._ingest_chat_capabilities(message)
+        # Ingerir capabilities en background para no bloquear UI
+        threading.Thread(target=self._ingest_chat_capabilities, args=(message,), daemon=True).start()
         # Actualizar packet en background sin bloquear UI
         threading.Thread(target=self._refresh_development_packet, args=(message,), daemon=True).start()
         if self._try_handle_chat_command(message):
             return
-        shortcut_analysis = self._chat_shortcut_analysis(message)
+        # _chat_shortcut_analysis puede llamar a LLM — ejecutar con timeout
+        # APRENDIDO: NO usar 'with ThreadPoolExecutor' en hilo de UI porque
+        # pool.shutdown(wait=True) bloquea al salir del with aunque el timeout
+        # se haya cumplido. Usar Thread + Event en su lugar.
+        shortcut_analysis = {}
+        _sa_result: dict[str, Any] = {}
+        _sa_done = threading.Event()
+        def _sa_worker() -> None:
+            try:
+                _sa_result.update(self._chat_shortcut_analysis(message))
+            except Exception:
+                pass
+            finally:
+                _sa_done.set()
+        _sa_thread = threading.Thread(target=_sa_worker, daemon=True)
+        _sa_thread.start()
+        if _sa_done.wait(timeout=3):
+            shortcut_analysis = _sa_result
         allow_chat_shortcuts = not bool(shortcut_analysis.get('mixed_actionable')) and not bool(shortcut_analysis.get('requires_clarification'))
         if allow_chat_shortcuts and self._is_world_model_question(message):
             self._answer_world_model_question(message)
@@ -5131,7 +5393,9 @@ class ControlCenterViewModel(QObject):
             self._last_user_goal = message
             self._run_external_consultation(explicit_assistant, announce=True)
             return
+        import time as _time
         self._working = True
+        self._working_since = _time.time()
         self._busy_label = 'Estoy entendiendo tu mensaje y preparando la mejor respuesta.'
         self._set_autonomy_activity_override(
             visible=True,
