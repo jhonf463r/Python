@@ -1056,7 +1056,7 @@ def main():
         })
 
     # --- Dual-GPU simultaneous usage reasoning ---
-    if nvidia_gpu and intel_gpu:
+    if nvidia_gpu and intel_gpu and best_model:
         reasoning.append({
             'component': 'Dual-GPU (estrategia)',
             'status': 'oportunidad de optimización',

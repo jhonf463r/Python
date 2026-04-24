@@ -1635,6 +1635,115 @@ class IABVMCPServer:
             }
 
         # ------------------------------------------------------------
+        # self_update — el programa se actualiza a sí mismo (git pull)
+        #
+        # Metacognición: el programa puede aplicar sus propias mejoras
+        # sin requerir intervención manual del usuario.
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def self_update(
+            branch: str | None = None,
+        ) -> dict[str, Any]:
+            """El programa se actualiza a sí mismo haciendo git pull.
+
+            Metacognición aplicada: el programa reconoce que tiene una
+            versión nueva disponible y se auto-actualiza sin intervención
+            del usuario.
+
+            Args:
+                branch: rama específica (default: rama actual).
+
+            Returns:
+                dict con status, branch, output del git pull.
+            """
+            import subprocess as _sp
+
+            ws = self.workspace
+            try:
+                # Get current branch
+                cur = _sp.run(
+                    ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                    capture_output=True, text=True, timeout=10,
+                    cwd=ws, check=False,
+                )
+                current_branch = cur.stdout.strip() or "unknown"
+
+                if branch and branch != current_branch:
+                    co = _sp.run(
+                        ["git", "checkout", branch],
+                        capture_output=True, text=True, timeout=30,
+                        cwd=ws, check=False,
+                    )
+                    if co.returncode != 0:
+                        return {
+                            "status": "error",
+                            "detail": f"checkout failed: {co.stderr.strip()}",
+                        }
+                    current_branch = branch
+
+                result = _sp.run(
+                    ["git", "pull", "--ff-only"],
+                    capture_output=True, text=True, timeout=60,
+                    cwd=ws, check=False,
+                )
+                return {
+                    "status": "ok" if result.returncode == 0 else "error",
+                    "branch": current_branch,
+                    "output": result.stdout.strip(),
+                    "error": result.stderr.strip() if result.returncode != 0 else None,
+                }
+            except Exception as exc:
+                return {"status": "error", "detail": str(exc)}
+
+        # ------------------------------------------------------------
+        # self_run_benchmark — el programa corre su propio benchmark
+        #
+        # Metacognición: el programa se auto-evalúa ejecutando el
+        # script de benchmark y reportando los resultados.
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def self_run_benchmark() -> dict[str, Any]:
+            """El programa ejecuta su propio GPU benchmark (gpu_auto_benchmark.py).
+
+            Metacognición aplicada: el programa se auto-evalúa corriendo
+            el benchmark completo (FASE 0-5) y reportando los resultados.
+
+            Returns:
+                dict con status, output (últimas 200 líneas), report_path.
+            """
+            import subprocess as _sp
+
+            ws = self.workspace
+            script = os.path.join(ws, "scripts", "gpu_auto_benchmark.py")
+            if not os.path.isfile(script):
+                return {"status": "error", "detail": f"script not found: {script}"}
+
+            try:
+                env = os.environ.copy()
+                env["PYTHONPATH"] = os.path.join(ws, "src")
+                result = _sp.run(
+                    ["python", script],
+                    capture_output=True, text=True, timeout=600,
+                    cwd=ws, env=env, check=False,
+                )
+                lines = result.stdout.strip().splitlines()
+                # Return last 200 lines to avoid huge responses
+                output_tail = "\n".join(lines[-200:]) if len(lines) > 200 else result.stdout.strip()
+                return {
+                    "status": "ok" if result.returncode == 0 else "error",
+                    "output": output_tail,
+                    "error": result.stderr.strip()[-500:] if result.returncode != 0 else None,
+                    "report_path": os.path.join(ws, "data", "gpu_benchmark_report.json"),
+                    "total_lines": len(lines),
+                }
+            except _sp.TimeoutExpired:
+                return {"status": "timeout", "detail": "benchmark exceeded 10 min limit"}
+            except Exception as exc:
+                return {"status": "error", "detail": str(exc)}
+
+        # ------------------------------------------------------------
         # self_auto_merge — el programa mergea sus propios PRs devin/*
         #
         # Motivacion: el usuario pidio dejar de hacer click en "Merge" en
