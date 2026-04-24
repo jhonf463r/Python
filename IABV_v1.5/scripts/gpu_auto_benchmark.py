@@ -1119,6 +1119,246 @@ def main():
             p(GREEN, f'      {extra_line.strip()}')
         print()
 
+    # === PHASE 5: Multi-IA Super-Scanner ===
+    print()
+    p(BOLD, '▸ FASE 5: Super-escáner multi-IA (configuraciones óptimas)')
+    print()
+
+    # --- 5a: Auto-discover all available resources ---
+    p(BOLD, '  [5a] Descubrimiento automático del entorno...')
+
+    # Detect installed browsers
+    detected_browsers: list[dict] = []
+    if os.name == 'nt':
+        browser_checks = [
+            ('Chrome', [
+                os.path.expandvars(r'%ProgramFiles%\Google\Chrome\Application\chrome.exe'),
+                os.path.expandvars(r'%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe'),
+                os.path.expandvars(r'%LocalAppData%\Google\Chrome\Application\chrome.exe'),
+            ]),
+            ('Edge', [
+                os.path.expandvars(r'%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe'),
+                os.path.expandvars(r'%ProgramFiles%\Microsoft\Edge\Application\msedge.exe'),
+            ]),
+            ('Firefox', [
+                os.path.expandvars(r'%ProgramFiles%\Mozilla Firefox\firefox.exe'),
+                os.path.expandvars(r'%ProgramFiles(x86)%\Mozilla Firefox\firefox.exe'),
+            ]),
+            ('Brave', [
+                os.path.expandvars(r'%ProgramFiles%\BraveSoftware\Brave-Browser\Application\brave.exe'),
+                os.path.expandvars(r'%LocalAppData%\BraveSoftware\Brave-Browser\Application\brave.exe'),
+            ]),
+            ('Opera', [
+                os.path.expandvars(r'%LocalAppData%\Programs\Opera\opera.exe'),
+                os.path.expandvars(r'%AppData%\Opera Software\Opera Stable\opera.exe'),
+            ]),
+            ('Vivaldi', [
+                os.path.expandvars(r'%LocalAppData%\Vivaldi\Application\vivaldi.exe'),
+            ]),
+        ]
+        for name, paths in browser_checks:
+            for p_path in paths:
+                if os.path.isfile(p_path):
+                    detected_browsers.append({'name': name, 'path': p_path})
+                    break
+
+    if detected_browsers:
+        p(GREEN, f'  Navegadores detectados: {len(detected_browsers)}')
+        for b in detected_browsers:
+            p(CYAN, f'    • {b["name"]}: {b["path"]}')
+    else:
+        p(YELLOW, '  No se detectaron navegadores (o no es Windows)')
+
+    # Detect all Ollama models (auto-discover, not hardcoded)
+    ollama_models_discovered: list[str] = []
+    try:
+        req_models = urllib.request.Request('http://127.0.0.1:11434/api/tags')
+        with urllib.request.urlopen(req_models, timeout=10) as resp:
+            tags_data = json.loads(resp.read())
+        for m in tags_data.get('models', []):
+            name = m.get('name', '')
+            if name:
+                ollama_models_discovered.append(name)
+        p(GREEN, f'  Modelos Ollama instalados: {len(ollama_models_discovered)}')
+        for m_name in ollama_models_discovered:
+            size_gb = 0
+            for m in tags_data.get('models', []):
+                if m.get('name') == m_name:
+                    size_gb = round(m.get('size', 0) / 1e9, 1)
+            p(CYAN, f'    • {m_name} ({size_gb}GB)')
+    except Exception as e:
+        p(RED, f'  Error descubriendo modelos Ollama: {e}')
+
+    # Detect cloud IAs availability
+    cloud_ias: list[dict] = []
+    ia_endpoints = {
+        'ChatGPT': {'check': 'chatgpt_installed', 'web': 'https://chatgpt.com'},
+        'Claude': {'check': 'claude_installed', 'web': 'https://claude.ai'},
+        'Codex': {'check': 'codex_installed', 'web': 'https://chatgpt.com/codex'},
+        'Devin': {'check': 'devin_api', 'web': 'https://app.devin.ai'},
+    }
+    for ia_name, info in ia_endpoints.items():
+        cloud_ias.append({
+            'name': ia_name,
+            'type': 'cloud',
+            'web_url': info['web'],
+            'status': 'requires_browser_session',
+        })
+    p(GREEN, f'  IAs cloud conocidas: {len(cloud_ias)}')
+    for cia in cloud_ias:
+        p(CYAN, f'    • {cia["name"]}: {cia["web_url"]} ({cia["status"]})')
+
+    print()
+
+    # --- 5b: Benchmark all Ollama models x configs x prompts ---
+    p(BOLD, '  [5b] Benchmark exhaustivo de modelos locales...')
+    print()
+
+    # Test prompts by task type
+    test_prompts = {
+        'código': 'Escribe una función Python que encuentre el segundo número '
+                  'más grande en una lista sin usar sort. Solo código, sin explicación.',
+        'razonamiento': 'Un granjero tiene 17 ovejas. Todas menos 9 se escapan. '
+                        '¿Cuántas quedan? Explica paso a paso.',
+        'creatividad': 'Inventa un haiku sobre inteligencia artificial en español.',
+        'metacognición': 'Eres un programa que se auto-examina. Describe tu estado '
+                         'actual: qué puedes hacer, qué limitaciones tienes, y cómo '
+                         'mejorarías tu propio rendimiento si pudieras modificarte.',
+    }
+
+    # Temperature configs to test
+    temperatures = [0.1, 0.5, 0.9]
+
+    # Use ALL discovered models — full panorama, not just hardcoded ones
+    models_to_scan = ollama_models_discovered if ollama_models_discovered else MODELS
+
+    ia_scan_results: list[dict] = []
+
+    p(CYAN, f'  Modelos: {models_to_scan}')
+    p(CYAN, f'  Tareas: {list(test_prompts.keys())}')
+    p(CYAN, f'  Temperaturas: {temperatures}')
+    total_combos = len(models_to_scan) * len(test_prompts) * len(temperatures)
+    p(CYAN, f'  Total combinaciones: {total_combos}')
+    print()
+
+    combo_num = 0
+    for model in models_to_scan:
+        for task_name, prompt in test_prompts.items():
+            for temp in temperatures:
+                combo_num += 1
+                label = f'{model} | {task_name} | temp={temp}'
+                print(f'  [{combo_num}/{total_combos}] {label}...', end=' ', flush=True)
+
+                payload = json.dumps({
+                    'model': model, 'prompt': prompt, 'stream': False,
+                    'options': {'num_predict': 128, 'temperature': temp},
+                }).encode()
+                req = urllib.request.Request(
+                    'http://127.0.0.1:11434/api/generate',
+                    data=payload,
+                    headers={'Content-Type': 'application/json'},
+                )
+
+                try:
+                    t0 = time.perf_counter()
+                    with urllib.request.urlopen(req, timeout=60) as resp:
+                        body = json.loads(resp.read())
+                    elapsed = time.perf_counter() - t0
+
+                    eval_count = body.get('eval_count', 0)
+                    eval_ns = body.get('eval_duration', 0)
+                    tps = round(eval_count / (eval_ns / 1e9), 2) if eval_ns > 0 else 0
+                    response_text = body.get('response', '')
+
+                    # Quality heuristics per task type
+                    has_content = len(response_text.strip()) > 10
+                    if task_name == 'código':
+                        has_quality = 'def ' in response_text or 'return' in response_text
+                    elif task_name == 'razonamiento':
+                        has_quality = '9' in response_text or 'nueve' in response_text.lower()
+                    elif task_name == 'metacognición':
+                        rt = response_text.lower()
+                        has_quality = any(w in rt for w in [
+                            'limitacion', 'limitación', 'mejorar',
+                            'rendimiento', 'capacidad', 'estado',
+                        ])
+                    else:
+                        has_quality = len(response_text.strip()) > 20
+
+                    quality_score = round(
+                        (0.5 if has_content else 0) + (0.5 if has_quality else 0), 2
+                    )
+
+                    result_entry = {
+                        'model': model, 'task': task_name, 'temperature': temp,
+                        'tps': tps, 'tokens': eval_count, 'elapsed_s': round(elapsed, 2),
+                        'quality': quality_score,
+                        'response_excerpt': response_text[:150].replace('\n', ' '),
+                    }
+                    ia_scan_results.append(result_entry)
+
+                    q_icon = '✓' if quality_score >= 0.5 else '✗'
+                    p(GREEN if quality_score >= 0.5 else RED,
+                      f'{tps} tok/s, calidad={quality_score} {q_icon}')
+
+                except Exception as e:
+                    ia_scan_results.append({
+                        'model': model, 'task': task_name, 'temperature': temp,
+                        'error': str(e),
+                    })
+                    p(RED, f'ERROR: {e}')
+
+    # Analyze results per task
+    print()
+    p(BOLD, '  Resultados del super-escáner:')
+    print()
+
+    best_per_task: dict[str, dict] = {}
+    for task_name in test_prompts:
+        task_results = [r for r in ia_scan_results
+                        if r.get('task') == task_name and r.get('tps')]
+        if not task_results:
+            continue
+
+        # Best = highest quality, then highest speed
+        task_results.sort(key=lambda r: (r.get('quality', 0), r.get('tps', 0)), reverse=True)
+        best = task_results[0]
+        best_per_task[task_name] = best
+
+        p(GREEN + BOLD, f'  [{task_name.upper()}] Mejor: {best["model"]} '
+                        f'(temp={best["temperature"]}) → {best["tps"]} tok/s, '
+                        f'calidad={best["quality"]}')
+        p(CYAN, f'    Respuesta: {best.get("response_excerpt", "")[:100]}...')
+        # Show alternatives
+        for alt in task_results[1:3]:
+            p(CYAN, f'    Alt: {alt["model"]} temp={alt["temperature"]} → '
+                    f'{alt["tps"]} tok/s, calidad={alt["quality"]}')
+        print()
+
+    # Overall recommendation
+    if best_per_task:
+        print()
+        p(GREEN + BOLD, '  RECOMENDACIÓN POR TIPO DE TAREA:')
+        for task_name, best in best_per_task.items():
+            p(GREEN, f'    • {task_name}: usar {best["model"]} con '
+                    f'temperature={best["temperature"]}')
+        print()
+
+    # Check if different tasks need different models/configs
+    unique_configs = set()
+    for best in best_per_task.values():
+        unique_configs.add((best['model'], best['temperature']))
+
+    if len(unique_configs) > 1:
+        p(YELLOW, '  METACOGNICIÓN: Diferentes tareas rinden mejor con '
+                  'diferentes configuraciones.')
+        p(YELLOW, '  El programa debe seleccionar modelo+temperatura según '
+                  'el tipo de tarea.')
+    elif len(unique_configs) == 1:
+        cfg = list(unique_configs)[0]
+        p(GREEN, f'  METACOGNICIÓN: Una sola configuración óptima para todo: '
+                 f'{cfg[0]} temp={cfg[1]}')
+
     print()
     p(BOLD + CYAN, '=' * 60)
 
@@ -1141,6 +1381,33 @@ def main():
         'benchmark': benchmark_results,
         'best_model': ok_results[0]['model'] if ok_results else None,
         'best_tps': ok_results[0]['tps'] if ok_results else None,
+        'ias_super_scan': {
+            'scan_timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
+            'environment_discovery': {
+                'browsers_detected': detected_browsers,
+                'ollama_models_discovered': ollama_models_discovered,
+                'cloud_ias_known': cloud_ias,
+            },
+            'models_tested': models_to_scan,
+            'tasks_tested': list(test_prompts.keys()),
+            'temperatures_tested': temperatures,
+            'total_combinations': total_combos,
+            'results': ia_scan_results,
+            'best_per_task': {
+                task: {
+                    'model': best['model'],
+                    'temperature': best['temperature'],
+                    'tps': best['tps'],
+                    'quality': best['quality'],
+                }
+                for task, best in best_per_task.items()
+            },
+            'metacognition_insight': (
+                'different_config_per_task'
+                if len(unique_configs) > 1
+                else 'single_optimal_config'
+            ),
+        },
     }
     report_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'gpu_benchmark_report.json')
     os.makedirs(os.path.dirname(report_path), exist_ok=True)
