@@ -1657,9 +1657,21 @@ class IABVMCPServer:
             Returns:
                 dict con status, branch, output del git pull.
             """
+            import re as _re
             import subprocess as _sp
 
-            ws = self.workspace
+            block = self._governance_block_for_route(
+                assistant_kind="self_update",
+                requires_network=True,
+            )
+            if block is not None:
+                return block
+
+            # Sanitize branch name
+            if branch and not _re.match(r'^[\w./-]+$', branch):
+                return {"status": "error", "detail": "invalid branch name"}
+
+            ws = self._workspace_root()
             try:
                 # Get current branch
                 cur = _sp.run(
@@ -1715,7 +1727,14 @@ class IABVMCPServer:
             """
             import subprocess as _sp
 
-            ws = self.workspace
+            block = self._governance_block_for_route(
+                assistant_kind="gpu_benchmark",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
+
+            ws = self._workspace_root()
             script = os.path.join(ws, "scripts", "gpu_auto_benchmark.py")
             if not os.path.isfile(script):
                 return {"status": "error", "detail": f"script not found: {script}"}
