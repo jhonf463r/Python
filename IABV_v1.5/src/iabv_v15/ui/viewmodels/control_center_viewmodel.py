@@ -5126,11 +5126,11 @@ class ControlCenterViewModel(QObject):
         return False
 
     def _run_self_code_analysis(self) -> None:
-        """Ejecuta self_code_analysis y gpu_metacognition en background y presenta resultados."""
+        """Ejecuta auto-update + self_code_analysis + gpu_metacognition en background."""
         self._append_message(
             'assistant', 'IABV',
-            'Entendido. Voy a analizar mi propio codigo, revisar GPU, y buscar mejoras pendientes. Dame un momento...',
-            'Metacognicion: auto-analisis de codigo iniciado.',
+            'Entendido. Primero me actualizo (git pull), luego analizo mi codigo, GPU, y busco mejoras pendientes...',
+            'Metacognicion: auto-update + auto-analisis iniciado.',
         )
         self._set_live_status('processing')
         self.dataChanged.emit()
@@ -5142,6 +5142,31 @@ class ControlCenterViewModel(QObject):
                     import os
                     ws = os.getcwd()
                 sections: list[str] = []
+
+                # 0. Auto-update: git pull antes de analizar
+                import subprocess as _sp
+                try:
+                    pull_result = _sp.run(
+                        ['git', '-C', ws, 'pull', '--ff-only'],
+                        capture_output=True, text=True, timeout=30,
+                    )
+                    pull_out = pull_result.stdout.strip()
+                    if pull_result.returncode == 0:
+                        if 'Already up to date' in pull_out or 'Already up-to-date' in pull_out:
+                            sections.append('== AUTO-UPDATE ==')
+                            sections.append('Ya estoy actualizado (git pull: up to date)')
+                        else:
+                            sections.append('== AUTO-UPDATE ==')
+                            sections.append(f'Me actualice exitosamente:')
+                            for line in pull_out.splitlines()[-5:]:
+                                sections.append(f'  {line}')
+                    else:
+                        sections.append('== AUTO-UPDATE ==')
+                        sections.append(f'Error al actualizar: {pull_result.stderr.strip()[:200]}')
+                except Exception as pull_exc:
+                    sections.append('== AUTO-UPDATE ==')
+                    sections.append(f'No pude actualizarme: {pull_exc}')
+                sections.append('')
 
                 # 1. Full self code analysis (includes syntax, slots, routing, tests, perf)
                 try:
