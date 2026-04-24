@@ -6,6 +6,14 @@ y registra los resultados en el ExperimentLab.  El resultado es una
 recomendacion basada en evidencia de cual modelo rinde mejor en el
 hardware actual (GPU, VRAM, RAM).
 
+Fuente de verdad: nvidia-smi.  Durante cada prompt se muestrea la GPU
+con ``nvidia-smi --query-gpu=index,name,utilization.gpu,memory.used,
+memory.total,temperature.gpu`` para saber si la inferencia realmente
+esta corriendo en la GPU discreta (GPU1 en Task Manager) y no en la
+integrada (GPU0).  Si hay discrepancia, se registra como hallazgo
+metacognitivo para que el sistema aprenda a detectar su entorno de
+forma precisa cuando se mueva a otro laptop.
+
 No crea otro cerebro: usa ExperimentLab existente para persistir y
 StrategySelector para recomendar.
 """
@@ -15,6 +23,7 @@ import json
 import logging
 import shutil
 import subprocess
+import threading
 import time
 from typing import Any
 
@@ -31,25 +40,46 @@ logger = logging.getLogger(__name__)
 
 _BENCHMARK_PROMPTS: list[dict[str, str]] = [
     {
-        'prompt': 'Explica en 3 oraciones que es la neuroplasticidad.',
-        'expected': 'neuroplasticidad capacidad cerebro cambiar adaptarse',
+        'prompt': (
+            'Explica en detalle que es la neuroplasticidad, como funciona '
+            'el aprendizaje en el cerebro humano, que tipos de sinapsis '
+            'existen y como se forman nuevas conexiones neuronales. '
+            'Escribe al menos 6 oraciones completas y detalladas.'
+        ),
+        'expected': 'neuroplasticidad capacidad cerebro cambiar adaptarse sinapsis conexiones neuronales aprendizaje',
         'category': 'knowledge',
     },
     {
-        'prompt': 'Escribe una funcion Python que calcule el factorial de un numero usando recursion.',
-        'expected': 'def factorial recursion return base case',
+        'prompt': (
+            'Escribe una funcion Python completa que implemente el algoritmo '
+            'quicksort con documentacion, type hints, y un ejemplo de uso. '
+            'Incluye el manejo de listas vacias y un solo elemento. '
+            'Explica la complejidad temporal del algoritmo.'
+        ),
+        'expected': 'def quicksort pivot partition recursion return list base case O(n log n)',
         'category': 'code',
     },
     {
-        'prompt': 'Resume en una oracion: "El aprendizaje automatico permite que las maquinas aprendan patrones de datos sin ser programadas explicitamente."',
-        'expected': 'aprendizaje automatico maquinas patrones datos',
+        'prompt': (
+            'Resume en 3 oraciones el siguiente texto: '
+            '"El aprendizaje automatico es una rama de la inteligencia '
+            'artificial que permite a las maquinas aprender patrones de '
+            'datos sin ser programadas explicitamente. Usa algoritmos que '
+            'mejoran con la experiencia, incluyendo redes neuronales, '
+            'arboles de decision, y metodos de ensamble. Las aplicaciones '
+            'van desde reconocimiento de imagenes hasta procesamiento de '
+            'lenguaje natural y conduccion autonoma."'
+        ),
+        'expected': 'aprendizaje automatico inteligencia artificial maquinas patrones datos algoritmos redes neuronales',
         'category': 'summarization',
     },
 ]
 
 _OLLAMA_API_BASE = 'http://127.0.0.1:11434'
-_GENERATE_TIMEOUT_SECONDS = 120
+_GENERATE_TIMEOUT_SECONDS = 180
 _LIST_TIMEOUT_SECONDS = 10
+_NUM_PREDICT = 512
+_GPU_SAMPLE_INTERVAL_SECONDS = 0.5
 
 
 class GpuModelBenchmarkService:
@@ -63,6 +93,132 @@ class GpuModelBenchmarkService:
     ) -> None:
         self.experiment_lab = experiment_lab
         self.ollama_api_base = ollama_api_base.rstrip('/')
+
+    # ------------------------------------------------------------------
+    # nvidia-smi monitoring
+    # ------------------------------------------------------------------
+
+    def query_all_gpus(self) -> list[dict[str, Any]]:
+        """Query nvidia-smi for ALL GPUs and return structured data per GPU."""
+        nvidia = shutil.which('nvidia-smi')
+        if not nvidia:
+            return []
+        try:
+            result = subprocess.run(
+                [
+                    nvidia,
+                    '--query-gpu=index,name,utilization.gpu,memory.used,memory.total,temperature.gpu',
+                    '--format=csv,noheader,nounits',
+                ],
+                capture_output=True, text=True, timeout=5,
+                encoding='utf-8', errors='ignore', check=False,
+            )
+        except Exception:
+            return []
+        if result.returncode != 0:
+            return []
+        gpus: list[dict[str, Any]] = []
+        for line in result.stdout.strip().splitlines():
+            parts = [p.strip() for p in line.split(',')]
+            if len(parts) < 6:
+                continue
+            try:
+                gpus.append({
+                    'index': int(parts[0]),
+                    'name': parts[1],
+                    'utilization_pct': float(parts[2]),
+                    'memory_used_mb': int(float(parts[3])),
+                    'memory_total_mb': int(float(parts[4])),
+                    'temperature_c': float(parts[5]),
+                })
+            except (ValueError, IndexError):
+                continue
+        return gpus
+
+    def _sample_gpu_during(
+        self,
+        target_fn: Any,
+        *args: Any,
+        **kwargs: Any,
+    ) -> tuple[Any, list[list[dict[str, Any]]]]:
+        """Run *target_fn* while sampling nvidia-smi in a background thread.
+
+        Returns ``(fn_result, gpu_samples)`` where *gpu_samples* is a list
+        of snapshots, each snapshot being a list of per-GPU dicts.
+        """
+        samples: list[list[dict[str, Any]]] = []
+        stop_event = threading.Event()
+
+        def _sampler() -> None:
+            while not stop_event.is_set():
+                snap = self.query_all_gpus()
+                if snap:
+                    samples.append(snap)
+                stop_event.wait(_GPU_SAMPLE_INTERVAL_SECONDS)
+
+        sampler_thread = threading.Thread(target=_sampler, daemon=True)
+        sampler_thread.start()
+        try:
+            result = target_fn(*args, **kwargs)
+        finally:
+            stop_event.set()
+            sampler_thread.join(timeout=2)
+        return result, samples
+
+    def _analyze_gpu_usage(
+        self,
+        samples: list[list[dict[str, Any]]],
+    ) -> dict[str, Any]:
+        """Analyze sampled GPU data to determine which GPU was active."""
+        if not samples:
+            return {
+                'nvidia_smi_available': False,
+                'active_gpu_index': None,
+                'gpu_actually_used': False,
+                'discrepancy': 'nvidia-smi no disponible o no devolvio datos',
+            }
+
+        gpu_peak: dict[int, float] = {}
+        gpu_peak_mem: dict[int, int] = {}
+        gpu_names: dict[int, str] = {}
+        gpu_avg_util: dict[int, list[float]] = {}
+
+        for snapshot in samples:
+            for gpu in snapshot:
+                idx = gpu['index']
+                gpu_names[idx] = gpu['name']
+                util = gpu['utilization_pct']
+                mem = gpu['memory_used_mb']
+                gpu_peak[idx] = max(gpu_peak.get(idx, 0), util)
+                gpu_peak_mem[idx] = max(gpu_peak_mem.get(idx, 0), mem)
+                if idx not in gpu_avg_util:
+                    gpu_avg_util[idx] = []
+                gpu_avg_util[idx].append(util)
+
+        active_idx = max(gpu_peak, key=lambda i: gpu_peak[i]) if gpu_peak else None
+        avg_utils = {
+            idx: sum(vals) / len(vals) for idx, vals in gpu_avg_util.items()
+        }
+
+        gpu_used = active_idx is not None and gpu_peak.get(active_idx, 0) > 5.0
+
+        return {
+            'nvidia_smi_available': True,
+            'active_gpu_index': active_idx,
+            'active_gpu_name': gpu_names.get(active_idx, 'unknown') if active_idx is not None else None,
+            'gpu_actually_used': gpu_used,
+            'samples_count': len(samples),
+            'per_gpu': {
+                idx: {
+                    'name': gpu_names[idx],
+                    'peak_utilization_pct': round(gpu_peak[idx], 1),
+                    'avg_utilization_pct': round(avg_utils.get(idx, 0), 1),
+                    'peak_memory_used_mb': gpu_peak_mem.get(idx, 0),
+                }
+                for idx in sorted(gpu_names)
+            },
+            'discrepancy': None if gpu_used else 'GPU utilization < 5% durante inferencia — posible ejecucion en CPU',
+        }
 
     def discover_models(self) -> list[dict[str, Any]]:
         """Return list of installed Ollama models with metadata."""
@@ -95,9 +251,16 @@ class GpuModelBenchmarkService:
         *,
         prompts: list[dict[str, str]] | None = None,
     ) -> dict[str, Any]:
-        """Run benchmark prompts against a single model and return metrics."""
+        """Run benchmark prompts against a single model and return metrics.
+
+        GPU utilization is sampled via nvidia-smi during each prompt to
+        provide ground-truth data about which GPU is really active.
+        """
         prompts = prompts or _BENCHMARK_PROMPTS
         results: list[dict[str, Any]] = []
+        all_gpu_samples: list[list[dict[str, Any]]] = []
+
+        gpu_before = self.query_all_gpus()
 
         for prompt_spec in prompts:
             prompt = prompt_spec['prompt']
@@ -105,10 +268,13 @@ class GpuModelBenchmarkService:
             category = prompt_spec.get('category', 'general')
 
             start = time.perf_counter()
-            output_text, token_count, eval_duration_ns = self._ollama_generate(
-                model_name, prompt,
+            (output_text, token_count, eval_duration_ns), gpu_samples = (
+                self._sample_gpu_during(
+                    self._ollama_generate, model_name, prompt,
+                )
             )
             elapsed_ms = int((time.perf_counter() - start) * 1000)
+            all_gpu_samples.extend(gpu_samples)
 
             tokens_per_second = 0.0
             if eval_duration_ns and eval_duration_ns > 0 and token_count > 0:
@@ -121,6 +287,8 @@ class GpuModelBenchmarkService:
             total_keywords = max(len(expected_keywords.split()), 1)
             quality_score = keyword_hits / total_keywords
 
+            prompt_gpu_analysis = self._analyze_gpu_usage(gpu_samples)
+
             results.append({
                 'category': category,
                 'prompt': prompt[:120],
@@ -129,11 +297,15 @@ class GpuModelBenchmarkService:
                 'token_count': token_count,
                 'elapsed_ms': elapsed_ms,
                 'quality_score': round(quality_score, 4),
+                'gpu_during_inference': prompt_gpu_analysis,
             })
 
         avg_tps = sum(r['tokens_per_second'] for r in results) / max(len(results), 1)
         avg_quality = sum(r['quality_score'] for r in results) / max(len(results), 1)
         avg_latency = sum(r['elapsed_ms'] for r in results) / max(len(results), 1)
+
+        gpu_after = self.query_all_gpus()
+        overall_gpu = self._analyze_gpu_usage(all_gpu_samples)
 
         return {
             'model_name': model_name,
@@ -142,6 +314,11 @@ class GpuModelBenchmarkService:
             'avg_latency_ms': int(avg_latency),
             'prompt_count': len(results),
             'details': results,
+            'gpu_ground_truth': {
+                'before': gpu_before,
+                'after': gpu_after,
+                'during_inference': overall_gpu,
+            },
         }
 
     def run_full_benchmark(
@@ -230,6 +407,25 @@ class GpuModelBenchmarkService:
         best = ranked[0] if ranked else None
         summary = self._build_summary(ranked, recommendation)
 
+        gpu_findings: list[dict[str, str]] = []
+        for r in benchmark_results:
+            gt = r.get('gpu_ground_truth', {}).get('during_inference', {})
+            if gt.get('discrepancy'):
+                gpu_findings.append({
+                    'model': r['model_name'],
+                    'finding': gt['discrepancy'],
+                    'severity': 'HIGH',
+                })
+            if gt.get('gpu_actually_used') and gt.get('active_gpu_index') is not None:
+                gpu_findings.append({
+                    'model': r['model_name'],
+                    'finding': (
+                        f'Inferencia ejecutada en GPU{gt["active_gpu_index"]} '
+                        f'({gt.get("active_gpu_name", "?")})'
+                    ),
+                    'severity': 'INFO',
+                })
+
         return {
             'status': 'completed',
             'message': summary,
@@ -242,9 +438,11 @@ class GpuModelBenchmarkService:
                     'tokens_per_second': r['avg_tokens_per_second'],
                     'quality_score': r['avg_quality_score'],
                     'latency_ms': r['avg_latency_ms'],
+                    'gpu_ground_truth': r.get('gpu_ground_truth', {}).get('during_inference', {}),
                 }
                 for r in ranked
             ],
+            'gpu_findings': gpu_findings,
             'experiment_runs': len(runs),
             'recommendation': {
                 'recommended_route': recommendation.recommended_route.value,
@@ -265,7 +463,7 @@ class GpuModelBenchmarkService:
             'model': model,
             'prompt': prompt,
             'stream': False,
-            'options': {'num_predict': 256},
+            'options': {'num_predict': _NUM_PREDICT},
         }).encode('utf-8')
 
         url = f'{self.ollama_api_base}/api/generate'
