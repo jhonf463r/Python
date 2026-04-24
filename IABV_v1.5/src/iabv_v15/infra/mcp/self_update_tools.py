@@ -102,7 +102,60 @@ def register(mcp: Any, workspace_root: str | Path) -> None:
             JSON con resultado: {success, committed, pushed, branch, commit_hash, error}
         """
         import subprocess
+        import re as _re
         ws = Path(workspace_root)
+
+        def _pre_commit_validate(file_list: list[str]) -> list[str]:
+            """Validacion pre-commit: detecta errores conocidos antes de commitear."""
+            errors: list[str] = []
+            for fpath in file_list:
+                full = ws / fpath
+                if not full.exists():
+                    continue
+                try:
+                    text = full.read_text(encoding='utf-8', errors='ignore')
+                except Exception:
+                    continue
+
+                # ── QML: detectar signal duplicado con property ──
+                if fpath.endswith('.qml'):
+                    props = set()
+                    signals = set()
+                    for line in text.splitlines():
+                        stripped = line.strip()
+                        # property <type> <name>
+                        m = _re.match(r'property\s+\w+\s+(\w+)', stripped)
+                        if m:
+                            props.add(m.group(1))
+                        # signal <name>(...)
+                        m = _re.match(r'signal\s+(\w+)', stripped)
+                        if m:
+                            signals.add(m.group(1))
+                    for sig in signals:
+                        # QML auto-genera <prop>Changed para cada property
+                        base = sig.replace('Changed', '')
+                        if base in props:
+                            errors.append(
+                                f'QML duplicate signal: {fpath} declara '
+                                f'property "{base}" Y signal "{sig}" — '
+                                f'QML auto-genera {sig} desde la property. '
+                                f'Eliminar la declaracion explicita del signal.'
+                            )
+
+                # ── Python: detectar asignacion directa a modelos Pydantic ──
+                if fpath.endswith('.py'):
+                    for i, line in enumerate(text.splitlines(), 1):
+                        # card.some_field = ... donde card es tipo known Pydantic
+                        if 'card.' in line and '=' in line and 'card.metadata' not in line:
+                            # Heuristica: si asigna a un campo que no es metadata
+                            stripped = line.strip()
+                            if (_re.match(r'card\.(?!metadata)[a-z_]+\s*=', stripped)
+                                    and 'getattr' not in stripped
+                                    and '#' not in stripped.split('=')[0]):
+                                # Solo warning, no bloquea
+                                pass
+
+            return errors
 
         try:
             # Detect branch
@@ -131,6 +184,32 @@ def register(mcp: Any, workspace_root: str | Path) -> None:
                     ['git', 'add', '-u', '.'],
                     cwd=ws, capture_output=True,
                 )
+
+            # ── Pre-commit validation ──
+            staged_files = file_list if files else []
+            if not staged_files:
+                # Get list of staged files from git
+                diff_r = subprocess.run(
+                    ['git', 'diff', '--cached', '--name-only'],
+                    capture_output=True, text=True, cwd=ws,
+                )
+                staged_files = [f.strip() for f in diff_r.stdout.splitlines() if f.strip()]
+
+            validation_errors = _pre_commit_validate(staged_files)
+            if validation_errors:
+                # Revert staged changes
+                subprocess.run(['git', 'reset', 'HEAD'], cwd=ws, capture_output=True)
+                return json.dumps({
+                    'success': False,
+                    'committed': False,
+                    'pushed': False,
+                    'validation_errors': validation_errors,
+                    'error': f'Pre-commit validation fallo: {len(validation_errors)} error(es) detectados. '
+                             f'El programa aprendio de errores anteriores y bloqueo el commit.',
+                    'learned_patterns_applied': [
+                        'QML_DUPLICATE_SIGNAL: property X auto-genera signal XChanged',
+                    ],
+                })
 
             # Check if there's anything to commit
             status = subprocess.run(

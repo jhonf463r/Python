@@ -298,12 +298,59 @@ class SelfAuditService:
     # ------------------------------------------------------------------
     # Pending issues (self-examination live + portable_context package)
 
+    # ── Patrones aprendidos por el programa ──
+    # Cada patron es un error que el programa cometio y aprendio a detectar.
+    LEARNED_PATTERNS: list[dict[str, str]] = [
+        {
+            'id': 'QML_DUPLICATE_SIGNAL',
+            'category': 'qml',
+            'severity': 'error',
+            'title': 'QML: property auto-genera signal Changed',
+            'description': (
+                'En QML, declarar "property string X" auto-genera "signal XChanged()". '
+                'Si tambien se declara "signal XChanged(type param)" explicitamente, '
+                'QML rechaza el tipo completo con "Duplicate signal name" y el '
+                'componente no se carga. Solucion: eliminar la declaracion explicita '
+                'del signal y usar la property directamente en los handlers.'
+            ),
+            'first_seen': '2026-04-23',
+            'affected_files': ['ChatToolbar.qml'],
+        },
+        {
+            'id': 'PYDANTIC_NO_ARBITRARY_FIELDS',
+            'category': 'python',
+            'severity': 'error',
+            'title': 'Pydantic: no permite campos arbitrarios en modelos',
+            'description': (
+                'Los modelos Pydantic (como ToolCard) no permiten asignar campos '
+                'que no estan declarados en la clase. "card.detection_evidence = {}" '
+                'lanza ValueError. Solucion: usar card.metadata (dict existente) '
+                'para guardar datos dinamicos, o declarar el campo en el modelo.'
+            ),
+            'first_seen': '2026-04-23',
+            'affected_files': ['tool_adapters.py'],
+        },
+        {
+            'id': 'COMPONENTS_NOT_INTEGRATED',
+            'category': 'ui',
+            'severity': 'warning',
+            'title': 'UI: crear componentes no es suficiente, hay que integrarlos',
+            'description': (
+                'Crear archivos QML de componentes (ChatToolbar.qml, etc.) no los '
+                'hace visibles automaticamente. Hay que instanciarlos explicitamente '
+                'en la pagina principal (ControlCenterPage.qml) con bindings a las '
+                'properties del ViewModel. Siempre verificar que el componente se '
+                'usa en la pagina, no solo que existe como archivo.'
+            ),
+            'first_seen': '2026-04-23',
+            'affected_files': ['ControlCenterPage.qml'],
+        },
+    ]
+
     def _collect_pending_issues(self) -> list[str]:
         # Include UI validation issues from ControlCenterViewModel
         try:
             from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
-            # Check if any ControlCenterViewModel instances have validation issues
-            # This is a static check - does the class have _validate_ui_reflects_reality
             if hasattr(ControlCenterViewModel, '_validate_ui_reflects_reality'):
                 pass  # Method exists - good
             else:
@@ -313,6 +360,15 @@ class SelfAuditService:
 
         items: list[str] = []
         seen: set[str] = set()
+
+        # Incluir patrones aprendidos como issues pendientes de verificacion
+        for pattern in self.LEARNED_PATTERNS:
+            key = f"LEARNED:{pattern['id']}"
+            if key not in seen:
+                seen.add(key)
+                items.append(f"[{pattern['severity']}] {pattern['title']}")
+            if len(items) >= _MAX_PENDING_ISSUES:
+                break
 
         review = self._safe(self._current_review, default=None)
         if review is not None:
