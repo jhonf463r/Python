@@ -92,6 +92,55 @@ def query_nvidia_processes() -> list[dict]:
     return procs
 
 
+def query_task_manager_gpu() -> dict:
+    """Query Windows Performance Counters — the SAME data Task Manager shows.
+
+    This reads GPU Engine utilization counters via PowerShell, which is the
+    exact source that feeds the Task Manager GPU graphs. This provides an
+    independent truth source separate from nvidia-smi.
+    """
+    if sys.platform != 'win32':
+        return {'available': False, 'reason': 'not Windows'}
+    try:
+        # Read GPU utilization from Performance Counters (same as Task Manager)
+        ps_cmd = (
+            'Get-Counter -Counter '
+            '"\\GPU Engine(*)\\Utilization Percentage" '
+            '-ErrorAction SilentlyContinue | '
+            'Select-Object -ExpandProperty CounterSamples | '
+            'Where-Object { $_.CookedValue -gt 0 } | '
+            'Select-Object -Property Path, CookedValue | '
+            'ConvertTo-Json -Compress'
+        )
+        r = subprocess.run(
+            ['powershell', '-NoProfile', '-Command', ps_cmd],
+            capture_output=True, text=True, timeout=15, check=False,
+        )
+        if r.returncode != 0 or not r.stdout.strip():
+            return {'available': True, 'active_engines': [], 'total_util': 0.0}
+
+        data = json.loads(r.stdout)
+        if isinstance(data, dict):
+            data = [data]
+
+        engines = []
+        total_util = 0.0
+        for sample in data:
+            path = sample.get('Path', '')
+            value = sample.get('CookedValue', 0.0)
+            total_util += value
+            engines.append({'path': path, 'util_pct': round(value, 2)})
+
+        return {
+            'available': True,
+            'active_engines': engines,
+            'total_util': round(total_util, 2),
+            'engine_count': len(engines),
+        }
+    except Exception as e:
+        return {'available': True, 'error': str(e), 'active_engines': [], 'total_util': 0.0}
+
+
 def query_ollama_ps() -> str:
     ollama = shutil.which('ollama')
     if not ollama:
@@ -189,6 +238,10 @@ def run_inference(model: str, prompt: str, num_predict: int = 256) -> dict:
     result['gpu_samples_count'] = len(samples)
     result['peak_util_per_gpu'] = peak_utils
     result['avg_util_per_gpu'] = avg_utils
+
+    # Also sample Task Manager counters (independent truth source)
+    task_mgr_after = query_task_manager_gpu()
+    result['task_manager'] = task_mgr_after
     return result
 
 
@@ -236,7 +289,21 @@ def main():
     if not ollama_models:
         p(YELLOW, '    (ningún modelo cargado)')
 
-    # Source 4: CUDA_VISIBLE_DEVICES
+    # Source 4: Task Manager (Windows Performance Counters)
+    task_mgr = query_task_manager_gpu()
+    if task_mgr.get('available'):
+        active = task_mgr.get('active_engines', [])
+        total = task_mgr.get('total_util', 0)
+        p(CYAN, f'  [Task Manager GPU Counters] {len(active)} engine(s) activo(s), '
+              f'utilización total: {total:.1f}%')
+        for eng in active[:5]:
+            p(CYAN, f'    {eng["path"]}: {eng["util_pct"]}%')
+        if not active:
+            p(YELLOW, '    (sin actividad GPU según Performance Counters)')
+    else:
+        p(YELLOW, f'  [Task Manager GPU Counters] No disponible: {task_mgr.get("reason", "?")}')
+
+    # Source 5: CUDA_VISIBLE_DEVICES
     p(CYAN, f'  [CUDA_VISIBLE_DEVICES] = "{cuda_vis or "(no set)"}"')
     nvidia_indices = {g['index'] for g in gpus}
     if cuda_vis:
@@ -479,32 +546,45 @@ def main():
             ollama_says_gpu = 'gpu' in model_proc.lower()
             ollama_in_compute = any('ollama' in p.get('name', '').lower() for p in procs_after)
 
-            # Count agreements
+            # Source 4: Task Manager Performance Counters
+            tm = result.get('task_manager', {})
+            tm_active = tm.get('total_util', 0) > 1.0 if tm.get('available') else None
+
+            # Count agreements (4 sources now)
             sources = {
                 'nvidia_smi_util': any_gpu,
                 'ollama_ps': ollama_says_gpu,
                 'nvidia_compute_apps': ollama_in_compute,
             }
+            if tm_active is not None:
+                sources['task_manager_counters'] = tm_active
+
+            total_sources = len(sources)
             agree_gpu = sum(1 for v in sources.values() if v)
             agree_cpu = sum(1 for v in sources.values() if not v)
 
-            if agree_gpu >= 2:
-                result['verdict'] = f'CALIBRADO (GPU): {agree_gpu}/3 fuentes confirman GPU activa'
+            if agree_gpu >= (total_sources - 1):
+                result['verdict'] = f'CALIBRADO (GPU): {agree_gpu}/{total_sources} fuentes confirman GPU activa'
                 color = GREEN
-            elif agree_cpu >= 2:
-                result['verdict'] = f'NO CALIBRADO (CPU): {agree_cpu}/3 fuentes indican CPU'
+            elif agree_cpu >= (total_sources - 1):
+                result['verdict'] = f'NO CALIBRADO (CPU): {agree_cpu}/{total_sources} fuentes indican CPU'
                 color = RED
             else:
-                result['verdict'] = 'PARCIAL: fuentes no concuerdan'
+                result['verdict'] = f'PARCIAL: {agree_gpu}/{total_sources} GPU vs {agree_cpu}/{total_sources} CPU'
                 color = YELLOW
 
             result['sources'] = sources
             p(color, f'    → {result["verdict"]}')
             p(CYAN, f'    → {tps} tok/s, {result["tokens"]} tokens en {result["elapsed_s"]}s')
-            p(CYAN, f'    → Peak GPU util: {result.get("peak_util_per_gpu", {})}')
-            p(CYAN, f'    → Avg GPU util: {result.get("avg_util_per_gpu", {})}')
-            p(CYAN, f'    → ollama ps processor: {model_proc}')
-            p(CYAN, f'    → nvidia compute apps: {[p["name"] for p in procs_after]}')
+            p(CYAN, f'    → [nvidia-smi]         Peak GPU: {result.get("peak_util_per_gpu", {})} Avg: {result.get("avg_util_per_gpu", {})}')
+            p(CYAN, f'    → [ollama ps]           processor: {model_proc}')
+            p(CYAN, f'    → [nvidia compute apps] {[pr["name"] for pr in procs_after]}')
+            # Task Manager cross-reference
+            if tm.get('available'):
+                tm_util = tm.get('total_util', 0)
+                tm_engines = tm.get('engine_count', 0)
+                tm_color = GREEN if tm_util > 1 else RED
+                p(tm_color, f'    → [Task Manager]        {tm_engines} engine(s), {tm_util:.1f}% total')
         else:
             p(RED, f'    → ERROR: {result.get("error", "?")}')
 
