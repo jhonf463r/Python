@@ -1230,7 +1230,8 @@ def main():
     temperatures = [0.1, 0.5, 0.9]
 
     # Use ALL discovered models — full panorama, not just hardcoded ones
-    models_to_scan = ollama_models_discovered if ollama_models_discovered else MODELS
+    # Fallback to test_models from FASE 2 if Ollama API discovery failed
+    models_to_scan = ollama_models_discovered if ollama_models_discovered else test_models
 
     ia_scan_results: list[dict] = []
 
