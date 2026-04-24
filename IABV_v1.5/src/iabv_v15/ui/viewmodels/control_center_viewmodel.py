@@ -5064,7 +5064,181 @@ class ControlCenterViewModel(QObject):
         if 'ciclo pbt' in command or 'ejecutar pbt' in command:
             self.runQuickPbt()
             return True
+        if self._is_self_code_analysis_request(command):
+            self._run_self_code_analysis()
+            return True
         return False
+
+    def _is_self_code_analysis_request(self, command: str) -> bool:
+        """Detecta si el usuario pide que el programa analice su propio codigo,
+        busque errores, mejoras pendientes, diagnostique lentitud o revise GPU."""
+        direct_phrases = (
+            'analizate',
+            'analízate',
+            'analiza tu codigo',
+            'analiza tu código',
+            'revisa tu codigo',
+            'revisa tu código',
+            'busca errores',
+            'busca fallas',
+            'busca bugs',
+            'autoanalisis',
+            'autoanálisis',
+            'auto analisis',
+            'auto análisis',
+            'auto diagnostico',
+            'autodiagnostico',
+            'autodiagnóstico',
+            'por que te congelas',
+            'por qué te congelas',
+            'por que estas lento',
+            'por qué estás lento',
+            'por que respondes lento',
+            'por qué respondes lento',
+            'analiza tu estado',
+            'diagnostica tu estado',
+            'diagnosticate',
+            'diagnostícate',
+            'examina tu codigo',
+            'examina tu código',
+            'revisa tu estado real',
+            'reporte de tu estado',
+            'mejoras pendientes',
+            'ramas sin mergear',
+            'ramas pendientes',
+            'codigo desactualizado',
+            'código desactualizado',
+            'tu gpu esta funcionando',
+            'tu gpu está funcionando',
+            'revisa tu gpu',
+        )
+        if any(phrase in command for phrase in direct_phrases):
+            return True
+        word_tokens = set(re.findall(r'[a-z0-9_]+', command))
+        asks_self = any(t in word_tokens for t in ('analizate', 'analízate', 'autoanalisis', 'diagnosticate'))
+        asks_code = any(t in word_tokens for t in ('codigo', 'código', 'errores', 'fallas', 'bugs', 'sintaxis'))
+        asks_perf = any(t in word_tokens for t in ('lento', 'congela', 'congelas', 'rendimiento', 'lentitud'))
+        asks_analyze = any(t in command for t in ('analiza', 'revisa', 'examina', 'diagnostica', 'busca'))
+        if asks_analyze and (asks_code or asks_perf):
+            return True
+        if asks_self:
+            return True
+        return False
+
+    def _run_self_code_analysis(self) -> None:
+        """Ejecuta self_code_analysis y gpu_metacognition en background y presenta resultados."""
+        self._append_message(
+            'assistant', 'IABV',
+            'Entendido. Voy a analizar mi propio codigo, revisar GPU, y buscar mejoras pendientes. Dame un momento...',
+            'Metacognicion: auto-analisis de codigo iniciado.',
+        )
+        self._set_live_status('processing')
+        self.dataChanged.emit()
+
+        def _worker() -> None:
+            try:
+                ws = str(getattr(self.config, 'workspace_root', ''))
+                if not ws:
+                    import os
+                    ws = os.getcwd()
+                sections: list[str] = []
+
+                # 1. Self code analysis
+                try:
+                    from iabv_v15.services.self_code_analysis import full_self_analysis_report
+                    report = full_self_analysis_report(ws)
+                    syntax = report.get('syntax', {})
+                    mcp = report.get('mcp_tools', {})
+                    perf = report.get('performance', {})
+                    threading_info = report.get('threading', {})
+                    branches = report.get('unmerged_branches', {})
+                    branch_count = branches.get('count', 0) if isinstance(branches, dict) else 0
+
+                    sections.append('ANALISIS DE CODIGO')
+                    sections.append(f"Salud general: {report.get('overall_health', 'desconocido')}")
+                    sections.append(f"Sintaxis: {syntax.get('summary', 'sin datos')}")
+                    sections.append(f"MCP Tools: {mcp.get('summary', 'sin datos')}")
+                    sections.append(f"Rendimiento: {perf.get('summary', 'sin datos')}")
+                    if threading_info.get('issues'):
+                        sections.append(f"Threading: {len(threading_info['issues'])} problemas detectados")
+                        for issue in threading_info['issues'][:5]:
+                            sections.append(f"  - {issue.get('file', '?')}: {issue.get('description', '?')}")
+                    else:
+                        sections.append('Threading: sin problemas detectados')
+                    if branch_count > 0:
+                        sections.append(f"Ramas sin mergear: {branch_count}")
+                        top_branches = branches.get('top_branches', [])[:5]
+                        for b in top_branches:
+                            bname = b.get('name', '?') if isinstance(b, dict) else str(b)
+                            sections.append(f"  - {bname}")
+                except Exception as exc:
+                    sections.append(f'Error en self_code_analysis: {exc}')
+
+                # 2. GPU metacognition
+                try:
+                    from iabv_v15.services.gpu_metacognition import gpu_metacognition_report
+                    gpu = gpu_metacognition_report()
+                    sections.append('')
+                    sections.append('GPU')
+                    gpu_count = gpu.get('nvidia_count', 0) + gpu.get('intel_igpu_count', 0)
+                    sections.append(f"GPUs detectadas: {gpu_count}")
+                    ollama = gpu.get('ollama_state', {})
+                    sections.append(f"Ollama: {ollama.get('status', 'no detectado')}")
+                    gpu_issues = gpu.get('issues', [])
+                    if gpu_issues:
+                        sections.append(f"Issues GPU: {len(gpu_issues)}")
+                        for gi in gpu_issues[:3]:
+                            sections.append(f"  - {gi}")
+                    else:
+                        sections.append('Issues GPU: ninguno')
+                    recs = gpu.get('recommendations', [])
+                    if recs:
+                        for r in recs[:3]:
+                            sections.append(f"  Recomendacion: {r}")
+                except Exception as exc:
+                    sections.append(f'Error en gpu_metacognition: {exc}')
+
+                # 3. Resumen ejecutivo
+                sections.append('')
+                sections.append('RESUMEN')
+                all_ok = True
+                issues_found: list[str] = []
+                if syntax.get('errors'):
+                    all_ok = False
+                    issues_found.append(f"{len(syntax['errors'])} errores de sintaxis")
+                if branch_count > 10:
+                    issues_found.append(f"{branch_count} ramas sin mergear (deuda tecnica)")
+                if threading_info.get('issues'):
+                    all_ok = False
+                    issues_found.append(f"{len(threading_info['issues'])} problemas de threading")
+                if gpu_issues:
+                    issues_found.append(f"{len(gpu_issues)} issues de GPU")
+                if issues_found:
+                    sections.append('Issues encontrados: ' + ', '.join(issues_found))
+                else:
+                    sections.append('No se encontraron problemas criticos.')
+                if all_ok and not issues_found:
+                    sections.append('Estado: codigo saludable, listo para produccion.')
+                else:
+                    sections.append('Estado: necesita atencion. Revisa los issues arriba.')
+
+                reply = '\n'.join(sections)
+                self._append_message(
+                    'assistant', 'IABV', reply,
+                    'Metacognicion: auto-analisis completo.',
+                )
+
+            except Exception as exc:
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Error durante el auto-analisis: {exc}',
+                    'Metacognicion: error en auto-analisis.',
+                )
+            finally:
+                self._set_live_status('idle')
+                self.dataChanged.emit()
+
+        threading.Thread(target=_worker, daemon=True).start()
 
     def _ingest_chat_capabilities(self, message: str) -> list[dict[str, str]]:
         """Delega en ChatCapabilityIngestionService si esta disponible.
