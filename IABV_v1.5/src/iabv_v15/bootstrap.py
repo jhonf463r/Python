@@ -1209,6 +1209,21 @@ class AppBootstrap:
         cards = self.tool_registry.list_cards()
         if not cards:
             logger.info('tool_availability: sin tools registradas')
+
+        # GPU Metacognition: verify GPU health at startup
+        try:
+            from iabv_v15.services.gpu_metacognition import startup_gpu_health_check
+            _gpu_report = startup_gpu_health_check()
+            _gpu_issues = _gpu_report.get('issues', [])
+            if _gpu_issues:
+                for _issue in _gpu_issues:
+                    logger.warning('gpu_startup_issue: %s', _issue)
+            else:
+                logger.info('gpu_startup: healthy (%d GPU(s) detected)',
+                            _gpu_report.get('nvidia_count', 0) + _gpu_report.get('intel_igpu_count', 0))
+        except Exception as _gpu_exc:
+            logger.warning('gpu_startup_check failed: %s', _gpu_exc)
+
             return
         ready = []
         missing = []
