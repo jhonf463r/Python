@@ -54,7 +54,11 @@ class IntentLearningLayer:
 
     def _load(self) -> None:
         """Load learned patterns from JSONL file."""
-        path = _intent_learning_path()
+        try:
+            path = _intent_learning_path()
+        except Exception as exc:
+            logger.debug('intent_learning: failed to resolve path: %s', exc)
+            return
         if not path.exists():
             return
         try:
@@ -1046,6 +1050,9 @@ class IntentUnderstandingService:
         Called by external services (e.g., ControlCenterViewModel) when
         the user explicitly corrects a misclassification.
         """
+        if correct_intent_key == 'general.assistance':
+            logger.info('record_intent_correction: refusing to record general.assistance (lock-in risk)')
+            return
         _intent_learning_layer.record(
             normalized_text,
             correct_intent_key,
