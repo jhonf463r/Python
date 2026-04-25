@@ -1796,6 +1796,28 @@ class IABVMCPServer:
             return _to_jsonable(verify_ollama_gpu_usage())
 
         # ------------------------------------------------------------
+        # common_sense — razonamiento autónomo por sentido común
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def common_sense_reasoning_tool(dry_run: bool = False) -> dict[str, Any]:
+            """Ejecutar motor de razonamiento autónomo (sentido común).
+
+            Observa el entorno, deduce conclusiones por cadena causal,
+            y ejecuta acciones seguras automáticamente. Si dry_run=True,
+            solo reporta lo que haría sin ejecutar.
+            """
+            from iabv_v15.services.common_sense_engine import run_common_sense_reasoning
+            from iabv_v15.services.gpu_metacognition import gpu_metacognition_report
+            from iabv_v15.services.account_resource_scanner import account_resource_scan
+            ws = self._workspace_root()
+            gpu = gpu_metacognition_report()
+            acc = _run_sync_off_event_loop(account_resource_scan)
+            return _to_jsonable(run_common_sense_reasoning(
+                gpu_scan=gpu, account_scan=acc, dry_run=dry_run,
+            ))
+
+        # ------------------------------------------------------------
         # auto_correction — correcciones autónomas + deducción de herramientas
         # ------------------------------------------------------------
 
