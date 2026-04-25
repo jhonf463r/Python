@@ -215,6 +215,202 @@ def scan_browser_accounts() -> dict[str, Any]:
     }
 
 
+# Domains that indicate an active session for each assistant tool.
+_TOOL_SESSION_DOMAINS: dict[str, list[str]] = {
+    'chatgpt': ['chatgpt.com', 'chat.openai.com', 'auth0.openai.com'],
+    'claude': ['claude.ai', 'anthropic.com'],
+    'codex': ['chatgpt.com', 'openai.com'],
+    'github': ['github.com'],
+    'google': ['accounts.google.com', 'myaccount.google.com'],
+}
+
+
+def scan_browser_sessions() -> dict[str, Any]:
+    """Detect which tool services have active cookies in the user's browsers.
+
+    Reads the Chrome/Edge Cookies SQLite database (copy to temp to avoid
+    locking) and checks for session cookies from known tool domains.
+    This tells the program: "the user has an active ChatGPT session in
+    Chrome Profile 2" — which means CDP mode can reuse that session.
+
+    NOTE: Chrome encrypts cookie values on Windows (DPAPI). We do NOT
+    read cookie values — we only check if rows EXIST for the domain,
+    which is enough to confirm an active session.
+    """
+    import shutil as _shutil
+    import tempfile as _tempfile
+
+    sessions: list[dict[str, Any]] = []
+    chrome_dirs: list[Path] = []
+
+    if os.name == 'nt':
+        local_app = os.environ.get('LOCALAPPDATA', '')
+        if local_app:
+            chrome_dirs.append(Path(local_app) / 'Google' / 'Chrome' / 'User Data')
+        edge_dir = Path(local_app) / 'Microsoft' / 'Edge' / 'User Data' if local_app else None
+        if edge_dir and edge_dir.exists():
+            chrome_dirs.append(edge_dir)
+    else:
+        home = Path.home()
+        chrome_dirs.append(home / '.config' / 'google-chrome')
+        chrome_dirs.append(home / '.config' / 'chromium')
+
+    for chrome_dir in chrome_dirs:
+        if not chrome_dir.exists():
+            continue
+
+        browser_name = 'Chrome'
+        if 'edge' in str(chrome_dir).lower():
+            browser_name = 'Edge'
+        elif 'chromium' in str(chrome_dir).lower():
+            browser_name = 'Chromium'
+
+        for profile_dir in chrome_dir.iterdir():
+            if not profile_dir.is_dir():
+                continue
+            cookies_db = profile_dir / 'Cookies'
+            # Newer Chrome versions use Network/Cookies
+            if not cookies_db.exists():
+                cookies_db = profile_dir / 'Network' / 'Cookies'
+            if not cookies_db.exists():
+                continue
+
+            # Copy database to temp to avoid locking issues
+            try:
+                with _tempfile.NamedTemporaryFile(suffix='.db', delete=False) as tmp:
+                    tmp_path = tmp.name
+                _shutil.copy2(str(cookies_db), tmp_path)
+
+                conn = sqlite3.connect(tmp_path)
+                conn.execute('PRAGMA journal_mode=WAL')
+                cursor = conn.cursor()
+
+                for tool_name, domains in _TOOL_SESSION_DOMAINS.items():
+                    for domain in domains:
+                        try:
+                            cursor.execute(
+                                'SELECT COUNT(*) FROM cookies WHERE host_key LIKE ?',
+                                (f'%{domain}%',),
+                            )
+                            count = cursor.fetchone()[0]
+                            if count > 0:
+                                sessions.append({
+                                    'browser': browser_name,
+                                    'profile': profile_dir.name,
+                                    'tool': tool_name,
+                                    'domain': domain,
+                                    'cookie_count': count,
+                                    'has_session': True,
+                                })
+                        except Exception:
+                            continue
+
+                conn.close()
+            except Exception:
+                continue
+            finally:
+                try:
+                    os.unlink(tmp_path)
+                except Exception:
+                    pass
+
+    # Aggregate by tool
+    tool_sessions: dict[str, list[dict[str, Any]]] = {}
+    for s in sessions:
+        tool = s['tool']
+        if tool not in tool_sessions:
+            tool_sessions[tool] = []
+        tool_sessions[tool].append(s)
+
+    return {
+        'sessions': sessions,
+        'session_count': len(sessions),
+        'tools_with_sessions': list(tool_sessions.keys()),
+        'by_tool': tool_sessions,
+    }
+
+
+def diagnose_browser_access() -> str:
+    """Run a comprehensive diagnostic of browser accounts and sessions.
+
+    Returns a human-readable report that the user can verify.
+    The program calls this to self-audit its browser awareness.
+    """
+    lines: list[str] = ['== DIAGNOSTICO DE ACCESO A NAVEGADORES ==', '']
+
+    # 1. Accounts
+    accounts = scan_browser_accounts()
+    lines.append(f'Navegadores escaneados: {len(accounts.get("browsers_scanned", []))}')
+    for b in accounts.get('browsers_scanned', []):
+        lines.append(f'  {b}')
+    lines.append(f'\nCuentas detectadas: {accounts["count"]}')
+    for acc in accounts.get('accounts', []):
+        lines.append(
+            f'  [{acc.get("browser", "?")}] {acc.get("profile", "?")} — '
+            f'{acc.get("email", "?")} ({acc.get("full_name", "")})'
+        )
+
+    # 2. Sessions (cookies)
+    lines.append('')
+    try:
+        sess = scan_browser_sessions()
+        lines.append(f'Sesiones activas detectadas: {sess["session_count"]}')
+        for tool, tool_sessions in sess.get('by_tool', {}).items():
+            lines.append(f'\n  {tool.upper()}:')
+            for s in tool_sessions:
+                lines.append(
+                    f'    [{s["browser"]}] {s["profile"]} — {s["domain"]} '
+                    f'({s["cookie_count"]} cookies)'
+                )
+        if not sess.get('tools_with_sessions'):
+            lines.append('  Ninguna sesion activa detectada en cookies')
+    except Exception as exc:
+        lines.append(f'  Error escaneando cookies: {exc}')
+
+    # 3. APIs
+    lines.append('\n== ESTADO DE APIs ==')
+    try:
+        ollama = scan_ollama_api()
+        lines.append(f'  Ollama: {"disponible" if ollama.get("available") else "no disponible"}')
+        if ollama.get('available'):
+            lines.append(f'    Modelos: {ollama.get("models_count", 0)}')
+    except Exception:
+        lines.append('  Ollama: error')
+    try:
+        github = scan_github_api()
+        lines.append(f'  GitHub API: {"disponible" if github.get("available") else "no disponible"}')
+        if github.get('available'):
+            lines.append(f'    Remaining: {github.get("remaining", "?")}/{github.get("rate_limit", "?")}')
+    except Exception:
+        lines.append('  GitHub API: error')
+    try:
+        devin = scan_devin_api()
+        lines.append(f'  Devin API: {"disponible" if devin.get("available") else "no disponible"}')
+    except Exception:
+        lines.append('  Devin API: error')
+
+    # 4. Summary
+    lines.append('\n== RESUMEN ==')
+    if accounts['count'] > 0:
+        lines.append(f'El programa VE {accounts["count"]} cuenta(s) del navegador.')
+    else:
+        lines.append('El programa NO ve cuentas del navegador.')
+
+    try:
+        sess_tools = sess.get('tools_with_sessions', [])
+        if sess_tools:
+            lines.append(
+                f'Hay sesiones activas para: {", ".join(t.upper() for t in sess_tools)}. '
+                f'Estas se pueden reusar via CDP.'
+            )
+        else:
+            lines.append('No hay sesiones activas detectadas en cookies.')
+    except Exception:
+        pass
+
+    return '\n'.join(lines)
+
+
 # ──────────────────────────────────────────────────────────────
 # Configured Secrets Detection (names only, never values)
 # ──────────────────────────────────────────────────────────────

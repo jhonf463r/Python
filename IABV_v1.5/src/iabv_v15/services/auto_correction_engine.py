@@ -999,6 +999,24 @@ def _build_deductive_context(
     except Exception:
         parts.append('- (scanner no disponible)')
 
+    # Active browser sessions (cookies per tool domain)
+    parts.append('\n== SESIONES ACTIVAS EN NAVEGADOR (cookies) ==')
+    try:
+        from iabv_v15.services.account_resource_scanner import scan_browser_sessions
+        sess = scan_browser_sessions()
+        if sess.get('session_count', 0) > 0:
+            for tool, tool_sessions in sess.get('by_tool', {}).items():
+                for s in tool_sessions:
+                    parts.append(
+                        f"- {s.get('tool', '?').upper()} en {s.get('browser', '?')} "
+                        f"{s.get('profile', '?')}: {s.get('cookie_count', 0)} cookies "
+                        f"({s.get('domain', '?')})"
+                    )
+        else:
+            parts.append('- Ninguna sesion activa detectada')
+    except Exception:
+        parts.append('- (scanner de sesiones no disponible)')
+
     # API status
     parts.append('\n== ESTADO DE APIs ==')
     try:
@@ -1023,52 +1041,8 @@ def _build_deductive_context(
 
 
 def _query_ollama_for_deduction(context: str) -> dict[str, Any] | None:
-    """Ask Ollama to reason about findings and propose corrections.
-
-    Returns parsed JSON response or None if Ollama is unavailable.
-    Uses a short timeout to avoid blocking the auto-correction cycle.
-    """
-    import json as _json
-
-    base_url = os.environ.get('IABV_OLLAMA_BASE_URL', 'http://127.0.0.1:11434/v1')
-    model = os.environ.get('IABV_OLLAMA_MODEL', 'qwen3:8b')
-
-    try:
-        import httpx
-    except ImportError:
-        logger.debug('httpx not available for deductive reasoning')
-        return None
-
-    messages = [
-        {'role': 'system', 'content': _DEDUCTIVE_SYSTEM_PROMPT},
-        {'role': 'user', 'content': context},
-    ]
-    payload = {
-        'model': model,
-        'messages': messages,
-        'stream': False,
-        'temperature': 0.2,
-    }
-
-    try:
-        with httpx.Client(timeout=30.0) as client:
-            resp = client.post(f'{base_url}/chat/completions', json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-        raw_text = data['choices'][0]['message']['content'].strip()
-
-        # Strip /think tags if present (qwen3 uses these)
-        import re
-        raw_text = re.sub(r'<think>.*?</think>', '', raw_text, flags=re.DOTALL).strip()
-
-        # Try to extract JSON from response
-        json_match = re.search(r'\{[\s\S]*\}', raw_text)
-        if json_match:
-            return _json.loads(json_match.group())
-        return None
-    except Exception as exc:
-        logger.debug('ollama deductive reasoning failed: %s', exc)
-        return None
+    """Ask Ollama to reason about findings and propose corrections."""
+    return _query_ollama_for_reasoning(context, _DEDUCTIVE_SYSTEM_PROMPT)
 
 
 # Executors for deduced corrections — these actually carry out the actions.
@@ -1235,6 +1209,430 @@ def apply_deductive_corrections(
         'corrections_count': len(corrections),
         'ollama_available': deduction is not None,
     }
+
+
+# ──────────────────────────────────────────────────────────────
+# Intelligent Tool Verification — deep audit of real access to each tool
+#
+# When the program detects a multi_source_disagreement (e.g. codex:
+# filesystem=yes, process=no, window=no), it now goes DEEPER:
+# - Checks session state files (sqlite, rollouts)
+# - Scans browser accounts for web-based alternatives
+# - Queries CLI availability
+# - Asks Ollama to reason about the best configuration
+#
+# The program does this ITSELF — no human programming for each tool.
+# ──────────────────────────────────────────────────────────────
+
+_TOOL_VERIFICATION_PROMPT = """\
+Eres el verificador inteligente de herramientas de IABV v1.5.
+Recibes un informe detallado del estado real de una herramienta
+(archivos, procesos, sesiones, rutas, cuentas del navegador) y
+debes deducir:
+1. Si la herramienta realmente esta disponible y en que modo.
+2. Cual es la MEJOR configuracion para usarla dado el estado actual.
+3. Que acciones tomar para mejorar el acceso.
+
+REGLAS:
+- Responde SOLO en JSON valido.
+- Basa tus conclusiones SOLO en la evidencia provista, no inventes.
+- Si hay sesiones activas en el navegador del usuario, prefiere CDP.
+- Si el ejecutable existe pero no esta corriendo, puede lanzarse.
+- Si hay datos de sesion (sqlite, rollouts), la herramienta fue usada.
+
+FORMATO DE RESPUESTA:
+{
+  "tool_id": "nombre",
+  "truly_available": true/false,
+  "best_mode": "desktop_app|codex_rollout|web_assisted|cdp_shared|cli",
+  "reasoning": "explicacion corta",
+  "configuration": {
+    "launch_mode": "...",
+    "response_capture_mode": "...",
+    "use_browser_session": true/false,
+    "additional_params": {}
+  },
+  "actions": [
+    {"action": "nombre_accion", "params": {...}, "confidence": 0.0-1.0}
+  ]
+}
+"""
+
+
+def _deep_tool_probe(tool_id: str, *, workspace: str = '') -> dict[str, Any]:
+    """Gather deep diagnostic info about a tool's real state.
+
+    Goes beyond the 3-source check (filesystem/process/window) to inspect:
+    - Session state files and their age
+    - Rollout directories and recent sessions
+    - CLI availability and version
+    - Browser accounts with active sessions for web alternatives
+    - Environment variables that affect the tool
+    """
+    import glob as _glob
+    import time as _time
+
+    info: dict[str, Any] = {
+        'tool_id': tool_id,
+        'timestamp': _time.time(),
+    }
+
+    # Determine assistant_kind from tool_id
+    assistant_kind = tool_id.replace('_installed', '').replace('_web_assisted', '')
+    info['assistant_kind'] = assistant_kind
+
+    # 1. ToolRegistry card info
+    try:
+        from iabv_v15.services.tools.tool_registry import ToolRegistry
+        registry = ToolRegistry(workspace_root=workspace or '.')
+        card = registry.get_card(tool_id)
+        if card:
+            info['card'] = {
+                'title': card.title,
+                'adapter_key': card.adapter_key,
+                'launch_mode': card.metadata.get('launch_mode', ''),
+                'response_capture_mode': card.metadata.get('response_capture_mode', ''),
+                'background_capture_mode': card.metadata.get('background_capture_mode', ''),
+                'web_url': card.metadata.get('web_url', ''),
+                'command_name': card.metadata.get('command_name', ''),
+                'command_aliases': card.metadata.get('command_aliases', []),
+                'windows_default_paths': card.metadata.get('windows_default_paths', []),
+                'session_state_path': card.metadata.get('session_state_path', ''),
+                'session_rollouts_root': card.metadata.get('session_rollouts_root', ''),
+                'window_title_hints': card.metadata.get('window_title_hints', []),
+            }
+    except Exception:
+        info['card'] = None
+
+    # 2. Filesystem check — resolve all possible executable paths
+    resolved_paths: list[dict[str, Any]] = []
+    try:
+        import shutil as _shutil
+        cmd_name = (info.get('card') or {}).get('command_name', assistant_kind)
+        which_result = _shutil.which(cmd_name)
+        if which_result:
+            resolved_paths.append({'source': 'which', 'path': which_result, 'exists': True})
+
+        for alias in (info.get('card') or {}).get('command_aliases', []):
+            alias_result = _shutil.which(alias)
+            if alias_result:
+                resolved_paths.append({'source': f'which({alias})', 'path': alias_result, 'exists': True})
+
+        for pattern in (info.get('card') or {}).get('windows_default_paths', []):
+            expanded = pattern
+            for token, env_var in [
+                ('{localappdata}', 'LOCALAPPDATA'),
+                ('{programfiles}', 'ProgramFiles'),
+                ('{userprofile}', 'USERPROFILE'),
+            ]:
+                expanded = expanded.replace(token, os.environ.get(env_var, ''))
+            expanded = expanded.replace('\\', os.sep)
+            matches = _glob.glob(expanded) if ('*' in expanded or '?' in expanded) else []
+            if matches:
+                for m in matches:
+                    resolved_paths.append({'source': 'glob', 'path': m, 'exists': os.path.exists(m)})
+            elif os.path.exists(expanded):
+                resolved_paths.append({'source': 'direct', 'path': expanded, 'exists': True})
+            else:
+                resolved_paths.append({'source': 'direct', 'path': expanded, 'exists': False})
+    except Exception:
+        pass
+    info['filesystem'] = {'paths_found': resolved_paths, 'any_exists': any(p['exists'] for p in resolved_paths)}
+
+    # 3. Process check
+    try:
+        import psutil
+        keywords = [assistant_kind]
+        keywords.extend((info.get('card') or {}).get('command_aliases', []))
+        running_procs: list[dict[str, str]] = []
+        for proc in psutil.process_iter(['name', 'exe', 'pid']):
+            try:
+                name = str(proc.info.get('name') or '').lower()
+                exe = str(proc.info.get('exe') or '').lower()
+                for kw in keywords:
+                    if kw.lower() in name or kw.lower() in exe:
+                        running_procs.append({
+                            'pid': str(proc.info.get('pid', '')),
+                            'name': name,
+                            'exe': exe,
+                        })
+                        break
+            except Exception:
+                continue
+        info['process'] = {'running': running_procs, 'is_running': bool(running_procs)}
+    except Exception:
+        info['process'] = {'running': [], 'is_running': False}
+
+    # 4. Session state — check sqlite DB and rollout directories
+    session_info: dict[str, Any] = {}
+    state_path = (info.get('card') or {}).get('session_state_path', '')
+    if state_path:
+        expanded_state = state_path
+        for token, env_var in [('{userprofile}', 'USERPROFILE')]:
+            expanded_state = expanded_state.replace(token, os.environ.get(env_var, ''))
+        expanded_state = expanded_state.replace('\\', os.sep)
+        session_info['state_path'] = expanded_state
+        session_info['state_exists'] = os.path.exists(expanded_state)
+        if session_info['state_exists']:
+            try:
+                stat = os.stat(expanded_state)
+                session_info['state_size_bytes'] = stat.st_size
+                session_info['state_modified_ago_seconds'] = round(_time.time() - stat.st_mtime)
+            except Exception:
+                pass
+
+    rollouts_root = (info.get('card') or {}).get('session_rollouts_root', '')
+    if rollouts_root:
+        expanded_rollouts = rollouts_root
+        for token, env_var in [('{userprofile}', 'USERPROFILE')]:
+            expanded_rollouts = expanded_rollouts.replace(token, os.environ.get(env_var, ''))
+        expanded_rollouts = expanded_rollouts.replace('\\', os.sep)
+        session_info['rollouts_root'] = expanded_rollouts
+        session_info['rollouts_exists'] = os.path.isdir(expanded_rollouts)
+        if session_info['rollouts_exists']:
+            try:
+                rollout_dirs = sorted(Path(expanded_rollouts).iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+                session_info['rollout_count'] = len(rollout_dirs)
+                if rollout_dirs:
+                    newest = rollout_dirs[0]
+                    session_info['newest_rollout'] = str(newest.name)
+                    session_info['newest_rollout_age_seconds'] = round(_time.time() - newest.stat().st_mtime)
+            except Exception:
+                pass
+    info['session'] = session_info
+
+    # 5. Window titles (only on Windows)
+    info['window'] = {'detected': False}
+    if os.name == 'nt':
+        try:
+            import ctypes
+            user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+            titles: list[str] = []
+
+            @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)  # type: ignore[misc]
+            def _enum_cb(hwnd: Any, _: Any) -> bool:
+                if user32.IsWindowVisible(hwnd):
+                    buf = ctypes.create_unicode_buffer(512)
+                    user32.GetWindowTextW(hwnd, buf, 512)
+                    t = buf.value.strip()
+                    if t:
+                        titles.append(t)
+                return True
+            user32.EnumWindows(_enum_cb, 0)
+
+            hints = (info.get('card') or {}).get('window_title_hints', [assistant_kind.title()])
+            matching = [t for t in titles if any(h.lower() in t.lower() for h in hints)]
+            info['window'] = {
+                'detected': bool(matching),
+                'matching_windows': matching[:5],
+                'total_visible': len(titles),
+            }
+        except Exception:
+            pass
+
+    # 6. Browser accounts (for web-based alternatives)
+    try:
+        from iabv_v15.services.account_resource_scanner import scan_browser_accounts
+        browser = scan_browser_accounts()
+        info['browser_accounts'] = {
+            'count': browser.get('count', 0),
+            'accounts': [
+                {'email': a.get('email', '?'), 'browser': a.get('browser', '?')}
+                for a in browser.get('accounts', [])[:10]
+            ],
+        }
+    except Exception:
+        info['browser_accounts'] = {'count': 0, 'accounts': []}
+
+    # 7. Web alternative check
+    web_tool_id = f'{assistant_kind}_web_assisted'
+    web_url = ''
+    try:
+        from iabv_v15.services.tools.tool_registry import ToolRegistry
+        registry = ToolRegistry(workspace_root=workspace or '.')
+        web_card = registry.get_card(web_tool_id)
+        if web_card:
+            web_url = web_card.metadata.get('web_url', '')
+    except Exception:
+        pass
+    info['web_alternative'] = {
+        'tool_id': web_tool_id,
+        'web_url': web_url,
+        'available': bool(web_url),
+    }
+
+    # 8. Environment flags
+    info['env_flags'] = {
+        'IABV_PREFER_CDP_SESSION': os.environ.get('IABV_PREFER_CDP_SESSION', ''),
+        'CODEX_HOME': os.environ.get('CODEX_HOME', ''),
+    }
+
+    return info
+
+
+def verify_tool_access_deductive(
+    tool_id: str,
+    *,
+    workspace: str = '',
+) -> dict[str, Any]:
+    """Perform an intelligent, deep verification of real access to a tool.
+
+    This function:
+    1. Gathers deep diagnostic info (filesystem, process, sessions, browser)
+    2. Sends ALL evidence to Ollama for reasoning
+    3. Returns Ollama's assessment of best configuration
+
+    The program calls this ITSELF when it detects disagreements — no human
+    needs to program the verification logic for each tool.
+    """
+    probe = _deep_tool_probe(tool_id, workspace=workspace)
+
+    # Build a readable summary for Ollama
+    parts: list[str] = [f'== VERIFICACION PROFUNDA: {tool_id} ==']
+    parts.append(f"assistant_kind: {probe.get('assistant_kind', '?')}")
+
+    # Card
+    card = probe.get('card') or {}
+    parts.append(f"\nToolCard: launch_mode={card.get('launch_mode', '?')}, "
+                 f"capture={card.get('response_capture_mode', '?')}, "
+                 f"background={card.get('background_capture_mode', '?')}")
+    if card.get('web_url'):
+        parts.append(f"  web_url: {card['web_url']}")
+
+    # Filesystem
+    fs = probe.get('filesystem', {})
+    parts.append(f"\nFilesystem: any_exists={fs.get('any_exists', False)}")
+    for p in fs.get('paths_found', []):
+        parts.append(f"  [{p['source']}] {p['path']} exists={p['exists']}")
+
+    # Process
+    proc = probe.get('process', {})
+    parts.append(f"\nProcess: is_running={proc.get('is_running', False)}")
+    for p in proc.get('running', []):
+        parts.append(f"  PID={p['pid']} name={p['name']}")
+
+    # Session
+    sess = probe.get('session', {})
+    if sess.get('state_exists'):
+        parts.append(f"\nSession DB: {sess['state_path']} "
+                     f"(size={sess.get('state_size_bytes', '?')}B, "
+                     f"modified {sess.get('state_modified_ago_seconds', '?')}s ago)")
+    else:
+        parts.append(f"\nSession DB: {sess.get('state_path', 'none')} — no existe")
+    if sess.get('rollouts_exists'):
+        parts.append(f"Rollouts: {sess.get('rollout_count', 0)} sesiones, "
+                     f"mas reciente: {sess.get('newest_rollout', '?')} "
+                     f"({sess.get('newest_rollout_age_seconds', '?')}s ago)")
+
+    # Window
+    win = probe.get('window', {})
+    parts.append(f"\nWindow: detected={win.get('detected', False)}")
+    for w in win.get('matching_windows', []):
+        parts.append(f"  '{w}'")
+
+    # Browser accounts
+    ba = probe.get('browser_accounts', {})
+    parts.append(f"\nBrowser accounts: {ba.get('count', 0)}")
+    for a in ba.get('accounts', []):
+        parts.append(f"  {a.get('browser', '?')}: {a.get('email', '?')}")
+
+    # Web alternative
+    web = probe.get('web_alternative', {})
+    parts.append(f"\nWeb alternative: {web.get('tool_id', '?')} "
+                 f"available={web.get('available', False)} url={web.get('web_url', '')}")
+
+    # Env flags
+    env = probe.get('env_flags', {})
+    parts.append(f"\nEnvironment: CDP_PREFER={env.get('IABV_PREFER_CDP_SESSION', 'unset')}")
+
+    context = '\n'.join(parts)
+
+    # Query Ollama
+    deduction = _query_ollama_for_reasoning(context, _TOOL_VERIFICATION_PROMPT)
+
+    result: dict[str, Any] = {
+        'tool_id': tool_id,
+        'probe': probe,
+        'ollama_available': deduction is not None,
+    }
+
+    if deduction:
+        result['truly_available'] = deduction.get('truly_available', False)
+        result['best_mode'] = deduction.get('best_mode', 'unknown')
+        result['reasoning'] = deduction.get('reasoning', '')
+        result['configuration'] = deduction.get('configuration', {})
+        result['actions'] = deduction.get('actions', [])
+
+        logger.info(
+            'tool-verification[%s]: truly_available=%s, best_mode=%s — %s',
+            tool_id,
+            result['truly_available'],
+            result['best_mode'],
+            result.get('reasoning', '')[:200],
+        )
+
+        # Execute any deduced actions
+        for action_item in deduction.get('actions', []):
+            action = action_item.get('action', '')
+            params = action_item.get('params', {})
+            confidence = action_item.get('confidence', 0.0)
+            if confidence >= 0.6:
+                executor = _DEDUCTIVE_EXECUTORS.get(action)
+                if executor:
+                    try:
+                        exec_result = executor(params)
+                        result.setdefault('corrections_applied', []).append(exec_result)
+                    except Exception as exc:
+                        logger.debug('tool-verification executor %s failed: %s', action, exc)
+    else:
+        result['truly_available'] = probe.get('filesystem', {}).get('any_exists', False)
+        result['best_mode'] = 'unknown'
+        result['reasoning'] = 'Ollama no disponible — usando resultado de filesystem'
+
+    return result
+
+
+def _query_ollama_for_reasoning(context: str, system_prompt: str) -> dict[str, Any] | None:
+    """Generic Ollama reasoning query. Reused by both deductive correction
+    and tool verification engines."""
+    import json as _json
+
+    base_url = os.environ.get('IABV_OLLAMA_BASE_URL', 'http://127.0.0.1:11434/v1')
+    model = os.environ.get('IABV_OLLAMA_MODEL', 'qwen3:8b')
+
+    try:
+        import httpx
+    except ImportError:
+        return None
+
+    messages = [
+        {'role': 'system', 'content': system_prompt},
+        {'role': 'user', 'content': context},
+    ]
+    payload = {
+        'model': model,
+        'messages': messages,
+        'stream': False,
+        'temperature': 0.2,
+    }
+
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.post(f'{base_url}/chat/completions', json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+        raw_text = data['choices'][0]['message']['content'].strip()
+
+        import re
+        raw_text = re.sub(r'<think>.*?</think>', '', raw_text, flags=re.DOTALL).strip()
+
+        json_match = re.search(r'\{[\s\S]*\}', raw_text)
+        if json_match:
+            return _json.loads(json_match.group())
+        return None
+    except Exception as exc:
+        logger.debug('ollama reasoning query failed: %s', exc)
+        return None
 
 
 def format_auto_correction_report(result: dict[str, Any]) -> str:

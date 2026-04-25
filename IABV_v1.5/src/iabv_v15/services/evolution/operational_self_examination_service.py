@@ -1280,6 +1280,77 @@ class OperationalSelfExaminationService:
             except Exception as exc:
                 logger.debug('deductive reasoning failed: %s', exc)
 
+        # Intelligent tool verification: when there are disagreements about
+        # tool availability, the program deep-probes each tool and asks
+        # Ollama to deduce the best configuration.  This is the program
+        # auditing its OWN tool access autonomously.
+        disagreement_tools = [
+            f for f in findings
+            if f.category in ('multi_source_disagreement', 'runtime_noise')
+            and 'disagreement' in (f.summary or '').lower()
+        ]
+        if disagreement_tools:
+            try:
+                from iabv_v15.services.auto_correction_engine import (
+                    verify_tool_access_deductive,
+                )
+                # Extract tool_ids from disagreement findings
+                verified_tools: list[str] = []
+                for f in disagreement_tools:
+                    refs = f.evidence_refs or []
+                    for ref in refs:
+                        ref_str = str(ref)
+                        if '_installed' in ref_str:
+                            tid = ref_str.split(' ')[0].split(':')[0].strip()
+                            if tid and tid not in verified_tools:
+                                verified_tools.append(tid)
+                    # Also try extracting from metadata
+                    meta = f.metadata or {}
+                    for key in ('tool_id', 'tool_ids'):
+                        val = meta.get(key, '')
+                        if isinstance(val, str) and val and val not in verified_tools:
+                            verified_tools.append(val)
+                        elif isinstance(val, list):
+                            for v in val:
+                                if v and v not in verified_tools:
+                                    verified_tools.append(str(v))
+
+                # If we couldn't extract specific tool_ids, check common ones
+                if not verified_tools:
+                    verified_tools = ['codex_installed', 'chatgpt_installed', 'claude_installed']
+
+                for tid in verified_tools[:5]:
+                    verification = verify_tool_access_deductive(
+                        tid, workspace=str(self.workspace_root),
+                    )
+                    if verification.get('reasoning'):
+                        findings.append(
+                            SelfExaminationFinding(
+                                category='tool_access_verification',
+                                title=f'Verificacion inteligente: {tid}',
+                                summary=(
+                                    f"truly_available={verification.get('truly_available', '?')}, "
+                                    f"best_mode={verification.get('best_mode', '?')}. "
+                                    f"{verification.get('reasoning', '')[:300]}"
+                                ),
+                                severity=IssueSeverity.LOW,
+                                confidence=0.85,
+                                recommendation=(
+                                    f"Configuracion optima deducida: "
+                                    f"{verification.get('configuration', {})}"
+                                ),
+                                evidence_refs=[
+                                    f"filesystem={verification.get('probe', {}).get('filesystem', {}).get('any_exists', '?')}",
+                                    f"process={verification.get('probe', {}).get('process', {}).get('is_running', '?')}",
+                                    f"session={verification.get('probe', {}).get('session', {}).get('state_exists', '?')}",
+                                ],
+                                source_refs=['verify_tool_access_deductive', 'ollama'],
+                                metadata={'verification': verification},
+                            )
+                        )
+            except Exception as exc:
+                logger.debug('tool access verification failed: %s', exc)
+
         return findings
 
     def _dedupe_findings(self, findings: list[SelfExaminationFinding]) -> list[SelfExaminationFinding]:
