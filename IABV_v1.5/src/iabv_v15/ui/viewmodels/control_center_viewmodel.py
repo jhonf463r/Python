@@ -5483,6 +5483,36 @@ class ControlCenterViewModel(QObject):
                     except Exception as cleanup_exc:
                         sections.append(f'Error en limpieza de ramas: {cleanup_exc}')
 
+                # 4.5a Deep environment scan — run BEFORE holistic to feed cross-deductions
+                _deep_scan: dict = {}
+                try:
+                    from iabv_v15.services.deep_environment_scanner import (
+                        deep_environment_scan, format_deep_scan_report,
+                    )
+                    _deep_scan = deep_environment_scan()
+                except Exception as deep_exc:
+                    logger.debug('Deep scan failed: %s', deep_exc)
+
+                # 4.5b Account & Resource scan — APIs, cuentas, secretos
+                _account_scan: dict = {}
+                try:
+                    from iabv_v15.services.account_resource_scanner import (
+                        account_resource_scan, format_account_resource_report,
+                    )
+                    _account_scan = account_resource_scan()
+                except Exception as acc_exc:
+                    logger.debug('Account scan failed: %s', acc_exc)
+
+                # 4.5c Regression cycle detection — hacer-deshacer
+                _regression_scan: dict = {}
+                try:
+                    from iabv_v15.services.regression_cycle_detector import (
+                        regression_cycle_scan,
+                    )
+                    _regression_scan = regression_cycle_scan(workspace=ws)
+                except Exception as reg_exc:
+                    logger.debug('Regression scan failed: %s', reg_exc)
+
                 # 4.5 Holistic metacognition: cross-reference ALL sources
                 try:
                     from iabv_v15.services.self_code_analysis import holistic_metacognition_scan
@@ -5506,6 +5536,9 @@ class ControlCenterViewModel(QObject):
                         stalled_sessions=stalled_items if 'stalled_items' in locals() else None,
                         monitor_count=_monitor_count,
                         workspace=ws,
+                        account_state=_account_scan if _account_scan else None,
+                        regression_state=_regression_scan if _regression_scan else None,
+                        deep_env_state=_deep_scan if '_deep_scan' in locals() and _deep_scan else None,
                     )
                     sections.append('')
                     sections.append('== CRUCE DE FUENTES DE VERDAD ==')
@@ -5527,17 +5560,45 @@ class ControlCenterViewModel(QObject):
                 except Exception as hol_exc:
                     sections.append(f'Error en cruce de fuentes: {hol_exc}')
 
-                # 4.6 Deep environment scan — peripherals, BIOS, security, etc.
-                _deep_scan: dict = {}
+                # 4.6 Deep environment scan report
                 try:
-                    from iabv_v15.services.deep_environment_scanner import (
-                        deep_environment_scan, format_deep_scan_report,
-                    )
-                    _deep_scan = deep_environment_scan()
-                    sections.append('')
-                    sections.append(format_deep_scan_report(_deep_scan))
+                    if _deep_scan:
+                        sections.append('')
+                        sections.append(format_deep_scan_report(_deep_scan))
                 except Exception as deep_exc:
-                    sections.append(f'\nError en escaneo profundo: {deep_exc}')
+                    sections.append(f'\nError en reporte de escaneo profundo: {deep_exc}')
+
+                # 4.6a Account & Resource report
+                try:
+                    if _account_scan:
+                        sections.append('')
+                        sections.append(format_account_resource_report(_account_scan))
+                except Exception as acc_rep_exc:
+                    sections.append(f'\nError en reporte de cuentas: {acc_rep_exc}')
+
+                # 4.6b Regression cycle report
+                try:
+                    if _regression_scan:
+                        from iabv_v15.services.regression_cycle_detector import format_regression_report
+                        sections.append('')
+                        sections.append(format_regression_report(_regression_scan))
+                except Exception as reg_rep_exc:
+                    sections.append(f'\nError en reporte de regresiones: {reg_rep_exc}')
+
+                # 4.6c Limits awareness report
+                try:
+                    from iabv_v15.services.limits_awareness import (
+                        limits_awareness_scan, format_limits_report,
+                    )
+                    _limits_scan = limits_awareness_scan(
+                        monitor_count=_monitor_count if '_monitor_count' in locals() else 1,
+                        environment_scan=_deep_scan,
+                        workspace=ws,
+                    )
+                    sections.append('')
+                    sections.append(format_limits_report(_limits_scan))
+                except Exception as lim_exc:
+                    sections.append(f'\nError en reporte de limites: {lim_exc}')
 
                 # 4.7 Evolution backlog — tareas pendientes priorizadas
                 try:
@@ -5610,6 +5671,9 @@ class ControlCenterViewModel(QObject):
                     'holistic_confidence': _holistic_summary.get('confidence', 0),
                     'cross_validations_count': _holistic_summary.get('cross_validation_count', 0),
                     'deep_scan_summary': _deep_scan.get('summary', {}) if '_deep_scan' in locals() else {},
+                    'account_resource_summary': _account_scan.get('summary', {}) if '_account_scan' in locals() else {},
+                    'regression_summary': _regression_scan.get('summary', {}) if '_regression_scan' in locals() else {},
+                    'limits_count': _limits_scan.get('total_count', 0) if '_limits_scan' in locals() else 0,
                 }
                 try:
                     import os as _os

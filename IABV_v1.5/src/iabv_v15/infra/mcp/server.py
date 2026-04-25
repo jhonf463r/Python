@@ -1734,6 +1734,53 @@ class IABVMCPServer:
             return _to_jsonable({'ok': ok, 'task_id': task_id})
 
         # ------------------------------------------------------------
+        # account_resource_scan — cuentas, APIs, secretos, recursos
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def account_resource_scan_tool() -> dict[str, Any]:
+            """Escanear cuentas, APIs, secretos y recursos disponibles.
+
+            Detecta qué APIs están configuradas (GitHub, Devin, Ollama),
+            qué cuentas de navegador existen, qué secretos están configurados,
+            y el estado de Cloudflare Tunnel.
+            """
+            from iabv_v15.services.account_resource_scanner import account_resource_scan
+            return _to_jsonable(_run_sync_off_event_loop(account_resource_scan))
+
+        # ------------------------------------------------------------
+        # regression_cycle_scan — detector de ciclos hacer-deshacer
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def regression_cycle_scan_tool() -> dict[str, Any]:
+            """Detector de ciclos y regresiones — hacer-deshacer.
+
+            Analiza el historial de git para detectar reverts, archivos
+            con churn cíclico, tareas del backlog que oscilan, y funciones
+            que se eliminan y reaparecen.
+            """
+            from iabv_v15.services.regression_cycle_detector import regression_cycle_scan
+            ws = self._workspace_root()
+            return _to_jsonable(regression_cycle_scan(workspace=ws))
+
+        # ------------------------------------------------------------
+        # limits_awareness — metacognición de límites y blind spots
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def limits_awareness_scan_tool() -> dict[str, Any]:
+            """Metacognición profunda de límites y blind spots.
+
+            Identifica qué NO puede ver o hacer el programa: hardware sin
+            acceso, software no instalado, percepciones limitadas, gaps de
+            conocimiento, y restricciones de autonomía.
+            """
+            from iabv_v15.services.limits_awareness import limits_awareness_scan
+            ws = self._workspace_root()
+            return _to_jsonable(limits_awareness_scan(workspace=ws))
+
+        # ------------------------------------------------------------
         # self_code_analysis — el programa analiza su propio código
         # ------------------------------------------------------------
 
