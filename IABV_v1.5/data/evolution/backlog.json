@@ -1,0 +1,50 @@
+[
+  {
+    "id": "1b864ce7-1c60-44a7-816b-9ad664eb8692",
+    "title": "Auto-timeout de sesiones externas estancadas (ChatGPT/Codex al 26-32%)",
+    "area": "tools",
+    "priority": "high",
+    "status": "pending",
+    "source": "devin_audit",
+    "created_at": "2026-04-25T18:53:08+00:00",
+    "completed_at": null,
+    "evidence": "Sesiones de ChatGPT y Codex se quedan en \"abriendo sesion aislada\" al 26-32% sin avanzar. ChatGPT queda en \"Just a moment...\" y Codex en wrong_thread. Estas sesiones zombi consumen recursos y confunden al usuario. Se necesita un timeout automatico (ej: 2 minutos) que aborte la sesion y caiga a una ruta local (Ollama).",
+    "depends_on": []
+  },
+  {
+    "id": "cd2b4feb-8dea-474d-a3f4-8486234c60ab",
+    "title": "Fallback automatico a Ollama cuando ChatGPT falla con [WinError 5] Acceso denegado",
+    "area": "tools",
+    "priority": "high",
+    "status": "pending",
+    "source": "devin_audit",
+    "created_at": "2026-04-25T18:53:08+00:00",
+    "completed_at": null,
+    "evidence": "ChatGPT sesion aislada falla con [WinError 5] Acceso denegado en Windows. El programa se queda bloqueado en vez de caer automaticamente a Ollama. Debe detectar el error de permisos y re-rutear sin intervencion del usuario.",
+    "depends_on": []
+  },
+  {
+    "id": "e4b59a3a-69da-4789-a294-fc9288245cfd",
+    "title": "Deteccion y re-routing automatico cuando Codex reporta wrong_thread",
+    "area": "tools",
+    "priority": "high",
+    "status": "pending",
+    "source": "devin_audit",
+    "created_at": "2026-04-25T18:53:08+00:00",
+    "completed_at": null,
+    "evidence": "Codex sesion reporta Bloqueo: wrong_thread pero el programa no toma accion correctiva. Debe detectar wrong_thread, invalidar la sesion y re-intentar o caer a Ollama.",
+    "depends_on": []
+  },
+  {
+    "id": "0edc8497-9439-4ec9-9ea1-079ffbfd2bce",
+    "title": "Deduccion autonoma de secretos con nombres diferentes (GITHUB_TOKEN_IABV vs GITHUB_TOKEN)",
+    "area": "metacognition",
+    "priority": "critical",
+    "status": "pending",
+    "source": "devin_audit",
+    "created_at": "2026-04-25T18:53:08+00:00",
+    "completed_at": null,
+    "evidence": "Bootstrap configura GITHUB_TOKEN_IABV y DEVIN_API_KEY pero el programa busca GITHUB_TOKEN y DEVIN_API_KEY_IABV. El Common Sense Engine v2 deberia deducir que son el mismo secreto con nombre diferente y mapearlos automaticamente. Esto es una prueba clave de autonomia.",
+    "depends_on": []
+  }
+]

@@ -162,6 +162,8 @@ class OperationalSelfExaminationService:
             previous_review=previous_review,
             experiment_runs=experiment_runs,
         ))
+        # Runtime log self-inspection: read own log tail and detect anomalies
+        findings.extend(self._runtime_log_findings())
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -988,6 +990,367 @@ class OperationalSelfExaminationService:
                     },
                 )
             )
+        return findings
+
+    # ------------------------------------------------------------------
+    # Runtime log self-inspection
+    # ------------------------------------------------------------------
+    _LOG_TAIL_LINES = 500
+    _LOG_ANOMALY_PATTERNS: tuple[tuple[str, str, str, str], ...] = (
+        # (substring_to_match, category, title, recommendation)
+        (
+            'multi_source_disagreement',
+            'runtime_noise',
+            'multi_source_disagreement repetido en logs',
+            'El cache de 120s puede no ser suficiente o el MCP polling '
+            'recrea instancias que pierden el cache. Considerar aumentar '
+            'TTL o mover cache a nivel de clase persistente.',
+        ),
+        (
+            'No pude completar la consulta externa',
+            'external_consultation_failure',
+            'Consulta externa fallida detectada en logs',
+            'Revisar si la herramienta externa estaba realmente disponible '
+            'antes de intentar la consulta. Preferir via local cuando el '
+            'tema es interno (secretos, configuracion, metacognicion).',
+        ),
+        (
+            'tool_missing',
+            'tool_availability',
+            'Herramienta faltante reportada en logs',
+            'Verificar si la herramienta faltante es necesaria para el '
+            'flujo actual o si existe un fallback disponible.',
+        ),
+        (
+            'ghost_session_watchdog',
+            'ghost_session',
+            'Watchdog de sesion fantasma se activo',
+            'Una consulta externa excedio el timeout y fue cancelada. '
+            'Investigar por que la herramienta no respondio.',
+        ),
+        (
+            'HTTP Request:',
+            'http_noise',
+            'Ruido excesivo de logs HTTP (httpx)',
+            'Demasiadas lineas de httpx poluciona el log y dificulta '
+            'encontrar hallazgos importantes. Auto-suprimir httpx a '
+            'WARNING cuando exceda el umbral.',
+        ),
+        (
+            'cloudflare_challenge',
+            'cloudflare_blocked',
+            'Sesion bloqueada por Cloudflare challenge',
+            'La sesion aislada no puede pasar la verificacion de Cloudflare. '
+            'El programa deberia usar CDP contra el Chrome del usuario '
+            '(use_browser_session=False) donde ya hay sesion activa.',
+        ),
+        (
+            'wrong_thread',
+            'wrong_thread',
+            'Captura en hilo incorrecto del asistente',
+            'La sesion se abrio pero capturo respuesta de un hilo diferente '
+            'al esperado. Verificar que el thread_key apunte al hilo '
+            'correcto o crear un hilo nuevo dedicado.',
+        ),
+        (
+            'verificacion del sitio',
+            'session_verification_failed',
+            'Sesion no paso verificacion del sitio',
+            'La sesion aislada quedo bloqueada en la pagina de verificacion '
+            'sin poder acceder al chat. Esto indica que se necesita reusar '
+            'la sesion del navegador del usuario, no una sesion aislada.',
+        ),
+        (
+            'adapter_missing',
+            'adapter_missing',
+            'Falta adaptador operativo para fase de ejecucion',
+            'Hay estrategia y contexto listos pero no existe un adaptador '
+            'que ejecute la fase. Verificar ToolRegistry y considerar usar '
+            'un executor local disponible.',
+        ),
+    )
+
+    def _runtime_log_findings(self) -> list[SelfExaminationFinding]:
+        """Read the tail of the runtime log file and detect anomaly patterns.
+
+        This is the core of the "program sees itself" capability: instead
+        of requiring the user to copy-paste logs into the chat, the
+        autoexamination service reads its own log output and produces
+        findings from patterns like repeated errors, ghost sessions,
+        tool disagreements, and failed external consultations.
+        """
+        # Primary path: data/logs/iabv_v15.log (matches configure_logging)
+        log_path = Path(self.workspace_root) / 'data' / 'logs' / 'iabv_v15.log'
+        if not log_path.exists():
+            # Legacy fallback: some old setups used src/data/
+            log_path = Path(self.workspace_root) / 'src' / 'data' / 'iabv_v15.log'
+        if not log_path.exists():
+            log_path = Path(self.workspace_root) / 'iabv_v15.log'
+        if not log_path.exists():
+            return []
+
+        try:
+            with log_path.open('r', encoding='utf-8', errors='replace') as fh:
+                # Read only last N lines to avoid loading huge files
+                lines = fh.readlines()[-self._LOG_TAIL_LINES:]
+        except OSError:
+            return []
+
+        if not lines:
+            return []
+
+        findings: list[SelfExaminationFinding] = []
+        for pattern_str, category, title, recommendation in self._LOG_ANOMALY_PATTERNS:
+            matching_lines = [
+                line.strip() for line in lines
+                if pattern_str in line
+            ]
+            if not matching_lines:
+                continue
+            count = len(matching_lines)
+            severity = IssueSeverity.HIGH if count > 10 else (
+                IssueSeverity.MEDIUM if count > 3 else IssueSeverity.LOW
+            )
+            sample = matching_lines[-3:]  # last 3 occurrences as evidence
+            findings.append(
+                SelfExaminationFinding(
+                    category=category,
+                    title=title,
+                    summary=(
+                        f'Detectadas {count} ocurrencias de "{pattern_str}" '
+                        f'en las ultimas {self._LOG_TAIL_LINES} lineas del log. '
+                        f'Ejemplo reciente: {sample[-1][:200]}'
+                    ),
+                    severity=severity,
+                    confidence=0.9,
+                    recommendation=recommendation,
+                    evidence_refs=[f'log_occurrences={count}'] + [
+                        line[:120] for line in sample
+                    ],
+                    source_refs=['runtime_log', str(log_path)],
+                    metadata={
+                        'pattern': pattern_str,
+                        'occurrences': count,
+                        'log_path': str(log_path),
+                    },
+                )
+            )
+
+        # Enrich with browser account awareness: the program should know
+        # what accounts the user has in their browsers to make better
+        # decisions about using isolated vs shared sessions.
+        try:
+            from iabv_v15.services.account_resource_scanner import scan_browser_accounts
+            browser_info = scan_browser_accounts()
+            acct_count = browser_info.get('count', 0)
+            if acct_count > 0:
+                accounts = browser_info.get('accounts', [])
+                account_summary = ', '.join(
+                    f"{a.get('email', '?')} ({a.get('browser', '?')})"
+                    for a in accounts[:5]
+                )
+                # Only report if there are cloudflare/session issues
+                has_session_issues = any(
+                    f.category in ('cloudflare_blocked', 'session_verification_failed', 'wrong_thread')
+                    for f in findings
+                )
+                if has_session_issues:
+                    findings.append(
+                        SelfExaminationFinding(
+                            category='browser_accounts_available',
+                            title=f'{acct_count} cuenta(s) de navegador detectadas',
+                            summary=(
+                                f'El usuario tiene {acct_count} cuenta(s) activa(s) en sus '
+                                f'navegadores: {account_summary}. Estas sesiones pueden '
+                                f'usarse via CDP para evitar bloqueos de Cloudflare.'
+                            ),
+                            severity=IssueSeverity.LOW,
+                            confidence=0.95,
+                            recommendation=(
+                                'Usar connect_over_cdp al Chrome del usuario en vez de '
+                                'sesiones aisladas para herramientas web (ChatGPT, Claude, Codex).'
+                            ),
+                            evidence_refs=[
+                                f'{a.get("browser", "?")}: {a.get("email", "?")}'
+                                for a in accounts[:5]
+                            ],
+                            source_refs=['account_resource_scanner'],
+                            metadata={'browser_accounts': browser_info},
+                        )
+                    )
+        except Exception:
+            pass  # scanner not available or failed — not critical
+
+        # Auto-correction loop: when the program detects anomalies in its
+        # own logs, attempt corrective actions automatically.
+        if findings:
+            try:
+                from iabv_v15.services.auto_correction_engine import (
+                    apply_runtime_log_corrections,
+                )
+                corrections = apply_runtime_log_corrections(
+                    [
+                        {
+                            'category': f.category,
+                            'occurrences': (f.metadata or {}).get('occurrences', 0),
+                        }
+                        for f in findings
+                    ],
+                    workspace=str(self.workspace_root),
+                )
+                applied = corrections.get('corrections_count', 0)
+                if applied > 0:
+                    findings.append(
+                        SelfExaminationFinding(
+                            category='self_correction',
+                            title=f'Auto-correcciones aplicadas desde log: {applied}',
+                            summary=(
+                                f'El programa detecto {len(findings)} anomalias en su '
+                                f'propio log y aplico {applied} correcciones automaticas.'
+                            ),
+                            severity=IssueSeverity.LOW,
+                            confidence=1.0,
+                            recommendation='Verificar que las correcciones fueron efectivas en el proximo ciclo.',
+                            evidence_refs=[
+                                f'{c.get("action", "?")}: {c.get("detail", "?")}'
+                                for c in corrections.get('corrections_applied', [])
+                            ],
+                            source_refs=['auto_correction_engine'],
+                            metadata={'corrections': corrections},
+                        )
+                    )
+            except Exception as exc:
+                logger.debug('runtime log auto-correction failed: %s', exc)
+
+        # Deductive reasoning: instead of only matching patterns to hardcoded
+        # handlers, ask Ollama to reason about ALL findings and deduce what
+        # corrections to make using available tools and resources.
+        # This gives the program general-purpose "intuition" — the ability
+        # to solve NEW problems without a human programming each case.
+        if findings:
+            try:
+                from iabv_v15.services.auto_correction_engine import (
+                    apply_deductive_corrections,
+                )
+                finding_dicts = [
+                    {
+                        'category': f.category,
+                        'occurrences': (f.metadata or {}).get('occurrences', 0),
+                        'title': f.title,
+                        'summary': f.summary,
+                    }
+                    for f in findings
+                    if f.category != 'self_correction'
+                ]
+                if finding_dicts:
+                    deductive = apply_deductive_corrections(
+                        finding_dicts,
+                        workspace=str(self.workspace_root),
+                    )
+                    ded_applied = deductive.get('corrections_count', 0)
+                    reasoning = deductive.get('deductive_reasoning', '')
+                    if ded_applied > 0 or reasoning:
+                        findings.append(
+                            SelfExaminationFinding(
+                                category='deductive_self_correction',
+                                title=f'Razonamiento deductivo: {ded_applied} correcciones',
+                                summary=(
+                                    f'El programa uso Ollama para razonar sobre '
+                                    f'{len(finding_dicts)} hallazgo(s) y dedujo '
+                                    f'{ded_applied} correccion(es). '
+                                    f'Razonamiento: {reasoning[:300]}'
+                                ),
+                                severity=IssueSeverity.LOW,
+                                confidence=0.85,
+                                recommendation=(
+                                    'El programa ahora puede razonar sobre problemas '
+                                    'nuevos sin necesitar programacion especifica.'
+                                ),
+                                evidence_refs=[
+                                    f'{c.get("action", "?")}: {c.get("detail", "?")}'
+                                    for c in deductive.get('corrections_applied', [])
+                                ],
+                                source_refs=['deductive_reasoning_engine', 'ollama'],
+                                metadata={
+                                    'deductive_corrections': deductive,
+                                    'ollama_available': deductive.get('ollama_available', False),
+                                },
+                            )
+                        )
+            except Exception as exc:
+                logger.debug('deductive reasoning failed: %s', exc)
+
+        # Intelligent tool verification: when there are disagreements about
+        # tool availability, the program deep-probes each tool and asks
+        # Ollama to deduce the best configuration.  This is the program
+        # auditing its OWN tool access autonomously.
+        disagreement_tools = [
+            f for f in findings
+            if f.category in ('multi_source_disagreement', 'runtime_noise')
+            and 'disagreement' in (f.summary or '').lower()
+        ]
+        if disagreement_tools:
+            try:
+                from iabv_v15.services.auto_correction_engine import (
+                    verify_tool_access_deductive,
+                )
+                # Extract tool_ids from disagreement findings
+                verified_tools: list[str] = []
+                for f in disagreement_tools:
+                    refs = f.evidence_refs or []
+                    for ref in refs:
+                        ref_str = str(ref)
+                        if '_installed' in ref_str:
+                            tid = ref_str.split(' ')[0].split(':')[0].strip()
+                            if tid and tid not in verified_tools:
+                                verified_tools.append(tid)
+                    # Also try extracting from metadata
+                    meta = f.metadata or {}
+                    for key in ('tool_id', 'tool_ids'):
+                        val = meta.get(key, '')
+                        if isinstance(val, str) and val and val not in verified_tools:
+                            verified_tools.append(val)
+                        elif isinstance(val, list):
+                            for v in val:
+                                if v and v not in verified_tools:
+                                    verified_tools.append(str(v))
+
+                # If we couldn't extract specific tool_ids, check common ones
+                if not verified_tools:
+                    verified_tools = ['codex_installed', 'chatgpt_installed', 'claude_installed']
+
+                for tid in verified_tools[:5]:
+                    verification = verify_tool_access_deductive(
+                        tid, workspace=str(self.workspace_root),
+                    )
+                    if verification.get('reasoning'):
+                        findings.append(
+                            SelfExaminationFinding(
+                                category='tool_access_verification',
+                                title=f'Verificacion inteligente: {tid}',
+                                summary=(
+                                    f"truly_available={verification.get('truly_available', '?')}, "
+                                    f"best_mode={verification.get('best_mode', '?')}. "
+                                    f"{verification.get('reasoning', '')[:300]}"
+                                ),
+                                severity=IssueSeverity.LOW,
+                                confidence=0.85,
+                                recommendation=(
+                                    f"Configuracion optima deducida: "
+                                    f"{verification.get('configuration', {})}"
+                                ),
+                                evidence_refs=[
+                                    f"filesystem={verification.get('probe', {}).get('filesystem', {}).get('any_exists', '?')}",
+                                    f"process={verification.get('probe', {}).get('process', {}).get('is_running', '?')}",
+                                    f"session={verification.get('probe', {}).get('session', {}).get('state_exists', '?')}",
+                                ],
+                                source_refs=['verify_tool_access_deductive', 'ollama'],
+                                metadata={'verification': verification},
+                            )
+                        )
+            except Exception as exc:
+                logger.debug('tool access verification failed: %s', exc)
+
         return findings
 
     def _dedupe_findings(self, findings: list[SelfExaminationFinding]) -> list[SelfExaminationFinding]:

@@ -287,7 +287,7 @@ from iabv_v15.services.self_teach.sandbox_experiment_service import SandboxExper
 from iabv_v15.services.self_teach.self_teach_orchestrator import SelfTeachOrchestrator
 from iabv_v15.infra.persistence.site_manual_repository import SiteManualRepository
 from iabv_v15.services.tools.site_exploration_service import SiteExplorationService
-from iabv_v15.services.tools.tool_adapters import AiderToolAdapter, DevinApiToolAdapter, DesktopHumanToolAdapter, ExternalAssistantToolAdapter, GitHubApiToolAdapter, LocalCliToolAdapter, MCPToolAdapter, OllamaToolAdapter, PlaywrightToolAdapter, ShellToolAdapter, SiteExplorerToolAdapter
+from iabv_v15.services.tools.tool_adapters import AiderToolAdapter, DevinApiToolAdapter, DesktopHumanToolAdapter, ExternalAssistantToolAdapter, GitHubApiToolAdapter, LocalCliToolAdapter, MCPToolAdapter, OllamaToolAdapter, PlaywrightToolAdapter, ShellToolAdapter, SiteExplorerToolAdapter, ToolAdapter
 from iabv_v15.services.tools.tool_approval_policy import ToolApprovalPolicy
 from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
 from iabv_v15.services.tools.interaction_mode_selector import InteractionModeSelector
@@ -457,6 +457,11 @@ class AppBootstrap:
             # binario, los ``allowed_verbs`` y rutas Windows tipicas.
             'local_cli': LocalCliToolAdapter(),
         }
+        # Wire cross-process disagreement marker directory so the MCP
+        # subprocess suppresses INFO logs already emitted by the UI process.
+        ToolAdapter.set_disagreement_marker_dir(
+            Path(self.config.data_dir) / 'logs',
+        )
         self.tool_validator = ToolValidator()
         self.tool_sandbox = ToolSandbox(self.tool_validator)
         self.tool_registry = ToolRegistry(self.tool_record_repository, self.tool_adapters)
@@ -468,6 +473,13 @@ class AppBootstrap:
             role_router=None,
             tool_registry=self.tool_registry,
         )
+        # The MCP subprocess inherits the persisted world model snapshot from
+        # the main UI process.  It doesn't need its own aggressive 18-second
+        # background scan (which re-probes Ollama, Devin API, GitHub API each
+        # cycle).  Disable bootstrap_scan entirely (the snapshot on disk is
+        # fresh from the UI process) and use 300s/600s intervals for the
+        # background thread to cut redundant API calls from ~70/hour to ~12.
+        _is_mcp_sub = os.environ.get('IABV_MCP_SUBPROCESS') == '1'
         self.world_model_service = WorldModelService(
             workspace_root=self.config.workspace_root,
             evolution_dir=self.config.evolution_dir,
@@ -476,6 +488,9 @@ class AppBootstrap:
             environment_self_awareness_service=self.environment_self_awareness_service,
             universal_perception_service=self.universal_perception_service,
             role_router=None,
+            bootstrap_scan=not _is_mcp_sub,
+            scan_interval_seconds=300.0 if _is_mcp_sub else WorldModelService._DEFAULT_SCAN_INTERVAL,
+            full_scan_interval_seconds=600.0 if _is_mcp_sub else WorldModelService._DEFAULT_FULL_SCAN_INTERVAL,
         )
         self.interaction_learning_service = InteractionLearningService(self.tool_record_repository)
         self.interaction_mode_selector = InteractionModeSelector(self.tool_registry, self.tool_record_repository)
@@ -1181,7 +1196,13 @@ class AppBootstrap:
         ``ThreadPoolExecutor`` para reducir el tiempo de arranque cuando
         hay adapters que hacen I/O de red (Ollama, Devin API, GitHub API)
         o enumeracion de procesos (ExternalAssistantToolAdapter).
+
+        In the MCP subprocess the main UI process already did this work;
+        repeating it just adds duplicate logs and redundant API calls.
         """
+        if os.environ.get('IABV_MCP_SUBPROCESS') == '1':
+            logger.debug('tool_availability: skipped (MCP subprocess)')
+            return
         from concurrent.futures import ThreadPoolExecutor, as_completed
         from datetime import datetime, timezone
 
@@ -1226,7 +1247,9 @@ class AppBootstrap:
         def _probe_group(group_cards: list) -> list[tuple[str, bool, Any]]:
             out: list[tuple[str, bool, Any]] = []
             for c in group_cards:
-                refreshed = self.tool_registry.refresh_card(c, force=True)
+                refreshed = self.tool_registry.refresh_card(
+                    c, max_age_seconds=60.0,
+                )
                 out.append((refreshed.tool_id, refreshed.available, refreshed))
             return out
 
@@ -1635,6 +1658,9 @@ class AppBootstrap:
         env.setdefault('FASTMCP_HOST', '127.0.0.1')
         env.setdefault('FASTMCP_PORT', '8000')
         env['IABV_WORKSPACE_ROOT'] = workspace
+        # Signal that this bootstrap runs inside the MCP subprocess so it
+        # can reduce redundant scans and log noise.
+        env['IABV_MCP_SUBPROCESS'] = '1'
 
         # Inject portable CLI tools into PATH (same as run_mcp_bridge.ps1)
         iabv_tools = Path.home() / '.iabv' / 'tools'

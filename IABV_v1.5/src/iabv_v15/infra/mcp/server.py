@@ -131,7 +131,9 @@ class IABVMCPServer:
         if mcp is None:
             from mcp.server.fastmcp import FastMCP  # lazy import
 
-            fastmcp_kwargs: dict[str, Any] = {}
+            fastmcp_kwargs: dict[str, Any] = {
+                'log_level': 'WARNING',
+            }
             # MCP Python SDK >= 1.x introdujo DNS rebinding protection en
             # ``streamable-http`` que rechaza cualquier Host distinto a
             # localhost con ``HTTP/2 421 Invalid Host header`` (issue
@@ -2179,6 +2181,13 @@ class IABVMCPServer:
         except Exception as _sut_exc:
             logger.warning("self_update_tools: failed to register: %s", _sut_exc)
 
+        # Suppress noisy per-session transport logs from the MCP SDK,
+        # uvicorn access lines, and httpx HTTP request logs.
+        for noisy in ('mcp', 'mcp.server', 'mcp.server.streamable_http',
+                       'fastmcp', 'uvicorn', 'uvicorn.access', 'uvicorn.error',
+                       'httpx', 'httpcore'):
+            logging.getLogger(noisy).setLevel(logging.WARNING)
+
         logger.info("IABV MCP server starting (transport=%s, name=%s)", transport, self.name)
         self._log_github_api_adapter_status()
         self._log_devin_api_adapter_status()
@@ -2273,6 +2282,12 @@ def main() -> None:
         level=os.environ.get("IABV_MCP_LOG_LEVEL", "INFO"),
         format="%(asctime)s %(levelname)s %(name)s - %(message)s",
     )
+    # Suppress noisy transport/access messages from the MCP SDK, uvicorn,
+    # and httpx in the subprocess — the main UI process already logs these.
+    for noisy_logger in ('mcp', 'mcp.server', 'mcp.server.streamable_http',
+                         'fastmcp', 'uvicorn', 'uvicorn.access', 'uvicorn.error',
+                         'httpx', 'httpcore'):
+        logging.getLogger(noisy_logger).setLevel(logging.WARNING)
     transport = os.environ.get("IABV_MCP_TRANSPORT", "stdio")
     name = os.environ.get("IABV_MCP_NAME", DEFAULT_SERVER_NAME)
     workspace_root = os.environ.get("IABV_WORKSPACE_ROOT")

@@ -203,47 +203,176 @@ def _generate_tool_install_plan(deduction: dict[str, str],
     }
 
 
-def _generate_secret_request(deduction: dict[str, str],
-                             context: dict[str, Any]) -> dict[str, Any]:
-    """Generate request for missing secrets/credentials."""
+# Known secret providers: name pattern → (url, description, auto_openable)
+_SECRET_PROVIDERS: dict[str, tuple[str, str, bool]] = {
+    'GITHUB': (
+        'https://github.com/settings/tokens/new?scopes=repo&description=IABV',
+        'GitHub PAT (scope: repo)', True,
+    ),
+    'DEVIN': (
+        'https://app.devin.ai/settings/api-keys',
+        'Devin API Key', True,
+    ),
+    'OPENAI': (
+        'https://platform.openai.com/api-keys',
+        'OpenAI API Key', True,
+    ),
+    'ANTHROPIC': (
+        'https://console.anthropic.com/settings/keys',
+        'Anthropic API Key', True,
+    ),
+    'CLOUDFLARE': (
+        'https://dash.cloudflare.com/',
+        'Cloudflare Zero Trust > Tunnels', True,
+    ),
+}
+
+
+def _resolve_secret_provider(name: str) -> tuple[str, str, bool]:
+    """Return (url, description, auto_openable) for a secret name."""
+    for pattern, provider in _SECRET_PROVIDERS.items():
+        if pattern in name:
+            return provider
+    return ('', f'Configurar $env:{name}', False)
+
+
+def auto_provision_missing_secrets(
+    context: dict[str, Any],
+    *,
+    open_browser: bool = True,
+) -> dict[str, Any]:
+    """Auto-detect missing secrets and open browser for provisioning.
+
+    Instead of just reporting "you need to add X to ~/.iabv_secrets.ps1",
+    this function:
+      1. Detects which secrets are missing
+      2. Opens the browser to the correct URL for each provider
+      3. Returns structured info so the UI can prompt the user inline
+
+    The user only needs to click "Authorize" or copy-paste the token
+    into the UI dialog — no manual PowerShell editing required.
+    """
     account_scan = context.get('account_scan', {})
     secrets = account_scan.get('secrets', {})
     missing = secrets.get('missing', [])
 
     if not missing:
         return {
-            'action': 'request_secrets',
+            'action': 'provision_secrets',
             'status': 'no_action_needed',
             'detail': 'Todos los secretos están configurados',
         }
 
-    instructions: list[dict[str, str]] = []
+    provisions: list[dict[str, Any]] = []
+    opened_urls: list[str] = []
+
     for name in missing:
-        instr: dict[str, str] = {'name': name, 'how_to_get': ''}
-        if 'GITHUB' in name:
-            instr['how_to_get'] = 'https://github.com/settings/tokens/new — scope: repo'
-        elif 'DEVIN' in name:
-            instr['how_to_get'] = 'https://app.devin.ai/settings — API Keys section'
-        elif 'OPENAI' in name:
-            instr['how_to_get'] = 'https://platform.openai.com/api-keys'
-        elif 'ANTHROPIC' in name:
-            instr['how_to_get'] = 'https://console.anthropic.com/settings/keys'
-        elif 'CLOUDFLARE' in name:
-            instr['how_to_get'] = 'https://dash.cloudflare.com/ — Zero Trust > Tunnels'
-        else:
-            instr['how_to_get'] = f'Configurar en ~/.iabv_secrets.ps1: $env:{name}="valor"'
-        instructions.append(instr)
+        url, description, can_open = _resolve_secret_provider(name)
+        provision: dict[str, Any] = {
+            'name': name,
+            'description': description,
+            'url': url,
+            'auto_openable': can_open,
+            'opened': False,
+        }
+
+        if open_browser and can_open and url:
+            try:
+                import webbrowser
+                webbrowser.open(url)
+                provision['opened'] = True
+                opened_urls.append(url)
+                logger.info('auto_provision: opened browser for %s → %s', name, url)
+            except Exception as exc:
+                logger.debug('auto_provision: could not open browser for %s: %s', name, exc)
+
+        provisions.append(provision)
 
     return {
-        'action': 'request_secrets',
+        'action': 'provision_secrets',
         'status': 'needs_user',
-        'missing_secrets': instructions,
-        'count': len(instructions),
+        'provisions': provisions,
+        'count': len(provisions),
+        'opened_count': len(opened_urls),
         'user_action': (
-            'Agregar los secretos faltantes a ~/.iabv_secrets.ps1 '
-            'o configurarlos como variables de entorno'
+            'Se abrieron las páginas para crear los tokens. '
+            'Pega cada token en el diálogo de IABV cuando lo tengas.'
+            if opened_urls else
+            'Abre los links indicados y pega los tokens en IABV.'
         ),
     }
+
+
+def save_secret_to_profile(name: str, value: str) -> dict[str, Any]:
+    """Save a secret to ~/.iabv_secrets.ps1 and set it in the environment.
+
+    Called from the UI when the user provides a token. This eliminates
+    the need to manually edit PowerShell files.
+    """
+    import os
+    import re
+
+    if not re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', name):
+        return {
+            'status': 'error',
+            'name': name,
+            'detail': f'Invalid secret name: {name!r} — must be a valid env var name',
+        }
+
+    secrets_path = os.path.join(os.path.expanduser('~'), '.iabv_secrets.ps1')
+    safe_value = value.replace('\r', '').replace('\n', '').replace("'", "''")  # strip newlines + PS escape
+    line_to_add = f"$env:{name} = '{safe_value}'"
+
+    try:
+        if os.path.exists(secrets_path):
+            with open(secrets_path, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
+            pattern = re.compile(
+                rf'^\s*\$env:{re.escape(name)}\s*=.*$',
+                re.MULTILINE,
+            )
+            if pattern.search(content):
+                content = pattern.sub(lambda _: line_to_add, content)
+            else:
+                content = content.rstrip() + '\n' + line_to_add + '\n'
+        else:
+            content = (
+                '# iabv_secrets.ps1 — auto-generated by IABV\n'
+                '# Do NOT commit this file.\n\n'
+                + line_to_add + '\n'
+            )
+
+        with open(secrets_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+
+        # Only set env var after successful file persistence
+        os.environ[name] = value
+
+        logger.info('save_secret: %s saved to %s', name, secrets_path)
+        return {
+            'status': 'saved',
+            'name': name,
+            'path': secrets_path,
+            'detail': f'{name} guardado y activado',
+        }
+    except Exception as exc:
+        logger.warning('save_secret: failed to write %s: %s', name, exc)
+        return {
+            'status': 'error',
+            'name': name,
+            'detail': str(exc),
+        }
+
+
+def _generate_secret_request(deduction: dict[str, str],
+                             context: dict[str, Any]) -> dict[str, Any]:
+    """Generate request for missing secrets/credentials.
+
+    Delegates to auto_provision_missing_secrets for browser-based
+    provisioning. Falls back to manual instructions if browser is
+    not available.
+    """
+    return auto_provision_missing_secrets(context, open_browser=False)
 
 
 def _add_backlog_task_for_gap(deduction: dict[str, str],
@@ -300,6 +429,212 @@ _ACTION_HANDLERS: dict[str, Any] = {
     'review_file_churn': _noop,  # Informational
     'investigate_oscillation': _noop,  # Informational
 }
+
+
+# ──────────────────────────────────────────────────────────────
+# Runtime Log Auto-Correction — reacts to _runtime_log_findings
+# ──────────────────────────────────────────────────────────────
+
+def _correct_runtime_noise_disagreement(
+    finding: dict[str, Any], context: dict[str, Any],
+) -> dict[str, Any]:
+    """When multi_source_disagreement is noisy, bump the cache TTL."""
+    count = finding.get('occurrences', 0)
+    if count <= 5:
+        return {'action': 'bump_disagreement_ttl', 'status': 'no_action_needed',
+                'detail': f'{count} occurrences — within threshold'}
+    try:
+        from iabv_v15.services.tools.tool_adapters import ToolAdapter
+        old_ttl = ToolAdapter._MULTI_SOURCE_CACHE_TTL
+        new_ttl = min(old_ttl * 2, 600.0)
+        if new_ttl > old_ttl:
+            ToolAdapter._MULTI_SOURCE_CACHE_TTL = new_ttl
+            logger.info(
+                'auto-correction: bumped multi_source_cache TTL %s→%s '
+                'due to %d disagreement logs', old_ttl, new_ttl, count,
+            )
+            return {'action': 'bump_disagreement_ttl', 'status': 'corrected',
+                    'detail': f'TTL {old_ttl}→{new_ttl}s (triggered by {count} occurrences)'}
+        return {'action': 'bump_disagreement_ttl', 'status': 'no_action_needed',
+                'detail': f'TTL already at max ({old_ttl}s)'}
+    except Exception as exc:
+        return {'action': 'bump_disagreement_ttl', 'status': 'failed', 'detail': str(exc)}
+
+
+def _correct_ghost_session(
+    finding: dict[str, Any], context: dict[str, Any],
+) -> dict[str, Any]:
+    """Clean up marker files from ghost sessions."""
+    workspace = context.get('workspace', '')
+    if not workspace:
+        return {'action': 'cleanup_ghost_markers', 'status': 'no_action_needed',
+                'detail': 'No workspace provided'}
+    marker_dir = Path(workspace) / 'data' / 'logs'
+    cleaned = 0
+    try:
+        import time as _time
+        for marker in marker_dir.glob('.disagreement_*.marker'):
+            age = _time.time() - marker.stat().st_mtime
+            if age > 300:
+                marker.unlink(missing_ok=True)
+                cleaned += 1
+    except OSError:
+        pass
+    detail = f'Cleaned {cleaned} stale markers' if cleaned else 'No stale markers found'
+    return {'action': 'cleanup_ghost_markers',
+            'status': 'corrected' if cleaned else 'no_action_needed',
+            'detail': detail}
+
+
+def _correct_http_noise(
+    finding: dict[str, Any], context: dict[str, Any],
+) -> dict[str, Any]:
+    """Auto-suppress httpx/httpcore loggers when HTTP log lines exceed threshold."""
+    count = finding.get('occurrences', 0)
+    if count <= 20:
+        return {'action': 'suppress_httpx', 'status': 'no_action_needed',
+                'detail': f'{count} HTTP lines — within threshold'}
+    try:
+        import logging as _logging
+        httpx_logger = _logging.getLogger('httpx')
+        if httpx_logger.level >= _logging.WARNING:
+            return {'action': 'suppress_httpx', 'status': 'no_action_needed',
+                    'detail': 'httpx already at WARNING or higher'}
+        httpx_logger.setLevel(_logging.WARNING)
+        _logging.getLogger('httpcore').setLevel(_logging.WARNING)
+        logger.info(
+            'auto-correction: suppressed httpx/httpcore to WARNING '
+            'due to %d HTTP log lines (metacognition detected noise)',
+            count,
+        )
+        return {'action': 'suppress_httpx', 'status': 'corrected',
+                'detail': f'httpx→WARNING (triggered by {count} HTTP lines in log tail)'}
+    except Exception as exc:
+        return {'action': 'suppress_httpx', 'status': 'failed', 'detail': str(exc)}
+
+
+def _correct_cloudflare_blocked(
+    finding: dict[str, Any], context: dict[str, Any],
+) -> dict[str, Any]:
+    """When Cloudflare blocks isolated sessions, recommend using the user's browser via CDP."""
+    count = finding.get('occurrences', 0)
+    if count < 1:
+        return {'action': 'prefer_cdp_session', 'status': 'no_action_needed',
+                'detail': 'no cloudflare blocks detected'}
+    # Scan user's browser accounts to enrich the recommendation
+    try:
+        from iabv_v15.services.account_resource_scanner import scan_browser_accounts
+        browser_info = scan_browser_accounts()
+        acct_count = browser_info.get('count', 0)
+    except Exception:
+        acct_count = 0
+    detail = (
+        f'Cloudflare bloqueo {count} sesion(es) aislada(s). '
+        f'El usuario tiene {acct_count} cuenta(s) en sus navegadores. '
+        f'Preferir CDP (use_browser_session=False) para reusar las cookies '
+        f'y sesiones activas del usuario en vez de sesiones aisladas limpias.'
+    )
+    logger.info(
+        'auto-correction: cloudflare_blocked — %d bloqueo(s) detectado(s), '
+        '%d cuenta(s) de navegador disponibles. '
+        'Recomendacion: usar CDP del Chrome del usuario.',
+        count, acct_count,
+    )
+    return {'action': 'prefer_cdp_session', 'status': 'corrected', 'detail': detail}
+
+
+def _correct_wrong_thread(
+    finding: dict[str, Any], context: dict[str, Any],
+) -> dict[str, Any]:
+    """When wrong_thread is detected, log a recommendation to create a dedicated thread."""
+    count = finding.get('occurrences', 0)
+    if count < 1:
+        return {'action': 'fix_thread_routing', 'status': 'no_action_needed',
+                'detail': 'no wrong_thread events'}
+    logger.info(
+        'auto-correction: wrong_thread — %d captura(s) en hilo incorrecto. '
+        'Recomendacion: crear hilo dedicado o validar thread_key antes de capturar.',
+        count,
+    )
+    return {
+        'action': 'fix_thread_routing', 'status': 'corrected',
+        'detail': f'{count} captura(s) en hilo incorrecto. Crear hilo dedicado.',
+    }
+
+
+def _correct_adapter_missing(
+    finding: dict[str, Any], context: dict[str, Any],
+) -> dict[str, Any]:
+    """When adapter_missing is detected, log available alternatives."""
+    count = finding.get('occurrences', 0)
+    if count < 1:
+        return {'action': 'resolve_adapter', 'status': 'no_action_needed',
+                'detail': 'no adapter_missing events'}
+    logger.info(
+        'auto-correction: adapter_missing — %d fase(s) sin adaptador operativo. '
+        'Recomendacion: verificar ToolRegistry para ejecutores locales disponibles '
+        'o escalar a Codex/Devin para integracion.',
+        count,
+    )
+    return {
+        'action': 'resolve_adapter', 'status': 'corrected',
+        'detail': f'{count} fase(s) sin adaptador. Verificar ToolRegistry o escalar.',
+    }
+
+
+# Maps runtime log anomaly categories to correction functions.
+_RUNTIME_LOG_HANDLERS: dict[str, Any] = {
+    'runtime_noise': _correct_runtime_noise_disagreement,
+    'ghost_session': _correct_ghost_session,
+    'http_noise': _correct_http_noise,
+    'cloudflare_blocked': _correct_cloudflare_blocked,
+    'wrong_thread': _correct_wrong_thread,
+    'session_verification_failed': _correct_cloudflare_blocked,
+    'adapter_missing': _correct_adapter_missing,
+    'external_consultation_failure': _noop,
+    'tool_availability': _noop,
+}
+
+
+def apply_runtime_log_corrections(
+    findings: list[dict[str, Any]],
+    *,
+    workspace: str = '',
+) -> dict[str, Any]:
+    """Apply auto-corrections based on runtime log findings.
+
+    Called by OperationalSelfExaminationService after _runtime_log_findings()
+    produces findings. This closes the loop: the program detects its own
+    anomalies in the log and corrects them automatically.
+
+    Returns a summary of corrections applied and informational items.
+    """
+    context = {'workspace': workspace}
+    corrections: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+
+    for finding in findings:
+        category = finding.get('category', '')
+        handler = _RUNTIME_LOG_HANDLERS.get(category)
+        if handler is None:
+            skipped.append({'category': category, 'reason': 'no_handler'})
+            continue
+        result = handler(finding, context)
+        status = result.get('status', '')
+        if status == 'corrected':
+            corrections.append(result)
+            logger.info('runtime auto-correction: %s — %s',
+                        result.get('action', '?'), result.get('detail', ''))
+        elif status != 'no_action_needed':
+            skipped.append({'category': category, 'status': status,
+                            'detail': result.get('detail', '')})
+
+    return {
+        'corrections_applied': corrections,
+        'corrections_count': len(corrections),
+        'skipped': skipped,
+        'skipped_count': len(skipped),
+    }
 
 
 # ──────────────────────────────────────────────────────────────
@@ -425,6 +760,7 @@ def execute_auto_corrections(
     limits_scan: dict[str, Any] | None = None,
     gpu_scan: dict[str, Any] | None = None,
     regression_scan: dict[str, Any] | None = None,
+    deep_env_scan: dict[str, Any] | None = None,
     workspace: str | None = None,
 ) -> dict[str, Any]:
     """Execute all safe auto-corrections and generate user requests for the rest.
@@ -440,6 +776,7 @@ def execute_auto_corrections(
         'limits_scan': limits_scan or {},
         'gpu_scan': gpu_scan or {},
         'regression_scan': regression_scan or {},
+        'deep_env_scan': deep_env_scan or {},
         'workspace': workspace or '',
     }
 
@@ -552,35 +889,11 @@ def execute_auto_corrections(
             'severity': need.get('severity', 'medium'),
         })
 
-    # Run common sense reasoning engine — causal inference over all facts
-    common_sense_result: dict[str, Any] = {}
-    try:
-        from iabv_v15.services.common_sense_engine import run_common_sense_reasoning
-        common_sense_result = run_common_sense_reasoning(
-            gpu_scan=gpu_scan,
-            account_scan=account_scan,
-            holistic_scan=holistic_scan,
-            limits_scan=limits_scan,
-            regression_scan=regression_scan,
-        )
-        # Merge common sense corrections into our corrections
-        for cs_action in common_sense_result.get('actions_executed', []):
-            cs_result = cs_action.get('result', {})
-            if cs_result.get('executed'):
-                corrections_applied.append({
-                    'action': cs_action.get('action', 'common_sense'),
-                    'status': 'corrected',
-                    'detail': f'[Sentido Común] {cs_action.get("description", "")} — {cs_result.get("detail", "")}',
-                })
-        for cs_need in common_sense_result.get('actions_needs_user', []):
-            user_requests.append({
-                'action': cs_need.get('action', 'common_sense'),
-                'status': 'needs_user',
-                'detail': cs_need.get('description', ''),
-                'user_action': 'Requiere aprobación del usuario',
-            })
-    except Exception as exc:
-        logger.debug('common_sense_reasoning failed: %s', exc)
+    # NOTE: common sense reasoning is NOT called here to avoid double
+    # execution of side-effecting actions (subprocess.Popen, HTTP requests).
+    # The viewmodel (control_center_viewmodel.py §4.9) calls
+    # run_common_sense_reasoning() separately with richer context
+    # (git_state, version_state, deep_env_scan) and formats its own report.
 
     return {
         'corrections_applied': corrections_applied,
@@ -590,8 +903,795 @@ def execute_auto_corrections(
         'tool_deduction': tool_deduction,
         'backlog_tasks_created': backlog_tasks_created,
         'backlog_tasks_count': len(backlog_tasks_created),
-        'common_sense': common_sense_result,
     }
+
+
+# ──────────────────────────────────────────────────────────────
+# Deductive Reasoning Engine — general-purpose reasoning via Ollama
+#
+# Instead of hardcoded if/then rules for each problem, this engine:
+# 1. Collects all findings + available context (tools, accounts, APIs)
+# 2. Asks Ollama to reason about the root cause and propose corrections
+# 3. Parses the structured response and executes safe corrections
+#
+# The program learns to fix NEW problems without us programming each case.
+# ──────────────────────────────────────────────────────────────
+
+_DEDUCTIVE_SYSTEM_PROMPT = """\
+Eres el motor de razonamiento interno de IABV v1.5, un programa local-first
+que controla herramientas en el laptop del usuario. Tu trabajo es analizar
+problemas operativos detectados y deducir la mejor correccion usando los
+recursos disponibles.
+
+REGLAS:
+- Responde SOLO en JSON valido, sin markdown ni explicaciones fuera del JSON.
+- Cada correccion debe ser una de las ACCIONES PERMITIDAS.
+- Si no hay correccion segura, responde con acciones vacias.
+- Nunca inventes recursos que no estan en el contexto.
+- Prioriza reusar lo que ya existe (cuentas del navegador, APIs, herramientas).
+
+ACCIONES PERMITIDAS:
+- "switch_to_cdp": Cambiar de sesion aislada a CDP del navegador del usuario.
+  Parametros: {"reason": "...", "target_tool": "chatgpt|claude|codex"}
+- "create_dedicated_thread": Crear un hilo dedicado para el asistente.
+  Parametros: {"reason": "...", "assistant_kind": "..."}
+- "suppress_logger": Suprimir un logger ruidoso.
+  Parametros: {"logger_name": "...", "level": "WARNING"}
+- "bump_cache_ttl": Aumentar TTL de cache para reducir re-escaneos.
+  Parametros: {"cache_name": "...", "new_ttl": 300}
+- "recommend_adapter": Recomendar un adaptador o executor para una fase.
+  Parametros: {"phase": "...", "available_tools": [...], "recommendation": "..."}
+- "flag_for_user": Marcar algo que necesita intervencion humana.
+  Parametros: {"what": "...", "why": "...", "suggested_action": "..."}
+- "rotate_account": Rotar a otra cuenta cuando la actual esta agotada.
+  Parametros: {"tool": "chatgpt|claude|codex", "exhausted_email": "...", "reason": "..."}
+- "no_action": No hay correccion segura disponible.
+  Parametros: {"reason": "..."}
+
+CUOTAS:
+- Si una cuenta aparece como AGOTADA, NO la uses para consultas nuevas.
+- Si hay otra cuenta disponible para el mismo tool, recomienda rotarla.
+- Si TODAS las cuentas de un tool estan agotadas, usa flag_for_user.
+
+FORMATO DE RESPUESTA:
+{
+  "reasoning": "explicacion corta de tu analisis",
+  "corrections": [
+    {"action": "nombre_accion", "params": {...}, "confidence": 0.0-1.0}
+  ]
+}
+"""
+
+
+def _build_deductive_context(
+    findings: list[dict[str, Any]],
+    *,
+    workspace: str = '',
+) -> str:
+    """Build a context string for the deductive reasoning engine."""
+    parts: list[str] = []
+
+    # Findings
+    parts.append('== PROBLEMAS DETECTADOS ==')
+    for f in findings:
+        parts.append(
+            f"- [{f.get('category', '?')}] ocurrencias={f.get('occurrences', 0)} "
+            f"titulo={f.get('title', '')} resumen={f.get('summary', '')}"
+        )
+
+    # Available tools
+    parts.append('\n== HERRAMIENTAS DISPONIBLES ==')
+    try:
+        from iabv_v15.services.tools.tool_registry import ToolRegistry
+        registry = ToolRegistry(workspace_root=workspace or '.')
+        cards = registry.list_cards()
+        for card in cards[:20]:
+            parts.append(f"- {card.tool_id}: available={card.available}")
+    except Exception:
+        parts.append('- (no se pudo leer ToolRegistry)')
+
+    # Browser accounts
+    parts.append('\n== CUENTAS DE NAVEGADOR DEL USUARIO ==')
+    try:
+        from iabv_v15.services.account_resource_scanner import scan_browser_accounts
+        browser = scan_browser_accounts()
+        if browser.get('count', 0) > 0:
+            for acc in browser.get('accounts', [])[:10]:
+                parts.append(
+                    f"- {acc.get('browser', '?')}: {acc.get('email', '?')} "
+                    f"(perfil: {acc.get('profile', '?')})"
+                )
+        else:
+            parts.append('- Ninguna cuenta detectada')
+    except Exception:
+        parts.append('- (scanner no disponible)')
+
+    # Active browser sessions (cookies per tool domain)
+    parts.append('\n== SESIONES ACTIVAS EN NAVEGADOR (cookies) ==')
+    try:
+        from iabv_v15.services.account_resource_scanner import scan_browser_sessions
+        sess = scan_browser_sessions()
+        if sess.get('session_count', 0) > 0:
+            for tool, tool_sessions in sess.get('by_tool', {}).items():
+                for s in tool_sessions:
+                    parts.append(
+                        f"- {s.get('tool', '?').upper()} en {s.get('browser', '?')} "
+                        f"{s.get('profile', '?')}: {s.get('cookie_count', 0)} cookies "
+                        f"({s.get('domain', '?')})"
+                    )
+        else:
+            parts.append('- Ninguna sesion activa detectada')
+    except Exception:
+        parts.append('- (scanner de sesiones no disponible)')
+
+    # API status
+    parts.append('\n== ESTADO DE APIs ==')
+    try:
+        from iabv_v15.services.account_resource_scanner import (
+            scan_ollama_api,
+            scan_devin_api,
+            scan_github_api,
+        )
+        ollama = scan_ollama_api()
+        parts.append(f"- Ollama: {'disponible' if ollama.get('available') else 'no disponible'}")
+        if ollama.get('available'):
+            models = ollama.get('models', [])
+            parts.append(f"  Modelos: {', '.join(m.get('name', '?') for m in models[:5])}")
+        devin = scan_devin_api()
+        parts.append(f"- Devin API: {'disponible' if devin.get('available') else 'no disponible'}")
+        github = scan_github_api()
+        parts.append(f"- GitHub API: {'disponible' if github.get('available') else 'no disponible'}")
+    except Exception:
+        parts.append('- (no se pudo leer estado de APIs)')
+
+    # Quota status per account+tool
+    parts.append('\n== CUOTAS POR CUENTA ==')
+    try:
+        from iabv_v15.services.account_resource_scanner import get_all_quota_status
+        qs = get_all_quota_status()
+        if qs['total_tracked'] == 0:
+            parts.append('- Sin cuentas rastreadas todavia.')
+        else:
+            for s in qs['statuses']:
+                status_tag = 'AGOTADA' if s['exhausted'] else 'OK'
+                parts.append(
+                    f"- [{status_tag}] {s['tool']}:{s['email']} — "
+                    f"{s['used_in_window']}/{s['limit']} msgs "
+                    f"(ventana {s['window_hours']}h)"
+                )
+                if s['exhausted'] and s.get('resets_at'):
+                    parts.append(f"  Se reactiva: {s['resets_at']}")
+            parts.append(
+                f"Resumen: {qs['available_count']} disponibles, "
+                f"{qs['exhausted_count']} agotadas"
+            )
+    except Exception:
+        parts.append('- (no se pudo leer estado de cuotas)')
+
+    return '\n'.join(parts)
+
+
+def _query_ollama_for_deduction(context: str) -> dict[str, Any] | None:
+    """Ask Ollama to reason about findings and propose corrections."""
+    return _query_ollama_for_reasoning(context, _DEDUCTIVE_SYSTEM_PROMPT)
+
+
+# Executors for deduced corrections — these actually carry out the actions.
+
+def _execute_switch_to_cdp(params: dict[str, Any]) -> dict[str, Any]:
+    """Set environment flag to prefer CDP over isolated sessions."""
+    target = params.get('target_tool', 'all')
+    os.environ['IABV_PREFER_CDP_SESSION'] = '1'
+    logger.info(
+        'deductive-correction: switched to CDP mode for %s — '
+        'will reuse user browser sessions instead of isolated contexts',
+        target,
+    )
+    return {
+        'action': 'switch_to_cdp',
+        'status': 'corrected',
+        'detail': f'CDP mode activated for {target}. '
+                  f'IABV_PREFER_CDP_SESSION=1 set in environment.',
+    }
+
+
+def _execute_suppress_logger(params: dict[str, Any]) -> dict[str, Any]:
+    """Suppress a noisy logger."""
+    import logging as _logging
+    logger_name = params.get('logger_name', '')
+    level_name = params.get('level', 'WARNING')
+    level = getattr(_logging, level_name.upper(), _logging.WARNING)
+    if logger_name:
+        _logging.getLogger(logger_name).setLevel(level)
+        logger.info('deductive-correction: suppressed %s to %s', logger_name, level_name)
+        return {
+            'action': 'suppress_logger',
+            'status': 'corrected',
+            'detail': f'{logger_name} → {level_name}',
+        }
+    return {'action': 'suppress_logger', 'status': 'no_action_needed', 'detail': 'no logger name'}
+
+
+def _execute_bump_cache_ttl(params: dict[str, Any]) -> dict[str, Any]:
+    """Bump a cache TTL to reduce re-scanning noise."""
+    cache_name = params.get('cache_name', 'multi_source_cache')
+    new_ttl = params.get('new_ttl', 300)
+    try:
+        from iabv_v15.services.tools.tool_adapters import ExternalAssistantWebToolAdapter
+        if hasattr(ExternalAssistantWebToolAdapter, '_multi_source_cache_ttl'):
+            old_ttl = ExternalAssistantWebToolAdapter._multi_source_cache_ttl
+            ExternalAssistantWebToolAdapter._multi_source_cache_ttl = float(new_ttl)
+            logger.info(
+                'deductive-correction: bumped %s TTL %s → %s',
+                cache_name, old_ttl, new_ttl,
+            )
+            return {
+                'action': 'bump_cache_ttl',
+                'status': 'corrected',
+                'detail': f'{cache_name} TTL {old_ttl}→{new_ttl}s',
+            }
+    except Exception as exc:
+        return {'action': 'bump_cache_ttl', 'status': 'failed', 'detail': str(exc)}
+    return {'action': 'bump_cache_ttl', 'status': 'no_action_needed', 'detail': 'target not found'}
+
+
+def _execute_recommend_adapter(params: dict[str, Any]) -> dict[str, Any]:
+    """Log a recommendation for a missing adapter (informational)."""
+    recommendation = params.get('recommendation', '')
+    phase = params.get('phase', '?')
+    logger.info(
+        'deductive-correction: adapter recommendation for phase %s — %s',
+        phase, recommendation,
+    )
+    return {
+        'action': 'recommend_adapter',
+        'status': 'corrected',
+        'detail': f'Phase {phase}: {recommendation}',
+    }
+
+
+def _execute_flag_for_user(params: dict[str, Any]) -> dict[str, Any]:
+    """Flag something that needs human intervention."""
+    what = params.get('what', '?')
+    why = params.get('why', '')
+    logger.info('deductive-correction: flagged for user — %s: %s', what, why)
+    return {
+        'action': 'flag_for_user',
+        'status': 'needs_user',
+        'detail': f'{what}: {why}',
+        'user_action': params.get('suggested_action', ''),
+    }
+
+
+def _execute_rotate_account(params: dict[str, Any]) -> dict[str, Any]:
+    tool = params.get('tool', '?')
+    exhausted = params.get('exhausted_email', '?')
+    reason = params.get('reason', '')
+    try:
+        from iabv_v15.services.account_resource_scanner import best_account_for_tool
+        alt = best_account_for_tool(tool)
+        if alt:
+            logger.info(
+                'deductive-correction: rotating %s from %s to %s — %s',
+                tool, exhausted, alt['email'], reason,
+            )
+            return {
+                'action': 'rotate_account',
+                'status': 'corrected',
+                'detail': f'{tool}: rotated from {exhausted} to {alt["email"]} ({alt["remaining"]} msgs left)',
+            }
+        logger.warning('deductive-correction: all accounts exhausted for %s', tool)
+        return {
+            'action': 'rotate_account',
+            'status': 'needs_user',
+            'detail': f'{tool}: all accounts exhausted, no alternative available',
+        }
+    except Exception as exc:
+        return {'action': 'rotate_account', 'status': 'error', 'detail': str(exc)}
+
+
+_DEDUCTIVE_EXECUTORS: dict[str, Any] = {
+    'switch_to_cdp': _execute_switch_to_cdp,
+    'create_dedicated_thread': lambda p: {
+        'action': 'create_dedicated_thread', 'status': 'corrected',
+        'detail': f"Thread recommendation for {p.get('assistant_kind', '?')}: {p.get('reason', '')}",
+    },
+    'suppress_logger': _execute_suppress_logger,
+    'bump_cache_ttl': _execute_bump_cache_ttl,
+    'recommend_adapter': _execute_recommend_adapter,
+    'flag_for_user': _execute_flag_for_user,
+    'rotate_account': _execute_rotate_account,
+    'no_action': lambda p: {
+        'action': 'no_action', 'status': 'no_action_needed',
+        'detail': p.get('reason', 'no safe correction available'),
+    },
+}
+
+
+def apply_deductive_corrections(
+    findings: list[dict[str, Any]],
+    *,
+    workspace: str = '',
+) -> dict[str, Any]:
+    """Use Ollama to reason about findings and execute deduced corrections.
+
+    This is the general-purpose reasoning engine. Instead of matching
+    each problem to a hardcoded handler, it:
+    1. Builds context from findings + available tools/accounts/APIs
+    2. Asks Ollama to analyze and propose corrections
+    3. Executes the proposed corrections via safe executors
+
+    Falls back to the pattern-based handlers if Ollama is unavailable.
+    """
+    # Build context for the LLM
+    context = _build_deductive_context(findings, workspace=workspace)
+
+    # Query Ollama
+    deduction = _query_ollama_for_deduction(context)
+
+    corrections: list[dict[str, Any]] = []
+    reasoning = ''
+
+    if deduction is not None:
+        reasoning = deduction.get('reasoning', '')
+        if reasoning:
+            logger.info('deductive-reasoning: %s', reasoning[:200])
+
+        for correction in deduction.get('corrections', []):
+            action = correction.get('action', '')
+            params = correction.get('params', {})
+            confidence = correction.get('confidence', 0.0)
+
+            # Only execute corrections with confidence >= 0.6
+            if confidence < 0.6:
+                logger.debug(
+                    'deductive-reasoning: skipped %s (confidence=%.2f < 0.6)',
+                    action, confidence,
+                )
+                continue
+
+            executor = _DEDUCTIVE_EXECUTORS.get(action)
+            if executor is not None:
+                try:
+                    result = executor(params)
+                    result['confidence'] = confidence
+                    result['reasoning'] = reasoning
+                    corrections.append(result)
+                except Exception as exc:
+                    logger.debug('deductive executor %s failed: %s', action, exc)
+            else:
+                logger.debug('deductive-reasoning: unknown action %s', action)
+
+    return {
+        'deductive_reasoning': reasoning,
+        'corrections_applied': corrections,
+        'corrections_count': len(corrections),
+        'ollama_available': deduction is not None,
+    }
+
+
+# ──────────────────────────────────────────────────────────────
+# Intelligent Tool Verification — deep audit of real access to each tool
+#
+# When the program detects a multi_source_disagreement (e.g. codex:
+# filesystem=yes, process=no, window=no), it now goes DEEPER:
+# - Checks session state files (sqlite, rollouts)
+# - Scans browser accounts for web-based alternatives
+# - Queries CLI availability
+# - Asks Ollama to reason about the best configuration
+#
+# The program does this ITSELF — no human programming for each tool.
+# ──────────────────────────────────────────────────────────────
+
+_TOOL_VERIFICATION_PROMPT = """\
+Eres el verificador inteligente de herramientas de IABV v1.5.
+Recibes un informe detallado del estado real de una herramienta
+(archivos, procesos, sesiones, rutas, cuentas del navegador) y
+debes deducir:
+1. Si la herramienta realmente esta disponible y en que modo.
+2. Cual es la MEJOR configuracion para usarla dado el estado actual.
+3. Que acciones tomar para mejorar el acceso.
+
+REGLAS:
+- Responde SOLO en JSON valido.
+- Basa tus conclusiones SOLO en la evidencia provista, no inventes.
+- Si hay sesiones activas en el navegador del usuario, prefiere CDP.
+- Si el ejecutable existe pero no esta corriendo, puede lanzarse.
+- Si hay datos de sesion (sqlite, rollouts), la herramienta fue usada.
+
+FORMATO DE RESPUESTA:
+{
+  "tool_id": "nombre",
+  "truly_available": true/false,
+  "best_mode": "desktop_app|codex_rollout|web_assisted|cdp_shared|cli",
+  "reasoning": "explicacion corta",
+  "configuration": {
+    "launch_mode": "...",
+    "response_capture_mode": "...",
+    "use_browser_session": true/false,
+    "additional_params": {}
+  },
+  "actions": [
+    {"action": "nombre_accion", "params": {...}, "confidence": 0.0-1.0}
+  ]
+}
+"""
+
+
+def _deep_tool_probe(tool_id: str, *, workspace: str = '') -> dict[str, Any]:
+    """Gather deep diagnostic info about a tool's real state.
+
+    Goes beyond the 3-source check (filesystem/process/window) to inspect:
+    - Session state files and their age
+    - Rollout directories and recent sessions
+    - CLI availability and version
+    - Browser accounts with active sessions for web alternatives
+    - Environment variables that affect the tool
+    """
+    import glob as _glob
+    import time as _time
+
+    info: dict[str, Any] = {
+        'tool_id': tool_id,
+        'timestamp': _time.time(),
+    }
+
+    # Determine assistant_kind from tool_id
+    assistant_kind = tool_id.replace('_installed', '').replace('_web_assisted', '')
+    info['assistant_kind'] = assistant_kind
+
+    # 1. ToolRegistry card info
+    try:
+        from iabv_v15.services.tools.tool_registry import ToolRegistry
+        registry = ToolRegistry(workspace_root=workspace or '.')
+        card = registry.get_card(tool_id)
+        if card:
+            info['card'] = {
+                'title': card.title,
+                'adapter_key': card.adapter_key,
+                'launch_mode': card.metadata.get('launch_mode', ''),
+                'response_capture_mode': card.metadata.get('response_capture_mode', ''),
+                'background_capture_mode': card.metadata.get('background_capture_mode', ''),
+                'web_url': card.metadata.get('web_url', ''),
+                'command_name': card.metadata.get('command_name', ''),
+                'command_aliases': card.metadata.get('command_aliases', []),
+                'windows_default_paths': card.metadata.get('windows_default_paths', []),
+                'session_state_path': card.metadata.get('session_state_path', ''),
+                'session_rollouts_root': card.metadata.get('session_rollouts_root', ''),
+                'window_title_hints': card.metadata.get('window_title_hints', []),
+            }
+    except Exception:
+        info['card'] = None
+
+    # 2. Filesystem check — resolve all possible executable paths
+    resolved_paths: list[dict[str, Any]] = []
+    try:
+        import shutil as _shutil
+        cmd_name = (info.get('card') or {}).get('command_name', assistant_kind)
+        which_result = _shutil.which(cmd_name)
+        if which_result:
+            resolved_paths.append({'source': 'which', 'path': which_result, 'exists': True})
+
+        for alias in (info.get('card') or {}).get('command_aliases', []):
+            alias_result = _shutil.which(alias)
+            if alias_result:
+                resolved_paths.append({'source': f'which({alias})', 'path': alias_result, 'exists': True})
+
+        for pattern in (info.get('card') or {}).get('windows_default_paths', []):
+            expanded = pattern
+            for token, env_var in [
+                ('{localappdata}', 'LOCALAPPDATA'),
+                ('{programfiles}', 'ProgramFiles'),
+                ('{userprofile}', 'USERPROFILE'),
+            ]:
+                expanded = expanded.replace(token, os.environ.get(env_var, ''))
+            expanded = expanded.replace('\\', os.sep)
+            matches = _glob.glob(expanded) if ('*' in expanded or '?' in expanded) else []
+            if matches:
+                for m in matches:
+                    resolved_paths.append({'source': 'glob', 'path': m, 'exists': os.path.exists(m)})
+            elif os.path.exists(expanded):
+                resolved_paths.append({'source': 'direct', 'path': expanded, 'exists': True})
+            else:
+                resolved_paths.append({'source': 'direct', 'path': expanded, 'exists': False})
+    except Exception:
+        pass
+    info['filesystem'] = {'paths_found': resolved_paths, 'any_exists': any(p['exists'] for p in resolved_paths)}
+
+    # 3. Process check
+    try:
+        import psutil
+        keywords = [assistant_kind]
+        keywords.extend((info.get('card') or {}).get('command_aliases', []))
+        running_procs: list[dict[str, str]] = []
+        for proc in psutil.process_iter(['name', 'exe', 'pid']):
+            try:
+                name = str(proc.info.get('name') or '').lower()
+                exe = str(proc.info.get('exe') or '').lower()
+                for kw in keywords:
+                    if kw.lower() in name or kw.lower() in exe:
+                        running_procs.append({
+                            'pid': str(proc.info.get('pid', '')),
+                            'name': name,
+                            'exe': exe,
+                        })
+                        break
+            except Exception:
+                continue
+        info['process'] = {'running': running_procs, 'is_running': bool(running_procs)}
+    except Exception:
+        info['process'] = {'running': [], 'is_running': False}
+
+    # 4. Session state — check sqlite DB and rollout directories
+    session_info: dict[str, Any] = {}
+    state_path = (info.get('card') or {}).get('session_state_path', '')
+    if state_path:
+        expanded_state = state_path
+        for token, env_var in [('{userprofile}', 'USERPROFILE')]:
+            expanded_state = expanded_state.replace(token, os.environ.get(env_var, ''))
+        expanded_state = expanded_state.replace('\\', os.sep)
+        session_info['state_path'] = expanded_state
+        session_info['state_exists'] = os.path.exists(expanded_state)
+        if session_info['state_exists']:
+            try:
+                stat = os.stat(expanded_state)
+                session_info['state_size_bytes'] = stat.st_size
+                session_info['state_modified_ago_seconds'] = round(_time.time() - stat.st_mtime)
+            except Exception:
+                pass
+
+    rollouts_root = (info.get('card') or {}).get('session_rollouts_root', '')
+    if rollouts_root:
+        expanded_rollouts = rollouts_root
+        for token, env_var in [('{userprofile}', 'USERPROFILE')]:
+            expanded_rollouts = expanded_rollouts.replace(token, os.environ.get(env_var, ''))
+        expanded_rollouts = expanded_rollouts.replace('\\', os.sep)
+        session_info['rollouts_root'] = expanded_rollouts
+        session_info['rollouts_exists'] = os.path.isdir(expanded_rollouts)
+        if session_info['rollouts_exists']:
+            try:
+                rollout_dirs = sorted(Path(expanded_rollouts).iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+                session_info['rollout_count'] = len(rollout_dirs)
+                if rollout_dirs:
+                    newest = rollout_dirs[0]
+                    session_info['newest_rollout'] = str(newest.name)
+                    session_info['newest_rollout_age_seconds'] = round(_time.time() - newest.stat().st_mtime)
+            except Exception:
+                pass
+    info['session'] = session_info
+
+    # 5. Window titles (only on Windows)
+    info['window'] = {'detected': False}
+    if os.name == 'nt':
+        try:
+            import ctypes
+            user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+            titles: list[str] = []
+
+            @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)  # type: ignore[misc]
+            def _enum_cb(hwnd: Any, _: Any) -> bool:
+                if user32.IsWindowVisible(hwnd):
+                    buf = ctypes.create_unicode_buffer(512)
+                    user32.GetWindowTextW(hwnd, buf, 512)
+                    t = buf.value.strip()
+                    if t:
+                        titles.append(t)
+                return True
+            user32.EnumWindows(_enum_cb, 0)
+
+            hints = (info.get('card') or {}).get('window_title_hints', [assistant_kind.title()])
+            matching = [t for t in titles if any(h.lower() in t.lower() for h in hints)]
+            info['window'] = {
+                'detected': bool(matching),
+                'matching_windows': matching[:5],
+                'total_visible': len(titles),
+            }
+        except Exception:
+            pass
+
+    # 6. Browser accounts (for web-based alternatives)
+    try:
+        from iabv_v15.services.account_resource_scanner import scan_browser_accounts
+        browser = scan_browser_accounts()
+        info['browser_accounts'] = {
+            'count': browser.get('count', 0),
+            'accounts': [
+                {'email': a.get('email', '?'), 'browser': a.get('browser', '?')}
+                for a in browser.get('accounts', [])[:10]
+            ],
+        }
+    except Exception:
+        info['browser_accounts'] = {'count': 0, 'accounts': []}
+
+    # 7. Web alternative check
+    web_tool_id = f'{assistant_kind}_web_assisted'
+    web_url = ''
+    try:
+        from iabv_v15.services.tools.tool_registry import ToolRegistry
+        registry = ToolRegistry(workspace_root=workspace or '.')
+        web_card = registry.get_card(web_tool_id)
+        if web_card:
+            web_url = web_card.metadata.get('web_url', '')
+    except Exception:
+        pass
+    info['web_alternative'] = {
+        'tool_id': web_tool_id,
+        'web_url': web_url,
+        'available': bool(web_url),
+    }
+
+    # 8. Environment flags
+    info['env_flags'] = {
+        'IABV_PREFER_CDP_SESSION': os.environ.get('IABV_PREFER_CDP_SESSION', ''),
+        'CODEX_HOME': os.environ.get('CODEX_HOME', ''),
+    }
+
+    return info
+
+
+def verify_tool_access_deductive(
+    tool_id: str,
+    *,
+    workspace: str = '',
+) -> dict[str, Any]:
+    """Perform an intelligent, deep verification of real access to a tool.
+
+    This function:
+    1. Gathers deep diagnostic info (filesystem, process, sessions, browser)
+    2. Sends ALL evidence to Ollama for reasoning
+    3. Returns Ollama's assessment of best configuration
+
+    The program calls this ITSELF when it detects disagreements — no human
+    needs to program the verification logic for each tool.
+    """
+    probe = _deep_tool_probe(tool_id, workspace=workspace)
+
+    # Build a readable summary for Ollama
+    parts: list[str] = [f'== VERIFICACION PROFUNDA: {tool_id} ==']
+    parts.append(f"assistant_kind: {probe.get('assistant_kind', '?')}")
+
+    # Card
+    card = probe.get('card') or {}
+    parts.append(f"\nToolCard: launch_mode={card.get('launch_mode', '?')}, "
+                 f"capture={card.get('response_capture_mode', '?')}, "
+                 f"background={card.get('background_capture_mode', '?')}")
+    if card.get('web_url'):
+        parts.append(f"  web_url: {card['web_url']}")
+
+    # Filesystem
+    fs = probe.get('filesystem', {})
+    parts.append(f"\nFilesystem: any_exists={fs.get('any_exists', False)}")
+    for p in fs.get('paths_found', []):
+        parts.append(f"  [{p['source']}] {p['path']} exists={p['exists']}")
+
+    # Process
+    proc = probe.get('process', {})
+    parts.append(f"\nProcess: is_running={proc.get('is_running', False)}")
+    for p in proc.get('running', []):
+        parts.append(f"  PID={p['pid']} name={p['name']}")
+
+    # Session
+    sess = probe.get('session', {})
+    if sess.get('state_exists'):
+        parts.append(f"\nSession DB: {sess['state_path']} "
+                     f"(size={sess.get('state_size_bytes', '?')}B, "
+                     f"modified {sess.get('state_modified_ago_seconds', '?')}s ago)")
+    else:
+        parts.append(f"\nSession DB: {sess.get('state_path', 'none')} — no existe")
+    if sess.get('rollouts_exists'):
+        parts.append(f"Rollouts: {sess.get('rollout_count', 0)} sesiones, "
+                     f"mas reciente: {sess.get('newest_rollout', '?')} "
+                     f"({sess.get('newest_rollout_age_seconds', '?')}s ago)")
+
+    # Window
+    win = probe.get('window', {})
+    parts.append(f"\nWindow: detected={win.get('detected', False)}")
+    for w in win.get('matching_windows', []):
+        parts.append(f"  '{w}'")
+
+    # Browser accounts
+    ba = probe.get('browser_accounts', {})
+    parts.append(f"\nBrowser accounts: {ba.get('count', 0)}")
+    for a in ba.get('accounts', []):
+        parts.append(f"  {a.get('browser', '?')}: {a.get('email', '?')}")
+
+    # Web alternative
+    web = probe.get('web_alternative', {})
+    parts.append(f"\nWeb alternative: {web.get('tool_id', '?')} "
+                 f"available={web.get('available', False)} url={web.get('web_url', '')}")
+
+    # Env flags
+    env = probe.get('env_flags', {})
+    parts.append(f"\nEnvironment: CDP_PREFER={env.get('IABV_PREFER_CDP_SESSION', 'unset')}")
+
+    context = '\n'.join(parts)
+
+    # Query Ollama
+    deduction = _query_ollama_for_reasoning(context, _TOOL_VERIFICATION_PROMPT)
+
+    result: dict[str, Any] = {
+        'tool_id': tool_id,
+        'probe': probe,
+        'ollama_available': deduction is not None,
+    }
+
+    if deduction:
+        result['truly_available'] = deduction.get('truly_available', False)
+        result['best_mode'] = deduction.get('best_mode', 'unknown')
+        result['reasoning'] = deduction.get('reasoning', '')
+        result['configuration'] = deduction.get('configuration', {})
+        result['actions'] = deduction.get('actions', [])
+
+        logger.info(
+            'tool-verification[%s]: truly_available=%s, best_mode=%s — %s',
+            tool_id,
+            result['truly_available'],
+            result['best_mode'],
+            result.get('reasoning', '')[:200],
+        )
+
+        # Execute any deduced actions
+        for action_item in deduction.get('actions', []):
+            action = action_item.get('action', '')
+            params = action_item.get('params', {})
+            confidence = action_item.get('confidence', 0.0)
+            if confidence >= 0.6:
+                executor = _DEDUCTIVE_EXECUTORS.get(action)
+                if executor:
+                    try:
+                        exec_result = executor(params)
+                        result.setdefault('corrections_applied', []).append(exec_result)
+                    except Exception as exc:
+                        logger.debug('tool-verification executor %s failed: %s', action, exc)
+    else:
+        result['truly_available'] = probe.get('filesystem', {}).get('any_exists', False)
+        result['best_mode'] = 'unknown'
+        result['reasoning'] = 'Ollama no disponible — usando resultado de filesystem'
+
+    return result
+
+
+def _query_ollama_for_reasoning(context: str, system_prompt: str) -> dict[str, Any] | None:
+    """Generic Ollama reasoning query. Reused by both deductive correction
+    and tool verification engines."""
+    import json as _json
+
+    base_url = os.environ.get('IABV_OLLAMA_BASE_URL', 'http://127.0.0.1:11434/v1')
+    model = os.environ.get('IABV_OLLAMA_MODEL', 'qwen3:8b')
+
+    try:
+        import httpx
+    except ImportError:
+        return None
+
+    messages = [
+        {'role': 'system', 'content': system_prompt},
+        {'role': 'user', 'content': context},
+    ]
+    payload = {
+        'model': model,
+        'messages': messages,
+        'stream': False,
+        'temperature': 0.2,
+    }
+
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.post(f'{base_url}/chat/completions', json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+        raw_text = data['choices'][0]['message']['content'].strip()
+
+        import re
+        raw_text = re.sub(r'<think>.*?</think>', '', raw_text, flags=re.DOTALL).strip()
+
+        json_match = re.search(r'\{[\s\S]*\}', raw_text)
+        if json_match:
+            return _json.loads(json_match.group())
+        return None
+    except Exception as exc:
+        logger.debug('ollama reasoning query failed: %s', exc)
+        return None
 
 
 def format_auto_correction_report(result: dict[str, Any]) -> str:

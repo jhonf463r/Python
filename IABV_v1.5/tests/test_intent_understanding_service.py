@@ -250,3 +250,83 @@ def test_intent_understanding_service_flags_meta_assistant_prompt_for_devin_wind
     # No es una consulta dirigida, es pregunta meta sobre capacidades -> local.
     assert intent.intent_key in {'general.assistance', 'knowledge.query', 'system.self_awareness'}
     assert intent.metadata.get('meta_assistant_prompt') is True
+
+
+# ---------------------------------------------------------------------------
+# Audit fix: internal-topic messages must NOT inherit site_hint from
+# conversation history.  E.g. asking about missing secrets after a Wplay
+# conversation should NOT carry site_hint='wplay'.
+
+
+def test_internal_topic_does_not_inherit_site_hint_from_wplay_history() -> None:
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(
+            user_goal='secretos que me pide como faltantes',
+            conversation_context=[
+                {'role': 'user', 'text': 'Abre Wplay y entra al casino', 'meta': ''},
+                {'role': 'assistant', 'text': 'Preparo la sesion de Wplay.', 'meta': ''},
+            ],
+        )
+    )
+
+    # Must NOT route to any wplay intent — this is an internal question.
+    assert 'wplay' not in intent.intent_key
+    assert intent.intent_key in {
+        'system.metacognition',
+        'system.self_awareness',
+        'general.assistance',
+        'knowledge.query',
+    }
+
+
+def test_internal_topic_token_config_does_not_inherit_site_hint() -> None:
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(
+            user_goal='por que no encuentra los tokens que tengo configurados',
+            conversation_context=[
+                {'role': 'user', 'text': 'Abre Wplay', 'meta': ''},
+            ],
+        )
+    )
+
+    assert 'wplay' not in intent.intent_key
+
+
+def test_wplay_explicit_mention_still_routes_to_wplay() -> None:
+    """Explicit mention of Wplay in the current message must still work."""
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='abre wplay y entra al casino')
+    )
+
+    # Either site_hint is set OR the intent routes to a wplay flow.
+    # The IntentLearningLayer may shortcut the classification; what
+    # matters is the intent routes correctly to Wplay.
+    assert intent.site_hint == 'wplay' or 'wplay' in intent.intent_key
+
+
+def test_intent_learning_layer_records_failure_and_decays() -> None:
+    """record_failure should reduce confirmations and confidence."""
+    import threading
+    from iabv_v15.services.adaptive.intent_understanding_service import IntentLearningLayer
+
+    # Isolated instance with no file persistence.
+    layer = IntentLearningLayer.__new__(IntentLearningLayer)
+    layer._lock = threading.Lock()
+    layer._patterns = {}
+
+    layer.record('test pattern decay', 'general.assistance', confidence=0.8)
+    layer.record('test pattern decay', 'general.assistance', confidence=0.8)
+    layer.record('test pattern decay', 'general.assistance', confidence=0.8)
+
+    layer.record_failure('test pattern decay', 'general.assistance')
+
+    record = layer._patterns.get('test pattern decay')
+    assert record is not None
+    assert record['confirmations'] == 2  # was 3, decayed to 2
+    assert record['confidence'] < 0.8   # 0.8 * 0.7 = 0.56

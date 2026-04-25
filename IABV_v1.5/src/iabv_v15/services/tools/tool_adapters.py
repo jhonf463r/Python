@@ -101,7 +101,7 @@ class ToolAdapter:
             # simplemente seguimos con el mensaje de espera ya existente.
             return
 
-    def is_available(self, card: ToolCard) -> bool:
+    def is_available(self, card: ToolCard, *, force: bool = False) -> bool:
         launch_mode = str(card.metadata.get('launch_mode') or '').strip().lower()
         response_capture_mode = str(card.metadata.get('response_capture_mode') or '').strip().lower()
         direct_response_text = str(card.metadata.get('direct_response_text') or '').strip()
@@ -110,12 +110,62 @@ class ToolAdapter:
         if launch_mode == 'web_assisted':
             return bool(str(card.metadata.get('web_url') or '').strip())
         if launch_mode == 'desktop_app' and os.name == 'nt':
-            return self._multi_source_detect(card)
+            return self._multi_source_detect(card, force=force)
         if self._resolve_launch_target(card):
             return True
         return False
 
-    def _multi_source_detect(self, card: ToolCard) -> bool:
+    # Cache for multi-source detection results to avoid re-probing
+    # filesystem/process/window every ~50 seconds on each MCP session.
+    _multi_source_cache: dict[str, tuple[float, bool]] = {}
+    _MULTI_SOURCE_CACHE_TTL = 120.0  # seconds
+    # Track which tool_ids have already been logged at INFO for disagreement.
+    # After the first INFO log, subsequent identical disagreements are logged
+    # at DEBUG to stop the console/log spam the user reported.
+    # Uses a cross-process marker file so the MCP subprocess (which has its
+    # own class scope) also suppresses the INFO log when the main UI process
+    # already logged the same disagreement.
+    _disagreement_logged: dict[str, tuple[list[str], list[str]]] = {}
+    _DISAGREEMENT_MARKER_DIR: Path | None = None
+
+    @classmethod
+    def invalidate_multi_source_cache(cls, tool_id: str) -> None:
+        """Clear cached detection result for a specific tool."""
+        cls._multi_source_cache.pop(tool_id, None)
+
+    @classmethod
+    def set_disagreement_marker_dir(cls, path: Path) -> None:
+        """Set the directory for cross-process disagreement markers."""
+        cls._DISAGREEMENT_MARKER_DIR = path
+
+    def _has_cross_process_marker(self, tool_id: str) -> bool:
+        """Check if another process already logged this disagreement."""
+        marker_dir = self._DISAGREEMENT_MARKER_DIR
+        if marker_dir is None:
+            return False
+        marker = marker_dir / f'.disagreement_{tool_id}.marker'
+        if not marker.exists():
+            return False
+        try:
+            age = time.time() - marker.stat().st_mtime
+            return age < self._MULTI_SOURCE_CACHE_TTL
+        except OSError:
+            return False
+
+    def _write_cross_process_marker(self, tool_id: str) -> None:
+        """Write a marker so other processes know we logged this."""
+        marker_dir = self._DISAGREEMENT_MARKER_DIR
+        if marker_dir is None:
+            return
+        try:
+            marker_dir.mkdir(parents=True, exist_ok=True)
+            (marker_dir / f'.disagreement_{tool_id}.marker').write_text(
+                str(time.time()), encoding='utf-8',
+            )
+        except OSError:
+            pass
+
+    def _multi_source_detect(self, card: ToolCard, *, force: bool = False) -> bool:
         """Multi-source availability check for desktop apps.
 
         Never declares a tool missing based on a single source.  Checks
@@ -123,7 +173,17 @@ class ToolAdapter:
         If ANY source confirms presence the tool is considered available.
         Disagreements between sources are logged so the meta-cognition
         layer can learn from them.
+
+        Results are cached for 120 seconds to avoid redundant probes on
+        each MCP session reconnect.
         """
+        if not force:
+            cached = self._multi_source_cache.get(card.tool_id)
+            now = time.monotonic()
+            if cached and (now - cached[0]) < self._MULTI_SOURCE_CACHE_TTL:
+                return cached[1]
+        now = time.monotonic()
+
         sources: dict[str, bool] = {}
         sources['filesystem'] = bool(self._resolve_launch_target(card))
         sources['process'] = self._detect_running_process(card)
@@ -133,7 +193,11 @@ class ToolAdapter:
         negatives = [s for s, v in sources.items() if not v]
 
         if positives and negatives:
-            logger.info(
+            prev = self._disagreement_logged.get(card.tool_id)
+            same_as_before = prev is not None and sorted(prev[0]) == sorted(positives) and sorted(prev[1]) == sorted(negatives)
+            cross_process_logged = self._has_cross_process_marker(card.tool_id)
+            log_fn = logger.debug if (same_as_before or cross_process_logged) else logger.info
+            log_fn(
                 'multi_source_disagreement: %s — positives=%s negatives=%s'
                 ' | La herramienta existe segun %s pero no segun %s.'
                 ' Declarando available=True (optimistic).',
@@ -143,7 +207,12 @@ class ToolAdapter:
                 positives,
                 negatives,
             )
-        return bool(positives)
+            self._disagreement_logged[card.tool_id] = (positives, negatives)
+            if not cross_process_logged:
+                self._write_cross_process_marker(card.tool_id)
+        result = bool(positives)
+        self._multi_source_cache[card.tool_id] = (now, result)
+        return result
 
     _process_snapshot: list[tuple[str, str]] | None = None
     _process_snapshot_time: float = 0.0
@@ -1195,11 +1264,16 @@ class MCPToolAdapter:
         server_url = str(card.metadata.get('server_url') or '').strip()
         if not server_url:
             return False
+        # When the MCP server runs in-process, use a shorter timeout
+        # so bootstrap doesn't block long if the server isn't ready yet.
+        import sys
+        in_process = 'iabv_v15.infra.mcp.server' in sys.modules
         if httpx is None:
             return False
         base = server_url.rstrip('/')
         try:
-            with httpx.Client(timeout=3.0) as client:
+            probe_timeout = 0.5 if in_process else 3.0
+            with httpx.Client(timeout=probe_timeout) as client:
                 resp = client.post(
                     base + '/mcp',
                     json={

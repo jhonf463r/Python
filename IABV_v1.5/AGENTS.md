@@ -228,6 +228,40 @@ Infra de arranque operativo para el usuario:
   ``$ErrorActionPreference`` localmente alrededor de esa llamada para no
   matarse antes de leer el exit code.
 
+## Principio Central De Autonomia — UNA SOLA VENTANA
+
+IABV es **una unica ventana** con la que el usuario interactua al prender
+su laptop. Todo lo demas lo hace el programa solo.
+
+Reglas absolutas:
+1. **El usuario NUNCA debe abrir PowerShell para configurar tokens.** Si
+   falta un secreto, IABV abre el browser a la pagina correcta (GitHub
+   settings, Devin API keys, etc.) y le pide al usuario que pegue el
+   token en un dialogo dentro de la UI. IABV lo guarda automaticamente
+   en ``~/.iabv_secrets.ps1`` via ``save_secret_to_profile()``.
+2. **El usuario NUNCA debe instalar herramientas manualmente.** Si falta
+   algo (gh, cloudflared, paquete pip), IABV lo instala solo. Si necesita
+   admin, lo explica en la UI y ofrece un boton para elevacion.
+3. **El usuario NUNCA debe editar archivos de configuracion.** Todo se
+   configura desde la UI o se auto-detecta.
+4. **Cada sesion de agente debe entender este principio.** No sugerir al
+   usuario que ejecute comandos manuales, edite archivos, o copie tokens
+   en una terminal. Si el agente necesita algo del usuario, lo pide via
+   la UI de IABV o via un mecanismo automatico (device-flow, browser).
+
+Funciones clave para autonomia de secretos:
+- ``auto_correction_engine.auto_provision_missing_secrets()``: detecta
+  secretos faltantes y abre el browser automaticamente para crearlos.
+- ``auto_correction_engine.save_secret_to_profile(name, value)``: guarda
+  un token en ``~/.iabv_secrets.ps1`` y lo activa en ``os.environ``.
+  Llamado desde la UI cuando el usuario pega un token.
+- ``auto_correction_engine._SECRET_PROVIDERS``: mapa de patrones de
+  nombre de secreto a URLs de creacion (GitHub, Devin, OpenAI, etc.).
+
+El bootstrap desde PowerShell (``iabv_bootstrap.ps1``) existe como
+fallback para la primera instalacion o maquinas sin UI. Pero una vez
+que la UI esta corriendo, **todo pasa por la ventana**.
+
 ## Forma De Trabajo En Sesiones Nuevas
 1. lee este archivo primero
 2. inspecciona `bootstrap.py` y los archivos del slice relevante
