@@ -2276,6 +2276,7 @@ class AdaptiveTaskOrchestrator:
                 'validation_learning_summary': dict(context.metadata.get('validation_learning_summary') or {}),
                 'world_model_summary': self._world_model_summary(world_model),
                 'portable_context_summary': portable_context_summary,
+                'worker_pool': self._worker_pool_snapshot(),
             },
         )
 
@@ -2416,6 +2417,36 @@ class AdaptiveTaskOrchestrator:
         if corrective:
             summary['corrective_guidance'] = corrective
         return summary
+
+    def _worker_pool_snapshot(self) -> dict[str, Any]:
+        """Return a lightweight snapshot of the multi-account worker pool.
+
+        Used by the decision context so that coordinated plans and the
+        autonomous evolution service can see which accounts have active
+        sessions and remaining free-tier messages.  Failures are silently
+        swallowed to avoid disrupting the decision pipeline.
+        """
+        try:
+            from iabv_v15.services.account_resource_scanner import estimate_available_workers
+            pool = estimate_available_workers()
+            return {
+                'available_count': pool.get('available_count', 0),
+                'exhausted_count': pool.get('exhausted_count', 0),
+                'total_remaining_messages': pool.get('total_remaining_messages', 0),
+                'tools_available': pool.get('tools_available', []),
+                'workers': [
+                    {
+                        'email': w['email'],
+                        'tool': w['tool'],
+                        'remaining': w['remaining_messages'],
+                        'limit': w['limit'],
+                        'exhausted': w['exhausted'],
+                    }
+                    for w in pool.get('workers', [])[:20]
+                ],
+            }
+        except Exception:
+            return {'available_count': 0, 'error': 'scanner_unavailable'}
 
     @classmethod
     def _corrective_guidance_for_blocks(

@@ -953,6 +953,14 @@ CUOTAS:
 - Si hay otra cuenta disponible para el mismo tool, recomienda rotarla.
 - Si TODAS las cuentas de un tool estan agotadas, usa flag_for_user.
 
+POOL DE ASISTENTES:
+- Cada cuenta con sesion activa es un "asistente" disponible.
+- Al distribuir tareas, prioriza cuentas con mas mensajes restantes.
+- Si hay multiples cuentas con sesion en el mismo tool, se pueden
+  usar en paralelo para acelerar tareas complejas.
+- Si una cuenta se agota, rotar automaticamente a la siguiente disponible.
+- El pool se actualiza en tiempo real; consulta estimate_available_workers().
+
 FORMATO DE RESPUESTA:
 {
   "reasoning": "explicacion corta de tu analisis",
@@ -1067,6 +1075,32 @@ def _build_deductive_context(
             )
     except Exception:
         parts.append('- (no se pudo leer estado de cuotas)')
+
+    # Worker pool: accounts with active sessions + remaining messages
+    parts.append('\n== POOL DE ASISTENTES ==')
+    try:
+        from iabv_v15.services.account_resource_scanner import estimate_available_workers
+        pool = estimate_available_workers()
+        if pool['available_count'] == 0 and pool['exhausted_count'] == 0:
+            parts.append('- Sin asistentes con sesion activa detectados.')
+        else:
+            for w in pool.get('workers', []):
+                parts.append(
+                    f"- [DISPONIBLE] {w['tool']}:{w['email']} — "
+                    f"{w['remaining_messages']}/{w['limit']} msgs"
+                )
+            for w in pool.get('exhausted', []):
+                reset = f" (reactiva: {w['resets_at']})" if w.get('resets_at') else ''
+                parts.append(
+                    f"- [AGOTADO] {w['tool']}:{w['email']}{reset}"
+                )
+            parts.append(
+                f"Total: {pool['available_count']} disponibles, "
+                f"{pool['exhausted_count']} agotados, "
+                f"{pool['total_remaining_messages']} msgs restantes"
+            )
+    except Exception:
+        parts.append('- (no se pudo leer pool de asistentes)')
 
     return '\n'.join(parts)
 
