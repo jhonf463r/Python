@@ -439,7 +439,7 @@ class IntentUnderstandingService:
                 'confirmations=%d confidence=%.2f',
                 learned_intent_key, confirmations, learned_confidence,
             )
-            # Map known intent_keys to their TaskRole
+            # Map known intent_keys to their TaskRole (must match static paths)
             role_map: dict[str, TaskRole] = {
                 'general.assistance': TaskRole.KNOWLEDGE,
                 'knowledge.query': TaskRole.KNOWLEDGE,
@@ -451,14 +451,39 @@ class IntentUnderstandingService:
                 'research.external_consultation': TaskRole.RESEARCH,
                 'tools.local_workflow': TaskRole.TOOL_USE,
                 'tools.sandbox': TaskRole.TOOL_SANDBOX,
+                'wplay.login': TaskRole.TRAINING,
+                'wplay.core': TaskRole.TRAINING,
+                'wplay.casino': TaskRole.TRAINING,
                 'browser.search': TaskRole.TOOL_USE,
                 'browser.navigate': TaskRole.TOOL_USE,
-                'analytics.strategy': TaskRole.RESEARCH,
-                'customer.support': TaskRole.KNOWLEDGE,
+                'analytics.strategy': TaskRole.ANALYTICS,
+                'customer.support': TaskRole.CUSTOMER_SUPPORT,
+            }
+            disposition_map: dict[str, IntentDisposition] = {
+                'general.assistance': IntentDisposition.ANSWER_NOW,
+                'knowledge.query': IntentDisposition.ANSWER_NOW,
+                'system.self_awareness': IntentDisposition.ANSWER_NOW,
+                'system.metacognition': IntentDisposition.ANSWER_NOW,
+                'consulta_estado_evolutivo': IntentDisposition.ANSWER_NOW,
+                'project.evolution': IntentDisposition.PLAN_THEN_EXECUTE,
+                'research.local': IntentDisposition.PLAN_THEN_EXECUTE,
+                'research.external_consultation': IntentDisposition.PLAN_THEN_EXECUTE,
+                'tools.local_workflow': IntentDisposition.PLAN_THEN_EXECUTE,
+                'tools.sandbox': IntentDisposition.PLAN_THEN_EXECUTE,
+                'wplay.login': IntentDisposition.PLAN_THEN_EXECUTE,
+                'wplay.core': IntentDisposition.PLAN_THEN_EXECUTE,
+                'wplay.casino': IntentDisposition.PLAN_THEN_EXECUTE,
+                'browser.search': IntentDisposition.PLAN_THEN_EXECUTE,
+                'browser.navigate': IntentDisposition.PLAN_THEN_EXECUTE,
+                'analytics.strategy': IntentDisposition.ANSWER_NOW,
+                'customer.support': IntentDisposition.ANSWER_NOW,
             }
             detected_role = role_map.get(learned_intent_key, TaskRole.KNOWLEDGE)
+            detected_disposition = disposition_map.get(
+                learned_intent_key, IntentDisposition.ANSWER_NOW,
+            )
             intent = TaskIntent(
-                disposition=IntentDisposition.ANSWER_NOW,
+                disposition=detected_disposition,
                 intent_key=learned_intent_key,
                 title=f'Learned: {learned_intent_key}',
                 summary=f'Clasificado por patrón aprendido ({confirmations} confirmaciones)',
