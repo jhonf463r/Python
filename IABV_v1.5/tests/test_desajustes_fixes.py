@@ -148,3 +148,92 @@ def test_world_model_summary_omits_corrective_guidance_when_no_blocks() -> None:
     orch = AdaptiveTaskOrchestrator.__new__(AdaptiveTaskOrchestrator)
     summary = orch._world_model_summary(model)
     assert 'corrective_guidance' not in summary
+
+
+# ── Fix 7: Runtime log self-inspection findings ──────────────
+
+
+def test_runtime_log_findings_detects_patterns(tmp_path) -> None:
+    """_runtime_log_findings should detect anomaly patterns in own log."""
+    from iabv_v15.services.evolution.operational_self_examination_service import (
+        OperationalSelfExaminationService,
+    )
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+
+    # Create a fake workspace with a log file
+    log_dir = tmp_path / 'src' / 'data'
+    log_dir.mkdir(parents=True)
+    log_file = log_dir / 'iabv_v15.log'
+    log_lines = [
+        '2026-04-25 13:58:15 | INFO | tool_adapters | multi_source_disagreement: codex_installed\n',
+        '2026-04-25 13:58:32 | INFO | tool_adapters | multi_source_disagreement: chatgpt_installed\n',
+        '2026-04-25 14:01:27 | INFO | tool_adapters | multi_source_disagreement: codex_installed\n',
+        '2026-04-25 14:01:27 | INFO | tool_adapters | multi_source_disagreement: chatgpt_installed\n',
+        '2026-04-25 14:03:40 | INFO | viewmodel | No pude completar la consulta externa\n',
+    ]
+    log_file.write_text(''.join(log_lines), encoding='utf-8')
+
+    storage = ArtifactStorage(root=str(tmp_path / 'artifacts'))
+    service = OperationalSelfExaminationService(
+        workspace_root=str(tmp_path),
+        storage=storage,
+    )
+
+    findings = service._runtime_log_findings()
+
+    categories = {f.category for f in findings}
+    assert 'runtime_noise' in categories
+    assert 'external_consultation_failure' in categories
+
+    noise_finding = next(f for f in findings if f.category == 'runtime_noise')
+    assert noise_finding.metadata['occurrences'] == 4
+    assert noise_finding.confidence == 0.9
+
+
+def test_runtime_log_findings_empty_when_no_log(tmp_path) -> None:
+    """No log file -> no findings (not an error)."""
+    from iabv_v15.services.evolution.operational_self_examination_service import (
+        OperationalSelfExaminationService,
+    )
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+
+    storage = ArtifactStorage(root=str(tmp_path / 'artifacts'))
+    service = OperationalSelfExaminationService(
+        workspace_root=str(tmp_path),
+        storage=storage,
+    )
+
+    assert service._runtime_log_findings() == []
+
+
+# ── Fix 8: scan_configured_secrets file-based alias resolution ──
+
+
+def test_scan_configured_secrets_resolves_file_aliases(monkeypatch, tmp_path) -> None:
+    """Secrets in ~/.iabv_secrets.ps1 should satisfy alias groups even if
+    not loaded in os.environ."""
+    import os
+    from iabv_v15.services.account_resource_scanner import scan_configured_secrets
+
+    # Clear all relevant env vars
+    for name in ('GITHUB_TOKEN_IABV', 'IABV_GITHUB_TOKEN', 'GITHUB_TOKEN',
+                 'GH_TOKEN', 'DEVIN_API_KEY_IABV', 'IABV_DEVIN_API_KEY',
+                 'DEVIN_API_KEY'):
+        monkeypatch.delenv(name, raising=False)
+
+    # Write a secrets file with GITHUB_TOKEN_IABV configured
+    secrets_file = tmp_path / '.iabv_secrets.ps1'
+    secrets_file.write_text(
+        "$env:GITHUB_TOKEN_IABV = 'ghp_test123'\n"
+        "$env:DEVIN_API_KEY_IABV = 'cog_test456'\n",
+        encoding='utf-8',
+    )
+    monkeypatch.setattr('pathlib.Path.home', lambda: tmp_path)
+
+    result = scan_configured_secrets()
+
+    # Both alias groups should be resolved from file
+    assert 'GITHUB_TOKEN_IABV' not in result['missing']
+    assert 'DEVIN_API_KEY_IABV' not in result['missing']
+    assert 'GITHUB_TOKEN_IABV' in result['configured']
+    assert 'DEVIN_API_KEY_IABV' in result['configured']

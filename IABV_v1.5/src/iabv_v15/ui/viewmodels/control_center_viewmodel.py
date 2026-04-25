@@ -4406,7 +4406,19 @@ class ControlCenterViewModel(QObject):
         evolution_status_prompt = intent_key == 'consulta_estado_evolutivo' or bool(intent_metadata.get('evolution_status_prompt')) or self._is_evolution_status_question(user_goal)
         learning_prompt = self._is_learning_question(user_goal)
         self_examination_prompt = self._is_self_examination_question(user_goal) or bool(intent_metadata.get('self_examination_prompt'))
-        if source == 'chat' and (self_awareness_prompt or world_model_prompt or evolution_status_prompt or learning_prompt or self_examination_prompt):
+        # Internal/system topics (secrets, bootstrap config, metacognition)
+        # should NEVER trigger an external consultation — the program must
+        # resolve these by introspecting its own code and config, not by
+        # asking ChatGPT or Codex.
+        _internal_signals = (
+            'secreto', 'secretos', 'token', 'tokens', 'configuracion',
+            'configurar', 'bootstrap', 'faltantes', 'faltante',
+            'tu codigo', 'tu código', 'tu algoritmo', 'tu sistema',
+            'metacognicion', 'metacognición', 'autoanalisis', 'autoanálisis',
+        )
+        user_goal_lower = user_goal.lower()
+        internal_system_topic = any(s in user_goal_lower for s in _internal_signals)
+        if source == 'chat' and (self_awareness_prompt or world_model_prompt or evolution_status_prompt or learning_prompt or self_examination_prompt or internal_system_topic):
             return None
         if source == 'chat' and intent_key in {'general.assistance', 'knowledge.query'} and intent_disposition in {'answer_now', 'need_info'} and ((structured_conversational_prompt is True) or fallback_conversational_prompt) and not explicit_assistant:
             return None

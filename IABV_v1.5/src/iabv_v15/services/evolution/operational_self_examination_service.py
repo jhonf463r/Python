@@ -162,6 +162,8 @@ class OperationalSelfExaminationService:
             previous_review=previous_review,
             experiment_runs=experiment_runs,
         ))
+        # Runtime log self-inspection: read own log tail and detect anomalies
+        findings.extend(self._runtime_log_findings())
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -985,6 +987,108 @@ class OperationalSelfExaminationService:
                         'occurrences': occurrences,
                         'sessions': sessions,
                         'latest_detected_at_utc': detected_at,
+                    },
+                )
+            )
+        return findings
+
+    # ------------------------------------------------------------------
+    # Runtime log self-inspection
+    # ------------------------------------------------------------------
+    _LOG_TAIL_LINES = 500
+    _LOG_ANOMALY_PATTERNS: tuple[tuple[str, str, str, str], ...] = (
+        # (substring_to_match, category, title, recommendation)
+        (
+            'multi_source_disagreement',
+            'runtime_noise',
+            'multi_source_disagreement repetido en logs',
+            'El cache de 120s puede no ser suficiente o el MCP polling '
+            'recrea instancias que pierden el cache. Considerar aumentar '
+            'TTL o mover cache a nivel de clase persistente.',
+        ),
+        (
+            'No pude completar la consulta externa',
+            'external_consultation_failure',
+            'Consulta externa fallida detectada en logs',
+            'Revisar si la herramienta externa estaba realmente disponible '
+            'antes de intentar la consulta. Preferir via local cuando el '
+            'tema es interno (secretos, configuracion, metacognicion).',
+        ),
+        (
+            'tool_missing',
+            'tool_availability',
+            'Herramienta faltante reportada en logs',
+            'Verificar si la herramienta faltante es necesaria para el '
+            'flujo actual o si existe un fallback disponible.',
+        ),
+        (
+            'ghost_session_watchdog',
+            'ghost_session',
+            'Watchdog de sesion fantasma se activo',
+            'Una consulta externa excedio el timeout y fue cancelada. '
+            'Investigar por que la herramienta no respondio.',
+        ),
+    )
+
+    def _runtime_log_findings(self) -> list[SelfExaminationFinding]:
+        """Read the tail of the runtime log file and detect anomaly patterns.
+
+        This is the core of the "program sees itself" capability: instead
+        of requiring the user to copy-paste logs into the chat, the
+        autoexamination service reads its own log output and produces
+        findings from patterns like repeated errors, ghost sessions,
+        tool disagreements, and failed external consultations.
+        """
+        log_path = Path(self.workspace_root) / 'src' / 'data' / 'iabv_v15.log'
+        if not log_path.exists():
+            # Fallback: some setups place the log in the workspace root
+            log_path = Path(self.workspace_root) / 'iabv_v15.log'
+        if not log_path.exists():
+            return []
+
+        try:
+            with log_path.open('r', encoding='utf-8', errors='replace') as fh:
+                # Read only last N lines to avoid loading huge files
+                lines = fh.readlines()[-self._LOG_TAIL_LINES:]
+        except OSError:
+            return []
+
+        if not lines:
+            return []
+
+        findings: list[SelfExaminationFinding] = []
+        for pattern_str, category, title, recommendation in self._LOG_ANOMALY_PATTERNS:
+            matching_lines = [
+                line.strip() for line in lines
+                if pattern_str in line
+            ]
+            if not matching_lines:
+                continue
+            count = len(matching_lines)
+            severity = IssueSeverity.HIGH if count > 10 else (
+                IssueSeverity.MEDIUM if count > 3 else IssueSeverity.LOW
+            )
+            sample = matching_lines[-3:]  # last 3 occurrences as evidence
+            findings.append(
+                SelfExaminationFinding(
+                    category=category,
+                    title=title,
+                    summary=(
+                        f'Detectadas {count} ocurrencias de "{pattern_str}" '
+                        f'en las ultimas {self._LOG_TAIL_LINES} lineas del log. '
+                        f'Ejemplo reciente: {sample[-1][:200]}'
+                    ),
+                    severity=severity,
+                    confidence=0.9,
+                    recommendation=recommendation,
+                    evidence_refs=[f'log_occurrences={count}'] + [
+                        line[:120] for line in sample
+                    ],
+                    source_refs=['runtime_log', str(log_path)],
+                    metadata={
+                        'pattern': pattern_str,
+                        'occurrences': count,
+                        'log_path': str(log_path),
                     },
                 )
             )
