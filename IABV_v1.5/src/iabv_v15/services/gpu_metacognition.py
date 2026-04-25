@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def detect_physical_gpus() -> list[dict[str, Any]]:
-    """Detect all physical GPUs via nvidia-smi and wmic."""
+    """Detect all physical GPUs via nvidia-smi, wmic, and PowerShell (fallback)."""
     gpus: list[dict[str, Any]] = []
     try:
         result = subprocess.run(
@@ -69,6 +69,46 @@ def detect_physical_gpus() -> list[dict[str, Any]]:
                         })
     except (FileNotFoundError, subprocess.TimeoutExpired):
         pass
+    # Fallback: PowerShell Get-CimInstance for GPUs not found by wmic
+    if os.name == 'nt':
+        try:
+            ps_script = (
+                "Get-CimInstance Win32_VideoController | "
+                "Select-Object Name, AdapterCompatibility, AdapterRAM, "
+                "VideoProcessor, DriverVersion | ConvertTo-Json -Compress"
+            )
+            result = subprocess.run(
+                ['powershell', '-NoProfile', '-Command', ps_script],
+                capture_output=True, text=True, timeout=10,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                import json as _json
+                data = _json.loads(result.stdout.strip())
+                if isinstance(data, dict):
+                    data = [data]
+                for vc in data:
+                    name = vc.get('Name', '')
+                    if not name:
+                        continue
+                    # Skip if already found
+                    is_dup = any(name.lower() in g.get('name', '').lower()
+                                or g.get('name', '').lower() in name.lower()
+                                for g in gpus)
+                    if is_dup:
+                        continue
+                    vendor = vc.get('AdapterCompatibility', '')
+                    gpu_type = 'nvidia' if 'nvidia' in vendor.lower() else (
+                        'intel' if 'intel' in vendor.lower() else 'other')
+                    gpus.append({
+                        "name": name,
+                        "vendor": vendor,
+                        "vram_bytes": int(vc.get('AdapterRAM', 0) or 0),
+                        "driver_version": vc.get('DriverVersion', ''),
+                        "type": gpu_type,
+                        "source": "powershell",
+                    })
+        except Exception:
+            pass
     return gpus
 
 

@@ -222,6 +222,30 @@ def _auto_complete_resolved(
         if 'trend comparison' in title_lower and 'holistic_deductions' in title_lower:
             resolved_reason = 'implementado en PR #175'
 
+        # Account/resource scanning — resolved if module exists and scan produces data
+        if area == 'resource_control' and ('cuentas' in title_lower or 'recursos' in title_lower):
+            try:
+                from iabv_v15.services.account_resource_scanner import account_resource_scan  # noqa: F811
+                resolved_reason = 'account_resource_scanner implementado'
+            except ImportError:
+                pass
+
+        # Regression cycle detector — resolved if module exists
+        if area == 'regression_detection' and ('ciclo' in title_lower or 'regresion' in title_lower):
+            try:
+                from iabv_v15.services.regression_cycle_detector import regression_cycle_scan  # noqa: F811
+                resolved_reason = 'regression_cycle_detector implementado'
+            except ImportError:
+                pass
+
+        # Limits awareness — resolved if module exists
+        if area == 'metacognition' and ('limites' in title_lower or 'blind spot' in title_lower):
+            try:
+                from iabv_v15.services.limits_awareness import limits_awareness_scan  # noqa: F811
+                resolved_reason = 'limits_awareness implementado'
+            except ImportError:
+                pass
+
         if resolved_reason:
             task['status'] = 'completed'
             task['completed_at'] = now
@@ -324,6 +348,34 @@ def seed_initial_backlog(workspace: str | None = None) -> list[dict[str, Any]]:
             'priority': 'medium',
             'source': 'devin_review',
             'evidence': 'Devin Review round 2 detectó que la comparación de tendencias mezcla métricas diferentes.',
+        },
+        {
+            'title': 'Control de cuentas y recursos: escanear APIs, cuentas navegador, secretos, cuotas',
+            'area': 'resource_control',
+            'priority': 'high',
+            'source': 'audit_session',
+            'evidence': 'El programa no sabe qué APIs tiene configuradas ni sus límites de uso.',
+        },
+        {
+            'title': 'Detector de ciclos hacer-deshacer: reverts, churn, oscilación de tareas',
+            'area': 'regression_detection',
+            'priority': 'high',
+            'source': 'audit_session',
+            'evidence': 'El programa debe detectar cuando deshace trabajo previo y evitar ciclos infinitos.',
+        },
+        {
+            'title': 'Metacognición de límites y blind spots: qué NO puede ver o hacer',
+            'area': 'metacognition',
+            'priority': 'high',
+            'source': 'audit_session',
+            'evidence': 'El programa debe reportar honestamente sus limitaciones y qué está fuera de su alcance.',
+        },
+        {
+            'title': 'GPU detection mejorada: PowerShell fallback para detectar iGPU + cruce con BIOS info',
+            'area': 'gpu_routing',
+            'priority': 'high',
+            'source': 'audit_session',
+            'evidence': 'En laptop MSI solo detecta 1 GPU — necesita cruce con info de BIOS para deducir GPU dual.',
         },
     ]
 

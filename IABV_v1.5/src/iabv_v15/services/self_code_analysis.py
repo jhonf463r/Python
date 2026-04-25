@@ -836,6 +836,9 @@ def holistic_metacognition_scan(
     stalled_sessions: list[str] | None = None,
     monitor_count: int = 1,
     workspace: str | None = None,
+    account_state: dict[str, Any] | None = None,
+    regression_state: dict[str, Any] | None = None,
+    deep_env_state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Cross-reference ALL sources of truth and deduce metacognitive gaps.
 
@@ -1022,7 +1025,85 @@ def holistic_metacognition_scan(
             pass
     cross_validations.append('current_analysis × previous_analysis')
 
-    all_sources = [git_state, gpu_state, test_state, version_state, branch_state, stalled_sessions]
+    # --- Account/Resource × GPU × Deep Env cross-check ---
+    acc = account_state or {}
+    acc_summary = acc.get('summary', {})
+    if acc_summary.get('alert_count', 0) > 0:
+        for alert in acc_summary.get('alerts', [])[:3]:
+            deductions.append({
+                'severity': 'warning',
+                'area': 'resource_availability',
+                'finding': alert,
+                'action': 'notify_user',
+            })
+    if acc and acc_summary.get('available', 0) < acc_summary.get('total_resources', 1):
+        blind_spots.append(
+            f'recursos: {acc_summary.get("total_resources", 0) - acc_summary.get("available", 0)} '
+            f'recursos no disponibles de {acc_summary.get("total_resources", 0)} totales'
+        )
+    cross_validations.append('accounts × api_status × credentials')
+
+    # --- GPU × Deep Env: NVIDIA laptop should have 2 GPUs ---
+    deep = deep_env_state or {}
+    deep_bios = deep.get('bios_firmware', {})
+    board_mfr = str(deep_bios.get('motherboard_manufacturer', '') or
+                    deep_bios.get('board_vendor', '')).lower()
+    # Common gaming/workstation laptop brands with dual GPU
+    is_likely_dual_gpu = any(brand in board_mfr for brand in
+                            ['msi', 'asus', 'lenovo', 'dell', 'hp', 'acer', 'razer'])
+    if is_likely_dual_gpu and nvidia_count > 0 and gp.get('intel_igpu_count', 0) == 0:
+        deductions.append({
+            'severity': 'warning',
+            'area': 'gpu_detection',
+            'finding': (
+                f'Laptop {board_mfr.upper()} con NVIDIA detectada pero Intel iGPU '
+                'no aparece — probablemente tiene GPU dual pero solo se detecta 1'
+            ),
+            'action': 'verify_igpu_drivers',
+        })
+    cross_validations.append('deep_env_bios × gpu_count × laptop_brand')
+
+    # --- Regression cycle cross-check ---
+    reg = regression_state or {}
+    reg_summary = reg.get('summary', {})
+    if reg_summary.get('total_issues', 0) > 0:
+        if reg_summary.get('revert_count', 0) > 0:
+            deductions.append({
+                'severity': 'warning',
+                'area': 'regression_cycle',
+                'finding': (
+                    f'{reg_summary["revert_count"]} reverts detectados en commits recientes — '
+                    'posible ciclo hacer-deshacer'
+                ),
+                'action': 'review_reverts',
+            })
+        if reg_summary.get('cyclic_files', 0) > 0:
+            deductions.append({
+                'severity': 'warning',
+                'area': 'regression_cycle',
+                'finding': (
+                    f'{reg_summary["cyclic_files"]} archivos con churn cíclico — '
+                    'se modifican repetidamente sin progreso neto'
+                ),
+                'action': 'review_file_churn',
+            })
+        if reg_summary.get('oscillation_count', 0) > 0:
+            deductions.append({
+                'severity': 'info',
+                'area': 'regression_cycle',
+                'finding': (
+                    f'{reg_summary["oscillation_count"]} tareas del backlog oscilando — '
+                    'se completan y reaparecen'
+                ),
+                'action': 'investigate_oscillation',
+            })
+    cross_validations.append('git_reverts × file_churn × backlog_oscillation')
+
+    all_sources = [
+        git_state, gpu_state, test_state, version_state,
+        branch_state, stalled_sessions, account_state,
+        regression_state, deep_env_state,
+    ]
     total_sources = len(all_sources)
     sources_with_data = sum(1 for x in all_sources if x is not None)
     confidence = round(sources_with_data / max(total_sources, 1), 2)
