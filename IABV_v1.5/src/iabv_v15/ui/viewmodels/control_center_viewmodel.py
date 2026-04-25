@@ -1635,6 +1635,58 @@ class ControlCenterViewModel(QObject):
         asks_meta = any(token in word_tokens for token in ('recomiendas', 'recomendar', 'aprendiste', 'aprendido', 'deberias', 'debería', 'deberias', 'detectas', 'analiza', 'revisa', 'dime'))
         return asks_review and asks_meta
 
+    def _is_account_resource_question(self, message: str) -> bool:
+        normalized = self._normalized_command_text(message)
+        if not normalized:
+            return False
+        direct_phrases = (
+            'que cuentas tienes',
+            'qué cuentas tienes',
+            'que cuentas tengo',
+            'qué cuentas tengo',
+            'que cuentas hay',
+            'qué cuentas hay',
+            'verifica acceso',
+            'verificar acceso',
+            'escanea cuentas',
+            'escanear cuentas',
+            'escanea mis cuentas',
+            'escanear mis cuentas',
+            'diagnostico de cuentas',
+            'diagnóstico de cuentas',
+            'que correos tienes',
+            'qué correos tienes',
+            'que correos tengo',
+            'qué correos tengo',
+            'que programas puedo usar',
+            'qué programas puedo usar',
+            'que sesiones activas hay',
+            'qué sesiones activas hay',
+            'cuantos mensajes me quedan',
+            'cuántos mensajes me quedan',
+            'cuantos mensajes quedan',
+            'cuántos mensajes quedan',
+            'estado de cuotas',
+            'estado de mis cuotas',
+            'que cuentas estan agotadas',
+            'qué cuentas están agotadas',
+            'que limites tengo',
+            'qué límites tengo',
+            'limites de mensajes',
+            'límites de mensajes',
+            'escanea navegadores',
+            'escanear navegadores',
+            'revisa mis navegadores',
+            'que ves en mis navegadores',
+            'qué ves en mis navegadores',
+        )
+        if any(phrase in normalized for phrase in direct_phrases):
+            return True
+        word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
+        asks_accounts = any(token in word_tokens for token in ('cuentas', 'correos', 'sesiones', 'navegadores', 'cuotas', 'limites', 'límites'))
+        asks_action = any(token in word_tokens for token in ('escanea', 'escanear', 'verifica', 'verificar', 'revisa', 'diagnostico', 'muestra', 'dime', 'tienes', 'tengo', 'quedan', 'agotadas'))
+        return asks_accounts and asks_action
+
     def _human_join(self, items: list[str], *, limit: int = 4) -> str:
         cleaned = [str(item).strip() for item in items if str(item).strip()]
         cleaned = list(dict.fromkeys(cleaned))[:limit]
@@ -2421,6 +2473,83 @@ class ControlCenterViewModel(QObject):
         self._busy_label = 'Respuesta lista.'
         self.dataChanged.emit()
 
+    def _account_resource_reply(self, message: str) -> tuple[str, str]:
+        """Build a reply with the full account/resource diagnostic."""
+        parts: list[str] = []
+
+        # 1. Browser accounts
+        try:
+            from iabv_v15.services.account_resource_scanner import scan_browser_accounts
+            browser = scan_browser_accounts()
+            if browser.get('count', 0) > 0:
+                parts.append(f"Detecto {browser['count']} cuenta(s) en tus navegadores:")
+                for acc in browser.get('accounts', []):
+                    name = acc.get('full_name', '')
+                    email = acc.get('email', '?')
+                    label = f"{name} <{email}>" if name else email
+                    parts.append(f"  [{acc.get('browser', '?')}] {acc.get('profile', '?')} — {label}")
+            else:
+                parts.append("No detecto cuentas en tus navegadores.")
+        except Exception as exc:
+            parts.append(f"Error escaneando cuentas: {exc}")
+
+        # 2. Active sessions (cookies)
+        try:
+            from iabv_v15.services.account_resource_scanner import scan_browser_sessions
+            sess = scan_browser_sessions()
+            if sess.get('session_count', 0) > 0:
+                parts.append(f"\nSesiones activas detectadas ({sess['session_count']}):")
+                for tool, tool_sessions in sess.get('by_tool', {}).items():
+                    for s in tool_sessions:
+                        parts.append(
+                            f"  {tool.upper()} en [{s['browser']}] {s['profile']} — "
+                            f"{s['domain']} ({s['cookie_count']} cookies)"
+                        )
+            else:
+                parts.append("\nNo detecto sesiones activas en cookies de navegador.")
+        except Exception:
+            pass
+
+        # 3. Quota status
+        try:
+            from iabv_v15.services.account_resource_scanner import format_quota_report
+            quota_report = format_quota_report()
+            parts.append(f"\n{quota_report}")
+        except Exception:
+            parts.append("\nCuotas: sin datos de rastreo todavia.")
+
+        # 4. APIs
+        try:
+            from iabv_v15.services.account_resource_scanner import (
+                scan_ollama_api, scan_github_api, scan_devin_api,
+            )
+            parts.append("\nAPIs:")
+            ollama = scan_ollama_api()
+            parts.append(f"  Ollama: {'disponible' if ollama.get('available') else 'no disponible'}")
+            github = scan_github_api()
+            if github.get('available'):
+                parts.append(f"  GitHub: OK ({github.get('remaining', '?')}/{github.get('rate_limit', '?')} requests)")
+            else:
+                parts.append(f"  GitHub: no disponible")
+            devin = scan_devin_api()
+            parts.append(f"  Devin: {'disponible' if devin.get('available') else 'no disponible'}")
+        except Exception:
+            pass
+
+        response = '\n'.join(parts)
+        return response, 'Diagnostico de cuentas y recursos.'
+
+    def _answer_account_resource_question(self, message: str) -> None:
+        self._last_user_goal = message
+        self._clear_autonomy_activity_override()
+        self._update_adaptive_state(self._general_conversation_payload(message=message))
+        reply, meta = self._account_resource_reply(message)
+        self._append_message('assistant', 'IABV', reply, meta)
+        self._latest_response_text = reply
+        self._latest_response_meta = meta
+        self._busy_label = 'Respuesta lista.'
+        self.dataChanged.emit()
+
     def _general_conversation_payload(self, *, message: str) -> dict[str, Any]:
         site_id = self._current_site_id() or ''
         goal_context = self._goal_context_for_display(site_id or None)
@@ -2547,6 +2676,8 @@ class ControlCenterViewModel(QObject):
             return self._self_examination_reply(message)[0]
         if self._is_learning_question(normalized):
             return self._learning_reply(message)[0]
+        if self._is_account_resource_question(normalized):
+            return self._account_resource_reply(message)[0]
         asks_about_assistants = (
             any(token in normalized for token in ('codex', 'chatgpt', 'claude', 'ollama', 'ia', 'ias'))
             and any(token in normalized for token in ('puedes', 'puede', 'sabes', 'manejas', 'manejar', 'manej', 'aca adentro', 'automatic'))
@@ -2865,6 +2996,7 @@ class ControlCenterViewModel(QObject):
         world_model_question = self._is_world_model_question(message)
         learning_question = self._is_learning_question(message)
         self_examination_question = self._is_self_examination_question(message)
+        account_resource_question = self._is_account_resource_question(message)
         if self_awareness:
             return self._self_awareness_reply(message)
         if world_model_question:
@@ -2873,6 +3005,8 @@ class ControlCenterViewModel(QObject):
             return self._self_examination_reply(message)
         if learning_question:
             return self._learning_reply(message)
+        if account_resource_question:
+            return self._account_resource_reply(message)
         local_chat_llm = dict(payload.get('local_chat_llm') or {})
         llm_answered = bool(local_chat_llm.get('available')) and bool(str(raw_summary or '').strip()) and not local_chat_llm.get('error')
         vm_small_talk = self._is_general_chat_message(message)
@@ -3888,6 +4022,7 @@ class ControlCenterViewModel(QObject):
             evolution_status_question = self._is_evolution_status_session(intent) or self._is_evolution_status_question(current_goal)
             learning_question = self._is_learning_question(current_goal)
             self_examination_question = self._is_self_examination_question(current_goal)
+            account_resource_question = self._is_account_resource_question(current_goal)
             self._apply_human_general_adaptive_texts(
                 status=status,
                 governance=governance,
@@ -4446,6 +4581,7 @@ class ControlCenterViewModel(QObject):
         evolution_status_prompt = intent_key == 'consulta_estado_evolutivo' or bool(intent_metadata.get('evolution_status_prompt')) or self._is_evolution_status_question(user_goal)
         learning_prompt = self._is_learning_question(user_goal)
         self_examination_prompt = self._is_self_examination_question(user_goal) or bool(intent_metadata.get('self_examination_prompt'))
+        account_resource_prompt = self._is_account_resource_question(user_goal)
         # Internal/system topics (secrets, bootstrap config, metacognition)
         # should NEVER trigger an external consultation — the program must
         # resolve these by introspecting its own code and config, not by
@@ -4463,10 +4599,11 @@ class ControlCenterViewModel(QObject):
             'autoevalua', 'autoevaluacion', 'autoevaluación',
             'que detectas', 'que ves en ti', 'revisa tu',
             'analiza tu', 'analízate', 'examinat',
+            'cuentas', 'cuotas', 'navegadores', 'sesiones activas',
         )
         user_goal_lower = user_goal.lower()
         internal_system_topic = any(s in user_goal_lower for s in _internal_signals)
-        if source == 'chat' and (self_awareness_prompt or world_model_prompt or evolution_status_prompt or learning_prompt or self_examination_prompt or internal_system_topic):
+        if source == 'chat' and (self_awareness_prompt or world_model_prompt or evolution_status_prompt or learning_prompt or self_examination_prompt or account_resource_prompt or internal_system_topic):
             return None
         if source == 'chat' and intent_key in {'general.assistance', 'knowledge.query'} and intent_disposition in {'answer_now', 'need_info'} and ((structured_conversational_prompt is True) or fallback_conversational_prompt) and not explicit_assistant:
             return None
@@ -6221,6 +6358,9 @@ class ControlCenterViewModel(QObject):
             return
         if allow_chat_shortcuts and self._is_learning_question(message):
             self._answer_learning_question(message)
+            return
+        if allow_chat_shortcuts and self._is_account_resource_question(message):
+            self._answer_account_resource_question(message)
             return
         if allow_chat_shortcuts and self._is_general_chat_message(message) and not self._seems_task_like_message(message):
             self._answer_general_chat(message)

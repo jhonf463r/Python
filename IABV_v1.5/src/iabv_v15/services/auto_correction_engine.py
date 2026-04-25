@@ -943,8 +943,15 @@ ACCIONES PERMITIDAS:
   Parametros: {"phase": "...", "available_tools": [...], "recommendation": "..."}
 - "flag_for_user": Marcar algo que necesita intervencion humana.
   Parametros: {"what": "...", "why": "...", "suggested_action": "..."}
+- "rotate_account": Rotar a otra cuenta cuando la actual esta agotada.
+  Parametros: {"tool": "chatgpt|claude|codex", "exhausted_email": "...", "reason": "..."}
 - "no_action": No hay correccion segura disponible.
   Parametros: {"reason": "..."}
+
+CUOTAS:
+- Si una cuenta aparece como AGOTADA, NO la uses para consultas nuevas.
+- Si hay otra cuenta disponible para el mismo tool, recomienda rotarla.
+- Si TODAS las cuentas de un tool estan agotadas, usa flag_for_user.
 
 FORMATO DE RESPUESTA:
 {
@@ -1036,6 +1043,30 @@ def _build_deductive_context(
         parts.append(f"- GitHub API: {'disponible' if github.get('available') else 'no disponible'}")
     except Exception:
         parts.append('- (no se pudo leer estado de APIs)')
+
+    # Quota status per account+tool
+    parts.append('\n== CUOTAS POR CUENTA ==')
+    try:
+        from iabv_v15.services.account_resource_scanner import get_all_quota_status
+        qs = get_all_quota_status()
+        if qs['total_tracked'] == 0:
+            parts.append('- Sin cuentas rastreadas todavia.')
+        else:
+            for s in qs['statuses']:
+                status_tag = 'AGOTADA' if s['exhausted'] else 'OK'
+                parts.append(
+                    f"- [{status_tag}] {s['tool']}:{s['email']} — "
+                    f"{s['used_in_window']}/{s['limit']} msgs "
+                    f"(ventana {s['window_hours']}h)"
+                )
+                if s['exhausted'] and s.get('resets_at'):
+                    parts.append(f"  Se reactiva: {s['resets_at']}")
+            parts.append(
+                f"Resumen: {qs['available_count']} disponibles, "
+                f"{qs['exhausted_count']} agotadas"
+            )
+    except Exception:
+        parts.append('- (no se pudo leer estado de cuotas)')
 
     return '\n'.join(parts)
 
@@ -1132,6 +1163,33 @@ def _execute_flag_for_user(params: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _execute_rotate_account(params: dict[str, Any]) -> dict[str, Any]:
+    tool = params.get('tool', '?')
+    exhausted = params.get('exhausted_email', '?')
+    reason = params.get('reason', '')
+    try:
+        from iabv_v15.services.account_resource_scanner import best_account_for_tool
+        alt = best_account_for_tool(tool)
+        if alt:
+            logger.info(
+                'deductive-correction: rotating %s from %s to %s — %s',
+                tool, exhausted, alt['email'], reason,
+            )
+            return {
+                'action': 'rotate_account',
+                'status': 'corrected',
+                'detail': f'{tool}: rotated from {exhausted} to {alt["email"]} ({alt["remaining"]} msgs left)',
+            }
+        logger.warning('deductive-correction: all accounts exhausted for %s', tool)
+        return {
+            'action': 'rotate_account',
+            'status': 'needs_user',
+            'detail': f'{tool}: all accounts exhausted, no alternative available',
+        }
+    except Exception as exc:
+        return {'action': 'rotate_account', 'status': 'error', 'detail': str(exc)}
+
+
 _DEDUCTIVE_EXECUTORS: dict[str, Any] = {
     'switch_to_cdp': _execute_switch_to_cdp,
     'create_dedicated_thread': lambda p: {
@@ -1142,6 +1200,7 @@ _DEDUCTIVE_EXECUTORS: dict[str, Any] = {
     'bump_cache_ttl': _execute_bump_cache_ttl,
     'recommend_adapter': _execute_recommend_adapter,
     'flag_for_user': _execute_flag_for_user,
+    'rotate_account': _execute_rotate_account,
     'no_action': lambda p: {
         'action': 'no_action', 'status': 'no_action_needed',
         'detail': p.get('reason', 'no safe correction available'),

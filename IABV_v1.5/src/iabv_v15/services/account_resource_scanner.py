@@ -412,6 +412,217 @@ def diagnose_browser_access() -> str:
 
 
 # ──────────────────────────────────────────────────────────────
+# Quota Tracker — message limits per account per program
+#
+# Tracks how many messages each account has used in each tool
+# (ChatGPT, Claude, Codex), when free-tier limits reset, and
+# which accounts are currently exhausted.  The program uses
+# this to avoid querying exhausted accounts and to pick the
+# best available account automatically.
+#
+# Persistence: ``data/evolution/quota_tracker.json``
+# ──────────────────────────────────────────────────────────────
+
+# Known free-tier limits (approximate) per tool.
+_FREE_TIER_LIMITS: dict[str, dict[str, Any]] = {
+    'chatgpt': {
+        'messages_per_window': 15,
+        'window_hours': 3,
+        'label': 'ChatGPT Free (GPT-4o mini)',
+    },
+    'claude': {
+        'messages_per_window': 20,
+        'window_hours': 8,
+        'label': 'Claude Free (Sonnet)',
+    },
+    'codex': {
+        'messages_per_window': 20,
+        'window_hours': 3,
+        'label': 'Codex CLI Free',
+    },
+}
+
+
+def _quota_file() -> Path:
+    """Return the path to the quota tracker JSON file."""
+    candidates = [
+        Path(os.environ.get('IABV_WORKSPACE', '')) / 'data' / 'evolution' / 'quota_tracker.json',
+        Path.home() / 'IABV_v1.5' / 'data' / 'evolution' / 'quota_tracker.json',
+    ]
+    for p in candidates:
+        if p.parent.exists():
+            return p
+    candidates[0].parent.mkdir(parents=True, exist_ok=True)
+    return candidates[0]
+
+
+def _load_quota_state() -> dict[str, Any]:
+    qf = _quota_file()
+    if qf.exists():
+        try:
+            return json.loads(qf.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+    return {'accounts': {}}
+
+
+def _save_quota_state(state: dict[str, Any]) -> None:
+    qf = _quota_file()
+    try:
+        qf.parent.mkdir(parents=True, exist_ok=True)
+        qf.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding='utf-8')
+    except Exception as exc:
+        logger.debug('quota_tracker: failed to save state: %s', exc)
+
+
+def record_message_sent(tool: str, email: str) -> dict[str, Any]:
+    """Record that a message was sent via *tool* using *email*.
+
+    Call this every time the program sends a query through an external
+    assistant so the tracker can count usage against free-tier limits.
+    Returns the updated quota status for the account.
+    """
+    import time as _time
+
+    state = _load_quota_state()
+    key = f'{tool}:{email}'
+    entry = state['accounts'].get(key, {
+        'tool': tool,
+        'email': email,
+        'messages': [],
+        'total_sent': 0,
+    })
+
+    now = _time.time()
+    entry['messages'].append(now)
+    entry['total_sent'] = entry.get('total_sent', 0) + 1
+
+    # Prune messages outside the current window
+    limits = _FREE_TIER_LIMITS.get(tool, {})
+    window_secs = limits.get('window_hours', 3) * 3600
+    entry['messages'] = [t for t in entry['messages'] if now - t < window_secs]
+
+    state['accounts'][key] = entry
+    _save_quota_state(state)
+
+    return _quota_status_for_entry(entry, tool)
+
+
+def _quota_status_for_entry(entry: dict[str, Any], tool: str) -> dict[str, Any]:
+    """Compute quota status for one account+tool entry."""
+    import time as _time
+
+    limits = _FREE_TIER_LIMITS.get(tool, {})
+    max_msgs = limits.get('messages_per_window', 999)
+    window_secs = limits.get('window_hours', 3) * 3600
+
+    now = _time.time()
+    recent = [t for t in entry.get('messages', []) if now - t < window_secs]
+    used = len(recent)
+    remaining = max(0, max_msgs - used)
+    exhausted = remaining == 0
+
+    resets_at: str | None = None
+    if exhausted and recent:
+        oldest_in_window = min(recent)
+        reset_ts = oldest_in_window + window_secs
+        resets_at = datetime.fromtimestamp(reset_ts, tz=timezone.utc).isoformat()
+
+    return {
+        'tool': tool,
+        'email': entry.get('email', '?'),
+        'used_in_window': used,
+        'remaining': remaining,
+        'limit': max_msgs,
+        'window_hours': limits.get('window_hours', 3),
+        'exhausted': exhausted,
+        'resets_at': resets_at,
+        'total_sent_all_time': entry.get('total_sent', 0),
+        'label': limits.get('label', tool),
+    }
+
+
+def get_all_quota_status() -> dict[str, Any]:
+    """Return quota status for every tracked account+tool pair."""
+    state = _load_quota_state()
+    statuses: list[dict[str, Any]] = []
+    exhausted_keys: list[str] = []
+    available_keys: list[str] = []
+
+    for key, entry in state.get('accounts', {}).items():
+        tool = entry.get('tool', key.split(':')[0] if ':' in key else '?')
+        status = _quota_status_for_entry(entry, tool)
+        statuses.append(status)
+        if status['exhausted']:
+            exhausted_keys.append(key)
+        else:
+            available_keys.append(key)
+
+    return {
+        'statuses': statuses,
+        'total_tracked': len(statuses),
+        'exhausted_count': len(exhausted_keys),
+        'available_count': len(available_keys),
+        'exhausted_keys': exhausted_keys,
+        'available_keys': available_keys,
+    }
+
+
+def best_account_for_tool(tool: str) -> dict[str, Any] | None:
+    """Pick the best available account for *tool* (least used, not exhausted).
+
+    Returns ``None`` if no accounts are tracked for the tool or all are
+    exhausted.  The program calls this before sending a query so it
+    automatically rotates to a fresh account.
+    """
+    all_status = get_all_quota_status()
+    candidates = [
+        s for s in all_status['statuses']
+        if s['tool'] == tool and not s['exhausted']
+    ]
+    if not candidates:
+        return None
+    # Pick the one with the most remaining messages
+    candidates.sort(key=lambda s: s['remaining'], reverse=True)
+    return candidates[0]
+
+
+def format_quota_report() -> str:
+    """Human-readable report of quota status for all tracked accounts."""
+    all_status = get_all_quota_status()
+    lines: list[str] = ['== ESTADO DE CUOTAS POR CUENTA ==', '']
+
+    if not all_status['statuses']:
+        lines.append('No hay cuentas rastreadas todavía.')
+        lines.append('El rastreo comienza automáticamente al enviar mensajes.')
+        return '\n'.join(lines)
+
+    # Group by tool
+    by_tool: dict[str, list[dict[str, Any]]] = {}
+    for s in all_status['statuses']:
+        by_tool.setdefault(s['tool'], []).append(s)
+
+    for tool, entries in by_tool.items():
+        label = _FREE_TIER_LIMITS.get(tool, {}).get('label', tool.upper())
+        lines.append(f'{label}:')
+        for e in entries:
+            status_icon = 'AGOTADA' if e['exhausted'] else 'OK'
+            lines.append(
+                f'  [{status_icon}] {e["email"]} — '
+                f'{e["used_in_window"]}/{e["limit"]} mensajes '
+                f'(ventana de {e["window_hours"]}h)'
+            )
+            if e['exhausted'] and e.get('resets_at'):
+                lines.append(f'         Se reactiva: {e["resets_at"]}')
+            lines.append(f'         Total histórico: {e["total_sent_all_time"]} mensajes')
+        lines.append('')
+
+    lines.append(f'Resumen: {all_status["available_count"]} disponibles, '
+                 f'{all_status["exhausted_count"]} agotadas')
+    return '\n'.join(lines)
+
+
+# ──────────────────────────────────────────────────────────────
 # Configured Secrets Detection (names only, never values)
 # ──────────────────────────────────────────────────────────────
 
