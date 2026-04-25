@@ -1465,7 +1465,17 @@ class ControlCenterViewModel(QObject):
         word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
         asks_system_state = any(token in word_tokens for token in ('entorno', 'arquitectura', 'herramienta', 'herramientas', 'ias', 'ia', 'estado', 'conexiones'))
         asks_directly = any(token in normalized for token in ('conoces', 'sabes', 'tienes', 'disponibles', 'te conectas', 'te puedes conectar', 'consciente', 'que tan bien', 'como estas', 'cómo estás'))
-        return asks_system_state and asks_directly
+        if asks_system_state and asks_directly:
+            return True
+        # Ollama fallback
+        try:
+            from iabv_v15.services.account_resource_scanner import classify_chat_intent
+            result = classify_chat_intent(normalized)
+            if result and result.get('category') == 'self_awareness' and float(result.get('confidence', 0)) >= 0.6:
+                return True
+        except Exception:
+            pass
+        return False
 
     def _is_learning_question(self, message: str) -> bool:
         normalized = self._normalized_command_text(message)
@@ -1498,13 +1508,22 @@ class ControlCenterViewModel(QObject):
         if any(phrase in normalized for phrase in direct_phrases):
             return True
         word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
-        return (
-            'aprend' in normalized
-            or (
-                any(token in word_tokens for token in ('herramienta', 'herramientas', 'rutas', 'ruta', 'ias', 'ia', 'probando', 'funcionando'))
-                and any(token in word_tokens for token in ('mejor', 'mejores', 'aprendido', 'cambiaste', 'aprendiste'))
-            )
-        )
+        if 'aprend' in normalized:
+            return True
+        if (
+            any(token in word_tokens for token in ('herramienta', 'herramientas', 'rutas', 'ruta', 'ias', 'ia', 'probando', 'funcionando'))
+            and any(token in word_tokens for token in ('mejor', 'mejores', 'aprendido', 'cambiaste', 'aprendiste'))
+        ):
+            return True
+        # Ollama fallback
+        try:
+            from iabv_v15.services.account_resource_scanner import classify_chat_intent
+            result = classify_chat_intent(normalized)
+            if result and result.get('category') == 'learning' and float(result.get('confidence', 0)) >= 0.6:
+                return True
+        except Exception:
+            pass
+        return False
 
     def _is_evolution_status_question(self, message: str) -> bool:
         normalized = self._normalized_command_text(message)
@@ -1679,13 +1698,61 @@ class ControlCenterViewModel(QObject):
             'revisa mis navegadores',
             'que ves en mis navegadores',
             'qué ves en mis navegadores',
+            'te falto las demas cuentas',
+            'te faltó las demás cuentas',
+            'falta escanear navegadores',
+            'faltan navegadores',
+            'faltan cuentas',
+            'te faltan cuentas',
+            'que asistentes tengo',
+            'qué asistentes tengo',
+            'que asistentes hay disponibles',
+            'qué asistentes hay disponibles',
+            'pool de asistentes',
+            'muestra los asistentes',
+            'muestra asistentes disponibles',
+            'cuantos asistentes disponibles',
+            'cuántos asistentes disponibles',
+            'cuales cuentas tienen sesion',
+            'cuáles cuentas tienen sesión',
+            'que cuentas tienen acceso',
+            'qué cuentas tienen acceso',
         )
         if any(phrase in normalized for phrase in direct_phrases):
             return True
-        word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
-        asks_accounts = any(token in word_tokens for token in ('cuentas', 'correos', 'sesiones', 'navegadores', 'cuotas', 'limites', 'límites'))
-        asks_action = any(token in word_tokens for token in ('escanea', 'escanear', 'verifica', 'verificar', 'revisa', 'diagnostico', 'muestra', 'dime', 'tienes', 'tengo', 'quedan', 'agotadas'))
-        return asks_accounts and asks_action
+        word_tokens = set(re.findall(r'[a-z0-9áéíóúñü_]+', normalized))
+        account_nouns = ('cuentas', 'correos', 'sesiones', 'navegadores', 'cuotas',
+                         'limites', 'límites', 'asistentes', 'workers', 'pool')
+        action_verbs = ('escanea', 'escanear', 'verifica', 'verificar', 'revisa',
+                        'revisar', 'diagnostico', 'diagnóstico', 'muestra', 'mostrar',
+                        'dime', 'tienes', 'tengo', 'quedan', 'agotadas', 'agotados',
+                        'falto', 'faltó', 'falta', 'faltan', 'faltaron',
+                        'busca', 'buscar', 'detecta', 'detectar', 'analiza',
+                        'analizar', 'lista', 'listar', 'dame', 'muestrame',
+                        'disponibles', 'activas', 'activos', 'hay', 'cuales',
+                        'cuáles', 'cuantas', 'cuántas')
+        asks_accounts = any(token in word_tokens for token in account_nouns)
+        asks_action = any(token in word_tokens for token in action_verbs)
+        if asks_accounts and asks_action:
+            return True
+
+        # Fallback: Ollama-based classification for ambiguous messages.
+        # Only invoked when the fast pattern check above didn't match.
+        try:
+            from iabv_v15.services.account_resource_scanner import classify_chat_intent
+            result = classify_chat_intent(normalized)
+            if result and result.get('category') == 'account_resource':
+                confidence = float(result.get('confidence', 0))
+                if confidence >= 0.6:
+                    logger.info(
+                        'ollama_intent_fallback: classified as account_resource '
+                        '(confidence=%.2f) for: %s',
+                        confidence, normalized[:80],
+                    )
+                    return True
+        except Exception:
+            pass
+        return False
 
     def _human_join(self, items: list[str], *, limit: int = 4) -> str:
         cleaned = [str(item).strip() for item in items if str(item).strip()]
@@ -2518,7 +2585,15 @@ class ControlCenterViewModel(QObject):
         except Exception:
             parts.append("\nCuotas: sin datos de rastreo todavia.")
 
-        # 4. APIs
+        # 4. Worker pool (sessions + quotas cross-reference)
+        try:
+            from iabv_v15.services.account_resource_scanner import format_worker_pool_report
+            worker_report = format_worker_pool_report()
+            parts.append(f"\n{worker_report}")
+        except Exception:
+            pass
+
+        # 5. APIs
         try:
             from iabv_v15.services.account_resource_scanner import (
                 scan_ollama_api, scan_github_api, scan_devin_api,

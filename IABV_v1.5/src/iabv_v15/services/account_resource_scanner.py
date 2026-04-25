@@ -151,34 +151,83 @@ def scan_ollama_api() -> dict[str, Any]:
 # Browser Account Detection
 # ──────────────────────────────────────────────────────────────
 
-def scan_browser_accounts() -> dict[str, Any]:
-    """Detect active browser sessions/accounts from Chrome profiles."""
-    accounts: list[dict[str, str]] = []
-    chrome_dirs: list[Path] = []
-
+def _chromium_browser_dirs() -> list[tuple[str, Path]]:
+    """Return ``(browser_name, user_data_dir)`` for all Chromium-based browsers."""
+    dirs: list[tuple[str, Path]] = []
     if os.name == 'nt':
         local_app = os.environ.get('LOCALAPPDATA', '')
-        if local_app:
-            chrome_dirs.append(Path(local_app) / 'Google' / 'Chrome' / 'User Data')
-        edge_dir = Path(local_app) / 'Microsoft' / 'Edge' / 'User Data' if local_app else None
-        if edge_dir and edge_dir.exists():
-            chrome_dirs.append(edge_dir)
+        if not local_app:
+            return dirs
+        base = Path(local_app)
+        candidates: list[tuple[str, Path]] = [
+            ('Chrome', base / 'Google' / 'Chrome' / 'User Data'),
+            ('Edge', base / 'Microsoft' / 'Edge' / 'User Data'),
+            ('Brave', base / 'BraveSoftware' / 'Brave-Browser' / 'User Data'),
+            ('Opera', Path(os.environ.get('APPDATA', '')) / 'Opera Software' / 'Opera Stable'),
+            ('Opera GX', Path(os.environ.get('APPDATA', '')) / 'Opera Software' / 'Opera GX Stable'),
+            ('Vivaldi', base / 'Vivaldi' / 'User Data'),
+        ]
+        for name, path in candidates:
+            if path.exists():
+                dirs.append((name, path))
     else:
         home = Path.home()
-        chrome_dirs.append(home / '.config' / 'google-chrome')
-        chrome_dirs.append(home / '.config' / 'chromium')
+        candidates = [
+            ('Chrome', home / '.config' / 'google-chrome'),
+            ('Chromium', home / '.config' / 'chromium'),
+            ('Edge', home / '.config' / 'microsoft-edge'),
+            ('Brave', home / '.config' / 'BraveSoftware' / 'Brave-Browser'),
+            ('Vivaldi', home / '.config' / 'vivaldi'),
+            ('Opera', home / '.config' / 'opera'),
+        ]
+        for name, path in candidates:
+            if path.exists():
+                dirs.append((name, path))
+    return dirs
 
-    for chrome_dir in chrome_dirs:
-        if not chrome_dir.exists():
+
+def _firefox_accounts() -> list[dict[str, str]]:
+    """Detect Firefox accounts from profile signedInUser.json files."""
+    accounts: list[dict[str, str]] = []
+    if os.name == 'nt':
+        ff_root = Path(os.environ.get('APPDATA', '')) / 'Mozilla' / 'Firefox' / 'Profiles'
+    else:
+        ff_root = Path.home() / '.mozilla' / 'firefox'
+    if not ff_root.exists():
+        return accounts
+    for profile_dir in ff_root.iterdir():
+        if not profile_dir.is_dir():
             continue
+        signed_in = profile_dir / 'signedInUser.json'
+        if not signed_in.exists():
+            continue
+        try:
+            data = json.loads(signed_in.read_text(encoding='utf-8', errors='replace'))
+            acct = data.get('accountData', {})
+            email = acct.get('email', '')
+            if email:
+                accounts.append({
+                    'browser': 'Firefox',
+                    'profile': profile_dir.name,
+                    'email': email,
+                    'full_name': acct.get('displayName', ''),
+                })
+        except Exception:
+            continue
+    return accounts
 
-        browser_name = 'Chrome'
-        if 'edge' in str(chrome_dir).lower():
-            browser_name = 'Edge'
-        elif 'chromium' in str(chrome_dir).lower():
-            browser_name = 'Chromium'
 
-        # Check profile preferences for logged-in accounts
+def scan_browser_accounts() -> dict[str, Any]:
+    """Detect active browser sessions/accounts from all supported browsers.
+
+    Scans: Chrome, Edge, Brave, Opera, Opera GX, Vivaldi (Chromium-based)
+    and Firefox (signedInUser.json).
+    """
+    accounts: list[dict[str, str]] = []
+    browsers_scanned: list[str] = []
+
+    for browser_name, chrome_dir in _chromium_browser_dirs():
+        browsers_scanned.append(str(chrome_dir))
         for profile_dir in chrome_dir.iterdir():
             if not profile_dir.is_dir():
                 continue
@@ -197,7 +246,6 @@ def scan_browser_accounts() -> dict[str, Any]:
                             'email': email,
                             'full_name': acc.get('full_name', ''),
                         })
-                # Also check signin info
                 signin = prefs.get('google', {}).get('services', {}).get('signin', {})
                 if signin.get('allowed') and not account_info:
                     accounts.append({
@@ -208,10 +256,19 @@ def scan_browser_accounts() -> dict[str, Any]:
             except Exception:
                 continue
 
+    # Firefox accounts
+    ff_accounts = _firefox_accounts()
+    if ff_accounts:
+        accounts.extend(ff_accounts)
+        if os.name == 'nt':
+            browsers_scanned.append(str(Path(os.environ.get('APPDATA', '')) / 'Mozilla' / 'Firefox'))
+        else:
+            browsers_scanned.append(str(Path.home() / '.mozilla' / 'firefox'))
+
     return {
         'accounts': accounts,
         'count': len(accounts),
-        'browsers_scanned': [str(d) for d in chrome_dirs if d.exists()],
+        'browsers_scanned': browsers_scanned,
     }
 
 
@@ -241,30 +298,8 @@ def scan_browser_sessions() -> dict[str, Any]:
     import tempfile as _tempfile
 
     sessions: list[dict[str, Any]] = []
-    chrome_dirs: list[Path] = []
 
-    if os.name == 'nt':
-        local_app = os.environ.get('LOCALAPPDATA', '')
-        if local_app:
-            chrome_dirs.append(Path(local_app) / 'Google' / 'Chrome' / 'User Data')
-        edge_dir = Path(local_app) / 'Microsoft' / 'Edge' / 'User Data' if local_app else None
-        if edge_dir and edge_dir.exists():
-            chrome_dirs.append(edge_dir)
-    else:
-        home = Path.home()
-        chrome_dirs.append(home / '.config' / 'google-chrome')
-        chrome_dirs.append(home / '.config' / 'chromium')
-
-    for chrome_dir in chrome_dirs:
-        if not chrome_dir.exists():
-            continue
-
-        browser_name = 'Chrome'
-        if 'edge' in str(chrome_dir).lower():
-            browser_name = 'Edge'
-        elif 'chromium' in str(chrome_dir).lower():
-            browser_name = 'Chromium'
-
+    for browser_name, chrome_dir in _chromium_browser_dirs():
         for profile_dir in chrome_dir.iterdir():
             if not profile_dir.is_dir():
                 continue
@@ -623,6 +658,198 @@ def format_quota_report() -> str:
 
 
 # ──────────────────────────────────────────────────────────────
+# Fix 32: Account↔Session Cross-Reference
+# ──────────────────────────────────────────────────────────────
+
+def verify_account_sessions() -> dict[str, Any]:
+    """Cross-reference browser accounts with detected tool sessions.
+
+    For each account email found in browser profiles, check which tool
+    sessions (ChatGPT, Claude, Codex, GitHub) exist in the SAME browser
+    profile.  This tells the orchestrator: "account X has an active
+    ChatGPT session in Chrome Default — we can route queries through it."
+    """
+    accounts = scan_browser_accounts()
+    sessions = scan_browser_sessions()
+
+    # Index sessions by (browser, profile) for fast lookup
+    session_index: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for s in sessions.get('sessions', []):
+        key = (s.get('browser', ''), s.get('profile', ''))
+        session_index.setdefault(key, []).append(s)
+
+    verified: list[dict[str, Any]] = []
+    for acc in accounts.get('accounts', []):
+        browser = acc.get('browser', '')
+        profile = acc.get('profile', '')
+        email = acc.get('email', '')
+        full_name = acc.get('full_name', '')
+        key = (browser, profile)
+        profile_sessions = session_index.get(key, [])
+
+        tools_access: list[dict[str, Any]] = []
+        tools_available: list[str] = []
+        for tool_name in ('chatgpt', 'claude', 'codex', 'github'):
+            matching = [s for s in profile_sessions if s.get('tool') == tool_name]
+            has_session = len(matching) > 0
+            tools_access.append({
+                'tool': tool_name,
+                'has_session': has_session,
+                'cookie_count': sum(s.get('cookie_count', 0) for s in matching),
+            })
+            if has_session:
+                tools_available.append(tool_name)
+
+        verified.append({
+            'email': email,
+            'full_name': full_name,
+            'browser': browser,
+            'profile': profile,
+            'tools': tools_access,
+            'tools_available': tools_available,
+            'tool_count': len(tools_available),
+        })
+
+    # Summary: which tools have at least one account with an active session
+    tools_with_accounts: dict[str, list[str]] = {}
+    for v in verified:
+        for t in v['tools_available']:
+            tools_with_accounts.setdefault(t, []).append(v['email'])
+
+    return {
+        'accounts': verified,
+        'account_count': len(verified),
+        'tools_with_accounts': tools_with_accounts,
+        'total_sessions_found': sessions.get('session_count', 0),
+    }
+
+
+# ──────────────────────────────────────────────────────────────
+# Fix 33: Worker Pool Estimation
+# ──────────────────────────────────────────────────────────────
+
+def estimate_available_workers() -> dict[str, Any]:
+    """Build a worker pool: accounts with sessions + remaining free messages.
+
+    Each "worker" is an account+tool pair that has:
+    1. An active session (cookies detected)
+    2. Free messages remaining (not exhausted in the quota window)
+
+    The orchestrator calls this to decide how to distribute tasks.
+    """
+    verified = verify_account_sessions()
+    all_quota = get_all_quota_status()
+
+    # Build quota lookup by (tool, email)
+    quota_lookup: dict[str, dict[str, Any]] = {}
+    for s in all_quota.get('statuses', []):
+        key = f"{s['tool']}:{s['email']}"
+        quota_lookup[key] = s
+
+    workers: list[dict[str, Any]] = []
+    exhausted_workers: list[dict[str, Any]] = []
+
+    for acc in verified.get('accounts', []):
+        email = acc['email']
+        for tool_info in acc.get('tools', []):
+            tool = tool_info['tool']
+            if not tool_info['has_session']:
+                continue
+
+            # Check quota status
+            quota_key = f"{tool}:{email}"
+            quota = quota_lookup.get(quota_key)
+            limits = _FREE_TIER_LIMITS.get(tool, {})
+            max_msgs = limits.get('messages_per_window', 999)
+
+            if quota:
+                remaining = quota['remaining']
+                exhausted = quota['exhausted']
+                used = quota['used_in_window']
+            else:
+                # No tracking data yet — assume full quota available
+                remaining = max_msgs
+                exhausted = False
+                used = 0
+
+            worker = {
+                'email': email,
+                'full_name': acc.get('full_name', ''),
+                'tool': tool,
+                'browser': acc['browser'],
+                'profile': acc['profile'],
+                'remaining_messages': remaining,
+                'used_in_window': used,
+                'limit': max_msgs,
+                'window_hours': limits.get('window_hours', 3),
+                'exhausted': exhausted,
+                'label': limits.get('label', tool),
+                'resets_at': quota.get('resets_at') if quota else None,
+            }
+
+            if exhausted:
+                exhausted_workers.append(worker)
+            else:
+                workers.append(worker)
+
+    # Sort available workers by remaining messages (most available first)
+    workers.sort(key=lambda w: w['remaining_messages'], reverse=True)
+
+    # Group available workers by tool
+    by_tool: dict[str, list[dict[str, Any]]] = {}
+    for w in workers:
+        by_tool.setdefault(w['tool'], []).append(w)
+
+    total_remaining = sum(w['remaining_messages'] for w in workers)
+
+    return {
+        'workers': workers,
+        'exhausted': exhausted_workers,
+        'available_count': len(workers),
+        'exhausted_count': len(exhausted_workers),
+        'by_tool': by_tool,
+        'total_remaining_messages': total_remaining,
+        'tools_available': list(by_tool.keys()),
+    }
+
+
+def format_worker_pool_report() -> str:
+    """Human-readable report of the worker pool for chat UI."""
+    pool = estimate_available_workers()
+    lines: list[str] = ['== POOL DE ASISTENTES DISPONIBLES ==', '']
+
+    if not pool['workers'] and not pool['exhausted']:
+        lines.append('No hay asistentes con sesión activa detectados.')
+        lines.append('Para activar asistentes, inicia sesión en ChatGPT, Claude o Codex')
+        lines.append('en tu navegador Chrome o Edge.')
+        return '\n'.join(lines)
+
+    if pool['workers']:
+        lines.append(f"Asistentes disponibles ({pool['available_count']}):")
+        for tool, tool_workers in pool['by_tool'].items():
+            label = _FREE_TIER_LIMITS.get(tool, {}).get('label', tool.upper())
+            lines.append(f'\n  {label}:')
+            for w in tool_workers:
+                name = w.get('full_name', '')
+                email_label = f"{name} <{w['email']}>" if name else w['email']
+                lines.append(
+                    f"    [{w['remaining_messages']}/{w['limit']} msgs] "
+                    f"{email_label} — [{w['browser']}] {w['profile']}"
+                )
+        lines.append(f"\nCapacidad total: {pool['total_remaining_messages']} mensajes disponibles")
+    else:
+        lines.append('Todos los asistentes están agotados.')
+
+    if pool['exhausted']:
+        lines.append(f"\nAgotados ({pool['exhausted_count']}):")
+        for w in pool['exhausted']:
+            reset = f" — se reactiva: {w['resets_at']}" if w.get('resets_at') else ''
+            lines.append(f"  {w['tool'].upper()}: {w['email']}{reset}")
+
+    return '\n'.join(lines)
+
+
+# ──────────────────────────────────────────────────────────────
 # Configured Secrets Detection (names only, never values)
 # ──────────────────────────────────────────────────────────────
 
@@ -865,3 +1092,72 @@ def format_account_resource_report(scan: dict[str, Any]) -> str:
     lines.append(f'  Cobertura de recursos: {summary.get("coverage_pct", 0)}%')
 
     return '\n'.join(lines)
+
+
+# ──────────────────────────────────────────────────────────────
+# Ollama-based chat intent classifier (Fix 37)
+# ──────────────────────────────────────────────────────────────
+
+_INTENT_CLASSIFIER_PROMPT = """\
+Eres un clasificador de intenciones para IABV, un programa de IA local.
+Tu UNICA tarea: dado un mensaje del usuario, decidir a cual categoria pertenece.
+
+CATEGORIAS:
+- "account_resource": pregunta sobre cuentas de navegador, sesiones activas,
+  cuotas de mensajes, asistentes disponibles, pool de workers, navegadores
+  detectados, correos, acceso a ChatGPT/Claude/Codex, mensajes restantes.
+  Incluye seguimientos como "te faltaron cuentas", "y los demas navegadores",
+  "cuales tienen sesion", "que asistentes hay".
+- "self_awareness": pregunta sobre el estado del sistema, que es IABV, como
+  funciona, auto-examen, examinate, que sabes de ti, como estas.
+- "learning": pregunta sobre aprendizaje, que has aprendido, historial,
+  experimentos, evidencia acumulada.
+- "general": cualquier otra cosa (conversacion, tareas, preguntas generales).
+
+RESPONDE SOLO con un JSON asi (sin explicacion, sin markdown):
+{"category": "account_resource", "confidence": 0.85}
+"""
+
+
+def classify_chat_intent(message: str) -> dict[str, Any] | None:
+    """Use Ollama to classify a chat message into intent categories.
+
+    Returns ``{"category": str, "confidence": float}`` or ``None`` on failure.
+    This is a lightweight call (~200ms) used as fallback when pattern
+    matching doesn't catch an ambiguous user message.
+    """
+    base_url = os.environ.get('IABV_OLLAMA_BASE_URL', 'http://127.0.0.1:11434/v1')
+    model = os.environ.get('IABV_OLLAMA_MODEL', 'qwen3:8b')
+
+    try:
+        import httpx
+    except ImportError:
+        return None
+
+    messages = [
+        {'role': 'system', 'content': _INTENT_CLASSIFIER_PROMPT},
+        {'role': 'user', 'content': message},
+    ]
+    payload = {
+        'model': model,
+        'messages': messages,
+        'stream': False,
+        'temperature': 0.1,
+    }
+
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            resp = client.post(f'{base_url}/chat/completions', json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+        raw_text = data['choices'][0]['message']['content'].strip()
+        raw_text = re.sub(r'<think>.*?</think>', '', raw_text, flags=re.DOTALL).strip()
+        json_match = re.search(r'\{[\s\S]*?\}', raw_text)
+        if json_match:
+            result = json.loads(json_match.group())
+            if 'category' in result:
+                return result
+        return None
+    except Exception as exc:
+        logger.debug('classify_chat_intent failed: %s', exc)
+        return None
