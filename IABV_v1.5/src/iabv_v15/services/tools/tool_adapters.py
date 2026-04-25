@@ -115,6 +115,11 @@ class ToolAdapter:
             return True
         return False
 
+    # Cache for multi-source detection results to avoid re-probing
+    # filesystem/process/window every ~50 seconds on each MCP session.
+    _multi_source_cache: dict[str, tuple[float, bool]] = {}
+    _MULTI_SOURCE_CACHE_TTL = 120.0  # seconds
+
     def _multi_source_detect(self, card: ToolCard) -> bool:
         """Multi-source availability check for desktop apps.
 
@@ -123,7 +128,15 @@ class ToolAdapter:
         If ANY source confirms presence the tool is considered available.
         Disagreements between sources are logged so the meta-cognition
         layer can learn from them.
+
+        Results are cached for 120 seconds to avoid redundant probes on
+        each MCP session reconnect.
         """
+        cached = self._multi_source_cache.get(card.tool_id)
+        now = time.time()
+        if cached and (now - cached[0]) < self._MULTI_SOURCE_CACHE_TTL:
+            return cached[1]
+
         sources: dict[str, bool] = {}
         sources['filesystem'] = bool(self._resolve_launch_target(card))
         sources['process'] = self._detect_running_process(card)
@@ -143,7 +156,9 @@ class ToolAdapter:
                 positives,
                 negatives,
             )
-        return bool(positives)
+        result = bool(positives)
+        self._multi_source_cache[card.tool_id] = (now, result)
+        return result
 
     _process_snapshot: list[tuple[str, str]] | None = None
     _process_snapshot_time: float = 0.0
