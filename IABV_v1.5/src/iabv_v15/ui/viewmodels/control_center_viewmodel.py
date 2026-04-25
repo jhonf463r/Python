@@ -4406,7 +4406,19 @@ class ControlCenterViewModel(QObject):
         evolution_status_prompt = intent_key == 'consulta_estado_evolutivo' or bool(intent_metadata.get('evolution_status_prompt')) or self._is_evolution_status_question(user_goal)
         learning_prompt = self._is_learning_question(user_goal)
         self_examination_prompt = self._is_self_examination_question(user_goal) or bool(intent_metadata.get('self_examination_prompt'))
-        if source == 'chat' and (self_awareness_prompt or world_model_prompt or evolution_status_prompt or learning_prompt or self_examination_prompt):
+        # Internal/system topics (secrets, bootstrap config, metacognition)
+        # should NEVER trigger an external consultation — the program must
+        # resolve these by introspecting its own code and config, not by
+        # asking ChatGPT or Codex.
+        _internal_signals = (
+            'secreto', 'secretos', 'token', 'tokens', 'configuracion',
+            'configurar', 'bootstrap', 'faltantes', 'faltante',
+            'tu codigo', 'tu código', 'tu algoritmo', 'tu sistema',
+            'metacognicion', 'metacognición', 'autoanalisis', 'autoanálisis',
+        )
+        user_goal_lower = user_goal.lower()
+        internal_system_topic = any(s in user_goal_lower for s in _internal_signals)
+        if source == 'chat' and (self_awareness_prompt or world_model_prompt or evolution_status_prompt or learning_prompt or self_examination_prompt or internal_system_topic):
             return None
         if source == 'chat' and intent_key in {'general.assistance', 'knowledge.query'} and intent_disposition in {'answer_now', 'need_info'} and ((structured_conversational_prompt is True) or fallback_conversational_prompt) and not explicit_assistant:
             return None
@@ -4879,9 +4891,16 @@ class ControlCenterViewModel(QObject):
         self.dataChanged.emit()
         return self._run_external_consultation(assistant_kind, announce=False)
 
+    # Maximum seconds an external consultation can run before being
+    # considered a ghost session.  After this deadline the _working flag
+    # is auto-reset so the user can continue interacting with the UI.
+    _CONSULTATION_TIMEOUT_S: int = 180
+
     def _run_external_consultation(self, assistant_kind: str, *, announce: bool = True) -> bool:
         assistant_title = self._assistant_display_name(assistant_kind)
         self._working = True
+        import time as _time
+        self._working_since = _time.time()
         self._busy_label = f'Voy a preparar una consulta con {assistant_title}.'
         self._latest_response_text = (
             f'Consulta externa aceptada para {assistant_title}. '
@@ -4904,6 +4923,8 @@ class ControlCenterViewModel(QObject):
             self._append_message('assistant', 'IABV', self._latest_response_text, self._latest_response_meta)
         self.dataChanged.emit()
 
+        consultation_epoch = _time.time()
+
         def worker() -> None:
             try:
                 result_payload = self._execute_external_consultation_sync(assistant_kind)
@@ -4911,7 +4932,31 @@ class ControlCenterViewModel(QObject):
             except Exception as exc:
                 self.taskFailed.emit('external_consultation', f'No pude completar la consulta externa guiada: {exc}')
 
+        def _ghost_session_watchdog() -> None:
+            """Auto-reset _working if the consultation exceeds the deadline.
+
+            Without this, a stuck external session (e.g. ChatGPT browser
+            tab that never responds) keeps _working=True forever and the
+            user cannot send new messages until the 60 s reset in sendChat.
+            """
+            if not self._working:
+                return
+            import time as _tw
+            if (_tw.time() - consultation_epoch) < self._CONSULTATION_TIMEOUT_S:
+                return
+            self._working = False
+            self._busy_label = (
+                f'La consulta con {assistant_title} excedio {self._CONSULTATION_TIMEOUT_S}s '
+                'sin respuesta. Puedes seguir interactuando.'
+            )
+            self._set_live_status('idle')
+            self._clear_autonomy_activity_override()
+            self.dataChanged.emit()
+
         threading.Thread(target=worker, daemon=True).start()
+        threading.Timer(
+            self._CONSULTATION_TIMEOUT_S, _ghost_session_watchdog,
+        ).start()
         return True
 
     def _perform_guidance_action(self, action: str, *, announce: bool = True) -> bool:

@@ -253,7 +253,8 @@ def scan_configured_secrets() -> dict[str, Any]:
         else:
             missing.append(name)
 
-    # Check secrets file
+    # Check secrets file — secrets configured here with ANY alias name
+    # should satisfy the whole alias group, just like env vars do.
     secrets_file = Path.home() / '.iabv_secrets.ps1'
     secrets_from_file: list[str] = []
     if secrets_file.exists():
@@ -265,6 +266,24 @@ def scan_configured_secrets() -> dict[str, Any]:
                     secrets_from_file.append(m.group(1))
         except Exception:
             pass
+
+    # Cross-reference file-based secrets against alias groups to resolve
+    # names that are configured in the file but not yet loaded into env.
+    if secrets_from_file:
+        file_set = set(secrets_from_file)
+        resolved_from_file: list[str] = []
+        for primary in list(missing):
+            group = next((g for g in _alias_groups if g[0] == primary), None)
+            if group:
+                found_in_file = [n for n in group if n in file_set]
+                if found_in_file:
+                    missing.remove(primary)
+                    configured.extend(found_in_file)
+                    resolved_from_file.extend(found_in_file)
+            elif primary in file_set:
+                missing.remove(primary)
+                configured.append(primary)
+                resolved_from_file.append(primary)
 
     return {
         'configured': configured,

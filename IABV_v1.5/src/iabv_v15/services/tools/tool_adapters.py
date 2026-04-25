@@ -119,6 +119,10 @@ class ToolAdapter:
     # filesystem/process/window every ~50 seconds on each MCP session.
     _multi_source_cache: dict[str, tuple[float, bool]] = {}
     _MULTI_SOURCE_CACHE_TTL = 120.0  # seconds
+    # Track which tool_ids have already been logged at INFO for disagreement.
+    # After the first INFO log, subsequent identical disagreements are logged
+    # at DEBUG to stop the console/log spam the user reported.
+    _disagreement_logged: dict[str, tuple[list[str], list[str]]] = {}
 
     @classmethod
     def invalidate_multi_source_cache(cls, tool_id: str) -> None:
@@ -153,7 +157,10 @@ class ToolAdapter:
         negatives = [s for s, v in sources.items() if not v]
 
         if positives and negatives:
-            logger.info(
+            prev = self._disagreement_logged.get(card.tool_id)
+            same_as_before = prev is not None and sorted(prev[0]) == sorted(positives) and sorted(prev[1]) == sorted(negatives)
+            log_fn = logger.debug if same_as_before else logger.info
+            log_fn(
                 'multi_source_disagreement: %s — positives=%s negatives=%s'
                 ' | La herramienta existe segun %s pero no segun %s.'
                 ' Declarando available=True (optimistic).',
@@ -163,6 +170,7 @@ class ToolAdapter:
                 positives,
                 negatives,
             )
+            self._disagreement_logged[card.tool_id] = (positives, negatives)
         result = bool(positives)
         self._multi_source_cache[card.tool_id] = (now, result)
         return result

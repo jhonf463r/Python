@@ -187,6 +187,39 @@ class IntentLearningLayer:
         # Write outside the lock so lookup() isn't blocked by file I/O
         self._save_snapshot(snapshot)
 
+    def record_failure(
+        self,
+        normalized_text: str,
+        failed_intent_key: str,
+    ) -> None:
+        """Decay confidence for a pattern whose intent was wrong.
+
+        Called when the system classified with *failed_intent_key* but the
+        user corrected or the outcome was clearly wrong.  Reduces
+        confirmations (never below 0) so the pattern naturally loses
+        priority and eventually gets evicted.
+        """
+        text_lower = normalized_text.strip().lower()
+        if not text_lower:
+            return
+
+        with self._lock:
+            existing = self._patterns.get(text_lower)
+            if not existing:
+                return
+            if existing.get('intent_key') != failed_intent_key:
+                return
+            existing['confirmations'] = max(
+                0, existing.get('confirmations', 0) - 1,
+            )
+            existing['confidence'] = max(
+                0.0, (existing.get('confidence', 0.0) or 0.0) * 0.7,
+            )
+            existing['last_decay'] = time.time()
+            snapshot = list(self._patterns.values())
+
+        self._save_snapshot(snapshot)
+
     def get_stats(self) -> dict[str, Any]:
         """Return statistics about learned patterns for reporting."""
         with self._lock:
@@ -194,6 +227,10 @@ class IntentLearningLayer:
             trusted = sum(
                 1 for p in self._patterns.values()
                 if p.get('confirmations', 0) >= self._MIN_CONFIRMATIONS
+            )
+            decayed = sum(
+                1 for p in self._patterns.values()
+                if p.get('last_decay')
             )
             by_intent: dict[str, int] = {}
             for p in self._patterns.values():
@@ -203,6 +240,7 @@ class IntentLearningLayer:
                 'total_patterns': total,
                 'trusted_patterns': trusted,
                 'learning_patterns': total - trusted,
+                'decayed_patterns': decayed,
                 'by_intent': by_intent,
             }
 
@@ -1112,14 +1150,19 @@ class IntentUnderstandingService:
                 4.0,
                 'mensaje asociado a herramientas locales o sandbox',
             )
-        if site_hint == 'wplay' and self._contains_any(text, ['casino', 'juega', 'jugar', 'apuesta', 'estrategia', 'algoritmo']):
+        # Skip site-specific and browser registrations when the current
+        # text is about an internal/system topic (secrets, config, GPU, etc.).
+        # This prevents spurious wplay/browser scores when the site_hint was
+        # carried from a previous conversation about a completely different topic.
+        _internal = self._is_internal_topic(text)
+        if not _internal and site_hint == 'wplay' and self._contains_any(text, ['casino', 'juega', 'jugar', 'apuesta', 'estrategia', 'algoritmo']):
             register('wplay.casino', 5.0, 'flujo Wplay orientado a casino o estrategia')
-        if site_hint == 'wplay' and self._contains_any(text, ['inicia sesion', 'iniciar sesion', 'login', 'loguea', 'abre wplay']):
+        if not _internal and site_hint == 'wplay' and self._contains_any(text, ['inicia sesion', 'iniciar sesion', 'login', 'loguea', 'abre wplay']):
             register('wplay.login', 5.0, 'flujo Wplay orientado a login')
-        if site_hint == 'wplay' and self._contains_any(text, ['abre', 'abrir', 'pagina', 'p?gina', 'entra', 'ingresa', 've a']):
+        if not _internal and site_hint == 'wplay' and self._contains_any(text, ['abre', 'abrir', 'pagina', 'p?gina', 'entra', 'ingresa', 've a']):
             register('wplay.core', 4.0, 'flujo Wplay orientado a navegacion base')
         _web_ctx = self._contains_any(text, ['internet', 'web', 'en linea', 'online', 'pagina', 'sitio', 'url', 'http'])
-        if self._contains_any(text, ['abre', 'abrir', 've a', 'buscar', 'busca', 'navega']) and (site_hint is not None or self._contains_any(text, ['google', 'mercadolibre', 'mercado libre']) or _web_ctx):
+        if not _internal and self._contains_any(text, ['abre', 'abrir', 've a', 'buscar', 'busca', 'navega']) and (site_hint is not None or self._contains_any(text, ['google', 'mercadolibre', 'mercado libre']) or _web_ctx):
             register(
                 'browser.search' if self._contains_any(text, ['buscar', 'busca']) else 'browser.navigate',
                 3.5,
@@ -1599,6 +1642,24 @@ class IntentUnderstandingService:
         site_hint, _ = self._detect_site_with_history(text, goal_parameters, '')
         return site_hint
 
+    # Signals that indicate the user is asking about the program itself.
+    # When any of these appear in the current text, site_hint must NOT be
+    # inherited from conversation history — the question is internal.
+    _INTERNAL_TOPIC_SIGNALS: tuple[str, ...] = (
+        'secreto', 'secretos', 'token', 'tokens', 'configuracion',
+        'configurar', 'entorno', 'variable', 'variables', 'bootstrap',
+        'analiza por que', 'analiza por qué', 'faltantes', 'faltante',
+        'auto-correccion', 'autocorreccion', 'auto correccion',
+        'tu codigo', 'tu código', 'tu algoritmo', 'tus algoritmos',
+        'tu sistema', 'tu configuracion', 'tu configuración',
+        'metacognicion', 'metacognición', 'autoanalisis', 'autoanálisis',
+        'autodiagnostico', 'autodiagnóstico', 'tu estado', 'tu gpu',
+        'tu rendimiento', 'tus herramientas', 'tus conexiones',
+    )
+
+    def _is_internal_topic(self, text: str) -> bool:
+        return any(signal in text for signal in self._INTERNAL_TOPIC_SIGNALS)
+
     def _detect_site_with_history(
         self,
         text: str,
@@ -1612,6 +1673,12 @@ class IntentUnderstandingService:
             if any(alias in merged for alias in aliases):
                 return site_id, False
         if conversation_text:
+            # Do NOT inherit site_hint from history when the current
+            # message is about internal/system topics (secrets, config,
+            # metacognition, etc.).  This prevents e.g. a previous Wplay
+            # conversation from polluting a question about missing tokens.
+            if self._is_internal_topic(text):
+                return None, False
             for site_id, aliases in self.SITE_ALIASES.items():
                 if any(alias in conversation_text for alias in aliases):
                     return site_id, True
