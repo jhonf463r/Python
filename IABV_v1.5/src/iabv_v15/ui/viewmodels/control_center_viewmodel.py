@@ -5656,6 +5656,27 @@ class ControlCenterViewModel(QObject):
                 except Exception as ac_exc:
                     sections.append(f'\nError en auto-correccion: {ac_exc}')
 
+                # 4.9 Common sense reasoning — razonamiento autónomo
+                _common_sense_result: dict = {}
+                try:
+                    from iabv_v15.services.common_sense_engine import (
+                        run_common_sense_reasoning, format_common_sense_report,
+                    )
+                    _common_sense_result = run_common_sense_reasoning(
+                        gpu_scan=gpu if 'gpu' in locals() else None,
+                        account_scan=_account_scan if '_account_scan' in locals() else None,
+                        holistic_scan=holistic if 'holistic' in locals() else None,
+                        limits_scan=_limits_scan if '_limits_scan' in locals() else None,
+                        regression_scan=_regression_scan if '_regression_scan' in locals() else None,
+                        deep_env_scan=_deep_scan if '_deep_scan' in locals() else None,
+                        git_state=git_info if 'git_info' in locals() else None,
+                        version_state=version_scan if 'version_scan' in locals() else None,
+                    )
+                    sections.append('')
+                    sections.append(format_common_sense_report(_common_sense_result))
+                except Exception as cs_exc:
+                    sections.append(f'\nError en razonamiento autónomo: {cs_exc}')
+
                 # 5. Veredicto final con transparencia total
                 sections.append('')
                 sections.append('== VEREDICTO ==')
