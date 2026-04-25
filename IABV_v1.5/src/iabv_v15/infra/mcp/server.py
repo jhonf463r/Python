@@ -1781,6 +1781,60 @@ class IABVMCPServer:
             return _to_jsonable(limits_awareness_scan(workspace=ws))
 
         # ------------------------------------------------------------
+        # auto_correction — correcciones autónomas + deducción de herramientas
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def auto_correction_scan_tool() -> dict[str, Any]:
+            """Ejecutar motor de auto-corrección y deducción de herramientas.
+
+            Toma las deducciones del holistic scan, detecta qué herramientas
+            faltan, aplica correcciones automáticas seguras, y genera una
+            lista de lo que necesita acción del usuario.
+            """
+            from iabv_v15.services.auto_correction_engine import execute_auto_corrections
+            from iabv_v15.services.account_resource_scanner import account_resource_scan
+            from iabv_v15.services.limits_awareness import limits_awareness_scan
+            from iabv_v15.services.gpu_metacognition import gpu_metacognition_report
+            from iabv_v15.services.regression_cycle_detector import regression_cycle_scan
+            from iabv_v15.services.self_code_analysis import holistic_metacognition_scan
+            ws = self._workspace_root()
+            acc = _run_sync_off_event_loop(account_resource_scan)
+            lim = limits_awareness_scan(workspace=ws)
+            gpu = gpu_metacognition_report()
+            reg = regression_cycle_scan(workspace=ws)
+            hol = holistic_metacognition_scan(
+                account_state=acc, gpu_state=gpu,
+                regression_state=reg, workspace=ws,
+            )
+            result = execute_auto_corrections(
+                holistic_scan=hol, account_scan=acc,
+                limits_scan=lim, gpu_scan=gpu,
+                regression_scan=reg, workspace=ws,
+            )
+            return _to_jsonable(result)
+
+        @mcp.tool()
+        def deduce_missing_tools_tool() -> dict[str, Any]:
+            """Deducir qué herramientas, APIs y recursos le faltan a IABV.
+
+            Analiza los gaps detectados por los scanners y genera un plan
+            de qué instalar, qué secretos pedir, y qué requiere acción
+            del usuario vs qué puede resolverse automáticamente.
+            """
+            from iabv_v15.services.auto_correction_engine import deduce_missing_tools
+            from iabv_v15.services.account_resource_scanner import account_resource_scan
+            from iabv_v15.services.limits_awareness import limits_awareness_scan
+            from iabv_v15.services.gpu_metacognition import gpu_metacognition_report
+            ws = self._workspace_root()
+            acc = _run_sync_off_event_loop(account_resource_scan)
+            lim = limits_awareness_scan(workspace=ws)
+            gpu = gpu_metacognition_report()
+            return _to_jsonable(deduce_missing_tools(
+                account_scan=acc, limits_scan=lim, gpu_scan=gpu,
+            ))
+
+        # ------------------------------------------------------------
         # self_code_analysis — el programa analiza su propio código
         # ------------------------------------------------------------
 
