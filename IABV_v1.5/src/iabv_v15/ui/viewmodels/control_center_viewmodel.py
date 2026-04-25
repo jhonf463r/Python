@@ -1610,12 +1610,29 @@ class ControlCenterViewModel(QObject):
             'qué recomiendas cambiar',
             'que deberias corregir',
             'qué deberías corregir',
+            # Log self-inspection / runtime self-diagnosis
+            'analiza tus logs',
+            'analiza tus propios logs',
+            'revisa tus logs',
+            'que anomalias detectas',
+            'qué anomalías detectas',
+            'diagnosticate',
+            'diagnostícate',
+            'autodiagnostico',
+            'autodiagnóstico',
+            'que ves en tus logs',
+            'qué ves en tus logs',
+            'que detectas en tu log',
+            'qué detectas en tu log',
+            'analiza tu log',
+            'revisa tu log',
+            'lee tus logs',
         )
         if any(phrase in normalized for phrase in direct_phrases):
             return True
         word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
-        asks_review = any(token in word_tokens for token in ('fallando', 'falla', 'repitiendo', 'mejorar', 'cambios', 'cambiar', 'corregir', 'revisarte', 'autoexaminacion'))
-        asks_meta = any(token in word_tokens for token in ('recomiendas', 'recomendar', 'aprendiste', 'aprendido', 'deberias', 'debería', 'deberias'))
+        asks_review = any(token in word_tokens for token in ('fallando', 'falla', 'repitiendo', 'mejorar', 'cambios', 'cambiar', 'corregir', 'revisarte', 'autoexaminacion', 'anomalias', 'anomalías', 'diagnostica', 'logs'))
+        asks_meta = any(token in word_tokens for token in ('recomiendas', 'recomendar', 'aprendiste', 'aprendido', 'deberias', 'debería', 'deberias', 'detectas', 'analiza', 'revisa', 'dime'))
         return asks_review and asks_meta
 
     def _human_join(self, items: list[str], *, limit: int = 4) -> str:
@@ -1668,6 +1685,8 @@ class ControlCenterViewModel(QObject):
             return 'repetition'
         if any(token in normalized for token in ('cambios recomiendas', 'recomiendas cambiar', 'deberias mejorar', 'deberías mejorar', 'deberias corregir', 'deberías corregir')):
             return 'adjustments'
+        if any(token in normalized for token in ('logs', 'log', 'anomalias', 'anomalías', 'diagnostica', 'diagnostico', 'autodiagnostico')):
+            return 'runtime_logs'
         return 'general'
 
     def _format_percent(self, value: Any) -> str:
@@ -2310,6 +2329,27 @@ class ControlCenterViewModel(QObject):
                     response += f" Despues vendria {str(recommended_adjustments[1].get('recommended_change') or '').strip()}."
                 return response, 'Ajustes recomendados por evidencia.'
             return ('Todavia no tengo cambios recomendados con evidencia suficiente para proponerlos en serio.', 'Sin ajuste fuerte.')
+        if focus == 'runtime_logs':
+            runtime_categories = {'runtime_noise', 'external_consultation_failure', 'tool_availability', 'ghost_session'}
+            log_findings = [f for f in findings if str(f.get('category') or '') in runtime_categories]
+            if log_findings:
+                parts = []
+                for lf in log_findings[:4]:
+                    title = str(lf.get('title') or 'anomalia sin nombre')
+                    summary = str(lf.get('summary') or '').strip()
+                    recommendation = str(lf.get('recommendation') or '').strip()
+                    entry = f"- {title}"
+                    if summary:
+                        entry += f": {summary}"
+                    if recommendation:
+                        entry += f" Recomendacion: {recommendation}"
+                    parts.append(entry)
+                header = f"Encontre {len(log_findings)} anomalia(s) en mis logs de runtime:"
+                return (f"{header}\n" + '\n'.join(parts), 'Autodiagnostico de logs en vivo.')
+            # No runtime findings — fall through to check regular findings
+            if findings:
+                return (f"No encontre anomalias de runtime en mis logs recientes, pero tengo {len(findings)} hallazgo(s) de autoexaminacion: {str(findings[0].get('title') or 'hallazgo sin nombre')}.", 'Sin anomalias de runtime; hay hallazgos regulares.')
+            return ('Revise mis logs recientes y no encontre anomalias activas. Todo parece estable por ahora.', 'Sin anomalias detectadas.')
         if findings or recommended_adjustments or validated_improvements:
             parts = []
             if findings:
@@ -4414,7 +4454,15 @@ class ControlCenterViewModel(QObject):
             'secreto', 'secretos', 'token', 'tokens', 'configuracion',
             'configurar', 'bootstrap', 'faltantes', 'faltante',
             'tu codigo', 'tu código', 'tu algoritmo', 'tu sistema',
+            'tus logs', 'tus propios', 'tu log', 'tu propio',
             'metacognicion', 'metacognición', 'autoanalisis', 'autoanálisis',
+            'autodiagnostico', 'autodiagnóstico', 'auto-diagnostico',
+            'anomalias', 'anomalías', 'diagnostica', 'diagnostico',
+            'tu estado', 'tu salud', 'tu rendimiento',
+            'autoexamina', 'autoexaminacion', 'autoexaminación',
+            'autoevalua', 'autoevaluacion', 'autoevaluación',
+            'que detectas', 'que ves en ti', 'revisa tu',
+            'analiza tu', 'analízate', 'examinat',
         )
         user_goal_lower = user_goal.lower()
         internal_system_topic = any(s in user_goal_lower for s in _internal_signals)
