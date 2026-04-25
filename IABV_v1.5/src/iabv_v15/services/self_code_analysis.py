@@ -520,6 +520,18 @@ def _is_branch_obsolete(workspace: str, branch: str) -> tuple[bool, str]:
         'git', '-C', ws, 'log', '-1', '--format=%cr', branch,
     ])
 
+    # Recency guard: branches < 2 days old are never obsolete (active work)
+    if age_str:
+        is_recent = any(unit in age_str for unit in ['hour', 'minute', 'second', 'hora', 'minuto', 'segundo'])
+        if not is_recent and 'day' in age_str:
+            try:
+                day_count = int(''.join(c for c in age_str.split('day')[0].strip().split()[-1] if c.isdigit()) or '0')
+                is_recent = day_count < 2
+            except (ValueError, IndexError):
+                is_recent = False
+        if is_recent:
+            return False, f'rama con actividad reciente ({age_str}) — conservada'
+
     # Check if branch tip message exists in main (squash-merged PR)
     tip_msg = _run_cmd(['git', '-C', ws, 'log', '-1', '--format=%s', branch])
     if tip_msg:

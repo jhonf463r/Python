@@ -1928,6 +1928,31 @@ class IABVMCPServer:
             )
             return result.to_dict()
 
+        @mcp.tool()
+        def tool_version_scan() -> dict[str, Any]:
+            """Escanea versiones de todas las herramientas que IABV usa.
+
+            Retorna version instalada, disponibilidad y estado de cada
+            tool (Ollama, git, gh, cloudflared, APIs). Persiste el log
+            en data/metacognition/tool_versions_log.jsonl.
+            """
+
+            block = self._governance_block_for_route(
+                assistant_kind="audit",
+                requires_network=True,
+            )
+            if block is not None:
+                return block
+
+            from iabv_v15.services.tools.tool_version_monitor import (
+                full_version_scan, persist_version_log,
+            )
+            scan = full_version_scan()
+            ws = self._workspace_root() or ''
+            if ws:
+                persist_version_log(ws, scan)
+            return _to_jsonable(scan)
+
     # ------------------------------------------------------------------
     # Ciclo de vida
 

@@ -5184,7 +5184,7 @@ class ControlCenterViewModel(QObject):
                     elif current_branch in ('main', 'master'):
                         # Safe to reset: on main, no local changes
                         reset_r = _sp.run(
-                            ['git', '-C', ws, 'reset', '--hard', 'origin/main'],
+                            ['git', '-C', ws, 'reset', '--hard', f'origin/{current_branch}'],
                             capture_output=True, text=True, timeout=15,
                         )
                         new_head = _sp.run(
@@ -5193,7 +5193,7 @@ class ControlCenterViewModel(QObject):
                         ).stdout.strip()
                         if reset_r.returncode == 0:
                             if old_head == new_head:
-                                sections.append('Ya estoy actualizado (sin cambios nuevos en origin/main)')
+                                sections.append(f'Ya estoy actualizado (sin cambios nuevos en origin/{current_branch})')
                             else:
                                 sections.append(f'Me actualice exitosamente: {old_head} -> {new_head}')
                         else:
@@ -5330,6 +5330,19 @@ class ControlCenterViewModel(QObject):
                 except Exception as exc:
                     sections.append(f'Error en gpu_metacognition: {exc}')
 
+                # 2.3 Tool version monitoring
+                version_scan: dict = {}
+                try:
+                    from iabv_v15.services.tools.tool_version_monitor import (
+                        full_version_scan, format_version_report, persist_version_log,
+                    )
+                    version_scan = full_version_scan()
+                    sections.append('')
+                    sections.append(format_version_report(version_scan))
+                    persist_version_log(ws, version_scan)
+                except Exception as exc:
+                    sections.append(f'Error en version monitor: {exc}')
+
                 # 2.5 Diagnostico de trabajo en vivo y consultas externas
                 sections.append('')
                 sections.append('== DIAGNOSTICO DE TRABAJO EN VIVO ==')
@@ -5443,7 +5456,7 @@ class ControlCenterViewModel(QObject):
                 else:
                     sections.append('No se encontraron problemas.')
                     sections.append('Estado: codigo verificado, listo para produccion.')
-                analysis_time = report.get('elapsed_seconds', '?')
+                analysis_time = report.get('elapsed_seconds', '?') if 'report' in locals() else '?'
                 sections.append(f"Tiempo de analisis: {analysis_time}s")
 
                 # 6. Metacognition decision log — persist what was learned
@@ -5460,6 +5473,8 @@ class ControlCenterViewModel(QObject):
                     'mcp_tools_count': mcp.get('tool_count', 0),
                     'issues_found': issues_found,
                     'estado': 'NECESITA ATENCION' if issues_found else 'VERIFICADO',
+                    'tools_available': version_scan.get('available_count', 0),
+                    'tools_unavailable': version_scan.get('unavailable_tools', []),
                 }
                 try:
                     import os as _os
