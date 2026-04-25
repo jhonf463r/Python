@@ -220,17 +220,34 @@ def scan_browser_accounts() -> dict[str, Any]:
 # ──────────────────────────────────────────────────────────────
 
 def scan_configured_secrets() -> dict[str, Any]:
-    """Detect which secret/env vars are configured (names only, never values)."""
-    known_secrets = [
-        'GITHUB_TOKEN_IABV', 'GITHUB_TOKEN',
-        'DEVIN_API_KEY_IABV', 'DEVIN_API_KEY',
+    """Detect which secret/env vars are configured (names only, never values).
+
+    Secrets that are aliases of each other (e.g. GITHUB_TOKEN_IABV and
+    GITHUB_TOKEN) are grouped: if ANY alias in the group is configured, the
+    whole group is satisfied and none of its members appear as missing.
+    """
+    # Groups of aliases — if any name in a group is set, the group is OK.
+    _alias_groups: list[tuple[str, ...]] = [
+        ('GITHUB_TOKEN_IABV', 'IABV_GITHUB_TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN'),
+        ('DEVIN_API_KEY_IABV', 'IABV_DEVIN_API_KEY', 'DEVIN_API_KEY'),
+    ]
+    # Standalone secrets (not aliased).
+    _standalone = [
         'OPENAI_API_KEY', 'ANTHROPIC_API_KEY',
         'CLOUDFLARE_TUNNEL_TOKEN', 'CLOUDFLARED_TOKEN',
         'IABV_MCP_API_KEY',
     ]
     configured: list[str] = []
     missing: list[str] = []
-    for name in known_secrets:
+
+    for group in _alias_groups:
+        found = [name for name in group if os.environ.get(name)]
+        if found:
+            configured.extend(found)
+        else:
+            missing.append(group[0])
+
+    for name in _standalone:
         if os.environ.get(name):
             configured.append(name)
         else:
