@@ -106,6 +106,32 @@ class TextUnderstandingSuite:
         }
 
 
+class InferenceBenchmarkSuite:
+    suite_name = 'inference_benchmark_suite'
+
+    def evaluate(self, *, domain: ExperimentDomain, objective: str, expected: Any, candidate: ExperimentCandidate) -> dict[str, Any]:
+        expected_text = str(expected.get('text') or '') if isinstance(expected, dict) else str(expected or '')
+        observed_text = str(candidate.output_text or '')
+        quality = max(_text_similarity(expected_text, observed_text), _token_overlap(expected_text, observed_text))
+        tps = float(candidate.metadata.get('tokens_per_second') or 0.0)
+        tps_score = min(tps / 80.0, 1.0) if tps > 0 else 0.0
+        precision = quality * 0.6 + tps_score * 0.4
+        robustness = 0.9 if precision >= 0.7 else 0.6 if precision >= 0.4 else 0.3
+        return {
+            'suite_name': self.suite_name,
+            'precision': precision,
+            'robustness': robustness,
+            'observed_summary': observed_text[:240],
+            'success': tps > 5.0 and quality >= 0.15,
+            'metadata': {
+                'domain': domain.value,
+                'objective': objective,
+                'tokens_per_second': tps,
+                'quality_score': round(quality, 4),
+            },
+        }
+
+
 class CodeUnderstandingSuite:
     suite_name = 'code_understanding_suite'
 

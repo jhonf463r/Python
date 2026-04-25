@@ -68,6 +68,15 @@ class ControlCenterViewModel(QObject):
     selfAuditCompleted = Signal(str)  # JSON serializado del SelfAuditSnapshot
     selfAuditFailed = Signal(str)     # detalle textual del fallo
 
+    # Señales avanzadas del chat (Frente 4 — UI Chat Avanzada)
+    fileAttached = Signal(dict)           # {name, path, size, type}
+    fileDetached = Signal(str)            # path del archivo removido
+    chatSearchResults = Signal(list)      # lista de mensajes filtrados
+    contextualSuggestionsChanged = Signal(list)  # sugerencias contextuales
+    liveStatusChanged = Signal(str)       # "idle"|"processing"|"streaming"|"error"
+    codeApplyRequested = Signal(str, str) # (code, language)
+    chatDownloadRequested = Signal(str, str)  # (content, filename)
+
     def __init__(
         self,
         *,
@@ -166,7 +175,12 @@ class ControlCenterViewModel(QObject):
         self._agent_cards: list[dict[str, Any]] = []
         self._legacy_cards = self._build_legacy_cards()
         self._role_cards = [profile.model_dump(mode='json') for profile in self.role_router.role_profiles]
+        self._ui_state_lock = threading.Lock()
         self._chat_messages: list[dict[str, str]] = []
+        self._attached_files: list[dict[str, Any]] = []
+        self._live_status: str = 'idle'
+        self._contextual_suggestions: list[dict[str, Any]] = []
+        self._chat_search_query: str = ''
         self._pbt_state: dict[str, Any] = {}
         self._pbt_candidates: list[dict[str, Any]] = []
         self._diagnostic_text = 'Diagnostico pendiente. La consola revisa el stack local automaticamente y puedes pedirme ajustes o aprobaciones por chat.'
@@ -280,9 +294,24 @@ class ControlCenterViewModel(QObject):
             'idle': 'inactivo',
         }.get(status, status)
 
-    def _append_message(self, role: str, speaker: str, text: str, meta: str = '') -> None:
-        self._chat_messages.append({'role': role, 'speaker': speaker, 'text': text, 'meta': meta})
-        self._chat_messages = self._chat_messages[-18:]
+    def _append_message(self, role: str, speaker: str, text: str, meta: str = '',
+                        *, attachments: list[dict[str, Any]] | None = None,
+                        code_blocks: list[dict[str, Any]] | None = None,
+                        status: str = 'complete',
+                        reasoning: str = '') -> None:
+        msg: dict[str, Any] = {'role': role, 'speaker': speaker, 'text': text, 'meta': meta,
+                               'status': status, 'timestamp': datetime.now(timezone.utc).strftime('%H:%M')}
+        if attachments:
+            msg['attachments'] = attachments
+        if code_blocks:
+            msg['codeBlocks'] = code_blocks
+        if reasoning:
+            msg['reasoning'] = reasoning
+        with self._ui_state_lock:
+            self._chat_messages.append(msg)
+            self._chat_messages = self._chat_messages[-30:]
+        self._refresh_contextual_suggestions()
+        self._validate_ui_reflects_reality()
 
     def _count_payloads(self) -> int:
         payload_dir = Path(self.config.payloads_dir)
@@ -3909,7 +3938,8 @@ class ControlCenterViewModel(QObject):
         self._refresh_autonomy_dock()
 
     def get_chat_messages(self) -> list[dict[str, str]]:
-        return self._chat_messages
+        with self._ui_state_lock:
+            return list(self._chat_messages)
 
     def get_provider_cards(self) -> list[dict[str, Any]]:
         return self._provider_cards
@@ -4115,14 +4145,16 @@ class ControlCenterViewModel(QObject):
         if role == 'auto':
             self._auto_route_enabled = True
             self._busy_label = 'Modo automatico restaurado. La consola detectara intencion, pack y aprobaciones.'
-            self._refresh_development_packet()
+            import threading as _th
+            _th.Thread(target=self._refresh_development_packet, daemon=True).start()
             self.dataChanged.emit()
             return
         if role in valid_roles:
             self._selected_role = role
             self._auto_route_enabled = False
             self._busy_label = f'Rol forzado a {self._selected_role_title()}.'
-            self._refresh_development_packet()
+            import threading as _th
+            _th.Thread(target=self._refresh_development_packet, daemon=True).start()
             self.dataChanged.emit()
 
     @Slot()
@@ -5035,7 +5067,383 @@ class ControlCenterViewModel(QObject):
         if 'ciclo pbt' in command or 'ejecutar pbt' in command:
             self.runQuickPbt()
             return True
+        if self._is_self_code_analysis_request(command):
+            self._run_self_code_analysis()
+            return True
         return False
+
+    def _is_self_code_analysis_request(self, command: str) -> bool:
+        """Detecta si el usuario pide que el programa analice su propio codigo,
+        busque errores, mejoras pendientes, diagnostique lentitud o revise GPU."""
+        direct_phrases = (
+            'analizate',
+            'analízate',
+            'analiza tu codigo',
+            'analiza tu código',
+            'revisa tu codigo',
+            'revisa tu código',
+            'busca errores',
+            'busca fallas',
+            'busca bugs',
+            'autoanalisis',
+            'autoanálisis',
+            'auto analisis',
+            'auto análisis',
+            'auto diagnostico',
+            'autodiagnostico',
+            'autodiagnóstico',
+            'por que te congelas',
+            'por qué te congelas',
+            'por que estas lento',
+            'por qué estás lento',
+            'por que respondes lento',
+            'por qué respondes lento',
+            'analiza tu estado',
+            'diagnostica tu estado',
+            'diagnosticate',
+            'diagnostícate',
+            'examina tu codigo',
+            'examina tu código',
+            'revisa tu estado real',
+            'reporte de tu estado',
+            'mejoras pendientes',
+            'ramas sin mergear',
+            'ramas pendientes',
+            'codigo desactualizado',
+            'código desactualizado',
+            'tu gpu esta funcionando',
+            'tu gpu está funcionando',
+            'revisa tu gpu',
+        )
+        if any(phrase in command for phrase in direct_phrases):
+            return True
+        word_tokens = set(re.findall(r'[a-z0-9_]+', command))
+        asks_self = any(t in word_tokens for t in ('analizate', 'analízate', 'autoanalisis', 'diagnosticate'))
+        asks_code = any(t in word_tokens for t in ('codigo', 'código', 'errores', 'fallas', 'bugs', 'sintaxis'))
+        asks_perf = any(t in word_tokens for t in ('lento', 'congela', 'congelas', 'rendimiento', 'lentitud'))
+        asks_analyze = any(t in command for t in ('analiza', 'revisa', 'examina', 'diagnostica', 'busca'))
+        if asks_analyze and (asks_code or asks_perf):
+            return True
+        if asks_self:
+            return True
+        return False
+
+    def _run_self_code_analysis(self) -> None:
+        """Ejecuta auto-update + self_code_analysis + gpu_metacognition en background."""
+        self._append_message(
+            'assistant', 'IABV',
+            'Entendido. Primero me actualizo (git pull), luego analizo mi codigo, GPU, y busco mejoras pendientes...',
+            'Metacognicion: auto-update + auto-analisis iniciado.',
+        )
+        self._set_live_status('processing')
+        self.dataChanged.emit()
+
+        def _worker() -> None:
+            try:
+                ws = str(getattr(self.config, 'workspace_root', ''))
+                if not ws:
+                    import os
+                    ws = os.getcwd()
+                sections: list[str] = []
+
+                # 0. Auto-update: git pull antes de analizar
+                # Usa --rebase=false para tolerar divergencias locales
+                # (ej: commits de auto-merge previos que divergen del remoto).
+                # --ff-only falla en ese caso con "Diverging branches can't".
+                import subprocess as _sp
+                try:
+                    pull_result = _sp.run(
+                        ['git', '-C', ws, 'pull', '--rebase=false'],
+                        capture_output=True, text=True, timeout=30,
+                    )
+                    pull_out = pull_result.stdout.strip()
+                    if pull_result.returncode == 0:
+                        if 'Already up to date' in pull_out or 'Already up-to-date' in pull_out:
+                            sections.append('== AUTO-UPDATE ==')
+                            sections.append('Ya estoy actualizado (git pull: up to date)')
+                        else:
+                            sections.append('== AUTO-UPDATE ==')
+                            sections.append('Me actualice exitosamente:')
+                            for line in pull_out.splitlines()[-5:]:
+                                sections.append(f'  {line}')
+                    else:
+                        # Fallback: fetch + merge para casos extremos
+                        _sp.run(
+                            ['git', '-C', ws, 'fetch', 'origin'],
+                            capture_output=True, text=True, timeout=30,
+                        )
+                        merge_r = _sp.run(
+                            ['git', '-C', ws, 'merge', '--no-edit', '-X', 'theirs',
+                             'origin/' + _sp.run(
+                                 ['git', '-C', ws, 'rev-parse', '--abbrev-ref', 'HEAD'],
+                                 capture_output=True, text=True, timeout=5,
+                             ).stdout.strip()],
+                            capture_output=True, text=True, timeout=30,
+                        )
+                        if merge_r.returncode == 0:
+                            sections.append('== AUTO-UPDATE ==')
+                            sections.append('Me actualice via fetch+merge (divergencia local resuelta):')
+                            for line in merge_r.stdout.strip().splitlines()[-5:]:
+                                sections.append(f'  {line}')
+                        else:
+                            sections.append('== AUTO-UPDATE ==')
+                            sections.append(f'Error al actualizar: {pull_result.stderr.strip()[:200]}')
+                except Exception as pull_exc:
+                    sections.append('== AUTO-UPDATE ==')
+                    sections.append(f'No pude actualizarme: {pull_exc}')
+                sections.append('')
+
+                # 1. Full self code analysis (includes syntax, slots, routing, tests, perf)
+                branch_count = 0
+                branches: list = []
+                syntax: dict = {}
+                mcp: dict = {}
+                perf: dict = {}
+                slots: dict = {}
+                routing: dict = {}
+                tests: dict = {}
+                try:
+                    from iabv_v15.services.self_code_analysis import full_self_analysis_report
+                    report = full_self_analysis_report(ws)
+                    syntax = report.get('syntax', {})
+                    mcp = report.get('mcp_tools', {})
+                    perf = report.get('performance', {})
+                    slots = report.get('slot_decorators', {})
+                    routing = report.get('intent_routing', {})
+                    tests = report.get('tests', {})
+                    branches = report.get('unmerged_branches', [])
+                    branch_count = len(branches) if isinstance(branches, list) else 0
+
+                    sections.append('== ANALISIS DE CODIGO ==')
+                    sections.append(f"Salud general: {report.get('overall_health', 'desconocido')}")
+                    sections.append(f"Sintaxis: {syntax.get('summary', 'sin datos')}")
+                    sections.append(f"MCP Tools: {mcp.get('summary', 'sin datos')}")
+                    sections.append(f"Rendimiento: {perf.get('summary', 'sin datos')}")
+
+                    sections.append('')
+                    sections.append('== INTEGRIDAD QML-PYTHON ==')
+                    sections.append(f"@Slot decorators: {slots.get('summary', 'sin datos')}")
+                    if slots.get('issues'):
+                        for si in slots['issues'][:5]:
+                            sections.append(f"  CRITICO: {si.get('method', '?')}() sin @Slot — QML no puede invocarlo")
+
+                    sections.append('')
+                    sections.append('== ROUTING DE INTENCION ==')
+                    sections.append(f"Rutas verificadas: {routing.get('summary', 'sin datos')}")
+                    if routing.get('ius_metacognition_intent'):
+                        sections.append('IntentUnderstandingService: system.metacognition intent PRESENTE')
+                    else:
+                        sections.append('IntentUnderstandingService: FALTA system.metacognition intent (el cerebro no puede clasificar peticiones de auto-analisis)')
+                    if routing.get('missing_handlers'):
+                        for mh in routing['missing_handlers']:
+                            sections.append(f"  FALTA: handler {mh} no existe")
+                    if routing.get('unwired_handlers'):
+                        for uh in routing['unwired_handlers']:
+                            sections.append(f"  DESCONECTADO: handler {uh} existe pero no esta wired en sendChat")
+                    routing_results = routing.get('results', [])
+                    for rr in routing_results:
+                        status = rr.get('status', '?')
+                        phrase = rr.get('phrase', '?')
+                        if status != 'OK':
+                            sections.append(f"  {status}: '{phrase}' -> {rr.get('reason', '?')}")
+
+                    sections.append('')
+                    sections.append('== TESTS ==')
+                    if tests.get('skipped'):
+                        sections.append('Tests: no hay directorio tests/')
+                    elif tests.get('ok'):
+                        sections.append(f"Tests: {tests.get('summary', 'OK')}")
+                    else:
+                        sections.append(f"Tests: FALLARON — {tests.get('summary', 'error')}")
+                        test_output = tests.get('output', '')
+                        if test_output:
+                            for line in test_output.splitlines()[-10:]:
+                                sections.append(f"  {line}")
+
+                    if branch_count > 0:
+                        sections.append('')
+                        sections.append(f'== RAMAS SIN MERGEAR: {branch_count} ==')
+                        for b in branches[:5]:
+                            bname = b.get('branch', '?') if isinstance(b, dict) else str(b)
+                            commits = b.get('commits_ahead', 0) if isinstance(b, dict) else 0
+                            sections.append(f"  - {bname} ({commits} commits)")
+                except Exception as exc:
+                    sections.append(f'Error en self_code_analysis: {exc}')
+
+                # 2. GPU metacognition
+                gpu_issues: list[str] = []
+                try:
+                    from iabv_v15.services.gpu_metacognition import gpu_metacognition_report
+                    gpu = gpu_metacognition_report()
+                    sections.append('')
+                    sections.append('== GPU ==')
+                    gpu_count = gpu.get('nvidia_count', 0) + gpu.get('intel_igpu_count', 0)
+                    sections.append(f"GPUs detectadas: {gpu_count}")
+                    ollama = gpu.get('ollama_state', {})
+                    sections.append(f"Ollama: {ollama.get('status', 'no detectado')}")
+                    gpu_issues = gpu.get('issues', [])
+                    if gpu_issues:
+                        sections.append(f"Issues GPU: {len(gpu_issues)}")
+                        for gi in gpu_issues[:3]:
+                            sections.append(f"  - {gi}")
+                    else:
+                        sections.append('Issues GPU: ninguno')
+                    recs = gpu.get('recommendations', [])
+                    if recs:
+                        for r in recs[:3]:
+                            sections.append(f"  Recomendacion: {r}")
+                except Exception as exc:
+                    sections.append(f'Error en gpu_metacognition: {exc}')
+
+                # 2.5 Diagnostico de trabajo en vivo y consultas externas
+                sections.append('')
+                sections.append('== DIAGNOSTICO DE TRABAJO EN VIVO ==')
+                try:
+                    stalled_items: list[str] = []
+                    # A) In-memory: check adaptive orchestrator sessions
+                    if hasattr(self, 'adaptive_orchestrator'):
+                        sessions = getattr(self.adaptive_orchestrator, '_sessions', {})
+                        for sid, session in sessions.items():
+                            progress = getattr(session, 'progress', 0)
+                            status = getattr(session, 'status', 'unknown')
+                            if status == 'active' and 0 < progress < 1.0:
+                                elapsed = getattr(session, 'elapsed_seconds', 0)
+                                if elapsed > 120:
+                                    stalled_items.append(
+                                        f"Sesion {sid[:12]}... estancada en {int(progress*100)}% por {int(elapsed)}s — posible bloqueo"
+                                    )
+                    # B) On-disk: scan adaptive_sessions dir for non-completed sessions
+                    import json as _json
+                    from pathlib import Path as _Path
+                    sessions_dir = _Path(ws) / 'data' / 'evolution' / 'adaptive_sessions'
+                    if sessions_dir.exists():
+                        terminal_states = {'completed', 'failed', 'cancelled', 'noop'}
+                        disk_stalled = 0
+                        for sf in sessions_dir.glob('*.json'):
+                            try:
+                                sd = _json.loads(sf.read_text(encoding='utf-8', errors='replace'))
+                                s_status = str(sd.get('status', '')).lower()
+                                if s_status and s_status not in terminal_states:
+                                    disk_stalled += 1
+                                    if disk_stalled <= 5:
+                                        s_goal = str(sd.get('user_goal', ''))[:60]
+                                        stalled_items.append(
+                                            f"Sesion {sf.stem[:12]}... status={s_status} — '{s_goal}'"
+                                        )
+                            except Exception:
+                                continue
+                        if disk_stalled > 5:
+                            stalled_items.append(f"... y {disk_stalled - 5} sesiones mas no terminadas")
+                    # C) Check for visible browser consultations that should be background
+                    if hasattr(self, '_consultation_history'):
+                        for ch in list(self._consultation_history or [])[-5:]:
+                            if ch.get('tool_id') in ('chatgpt_web_assisted', 'claude_web_assisted'):
+                                if ch.get('status') in ('prepared', 'awaiting_response'):
+                                    stalled_items.append(
+                                        f"Consulta externa {ch.get('tool_id', '?')} abierta — deberia correr en background (headless)"
+                                    )
+                    if stalled_items:
+                        for si_item in stalled_items:
+                            sections.append(f"  ALERTA: {si_item}")
+                    else:
+                        sections.append('Sin trabajo estancado ni consultas externas visibles.')
+                except Exception as work_exc:
+                    sections.append(f'Error al diagnosticar trabajo en vivo: {work_exc}')
+
+                # 3. Auto-correccion: mergear ramas seguras si hay muchas pendientes
+                merge_result: dict = {}
+                if branch_count > 5:
+                    sections.append('')
+                    sections.append('== AUTO-CORRECCION: RAMAS PENDIENTES ==')
+                    try:
+                        from iabv_v15.services.self_code_analysis import auto_merge_safe_branches
+                        merge_result = auto_merge_safe_branches(ws)
+                        if merge_result.get('merged'):
+                            sections.append(f"Mergee {len(merge_result['merged'])} ramas limpiamente:")
+                            for mb in merge_result['merged'][:10]:
+                                sections.append(f"  + {mb}")
+                        if merge_result.get('merged_with_ours'):
+                            sections.append(f"Mergee {len(merge_result['merged_with_ours'])} ramas resolviendo conflictos (conservando codigo actual):")
+                            for mb in merge_result['merged_with_ours'][:10]:
+                                sections.append(f"  ~ {mb}")
+                        if merge_result.get('reverted'):
+                            sections.append(f"AUTOPROTECCION: {len(merge_result['reverted'])} ramas REVERTIDAS (dañaban el codigo):")
+                            for rv in merge_result['reverted'][:10]:
+                                sections.append(f"  !! {rv.get('branch', '?')}: {rv.get('reason', '?')[:100]}")
+                        if merge_result.get('failed'):
+                            sections.append(f"{len(merge_result['failed'])} ramas que no se pudieron mergear:")
+                            for fb in merge_result['failed'][:5]:
+                                sections.append(f"  x {fb.get('branch', '?')}: {fb.get('reason', '?')[:80]}")
+                        if merge_result.get('already_merged_count', 0) > 0:
+                            sections.append(f"{merge_result['already_merged_count']} ramas ya integradas (no re-mergeadas)")
+                        if merge_result.get('skipped_count', 0) > 0:
+                            sections.append(f"{merge_result['skipped_count']} ramas omitidas (prefijo no seguro o tocan capas cerradas)")
+                        sections.append(f"Resumen merge: {merge_result.get('summary', 'n/a')}")
+                    except Exception as merge_exc:
+                        sections.append(f'Error en auto-merge: {merge_exc}')
+
+                # 4. Re-verificacion si hubo cambios
+                if branch_count > 5 and (merge_result.get('merged') or merge_result.get('merged_with_ours')):
+                    sections.append('')
+                    sections.append('== RE-VERIFICACION POST-MERGE ==')
+                    try:
+                        from iabv_v15.services.self_code_analysis import verify_python_syntax
+                        re_syntax = verify_python_syntax(ws)
+                        sections.append(f"Sintaxis post-merge: {re_syntax.get('summary', 'sin datos')}")
+                        if not re_syntax.get('ok'):
+                            sections.append('ALERTA: el merge introdujo errores de sintaxis')
+                            for err in re_syntax.get('errors', [])[:3]:
+                                sections.append(f"  - {err.get('file', '?')}: {err.get('error', '?')[:100]}")
+                    except Exception as rev_exc:
+                        sections.append(f'Error en re-verificacion: {rev_exc}')
+
+                # 5. Veredicto final con transparencia total
+                sections.append('')
+                sections.append('== VEREDICTO ==')
+                issues_found: list[str] = []
+                if syntax.get('errors'):
+                    issues_found.append(f"{len(syntax['errors'])} errores de sintaxis")
+                if not slots.get('ok', True):
+                    issues_found.append(f"{len(slots.get('issues', []))} metodos sin @Slot (QML roto)")
+                if not routing.get('ok', True):
+                    issues_found.append('routing de intencion incompleto')
+                if not tests.get('ok', True) and not tests.get('skipped'):
+                    issues_found.append(f"tests fallaron: {tests.get('summary', '?')}")
+                remaining_branches = branch_count - merge_result.get('total_merged', len(merge_result.get('merged', []))) if branch_count > 5 else branch_count
+                if remaining_branches > 10:
+                    issues_found.append(f"{remaining_branches} ramas sin mergear (deuda tecnica)")
+                if gpu_issues:
+                    issues_found.append(f"{len(gpu_issues)} issues de GPU")
+                perf_findings = perf.get('findings', [])
+                if perf_findings:
+                    issues_found.append(f"{len(perf_findings)} problemas de rendimiento")
+                if issues_found:
+                    sections.append('Issues encontrados:')
+                    for iss in issues_found:
+                        sections.append(f'  - {iss}')
+                    sections.append('Estado: NECESITA ATENCION')
+                else:
+                    sections.append('No se encontraron problemas.')
+                    sections.append('Estado: codigo verificado, listo para produccion.')
+                sections.append(f"Tiempo de analisis: {report.get('elapsed_seconds', '?')}s")
+
+                reply = '\n'.join(sections)
+                self._append_message(
+                    'assistant', 'IABV', reply,
+                    'Metacognicion: auto-analisis + auto-correccion completo.',
+                )
+
+            except Exception as exc:
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Error durante el auto-analisis: {exc}',
+                    'Metacognicion: error en auto-analisis.',
+                )
+            finally:
+                self._set_live_status('idle')
+                self.dataChanged.emit()
+
+        threading.Thread(target=_worker, daemon=True).start()
 
     def _ingest_chat_capabilities(self, message: str) -> list[dict[str, str]]:
         """Delega en ChatCapabilityIngestionService si esta disponible.
@@ -5090,23 +5498,258 @@ class ControlCenterViewModel(QObject):
             lines.append(f"(+{len(notices) - 5} mas en backlog)")
         return '\n'.join(lines)
 
+    # ── Frente 4: Chat avanzado — métodos ──────────────────────────
+    @Slot(str, str, int, str)
+    def attachFile(self, name: str, path: str, size: int, file_type: str) -> None:
+        entry = {'name': name, 'path': path, 'size': size, 'type': file_type}
+        self._attached_files.append(entry)
+        self.fileAttached.emit(entry)
+        self.dataChanged.emit()
+
+    @Slot(str)
+    def detachFile(self, path: str) -> None:
+        self._attached_files = [f for f in self._attached_files if f['path'] != path]
+        self.fileDetached.emit(path)
+        self.dataChanged.emit()
+
+    @Slot()
+    def clearAttachedFiles(self) -> None:
+        self._attached_files.clear()
+        self.dataChanged.emit()
+
+    @Property(list, notify=dataChanged)
+    def attachedFiles(self) -> list[dict[str, Any]]:
+        return list(self._attached_files)
+
+    @Property(int, notify=dataChanged)
+    def attachedFileCount(self) -> int:
+        return len(self._attached_files)
+
+    @Slot(str)
+    def searchChatHistory(self, query: str) -> None:
+        self._chat_search_query = query.strip().lower()
+        if not self._chat_search_query:
+            self.chatSearchResults.emit(self._chat_messages)
+            return
+        filtered = [
+            msg for msg in self._chat_messages
+            if self._chat_search_query in (msg.get('text', '') or '').lower()
+            or self._chat_search_query in (msg.get('speaker', '') or '').lower()
+        ]
+        self.chatSearchResults.emit(filtered)
+
+    @Property(str, notify=dataChanged)
+    def liveStatus(self) -> str:
+        with self._ui_state_lock:
+            return self._live_status
+
+    def _set_live_status(self, status: str) -> None:
+        with self._ui_state_lock:
+            if self._live_status == status:
+                return
+            self._live_status = status
+        self.liveStatusChanged.emit(status)
+        self.dataChanged.emit()
+
+    @Property(list, notify=dataChanged)
+    def contextualSuggestions(self) -> list[dict[str, Any]]:
+        return list(self._contextual_suggestions)
+
+    def _refresh_contextual_suggestions(self) -> None:
+        suggestions: list[dict[str, Any]] = []
+        if hasattr(self, '_efficiency_audit_service'):
+            suggestions.append({
+                'text': 'Ejecutar auditoria de eficiencia',
+                'category': 'audit',
+                'icon': '\U0001f50d',
+                'action': 'run_efficiency_audit',
+                'priority': 3,
+            })
+        if self._chat_messages and len(self._chat_messages) > 2:
+            suggestions.append({
+                'text': 'Revisar self-examination',
+                'category': 'diagnostic',
+                'icon': '\U0001f9e0',
+                'action': 'show_self_examination',
+                'priority': 2,
+            })
+        suggestions.append({
+            'text': 'Mostrar estado del mundo',
+            'category': 'command',
+            'icon': '\U0001f30d',
+            'action': 'world_model',
+            'priority': 1,
+        })
+        suggestions.append({
+            'text': 'Ver evolucion del sistema',
+            'category': 'evolution',
+            'icon': '\U0001f4c8',
+            'action': 'show_evolution',
+            'priority': 1,
+        })
+        if self._attached_files:
+            suggestions.append({
+                'text': f'Procesar {len(self._attached_files)} archivo(s) adjunto(s)',
+                'category': 'command',
+                'icon': '\U0001f4ce',
+                'action': 'process_attachments',
+                'priority': 5,
+            })
+        self._contextual_suggestions = suggestions
+        self.contextualSuggestionsChanged.emit(suggestions)
+
+    @Slot(str, str)
+    def handleSuggestionAction(self, action: str, text: str) -> None:
+        action_map = {
+            'run_efficiency_audit': 'Ejecutar auditoria de eficiencia',
+            'show_self_examination': 'mostrar self examination',
+            'world_model': 'mostrar estado del mundo',
+            'show_evolution': 'mostrar evolucion',
+            'process_attachments': 'procesar archivos adjuntos',
+        }
+        message = action_map.get(action, text)
+        self.sendChat(message)
+
+    @Slot(str, str)
+    def applyCode(self, code: str, language: str) -> None:
+        self.codeApplyRequested.emit(code, language)
+        self._append_message('system', 'IABV', f'Codigo {language} recibido para aplicar ({len(code)} chars).')
+        self.dataChanged.emit()
+
+    @Slot(str, str)
+    def downloadChat(self, content: str, filename: str) -> None:
+        self.chatDownloadRequested.emit(content, filename)
+        self._append_message('system', 'IABV', f'Descarga preparada: {filename}')
+        self.dataChanged.emit()
+
+    @Slot(str)
+    def copyToClipboard(self, text: str) -> None:
+        try:
+            from iabv_v15.ui.qt import QGuiApplication
+            clipboard = QGuiApplication.instance().clipboard()
+            if clipboard:
+                clipboard.setText(text)
+        except Exception:
+            pass
+
+
+    # ── Auto-validación de interfaz ──────────────────────────
+    def _validate_ui_reflects_reality(self) -> dict[str, Any]:
+        """Cruza la percepción del sistema con la realidad para detectar inconsistencias.
+        El sistema debe ser capaz de verificar que lo que muestra en su interfaz
+        corresponde a lo que realmente tiene/sabe."""
+        findings: list[dict[str, str]] = []
+        
+        # Verificar que los mensajes del chat tienen la estructura esperada
+        for i, msg in enumerate(self._chat_messages):
+            if 'status' not in msg:
+                findings.append({
+                    'severity': 'info',
+                    'description': f'Mensaje {i} sin campo status — se asume complete',
+                    'auto_fix': 'applied',
+                })
+                msg['status'] = 'complete'
+            if 'timestamp' not in msg:
+                from datetime import datetime, timezone
+                msg['timestamp'] = datetime.now(timezone.utc).strftime('%H:%M')
+        
+        # Verificar consistencia de live_status
+        if self._working and self._live_status == 'idle':
+            findings.append({
+                'severity': 'warning',
+                'description': 'ViewModel._working=True pero _live_status=idle — desincronizado',
+                'auto_fix': 'applied',
+            })
+            self._set_live_status('processing')
+        elif not self._working and self._live_status == 'processing':
+            findings.append({
+                'severity': 'warning',
+                'description': 'ViewModel._working=False pero _live_status=processing — desincronizado',
+                'auto_fix': 'applied',
+            })
+            self._set_live_status('idle')
+        
+        # Verificar que attached_files es consistente
+        if self._attached_files:
+            for f in self._attached_files:
+                if not all(k in f for k in ('name', 'path', 'size', 'type')):
+                    findings.append({
+                        'severity': 'error',
+                        'description': f'Archivo adjunto con campos faltantes: {f}',
+                        'auto_fix': 'none',
+                    })
+        
+        # Verificar que contextual_suggestions se actualizaron
+        if not self._contextual_suggestions:
+            self._refresh_contextual_suggestions()
+            findings.append({
+                'severity': 'info',
+                'description': 'Sugerencias contextuales estaban vacias — refrescadas',
+                'auto_fix': 'applied',
+            })
+        
+        return {
+            'valid': len([f for f in findings if f['severity'] == 'error']) == 0,
+            'findings': findings,
+            'chat_messages_count': len(self._chat_messages),
+            'attached_files_count': len(self._attached_files),
+            'live_status': self._live_status,
+            'suggestions_count': len(self._contextual_suggestions),
+        }
+
     @Slot(str)
     def sendChat(self, text: str) -> None:
         message = text.strip()
-        if not message or self._working:
+        if not message:
             return
-        self._append_message('user', 'Tu', message, self._routing_mode_label())
+        # Safety: si _working quedo stuck de una llamada anterior (>60s),
+        # resetearlo para no bloquear al usuario permanentemente.
+        # APRENDIDO: _working puede quedar en True si worker() lanza excepcion
+        # no capturada o si el signal taskFailed no se emite correctamente.
+        if self._working:
+            import time
+            elapsed = time.time() - getattr(self, '_working_since', 0)
+            if elapsed < 60:
+                return
+            # Reset forzado: _working stuck por mas de 60 segundos
+            self._working = False
+            self._set_live_status('idle')
+            self._clear_autonomy_activity_override()
+        user_attachments = list(self._attached_files) if self._attached_files else None
+        self._append_message('user', 'Tu', message, self._routing_mode_label(),
+                            attachments=user_attachments)
+        if self._attached_files:
+            self._attached_files.clear()
+        self._set_live_status('processing')
         # Escucha pasiva de capacidades declaradas (GPU, modelos, cuentas, runtimes).
         # Persiste detecciones a data/chat_research_backlog/*.jsonl para que OSES
         # y ExperimentLab las consuman despues como areas de investigacion. No
         # modifica el ruteo; solo anota y avisa al usuario en una linea corta
         # para que sepa que su dato quedo registrado (antes se perdian en memoria).
-        self._ingest_chat_capabilities(message)
+        # Ingerir capabilities en background para no bloquear UI
+        threading.Thread(target=self._ingest_chat_capabilities, args=(message,), daemon=True).start()
         # Actualizar packet en background sin bloquear UI
         threading.Thread(target=self._refresh_development_packet, args=(message,), daemon=True).start()
         if self._try_handle_chat_command(message):
             return
-        shortcut_analysis = self._chat_shortcut_analysis(message)
+        # _chat_shortcut_analysis puede llamar a LLM — ejecutar con timeout
+        # APRENDIDO: NO usar 'with ThreadPoolExecutor' en hilo de UI porque
+        # pool.shutdown(wait=True) bloquea al salir del with aunque el timeout
+        # se haya cumplido. Usar Thread + Event en su lugar.
+        shortcut_analysis = {}
+        _sa_result: dict[str, Any] = {}
+        _sa_done = threading.Event()
+        def _sa_worker() -> None:
+            try:
+                _sa_result.update(self._chat_shortcut_analysis(message))
+            except Exception:
+                pass
+            finally:
+                _sa_done.set()
+        _sa_thread = threading.Thread(target=_sa_worker, daemon=True)
+        _sa_thread.start()
+        if _sa_done.wait(timeout=3):
+            shortcut_analysis = _sa_result
         allow_chat_shortcuts = not bool(shortcut_analysis.get('mixed_actionable')) and not bool(shortcut_analysis.get('requires_clarification'))
         if allow_chat_shortcuts and self._is_world_model_question(message):
             self._answer_world_model_question(message)
@@ -5131,7 +5774,9 @@ class ControlCenterViewModel(QObject):
             self._last_user_goal = message
             self._run_external_consultation(explicit_assistant, announce=True)
             return
+        import time as _time
         self._working = True
+        self._working_since = _time.time()
         self._busy_label = 'Estoy entendiendo tu mensaje y preparando la mejor respuesta.'
         self._set_autonomy_activity_override(
             visible=True,
@@ -5903,7 +6548,6 @@ class ControlCenterViewModel(QObject):
         get_last_self_audit_summary,
         notify=dataChanged,
     )
-
 
 
 

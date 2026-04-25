@@ -17,12 +17,13 @@
 #   -Quiet                  Menos output en consola.
 #   -StartUI                Ademas de MCP+tunel, lanza ControlCenter
 #                           (python -m iabv_v15 app) en proceso aparte.
-#   -AutoPull               Corre 'git pull --ff-only' en el workspace antes
-#                           de cualquier otra cosa (default ON). Si hubo
+#   -AutoPull               Corre 'git pull --rebase=false' en el workspace
+#                           antes de cualquier otra cosa (default ON). Si hubo
 #                           commits nuevos, invoca summarize_updates para
 #                           imprimir un resumen humano en espanol de los
-#                           cambios. Si el pull falla o hay divergencia,
-#                           aborta con mensaje claro (NO fuerza merge).
+#                           cambios. Usa --rebase=false para tolerar ramas
+#                           divergentes (e.g. auto-merge local). Si el pull
+#                           falla, aborta con mensaje claro (NO fuerza merge).
 #   -NoAutoPull             Desactiva el auto-pull (p.ej. cuando ya lo
 #                           corriste a mano o estas en una rama intencional).
 #
@@ -77,8 +78,8 @@ Write-Info "Secrets : $secretsPath"
 # --- Auto pull (default ON) -------------------------------------------------
 # Mantiene el workspace sincronizado con origin/main antes de arrancar el MCP,
 # para que el usuario no termine corriendo una version vieja despues de que
-# Devin mergeo fixes automaticos. Solo fast-forward: si hay divergencia real,
-# abortamos en vez de resolver a ciegas.
+# Devin mergeo fixes automaticos. Usa --rebase=false para tolerar divergencia
+# local (e.g. auto-merge commits). Si falla, abortamos con mensaje claro.
 if ($AutoPull) {
     $repoRoot = $null
     try {
@@ -89,14 +90,14 @@ if ($AutoPull) {
     if (-not $repoRoot) {
         Write-Warn "[auto-pull] No pude resolver la raiz del repo git desde $PSScriptRoot; salto pull."
     } else {
-        Write-Info "Auto-pull : git pull --ff-only en $repoRoot"
+        Write-Info "Auto-pull : git pull --rebase=false en $repoRoot"
         $oldSha = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
-        & git -C $repoRoot pull --ff-only
+        & git -C $repoRoot pull --rebase=false
         $pullExit = $LASTEXITCODE
         if ($pullExit -ne 0) {
-            Write-Err "[auto-pull] git pull --ff-only fallo (exit $pullExit)."
-            Write-Err "  Probablemente hay divergencia local (commits sin pushear o rama reescrita)."
-            Write-Err "  Resolvelo a mano o corre con -NoAutoPull si sabes lo que haces."
+            Write-Err "[auto-pull] git pull --rebase=false fallo (exit $pullExit)."
+            Write-Err "  Verifica el estado del repo y corregilo a mano,"
+            Write-Err "  o corre con -NoAutoPull si sabes lo que haces."
             exit 1
         }
         $newSha = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()

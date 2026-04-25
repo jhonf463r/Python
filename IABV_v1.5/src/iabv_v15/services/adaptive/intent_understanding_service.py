@@ -28,6 +28,7 @@ class IntentUnderstandingService:
         'general.assistance',
         'knowledge.query',
         'system.self_awareness',
+        'system.metacognition',
         'consulta_estado_evolutivo',
     }
     ACTIONABLE_INTENT_KEYS = {
@@ -333,6 +334,32 @@ class IntentUnderstandingService:
                 metadata={'conversational_prompt': True, 'meta_assistant_prompt': self._contains_any(text, ['codex', 'chatgpt', 'claude', 'ollama', 'devin', 'windsurf', 'ia', 'ias'])},
             )
             hypotheses.append(IntentHypothesis(intent_key='knowledge.query', title='Consulta local', confidence=0.44, rationale='Pregunta abierta sin sitio especifico.'))
+            return finalize(intent, hypotheses)
+
+        if self._is_metacognition_prompt(text):
+            intent = build(
+                intent_key='system.metacognition',
+                title='Metacognicion autonoma: auto-analisis de codigo, GPU y estado',
+                detected_role=TaskRole.TOOL_USE,
+                disposition=IntentDisposition.ANSWER_NOW,
+                confidence=0.96,
+                domain_hint='system',
+                summary='Ejecutar auto-analisis completo: sintaxis, @Slot, routing, tests, ramas, GPU. Corregir lo que se pueda y reportar con transparencia.',
+                reasoning=['peticion explicita de auto-analisis, diagnostico, o revision de codigo propio'],
+                metadata={
+                    'conversational_prompt': True,
+                    'metacognition_prompt': True,
+                    'requires_mcp_tools': ['self_code_analysis', 'gpu_metacognition_check'],
+                },
+            )
+            hypotheses.append(
+                IntentHypothesis(
+                    intent_key='system.self_awareness',
+                    title='Autodiagnostico conversacional',
+                    confidence=0.55,
+                    rationale='Podria ser solo pregunta de estado, pero la peticion pide accion (analisis de codigo).',
+                )
+            )
             return finalize(intent, hypotheses)
 
         if self._is_self_awareness_prompt(text) and not bool(analysis.get('mixed_actionable')):
@@ -708,6 +735,8 @@ class IntentUnderstandingService:
                 reasons.append(reason)
             bucket['reasons'] = reasons
 
+        if self._is_metacognition_prompt(text):
+            register('system.metacognition', 6.0, 'peticion de auto-analisis, diagnostico de codigo, o metacognicion')
         if self._is_self_awareness_prompt(text):
             register('system.self_awareness', 5.0, 'pregunta explicita por entorno, herramientas o conexiones')
         if self._is_evolution_status_prompt(text):
@@ -987,6 +1016,7 @@ class IntentUnderstandingService:
             'general.assistance': 'Asistencia general',
             'knowledge.query': 'Consulta local',
             'system.self_awareness': 'Autodiagnostico conversacional',
+            'system.metacognition': 'Metacognicion autonoma',
             'consulta_estado_evolutivo': 'Consulta de estado evolutivo',
             'research.external_consultation': 'Consulta externa dirigida',
             'research.local': 'Investigacion local',
@@ -1058,6 +1088,43 @@ class IntentUnderstandingService:
             or (conversational_issue_terms and action_signals)
             or architecture_request
         )
+
+    def _is_metacognition_prompt(self, text: str) -> bool:
+        """Detecta peticiones de auto-analisis de codigo, diagnostico de rendimiento,
+        revision de GPU, o metacognicion general. Diferencia clave vs self_awareness:
+        self_awareness = 'que herramientas tienes' (informacional)
+        metacognition  = 'analiza tu codigo, busca errores' (accion sobre si mismo)
+        """
+        if not text:
+            return False
+        direct_phrases = (
+            'analizate', 'analízate', 'analiza tu codigo', 'analiza tu código',
+            'revisa tu codigo', 'revisa tu código', 'busca errores', 'busca fallas',
+            'busca bugs', 'autoanalisis', 'autoanálisis', 'auto analisis',
+            'auto análisis', 'auto diagnostico', 'autodiagnostico', 'autodiagnóstico',
+            'por que te congelas', 'por qué te congelas', 'por que estas lento',
+            'por qué estás lento', 'por que respondes lento', 'por qué respondes lento',
+            'analiza tu estado', 'diagnostica tu estado', 'diagnosticate', 'diagnostícate',
+            'examina tu codigo', 'examina tu código', 'revisa tu estado real',
+            'reporte de tu estado', 'mejoras pendientes', 'ramas sin mergear',
+            'ramas pendientes', 'codigo desactualizado', 'código desactualizado',
+            'tu gpu esta funcionando', 'tu gpu está funcionando', 'revisa tu gpu',
+            'self code analysis', 'self_code_analysis', 'actualizate y analizate',
+            'actualízate y analízate', 'analiza tu rendimiento', 'analiza tu salud',
+            'corrige lo que puedas', 'tu codigo tiene errores', 'tu código tiene errores',
+        )
+        if any(phrase in text for phrase in direct_phrases):
+            return True
+        word_tokens = set(re.findall(r'[a-z0-9_]+', text))
+        asks_self = any(t in word_tokens for t in ('analizate', 'analízate', 'autoanalisis', 'diagnosticate', 'metacognicion'))
+        asks_code = any(t in word_tokens for t in ('codigo', 'código', 'errores', 'fallas', 'bugs', 'sintaxis'))
+        asks_perf = any(t in word_tokens for t in ('lento', 'congela', 'congelas', 'rendimiento', 'lentitud'))
+        asks_analyze = any(t in text for t in ('analiza', 'revisa', 'examina', 'diagnostica', 'busca'))
+        if asks_analyze and (asks_code or asks_perf):
+            return True
+        if asks_self:
+            return True
+        return False
 
     def _is_self_awareness_prompt(self, text: str) -> bool:
         if not text:

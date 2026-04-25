@@ -623,13 +623,35 @@ class IABVMCPServer:
             return result
 
         @mcp.tool()
+        def gpu_model_benchmark(models: list[str] | None = None) -> dict[str, Any]:
+            """Ejecuta benchmark de modelos Ollama locales y registra en ExperimentLab.
+
+            Descubre los modelos instalados, ejecuta prompts estandarizados,
+            mide tokens/segundo y calidad, y devuelve un ranking con la
+            recomendacion del ExperimentLab sobre cual modelo rinde mejor
+            en el hardware actual.
+
+            Si ``models`` se omite, benchmarkea todos los modelos instalados.
+            """
+            block = self._governance_block_for_route(
+                assistant_kind="gpu_benchmark",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
+            svc = getattr(self.container, "gpu_model_benchmark_service", None)
+            if svc is None:
+                return {"error": "gpu_model_benchmark_service no disponible en el container"}
+            return _run_sync_off_event_loop(svc.run_full_benchmark, models=models)
+
+        @mcp.tool()
         def chatgpt_web_capture(
             prompt_text: str,
             launch_target: str = "https://chatgpt.com/",
             response_wait_seconds: float = 45.0,
             reingest_only: bool = False,
             browser_profile_dir: str | None = None,
-            browser_headless: bool = False,
+            browser_headless: bool = True,
             input_selectors: list[str] | None = None,
             response_selectors: list[str] | None = None,
             submit_selectors: list[str] | None = None,
@@ -645,7 +667,7 @@ class IABVMCPServer:
                 response_wait_seconds: tope de espera de respuesta estable.
                 reingest_only: si True, sólo relee DOM sin pegar prompt.
                 browser_profile_dir: ruta del perfil persistente (opcional).
-                browser_headless: si True, corre sin ventana visible.
+                browser_headless: si True, corre sin ventana visible (default).
                 input_selectors / response_selectors / submit_selectors:
                     selectores del card (defaults = oficiales del ToolCard).
             """
@@ -1613,6 +1635,238 @@ class IABVMCPServer:
             }
 
         # ------------------------------------------------------------
+        # gpu_metacognition_check — verificación real de GPU
+        #
+        # Metacognición: el programa verifica qué GPU está usando
+        # realmente cruzando nvidia-smi, ollama ps y wmic.
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def gpu_metacognition_check() -> dict[str, Any]:
+            """Verificación metacognitiva de GPU (cross-validation).
+
+            Cruza nvidia-smi, ollama ps, y detección de hardware para
+            verificar que Ollama realmente usa la GPU correcta y que
+            los modelos caben 100% en VRAM.
+
+            Returns:
+                dict con gpus_detected, ollama_state, issues, recommendations.
+            """
+            from iabv_v15.services.gpu_metacognition import gpu_metacognition_report
+            return _to_jsonable(_run_sync_off_event_loop(gpu_metacognition_report))
+
+        # ------------------------------------------------------------
+        # full_system_metacognition_scan — inventario completo del sistema
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def full_system_metacognition_scan() -> dict[str, Any]:
+            """Escaneo COMPLETO del sistema: navegadores, programas, modelos IA, configuraciones optimas."""
+            from iabv_v15.services.full_system_metacognition import full_system_metacognition_report
+            return _to_jsonable(_run_sync_off_event_loop(full_system_metacognition_report))
+
+        # ------------------------------------------------------------
+        # self_code_analysis — el programa analiza su propio código
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def self_code_analysis() -> dict[str, Any]:
+            """Auto-análisis COMPLETO del código: sintaxis, ramas pendientes, MCP tools, rendimiento, threading.
+
+            Metacognición: el programa examina su propio código fuente para
+            detectar errores de sintaxis, ramas sin mergear, problemas de
+            indentación en tools MCP, llamadas bloqueantes en UI, y otros
+            patrones que degradan rendimiento o funcionalidad.
+            """
+            from iabv_v15.services.self_code_analysis import full_self_analysis_report
+            ws = self._workspace_root()
+            return _to_jsonable(full_self_analysis_report(ws))
+
+        @mcp.tool()
+        def self_merge_branch(
+            branch: str,
+        ) -> dict[str, Any]:
+            """Mergear una rama pendiente a la rama actual.
+
+            Metacognición: el programa detecta ramas con mejoras no integradas
+            y puede auto-mergearlas para mantener su código actualizado.
+
+            Args:
+                branch: nombre de la rama a mergear (ej: 'origin/iabv-auto/...')
+            """
+            gate = self._governance_block_for_route(
+                assistant_kind='self_modify',
+                requires_network=False,
+            )
+            if gate:
+                return _to_jsonable(gate)
+
+            import re as _re
+            import subprocess as _sp
+            if _re.search(r'[;&|`$\n]|--force|\.\.', branch):
+                return _to_jsonable({'ok': False, 'error': 'branch name rejected (unsafe chars)'})
+
+            ws = self._workspace_root()
+            try:
+                merge_result = _sp.run(
+                    ['git', '-C', ws, 'merge', '--no-edit', branch],
+                    capture_output=True, text=True, timeout=60,
+                )
+                if merge_result.returncode != 0:
+                    # Abort the merge on conflict
+                    _sp.run(['git', '-C', ws, 'merge', '--abort'],
+                                   capture_output=True, timeout=10)
+                    return _to_jsonable({
+                        'ok': False,
+                        'error': 'merge conflict — aborted',
+                        'details': merge_result.stderr.strip()[:500],
+                    })
+                return _to_jsonable({
+                    'ok': True,
+                    'merged': branch,
+                    'output': merge_result.stdout.strip()[:500],
+                })
+            except Exception as exc:
+                return _to_jsonable({'ok': False, 'error': str(exc)})
+
+        # ------------------------------------------------------------
+        # self_update — el programa se actualiza a sí mismo (git pull)
+        #
+        # Metacognición: el programa puede aplicar sus propias mejoras
+        # sin requerir intervención manual del usuario.
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def self_update(
+            branch: str | None = None,
+        ) -> dict[str, Any]:
+            """El programa se actualiza a sí mismo haciendo git pull.
+
+            Metacognición aplicada: el programa reconoce que tiene una
+            versión nueva disponible y se auto-actualiza sin intervención
+            del usuario.
+
+            Args:
+                branch: rama específica (default: rama actual).
+
+            Returns:
+                dict con status, branch, output del git pull.
+            """
+            import re as _re
+            import subprocess as _sp
+
+            block = self._governance_block_for_route(
+                assistant_kind="self_update",
+                requires_network=True,
+            )
+            if block is not None:
+                return block
+
+            # Sanitize branch name — reject git flags (--force),
+            # directory traversal (..), and shell metacharacters.
+            if branch:
+                if branch.startswith('-'):
+                    return {"status": "error", "detail": "branch name cannot start with '-' (git flag injection)"}
+                if '..' in branch:
+                    return {"status": "error", "detail": "branch name cannot contain '..' (directory traversal)"}
+                if not _re.match(r'^[a-zA-Z0-9][\w./-]*$', branch):
+                    return {"status": "error", "detail": "invalid branch name"}
+
+            ws = self._workspace_root()
+            try:
+                # Get current branch
+                cur = _sp.run(
+                    ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                    capture_output=True, text=True, timeout=10,
+                    cwd=ws, check=False,
+                )
+                current_branch = cur.stdout.strip() or "unknown"
+
+                if branch and branch != current_branch:
+                    co = _sp.run(
+                        ["git", "checkout", branch],
+                        capture_output=True, text=True, timeout=30,
+                        cwd=ws, check=False,
+                    )
+                    if co.returncode != 0:
+                        return {
+                            "status": "error",
+                            "detail": f"checkout failed: {co.stderr.strip()}",
+                        }
+                    current_branch = branch
+
+                # --rebase=false tolerates diverging branches
+                # (e.g. local auto-merge commits that diverge from remote).
+                # --ff-only would fail with "Diverging branches can't".
+                result = _sp.run(
+                    ["git", "pull", "--rebase=false"],
+                    capture_output=True, text=True, timeout=60,
+                    cwd=ws, check=False,
+                )
+                return {
+                    "status": "ok" if result.returncode == 0 else "error",
+                    "branch": current_branch,
+                    "output": result.stdout.strip(),
+                    "error": result.stderr.strip() if result.returncode != 0 else None,
+                }
+            except Exception as exc:
+                return {"status": "error", "detail": str(exc)}
+
+        # ------------------------------------------------------------
+        # self_run_benchmark — el programa corre su propio benchmark
+        #
+        # Metacognición: el programa se auto-evalúa ejecutando el
+        # script de benchmark y reportando los resultados.
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def self_run_benchmark() -> dict[str, Any]:
+            """El programa ejecuta su propio GPU benchmark (gpu_auto_benchmark.py).
+
+            Metacognición aplicada: el programa se auto-evalúa corriendo
+            el benchmark completo (FASE 0-5) y reportando los resultados.
+
+            Returns:
+                dict con status, output (últimas 200 líneas), report_path.
+            """
+            import subprocess as _sp
+
+            block = self._governance_block_for_route(
+                assistant_kind="gpu_benchmark",
+                requires_network=False,
+            )
+            if block is not None:
+                return block
+
+            ws = self._workspace_root()
+            script = os.path.join(ws, "scripts", "gpu_auto_benchmark.py")
+            if not os.path.isfile(script):
+                return {"status": "error", "detail": f"script not found: {script}"}
+
+            try:
+                env = os.environ.copy()
+                env["PYTHONPATH"] = os.path.join(ws, "src")
+                result = _sp.run(
+                    ["python", script],
+                    capture_output=True, text=True, timeout=600,
+                    cwd=ws, env=env, check=False,
+                )
+                lines = result.stdout.strip().splitlines()
+                # Return last 200 lines to avoid huge responses
+                output_tail = "\n".join(lines[-200:]) if len(lines) > 200 else result.stdout.strip()
+                return {
+                    "status": "ok" if result.returncode == 0 else "error",
+                    "output": output_tail,
+                    "error": result.stderr.strip()[-500:] if result.returncode != 0 else None,
+                    "report_path": os.path.join(ws, "data", "gpu_benchmark_report.json"),
+                    "total_lines": len(lines),
+                }
+            except _sp.TimeoutExpired:
+                return {"status": "timeout", "detail": "benchmark exceeded 10 min limit"}
+            except Exception as exc:
+                return {"status": "error", "detail": str(exc)}
+
+        # ------------------------------------------------------------
         # self_auto_merge — el programa mergea sus propios PRs devin/*
         #
         # Motivacion: el usuario pidio dejar de hacer click en "Merge" en
@@ -1674,6 +1928,20 @@ class IABVMCPServer:
     def run(self, transport: str = "stdio") -> None:
         if transport not in SUPPORTED_TRANSPORTS:
             raise ValueError(f"transport '{transport}' no soportado. Usa {sorted(SUPPORTED_TRANSPORTS)}")
+        
+        # Register self-update (write) tools for autonomous self-modification
+        try:
+            from iabv_v15.infra.mcp.self_update_tools import register_self_update_tools
+            _n_write_tools = register_self_update_tools(
+                mcp=self.mcp,
+                workspace_root_fn=self._workspace_root,
+                governance_fn=self._governance_block_for_route,
+                to_jsonable_fn=_to_jsonable,
+            )
+            logger.info("self_update_tools: %d write tools registered", _n_write_tools)
+        except Exception as _sut_exc:
+            logger.warning("self_update_tools: failed to register: %s", _sut_exc)
+
         logger.info("IABV MCP server starting (transport=%s, name=%s)", transport, self.name)
         self._log_github_api_adapter_status()
         self._log_devin_api_adapter_status()

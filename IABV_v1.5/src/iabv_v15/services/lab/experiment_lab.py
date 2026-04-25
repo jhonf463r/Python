@@ -9,6 +9,7 @@ from iabv_v15.domain.models import (
     ExperimentDomain,
     ExperimentRecommendation,
     ExperimentRun,
+    IATraceEntry,
 )
 from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
 from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
@@ -134,6 +135,9 @@ class ExperimentLab:
         recommendation = self.strategy_selector.recommend(domain=domain, subject_key=subject_key, candidate_runs=[], historical_runs=runs)
         self.repository.save_recommendation(recommendation)
         return recommendation
+
+    def list_candidate_traces_for_scope(self, scope_key: str, *, limit: int = 20) -> list[IATraceEntry]:
+        return self.repository.list_candidate_traces_for_scope(scope_key, limit=limit)
 
     def record_outcome(
         self,
@@ -350,6 +354,5 @@ class ExperimentLab:
         if not comparison_pool:
             return False
         return score > max(item.metrics.total_score for item in comparison_pool)
-
 
 

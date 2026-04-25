@@ -125,7 +125,7 @@ def test_sync_applies_ff_pull_when_safe() -> None:
         ("git", "fetch", "origin", "main"): FakeCompleted(),
         ("git", "status", "--porcelain"): FakeCompleted(stdout=""),
         ("git", "rev-list", "--left-right", "--count", "HEAD...origin/main"): FakeCompleted(stdout="0 2\n"),
-        ("git", "pull", "--ff-only", "origin", "main"): FakeCompleted(stdout="Fast-forward\n"),
+        ("git", "pull", "--rebase=false", "origin", "main"): FakeCompleted(stdout="Fast-forward\n"),
         ("git", "rev-parse", "HEAD"): FakeCompleted(stdout="cafebabe\n"),
     }
     svc, runner = _svc(recipe)
@@ -135,7 +135,7 @@ def test_sync_applies_ff_pull_when_safe() -> None:
     assert result.commits_applied == 2
     assert result.new_head == "cafebabe"
     # pull was actually invoked
-    assert ("git", "pull", "--ff-only", "origin", "main") in runner.calls
+    assert ("git", "pull", "--rebase=false", "origin", "main") in runner.calls
 
 
 def test_sync_up_to_date_does_not_register_unresolved() -> None:
@@ -157,7 +157,7 @@ def test_sync_up_to_date_does_not_register_unresolved() -> None:
     assert result.applied is False
     assert any("up to date" in r for r in result.blocked_reasons)
     assert recorded == []  # healthy no-op: zero UNRESOLVED noise
-    assert ("git", "pull", "--ff-only", "origin", "main") not in runner.calls
+    assert ("git", "pull", "--rebase=false", "origin", "main") not in runner.calls
 
 
 def test_sync_blocks_on_dirty_tree_and_registers_unresolved() -> None:
@@ -177,7 +177,7 @@ def test_sync_blocks_on_dirty_tree_and_registers_unresolved() -> None:
     assert result.applied is False
     assert any("uncommitted" in reason for reason in result.blocked_reasons)
     # pull must NOT have been invoked
-    assert ("git", "pull", "--ff-only", "origin", "main") not in runner.calls
+    assert ("git", "pull", "--rebase=false", "origin", "main") not in runner.calls
     assert len(recorded) == 1
     assert "uncommitted" in recorded[0][0]
 
@@ -197,7 +197,7 @@ def test_sync_respects_autonomy_policy_block() -> None:
     result = svc.sync()
     assert result.applied is False
     assert any("maintenance window" in r for r in result.blocked_reasons)
-    assert ("git", "pull", "--ff-only", "origin", "main") not in runner.calls
+    assert ("git", "pull", "--rebase=false", "origin", "main") not in runner.calls
 
 
 def test_sync_accepts_real_autonomy_governance_policy_default_allow() -> None:
@@ -210,7 +210,7 @@ def test_sync_accepts_real_autonomy_governance_policy_default_allow() -> None:
         ("git", "fetch", "origin", "main"): FakeCompleted(),
         ("git", "status", "--porcelain"): FakeCompleted(stdout=""),
         ("git", "rev-list", "--left-right", "--count", "HEAD...origin/main"): FakeCompleted(stdout="0 1\n"),
-        ("git", "pull", "--ff-only", "origin", "main"): FakeCompleted(stdout="Fast-forward\n"),
+        ("git", "pull", "--rebase=false", "origin", "main"): FakeCompleted(stdout="Fast-forward\n"),
         ("git", "rev-parse", "HEAD"): FakeCompleted(stdout="abc123\n"),
     }
     svc, _ = _svc(recipe, autonomy_governance_policy=AutonomyGovernancePolicy())
@@ -224,7 +224,7 @@ def test_sync_reports_pull_failure() -> None:
         ("git", "fetch", "origin", "main"): FakeCompleted(),
         ("git", "status", "--porcelain"): FakeCompleted(stdout=""),
         ("git", "rev-list", "--left-right", "--count", "HEAD...origin/main"): FakeCompleted(stdout="0 1\n"),
-        ("git", "pull", "--ff-only", "origin", "main"): FakeCompleted(stderr="not a fast-forward\n", returncode=1),
+        ("git", "pull", "--rebase=false", "origin", "main"): FakeCompleted(stderr="not a fast-forward\n", returncode=1),
     }
     svc, _ = _svc(recipe)
     result = svc.sync()

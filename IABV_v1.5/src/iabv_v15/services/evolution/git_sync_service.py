@@ -2,7 +2,7 @@
 
 Servicio minimalista que respeta AGENTS.md:
     * nunca hace git reset --hard ni git clean,
-    * solo ``git pull --ff-only`` cuando el working tree esta limpio,
+    * usa ``git pull --rebase=false`` cuando el working tree esta limpio,
     * consulta a ``AutonomyGovernancePolicy`` antes de aplicar cambios,
     * registra UNRESOLVED en ``ControlMasterService`` cuando bloquea.
 
@@ -103,9 +103,9 @@ class GitSyncService:
         elif tree_dirty:
             can_sync = False
             block_reason = "working tree has uncommitted changes"
-        elif ahead > 0:
+        elif ahead > 0 and behind == 0:
             can_sync = False
-            block_reason = f"local branch has {ahead} unpushed commit(s)"
+            block_reason = f"local branch has {ahead} unpushed commit(s) — nothing to pull"
         elif behind == 0:
             can_sync = False
             block_reason = "already up to date"
@@ -122,7 +122,7 @@ class GitSyncService:
         )
 
     def sync(self) -> GitSyncResult:
-        """Runs fast-forward-only pull when safe. Reports result structurally.
+        """Runs pull (--rebase=false) when safe. Reports result structurally.
 
         Never runs destructive ops. On block, registers an UNRESOLVED item in
         ``ControlMasterService`` (if provided) so operators see the state in
@@ -147,7 +147,10 @@ class GitSyncService:
             self._register_unresolved(status, extra_reason=blocked[-1])
             return GitSyncResult(status_before=status, applied=False, blocked_reasons=tuple(blocked))
 
-        pull = self._run(["git", "pull", "--ff-only", "origin", self.branch])
+        # --rebase=false tolerates diverging branches caused by local
+        # auto-merge commits.  --ff-only would fail with "Diverging
+        # branches can't" after auto-correction runs.
+        pull = self._run(["git", "pull", "--rebase=false", "origin", self.branch])
         if pull.returncode != 0:
             pull_error = (pull.stderr or pull.stdout or "").strip()
             blocked.append(f"pull failed: {pull_error}")

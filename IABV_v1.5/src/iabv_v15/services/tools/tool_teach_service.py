@@ -63,6 +63,7 @@ class ToolTeachService:
         mode_selector: InteractionModeSelector | None = None,
         experiment_lab: ExperimentLab | None = None,
         live_audit_supervisor: LiveAuditSupervisor | None = None,
+        synaptic_router: Any | None = None,
     ) -> None:
         self.registry = registry
         self.memory = memory
@@ -76,6 +77,7 @@ class ToolTeachService:
         self.mode_selector = mode_selector
         self.experiment_lab = experiment_lab
         self.live_audit_supervisor = live_audit_supervisor
+        self.synaptic_router = synaptic_router
 
     def _assistant_configuration_snapshot(
         self,
@@ -459,7 +461,10 @@ class ToolTeachService:
 
     def preview_request(self, request: InferenceRequest) -> dict[str, Any]:
         task = self.build_task_from_request(request)
-        card = self.registry.pick_card_for_task(task)
+        card = self.registry.pick_card_for_task(
+            task,
+            preferred_assistant_kind=str(task.metadata.get('synaptic_preferred_assistant_kind') or ''),
+        )
         if card is None:
             return {'available': False, 'summary': 'No encontre una herramienta local registrada para esta tarea.'}
         task = task.model_copy(update={'tool_id': card.tool_id})
@@ -535,6 +540,21 @@ class ToolTeachService:
         expected = str(request.goal_parameters.get('expected_outcome') or 'Resultado validado de la herramienta.')
         site_id = str(request.goal_parameters.get('site_id') or request.site_hint or '') or None
         selection = self._select_mode(request=request, suggested_tool_id=suggested_tool_id, site_id=site_id)
+        synaptic_decision = self._synaptic_decision_for_request(request)
+        synaptic_preferred_assistant_kind = str(synaptic_decision.get('selected_assistant_kind') or '')
+        if synaptic_preferred_assistant_kind and not str(goal_parameters.get('tool_id') or '').strip():
+            preferred_card = self.registry.pick_card_for_task(
+                ToolTask(
+                    tool_id='',
+                    title=title,
+                    objective=request.user_goal,
+                    requested_by_role=request.task_role if request.task_role in {TaskRole.TOOL_USE, TaskRole.TOOL_SANDBOX} else TaskRole.TOOL_USE,
+                ),
+                preferred_assistant_kind=synaptic_preferred_assistant_kind,
+            )
+            if preferred_card is not None:
+                suggested_tool_id = preferred_card.tool_id
+                selection = self._select_mode(request=request, suggested_tool_id=suggested_tool_id, site_id=site_id)
         selection = self._enforce_explicit_external_selection(request=request, selection=selection, suggested_tool_id=suggested_tool_id)
         tool_id = str(selection.selected_tool_id or suggested_tool_id)
         reusable_pattern = self._pattern_from_selection(selection)
@@ -578,6 +598,8 @@ class ToolTeachService:
                 'created_at_utc': now,
                 'updated_at_utc': now,
                 'mode_selection': selection.model_dump(mode='json'),
+                'synaptic_routing_decision': synaptic_decision,
+                'synaptic_preferred_assistant_kind': synaptic_preferred_assistant_kind,
                 'already_resolved': selection.already_resolved,
                 'equivalent_pattern_exists': selection.equivalent_pattern_exists,
                 'improvement_already_implemented': selection.improvement_already_implemented,
@@ -710,7 +732,10 @@ class ToolTeachService:
         return stored_task, result, preview
 
     def execute_task(self, task: ToolTask, *, approved: bool = False) -> ToolResult:
-        card = self.registry.pick_card_for_task(task)
+        card = self.registry.pick_card_for_task(
+            task,
+            preferred_assistant_kind=str(task.metadata.get('synaptic_preferred_assistant_kind') or ''),
+        )
         if card is None:
             result = ToolResult(
                 task_id=task.task_id,
@@ -829,6 +854,25 @@ class ToolTeachService:
                 'config_signature': str(task.metadata.get('config_signature') or ''),
             },
         )
+        if bool(payload_metadata.get('capture_unverified')) or str(payload_metadata.get('thread_verification') or '').strip().lower() == 'wrong_thread':
+            result = result.model_copy(
+                update={
+                    'success': False,
+                    'validation_status': ToolValidationStatus.UNVALIDATED,
+                    'execution_state': result.execution_state.model_copy(
+                        update={
+                            'state': 'failed',
+                            'detail': str(payload.get('error_message') or payload_metadata.get('auto_capture_reason') or 'capture_unverified'),
+                            'metadata': {
+                                **dict(result.execution_state.metadata or {}),
+                                'response_captured': False,
+                            },
+                        }
+                    ),
+                    'output_text': '',
+                    'error_message': str(payload.get('error_message') or payload_metadata.get('auto_capture_reason') or 'capture_unverified'),
+                }
+            )
         result = self.validator.validate(card=card, task=task, result=result, sandbox=False)
         trace_entry = self._build_ia_trace_entry(task=task, result=result)
         result = result.model_copy(
@@ -1155,6 +1199,27 @@ class ToolTeachService:
             suggested_tool_id=suggested_tool_id,
             allowed_tool_ids=allowed_tool_ids or None,
         )
+
+    def _synaptic_decision_for_request(self, request: InferenceRequest) -> dict[str, Any]:
+        if self.synaptic_router is None:
+            return {}
+        goal_parameters = dict(request.goal_parameters or {})
+        raw_candidates = goal_parameters.get('candidate_assistant_kinds') or goal_parameters.get('allowed_assistant_kinds') or []
+        candidate_assistant_kinds = [str(item) for item in raw_candidates if str(item).strip()] if isinstance(raw_candidates, list) else None
+        task_kind = str(
+            goal_parameters.get('task_kind')
+            or goal_parameters.get('diagnostic_category')
+            or request.task_role.value
+            or request.user_goal
+        )
+        try:
+            decision = self.synaptic_router.decide(
+                task_kind=task_kind,
+                candidate_assistant_kinds=candidate_assistant_kinds,
+            )
+        except Exception:
+            return {'error': 'synaptic_router_failed'}
+        return decision.model_dump(mode='json')
 
     def _enforce_explicit_external_selection(
         self,
@@ -1817,10 +1882,6 @@ class ToolTeachService:
         if tool_id in {'chatgpt_web_assisted', 'claude_web_assisted'}:
             return ToolType.LLM_WEB_UI
         return ToolType.LLM_LOCAL
-
-
-
-
 
 
 

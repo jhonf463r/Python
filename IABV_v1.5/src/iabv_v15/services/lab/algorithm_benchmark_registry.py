@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from iabv_v15.domain.models import ExperimentCandidate, ExperimentDomain
-from iabv_v15.services.lab.suites import CodeUnderstandingSuite, FormulaTestHarness, OCRBenchmarkSuite, TextUnderstandingSuite
+from iabv_v15.services.lab.suites import CodeUnderstandingSuite, FormulaTestHarness, InferenceBenchmarkSuite, OCRBenchmarkSuite, TextUnderstandingSuite
 
 
 class AlgorithmBenchmarkRegistry:
@@ -12,6 +12,7 @@ class AlgorithmBenchmarkRegistry:
         self.ocr_suite = OCRBenchmarkSuite()
         self.text_suite = TextUnderstandingSuite()
         self.code_suite = CodeUnderstandingSuite()
+        self.inference_suite = InferenceBenchmarkSuite()
 
     def evaluate(self, *, domain: ExperimentDomain, objective: str, expected: Any, candidate: ExperimentCandidate) -> dict[str, Any]:
         if domain in {ExperimentDomain.EQUATION, ExperimentDomain.FORMULA, ExperimentDomain.SYMBOLIC_LOGIC}:
@@ -20,4 +21,6 @@ class AlgorithmBenchmarkRegistry:
             return self.ocr_suite.evaluate(domain=domain, objective=objective, expected=expected, candidate=candidate)
         if domain == ExperimentDomain.LANGUAGE:
             return self.text_suite.evaluate(domain=domain, objective=objective, expected=expected, candidate=candidate)
+        if domain == ExperimentDomain.INFERENCE_BENCHMARK:
+            return self.inference_suite.evaluate(domain=domain, objective=objective, expected=expected, candidate=candidate)
         return self.code_suite.evaluate(domain=domain, objective=objective, expected=expected, candidate=candidate)

@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 from uuid import uuid4
 
-from iabv_v15.domain.models import ToolCard, ToolType
+from iabv_v15.domain.models import TaskRole, ToolCard, ToolTask, ToolType
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
@@ -110,6 +110,29 @@ def test_tool_registry_refreshes_default_metadata_but_preserves_manual_executabl
         refreshed = repository.get_card('chatgpt_installed')
         assert refreshed is not None
         assert refreshed.available is True
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_tool_registry_prefers_synaptic_assistant_kind_hint() -> None:
+    root = _workspace('tool_registry_synaptic_hint')
+    try:
+        db = AppDatabase(str(root / 'app.sqlite'))
+        storage = ArtifactStorage(str(root / 'tool_teaching'))
+        repository = ToolRecordRepository(db, storage)
+        registry = ToolRegistry(repository, {'external_assistant': _AvailableAdapter()})
+
+        task = ToolTask(
+            tool_id='',
+            title='Revisar arquitectura',
+            objective='analiza este cambio con la IA mas fuerte',
+            requested_by_role=TaskRole.TOOL_USE,
+        )
+
+        card = registry.pick_card_for_task(task, preferred_assistant_kind='claude')
+
+        assert card is not None
+        assert card.metadata['assistant_kind'] == 'claude'
     finally:
         shutil.rmtree(root, ignore_errors=True)
 

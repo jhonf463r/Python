@@ -51,6 +51,12 @@ Item {
     property string adaptiveEvidenceTextValue: controlCenterViewModel ? controlCenterViewModel.adaptiveEvidenceText : ""
     property string adaptiveEvolutionTextValue: controlCenterViewModel ? controlCenterViewModel.adaptiveEvolutionText : ""
 
+    // ── Propiedades avanzadas del chat ──
+    property int attachedFileCountValue: controlCenterViewModel ? controlCenterViewModel.attachedFileCount : 0
+    property string liveStatusValue: controlCenterViewModel ? controlCenterViewModel.liveStatus : "idle"
+    property var contextualSuggestionsModel: controlCenterViewModel ? controlCenterViewModel.contextualSuggestions : []
+    property var attachedFilesModel: controlCenterViewModel ? controlCenterViewModel.attachedFiles : []
+
     Timer {
         id: autonomyDockTimer
         interval: 1500
@@ -235,46 +241,22 @@ Item {
 
                             Repeater {
                                 model: chatMessagesModel
-                                delegate: Rectangle {
+                                delegate: ChatMessageDelegate {
                                     width: chatCol.width
-                                    radius: 14
-                                    color: modelData.role === "user" ? "#26414b" : "#22303a"
-                                    border.width: 1
-                                    border.color: borderSoft
-                                    implicitHeight: msgCol.implicitHeight + 18
-
-                                    Column {
-                                        id: msgCol
-                                        anchors.fill: parent
-                                        anchors.margins: 10
-                                        spacing: 6
-
-                                        Label { text: modelData.speaker; color: textPrimary; font.pixelSize: 13; font.family: "Segoe UI" }
-                                        TextEdit {
-                                            width: msgCol.width
-                                            text: modelData.text
-                                            readOnly: true
-                                            selectByMouse: true
-                                            wrapMode: TextEdit.Wrap
-                                            textFormat: TextEdit.PlainText
-                                            color: textPrimary
-                                            font.family: "Segoe UI"
-                                            font.pixelSize: 12
-                                            height: Math.max(contentHeight, 18)
-                                        }
-                                        TextEdit {
-                                            width: msgCol.width
-                                            text: modelData.meta
-                                            visible: text.length > 0
-                                            readOnly: true
-                                            selectByMouse: true
-                                            wrapMode: TextEdit.Wrap
-                                            textFormat: TextEdit.PlainText
-                                            color: textSecondary
-                                            font.family: "Segoe UI"
-                                            font.pixelSize: 11
-                                            height: visible ? Math.max(contentHeight, 16) : 0
-                                        }
+                                    onCopyRequested: function(text) {
+                                        if (controlCenterViewModel) controlCenterViewModel.copyToClipboard(text)
+                                    }
+                                    onDownloadRequested: function(text, filename) {
+                                        if (controlCenterViewModel) controlCenterViewModel.downloadChat(text, filename)
+                                    }
+                                    onApplyCodeRequested: function(code, language) {
+                                        if (controlCenterViewModel) controlCenterViewModel.applyCode(code, language)
+                                    }
+                                    onActionRequested: function(actionId, actionData) {
+                                        if (controlCenterViewModel) controlCenterViewModel.handleSuggestionAction(actionId, actionData.label || "")
+                                    }
+                                    onAttachmentClicked: function(path, name) {
+                                        console.log("Attachment clicked:", path, name)
                                     }
                                 }
                             }
@@ -320,6 +302,46 @@ Item {
                         }
                     }
 
+                    // ── Toolbar avanzado del chat ──
+                    ChatToolbar {
+                        id: chatToolbar
+                        width: chatCol.width
+                        toolCount: controlCenterViewModel ? controlCenterViewModel.providerCards.length : 0
+                        activeProvider: routingModeLabelValue.toLowerCase().indexOf("chatgpt") >= 0 ? "chatgpt" : (routingModeLabelValue.toLowerCase().indexOf("claude") >= 0 ? "claude" : (routingModeLabelValue.toLowerCase().indexOf("devin") >= 0 ? "devin" : (routingModeLabelValue.toLowerCase().indexOf("ollama") >= 0 ? "ollama" : "auto")))
+                        codeMode: false
+                        canAttach: true
+                        attachedCount: attachedFileCountValue
+                        systemStatus: liveStatusValue === "idle" ? "idle" : (liveStatusValue === "error" ? "error" : "processing")
+                        onAttachClicked: {
+                            if (controlCenterViewModel) controlCenterViewModel.attachFile("test.txt", "C:/tmp/test.txt", 1024, "text/plain")
+                        }
+                        onClearAttachments: {
+                            if (controlCenterViewModel) controlCenterViewModel.clearAttachedFiles()
+                        }
+                        onCodeModeToggled: console.log("Code mode toggled")
+                        onSearchClicked: console.log("Search clicked")
+                        onProviderSwitchClicked: {
+                            if (controlCenterViewModel) controlCenterViewModel.setRole("auto")
+                        }
+                        onKeyInputRequested: {
+                            if (controlCenterViewModel) controlCenterViewModel.sendChat("ingresar clave")
+                        }
+                        onSearchQueryChanged: {
+                            if (controlCenterViewModel) controlCenterViewModel.searchChatHistory(chatToolbar.searchQuery)
+                        }
+                    }
+
+                    // ── Panel de sugerencias contextuales ──
+                    ContextualSuggestionsPanel {
+                        id: suggestionsPanel
+                        width: chatCol.width
+                        suggestions: contextualSuggestionsModel
+                        onSuggestionClicked: function(action, text) {
+                            if (controlCenterViewModel) controlCenterViewModel.handleSuggestionAction(action, text)
+                        }
+                        onDismissed: visible = false
+                    }
+
                     AppTextArea { id: chatInput; width: chatCol.width; implicitHeight: 92; placeholderText: "Describe la tarea cotidiana que quieres resolver o automatizar por fases..." }
                     Flow {
                         width: chatCol.width
@@ -334,6 +356,7 @@ Item {
                                     if (outgoing.length > 0) {
                                         controlCenterViewModel.sendChat(outgoing);
                                         chatInput.text = "";
+                                        suggestionsPanel.visible = false;
                                     }
                                 }
                             }

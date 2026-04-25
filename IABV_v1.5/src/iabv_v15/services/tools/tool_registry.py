@@ -40,11 +40,17 @@ class ToolRegistry:
     def get_card(self, tool_id: str) -> ToolCard | None:
         return self.repository.get_card(tool_id)
 
-    def pick_card_for_task(self, task: ToolTask) -> ToolCard | None:
+    def pick_card_for_task(self, task: ToolTask, *, preferred_assistant_kind: str = '') -> ToolCard | None:
         if task.tool_id:
             card = self.get_card(task.tool_id)
             if card is not None:
                 return self.refresh_card(card)
+        preferred_assistant_kind = str(preferred_assistant_kind or '').strip().lower()
+        if preferred_assistant_kind:
+            for card in self.list_cards():
+                card_kind = str(card.metadata.get('assistant_kind') or '').strip().lower()
+                if card_kind == preferred_assistant_kind:
+                    return self.refresh_card(card)
         objective = (task.objective + ' ' + task.title).lower()
         for card in self.list_cards():
             score = 0
@@ -620,5 +626,4 @@ class ToolRegistry:
                 self.refresh_card(merged)
             else:
                 self.refresh_card(card)
-
 

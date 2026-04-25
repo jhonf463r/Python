@@ -181,6 +181,8 @@ def test_run_returns_frozen_snapshot_with_expected_shape(tmp_path: Path) -> None
     assert all(isinstance(r, ToolCheckResult) for r in snapshot.tool_checks)
     assert snapshot.world_model_digest.get("available") is True
     assert "codex" in snapshot.world_model_digest.get("tool_live_ids", [])
+    assert snapshot.cross_source_truth["local_laptop_observed"] is True
+    assert snapshot.cross_source_truth["requires_external_ia"] is True
 
 
 def test_environment_matches_when_world_reflects_available_and_missing(tmp_path: Path) -> None:
@@ -223,6 +225,20 @@ def test_environment_mismatch_when_network_disconnected(tmp_path: Path) -> None:
 
     assert snapshot.environment_match.matched is False
     assert any("network" in m.lower() or "desconect" in m.lower() for m in snapshot.environment_match.mismatches)
+
+
+def test_self_audit_marks_local_laptop_audit_unresolved_when_world_model_missing(tmp_path: Path) -> None:
+    svc = _make_service(
+        tmp_path,
+        environment=_env(),
+        world_model=None,
+    )
+
+    snapshot = svc.run(reason="external_vm_only")
+
+    assert snapshot.cross_source_truth["local_laptop_observed"] is False
+    assert "UNRESOLVED:requires_local_laptop_audit" in snapshot.cross_source_truth["unresolved"]
+    assert "Cruce de fuentes" in snapshot.summary_markdown
 
 
 def test_environment_mismatch_when_scan_status_degraded(tmp_path: Path) -> None:

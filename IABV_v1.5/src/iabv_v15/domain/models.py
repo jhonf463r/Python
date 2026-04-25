@@ -1979,6 +1979,7 @@ class ExperimentDomain(str, Enum):
     OBJECT_DETECTION = "object_detection"
     LANGUAGE = "language"
     CODE = "code"
+    INFERENCE_BENCHMARK = "inference_benchmark"
 
 
 class EvaluationRoute(str, Enum):
@@ -2671,6 +2672,7 @@ class SelfAuditSnapshot:
     pending_issues: list[str]
     world_model_digest: dict[str, Any]
     summary_markdown: str
+    cross_source_truth: dict[str, Any] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------

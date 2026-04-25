@@ -124,6 +124,7 @@ class PortableContextService:
                 now=now,
             ),
             self._architecture_section(now=now),
+            self._user_metacognitive_intent_section(now=now),
             self._implemented_capabilities_section(
                 recommendations=recommendations,
                 validation=validation,
@@ -789,6 +790,40 @@ class PortableContextService:
             unresolved_fields=unresolved,
         )
 
+    def _user_metacognitive_intent_section(self, *, now) -> PortableContextSection:
+        items = [
+            {
+                'label': 'centro_metacognitivo_local',
+                'detail': 'IABV debe ser el centro local-first que observa laptop, nube, herramientas, sesiones y resultados sin crear otro cerebro.',
+            },
+            {
+                'label': 'ias_como_organos_externos',
+                'detail': 'Devin, Codex, ChatGPT, Claude y otros asistentes deben aportar evidencia, trazas y rendimiento al ExperimentLab.',
+            },
+            {
+                'label': 'no_repetir_intencion',
+                'detail': 'Las ideas recurrentes del usuario se condensan en contexto portable para que cada sesion arranque con la misma direccion.',
+            },
+            {
+                'label': 'evolucion_gobernada',
+                'detail': 'Toda incubacion cognitiva, algoritmo mutable o ajuste de prompts pasa por sandbox, consenso y validacion antes de promoverse.',
+            },
+            {
+                'label': 'percepcion_segura_de_cuentas',
+                'detail': 'El sistema puede detectar presencia/sesion y recomendar rutas, pero no extrae contrasenas, cookies ni tokens; pide permiso cuando corresponda.',
+            },
+        ]
+        return self._section(
+            section_id='user_metacognitive_intent',
+            title='Intencion persistente del usuario',
+            summary='Direccion estable: todas las IAs deben alimentar la metacognicion de IABV para mejorar coherencia, memoria operativa y autonomia gobernada.',
+            items=items,
+            source_kind='user_intent',
+            source_refs=['chat:metacognicion_extendida', 'AGENTS.md', 'portable_context'],
+            confidence=0.9,
+            last_updated=now,
+        )
+
     def _implemented_capabilities_section(
         self,
         *,
@@ -1254,7 +1289,7 @@ class PortableContextService:
                     lines.append(f"- {str(item.get('component') or 'n/d')}: {str(item.get('status') or 'n/d')} | {str(item.get('detail') or '').strip()}")
                 elif section.section_id == 'implemented_capabilities':
                     lines.append(f"- {str(item.get('capability') or 'n/d')}: {str(item.get('status') or 'n/d')} | {str(item.get('detail') or '').strip()}")
-                elif section.section_id in {'learning', 'tool_discovery', 'tool_evolution', 'tool_evolution_decisions', 'self_examination', 'recommended_routes', 'validated_decisions', 'decision_history'}:
+                elif section.section_id in {'learning', 'tool_discovery', 'tool_evolution', 'tool_evolution_decisions', 'self_examination', 'recommended_routes', 'validated_decisions', 'decision_history', 'user_metacognitive_intent'}:
                     label = str(item.get('label') or item.get('decision') or item.get('subject_key') or item.get('assistant_kind') or 'n/d')
                     detail = str(item.get('value') or item.get('route') or item.get('summary') or item.get('recommendation') or item.get('why') or item.get('detail') or '').strip()
                     assistant = str(item.get('assistant_kind') or '').strip()
