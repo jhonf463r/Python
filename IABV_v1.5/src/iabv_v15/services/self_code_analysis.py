@@ -537,12 +537,13 @@ def _is_branch_obsolete(workspace: str, branch: str) -> tuple[bool, str]:
     ws = workspace
 
     # --- Squash-merge detection (runs first, before recency guard) ---
-    # Strategy 1: search main log for branch name fragment (squash commits
-    # typically include the branch name or PR number in the title)
     short_branch = branch.replace('origin/', '', 1)
-    branch_slug = short_branch.split('/')[-1] if '/' in short_branch else short_branch
+
+    # Strategy 1: search main log for full branch path (specific enough
+    # to avoid false positives on short slugs like "fix" or "test")
     main_has = _run_cmd([
-        'git', '-C', ws, 'log', 'origin/main', '--oneline', '-20', '--grep', branch_slug[:40],
+        'git', '-C', ws, 'log', 'origin/main', '--oneline', '-20',
+        '--grep', short_branch, '--fixed-strings',
     ])
     if main_has:
         first_match = main_has.splitlines()[0][:60]
@@ -558,16 +559,15 @@ def _is_branch_obsolete(workspace: str, branch: str) -> tuple[bool, str]:
             return True, f'contenido ya en main: {tip_msg[:50]}'
 
     # Strategy 3: check if branch is ancestor of main (fast-forward merge)
-    ancestor_check = _run_cmd([
-        'git', '-C', ws, 'merge-base', '--is-ancestor', branch, 'origin/main',
-    ])
-    if ancestor_check is not None:
+    try:
         r = subprocess.run(
             ['git', '-C', ws, 'merge-base', '--is-ancestor', branch, 'origin/main'],
             capture_output=True, timeout=10,
         )
         if r.returncode == 0:
             return True, 'rama es ancestro de main — ya fue mergeada'
+    except Exception:
+        pass
 
     # --- Recency guard (only after merge checks) ---
     age_str = _run_cmd([
