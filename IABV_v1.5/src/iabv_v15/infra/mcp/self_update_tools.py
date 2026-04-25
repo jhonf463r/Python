@@ -38,9 +38,9 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
 
     def _safe_path(relative_path: str) -> Path | None:
         """Resolve and validate a relative path within the workspace."""
-        ws = workspace_root_fn()
+        ws = Path(workspace_root_fn())
         resolved = (ws / relative_path).resolve()
-        if not str(resolved).startswith(str(ws.resolve())):
+        if not resolved.is_relative_to(ws.resolve()):
             return None  # directory traversal attempt
         return resolved
 
@@ -77,10 +77,11 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
         if target is None:
             return {"status": "error", "detail": "path escapes workspace (directory traversal)"}
 
-        # Reject sensitive paths
+        # Reject sensitive paths (normalize to forward slashes for Windows compat)
         sensitive = ['.git/config', '.git/hooks', '.env', 'secrets']
+        target_str = str(target).replace('\\', '/')
         for s in sensitive:
-            if s in str(target):
+            if s in target_str:
                 return {"status": "error", "detail": f"cannot write to sensitive path containing '{s}'"}
 
         try:

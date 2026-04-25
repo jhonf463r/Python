@@ -1703,8 +1703,14 @@ class IABVMCPServer:
 
             import re as _re
             import subprocess as _sp
+            if branch.startswith('-'):
+                return _to_jsonable({'ok': False, 'error': 'branch name cannot start with "-" (git flag injection)'})
             if _re.search(r'[;&|`$\n]|--force|\.\.', branch):
                 return _to_jsonable({'ok': False, 'error': 'branch name rejected (unsafe chars)'})
+            # AGENTS.md: only devin/* and iabv-auto/* branches can be auto-merged
+            safe_prefixes = ('devin/', 'iabv-auto/', 'origin/devin/', 'origin/iabv-auto/')
+            if not any(branch.startswith(p) for p in safe_prefixes):
+                return _to_jsonable({'ok': False, 'error': f'branch {branch!r} not in safe prefixes {safe_prefixes} — requires explicit human approval per AGENTS.md'})
 
             ws = self._workspace_root()
             try:
