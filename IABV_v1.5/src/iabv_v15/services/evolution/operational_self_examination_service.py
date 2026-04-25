@@ -1036,6 +1036,38 @@ class OperationalSelfExaminationService:
             'encontrar hallazgos importantes. Auto-suprimir httpx a '
             'WARNING cuando exceda el umbral.',
         ),
+        (
+            'cloudflare_challenge',
+            'cloudflare_blocked',
+            'Sesion bloqueada por Cloudflare challenge',
+            'La sesion aislada no puede pasar la verificacion de Cloudflare. '
+            'El programa deberia usar CDP contra el Chrome del usuario '
+            '(use_browser_session=False) donde ya hay sesion activa.',
+        ),
+        (
+            'wrong_thread',
+            'wrong_thread',
+            'Captura en hilo incorrecto del asistente',
+            'La sesion se abrio pero capturo respuesta de un hilo diferente '
+            'al esperado. Verificar que el thread_key apunte al hilo '
+            'correcto o crear un hilo nuevo dedicado.',
+        ),
+        (
+            'verificacion del sitio',
+            'session_verification_failed',
+            'Sesion no paso verificacion del sitio',
+            'La sesion aislada quedo bloqueada en la pagina de verificacion '
+            'sin poder acceder al chat. Esto indica que se necesita reusar '
+            'la sesion del navegador del usuario, no una sesion aislada.',
+        ),
+        (
+            'adapter_missing',
+            'adapter_missing',
+            'Falta adaptador operativo para fase de ejecucion',
+            'Hay estrategia y contexto listos pero no existe un adaptador '
+            'que ejecute la fase. Verificar ToolRegistry y considerar usar '
+            'un executor local disponible.',
+        ),
     )
 
     def _runtime_log_findings(self) -> list[SelfExaminationFinding]:
@@ -1103,6 +1135,51 @@ class OperationalSelfExaminationService:
                     },
                 )
             )
+
+        # Enrich with browser account awareness: the program should know
+        # what accounts the user has in their browsers to make better
+        # decisions about using isolated vs shared sessions.
+        try:
+            from iabv_v15.services.account_resource_scanner import scan_browser_accounts
+            browser_info = scan_browser_accounts()
+            acct_count = browser_info.get('count', 0)
+            if acct_count > 0:
+                accounts = browser_info.get('accounts', [])
+                account_summary = ', '.join(
+                    f"{a.get('email', '?')} ({a.get('browser', '?')})"
+                    for a in accounts[:5]
+                )
+                # Only report if there are cloudflare/session issues
+                has_session_issues = any(
+                    f.category in ('cloudflare_blocked', 'session_verification_failed', 'wrong_thread')
+                    for f in findings
+                )
+                if has_session_issues:
+                    findings.append(
+                        SelfExaminationFinding(
+                            category='browser_accounts_available',
+                            title=f'{acct_count} cuenta(s) de navegador detectadas',
+                            summary=(
+                                f'El usuario tiene {acct_count} cuenta(s) activa(s) en sus '
+                                f'navegadores: {account_summary}. Estas sesiones pueden '
+                                f'usarse via CDP para evitar bloqueos de Cloudflare.'
+                            ),
+                            severity=IssueSeverity.LOW,
+                            confidence=0.95,
+                            recommendation=(
+                                'Usar connect_over_cdp al Chrome del usuario en vez de '
+                                'sesiones aisladas para herramientas web (ChatGPT, Claude, Codex).'
+                            ),
+                            evidence_refs=[
+                                f'{a.get("browser", "?")}: {a.get("email", "?")}'
+                                for a in accounts[:5]
+                            ],
+                            source_refs=['account_resource_scanner'],
+                            metadata={'browser_accounts': browser_info},
+                        )
+                    )
+        except Exception:
+            pass  # scanner not available or failed — not critical
 
         # Auto-correction loop: when the program detects anomalies in its
         # own logs, attempt corrective actions automatically.

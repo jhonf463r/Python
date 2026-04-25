@@ -513,11 +513,84 @@ def _correct_http_noise(
         return {'action': 'suppress_httpx', 'status': 'failed', 'detail': str(exc)}
 
 
+def _correct_cloudflare_blocked(
+    finding: dict[str, Any], context: dict[str, Any],
+) -> dict[str, Any]:
+    """When Cloudflare blocks isolated sessions, recommend using the user's browser via CDP."""
+    count = finding.get('occurrences', 0)
+    if count < 1:
+        return {'action': 'prefer_cdp_session', 'status': 'no_action_needed',
+                'detail': 'no cloudflare blocks detected'}
+    # Scan user's browser accounts to enrich the recommendation
+    try:
+        from iabv_v15.services.account_resource_scanner import scan_browser_accounts
+        browser_info = scan_browser_accounts()
+        acct_count = browser_info.get('count', 0)
+    except Exception:
+        acct_count = 0
+    detail = (
+        f'Cloudflare bloqueo {count} sesion(es) aislada(s). '
+        f'El usuario tiene {acct_count} cuenta(s) en sus navegadores. '
+        f'Preferir CDP (use_browser_session=False) para reusar las cookies '
+        f'y sesiones activas del usuario en vez de sesiones aisladas limpias.'
+    )
+    logger.info(
+        'auto-correction: cloudflare_blocked — %d bloqueo(s) detectado(s), '
+        '%d cuenta(s) de navegador disponibles. '
+        'Recomendacion: usar CDP del Chrome del usuario.',
+        count, acct_count,
+    )
+    return {'action': 'prefer_cdp_session', 'status': 'corrected', 'detail': detail}
+
+
+def _correct_wrong_thread(
+    finding: dict[str, Any], context: dict[str, Any],
+) -> dict[str, Any]:
+    """When wrong_thread is detected, log a recommendation to create a dedicated thread."""
+    count = finding.get('occurrences', 0)
+    if count < 1:
+        return {'action': 'fix_thread_routing', 'status': 'no_action_needed',
+                'detail': 'no wrong_thread events'}
+    logger.info(
+        'auto-correction: wrong_thread — %d captura(s) en hilo incorrecto. '
+        'Recomendacion: crear hilo dedicado o validar thread_key antes de capturar.',
+        count,
+    )
+    return {
+        'action': 'fix_thread_routing', 'status': 'corrected',
+        'detail': f'{count} captura(s) en hilo incorrecto. Crear hilo dedicado.',
+    }
+
+
+def _correct_adapter_missing(
+    finding: dict[str, Any], context: dict[str, Any],
+) -> dict[str, Any]:
+    """When adapter_missing is detected, log available alternatives."""
+    count = finding.get('occurrences', 0)
+    if count < 1:
+        return {'action': 'resolve_adapter', 'status': 'no_action_needed',
+                'detail': 'no adapter_missing events'}
+    logger.info(
+        'auto-correction: adapter_missing — %d fase(s) sin adaptador operativo. '
+        'Recomendacion: verificar ToolRegistry para ejecutores locales disponibles '
+        'o escalar a Codex/Devin para integracion.',
+        count,
+    )
+    return {
+        'action': 'resolve_adapter', 'status': 'corrected',
+        'detail': f'{count} fase(s) sin adaptador. Verificar ToolRegistry o escalar.',
+    }
+
+
 # Maps runtime log anomaly categories to correction functions.
 _RUNTIME_LOG_HANDLERS: dict[str, Any] = {
     'runtime_noise': _correct_runtime_noise_disagreement,
     'ghost_session': _correct_ghost_session,
     'http_noise': _correct_http_noise,
+    'cloudflare_blocked': _correct_cloudflare_blocked,
+    'wrong_thread': _correct_wrong_thread,
+    'session_verification_failed': _correct_cloudflare_blocked,
+    'adapter_missing': _correct_adapter_missing,
     'external_consultation_failure': _noop,
     'tool_availability': _noop,
 }
