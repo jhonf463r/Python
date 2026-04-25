@@ -315,7 +315,8 @@ def save_secret_to_profile(name: str, value: str) -> dict[str, Any]:
     os.environ[name] = value
 
     secrets_path = os.path.join(os.path.expanduser('~'), '.iabv_secrets.ps1')
-    line_to_add = f"$env:{name} = '{value}'"
+    safe_value = value.replace("'", "''")  # PowerShell single-quote escape
+    line_to_add = f"$env:{name} = '{safe_value}'"
 
     try:
         if os.path.exists(secrets_path):
@@ -326,7 +327,7 @@ def save_secret_to_profile(name: str, value: str) -> dict[str, Any]:
                 re.MULTILINE,
             )
             if pattern.search(content):
-                content = pattern.sub(line_to_add, content)
+                content = pattern.sub(lambda _: line_to_add, content)
             else:
                 content = content.rstrip() + '\n' + line_to_add + '\n'
         else:
