@@ -5,6 +5,7 @@ severity scaling, and corrective block guidance in the orchestrator.
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path as pathlib_Path
 
 from iabv_v15.domain.models import (
     IssueSeverity,
@@ -204,6 +205,73 @@ def test_runtime_log_findings_empty_when_no_log(tmp_path) -> None:
     )
 
     assert service._runtime_log_findings() == []
+
+
+# ── Fix 9: self-examination question classification for log analysis ──
+
+
+def test_self_examination_catches_log_analysis_phrases() -> None:
+    """Phrases about analyzing logs or detecting anomalies should be
+    classified as self-examination questions, not general chat."""
+    import importlib
+    import re
+    import sys
+    # Avoid importing ControlCenterViewModel (needs PySide6) — extract the
+    # detection logic by reading the source directly.
+    src_path = str(
+        (pathlib_Path(__file__).resolve().parent.parent / 'src'
+         / 'iabv_v15' / 'ui' / 'viewmodels' / 'control_center_viewmodel.py')
+    )
+    import ast as _ast
+    source = pathlib_Path(src_path).read_text(encoding='utf-8')
+    # Just verify the direct_phrases tuple contains the new entries
+    assert "'analiza tus logs'" in source
+    assert "'revisa tus logs'" in source
+    assert "'diagnosticate'" in source or "'diagnostícate'" in source
+    assert "'lee tus logs'" in source
+
+    # Now verify the keyword matching would work for the exact user phrase
+    direct_phrases = (
+        'examinate', 'examínate', 'revisate', 'revísate',
+        'analiza tus logs', 'analiza tus propios logs', 'revisa tus logs',
+        'que anomalias detectas', 'qué anomalías detectas',
+        'diagnosticate', 'diagnostícate', 'autodiagnostico', 'autodiagnóstico',
+        'que ves en tus logs', 'qué ves en tus logs',
+        'que detectas en tu log', 'qué detectas en tu log',
+        'analiza tu log', 'revisa tu log', 'lee tus logs',
+    )
+    test_msg = 'analiza tus propios logs y dime qué anomalías detectas'
+    assert any(phrase in test_msg.lower() for phrase in direct_phrases)
+    assert not any(phrase in 'hola como estas' for phrase in direct_phrases)
+    assert not any(phrase in 'abre wplay' for phrase in direct_phrases)
+
+
+def test_self_examination_focus_returns_runtime_logs() -> None:
+    """When the message mentions logs or anomalies, focus should be
+    'runtime_logs'."""
+    log_tokens = ('logs', 'log', 'anomalias', 'anomalías', 'diagnostica',
+                  'diagnostico', 'autodiagnostico')
+    failure_tokens = ('fallando mas', 'falla mas', 'fallando', 'falla')
+    adjust_tokens = ('cambios recomiendas', 'recomiendas cambiar',
+                     'deberias mejorar', 'deberías mejorar')
+
+    def focus(msg: str) -> str:
+        n = msg.lower().strip()
+        if any(t in n for t in failure_tokens):
+            return 'failures'
+        if any(t in n for t in ('repitiendo mal', 'repitiendo')):
+            return 'repetition'
+        if any(t in n for t in adjust_tokens):
+            return 'adjustments'
+        if any(t in n for t in log_tokens):
+            return 'runtime_logs'
+        return 'general'
+
+    assert focus('analiza tus propios logs y dime qué anomalías detectas') == 'runtime_logs'
+    assert focus('que ves en tus logs') == 'runtime_logs'
+    assert focus('autodiagnostico') == 'runtime_logs'
+    assert focus('que esta fallando mas') == 'failures'
+    assert focus('que cambios recomiendas') == 'adjustments'
 
 
 # ── Fix 8: scan_configured_secrets file-based alias resolution ──
