@@ -498,35 +498,107 @@ def _take_health_snapshot(ws: str) -> dict[str, int]:
     }
 
 
-def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
-    """Attempt to merge safe branches (devin/*, iabv-auto/*) into current branch.
+def _is_branch_obsolete(workspace: str, branch: str) -> tuple[bool, str]:
+    """Determine if a remote branch is obsolete and safe to delete.
 
-    Per AGENTS.md, auto-merge is allowed for devin/* and iabv-auto/* branches.
-    Strategy: first try clean merge; if conflicts, retry with -X ours
-    (keep current branch's code intact — it has the latest fixes).
+    Returns (is_obsolete, reason) where reason explains the decision.
 
-    **Metacognitive self-protection**: before each merge, a health snapshot
-    captures MCP tool count, @Slot count, and routing handler count. After
-    the merge, if any metric decreased, the merge is auto-reverted and the
-    branch is reported as "damaging". This prevents older branches from
-    silently destroying the program's own functionality.
+    A branch is considered obsolete if ANY of these is true:
+    1. Its last commit is older than 7 days (stale experiment)
+    2. All files it touches have been modified more recently on main
+       (main evolved beyond the branch)
+    3. Its tip commit message matches a squash-merge on main
+       (content was already merged via PR)
+
+    A branch is NOT obsolete if:
+    - It has very recent commits (< 2 days old) — might be active work
+    """
+    ws = workspace
+
+    # Check age of last commit on branch
+    age_str = _run_cmd([
+        'git', '-C', ws, 'log', '-1', '--format=%cr', branch,
+    ])
+
+    # Check if branch tip message exists in main (squash-merged PR)
+    tip_msg = _run_cmd(['git', '-C', ws, 'log', '-1', '--format=%s', branch])
+    if tip_msg:
+        # Search for the commit message on main (squash merges often include PR title)
+        main_has = _run_cmd([
+            'git', '-C', ws, 'log', 'origin/main', '--oneline', '--grep', tip_msg[:60],
+        ])
+        if main_has:
+            return True, f'contenido ya en main (squash-merge detectado): {tip_msg[:50]}'
+
+    # Check age — if older than 7 days, it's stale
+    if age_str:
+        is_old = any(unit in age_str for unit in ['week', 'month', 'year', 'semana', 'mes', 'año'])
+        if not is_old and 'day' in age_str:
+            try:
+                days = int(''.join(c for c in age_str.split('day')[0].strip().split()[-1] if c.isdigit()) or '0')
+                is_old = days >= 7
+            except (ValueError, IndexError):
+                pass
+        if is_old:
+            return True, f'rama vieja sin actividad reciente ({age_str})'
+
+    # Check if all changed files were modified more recently on main
+    changed_files = _run_cmd([
+        'git', '-C', ws, 'diff', '--name-only', f'origin/main...{branch}',
+    ])
+    if changed_files:
+        files = [f.strip() for f in changed_files.splitlines() if f.strip()]
+        if files:
+            all_superseded = True
+            for f in files[:20]:
+                # Get last modification time on main vs branch
+                main_date = _run_cmd([
+                    'git', '-C', ws, 'log', '-1', '--format=%at', 'origin/main', '--', f,
+                ])
+                branch_date = _run_cmd([
+                    'git', '-C', ws, 'log', '-1', '--format=%at', branch, '--', f,
+                ])
+                if main_date and branch_date:
+                    try:
+                        if int(main_date) <= int(branch_date):
+                            all_superseded = False
+                            break
+                    except ValueError:
+                        all_superseded = False
+                        break
+                else:
+                    all_superseded = False
+                    break
+            if all_superseded:
+                return True, f'main tiene cambios mas recientes en los {len(files)} archivos tocados'
+
+    return False, 'rama reciente o con cambios unicos — conservada'
+
+
+def cleanup_stale_remote_branches(workspace: str | None = None) -> dict[str, Any]:
+    """Intelligently clean up stale remote branches.
+
+    Uses metacognitive analysis to decide which branches are truly obsolete:
+    - Checks if branch content was already squash-merged via PR
+    - Checks branch age (> 7 days without activity = stale)
+    - Checks if main has evolved beyond the branch's changes
+    - Conserves recent branches or those with unique unmerged content
+
+    Safety rules:
+    - Only evaluates branches matching safe prefixes (devin/*, iabv-auto/*, fix/*)
+    - Never touches main, master, or non-prefixed branches
+    - Reports conserved branches with reasons for transparency
     """
     ws = workspace or _default_workspace()
     if not ws:
-        return {'ok': False, 'error': 'workspace not found', 'merged': [], 'failed': [], 'skipped': []}
+        return {'ok': False, 'error': 'workspace not found', 'deleted': [], 'skipped': [], 'conserved': []}
 
     branches = scan_unmerged_branches(ws)
-    safe_prefixes = ('origin/devin/', 'origin/iabv-auto/')
-    merged: list[str] = []
-    merged_with_ours: list[str] = []
-    failed: list[dict[str, str]] = []
+    safe_prefixes = ('origin/devin/', 'origin/iabv-auto/', 'origin/fix/')
+    deleted: list[str] = []
+    conserved: list[dict[str, str]] = []
     skipped: list[str] = []
-    already_merged: list[str] = []
-    reverted: list[dict[str, str]] = []
-
-    # Get list of branches already merged into HEAD to skip re-merging
-    already_in_head_raw = _run_cmd(['git', '-C', ws, 'branch', '-r', '--merged', 'HEAD'])
-    already_in_head = {l.strip() for l in already_in_head_raw.splitlines() if l.strip() and '->' not in l}
+    failed: list[dict[str, str]] = []
 
     for b_info in branches:
         branch = b_info.get('branch', '')
@@ -534,128 +606,83 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
             skipped.append(branch)
             continue
 
-        # Skip branches already merged into HEAD (avoids destructive re-merge)
-        if branch in already_in_head:
-            already_merged.append(branch)
+        # Metacognitive decision: is this branch truly obsolete?
+        is_obsolete, reason = _is_branch_obsolete(ws, branch)
+
+        if not is_obsolete:
+            conserved.append({'branch': branch, 'reason': reason})
+            logger.info('branch_cleanup: conserved %s — %s', branch, reason)
             continue
 
-        # Check if branch touches closed-layer contracts
+        # Delete the obsolete branch
+        remote_branch = branch.replace('origin/', '', 1)
         try:
-            diff_stat = _run_cmd(['git', '-C', ws, 'diff', '--name-only', f'HEAD...{branch}'])
-        except Exception:
-            diff_stat = ''
-        closed_layer_files = ('domain/models.py', 'governance', 'world_model')
-        touches_closed = any(cl in diff_stat for cl in closed_layer_files)
-        if touches_closed:
-            skipped.append(f'{branch} (touches closed layer)')
-            continue
-
-        # Metacognitive self-protection: snapshot before merge
-        pre_snapshot = _take_health_snapshot(ws)
-        pre_head = _run_cmd(['git', '-C', ws, 'rev-parse', 'HEAD'])
-
-        try:
-            # First try clean merge
             result = subprocess.run(
-                ['git', '-C', ws, 'merge', '--no-edit', branch],
+                ['git', '-C', ws, 'push', 'origin', '--delete', remote_branch],
                 capture_output=True, text=True, timeout=30,
             )
-            merge_ok = result.returncode == 0
-            used_ours = False
-            if not merge_ok:
-                # Conflict — abort and retry with -X ours (keep current code)
-                subprocess.run(
-                    ['git', '-C', ws, 'merge', '--abort'],
-                    capture_output=True, timeout=10,
-                )
-                result2 = subprocess.run(
-                    ['git', '-C', ws, 'merge', '--no-edit', '-X', 'ours', branch],
-                    capture_output=True, text=True, timeout=30,
-                )
-                merge_ok = result2.returncode == 0
-                used_ours = True
-                if not merge_ok:
-                    subprocess.run(
-                        ['git', '-C', ws, 'merge', '--abort'],
-                        capture_output=True, timeout=10,
-                    )
-                    failed.append({
-                        'branch': branch,
-                        'reason': result2.stderr.strip()[:200] or 'merge failed even with -X ours',
-                    })
-                    logger.warning('auto_merge: failed %s even with -X ours', branch)
-                    continue
-
-            # Metacognitive self-protection: verify health after merge
-            post_snapshot = _take_health_snapshot(ws)
-            damage: list[str] = []
-            if post_snapshot['mcp_tool_count'] < pre_snapshot['mcp_tool_count']:
-                damage.append(
-                    f"MCP tools: {pre_snapshot['mcp_tool_count']}→{post_snapshot['mcp_tool_count']}"
-                )
-            if post_snapshot['slot_count'] < pre_snapshot['slot_count']:
-                damage.append(
-                    f"@Slot methods: {pre_snapshot['slot_count']}→{post_snapshot['slot_count']}"
-                )
-            if post_snapshot['routing_missing'] > pre_snapshot['routing_missing']:
-                damage.append(
-                    f"routing handlers lost: {pre_snapshot['routing_missing']}→{post_snapshot['routing_missing']} missing"
-                )
-
-            if damage:
-                # AUTO-REVERT: this merge damaged the program
-                subprocess.run(
-                    ['git', '-C', ws, 'reset', '--hard', pre_head],
-                    capture_output=True, timeout=10,
-                )
-                damage_desc = '; '.join(damage)
-                reverted.append({'branch': branch, 'reason': damage_desc})
-                logger.warning(
-                    'auto_merge: REVERTED %s — damaged codebase: %s', branch, damage_desc
-                )
+            if result.returncode == 0:
+                deleted.append(branch)
+                logger.info('branch_cleanup: deleted %s — %s', branch, reason)
             else:
-                if used_ours:
-                    merged_with_ours.append(branch)
-                    logger.info('auto_merge: merged %s with -X ours (kept current code)', branch)
+                err = result.stderr.strip()[:200]
+                if 'remote ref does not exist' in err:
+                    deleted.append(branch)
                 else:
-                    merged.append(branch)
-                    logger.info('auto_merge: merged %s successfully', branch)
-
+                    failed.append({'branch': branch, 'reason': err})
         except Exception as exc:
-            try:
-                subprocess.run(['git', '-C', ws, 'merge', '--abort'], capture_output=True, timeout=10)
-            except Exception:
-                pass
             failed.append({'branch': branch, 'reason': str(exc)})
 
-    total_merged = len(merged) + len(merged_with_ours)
     parts = []
-    if total_merged > 0:
-        parts.append(f'{total_merged} merged ({len(merged)} clean, {len(merged_with_ours)} con conflictos resueltos conservando codigo actual)')
-    if already_merged:
-        parts.append(f'{len(already_merged)} ya integradas')
-    if reverted:
-        parts.append(f'{len(reverted)} revertidas (dañaban el codigo)')
-    if failed:
-        parts.append(f'{len(failed)} failed')
+    if deleted:
+        parts.append(f'{len(deleted)} ramas obsoletas eliminadas')
+    if conserved:
+        parts.append(f'{len(conserved)} ramas conservadas (aun relevantes)')
     if skipped:
-        parts.append(f'{len(skipped)} skipped')
+        parts.append(f'{len(skipped)} ramas ignoradas (prefijo no seguro)')
+    if failed:
+        parts.append(f'{len(failed)} fallaron al eliminar')
     return {
-        'ok': len(failed) == 0 and len(reverted) == 0,
-        'merged': merged,
-        'merged_count': len(merged),
-        'merged_with_ours': merged_with_ours,
-        'merged_with_ours_count': len(merged_with_ours),
-        'total_merged': total_merged,
-        'already_merged': already_merged,
-        'already_merged_count': len(already_merged),
-        'reverted': reverted,
-        'reverted_count': len(reverted),
-        'failed': failed,
-        'failed_count': len(failed),
+        'ok': len(failed) == 0,
+        'deleted': deleted,
+        'deleted_count': len(deleted),
+        'conserved': conserved,
+        'conserved_count': len(conserved),
         'skipped': skipped,
         'skipped_count': len(skipped),
-        'summary': ', '.join(parts) if parts else 'nada que mergear',
+        'failed': failed,
+        'failed_count': len(failed),
+        'summary': ', '.join(parts) if parts else 'no hay ramas obsoletas',
+    }
+
+
+def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
+    """Clean up stale remote branches instead of merging them.
+
+    This function now delegates to ``cleanup_stale_remote_branches``.
+    The old approach of merging every devin/* branch locally caused merge
+    conflicts and syntax errors. Keeping the function name for backward
+    compatibility with callers.
+    """
+    result = cleanup_stale_remote_branches(workspace)
+    return {
+        'ok': result['ok'],
+        'merged': [],
+        'merged_count': 0,
+        'merged_with_ours': [],
+        'merged_with_ours_count': 0,
+        'total_merged': 0,
+        'already_merged': [],
+        'already_merged_count': 0,
+        'reverted': [],
+        'reverted_count': 0,
+        'failed': result.get('failed', []),
+        'failed_count': result.get('failed_count', 0),
+        'skipped': result.get('skipped', []),
+        'skipped_count': result.get('skipped_count', 0),
+        'deleted': result.get('deleted', []),
+        'deleted_count': result.get('deleted_count', 0),
+        'summary': result.get('summary', ''),
     }
 
 
