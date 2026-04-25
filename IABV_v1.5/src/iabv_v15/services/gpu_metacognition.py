@@ -181,8 +181,8 @@ def auto_free_gpu_for_model(target_vram_gb: float = 4.0) -> dict[str, Any]:
                     capture_output=True, timeout=30,
                 )
                 freed.append(m["name"])
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("auto_free_gpu_for_model: could not stop %s: %s", m["name"], exc)
     return {"freed": freed, "count": len(freed)}
 
 

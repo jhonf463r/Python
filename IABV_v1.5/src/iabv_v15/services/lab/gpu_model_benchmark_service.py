@@ -79,6 +79,8 @@ _BENCHMARK_PROMPTS: list[dict[str, str]] = [
 _OLLAMA_API_BASE = 'http://127.0.0.1:11434'
 _GENERATE_TIMEOUT_SECONDS = 180
 _LIST_TIMEOUT_SECONDS = 10
+_FULL_BENCHMARK_TIMEOUT_SECONDS = 900
+_MAX_BENCHMARK_MODELS = 3
 _NUM_PREDICT = 512
 _GPU_SAMPLE_INTERVAL_SECONDS = 0.5
 
@@ -906,6 +908,8 @@ class GpuModelBenchmarkService:
         self,
         *,
         models: list[str] | None = None,
+        timeout_seconds: int = _FULL_BENCHMARK_TIMEOUT_SECONDS,
+        max_models: int = _MAX_BENCHMARK_MODELS,
     ) -> dict[str, Any]:
         """Benchmark all (or specified) models and register via ExperimentLab.
 
@@ -915,6 +919,8 @@ class GpuModelBenchmarkService:
         if models is None:
             discovered = self.discover_models()
             models = [m['name'] for m in discovered]
+        if max_models > 0:
+            models = models[:max_models]
 
         if not models:
             return {
@@ -926,8 +932,12 @@ class GpuModelBenchmarkService:
 
         benchmark_results: list[dict[str, Any]] = []
         candidates: list[ExperimentCandidate] = []
+        deadline = time.monotonic() + max(float(timeout_seconds), 0.0) if timeout_seconds > 0 else None
 
         for model_name in models:
+            if deadline is not None and time.monotonic() >= deadline:
+                logger.warning('gpu_model_benchmark: timeout after %s seconds', timeout_seconds)
+                break
             logger.info('gpu_model_benchmark: benchmarking %s', model_name)
             try:
                 result = self.benchmark_model(model_name)

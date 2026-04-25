@@ -21,12 +21,25 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+
+_ACCOUNT_EMAIL_RE = re.compile(r'(^.).*(@.*$)')
+
+
+def _safe_account_label(value: str) -> str:
+    cleaned = str(value or '').strip()
+    if not cleaned:
+        return ''
+    if '@' not in cleaned:
+        return cleaned[:2] + '***' if len(cleaned) > 2 else '***'
+    return _ACCOUNT_EMAIL_RE.sub(r'\1***\2', cleaned)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -166,6 +179,7 @@ def _scan_browser_profiles(profile_root: Path, browser_id: str) -> list[dict[str
                                 profile['accounts'].append({
                                     'site': hostname,
                                     'has_saved_login': True,
+                                    'secret_extracted': False,
                                 })
                     except Exception:
                         pass
@@ -198,10 +212,12 @@ def _scan_browser_profiles(profile_root: Path, browser_id: str) -> list[dict[str
                     # Google account info
                     account_info = prefs.get('account_info', [])
                     for acc in account_info:
+                        email = str(acc.get('email') or '')
                         profile['accounts'].append({
-                            'email': acc.get('email', ''),
-                            'full_name': acc.get('full_name', ''),
+                            'email_label': _safe_account_label(email),
+                            'full_name_label': _safe_account_label(str(acc.get('full_name') or '')),
                             'type': 'google' if 'google' in acc.get('email', '').lower() or '@gmail' in acc.get('email', '') else 'microsoft' if 'outlook' in acc.get('email', '').lower() or 'hotmail' in acc.get('email', '').lower() else 'other',
+                            'secret_extracted': False,
                         })
                     # Check for AI-related extensions
                     extensions = prefs.get('extensions', {}).get('settings', {})
@@ -223,6 +239,57 @@ def _scan_browser_profiles(profile_root: Path, browser_id: str) -> list[dict[str
             profiles.append(profile)
 
     return profiles
+
+
+def build_safe_session_presence(browsers: list[dict[str, Any]], ai_ecosystem: dict[str, Any]) -> dict[str, Any]:
+    assistant_domains = {
+        'chatgpt': ['chatgpt.com', 'openai.com'],
+        'claude': ['claude.ai', 'anthropic.com'],
+        'gemini': ['gemini.google.com', 'bard.google.com'],
+        'copilot': ['copilot.microsoft.com', 'github.com'],
+        'devin': ['app.devin.ai', 'devin.ai'],
+    }
+    detected: dict[str, list[dict[str, Any]]] = {kind: [] for kind in assistant_domains}
+    for browser in browsers:
+        for profile in browser.get('profiles') or []:
+            account_sites = [
+                str(account.get('site') or '').lower()
+                for account in (profile.get('accounts') or [])
+                if account.get('has_saved_login')
+            ]
+            for kind, domains in assistant_domains.items():
+                if any(domain in site for domain in domains for site in account_sites):
+                    detected[kind].append(
+                        {
+                            'browser_id': browser.get('id', ''),
+                            'profile_name': profile.get('name', ''),
+                            'presence': 'saved_login_hint',
+                            'secret_extracted': False,
+                        }
+                    )
+    actions: list[dict[str, Any]] = []
+    cloud_assistants = ai_ecosystem.get('cloud_assistants') if isinstance(ai_ecosystem, dict) else []
+    for assistant in cloud_assistants or []:
+        kind = str(assistant.get('kind') or '').strip().lower()
+        if not kind:
+            continue
+        has_presence = bool(detected.get(kind))
+        actions.append(
+            {
+                'assistant_kind': kind,
+                'recommended_route': 'use_existing_session' if has_presence else 'request_login_or_api_key',
+                'approval_required': not has_presence,
+                'safe_automation_boundary': 'no_passwords_no_cookies_no_tokens_extracted',
+            }
+        )
+    return {
+        'detected_session_hints': detected,
+        'recommended_actions': actions,
+        'secret_policy': 'presence_only_no_cookie_password_or_token_extraction',
+        'unresolved_fields': [
+            'UNRESOLVED:visible_account_state_requires_user_permission',
+        ],
+    }
 
 
 # ──────────────────────────────────────────────────────────────
@@ -586,6 +653,14 @@ def full_system_metacognition_report() -> dict[str, Any]:
     except Exception as exc:
         report['ai_ecosystem'] = {}
         report['ai_ecosystem_error'] = str(exc)
+
+    try:
+        report['safe_session_presence'] = build_safe_session_presence(
+            report.get('browsers', []),
+            report.get('ai_ecosystem', {}),
+        )
+    except Exception as exc:
+        report['safe_session_presence'] = {'error': str(exc)}
 
     # Dev tools
     try:

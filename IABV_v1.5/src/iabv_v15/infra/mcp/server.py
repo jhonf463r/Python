@@ -1653,7 +1653,7 @@ class IABVMCPServer:
                 dict con gpus_detected, ollama_state, issues, recommendations.
             """
             from iabv_v15.services.gpu_metacognition import gpu_metacognition_report
-            return _to_jsonable(gpu_metacognition_report())
+            return _to_jsonable(_run_sync_off_event_loop(gpu_metacognition_report))
 
         # ------------------------------------------------------------
         # full_system_metacognition_scan — inventario completo del sistema
@@ -1663,7 +1663,7 @@ class IABVMCPServer:
         def full_system_metacognition_scan() -> dict[str, Any]:
             """Escaneo COMPLETO del sistema: navegadores, programas, modelos IA, configuraciones optimas."""
             from iabv_v15.services.full_system_metacognition import full_system_metacognition_report
-            return _to_jsonable(full_system_metacognition_report())
+            return _to_jsonable(_run_sync_off_event_loop(full_system_metacognition_report))
 
         # ------------------------------------------------------------
         # self_code_analysis — el programa analiza su propio código

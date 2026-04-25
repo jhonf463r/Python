@@ -2672,6 +2672,7 @@ class SelfAuditSnapshot:
     pending_issues: list[str]
     world_model_digest: dict[str, Any]
     summary_markdown: str
+    cross_source_truth: dict[str, Any] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------

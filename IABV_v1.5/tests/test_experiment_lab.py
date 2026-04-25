@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 from uuid import uuid4
 
-from iabv_v15.domain.models import AssistantConfigurationSnapshot, EvaluationRoute, ExperimentCandidate, ExperimentDomain
+from iabv_v15.domain.models import AssistantConfigurationSnapshot, EvaluationRoute, ExperimentCandidate, ExperimentDomain, IATraceEntry
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
 from iabv_v15.infra.persistence.storage import ArtifactStorage
@@ -136,6 +136,51 @@ def test_experiment_lab_suggest_route_uses_persisted_history() -> None:
         assert recommendation is not None
         assert recommendation.recommended_route == EvaluationRoute.CODE_AGENT
         assert recommendation.confidence > 0.5
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_experiment_lab_lists_candidate_traces_by_scope_key() -> None:
+    root = _workspace('experiment_lab_scope_traces')
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        lab = _lab(root)
+        lab.record_outcome(
+            domain=ExperimentDomain.CODE,
+            objective='Comparar asistentes para reparar el bridge',
+            subject_key='iabv:bridge',
+            route=EvaluationRoute.CODE_AGENT,
+            candidate_label='Codex',
+            success=True,
+            observed_summary='Codex reparo el bridge con evidencia.',
+            precision=0.88,
+            robustness=0.82,
+            execution_ms=240,
+            metadata={
+                'assistant_kind': 'codex',
+                'comparison_scope_key': 'iabv:bridge',
+                'result_label': 'pass',
+            },
+        )
+        lab.record_outcome(
+            domain=ExperimentDomain.CODE,
+            objective='Otro problema no comparable',
+            subject_key='iabv:other',
+            route=EvaluationRoute.LANGUAGE_UNDERSTANDING,
+            candidate_label='ChatGPT',
+            success=False,
+            observed_summary='No comparable.',
+            metadata={'assistant_kind': 'chatgpt', 'comparison_scope_key': 'iabv:other'},
+        )
+
+        traces = lab.list_candidate_traces_for_scope('iabv:bridge')
+
+        assert len(traces) == 1
+        assert isinstance(traces[0], IATraceEntry)
+        assert traces[0].assistant_kind == 'codex'
+        assert traces[0].comparison_scope_key == 'iabv:bridge'
+        assert traces[0].success is True
     finally:
         shutil.rmtree(root, ignore_errors=True)
 

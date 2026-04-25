@@ -175,6 +175,7 @@ class ControlCenterViewModel(QObject):
         self._agent_cards: list[dict[str, Any]] = []
         self._legacy_cards = self._build_legacy_cards()
         self._role_cards = [profile.model_dump(mode='json') for profile in self.role_router.role_profiles]
+        self._ui_state_lock = threading.Lock()
         self._chat_messages: list[dict[str, str]] = []
         self._attached_files: list[dict[str, Any]] = []
         self._live_status: str = 'idle'
@@ -306,8 +307,9 @@ class ControlCenterViewModel(QObject):
             msg['codeBlocks'] = code_blocks
         if reasoning:
             msg['reasoning'] = reasoning
-        self._chat_messages.append(msg)
-        self._chat_messages = self._chat_messages[-30:]
+        with self._ui_state_lock:
+            self._chat_messages.append(msg)
+            self._chat_messages = self._chat_messages[-30:]
         self._refresh_contextual_suggestions()
         self._validate_ui_reflects_reality()
 
@@ -3936,7 +3938,8 @@ class ControlCenterViewModel(QObject):
         self._refresh_autonomy_dock()
 
     def get_chat_messages(self) -> list[dict[str, str]]:
-        return self._chat_messages
+        with self._ui_state_lock:
+            return list(self._chat_messages)
 
     def get_provider_cards(self) -> list[dict[str, Any]]:
         return self._provider_cards
@@ -5537,13 +5540,16 @@ class ControlCenterViewModel(QObject):
 
     @Property(str, notify=dataChanged)
     def liveStatus(self) -> str:
-        return self._live_status
+        with self._ui_state_lock:
+            return self._live_status
 
     def _set_live_status(self, status: str) -> None:
-        if self._live_status != status:
+        with self._ui_state_lock:
+            if self._live_status == status:
+                return
             self._live_status = status
-            self.liveStatusChanged.emit(status)
-            self.dataChanged.emit()
+        self.liveStatusChanged.emit(status)
+        self.dataChanged.emit()
 
     @Property(list, notify=dataChanged)
     def contextualSuggestions(self) -> list[dict[str, Any]]:
@@ -6542,7 +6548,6 @@ class ControlCenterViewModel(QObject):
         get_last_self_audit_summary,
         notify=dataChanged,
     )
-
 
 
 

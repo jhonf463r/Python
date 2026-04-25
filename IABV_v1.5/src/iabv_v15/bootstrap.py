@@ -486,6 +486,54 @@ class AppBootstrap:
         self.decision_scoring_engine = DecisionScoringEngine()
         self.adaptive_weight_layer = AdaptiveWeightLayer()
         self.lab_strategy_selector = StrategySelector(adaptive_weight_layer=self.adaptive_weight_layer)
+        # PCS v1 dependencies are created before ToolTeachService so external
+        # tool selection can consume SynapticRouter hints without replacing
+        # LocalRoleRouter or AdaptiveTaskOrchestrator.
+        try:
+            from iabv_v15.services.adaptive.consensus_fusion_service import (
+                ConsensusFusionService,
+            )
+            from iabv_v15.services.roles.assistant_capability_registry import (
+                AssistantCapabilityRegistry,
+            )
+            from iabv_v15.services.roles.cognitive_frame_translator import (
+                CognitiveFrameTranslator,
+            )
+            from iabv_v15.services.roles.synaptic_router import SynapticRouter
+
+            self.assistant_capability_registry = AssistantCapabilityRegistry.with_defaults()
+            self.cognitive_frame_translator = CognitiveFrameTranslator(
+                capability_registry=self.assistant_capability_registry,
+            )
+
+            world_model_service = self.world_model_service
+
+            def _synaptic_world_model_provider() -> WorldModelSnapshot | None:
+                try:
+                    return world_model_service.current_model()
+                except Exception:  # pragma: no cover - defensive
+                    return None
+
+            self.synaptic_router = SynapticRouter(
+                capability_registry=self.assistant_capability_registry,
+                adaptive_weight_layer=self.adaptive_weight_layer,
+                world_model_provider=_synaptic_world_model_provider,
+                experiment_lab_repository=self.experiment_lab_repository,
+                enabled_override=getattr(
+                    self.config, "synaptic_routing_enabled", None
+                ),
+            )
+            self.consensus_fusion_service = ConsensusFusionService(
+                adaptive_weight_layer=self.adaptive_weight_layer,
+            )
+        except Exception:  # pragma: no cover - defensive
+            logger.exception(
+                "No se pudo wirear PCS v1 temprano; las tools MCP PCS reportarán *_unavailable"
+            )
+            self.assistant_capability_registry = None
+            self.cognitive_frame_translator = None
+            self.synaptic_router = None
+            self.consensus_fusion_service = None
         self.experiment_lab = ExperimentLab(
             repository=self.experiment_lab_repository,
             registry=self.algorithm_benchmark_registry,
@@ -534,6 +582,7 @@ class AppBootstrap:
             mode_selector=self.interaction_mode_selector,
             experiment_lab=self.experiment_lab,
             live_audit_supervisor=self.live_audit_supervisor,
+            synaptic_router=self.synaptic_router,
         )
         self.embedding_service = EmbeddingIndexService(
             base_url=self.config.ollama_base_url,
@@ -937,82 +986,6 @@ class AppBootstrap:
             )
             self.perception_ground_truth_comparator = None
 
-        # PCS v1 — Protocolo Cognitivo Sináptico Inter-IA.
-        # Registro de capacidades + traductor de frame cognitivo. Son
-        # servicios puros (sin estado mutable compartido, sin red) que
-        # alimentan la tool MCP ``cognitive_frame_translate``. Si alguna
-        # dependencia fallara (no debería: ambos son puramente en memoria)
-        # degradamos a ``None`` para no romper el bootstrap.
-        try:
-            from iabv_v15.services.roles.assistant_capability_registry import (
-                AssistantCapabilityRegistry,
-            )
-            from iabv_v15.services.roles.cognitive_frame_translator import (
-                CognitiveFrameTranslator,
-            )
-
-            self.assistant_capability_registry = AssistantCapabilityRegistry.with_defaults()
-            self.cognitive_frame_translator = CognitiveFrameTranslator(
-                capability_registry=self.assistant_capability_registry,
-            )
-        except Exception:  # pragma: no cover - defensive
-            logger.exception(
-                "No se pudo wirear AssistantCapabilityRegistry/CognitiveFrameTranslator; "
-                "la tool MCP cognitive_frame_translate reportará translator_unavailable"
-            )
-            self.assistant_capability_registry = None
-            self.cognitive_frame_translator = None
-
-        # PCS v1 — Piezas 4 y 5: SynapticRouter + ConsensusFusionService.
-        # Son adaptadores puramente descriptivos, read-only, sin red ni
-        # mutación de estado vivo. El `SynapticRouter` depende de
-        # `AssistantCapabilityRegistry`, `AdaptiveWeightLayer` y un
-        # callable que devuelva el WorldModel vivo; si alguna dependencia
-        # faltara degradamos a ``None`` para que las tools MCP devuelvan
-        # ``router_unavailable`` / ``consensus_unavailable`` (fail-observable)
-        # en vez de romper el bootstrap.
-        #
-        # NOTA: NO reemplaza ni toca `LocalRoleRouter` ni
-        # `AdaptiveTaskOrchestrator`. Feature flag ``SYNAPTIC_ROUTING``
-        # por default en ``false`` preserva comportamiento previo.
-        try:
-            from iabv_v15.services.adaptive.consensus_fusion_service import (
-                ConsensusFusionService,
-            )
-            from iabv_v15.services.roles.synaptic_router import SynapticRouter
-
-            if self.assistant_capability_registry is None:
-                self.synaptic_router = None
-            else:
-                world_model_service = self.world_model_service
-
-                def _synaptic_world_model_provider() -> WorldModelSnapshot | None:
-                    try:
-                        return world_model_service.current_model()
-                    except Exception:  # pragma: no cover - defensive
-                        return None
-
-                self.synaptic_router = SynapticRouter(
-                    capability_registry=self.assistant_capability_registry,
-                    adaptive_weight_layer=self.adaptive_weight_layer,
-                    world_model_provider=_synaptic_world_model_provider,
-                    experiment_lab_repository=self.experiment_lab_repository,
-                    enabled_override=getattr(
-                        self.config, "synaptic_routing_enabled", None
-                    ),
-                )
-            self.consensus_fusion_service = ConsensusFusionService(
-                adaptive_weight_layer=self.adaptive_weight_layer,
-            )
-        except Exception:  # pragma: no cover - defensive
-            logger.exception(
-                "No se pudo wirear SynapticRouter/ConsensusFusionService; "
-                "las tools MCP synaptic_route/consensus_fuse reportarán "
-                "*_unavailable"
-            )
-            self.synaptic_router = None
-            self.consensus_fusion_service = None
-
         self.control_master_repository = ControlMasterRepository(self.evolution_storage)
         self.control_master_service = ControlMasterService(
             repository=self.control_master_repository,
@@ -1210,21 +1183,25 @@ class AppBootstrap:
         if not cards:
             logger.info('tool_availability: sin tools registradas')
 
-        # GPU Metacognition: verify GPU health at startup
-        try:
-            from iabv_v15.services.gpu_metacognition import startup_gpu_health_check
-            _gpu_report = startup_gpu_health_check()
-            _gpu_issues = _gpu_report.get('issues', [])
-            if _gpu_issues:
-                for _issue in _gpu_issues:
-                    logger.warning('gpu_startup_issue: %s', _issue)
-            else:
-                logger.info('gpu_startup: healthy (%d GPU(s) detected)',
-                            _gpu_report.get('nvidia_count', 0) + _gpu_report.get('intel_igpu_count', 0))
-        except Exception as _gpu_exc:
-            logger.warning('gpu_startup_check failed: %s', _gpu_exc)
+        def _run_gpu_startup_health_check() -> None:
+            try:
+                from iabv_v15.services.gpu_metacognition import startup_gpu_health_check
+                _gpu_report = startup_gpu_health_check()
+                _gpu_issues = _gpu_report.get('issues', [])
+                if _gpu_issues:
+                    for _issue in _gpu_issues:
+                        logger.warning('gpu_startup_issue: %s', _issue)
+                else:
+                    logger.info('gpu_startup: healthy (%d GPU(s) detected)',
+                                _gpu_report.get('nvidia_count', 0) + _gpu_report.get('intel_igpu_count', 0))
+            except Exception as _gpu_exc:
+                logger.warning('gpu_startup_check failed: %s', _gpu_exc)
 
-            return
+        threading.Thread(
+            target=_run_gpu_startup_health_check,
+            name='iabv-gpu-startup-health',
+            daemon=True,
+        ).start()
         ready = []
         missing = []
         now = datetime.now(timezone.utc)
@@ -1590,9 +1567,6 @@ class AppBootstrap:
     def run(self) -> int:
         app, _engine = self.create_engine()
         return app.exec()
-
-
-
 
 
 
