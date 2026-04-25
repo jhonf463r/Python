@@ -1028,6 +1028,14 @@ class OperationalSelfExaminationService:
             'Una consulta externa excedio el timeout y fue cancelada. '
             'Investigar por que la herramienta no respondio.',
         ),
+        (
+            'HTTP Request:',
+            'http_noise',
+            'Ruido excesivo de logs HTTP (httpx)',
+            'Demasiadas lineas de httpx poluciona el log y dificulta '
+            'encontrar hallazgos importantes. Auto-suprimir httpx a '
+            'WARNING cuando exceda el umbral.',
+        ),
     )
 
     def _runtime_log_findings(self) -> list[SelfExaminationFinding]:

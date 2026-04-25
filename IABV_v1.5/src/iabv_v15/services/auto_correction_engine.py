@@ -486,10 +486,38 @@ def _correct_ghost_session(
             'detail': detail}
 
 
+def _correct_http_noise(
+    finding: dict[str, Any], context: dict[str, Any],
+) -> dict[str, Any]:
+    """Auto-suppress httpx/httpcore loggers when HTTP log lines exceed threshold."""
+    count = finding.get('occurrences', 0)
+    if count <= 20:
+        return {'action': 'suppress_httpx', 'status': 'no_action_needed',
+                'detail': f'{count} HTTP lines — within threshold'}
+    try:
+        import logging as _logging
+        httpx_logger = _logging.getLogger('httpx')
+        if httpx_logger.level >= _logging.WARNING:
+            return {'action': 'suppress_httpx', 'status': 'no_action_needed',
+                    'detail': 'httpx already at WARNING or higher'}
+        httpx_logger.setLevel(_logging.WARNING)
+        _logging.getLogger('httpcore').setLevel(_logging.WARNING)
+        logger.info(
+            'auto-correction: suppressed httpx/httpcore to WARNING '
+            'due to %d HTTP log lines (metacognition detected noise)',
+            count,
+        )
+        return {'action': 'suppress_httpx', 'status': 'corrected',
+                'detail': f'httpx→WARNING (triggered by {count} HTTP lines in log tail)'}
+    except Exception as exc:
+        return {'action': 'suppress_httpx', 'status': 'failed', 'detail': str(exc)}
+
+
 # Maps runtime log anomaly categories to correction functions.
 _RUNTIME_LOG_HANDLERS: dict[str, Any] = {
     'runtime_noise': _correct_runtime_noise_disagreement,
     'ghost_session': _correct_ghost_session,
+    'http_noise': _correct_http_noise,
     'external_consultation_failure': _noop,
     'tool_availability': _noop,
 }

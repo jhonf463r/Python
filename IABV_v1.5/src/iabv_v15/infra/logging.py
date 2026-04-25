@@ -22,3 +22,9 @@ def configure_logging(logs_dir: str) -> None:
     file_handler = logging.FileHandler(path / "iabv_v15.log", encoding="utf-8")
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
+
+    # Suppress noisy HTTP-level loggers.  The important information
+    # (tool availability, disagreements, auto-corrections) is logged at
+    # the IABV service level; per-request HTTP lines are operational noise.
+    for noisy in ('httpx', 'httpcore'):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
