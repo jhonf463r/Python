@@ -122,9 +122,13 @@ def check_ollama_api_version() -> dict[str, Any]:
 def check_devin_api_version() -> dict[str, Any]:
     """Check Devin API availability."""
     result: dict[str, Any] = {'tool': 'devin_api', 'available': False}
-    api_key = os.environ.get('DEVIN_API_KEY', '')
+    api_key = (
+        os.environ.get('DEVIN_API_KEY_IABV', '')
+        or os.environ.get('IABV_DEVIN_API_KEY', '')
+        or os.environ.get('DEVIN_API_KEY', '')
+    )
     if not api_key:
-        result['reason'] = 'DEVIN_API_KEY not set'
+        result['reason'] = 'DEVIN_API_KEY_IABV / IABV_DEVIN_API_KEY / DEVIN_API_KEY not set'
         return result
     try:
         import httpx
@@ -144,7 +148,12 @@ def check_devin_api_version() -> dict[str, Any]:
 def check_github_api_version() -> dict[str, Any]:
     """Check GitHub API availability."""
     result: dict[str, Any] = {'tool': 'github_api', 'available': False}
-    token = os.environ.get('GITHUB_TOKEN', '') or os.environ.get('GH_TOKEN', '')
+    token = (
+        os.environ.get('GITHUB_TOKEN_IABV', '')
+        or os.environ.get('IABV_GITHUB_TOKEN', '')
+        or os.environ.get('GITHUB_TOKEN', '')
+        or os.environ.get('GH_TOKEN', '')
+    )
     headers: dict[str, str] = {'Accept': 'application/vnd.github.v3+json'}
     if token:
         headers['Authorization'] = f'token {token}'
