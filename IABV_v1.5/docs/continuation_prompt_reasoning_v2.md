@@ -29,7 +29,31 @@ Lo que el usuario quiere es un algoritmo que:
 
 ---
 
-## TAREA: Construir el Algoritmo de Razonamiento Real
+## PRINCIPIO FUNDAMENTAL: EVOLUCIONAR, NO REESCRIBIR
+
+**La arquitectura de IABV ya es intuitiva y está diseñada para que cualquier IA la entienda.**
+Cualquier agente que trabaje aquí DEBE respetar esto:
+
+1. **NO borrar código existente** — todo lo que funciona se conserva
+2. **NO crear archivos que reemplacen otros** — agregar capas encima, no al lado
+3. **NO reescribir lógica que ya funciona** — si `forward_chain()` funciona, sigue ahí
+4. **Evolucionar = agregar capacidades nuevas al algoritmo existente**:
+   - `common_sense_engine.py` ya existe con 13 reglas → agregarle anomaly detection
+   - `holistic_metacognition_scan()` ya cruza 12 fuentes → ampliar los cruces
+   - `auto_correction_engine.py` ya mapea acciones → agregar más handlers reales
+   - `ExperimentLab` ya registra resultados → usarlo para comparar versiones
+5. **Si algo se puede mejorar en el archivo existente, se mejora AHÍ** — no se crea `_v2.py`
+6. **Evitar código basura o redundante** — cada línea nueva debe aportar valor real
+7. **Usar la infraestructura que ya existe** — ExperimentLab, StrategySelector, AdaptiveWeightLayer, PortableContextService ya están hechos para esto
+
+El objetivo es que `common_sense_engine.py` EVOLUCIONE internamente:
+- Hoy tiene forward chaining con reglas fijas
+- Mañana tiene forward chaining + anomaly detection + consulta histórica
+- Todo en el MISMO archivo, el MISMO pipeline, sin crear otro motor paralelo
+
+---
+
+## TAREA: Evolucionar el Algoritmo de Razonamiento
 
 ### 1. Análisis del gap actual
 
@@ -97,63 +121,39 @@ Lo que SÍ debe pedir al usuario:
 - Crear tokens/API keys (requiere login humano)
 - Decisiones de negocio (qué modelo preferir, qué priorizar)
 
-### 3. Arquitectura propuesta para v2
+### 3. Evolución del archivo existente (NO crear archivo nuevo)
 
-```
-common_sense_engine_v2.py:
+Todo va DENTRO de `common_sense_engine.py` existente. Agregar funciones nuevas al pipeline:
 
-class ReasoningEngine:
-    """Motor de razonamiento autónomo — no depende de reglas fijas."""
-    
-    def __init__(self, experiment_lab, strategy_selector):
-        self.lab = experiment_lab
-        self.selector = strategy_selector
-    
-    def reason(self, observations: dict) -> list[Conclusion]:
-        """Pipeline: observe → detect anomalies → evaluate → act"""
-        
-        # Fase 1: Extraer hechos (igual que v1 pero extensible)
-        facts = self.extract_facts(observations)
-        
-        # Fase 2: Detectar anomalías por comparación
-        anomalies = self.detect_anomalies(facts)  # NUEVO
-        
-        # Fase 3: Forward chaining con reglas fijas (v1 legacy)
-        rule_conclusions = self.forward_chain(facts)
-        
-        # Fase 4: Razonamiento por historial
-        historical = self.consult_history(anomalies + rule_conclusions)  # NUEVO
-        
-        # Fase 5: Priorizar y filtrar
-        prioritized = self.prioritize(historical)  # NUEVO
-        
-        # Fase 6: Ejecutar acciones seguras
-        results = self.execute(prioritized)
-        
-        # Fase 7: Registrar en ExperimentLab para aprendizaje
-        self.record(results)
-        
-        return results
-    
-    def detect_anomalies(self, facts):
-        """Detecta anomalías SIN reglas fijas.
-        
-        Compara pares de recursos:
-        - recurso_disponible vs recurso_en_uso → subóptimo si inferior en uso
-        - estado_esperado vs estado_real → anomalía si difieren
-        - tendencia_histórica → regresión si empeora
-        """
-        ...
-    
-    def consult_history(self, conclusions):
-        """Consulta ExperimentLab antes de actuar.
-        
-        Para cada conclusión, verifica:
-        - ¿Se intentó esta acción antes?
-        - ¿Funcionó? (success_rate)
-        - ¿Hay una alternativa mejor? (strategy_selector)
-        """
-        ...
+```python
+# EN common_sense_engine.py — AGREGAR estas funciones al pipeline existente:
+
+def detect_anomalies(facts: set[str], scans: dict) -> list[dict]:
+    """Detecta anomalías SIN reglas fijas.
+    Compara pares de recursos:
+    - recurso_disponible vs recurso_en_uso → subóptimo si inferior en uso
+    - estado_esperado vs estado_real → anomalía si difieren
+    - tendencia_histórica → regresión si empeora
+    """
+    ...
+
+def consult_history(conclusions: list[dict]) -> list[dict]:
+    """Consulta ExperimentLab antes de actuar.
+    Para cada conclusión, verifica:
+    - ¿Se intentó esta acción antes?
+    - ¿Funcionó? (success_rate)
+    - ¿Hay una alternativa mejor? (strategy_selector)
+    """
+    ...
+
+# MODIFICAR run_common_sense_reasoning() para agregar las fases nuevas:
+def run_common_sense_reasoning(...):
+    facts = extract_facts(...)        # Fase 1: ya existe
+    anomalies = detect_anomalies(facts, scans)  # Fase 2: NUEVA
+    chain = forward_chain(facts)      # Fase 3: ya existe
+    enriched = consult_history(chain['fired_rules'] + anomalies)  # Fase 4: NUEVA
+    actions = act_on_conclusions(...)  # Fase 5: ya existe
+    _register_with_experiment_lab(...) # Fase 6: ya existe
 ```
 
 ### 4. Integración con ExperimentLab
@@ -185,14 +185,19 @@ recommendation = selector.recommend(
 
 ### 5. Pasos concretos de implementación
 
-1. **Crear `common_sense_engine_v2.py`** con la clase `ReasoningEngine`
-2. **Agregar anomaly detection** que compare recursos disponibles vs en uso
-3. **Agregar consulta histórica** que use `ExperimentLab.record_outcome` antes de decidir
-4. **Eliminar "NECESITA USUARIO"** para acciones que IABV puede hacer solo
-5. **Integrar con ExperimentLab** para comparar v1 vs v2 en paralelo
-6. **Registrar en viewmodel** como sección del auto-análisis
-7. **Agregar MCP tool** para invocación directa
-8. **Verificar GPU real**: que cuando Ollama cargue un modelo, lo fuerce a NVIDIA y confirme con `ollama ps` + `nvidia-smi`
+1. **EVOLUCIONAR `common_sense_engine.py`** — agregar `detect_anomalies()` y `consult_history()` al pipeline existente
+2. **Ampliar `extract_facts()`** — extraer más hechos de los scans existentes (RAM, disco, procesos)
+3. **Agregar más INFERENCE_RULES** — reglas que faltan para situaciones obvias
+4. **Agregar más _ACTION_EXECUTORS** — reemplazar `_noop` por ejecutores reales
+5. **Reducir "NECESITA USUARIO"** — mover acciones que IABV puede hacer solo a auto-ejecutables
+6. **Usar ExperimentLab** para registrar y comparar calidad de razonamiento entre versiones
+7. **Verificar GPU real**: que cuando Ollama cargue un modelo, lo fuerce a NVIDIA y confirme con `ollama ps` + `nvidia-smi`
+
+**NO hacer**:
+- NO crear `common_sense_engine_v2.py` como archivo separado
+- NO borrar las 13 reglas existentes
+- NO crear clases nuevas que dupliquen funcionalidad existente
+- NO desconectar la integración actual con auto_correction_engine
 
 ### 6. Reglas de trabajo
 
@@ -248,10 +253,12 @@ recommendation = selector.recommend(
 
 ## RESUMEN EJECUTIVO PARA EL AGENTE
 
-**Misión**: Construir un algoritmo de razonamiento que haga que IABV tome decisiones
-obvias, sensatas y coherentes SIN que nadie se lo diga. IABV es la ventana del laptop
-completo — tiene que actuar como dueño, no como reportero.
+**Misión**: Evolucionar el algoritmo de razonamiento en `common_sense_engine.py` para que
+IABV tome decisiones obvias, sensatas y coherentes SIN que nadie se lo diga. IABV es la
+ventana del laptop completo — tiene que actuar como dueño, no como reportero.
 
-**Clave**: No más if/else hardcodeados. Razonamiento por anomalía + historial + ExperimentLab.
+**Clave**: Evolucionar el archivo existente. Agregar anomaly detection + consulta histórica
+al pipeline actual. NO crear archivos nuevos. NO borrar código que funciona.
 
-**Entregable**: PR con `common_sense_engine_v2.py` que supere a v1 en ExperimentLab.
+**Entregable**: PR que evolucione `common_sense_engine.py` con capacidades nuevas,
+medidas por ExperimentLab como mejora sobre la versión anterior.
