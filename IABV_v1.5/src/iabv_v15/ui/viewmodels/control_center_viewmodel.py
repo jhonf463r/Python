@@ -5319,6 +5319,10 @@ class ControlCenterViewModel(QObject):
                             sections.append(f"  - {gi}")
                     else:
                         sections.append('Issues GPU: ninguno')
+                    strategy = gpu.get('dual_gpu_strategy', {})
+                    if strategy:
+                        sections.append(f"Estrategia GPU: {strategy.get('primary_compute', '?')} (primaria)")
+                        sections.append(f"  Refuerzo: {strategy.get('reinforcement', '?')}")
                     recs = gpu.get('recommendations', [])
                     if recs:
                         for r in recs[:3]:
@@ -5439,7 +5443,33 @@ class ControlCenterViewModel(QObject):
                 else:
                     sections.append('No se encontraron problemas.')
                     sections.append('Estado: codigo verificado, listo para produccion.')
-                sections.append(f"Tiempo de analisis: {report.get('elapsed_seconds', '?')}s")
+                analysis_time = report.get('elapsed_seconds', '?')
+                sections.append(f"Tiempo de analisis: {analysis_time}s")
+
+                # 6. Metacognition decision log — persist what was learned
+                import json as _json
+                from datetime import datetime as _dt, timezone as _tz
+                decision_log = {
+                    'timestamp': _dt.now(_tz.utc).isoformat(),
+                    'analysis_time_seconds': analysis_time,
+                    'gpu_strategy': gpu.get('dual_gpu_strategy', {}) if 'gpu' in locals() else {},
+                    'branches_deleted': len(cleanup_result.get('deleted', [])),
+                    'branches_conserved': len(cleanup_result.get('conserved', [])),
+                    'syntax_errors': len(syntax.get('errors', [])),
+                    'tests_ok': tests.get('ok', False),
+                    'mcp_tools_count': mcp.get('tool_count', 0),
+                    'issues_found': issues_found,
+                    'estado': 'NECESITA ATENCION' if issues_found else 'VERIFICADO',
+                }
+                try:
+                    import os as _os
+                    log_dir = _os.path.join(ws, 'src', 'data', 'metacognition')
+                    _os.makedirs(log_dir, exist_ok=True)
+                    log_path = _os.path.join(log_dir, 'auto_analysis_log.jsonl')
+                    with open(log_path, 'a', encoding='utf-8') as f:
+                        f.write(_json.dumps(decision_log, ensure_ascii=False) + '\n')
+                except Exception:
+                    pass
 
                 reply = '\n'.join(sections)
                 self._append_message(

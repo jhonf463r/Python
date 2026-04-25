@@ -30,3 +30,6 @@ Thumbs.db
 # Directorios de datos pesados
 data/app.sqlite
 data/**/*.sqlite
+
+# Metacognition runtime logs (local only)
+src/data/metacognition/
