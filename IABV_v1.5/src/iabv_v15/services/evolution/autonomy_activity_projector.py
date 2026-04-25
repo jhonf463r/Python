@@ -422,10 +422,28 @@ class AutonomyActivityProjector:
                 blocker = 'La sesion aislada necesita autenticacion inicial.'
                 progress = 0.24
             elif auto_reason == 'browser_input_missing' and focused_title:
-                stage = 'abriendo sesion aislada'
-                phase_index = min(1, len(steps) - 1)
-                blocker = f'La sesion aislada quedo en "{focused_title}" y aun no aparece el input del chat.'
-                progress = 0.26
+                # Check if this session is stale (> 120s) — show as expired
+                _stale_browser = False
+                _result_ts = str(getattr(result, 'created_at_utc', '') or execution_metadata.get('last_capture_attempt_utc') or '').strip()
+                if _result_ts:
+                    try:
+                        from datetime import datetime, timezone
+                        _started = datetime.fromisoformat(_result_ts.replace('Z', '+00:00'))
+                        _stale_browser = (datetime.now(timezone.utc) - _started).total_seconds() > 120
+                    except (ValueError, TypeError):
+                        _stale_browser = True
+                else:
+                    _stale_browser = True
+                if _stale_browser:
+                    stage = 'sesion caducada'
+                    phase_index = 1 if len(steps) > 1 else 0
+                    blocker = f'La sesion con "{focused_title}" no pudo pasar la verificacion del sitio. Caduco sin resultado.'
+                    progress = 1.0
+                else:
+                    stage = 'abriendo sesion aislada'
+                    phase_index = min(1, len(steps) - 1)
+                    blocker = f'La sesion aislada quedo en "{focused_title}" y aun no aparece el input del chat.'
+                    progress = 0.26
             elif str(execution_metadata.get('launch_mode') or '').strip().lower() in {'web_assisted', 'desktop_app'} and not focused_title:
                 stage = 'lanzando asistente'
                 phase_index = min(1, len(steps) - 1)
