@@ -1039,9 +1039,12 @@ class OperationalSelfExaminationService:
         findings from patterns like repeated errors, ghost sessions,
         tool disagreements, and failed external consultations.
         """
-        log_path = Path(self.workspace_root) / 'src' / 'data' / 'iabv_v15.log'
+        # Primary path: data/logs/iabv_v15.log (matches configure_logging)
+        log_path = Path(self.workspace_root) / 'data' / 'logs' / 'iabv_v15.log'
         if not log_path.exists():
-            # Fallback: some setups place the log in the workspace root
+            # Legacy fallback: some old setups used src/data/
+            log_path = Path(self.workspace_root) / 'src' / 'data' / 'iabv_v15.log'
+        if not log_path.exists():
             log_path = Path(self.workspace_root) / 'iabv_v15.log'
         if not log_path.exists():
             return []
@@ -1092,6 +1095,48 @@ class OperationalSelfExaminationService:
                     },
                 )
             )
+
+        # Auto-correction loop: when the program detects anomalies in its
+        # own logs, attempt corrective actions automatically.
+        if findings:
+            try:
+                from iabv_v15.services.auto_correction_engine import (
+                    apply_runtime_log_corrections,
+                )
+                corrections = apply_runtime_log_corrections(
+                    [
+                        {
+                            'category': f.category,
+                            'occurrences': (f.metadata or {}).get('occurrences', 0),
+                        }
+                        for f in findings
+                    ],
+                    workspace=str(self.workspace_root),
+                )
+                applied = corrections.get('corrections_count', 0)
+                if applied > 0:
+                    findings.append(
+                        SelfExaminationFinding(
+                            category='self_correction',
+                            title=f'Auto-correcciones aplicadas desde log: {applied}',
+                            summary=(
+                                f'El programa detecto {len(findings)} anomalias en su '
+                                f'propio log y aplico {applied} correcciones automaticas.'
+                            ),
+                            severity=IssueSeverity.LOW,
+                            confidence=1.0,
+                            recommendation='Verificar que las correcciones fueron efectivas en el proximo ciclo.',
+                            evidence_refs=[
+                                f'{c.get("action", "?")}: {c.get("detail", "?")}'
+                                for c in corrections.get('corrections_applied', [])
+                            ],
+                            source_refs=['auto_correction_engine'],
+                            metadata={'corrections': corrections},
+                        )
+                    )
+            except Exception as exc:
+                logger.debug('runtime log auto-correction failed: %s', exc)
+
         return findings
 
     def _dedupe_findings(self, findings: list[SelfExaminationFinding]) -> list[SelfExaminationFinding]:

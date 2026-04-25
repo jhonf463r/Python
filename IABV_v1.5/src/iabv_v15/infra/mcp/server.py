@@ -2179,6 +2179,11 @@ class IABVMCPServer:
         except Exception as _sut_exc:
             logger.warning("self_update_tools: failed to register: %s", _sut_exc)
 
+        # Suppress noisy per-session transport logs from the MCP SDK.
+        for noisy in ('mcp', 'mcp.server', 'mcp.server.streamable_http',
+                       'fastmcp', 'uvicorn.access'):
+            logging.getLogger(noisy).setLevel(logging.WARNING)
+
         logger.info("IABV MCP server starting (transport=%s, name=%s)", transport, self.name)
         self._log_github_api_adapter_status()
         self._log_devin_api_adapter_status()
@@ -2273,6 +2278,12 @@ def main() -> None:
         level=os.environ.get("IABV_MCP_LOG_LEVEL", "INFO"),
         format="%(asctime)s %(levelname)s %(name)s - %(message)s",
     )
+    # Suppress noisy "Created new transport with session ID" messages from
+    # the MCP SDK.  Each external client poll creates a new HTTP session
+    # which is normal behaviour — no need to spam the log.
+    for noisy_logger in ('mcp', 'mcp.server', 'mcp.server.streamable_http',
+                         'fastmcp', 'uvicorn.access'):
+        logging.getLogger(noisy_logger).setLevel(logging.WARNING)
     transport = os.environ.get("IABV_MCP_TRANSPORT", "stdio")
     name = os.environ.get("IABV_MCP_NAME", DEFAULT_SERVER_NAME)
     workspace_root = os.environ.get("IABV_WORKSPACE_ROOT")

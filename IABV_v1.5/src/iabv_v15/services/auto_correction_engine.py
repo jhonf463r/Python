@@ -432,6 +432,111 @@ _ACTION_HANDLERS: dict[str, Any] = {
 
 
 # ──────────────────────────────────────────────────────────────
+# Runtime Log Auto-Correction — reacts to _runtime_log_findings
+# ──────────────────────────────────────────────────────────────
+
+def _correct_runtime_noise_disagreement(
+    finding: dict[str, Any], context: dict[str, Any],
+) -> dict[str, Any]:
+    """When multi_source_disagreement is noisy, bump the cache TTL."""
+    count = finding.get('occurrences', 0)
+    if count <= 5:
+        return {'action': 'bump_disagreement_ttl', 'status': 'no_action_needed',
+                'detail': f'{count} occurrences — within threshold'}
+    try:
+        from iabv_v15.services.tools.tool_adapters import ToolAdapter
+        old_ttl = ToolAdapter._MULTI_SOURCE_CACHE_TTL
+        new_ttl = min(old_ttl * 2, 600.0)
+        if new_ttl > old_ttl:
+            ToolAdapter._MULTI_SOURCE_CACHE_TTL = new_ttl
+            logger.info(
+                'auto-correction: bumped multi_source_cache TTL %s→%s '
+                'due to %d disagreement logs', old_ttl, new_ttl, count,
+            )
+            return {'action': 'bump_disagreement_ttl', 'status': 'corrected',
+                    'detail': f'TTL {old_ttl}→{new_ttl}s (triggered by {count} occurrences)'}
+        return {'action': 'bump_disagreement_ttl', 'status': 'no_action_needed',
+                'detail': f'TTL already at max ({old_ttl}s)'}
+    except Exception as exc:
+        return {'action': 'bump_disagreement_ttl', 'status': 'failed', 'detail': str(exc)}
+
+
+def _correct_ghost_session(
+    finding: dict[str, Any], context: dict[str, Any],
+) -> dict[str, Any]:
+    """Clean up marker files from ghost sessions."""
+    workspace = context.get('workspace', '')
+    if not workspace:
+        return {'action': 'cleanup_ghost_markers', 'status': 'no_action_needed',
+                'detail': 'No workspace provided'}
+    marker_dir = Path(workspace) / 'data' / 'logs'
+    cleaned = 0
+    try:
+        import time as _time
+        for marker in marker_dir.glob('.disagreement_*.marker'):
+            age = _time.time() - marker.stat().st_mtime
+            if age > 300:
+                marker.unlink(missing_ok=True)
+                cleaned += 1
+    except OSError:
+        pass
+    detail = f'Cleaned {cleaned} stale markers' if cleaned else 'No stale markers found'
+    return {'action': 'cleanup_ghost_markers',
+            'status': 'corrected' if cleaned else 'no_action_needed',
+            'detail': detail}
+
+
+# Maps runtime log anomaly categories to correction functions.
+_RUNTIME_LOG_HANDLERS: dict[str, Any] = {
+    'runtime_noise': _correct_runtime_noise_disagreement,
+    'ghost_session': _correct_ghost_session,
+    'external_consultation_failure': _noop,
+    'tool_availability': _noop,
+}
+
+
+def apply_runtime_log_corrections(
+    findings: list[dict[str, Any]],
+    *,
+    workspace: str = '',
+) -> dict[str, Any]:
+    """Apply auto-corrections based on runtime log findings.
+
+    Called by OperationalSelfExaminationService after _runtime_log_findings()
+    produces findings. This closes the loop: the program detects its own
+    anomalies in the log and corrects them automatically.
+
+    Returns a summary of corrections applied and informational items.
+    """
+    context = {'workspace': workspace}
+    corrections: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+
+    for finding in findings:
+        category = finding.get('category', '')
+        handler = _RUNTIME_LOG_HANDLERS.get(category)
+        if handler is None:
+            skipped.append({'category': category, 'reason': 'no_handler'})
+            continue
+        result = handler(finding, context)
+        status = result.get('status', '')
+        if status == 'corrected':
+            corrections.append(result)
+            logger.info('runtime auto-correction: %s — %s',
+                        result.get('action', '?'), result.get('detail', ''))
+        elif status != 'no_action_needed':
+            skipped.append({'category': category, 'status': status,
+                            'detail': result.get('detail', '')})
+
+    return {
+        'corrections_applied': corrections,
+        'corrections_count': len(corrections),
+        'skipped': skipped,
+        'skipped_count': len(skipped),
+    }
+
+
+# ──────────────────────────────────────────────────────────────
 # Tool Deduction — what tools/resources are missing and how to get them
 # ──────────────────────────────────────────────────────────────
 
