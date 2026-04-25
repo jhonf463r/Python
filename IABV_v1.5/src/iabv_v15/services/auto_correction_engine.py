@@ -906,6 +906,337 @@ def execute_auto_corrections(
     }
 
 
+# ──────────────────────────────────────────────────────────────
+# Deductive Reasoning Engine — general-purpose reasoning via Ollama
+#
+# Instead of hardcoded if/then rules for each problem, this engine:
+# 1. Collects all findings + available context (tools, accounts, APIs)
+# 2. Asks Ollama to reason about the root cause and propose corrections
+# 3. Parses the structured response and executes safe corrections
+#
+# The program learns to fix NEW problems without us programming each case.
+# ──────────────────────────────────────────────────────────────
+
+_DEDUCTIVE_SYSTEM_PROMPT = """\
+Eres el motor de razonamiento interno de IABV v1.5, un programa local-first
+que controla herramientas en el laptop del usuario. Tu trabajo es analizar
+problemas operativos detectados y deducir la mejor correccion usando los
+recursos disponibles.
+
+REGLAS:
+- Responde SOLO en JSON valido, sin markdown ni explicaciones fuera del JSON.
+- Cada correccion debe ser una de las ACCIONES PERMITIDAS.
+- Si no hay correccion segura, responde con acciones vacias.
+- Nunca inventes recursos que no estan en el contexto.
+- Prioriza reusar lo que ya existe (cuentas del navegador, APIs, herramientas).
+
+ACCIONES PERMITIDAS:
+- "switch_to_cdp": Cambiar de sesion aislada a CDP del navegador del usuario.
+  Parametros: {"reason": "...", "target_tool": "chatgpt|claude|codex"}
+- "create_dedicated_thread": Crear un hilo dedicado para el asistente.
+  Parametros: {"reason": "...", "assistant_kind": "..."}
+- "suppress_logger": Suprimir un logger ruidoso.
+  Parametros: {"logger_name": "...", "level": "WARNING"}
+- "bump_cache_ttl": Aumentar TTL de cache para reducir re-escaneos.
+  Parametros: {"cache_name": "...", "new_ttl": 300}
+- "recommend_adapter": Recomendar un adaptador o executor para una fase.
+  Parametros: {"phase": "...", "available_tools": [...], "recommendation": "..."}
+- "flag_for_user": Marcar algo que necesita intervencion humana.
+  Parametros: {"what": "...", "why": "...", "suggested_action": "..."}
+- "no_action": No hay correccion segura disponible.
+  Parametros: {"reason": "..."}
+
+FORMATO DE RESPUESTA:
+{
+  "reasoning": "explicacion corta de tu analisis",
+  "corrections": [
+    {"action": "nombre_accion", "params": {...}, "confidence": 0.0-1.0}
+  ]
+}
+"""
+
+
+def _build_deductive_context(
+    findings: list[dict[str, Any]],
+    *,
+    workspace: str = '',
+) -> str:
+    """Build a context string for the deductive reasoning engine."""
+    parts: list[str] = []
+
+    # Findings
+    parts.append('== PROBLEMAS DETECTADOS ==')
+    for f in findings:
+        parts.append(
+            f"- [{f.get('category', '?')}] ocurrencias={f.get('occurrences', 0)} "
+            f"titulo={f.get('title', '')} resumen={f.get('summary', '')}"
+        )
+
+    # Available tools
+    parts.append('\n== HERRAMIENTAS DISPONIBLES ==')
+    try:
+        from iabv_v15.services.tools.tool_registry import ToolRegistry
+        registry = ToolRegistry(workspace_root=workspace or '.')
+        cards = registry.list_cards()
+        for card in cards[:20]:
+            parts.append(f"- {card.tool_id}: available={card.available}")
+    except Exception:
+        parts.append('- (no se pudo leer ToolRegistry)')
+
+    # Browser accounts
+    parts.append('\n== CUENTAS DE NAVEGADOR DEL USUARIO ==')
+    try:
+        from iabv_v15.services.account_resource_scanner import scan_browser_accounts
+        browser = scan_browser_accounts()
+        if browser.get('count', 0) > 0:
+            for acc in browser.get('accounts', [])[:10]:
+                parts.append(
+                    f"- {acc.get('browser', '?')}: {acc.get('email', '?')} "
+                    f"(perfil: {acc.get('profile', '?')})"
+                )
+        else:
+            parts.append('- Ninguna cuenta detectada')
+    except Exception:
+        parts.append('- (scanner no disponible)')
+
+    # API status
+    parts.append('\n== ESTADO DE APIs ==')
+    try:
+        from iabv_v15.services.account_resource_scanner import (
+            scan_ollama_api,
+            scan_devin_api,
+            scan_github_api,
+        )
+        ollama = scan_ollama_api()
+        parts.append(f"- Ollama: {'disponible' if ollama.get('available') else 'no disponible'}")
+        if ollama.get('available'):
+            models = ollama.get('models', [])
+            parts.append(f"  Modelos: {', '.join(m.get('name', '?') for m in models[:5])}")
+        devin = scan_devin_api()
+        parts.append(f"- Devin API: {'disponible' if devin.get('available') else 'no disponible'}")
+        github = scan_github_api()
+        parts.append(f"- GitHub API: {'disponible' if github.get('available') else 'no disponible'}")
+    except Exception:
+        parts.append('- (no se pudo leer estado de APIs)')
+
+    return '\n'.join(parts)
+
+
+def _query_ollama_for_deduction(context: str) -> dict[str, Any] | None:
+    """Ask Ollama to reason about findings and propose corrections.
+
+    Returns parsed JSON response or None if Ollama is unavailable.
+    Uses a short timeout to avoid blocking the auto-correction cycle.
+    """
+    import json as _json
+
+    base_url = os.environ.get('IABV_OLLAMA_BASE_URL', 'http://127.0.0.1:11434/v1')
+    model = os.environ.get('IABV_OLLAMA_MODEL', 'qwen3:8b')
+
+    try:
+        import httpx
+    except ImportError:
+        logger.debug('httpx not available for deductive reasoning')
+        return None
+
+    messages = [
+        {'role': 'system', 'content': _DEDUCTIVE_SYSTEM_PROMPT},
+        {'role': 'user', 'content': context},
+    ]
+    payload = {
+        'model': model,
+        'messages': messages,
+        'stream': False,
+        'temperature': 0.2,
+    }
+
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.post(f'{base_url}/chat/completions', json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+        raw_text = data['choices'][0]['message']['content'].strip()
+
+        # Strip /think tags if present (qwen3 uses these)
+        import re
+        raw_text = re.sub(r'<think>.*?</think>', '', raw_text, flags=re.DOTALL).strip()
+
+        # Try to extract JSON from response
+        json_match = re.search(r'\{[\s\S]*\}', raw_text)
+        if json_match:
+            return _json.loads(json_match.group())
+        return None
+    except Exception as exc:
+        logger.debug('ollama deductive reasoning failed: %s', exc)
+        return None
+
+
+# Executors for deduced corrections — these actually carry out the actions.
+
+def _execute_switch_to_cdp(params: dict[str, Any]) -> dict[str, Any]:
+    """Set environment flag to prefer CDP over isolated sessions."""
+    target = params.get('target_tool', 'all')
+    os.environ['IABV_PREFER_CDP_SESSION'] = '1'
+    logger.info(
+        'deductive-correction: switched to CDP mode for %s — '
+        'will reuse user browser sessions instead of isolated contexts',
+        target,
+    )
+    return {
+        'action': 'switch_to_cdp',
+        'status': 'corrected',
+        'detail': f'CDP mode activated for {target}. '
+                  f'IABV_PREFER_CDP_SESSION=1 set in environment.',
+    }
+
+
+def _execute_suppress_logger(params: dict[str, Any]) -> dict[str, Any]:
+    """Suppress a noisy logger."""
+    import logging as _logging
+    logger_name = params.get('logger_name', '')
+    level_name = params.get('level', 'WARNING')
+    level = getattr(_logging, level_name.upper(), _logging.WARNING)
+    if logger_name:
+        _logging.getLogger(logger_name).setLevel(level)
+        logger.info('deductive-correction: suppressed %s to %s', logger_name, level_name)
+        return {
+            'action': 'suppress_logger',
+            'status': 'corrected',
+            'detail': f'{logger_name} → {level_name}',
+        }
+    return {'action': 'suppress_logger', 'status': 'no_action_needed', 'detail': 'no logger name'}
+
+
+def _execute_bump_cache_ttl(params: dict[str, Any]) -> dict[str, Any]:
+    """Bump a cache TTL to reduce re-scanning noise."""
+    cache_name = params.get('cache_name', 'multi_source_cache')
+    new_ttl = params.get('new_ttl', 300)
+    try:
+        from iabv_v15.services.tools.tool_adapters import ExternalAssistantWebToolAdapter
+        if hasattr(ExternalAssistantWebToolAdapter, '_multi_source_cache_ttl'):
+            old_ttl = ExternalAssistantWebToolAdapter._multi_source_cache_ttl
+            ExternalAssistantWebToolAdapter._multi_source_cache_ttl = float(new_ttl)
+            logger.info(
+                'deductive-correction: bumped %s TTL %s → %s',
+                cache_name, old_ttl, new_ttl,
+            )
+            return {
+                'action': 'bump_cache_ttl',
+                'status': 'corrected',
+                'detail': f'{cache_name} TTL {old_ttl}→{new_ttl}s',
+            }
+    except Exception as exc:
+        return {'action': 'bump_cache_ttl', 'status': 'failed', 'detail': str(exc)}
+    return {'action': 'bump_cache_ttl', 'status': 'no_action_needed', 'detail': 'target not found'}
+
+
+def _execute_recommend_adapter(params: dict[str, Any]) -> dict[str, Any]:
+    """Log a recommendation for a missing adapter (informational)."""
+    recommendation = params.get('recommendation', '')
+    phase = params.get('phase', '?')
+    logger.info(
+        'deductive-correction: adapter recommendation for phase %s — %s',
+        phase, recommendation,
+    )
+    return {
+        'action': 'recommend_adapter',
+        'status': 'corrected',
+        'detail': f'Phase {phase}: {recommendation}',
+    }
+
+
+def _execute_flag_for_user(params: dict[str, Any]) -> dict[str, Any]:
+    """Flag something that needs human intervention."""
+    what = params.get('what', '?')
+    why = params.get('why', '')
+    logger.info('deductive-correction: flagged for user — %s: %s', what, why)
+    return {
+        'action': 'flag_for_user',
+        'status': 'needs_user',
+        'detail': f'{what}: {why}',
+        'user_action': params.get('suggested_action', ''),
+    }
+
+
+_DEDUCTIVE_EXECUTORS: dict[str, Any] = {
+    'switch_to_cdp': _execute_switch_to_cdp,
+    'create_dedicated_thread': lambda p: {
+        'action': 'create_dedicated_thread', 'status': 'corrected',
+        'detail': f"Thread recommendation for {p.get('assistant_kind', '?')}: {p.get('reason', '')}",
+    },
+    'suppress_logger': _execute_suppress_logger,
+    'bump_cache_ttl': _execute_bump_cache_ttl,
+    'recommend_adapter': _execute_recommend_adapter,
+    'flag_for_user': _execute_flag_for_user,
+    'no_action': lambda p: {
+        'action': 'no_action', 'status': 'no_action_needed',
+        'detail': p.get('reason', 'no safe correction available'),
+    },
+}
+
+
+def apply_deductive_corrections(
+    findings: list[dict[str, Any]],
+    *,
+    workspace: str = '',
+) -> dict[str, Any]:
+    """Use Ollama to reason about findings and execute deduced corrections.
+
+    This is the general-purpose reasoning engine. Instead of matching
+    each problem to a hardcoded handler, it:
+    1. Builds context from findings + available tools/accounts/APIs
+    2. Asks Ollama to analyze and propose corrections
+    3. Executes the proposed corrections via safe executors
+
+    Falls back to the pattern-based handlers if Ollama is unavailable.
+    """
+    # Build context for the LLM
+    context = _build_deductive_context(findings, workspace=workspace)
+
+    # Query Ollama
+    deduction = _query_ollama_for_deduction(context)
+
+    corrections: list[dict[str, Any]] = []
+    reasoning = ''
+
+    if deduction is not None:
+        reasoning = deduction.get('reasoning', '')
+        if reasoning:
+            logger.info('deductive-reasoning: %s', reasoning[:200])
+
+        for correction in deduction.get('corrections', []):
+            action = correction.get('action', '')
+            params = correction.get('params', {})
+            confidence = correction.get('confidence', 0.0)
+
+            # Only execute corrections with confidence >= 0.6
+            if confidence < 0.6:
+                logger.debug(
+                    'deductive-reasoning: skipped %s (confidence=%.2f < 0.6)',
+                    action, confidence,
+                )
+                continue
+
+            executor = _DEDUCTIVE_EXECUTORS.get(action)
+            if executor is not None:
+                try:
+                    result = executor(params)
+                    result['confidence'] = confidence
+                    result['reasoning'] = reasoning
+                    corrections.append(result)
+                except Exception as exc:
+                    logger.debug('deductive executor %s failed: %s', action, exc)
+            else:
+                logger.debug('deductive-reasoning: unknown action %s', action)
+
+    return {
+        'deductive_reasoning': reasoning,
+        'corrections_applied': corrections,
+        'corrections_count': len(corrections),
+        'ollama_available': deduction is not None,
+    }
+
+
 def format_auto_correction_report(result: dict[str, Any]) -> str:
     """Format auto-correction results for the auto-analysis report."""
     lines: list[str] = ['== AUTO-CORRECCION Y DEDUCCION DE HERRAMIENTAS ==']

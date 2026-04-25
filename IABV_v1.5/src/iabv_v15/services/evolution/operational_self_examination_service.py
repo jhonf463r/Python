@@ -1222,6 +1222,64 @@ class OperationalSelfExaminationService:
             except Exception as exc:
                 logger.debug('runtime log auto-correction failed: %s', exc)
 
+        # Deductive reasoning: instead of only matching patterns to hardcoded
+        # handlers, ask Ollama to reason about ALL findings and deduce what
+        # corrections to make using available tools and resources.
+        # This gives the program general-purpose "intuition" — the ability
+        # to solve NEW problems without a human programming each case.
+        if findings:
+            try:
+                from iabv_v15.services.auto_correction_engine import (
+                    apply_deductive_corrections,
+                )
+                finding_dicts = [
+                    {
+                        'category': f.category,
+                        'occurrences': (f.metadata or {}).get('occurrences', 0),
+                        'title': f.title,
+                        'summary': f.summary,
+                    }
+                    for f in findings
+                    if f.category != 'self_correction'
+                ]
+                if finding_dicts:
+                    deductive = apply_deductive_corrections(
+                        finding_dicts,
+                        workspace=str(self.workspace_root),
+                    )
+                    ded_applied = deductive.get('corrections_count', 0)
+                    reasoning = deductive.get('deductive_reasoning', '')
+                    if ded_applied > 0 or reasoning:
+                        findings.append(
+                            SelfExaminationFinding(
+                                category='deductive_self_correction',
+                                title=f'Razonamiento deductivo: {ded_applied} correcciones',
+                                summary=(
+                                    f'El programa uso Ollama para razonar sobre '
+                                    f'{len(finding_dicts)} hallazgo(s) y dedujo '
+                                    f'{ded_applied} correccion(es). '
+                                    f'Razonamiento: {reasoning[:300]}'
+                                ),
+                                severity=IssueSeverity.LOW,
+                                confidence=0.85,
+                                recommendation=(
+                                    'El programa ahora puede razonar sobre problemas '
+                                    'nuevos sin necesitar programacion especifica.'
+                                ),
+                                evidence_refs=[
+                                    f'{c.get("action", "?")}: {c.get("detail", "?")}'
+                                    for c in deductive.get('corrections_applied', [])
+                                ],
+                                source_refs=['deductive_reasoning_engine', 'ollama'],
+                                metadata={
+                                    'deductive_corrections': deductive,
+                                    'ollama_available': deductive.get('ollama_available', False),
+                                },
+                            )
+                        )
+            except Exception as exc:
+                logger.debug('deductive reasoning failed: %s', exc)
+
         return findings
 
     def _dedupe_findings(self, findings: list[SelfExaminationFinding]) -> list[SelfExaminationFinding]:
