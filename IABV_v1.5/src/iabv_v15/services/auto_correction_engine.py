@@ -553,36 +553,11 @@ def execute_auto_corrections(
             'severity': need.get('severity', 'medium'),
         })
 
-    # Run common sense reasoning engine — causal inference over all facts
-    common_sense_result: dict[str, Any] = {}
-    try:
-        from iabv_v15.services.common_sense_engine import run_common_sense_reasoning
-        common_sense_result = run_common_sense_reasoning(
-            gpu_scan=gpu_scan,
-            account_scan=account_scan,
-            holistic_scan=holistic_scan,
-            limits_scan=limits_scan,
-            regression_scan=regression_scan,
-            deep_env_scan=deep_env_scan,
-        )
-        # Merge common sense corrections into our corrections
-        for cs_action in common_sense_result.get('actions_executed', []):
-            cs_result = cs_action.get('result', {})
-            if cs_result.get('executed'):
-                corrections_applied.append({
-                    'action': cs_action.get('action', 'common_sense'),
-                    'status': 'corrected',
-                    'detail': f'[Sentido Común] {cs_action.get("description", "")} — {cs_result.get("detail", "")}',
-                })
-        for cs_need in common_sense_result.get('actions_needs_user', []):
-            user_requests.append({
-                'action': cs_need.get('action', 'common_sense'),
-                'status': 'needs_user',
-                'detail': cs_need.get('description', ''),
-                'user_action': 'Requiere aprobación del usuario',
-            })
-    except Exception as exc:
-        logger.debug('common_sense_reasoning failed: %s', exc)
+    # NOTE: common sense reasoning is NOT called here to avoid double
+    # execution of side-effecting actions (subprocess.Popen, HTTP requests).
+    # The viewmodel (control_center_viewmodel.py §4.9) calls
+    # run_common_sense_reasoning() separately with richer context
+    # (git_state, version_state, deep_env_scan) and formats its own report.
 
     return {
         'corrections_applied': corrections_applied,
@@ -592,7 +567,6 @@ def execute_auto_corrections(
         'tool_deduction': tool_deduction,
         'backlog_tasks_created': backlog_tasks_created,
         'backlog_tasks_count': len(backlog_tasks_created),
-        'common_sense': common_sense_result,
     }
 
 

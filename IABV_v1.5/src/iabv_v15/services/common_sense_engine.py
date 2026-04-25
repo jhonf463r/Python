@@ -522,9 +522,10 @@ def detect_anomalies(
 
 def _action_history_path() -> Path:
     """Return path to the per-action history JSONL file."""
-    data_dir = Path(
-        os.environ.get('IABV_DATA_DIR', ''),
-    ) or Path(os.path.expanduser('~')) / 'IABV_v1.5' / 'data'
+    env_val = os.environ.get('IABV_DATA_DIR', '').strip()
+    data_dir = Path(env_val) if env_val else (
+        Path(os.path.expanduser('~')) / 'IABV_v1.5' / 'data'
+    )
     history_dir = data_dir / 'evolution' / 'action_history'
     history_dir.mkdir(parents=True, exist_ok=True)
     return history_dir / 'action_outcomes.jsonl'
