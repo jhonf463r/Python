@@ -5146,48 +5146,79 @@ class ControlCenterViewModel(QObject):
                     ws = os.getcwd()
                 sections: list[str] = []
 
-                # 0. Auto-update: git pull antes de analizar
-                # Usa --rebase=false para tolerar divergencias locales
-                # (ej: commits de auto-merge previos que divergen del remoto).
-                # --ff-only falla en ese caso con "Diverging branches can't".
+                # 0. Auto-update: fetch + fast-forward on main only
+                # Only resets to origin/main if currently on the main branch
+                # and there are no local uncommitted changes. Otherwise uses
+                # git pull --ff-only which is safe (no data loss).
                 import subprocess as _sp
                 try:
-                    pull_result = _sp.run(
-                        ['git', '-C', ws, 'pull', '--rebase=false'],
+                    # Abort any in-progress merge first
+                    _sp.run(
+                        ['git', '-C', ws, 'merge', '--abort'],
+                        capture_output=True, text=True, timeout=10,
+                    )
+                    # Fetch with prune to remove deleted remote branches
+                    fetch_r = _sp.run(
+                        ['git', '-C', ws, 'fetch', 'origin', '--prune'],
                         capture_output=True, text=True, timeout=30,
                     )
-                    pull_out = pull_result.stdout.strip()
-                    if pull_result.returncode == 0:
-                        if 'Already up to date' in pull_out or 'Already up-to-date' in pull_out:
-                            sections.append('== AUTO-UPDATE ==')
-                            sections.append('Ya estoy actualizado (git pull: up to date)')
+                    # Check current branch
+                    current_branch = _sp.run(
+                        ['git', '-C', ws, 'rev-parse', '--abbrev-ref', 'HEAD'],
+                        capture_output=True, text=True, timeout=5,
+                    ).stdout.strip()
+                    # Check for local uncommitted changes
+                    local_dirty = _sp.run(
+                        ['git', '-C', ws, 'status', '--porcelain'],
+                        capture_output=True, text=True, timeout=5,
+                    ).stdout.strip()
+                    old_head = _sp.run(
+                        ['git', '-C', ws, 'rev-parse', '--short', 'HEAD'],
+                        capture_output=True, text=True, timeout=5,
+                    ).stdout.strip()
+
+                    sections.append('== AUTO-UPDATE ==')
+                    if local_dirty:
+                        sections.append('Cambios locales detectados — omitiendo reset para no perder trabajo')
+                        sections.append(f'  Branch: {current_branch}, archivos modificados: {len(local_dirty.splitlines())}')
+                    elif current_branch in ('main', 'master'):
+                        # Safe to reset: on main, no local changes
+                        reset_r = _sp.run(
+                            ['git', '-C', ws, 'reset', '--hard', 'origin/main'],
+                            capture_output=True, text=True, timeout=15,
+                        )
+                        new_head = _sp.run(
+                            ['git', '-C', ws, 'rev-parse', '--short', 'HEAD'],
+                            capture_output=True, text=True, timeout=5,
+                        ).stdout.strip()
+                        if reset_r.returncode == 0:
+                            if old_head == new_head:
+                                sections.append('Ya estoy actualizado (sin cambios nuevos en origin/main)')
+                            else:
+                                sections.append(f'Me actualice exitosamente: {old_head} -> {new_head}')
                         else:
-                            sections.append('== AUTO-UPDATE ==')
-                            sections.append('Me actualice exitosamente:')
-                            for line in pull_out.splitlines()[-5:]:
-                                sections.append(f'  {line}')
+                            sections.append(f'Error al actualizar: {reset_r.stderr.strip()[:200]}')
                     else:
-                        # Fallback: fetch + merge para casos extremos
-                        _sp.run(
-                            ['git', '-C', ws, 'fetch', 'origin'],
+                        # On a feature branch — try safe ff-only pull
+                        ff_r = _sp.run(
+                            ['git', '-C', ws, 'pull', '--ff-only'],
                             capture_output=True, text=True, timeout=30,
                         )
-                        merge_r = _sp.run(
-                            ['git', '-C', ws, 'merge', '--no-edit', '-X', 'theirs',
-                             'origin/' + _sp.run(
-                                 ['git', '-C', ws, 'rev-parse', '--abbrev-ref', 'HEAD'],
-                                 capture_output=True, text=True, timeout=5,
-                             ).stdout.strip()],
-                            capture_output=True, text=True, timeout=30,
-                        )
-                        if merge_r.returncode == 0:
-                            sections.append('== AUTO-UPDATE ==')
-                            sections.append('Me actualice via fetch+merge (divergencia local resuelta):')
-                            for line in merge_r.stdout.strip().splitlines()[-5:]:
-                                sections.append(f'  {line}')
+                        if ff_r.returncode == 0:
+                            new_head = _sp.run(
+                                ['git', '-C', ws, 'rev-parse', '--short', 'HEAD'],
+                                capture_output=True, text=True, timeout=5,
+                            ).stdout.strip()
+                            if old_head == new_head:
+                                sections.append(f'Ya estoy actualizado en branch {current_branch}')
+                            else:
+                                sections.append(f'Actualice branch {current_branch}: {old_head} -> {new_head}')
                         else:
-                            sections.append('== AUTO-UPDATE ==')
-                            sections.append(f'Error al actualizar: {pull_result.stderr.strip()[:200]}')
+                            sections.append(f'Branch {current_branch} diverge del remoto — conservando estado local')
+                    # Report pruned branches if any
+                    pruned = [l for l in (fetch_r.stderr or '').splitlines() if '[deleted]' in l]
+                    if pruned:
+                        sections.append(f'  Ramas remotas limpiadas: {len(pruned)}')
                 except Exception as pull_exc:
                     sections.append('== AUTO-UPDATE ==')
                     sections.append(f'No pude actualizarme: {pull_exc}')
@@ -5288,6 +5319,10 @@ class ControlCenterViewModel(QObject):
                             sections.append(f"  - {gi}")
                     else:
                         sections.append('Issues GPU: ninguno')
+                    strategy = gpu.get('dual_gpu_strategy', {})
+                    if strategy:
+                        sections.append(f"Estrategia GPU: {strategy.get('primary_compute', '?')} (primaria)")
+                        sections.append(f"  Refuerzo: {strategy.get('reinforcement', '?')}")
                     recs = gpu.get('recommendations', [])
                     if recs:
                         for r in recs[:3]:
@@ -5350,52 +5385,35 @@ class ControlCenterViewModel(QObject):
                 except Exception as work_exc:
                     sections.append(f'Error al diagnosticar trabajo en vivo: {work_exc}')
 
-                # 3. Auto-correccion: mergear ramas seguras si hay muchas pendientes
-                merge_result: dict = {}
-                if branch_count > 5:
+                # 3. Auto-correccion: limpiar ramas obsoletas (no mergear)
+                cleanup_result: dict = {}
+                if branch_count > 0:
                     sections.append('')
-                    sections.append('== AUTO-CORRECCION: RAMAS PENDIENTES ==')
+                    sections.append('== AUTO-CORRECCION: LIMPIEZA DE RAMAS OBSOLETAS ==')
                     try:
-                        from iabv_v15.services.self_code_analysis import auto_merge_safe_branches
-                        merge_result = auto_merge_safe_branches(ws)
-                        if merge_result.get('merged'):
-                            sections.append(f"Mergee {len(merge_result['merged'])} ramas limpiamente:")
-                            for mb in merge_result['merged'][:10]:
-                                sections.append(f"  + {mb}")
-                        if merge_result.get('merged_with_ours'):
-                            sections.append(f"Mergee {len(merge_result['merged_with_ours'])} ramas resolviendo conflictos (conservando codigo actual):")
-                            for mb in merge_result['merged_with_ours'][:10]:
-                                sections.append(f"  ~ {mb}")
-                        if merge_result.get('reverted'):
-                            sections.append(f"AUTOPROTECCION: {len(merge_result['reverted'])} ramas REVERTIDAS (dañaban el codigo):")
-                            for rv in merge_result['reverted'][:10]:
-                                sections.append(f"  !! {rv.get('branch', '?')}: {rv.get('reason', '?')[:100]}")
-                        if merge_result.get('failed'):
-                            sections.append(f"{len(merge_result['failed'])} ramas que no se pudieron mergear:")
-                            for fb in merge_result['failed'][:5]:
+                        from iabv_v15.services.self_code_analysis import cleanup_stale_remote_branches
+                        cleanup_result = cleanup_stale_remote_branches(ws)
+                        if cleanup_result.get('deleted'):
+                            sections.append(f"Elimine {len(cleanup_result['deleted'])} ramas obsoletas del remoto:")
+                            for db in cleanup_result['deleted'][:10]:
+                                sections.append(f"  - {db}")
+                            if len(cleanup_result['deleted']) > 10:
+                                sections.append(f"  ... y {len(cleanup_result['deleted']) - 10} mas")
+                        if cleanup_result.get('conserved'):
+                            sections.append(f"Conserve {len(cleanup_result['conserved'])} ramas (aun tienen valor):")
+                            for cv in cleanup_result['conserved'][:5]:
+                                sections.append(f"  + {cv.get('branch', '?')}: {cv.get('reason', '?')[:80]}")
+                        if cleanup_result.get('failed'):
+                            sections.append(f"{len(cleanup_result['failed'])} ramas no se pudieron eliminar:")
+                            for fb in cleanup_result['failed'][:5]:
                                 sections.append(f"  x {fb.get('branch', '?')}: {fb.get('reason', '?')[:80]}")
-                        if merge_result.get('already_merged_count', 0) > 0:
-                            sections.append(f"{merge_result['already_merged_count']} ramas ya integradas (no re-mergeadas)")
-                        if merge_result.get('skipped_count', 0) > 0:
-                            sections.append(f"{merge_result['skipped_count']} ramas omitidas (prefijo no seguro o tocan capas cerradas)")
-                        sections.append(f"Resumen merge: {merge_result.get('summary', 'n/a')}")
-                    except Exception as merge_exc:
-                        sections.append(f'Error en auto-merge: {merge_exc}')
-
-                # 4. Re-verificacion si hubo cambios
-                if branch_count > 5 and (merge_result.get('merged') or merge_result.get('merged_with_ours')):
-                    sections.append('')
-                    sections.append('== RE-VERIFICACION POST-MERGE ==')
-                    try:
-                        from iabv_v15.services.self_code_analysis import verify_python_syntax
-                        re_syntax = verify_python_syntax(ws)
-                        sections.append(f"Sintaxis post-merge: {re_syntax.get('summary', 'sin datos')}")
-                        if not re_syntax.get('ok'):
-                            sections.append('ALERTA: el merge introdujo errores de sintaxis')
-                            for err in re_syntax.get('errors', [])[:3]:
-                                sections.append(f"  - {err.get('file', '?')}: {err.get('error', '?')[:100]}")
-                    except Exception as rev_exc:
-                        sections.append(f'Error en re-verificacion: {rev_exc}')
+                        if cleanup_result.get('skipped_count', 0) > 0:
+                            sections.append(f"{cleanup_result['skipped_count']} ramas ignoradas (prefijo no seguro)")
+                        if not cleanup_result.get('deleted') and not cleanup_result.get('conserved'):
+                            sections.append('No hay ramas obsoletas que limpiar.')
+                        sections.append(f"Resumen: {cleanup_result.get('summary', 'n/a')}")
+                    except Exception as cleanup_exc:
+                        sections.append(f'Error en limpieza de ramas: {cleanup_exc}')
 
                 # 5. Veredicto final con transparencia total
                 sections.append('')
@@ -5409,9 +5427,9 @@ class ControlCenterViewModel(QObject):
                     issues_found.append('routing de intencion incompleto')
                 if not tests.get('ok', True) and not tests.get('skipped'):
                     issues_found.append(f"tests fallaron: {tests.get('summary', '?')}")
-                remaining_branches = branch_count - merge_result.get('total_merged', len(merge_result.get('merged', []))) if branch_count > 5 else branch_count
+                remaining_branches = branch_count - cleanup_result.get('deleted_count', 0)
                 if remaining_branches > 10:
-                    issues_found.append(f"{remaining_branches} ramas sin mergear (deuda tecnica)")
+                    issues_found.append(f"{remaining_branches} ramas pendientes (deuda tecnica)")
                 if gpu_issues:
                     issues_found.append(f"{len(gpu_issues)} issues de GPU")
                 perf_findings = perf.get('findings', [])
@@ -5425,7 +5443,33 @@ class ControlCenterViewModel(QObject):
                 else:
                     sections.append('No se encontraron problemas.')
                     sections.append('Estado: codigo verificado, listo para produccion.')
-                sections.append(f"Tiempo de analisis: {report.get('elapsed_seconds', '?')}s")
+                analysis_time = report.get('elapsed_seconds', '?')
+                sections.append(f"Tiempo de analisis: {analysis_time}s")
+
+                # 6. Metacognition decision log — persist what was learned
+                import json as _json
+                from datetime import datetime as _dt, timezone as _tz
+                decision_log = {
+                    'timestamp': _dt.now(_tz.utc).isoformat(),
+                    'analysis_time_seconds': analysis_time,
+                    'gpu_strategy': gpu.get('dual_gpu_strategy', {}) if 'gpu' in locals() else {},
+                    'branches_deleted': len(cleanup_result.get('deleted', [])),
+                    'branches_conserved': len(cleanup_result.get('conserved', [])),
+                    'syntax_errors': len(syntax.get('errors', [])),
+                    'tests_ok': tests.get('ok', False),
+                    'mcp_tools_count': mcp.get('tool_count', 0),
+                    'issues_found': issues_found,
+                    'estado': 'NECESITA ATENCION' if issues_found else 'VERIFICADO',
+                }
+                try:
+                    import os as _os
+                    log_dir = _os.path.join(ws, 'src', 'data', 'metacognition')
+                    _os.makedirs(log_dir, exist_ok=True)
+                    log_path = _os.path.join(log_dir, 'auto_analysis_log.jsonl')
+                    with open(log_path, 'a', encoding='utf-8') as f:
+                        f.write(_json.dumps(decision_log, ensure_ascii=False) + '\n')
+                except Exception:
+                    pass
 
                 reply = '\n'.join(sections)
                 self._append_message(
@@ -5545,11 +5589,37 @@ class ControlCenterViewModel(QObject):
 
     def _set_live_status(self, status: str) -> None:
         with self._ui_state_lock:
-            if self._live_status == status:
+            previous = self._live_status
+            if previous == status:
                 return
             self._live_status = status
         self.liveStatusChanged.emit(status)
         self.dataChanged.emit()
+        # Audible notification when processing finishes
+        if previous == 'processing' and status == 'idle':
+            self._play_completion_sound()
+
+    def _play_completion_sound(self) -> None:
+        """Play a short notification sound when a task completes.
+
+        Uses winsound on Windows (native, no dependencies).
+        Falls back to terminal bell on other platforms.
+        Runs in a background thread to avoid blocking the UI.
+        """
+        def _beep() -> None:
+            try:
+                import sys
+                if sys.platform == 'win32':
+                    import winsound
+                    # Two short ascending tones: "task complete"
+                    winsound.Beep(800, 150)
+                    winsound.Beep(1200, 200)
+                else:
+                    # Terminal bell as cross-platform fallback
+                    print('\a', end='', flush=True)
+            except Exception:
+                pass
+        threading.Thread(target=_beep, daemon=True).start()
 
     @Property(list, notify=dataChanged)
     def contextualSuggestions(self) -> list[dict[str, Any]]:
