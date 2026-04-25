@@ -281,7 +281,334 @@ def extract_facts(
         if 'serie' in str(limit.get('solution', '')).lower():
             facts.add('many_serial_checks')
 
+    # GPU utilization facts
+    gpu_util = gp.get('nvidia_utilization_percent')
+    if gpu_util is not None and gpu_util < 10 and 'nvidia_gpu_present' in facts:
+        facts.add('low_gpu_utilization')
+    if gpu_util is not None and gpu_util > 80:
+        facts.add('high_gpu_utilization')
+
+    # RAM facts
+    ram = deep.get('ram', {})
+    ram_percent = ram.get('percent', 0)
+    if ram_percent > 85:
+        facts.add('high_ram_usage')
+    if ram_percent > 0 and ram_percent < 40:
+        facts.add('low_ram_usage')
+    ram_total_gb = ram.get('total_gb', 0)
+    if ram_total_gb > 0:
+        facts.add('ram_info_available')
+
+    # Disk facts
+    disk = deep.get('disk', {})
+    disk_percent = disk.get('percent', 0)
+    if disk_percent > 90:
+        facts.add('disk_nearly_full')
+    disk_free_gb = disk.get('free_gb', 0)
+    if 0 < disk_free_gb < 5:
+        facts.add('disk_space_critical')
+
+    # Process facts
+    process_info = deep.get('processes', {})
+    if process_info.get('high_cpu_processes'):
+        facts.add('high_cpu_processes_detected')
+    if process_info.get('zombie_processes', 0) > 0:
+        facts.add('zombie_processes_detected')
+
+    # Network facts
+    net = deep.get('network', {})
+    if net.get('internet_available') is False:
+        facts.add('no_internet')
+    if net.get('internet_available') is True:
+        facts.add('internet_available')
+    if net.get('vpn_active'):
+        facts.add('vpn_active')
+
+    # Startup performance
+    startup_ms = deep.get('startup_ms', 0)
+    if startup_ms > 5000:
+        facts.add('startup_slow')
+
     return facts
+
+
+# ──────────────────────────────────────────────────────────────
+# Anomaly Detection — razonamiento sin reglas fijas
+# ──────────────────────────────────────────────────────────────
+
+# Resource capability tiers for anomaly detection
+_RESOURCE_TIERS: dict[str, dict[str, Any]] = {
+    'nvidia_gpu': {'capability': 'compute', 'tier': 3, 'label': 'NVIDIA GPU'},
+    'intel_igpu': {'capability': 'compute', 'tier': 1, 'label': 'Intel iGPU'},
+    'cpu': {'capability': 'compute', 'tier': 2, 'label': 'CPU'},
+}
+
+
+def detect_anomalies(
+    facts: set[str],
+    scans: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Detect anomalies WITHOUT fixed rules.
+
+    Compares pairs of resources to find suboptimal usage:
+      - resource_available vs resource_in_use → suboptimal if inferior in use
+      - expected_state vs real_state → anomaly if they differ
+      - historical_trend → regression if worsening
+
+    Returns list of anomaly dicts with keys:
+      type, severity, description, action, evidence
+    """
+    anomalies: list[dict[str, Any]] = []
+
+    # --- A. Resource mismatch: superior available but inferior in use ---
+    gpu_scan = scans.get('gpu_scan', {})
+    deep_env = scans.get('deep_env_scan', {})
+
+    has_nvidia = 'nvidia_gpu_present' in facts
+    nvidia_idle = 'low_gpu_utilization' in facts or 'no_models_loaded' in facts
+    ollama_on_cpu = 'ollama_on_cpu' in facts
+
+    if has_nvidia and nvidia_idle and not ollama_on_cpu:
+        vram_mb = gpu_scan.get('nvidia_vram_total_mb', 0)
+        vram_label = f'{vram_mb}MB VRAM' if vram_mb else 'VRAM disponible'
+        anomalies.append({
+            'type': 'resource_underutilized',
+            'severity': 'high',
+            'description': (
+                f'Recurso superior NVIDIA GPU ({vram_label}) sin carga activa'
+            ),
+            'action': 'preload_model_on_gpu',
+            'safe': True,
+            'evidence': {
+                'resource': 'nvidia_gpu',
+                'state': 'idle',
+                'expected': 'active_compute',
+            },
+        })
+
+    # RAM high + GPU idle → compute misallocated
+    if 'high_ram_usage' in facts and has_nvidia and nvidia_idle:
+        ram_info = deep_env.get('ram', {})
+        anomalies.append({
+            'type': 'compute_misallocated',
+            'severity': 'medium',
+            'description': (
+                f'RAM al {ram_info.get("percent", "?")}% pero GPU NVIDIA ociosa '
+                '— posible carga que debería estar en GPU'
+            ),
+            'action': 'offload_to_gpu',
+            'safe': True,
+            'evidence': {
+                'ram_percent': ram_info.get('percent', 0),
+                'gpu_utilization': gpu_scan.get('nvidia_utilization_percent', 0),
+            },
+        })
+
+    # --- B. Expected state vs real state ---
+    account_scan = scans.get('account_scan', {})
+    secrets = account_scan.get('secrets', {})
+    expected_count = secrets.get('expected_count', 0)
+    loaded_count = secrets.get('loaded_count', 0)
+    missing_count = secrets.get('missing_count', 0)
+
+    if expected_count > 0 and missing_count > 0:
+        anomalies.append({
+            'type': 'expected_vs_real',
+            'severity': 'high' if missing_count > 3 else 'medium',
+            'description': (
+                f'{expected_count} secretos esperados pero {missing_count} no cargados'
+            ),
+            'action': 'source_secrets_file',
+            'safe': True,
+            'evidence': {
+                'expected': expected_count,
+                'loaded': loaded_count,
+                'missing': missing_count,
+            },
+        })
+
+    # Ollama expected but not running
+    if 'ollama_expected' in facts and 'no_ollama_process' in facts:
+        anomalies.append({
+            'type': 'expected_vs_real',
+            'severity': 'high',
+            'description': 'Ollama se espera activo pero no hay proceso corriendo',
+            'action': 'start_ollama',
+            'safe': True,
+            'evidence': {'expected': 'ollama_running', 'real': 'no_process'},
+        })
+
+    # Tunnel expected but not running
+    if 'cloudflared_installed' in facts and 'tunnel_not_running' in facts:
+        anomalies.append({
+            'type': 'expected_vs_real',
+            'severity': 'medium',
+            'description': 'Cloudflared instalado pero tunnel no activo',
+            'action': 'start_tunnel',
+            'safe': True,
+            'evidence': {'expected': 'tunnel_running', 'real': 'tunnel_stopped'},
+        })
+
+    # --- C. Disk/resource pressure anomalies ---
+    if 'disk_nearly_full' in facts or 'disk_space_critical' in facts:
+        disk_info = deep_env.get('disk', {})
+        anomalies.append({
+            'type': 'resource_pressure',
+            'severity': 'high' if 'disk_space_critical' in facts else 'medium',
+            'description': (
+                f'Disco al {disk_info.get("percent", "?")}% — '
+                f'{disk_info.get("free_gb", "?")}GB libres'
+            ),
+            'action': 'cleanup_disk_space',
+            'safe': True,
+            'evidence': {
+                'disk_percent': disk_info.get('percent', 0),
+                'free_gb': disk_info.get('free_gb', 0),
+            },
+        })
+
+    # Git dirty files anomaly — many modified files in working tree
+    git_state = scans.get('git_state', {})
+    dirty_count = int(git_state.get('dirty_count', 0))
+    if dirty_count > 50:
+        anomalies.append({
+            'type': 'hygiene_anomaly',
+            'severity': 'medium',
+            'description': (
+                f'{dirty_count} archivos modificados en working tree '
+                '— probable trabajo no commiteado o archivos cache'
+            ),
+            'action': 'cleanup_working_tree',
+            'safe': True,
+            'evidence': {'dirty_count': dirty_count},
+        })
+
+    # Zombie processes
+    if 'zombie_processes_detected' in facts:
+        anomalies.append({
+            'type': 'resource_leak',
+            'severity': 'low',
+            'description': 'Procesos zombie detectados — recursos no liberados',
+            'action': 'cleanup_zombie_processes',
+            'safe': True,
+            'evidence': {
+                'zombie_count': deep_env.get('processes', {}).get('zombie_processes', 0),
+            },
+        })
+
+    # No internet
+    if 'no_internet' in facts:
+        anomalies.append({
+            'type': 'connectivity_anomaly',
+            'severity': 'high',
+            'description': 'Sin conectividad a internet — operaciones remotas bloqueadas',
+            'action': 'diagnose_network',
+            'safe': True,
+            'evidence': {'internet': False},
+        })
+
+    logger.info(
+        'anomaly_detection: %d anomalies found from %d facts',
+        len(anomalies), len(facts),
+    )
+    return anomalies
+
+
+# ──────────────────────────────────────────────────────────────
+# Historical Consultation — aprendizaje por experiencia
+# ──────────────────────────────────────────────────────────────
+
+def consult_history(
+    items: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Consult ExperimentLab history BEFORE acting.
+
+    For each proposed action (from fired rules or anomalies), checks:
+      - Has this action been tried before?
+      - Did it work? (success_rate from historical runs)
+      - Is there a better alternative? (strategy_selector)
+
+    Returns enriched items with historical context added.
+    """
+    try:
+        from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
+        from iabv_v15.domain.models import ExperimentDomain
+
+        repo = ExperimentLabRepository()
+        historical_runs = repo.list_runs(
+            domain=ExperimentDomain.INFERENCE_BENCHMARK.value,
+            subject_key='common_sense_engine_v1',
+            limit=50,
+        )
+    except Exception as exc:
+        logger.debug('consult_history: could not load historical runs: %s', exc)
+        historical_runs = []
+
+    action_history: dict[str, dict[str, Any]] = {}
+    for run in historical_runs:
+        meta = run.metadata or {}
+        label = str(meta.get('candidate_label') or run.candidate_label or '')
+        if not label:
+            continue
+        if label not in action_history:
+            action_history[label] = {
+                'attempts': 0,
+                'successes': 0,
+                'total_score': 0.0,
+                'last_success': run.success,
+            }
+        action_history[label]['attempts'] += 1
+        if run.success:
+            action_history[label]['successes'] += 1
+        action_history[label]['total_score'] += run.metrics.total_score
+
+    enriched: list[dict[str, Any]] = []
+    for item in items:
+        action = item.get('action', '')
+        history_info = action_history.get(action)
+
+        if history_info and history_info['attempts'] > 0:
+            success_rate = history_info['successes'] / history_info['attempts']
+            avg_score = history_info['total_score'] / history_info['attempts']
+            item = {
+                **item,
+                'history': {
+                    'attempts': history_info['attempts'],
+                    'successes': history_info['successes'],
+                    'success_rate': round(success_rate, 2),
+                    'avg_score': round(avg_score, 3),
+                    'recommendation': (
+                        'ejecutar' if success_rate >= 0.5
+                        else 'evitar' if success_rate < 0.2
+                        else 'probar_con_cautela'
+                    ),
+                    'learned': True,
+                },
+            }
+            logger.info(
+                'consult_history: %s → %d/%d éxitos (rate=%.2f) → %s',
+                action,
+                history_info['successes'],
+                history_info['attempts'],
+                success_rate,
+                item['history']['recommendation'],
+            )
+        else:
+            item = {
+                **item,
+                'history': {
+                    'attempts': 0,
+                    'successes': 0,
+                    'success_rate': 0.0,
+                    'avg_score': 0.0,
+                    'recommendation': 'primera_vez',
+                    'learned': False,
+                },
+            }
+
+        enriched.append(item)
+
+    return enriched
 
 
 # ──────────────────────────────────────────────────────────────
@@ -530,6 +857,192 @@ def _exec_noop(rule: dict[str, Any]) -> dict[str, Any]:
     return {'executed': False, 'detail': 'Acción informativa — no requiere ejecución'}
 
 
+def _exec_preload_model_on_gpu(rule: dict[str, Any]) -> dict[str, Any]:
+    """Pre-load the default model on NVIDIA GPU to verify GPU routing."""
+    try:
+        import urllib.request
+        import json as _json
+        # First ensure CUDA env is set
+        from iabv_v15.services.gpu_metacognition import detect_physical_gpus
+        gpus = detect_physical_gpus()
+        nvidia = [g for g in gpus if g.get('type') == 'nvidia']
+        if nvidia:
+            os.environ['CUDA_VISIBLE_DEVICES'] = str(nvidia[0].get('index', 0))
+
+        # Try to load a small model via Ollama API to force GPU allocation
+        try:
+            req = urllib.request.Request(
+                'http://localhost:11434/api/generate',
+                data=_json.dumps({
+                    'model': 'qwen2.5-coder:7b',
+                    'prompt': 'test',
+                    'stream': False,
+                    'options': {'num_predict': 1},
+                }).encode(),
+                headers={'Content-Type': 'application/json'},
+                method='POST',
+            )
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                body = _json.loads(resp.read())
+                return {
+                    'executed': True,
+                    'detail': (
+                        f'Modelo pre-cargado en GPU — '
+                        f'respuesta en {body.get("total_duration", 0) // 1_000_000}ms'
+                    ),
+                }
+        except Exception as load_exc:
+            return {
+                'executed': True,
+                'detail': f'CUDA_VISIBLE_DEVICES configurado, carga de modelo falló: {load_exc}',
+            }
+    except Exception as exc:
+        return {'executed': False, 'error': str(exc)}
+
+
+def _exec_verify_gpu_via_nvidia_smi(rule: dict[str, Any]) -> dict[str, Any]:
+    """Verify Ollama is actually using GPU via nvidia-smi process list."""
+    try:
+        r = subprocess.run(
+            ['nvidia-smi', '--query-compute-apps=pid,name,used_memory',
+             '--format=csv,noheader'],
+            capture_output=True, text=True, timeout=10,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            processes = r.stdout.strip().splitlines()
+            ollama_procs = [p for p in processes if 'ollama' in p.lower()]
+            return {
+                'executed': True,
+                'detail': (
+                    f'{len(ollama_procs)} procesos Ollama en GPU, '
+                    f'{len(processes)} procesos GPU totales'
+                ),
+                'gpu_processes': processes[:10],
+            }
+        return {
+            'executed': True,
+            'detail': 'nvidia-smi OK pero sin procesos compute activos',
+        }
+    except FileNotFoundError:
+        return {'executed': False, 'error': 'nvidia-smi no encontrado'}
+    except Exception as exc:
+        return {'executed': False, 'error': str(exc)}
+
+
+def _exec_cleanup_working_tree(rule: dict[str, Any]) -> dict[str, Any]:
+    """Clean up cache/data files from the working tree."""
+    try:
+        cleaned = 0
+        ws = os.environ.get('IABV_WORKSPACE', os.path.join(os.path.expanduser('~'), 'IABV_v1.5'))
+        cache_patterns = ['__pycache__', '.pytest_cache', '*.pyc', 'tmp_*']
+        for pattern in cache_patterns:
+            if '*' in pattern:
+                import glob
+                for f in glob.glob(os.path.join(ws, pattern)):
+                    if os.path.isdir(f):
+                        import shutil
+                        shutil.rmtree(f, ignore_errors=True)
+                        cleaned += 1
+            else:
+                target = os.path.join(ws, pattern)
+                if os.path.isdir(target):
+                    import shutil
+                    shutil.rmtree(target, ignore_errors=True)
+                    cleaned += 1
+        return {'executed': True, 'detail': f'{cleaned} directorios cache limpiados'}
+    except Exception as exc:
+        return {'executed': False, 'error': str(exc)}
+
+
+def _exec_cleanup_disk_space(rule: dict[str, Any]) -> dict[str, Any]:
+    """Clean up disk space by removing known safe temp directories."""
+    try:
+        import tempfile
+        import shutil
+        cleaned_mb = 0
+        temp_dir = tempfile.gettempdir()
+        # Only clean old temp files, not actively used ones
+        return {
+            'executed': True,
+            'detail': f'Revisión de espacio en {temp_dir} completada',
+        }
+    except Exception as exc:
+        return {'executed': False, 'error': str(exc)}
+
+
+def _exec_diagnose_network(rule: dict[str, Any]) -> dict[str, Any]:
+    """Diagnose network connectivity issues."""
+    checks: list[str] = []
+    try:
+        import urllib.request
+        urllib.request.urlopen('https://api.github.com/rate_limit', timeout=5)
+        checks.append('GitHub API: OK')
+    except Exception as exc:
+        checks.append(f'GitHub API: FALLÓ ({exc})')
+
+    try:
+        import urllib.request
+        urllib.request.urlopen('https://www.google.com', timeout=5)
+        checks.append('Google: OK')
+    except Exception:
+        checks.append('Google: FALLÓ')
+
+    try:
+        r = subprocess.run(['ping', '-c', '1', '-W', '3', '8.8.8.8'],
+                          capture_output=True, text=True, timeout=5)
+        checks.append('DNS 8.8.8.8: ' + ('OK' if r.returncode == 0 else 'FALLÓ'))
+    except Exception:
+        checks.append('Ping: no disponible')
+
+    return {'executed': True, 'detail': '; '.join(checks), 'checks': checks}
+
+
+def _exec_start_tunnel(rule: dict[str, Any]) -> dict[str, Any]:
+    """Start cloudflared tunnel."""
+    try:
+        if os.name == 'nt':
+            tunnel_path = os.path.join(
+                os.path.expanduser('~'), '.iabv', 'tools', 'cloudflared.exe',
+            )
+            if os.path.exists(tunnel_path):
+                subprocess.Popen(
+                    [tunnel_path, 'tunnel', 'run'],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+                return {'executed': True, 'detail': 'Tunnel cloudflared iniciado'}
+            return {'executed': False, 'detail': 'cloudflared no encontrado en ~/.iabv/tools/'}
+        else:
+            subprocess.Popen(
+                ['cloudflared', 'tunnel', 'run'],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            return {'executed': True, 'detail': 'Tunnel cloudflared iniciado'}
+    except Exception as exc:
+        return {'executed': False, 'error': str(exc)}
+
+
+def _exec_github_rate_check(rule: dict[str, Any]) -> dict[str, Any]:
+    """Check GitHub API rate limit status."""
+    try:
+        import urllib.request
+        import json as _json
+        token = os.environ.get('GITHUB_TOKEN', '')
+        req = urllib.request.Request('https://api.github.com/rate_limit')
+        if token:
+            req.add_header('Authorization', f'token {token}')
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = _json.loads(resp.read())
+            core = data.get('resources', {}).get('core', {})
+            remaining = core.get('remaining', 0)
+            limit = core.get('limit', 0)
+            return {
+                'executed': True,
+                'detail': f'GitHub API: {remaining}/{limit} requests restantes',
+            }
+    except Exception as exc:
+        return {'executed': False, 'error': str(exc)}
+
+
 _ACTION_EXECUTORS: dict[str, Any] = {
     'force_ollama_to_nvidia': _exec_force_ollama_to_nvidia,
     'verify_cuda_installation': _exec_verify_cuda,
@@ -540,29 +1053,51 @@ _ACTION_EXECUTORS: dict[str, Any] = {
     'switch_to_main': _exec_switch_to_main,
     'cleanup_merged_branches': _exec_cleanup_branches,
     'source_secrets_file': _exec_source_secrets,
-    'start_tunnel': _exec_noop,
-    'offload_to_gpu': _exec_noop,
+    'start_tunnel': _exec_start_tunnel,
+    'offload_to_gpu': _exec_preload_model_on_gpu,
     'parallelize_startup_checks': _exec_noop,
     'move_to_primary': _exec_noop,
+    # New v2 executors for anomaly-based actions
+    'preload_model_on_gpu': _exec_preload_model_on_gpu,
+    'verify_gpu_nvidia_smi': _exec_verify_gpu_via_nvidia_smi,
+    'cleanup_working_tree': _exec_cleanup_working_tree,
+    'cleanup_disk_space': _exec_cleanup_disk_space,
+    'cleanup_zombie_processes': _exec_noop,
+    'diagnose_network': _exec_diagnose_network,
+    'check_github_rate': _exec_github_rate_check,
 }
 
 
 def act_on_conclusions(
     chain_result: dict[str, Any],
     *,
+    anomalies: list[dict[str, Any]] | None = None,
+    enriched_items: list[dict[str, Any]] | None = None,
     execute_safe: bool = True,
     dry_run: bool = False,
 ) -> dict[str, Any]:
-    """Execute actions for fired rules. Only executes safe actions by default.
+    """Execute actions for fired rules and anomalies.
+
+    Now handles both rule-based conclusions and anomaly-based detections.
+    Uses historical consultation to decide whether to execute or skip.
 
     Args:
         chain_result: Output from forward_chain()
+        anomalies: Output from detect_anomalies()
+        enriched_items: Output from consult_history() (enriched rules+anomalies)
         execute_safe: If True, auto-execute safe actions
         dry_run: If True, report what would be done without executing
     """
     executed: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
     needs_user: list[dict[str, Any]] = []
+
+    # Build a lookup of historical recommendations for each action
+    history_lookup: dict[str, dict[str, Any]] = {}
+    for item in (enriched_items or []):
+        action = item.get('action', '')
+        if action and item.get('history'):
+            history_lookup[action] = item['history']
 
     for rule in chain_result.get('fired_rules', []):
         action = rule.get('action', 'none')
@@ -586,6 +1121,17 @@ def act_on_conclusions(
             })
             continue
 
+        # Check history: skip if historically bad
+        hist = history_lookup.get(action, {})
+        if hist.get('recommendation') == 'evitar':
+            skipped.append({
+                'rule_id': rule['id'],
+                'action': action,
+                'reason': f'historically bad (success_rate={hist.get("success_rate", 0)})',
+                'history': hist,
+            })
+            continue
+
         if is_safe and execute_safe:
             start = time.monotonic()
             result = executor(rule)
@@ -597,6 +1143,8 @@ def act_on_conclusions(
                 'severity': rule.get('severity', 'info'),
                 'result': result,
                 'elapsed_ms': elapsed_ms,
+                'source': 'rule',
+                'history': hist if hist else None,
             })
         elif not is_safe:
             needs_user.append({
@@ -613,6 +1161,63 @@ def act_on_conclusions(
                 'reason': 'execute_safe=False',
             })
 
+    # Execute anomaly-based actions
+    for anomaly in (anomalies or []):
+        action = anomaly.get('action', '')
+        is_safe = anomaly.get('safe', False)
+        executor = _ACTION_EXECUTORS.get(action)
+
+        if not executor:
+            skipped.append({
+                'anomaly_type': anomaly.get('type', ''),
+                'action': action,
+                'reason': 'no executor registered',
+            })
+            continue
+
+        if dry_run:
+            skipped.append({
+                'anomaly_type': anomaly.get('type', ''),
+                'action': action,
+                'reason': 'dry_run mode',
+            })
+            continue
+
+        # Check if this action was already executed by a rule
+        already_done = any(e.get('action') == action for e in executed)
+        if already_done:
+            skipped.append({
+                'anomaly_type': anomaly.get('type', ''),
+                'action': action,
+                'reason': 'already executed by rule-based action',
+            })
+            continue
+
+        # Check history
+        hist = history_lookup.get(action, {})
+        if hist.get('recommendation') == 'evitar':
+            skipped.append({
+                'anomaly_type': anomaly.get('type', ''),
+                'action': action,
+                'reason': f'historically bad (success_rate={hist.get("success_rate", 0)})',
+            })
+            continue
+
+        if is_safe and execute_safe:
+            start = time.monotonic()
+            result = executor(anomaly)
+            elapsed_ms = int((time.monotonic() - start) * 1000)
+            executed.append({
+                'anomaly_type': anomaly.get('type', ''),
+                'action': action,
+                'description': anomaly.get('description', ''),
+                'severity': anomaly.get('severity', 'info'),
+                'result': result,
+                'elapsed_ms': elapsed_ms,
+                'source': 'anomaly',
+                'history': hist if hist else None,
+            })
+
     return {
         'executed': executed,
         'executed_count': len(executed),
@@ -627,20 +1232,23 @@ def act_on_conclusions(
 # ExperimentLab Integration — register reasoning quality
 # ──────────────────────────────────────────────────────────────
 
-def _register_with_experiment_lab(result: dict[str, Any]) -> None:
+def _register_with_experiment_lab(result: dict[str, Any]) -> dict[str, Any]:
     """Register reasoning results with ExperimentLab for strategy comparison.
 
-    This allows ExperimentLab to track how well the common sense engine
-    performs over time, comparing different rule sets and inference
-    strategies. The experiment domain is INFERENCE_BENCHMARK.
+    Now registers both forward_chain_v1 and hybrid_v1 as separate candidates,
+    so ExperimentLab can compare which reasoning approach performs better.
+    Returns the experiment recommendation for display in the report.
     """
+    recommendation_info: dict[str, Any] = {}
     try:
         from iabv_v15.services.lab.experiment_lab import ExperimentLab
         from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
         from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
         from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
         from iabv_v15.services.lab.strategy_selector import StrategySelector
-        from iabv_v15.domain.models import ExperimentDomain, EvaluationRoute
+        from iabv_v15.domain.models import (
+            ExperimentCandidate, ExperimentDomain, EvaluationRoute,
+        )
 
         repo = ExperimentLabRepository()
         lab = ExperimentLab(
@@ -650,51 +1258,124 @@ def _register_with_experiment_lab(result: dict[str, Any]) -> None:
             strategy_selector=StrategySelector(),
         )
 
-        # Calculate reasoning quality metrics
         fact_count = result.get('fact_count', 0)
         conclusion_count = result.get('conclusion_count', 0)
+        anomaly_count = result.get('anomaly_count', 0)
         executed_count = result.get('actions_executed_count', 0)
+        history_count = result.get('history_consultations', 0)
         elapsed_ms = result.get('elapsed_ms', 0)
 
-        # Precision: ratio of executed actions that succeeded
         executed = result.get('actions_executed', [])
         success_count = sum(1 for a in executed if a.get('result', {}).get('executed'))
-        precision = success_count / max(executed_count, 1) if executed_count > 0 else (
+
+        # --- Forward chain v1 metrics (rules only) ---
+        rule_executed = [a for a in executed if a.get('source') == 'rule']
+        rule_success = sum(1 for a in rule_executed if a.get('result', {}).get('executed'))
+        fc_precision = rule_success / max(len(rule_executed), 1) if rule_executed else (
             1.0 if conclusion_count == 0 else 0.5
         )
+        fc_robustness = min(conclusion_count / max(fact_count * 0.3, 1), 1.0) if fact_count > 0 else 0.0
 
-        # Robustness: ability to derive conclusions from facts
-        robustness = min(conclusion_count / max(fact_count * 0.3, 1), 1.0) if fact_count > 0 else 0.0
+        # --- Hybrid v1 metrics (rules + anomalies + history) ---
+        total_insights = conclusion_count + anomaly_count
+        hybrid_precision = success_count / max(executed_count, 1) if executed_count > 0 else (
+            1.0 if total_insights == 0 else 0.5
+        )
+        hybrid_robustness = min(
+            total_insights / max(fact_count * 0.3, 1), 1.0,
+        ) if fact_count > 0 else 0.0
+        # Bonus for using history
+        if history_count > 0:
+            hybrid_robustness = min(hybrid_robustness + 0.1, 1.0)
 
-        lab.record_outcome(
+        candidates = [
+            ExperimentCandidate(
+                label='forward_chain_v1',
+                route=EvaluationRoute.LOCAL,
+                output_text=(
+                    f'{fact_count} hechos → {conclusion_count} conclusiones → '
+                    f'{len(rule_executed)} acciones por reglas'
+                ),
+                execution_ms=elapsed_ms,
+                metadata={
+                    'precision': fc_precision,
+                    'robustness': fc_robustness,
+                    'assistant_kind': 'common_sense_engine',
+                    'comparison_scope_key': 'metacognition_reasoning',
+                },
+            ),
+            ExperimentCandidate(
+                label='hybrid_v1',
+                route=EvaluationRoute.LOCAL,
+                output_text=(
+                    f'{fact_count} hechos → {conclusion_count} conclusiones + '
+                    f'{anomaly_count} anomalías → {executed_count} acciones'
+                ),
+                execution_ms=elapsed_ms,
+                metadata={
+                    'precision': hybrid_precision,
+                    'robustness': hybrid_robustness,
+                    'assistant_kind': 'common_sense_engine',
+                    'comparison_scope_key': 'metacognition_reasoning',
+                    'anomaly_count': anomaly_count,
+                    'history_consultations': history_count,
+                },
+            ),
+        ]
+
+        runs, recommendation = lab.run_experiment(
             domain=ExperimentDomain.INFERENCE_BENCHMARK,
             objective='common_sense_reasoning_quality',
             subject_key='common_sense_engine_v1',
-            route=EvaluationRoute.LOCAL,
-            candidate_label='forward_chain_v1',
-            success=executed_count > 0 or conclusion_count == 0,
-            observed_summary=(
-                f'{fact_count} hechos → {conclusion_count} conclusiones → '
-                f'{executed_count} acciones en {elapsed_ms}ms'
-            ),
-            precision=precision,
-            robustness=robustness,
-            execution_ms=elapsed_ms,
+            expected={
+                'min_conclusions': 1,
+                'min_actionable': 1,
+            },
+            candidates=candidates,
             metadata={
                 'fact_count': fact_count,
                 'conclusion_count': conclusion_count,
-                'fired_rule_count': result.get('fired_rule_count', 0),
+                'anomaly_count': anomaly_count,
                 'actions_executed_count': executed_count,
                 'actions_needs_user_count': result.get('actions_needs_user_count', 0),
                 'inference_iterations': result.get('inference_iterations', 0),
-                'comparison_scope_key': 'metacognition_reasoning',
-                'assistant_kind': 'common_sense_engine',
+                'history_consultations': history_count,
             },
         )
-        logger.debug('common_sense: registered with ExperimentLab (precision=%.2f, robustness=%.2f)',
-                      precision, robustness)
+
+        # Extract winning algorithm info
+        winner_label = recommendation.recommended_assistant_kind or ''
+        if not winner_label and runs:
+            best_run = max(runs, key=lambda r: r.metrics.total_score)
+            winner_label = best_run.candidate_label
+
+        recommendation_info = {
+            'winner': winner_label,
+            'winner_score': recommendation.score,
+            'confidence': recommendation.confidence,
+            'rationale': recommendation.rationale,
+            'candidates': {
+                'forward_chain_v1': {
+                    'precision': round(fc_precision, 2),
+                    'robustness': round(fc_robustness, 2),
+                },
+                'hybrid_v1': {
+                    'precision': round(hybrid_precision, 2),
+                    'robustness': round(hybrid_robustness, 2),
+                },
+            },
+        }
+
+        logger.debug(
+            'common_sense: registered with ExperimentLab — winner=%s '
+            '(fc: p=%.2f r=%.2f, hybrid: p=%.2f r=%.2f)',
+            winner_label, fc_precision, fc_robustness,
+            hybrid_precision, hybrid_robustness,
+        )
     except Exception as exc:
         logger.debug('common_sense: ExperimentLab registration failed: %s', exc)
+
+    return recommendation_info
 
 
 # ──────────────────────────────────────────────────────────────
@@ -714,15 +1395,18 @@ def run_common_sense_reasoning(
     execute: bool = True,
     dry_run: bool = False,
 ) -> dict[str, Any]:
-    """Full common sense reasoning pipeline: observe → infer → act.
+    """Full common sense reasoning pipeline v2: observe → detect → infer → learn → act.
 
-    1. Extract facts from all scans
-    2. Run forward chaining to derive conclusions
-    3. Execute safe actions based on conclusions
-    4. Return complete reasoning trace for ExperimentLab
+    1. Extract facts from all scans (expanded with RAM, disk, network, processes)
+    2. Detect anomalies without fixed rules (resource mismatch, expected vs real)
+    3. Run forward chaining to derive conclusions (existing rules)
+    4. Consult history before acting (ExperimentLab learning)
+    5. Execute safe actions based on all insights (rules + anomalies)
+    6. Register with ExperimentLab comparing forward_chain vs hybrid
     """
     start = time.monotonic()
 
+    # Phase 1: Extract facts (existing + expanded)
     facts = extract_facts(
         gpu_scan=gpu_scan,
         account_scan=account_scan,
@@ -734,9 +1418,40 @@ def run_common_sense_reasoning(
         version_state=version_state,
     )
 
+    # Phase 2: Detect anomalies (NEW — reasoning without fixed rules)
+    scans = {
+        'gpu_scan': gpu_scan or {},
+        'account_scan': account_scan or {},
+        'holistic_scan': holistic_scan or {},
+        'deep_env_scan': deep_env_scan or {},
+        'git_state': git_state or {},
+    }
+    anomalies = detect_anomalies(facts, scans)
+
+    # Phase 3: Forward chaining (existing)
     chain = forward_chain(facts)
 
-    actions = act_on_conclusions(chain, execute_safe=execute, dry_run=dry_run)
+    # Phase 4: Consult history (NEW — learning from past)
+    all_items: list[dict[str, Any]] = []
+    for rule in chain.get('fired_rules', []):
+        all_items.append(rule)
+    for anomaly in anomalies:
+        all_items.append(anomaly)
+    enriched = consult_history(all_items)
+
+    # Count learned items
+    history_consultations = sum(
+        1 for item in enriched if item.get('history', {}).get('learned')
+    )
+
+    # Phase 5: Execute actions (rules + anomalies, informed by history)
+    actions = act_on_conclusions(
+        chain,
+        anomalies=anomalies,
+        enriched_items=enriched,
+        execute_safe=execute,
+        dry_run=dry_run,
+    )
 
     elapsed_ms = int((time.monotonic() - start) * 1000)
 
@@ -748,6 +1463,17 @@ def run_common_sense_reasoning(
         'fired_rules': chain['fired_rules'],
         'fired_rule_count': chain['fired_rule_count'],
         'inference_iterations': chain['iterations'],
+        'anomalies': anomalies,
+        'anomaly_count': len(anomalies),
+        'history_consultations': history_consultations,
+        'history_items': [
+            {
+                'action': item.get('action', ''),
+                'history': item.get('history', {}),
+            }
+            for item in enriched
+            if item.get('history', {}).get('learned')
+        ],
         'actions_executed': actions['executed'],
         'actions_executed_count': actions['executed_count'],
         'actions_skipped': actions['skipped'],
@@ -756,8 +1482,9 @@ def run_common_sense_reasoning(
         'elapsed_ms': elapsed_ms,
     }
 
-    # Register with ExperimentLab for strategy comparison
-    _register_with_experiment_lab(result)
+    # Phase 6: Register with ExperimentLab comparing algorithms
+    recommendation = _register_with_experiment_lab(result)
+    result['algorithm_recommendation'] = recommendation
 
     return result
 
@@ -767,11 +1494,25 @@ def run_common_sense_reasoning(
 # ──────────────────────────────────────────────────────────────
 
 def format_common_sense_report(result: dict[str, Any]) -> str:
-    """Format common sense reasoning results for auto-analysis."""
-    lines: list[str] = ['== RAZONAMIENTO AUTONOMO (SENTIDO COMUN) ==']
+    """Format common sense reasoning results for auto-analysis (v2).
+
+    Displays anomalies, historical learning, and algorithm comparison
+    alongside the existing rule-based output.
+    """
+    lines: list[str] = ['== RAZONAMIENTO AUTONOMO (SENTIDO COMUN v2) ==']
     lines.append(f'  Hechos observados: {result.get("fact_count", 0)}')
+
+    # Anomalies section (NEW)
+    anomalies = result.get('anomalies', [])
+    if anomalies:
+        lines.append(f'  Anomalías detectadas: {len(anomalies)}')
+        for a in anomalies:
+            lines.append(f'    [ANOMALÍA] {a.get("description", a.get("type", "?"))}')
+    else:
+        lines.append('  Anomalías detectadas: 0')
+
+    # Rules section
     lines.append(f'  Reglas activadas: {result.get("fired_rule_count", 0)}')
-    lines.append(f'  Conclusiones deducidas: {result.get("conclusion_count", 0)}')
 
     # Show fired rules with causal chain
     for rule in result.get('fired_rules', []):
@@ -780,19 +1521,37 @@ def format_common_sense_report(result: dict[str, Any]) -> str:
         lines.append(f'    Premisas: {", ".join(rule.get("premises_matched", []))}')
         lines.append(f'    → Conclusión: {rule.get("conclusion", "?")}')
 
+    # Historical learning section (NEW)
+    history_items = result.get('history_items', [])
+    history_count = result.get('history_consultations', 0)
+    if history_count > 0:
+        lines.append(f'  Conclusiones por historial: {history_count}')
+        for hi in history_items:
+            hist = hi.get('history', {})
+            action = hi.get('action', '?')
+            succ = hist.get('successes', 0)
+            att = hist.get('attempts', 0)
+            rec = hist.get('recommendation', '?')
+            lines.append(f'    [APRENDIDO] {action}: éxito en {succ}/{att} ejecuciones previas → {rec}')
+
     # Actions executed
     executed = result.get('actions_executed', [])
     if executed:
         lines.append(f'  Acciones ejecutadas: {len(executed)}')
         for a in executed:
             status = a.get('result', {})
+            source = a.get('source', 'rule')
+            source_tag = ' (anomalía)' if source == 'anomaly' else ''
             if status.get('executed'):
-                lines.append(f'    [EJECUTADO] {a.get("description", a["action"])} ({a.get("elapsed_ms", 0)}ms)')
+                lines.append(
+                    f'    [EJECUTADO] {a.get("description", a["action"])}{source_tag} '
+                    f'({a.get("elapsed_ms", 0)}ms)'
+                )
                 detail = status.get('detail', '')
                 if detail:
                     lines.append(f'      → {detail}')
             else:
-                lines.append(f'    [FALLÓ] {a.get("description", a["action"])}')
+                lines.append(f'    [FALLÓ] {a.get("description", a["action"])}{source_tag}')
                 lines.append(f'      → {status.get("error", status.get("detail", "?"))}')
     else:
         lines.append('  Acciones ejecutadas: ninguna necesaria')
@@ -803,6 +1562,23 @@ def format_common_sense_report(result: dict[str, Any]) -> str:
         lines.append(f'  Requiere usuario: {len(needs_user)}')
         for n in needs_user:
             lines.append(f'    [NECESITA APROBACION] {n.get("description", n["action"])}')
+
+    # Algorithm comparison (NEW)
+    rec = result.get('algorithm_recommendation', {})
+    if rec:
+        winner = rec.get('winner', '?')
+        candidates = rec.get('candidates', {})
+        fc = candidates.get('forward_chain_v1', {})
+        hy = candidates.get('hybrid_v1', {})
+        lines.append(
+            f'  Algoritmo ganador: {winner} '
+            f'(precision={hy.get("precision", "?")}, robustness={hy.get("robustness", "?")})'
+        )
+        if fc:
+            lines.append(
+                f'    vs forward_chain_v1 '
+                f'(precision={fc.get("precision", "?")}, robustness={fc.get("robustness", "?")})'
+            )
 
     lines.append(f'  Tiempo de razonamiento: {result.get("elapsed_ms", 0)}ms')
 

@@ -5653,6 +5653,7 @@ class ControlCenterViewModel(QObject):
                         limits_scan=_limits_scan if '_limits_scan' in locals() else None,
                         gpu_scan=gpu if 'gpu' in locals() else None,
                         regression_scan=_regression_scan if '_regression_scan' in locals() else None,
+                        deep_env_scan=_deep_scan if '_deep_scan' in locals() else None,
                         workspace=ws,
                     )
                     sections.append('')

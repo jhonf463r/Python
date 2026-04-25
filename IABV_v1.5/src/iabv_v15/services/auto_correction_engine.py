@@ -425,6 +425,7 @@ def execute_auto_corrections(
     limits_scan: dict[str, Any] | None = None,
     gpu_scan: dict[str, Any] | None = None,
     regression_scan: dict[str, Any] | None = None,
+    deep_env_scan: dict[str, Any] | None = None,
     workspace: str | None = None,
 ) -> dict[str, Any]:
     """Execute all safe auto-corrections and generate user requests for the rest.
@@ -562,6 +563,7 @@ def execute_auto_corrections(
             holistic_scan=holistic_scan,
             limits_scan=limits_scan,
             regression_scan=regression_scan,
+            deep_env_scan=deep_env_scan,
         )
         # Merge common sense corrections into our corrections
         for cs_action in common_sense_result.get('actions_executed', []):
