@@ -322,7 +322,7 @@ def save_secret_to_profile(name: str, value: str) -> dict[str, Any]:
     os.environ[name] = value
 
     secrets_path = os.path.join(os.path.expanduser('~'), '.iabv_secrets.ps1')
-    safe_value = value.replace("'", "''")  # PowerShell single-quote escape
+    safe_value = value.replace('\r', '').replace('\n', '').replace("'", "''")  # strip newlines + PS escape
     line_to_add = f"$env:{name} = '{safe_value}'"
 
     try:

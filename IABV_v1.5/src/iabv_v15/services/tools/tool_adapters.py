@@ -1210,18 +1210,16 @@ class MCPToolAdapter:
         server_url = str(card.metadata.get('server_url') or '').strip()
         if not server_url:
             return False
-        # If the MCP server is running in-process (bootstrap just created
-        # us), the HTTP endpoint may not be listening yet. Detect this by
-        # checking if the module was already imported — meaning we ARE the
-        # server. In that case, report available=True without probing.
+        # When the MCP server runs in-process, use a shorter timeout
+        # so bootstrap doesn't block long if the server isn't ready yet.
         import sys
-        if 'iabv_v15.infra.mcp.server' in sys.modules:
-            return True
+        in_process = 'iabv_v15.infra.mcp.server' in sys.modules
         if httpx is None:
             return False
         base = server_url.rstrip('/')
         try:
-            with httpx.Client(timeout=3.0) as client:
+            probe_timeout = 0.5 if in_process else 3.0
+            with httpx.Client(timeout=probe_timeout) as client:
                 resp = client.post(
                     base + '/mcp',
                     json={
