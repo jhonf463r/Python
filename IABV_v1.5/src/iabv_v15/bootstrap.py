@@ -476,8 +476,9 @@ class AppBootstrap:
         # The MCP subprocess inherits the persisted world model snapshot from
         # the main UI process.  It doesn't need its own aggressive 18-second
         # background scan (which re-probes Ollama, Devin API, GitHub API each
-        # cycle).  Use 300s light / 600s full when running as subprocess to
-        # cut redundant API calls from ~70/hour to ~12/hour.
+        # cycle).  Disable bootstrap_scan entirely (the snapshot on disk is
+        # fresh from the UI process) and use 300s/600s intervals for the
+        # background thread to cut redundant API calls from ~70/hour to ~12.
         _is_mcp_sub = os.environ.get('IABV_MCP_SUBPROCESS') == '1'
         self.world_model_service = WorldModelService(
             workspace_root=self.config.workspace_root,
@@ -487,6 +488,7 @@ class AppBootstrap:
             environment_self_awareness_service=self.environment_self_awareness_service,
             universal_perception_service=self.universal_perception_service,
             role_router=None,
+            bootstrap_scan=not _is_mcp_sub,
             scan_interval_seconds=300.0 if _is_mcp_sub else WorldModelService._DEFAULT_SCAN_INTERVAL,
             full_scan_interval_seconds=600.0 if _is_mcp_sub else WorldModelService._DEFAULT_FULL_SCAN_INTERVAL,
         )
