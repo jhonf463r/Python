@@ -157,14 +157,55 @@ def gpu_metacognition_report() -> dict[str, Any]:
     if nvidia_gpus and intel_gpus:
         report["dual_gpu_strategy"] = {
             "recommended": True,
-            "compute_gpu": nvidia_gpus[0]["name"],
-            "display_gpu": intel_gpus[0]["name"],
+            "primary_compute": nvidia_gpus[0]["name"],
+            "primary_compute_index": nvidia_gpus[0].get("index", 0),
+            "reinforcement": intel_gpus[0]["name"],
             "explanation": (
-                "Use Intel iGPU for display/video, "
-                "NVIDIA for CUDA compute (Ollama)"
+                "NVIDIA GPU is primary for CUDA compute (Ollama, inference). "
+                "Intel iGPU handles display/video and acts as reinforcement "
+                "when NVIDIA VRAM is full or for parallel lightweight tasks."
+            ),
+        }
+        # Ensure Ollama uses the NVIDIA GPU as primary
+        _ensure_gpu_primary(nvidia_gpus[0])
+    elif len(nvidia_gpus) > 1:
+        report["dual_gpu_strategy"] = {
+            "recommended": True,
+            "primary_compute": nvidia_gpus[0]["name"],
+            "primary_compute_index": nvidia_gpus[0].get("index", 0),
+            "reinforcement": nvidia_gpus[1]["name"],
+            "explanation": (
+                f"GPU {nvidia_gpus[0].get('index', 0)} ({nvidia_gpus[0]['name']}) "
+                f"is primary. GPU {nvidia_gpus[1].get('index', 1)} "
+                f"({nvidia_gpus[1]['name']}) is reinforcement for high load."
             ),
         }
     return report
+
+
+def _ensure_gpu_primary(nvidia_gpu: dict[str, Any]) -> None:
+    """Ensure CUDA_VISIBLE_DEVICES points to the NVIDIA GPU if not already set.
+
+    On dual-GPU systems (Intel iGPU + NVIDIA dGPU), CUDA only sees
+    NVIDIA GPUs, so CUDA index 0 = first NVIDIA GPU. We only set
+    the env var if it's currently misconfigured.
+    """
+    current = os.environ.get('CUDA_VISIBLE_DEVICES', '')
+    if not current:
+        # Not set — CUDA defaults to all NVIDIA GPUs, which is correct
+        return
+    try:
+        requested = [int(x.strip()) for x in current.split(',') if x.strip()]
+        nvidia_index = nvidia_gpu.get('index', 0)
+        if nvidia_index not in requested:
+            # Misconfigured — fix it to point to the NVIDIA GPU
+            os.environ['CUDA_VISIBLE_DEVICES'] = str(nvidia_index)
+            logger.info(
+                'gpu_metacognition: corrected CUDA_VISIBLE_DEVICES from %s to %s',
+                current, nvidia_index,
+            )
+    except ValueError:
+        pass
 
 
 def auto_free_gpu_for_model(target_vram_gb: float = 4.0) -> dict[str, Any]:

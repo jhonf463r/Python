@@ -5535,11 +5535,34 @@ class ControlCenterViewModel(QObject):
 
     def _set_live_status(self, status: str) -> None:
         with self._ui_state_lock:
-            if self._live_status == status:
+            previous = self._live_status
+            if previous == status:
                 return
             self._live_status = status
         self.liveStatusChanged.emit(status)
         self.dataChanged.emit()
+        # Audible notification when processing finishes
+        if previous == 'processing' and status == 'idle':
+            self._play_completion_sound()
+
+    def _play_completion_sound(self) -> None:
+        """Play a short notification sound when a task completes.
+
+        Uses winsound on Windows (native, no dependencies).
+        Falls back to terminal bell on other platforms.
+        """
+        try:
+            import sys
+            if sys.platform == 'win32':
+                import winsound
+                # Two short ascending tones: "task complete"
+                winsound.Beep(800, 150)
+                winsound.Beep(1200, 200)
+            else:
+                # Terminal bell as cross-platform fallback
+                print('\a', end='', flush=True)
+        except Exception:
+            pass
 
     @Property(list, notify=dataChanged)
     def contextualSuggestions(self) -> list[dict[str, Any]]:
