@@ -703,6 +703,26 @@ def full_system_metacognition_report() -> dict[str, Any]:
     except Exception as exc:
         report['gpu'] = {'error': str(exc)}
 
+    # Deep environment scan (BIOS, peripherals, security, etc.)
+    try:
+        from iabv_v15.services.deep_environment_scanner import deep_environment_scan
+        report['deep_environment'] = deep_environment_scan()
+    except Exception as exc:
+        report['deep_environment'] = {'error': str(exc)}
+
+    # Evolution backlog (pending tasks the program deduces)
+    try:
+        from iabv_v15.services.evolution_backlog import (
+            seed_initial_backlog, get_pending_tasks,
+        )
+        seed_initial_backlog()
+        report['evolution_backlog'] = {
+            'pending_tasks': get_pending_tasks(),
+            'total_pending': len(get_pending_tasks()),
+        }
+    except Exception as exc:
+        report['evolution_backlog'] = {'error': str(exc)}
+
     # Metacognition gaps identified
     report['metacognition_gaps'] = _identify_gaps(report)
 

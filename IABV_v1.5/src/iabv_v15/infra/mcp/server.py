@@ -1666,6 +1666,74 @@ class IABVMCPServer:
             return _to_jsonable(_run_sync_off_event_loop(full_system_metacognition_report))
 
         # ------------------------------------------------------------
+        # deep_environment_scan — periféricos, BIOS, seguridad, red
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def deep_environment_scan() -> dict[str, Any]:
+            """Escaneo PROFUNDO del entorno: BIOS, USB, impresoras, audio, bluetooth, monitores, red, seguridad, servicios.
+
+            Cubre los blind spots que EnvironmentSelfAwarenessService no cubre.
+            """
+            from iabv_v15.services.deep_environment_scanner import deep_environment_scan as _scan
+            return _to_jsonable(_run_sync_off_event_loop(_scan))
+
+        # ------------------------------------------------------------
+        # evolution_backlog — tareas pendientes priorizadas
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def evolution_backlog_read() -> dict[str, Any]:
+            """Leer el backlog de evolución — tareas pendientes que el programa debe resolver.
+
+            Muestra todas las tareas pendientes priorizadas por severidad.
+            """
+            from iabv_v15.services.evolution_backlog import get_pending_tasks, load_backlog
+            ws = self._workspace_root()
+            pending = get_pending_tasks(workspace=ws)
+            all_tasks = load_backlog(workspace=ws)
+            return _to_jsonable({
+                'pending': pending,
+                'total_pending': len(pending),
+                'total_all': len(all_tasks),
+                'completed': len([t for t in all_tasks if t.get('status') == 'completed']),
+            })
+
+        @mcp.tool()
+        def evolution_backlog_add(
+            title: str,
+            area: str,
+            priority: str = 'medium',
+            evidence: str = '',
+        ) -> dict[str, Any]:
+            """Agregar una tarea al backlog de evolución.
+
+            Args:
+                title: descripción corta de la tarea
+                area: categoría (metacognition, hardware, gpu_routing, learning_persistence, etc.)
+                priority: critical / high / medium / low
+                evidence: por qué es necesaria
+            """
+            from iabv_v15.services.evolution_backlog import add_task
+            ws = self._workspace_root()
+            return _to_jsonable(add_task(
+                title=title, area=area, priority=priority,
+                source='mcp_tool', evidence=evidence, workspace=ws,
+            ))
+
+        @mcp.tool()
+        def evolution_backlog_complete(task_id: str) -> dict[str, Any]:
+            """Marcar una tarea del backlog como completada.
+
+            Args:
+                task_id: UUID de la tarea a completar
+            """
+            from iabv_v15.services.evolution_backlog import complete_task
+            ws = self._workspace_root()
+            ok = complete_task(task_id, workspace=ws)
+            return _to_jsonable({'ok': ok, 'task_id': task_id})
+
+        # ------------------------------------------------------------
         # self_code_analysis — el programa analiza su propio código
         # ------------------------------------------------------------
 

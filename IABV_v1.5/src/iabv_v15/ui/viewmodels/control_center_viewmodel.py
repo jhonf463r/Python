@@ -5507,6 +5507,36 @@ class ControlCenterViewModel(QObject):
                 except Exception as hol_exc:
                     sections.append(f'Error en cruce de fuentes: {hol_exc}')
 
+                # 4.6 Deep environment scan — peripherals, BIOS, security, etc.
+                _deep_scan: dict = {}
+                try:
+                    from iabv_v15.services.deep_environment_scanner import (
+                        deep_environment_scan, format_deep_scan_report,
+                    )
+                    _deep_scan = deep_environment_scan()
+                    sections.append('')
+                    sections.append(format_deep_scan_report(_deep_scan))
+                except Exception as deep_exc:
+                    sections.append(f'\nError en escaneo profundo: {deep_exc}')
+
+                # 4.7 Evolution backlog — tareas pendientes priorizadas
+                try:
+                    from iabv_v15.services.evolution_backlog import (
+                        seed_initial_backlog, deduce_priorities,
+                        format_backlog_report,
+                    )
+                    seed_initial_backlog(workspace=ws)
+                    _holistic_for_backlog = holistic if 'holistic' in locals() else {}
+                    deduce_priorities(
+                        environment_scan=_deep_scan,
+                        holistic_scan=_holistic_for_backlog,
+                        workspace=ws,
+                    )
+                    sections.append('')
+                    sections.append(format_backlog_report(workspace=ws))
+                except Exception as bl_exc:
+                    sections.append(f'\nError en backlog de evolucion: {bl_exc}')
+
                 # 5. Veredicto final con transparencia total
                 sections.append('')
                 sections.append('== VEREDICTO ==')
@@ -5559,6 +5589,7 @@ class ControlCenterViewModel(QObject):
                     'holistic_blind_spots': _holistic_summary.get('blind_spots', []),
                     'holistic_confidence': _holistic_summary.get('confidence', 0),
                     'cross_validations_count': _holistic_summary.get('cross_validation_count', 0),
+                    'deep_scan_summary': _deep_scan.get('summary', {}) if '_deep_scan' in locals() else {},
                 }
                 try:
                     import os as _os
