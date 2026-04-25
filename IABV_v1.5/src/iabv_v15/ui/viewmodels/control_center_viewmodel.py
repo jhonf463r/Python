@@ -5618,6 +5618,25 @@ class ControlCenterViewModel(QObject):
                 except Exception as bl_exc:
                     sections.append(f'\nError en backlog de evolucion: {bl_exc}')
 
+                # 4.8 Auto-correction engine — correcciones autónomas + deducción de herramientas
+                _auto_correction_result: dict = {}
+                try:
+                    from iabv_v15.services.auto_correction_engine import (
+                        execute_auto_corrections, format_auto_correction_report,
+                    )
+                    _auto_correction_result = execute_auto_corrections(
+                        holistic_scan=holistic if 'holistic' in locals() else None,
+                        account_scan=_account_scan if '_account_scan' in locals() else None,
+                        limits_scan=_limits_scan if '_limits_scan' in locals() else None,
+                        gpu_scan=gpu if 'gpu' in locals() else None,
+                        regression_scan=_regression_scan if '_regression_scan' in locals() else None,
+                        workspace=ws,
+                    )
+                    sections.append('')
+                    sections.append(format_auto_correction_report(_auto_correction_result))
+                except Exception as ac_exc:
+                    sections.append(f'\nError en auto-correccion: {ac_exc}')
+
                 # 5. Veredicto final con transparencia total
                 sections.append('')
                 sections.append('== VEREDICTO ==')
@@ -5674,6 +5693,9 @@ class ControlCenterViewModel(QObject):
                     'account_resource_summary': _account_scan.get('summary', {}) if '_account_scan' in locals() else {},
                     'regression_summary': _regression_scan.get('summary', {}) if '_regression_scan' in locals() else {},
                     'limits_count': _limits_scan.get('total_count', 0) if '_limits_scan' in locals() else 0,
+                    'auto_corrections_applied': _auto_correction_result.get('corrections_count', 0) if '_auto_correction_result' in locals() else 0,
+                    'user_requests_pending': _auto_correction_result.get('user_requests_count', 0) if '_auto_correction_result' in locals() else 0,
+                    'tool_gaps_total': _auto_correction_result.get('tool_deduction', {}).get('total_gaps', 0) if '_auto_correction_result' in locals() else 0,
                 }
                 try:
                     import os as _os
