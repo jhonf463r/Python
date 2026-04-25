@@ -490,7 +490,7 @@ class IntentUnderstandingService:
                 detected_role=detected_role,
                 site_hint=request.site_hint,
                 domain_hint=learned_intent_key.split('.')[0] if '.' in learned_intent_key else 'general',
-                confidence=learned_confidence,
+                confidence=max(0.1, learned_confidence - self._confidence_decay(learned_intent_key)),
                 reasoning=[
                     f'patrón aprendido con {confirmations} confirmaciones',
                     f'fuente: {learned.get("source", "unknown")}',
@@ -594,21 +594,17 @@ class IntentUnderstandingService:
                 )
 
             # ── Intent Learning: record pattern for future use ──
+            # Only record specific intents with high confidence.
+            # NEVER record general.assistance — it would create a
+            # self-reinforcing lock-in where fallback inputs get
+            # promoted to "trusted" and permanently bypass static
+            # pattern matching.
             if intent.confidence >= 0.7 and intent.intent_key != 'general.assistance':
                 _intent_learning_layer.record(
                     text,
                     intent.intent_key,
                     confidence=intent.confidence,
                     source='high_confidence_classification',
-                )
-            elif intent.intent_key == 'general.assistance':
-                # Low-confidence fallback — record as candidate for
-                # learning when the user next provides clearer input
-                _intent_learning_layer.record(
-                    text,
-                    intent.intent_key,
-                    confidence=intent.confidence,
-                    source='fallback_candidate',
                 )
 
             return intent, merged_hypotheses

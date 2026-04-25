@@ -312,6 +312,13 @@ def save_secret_to_profile(name: str, value: str) -> dict[str, Any]:
     import os
     import re
 
+    if not re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', name):
+        return {
+            'status': 'error',
+            'name': name,
+            'detail': f'Invalid secret name: {name!r} — must be a valid env var name',
+        }
+
     os.environ[name] = value
 
     secrets_path = os.path.join(os.path.expanduser('~'), '.iabv_secrets.ps1')

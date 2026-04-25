@@ -133,7 +133,7 @@ class ToolAdapter:
         each MCP session reconnect.
         """
         cached = self._multi_source_cache.get(card.tool_id)
-        now = time.time()
+        now = time.monotonic()
         if cached and (now - cached[0]) < self._MULTI_SOURCE_CACHE_TTL:
             return cached[1]
 
