@@ -1176,7 +1176,13 @@ class AppBootstrap:
         el probe de startup para que la confianza base suba por encima
         del minimo (0.26).  Solo toca cards cuyo campo era ``None``.
         Diagnostica por que cada tool faltante no esta disponible.
+
+        Los probes de disponibilidad se ejecutan en paralelo usando un
+        ``ThreadPoolExecutor`` para reducir el tiempo de arranque cuando
+        hay adapters que hacen I/O de red (Ollama, Devin API, GitHub API)
+        o enumeracion de procesos (ExternalAssistantToolAdapter).
         """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
         from datetime import datetime, timezone
 
         cards = self.tool_registry.list_cards()
@@ -1202,25 +1208,63 @@ class AppBootstrap:
             name='iabv-gpu-startup-health',
             daemon=True,
         ).start()
+
+        # --- Parallel tool availability probes ---
+        # Group cards by adapter_key so that cards sharing the same adapter
+        # (e.g. multiple ExternalAssistant cards) run sequentially within
+        # their group but different adapter groups run in parallel.  This
+        # avoids concurrent mutation of per-adapter state while still
+        # parallelising the expensive I/O (HTTP pings, process enumeration).
+        from collections import defaultdict
+        adapter_groups: dict[str, list] = defaultdict(list)
+        for card in cards:
+            adapter_groups[card.adapter_key].append(card)
+
+        results: dict[str, bool] = {}
+        refreshed_cards: dict[str, Any] = {}
+
+        def _probe_group(group_cards: list) -> list[tuple[str, bool, Any]]:
+            out: list[tuple[str, bool, Any]] = []
+            for c in group_cards:
+                refreshed = self.tool_registry.refresh_card(c, force=True)
+                out.append((refreshed.tool_id, refreshed.available, refreshed))
+            return out
+
+        max_workers = min(len(adapter_groups), 8) or 1
+        with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix='iabv-tool-probe') as pool:
+            futures = {
+                pool.submit(_probe_group, group_cards): adapter_key
+                for adapter_key, group_cards in adapter_groups.items()
+            }
+            for future in as_completed(futures):
+                try:
+                    for tool_id, available, refreshed in future.result():
+                        results[tool_id] = available
+                        refreshed_cards[tool_id] = refreshed
+                except Exception as exc:
+                    adapter_key = futures[future]
+                    logger.warning('tool_probe failed for adapter %s: %s', adapter_key, exc)
+
         ready = []
         missing = []
         now = datetime.now(timezone.utc)
         for card in cards:
-            refreshed = self.tool_registry.refresh_card(card, force=True)
-            if refreshed.available:
-                ready.append(refreshed.tool_id)
+            available = results.get(card.tool_id, False)
+            refreshed = refreshed_cards.get(card.tool_id, card)
+            if available:
+                ready.append(card.tool_id)
                 if refreshed.last_validated_at_utc is None:
                     stamped = refreshed.model_copy(
                         update={'last_validated_at_utc': now},
                     )
                     self.tool_registry.repository.save_card(stamped)
             else:
-                missing.append(refreshed.tool_id)
-                guidance = self._TOOL_INSTALL_GUIDANCE.get(refreshed.tool_id, '')
+                missing.append(card.tool_id)
+                guidance = self._TOOL_INSTALL_GUIDANCE.get(card.tool_id, '')
                 logger.info(
                     'tool_missing: %s — adapter=%s%s',
-                    refreshed.tool_id,
-                    refreshed.adapter_key,
+                    card.tool_id,
+                    refreshed.adapter_key if hasattr(refreshed, 'adapter_key') else card.adapter_key,
                     f' | fix: {guidance}' if guidance else '',
                 )
         logger.info(
@@ -1564,9 +1608,135 @@ class AppBootstrap:
             raise RuntimeError('Failed to load Main.qml.')
         return app, engine
 
+    # ------------------------------------------------------------------
+    # Integrated MCP server + Cloudflare tunnel auto-start
+    # ------------------------------------------------------------------
+    # When the user launches ``python -m iabv_v15``, the full stack must
+    # come alive autonomously: secrets, MCP server, tunnel (if internet
+    # is available), and the PySide6 UI — all from a single invocation.
+    # The MCP server and tunnel run as daemon subprocesses so they die
+    # automatically when the UI (main process) exits.
+    # ------------------------------------------------------------------
+
+    def _start_mcp_subprocess(self) -> 'subprocess.Popen[bytes] | None':
+        """Launch the MCP server as a background subprocess."""
+        import shutil
+        import subprocess
+
+        python_exe = sys.executable
+        workspace = str(self.config.workspace_root)
+        src_dir = str(Path(workspace) / 'src')
+
+        env = {**os.environ}
+        if 'PYTHONPATH' not in env or src_dir not in env.get('PYTHONPATH', ''):
+            env['PYTHONPATH'] = src_dir + os.pathsep + env.get('PYTHONPATH', '')
+        env.setdefault('IABV_MCP_TRANSPORT', 'streamable-http')
+        env.setdefault('IABV_MCP_NAME', 'iabv-v15')
+        env.setdefault('FASTMCP_HOST', '127.0.0.1')
+        env.setdefault('FASTMCP_PORT', '8000')
+        env['IABV_WORKSPACE_ROOT'] = workspace
+
+        # Inject portable CLI tools into PATH (same as run_mcp_bridge.ps1)
+        iabv_tools = Path.home() / '.iabv' / 'tools'
+        if iabv_tools.is_dir():
+            extra_paths = []
+            for candidate in ['gh/bin', 'cloudflared']:
+                p = iabv_tools / candidate
+                if p.is_dir():
+                    extra_paths.append(str(p))
+            if extra_paths:
+                env['PATH'] = os.pathsep.join(extra_paths) + os.pathsep + env.get('PATH', '')
+
+        try:
+            proc = subprocess.Popen(
+                [python_exe, '-m', 'iabv_v15.infra.mcp.server'],
+                cwd=workspace,
+                env=env,
+                stdout=None,
+                stderr=None,
+            )
+            logger.info('mcp_autostart: MCP server launched (PID %d)', proc.pid)
+            return proc
+        except Exception as exc:
+            logger.warning('mcp_autostart: failed to launch MCP server: %s', exc)
+            return None
+
+    def _start_tunnel_subprocess(self) -> 'subprocess.Popen[bytes] | None':
+        """Launch Cloudflare tunnel as a background subprocess if available."""
+        import shutil
+        import subprocess
+
+        cloudflared = shutil.which('cloudflared')
+        if not cloudflared:
+            # Check portable install
+            portable = Path.home() / '.iabv' / 'tools' / 'cloudflared'
+            if portable.is_dir():
+                for name in ('cloudflared.exe', 'cloudflared'):
+                    candidate = portable / name
+                    if candidate.is_file():
+                        cloudflared = str(candidate)
+                        break
+        if not cloudflared:
+            logger.info('mcp_autostart: cloudflared not found, skipping tunnel')
+            return None
+
+        bind_host = os.environ.get('FASTMCP_HOST', '127.0.0.1')
+        bind_port = os.environ.get('FASTMCP_PORT', '8000')
+        origin = f'http://{bind_host}:{bind_port}'
+        host_header = f'{bind_host}:{bind_port}'
+
+        try:
+            proc = subprocess.Popen(
+                [
+                    cloudflared, 'tunnel',
+                    '--url', origin,
+                    '--no-autoupdate',
+                    '--loglevel', 'info',
+                    '--http-host-header', host_header,
+                ],
+                stdout=None,
+                stderr=None,
+            )
+            logger.info('mcp_autostart: Cloudflare tunnel launched (PID %d)', proc.pid)
+            return proc
+        except Exception as exc:
+            logger.warning('mcp_autostart: failed to launch tunnel: %s', exc)
+            return None
+
+    def _is_mcp_port_in_use(self, port: int = 8000) -> bool:
+        """Check if the MCP port is already in use (another instance running)."""
+        import socket
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(0.5)
+            return s.connect_ex(('127.0.0.1', port)) == 0
+
     def run(self) -> int:
-        app, _engine = self.create_engine()
-        return app.exec()
+        mcp_proc = None
+        tunnel_proc = None
+        try:
+            mcp_port = int(os.environ.get('FASTMCP_PORT', '8000'))
+            if not self._is_mcp_port_in_use(mcp_port):
+                mcp_proc = self._start_mcp_subprocess()
+                if mcp_proc:
+                    import time
+                    time.sleep(2)
+                    tunnel_proc = self._start_tunnel_subprocess()
+            else:
+                logger.info('mcp_autostart: port %d already in use, skipping MCP launch', mcp_port)
+
+            app, _engine = self.create_engine()
+            return app.exec()
+        finally:
+            for proc in (tunnel_proc, mcp_proc):
+                if proc and proc.poll() is None:
+                    try:
+                        proc.terminate()
+                        proc.wait(timeout=5)
+                    except Exception:
+                        try:
+                            proc.kill()
+                        except Exception:
+                            pass
 
 
 

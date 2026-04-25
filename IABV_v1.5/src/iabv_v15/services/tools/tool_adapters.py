@@ -145,6 +145,38 @@ class ToolAdapter:
             )
         return bool(positives)
 
+    _process_snapshot: list[tuple[str, str]] | None = None
+    _process_snapshot_time: float = 0.0
+    _PROCESS_SNAPSHOT_TTL: float = 10.0
+
+    @classmethod
+    def _get_process_snapshot(cls) -> list[tuple[str, str]]:
+        """Return a cached snapshot of (name, exe) for all running processes.
+
+        Enumerating processes via psutil is expensive (~200-500ms on Windows).
+        This cache avoids repeating the enumeration for every tool card during
+        startup probes.  The snapshot expires after ``_PROCESS_SNAPSHOT_TTL``
+        seconds so runtime re-checks still reflect current state.
+        """
+        now = time.monotonic()
+        if cls._process_snapshot is not None and (now - cls._process_snapshot_time) < cls._PROCESS_SNAPSHOT_TTL:
+            return cls._process_snapshot
+        snapshot: list[tuple[str, str]] = []
+        try:
+            import psutil
+            for proc in psutil.process_iter(['name', 'exe']):
+                try:
+                    name = str(proc.info.get('name') or '').lower()
+                    exe = str(proc.info.get('exe') or '').lower()
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+                snapshot.append((name, exe))
+        except Exception:
+            pass
+        cls._process_snapshot = snapshot
+        cls._process_snapshot_time = now
+        return snapshot
+
     def _detect_running_process(self, card: ToolCard) -> bool:
         """Detect desktop apps by running process (e.g. MSIX installs)."""
         keywords: list[str] = []
@@ -158,39 +190,27 @@ class ToolAdapter:
                 keywords.append(val)
         if not keywords:
             return False
-        try:
-            import psutil
-            for proc in psutil.process_iter(['name', 'exe']):
-                try:
-                    name = str(proc.info.get('name') or '').lower()
-                    exe = str(proc.info.get('exe') or '').lower()
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    continue
-                for kw in keywords:
-                    if kw in name or kw in exe:
-                        return True
-        except Exception:
-            pass
+        for name, exe in self._get_process_snapshot():
+            for kw in keywords:
+                if kw in name or kw in exe:
+                    return True
         return False
 
-    def _detect_by_window_title(self, card: ToolCard) -> bool:
-        """Detect desktop apps by matching visible window titles.
+    _window_titles_snapshot: str | None = None
+    _window_titles_snapshot_time: float = 0.0
 
-        Third source of truth: even if the filesystem and process list
-        miss an app, an open window whose title contains the tool's
-        display name or assistant_kind confirms it is present.
+    @classmethod
+    def _get_window_titles_snapshot(cls) -> str:
+        """Return a cached concatenation of visible window titles.
+
+        Enumerating windows via Win32 ``EnumWindows`` is moderately expensive
+        (~50-150ms).  Caching the result across cards during startup avoids
+        repeating the syscall for every external assistant tool.
         """
-        if os.name != 'nt':
-            return False
-        keywords: list[str] = []
-        assistant_kind = str(card.metadata.get('assistant_kind') or '').strip().lower()
-        if assistant_kind:
-            keywords.append(assistant_kind)
-        title_lower = card.title.lower() if card.title else ''
-        if title_lower and title_lower not in keywords:
-            keywords.append(title_lower)
-        if not keywords:
-            return False
+        now = time.monotonic()
+        if cls._window_titles_snapshot is not None and (now - cls._window_titles_snapshot_time) < cls._PROCESS_SNAPSHOT_TTL:
+            return cls._window_titles_snapshot
+        all_titles = ''
         try:
             import ctypes
             user32 = ctypes.windll.user32  # type: ignore[attr-defined]
@@ -211,11 +231,34 @@ class ToolAdapter:
 
             EnumWindows(_enum_cb, 0)
             all_titles = ' '.join(titles)
-            for kw in keywords:
-                if kw in all_titles:
-                    return True
         except Exception:
             pass
+        cls._window_titles_snapshot = all_titles
+        cls._window_titles_snapshot_time = now
+        return all_titles
+
+    def _detect_by_window_title(self, card: ToolCard) -> bool:
+        """Detect desktop apps by matching visible window titles.
+
+        Third source of truth: even if the filesystem and process list
+        miss an app, an open window whose title contains the tool's
+        display name or assistant_kind confirms it is present.
+        """
+        if os.name != 'nt':
+            return False
+        keywords: list[str] = []
+        assistant_kind = str(card.metadata.get('assistant_kind') or '').strip().lower()
+        if assistant_kind:
+            keywords.append(assistant_kind)
+        title_lower = card.title.lower() if card.title else ''
+        if title_lower and title_lower not in keywords:
+            keywords.append(title_lower)
+        if not keywords:
+            return False
+        all_titles = self._get_window_titles_snapshot()
+        for kw in keywords:
+            if kw in all_titles:
+                return True
         return False
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
