@@ -829,7 +829,7 @@ def holistic_metacognition_scan(
     g = git_state or {}
     current_branch = str(g.get('branch', ''))
     dirty_count = int(g.get('dirty_count', 0))
-    stale_prefixes = ('devin/', 'iabv-auto/', 'fix/')
+    stale_prefixes = ('devin/', 'iabv-auto/')
 
     if current_branch and any(current_branch.startswith(p) for p in stale_prefixes):
         if dirty_count > 100:
@@ -960,7 +960,8 @@ def holistic_metacognition_scan(
     log_entries = 0
     if log_path and log_path.exists():
         try:
-            log_entries = sum(1 for _ in log_path.open(encoding='utf-8'))
+            with log_path.open(encoding='utf-8') as _f:
+                log_entries = sum(1 for _ in _f)
         except Exception:
             pass
     if log_entries == 0:
@@ -989,8 +990,9 @@ def holistic_metacognition_scan(
             pass
     cross_validations.append('current_analysis × previous_analysis')
 
-    total_sources = len(cross_validations)
-    sources_with_data = sum(1 for x in [git_state, gpu_state, test_state, version_state] if x)
+    all_sources = [git_state, gpu_state, test_state, version_state, branch_state, stalled_sessions]
+    total_sources = len(all_sources)
+    sources_with_data = sum(1 for x in all_sources if x is not None)
     confidence = round(sources_with_data / max(total_sources, 1), 2)
 
     return {

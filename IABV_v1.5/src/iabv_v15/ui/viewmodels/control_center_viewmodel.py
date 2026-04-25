@@ -5179,34 +5179,40 @@ class ControlCenterViewModel(QObject):
 
                     sections.append('== AUTO-UPDATE ==')
                     # Metacognition: detect if we're on a stale feature branch
-                    _stale_prefixes = ('devin/', 'iabv-auto/', 'fix/')
+                    # AGENTS.md: only devin/* and iabv-auto/* can be auto-switched;
+                    # other prefixes (fix/, etc.) require explicit user approval
+                    _stale_prefixes = ('devin/', 'iabv-auto/')
                     _is_feature_branch = any(current_branch.startswith(p) for p in _stale_prefixes)
-                    if _is_feature_branch:
-                        # Check if the branch is stale (old commits, probably abandoned)
+                    if _is_feature_branch and not local_dirty:
                         _branch_age = _sp.run(
                             ['git', '-C', ws, 'log', '-1', '--format=%cr'],
                             capture_output=True, text=True, timeout=5,
                         ).stdout.strip()
-                        _dirty_count = len(local_dirty.splitlines()) if local_dirty else 0
                         sections.append(f'ALERTA METACOGNITIVA: Estoy en rama {current_branch}')
-                        sections.append(f'  Ultimo commit: {_branch_age}, archivos modificados: {_dirty_count}')
+                        sections.append(f'  Ultimo commit: {_branch_age}')
                         sections.append('  Esta rama probablemente es obsoleta — cambiando a main para auto-analisis limpio')
-                        # Auto-switch to main for clean analysis
-                        _sp.run(
+                        _checkout_r = _sp.run(
                             ['git', '-C', ws, 'checkout', 'main'],
                             capture_output=True, text=True, timeout=10,
                         )
-                        _sp.run(
-                            ['git', '-C', ws, 'reset', '--hard', 'origin/main'],
-                            capture_output=True, text=True, timeout=15,
-                        )
-                        current_branch = 'main'
-                        local_dirty = ''
-                        new_head = _sp.run(
-                            ['git', '-C', ws, 'rev-parse', '--short', 'HEAD'],
-                            capture_output=True, text=True, timeout=5,
-                        ).stdout.strip()
-                        sections.append(f'  Cambie a main exitosamente: HEAD={new_head}')
+                        if _checkout_r.returncode == 0:
+                            _sp.run(
+                                ['git', '-C', ws, 'reset', '--hard', 'origin/main'],
+                                capture_output=True, text=True, timeout=15,
+                            )
+                            current_branch = 'main'
+                            local_dirty = ''
+                            new_head = _sp.run(
+                                ['git', '-C', ws, 'rev-parse', '--short', 'HEAD'],
+                                capture_output=True, text=True, timeout=5,
+                            ).stdout.strip()
+                            sections.append(f'  Cambie a main exitosamente: HEAD={new_head}')
+                        else:
+                            sections.append(f'  No pude cambiar a main: {_checkout_r.stderr.strip()[:200]}')
+                    elif _is_feature_branch and local_dirty:
+                        _dirty_count = len(local_dirty.splitlines())
+                        sections.append(f'ALERTA METACOGNITIVA: Estoy en rama {current_branch} con {_dirty_count} cambios locales')
+                        sections.append('  No cambio a main para no perder trabajo — revisa si estos cambios son intencionales')
                     elif local_dirty:
                         sections.append('Cambios locales detectados — omitiendo reset para no perder trabajo')
                         sections.append(f'  Branch: {current_branch}, archivos modificados: {len(local_dirty.splitlines())}')

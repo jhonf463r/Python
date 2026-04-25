@@ -1259,8 +1259,10 @@ class UIExecutionRunner:
         if hwnd is None or self._user32 is None:
             return False
         try:
-            # Ensure window is on the primary monitor before interacting
-            self.ensure_window_on_primary_monitor(hwnd)
+            # Only reposition to primary monitor when actively bringing to
+            # foreground — background probes must not visibly move windows
+            if bring_to_foreground:
+                self.ensure_window_on_primary_monitor(hwnd)
             if bring_to_foreground:
                 self._user32.ShowWindow(hwnd, self._SW_SHOW)
                 self._user32.SetForegroundWindow(hwnd)
