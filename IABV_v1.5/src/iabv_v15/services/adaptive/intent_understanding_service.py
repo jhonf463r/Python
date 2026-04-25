@@ -110,8 +110,8 @@ class IntentLearningLayer:
                 if record.get('confirmations', 0) < self._MIN_CONFIRMATIONS:
                     continue
                 if pattern_key in text_lower or text_lower in pattern_key:
-                    # Score by overlap ratio
-                    overlap = len(pattern_key) / max(len(text_lower), 1)
+                    # Bidirectional overlap ratio (0..1)
+                    overlap = min(len(pattern_key), len(text_lower)) / max(len(pattern_key), len(text_lower), 1)
                     if overlap > best_score and overlap > 0.5:
                         best_score = overlap
                         best_match = record

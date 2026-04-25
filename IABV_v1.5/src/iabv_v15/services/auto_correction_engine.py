@@ -319,8 +319,6 @@ def save_secret_to_profile(name: str, value: str) -> dict[str, Any]:
             'detail': f'Invalid secret name: {name!r} — must be a valid env var name',
         }
 
-    os.environ[name] = value
-
     secrets_path = os.path.join(os.path.expanduser('~'), '.iabv_secrets.ps1')
     safe_value = value.replace('\r', '').replace('\n', '').replace("'", "''")  # strip newlines + PS escape
     line_to_add = f"$env:{name} = '{safe_value}'"
@@ -346,6 +344,9 @@ def save_secret_to_profile(name: str, value: str) -> dict[str, Any]:
 
         with open(secrets_path, 'w', encoding='utf-8') as f:
             f.write(content)
+
+        # Only set env var after successful file persistence
+        os.environ[name] = value
 
         logger.info('save_secret: %s saved to %s', name, secrets_path)
         return {
