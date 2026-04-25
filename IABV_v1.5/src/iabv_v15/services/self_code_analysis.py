@@ -479,16 +479,37 @@ def run_test_suite(workspace: str | None = None) -> dict[str, Any]:
         return {'ok': False, 'error': str(exc), 'summary': f'Failed to run tests: {exc}'}
 
 
+def _take_health_snapshot(ws: str) -> dict[str, int]:
+    """Capture key integrity metrics for metacognitive self-protection.
+
+    Before and after each merge, the program compares these metrics.
+    If any decrease, the merge damaged the codebase and must be reverted.
+    """
+    mcp = check_mcp_tool_registration(ws)
+    slots = verify_slot_decorators(ws)
+    routing = verify_intent_routing(ws)
+    return {
+        'mcp_tool_count': mcp.get('tool_count', 0),
+        'slot_count': slots.get('checked', 0),
+        'routing_ok_count': sum(
+            1 for r in routing.get('results', []) if r.get('status') == 'OK'
+        ),
+        'routing_missing': len(routing.get('missing_handlers', [])),
+    }
+
+
 def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
     """Attempt to merge safe branches (devin/*, iabv-auto/*) into current branch.
 
     Per AGENTS.md, auto-merge is allowed for devin/* and iabv-auto/* branches.
     Strategy: first try clean merge; if conflicts, retry with -X ours
     (keep current branch's code intact — it has the latest fixes).
-    Using -X ours is correct because the current working branch is the
-    most recent, and the branches being merged are older feature branches.
-    -X theirs would overwrite our latest handlers/fixes with old code.
-    Only skips branches that touch closed layers P1-P4 contracts.
+
+    **Metacognitive self-protection**: before each merge, a health snapshot
+    captures MCP tool count, @Slot count, and routing handler count. After
+    the merge, if any metric decreased, the merge is auto-reverted and the
+    branch is reported as "damaging". This prevents older branches from
+    silently destroying the program's own functionality.
     """
     ws = workspace or _default_workspace()
     if not ws:
@@ -501,6 +522,7 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
     failed: list[dict[str, str]] = []
     skipped: list[str] = []
     already_merged: list[str] = []
+    reverted: list[dict[str, str]] = []
 
     # Get list of branches already merged into HEAD to skip re-merging
     already_in_head_raw = _run_cmd(['git', '-C', ws, 'branch', '-r', '--merged', 'HEAD'])
@@ -528,16 +550,19 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
             skipped.append(f'{branch} (touches closed layer)')
             continue
 
+        # Metacognitive self-protection: snapshot before merge
+        pre_snapshot = _take_health_snapshot(ws)
+        pre_head = _run_cmd(['git', '-C', ws, 'rev-parse', 'HEAD'])
+
         try:
             # First try clean merge
             result = subprocess.run(
                 ['git', '-C', ws, 'merge', '--no-edit', branch],
                 capture_output=True, text=True, timeout=30,
             )
-            if result.returncode == 0:
-                merged.append(branch)
-                logger.info('auto_merge: merged %s successfully', branch)
-            else:
+            merge_ok = result.returncode == 0
+            used_ours = False
+            if not merge_ok:
                 # Conflict — abort and retry with -X ours (keep current code)
                 subprocess.run(
                     ['git', '-C', ws, 'merge', '--abort'],
@@ -547,10 +572,9 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
                     ['git', '-C', ws, 'merge', '--no-edit', '-X', 'ours', branch],
                     capture_output=True, text=True, timeout=30,
                 )
-                if result2.returncode == 0:
-                    merged_with_ours.append(branch)
-                    logger.info('auto_merge: merged %s with -X ours (kept current code)', branch)
-                else:
+                merge_ok = result2.returncode == 0
+                used_ours = True
+                if not merge_ok:
                     subprocess.run(
                         ['git', '-C', ws, 'merge', '--abort'],
                         capture_output=True, timeout=10,
@@ -560,6 +584,43 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
                         'reason': result2.stderr.strip()[:200] or 'merge failed even with -X ours',
                     })
                     logger.warning('auto_merge: failed %s even with -X ours', branch)
+                    continue
+
+            # Metacognitive self-protection: verify health after merge
+            post_snapshot = _take_health_snapshot(ws)
+            damage: list[str] = []
+            if post_snapshot['mcp_tool_count'] < pre_snapshot['mcp_tool_count']:
+                damage.append(
+                    f"MCP tools: {pre_snapshot['mcp_tool_count']}→{post_snapshot['mcp_tool_count']}"
+                )
+            if post_snapshot['slot_count'] < pre_snapshot['slot_count']:
+                damage.append(
+                    f"@Slot methods: {pre_snapshot['slot_count']}→{post_snapshot['slot_count']}"
+                )
+            if post_snapshot['routing_missing'] > pre_snapshot['routing_missing']:
+                damage.append(
+                    f"routing handlers lost: {pre_snapshot['routing_missing']}→{post_snapshot['routing_missing']} missing"
+                )
+
+            if damage:
+                # AUTO-REVERT: this merge damaged the program
+                subprocess.run(
+                    ['git', '-C', ws, 'reset', '--hard', pre_head],
+                    capture_output=True, timeout=10,
+                )
+                damage_desc = '; '.join(damage)
+                reverted.append({'branch': branch, 'reason': damage_desc})
+                logger.warning(
+                    'auto_merge: REVERTED %s — damaged codebase: %s', branch, damage_desc
+                )
+            else:
+                if used_ours:
+                    merged_with_ours.append(branch)
+                    logger.info('auto_merge: merged %s with -X ours (kept current code)', branch)
+                else:
+                    merged.append(branch)
+                    logger.info('auto_merge: merged %s successfully', branch)
+
         except Exception as exc:
             try:
                 subprocess.run(['git', '-C', ws, 'merge', '--abort'], capture_output=True, timeout=10)
@@ -573,12 +634,14 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
         parts.append(f'{total_merged} merged ({len(merged)} clean, {len(merged_with_ours)} con conflictos resueltos conservando codigo actual)')
     if already_merged:
         parts.append(f'{len(already_merged)} ya integradas')
+    if reverted:
+        parts.append(f'{len(reverted)} revertidas (dañaban el codigo)')
     if failed:
         parts.append(f'{len(failed)} failed')
     if skipped:
         parts.append(f'{len(skipped)} skipped')
     return {
-        'ok': len(failed) == 0,
+        'ok': len(failed) == 0 and len(reverted) == 0,
         'merged': merged,
         'merged_count': len(merged),
         'merged_with_ours': merged_with_ours,
@@ -586,6 +649,8 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
         'total_merged': total_merged,
         'already_merged': already_merged,
         'already_merged_count': len(already_merged),
+        'reverted': reverted,
+        'reverted_count': len(reverted),
         'failed': failed,
         'failed_count': len(failed),
         'skipped': skipped,

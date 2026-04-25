@@ -5363,6 +5363,10 @@ class ControlCenterViewModel(QObject):
                             sections.append(f"Mergee {len(merge_result['merged_with_ours'])} ramas resolviendo conflictos (conservando codigo actual):")
                             for mb in merge_result['merged_with_ours'][:10]:
                                 sections.append(f"  ~ {mb}")
+                        if merge_result.get('reverted'):
+                            sections.append(f"AUTOPROTECCION: {len(merge_result['reverted'])} ramas REVERTIDAS (dañaban el codigo):")
+                            for rv in merge_result['reverted'][:10]:
+                                sections.append(f"  !! {rv.get('branch', '?')}: {rv.get('reason', '?')[:100]}")
                         if merge_result.get('failed'):
                             sections.append(f"{len(merge_result['failed'])} ramas que no se pudieron mergear:")
                             for fb in merge_result['failed'][:5]:
