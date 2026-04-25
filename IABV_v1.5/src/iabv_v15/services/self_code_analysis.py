@@ -450,9 +450,19 @@ def run_test_suite(workspace: str | None = None) -> dict[str, Any]:
     # Check if focused test files exist; fallback to full suite if not
     _use_focused = all((Path(ws) / t.split('::')[0]).exists() for t in focused_tests)
     test_args = focused_tests if _use_focused else ['tests/']
+
+    # Build pytest command — only add --timeout if pytest-timeout is available
+    _pytest_cmd = ['python', '-m', 'pytest', '-p', 'no:cacheprovider'] + test_args + ['-q', '--tb=short', '-x']
+    _timeout_check = subprocess.run(
+        ['python', '-c', 'import pytest_timeout'],
+        capture_output=True, cwd=ws, env=env, timeout=5,
+    )
+    if _timeout_check.returncode == 0:
+        _pytest_cmd.append('--timeout=30')
+
     try:
         result = subprocess.run(
-            ['python', '-m', 'pytest', '-p', 'no:cacheprovider'] + test_args + ['-q', '--tb=short', '-x', '--timeout=30'],
+            _pytest_cmd,
             capture_output=True, text=True, timeout=120,
             cwd=ws, env=env,
         )
@@ -515,23 +525,54 @@ def _is_branch_obsolete(workspace: str, branch: str) -> tuple[bool, str]:
     Returns (is_obsolete, reason) where reason explains the decision.
 
     A branch is considered obsolete if ANY of these is true:
-    1. Its last commit is older than 7 days (stale experiment)
-    2. All files it touches have been modified more recently on main
-       (main evolved beyond the branch)
-    3. Its tip commit message matches a squash-merge on main
-       (content was already merged via PR)
+    1. Its content is already in main (squash-merge detected via commit
+       message search or ``git merge-base --is-ancestor``)
+    2. Its last commit is older than 7 days (stale experiment)
+    3. All files it touches have been modified more recently on main
 
-    A branch is NOT obsolete if:
-    - It has very recent commits (< 2 days old) — might be active work
+    Squash-merge check runs BEFORE the recency guard so that recently
+    merged branches are correctly identified as obsolete even if their
+    last commit is only minutes old.
     """
     ws = workspace
 
-    # Check age of last commit on branch
+    # --- Squash-merge detection (runs first, before recency guard) ---
+    # Strategy 1: search main log for branch name fragment (squash commits
+    # typically include the branch name or PR number in the title)
+    short_branch = branch.replace('origin/', '', 1)
+    branch_slug = short_branch.split('/')[-1] if '/' in short_branch else short_branch
+    main_has = _run_cmd([
+        'git', '-C', ws, 'log', 'origin/main', '--oneline', '-20', '--grep', branch_slug[:40],
+    ])
+    if main_has:
+        first_match = main_has.splitlines()[0][:60]
+        return True, f'squash-merge detectado en main: {first_match}'
+
+    # Strategy 2: check if tip commit message exists on main
+    tip_msg = _run_cmd(['git', '-C', ws, 'log', '-1', '--format=%s', branch])
+    if tip_msg:
+        main_has_msg = _run_cmd([
+            'git', '-C', ws, 'log', 'origin/main', '--oneline', '--grep', tip_msg[:60],
+        ])
+        if main_has_msg:
+            return True, f'contenido ya en main: {tip_msg[:50]}'
+
+    # Strategy 3: check if branch is ancestor of main (fast-forward merge)
+    ancestor_check = _run_cmd([
+        'git', '-C', ws, 'merge-base', '--is-ancestor', branch, 'origin/main',
+    ])
+    if ancestor_check is not None:
+        r = subprocess.run(
+            ['git', '-C', ws, 'merge-base', '--is-ancestor', branch, 'origin/main'],
+            capture_output=True, timeout=10,
+        )
+        if r.returncode == 0:
+            return True, 'rama es ancestro de main — ya fue mergeada'
+
+    # --- Recency guard (only after merge checks) ---
     age_str = _run_cmd([
         'git', '-C', ws, 'log', '-1', '--format=%cr', branch,
     ])
-
-    # Recency guard: branches < 2 days old are never obsolete (active work)
     if age_str:
         is_recent = any(unit in age_str for unit in ['hour', 'minute', 'second', 'hora', 'minuto', 'segundo'])
         if not is_recent and 'day' in age_str:
@@ -542,16 +583,6 @@ def _is_branch_obsolete(workspace: str, branch: str) -> tuple[bool, str]:
                 is_recent = False
         if is_recent:
             return False, f'rama con actividad reciente ({age_str}) — conservada'
-
-    # Check if branch tip message exists in main (squash-merged PR)
-    tip_msg = _run_cmd(['git', '-C', ws, 'log', '-1', '--format=%s', branch])
-    if tip_msg:
-        # Search for the commit message on main (squash merges often include PR title)
-        main_has = _run_cmd([
-            'git', '-C', ws, 'log', 'origin/main', '--oneline', '--grep', tip_msg[:60],
-        ])
-        if main_has:
-            return True, f'contenido ya en main (squash-merge detectado): {tip_msg[:50]}'
 
     # Check age — if older than 7 days, it's stale
     if age_str:
@@ -574,7 +605,6 @@ def _is_branch_obsolete(workspace: str, branch: str) -> tuple[bool, str]:
         if files:
             all_superseded = True
             for f in files[:20]:
-                # Get last modification time on main vs branch
                 main_date = _run_cmd([
                     'git', '-C', ws, 'log', '-1', '--format=%at', 'origin/main', '--', f,
                 ])

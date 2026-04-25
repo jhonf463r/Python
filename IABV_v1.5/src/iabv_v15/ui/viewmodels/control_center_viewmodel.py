@@ -5178,6 +5178,22 @@ class ControlCenterViewModel(QObject):
                     ).stdout.strip()
 
                     sections.append('== AUTO-UPDATE ==')
+
+                    # Filter out non-essential dirty files (__pycache__, data/,
+                    # logs) so they don't block auto-update or mislead the
+                    # branch analysis. Only real source changes count.
+                    _ignore_patterns = ('__pycache__/', '.pyc', 'data/', '.log', '.sqlite')
+                    if local_dirty:
+                        _dirty_lines = local_dirty.splitlines()
+                        _real_dirty = [
+                            line for line in _dirty_lines
+                            if not any(pat in line for pat in _ignore_patterns)
+                        ]
+                        _ignored_count = len(_dirty_lines) - len(_real_dirty)
+                        local_dirty = '\n'.join(_real_dirty)
+                    else:
+                        _ignored_count = 0
+
                     # Metacognition: detect if we're on a stale feature branch
                     # AGENTS.md: only devin/* and iabv-auto/* can be auto-switched;
                     # other prefixes (fix/, etc.) require explicit user approval
@@ -5211,11 +5227,15 @@ class ControlCenterViewModel(QObject):
                             sections.append(f'  No pude cambiar a main: {_checkout_r.stderr.strip()[:200]}')
                     elif _is_feature_branch and local_dirty:
                         _dirty_count = len(local_dirty.splitlines())
-                        sections.append(f'ALERTA METACOGNITIVA: Estoy en rama {current_branch} con {_dirty_count} cambios locales')
+                        sections.append(f'ALERTA METACOGNITIVA: Estoy en rama {current_branch} con {_dirty_count} cambios de codigo fuente')
+                        if _ignored_count:
+                            sections.append(f'  ({_ignored_count} archivos cache/datos ignorados: __pycache__, data/, logs)')
                         sections.append('  No cambio a main para no perder trabajo — revisa si estos cambios son intencionales')
                     elif local_dirty:
-                        sections.append('Cambios locales detectados — omitiendo reset para no perder trabajo')
-                        sections.append(f'  Branch: {current_branch}, archivos modificados: {len(local_dirty.splitlines())}')
+                        sections.append('Cambios locales en codigo fuente detectados — omitiendo reset para no perder trabajo')
+                        sections.append(f'  Branch: {current_branch}, archivos fuente modificados: {len(local_dirty.splitlines())}')
+                        if _ignored_count:
+                            sections.append(f'  ({_ignored_count} archivos cache/datos ignorados)')
                     elif current_branch in ('main', 'master'):
                         # Safe to reset: on main, no local changes
                         reset_r = _sp.run(
