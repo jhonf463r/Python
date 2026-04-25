@@ -5146,13 +5146,10 @@ class ControlCenterViewModel(QObject):
                     ws = os.getcwd()
                 sections: list[str] = []
 
-                # 0. Auto-update: fetch + reset to origin/main (safe, no conflicts)
-                # Previous approach used `git pull --rebase=false` which caused
-                # merge conflicts when local divergences existed (e.g. from
-                # prior auto-merge of stale branches). The safe approach is:
-                # 1) abort any in-progress merge, 2) fetch with prune,
-                # 3) reset --hard to origin/main. This guarantees a clean
-                # state identical to the remote without conflicts.
+                # 0. Auto-update: fetch + fast-forward on main only
+                # Only resets to origin/main if currently on the main branch
+                # and there are no local uncommitted changes. Otherwise uses
+                # git pull --ff-only which is safe (no data loss).
                 import subprocess as _sp
                 try:
                     # Abort any in-progress merge first
@@ -5165,36 +5162,63 @@ class ControlCenterViewModel(QObject):
                         ['git', '-C', ws, 'fetch', 'origin', '--prune'],
                         capture_output=True, text=True, timeout=30,
                     )
-                    # Get current HEAD before reset
-                    old_head = _sp.run(
-                        ['git', '-C', ws, 'rev-parse', '--short', 'HEAD'],
+                    # Check current branch
+                    current_branch = _sp.run(
+                        ['git', '-C', ws, 'rev-parse', '--abbrev-ref', 'HEAD'],
                         capture_output=True, text=True, timeout=5,
                     ).stdout.strip()
-                    # Reset to origin/main
-                    reset_r = _sp.run(
-                        ['git', '-C', ws, 'reset', '--hard', 'origin/main'],
-                        capture_output=True, text=True, timeout=15,
-                    )
-                    new_head = _sp.run(
+                    # Check for local uncommitted changes
+                    local_dirty = _sp.run(
+                        ['git', '-C', ws, 'status', '--porcelain'],
+                        capture_output=True, text=True, timeout=5,
+                    ).stdout.strip()
+                    old_head = _sp.run(
                         ['git', '-C', ws, 'rev-parse', '--short', 'HEAD'],
                         capture_output=True, text=True, timeout=5,
                     ).stdout.strip()
 
                     sections.append('== AUTO-UPDATE ==')
-                    if reset_r.returncode == 0:
-                        if old_head == new_head:
-                            sections.append('Ya estoy actualizado (sin cambios nuevos en origin/main)')
+                    if local_dirty:
+                        sections.append('Cambios locales detectados — omitiendo reset para no perder trabajo')
+                        sections.append(f'  Branch: {current_branch}, archivos modificados: {len(local_dirty.splitlines())}')
+                    elif current_branch in ('main', 'master'):
+                        # Safe to reset: on main, no local changes
+                        reset_r = _sp.run(
+                            ['git', '-C', ws, 'reset', '--hard', 'origin/main'],
+                            capture_output=True, text=True, timeout=15,
+                        )
+                        new_head = _sp.run(
+                            ['git', '-C', ws, 'rev-parse', '--short', 'HEAD'],
+                            capture_output=True, text=True, timeout=5,
+                        ).stdout.strip()
+                        if reset_r.returncode == 0:
+                            if old_head == new_head:
+                                sections.append('Ya estoy actualizado (sin cambios nuevos en origin/main)')
+                            else:
+                                sections.append(f'Me actualice exitosamente: {old_head} -> {new_head}')
                         else:
-                            sections.append(f'Me actualice exitosamente: {old_head} -> {new_head}')
-                            reset_out = reset_r.stdout.strip()
-                            if reset_out:
-                                sections.append(f'  {reset_out}')
-                        # Report pruned branches if any
-                        pruned = [l for l in (fetch_r.stderr or '').splitlines() if '[deleted]' in l]
-                        if pruned:
-                            sections.append(f'  Ramas remotas limpiadas: {len(pruned)}')
+                            sections.append(f'Error al actualizar: {reset_r.stderr.strip()[:200]}')
                     else:
-                        sections.append(f'Error al actualizar: {reset_r.stderr.strip()[:200]}')
+                        # On a feature branch — try safe ff-only pull
+                        ff_r = _sp.run(
+                            ['git', '-C', ws, 'pull', '--ff-only'],
+                            capture_output=True, text=True, timeout=30,
+                        )
+                        if ff_r.returncode == 0:
+                            new_head = _sp.run(
+                                ['git', '-C', ws, 'rev-parse', '--short', 'HEAD'],
+                                capture_output=True, text=True, timeout=5,
+                            ).stdout.strip()
+                            if old_head == new_head:
+                                sections.append(f'Ya estoy actualizado en branch {current_branch}')
+                            else:
+                                sections.append(f'Actualice branch {current_branch}: {old_head} -> {new_head}')
+                        else:
+                            sections.append(f'Branch {current_branch} diverge del remoto — conservando estado local')
+                    # Report pruned branches if any
+                    pruned = [l for l in (fetch_r.stderr or '').splitlines() if '[deleted]' in l]
+                    if pruned:
+                        sections.append(f'  Ramas remotas limpiadas: {len(pruned)}')
                 except Exception as pull_exc:
                     sections.append('== AUTO-UPDATE ==')
                     sections.append(f'No pude actualizarme: {pull_exc}')
@@ -5550,19 +5574,22 @@ class ControlCenterViewModel(QObject):
 
         Uses winsound on Windows (native, no dependencies).
         Falls back to terminal bell on other platforms.
+        Runs in a background thread to avoid blocking the UI.
         """
-        try:
-            import sys
-            if sys.platform == 'win32':
-                import winsound
-                # Two short ascending tones: "task complete"
-                winsound.Beep(800, 150)
-                winsound.Beep(1200, 200)
-            else:
-                # Terminal bell as cross-platform fallback
-                print('\a', end='', flush=True)
-        except Exception:
-            pass
+        def _beep() -> None:
+            try:
+                import sys
+                if sys.platform == 'win32':
+                    import winsound
+                    # Two short ascending tones: "task complete"
+                    winsound.Beep(800, 150)
+                    winsound.Beep(1200, 200)
+                else:
+                    # Terminal bell as cross-platform fallback
+                    print('\a', end='', flush=True)
+            except Exception:
+                pass
+        threading.Thread(target=_beep, daemon=True).start()
 
     @Property(list, notify=dataChanged)
     def contextualSuggestions(self) -> list[dict[str, Any]]:

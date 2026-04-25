@@ -594,7 +594,7 @@ def cleanup_stale_remote_branches(workspace: str | None = None) -> dict[str, Any
         return {'ok': False, 'error': 'workspace not found', 'deleted': [], 'skipped': [], 'conserved': []}
 
     branches = scan_unmerged_branches(ws)
-    safe_prefixes = ('origin/devin/', 'origin/iabv-auto/', 'origin/fix/')
+    safe_prefixes = ('origin/devin/', 'origin/iabv-auto/')
     deleted: list[str] = []
     conserved: list[dict[str, str]] = []
     skipped: list[str] = []

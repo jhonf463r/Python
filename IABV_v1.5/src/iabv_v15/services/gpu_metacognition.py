@@ -166,8 +166,8 @@ def gpu_metacognition_report() -> dict[str, Any]:
                 "when NVIDIA VRAM is full or for parallel lightweight tasks."
             ),
         }
-        # Ensure Ollama uses the NVIDIA GPU as primary
-        _ensure_gpu_primary(nvidia_gpus[0])
+        # Note: GPU correction is done only at startup (startup_gpu_health_check),
+        # not here, to keep this function side-effect-free.
     elif len(nvidia_gpus) > 1:
         report["dual_gpu_strategy"] = {
             "recommended": True,
@@ -228,8 +228,13 @@ def auto_free_gpu_for_model(target_vram_gb: float = 4.0) -> dict[str, Any]:
 
 
 def startup_gpu_health_check() -> dict[str, Any]:
-    """Run at bootstrap to verify GPU health and log findings."""
+    """Run at bootstrap to verify GPU health, correct GPU config, and log findings."""
     report = gpu_metacognition_report()
+    # Auto-correct GPU config at startup only (not in the report function)
+    strategy = report.get('dual_gpu_strategy', {})
+    nvidia_gpus = [g for g in report.get('gpus_detected', []) if g.get('type') == 'nvidia']
+    if strategy.get('recommended') and nvidia_gpus:
+        _ensure_gpu_primary(nvidia_gpus[0])
     for issue in report.get("issues", []):
         logger.warning("gpu_metacognition: %s", issue)
     for rec in report.get("recommendations", []):
