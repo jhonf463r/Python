@@ -203,47 +203,167 @@ def _generate_tool_install_plan(deduction: dict[str, str],
     }
 
 
-def _generate_secret_request(deduction: dict[str, str],
-                             context: dict[str, Any]) -> dict[str, Any]:
-    """Generate request for missing secrets/credentials."""
+# Known secret providers: name pattern → (url, description, auto_openable)
+_SECRET_PROVIDERS: dict[str, tuple[str, str, bool]] = {
+    'GITHUB': (
+        'https://github.com/settings/tokens/new?scopes=repo&description=IABV',
+        'GitHub PAT (scope: repo)', True,
+    ),
+    'DEVIN': (
+        'https://app.devin.ai/settings/api-keys',
+        'Devin API Key', True,
+    ),
+    'OPENAI': (
+        'https://platform.openai.com/api-keys',
+        'OpenAI API Key', True,
+    ),
+    'ANTHROPIC': (
+        'https://console.anthropic.com/settings/keys',
+        'Anthropic API Key', True,
+    ),
+    'CLOUDFLARE': (
+        'https://dash.cloudflare.com/',
+        'Cloudflare Zero Trust > Tunnels', True,
+    ),
+}
+
+
+def _resolve_secret_provider(name: str) -> tuple[str, str, bool]:
+    """Return (url, description, auto_openable) for a secret name."""
+    for pattern, provider in _SECRET_PROVIDERS.items():
+        if pattern in name:
+            return provider
+    return ('', f'Configurar $env:{name}', False)
+
+
+def auto_provision_missing_secrets(
+    context: dict[str, Any],
+    *,
+    open_browser: bool = True,
+) -> dict[str, Any]:
+    """Auto-detect missing secrets and open browser for provisioning.
+
+    Instead of just reporting "you need to add X to ~/.iabv_secrets.ps1",
+    this function:
+      1. Detects which secrets are missing
+      2. Opens the browser to the correct URL for each provider
+      3. Returns structured info so the UI can prompt the user inline
+
+    The user only needs to click "Authorize" or copy-paste the token
+    into the UI dialog — no manual PowerShell editing required.
+    """
     account_scan = context.get('account_scan', {})
     secrets = account_scan.get('secrets', {})
     missing = secrets.get('missing', [])
 
     if not missing:
         return {
-            'action': 'request_secrets',
+            'action': 'provision_secrets',
             'status': 'no_action_needed',
             'detail': 'Todos los secretos están configurados',
         }
 
-    instructions: list[dict[str, str]] = []
+    provisions: list[dict[str, Any]] = []
+    opened_urls: list[str] = []
+
     for name in missing:
-        instr: dict[str, str] = {'name': name, 'how_to_get': ''}
-        if 'GITHUB' in name:
-            instr['how_to_get'] = 'https://github.com/settings/tokens/new — scope: repo'
-        elif 'DEVIN' in name:
-            instr['how_to_get'] = 'https://app.devin.ai/settings — API Keys section'
-        elif 'OPENAI' in name:
-            instr['how_to_get'] = 'https://platform.openai.com/api-keys'
-        elif 'ANTHROPIC' in name:
-            instr['how_to_get'] = 'https://console.anthropic.com/settings/keys'
-        elif 'CLOUDFLARE' in name:
-            instr['how_to_get'] = 'https://dash.cloudflare.com/ — Zero Trust > Tunnels'
-        else:
-            instr['how_to_get'] = f'Configurar en ~/.iabv_secrets.ps1: $env:{name}="valor"'
-        instructions.append(instr)
+        url, description, can_open = _resolve_secret_provider(name)
+        provision: dict[str, Any] = {
+            'name': name,
+            'description': description,
+            'url': url,
+            'auto_openable': can_open,
+            'opened': False,
+        }
+
+        if open_browser and can_open and url:
+            try:
+                import webbrowser
+                webbrowser.open(url)
+                provision['opened'] = True
+                opened_urls.append(url)
+                logger.info('auto_provision: opened browser for %s → %s', name, url)
+            except Exception as exc:
+                logger.debug('auto_provision: could not open browser for %s: %s', name, exc)
+
+        provisions.append(provision)
 
     return {
-        'action': 'request_secrets',
+        'action': 'provision_secrets',
         'status': 'needs_user',
-        'missing_secrets': instructions,
-        'count': len(instructions),
+        'provisions': provisions,
+        'count': len(provisions),
+        'opened_count': len(opened_urls),
         'user_action': (
-            'Agregar los secretos faltantes a ~/.iabv_secrets.ps1 '
-            'o configurarlos como variables de entorno'
+            'Se abrieron las páginas para crear los tokens. '
+            'Pega cada token en el diálogo de IABV cuando lo tengas.'
+            if opened_urls else
+            'Abre los links indicados y pega los tokens en IABV.'
         ),
     }
+
+
+def save_secret_to_profile(name: str, value: str) -> dict[str, Any]:
+    """Save a secret to ~/.iabv_secrets.ps1 and set it in the environment.
+
+    Called from the UI when the user provides a token. This eliminates
+    the need to manually edit PowerShell files.
+    """
+    import os
+    import re
+
+    os.environ[name] = value
+
+    secrets_path = os.path.join(os.path.expanduser('~'), '.iabv_secrets.ps1')
+    line_to_add = f"$env:{name} = '{value}'"
+
+    try:
+        if os.path.exists(secrets_path):
+            with open(secrets_path, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
+            pattern = re.compile(
+                rf'^\s*\$env:{re.escape(name)}\s*=.*$',
+                re.MULTILINE,
+            )
+            if pattern.search(content):
+                content = pattern.sub(line_to_add, content)
+            else:
+                content = content.rstrip() + '\n' + line_to_add + '\n'
+        else:
+            content = (
+                '# iabv_secrets.ps1 — auto-generated by IABV\n'
+                '# Do NOT commit this file.\n\n'
+                + line_to_add + '\n'
+            )
+
+        with open(secrets_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+
+        logger.info('save_secret: %s saved to %s', name, secrets_path)
+        return {
+            'status': 'saved',
+            'name': name,
+            'path': secrets_path,
+            'detail': f'{name} guardado y activado',
+        }
+    except Exception as exc:
+        logger.warning('save_secret: failed to write %s: %s', name, exc)
+        return {
+            'status': 'error',
+            'name': name,
+            'detail': str(exc),
+        }
+
+
+def _generate_secret_request(deduction: dict[str, str],
+                             context: dict[str, Any]) -> dict[str, Any]:
+    """Generate request for missing secrets/credentials.
+
+    Delegates to auto_provision_missing_secrets for browser-based
+    provisioning. Falls back to manual instructions if browser is
+    not available.
+    """
+    return auto_provision_missing_secrets(context, open_browser=False)
 
 
 def _add_backlog_task_for_gap(deduction: dict[str, str],

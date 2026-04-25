@@ -1250,13 +1250,18 @@ def act_on_conclusions(
             })
             continue
 
-        # Check if this action was already executed by a rule
-        already_done = any(e.get('action') == action for e in executed)
-        if already_done:
+        # Check if this action (or same executor under a different name)
+        # was already executed by a rule
+        executed_executors = {
+            _ACTION_EXECUTORS.get(e.get('action'))
+            for e in executed
+            if _ACTION_EXECUTORS.get(e.get('action'))
+        }
+        if action in {e.get('action') for e in executed} or executor in executed_executors:
             skipped.append({
                 'anomaly_type': anomaly.get('type', ''),
                 'action': action,
-                'reason': 'already executed by rule-based action',
+                'reason': 'already executed by rule-based action (same executor)',
             })
             continue
 
