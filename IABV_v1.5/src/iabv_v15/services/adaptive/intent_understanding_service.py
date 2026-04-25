@@ -1,11 +1,203 @@
 ﻿from __future__ import annotations
 
+import json
+import logging
+import os
 import re
 import threading
 import time
+from pathlib import Path
 from typing import Any
 
 from iabv_v15.domain.models import InferenceRequest, IntentDisposition, IntentHypothesis, IntentSchema, TaskIntent, TaskRole
+
+logger = logging.getLogger(__name__)
+
+
+# ──────────────────────────────────────────────────────────────
+# IntentLearningLayer — aprendizaje persistente de patrones
+# ──────────────────────────────────────────────────────────────
+
+def _intent_learning_path() -> Path:
+    """Return path to the learned intent patterns JSONL file."""
+    env_val = os.environ.get('IABV_DATA_DIR', '').strip()
+    data_dir = Path(env_val) if env_val else (
+        Path(os.path.expanduser('~')) / 'IABV_v1.5' / 'data'
+    )
+    learning_dir = data_dir / 'evolution' / 'intent_learning'
+    learning_dir.mkdir(parents=True, exist_ok=True)
+    return learning_dir / 'learned_patterns.jsonl'
+
+
+class IntentLearningLayer:
+    """Persistent layer that learns intent patterns from user interactions.
+
+    When the system classifies an intent with low confidence or falls back
+    to ``general.assistance``, and the user subsequently reformulates or
+    the system detects a correction, the learning layer records the mapping:
+
+        normalized_input → confirmed_intent_key
+
+    On startup, learned patterns are loaded and consulted BEFORE the
+    hardcoded pattern matching, giving them priority. Patterns that
+    accumulate enough confirmations (``_MIN_CONFIRMATIONS``) are promoted
+    to "trusted" and bypass the static classification entirely.
+    """
+
+    _MIN_CONFIRMATIONS = 3
+    _MAX_LEARNED_PATTERNS = 2000
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._patterns: dict[str, dict[str, Any]] = {}
+        self._load()
+
+    def _load(self) -> None:
+        """Load learned patterns from JSONL file."""
+        path = _intent_learning_path()
+        if not path.exists():
+            return
+        try:
+            with open(path, 'r', encoding='utf-8', errors='replace') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        record = json.loads(line)
+                        key = record.get('pattern', '').strip().lower()
+                        if key:
+                            self._patterns[key] = record
+                    except json.JSONDecodeError:
+                        continue
+            logger.info(
+                'intent_learning: loaded %d learned patterns from %s',
+                len(self._patterns), path,
+            )
+        except Exception as exc:
+            logger.debug('intent_learning: failed to load: %s', exc)
+
+    def _save(self) -> None:
+        """Persist all learned patterns to JSONL file."""
+        path = _intent_learning_path()
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                for record in self._patterns.values():
+                    f.write(json.dumps(record, ensure_ascii=False) + '\n')
+        except Exception as exc:
+            logger.debug('intent_learning: failed to save: %s', exc)
+
+    def lookup(self, normalized_text: str) -> dict[str, Any] | None:
+        """Check if a normalized input matches a learned pattern.
+
+        Returns the learned record if found and confirmed enough times,
+        otherwise None. Uses substring matching for flexibility:
+        if "dame los comandos para ejecutar" was learned, it also
+        matches "dame los comandos para ejecutar mi programa".
+        """
+        text_lower = normalized_text.strip().lower()
+        with self._lock:
+            # Exact match first
+            exact = self._patterns.get(text_lower)
+            if exact and exact.get('confirmations', 0) >= self._MIN_CONFIRMATIONS:
+                return exact
+
+            # Substring match — check if any learned pattern is contained
+            # in the input or vice versa
+            best_match: dict[str, Any] | None = None
+            best_score = 0.0
+            for pattern_key, record in self._patterns.items():
+                if record.get('confirmations', 0) < self._MIN_CONFIRMATIONS:
+                    continue
+                if pattern_key in text_lower or text_lower in pattern_key:
+                    # Score by overlap ratio
+                    overlap = len(pattern_key) / max(len(text_lower), 1)
+                    if overlap > best_score and overlap > 0.5:
+                        best_score = overlap
+                        best_match = record
+            return best_match
+
+    def record(
+        self,
+        normalized_text: str,
+        intent_key: str,
+        *,
+        confidence: float = 0.0,
+        source: str = 'user_correction',
+    ) -> None:
+        """Record or reinforce a learned pattern.
+
+        Called when:
+        - The user reformulates and the system classifies differently
+        - The system falls back to general.assistance and the user
+          provides a clearer instruction that resolves to a specific intent
+        - An action succeeds after being classified with a specific intent
+        """
+        text_lower = normalized_text.strip().lower()
+        if not text_lower or not intent_key:
+            return
+
+        with self._lock:
+            existing = self._patterns.get(text_lower)
+            if existing:
+                if existing.get('intent_key') == intent_key:
+                    existing['confirmations'] = existing.get('confirmations', 0) + 1
+                    existing['last_seen'] = time.time()
+                    existing['confidence'] = max(
+                        existing.get('confidence', 0.0), confidence,
+                    )
+                else:
+                    # Intent changed — could be a correction. If the new
+                    # intent has higher confidence, override.
+                    if confidence > existing.get('confidence', 0.0):
+                        existing['intent_key'] = intent_key
+                        existing['confirmations'] = 1
+                        existing['last_seen'] = time.time()
+                        existing['confidence'] = confidence
+                        existing['source'] = source
+            else:
+                if len(self._patterns) >= self._MAX_LEARNED_PATTERNS:
+                    # Evict least-confirmed pattern
+                    weakest = min(
+                        self._patterns,
+                        key=lambda k: self._patterns[k].get('confirmations', 0),
+                    )
+                    del self._patterns[weakest]
+
+                self._patterns[text_lower] = {
+                    'pattern': text_lower,
+                    'intent_key': intent_key,
+                    'confirmations': 1,
+                    'confidence': confidence,
+                    'first_seen': time.time(),
+                    'last_seen': time.time(),
+                    'source': source,
+                }
+
+            self._save()
+
+    def get_stats(self) -> dict[str, Any]:
+        """Return statistics about learned patterns for reporting."""
+        with self._lock:
+            total = len(self._patterns)
+            trusted = sum(
+                1 for p in self._patterns.values()
+                if p.get('confirmations', 0) >= self._MIN_CONFIRMATIONS
+            )
+            by_intent: dict[str, int] = {}
+            for p in self._patterns.values():
+                ik = p.get('intent_key', 'unknown')
+                by_intent[ik] = by_intent.get(ik, 0) + 1
+            return {
+                'total_patterns': total,
+                'trusted_patterns': trusted,
+                'learning_patterns': total - trusted,
+                'by_intent': by_intent,
+            }
+
+
+# Singleton instance — loaded once at import time, persists across calls
+_intent_learning_layer = IntentLearningLayer()
 
 
 class IntentUnderstandingService:
@@ -235,6 +427,62 @@ class IntentUnderstandingService:
 
     def classify(self, request: InferenceRequest) -> tuple[TaskIntent, list[IntentHypothesis]]:
         text = self._normalize(request.user_goal)
+
+        # ── Learned pattern lookup (BEFORE static patterns) ──
+        learned = _intent_learning_layer.lookup(text)
+        if learned:
+            learned_intent_key = str(learned.get('intent_key', ''))
+            learned_confidence = min(float(learned.get('confidence', 0.85)), 0.95)
+            confirmations = int(learned.get('confirmations', 0))
+            logger.info(
+                'intent_learning: matched learned pattern — intent=%s '
+                'confirmations=%d confidence=%.2f',
+                learned_intent_key, confirmations, learned_confidence,
+            )
+            # Map known intent_keys to their TaskRole
+            role_map: dict[str, TaskRole] = {
+                'general.assistance': TaskRole.KNOWLEDGE,
+                'knowledge.query': TaskRole.KNOWLEDGE,
+                'system.self_awareness': TaskRole.KNOWLEDGE,
+                'system.metacognition': TaskRole.TOOL_USE,
+                'consulta_estado_evolutivo': TaskRole.KNOWLEDGE,
+                'project.evolution': TaskRole.PROJECT_EVOLUTION,
+                'research.local': TaskRole.RESEARCH,
+                'research.external_consultation': TaskRole.RESEARCH,
+                'tools.local_workflow': TaskRole.TOOL_USE,
+                'tools.sandbox': TaskRole.TOOL_SANDBOX,
+                'browser.search': TaskRole.TOOL_USE,
+                'browser.navigate': TaskRole.TOOL_USE,
+                'analytics.strategy': TaskRole.RESEARCH,
+                'customer.support': TaskRole.KNOWLEDGE,
+            }
+            detected_role = role_map.get(learned_intent_key, TaskRole.KNOWLEDGE)
+            intent = TaskIntent(
+                disposition=IntentDisposition.ANSWER_NOW,
+                intent_key=learned_intent_key,
+                title=f'Learned: {learned_intent_key}',
+                summary=f'Clasificado por patrón aprendido ({confirmations} confirmaciones)',
+                detected_role=detected_role,
+                site_hint=request.site_hint,
+                domain_hint=learned_intent_key.split('.')[0] if '.' in learned_intent_key else 'general',
+                confidence=learned_confidence,
+                reasoning=[
+                    f'patrón aprendido con {confirmations} confirmaciones',
+                    f'fuente: {learned.get("source", "unknown")}',
+                ],
+                metadata={
+                    'learned_pattern': True,
+                    'learned_confirmations': confirmations,
+                },
+            )
+            hypotheses = [IntentHypothesis(
+                intent_key=learned_intent_key,
+                title=f'Learned: {learned_intent_key}',
+                confidence=learned_confidence,
+                rationale=f'Patrón aprendido previamente ({confirmations} confirmaciones)',
+            )]
+            return intent, hypotheses
+
         conversation_text = self._conversation_context_text(request.conversation_context)
         detected_site, context_carried_from_history = self._detect_site_with_history(
             text,
@@ -319,6 +567,25 @@ class IntentUnderstandingService:
                         'metadata': {**intent.metadata, 'requires_clarification': True},
                     }
                 )
+
+            # ── Intent Learning: record pattern for future use ──
+            if intent.confidence >= 0.7 and intent.intent_key != 'general.assistance':
+                _intent_learning_layer.record(
+                    text,
+                    intent.intent_key,
+                    confidence=intent.confidence,
+                    source='high_confidence_classification',
+                )
+            elif intent.intent_key == 'general.assistance':
+                # Low-confidence fallback — record as candidate for
+                # learning when the user next provides clearer input
+                _intent_learning_layer.record(
+                    text,
+                    intent.intent_key,
+                    confidence=intent.confidence,
+                    source='fallback_candidate',
+                )
+
             return intent, merged_hypotheses
 
         if self._contains_any(text, ['hola', 'que sabes hacer', 'quÃ© sabes hacer']) and len(text.split()) <= 8 and not bool(analysis.get('compound')):
@@ -680,12 +947,36 @@ class IntentUnderstandingService:
             )
         intent, hypotheses = self.classify(request)
         intent = intent.model_copy(update={'hypotheses': hypotheses})
+
+        # ── Cross-turn learning: if previous turn was fallback and this
+        #    turn resolved to a specific intent, teach the previous input ──
+        if (
+            intent.intent_key != 'general.assistance'
+            and intent.confidence >= 0.7
+            and conversation_history
+        ):
+            for prev_msg in reversed(conversation_history[-3:]):
+                prev_role = str(prev_msg.get('role', '')).strip().lower()
+                if prev_role in ('user', 'human'):
+                    prev_text = self._normalize(str(prev_msg.get('content', '')))
+                    if prev_text and len(prev_text.split()) >= 3:
+                        _intent_learning_layer.record(
+                            prev_text,
+                            intent.intent_key,
+                            confidence=intent.confidence * 0.8,
+                            source='cross_turn_correction',
+                        )
+                    break
+
         analysis: dict[str, Any] = dict(intent.metadata.get('conversation_analysis') or {})
         sub_intents = list(analysis.get('sub_intents') or [])
         ambiguity_score = float(analysis.get('ambiguity_score') or 0.0)
         risk_level = 'high' if intent.sensitive or intent.monetary else (
             'medium' if ambiguity_score >= 0.5 or intent.multi_step else 'low'
         )
+        semantic_source = 'conversation_analysis'
+        if intent.metadata.get('learned_pattern'):
+            semantic_source = 'learned_pattern'
         schema = IntentSchema(
             primary_intent=intent.intent_key,
             sub_intents=sub_intents,
@@ -694,13 +985,36 @@ class IntentUnderstandingService:
             clarification_prompt=str(analysis.get('clarification_prompt') or ''),
             risk_level=risk_level,
             confidence=intent.confidence,
-            semantic_source='conversation_analysis',
+            semantic_source=semantic_source,
             compound=bool(analysis.get('compound')),
             constraints=list(analysis.get('constraints') or []),
             objective_summary=str(analysis.get('objective_summary') or ''),
             context_carried_from_history=bool(analysis.get('context_carried_from_history')),
         )
         return intent, schema
+
+    @staticmethod
+    def get_learning_stats() -> dict[str, Any]:
+        """Return statistics about learned intent patterns."""
+        return _intent_learning_layer.get_stats()
+
+    @staticmethod
+    def record_intent_correction(
+        normalized_text: str,
+        correct_intent_key: str,
+        confidence: float = 0.9,
+    ) -> None:
+        """Manually teach the system a correct intent for an input.
+
+        Called by external services (e.g., ControlCenterViewModel) when
+        the user explicitly corrects a misclassification.
+        """
+        _intent_learning_layer.record(
+            normalized_text,
+            correct_intent_key,
+            confidence=confidence,
+            source='explicit_user_correction',
+        )
 
     def _analyze_conversation(
         self,

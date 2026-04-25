@@ -562,6 +562,7 @@ def execute_auto_corrections(
         'limits_scan': limits_scan or {},
         'gpu_scan': gpu_scan or {},
         'regression_scan': regression_scan or {},
+        'deep_env_scan': deep_env_scan or {},
         'workspace': workspace or '',
     }
 

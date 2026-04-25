@@ -1019,8 +1019,8 @@ def _exec_cleanup_disk_space(rule: dict[str, Any]) -> dict[str, Any]:
         temp_dir = tempfile.gettempdir()
         # Only clean old temp files, not actively used ones
         return {
-            'executed': True,
-            'detail': f'Revisión de espacio en {temp_dir} completada',
+            'executed': False,
+            'detail': f'Revisión de espacio en {temp_dir} — limpieza automática no implementada aún',
         }
     except Exception as exc:
         return {'executed': False, 'error': str(exc)}

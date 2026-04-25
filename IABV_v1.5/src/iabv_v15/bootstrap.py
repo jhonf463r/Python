@@ -1226,7 +1226,9 @@ class AppBootstrap:
         def _probe_group(group_cards: list) -> list[tuple[str, bool, Any]]:
             out: list[tuple[str, bool, Any]] = []
             for c in group_cards:
-                refreshed = self.tool_registry.refresh_card(c, force=True)
+                refreshed = self.tool_registry.refresh_card(
+                    c, max_age_seconds=60.0,
+                )
                 out.append((refreshed.tool_id, refreshed.available, refreshed))
             return out
 
