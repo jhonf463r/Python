@@ -5385,6 +5385,25 @@ class ControlCenterViewModel(QObject):
                 except Exception as exc:
                     sections.append(f'Error en gpu_metacognition: {exc}')
 
+                # 2.1 GPU routing verification — is Ollama on NVIDIA?
+                _gpu_routing_result: dict = {}
+                try:
+                    from iabv_v15.services.gpu_metacognition import verify_ollama_gpu_usage
+                    _gpu_routing_result = verify_ollama_gpu_usage()
+                    routing_status = _gpu_routing_result.get('status', '')
+                    if routing_status == 'optimal':
+                        sections.append(f'  GPU Routing: OPTIMO — {_gpu_routing_result.get("detail", "")}')
+                    elif routing_status in ('suboptimal', 'uncertain'):
+                        sections.append(f'  GPU Routing: CORREGIDO — {_gpu_routing_result.get("detail", "")}')
+                        for corr in _gpu_routing_result.get('corrections_made', []):
+                            sections.append(f'    [AUTO-CORREGIDO] {corr.get("detail", "")}')
+                    elif routing_status == 'idle':
+                        sections.append(f'  GPU Routing: pre-configurado — {_gpu_routing_result.get("detail", "")}')
+                    elif routing_status == 'no_nvidia':
+                        sections.append(f'  GPU Routing: {_gpu_routing_result.get("detail", "sin NVIDIA")}')
+                except Exception as gpu_rt_exc:
+                    sections.append(f'  GPU Routing: error — {gpu_rt_exc}')
+
                 # 2.3 Tool version monitoring
                 version_scan: dict = {}
                 try:

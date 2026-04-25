@@ -267,6 +267,156 @@ def auto_free_gpu_for_model(target_vram_gb: float = 4.0) -> dict[str, Any]:
     return {"freed": freed, "count": len(freed)}
 
 
+def verify_ollama_gpu_usage() -> dict[str, Any]:
+    """Verify which GPU Ollama is ACTUALLY using and fix if wrong.
+
+    Cross-validates nvidia-smi process list vs ollama ps to determine
+    if Ollama is running on the NVIDIA GPU (correct) or Intel/CPU (wrong).
+    If wrong, reconfigures and restarts Ollama's active model.
+    """
+    gpus = detect_physical_gpus()
+    nvidia_gpus = [g for g in gpus if g.get('type') == 'nvidia']
+    intel_gpus = [g for g in gpus if 'intel' in g.get('name', '').lower()
+                  or g.get('vendor', '').lower() == 'intel']
+    ollama_state = detect_ollama_gpu_state()
+
+    result: dict[str, Any] = {
+        'nvidia_present': len(nvidia_gpus) > 0,
+        'intel_igpu_present': len(intel_gpus) > 0,
+        'dual_gpu': len(nvidia_gpus) > 0 and len(intel_gpus) > 0,
+        'corrections_made': [],
+    }
+
+    if not nvidia_gpus:
+        result['status'] = 'no_nvidia'
+        result['detail'] = 'No NVIDIA GPU detected — nothing to optimize'
+        return result
+
+    # Check nvidia-smi for Ollama process
+    nvidia_sees_ollama = False
+    try:
+        r = subprocess.run(
+            ['nvidia-smi', '--query-compute-apps=pid,name,used_memory',
+             '--format=csv,noheader,nounits'],
+            capture_output=True, text=True, timeout=10,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            for line in r.stdout.strip().splitlines():
+                if 'ollama' in line.lower():
+                    nvidia_sees_ollama = True
+                    break
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+
+    # Check ollama ps for GPU usage
+    ollama_on_gpu = False
+    ollama_on_cpu = False
+    loaded_models: list[str] = []
+    if ollama_state.get('status') == 'ok':
+        for m in ollama_state.get('models', []):
+            loaded_models.append(m['name'])
+            if m.get('fully_gpu') or m.get('gpu_percent', 0) > 50:
+                ollama_on_gpu = True
+            elif m.get('cpu_percent', 0) == 100:
+                ollama_on_cpu = True
+
+    result['nvidia_sees_ollama'] = nvidia_sees_ollama
+    result['ollama_on_gpu'] = ollama_on_gpu
+    result['ollama_on_cpu'] = ollama_on_cpu
+    result['loaded_models'] = loaded_models
+
+    # Decision logic: is Ollama on the right GPU?
+    if ollama_on_gpu and nvidia_sees_ollama:
+        result['status'] = 'optimal'
+        result['detail'] = (
+            f'Ollama corriendo en NVIDIA {nvidia_gpus[0]["name"]} — configuración óptima'
+        )
+        return result
+
+    if ollama_on_cpu and nvidia_gpus:
+        result['status'] = 'suboptimal'
+        result['detail'] = (
+            f'Ollama corriendo en CPU cuando hay NVIDIA {nvidia_gpus[0]["name"]} disponible'
+        )
+        # Auto-correct: set CUDA env and restart model
+        corrections = _force_ollama_to_nvidia(nvidia_gpus[0], loaded_models)
+        result['corrections_made'] = corrections
+        result['auto_corrected'] = len(corrections) > 0
+        return result
+
+    if not loaded_models:
+        result['status'] = 'idle'
+        result['detail'] = 'Ollama sin modelos cargados — verificación se hará en próxima carga'
+        # Pre-configure env for next load
+        _ensure_gpu_primary(nvidia_gpus[0])
+        result['corrections_made'] = [{
+            'action': 'pre_configured_cuda',
+            'detail': f'CUDA_VISIBLE_DEVICES configurado para NVIDIA GPU index {nvidia_gpus[0].get("index", 0)}',
+        }]
+        return result
+
+    if ollama_on_gpu and not nvidia_sees_ollama:
+        result['status'] = 'uncertain'
+        result['detail'] = (
+            'Ollama reporta GPU pero nvidia-smi no muestra proceso de Ollama '
+            '— puede ser Intel iGPU en vez de NVIDIA'
+        )
+        corrections = _force_ollama_to_nvidia(nvidia_gpus[0], loaded_models)
+        result['corrections_made'] = corrections
+        result['auto_corrected'] = len(corrections) > 0
+        return result
+
+    result['status'] = 'unknown'
+    result['detail'] = 'Estado ambiguo — no se pudo determinar GPU usada'
+    return result
+
+
+def _force_ollama_to_nvidia(
+    nvidia_gpu: dict[str, Any],
+    loaded_models: list[str],
+) -> list[dict[str, str]]:
+    """Force Ollama to use the NVIDIA GPU by setting env and reloading models."""
+    corrections: list[dict[str, str]] = []
+    nvidia_index = nvidia_gpu.get('index', 0)
+
+    # Set CUDA_VISIBLE_DEVICES
+    old_cuda = os.environ.get('CUDA_VISIBLE_DEVICES', '')
+    os.environ['CUDA_VISIBLE_DEVICES'] = str(nvidia_index)
+    corrections.append({
+        'action': 'set_cuda_visible_devices',
+        'detail': f'CUDA_VISIBLE_DEVICES: {old_cuda!r} → {nvidia_index!r}',
+    })
+    logger.info('gpu_routing: set CUDA_VISIBLE_DEVICES=%s (was %r)', nvidia_index, old_cuda)
+
+    # Reload each model so Ollama picks up the new GPU config
+    for model_name in loaded_models:
+        try:
+            # Stop the model
+            subprocess.run(
+                ['ollama', 'stop', model_name],
+                capture_output=True, timeout=30,
+            )
+            # Reload it (this triggers GPU re-detection by Ollama)
+            subprocess.run(
+                ['ollama', 'run', model_name, '--keepalive', '5m'],
+                capture_output=True, timeout=60,
+                input=b'/bye\n',
+            )
+            corrections.append({
+                'action': 'reload_model_on_nvidia',
+                'detail': f'Modelo {model_name} recargado para usar NVIDIA GPU',
+            })
+            logger.info('gpu_routing: reloaded %s on NVIDIA GPU %s', model_name, nvidia_index)
+        except Exception as exc:
+            corrections.append({
+                'action': 'reload_model_failed',
+                'detail': f'No se pudo recargar {model_name}: {exc}',
+            })
+            logger.warning('gpu_routing: failed to reload %s: %s', model_name, exc)
+
+    return corrections
+
+
 def startup_gpu_health_check() -> dict[str, Any]:
     """Run at bootstrap to verify GPU health, correct GPU config, and log findings."""
     report = gpu_metacognition_report()

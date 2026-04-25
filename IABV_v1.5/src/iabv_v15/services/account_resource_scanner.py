@@ -382,12 +382,27 @@ def format_account_resource_report(scan: dict[str, Any]) -> str:
     else:
         lines.append(f'  Cloudflare Tunnel: {tun.get("reason", "no disponible")}')
 
-    # Browser accounts
+    # Browser accounts — ALL accounts, grouped by browser
     browser = scan.get('browser_accounts', {})
     if browser.get('count', 0) > 0:
         lines.append(f'  Cuentas de navegador: {browser["count"]}')
-        for acc in browser.get('accounts', [])[:5]:
-            lines.append(f'    - [{acc.get("browser", "?")}] {acc.get("email", "?")}')
+        # Group by browser
+        by_browser: dict[str, list[dict[str, str]]] = {}
+        for acc in browser.get('accounts', []):
+            b = acc.get('browser', '?')
+            by_browser.setdefault(b, []).append(acc)
+        for browser_name, accs in by_browser.items():
+            lines.append(f'    [{browser_name}] ({len(accs)} cuentas):')
+            for acc in accs:
+                name = acc.get('full_name', '')
+                profile = acc.get('profile', '')
+                email = acc.get('email', '?')
+                label = f'{email}'
+                if name:
+                    label = f'{name} <{email}>'
+                if profile and profile != 'Default':
+                    label += f' (perfil: {profile})'
+                lines.append(f'      - {label}')
     else:
         lines.append('  Cuentas de navegador: ninguna detectada')
 

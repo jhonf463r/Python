@@ -474,6 +474,36 @@ def execute_auto_corrections(
             backlog_task = _add_backlog_task_for_gap(deduction, context)
             backlog_tasks_created.append(backlog_task)
 
+    # GPU routing verification — ensure Ollama is on NVIDIA, not Intel/CPU
+    try:
+        from iabv_v15.services.gpu_metacognition import verify_ollama_gpu_usage
+        gpu_routing = verify_ollama_gpu_usage()
+        gpu_status = gpu_routing.get('status', '')
+        if gpu_status in ('suboptimal', 'uncertain'):
+            # Auto-corrected — Ollama was on wrong GPU
+            for corr in gpu_routing.get('corrections_made', []):
+                corrections_applied.append({
+                    'action': corr.get('action', 'gpu_routing'),
+                    'status': 'corrected',
+                    'detail': corr.get('detail', ''),
+                })
+            logger.info('gpu_routing auto-corrected: %s', gpu_routing.get('detail', ''))
+        elif gpu_status == 'optimal':
+            corrections_applied.append({
+                'action': 'gpu_routing_verified',
+                'status': 'corrected',
+                'detail': gpu_routing.get('detail', 'Ollama en NVIDIA — óptimo'),
+            })
+        elif gpu_status == 'idle':
+            for corr in gpu_routing.get('corrections_made', []):
+                corrections_applied.append({
+                    'action': corr.get('action', 'gpu_pre_config'),
+                    'status': 'corrected',
+                    'detail': corr.get('detail', ''),
+                })
+    except Exception as exc:
+        logger.debug('gpu_routing check failed: %s', exc)
+
     # Generate missing secrets request if there are missing secrets
     secrets_result = _generate_secret_request({}, context)
     if secrets_result.get('status') == 'needs_user':

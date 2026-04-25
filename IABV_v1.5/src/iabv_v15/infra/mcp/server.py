@@ -1781,6 +1781,21 @@ class IABVMCPServer:
             return _to_jsonable(limits_awareness_scan(workspace=ws))
 
         # ------------------------------------------------------------
+        # gpu_routing — verificar y corregir GPU usada por Ollama
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def verify_gpu_routing_tool() -> dict[str, Any]:
+            """Verificar y corregir qué GPU está usando Ollama.
+
+            Cross-valida nvidia-smi vs ollama ps para determinar si Ollama
+            está en la NVIDIA (correcto) o en Intel/CPU (incorrecto).
+            Si está mal, reconfigura CUDA_VISIBLE_DEVICES y recarga el modelo.
+            """
+            from iabv_v15.services.gpu_metacognition import verify_ollama_gpu_usage
+            return _to_jsonable(verify_ollama_gpu_usage())
+
+        # ------------------------------------------------------------
         # auto_correction — correcciones autónomas + deducción de herramientas
         # ------------------------------------------------------------
 
