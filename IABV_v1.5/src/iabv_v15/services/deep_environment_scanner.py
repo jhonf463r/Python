@@ -561,14 +561,26 @@ def deep_environment_scan() -> dict[str, Any]:
             report[key] = {'error': str(exc)[:200]}
             scan_errors.append(f'{key}: {exc!r}'[:100])
 
+    def _safe_list(key: str) -> list:
+        """Return scan result as list, or [] if it's an error dict."""
+        val = report.get(key, [])
+        return val if isinstance(val, list) else []
+
+    def _safe_dict(key: str) -> dict:
+        """Return scan result as dict, or {} if it failed."""
+        val = report.get(key, {})
+        if not isinstance(val, dict) or 'error' in val:
+            return {}
+        return val
+
     # Summary
-    usb_count = len(report.get('usb_devices', []))
-    printer_count = len(report.get('printers', []))
-    audio_count = len(report.get('audio_devices', []))
-    bt_paired = len((report.get('bluetooth', {}) or {}).get('paired_devices', []))
-    monitor_count = len([m for m in report.get('monitors_deep', []) if m.get('source') != 'video_controller'])
-    net_count = len(report.get('network_adapters', []))
-    service_count = (report.get('os_services', {}) or {}).get('total_running', 0)
+    usb_count = len(_safe_list('usb_devices'))
+    printer_count = len(_safe_list('printers'))
+    audio_count = len(_safe_list('audio_devices'))
+    bt_paired = len(_safe_dict('bluetooth').get('paired_devices', []))
+    monitor_count = len([m for m in _safe_list('monitors_deep') if isinstance(m, dict) and m.get('source') != 'video_controller'])
+    net_count = len(_safe_list('network_adapters'))
+    service_count = _safe_dict('os_services').get('total_running', 0)
 
     report['summary'] = {
         'usb_devices': usb_count,
@@ -578,7 +590,7 @@ def deep_environment_scan() -> dict[str, Any]:
         'monitors': monitor_count,
         'network_adapters': net_count,
         'services_running': service_count,
-        'bios_available': bool((report.get('bios_firmware', {}) or {}).get('available')),
+        'bios_available': bool(_safe_dict('bios_firmware').get('available')),
         'scan_errors': len(scan_errors),
         'coverage_estimate': _estimate_coverage(report),
     }
@@ -591,31 +603,39 @@ def deep_environment_scan() -> dict[str, Any]:
 def _estimate_coverage(report: dict[str, Any]) -> float:
     """Estimate what percentage of the environment was successfully scanned."""
     total = 9  # 9 scan categories
-    successful = sum(
-        1 for key in ['bios_firmware', 'usb_devices', 'printers', 'audio_devices',
-                       'bluetooth', 'monitors_deep', 'network_adapters', 'security', 'os_services']
-        if key in report and not isinstance(report[key], dict) or
-        (isinstance(report[key], dict) and 'error' not in report[key])
-    )
-    # Also count non-empty results
+
+    def _has_data(key: str) -> bool:
+        val = report.get(key)
+        if val is None:
+            return False
+        if isinstance(val, dict) and 'error' in val:
+            return False
+        if isinstance(val, list) and len(val) == 0:
+            return False
+        return True
+
     non_empty = 0
-    if report.get('usb_devices'):
+    if isinstance(report.get('usb_devices'), list) and report['usb_devices']:
         non_empty += 1
-    if report.get('printers'):
+    if isinstance(report.get('printers'), list) and report['printers']:
         non_empty += 1
-    if report.get('audio_devices'):
+    if isinstance(report.get('audio_devices'), list) and report['audio_devices']:
         non_empty += 1
-    if (report.get('bluetooth', {}) or {}).get('adapter_present'):
+    bt = report.get('bluetooth')
+    if isinstance(bt, dict) and 'error' not in bt and bt.get('adapter_present'):
         non_empty += 1
-    if report.get('monitors_deep'):
+    if isinstance(report.get('monitors_deep'), list) and report['monitors_deep']:
         non_empty += 1
-    if report.get('network_adapters'):
+    if isinstance(report.get('network_adapters'), list) and report['network_adapters']:
         non_empty += 1
-    if (report.get('bios_firmware', {}) or {}).get('available'):
+    bios = report.get('bios_firmware')
+    if isinstance(bios, dict) and 'error' not in bios and bios.get('available'):
         non_empty += 1
-    if (report.get('security', {}) or {}).get('firewall'):
+    sec = report.get('security')
+    if isinstance(sec, dict) and 'error' not in sec and sec.get('firewall'):
         non_empty += 1
-    if (report.get('os_services', {}) or {}).get('total_running', 0) > 0:
+    svc = report.get('os_services')
+    if isinstance(svc, dict) and 'error' not in svc and svc.get('total_running', 0) > 0:
         non_empty += 1
 
     return round(non_empty / max(total, 1), 2)
