@@ -948,8 +948,9 @@ class IntentUnderstandingService:
         intent, hypotheses = self.classify(request)
         intent = intent.model_copy(update={'hypotheses': hypotheses})
 
-        # ── Cross-turn learning: if previous turn was fallback and this
-        #    turn resolved to a specific intent, teach the previous input ──
+        # ── Cross-turn learning: ONLY when the previous turn was a
+        #    fallback (general.assistance) or low-confidence, and THIS
+        #    turn resolved to a specific intent with high confidence ──
         if (
             intent.intent_key != 'general.assistance'
             and intent.confidence >= 0.7
@@ -958,6 +959,14 @@ class IntentUnderstandingService:
             for prev_msg in reversed(conversation_history[-3:]):
                 prev_role = str(prev_msg.get('role', '')).strip().lower()
                 if prev_role in ('user', 'human'):
+                    prev_intent = str(prev_msg.get('intent_key', '')).strip()
+                    prev_confidence = float(prev_msg.get('confidence', 1.0))
+                    was_fallback = (
+                        prev_intent == 'general.assistance'
+                        or prev_confidence < 0.65
+                    )
+                    if not was_fallback:
+                        break
                     prev_text = self._normalize(str(prev_msg.get('content', '')))
                     if prev_text and len(prev_text.split()) >= 3:
                         _intent_learning_layer.record(
