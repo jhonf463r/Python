@@ -716,9 +716,10 @@ def full_system_metacognition_report() -> dict[str, Any]:
             seed_initial_backlog, get_pending_tasks,
         )
         seed_initial_backlog()
+        _pending = get_pending_tasks()
         report['evolution_backlog'] = {
-            'pending_tasks': get_pending_tasks(),
-            'total_pending': len(get_pending_tasks()),
+            'pending_tasks': _pending,
+            'total_pending': len(_pending),
         }
     except Exception as exc:
         report['evolution_backlog'] = {'error': str(exc)}
