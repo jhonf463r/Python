@@ -5178,7 +5178,36 @@ class ControlCenterViewModel(QObject):
                     ).stdout.strip()
 
                     sections.append('== AUTO-UPDATE ==')
-                    if local_dirty:
+                    # Metacognition: detect if we're on a stale feature branch
+                    _stale_prefixes = ('devin/', 'iabv-auto/', 'fix/')
+                    _is_feature_branch = any(current_branch.startswith(p) for p in _stale_prefixes)
+                    if _is_feature_branch:
+                        # Check if the branch is stale (old commits, probably abandoned)
+                        _branch_age = _sp.run(
+                            ['git', '-C', ws, 'log', '-1', '--format=%cr'],
+                            capture_output=True, text=True, timeout=5,
+                        ).stdout.strip()
+                        _dirty_count = len(local_dirty.splitlines()) if local_dirty else 0
+                        sections.append(f'ALERTA METACOGNITIVA: Estoy en rama {current_branch}')
+                        sections.append(f'  Ultimo commit: {_branch_age}, archivos modificados: {_dirty_count}')
+                        sections.append('  Esta rama probablemente es obsoleta — cambiando a main para auto-analisis limpio')
+                        # Auto-switch to main for clean analysis
+                        _sp.run(
+                            ['git', '-C', ws, 'checkout', 'main'],
+                            capture_output=True, text=True, timeout=10,
+                        )
+                        _sp.run(
+                            ['git', '-C', ws, 'reset', '--hard', 'origin/main'],
+                            capture_output=True, text=True, timeout=15,
+                        )
+                        current_branch = 'main'
+                        local_dirty = ''
+                        new_head = _sp.run(
+                            ['git', '-C', ws, 'rev-parse', '--short', 'HEAD'],
+                            capture_output=True, text=True, timeout=5,
+                        ).stdout.strip()
+                        sections.append(f'  Cambie a main exitosamente: HEAD={new_head}')
+                    elif local_dirty:
                         sections.append('Cambios locales detectados — omitiendo reset para no perder trabajo')
                         sections.append(f'  Branch: {current_branch}, archivos modificados: {len(local_dirty.splitlines())}')
                     elif current_branch in ('main', 'master'):
@@ -5428,6 +5457,50 @@ class ControlCenterViewModel(QObject):
                     except Exception as cleanup_exc:
                         sections.append(f'Error en limpieza de ramas: {cleanup_exc}')
 
+                # 4.5 Holistic metacognition: cross-reference ALL sources
+                try:
+                    from iabv_v15.services.self_code_analysis import holistic_metacognition_scan
+                    _monitor_count = 1
+                    try:
+                        from iabv_v15.services.tools.ui_execution_runner import UIExecutionRunner
+                        _runner = UIExecutionRunner(workspace_root=ws)
+                        _monitors = _runner.detect_all_monitors()
+                        _monitor_count = len(_monitors) if _monitors else 1
+                    except Exception:
+                        pass
+                    holistic = holistic_metacognition_scan(
+                        git_state={
+                            'branch': current_branch,
+                            'dirty_count': len(local_dirty.splitlines()) if local_dirty else 0,
+                        },
+                        gpu_state=gpu if 'gpu' in locals() else None,
+                        test_state=tests,
+                        version_state=version_scan,
+                        branch_state=branches,
+                        stalled_sessions=stalled_items if 'stalled_items' in locals() else None,
+                        monitor_count=_monitor_count,
+                        workspace=ws,
+                    )
+                    sections.append('')
+                    sections.append('== CRUCE DE FUENTES DE VERDAD ==')
+                    sections.append(f"Fuentes cruzadas: {holistic['cross_validation_count']}")
+                    sections.append(f"Confianza del escaneo: {holistic['confidence']}")
+                    if holistic['deductions']:
+                        sections.append(f"Deducciones ({holistic['deduction_count']}):")
+                        for d in holistic['deductions']:
+                            icon = {'critical': 'CRITICO', 'warning': 'ALERTA', 'info': 'INFO'}.get(d['severity'], '?')
+                            sections.append(f"  [{icon}] {d['area']}: {d['finding']}")
+                            if d.get('action') and d['action'] != 'none':
+                                sections.append(f"    Accion: {d['action']}")
+                    else:
+                        sections.append('Sin deducciones — todas las fuentes son coherentes.')
+                    if holistic['blind_spots']:
+                        sections.append(f"Blind spots ({holistic['blind_spot_count']}):")
+                        for bs in holistic['blind_spots']:
+                            sections.append(f"  [CIEGO] {bs}")
+                except Exception as hol_exc:
+                    sections.append(f'Error en cruce de fuentes: {hol_exc}')
+
                 # 5. Veredicto final con transparencia total
                 sections.append('')
                 sections.append('== VEREDICTO ==')
@@ -5462,6 +5535,7 @@ class ControlCenterViewModel(QObject):
                 # 6. Metacognition decision log — persist what was learned
                 import json as _json
                 from datetime import datetime as _dt, timezone as _tz
+                _holistic_summary = holistic if 'holistic' in locals() else {}
                 decision_log = {
                     'timestamp': _dt.now(_tz.utc).isoformat(),
                     'analysis_time_seconds': analysis_time,
@@ -5475,6 +5549,10 @@ class ControlCenterViewModel(QObject):
                     'estado': 'NECESITA ATENCION' if issues_found else 'VERIFICADO',
                     'tools_available': version_scan.get('available_count', 0),
                     'tools_unavailable': version_scan.get('unavailable_tools', []),
+                    'holistic_deductions': _holistic_summary.get('deductions', []),
+                    'holistic_blind_spots': _holistic_summary.get('blind_spots', []),
+                    'holistic_confidence': _holistic_summary.get('confidence', 0),
+                    'cross_validations_count': _holistic_summary.get('cross_validation_count', 0),
                 }
                 try:
                     import os as _os

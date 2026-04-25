@@ -33,3 +33,6 @@ data/**/*.sqlite
 
 # Metacognition runtime logs (local only)
 src/data/metacognition/
+
+# Test run artifacts (generated at runtime)
+data/test_runs/

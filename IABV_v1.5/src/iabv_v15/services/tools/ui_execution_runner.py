@@ -560,6 +560,93 @@ class UIExecutionRunner:
             return int(self._user32.GetSystemMetrics(0)), int(self._user32.GetSystemMetrics(1))
         return 0, 0
 
+    def detect_all_monitors(self) -> list[dict[str, Any]]:
+        """Detect all connected monitors and their geometry.
+
+        Returns a list of dicts with keys: index, x, y, width, height, is_primary.
+        This enables metacognitive awareness of the full display environment,
+        preventing blind spots when windows land on secondary monitors.
+        """
+        monitors: list[dict[str, Any]] = []
+        if self._user32 is None:
+            return monitors
+        try:
+            # SM_CMONITORS = 80 (number of monitors)
+            monitor_count = int(self._user32.GetSystemMetrics(80))
+            if monitor_count <= 1:
+                w, h = self._screen_size()
+                if w > 0:
+                    monitors.append({'index': 0, 'x': 0, 'y': 0, 'width': w, 'height': h, 'is_primary': True})
+                return monitors
+            # Use EnumDisplayMonitors for full geometry
+            import ctypes
+            from ctypes import wintypes
+            MONITORENUMPROC = ctypes.WINFUNCTYPE(
+                ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p,
+                ctypes.POINTER(wintypes.RECT), ctypes.c_void_p,
+            )
+            primary_w, primary_h = self._screen_size()
+
+            def _enum_callback(hMonitor, hdcMonitor, lprcMonitor, dwData):
+                rect = lprcMonitor.contents
+                x, y = int(rect.left), int(rect.top)
+                w = int(rect.right) - x
+                h = int(rect.bottom) - y
+                is_primary = (x == 0 and y == 0 and w == primary_w and h == primary_h)
+                monitors.append({
+                    'index': len(monitors),
+                    'x': x, 'y': y,
+                    'width': w, 'height': h,
+                    'is_primary': is_primary,
+                })
+                return 1
+
+            self._user32.EnumDisplayMonitors(None, None, MONITORENUMPROC(_enum_callback), 0)
+        except Exception:
+            # Fallback: report primary monitor only
+            w, h = self._screen_size()
+            if w > 0:
+                monitors.append({'index': 0, 'x': 0, 'y': 0, 'width': w, 'height': h, 'is_primary': True})
+        return monitors
+
+    def ensure_window_on_primary_monitor(self, hwnd: int) -> bool:
+        """Move a window to the primary monitor if it's on a secondary one.
+
+        Prevents the cognitive blind spot where autonomous operations
+        interact with windows the system can't properly see because
+        they're on a secondary monitor.
+        """
+        if self._user32 is None:
+            return False
+        try:
+            monitors = self.detect_all_monitors()
+            if len(monitors) <= 1:
+                return True  # Only one monitor, nothing to do
+            import ctypes
+            from ctypes import wintypes
+            rect = wintypes.RECT()
+            self._user32.GetWindowRect(hwnd, ctypes.byref(rect))
+            win_x, win_y = int(rect.left), int(rect.top)
+            primary = next((m for m in monitors if m['is_primary']), monitors[0])
+            # Check if window center is within primary monitor bounds
+            win_cx = win_x + (int(rect.right) - win_x) // 2
+            win_cy = win_y + (int(rect.bottom) - win_y) // 2
+            in_primary = (
+                primary['x'] <= win_cx < primary['x'] + primary['width']
+                and primary['y'] <= win_cy < primary['y'] + primary['height']
+            )
+            if not in_primary:
+                # Move window to primary monitor center
+                win_w = int(rect.right) - win_x
+                win_h = int(rect.bottom) - win_y
+                new_x = primary['x'] + (primary['width'] - win_w) // 2
+                new_y = primary['y'] + (primary['height'] - win_h) // 2
+                self._user32.MoveWindow(hwnd, new_x, new_y, win_w, win_h, True)
+                return True
+            return True
+        except Exception:
+            return False
+
     def read_clipboard_text(self) -> str:
         try:  # pragma: no cover - live app branch
             from PySide6.QtGui import QGuiApplication
@@ -1162,11 +1249,18 @@ class UIExecutionRunner:
         focus from the human. Callers that legitimately need the user's
         attention (login required, manual validation) must opt in with
         ``bring_to_foreground=True`` to trigger ``SetForegroundWindow``.
+
+        Metacognition: if the window is on a secondary monitor, it is
+        automatically moved to the primary monitor before interaction
+        to prevent the cognitive blind spot of operating on a screen
+        the system cannot properly see.
         """
         hwnd = self._find_window(title)
         if hwnd is None or self._user32 is None:
             return False
         try:
+            # Ensure window is on the primary monitor before interacting
+            self.ensure_window_on_primary_monitor(hwnd)
             if bring_to_foreground:
                 self._user32.ShowWindow(hwnd, self._SW_SHOW)
                 self._user32.SetForegroundWindow(hwnd)
