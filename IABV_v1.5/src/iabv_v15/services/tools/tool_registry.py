@@ -76,7 +76,12 @@ class ToolRegistry:
                     return card
                 return card.model_copy(update={'available': cached})
         adapter = self.adapters.get(card.adapter_key)
-        available = bool(adapter and adapter.is_available(card))
+        if force and hasattr(adapter, 'invalidate_multi_source_cache'):
+            adapter.invalidate_multi_source_cache(card.tool_id)
+        try:
+            available = bool(adapter and adapter.is_available(card, force=force))
+        except TypeError:
+            available = bool(adapter and adapter.is_available(card))
         now = datetime.now(timezone.utc)
         self._availability_cache[card.tool_id] = (available, now, metadata_signature)
         if card.available == available and str(card.metadata.get('updated_at_utc') or '').strip():
