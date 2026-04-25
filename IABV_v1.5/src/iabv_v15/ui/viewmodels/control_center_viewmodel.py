@@ -5184,7 +5184,7 @@ class ControlCenterViewModel(QObject):
                     elif current_branch in ('main', 'master'):
                         # Safe to reset: on main, no local changes
                         reset_r = _sp.run(
-                            ['git', '-C', ws, 'reset', '--hard', 'origin/main'],
+                            ['git', '-C', ws, 'reset', '--hard', f'origin/{current_branch}'],
                             capture_output=True, text=True, timeout=15,
                         )
                         new_head = _sp.run(
@@ -5193,7 +5193,7 @@ class ControlCenterViewModel(QObject):
                         ).stdout.strip()
                         if reset_r.returncode == 0:
                             if old_head == new_head:
-                                sections.append('Ya estoy actualizado (sin cambios nuevos en origin/main)')
+                                sections.append(f'Ya estoy actualizado (sin cambios nuevos en origin/{current_branch})')
                             else:
                                 sections.append(f'Me actualice exitosamente: {old_head} -> {new_head}')
                         else:
@@ -5456,7 +5456,7 @@ class ControlCenterViewModel(QObject):
                 else:
                     sections.append('No se encontraron problemas.')
                     sections.append('Estado: codigo verificado, listo para produccion.')
-                analysis_time = report.get('elapsed_seconds', '?')
+                analysis_time = report.get('elapsed_seconds', '?') if 'report' in locals() else '?'
                 sections.append(f"Tiempo de analisis: {analysis_time}s")
 
                 # 6. Metacognition decision log — persist what was learned
