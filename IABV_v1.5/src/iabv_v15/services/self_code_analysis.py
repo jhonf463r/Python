@@ -971,19 +971,21 @@ def holistic_metacognition_scan(
             lines = log_path.read_text(encoding='utf-8').strip().splitlines()
             prev = json.loads(lines[-2])
             curr_issues = len(deductions)
-            prev_issues = len(prev.get('issues_found', []))
+            # Compare holistic deductions with holistic deductions (not veredicto issues_found)
+            prev_holistic = prev.get('holistic_deductions', [])
+            prev_issues = len(prev_holistic) if isinstance(prev_holistic, list) else 0
             if curr_issues > prev_issues:
                 deductions.append({
                     'severity': 'info',
                     'area': 'trend',
-                    'finding': f'Issues aumentaron: {prev_issues} → {curr_issues} desde ultimo analisis',
+                    'finding': f'Deducciones holísticas aumentaron: {prev_issues} → {curr_issues} desde ultimo analisis',
                     'action': 'investigate_regression',
                 })
             elif curr_issues < prev_issues:
                 deductions.append({
                     'severity': 'info',
                     'area': 'trend',
-                    'finding': f'Issues disminuyeron: {prev_issues} → {curr_issues} — mejora confirmada',
+                    'finding': f'Deducciones holísticas disminuyeron: {prev_issues} → {curr_issues} — mejora confirmada',
                     'action': 'none',
                 })
         except Exception:
