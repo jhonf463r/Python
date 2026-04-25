@@ -5359,14 +5359,16 @@ class ControlCenterViewModel(QObject):
                             sections.append(f"Mergee {len(merge_result['merged'])} ramas limpiamente:")
                             for mb in merge_result['merged'][:10]:
                                 sections.append(f"  + {mb}")
-                        if merge_result.get('merged_with_theirs'):
-                            sections.append(f"Mergee {len(merge_result['merged_with_theirs'])} ramas resolviendo conflictos (version mas reciente gana):")
-                            for mb in merge_result['merged_with_theirs'][:10]:
+                        if merge_result.get('merged_with_ours'):
+                            sections.append(f"Mergee {len(merge_result['merged_with_ours'])} ramas resolviendo conflictos (conservando codigo actual):")
+                            for mb in merge_result['merged_with_ours'][:10]:
                                 sections.append(f"  ~ {mb}")
                         if merge_result.get('failed'):
                             sections.append(f"{len(merge_result['failed'])} ramas que no se pudieron mergear:")
                             for fb in merge_result['failed'][:5]:
                                 sections.append(f"  x {fb.get('branch', '?')}: {fb.get('reason', '?')[:80]}")
+                        if merge_result.get('already_merged_count', 0) > 0:
+                            sections.append(f"{merge_result['already_merged_count']} ramas ya integradas (no re-mergeadas)")
                         if merge_result.get('skipped_count', 0) > 0:
                             sections.append(f"{merge_result['skipped_count']} ramas omitidas (prefijo no seguro o tocan capas cerradas)")
                         sections.append(f"Resumen merge: {merge_result.get('summary', 'n/a')}")
@@ -5374,7 +5376,7 @@ class ControlCenterViewModel(QObject):
                         sections.append(f'Error en auto-merge: {merge_exc}')
 
                 # 4. Re-verificacion si hubo cambios
-                if branch_count > 5 and (merge_result.get('merged') or merge_result.get('merged_with_theirs')):
+                if branch_count > 5 and (merge_result.get('merged') or merge_result.get('merged_with_ours')):
                     sections.append('')
                     sections.append('== RE-VERIFICACION POST-MERGE ==')
                     try:

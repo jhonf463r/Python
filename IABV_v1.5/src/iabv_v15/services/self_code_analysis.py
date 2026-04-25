@@ -483,8 +483,11 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
     """Attempt to merge safe branches (devin/*, iabv-auto/*) into current branch.
 
     Per AGENTS.md, auto-merge is allowed for devin/* and iabv-auto/* branches.
-    Strategy: first try clean merge; if conflicts, retry with -X theirs
-    (take the branch's version — the most recent changes win).
+    Strategy: first try clean merge; if conflicts, retry with -X ours
+    (keep current branch's code intact — it has the latest fixes).
+    Using -X ours is correct because the current working branch is the
+    most recent, and the branches being merged are older feature branches.
+    -X theirs would overwrite our latest handlers/fixes with old code.
     Only skips branches that touch closed layers P1-P4 contracts.
     """
     ws = workspace or _default_workspace()
@@ -494,14 +497,24 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
     branches = scan_unmerged_branches(ws)
     safe_prefixes = ('origin/devin/', 'origin/iabv-auto/')
     merged: list[str] = []
-    merged_with_theirs: list[str] = []
+    merged_with_ours: list[str] = []
     failed: list[dict[str, str]] = []
     skipped: list[str] = []
+    already_merged: list[str] = []
+
+    # Get list of branches already merged into HEAD to skip re-merging
+    already_in_head_raw = _run_cmd(['git', '-C', ws, 'branch', '-r', '--merged', 'HEAD'])
+    already_in_head = {l.strip() for l in already_in_head_raw.splitlines() if l.strip() and '->' not in l}
 
     for b_info in branches:
         branch = b_info.get('branch', '')
         if not any(branch.startswith(p) for p in safe_prefixes):
             skipped.append(branch)
+            continue
+
+        # Skip branches already merged into HEAD (avoids destructive re-merge)
+        if branch in already_in_head:
+            already_merged.append(branch)
             continue
 
         # Check if branch touches closed-layer contracts
@@ -525,18 +538,18 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
                 merged.append(branch)
                 logger.info('auto_merge: merged %s successfully', branch)
             else:
-                # Conflict — abort and retry with -X theirs (take most recent)
+                # Conflict — abort and retry with -X ours (keep current code)
                 subprocess.run(
                     ['git', '-C', ws, 'merge', '--abort'],
                     capture_output=True, timeout=10,
                 )
                 result2 = subprocess.run(
-                    ['git', '-C', ws, 'merge', '--no-edit', '-X', 'theirs', branch],
+                    ['git', '-C', ws, 'merge', '--no-edit', '-X', 'ours', branch],
                     capture_output=True, text=True, timeout=30,
                 )
                 if result2.returncode == 0:
-                    merged_with_theirs.append(branch)
-                    logger.info('auto_merge: merged %s with -X theirs', branch)
+                    merged_with_ours.append(branch)
+                    logger.info('auto_merge: merged %s with -X ours (kept current code)', branch)
                 else:
                     subprocess.run(
                         ['git', '-C', ws, 'merge', '--abort'],
@@ -544,9 +557,9 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
                     )
                     failed.append({
                         'branch': branch,
-                        'reason': result2.stderr.strip()[:200] or 'merge failed even with -X theirs',
+                        'reason': result2.stderr.strip()[:200] or 'merge failed even with -X ours',
                     })
-                    logger.warning('auto_merge: failed %s even with -X theirs', branch)
+                    logger.warning('auto_merge: failed %s even with -X ours', branch)
         except Exception as exc:
             try:
                 subprocess.run(['git', '-C', ws, 'merge', '--abort'], capture_output=True, timeout=10)
@@ -554,19 +567,30 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
                 pass
             failed.append({'branch': branch, 'reason': str(exc)})
 
-    total_merged = len(merged) + len(merged_with_theirs)
+    total_merged = len(merged) + len(merged_with_ours)
+    parts = []
+    if total_merged > 0:
+        parts.append(f'{total_merged} merged ({len(merged)} clean, {len(merged_with_ours)} con conflictos resueltos conservando codigo actual)')
+    if already_merged:
+        parts.append(f'{len(already_merged)} ya integradas')
+    if failed:
+        parts.append(f'{len(failed)} failed')
+    if skipped:
+        parts.append(f'{len(skipped)} skipped')
     return {
         'ok': len(failed) == 0,
         'merged': merged,
         'merged_count': len(merged),
-        'merged_with_theirs': merged_with_theirs,
-        'merged_with_theirs_count': len(merged_with_theirs),
+        'merged_with_ours': merged_with_ours,
+        'merged_with_ours_count': len(merged_with_ours),
         'total_merged': total_merged,
+        'already_merged': already_merged,
+        'already_merged_count': len(already_merged),
         'failed': failed,
         'failed_count': len(failed),
         'skipped': skipped,
         'skipped_count': len(skipped),
-        'summary': f'{total_merged} merged ({len(merged)} clean, {len(merged_with_theirs)} con conflictos resueltos), {len(failed)} failed, {len(skipped)} skipped',
+        'summary': ', '.join(parts) if parts else 'nada que mergear',
     }
 
 
