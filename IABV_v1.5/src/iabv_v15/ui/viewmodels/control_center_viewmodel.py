@@ -5330,6 +5330,19 @@ class ControlCenterViewModel(QObject):
                 except Exception as exc:
                     sections.append(f'Error en gpu_metacognition: {exc}')
 
+                # 2.3 Tool version monitoring
+                version_scan: dict = {}
+                try:
+                    from iabv_v15.services.tools.tool_version_monitor import (
+                        full_version_scan, format_version_report, persist_version_log,
+                    )
+                    version_scan = full_version_scan()
+                    sections.append('')
+                    sections.append(format_version_report(version_scan))
+                    persist_version_log(ws, version_scan)
+                except Exception as exc:
+                    sections.append(f'Error en version monitor: {exc}')
+
                 # 2.5 Diagnostico de trabajo en vivo y consultas externas
                 sections.append('')
                 sections.append('== DIAGNOSTICO DE TRABAJO EN VIVO ==')
@@ -5460,6 +5473,8 @@ class ControlCenterViewModel(QObject):
                     'mcp_tools_count': mcp.get('tool_count', 0),
                     'issues_found': issues_found,
                     'estado': 'NECESITA ATENCION' if issues_found else 'VERIFICADO',
+                    'tools_available': version_scan.get('available_count', 0),
+                    'tools_unavailable': version_scan.get('unavailable_tools', []),
                 }
                 try:
                     import os as _os
