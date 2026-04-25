@@ -1176,7 +1176,13 @@ class AppBootstrap:
         el probe de startup para que la confianza base suba por encima
         del minimo (0.26).  Solo toca cards cuyo campo era ``None``.
         Diagnostica por que cada tool faltante no esta disponible.
+
+        Los probes de disponibilidad se ejecutan en paralelo usando un
+        ``ThreadPoolExecutor`` para reducir el tiempo de arranque cuando
+        hay adapters que hacen I/O de red (Ollama, Devin API, GitHub API)
+        o enumeracion de procesos (ExternalAssistantToolAdapter).
         """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
         from datetime import datetime, timezone
 
         cards = self.tool_registry.list_cards()
@@ -1202,25 +1208,63 @@ class AppBootstrap:
             name='iabv-gpu-startup-health',
             daemon=True,
         ).start()
+
+        # --- Parallel tool availability probes ---
+        # Group cards by adapter_key so that cards sharing the same adapter
+        # (e.g. multiple ExternalAssistant cards) run sequentially within
+        # their group but different adapter groups run in parallel.  This
+        # avoids concurrent mutation of per-adapter state while still
+        # parallelising the expensive I/O (HTTP pings, process enumeration).
+        from collections import defaultdict
+        adapter_groups: dict[str, list] = defaultdict(list)
+        for card in cards:
+            adapter_groups[card.adapter_key].append(card)
+
+        results: dict[str, bool] = {}
+        refreshed_cards: dict[str, Any] = {}
+
+        def _probe_group(group_cards: list) -> list[tuple[str, bool, Any]]:
+            out: list[tuple[str, bool, Any]] = []
+            for c in group_cards:
+                refreshed = self.tool_registry.refresh_card(c, force=True)
+                out.append((refreshed.tool_id, refreshed.available, refreshed))
+            return out
+
+        max_workers = min(len(adapter_groups), 8)
+        with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix='iabv-tool-probe') as pool:
+            futures = {
+                pool.submit(_probe_group, group_cards): adapter_key
+                for adapter_key, group_cards in adapter_groups.items()
+            }
+            for future in as_completed(futures):
+                try:
+                    for tool_id, available, refreshed in future.result():
+                        results[tool_id] = available
+                        refreshed_cards[tool_id] = refreshed
+                except Exception as exc:
+                    adapter_key = futures[future]
+                    logger.warning('tool_probe failed for adapter %s: %s', adapter_key, exc)
+
         ready = []
         missing = []
         now = datetime.now(timezone.utc)
         for card in cards:
-            refreshed = self.tool_registry.refresh_card(card, force=True)
-            if refreshed.available:
-                ready.append(refreshed.tool_id)
+            available = results.get(card.tool_id, False)
+            refreshed = refreshed_cards.get(card.tool_id, card)
+            if available:
+                ready.append(card.tool_id)
                 if refreshed.last_validated_at_utc is None:
                     stamped = refreshed.model_copy(
                         update={'last_validated_at_utc': now},
                     )
                     self.tool_registry.repository.save_card(stamped)
             else:
-                missing.append(refreshed.tool_id)
-                guidance = self._TOOL_INSTALL_GUIDANCE.get(refreshed.tool_id, '')
+                missing.append(card.tool_id)
+                guidance = self._TOOL_INSTALL_GUIDANCE.get(card.tool_id, '')
                 logger.info(
                     'tool_missing: %s — adapter=%s%s',
-                    refreshed.tool_id,
-                    refreshed.adapter_key,
+                    card.tool_id,
+                    refreshed.adapter_key if hasattr(refreshed, 'adapter_key') else card.adapter_key,
                     f' | fix: {guidance}' if guidance else '',
                 )
         logger.info(
