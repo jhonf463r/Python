@@ -5151,6 +5151,10 @@ class ControlCenterViewModel(QObject):
                 # and there are no local uncommitted changes. Otherwise uses
                 # git pull --ff-only which is safe (no data loss).
                 import subprocess as _sp
+                current_branch = 'main'
+                local_dirty = ''
+                old_head = ''
+                fetch_r = None
                 try:
                     # Abort any in-progress merge first
                     _sp.run(
@@ -5271,7 +5275,7 @@ class ControlCenterViewModel(QObject):
                         else:
                             sections.append(f'Branch {current_branch} diverge del remoto — conservando estado local')
                     # Report pruned branches if any
-                    pruned = [l for l in (fetch_r.stderr or '').splitlines() if '[deleted]' in l]
+                    pruned = [l for l in ((fetch_r.stderr if fetch_r else '') or '').splitlines() if '[deleted]' in l]
                     if pruned:
                         sections.append(f'  Ramas remotas limpiadas: {len(pruned)}')
                 except Exception as pull_exc:
