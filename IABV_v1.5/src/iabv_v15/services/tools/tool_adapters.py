@@ -372,25 +372,26 @@ class ToolAdapter:
                     prompt_text=prompt_text,
                     reingest_only=reingest_only,
                 )
-                # Fallback a clipboard si browser_dom falla por verificación de seguridad o falta de input
+                # Fallback cuando browser_dom falla
+                # METACOGNICION: NO abrir ventanas visibles durante consultas
+                # autonomas — el usuario no debe ver ventanas de Chrome
+                # apareciendo en su escritorio sin su intervencion.
+                # Solo registrar el fallo y retornar para que el sistema
+                # busque otra ruta (API, retry headless, etc.)
                 if not captured.get('response_captured') and browser_dom_capture:
                     fallback_error = str(captured.get('error_message') or '').strip().lower()
                     if fallback_error in {'browser_security_verification', 'browser_input_missing', 'browser_dom_capture_pending'}:
-                        clipboard_fallback = self.runner_factory(workspace_root).capture_response_from_app(
-                            launch_target=launch_target,
-                            title_hints=self._title_hints(card=card, task=task),
-                            prompt_text=prompt_text,
-                            launch_mode=launch_mode,
-                            submit_after_paste=bool(task.metadata.get('submit_prompt_after_paste', card.metadata.get('submit_prompt_after_paste', True))) and not reingest_only,
-                            launch_wait_seconds=float(task.metadata.get('launch_wait_seconds') or card.metadata.get('launch_wait_seconds') or 1.2),
-                            window_wait_seconds=float(task.metadata.get('window_wait_seconds') or card.metadata.get('window_wait_seconds') or 8.0),
-                            response_wait_seconds=float(task.metadata.get('response_wait_seconds') or card.metadata.get('response_wait_seconds') or 4.0),
-                            background_capture_mode='',  # Forzar modo clipboard
-                            reingest_only=reingest_only,
+                        import logging as _fb_log
+                        _fb_log.getLogger(__name__).info(
+                            'browser_dom_capture failed (%s) — skipping visible fallback to avoid interrupting user',
+                            fallback_error,
                         )
-                        if clipboard_fallback.get('response_captured'):
-                            captured = clipboard_fallback
-                            captured['capture_source'] = 'clipboard_fallback'
+                        captured['metadata'] = {
+                            **(captured.get('metadata') or {}),
+                            'visible_fallback_skipped': True,
+                            'skip_reason': 'autonomous queries must not open visible windows',
+                            'original_error': fallback_error,
+                        }
                 if captured.get('response_captured'):
                     capture_source = str(captured.get('capture_source') or response_capture_mode).strip().lower() or response_capture_mode
                     captured_text = str(captured.get('captured_text') or '').strip()
