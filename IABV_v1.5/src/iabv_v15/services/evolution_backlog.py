@@ -136,14 +136,20 @@ def deduce_priorities(
 ) -> list[dict[str, Any]]:
     """Re-prioritize backlog tasks based on current environment state.
 
-    Cross-references the pending tasks with live scan results to promote
-    tasks that address current problems and defer tasks for things that
-    are already working.
+    Cross-references the pending tasks with live scan results to:
+    1. Auto-complete tasks whose work is already done (evidence in scan)
+    2. Promote tasks that match current deductions or blind spots
+    3. Demote tasks for areas that are already working
     """
     backlog = load_backlog(workspace)
-    pending = [t for t in backlog if t.get('status') in ('pending', 'in_progress')]
     env = environment_scan or {}
     hol = holistic_scan or {}
+    env_summary = env.get('summary', {})
+
+    # --- Phase 1: Auto-complete tasks that are evidently resolved ---
+    _auto_complete_resolved(backlog, env_summary, hol)
+
+    pending = [t for t in backlog if t.get('status') in ('pending', 'in_progress')]
 
     deductions_areas = {d.get('area', '') for d in hol.get('deductions', [])}
     blind_spots = set(hol.get('blind_spots', []))
@@ -164,7 +170,6 @@ def deduce_priorities(
                 task['priority_reason'] = f'addresses blind spot: {area}'
 
         # Demote tasks for areas that are already working
-        env_summary = env.get('summary', {})
         if area == 'peripherals' and env_summary.get('usb_devices', 0) > 0:
             if task.get('priority') == 'critical':
                 task['priority'] = 'medium'
@@ -175,6 +180,53 @@ def deduce_priorities(
     priority_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
     pending.sort(key=lambda t: priority_order.get(t.get('priority', 'medium'), 2))
     return pending
+
+
+def _auto_complete_resolved(
+    backlog: list[dict[str, Any]],
+    env_summary: dict[str, Any],
+    holistic: dict[str, Any],
+) -> None:
+    """Auto-complete backlog tasks whose work is evidently done.
+
+    Checks each pending task against live scan evidence and marks it
+    completed if the problem it describes is already resolved.
+    """
+    now = _utc_now_iso()
+
+    for task in backlog:
+        if task.get('status') not in ('pending', 'in_progress'):
+            continue
+
+        title_lower = task.get('title', '').lower()
+        area = task.get('area', '')
+        resolved_reason = ''
+
+        # Deep environment scan task — resolved if coverage > 50%
+        if area == 'environment_discovery' and 'escaneo profundo' in title_lower:
+            coverage = env_summary.get('coverage_estimate', 0)
+            if coverage >= 0.5:
+                resolved_reason = f'cobertura del entorno: {coverage:.0%}'
+
+        # Holistic cross-validation with peripherals — resolved if scan has data
+        if area == 'metacognition' and 'cruce holístico' in title_lower and 'periféricos' in title_lower:
+            has_peripherals = (
+                env_summary.get('usb_devices', 0) > 0
+                or env_summary.get('printers', 0) > 0
+                or env_summary.get('audio_devices', 0) > 0
+            )
+            if has_peripherals:
+                resolved_reason = 'periféricos incluidos en escaneo profundo'
+
+        # Trend comparison fix — resolved (implemented in PR #175)
+        if 'trend comparison' in title_lower and 'holistic_deductions' in title_lower:
+            resolved_reason = 'implementado en PR #175'
+
+        if resolved_reason:
+            task['status'] = 'completed'
+            task['completed_at'] = now
+            task['completed_reason'] = f'auto-completada: {resolved_reason}'
+            logger.info('backlog auto-complete: "%s" — %s', task['title'][:60], resolved_reason)
 
 
 def seed_initial_backlog(workspace: str | None = None) -> list[dict[str, Any]]:
@@ -297,11 +349,25 @@ def seed_initial_backlog(workspace: str | None = None) -> list[dict[str, Any]]:
 
 def format_backlog_report(workspace: str | None = None) -> str:
     """Format the backlog for the auto-analysis report."""
-    pending = get_pending_tasks(workspace)
-    if not pending:
-        return '== BACKLOG DE EVOLUCION ==\nNo hay tareas pendientes.'
+    backlog = load_backlog(workspace)
+    pending = [t for t in backlog if t.get('status') in ('pending', 'in_progress')]
+    completed = [t for t in backlog if t.get('status') == 'completed']
 
     lines = ['== BACKLOG DE EVOLUCION ==']
+
+    if completed:
+        auto_completed = [t for t in completed if t.get('completed_reason', '').startswith('auto-completada')]
+        if auto_completed:
+            lines.append(f'Tareas auto-completadas esta sesion: {len(auto_completed)}')
+            for t in auto_completed:
+                lines.append(f'    [COMPLETADA] {t["title"][:70]}')
+                lines.append(f'      ({t.get("completed_reason", "")})')
+        lines.append(f'Total completadas: {len(completed)}')
+
+    if not pending:
+        lines.append('No hay tareas pendientes.')
+        return '\n'.join(lines)
+
     lines.append(f'Tareas pendientes: {len(pending)}')
 
     by_priority: dict[str, list[dict[str, Any]]] = {}
