@@ -3346,6 +3346,18 @@ class ControlCenterViewModel(QObject):
             return False
         if self._is_general_chat_message(message):
             return False
+        # Internal/system topics should never inherit a site hint from
+        # previous conversations — they are about the program itself.
+        internal_signals = (
+            'secreto', 'secretos', 'token', 'tokens', 'configuracion',
+            'configurar', 'entorno', 'variable', 'variables', 'bootstrap',
+            'analiza por que', 'analiza por qué', 'faltantes', 'faltante',
+            'auto-correccion', 'autocorreccion', 'auto correccion',
+            'tu codigo', 'tu código', 'tu algoritmo', 'tus algoritmos',
+            'tu sistema', 'tu configuracion', 'tu configuración',
+        )
+        if any(signal in normalized for signal in internal_signals):
+            return False
         follow_up_phrases = (
             'empecemos',
             'seguimos',
