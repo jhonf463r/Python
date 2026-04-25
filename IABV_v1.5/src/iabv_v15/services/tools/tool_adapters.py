@@ -101,7 +101,7 @@ class ToolAdapter:
             # simplemente seguimos con el mensaje de espera ya existente.
             return
 
-    def is_available(self, card: ToolCard) -> bool:
+    def is_available(self, card: ToolCard, *, force: bool = False) -> bool:
         launch_mode = str(card.metadata.get('launch_mode') or '').strip().lower()
         response_capture_mode = str(card.metadata.get('response_capture_mode') or '').strip().lower()
         direct_response_text = str(card.metadata.get('direct_response_text') or '').strip()
@@ -110,7 +110,7 @@ class ToolAdapter:
         if launch_mode == 'web_assisted':
             return bool(str(card.metadata.get('web_url') or '').strip())
         if launch_mode == 'desktop_app' and os.name == 'nt':
-            return self._multi_source_detect(card)
+            return self._multi_source_detect(card, force=force)
         if self._resolve_launch_target(card):
             return True
         return False
@@ -120,7 +120,12 @@ class ToolAdapter:
     _multi_source_cache: dict[str, tuple[float, bool]] = {}
     _MULTI_SOURCE_CACHE_TTL = 120.0  # seconds
 
-    def _multi_source_detect(self, card: ToolCard) -> bool:
+    @classmethod
+    def invalidate_multi_source_cache(cls, tool_id: str) -> None:
+        """Clear cached detection result for a specific tool."""
+        cls._multi_source_cache.pop(tool_id, None)
+
+    def _multi_source_detect(self, card: ToolCard, *, force: bool = False) -> bool:
         """Multi-source availability check for desktop apps.
 
         Never declares a tool missing based on a single source.  Checks
@@ -132,10 +137,12 @@ class ToolAdapter:
         Results are cached for 120 seconds to avoid redundant probes on
         each MCP session reconnect.
         """
-        cached = self._multi_source_cache.get(card.tool_id)
+        if not force:
+            cached = self._multi_source_cache.get(card.tool_id)
+            now = time.monotonic()
+            if cached and (now - cached[0]) < self._MULTI_SOURCE_CACHE_TTL:
+                return cached[1]
         now = time.monotonic()
-        if cached and (now - cached[0]) < self._MULTI_SOURCE_CACHE_TTL:
-            return cached[1]
 
         sources: dict[str, bool] = {}
         sources['filesystem'] = bool(self._resolve_launch_target(card))

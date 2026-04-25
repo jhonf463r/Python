@@ -78,11 +78,15 @@ class IntentLearningLayer:
             logger.debug('intent_learning: failed to load: %s', exc)
 
     def _save(self) -> None:
-        """Persist all learned patterns to JSONL file."""
+        """Persist all learned patterns to JSONL file (requires lock held)."""
+        self._save_snapshot(list(self._patterns.values()))
+
+    def _save_snapshot(self, records: list[dict[str, Any]]) -> None:
+        """Write a snapshot of records to disk (lock-free)."""
         path = _intent_learning_path()
         try:
             with open(path, 'w', encoding='utf-8') as f:
-                for record in self._patterns.values():
+                for record in records:
                     f.write(json.dumps(record, ensure_ascii=False) + '\n')
         except Exception as exc:
             logger.debug('intent_learning: failed to save: %s', exc)
@@ -174,7 +178,10 @@ class IntentLearningLayer:
                     'source': source,
                 }
 
-            self._save()
+            snapshot = list(self._patterns.values())
+
+        # Write outside the lock so lookup() isn't blocked by file I/O
+        self._save_snapshot(snapshot)
 
     def get_stats(self) -> dict[str, Any]:
         """Return statistics about learned patterns for reporting."""
