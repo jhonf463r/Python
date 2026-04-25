@@ -1463,6 +1463,10 @@ class IntentUnderstandingService:
             'self code analysis', 'self_code_analysis', 'actualizate y analizate',
             'actualízate y analízate', 'analiza tu rendimiento', 'analiza tu salud',
             'corrige lo que puedas', 'tu codigo tiene errores', 'tu código tiene errores',
+            'secretos faltantes', 'secretos que me pide', 'tokens faltantes',
+            'por que no encuentra', 'por qué no encuentra', 'por que no los encuentra',
+            'por qué no los encuentra', 'analiza por que', 'analiza por qué',
+            'corrigelo', 'corrígelo', 'los tengo configurados',
         )
         if any(phrase in text for phrase in direct_phrases):
             return True
