@@ -20,10 +20,12 @@ Arquitectura:
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import subprocess
 import time
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -515,52 +517,105 @@ def detect_anomalies(
 
 
 # ──────────────────────────────────────────────────────────────
-# Historical Consultation — aprendizaje por experiencia
+# Historical Consultation — aprendizaje por acción ejecutada
 # ──────────────────────────────────────────────────────────────
+
+def _action_history_path() -> Path:
+    """Return path to the per-action history JSONL file."""
+    data_dir = Path(
+        os.environ.get('IABV_DATA_DIR', ''),
+    ) or Path(os.path.expanduser('~')) / 'IABV_v1.5' / 'data'
+    history_dir = data_dir / 'evolution' / 'action_history'
+    history_dir.mkdir(parents=True, exist_ok=True)
+    return history_dir / 'action_outcomes.jsonl'
+
+
+def record_action_outcome(
+    action: str,
+    *,
+    success: bool,
+    detail: str = '',
+    elapsed_ms: int = 0,
+    source: str = 'rule',
+) -> None:
+    """Record the outcome of an executed action for future history lookups.
+
+    Appends one JSONL line per action execution, keyed by action name.
+    This is the data that consult_history() reads to learn from the past.
+    """
+    try:
+        entry = {
+            'action': action,
+            'success': success,
+            'detail': detail[:200],
+            'elapsed_ms': elapsed_ms,
+            'source': source,
+            'ts': time.time(),
+        }
+        path = _action_history_path()
+        with open(path, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+    except Exception as exc:
+        logger.debug('record_action_outcome: failed to write: %s', exc)
+
+
+def _load_action_history() -> dict[str, dict[str, Any]]:
+    """Load per-action history from the JSONL file.
+
+    Returns a dict keyed by action name with aggregated stats:
+      attempts, successes, total_elapsed_ms, last_success
+    """
+    history: dict[str, dict[str, Any]] = {}
+    path = _action_history_path()
+    if not path.exists():
+        return history
+    try:
+        with open(path, 'r', encoding='utf-8', errors='replace') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                except (json.JSONDecodeError, ValueError):
+                    continue
+                action = entry.get('action', '')
+                if not action:
+                    continue
+                if action not in history:
+                    history[action] = {
+                        'attempts': 0,
+                        'successes': 0,
+                        'total_elapsed_ms': 0,
+                        'last_success': False,
+                    }
+                history[action]['attempts'] += 1
+                if entry.get('success'):
+                    history[action]['successes'] += 1
+                history[action]['last_success'] = bool(entry.get('success'))
+                history[action]['total_elapsed_ms'] += entry.get('elapsed_ms', 0)
+    except Exception as exc:
+        logger.debug('_load_action_history: failed to read: %s', exc)
+    return history
+
 
 def consult_history(
     items: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Consult ExperimentLab history BEFORE acting.
+    """Consult per-action history BEFORE acting.
 
     For each proposed action (from fired rules or anomalies), checks:
       - Has this action been tried before?
-      - Did it work? (success_rate from historical runs)
-      - Is there a better alternative? (strategy_selector)
+      - Did it work? (success_rate)
+      - Should we execute, avoid, or proceed with caution?
+
+    Uses a dedicated JSONL file (action_outcomes.jsonl) that records
+    per-action outcomes, keyed by action name (e.g. 'start_ollama',
+    'force_ollama_to_nvidia').
 
     Returns enriched items with historical context added.
     """
-    try:
-        from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
-        from iabv_v15.domain.models import ExperimentDomain
-
-        repo = ExperimentLabRepository()
-        historical_runs = repo.list_runs(
-            domain=ExperimentDomain.INFERENCE_BENCHMARK.value,
-            subject_key='common_sense_engine_v1',
-            limit=50,
-        )
-    except Exception as exc:
-        logger.debug('consult_history: could not load historical runs: %s', exc)
-        historical_runs = []
-
-    action_history: dict[str, dict[str, Any]] = {}
-    for run in historical_runs:
-        meta = run.metadata or {}
-        label = str(meta.get('candidate_label') or run.candidate_label or '')
-        if not label:
-            continue
-        if label not in action_history:
-            action_history[label] = {
-                'attempts': 0,
-                'successes': 0,
-                'total_score': 0.0,
-                'last_success': run.success,
-            }
-        action_history[label]['attempts'] += 1
-        if run.success:
-            action_history[label]['successes'] += 1
-        action_history[label]['total_score'] += run.metrics.total_score
+    action_history = _load_action_history()
 
     enriched: list[dict[str, Any]] = []
     for item in items:
@@ -569,14 +624,14 @@ def consult_history(
 
         if history_info and history_info['attempts'] > 0:
             success_rate = history_info['successes'] / history_info['attempts']
-            avg_score = history_info['total_score'] / history_info['attempts']
+            avg_ms = history_info['total_elapsed_ms'] / history_info['attempts']
             item = {
                 **item,
                 'history': {
                     'attempts': history_info['attempts'],
                     'successes': history_info['successes'],
                     'success_rate': round(success_rate, 2),
-                    'avg_score': round(avg_score, 3),
+                    'avg_elapsed_ms': round(avg_ms, 0),
                     'recommendation': (
                         'ejecutar' if success_rate >= 0.5
                         else 'evitar' if success_rate < 0.2
@@ -600,7 +655,7 @@ def consult_history(
                     'attempts': 0,
                     'successes': 0,
                     'success_rate': 0.0,
-                    'avg_score': 0.0,
+                    'avg_elapsed_ms': 0.0,
                     'recommendation': 'primera_vez',
                     'learned': False,
                 },
@@ -988,7 +1043,11 @@ def _exec_diagnose_network(rule: dict[str, Any]) -> dict[str, Any]:
         checks.append('Google: FALLÓ')
 
     try:
-        r = subprocess.run(['ping', '-c', '1', '-W', '3', '8.8.8.8'],
+        if os.name == 'nt':
+            ping_cmd = ['ping', '-n', '1', '-w', '3000', '8.8.8.8']
+        else:
+            ping_cmd = ['ping', '-c', '1', '-W', '3', '8.8.8.8']
+        r = subprocess.run(ping_cmd,
                           capture_output=True, text=True, timeout=5)
         checks.append('DNS 8.8.8.8: ' + ('OK' if r.returncode == 0 else 'FALLÓ'))
     except Exception:
@@ -1146,6 +1205,13 @@ def act_on_conclusions(
                 'source': 'rule',
                 'history': hist if hist else None,
             })
+            record_action_outcome(
+                action,
+                success=bool(result.get('executed')),
+                detail=str(result.get('detail', result.get('error', '')))[:200],
+                elapsed_ms=elapsed_ms,
+                source='rule',
+            )
         elif not is_safe:
             needs_user.append({
                 'rule_id': rule['id'],
@@ -1217,6 +1283,13 @@ def act_on_conclusions(
                 'source': 'anomaly',
                 'history': hist if hist else None,
             })
+            record_action_outcome(
+                action,
+                success=bool(result.get('executed')),
+                detail=str(result.get('detail', result.get('error', '')))[:200],
+                elapsed_ms=elapsed_ms,
+                source='anomaly',
+            )
 
     return {
         'executed': executed,
