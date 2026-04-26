@@ -839,10 +839,10 @@ class AutonomousValidationCycleService:
         self._cloud_health_tick_counter += 1
         if self._cloud_health_tick_counter % self._CLOUD_HEALTH_EVERY_N_TICKS != 0:
             return
-        api_svc = getattr(self, 'api_key_discovery_service', None)
-        if api_svc is None:
+        if self.api_key_discovery_service is None:
             return
-        audit = getattr(self, 'decision_audit_trail', None)
+        api_svc = self.api_key_discovery_service
+        audit = self.decision_audit_trail
 
         try:
             comparison = api_svc.compare_all()
@@ -853,15 +853,17 @@ class AutonomousValidationCycleService:
 
         # Register each provider test as an ExperimentRun
         for result in comparison:
-            if not isinstance(result, dict) and hasattr(result, '__dict__'):
-                result = result.__dict__
-            elif not isinstance(result, dict):
-                continue
+            if not isinstance(result, dict):
+                if hasattr(result, 'to_dict'):
+                    result = result.to_dict()
+                else:
+                    continue
 
             provider_id = str(result.get('provider_id', ''))
             latency = float(result.get('latency_ms', 0) or 0)
-            status = str(result.get('status', ''))
-            is_success = status in ('valid', 'ok', 'success')
+            valid_flag = result.get('valid', False)
+            is_success = bool(valid_flag)
+            status = 'valid' if is_success else 'invalid'
 
             # Record in ExperimentLab as ExperimentCandidate
             try:
@@ -904,15 +906,17 @@ class AutonomousValidationCycleService:
                         DecisionOutcome,
                         DecisionPhase,
                     )
+                    error_str = str(result.get('error', '')).lower()
+                    quota_str = str(result.get('quota_info', '')).upper()
                     outcome = DecisionOutcome.SUCCESS if is_success else DecisionOutcome.FAILED
-                    if status == 'rate_limited':
+                    if 'rate' in error_str or 'RATE_LIMITED' in quota_str:
                         outcome = DecisionOutcome.RATE_LIMITED
-                    elif status == 'timeout':
+                    elif 'timeout' in error_str:
                         outcome = DecisionOutcome.TIMEOUT
                     audit.record(DecisionRecord(
                         phase=DecisionPhase.KEY_VALIDATION,
                         provider_id=provider_id,
-                        model_used=str(result.get('model', '')),
+                        model_used=str(result.get('model_used', '')),
                         user_goal='autonomous_key_health_check',
                         outcome=outcome,
                         latency_ms=latency,
