@@ -164,6 +164,8 @@ class OperationalSelfExaminationService:
         ))
         # Runtime log self-inspection: read own log tail and detect anomalies
         findings.extend(self._runtime_log_findings())
+        # Fix 42-43: Functional gap analysis and underutilized resource detection
+        findings.extend(self._functional_gap_findings())
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -3011,3 +3013,177 @@ class OperationalSelfExaminationService:
             IssueSeverity.CRITICAL.value: 4,
         }
         return order.get(value, 0)
+
+    # ──────────────────────────────────────────────────────────
+    # Fix 42-43: Functional gap analysis + underutilized resources
+    # ──────────────────────────────────────────────────────────
+
+    def _functional_gap_findings(self) -> list[SelfExaminationFinding]:
+        """Detect functional gaps and underutilized resources.
+
+        Unlike other findings that look at errors/failures, this method
+        proactively analyzes what the system COULD be doing better:
+        - Sessions in browsers without associated accounts (worker pool gap)
+        - API keys available but not used by the intent classifier
+        - Cloud models available but only local model being used
+        - Training examples accumulating but not being applied
+        """
+        import os
+        findings: list[SelfExaminationFinding] = []
+
+        # Gap 1: Sessions without accounts (Opera/Brave/Firefox)
+        try:
+            from iabv_v15.services.account_resource_scanner import (
+                scan_browser_accounts,
+                scan_browser_sessions,
+                verify_account_sessions,
+            )
+            accounts = scan_browser_accounts()
+            sessions = scan_browser_sessions()
+            verified = verify_account_sessions()
+
+            session_browsers = {s.get('browser', '') for s in sessions.get('sessions', [])}
+            account_browsers = {a.get('browser', '') for a in accounts.get('accounts', [])}
+            orphan_browsers = session_browsers - account_browsers
+
+            if orphan_browsers and sessions.get('session_count', 0) > 0:
+                findings.append(SelfExaminationFinding(
+                    category='functional_gap',
+                    title='Sesiones activas en navegadores sin cuentas asociadas',
+                    summary=(
+                        f'Se detectaron sesiones activas en {", ".join(orphan_browsers)} '
+                        f'pero no hay cuentas de Google asociadas en esos navegadores. '
+                        f'El pool de asistentes usa workers anonimos para estas sesiones.'
+                    ),
+                    severity=IssueSeverity.LOW,
+                    confidence=0.9,
+                    recommendation=(
+                        'Considerar asociar cuentas a los navegadores con sesiones '
+                        'para mejor tracking de cuotas por cuenta.'
+                    ),
+                    evidence_refs=[
+                        f'session_browsers={list(session_browsers)}',
+                        f'account_browsers={list(account_browsers)}',
+                    ],
+                    metadata={
+                        'gap_type': 'orphan_browser_sessions',
+                        'orphan_browsers': list(orphan_browsers),
+                    },
+                ))
+
+            # Gap 2: Workers with sessions but no quota tracking
+            pool_accounts = verified.get('accounts', [])
+            accounts_with_sessions = [
+                a for a in pool_accounts if a.get('tool_count', 0) > 0
+            ]
+            if accounts_with_sessions:
+                from iabv_v15.services.account_resource_scanner import get_all_quota_status
+                quotas = get_all_quota_status()
+                tracked_count = len(quotas.get('statuses', []))
+                if tracked_count == 0 and len(accounts_with_sessions) > 0:
+                    findings.append(SelfExaminationFinding(
+                        category='functional_gap',
+                        title='Asistentes con sesion activa sin rastreo de cuotas',
+                        summary=(
+                            f'{len(accounts_with_sessions)} asistentes tienen sesion activa '
+                            f'pero ninguno tiene cuotas rastreadas. El rastreo se activa '
+                            f'automaticamente al enviar mensajes.'
+                        ),
+                        severity=IssueSeverity.LOW,
+                        confidence=0.85,
+                        recommendation=(
+                            'Iniciar uso de las herramientas (ChatGPT, Claude, Codex) '
+                            'para que el rastreo de cuotas comience automaticamente.'
+                        ),
+                        metadata={
+                            'gap_type': 'untracked_quotas',
+                            'accounts_with_sessions': len(accounts_with_sessions),
+                        },
+                    ))
+        except Exception:
+            pass
+
+        # Gap 3: Cloud API keys available but not used by intent classifier
+        try:
+            has_openai = bool(os.environ.get('OPENAI_API_KEY'))
+            has_anthropic = bool(os.environ.get('ANTHROPIC_API_KEY'))
+            from iabv_v15.services.account_resource_scanner import _load_training_examples
+            training_count = len(_load_training_examples())
+
+            if (has_openai or has_anthropic) and training_count == 0:
+                cloud_name = 'OpenAI' if has_openai else 'Anthropic'
+                findings.append(SelfExaminationFinding(
+                    category='underutilized_resource',
+                    title=f'API key de {cloud_name} disponible sin ejemplos de entrenamiento',
+                    summary=(
+                        f'Hay una API key de {cloud_name} configurada pero el '
+                        f'clasificador dual aun no ha generado ejemplos de entrenamiento. '
+                        f'El modelo local se beneficiaria de clasificaciones del modelo '
+                        f'de la nube para mejorar su precision.'
+                    ),
+                    severity=IssueSeverity.LOW,
+                    confidence=0.8,
+                    recommendation=(
+                        'El clasificador dual se activara automaticamente la proxima vez '
+                        'que una pregunta ambigua pase por el chat. Los ejemplos de '
+                        'entrenamiento se acumularan en data/evolution/intent_training.jsonl.'
+                    ),
+                    metadata={
+                        'gap_type': 'unused_cloud_api',
+                        'cloud_provider': cloud_name,
+                        'training_examples': training_count,
+                    },
+                ))
+
+            if training_count > 0:
+                findings.append(SelfExaminationFinding(
+                    category='learning_progress',
+                    title=f'Clasificador dual: {training_count} ejemplos de entrenamiento acumulados',
+                    summary=(
+                        f'El modelo local ha aprendido de {training_count} clasificaciones '
+                        f'del modelo de la nube. Estos ejemplos se inyectan como few-shot '
+                        f'al prompt del modelo local para mejorar su precision.'
+                    ),
+                    severity=IssueSeverity.LOW,
+                    confidence=0.95,
+                    recommendation='Continuar usando el chat normalmente para acumular mas ejemplos.',
+                    metadata={
+                        'gap_type': 'training_progress',
+                        'training_examples': training_count,
+                    },
+                ))
+        except Exception:
+            pass
+
+        # Gap 4: Ollama available but not being leveraged for all classifiers
+        try:
+            import httpx
+            with httpx.Client(timeout=3.0) as client:
+                resp = client.get('http://127.0.0.1:11434/api/tags')
+                if resp.status_code == 200:
+                    models = resp.json().get('models', [])
+                    model_names = [m.get('name', '') for m in models]
+                    if len(models) > 1:
+                        findings.append(SelfExaminationFinding(
+                            category='underutilized_resource',
+                            title=f'{len(models)} modelos Ollama disponibles',
+                            summary=(
+                                f'Modelos instalados: {", ".join(model_names[:5])}. '
+                                f'El clasificador usa solo el modelo por defecto. '
+                                f'Modelos mas grandes podrian dar mejor precision local.'
+                            ),
+                            severity=IssueSeverity.LOW,
+                            confidence=0.7,
+                            recommendation=(
+                                'Considerar ejecutar benchmarks con diferentes modelos '
+                                'para determinar cual clasifica mejor los metadatos de IABV.'
+                            ),
+                            metadata={
+                                'gap_type': 'multiple_local_models',
+                                'models': model_names[:10],
+                            },
+                        ))
+        except Exception:
+            pass
+
+        return findings
