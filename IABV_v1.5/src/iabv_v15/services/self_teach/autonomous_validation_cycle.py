@@ -592,6 +592,14 @@ class AutonomousValidationCycleService:
             except Exception:
                 pass
 
+        # B: Integración consciente — cruzar risk signals del entorno con
+        # propuestas y recomendaciones para priorizar conscientemente.
+        # El sync_pulse no solo lee estado: INTEGRA información de múltiples
+        # fuentes y decide qué es relevante AHORA (función talámica).
+        resource_pressure = self._assess_environment_pressure()
+        if resource_pressure.get('under_pressure'):
+            sync_data['resource_pressure'] = resource_pressure
+
         # Determine coordination_status based on actionability
         available_ias = [
             k for k, v in (sync_data.get('ia_availability') or {}).items()
@@ -602,14 +610,30 @@ class AutonomousValidationCycleService:
             if isinstance(p, dict) and float(p.get('estimated_confidence') or 0.0) >= 0.5
             and p.get('primary_ia') in available_ias
         ]
+
+        # B: Bajo presión CRITICAL, inhibir action_ready para que el sistema
+        # no lance operaciones costosas (auto-ejecución de propuestas,
+        # comparación paralela). Bajo presión HIGH, solo permitir propuestas
+        # de confianza >= 0.7 (más selectivo).
+        if resource_pressure.get('critical'):
+            actionable_proposals = []
+            sync_data['coordination_status'] = 'inhibited_by_pressure'
+            sync_data['inhibition_reason'] = 'resource_pressure_critical'
+        elif resource_pressure.get('under_pressure'):
+            actionable_proposals = [
+                p for p in actionable_proposals
+                if float(p.get('estimated_confidence') or 0.0) >= 0.7
+            ]
+
         if actionable_proposals and len(available_ias) >= 2:
             sync_data['coordination_status'] = 'action_ready'
             sync_data['actionable_proposals'] = actionable_proposals[:2]
             sync_data['available_ia_count'] = len(available_ias)
-        elif sync_data.get('active_proposals'):
-            sync_data['coordination_status'] = 'proposals_pending'
-        else:
-            sync_data['coordination_status'] = 'synced'
+        elif sync_data.get('coordination_status') != 'inhibited_by_pressure':
+            if sync_data.get('active_proposals'):
+                sync_data['coordination_status'] = 'proposals_pending'
+            else:
+                sync_data['coordination_status'] = 'synced'
 
         # E: Auto-pull gobernado — si hay commits nuevos en origin/main,
         # sincronizar automáticamente para aplicar auto-modificaciones.
@@ -628,6 +652,55 @@ class AutonomousValidationCycleService:
         # iniciar la ejecución coordinada sin esperar request del usuario.
         # Esto cierra el loop: introspección → acción autónoma.
         self._maybe_auto_execute_proposals(sync_data)
+
+    def _assess_environment_pressure(self) -> dict[str, Any]:
+        """Read environment risk signals and return a pressure assessment.
+
+        Uses the ``environment_self_awareness_service`` (if wired) to detect
+        active ``EnvironmentRiskSignal`` entries. Returns a dict with:
+        - ``under_pressure``: bool
+        - ``critical``: bool (any CRITICAL signal)
+        - ``active_signals``: list of signal kinds
+        - ``recommendation``: str
+
+        This enables the sync_pulse to make conscious decisions about what
+        operations to inhibit or prioritize based on current resource state.
+        """
+        result: dict[str, Any] = {
+            'under_pressure': False,
+            'critical': False,
+            'active_signals': [],
+            'recommendation': 'normal_processing',
+        }
+        env_service = self.environment_self_awareness_service
+        if env_service is None:
+            return result
+        try:
+            env_model = env_service.current_model() if hasattr(env_service, 'current_model') else None
+            if env_model is None:
+                return result
+            risk_signals = list(getattr(env_model, 'risk_signals', None) or [])
+            if not risk_signals:
+                return result
+            signal_kinds = [str(getattr(s, 'kind', '') or '') for s in risk_signals]
+            severities = [str(getattr(s, 'severity', '') or '').upper() for s in risk_signals]
+            has_critical = 'CRITICAL' in severities or any(
+                str(getattr(s, 'severity', None)) == 'critical' for s in risk_signals
+            )
+            has_high = 'HIGH' in severities or any(
+                str(getattr(s, 'severity', None)) == 'high' for s in risk_signals
+            )
+            result['active_signals'] = signal_kinds
+            if has_critical:
+                result['under_pressure'] = True
+                result['critical'] = True
+                result['recommendation'] = 'reduce_depth_critical'
+            elif has_high:
+                result['under_pressure'] = True
+                result['recommendation'] = 'reduce_depth_high'
+        except Exception:
+            pass
+        return result
 
     def _maybe_git_auto_sync(self) -> dict[str, Any] | None:
         """Check for remote updates and auto-pull when safe.

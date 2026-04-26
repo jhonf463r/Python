@@ -58,6 +58,15 @@ Regla operativa:
 - `comparison_scope_key`: agrupa problemas comparables para evaluar ganadores reales
 - `adaptive_learning_summary`, `learned_patterns`, `validation_summary`: resumen operativo reusable
 
+### Conciencia De Estimulos Y Regulacion Cognitiva
+El sistema regula su profundidad de procesamiento segun la presion de recursos:
+- `_assess_resource_pressure()` en Orchestrator y ValidationCycle lee `EnvironmentRiskSignal` y clasifica presion (CRITICAL, HIGH, normal)
+- Bajo presion CRITICAL: se omite comparacion paralela de IAs y se inhibe auto-ejecucion de propuestas
+- Bajo presion HIGH: solo se ejecutan propuestas con confianza >= 0.7 (mas selectivo)
+- Sin presion: se activa cognicion profunda diferida en `OperationalSelfExaminationService` (cross-correlacion de fallos, deteccion de tendencias, decay de estrategias)
+- El `sync_pulse` integra conscientemente risk signals, propuestas y recomendaciones (funcion talamica)
+- El estado de presion se deposita en `context.metadata['resource_pressure']` para que downstream lo observe
+
 ### Sandbox Y Validacion
 - `SandboxExperimentService`: valida cambios o rutas candidatas sin tocar el sistema vivo
 - `AutonomousValidationCycleService`: revisa candidatos y promueve solo lo que tenga evidencia
