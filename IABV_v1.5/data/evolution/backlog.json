@@ -49,14 +49,14 @@
   },
   {
     "id": "f9ebabbd-bd44-4f81-b1de-89ad22babe25",
-    "title": "CognitiveMonitor — meta-observador continuo en background",
+    "title": "Extender OperationalSelfExaminationService con observacion continua en background",
     "area": "metacognition",
     "priority": "critical",
     "status": "pending",
     "source": "devin_audit_introspective",
     "created_at": "2026-04-26T22:09:51.363855+00:00",
     "completed_at": null,
-    "evidence": "No hay un meta-observador continuo que corra en paralelo observando TODO lo que el sistema hace. El sync_pulse solo lee estado, no reflexiona sobre el flujo completo. Necesita un CognitiveMonitor que en background registre: empece tarea X, elegi IA Y, tarde Z ms, resultado fue W, fue la mejor decision?",
+    "evidence": "OperationalSelfExaminationService revisa patrones periodicamente pero no observa el flujo en tiempo real. Extender OSES con capacidad de background review continuo: registrar cada decision (tarea, IA elegida, latencia, resultado) via DecisionAuditTrail y evaluar en cada tick si la ruta elegida fue optima. No crear servicio nuevo — extender OSES + DecisionAuditTrail existentes.",
     "depends_on": []
   },
   {
@@ -97,26 +97,26 @@
   },
   {
     "id": "e667991f-1e76-4ae0-95d8-e17bfaff53ee",
-    "title": "CognitiveLoadManager — gestion de carga cognitiva y priorizacion",
+    "title": "Extender AdaptiveTaskOrchestrator con priorizacion por carga cognitiva",
     "area": "metacognition",
     "priority": "high",
     "status": "pending",
     "source": "devin_audit_introspective",
     "created_at": "2026-04-26T22:09:51.363855+00:00",
     "completed_at": null,
-    "evidence": "Si llegan muchos estimulos a la vez, el sistema los procesa secuencialmente sin priorizar. Falta un CognitiveLoadManager que diga: estoy al 80% de capacidad, voy a priorizar lo urgente y encolar lo demas. Evita congelamiento y lentitud.",
+    "evidence": "Si llegan muchos estimulos a la vez, el orquestador los procesa secuencialmente sin priorizar. Extender AdaptiveTaskOrchestrator con queue depth check y priority sorting: cuando la cola supere un umbral, priorizar lo urgente y diferir lo demas. No crear servicio nuevo — extender el orquestador existente.",
     "depends_on": []
   },
   {
     "id": "126e7421-f755-4c12-a10d-fc9ff87fcd8e",
-    "title": "IdentityModel — identidad persistente y autoconciencia de fortalezas",
+    "title": "Extender PortableContextService con identidad persistente y objetivos a largo plazo",
     "area": "metacognition",
     "priority": "medium",
     "status": "pending",
     "source": "devin_audit_introspective",
     "created_at": "2026-04-26T22:09:51.363855+00:00",
     "completed_at": null,
-    "evidence": "El EnvironmentSelfModel captura circunstancias (hardware, herramientas) pero no hay una identidad persistente que diga: soy un sistema que funciona mejor con ChatGPT para codigo y con Claude para analisis, en este hardware con estas limitaciones, y mi objetivo a largo plazo es X. Ortega: yo soy yo y mis circunstancias.",
+    "evidence": "StrategySelector y AdaptiveWeightLayer ya saben que IA rinde mejor por ruta. PortableContextService ya exporta esa info entre sesiones. Lo que falta: persistir objetivos a largo plazo y preferencias del usuario como seccion adicional del contexto portable. Extender PortableContextService, no crear servicio nuevo.",
     "depends_on": []
   },
   {

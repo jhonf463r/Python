@@ -102,19 +102,19 @@ Simula escenarios complejos sin afectar el sistema real.
 
 | Gap | Descripción | Impacto |
 |---|---|---|
-| CognitiveMonitor | Meta-observador continuo en background | El sistema no reflexiona sobre su propio flujo en tiempo real |
-| TemporalAwareness | Conciencia del tiempo y anomalías temporales | No detecta "llevo 5 min en algo que tarda 30s" |
+| Extender OSES con observación continua | Agregar background review continuo a OperationalSelfExaminationService + DecisionAuditTrail | OSES revisa periódicamente pero no observa el flujo en tiempo real |
+| TemporalAwareness | Conciencia del tiempo y anomalías temporales en OSES/Orchestrator | No detecta "llevo 5 min en algo que tarda 30s" |
 | Exploración proactiva | Probar N IAs simultáneamente de forma proactiva | Solo compara IAs reactivamente |
-| DeepAnalysisQueue | Análisis profundo diferido | No aprovecha tiempo libre para análisis estadístico |
-| CognitiveLoadManager | Gestión de carga cognitiva | No prioriza cuando llegan muchos estímulos |
-| IdentityModel | Identidad persistente y autoconciencia | No sabe "soy mejor con ChatGPT para código" |
+| DeepAnalysisQueue | Análisis profundo diferido en sync_pulse | No aprovecha tiempo libre para análisis estadístico |
+| Extender Orchestrator con carga cognitiva | Queue depth check + priority sorting en AdaptiveTaskOrchestrator | No prioriza cuando llegan muchos estímulos |
+| Extender PortableContext con identidad | Persistir objetivos a largo plazo y preferencias del usuario | StrategySelector ya sabe qué IA rinde mejor; falta persistir goals |
 
 ## Orden de Implementación Recomendado
 
 ### Fase 1: Fundamentos (semana 1-2)
 1. **MathEngine** — base estadística para todo lo demás
 2. **AlgorithmAnalyzer** — mapear el estado actual
-3. **CognitiveMonitor** — empezar a observar en background
+3. **Extender OSES** — observación continua en background
 
 ### Fase 2: Validación (semana 3-4)
 4. **AlgorithmValidator** — verificar contratos y reglas
@@ -123,12 +123,12 @@ Simula escenarios complejos sin afectar el sistema real.
 
 ### Fase 3: Optimización (semana 5-6)
 7. **AlgorithmOptimizer** — optimización guiada por datos
-8. **DeepAnalysisQueue** — análisis diferido inteligente
-9. **CognitiveLoadManager** — gestión de carga
+8. **DeepAnalysisQueue** — análisis diferido en sync_pulse
+9. **Extender Orchestrator** — priorización por carga cognitiva
 
 ### Fase 4: Simulación (semana 7-8)
 10. **ExperimentSimulator** — simulación avanzada
-11. **IdentityModel** — autoconciencia de fortalezas
+11. **Extender PortableContext** — identidad persistente + goals
 12. **Exploración proactiva** — comparación paralela proactiva
 
 ## Principios de Diseño
