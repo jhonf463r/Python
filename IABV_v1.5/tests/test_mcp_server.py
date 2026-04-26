@@ -1609,7 +1609,7 @@ def test_self_auto_merge_returns_governance_block_when_network_down() -> None:
     # Snapshot con red desconectada.
     snapshot = _default_snapshot()
     snapshot = snapshot.model_copy(
-        update={"network_status": NetworkStatusSnapshot(connected=False, status="offline")}
+        update={"network_status": NetworkStatusSnapshot(connected=False, status="offline")},
     )
     container = _build_container(_snapshot=snapshot)
     server = IABVMCPServer(container)

@@ -168,6 +168,8 @@ class OperationalSelfExaminationService:
         findings.extend(self._runtime_log_findings())
         # Fix 42-43: Functional gap analysis and underutilized resource detection
         findings.extend(self._functional_gap_findings())
+        # UI self-awareness: detect own window issues (zombie, missing, duplicate)
+        findings.extend(self._ui_self_examination_findings(world=world))
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -1152,7 +1154,7 @@ class OperationalSelfExaminationService:
             'multi_source_disagreement',
             'runtime_noise',
             'multi_source_disagreement repetido en logs',
-            'El cache de 120s puede no ser suficiente o el MCP polling '
+            'El cache de 300s puede no ser suficiente o el MCP polling '
             'recrea instancias que pierden el cache. Considerar aumentar '
             'TTL o mover cache a nivel de clase persistente.',
         ),
@@ -1467,7 +1469,7 @@ class OperationalSelfExaminationService:
 
                 # If we couldn't extract specific tool_ids, check common ones
                 if not verified_tools:
-                    verified_tools = ['codex_installed', 'chatgpt_installed', 'claude_installed']
+                    verified_tools = ['codex_installed', 'chatgpt_installed', 'claude_installed', 'ollama_llm']
 
                 for tid in verified_tools[:5]:
                     verification = verify_tool_access_deductive(
@@ -3161,6 +3163,105 @@ class OperationalSelfExaminationService:
             IssueSeverity.CRITICAL.value: 4,
         }
         return order.get(value, 0)
+
+    # ──────────────────────────────────────────────────────────
+    # UI Self-Awareness: detect own window anomalies
+    # ──────────────────────────────────────────────────────────
+
+    _IABV_TITLE_MARKERS = ('iabv', 'iabv v1.5', 'centro de control', 'centro vivo')
+    _ZOMBIE_MARKERS = ('no responde', 'not responding')
+
+    def _ui_self_examination_findings(
+        self, *, world: WorldModelSnapshot,
+    ) -> list[SelfExaminationFinding]:
+        """Detect anomalies in IABV's own UI windows.
+
+        Uses the WorldModel's active_windows to check:
+        - Zombie IABV windows ("No responde")
+        - Missing IABV window entirely
+        - Duplicate IABV instances
+        """
+        findings: list[SelfExaminationFinding] = []
+        if not world.active_windows:
+            return findings
+
+        iabv_windows: list[Any] = []
+        zombie_windows: list[Any] = []
+
+        for w in world.active_windows:
+            title_lower = (w.title or '').lower()
+            is_iabv = any(m in title_lower for m in self._IABV_TITLE_MARKERS)
+            if not is_iabv:
+                continue
+            is_zombie = any(z in title_lower for z in self._ZOMBIE_MARKERS)
+            if is_zombie:
+                zombie_windows.append(w)
+            else:
+                iabv_windows.append(w)
+
+        if zombie_windows:
+            zombie_titles = [w.title for w in zombie_windows]
+            findings.append(SelfExaminationFinding(
+                category='ui_self_awareness',
+                title='zombie_iabv_window',
+                summary=(
+                    f'{len(zombie_windows)} ventana(s) IABV en estado '
+                    f'"No responde": {zombie_titles}. El event loop de la UI '
+                    f'esta bloqueado o el proceso esta colgado.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.95,
+                recommendation=(
+                    'Terminar el proceso zombie y reiniciar la UI. '
+                    'Investigar que operacion bloqueo el hilo principal.'
+                ),
+                evidence_refs=[f'window:{t}' for t in zombie_titles],
+                source_refs=['WorldModelSnapshot.active_windows'],
+            ))
+
+        if not iabv_windows and not zombie_windows and len(world.active_windows) > 0:
+            findings.append(SelfExaminationFinding(
+                category='ui_self_awareness',
+                title='iabv_window_missing',
+                summary=(
+                    'No se detecta ninguna ventana IABV entre las '
+                    f'{len(world.active_windows)} ventanas activas. '
+                    'La UI puede no haberse iniciado o el titulo no '
+                    'coincide con los marcadores conocidos.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.80,
+                recommendation=(
+                    'Verificar que el proceso UI (python -m iabv_v15 app) '
+                    'esta corriendo. Si esta corriendo, revisar el titulo '
+                    'de la ventana.'
+                ),
+                evidence_refs=[
+                    f'total_windows:{len(world.active_windows)}',
+                ],
+                source_refs=['WorldModelSnapshot.active_windows'],
+            ))
+
+        if len(iabv_windows) > 1:
+            titles = [w.title for w in iabv_windows]
+            findings.append(SelfExaminationFinding(
+                category='ui_self_awareness',
+                title='duplicate_iabv_windows',
+                summary=(
+                    f'{len(iabv_windows)} instancias IABV activas: {titles}. '
+                    f'Solo deberia haber una instancia corriendo.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.85,
+                recommendation=(
+                    'Cerrar las instancias duplicadas. Verificar que '
+                    'start_iabv.ps1 no lance multiples procesos.'
+                ),
+                evidence_refs=[f'window:{t}' for t in titles],
+                source_refs=['WorldModelSnapshot.active_windows'],
+            ))
+
+        return findings
 
     # ──────────────────────────────────────────────────────────
     # Fix 42-43: Functional gap analysis + underutilized resources

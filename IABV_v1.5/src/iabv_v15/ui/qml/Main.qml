@@ -183,7 +183,7 @@ ApplicationWindow {
                 objectName: "pageLoader"
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                asynchronous: true
+                asynchronous: false
                 source: routeSource(activeRoute)
             }
         }

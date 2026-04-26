@@ -1309,6 +1309,51 @@ class AppBootstrap:
             ', '.join(sorted(ready)),
             f' | missing=[{", ".join(sorted(missing))}]' if missing else '',
         )
+        self._startup_self_examination()
+
+    def _startup_self_examination(self) -> None:
+        """Run a lightweight self-examination at startup.
+
+        Executes the perception cross-validator (if wired) to detect
+        UI anomalies (zombie windows, missing IABV window, duplicates)
+        and logs the results. This gives the program self-awareness
+        about its own state immediately after boot.
+        """
+        if os.environ.get('IABV_MCP_SUBPROCESS') == '1':
+            return
+        validator = getattr(self, 'perception_cross_validator', None)
+        if validator is None:
+            return
+        try:
+            result = validator.run_cross_validation()
+            n_issues = result.get('total_inconsistencies', 0)
+            checks = result.get('checks_passed', [])
+            ui_issues = [
+                i for i in result.get('inconsistencies', [])
+                if i.get('check') == 'ui_self_awareness'
+            ]
+            if ui_issues:
+                for issue in ui_issues:
+                    logger.warning(
+                        'startup_ui_issue: %s — %s',
+                        issue.get('actual', ''),
+                        issue.get('detail', ''),
+                    )
+            if n_issues == 0:
+                logger.info(
+                    'startup_self_check: %d/%d checks passed — all consistent',
+                    len(checks),
+                    result.get('total_checks', 0),
+                )
+            else:
+                logger.warning(
+                    'startup_self_check: %d inconsistencies found (%d/%d passed)',
+                    n_issues,
+                    len(checks),
+                    result.get('total_checks', 0),
+                )
+        except Exception as exc:
+            logger.debug('startup_self_check: skipped (%s)', exc)
 
     def _ensure_directories(self) -> None:
         for path in (
@@ -1469,7 +1514,8 @@ class AppBootstrap:
             universal_perception_service=self.universal_perception_service,
         )
         self.control_center_viewmodel.capture_studio_viewmodel = self.capture_studio_viewmodel
-        self.control_center_viewmodel.refreshAutonomyDock()
+        # Deferred: refreshAutonomyDock runs inside the VM's deferred
+        # startup thread to avoid blocking UI creation.
         self.evolution_center_viewmodel = EvolutionCenterViewModel(
             dossier_repository=self.execution_dossier_repository,
             hidden_incident_repository=self.hidden_incident_repository,
@@ -1764,8 +1810,9 @@ class AppBootstrap:
             return s.connect_ex(('127.0.0.1', port)) == 0
 
     def run(self) -> int:
-        mcp_proc = None
-        tunnel_proc = None
+        # Holder for subprocesses; written from background thread.
+        self._mcp_proc = None
+        self._tunnel_proc = None
         try:
             # When launched via start_iabv.ps1 -StartUI, the script manages
             # MCP + tunnel externally.  Skip autostart to avoid port conflict.
@@ -1774,18 +1821,26 @@ class AppBootstrap:
             if skip_mcp:
                 logger.info('mcp_autostart: skipped (IABV_SKIP_MCP_AUTOSTART=1)')
             elif not self._is_mcp_port_in_use(mcp_port):
-                mcp_proc = self._start_mcp_subprocess()
-                if mcp_proc:
-                    import time
-                    time.sleep(2)
-                    tunnel_proc = self._start_tunnel_subprocess()
+                # Launch MCP + tunnel in background so the UI doesn't freeze
+                # waiting for the 2-second MCP warm-up.
+                def _deferred_mcp_start() -> None:
+                    self._mcp_proc = self._start_mcp_subprocess()
+                    if self._mcp_proc:
+                        import time
+                        time.sleep(2)
+                        self._tunnel_proc = self._start_tunnel_subprocess()
+                threading.Thread(
+                    target=_deferred_mcp_start,
+                    name='mcp-deferred-start',
+                    daemon=True,
+                ).start()
             else:
                 logger.info('mcp_autostart: port %d already in use, skipping MCP launch', mcp_port)
 
             app, _engine = self.create_engine()
             return app.exec()
         finally:
-            for proc in (tunnel_proc, mcp_proc):
+            for proc in (self._tunnel_proc, self._mcp_proc):
                 if proc and proc.poll() is None:
                     try:
                         proc.terminate()

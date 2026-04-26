@@ -57,6 +57,7 @@ class PerceptionCrossValidator:
 
         inconsistencies.extend(self._cross_audit_vs_worldmodel())
         inconsistencies.extend(self._cross_windows_consistency())
+        inconsistencies.extend(self._cross_ui_self_awareness())
 
         if not any(i['check'] == 'tools_vs_processes' for i in inconsistencies):
             checks_passed.append('tools_vs_processes')
@@ -64,6 +65,8 @@ class PerceptionCrossValidator:
             checks_passed.append('audit_vs_worldmodel')
         if not any(i['check'] == 'windows_consistency' for i in inconsistencies):
             checks_passed.append('windows_consistency')
+        if not any(i['check'] == 'ui_self_awareness' for i in inconsistencies):
+            checks_passed.append('ui_self_awareness')
 
         return {
             'checked_at': checked_at,
@@ -72,7 +75,7 @@ class PerceptionCrossValidator:
             'checks_passed': checks_passed,
             'total_inconsistencies': len(inconsistencies),
             'total_auto_corrections': len(auto_corrections),
-            'total_checks': 3,
+            'total_checks': 4,
             'learning': (
                 'Cuando las fuentes discrepan (filesystem vs procesos vs ventanas), '
                 'la fuente positiva prevalece. Un solo sensor negativo NO es '
@@ -343,5 +346,95 @@ class PerceptionCrossValidator:
                     'actual': f'Focused window "{focused.title}" not in active_windows',
                     'detail': 'The focused window is not found in the active windows list.',
                 })
+
+        return inconsistencies
+
+    # ------------------------------------------------------------------
+    # UI Self-Awareness: IABV checks its own window state
+    # ------------------------------------------------------------------
+
+    _IABV_TITLE_MARKERS = ('iabv', 'iabv v1.5', 'centro de control', 'centro vivo')
+    _ZOMBIE_MARKERS = ('no responde', 'not responding')
+
+    def _cross_ui_self_awareness(self) -> list[dict[str, Any]]:
+        """Check IABV's own window presence and health in WorldModel.
+
+        Detects:
+        - IABV window missing from WorldModel entirely
+        - Zombie window ("No responde") alongside a healthy instance
+        - Multiple IABV instances (potential resource leak)
+        """
+        inconsistencies: list[dict[str, Any]] = []
+        if self.world_model_service is None:
+            return inconsistencies
+
+        try:
+            snapshot = self.world_model_service.current_snapshot()
+        except Exception:
+            return inconsistencies
+
+        if not snapshot.active_windows:
+            return inconsistencies
+
+        iabv_windows: list[Any] = []
+        zombie_windows: list[Any] = []
+
+        for w in snapshot.active_windows:
+            title_lower = (w.title or '').lower()
+            is_iabv = any(m in title_lower for m in self._IABV_TITLE_MARKERS)
+            if not is_iabv:
+                continue
+            is_zombie = any(z in title_lower for z in self._ZOMBIE_MARKERS)
+            if is_zombie:
+                zombie_windows.append(w)
+            else:
+                iabv_windows.append(w)
+
+        if not iabv_windows and not zombie_windows:
+            inconsistencies.append({
+                'check': 'ui_self_awareness',
+                'severity': 'high',
+                'tool_id': 'iabv_ui',
+                'expected': 'IABV window should be visible in WorldModel',
+                'actual': 'No IABV window detected among active windows',
+                'detail': (
+                    'The program cannot see its own window in the WorldModel. '
+                    'Either the UI did not start, or the window enumeration '
+                    'does not match IABV title markers.'
+                ),
+            })
+
+        if zombie_windows:
+            zombie_titles = [w.title for w in zombie_windows]
+            inconsistencies.append({
+                'check': 'ui_self_awareness',
+                'severity': 'high',
+                'tool_id': 'iabv_ui',
+                'expected': 'No zombie IABV windows',
+                'actual': f'{len(zombie_windows)} zombie window(s): {zombie_titles}',
+                'detail': (
+                    'Detected IABV window(s) in "No responde" state. This '
+                    'indicates the UI event loop is blocked or the process '
+                    'is hung. The zombie PID should be terminated.'
+                ),
+                'zombie_pids': [
+                    getattr(w, 'pid', None) for w in zombie_windows
+                    if getattr(w, 'pid', None) is not None
+                ],
+            })
+
+        if len(iabv_windows) > 1:
+            inconsistencies.append({
+                'check': 'ui_self_awareness',
+                'severity': 'medium',
+                'tool_id': 'iabv_ui',
+                'expected': 'Single IABV window instance',
+                'actual': f'{len(iabv_windows)} active IABV windows detected',
+                'detail': (
+                    'Multiple IABV windows are running. This may indicate a '
+                    'resource leak or duplicate launch. Only one instance '
+                    'should be active at a time.'
+                ),
+            })
 
         return inconsistencies
