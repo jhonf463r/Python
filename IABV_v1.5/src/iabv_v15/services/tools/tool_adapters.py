@@ -118,7 +118,8 @@ class ToolAdapter:
     # Cache for multi-source detection results to avoid re-probing
     # filesystem/process/window every ~50 seconds on each MCP session.
     _multi_source_cache: dict[str, tuple[float, bool]] = {}
-    _MULTI_SOURCE_CACHE_TTL = 120.0  # seconds
+    _MULTI_SOURCE_CACHE_TTL = 120.0  # seconds — bumped at runtime by auto-correction
+    _TTL_PERSISTENCE_PATH: Path | None = None
     # Track which tool_ids have already been logged at INFO for disagreement.
     # After the first INFO log, subsequent identical disagreements are logged
     # at DEBUG to stop the console/log spam the user reported.
@@ -137,9 +138,45 @@ class ToolAdapter:
     def set_disagreement_marker_dir(cls, path: Path) -> None:
         """Set the directory for cross-process disagreement markers."""
         cls._DISAGREEMENT_MARKER_DIR = path
+        cls._TTL_PERSISTENCE_PATH = path
+        cls._load_persisted_ttl()
+
+    @classmethod
+    def _load_persisted_ttl(cls) -> None:
+        """Load persisted TTL from previous session to avoid re-bumping."""
+        if cls._TTL_PERSISTENCE_PATH is None:
+            return
+        ttl_file = cls._TTL_PERSISTENCE_PATH / '.multi_source_ttl'
+        if not ttl_file.exists():
+            return
+        try:
+            value = float(ttl_file.read_text(encoding='utf-8').strip())
+            if 120.0 <= value <= 600.0:
+                cls._MULTI_SOURCE_CACHE_TTL = value
+                logger.debug('multi_source_cache: loaded persisted TTL=%.0fs', value)
+        except (ValueError, OSError):
+            pass
+
+    @classmethod
+    def persist_ttl(cls) -> None:
+        """Persist current TTL so next session starts with the learned value."""
+        if cls._TTL_PERSISTENCE_PATH is None:
+            return
+        try:
+            cls._TTL_PERSISTENCE_PATH.mkdir(parents=True, exist_ok=True)
+            (cls._TTL_PERSISTENCE_PATH / '.multi_source_ttl').write_text(
+                str(cls._MULTI_SOURCE_CACHE_TTL), encoding='utf-8',
+            )
+        except OSError:
+            pass
 
     def _has_cross_process_marker(self, tool_id: str) -> bool:
-        """Check if another process already logged this disagreement."""
+        """Check if another process already logged this disagreement.
+
+        Uses a generous 2× TTL window so that MCP sub-processes (which
+        start with an empty ``_disagreement_logged`` dict) see the marker
+        left by the main process and suppress the redundant INFO log.
+        """
         marker_dir = self._DISAGREEMENT_MARKER_DIR
         if marker_dir is None:
             return False
@@ -148,7 +185,7 @@ class ToolAdapter:
             return False
         try:
             age = time.time() - marker.stat().st_mtime
-            return age < self._MULTI_SOURCE_CACHE_TTL
+            return age < self._MULTI_SOURCE_CACHE_TTL * 2
         except OSError:
             return False
 

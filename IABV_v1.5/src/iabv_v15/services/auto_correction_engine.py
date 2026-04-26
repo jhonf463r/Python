@@ -449,6 +449,7 @@ def _correct_runtime_noise_disagreement(
         new_ttl = min(old_ttl * 2, 600.0)
         if new_ttl > old_ttl:
             ToolAdapter._MULTI_SOURCE_CACHE_TTL = new_ttl
+            ToolAdapter.persist_ttl()
             logger.info(
                 'auto-correction: bumped multi_source_cache TTL %s→%s '
                 'due to %d disagreement logs', old_ttl, new_ttl, count,

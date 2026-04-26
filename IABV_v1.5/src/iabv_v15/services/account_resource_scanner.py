@@ -1264,22 +1264,20 @@ def _query_local_model(message: str) -> dict[str, Any] | None:
 
 
 def _query_cloud_model(message: str) -> dict[str, Any] | None:
-    """Query a cloud model (ChatGPT via OpenAI-compatible API) for intent
-    classification.  Uses the same prompt but a more capable model.
+    """Query a cloud model for intent classification.
+
+    Supports OpenAI (ChatGPT) and Anthropic (Claude) with their
+    respective API formats.
 
     Returns None if internet is unavailable, no API key, or quota exhausted.
     """
-    # Check for OpenAI-compatible API key (ChatGPT)
     api_key = os.environ.get('OPENAI_API_KEY', '')
-    base_url = 'https://api.openai.com/v1'
-    model = 'gpt-4o-mini'
+    use_anthropic = False
 
     if not api_key:
-        # Try Anthropic (Claude) as alternative
         api_key = os.environ.get('ANTHROPIC_API_KEY', '')
         if api_key:
-            base_url = 'https://api.anthropic.com/v1'
-            model = 'claude-3-haiku-20240307'
+            use_anthropic = True
         else:
             return None
 
@@ -1288,32 +1286,54 @@ def _query_cloud_model(message: str) -> dict[str, Any] | None:
     except ImportError:
         return None
 
-    messages = [
-        {'role': 'system', 'content': _INTENT_CLASSIFIER_PROMPT},
-        {'role': 'user', 'content': message},
-    ]
-    payload = {
-        'model': model,
-        'messages': messages,
-        'stream': False,
-        'temperature': 0.1,
-        'max_tokens': 100,
-    }
-    headers = {
-        'Authorization': f'Bearer {api_key}',
-        'Content-Type': 'application/json',
-    }
-
     try:
         with httpx.Client(timeout=10.0) as client:
-            resp = client.post(
-                f'{base_url}/chat/completions',
-                json=payload,
-                headers=headers,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-        raw_text = data['choices'][0]['message']['content'].strip()
+            if use_anthropic:
+                model = 'claude-3-haiku-20240307'
+                resp = client.post(
+                    'https://api.anthropic.com/v1/messages',
+                    json={
+                        'model': model,
+                        'max_tokens': 100,
+                        'system': _INTENT_CLASSIFIER_PROMPT,
+                        'messages': [{'role': 'user', 'content': message}],
+                    },
+                    headers={
+                        'x-api-key': api_key,
+                        'anthropic-version': '2023-06-01',
+                        'Content-Type': 'application/json',
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                raw_text = ''
+                for block in data.get('content', []):
+                    if block.get('type') == 'text':
+                        raw_text = block.get('text', '')
+                        break
+            else:
+                model = 'gpt-4o-mini'
+                resp = client.post(
+                    'https://api.openai.com/v1/chat/completions',
+                    json={
+                        'model': model,
+                        'messages': [
+                            {'role': 'system', 'content': _INTENT_CLASSIFIER_PROMPT},
+                            {'role': 'user', 'content': message},
+                        ],
+                        'stream': False,
+                        'temperature': 0.1,
+                        'max_tokens': 100,
+                    },
+                    headers={
+                        'Authorization': f'Bearer {api_key}',
+                        'Content-Type': 'application/json',
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                raw_text = data['choices'][0]['message']['content'].strip()
+
         json_match = re.search(r'\{[\s\S]*?\}', raw_text)
         if json_match:
             result = json.loads(json_match.group())
@@ -1337,9 +1357,17 @@ def _query_web_browser_model(message: str) -> dict[str, Any] | None:
     This allows using cloud models FOR FREE via existing browser sessions
     without needing API keys.
 
+    **Permission check**: per AGENTS.md observation policy, interacting with
+    visible external windows requires explicit permission.  The env var
+    ``IABV_ALLOW_BROWSER_CLASSIFIER`` must be ``1`` (set by the UI when
+    the user grants permission).
+
     Returns ``{"category": str, "confidence": float, "source": "web_browser",
     "model": str}`` or ``None`` on failure.
     """
+    if os.environ.get('IABV_ALLOW_BROWSER_CLASSIFIER', '') != '1':
+        logger.debug('web_browser_classifier: skipped — IABV_ALLOW_BROWSER_CLASSIFIER not set')
+        return None
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
