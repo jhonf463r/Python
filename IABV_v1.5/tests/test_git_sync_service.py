@@ -85,14 +85,28 @@ def test_check_blocks_on_local_ahead() -> None:
     recipe = {
         ("git", "fetch", "origin", "main"): FakeCompleted(),
         ("git", "status", "--porcelain"): FakeCompleted(stdout=""),
+        ("git", "rev-list", "--left-right", "--count", "HEAD...origin/main"): FakeCompleted(stdout="1 0\n"),
+    }
+    svc, _ = _svc(recipe)
+    status = svc.check()
+    assert status.commits_ahead == 1
+    assert status.commits_behind == 0
+    assert status.can_sync is False
+    assert "unpushed" in (status.block_reason or "")
+
+
+def test_check_allows_sync_on_diverged_branch() -> None:
+    """Diverged branches (ahead AND behind) should allow sync via merge pull."""
+    recipe = {
+        ("git", "fetch", "origin", "main"): FakeCompleted(),
+        ("git", "status", "--porcelain"): FakeCompleted(stdout=""),
         ("git", "rev-list", "--left-right", "--count", "HEAD...origin/main"): FakeCompleted(stdout="1 2\n"),
     }
     svc, _ = _svc(recipe)
     status = svc.check()
     assert status.commits_ahead == 1
     assert status.commits_behind == 2
-    assert status.can_sync is False
-    assert "unpushed" in (status.block_reason or "")
+    assert status.can_sync is True
 
 
 def test_check_reports_up_to_date() -> None:

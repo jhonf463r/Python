@@ -103,7 +103,7 @@ class GitSyncService:
         elif tree_dirty:
             can_sync = False
             block_reason = "working tree has uncommitted changes"
-        elif ahead > 0:
+        elif ahead > 0 and behind == 0:
             can_sync = False
             block_reason = f"local branch has {ahead} unpushed commit(s) — push or resolve before syncing"
         elif behind == 0:
