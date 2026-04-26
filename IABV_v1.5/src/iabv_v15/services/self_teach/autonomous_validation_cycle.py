@@ -1969,11 +1969,14 @@ class AutonomousValidationCycleService:
         tried_keys = list(dict.fromkeys(
             str(h.get('proposal_key') or '') for h in history if str(h.get('proposal_key') or '').strip()
         ))
-        self.storage.save_json('validation_feedback.json', {
-            'history': history,
-            'tried_proposal_keys': tried_keys,
-            'last_updated_utc': datetime.now(timezone.utc).isoformat(),
-        })
+        try:
+            self.storage.save_json('validation_feedback.json', {
+                'history': history,
+                'tried_proposal_keys': tried_keys,
+                'last_updated_utc': datetime.now(timezone.utc).isoformat(),
+            })
+        except Exception:
+            pass
 
     def _store_snapshot(self, snapshot: AutonomousValidationSnapshot) -> AutonomousValidationSnapshot:
         probes = self._load_pending_auto_probes()
