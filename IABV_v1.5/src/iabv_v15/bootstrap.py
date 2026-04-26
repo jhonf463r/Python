@@ -201,6 +201,7 @@ from iabv_v15.infra.persistence.user_clue_repository import UserClueRepository
 from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
 from iabv_v15.services.adaptive.adaptive_planner_service import AdaptivePlannerService
 from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+from iabv_v15.services.adaptive.cloud_reasoning_planner import CloudReasoningPlannerService
 from iabv_v15.services.adaptive.adaptive_weight_layer import AdaptiveWeightLayer
 from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
 from iabv_v15.services.adaptive.approval_gate_service import ApprovalGateService
@@ -1141,6 +1142,7 @@ class AppBootstrap:
         )
         self.portable_context_service.task_context_assembler = self.task_context_assembler
         self.portable_context_service.adaptive_task_orchestrator = self.adaptive_task_orchestrator
+        self.adaptive_task_orchestrator.cloud_reasoning_planner = CloudReasoningPlannerService()
         self.adaptive_task_orchestrator.control_master_service = self.control_master_service
         self.adaptive_task_orchestrator.control_master_digest_builder = self.control_master_digest_builder
         self.adaptive_task_orchestrator.self_examination_service = self.operational_self_examination_service
