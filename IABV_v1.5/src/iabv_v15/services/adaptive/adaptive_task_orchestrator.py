@@ -598,6 +598,12 @@ class AdaptiveTaskOrchestrator:
         ``plan_or_execute`` with the plan's primary IA, then chaining
         to the secondary IA if the primary succeeds.
 
+        G1 extension: also checks ``pending_auto_execution.json`` deposited
+        by the sync_pulse heartbeat.  If a proactive signal exists with
+        ``consumed == False``, treat it as an implicit coordinated action
+        even without explicit guidance — closing the introspection→action
+        loop.
+
         Returns the enriched payload with coordinated results, or ``None``
         if no plan qualifies for auto-execution.
         """
@@ -610,10 +616,23 @@ class AdaptiveTaskOrchestrator:
             if isinstance(action, dict) and action.get('action') == 'execute_coordinated_plan':
                 coordinated_action = action
                 break
+        # G1: if no explicit guidance action, check proactive signal from
+        # sync_pulse auto-execution deposited by ValidationCycle.
+        if coordinated_action is None:
+            proactive_signal = self._read_pending_auto_execution()
+            if proactive_signal is not None:
+                coordinated_action = {
+                    'action': 'execute_coordinated_plan',
+                    'source': 'sync_pulse_proactive',
+                    'proposal': proactive_signal.get('proposal'),
+                }
         if coordinated_action is None:
             return None
         sync_pulse = self._read_sync_pulse()
         actionable = list(sync_pulse.get('actionable_proposals') or [])
+        # G1: also check the proactive signal's proposal
+        if not actionable and isinstance(coordinated_action.get('proposal'), dict):
+            actionable = [coordinated_action['proposal']]
         if not actionable:
             return None
         best_proposal = actionable[0]
@@ -748,6 +767,51 @@ class AdaptiveTaskOrchestrator:
             'chained_result': dict(chained_result) if chained_result else None,
             'coordination_status': 'auto_executed',
         }
+
+    # ------------------------------------------------------------------
+    # G1: Read proactive auto-execution signal from sync_pulse
+    # ------------------------------------------------------------------
+
+    def _read_pending_auto_execution(self) -> dict[str, Any] | None:
+        """Read the pending auto-execution signal deposited by sync_pulse.
+
+        Returns the signal dict if it exists and has not been consumed yet.
+        Uses a compare-and-swap pattern: re-reads the file immediately
+        before writing to verify the signal hasn't been replaced by the
+        heartbeat between the initial read and the write.
+        """
+        service = self.validation_cycle_service
+        if service is None:
+            return None
+        storage = getattr(service, 'storage', None)
+        if storage is None:
+            return None
+        try:
+            signal = storage.load_json('pending_auto_execution.json')
+        except Exception:
+            return None
+        if not isinstance(signal, dict):
+            return None
+        if signal.get('consumed'):
+            return None
+        original_id = signal.get('signal_id') or signal.get('timestamp_utc') or ''
+        if not original_id:
+            return None
+        try:
+            pre_write = storage.load_json('pending_auto_execution.json')
+            if not isinstance(pre_write, dict):
+                return None
+            pre_id = pre_write.get('signal_id') or pre_write.get('timestamp_utc') or ''
+            if pre_id != original_id or pre_write.get('consumed'):
+                return None
+        except Exception:
+            return None
+        signal['consumed'] = True
+        try:
+            storage.save_json('pending_auto_execution.json', signal)
+        except Exception:
+            return None
+        return signal
 
     def _register_parallel_results(
         self,

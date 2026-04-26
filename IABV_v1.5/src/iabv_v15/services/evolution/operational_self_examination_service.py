@@ -2810,6 +2810,7 @@ class OperationalSelfExaminationService:
                 continue
             proposals.append({
                 'type': 'route_substitution',
+                'proposal_key': proposal_key,
                 'title': f'Sustituir {failing_kind} por {best_alt} en tareas con fallos recurrentes',
                 'description': (
                     f'{failing_kind} tiene {fail_count} fallos recientes. '
@@ -2836,6 +2837,7 @@ class OperationalSelfExaminationService:
                 if primary_score > 0.3 and secondary_score > 0.3 and collab_key not in tried_keys:
                     proposals.append({
                         'type': 'collaborative_execution',
+                        'proposal_key': collab_key,
                         'title': f'Plan coordinado: {primary_kind} + {secondary_kind}',
                         'description': (
                             f'{primary_kind} (score {"ponderado" if primary_kind in kind_weighted_scores else "promedio"} {primary_score:.2f}, {primary_runs} éxitos) '
@@ -2867,6 +2869,7 @@ class OperationalSelfExaminationService:
                     if vc_key not in tried_keys:
                         proposals.append({
                             'type': 'validated_collaboration',
+                            'proposal_key': vc_key,
                             'title': f'Extender éxito validado de {rec_kind} con {complementary[0]}',
                             'description': (
                                 f'{rec_kind} fue validado con confianza {rec_confidence:.2f}. '
