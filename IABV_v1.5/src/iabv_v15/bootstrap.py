@@ -1606,6 +1606,21 @@ class AppBootstrap:
         if not PYSIDE_AVAILABLE:
             raise RuntimeError('PySide6 is required to run the desktop UI.')
 
+        # Ensure PySide6's QML plugins are discoverable.  Conda/miniconda
+        # installs may place them in a non-default path, causing
+        # "qtquick2plugin not found" at engine load time.
+        try:
+            import PySide6
+            pyside_dir = Path(PySide6.__file__).resolve().parent
+            qml_dir = pyside_dir / 'qml'
+            plugin_dir = pyside_dir / 'plugins'
+            if qml_dir.is_dir():
+                os.environ.setdefault('QML2_IMPORT_PATH', str(qml_dir))
+            if plugin_dir.is_dir():
+                os.environ.setdefault('QT_PLUGIN_PATH', str(plugin_dir))
+        except Exception:
+            pass
+
         os.environ.setdefault('QT_QUICK_CONTROLS_STYLE', 'Basic')
         QQuickStyle.setStyle('Basic')
         app = QGuiApplication.instance() or QGuiApplication(sys.argv)
@@ -1740,8 +1755,13 @@ class AppBootstrap:
         mcp_proc = None
         tunnel_proc = None
         try:
+            # When launched via start_iabv.ps1 -StartUI, the script manages
+            # MCP + tunnel externally.  Skip autostart to avoid port conflict.
+            skip_mcp = os.environ.get('IABV_SKIP_MCP_AUTOSTART', '') == '1'
             mcp_port = int(os.environ.get('FASTMCP_PORT', '8000'))
-            if not self._is_mcp_port_in_use(mcp_port):
+            if skip_mcp:
+                logger.info('mcp_autostart: skipped (IABV_SKIP_MCP_AUTOSTART=1)')
+            elif not self._is_mcp_port_in_use(mcp_port):
                 mcp_proc = self._start_mcp_subprocess()
                 if mcp_proc:
                     import time

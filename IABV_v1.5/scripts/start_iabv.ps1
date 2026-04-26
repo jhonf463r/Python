@@ -207,6 +207,9 @@ if (-not (Test-Path $bridge)) {
 if ($StartUI) {
     Write-Info ""
     Write-Info "Lanzando ControlCenter UI (python -m iabv_v15 app) en proceso aparte..."
+    # Tell the UI bootstrap NOT to auto-start MCP+tunnel — this script
+    # manages them externally.  Prevents port-8000 conflict (Errno 10048).
+    $env:IABV_SKIP_MCP_AUTOSTART = '1'
     try {
         $pythonExe = 'python'
         if ($env:IABV_PYTHON) { $pythonExe = $env:IABV_PYTHON }
