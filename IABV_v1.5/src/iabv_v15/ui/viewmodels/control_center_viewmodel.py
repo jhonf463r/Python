@@ -1421,6 +1421,21 @@ class ControlCenterViewModel(QObject):
             'por qué no responde claude',
             'por que no responde ollama',
             'por qué no responde ollama',
+            'puedes ver los navegadores',
+            'puedes ver mis navegadores',
+            'que navegadores tengo abiertos',
+            'qué navegadores tengo abiertos',
+            'que navegadores hay abiertos',
+            'qué navegadores hay abiertos',
+            'que navegadores estan abiertos',
+            'qué navegadores están abiertos',
+            'que navegadores tienes abiertos',
+            'qué navegadores tienes abiertos',
+            'que navegadores ves',
+            'qué navegadores ves',
+            'ves mis navegadores',
+            'ves los navegadores',
+            'navegadores abiertos',
         )
         if any(phrase in normalized for phrase in direct_phrases):
             return True
@@ -1432,7 +1447,12 @@ class ControlCenterViewModel(QObject):
             and any(token in word_tokens for token in ('responde', 'bloqueado', 'hilo', 'mensajes', 'agotados', 'abierto', 'abierta'))
         )
         asks_current_state = any(phrase in normalized for phrase in ('que esta pasando', 'qué está pasando'))
-        return asks_about_windows or asks_about_network or asks_about_live_tool or asks_current_state
+        # "navegadores" + visibility words → world model (open browsers), not accounts
+        asks_about_browsers = (
+            any(token in word_tokens for token in ('navegador', 'navegadores', 'browser', 'browsers'))
+            and any(token in word_tokens for token in ('abierto', 'abiertos', 'abiertas', 'abierta', 'ves', 'ver', 'puedes', 'tienes'))
+        )
+        return asks_about_windows or asks_about_network or asks_about_live_tool or asks_current_state or asks_about_browsers
 
     def _is_self_awareness_question(self, message: str) -> bool:
         normalized = self._normalized_command_text(message)
@@ -1783,7 +1803,21 @@ class ControlCenterViewModel(QObject):
                         'cuáles', 'cuantas', 'cuántas')
         asks_accounts = any(token in word_tokens for token in account_nouns)
         asks_action = any(token in word_tokens for token in action_verbs)
+        # Disambiguate: "navegadores" + visibility words → world model, not accounts.
+        # If the user asks about open/visible browsers, _is_world_model_question
+        # handles it.  Only treat "navegadores" as account_resource when combined
+        # with account-specific verbs (escanea, cuentas, correos, etc.).
         if asks_accounts and asks_action:
+            browser_visibility_words = ('abierto', 'abiertos', 'abiertas', 'abierta',
+                                        'ves', 'ver', 'puedes')
+            browser_tokens = ('navegador', 'navegadores', 'browser', 'browsers')
+            is_browser_visibility = (
+                any(token in word_tokens for token in browser_tokens)
+                and any(token in word_tokens for token in browser_visibility_words)
+                and not any(token in word_tokens for token in ('cuentas', 'correos', 'sesiones'))
+            )
+            if is_browser_visibility:
+                return False
             return True
 
         # Fallback: Ollama-based classification for ambiguous messages.
