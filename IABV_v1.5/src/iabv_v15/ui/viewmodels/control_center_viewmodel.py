@@ -6998,6 +6998,7 @@ class ControlCenterViewModel(QObject):
         # the UI responsive for simple questions while the background
         # thread (Fix 55) handles the heavy inference path.
         if self._try_synchronous_shortcut(message):
+            self._set_live_status('idle')
             return
 
         # Fix 55: move ALL classification + routing + answer logic to a
