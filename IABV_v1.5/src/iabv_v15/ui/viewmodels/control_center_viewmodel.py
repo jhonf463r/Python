@@ -1752,7 +1752,7 @@ class ControlCenterViewModel(QObject):
         has_problem = any(token in word_tokens for token in ('bloqueos', 'bloqueo', 'problemas', 'problema', 'pendientes', 'pendiente', 'caducadas', 'caducados', 'caducada', 'errores', 'fallos', 'fallas'))
         return asks_fix and has_problem
 
-    def _is_account_resource_question(self, message: str) -> bool:
+    def _is_account_resource_question(self, message: str, *, fast_only: bool = False) -> bool:
         normalized = self._normalized_command_text(message)
         if not normalized:
             return False
@@ -1855,6 +1855,10 @@ class ControlCenterViewModel(QObject):
 
         # Fallback: Ollama-based classification for ambiguous messages.
         # Only invoked when the fast pattern check above didn't match.
+        # Skipped in fast_only mode (synchronous shortcut path) to avoid
+        # blocking the UI thread with LLM calls.
+        if fast_only:
+            return False
         try:
             from iabv_v15.services.account_resource_scanner import classify_chat_intent
             result = classify_chat_intent(normalized)
@@ -6107,7 +6111,7 @@ class ControlCenterViewModel(QObject):
         if self._is_learning_question(message, fast_only=True):
             self._answer_learning_question(message)
             return True
-        if self._is_account_resource_question(message):
+        if self._is_account_resource_question(message, fast_only=True):
             self._answer_account_resource_question(message)
             return True
         return False
