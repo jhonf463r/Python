@@ -799,7 +799,7 @@ class AdaptiveTaskOrchestrator:
         try:
             storage.save_json('pending_auto_execution.json', signal)
         except Exception:
-            pass
+            return None
         try:
             verification = storage.load_json('pending_auto_execution.json')
             if isinstance(verification, dict):
