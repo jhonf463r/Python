@@ -1327,14 +1327,137 @@ def _query_cloud_model(message: str) -> dict[str, Any] | None:
         return None
 
 
+def _query_web_browser_model(message: str) -> dict[str, Any] | None:
+    """Query a cloud model via the user's browser sessions (CDP).
+
+    Connects to an existing browser via Chrome DevTools Protocol, opens
+    a new tab to ChatGPT or Claude, sends the classification prompt,
+    reads the response, and closes the tab.
+
+    This allows using cloud models FOR FREE via existing browser sessions
+    without needing API keys.
+
+    Returns ``{"category": str, "confidence": float, "source": "web_browser",
+    "model": str}`` or ``None`` on failure.
+    """
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        return None
+
+    # Check which sessions are available
+    sessions = scan_browser_sessions()
+    session_tools = {s.get('tool', '').lower() for s in sessions.get('sessions', [])}
+
+    # Prefer ChatGPT, fallback to Claude
+    providers = []
+    if 'chatgpt' in session_tools:
+        providers.append({
+            'name': 'chatgpt',
+            'url': 'https://chatgpt.com/',
+            'input_selector': '#prompt-textarea',
+            'submit_method': 'enter',
+            'response_selector': '[data-message-author-role="assistant"]',
+        })
+    if 'claude' in session_tools:
+        providers.append({
+            'name': 'claude',
+            'url': 'https://claude.ai/new',
+            'input_selector': '[contenteditable="true"]',
+            'submit_method': 'enter',
+            'response_selector': '[data-testid="chat-message-content"]',
+        })
+
+    if not providers:
+        return None
+
+    cdp_url = os.environ.get('IABV_SHARED_CDP_URL', 'http://localhost:29229')
+    prompt_text = (
+        'Clasifica este mensaje en una categoria. '
+        'Responde SOLO con JSON asi: {"category": "account_resource", "confidence": 0.85}\n'
+        'Categorias: account_resource, self_awareness, learning, general.\n'
+        f'Mensaje: "{message}"'
+    )
+
+    pw = None
+    try:
+        pw = sync_playwright().start()
+        browser = pw.chromium.connect_over_cdp(cdp_url)
+        contexts = list(getattr(browser, 'contexts', []) or [])
+        if not contexts:
+            return None
+        context = contexts[0]
+
+        for provider in providers:
+            page = None
+            try:
+                page = context.new_page()
+                page.goto(provider['url'], timeout=15000)
+                page.wait_for_timeout(3000)
+
+                # Type the classification prompt
+                input_el = page.query_selector(provider['input_selector'])
+                if input_el is None:
+                    continue
+
+                input_el.click()
+                input_el.fill(prompt_text)
+                page.keyboard.press('Enter')
+
+                # Wait for response (up to 30 seconds)
+                page.wait_for_timeout(5000)
+                response_el = page.query_selector_all(provider['response_selector'])
+                if not response_el:
+                    page.wait_for_timeout(10000)
+                    response_el = page.query_selector_all(provider['response_selector'])
+
+                if response_el:
+                    # Get the last response (most recent)
+                    raw_text = response_el[-1].inner_text()
+                    json_match = re.search(r'\{[\s\S]*?\}', raw_text)
+                    if json_match:
+                        result = json.loads(json_match.group())
+                        if 'category' in result:
+                            result['source'] = 'web_browser'
+                            result['model'] = provider['name']
+                            logger.info(
+                                'web_browser_classifier: %s responded category=%s',
+                                provider['name'], result['category'],
+                            )
+                            return result
+            except Exception as exc:
+                logger.debug(
+                    'web_browser_classifier: %s failed: %s',
+                    provider['name'], exc,
+                )
+            finally:
+                if page is not None:
+                    try:
+                        page.close()
+                    except Exception:
+                        pass
+
+        return None
+    except Exception as exc:
+        logger.debug('web_browser_classifier: CDP connection failed: %s', exc)
+        return None
+    finally:
+        if pw is not None:
+            try:
+                pw.stop()
+            except Exception:
+                pass
+
+
 def classify_chat_intent(message: str) -> dict[str, Any] | None:
     """Dual-brain intent classifier.
 
-    Strategy:
+    Strategy (cascading, with parallel execution):
     1. Always query local model (Ollama) — instant, no quotas
-    2. If cloud API key available, query cloud in parallel
-    3. If both respond, cloud wins and trains local via saved examples
-    4. If only local responds, use it (enriched with past cloud examples)
+    2. If cloud API key available → query cloud API in parallel
+    3. If no API key but browser sessions exist → query via CDP/web
+    4. Cloud/web wins and trains local via saved examples
+    5. If only local responds, use it (enriched with past cloud examples)
 
     Returns ``{"category": str, "confidence": float, "source": str}``
     or ``None`` on failure.
@@ -1344,18 +1467,32 @@ def classify_chat_intent(message: str) -> dict[str, Any] | None:
     local_result: dict[str, Any] | None = None
     cloud_result: dict[str, Any] | None = None
 
-    # Check if cloud is available (has API key)
-    has_cloud = bool(
+    # Check cloud availability: API key first, then browser sessions
+    has_api_key = bool(
         os.environ.get('OPENAI_API_KEY')
         or os.environ.get('ANTHROPIC_API_KEY')
     )
 
-    if has_cloud:
-        # Run both in parallel
+    # Check if browser sessions are available (for web-based queries)
+    has_browser_sessions = False
+    if not has_api_key:
+        try:
+            sessions = scan_browser_sessions()
+            session_tools = {
+                s.get('tool', '').lower()
+                for s in sessions.get('sessions', [])
+            }
+            has_browser_sessions = bool(
+                session_tools & {'chatgpt', 'claude'}
+            )
+        except Exception:
+            pass
+
+    if has_api_key:
+        # API key path: fastest, most reliable
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
             local_future = pool.submit(_query_local_model, message)
             cloud_future = pool.submit(_query_cloud_model, message)
-
             try:
                 local_result = local_future.result(timeout=16)
             except Exception:
@@ -1364,8 +1501,21 @@ def classify_chat_intent(message: str) -> dict[str, Any] | None:
                 cloud_result = cloud_future.result(timeout=11)
             except Exception:
                 pass
+    elif has_browser_sessions:
+        # Browser session path: free, uses existing logins
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            local_future = pool.submit(_query_local_model, message)
+            web_future = pool.submit(_query_web_browser_model, message)
+            try:
+                local_result = local_future.result(timeout=16)
+            except Exception:
+                pass
+            try:
+                cloud_result = web_future.result(timeout=35)
+            except Exception:
+                pass
     else:
-        # Local only
+        # Local only — no cloud access
         local_result = _query_local_model(message)
 
     # Decision logic + Fix 44: benchmark tracking
@@ -1506,3 +1656,133 @@ def get_classifier_benchmark_summary() -> dict[str, Any]:
         'model_stats': model_stats,
         'local_learning_improving': agreement_rate > 0.7,
     }
+
+
+# ──────────────────────────────────────────────────────────────
+# Fix 46: Auto-benchmark of available models
+# ──────────────────────────────────────────────────────────────
+
+_BENCHMARK_TEST_CASES: list[dict[str, str]] = [
+    {'message': 'que cuentas tengo', 'expected': 'account_resource'},
+    {'message': 'te falto las demas cuentas en los demas navegadores', 'expected': 'account_resource'},
+    {'message': 'que asistentes hay disponibles', 'expected': 'account_resource'},
+    {'message': 'examinate', 'expected': 'self_awareness'},
+    {'message': 'como estas funcionando', 'expected': 'self_awareness'},
+    {'message': 'que has aprendido hasta ahora', 'expected': 'learning'},
+    {'message': 'ayudame a programar un script en python', 'expected': 'general'},
+    {'message': 'cual es la capital de francia', 'expected': 'general'},
+]
+
+
+def run_model_benchmark() -> dict[str, Any]:
+    """Benchmark all available local models on intent classification.
+
+    Tests each Ollama model with a set of known-answer test cases to
+    determine which model classifies IABV's cognitive metadata best.
+
+    Returns a summary with per-model accuracy and the recommended model.
+    """
+    import time as _time
+    base_url = os.environ.get('IABV_OLLAMA_BASE_URL', 'http://127.0.0.1:11434/v1')
+
+    # Discover available models
+    try:
+        import httpx
+        with httpx.Client(timeout=5.0) as client:
+            resp = client.get('http://127.0.0.1:11434/api/tags')
+            resp.raise_for_status()
+            models = [m.get('name', '') for m in resp.json().get('models', [])]
+    except Exception:
+        models = [os.environ.get('IABV_OLLAMA_MODEL', 'qwen3:8b')]
+
+    results: dict[str, dict[str, Any]] = {}
+
+    for model_name in models:
+        if not model_name or 'embedding' in model_name.lower():
+            continue  # skip embedding models
+
+        correct = 0
+        total = len(_BENCHMARK_TEST_CASES)
+        total_latency = 0.0
+        errors = 0
+
+        for test_case in _BENCHMARK_TEST_CASES:
+            try:
+                import httpx as _httpx
+                start = _time.monotonic()
+                messages = [
+                    {'role': 'system', 'content': _INTENT_CLASSIFIER_PROMPT},
+                    {'role': 'user', 'content': test_case['message']},
+                ]
+                payload = {
+                    'model': model_name,
+                    'messages': messages,
+                    'stream': False,
+                    'temperature': 0.1,
+                }
+                with _httpx.Client(timeout=30.0) as client:
+                    resp = client.post(
+                        f'{base_url}/chat/completions', json=payload,
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
+                elapsed = _time.monotonic() - start
+                total_latency += elapsed
+
+                raw_text = data['choices'][0]['message']['content'].strip()
+                raw_text = re.sub(
+                    r'<think>.*?</think>', '', raw_text, flags=re.DOTALL,
+                ).strip()
+                json_match = re.search(r'\{[\s\S]*?\}', raw_text)
+                if json_match:
+                    result = json.loads(json_match.group())
+                    if result.get('category') == test_case['expected']:
+                        correct += 1
+                else:
+                    errors += 1
+            except Exception:
+                errors += 1
+
+        accuracy = correct / total if total > 0 else 0
+        avg_latency = total_latency / total if total > 0 else 0
+
+        results[model_name] = {
+            'correct': correct,
+            'total': total,
+            'accuracy': round(accuracy, 3),
+            'avg_latency_ms': round(avg_latency * 1000),
+            'errors': errors,
+        }
+
+    # Determine best model
+    best_model = ''
+    best_accuracy = 0.0
+    for model_name, stats in results.items():
+        if stats['accuracy'] > best_accuracy:
+            best_accuracy = stats['accuracy']
+            best_model = model_name
+
+    # Persist benchmark results
+    benchmark_result = {
+        'models': results,
+        'best_model': best_model,
+        'best_accuracy': best_accuracy,
+        'test_cases_count': len(_BENCHMARK_TEST_CASES),
+    }
+
+    from datetime import datetime, timezone
+    bench_path = _classifier_benchmark_path().parent / 'model_benchmark_results.json'
+    try:
+        with open(bench_path, 'w', encoding='utf-8') as f:
+            json.dump(
+                {**benchmark_result, 'timestamp': datetime.now(timezone.utc).isoformat()},
+                f, ensure_ascii=False, indent=2,
+            )
+        logger.info(
+            'model_benchmark: best=%s accuracy=%.1f%% (%d models tested)',
+            best_model, best_accuracy * 100, len(results),
+        )
+    except Exception:
+        pass
+
+    return benchmark_result
