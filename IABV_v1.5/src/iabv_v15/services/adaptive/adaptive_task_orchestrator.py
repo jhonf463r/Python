@@ -776,9 +776,9 @@ class AdaptiveTaskOrchestrator:
         """Read the pending auto-execution signal deposited by sync_pulse.
 
         Returns the signal dict if it exists and has not been consumed yet.
-        Uses ``signal_id`` to verify the consumed write targets the same
-        signal that was read, avoiding a TOCTOU race where the heartbeat
-        could overwrite the file between read and write.
+        Uses a compare-and-swap pattern: re-reads the file immediately
+        before writing to verify the signal hasn't been replaced by the
+        heartbeat between the initial read and the write.
         """
         service = self.validation_cycle_service
         if service is None:
@@ -797,19 +797,20 @@ class AdaptiveTaskOrchestrator:
         original_id = signal.get('signal_id') or signal.get('timestamp_utc') or ''
         if not original_id:
             return None
+        try:
+            pre_write = storage.load_json('pending_auto_execution.json')
+            if not isinstance(pre_write, dict):
+                return None
+            pre_id = pre_write.get('signal_id') or pre_write.get('timestamp_utc') or ''
+            if pre_id != original_id or pre_write.get('consumed'):
+                return None
+        except Exception:
+            return None
         signal['consumed'] = True
         try:
             storage.save_json('pending_auto_execution.json', signal)
         except Exception:
             return None
-        try:
-            verification = storage.load_json('pending_auto_execution.json')
-            if isinstance(verification, dict):
-                written_id = verification.get('signal_id') or verification.get('timestamp_utc') or ''
-                if written_id != original_id:
-                    return None
-        except Exception:
-            pass
         return signal
 
     def _register_parallel_results(
