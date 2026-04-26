@@ -1309,6 +1309,51 @@ class AppBootstrap:
             ', '.join(sorted(ready)),
             f' | missing=[{", ".join(sorted(missing))}]' if missing else '',
         )
+        self._startup_self_examination()
+
+    def _startup_self_examination(self) -> None:
+        """Run a lightweight self-examination at startup.
+
+        Executes the perception cross-validator (if wired) to detect
+        UI anomalies (zombie windows, missing IABV window, duplicates)
+        and logs the results. This gives the program self-awareness
+        about its own state immediately after boot.
+        """
+        if os.environ.get('IABV_MCP_SUBPROCESS') == '1':
+            return
+        validator = getattr(self, 'perception_cross_validator', None)
+        if validator is None:
+            return
+        try:
+            result = validator.run_cross_validation()
+            n_issues = result.get('total_inconsistencies', 0)
+            checks = result.get('checks_passed', [])
+            ui_issues = [
+                i for i in result.get('inconsistencies', [])
+                if i.get('check') == 'ui_self_awareness'
+            ]
+            if ui_issues:
+                for issue in ui_issues:
+                    logger.warning(
+                        'startup_ui_issue: %s — %s',
+                        issue.get('actual', ''),
+                        issue.get('detail', ''),
+                    )
+            if n_issues == 0:
+                logger.info(
+                    'startup_self_check: %d/%d checks passed — all consistent',
+                    len(checks),
+                    result.get('total_checks', 0),
+                )
+            else:
+                logger.warning(
+                    'startup_self_check: %d inconsistencies found (%d/%d passed)',
+                    n_issues,
+                    len(checks),
+                    result.get('total_checks', 0),
+                )
+        except Exception as exc:
+            logger.debug('startup_self_check: skipped (%s)', exc)
 
     def _ensure_directories(self) -> None:
         for path in (
