@@ -776,7 +776,9 @@ class AdaptiveTaskOrchestrator:
         """Read the pending auto-execution signal deposited by sync_pulse.
 
         Returns the signal dict if it exists and has not been consumed yet.
-        Marks the signal as consumed after reading to prevent re-execution.
+        Uses ``signal_id`` to verify the consumed write targets the same
+        signal that was read, avoiding a TOCTOU race where the heartbeat
+        could overwrite the file between read and write.
         """
         service = self.validation_cycle_service
         if service is None:
@@ -792,9 +794,18 @@ class AdaptiveTaskOrchestrator:
             return None
         if signal.get('consumed'):
             return None
+        original_id = signal.get('signal_id') or signal.get('timestamp_utc') or ''
         signal['consumed'] = True
         try:
             storage.save_json('pending_auto_execution.json', signal)
+        except Exception:
+            pass
+        try:
+            verification = storage.load_json('pending_auto_execution.json')
+            if isinstance(verification, dict):
+                written_id = verification.get('signal_id') or verification.get('timestamp_utc') or ''
+                if written_id != original_id:
+                    return None
         except Exception:
             pass
         return signal
