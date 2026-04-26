@@ -1686,9 +1686,124 @@ def verify_tool_access_deductive(
     return result
 
 
+def _query_cloud_reasoning(context: str, system_prompt: str) -> dict[str, Any] | None:
+    """Fix 60: try cloud reasoning models (Gemini, Groq) before falling back
+    to local Ollama.  The best available model is used for metacognition,
+    planning and deductive reasoning.  Results are saved so the local model
+    can learn from better answers over time."""
+    import json as _json
+    import re as _re
+
+    try:
+        import httpx
+    except ImportError:
+        return None
+
+    messages_openai = [
+        {'role': 'system', 'content': system_prompt},
+        {'role': 'user', 'content': context},
+    ]
+
+    # --- Gemini (Google AI Studio, OpenAI-compat endpoint) ---
+    gemini_key = os.environ.get('GEMINI_API_KEY', '')
+    if gemini_key:
+        try:
+            with httpx.Client(timeout=25.0) as client:
+                resp = client.post(
+                    'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+                    json={
+                        'model': 'gemini-2.0-flash',
+                        'messages': messages_openai,
+                        'temperature': 0.2,
+                    },
+                    headers={
+                        'Authorization': f'Bearer {gemini_key}',
+                        'Content-Type': 'application/json',
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+            raw = data['choices'][0]['message']['content'].strip()
+            raw = _re.sub(r'<think>.*?</think>', '', raw, flags=_re.DOTALL).strip()
+            match = _re.search(r'\{[\s\S]*\}', raw)
+            if match:
+                result = _json.loads(match.group())
+                result['_cloud_source'] = 'gemini'
+                logger.info('cloud-reasoning: Gemini responded successfully')
+                _save_cloud_reasoning_example(context, result)
+                return result
+        except Exception as exc:
+            logger.debug('gemini reasoning failed: %s', exc)
+
+    # --- Groq (OpenAI-compat endpoint, Llama 3.3 70B) ---
+    groq_key = os.environ.get('GROQ_API_KEY', '')
+    if groq_key:
+        try:
+            with httpx.Client(timeout=25.0) as client:
+                resp = client.post(
+                    'https://api.groq.com/openai/v1/chat/completions',
+                    json={
+                        'model': 'llama-3.3-70b-versatile',
+                        'messages': messages_openai,
+                        'temperature': 0.2,
+                    },
+                    headers={
+                        'Authorization': f'Bearer {groq_key}',
+                        'Content-Type': 'application/json',
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+            raw = data['choices'][0]['message']['content'].strip()
+            raw = _re.sub(r'<think>.*?</think>', '', raw, flags=_re.DOTALL).strip()
+            match = _re.search(r'\{[\s\S]*\}', raw)
+            if match:
+                result = _json.loads(match.group())
+                result['_cloud_source'] = 'groq'
+                logger.info('cloud-reasoning: Groq responded successfully')
+                _save_cloud_reasoning_example(context, result)
+                return result
+        except Exception as exc:
+            logger.debug('groq reasoning failed: %s', exc)
+
+    return None
+
+
+def _save_cloud_reasoning_example(context: str, result: dict[str, Any]) -> None:
+    """Persist cloud reasoning examples so the local model can learn."""
+    import json as _json
+    try:
+        data_dir = Path(os.environ.get('IABV_DATA_DIR', '')) / 'evolution' / 'cloud_reasoning'
+        if not data_dir.exists():
+            data_dir = Path.home() / 'IABV_v1.5' / 'data' / 'evolution' / 'cloud_reasoning'
+        data_dir.mkdir(parents=True, exist_ok=True)
+        log_path = data_dir / 'reasoning_examples.jsonl'
+        from datetime import datetime, timezone
+        entry = {
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'context_hash': hash(context[:200]),
+            'source': result.get('_cloud_source', 'cloud'),
+            'reasoning': result.get('reasoning', ''),
+            'corrections_count': len(result.get('corrections', [])),
+        }
+        with open(log_path, 'a', encoding='utf-8') as f:
+            f.write(_json.dumps(entry, ensure_ascii=False) + '\n')
+    except Exception:
+        pass
+
+
 def _query_ollama_for_reasoning(context: str, system_prompt: str) -> dict[str, Any] | None:
-    """Generic Ollama reasoning query. Reused by both deductive correction
-    and tool verification engines."""
+    """Reasoning query with cloud-first, local-fallback strategy.
+
+    Fix 60: tries Gemini / Groq cloud models first (better reasoning),
+    then falls back to local Ollama.  Cloud results are saved so the
+    local model can learn from higher-quality answers over time."""
+    # Try cloud models first
+    cloud_result = _query_cloud_reasoning(context, system_prompt)
+    if cloud_result is not None:
+        return cloud_result
+
+    # Fallback to local Ollama
     import json as _json
 
     base_url = os.environ.get('IABV_OLLAMA_BASE_URL', 'http://127.0.0.1:11434/v1')

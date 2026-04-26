@@ -1,11 +1,14 @@
 ﻿from __future__ import annotations
 
 from datetime import datetime, timezone
+import logging
 from pathlib import Path
 import re
 import threading
 import uuid
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 def _generate_chat_session_id() -> str:
@@ -845,6 +848,12 @@ class ControlCenterViewModel(QObject):
         }
 
     def _update_evolution_snapshot(self) -> None:
+        try:
+            self._update_evolution_snapshot_inner()
+        except Exception as exc:
+            logger.debug('_update_evolution_snapshot failed (non-critical): %s', exc)
+
+    def _update_evolution_snapshot_inner(self) -> None:
         health_snapshot = self.evolution_review_service.build_project_health().model_dump(mode='json') if self.evolution_review_service is not None else {}
         experiment_runs = self.experiment_lab_repository.list_runs(limit=12) if self.experiment_lab_repository is not None else []
         experiment_recommendations = self.experiment_lab_repository.list_recommendations(limit=3) if self.experiment_lab_repository is not None else []
@@ -6522,7 +6531,12 @@ class ControlCenterViewModel(QObject):
         # background thread.  Both _chat_shortcut_analysis (up to 3 s)
         # and the _is_* classifiers (Ollama fallback, 5-16 s each) were
         # blocking the Qt event loop, freezing the UI.
+        import time as _time_mod
+        self._working = True
+        self._working_since = _time_mod.time()
+
         def _route_and_answer() -> None:
+            _inner_worker_took_over = False
             # Shortcut analysis (may call LLM, give it 3 s)
             shortcut_analysis: dict[str, Any] = {}
             _sa_result: dict[str, Any] = {}
@@ -6561,15 +6575,14 @@ class ControlCenterViewModel(QObject):
                     return
                 if allow_chat_shortcuts and self._is_general_chat_message(message) and not self._seems_task_like_message(message):
                     self._answer_general_chat(message)
+                    _inner_worker_took_over = True
                     return
                 explicit_assistant = self._explicit_assistant_preference(message)
                 if explicit_assistant:
                     self._last_user_goal = message
                     self._run_external_consultation(explicit_assistant, announce=True)
+                    _inner_worker_took_over = True
                     return
-                import time as _time
-                self._working = True
-                self._working_since = _time.time()
                 self._busy_label = 'Estoy entendiendo tu mensaje y preparando la mejor respuesta.'
                 self._set_autonomy_activity_override(
                     visible=True,
@@ -6616,10 +6629,11 @@ class ControlCenterViewModel(QObject):
                 logger.warning('_route_and_answer failed: %s', exc)
                 self.taskFailed.emit('chat', f'Error en clasificacion: {exc}')
             finally:
-                # Only reset to idle if no inner worker took over (e.g.
-                # _answer_general_chat sets _working=True and spawns its
-                # own thread that will reset when done).
-                if not self._working:
+                # Reset _working unless an inner worker took over (e.g.
+                # _answer_general_chat spawns its own thread that will
+                # reset _working when done).
+                if not _inner_worker_took_over:
+                    self._working = False
                     self._set_live_status('idle')
 
         threading.Thread(target=_route_and_answer, daemon=True).start()
@@ -7044,9 +7058,18 @@ class ControlCenterViewModel(QObject):
             self._working = False
         self._update_progress_cards()
         self._update_evolution_snapshot()
-        self._agent_cards = self._build_agent_cards()
-        self._refresh_development_packet()
-        self._refresh_autonomy_dock()
+        try:
+            self._agent_cards = self._build_agent_cards()
+        except Exception:
+            pass
+        try:
+            self._refresh_development_packet()
+        except Exception:
+            pass
+        try:
+            self._refresh_autonomy_dock()
+        except Exception:
+            pass
         self.dataChanged.emit()
 
     @Slot(str, str)
@@ -7075,8 +7098,14 @@ class ControlCenterViewModel(QObject):
             f"Sesion adaptativa: {self._adaptive_session_id or 'n/d'}\n"
             f"Detalle: {message}"
         )
-        self._refresh_development_packet()
-        self._refresh_autonomy_dock()
+        try:
+            self._refresh_development_packet()
+        except Exception:
+            pass
+        try:
+            self._refresh_autonomy_dock()
+        except Exception:
+            pass
         self.dataChanged.emit()
 
     def _build_provider_diagnostic(self) -> str:

@@ -51,8 +51,12 @@ except ImportError:  # pragma: no cover - fallback for non-UI test environments
 
         return decorator
 
-    def Property(_type, fget=None, fset=None, fdel=None, notify=None, constant=False):
-        return property(fget, fset, fdel)
+    def Property(_type=None, fget=None, fset=None, fdel=None, notify=None, constant=False):
+        if fget is not None:
+            return property(fget, fset, fdel)
+        def _decorator(func):
+            return property(func)
+        return _decorator
 
     class QUrl:
         def __init__(self, path: str):
