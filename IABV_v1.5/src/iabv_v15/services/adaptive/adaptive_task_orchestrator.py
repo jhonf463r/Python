@@ -38,6 +38,7 @@ from iabv_v15.domain.models import (
 )
 from iabv_v15.infra.persistence.adaptive_session_repository import AdaptiveSessionRepository
 from iabv_v15.services.adaptive.adaptive_planner_service import AdaptivePlannerService
+from iabv_v15.services.adaptive.cloud_reasoning_planner import CloudReasoningPlannerService, CloudPlan
 from iabv_v15.services.adaptive.approval_gate_service import ApprovalGateService
 from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
 from iabv_v15.services.adaptive.capability_readiness_service import CapabilityReadinessService
@@ -164,6 +165,7 @@ class AdaptiveTaskOrchestrator:
         # ``ExperimentRun`` persistidos en su repositorio. Es puramente
         # descriptivo; nunca decide ruta operativa.
         self.experiment_lab = experiment_lab
+        self.cloud_reasoning_planner: CloudReasoningPlannerService | None = None
         self.control_master_service: Any | None = None
         self.control_master_digest_builder: Any | None = None
         self.self_examination_service: Any | None = None
@@ -1443,6 +1445,86 @@ class AdaptiveTaskOrchestrator:
         replanned.metadata['replanned_from_session_id'] = session.session_id
         replanned.metadata['replan_count'] = int(session.metadata.get('replan_count') or 0) + 1
         return self.task_outcome_recorder.record(replanned)
+
+    # ------------------------------------------------------------------
+    # Cloud reasoning plan generation ("cerebro central")
+    # ------------------------------------------------------------------
+
+    def generate_cloud_plan(
+        self,
+        user_goal: str,
+        *,
+        context_summary: str = '',
+    ) -> CloudPlan | None:
+        """Use cloud reasoning to decompose *user_goal* into executable steps.
+
+        This is the main entry point for the "cerebro central" feature.
+        The orchestrator delegates plan generation to ``CloudReasoningPlannerService``
+        and enriches the result with world-model and tool-registry context.
+        """
+        if self.cloud_reasoning_planner is None:
+            return None
+
+        # Build context from world model and portable context if available
+        context_parts: list[str] = []
+        if context_summary:
+            context_parts.append(context_summary)
+
+        # Append world model summary if available
+        try:
+            if hasattr(self, 'context_assembler') and self.context_assembler is not None:
+                wm = getattr(self.context_assembler, 'world_model_service', None)
+                if wm is not None:
+                    snapshot = wm.snapshot()
+                    if snapshot is not None:
+                        active_tools = [
+                            t.get('name', t.get('tool_id', ''))
+                            for t in (getattr(snapshot, 'available_tools', None) or [])
+                            if isinstance(t, dict)
+                        ]
+                        if active_tools:
+                            context_parts.append(f"Available tools on this machine: {', '.join(active_tools[:10])}")
+                        blockers = getattr(snapshot, 'active_blockers', None) or []
+                        if blockers:
+                            blocker_strs = [str(b.get('description', b)) if isinstance(b, dict) else str(b) for b in blockers[:5]]
+                            context_parts.append(f"Active blockers: {'; '.join(blocker_strs)}")
+        except Exception:
+            pass
+
+        plan = self.cloud_reasoning_planner.generate_plan(
+            user_goal,
+            context='\n'.join(context_parts),
+        )
+        return plan
+
+    def cloud_plan_to_playbook_steps(self, plan: CloudPlan) -> list[PlaybookStep]:
+        """Convert a ``CloudPlan`` into ``PlaybookStep`` instances.
+
+        This bridges the cloud-generated plan with the existing playbook
+        execution infrastructure.  Each step carries the assigned tool
+        in its metadata so that ``ExecutionPlaybookService`` and the UI
+        know which tool to invoke.
+        """
+        from iabv_v15.domain.models import PlaybookStep, RunStatus
+        steps: list[PlaybookStep] = []
+        for ps in plan.steps:
+            steps.append(PlaybookStep(
+                phase_key=f'cloud_plan_step_{ps.order}',
+                title=ps.title,
+                description=ps.description,
+                status=RunStatus.PENDING if ps.status == 'pending' else RunStatus.SUCCESS,
+                requires_approval=ps.requires_approval,
+                executable=True,
+                detail=ps.tool_rationale,
+                metadata={
+                    'assigned_tool': ps.assigned_tool,
+                    'estimated_seconds': ps.estimated_seconds,
+                    'cloud_plan_id': plan.plan_id,
+                    'cloud_source': plan.cloud_source,
+                    'step_order': ps.order,
+                },
+            ))
+        return steps
 
     def _refresh_session_metadata(
         self,

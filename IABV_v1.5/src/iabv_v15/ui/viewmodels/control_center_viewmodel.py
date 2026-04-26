@@ -205,6 +205,7 @@ class ControlCenterViewModel(QObject):
         self._assistant_guidance_text = 'Describe una tarea y te dire si me falta ensenanza, aprobacion, revision evolutiva o apoyo de Codex.'
         self._assistant_action_buttons: list[dict[str, str]] = []
         self._last_adaptive_payload: dict[str, Any] = {}
+        self._pending_cloud_plan: Any = None
         self._autonomy_activity_override: dict[str, Any] = {}
         self._live_process_summary: dict[str, Any] = {}
         self._live_work_items: list[dict[str, Any]] = []
@@ -2914,6 +2915,203 @@ class ControlCenterViewModel(QObject):
             )
         )
 
+    # ------------------------------------------------------------------
+    # Cloud plan detection ("cerebro central")
+    # ------------------------------------------------------------------
+
+    _CLOUD_PLAN_TRIGGERS = (
+        'soluciona', 'solucioname', 'solucionar',
+        'planifica', 'planificar', 'haz un plan',
+        'genera un plan', 'arma un plan', 'coordina',
+        'resuelve esto', 'necesito que resuelvas',
+        'ejecuta un plan', 'plan de accion',
+    )
+
+    def _is_cloud_plan_request(self, message: str) -> bool:
+        normalized = self._normalized_command_text(message)
+        return any(trigger in normalized for trigger in self._CLOUD_PLAN_TRIGGERS)
+
+    def _handle_cloud_plan_request(self, message: str) -> None:
+        """Generate a cloud-reasoning plan and present it with action buttons."""
+        self._set_autonomy_activity_override(
+            visible=True,
+            title='Generando plan inteligente',
+            status='active',
+            stage='consultando modelos cloud',
+            progress=0.20,
+            detail='Descomponiendo tu solicitud en pasos concretos con asignacion de herramientas.',
+            tool='cloud reasoning (Gemini/Groq)',
+            next_step='Voy a generar un plan paso a paso y mostrartelo para que lo apruebes.',
+            learning_note='Se usa razonamiento cloud para planes complejos; el resultado se persiste para aprendizaje local.',
+            mode='cloud',
+        )
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+
+        plan = None
+        if self.adaptive_orchestrator is not None:
+            try:
+                plan = self.adaptive_orchestrator.generate_cloud_plan(message)
+            except Exception as exc:
+                logger.warning('cloud plan generation failed: %s', exc)
+
+        if plan is None:
+            self._append_message(
+                'assistant', 'IABV',
+                'No pude generar un plan en este momento. Los modelos cloud no estan disponibles o no pude descomponer la solicitud. '
+                'Intenta reformular tu objetivo o verifica que las API keys esten configuradas.',
+                'cloud-plan: no plan generated',
+            )
+            return
+
+        # Build chat message with plan steps
+        lines = [f'**Plan generado** ({plan.cloud_source}) — confianza: {plan.confidence:.0%}\n']
+        lines.append(f'_{plan.summary}_\n')
+        for step in plan.steps:
+            approval_tag = ' **[requiere aprobacion]**' if step.requires_approval else ''
+            lines.append(
+                f'{step.order}. **{step.title}** → _{step.assigned_tool}_{approval_tag}\n'
+                f'   {step.description}'
+            )
+        lines.append('\n¿Quieres que ejecute este plan?')
+
+        self._append_message('assistant', 'IABV', '\n'.join(lines), 'cloud-plan: plan presented')
+
+        # Store plan in metadata for later execution
+        self._pending_cloud_plan = plan
+        self._last_user_goal = message
+
+        # Set action buttons for the plan
+        self._assistant_action_buttons = [
+            {'action': 'execute_cloud_plan', 'label': 'Ejecutar plan'},
+            {'action': 'replan_cloud', 'label': 'Regenerar plan'},
+        ]
+        self._set_autonomy_activity_override(
+            visible=True,
+            title='Plan listo',
+            status='awaiting_approval',
+            stage='esperando tu decision',
+            progress=1.0,
+            detail=plan.summary,
+            tool=plan.cloud_source,
+            next_step='Aprueba el plan o pideme que lo regenere.',
+            mode='cloud',
+        )
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+
+    def _execute_cloud_plan(self) -> None:
+        """Execute the pending cloud plan step by step."""
+        plan = getattr(self, '_pending_cloud_plan', None)
+        if plan is None:
+            self._append_message('assistant', 'IABV', 'No hay un plan pendiente para ejecutar.', 'cloud-plan: no pending plan')
+            return
+
+        self._pending_cloud_plan = None
+        self._assistant_action_buttons = []
+
+        total = len(plan.steps)
+        for i, step in enumerate(plan.steps):
+            progress = (i + 1) / total
+            self._set_autonomy_activity_override(
+                visible=True,
+                title=f'Ejecutando paso {step.order}/{total}',
+                status='active',
+                stage=step.title,
+                progress=progress,
+                detail=step.description,
+                tool=step.assigned_tool,
+                next_step=plan.steps[i + 1].title if i + 1 < total else 'Finalizar plan',
+                mode='cloud',
+            )
+            try:
+                self.dataChanged.emit()
+            except Exception:
+                pass
+
+            if step.requires_approval:
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'**Paso {step.order}** requiere aprobacion: {step.title}\n{step.description}\n\n'
+                    f'Herramienta: {step.assigned_tool} — {step.tool_rationale}',
+                    f'cloud-plan step {step.order}: awaiting approval',
+                )
+                step.status = 'awaiting_approval'
+                break
+
+            # Execute step via the appropriate tool
+            try:
+                if step.assigned_tool in ('codex', 'chatgpt', 'claude', 'devin'):
+                    if self.adaptive_orchestrator is not None and hasattr(self.adaptive_orchestrator, 'autonomous_evolution_service'):
+                        aes = self.adaptive_orchestrator.autonomous_evolution_service
+                        if aes is not None:
+                            from iabv_v15.domain.models import DecisionContext
+                            result = aes.plan_or_execute(
+                                adaptive_payload={
+                                    'user_goal': step.description,
+                                    'metadata': {
+                                        'assistant_kind': step.assigned_tool,
+                                        'cloud_plan_step': step.order,
+                                        'cloud_plan_id': plan.plan_id,
+                                    },
+                                },
+                                user_goal=step.description,
+                                source='cloud_plan_execution',
+                                decision_context=DecisionContext(),
+                            )
+                            step.status = 'completed'
+                            step.result_summary = str(result.get('summary', result.get('status', 'done')))
+                            self._append_message(
+                                'assistant', 'IABV',
+                                f'Paso {step.order} completado ({step.assigned_tool}): {step.result_summary[:200]}',
+                                f'cloud-plan step {step.order}: completed via {step.assigned_tool}',
+                            )
+                            continue
+                # Local/ollama or fallback
+                step.status = 'completed'
+                step.result_summary = 'Ejecutado localmente'
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Paso {step.order} completado (local): {step.title}',
+                    f'cloud-plan step {step.order}: completed locally',
+                )
+            except Exception as exc:
+                step.status = 'failed'
+                step.result_summary = str(exc)[:200]
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Paso {step.order} fallo: {exc}',
+                    f'cloud-plan step {step.order}: failed',
+                )
+                logger.warning('cloud plan step %d failed: %s', step.order, exc)
+
+        # Finalize
+        completed = sum(1 for s in plan.steps if s.status == 'completed')
+        self._append_message(
+            'assistant', 'IABV',
+            f'Plan finalizado: {completed}/{total} pasos completados.',
+            f'cloud-plan: {completed}/{total} steps completed',
+        )
+        self._set_autonomy_activity_override(
+            visible=True,
+            title='Plan finalizado',
+            status='completed',
+            stage='resumen',
+            progress=1.0,
+            detail=f'{completed}/{total} pasos completados',
+            tool=plan.cloud_source,
+            next_step='Puedes pedirme otro plan o preguntar lo que necesites.',
+            mode='cloud',
+        )
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+
     def _is_general_conversation_session(self, payload: dict[str, Any], intent: dict[str, Any], context: dict[str, Any]) -> bool:
         intent_key = str(intent.get('intent_key') or '').strip()
         site_name = str(context.get('site_display_name') or context.get('site_id') or '').strip().lower()
@@ -5404,6 +5602,32 @@ class ControlCenterViewModel(QObject):
         if action == 'abort':
             self.abortAdaptive()
             return True
+        if action == 'execute_cloud_plan':
+            def _cloud_exec() -> None:
+                try:
+                    self._execute_cloud_plan()
+                finally:
+                    self._working = False
+                    self._set_live_status('idle')
+            self._working = True
+            threading.Thread(target=_cloud_exec, daemon=True).start()
+            return True
+
+        if action == 'replan_cloud':
+            goal = getattr(self, '_last_user_goal', '')
+            if goal:
+                self._pending_cloud_plan = None
+                self._assistant_action_buttons = []
+                def _replan() -> None:
+                    try:
+                        self._handle_cloud_plan_request(goal)
+                    finally:
+                        self._working = False
+                        self._set_live_status('idle')
+                self._working = True
+                threading.Thread(target=_replan, daemon=True).start()
+            return True
+
         if action == 'execute_coordinated_plan':
             # Fix 56: handle the coordinated plan action generated by
             # AdaptiveTaskOrchestrator._maybe_coordinated_plan_action().
@@ -6577,6 +6801,14 @@ class ControlCenterViewModel(QObject):
                     self._answer_general_chat(message)
                     _inner_worker_took_over = True
                     return
+                # Cloud plan detection: if the user asks to "solve" or
+                # "plan" something, generate a cloud-reasoning plan with
+                # step-by-step tool assignment instead of the normal flow.
+                if self._is_cloud_plan_request(message):
+                    self._handle_cloud_plan_request(message)
+                    _inner_worker_took_over = True
+                    return
+
                 explicit_assistant = self._explicit_assistant_preference(message)
                 if explicit_assistant:
                     self._last_user_goal = message
