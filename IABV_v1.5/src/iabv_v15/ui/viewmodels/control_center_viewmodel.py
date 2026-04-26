@@ -6825,25 +6825,36 @@ class ControlCenterViewModel(QObject):
             )
             self._update_adaptive_state(adaptive_payload)
             if adaptive_payload:
+                # Fix 57: move autonomy evaluation to a background thread.
+                # _maybe_run_autonomous_evolution calls govern_adaptive_payload
+                # which may invoke plan_or_execute (Ollama / cloud APIs).
+                # Running it on the UI thread freezes the window and leaves
+                # the progress bar stuck at ~58%.
                 self._busy_label = 'Ya tengo una primera respuesta. Estoy viendo si conviene apoyarme en otra herramienta o seguir por aqui.'
-                self._set_autonomy_activity_override(
-                    visible=True,
-                    title='Evaluando autonomia',
-                    status='active',
-                    stage='decidiendo si escalo o sigo local',
-                    progress=0.56,
-                    detail='Ya resolvi la primera respuesta local. Ahora contrasto gobernanza, evidencia y objetivo persistente antes de cerrar la respuesta.',
-                    tool='motor local',
-                    next_step='Si la evidencia lo pide, abrire Codex, ChatGPT, Claude u Ollama con el contexto redactado.',
-                    learning_note='La respuesta local aun puede enriquecerse con consulta externa antes de consolidarse.',
-                    mode='local',
-                )
                 self.dataChanged.emit()
-                self._process_ui_events()
-                autonomy_result = self._maybe_run_autonomous_evolution(adaptive_payload, source='chat')
-                if autonomy_result is None:
-                    self._busy_label = 'Respuesta lista.'
-                self._clear_autonomy_activity_override()
+                _ap = dict(adaptive_payload)
+                def _autonomy_worker() -> None:
+                    try:
+                        autonomy_result = self._maybe_run_autonomous_evolution(_ap, source='chat')
+                        if autonomy_result is None:
+                            self._busy_label = 'Respuesta lista.'
+                    except Exception as exc:
+                        logger.warning('autonomy evaluation failed: %s', exc)
+                        self._busy_label = 'Respuesta lista.'
+                    finally:
+                        self._clear_autonomy_activity_override()
+                        self._working = False
+                        self._set_live_status('idle')
+                        self.dataChanged.emit()
+                threading.Thread(target=_autonomy_worker, daemon=True).start()
+                # Return early so the code below (self._working = False)
+                # does NOT run — the worker thread handles cleanup.
+                self._update_progress_cards()
+                self._update_evolution_snapshot()
+                self._agent_cards = self._build_agent_cards()
+                threading.Thread(target=self._refresh_development_packet, daemon=True).start()
+                self.dataChanged.emit()
+                return
         elif task_name == 'adaptive_action':
             self._clear_autonomy_activity_override()
             session_payload = dict(payload)
