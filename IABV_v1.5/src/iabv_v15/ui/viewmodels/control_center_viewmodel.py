@@ -6418,100 +6418,108 @@ class ControlCenterViewModel(QObject):
         threading.Thread(target=self._refresh_development_packet, args=(message,), daemon=True).start()
         if self._try_handle_chat_command(message):
             return
-        # _chat_shortcut_analysis puede llamar a LLM — ejecutar con timeout
-        # APRENDIDO: NO usar 'with ThreadPoolExecutor' en hilo de UI porque
-        # pool.shutdown(wait=True) bloquea al salir del with aunque el timeout
-        # se haya cumplido. Usar Thread + Event en su lugar.
-        shortcut_analysis = {}
-        _sa_result: dict[str, Any] = {}
-        _sa_done = threading.Event()
-        def _sa_worker() -> None:
-            try:
-                _sa_result.update(self._chat_shortcut_analysis(message))
-            except Exception:
-                pass
-            finally:
-                _sa_done.set()
-        _sa_thread = threading.Thread(target=_sa_worker, daemon=True)
-        _sa_thread.start()
-        if _sa_done.wait(timeout=3):
-            shortcut_analysis = _sa_result
-        allow_chat_shortcuts = not bool(shortcut_analysis.get('mixed_actionable')) and not bool(shortcut_analysis.get('requires_clarification'))
-        if allow_chat_shortcuts and self._is_world_model_question(message):
-            self._answer_world_model_question(message)
-            return
-        if allow_chat_shortcuts and self._is_self_awareness_question(message):
-            self._answer_self_awareness_question(message)
-            return
-        if allow_chat_shortcuts and self._is_evolution_status_question(message):
-            self._answer_evolution_status_question(message)
-            return
-        if allow_chat_shortcuts and self._is_self_examination_question(message):
-            self._answer_self_examination_question(message)
-            return
-        if allow_chat_shortcuts and self._is_learning_question(message):
-            self._answer_learning_question(message)
-            return
-        # Account resource questions always resolve locally — bypass shortcut gate.
-        if self._is_account_resource_question(message):
-            self._answer_account_resource_question(message)
-            return
-        if allow_chat_shortcuts and self._is_general_chat_message(message) and not self._seems_task_like_message(message):
-            self._answer_general_chat(message)
-            return
-        explicit_assistant = self._explicit_assistant_preference(message)
-        if explicit_assistant:
-            self._last_user_goal = message
-            self._run_external_consultation(explicit_assistant, announce=True)
-            return
-        import time as _time
-        self._working = True
-        self._working_since = _time.time()
-        self._busy_label = 'Estoy entendiendo tu mensaje y preparando la mejor respuesta.'
-        self._set_autonomy_activity_override(
-            visible=True,
-            title='Analizando consulta',
-            status='active',
-            stage='orquestando decision local',
-            progress=0.14,
-            detail='Estoy detectando la intencion, el pack y si conviene resolver localmente o consultar otra herramienta.',
-            tool='motor local',
-            next_step='Primero cierro el analisis local y luego decido si hace falta apoyo externo.',
-            learning_note='La memoria del objetivo y los patrones previos se tienen en cuenta antes de responder.',
-            mode='local',
-        )
-        self.dataChanged.emit()
 
-        def worker() -> None:
+        # Fix 55: move ALL classification + routing + answer logic to a
+        # background thread.  Both _chat_shortcut_analysis (up to 3 s)
+        # and the _is_* classifiers (Ollama fallback, 5-16 s each) were
+        # blocking the Qt event loop, freezing the UI.
+        def _route_and_answer() -> None:
+            # Shortcut analysis (may call LLM, give it 3 s)
+            shortcut_analysis: dict[str, Any] = {}
+            _sa_result: dict[str, Any] = {}
+            _sa_done = threading.Event()
+            def _sa_worker() -> None:
+                try:
+                    _sa_result.update(self._chat_shortcut_analysis(message))
+                except Exception:
+                    pass
+                finally:
+                    _sa_done.set()
+            _sa_thread = threading.Thread(target=_sa_worker, daemon=True)
+            _sa_thread.start()
+            if _sa_done.wait(timeout=3):
+                shortcut_analysis = _sa_result
+            allow_chat_shortcuts = not bool(shortcut_analysis.get('mixed_actionable')) and not bool(shortcut_analysis.get('requires_clarification'))
             try:
-                request = self._build_request(message)
-                record = self.inference_service.infer_task(request)
-                adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
-                self.taskResolved.emit(
-                    'chat',
-                    {
-                        'summary': record.result.summary,
-                        'provider_name': record.result.provider_name,
-                        'reasoning_mode': record.result.reasoning_mode.value,
-                        'confidence': f'{record.result.confidence:.2f}',
-                        'route_reason': record.route.reason,
-                        'report_kind': record.result.report_kind.value,
-                        'role_title': self._role_title_from_task(record.result.detected_role or record.route.task_role),
-                        'sources': record.result.sources,
-                        'follow_up_teachings': record.result.follow_up_teachings,
-                        'used_tools': [tool.value for tool in record.result.used_tools],
-                        'planner_used': record.result.planner_used,
-                        'executor_model': record.result.executor_model or record.route.model_name,
-                        'chosen_pack': record.result.chosen_pack,
-                        'adaptive_session': adaptive_session,
-                        'assistant_guidance': (record.result.raw_output or {}).get('assistant_guidance') if isinstance(record.result.raw_output, dict) else None,
-                        'local_chat_llm': (record.result.raw_output or {}).get('local_chat_llm') if isinstance(record.result.raw_output, dict) else None,
-                    },
+                if allow_chat_shortcuts and self._is_world_model_question(message):
+                    self._answer_world_model_question(message)
+                    return
+                if allow_chat_shortcuts and self._is_self_awareness_question(message):
+                    self._answer_self_awareness_question(message)
+                    return
+                if allow_chat_shortcuts and self._is_evolution_status_question(message):
+                    self._answer_evolution_status_question(message)
+                    return
+                if allow_chat_shortcuts and self._is_self_examination_question(message):
+                    self._answer_self_examination_question(message)
+                    return
+                if allow_chat_shortcuts and self._is_learning_question(message):
+                    self._answer_learning_question(message)
+                    return
+                # Account resource questions always resolve locally — bypass shortcut gate.
+                if self._is_account_resource_question(message):
+                    self._answer_account_resource_question(message)
+                    return
+                if allow_chat_shortcuts and self._is_general_chat_message(message) and not self._seems_task_like_message(message):
+                    self._answer_general_chat(message)
+                    return
+                explicit_assistant = self._explicit_assistant_preference(message)
+                if explicit_assistant:
+                    self._last_user_goal = message
+                    self._run_external_consultation(explicit_assistant, announce=True)
+                    return
+                import time as _time
+                self._working = True
+                self._working_since = _time.time()
+                self._busy_label = 'Estoy entendiendo tu mensaje y preparando la mejor respuesta.'
+                self._set_autonomy_activity_override(
+                    visible=True,
+                    title='Analizando consulta',
+                    status='active',
+                    stage='orquestando decision local',
+                    progress=0.14,
+                    detail='Estoy detectando la intencion, el pack y si conviene resolver localmente o consultar otra herramienta.',
+                    tool='motor local',
+                    next_step='Primero cierro el analisis local y luego decido si hace falta apoyo externo.',
+                    learning_note='La memoria del objetivo y los patrones previos se tienen en cuenta antes de responder.',
+                    mode='local',
                 )
-            except Exception as exc:
-                self.taskFailed.emit('chat', f'No pude completar la consulta local: {exc}')
+                self.dataChanged.emit()
 
-        threading.Thread(target=worker, daemon=True).start()
+                try:
+                    request = self._build_request(message)
+                    record = self.inference_service.infer_task(request)
+                    adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
+                    self.taskResolved.emit(
+                        'chat',
+                        {
+                            'summary': record.result.summary,
+                            'provider_name': record.result.provider_name,
+                            'reasoning_mode': record.result.reasoning_mode.value,
+                            'confidence': f'{record.result.confidence:.2f}',
+                            'route_reason': record.route.reason,
+                            'report_kind': record.result.report_kind.value,
+                            'role_title': self._role_title_from_task(record.result.detected_role or record.route.task_role),
+                            'sources': record.result.sources,
+                            'follow_up_teachings': record.result.follow_up_teachings,
+                            'used_tools': [tool.value for tool in record.result.used_tools],
+                            'planner_used': record.result.planner_used,
+                            'executor_model': record.result.executor_model or record.route.model_name,
+                            'chosen_pack': record.result.chosen_pack,
+                            'adaptive_session': adaptive_session,
+                            'assistant_guidance': (record.result.raw_output or {}).get('assistant_guidance') if isinstance(record.result.raw_output, dict) else None,
+                            'local_chat_llm': (record.result.raw_output or {}).get('local_chat_llm') if isinstance(record.result.raw_output, dict) else None,
+                        },
+                    )
+                except Exception as exc:
+                    self.taskFailed.emit('chat', f'No pude completar la consulta local: {exc}')
+            except Exception as exc:
+                logger.warning('_route_and_answer failed: %s', exc)
+                self.taskFailed.emit('chat', f'Error en clasificacion: {exc}')
+            finally:
+                self._set_live_status('idle')
+
+        threading.Thread(target=_route_and_answer, daemon=True).start()
 
     def _role_title_from_task(self, role: TaskRole) -> str:
         return next((profile.title for profile in self.role_router.role_profiles if profile.role == role), role.value)
