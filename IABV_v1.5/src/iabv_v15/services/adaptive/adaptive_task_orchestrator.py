@@ -795,6 +795,8 @@ class AdaptiveTaskOrchestrator:
         if signal.get('consumed'):
             return None
         original_id = signal.get('signal_id') or signal.get('timestamp_utc') or ''
+        if not original_id:
+            return None
         signal['consumed'] = True
         try:
             storage.save_json('pending_auto_execution.json', signal)

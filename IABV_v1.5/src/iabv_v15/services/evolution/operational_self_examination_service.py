@@ -2869,6 +2869,7 @@ class OperationalSelfExaminationService:
                     if vc_key not in tried_keys:
                         proposals.append({
                             'type': 'validated_collaboration',
+                            'proposal_key': vc_key,
                             'title': f'Extender éxito validado de {rec_kind} con {complementary[0]}',
                             'description': (
                                 f'{rec_kind} fue validado con confianza {rec_confidence:.2f}. '
