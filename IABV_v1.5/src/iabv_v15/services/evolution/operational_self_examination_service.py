@@ -2803,17 +2803,6 @@ class OperationalSelfExaminationService:
             except Exception:
                 pass
 
-        # G2: Filtrar propuestas ya intentadas por ValidationCycle
-        tried_keys: set[str] = set()
-        if self.autonomous_validation_cycle is not None:
-            try:
-                storage = getattr(self.autonomous_validation_cycle, 'storage', None)
-                if storage is not None:
-                    fb = storage.load_json('validation_feedback.json') or {}
-                    tried_keys = set(fb.get('tried_proposal_keys') or [])
-            except Exception:
-                pass
-
         recurring_failure_kinds: set[str] = set()
         for finding in findings:
             if finding.severity in {IssueSeverity.HIGH, IssueSeverity.MEDIUM}:

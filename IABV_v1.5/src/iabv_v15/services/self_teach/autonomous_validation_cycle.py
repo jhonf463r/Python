@@ -624,11 +624,6 @@ class AutonomousValidationCycleService:
         if sync_data.get('coordination_status') == 'action_ready':
             self._maybe_auto_execute_proposals(sync_data)
 
-        # G2: Retroalimentar a SelfExamination con resultados de
-        # validación — cuando el tick procesó un experimento, persistir
-        # feedback para que propuestas futuras no repitan intentos.
-        self._persist_validation_feedback()
-
         with self._lock:
             current_snapshot = self._current_snapshot
             metadata = dict(current_snapshot.metadata or {})
@@ -1926,55 +1921,6 @@ class AutonomousValidationCycleService:
         }
         try:
             self.storage.save_json('pending_auto_execution.json', signal)
-        except Exception:
-            pass
-
-    # ------------------------------------------------------------------
-    # G2: Retroalimentar a SelfExamination con resultados de validación
-    # ------------------------------------------------------------------
-
-    def _persist_validation_feedback(self) -> None:
-        """Write validation results so SelfExamination can filter proposals.
-
-        After each tick that processes an experiment, persist the outcome
-        (promoted/rejected/unresolved + proposal_key) into
-        ``data/evolution/validation_feedback.json``.  SelfExamination
-        reads this when generating ``_solution_proposals()`` to skip
-        proposals that were already attempted.
-        """
-        if self.storage is None:
-            return
-        snapshot = self._current_snapshot
-        meta = dict(snapshot.metadata or {})
-        decision = str(meta.get('decision') or '').strip()
-        if not decision:
-            return
-        proposal_key = str(meta.get('proposal_key') or '').strip()
-        if not proposal_key:
-            return
-        entry = {
-            'proposal_key': proposal_key,
-            'decision': decision,
-            'winner': str(meta.get('winner') or ''),
-            'experiment_id': str(snapshot.last_experiment_id or ''),
-            'timestamp_utc': datetime.now(timezone.utc).isoformat(),
-        }
-        try:
-            existing = self.storage.load_json('validation_feedback.json') or {}
-        except Exception:
-            existing = {}
-        history = list(existing.get('history') or [])
-        history.append(entry)
-        history = history[-20:]
-        tried_keys = list(dict.fromkeys(
-            str(h.get('proposal_key') or '') for h in history if str(h.get('proposal_key') or '').strip()
-        ))
-        try:
-            self.storage.save_json('validation_feedback.json', {
-                'history': history,
-                'tried_proposal_keys': tried_keys,
-                'last_updated_utc': datetime.now(timezone.utc).isoformat(),
-            })
         except Exception:
             pass
 
