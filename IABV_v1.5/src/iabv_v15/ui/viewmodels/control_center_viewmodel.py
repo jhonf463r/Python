@@ -258,8 +258,31 @@ class ControlCenterViewModel(QObject):
         self.taskFailed.connect(self._apply_task_failure)
         self._seed_messages()
         self._seed_development_packet()
-        self.refresh()
-        self._refresh_provider_health(announce=False)
+        # Defer heavy refresh to a background thread so the QML engine
+        # can load and render the UI immediately.  The seed message and
+        # placeholder cards are already set so the chat area is visible
+        # from the first frame; the full data arrives shortly after.
+        # In test environments (no QGuiApplication), run synchronously
+        # to avoid races with test assertions.
+        has_gui = QGuiApplication.instance() is not None
+        if has_gui:
+            def _deferred_startup() -> None:
+                try:
+                    self.refresh()
+                except Exception:
+                    logger.exception('deferred startup refresh failed')
+                try:
+                    self.refreshAutonomyDock()
+                except Exception:
+                    logger.exception('deferred autonomy dock refresh failed')
+                try:
+                    self._refresh_provider_health(announce=False)
+                except Exception:
+                    logger.exception('deferred provider health failed')
+            threading.Thread(target=_deferred_startup, name='vm-deferred-startup', daemon=True).start()
+        else:
+            self.refresh()
+            self._refresh_provider_health(announce=False)
 
     def _placeholder_provider_cards(self) -> list[dict[str, Any]]:
         return [
@@ -3270,6 +3293,134 @@ class ControlCenterViewModel(QObject):
         threading.Thread(target=_worker, daemon=True).start()
 
     # ------------------------------------------------------------------
+    # Interactive API key generation
+    # ------------------------------------------------------------------
+
+    _API_KEY_PROVIDERS: ClassVar[list[dict[str, str]]] = [
+        {
+            'id': 'groq', 'name': 'Groq', 'env_key': 'GROQ_API_KEY',
+            'url': 'https://console.groq.com/keys',
+            'detail': 'Llama 3.3 70B gratis, rapido, 30 req/min',
+        },
+        {
+            'id': 'gemini', 'name': 'Google Gemini', 'env_key': 'GEMINI_API_KEY',
+            'url': 'https://aistudio.google.com/apikey',
+            'detail': 'Gemini 2.0 Flash gratis, 15 req/min',
+        },
+        {
+            'id': 'openrouter', 'name': 'OpenRouter', 'env_key': 'OPENROUTER_API_KEY',
+            'url': 'https://openrouter.ai/keys',
+            'detail': 'Multiples modelos, tier gratis disponible',
+        },
+        {
+            'id': 'together', 'name': 'Together AI', 'env_key': 'TOGETHER_API_KEY',
+            'url': 'https://api.together.xyz/settings/api-keys',
+            'detail': 'Llama, Mixtral gratis por $5 de credito inicial',
+        },
+        {
+            'id': 'github', 'name': 'GitHub', 'env_key': 'GITHUB_TOKEN_IABV',
+            'url': 'https://github.com/settings/tokens/new?scopes=repo&description=IABV',
+            'detail': 'PAT con scope repo para auto-merge PRs',
+        },
+        {
+            'id': 'devin', 'name': 'Devin (Cognition)', 'env_key': 'DEVIN_API_KEY',
+            'url': 'https://app.devin.ai/settings/api-keys',
+            'detail': 'API key para consultas a Devin',
+        },
+    ]
+
+    def _handle_interactive_key_generation(self) -> None:
+        """Show provider selection, then prompt for the key inline."""
+        import os
+        lines = ['**Selecciona el proveedor para generar o agregar la API key:**\n']
+        buttons: list[dict[str, str]] = []
+        for prov in self._API_KEY_PROVIDERS:
+            current = os.environ.get(prov['env_key'], '').strip()
+            status = 'configurada' if current else 'no configurada'
+            icon = 'OK' if current else 'FALTA'
+            lines.append(f'  - **{prov["name"]}** [{icon}]: {prov["detail"]}')
+            if not current:
+                buttons.append({
+                    'action': f'setup_key_{prov["id"]}',
+                    'label': f'Configurar {prov["name"]}',
+                })
+        if not buttons:
+            lines.append('\nTodas las keys estan configuradas. Escribe "revisar api keys" para probarlas.')
+        else:
+            lines.append('\nHaz clic en el proveedor que quieras configurar. '
+                         'Se abrira la pagina en tu navegador y podras pegar la key aqui.')
+        self._append_message('assistant', 'IABV', '\n'.join(lines),
+                             'interactive-key-setup: provider selection')
+        self._assistant_action_buttons = buttons
+        self.dataChanged.emit()
+
+    @Slot(str, str, bool)
+    def submitCredential(self, provider: str, value: str, remember: bool = True) -> None:
+        """Handle a credential submitted from InlineCredentialPrompt QML."""
+        self._save_api_key(provider, value, remember)
+
+    @Slot(object)
+    def onCredentialProvided(self, payload: dict) -> None:
+        """Handle credential from CredentialPromptDialog QML."""
+        domain = str(payload.get('domain', '')).strip()
+        password = str(payload.get('password', '')).strip()
+        if domain and password:
+            self._save_api_key(domain, password, bool(payload.get('remember', True)))
+
+    @Slot(object)
+    def onCredentialDelegated(self, payload: dict) -> None:
+        """User chose to handle credential manually."""
+        domain = str(payload.get('domain', '')).strip()
+        self._append_message('assistant', 'IABV',
+                             f'Entendido — {domain} queda pendiente. Puedes escribir '
+                             '"generar keys" cuando quieras configurarlo.',
+                             'credential: delegated to user')
+        self.dataChanged.emit()
+
+    def _save_api_key(self, provider_id: str, value: str, persist: bool) -> None:
+        """Save an API key for a provider, update env, confirm in chat."""
+        from iabv_v15.services.auto_correction_engine import save_secret_to_profile
+        env_key = ''
+        display_name = provider_id
+        for prov in self._API_KEY_PROVIDERS:
+            if prov['id'] == provider_id or prov['env_key'] == provider_id:
+                env_key = prov['env_key']
+                display_name = prov['name']
+                break
+        if not env_key:
+            env_key = provider_id.upper().replace(' ', '_')
+            if not env_key.endswith('_KEY') and not env_key.endswith('_TOKEN'):
+                env_key += '_API_KEY'
+        if persist:
+            result = save_secret_to_profile(env_key, value)
+            if result.get('status') == 'saved':
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Key de {display_name} guardada y activada. '
+                    f'Persistida en ~/.iabv_secrets.ps1 — no necesitas configurarla de nuevo.',
+                    f'credential: {env_key} saved',
+                )
+            else:
+                import os
+                os.environ[env_key] = value
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Key de {display_name} activada en esta sesion (no se pudo persistir: '
+                    f'{result.get("detail", "error desconocido")}).',
+                    f'credential: {env_key} session-only',
+                )
+        else:
+            import os
+            os.environ[env_key] = value
+            self._append_message(
+                'assistant', 'IABV',
+                f'Key de {display_name} activada para esta sesion.',
+                f'credential: {env_key} session-only',
+            )
+        self._assistant_action_buttons = []
+        self.dataChanged.emit()
+
+    # ------------------------------------------------------------------
     # Decision audit trail command
     # ------------------------------------------------------------------
 
@@ -5874,6 +6025,38 @@ class ControlCenterViewModel(QObject):
                     'Plan coordinado activado desde gesto sugerido.',
                 )
             return True
+
+        # Interactive key setup — buttons generated by _handle_interactive_key_generation
+        if action.startswith('setup_key_'):
+            provider_id = action[len('setup_key_'):]
+            prov = next((p for p in self._API_KEY_PROVIDERS if p['id'] == provider_id), None)
+            if prov is not None:
+                import webbrowser
+                try:
+                    webbrowser.open(prov['url'])
+                except Exception:
+                    pass
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Abri la pagina de {prov["name"]} en tu navegador.\n\n'
+                    f'1. Crea o copia tu API key de ahi\n'
+                    f'2. Pegala aqui en el chat con el formato:\n'
+                    f'   `key {provider_id} TU_KEY_AQUI`\n\n'
+                    f'IABV la guarda automaticamente en ~/.iabv_secrets.ps1.',
+                    f'interactive-key-setup: opened {prov["name"]}',
+                )
+                self._assistant_action_buttons = []
+                self.dataChanged.emit()
+                # Emit credential prompt signal for the inline secure input
+                try:
+                    self.credentialPromptRequested.emit({
+                        'domain': prov['id'],
+                        'reason': f'API key de {prov["name"]} para cloud reasoning',
+                        'username_hint': prov['env_key'],
+                    })
+                except Exception:
+                    pass
+            return True
         return False
 
     def _normalized_command_text(self, message: str) -> str:
@@ -5883,6 +6066,15 @@ class ControlCenterViewModel(QObject):
         command = self._normalized_command_text(message)
         if not command:
             return False
+
+        # Inline key pasting: "key groq gsk_..." or "key gemini AIza..."
+        if command.startswith('key '):
+            parts = command.split(None, 2)
+            if len(parts) >= 3:
+                provider_id = parts[1]
+                raw_value = message.split(None, 2)[2].strip()  # preserve original case
+                self._save_api_key(provider_id, raw_value, persist=True)
+                return True
 
         if any(token in command for token in ('mostrar avanzado', 'ver avanzado', 'abrir avanzado')):
             self._advanced_visible = True
@@ -5927,7 +6119,10 @@ class ControlCenterViewModel(QObject):
             self._append_message('assistant', 'IABV', 'Voy a revisar el stack local en segundo plano y te dejo el diagnostico actualizado.', 'Chequeo automatico solicitado por chat.')
             self.refreshProviderHealth()
             return True
-        if any(token in command for token in ('revisar api keys', 'revisa api keys', 'estado de las keys', 'health check keys', 'probar keys', 'verificar keys', 'buscar keys', 'generar keys', 'renovar keys')):
+        if any(token in command for token in ('generar keys', 'crear keys', 'configurar keys', 'agregar keys', 'agregar api', 'configurar api')):
+            self._handle_interactive_key_generation()
+            return True
+        if any(token in command for token in ('revisar api keys', 'revisa api keys', 'estado de las keys', 'health check keys', 'probar keys', 'verificar keys', 'buscar keys', 'renovar keys')):
             self._handle_api_key_health_command()
             return True
         if any(token in command for token in ('auditar decisiones', 'audita decisiones', 'ver historial', 'historial de decisiones', 'decision audit', 'ver audit trail', 'como van las decisiones', 'esta mejorando')):
