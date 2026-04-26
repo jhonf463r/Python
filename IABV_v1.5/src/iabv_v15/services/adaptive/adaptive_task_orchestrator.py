@@ -457,6 +457,61 @@ class AdaptiveTaskOrchestrator:
         }
 
     # ------------------------------------------------------------------
+    # A: Stimulus awareness — conciencia de carga y presión de recursos
+    # ------------------------------------------------------------------
+
+    def _assess_resource_pressure(self) -> dict[str, Any]:
+        """Read environment risk signals and return a pressure assessment.
+
+        Consults the latest ``EnvironmentSelfModel`` via the context
+        assembler's environment service (if wired) to detect active
+        ``EnvironmentRiskSignal`` entries.  Returns a dict with:
+        - ``under_pressure``: bool — True when any CRITICAL or HIGH signal
+        - ``critical``: bool — True when any CRITICAL signal (ram/disk/gpu)
+        - ``active_signals``: list of signal kinds currently firing
+        - ``recommendation``: str — what the orchestrator should avoid
+
+        This is purely descriptive: downstream code uses it to skip
+        expensive operations (parallel comparison, deep experimentation)
+        when the system is resource-constrained.
+        """
+        result: dict[str, Any] = {
+            'under_pressure': False,
+            'critical': False,
+            'active_signals': [],
+            'recommendation': 'normal_processing',
+        }
+        try:
+            env_service = getattr(self.context_assembler, 'environment_self_awareness_service', None)
+            if env_service is None:
+                return result
+            env_model = env_service.current_model() if hasattr(env_service, 'current_model') else None
+            if env_model is None:
+                return result
+            risk_signals = list(getattr(env_model, 'risk_signals', None) or [])
+            if not risk_signals:
+                return result
+            signal_kinds = [str(getattr(s, 'kind', '') or '') for s in risk_signals]
+            severities = [str(getattr(s, 'severity', '') or '').upper() for s in risk_signals]
+            has_critical = 'CRITICAL' in severities or any(
+                str(getattr(s, 'severity', None)) == 'critical' for s in risk_signals
+            )
+            has_high = 'HIGH' in severities or any(
+                str(getattr(s, 'severity', None)) == 'high' for s in risk_signals
+            )
+            result['active_signals'] = signal_kinds
+            if has_critical:
+                result['under_pressure'] = True
+                result['critical'] = True
+                result['recommendation'] = 'reduce_depth_critical'
+            elif has_high:
+                result['under_pressure'] = True
+                result['recommendation'] = 'reduce_depth_high'
+        except Exception:
+            pass
+        return result
+
+    # ------------------------------------------------------------------
     # B: Leer sync_pulse del ciclo de validación para inyectar en el flujo
     # ------------------------------------------------------------------
 
@@ -1016,6 +1071,12 @@ class AdaptiveTaskOrchestrator:
         self._inject_synaptic_into_decision_context(perception.decision_context, synaptic_decision)
         context = perception.task_context
 
+        # A: Stimulus awareness — evaluar presión de recursos ANTES de
+        # decidir la profundidad de procesamiento. Bajo presión CRITICAL
+        # se omiten operaciones costosas (comparación paralela, deep
+        # experimentation). Bajo presión HIGH se limitan candidatos.
+        resource_pressure = self._assess_resource_pressure()
+
         # B: Inyectar datos de sync_pulse del heartbeat en el contexto
         # para que P2 (playbook multi-IA) y P6 (guidance coordinado) puedan
         # usar las proposals activas y recomendaciones del pulso.
@@ -1023,15 +1084,26 @@ class AdaptiveTaskOrchestrator:
         if sync_pulse:
             self._inject_sync_coordination_into_context(context, sync_pulse)
 
+        # Depositar pressure assessment en el contexto para que downstream
+        # (planner, governance, UI) pueda observar el estado de recursos.
+        if resource_pressure.get('under_pressure'):
+            ctx_meta = dict(context.metadata or {})
+            ctx_meta['resource_pressure'] = resource_pressure
+            context.metadata = ctx_meta
+
         # PR I — cotejo en paralelo de las top-2 IAs rankeadas por el
         # ``SynapticRouter`` cuando la politica lo permite y existen al menos
         # dos candidatos. El resultado es puramente descriptivo; queda en
         # ``session.metadata['parallel_ia_comparison']`` para que downstream
         # (UI, portable context, experiment_lab) lo observe. Si la politica
         # bloquea o solo hay un candidato, el flujo cae al camino de IA unica.
+        # A: Bajo presión CRITICAL se omite la comparación paralela para
+        # reducir carga de CPU/RAM/red.
         parallel_comparison_result: dict[str, Any] | None = None
         parallel_comparison_block_reason: str | None = None
-        if synaptic_decision is not None:
+        if resource_pressure.get('critical'):
+            parallel_comparison_block_reason = 'resource_pressure_critical'
+        elif synaptic_decision is not None:
             ranked_candidates = self._ranked_candidates_from_synaptic(synaptic_decision)
             if len(ranked_candidates) >= 2:
                 allowed, block_reason = self._parallel_comparison_allowed()

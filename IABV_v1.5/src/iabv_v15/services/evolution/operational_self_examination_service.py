@@ -103,6 +103,137 @@ class OperationalSelfExaminationService:
             'markdown_path': resolved.markdown_path,
         }
 
+    def _is_low_load(self, world: WorldModelSnapshot) -> bool:
+        """Determine if the system is under low load (idle or near-idle).
+
+        Low load is detected when:
+        - No CRITICAL or HIGH risk signals in the environment
+        - The world model has no active operational blocks
+
+        When load is low, ``build_review`` activates deferred deep
+        cognition: additional analysis passes that are too expensive
+        to run under normal or high load.
+        """
+        risk_signals = list(getattr(world, 'risk_signals', None) or [])
+        for signal in risk_signals:
+            severity = str(getattr(signal, 'severity', '') or '').upper()
+            if severity in {'CRITICAL', 'HIGH'}:
+                return False
+        operational_blocks = list(getattr(world, 'operational_blocks', None) or [])
+        if len(operational_blocks) > 3:
+            return False
+        return True
+
+    def _deferred_deep_cognition_findings(
+        self,
+        *,
+        experiment_runs: list[ExperimentRun],
+        recent_runs: list[RunRecord],
+        findings_so_far: list[SelfExaminationFinding],
+    ) -> list[SelfExaminationFinding]:
+        """Deep cognition pass — only runs when the system is under low load.
+
+        This is the "when I have free time, think deeply" mechanism. It
+        performs analysis that would be too expensive under normal load:
+
+        1. Cross-correlation between failure patterns across different IAs
+        2. Long-window trend detection (are things getting better or worse?)
+        3. Strategy effectiveness decay (is a once-good strategy degrading?)
+
+        These findings are tagged with ``source='deferred_deep_cognition'``
+        so downstream consumers know they came from a deep analysis pass.
+        """
+        findings: list[SelfExaminationFinding] = []
+
+        # 1. Cross-correlation: if two different IAs fail on the same intent
+        # pattern, the problem is likely in the intent/context, not the IA.
+        if len(experiment_runs) >= 6:
+            intent_failures: dict[str, set[str]] = {}
+            for run in experiment_runs:
+                if bool(run.success):
+                    continue
+                intent_key = str(getattr(run, 'intent_key', '') or run.domain or '').strip()
+                kind = str(run.assistant_kind or '').strip().lower()
+                if intent_key and kind:
+                    intent_failures.setdefault(intent_key, set()).add(kind)
+            for intent_key, failing_kinds in intent_failures.items():
+                if len(failing_kinds) >= 2:
+                    findings.append(SelfExaminationFinding(
+                        category='cross_correlation_failure',
+                        severity=IssueSeverity.HIGH,
+                        title=f'Multiples IAs fallan en "{intent_key}"',
+                        detail=(
+                            f'{len(failing_kinds)} IAs distintas ({", ".join(sorted(failing_kinds))}) '
+                            f'fallan en el mismo patron de intent. El problema probablemente '
+                            f'esta en el contexto o la clasificacion, no en las IAs.'
+                        ),
+                        source_refs=['deferred_deep_cognition'],
+                    ))
+
+        # 2. Trend detection: compare success rate of last N runs vs previous N.
+        if len(recent_runs) >= 10:
+            mid = len(recent_runs) // 2
+            older_runs = recent_runs[mid:]
+            newer_runs = recent_runs[:mid]
+            older_success = sum(1 for r in older_runs if r.status == RunStatus.SUCCESS) / max(len(older_runs), 1)
+            newer_success = sum(1 for r in newer_runs if r.status == RunStatus.SUCCESS) / max(len(newer_runs), 1)
+            delta = newer_success - older_success
+            if delta <= -0.15:
+                findings.append(SelfExaminationFinding(
+                    category='trend_degradation',
+                    severity=IssueSeverity.HIGH,
+                    title='Tendencia de degradacion detectada',
+                    detail=(
+                        f'La tasa de exito cayo de {older_success:.0%} '
+                        f'a {newer_success:.0%} (delta={delta:+.0%}). '
+                        f'Revisar cambios recientes en configuracion o entorno.'
+                    ),
+                    source_refs=['deferred_deep_cognition'],
+                ))
+            elif delta >= 0.15:
+                findings.append(SelfExaminationFinding(
+                    category='trend_improvement',
+                    severity=IssueSeverity.LOW,
+                    title='Tendencia de mejora detectada',
+                    detail=(
+                        f'La tasa de exito subio de {older_success:.0%} '
+                        f'a {newer_success:.0%} (delta={delta:+.0%}). '
+                        f'Los ajustes recientes estan funcionando.'
+                    ),
+                    source_refs=['deferred_deep_cognition'],
+                ))
+
+        # 3. Strategy effectiveness decay: a strategy that was good but is
+        # now producing mixed results.
+        if len(experiment_runs) >= 8:
+            kind_runs: dict[str, list[ExperimentRun]] = {}
+            for run in experiment_runs:
+                kind = str(run.assistant_kind or '').strip().lower()
+                if kind:
+                    kind_runs.setdefault(kind, []).append(run)
+            for kind, runs in kind_runs.items():
+                if len(runs) < 4:
+                    continue
+                mid = len(runs) // 2
+                older = runs[mid:]
+                newer = runs[:mid]
+                older_rate = sum(1 for r in older if bool(r.success)) / max(len(older), 1)
+                newer_rate = sum(1 for r in newer if bool(r.success)) / max(len(newer), 1)
+                if older_rate >= 0.6 and newer_rate <= 0.35:
+                    findings.append(SelfExaminationFinding(
+                        category='strategy_decay',
+                        severity=IssueSeverity.MEDIUM,
+                        title=f'Estrategia "{kind}" en decadencia',
+                        detail=(
+                            f'{kind} tenia {older_rate:.0%} exito y ahora tiene '
+                            f'{newer_rate:.0%}. Considerar reclasificar o '
+                            f'investigar cambios en el proveedor.'
+                        ),
+                        source_refs=['deferred_deep_cognition'],
+                    ))
+
+        return findings[:3]
+
     def build_review(self) -> SelfExaminationSnapshot:
         now = utc_now()
         previous_review = self._load_latest_review()
@@ -170,6 +301,17 @@ class OperationalSelfExaminationService:
         findings.extend(self._functional_gap_findings())
         # UI self-awareness: detect own window issues (zombie, missing, duplicate)
         findings.extend(self._ui_self_examination_findings(world=world))
+
+        # C: Cognición profunda diferida — cuando la carga es baja, ejecutar
+        # análisis más profundos que serían costosos bajo presión normal.
+        # Cross-correlación de fallos, detección de tendencias, y decay de
+        # estrategias. Solo se activa cuando _is_low_load() retorna True.
+        if self._is_low_load(world):
+            findings.extend(self._deferred_deep_cognition_findings(
+                experiment_runs=experiment_runs,
+                recent_runs=recent_runs,
+                findings_so_far=findings,
+            ))
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
