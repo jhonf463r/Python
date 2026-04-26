@@ -3187,3 +3187,108 @@ class OperationalSelfExaminationService:
             pass
 
         return findings
+
+
+# ---------------------------------------------------------------------------
+# Lightweight accessor for functional-gap findings without full service init.
+# Used by ``_account_resource_reply`` so the chat response can include gaps.
+# ---------------------------------------------------------------------------
+
+def get_functional_gap_summary() -> list[dict[str, str]]:
+    """Return functional-gap findings as simple dicts (title + detail).
+
+    Runs only the cheap checks (browser account scan, env vars, Ollama
+    tags) without requiring the full OperationalSelfExaminationService
+    dependency graph.
+    """
+    import logging
+    import os
+
+    _log = logging.getLogger(__name__)
+    gaps: list[dict[str, str]] = []
+
+    # Gap 1 & 2: orphan browser sessions / untracked quotas
+    try:
+        from iabv_v15.services.account_resource_scanner import (
+            scan_browser_accounts,
+            scan_browser_sessions,
+            verify_account_sessions,
+            get_all_quota_status,
+        )
+        accounts = scan_browser_accounts()
+        sessions = scan_browser_sessions()
+
+        session_browsers = {s.get('browser', '') for s in sessions.get('sessions', [])}
+        account_browsers = {a.get('browser', '') for a in accounts.get('accounts', [])}
+        orphan_browsers = session_browsers - account_browsers
+        if orphan_browsers and sessions.get('session_count', 0) > 0:
+            gaps.append({
+                'title': 'Sesiones sin cuenta asociada',
+                'detail': (
+                    f'Navegadores con sesiones pero sin cuenta: '
+                    f'{", ".join(sorted(orphan_browsers))}.'
+                ),
+            })
+
+        verified = verify_account_sessions()
+        pool_accounts = verified.get('accounts', [])
+        active = [a for a in pool_accounts if a.get('tool_count', 0) > 0]
+        if active:
+            quotas = get_all_quota_status()
+            if len(quotas.get('statuses', [])) == 0:
+                gaps.append({
+                    'title': 'Workers sin rastreo de cuotas',
+                    'detail': (
+                        f'{len(active)} asistentes tienen sesion activa '
+                        f'pero ninguno tiene cuotas rastreadas aun.'
+                    ),
+                })
+    except Exception as exc:
+        _log.debug('functional gap scan (browsers) skipped: %s', exc)
+
+    # Gap 3: cloud API keys unused
+    try:
+        has_openai = bool(os.environ.get('OPENAI_API_KEY'))
+        has_anthropic = bool(os.environ.get('ANTHROPIC_API_KEY'))
+        if has_openai or has_anthropic:
+            from iabv_v15.services.account_resource_scanner import _load_training_examples
+            training_count = len(_load_training_examples())
+            if training_count == 0:
+                cloud_name = 'OpenAI' if has_openai else 'Anthropic'
+                gaps.append({
+                    'title': f'API {cloud_name} sin uso por clasificador',
+                    'detail': (
+                        f'Hay una API key de {cloud_name} pero el clasificador '
+                        f'dual aun no tiene ejemplos de entrenamiento.'
+                    ),
+                })
+            elif training_count > 0:
+                gaps.append({
+                    'title': f'Clasificador dual: {training_count} ejemplos acumulados',
+                    'detail': (
+                        f'El modelo local aprendio de {training_count} '
+                        f'clasificaciones de la nube.'
+                    ),
+                })
+    except Exception as exc:
+        _log.debug('functional gap scan (cloud) skipped: %s', exc)
+
+    # Gap 4: multiple Ollama models
+    try:
+        import httpx
+        with httpx.Client(timeout=3.0) as client:
+            resp = client.get('http://127.0.0.1:11434/api/tags')
+            if resp.status_code == 200:
+                models = resp.json().get('models', [])
+                if len(models) > 1:
+                    names = [m.get('name', '?') for m in models[:5]]
+                    gaps.append({
+                        'title': f'{len(models)} modelos Ollama disponibles',
+                        'detail': (
+                            f'Modelos: {", ".join(names)}. Se usa solo el default.'
+                        ),
+                    })
+    except Exception:
+        pass
+
+    return gaps

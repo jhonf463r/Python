@@ -1700,6 +1700,11 @@ class ControlCenterViewModel(QObject):
             'qué ves en mis navegadores',
             'te falto las demas cuentas',
             'te faltó las demás cuentas',
+            'te falto las demas cuentas en los demas navegadores',
+            'te faltó las demás cuentas en los demás navegadores',
+            'cuentas en los demas navegadores',
+            'cuentas en los demás navegadores',
+            'cuentas en otros navegadores',
             'falta escanear navegadores',
             'faltan navegadores',
             'faltan cuentas',
@@ -2608,6 +2613,19 @@ class ControlCenterViewModel(QObject):
                 parts.append(f"  GitHub: no disponible")
             devin = scan_devin_api()
             parts.append(f"  Devin: {'disponible' if devin.get('available') else 'no disponible'}")
+        except Exception:
+            pass
+
+        # 6. Functional gap analysis (self-examination lite)
+        try:
+            from iabv_v15.services.evolution.operational_self_examination_service import (
+                get_functional_gap_summary,
+            )
+            gaps = get_functional_gap_summary()
+            if gaps:
+                parts.append("\nAnalisis de gaps funcionales:")
+                for g in gaps:
+                    parts.append(f"  - {g['title']}: {g['detail']}")
         except Exception:
             pass
 
