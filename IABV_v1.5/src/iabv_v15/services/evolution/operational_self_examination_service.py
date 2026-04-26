@@ -181,7 +181,7 @@ class OperationalSelfExaminationService:
                         category='cross_correlation_failure',
                         severity=IssueSeverity.HIGH,
                         title=f'Multiples IAs fallan en "{intent_key}"',
-                        detail=(
+                        summary=(
                             f'{len(failing_kinds)} IAs distintas ({", ".join(sorted(failing_kinds))}) '
                             f'fallan en el mismo patron de intent. El problema probablemente '
                             f'esta en el contexto o la clasificacion, no en las IAs.'
@@ -202,7 +202,7 @@ class OperationalSelfExaminationService:
                     category='trend_degradation',
                     severity=IssueSeverity.HIGH,
                     title='Tendencia de degradacion detectada',
-                    detail=(
+                    summary=(
                         f'La tasa de exito cayo de {older_success:.0%} '
                         f'a {newer_success:.0%} (delta={delta:+.0%}). '
                         f'Revisar cambios recientes en configuracion o entorno.'
@@ -214,7 +214,7 @@ class OperationalSelfExaminationService:
                     category='trend_improvement',
                     severity=IssueSeverity.LOW,
                     title='Tendencia de mejora detectada',
-                    detail=(
+                    summary=(
                         f'La tasa de exito subio de {older_success:.0%} '
                         f'a {newer_success:.0%} (delta={delta:+.0%}). '
                         f'Los ajustes recientes estan funcionando.'
@@ -243,7 +243,7 @@ class OperationalSelfExaminationService:
                         category='strategy_decay',
                         severity=IssueSeverity.MEDIUM,
                         title=f'Estrategia "{kind}" en decadencia',
-                        detail=(
+                        summary=(
                             f'{kind} tenia {older_rate:.0%} exito y ahora tiene '
                             f'{newer_rate:.0%}. Considerar reclasificar o '
                             f'investigar cambios en el proveedor.'
