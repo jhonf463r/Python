@@ -107,20 +107,39 @@ class OperationalSelfExaminationService:
         """Determine if the system is under low load (idle or near-idle).
 
         Low load is detected when:
-        - No CRITICAL or HIGH risk signals in the environment
-        - The world model has no active operational blocks
+        - No CRITICAL or HIGH risk signals from ``EnvironmentSelfModel``
+          (fetched via ``world_model_service.environment_self_awareness_service``)
+        - The world model has <= 3 active ``block_records``
 
         When load is low, ``build_review`` activates deferred deep
         cognition: additional analysis passes that are too expensive
         to run under normal or high load.
+
+        Note: ``risk_signals`` lives on ``EnvironmentSelfModel``, NOT on
+        ``WorldModelSnapshot``.  ``WorldModelSnapshot`` has ``block_records``
+        (list[OperationalBlockRecord]) and ``detected_blocks`` (list[str]).
         """
-        risk_signals = list(getattr(world, 'risk_signals', None) or [])
-        for signal in risk_signals:
-            severity = str(getattr(signal, 'severity', '') or '').upper()
-            if severity in {'CRITICAL', 'HIGH'}:
-                return False
-        operational_blocks = list(getattr(world, 'operational_blocks', None) or [])
-        if len(operational_blocks) > 3:
+        # Check risk signals from EnvironmentSelfModel (if accessible).
+        try:
+            wm_service = self.world_model_service
+            if wm_service is not None:
+                env_service = getattr(wm_service, 'environment_self_awareness_service', None)
+                if env_service is not None and hasattr(env_service, 'current_model'):
+                    env_model = env_service.current_model()
+                    if env_model is not None:
+                        for signal in (env_model.risk_signals or []):
+                            severity = str(getattr(signal, 'severity', '') or '').upper()
+                            if severity in {'CRITICAL', 'HIGH'}:
+                                return False
+        except Exception:
+            pass
+
+        # Check operational blocks from WorldModelSnapshot.block_records.
+        active_blocks = [
+            b for b in (world.block_records or [])
+            if str(getattr(b, 'status', '') or '') == 'active'
+        ]
+        if len(active_blocks) > 3:
             return False
         return True
 
