@@ -3091,6 +3091,7 @@ class ControlCenterViewModel(QObject):
 
         # Finalize
         completed = sum(1 for s in plan.steps if s.status == 'completed')
+        failed = sum(1 for s in plan.steps if s.status == 'failed')
         self._append_message(
             'assistant', 'IABV',
             f'Plan finalizado: {completed}/{total} pasos completados.',
@@ -3107,6 +3108,35 @@ class ControlCenterViewModel(QObject):
             next_step='Puedes pedirme otro plan o preguntar lo que necesites.',
             mode='cloud',
         )
+
+        # Record execution outcome in decision audit trail
+        try:
+            orch = self.adaptive_orchestrator
+            audit = getattr(orch, 'decision_audit_trail', None) if orch else None
+            if audit is not None:
+                from iabv_v15.services.evolution.decision_audit_trail import (
+                    DecisionRecord, DecisionPhase, DecisionOutcome,
+                )
+                if completed == total:
+                    exec_outcome = DecisionOutcome.SUCCESS
+                elif completed > 0:
+                    exec_outcome = DecisionOutcome.PARTIAL
+                else:
+                    exec_outcome = DecisionOutcome.FAILED
+                audit.record(DecisionRecord(
+                    phase=DecisionPhase.PLAN_EXECUTION,
+                    provider_id=plan.cloud_source,
+                    model_used=plan.cloud_source,
+                    user_goal=plan.summary[:200],
+                    outcome=exec_outcome,
+                    confidence=plan.confidence,
+                    steps_total=total,
+                    steps_completed=completed,
+                    steps_failed=failed,
+                ))
+        except Exception:
+            pass
+
         try:
             self.dataChanged.emit()
         except Exception:
@@ -3193,6 +3223,51 @@ class ControlCenterViewModel(QObject):
                     'assistant', 'IABV',
                     f'Error al revisar las API keys: {exc}',
                     'api-key-health: failed',
+                )
+            finally:
+                self._working = False
+                self._set_live_status('idle')
+                try:
+                    self.dataChanged.emit()
+                except Exception:
+                    pass
+
+        self._working = True
+        threading.Thread(target=_worker, daemon=True).start()
+
+    # ------------------------------------------------------------------
+    # Decision audit trail command
+    # ------------------------------------------------------------------
+
+    def _handle_decision_audit_command(self) -> None:
+        """Show decision audit trail report in chat."""
+        self._append_message(
+            'assistant', 'IABV',
+            'Analizando el historial de decisiones...',
+            'decision-audit: loading trail',
+        )
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+
+        def _worker() -> None:
+            try:
+                audit = None
+                if self.adaptive_orchestrator is not None:
+                    audit = getattr(self.adaptive_orchestrator, 'decision_audit_trail', None)
+                if audit is None:
+                    from iabv_v15.services.evolution.decision_audit_trail import DecisionAuditTrail
+                    audit = DecisionAuditTrail()
+
+                report = audit.format_chat_report()
+                self._append_message('assistant', 'IABV', report, 'decision-audit: report complete')
+            except Exception as exc:
+                logger.warning('decision audit report failed: %s', exc)
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Error al generar el reporte de decisiones: {exc}',
+                    'decision-audit: failed',
                 )
             finally:
                 self._working = False
@@ -5820,6 +5895,9 @@ class ControlCenterViewModel(QObject):
             return True
         if any(token in command for token in ('revisar api keys', 'revisa api keys', 'estado de las keys', 'health check keys', 'probar keys', 'verificar keys', 'buscar keys', 'generar keys', 'renovar keys')):
             self._handle_api_key_health_command()
+            return True
+        if any(token in command for token in ('auditar decisiones', 'audita decisiones', 'ver historial', 'historial de decisiones', 'decision audit', 'ver audit trail', 'como van las decisiones', 'esta mejorando')):
+            self._handle_decision_audit_command()
             return True
         if 'auditar autonomia' in command or 'audita autonomia' in command or 'revisar autonomia' in command or 'revisa autonomia' in command:
             self.auditAutonomy()

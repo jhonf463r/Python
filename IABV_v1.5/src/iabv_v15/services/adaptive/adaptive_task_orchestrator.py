@@ -167,6 +167,7 @@ class AdaptiveTaskOrchestrator:
         self.experiment_lab = experiment_lab
         self.cloud_reasoning_planner: CloudReasoningPlannerService | None = None
         self.api_key_discovery_service: Any | None = None
+        self.decision_audit_trail: Any | None = None
         self.control_master_service: Any | None = None
         self.control_master_digest_builder: Any | None = None
         self.self_examination_service: Any | None = None
@@ -1492,10 +1493,44 @@ class AdaptiveTaskOrchestrator:
         except Exception:
             pass
 
+        import time as _time
+        _t0 = _time.monotonic()
         plan = self.cloud_reasoning_planner.generate_plan(
             user_goal,
             context='\n'.join(context_parts),
         )
+        _elapsed = (_time.monotonic() - _t0) * 1000
+
+        # Record in decision audit trail
+        if self.decision_audit_trail is not None:
+            try:
+                from iabv_v15.services.evolution.decision_audit_trail import (
+                    DecisionRecord, DecisionPhase, DecisionOutcome,
+                )
+                outcome = DecisionOutcome.SUCCESS if plan is not None else DecisionOutcome.FAILED
+                source = plan.cloud_source if plan else ''
+                confidence = plan.confidence if plan else 0.0
+                steps_total = len(plan.steps) if plan else 0
+                fallback_chain = []
+                if plan and plan.cloud_source == 'groq':
+                    fallback_chain = ['gemini_failed', 'groq']
+                elif plan and plan.cloud_source == 'ollama_local':
+                    fallback_chain = ['gemini_failed', 'groq_failed', 'ollama']
+                    outcome = DecisionOutcome.FALLBACK_USED
+                self.decision_audit_trail.record(DecisionRecord(
+                    phase=DecisionPhase.PLAN_GENERATION,
+                    provider_id=source,
+                    model_used=source,
+                    user_goal=user_goal[:200],
+                    outcome=outcome,
+                    latency_ms=_elapsed,
+                    confidence=confidence,
+                    steps_total=steps_total,
+                    fallback_chain=fallback_chain,
+                ))
+            except Exception as _audit_exc:
+                logger.debug('decision-audit recording failed: %s', _audit_exc)
+
         return plan
 
     def cloud_plan_to_playbook_steps(self, plan: CloudPlan) -> list[PlaybookStep]:
