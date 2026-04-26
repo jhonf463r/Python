@@ -1467,7 +1467,7 @@ class ControlCenterViewModel(QObject):
         asks_about_network = any(token in word_tokens for token in ('internet', 'red', 'conexion', 'conexión'))
         mentions_tool = any(token in word_tokens for token in ('codex', 'chatgpt', 'claude', 'ollama'))
         asks_tool_state = any(token in word_tokens for token in ('responde', 'bloqueado', 'hilo', 'mensajes', 'agotados', 'abierto', 'abierta'))
-        requests_consultation = any(token in word_tokens for token in ('consulta', 'consultar', 'necesito', 'usa', 'usar', 'revisa', 'revisar'))
+        requests_consultation = any(token in word_tokens for token in ('consulta', 'consultar', 'usa', 'usar'))
         asks_about_live_tool = mentions_tool and asks_tool_state and not requests_consultation
         asks_current_state = any(phrase in normalized for phrase in ('que esta pasando', 'qué está pasando'))
         # "navegadores" + visibility words → world model (open browsers), not accounts
