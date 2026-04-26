@@ -1646,13 +1646,48 @@ class ControlCenterViewModel(QObject):
             'analiza tu log',
             'revisa tu log',
             'lee tus logs',
+            # Fix 58: action-oriented self-examination phrases
+            'soluciona los bloqueos',
+            'arregla los bloqueos',
+            'corrige los bloqueos',
+            'resuelve los bloqueos',
+            'soluciona los problemas',
+            'arregla los problemas',
+            'corrige los problemas',
+            'resuelve los problemas',
+            'soluciona los pendientes',
+            'arregla los pendientes',
+            'secciones caducadas',
+            'informacion caducada',
+            'información caducada',
+            'datos caducados',
+            'trabajo en vivo',
+            'que esta bloqueado',
+            'qué está bloqueado',
+            'que bloqueos hay',
+            'qué bloqueos hay',
+            'que bloqueos tienes',
+            'qué bloqueos tienes',
+            'soluciona todo',
+            'arregla todo',
+            'corrige todo',
+            'que pendientes tienes',
+            'qué pendientes tienes',
+            'que tareas pendientes',
+            'qué tareas pendientes',
+            'resuelve lo pendiente',
         )
         if any(phrase in normalized for phrase in direct_phrases):
             return True
         word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
         asks_review = any(token in word_tokens for token in ('fallando', 'falla', 'repitiendo', 'mejorar', 'cambios', 'cambiar', 'corregir', 'revisarte', 'autoexaminacion', 'anomalias', 'anomalías', 'diagnostica', 'logs'))
         asks_meta = any(token in word_tokens for token in ('recomiendas', 'recomendar', 'aprendiste', 'aprendido', 'deberias', 'debería', 'deberias', 'detectas', 'analiza', 'revisa', 'dime'))
-        return asks_review and asks_meta
+        if asks_review and asks_meta:
+            return True
+        # Fix 58: action verbs + system-problem nouns
+        asks_fix = any(token in word_tokens for token in ('soluciona', 'solucionar', 'arregla', 'arreglar', 'corrige', 'corregir', 'resuelve', 'resolver', 'repara', 'reparar'))
+        has_problem = any(token in word_tokens for token in ('bloqueos', 'bloqueo', 'problemas', 'problema', 'pendientes', 'pendiente', 'caducadas', 'caducados', 'caducada', 'errores', 'fallos', 'fallas'))
+        return asks_fix and has_problem
 
     def _is_account_resource_question(self, message: str) -> bool:
         normalized = self._normalized_command_text(message)
@@ -2539,6 +2574,49 @@ class ControlCenterViewModel(QObject):
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._self_examination_conversation_payload(message=message))
         reply, meta = self._self_examination_reply(message)
+        # Fix 59: run auto-correction engine on findings and present
+        # remaining issues as action buttons.
+        auto_fixes_applied: list[str] = []
+        try:
+            from iabv_v15.services.auto_correction_engine import (
+                apply_runtime_log_corrections, apply_deductive_corrections,
+            )
+            review_data = self._current_self_examination_snapshot()
+            findings = list(review_data.get('top_findings') or [])
+            if findings:
+                rt_result = apply_runtime_log_corrections(findings)
+                for c in (rt_result.get('corrections_applied') or []):
+                    label = str(c.get('action') or c.get('detail') or 'correccion aplicada')
+                    auto_fixes_applied.append(label)
+                dd_result = apply_deductive_corrections(findings)
+                for c in (dd_result.get('executed') or []):
+                    label = str(c.get('action') or c.get('detail') or 'correccion deductiva')
+                    auto_fixes_applied.append(label)
+        except Exception:
+            pass
+        if auto_fixes_applied:
+            reply += f"\n\nAuto-correcciones aplicadas ({len(auto_fixes_applied)}):"
+            for fix_label in auto_fixes_applied[:5]:
+                reply += f"\n  - {fix_label}"
+            meta = 'Autoexaminacion con correcciones automaticas.'
+        # Set guidance with action buttons for remaining issues
+        review = self._current_self_examination_snapshot()
+        remaining = list(review.get('recommended_adjustments') or [])
+        unresolved = list(review.get('unresolved_risks') or [])
+        if remaining or unresolved:
+            guidance_prompt = 'Hay ajustes pendientes que puedo aplicar o que necesitan tu aprobacion.'
+            if unresolved:
+                guidance_prompt += f' Tambien hay {len(unresolved)} riesgo(s) sin resolver.'
+            self._apply_assistant_guidance({
+                'mode': 'need_approval',
+                'title': 'Ajustes pendientes',
+                'prompt': guidance_prompt,
+                'actions': [
+                    self._assistant_action('run_self_test', 'Autotest', 'Correr diagnostico completo con autoajuste.'),
+                    self._assistant_action('open_evolution_center', 'Ver evolutivo', 'Revisar hallazgos y backlog.'),
+                    self._assistant_action('review_stack', 'Revisar stack', 'Actualizar estado de herramientas.'),
+                ],
+            })
         self._append_message('assistant', 'IABV', reply, meta)
         self._latest_response_text = reply
         self._latest_response_meta = meta
