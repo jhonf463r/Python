@@ -1493,6 +1493,43 @@ class AdaptiveTaskOrchestrator:
         except Exception:
             pass
 
+        # Pre-scan: inject decision audit trail context so the planner
+        # has the full picture before generating a plan (which provider
+        # is working, which is degrading, recent outcomes)
+        if self.decision_audit_trail is not None:
+            try:
+                audit_summary = self.decision_audit_trail.self_examination_summary()
+                if audit_summary.get('status') == 'analyzed':
+                    best = audit_summary.get('best_provider') or {}
+                    best_id = best.get('provider_id', '')
+                    health = audit_summary.get('health_score', 0)
+                    trend = audit_summary.get('overall_trend', 'unknown')
+                    recs = audit_summary.get('recommendations', [])
+                    context_parts.append(
+                        f'Cloud reasoning status: health={health:.0%}, trend={trend}.'
+                        + (f' Best provider: {best_id}.' if best_id else '')
+                        + (f' Issues: {"; ".join(recs[:2])}' if recs else '')
+                    )
+            except Exception:
+                pass
+
+        # Pre-scan: inject OSES cloud findings if available
+        if self.self_examination_service is not None:
+            try:
+                review = self.self_examination_service.current_review(refresh=False)
+                if review is not None:
+                    cloud_findings = [
+                        f for f in (getattr(review, 'findings', None) or [])
+                        if hasattr(f, 'category') and str(getattr(f, 'category', '')).startswith('cloud_')
+                    ]
+                    for finding in cloud_findings[:3]:
+                        title = getattr(finding, 'title', '')
+                        rec = getattr(finding, 'recommendation', '')
+                        if title:
+                            context_parts.append(f'OSES finding: {title}. Recommendation: {rec[:120]}')
+            except Exception:
+                pass
+
         import time as _time
         _t0 = _time.monotonic()
         plan = self.cloud_reasoning_planner.generate_plan(

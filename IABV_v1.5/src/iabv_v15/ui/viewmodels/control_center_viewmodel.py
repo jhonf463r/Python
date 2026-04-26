@@ -7550,12 +7550,12 @@ class ControlCenterViewModel(QObject):
         if active_title:
             lines.append(f"Objetivo activo: {active_title} | estado {goal_context.get('status') or 'pending'} | progreso {float(goal_context.get('progress') or 0.0):.2f}")
         for card in self._provider_cards:
-            lines.append(f"- {card['provider_name']}: {card['status']} | {card['detail']}")
+            lines.append(f"- {card.get('provider_name', '')}: {card.get('status', '')} | {card.get('detail', '')}")
         assistant_cards = self._assistant_tool_cards()
         if assistant_cards:
             lines.append('Asistentes y vias externas')
             for card in assistant_cards:
-                lines.append(f"- {card['name']}: {card['status']} | {card['detail']}")
+                lines.append(f"- {card.get('name', '')}: {card.get('status', '')} | {card.get('detail', '')}")
         return '\n'.join(lines)
 
     chatMessages = Property(list, get_chat_messages, notify=dataChanged)

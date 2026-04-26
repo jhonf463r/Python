@@ -1144,8 +1144,12 @@ class AppBootstrap:
         )
         self.portable_context_service.task_context_assembler = self.task_context_assembler
         self.portable_context_service.adaptive_task_orchestrator = self.adaptive_task_orchestrator
-        self.api_key_discovery_service = ApiKeyDiscoveryService(data_root=self.config.data_root)
-        self.decision_audit_trail = DecisionAuditTrail(data_root=self.config.data_root)
+        self.api_key_discovery_service = ApiKeyDiscoveryService(data_root=self.config.data_dir)
+        self.decision_audit_trail = DecisionAuditTrail(data_root=self.config.data_dir)
+        self.operational_self_examination_service.decision_audit_trail = self.decision_audit_trail
+        self.portable_context_service.decision_audit_trail = self.decision_audit_trail
+        self.autonomous_validation_cycle.decision_audit_trail = self.decision_audit_trail
+        self.autonomous_validation_cycle.api_key_discovery_service = self.api_key_discovery_service
         self.adaptive_task_orchestrator.cloud_reasoning_planner = CloudReasoningPlannerService()
         self.adaptive_task_orchestrator.api_key_discovery_service = self.api_key_discovery_service
         self.adaptive_task_orchestrator.decision_audit_trail = self.decision_audit_trail

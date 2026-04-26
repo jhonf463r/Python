@@ -66,6 +66,8 @@ class AutonomousValidationCycleService:
         self.tool_registry = tool_registry
         self.autonomy_governance_policy = autonomy_governance_policy
         self.research_backlog_root = Path(research_backlog_root) if research_backlog_root else None
+        self.api_key_discovery_service: Any | None = None
+        self.decision_audit_trail: Any | None = None
         self.interval_seconds = max(float(interval_seconds), 60.0)
         self._auto_start = (not self._in_test_mode()) if auto_start is None else bool(auto_start)
         self._lock = threading.RLock()
@@ -482,6 +484,12 @@ class AutonomousValidationCycleService:
             self._auto_research_pass(reason=reason)
         except Exception:
             pass
+        # Cloud provider health: test configured keys and register results
+        # as ExperimentRun so ExperimentLab tracks provider comparison over time.
+        try:
+            self._cloud_provider_health_pass()
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # P4: Heartbeat de sincronización
@@ -814,6 +822,109 @@ class AutonomousValidationCycleService:
         'external_account': (),
         'local_runtime': (),
     }
+
+    # ------------------------------------------------------------------
+    # Cloud provider health check (feeds into ExperimentLab)
+    # ------------------------------------------------------------------
+
+    _CLOUD_HEALTH_EVERY_N_TICKS = 10
+    _cloud_health_tick_counter = 0
+
+    def _cloud_provider_health_pass(self) -> None:
+        """Periodically test cloud provider keys and register results as
+        ExperimentRun entries in ExperimentLab so the comparison pipeline
+        (StrategySelector, AdaptiveWeightLayer) can reason about provider
+        quality over time. Also records outcomes in DecisionAuditTrail.
+        """
+        self._cloud_health_tick_counter += 1
+        if self._cloud_health_tick_counter % self._CLOUD_HEALTH_EVERY_N_TICKS != 0:
+            return
+        if self.api_key_discovery_service is None:
+            return
+        api_svc = self.api_key_discovery_service
+        audit = self.decision_audit_trail
+
+        try:
+            comparison = api_svc.compare_all()
+        except Exception:
+            return
+        if not comparison:
+            return
+
+        # Register each provider test as an ExperimentRun
+        for result in comparison:
+            if not isinstance(result, dict):
+                if hasattr(result, 'to_dict'):
+                    result = result.to_dict()
+                else:
+                    continue
+
+            provider_id = str(result.get('provider_id', ''))
+            latency = float(result.get('latency_ms', 0) or 0)
+            valid_flag = result.get('valid', False)
+            is_success = bool(valid_flag)
+            status = 'valid' if is_success else 'invalid'
+
+            # Record in ExperimentLab as ExperimentCandidate
+            try:
+                from iabv_v15.domain.models import (
+                    ExperimentCandidate,
+                    ExperimentDomain,
+                    EvaluationRoute,
+                )
+                candidate = ExperimentCandidate(
+                    label=provider_id,
+                    route=EvaluationRoute.CLOUD,
+                    execution_ms=int(latency),
+                    metadata={
+                        'provider_id': provider_id,
+                        'status': status,
+                        'assistant_kind': 'cloud_provider',
+                        'config_signature': f'cloud:{provider_id}',
+                    },
+                )
+                self.experiment_lab.run_experiment(
+                    domain=ExperimentDomain.CLOUD_REASONING,
+                    objective='cloud_provider_health_check',
+                    subject_key=f'cloud_provider:{provider_id}',
+                    expected={'status': 'valid'},
+                    candidates=[candidate],
+                    metadata={
+                        'source': 'cloud_provider_health_pass',
+                        'latency_ms': latency,
+                        'key_status': status,
+                    },
+                )
+            except Exception:
+                pass
+
+            # Record in DecisionAuditTrail
+            if audit is not None:
+                try:
+                    from iabv_v15.services.evolution.decision_audit_trail import (
+                        DecisionRecord,
+                        DecisionOutcome,
+                        DecisionPhase,
+                    )
+                    error_str = str(result.get('error', '')).lower()
+                    quota_str = str(result.get('quota_info', '')).upper()
+                    outcome = DecisionOutcome.SUCCESS if is_success else DecisionOutcome.FAILED
+                    if 'rate' in error_str or 'RATE_LIMITED' in quota_str:
+                        outcome = DecisionOutcome.RATE_LIMITED
+                    elif 'timeout' in error_str:
+                        outcome = DecisionOutcome.TIMEOUT
+                    audit.record(DecisionRecord(
+                        phase=DecisionPhase.KEY_VALIDATION,
+                        provider_id=provider_id,
+                        model_used=str(result.get('model_used', '')),
+                        user_goal='autonomous_key_health_check',
+                        outcome=outcome,
+                        latency_ms=latency,
+                        confidence=1.0 if is_success else 0.0,
+                        error_detail=str(result.get('error', ''))[:200],
+                    ))
+                except Exception:
+                    pass
 
     def _auto_research_enabled(self) -> bool:
         raw = os.getenv('IABV_AUTO_RESEARCH_ENABLED', '1').strip().lower()

@@ -1980,6 +1980,7 @@ class ExperimentDomain(str, Enum):
     LANGUAGE = "language"
     CODE = "code"
     INFERENCE_BENCHMARK = "inference_benchmark"
+    CLOUD_REASONING = "cloud_reasoning"
 
 
 class EvaluationRoute(str, Enum):
@@ -1991,6 +1992,7 @@ class EvaluationRoute(str, Enum):
     MATH_EVALUATION = "math_evaluation"
     OCR_VISION = "ocr_vision"
     LANGUAGE_UNDERSTANDING = "language_understanding"
+    CLOUD = "cloud"
     FALLBACK = "fallback"
 
 
