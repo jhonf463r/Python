@@ -1477,6 +1477,8 @@ class ControlCenterViewModel(QObject):
         )
         return asks_about_windows or asks_about_network or asks_about_live_tool or asks_current_state or asks_about_browsers
 
+    _COMPOUND_CONJUNCTIONS = (' y ', ' y,', ' pero ', ' con eso ', ' ademas ', ' tambien ', ' además ', ' también ', ' revisa ', ' revisá ')
+
     def _is_self_awareness_question(self, message: str) -> bool:
         normalized = self._normalized_command_text(message)
         if not normalized:
@@ -1513,8 +1515,12 @@ class ControlCenterViewModel(QObject):
             'que tienes disponible',
             'qué tienes disponible',
         )
-        if any(phrase in normalized for phrase in direct_phrases):
-            return True
+        for phrase in direct_phrases:
+            if phrase in normalized:
+                remainder = normalized[normalized.index(phrase) + len(phrase):]
+                if any(conj in remainder for conj in self._COMPOUND_CONJUNCTIONS) and len(remainder.split()) > 5:
+                    return False
+                return True
         word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
         asks_system_state = any(token in word_tokens for token in ('entorno', 'arquitectura', 'herramienta', 'herramientas', 'ias', 'ia', 'estado', 'conexiones'))
         asks_directly = any(token in normalized for token in ('conoces', 'sabes', 'tienes', 'disponibles', 'te conectas', 'te puedes conectar', 'consciente', 'que tan bien', 'como estas', 'cómo estás'))
