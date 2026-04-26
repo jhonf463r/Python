@@ -270,6 +270,7 @@ from iabv_v15.services.security.proactive_dashboard_service import (
 from iabv_v15.services.capture.ui_screenshot_service import UIScreenshotService
 from iabv_v15.services.evolution.tool_discovery_service import ToolDiscoveryService
 from iabv_v15.services.evolution.tool_evolution_monitor import ToolEvolutionMonitor
+from iabv_v15.services.evolution.api_key_discovery_service import ApiKeyDiscoveryService
 from iabv_v15.services.evolution.autonomous_evolution_service import AutonomousEvolutionService
 from iabv_v15.services.evolution.runtime_signal_collector import RuntimeSignalCollector
 from iabv_v15.services.evolution.self_check_orchestrator import SelfCheckOrchestrator
@@ -1142,7 +1143,9 @@ class AppBootstrap:
         )
         self.portable_context_service.task_context_assembler = self.task_context_assembler
         self.portable_context_service.adaptive_task_orchestrator = self.adaptive_task_orchestrator
+        self.api_key_discovery_service = ApiKeyDiscoveryService(data_root=self.config.data_root)
         self.adaptive_task_orchestrator.cloud_reasoning_planner = CloudReasoningPlannerService()
+        self.adaptive_task_orchestrator.api_key_discovery_service = self.api_key_discovery_service
         self.adaptive_task_orchestrator.control_master_service = self.control_master_service
         self.adaptive_task_orchestrator.control_master_digest_builder = self.control_master_digest_builder
         self.adaptive_task_orchestrator.self_examination_service = self.operational_self_examination_service

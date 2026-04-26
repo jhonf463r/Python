@@ -1,0 +1,114 @@
+{
+  "task_id": "auto-key-mgmt-001",
+  "title": "Gestion autonoma de API keys para cloud reasoning",
+  "priority": "high",
+  "status": "active",
+  "created_at_utc": "2026-04-26T03:30:00Z",
+  "description": "IABV debe ser capaz de descubrir, crear, probar, comparar y renovar API keys de proveedores cloud de forma autonoma, sin intervencion manual del usuario mas alla de autorizar en el browser.",
+  "objectives": [
+    {
+      "id": "obj-1",
+      "title": "Descubrir proveedores gratuitos disponibles",
+      "description": "Escanear proveedores conocidos (Groq, Gemini, OpenRouter, Together AI) y nuevos que aparezcan. Evaluar cual ofrece mejor relacion calidad/velocidad/cuota gratis.",
+      "status": "ready",
+      "acceptance_criteria": [
+        "Lista actualizada de proveedores con tier gratuito",
+        "Comparativa de limites diarios, modelos disponibles y latencia",
+        "Recomendacion automatica del mejor proveedor"
+      ]
+    },
+    {
+      "id": "obj-2",
+      "title": "Auto-crear cuentas y generar keys via browser",
+      "description": "Cuando falte una key, abrir la pagina del proveedor en el browser del usuario (que ya tiene sesion iniciada con su email). Navegar la pagina, entenderla y guiar o automatizar la creacion de la key.",
+      "status": "ready",
+      "steps": [
+        "Detectar que falta una key (ej: GROQ_API_KEY no esta en env)",
+        "Abrir https://console.groq.com/keys en el browser del usuario",
+        "Si el usuario ya tiene sesion, navegar a 'Create API Key'",
+        "Si necesita crear cuenta, usar el flujo OAuth con la cuenta de correo ya autenticada",
+        "Copiar la key generada",
+        "Guardar via save_secret_to_profile() en ~/.iabv_secrets.ps1",
+        "Verificar que la key funciona con un test request"
+      ],
+      "acceptance_criteria": [
+        "Key creada y guardada sin que el usuario edite archivos",
+        "Key verificada con test request exitoso"
+      ]
+    },
+    {
+      "id": "obj-3",
+      "title": "Probar y comparar todas las keys configuradas",
+      "description": "Ejecutar health check periodico de todas las keys. Medir latencia, validez, cuota restante. Determinar la mejor configuracion y guardar la preferencia.",
+      "status": "ready",
+      "acceptance_criteria": [
+        "Health check ejecutado al arrancar IABV",
+        "Resultados persistidos en data/evolution/api_key_health/",
+        "Mejor proveedor seleccionado automaticamente como tier principal"
+      ]
+    },
+    {
+      "id": "obj-4",
+      "title": "Monitorear expiracion y renovar proactivamente",
+      "description": "Rastrear cuando cada key fue creada, si tiene limite de tiempo, si la cuota se reinicia diariamente. Cuando una key falle (401, 403, 429 persistente), diagnosticar la causa y tomar accion: esperar reinicio de cuota, rotar a otro proveedor, o pedir al usuario que renueve.",
+      "status": "ready",
+      "triggers": [
+        "Key retorna 401 Unauthorized → key invalida, necesita renovacion",
+        "Key retorna 403 Forbidden → key revocada o permisos insuficientes",
+        "Key retorna 429 Too Many Requests → cuota excedida, rotar a backup",
+        "Key no responde en >20s → timeout, rotar a backup temporalmente",
+        "Mas de 3 fallos consecutivos → marcar provider como degradado"
+      ],
+      "acceptance_criteria": [
+        "Cuando falla una key, IABV rota automaticamente al siguiente proveedor",
+        "Diagnostico del fallo guardado en logs con causa probable",
+        "Si todas las keys fallan, IABV notifica al usuario con accion concreta"
+      ]
+    },
+    {
+      "id": "obj-5",
+      "title": "Buscar mejores opciones continuamente",
+      "description": "Periodicamente (semanal) buscar en la web si hay nuevos proveedores con tier gratuito, si los existentes mejoraron sus limites, o si hay promociones. Actualizar la lista de CLOUD_PROVIDERS.",
+      "status": "ready",
+      "acceptance_criteria": [
+        "Busqueda web ejecutada al menos 1 vez por semana",
+        "Nuevos proveedores encontrados agregados a la lista",
+        "Resultado de la busqueda persistido para auditoria"
+      ]
+    }
+  ],
+  "providers_catalog": {
+    "groq": {
+      "url": "https://console.groq.com/keys",
+      "tier": "free",
+      "model": "llama-3.3-70b-versatile",
+      "daily_requests": 14400,
+      "key_lifetime": "no expiration",
+      "auth": "Google/GitHub OAuth"
+    },
+    "gemini": {
+      "url": "https://aistudio.google.com/apikey",
+      "tier": "free",
+      "model": "gemini-2.0-flash",
+      "daily_requests": 1500,
+      "key_lifetime": "no expiration, quota resets daily",
+      "auth": "Google account"
+    },
+    "openrouter": {
+      "url": "https://openrouter.ai/keys",
+      "tier": "free",
+      "model": "meta-llama/llama-3.3-70b-instruct:free",
+      "daily_requests": 200,
+      "key_lifetime": "no expiration",
+      "auth": "Google/GitHub OAuth"
+    },
+    "together": {
+      "url": "https://api.together.ai/settings/api-keys",
+      "tier": "trial ($5 credits)",
+      "model": "Llama-3.3-70B-Instruct-Turbo",
+      "daily_requests": "unlimited until credits exhausted",
+      "key_lifetime": "credits expire after 30 days of inactivity",
+      "auth": "Google/GitHub OAuth"
+    }
+  }
+}
