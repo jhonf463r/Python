@@ -1154,7 +1154,7 @@ class OperationalSelfExaminationService:
             'multi_source_disagreement',
             'runtime_noise',
             'multi_source_disagreement repetido en logs',
-            'El cache de 120s puede no ser suficiente o el MCP polling '
+            'El cache de 300s puede no ser suficiente o el MCP polling '
             'recrea instancias que pierden el cache. Considerar aumentar '
             'TTL o mover cache a nivel de clase persistente.',
         ),
@@ -1469,7 +1469,7 @@ class OperationalSelfExaminationService:
 
                 # If we couldn't extract specific tool_ids, check common ones
                 if not verified_tools:
-                    verified_tools = ['codex_installed', 'chatgpt_installed', 'claude_installed']
+                    verified_tools = ['codex_installed', 'chatgpt_installed', 'claude_installed', 'ollama_llm']
 
                 for tid in verified_tools[:5]:
                     verification = verify_tool_access_deductive(

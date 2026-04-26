@@ -478,7 +478,19 @@ class IntentUnderstandingService:
         text = self._normalize(request.user_goal)
 
         # ── Learned pattern lookup (BEFORE static patterns) ──
-        learned = _intent_learning_layer.lookup(text)
+        # Skip learned patterns for compound messages that need full
+        # conversation analysis (multiple intents joined by connectors).
+        _compound_connectors = (' y, ', ' y con ', ' pero ', ' con eso ',
+                                ' ademas ', ' tambien ', ' sin embargo ',
+                                ', y ')
+        is_compound = any(c in text for c in _compound_connectors)
+        has_conversation_context = bool(request.conversation_context)
+        learned = _intent_learning_layer.lookup(text) if not is_compound and not has_conversation_context else None
+        # Don't let learned patterns override explicit sandbox/tool signals
+        if learned:
+            _has_sandbox_signal = any(w in text for w in ('sandbox', 'probar herramienta', 'probar tool'))
+            if _has_sandbox_signal and learned.get('intent_key') not in ('tools.sandbox', 'tools.local_workflow'):
+                learned = None
         if learned:
             learned_intent_key = str(learned.get('intent_key', ''))
             learned_confidence = min(float(learned.get('confidence', 0.85)), 0.95)
@@ -531,6 +543,29 @@ class IntentUnderstandingService:
             detected_disposition = disposition_map.get(
                 learned_intent_key, IntentDisposition.ANSWER_NOW,
             )
+            # Preserve domain-specific metadata that the static path
+            # would have set — learned patterns must not strip flags
+            # that downstream handlers depend on.
+            domain_metadata: dict[str, Any] = {
+                'learned_pattern': True,
+                'learned_confirmations': confirmations,
+            }
+            if learned_intent_key == 'consulta_estado_evolutivo':
+                domain_metadata['conversational_prompt'] = True
+                domain_metadata['evolution_status_prompt'] = True
+            elif learned_intent_key == 'system.self_awareness':
+                domain_metadata['conversational_prompt'] = True
+                domain_metadata['self_awareness_prompt'] = True
+            elif learned_intent_key == 'system.metacognition':
+                domain_metadata['conversational_prompt'] = True
+                domain_metadata['metacognition_prompt'] = True
+            if learned_intent_key == 'project.evolution' and self._is_code_generation_prompt(text):
+                domain_metadata['code_generation_prompt'] = True
+            # Preserve sensitivity flags that the static path would set
+            _sensitive_intents = {'wplay.login', 'wplay.casino'}
+            _monetary_intents = {'wplay.casino'}
+            is_sensitive = learned_intent_key in _sensitive_intents
+            is_monetary = learned_intent_key in _monetary_intents
             intent = TaskIntent(
                 disposition=detected_disposition,
                 intent_key=learned_intent_key,
@@ -540,14 +575,13 @@ class IntentUnderstandingService:
                 site_hint=request.site_hint,
                 domain_hint=learned_intent_key.split('.')[0] if '.' in learned_intent_key else 'general',
                 confidence=max(0.1, learned_confidence - self._confidence_decay(learned_intent_key)),
+                sensitive=is_sensitive,
+                monetary=is_monetary,
                 reasoning=[
                     f'patrón aprendido con {confirmations} confirmaciones',
                     f'fuente: {learned.get("source", "unknown")}',
-                ],
-                metadata={
-                    'learned_pattern': True,
-                    'learned_confirmations': confirmations,
-                },
+                ] + (['patrones explicitos de generacion o modificacion de codigo detectados'] if domain_metadata.get('code_generation_prompt') else []),
+                metadata=domain_metadata,
             )
             hypotheses = [IntentHypothesis(
                 intent_key=learned_intent_key,
@@ -555,6 +589,20 @@ class IntentUnderstandingService:
                 confidence=learned_confidence,
                 rationale=f'Patrón aprendido previamente ({confirmations} confirmaciones)',
             )]
+            if learned_intent_key == 'consulta_estado_evolutivo':
+                hypotheses.append(IntentHypothesis(
+                    intent_key='knowledge.query',
+                    title='Consulta de conocimiento',
+                    confidence=max(0.1, learned_confidence - 0.15),
+                    rationale='consulta evolutiva implica consulta de conocimiento',
+                ))
+            elif learned_intent_key in ('system.self_awareness', 'system.metacognition'):
+                hypotheses.append(IntentHypothesis(
+                    intent_key='knowledge.query',
+                    title='Consulta de conocimiento',
+                    confidence=max(0.1, learned_confidence - 0.20),
+                    rationale='autoconciencia implica consulta de conocimiento interno',
+                ))
             return intent, hypotheses
 
         conversation_text = self._conversation_context_text(request.conversation_context)
@@ -786,7 +834,8 @@ class IntentUnderstandingService:
             return finalize(intent, hypotheses)
 
         _has_web_verb = self._contains_any(text, ['buscar', 'busca', 'navega', 'abre', 'abrir', 've a']) and self._contains_any(text, ['internet', 'web', 'en linea', 'online', 'pagina', 'sitio', 'url', 'http', 'google', 'mercadolibre', 'mercado libre'])
-        if not _has_web_verb and (self._is_tool_prompt(text, request.goal_parameters) or str(analysis.get('primary_intent') or '') in {'tools.local_workflow', 'tools.sandbox'}):
+        _sandbox_explicit = self._contains_any(text, ['sandbox', 'probar herramienta', 'probar tool', 'validar herramienta'])
+        if (_sandbox_explicit or not _has_web_verb) and (self._is_tool_prompt(text, request.goal_parameters) or str(analysis.get('primary_intent') or '') in {'tools.local_workflow', 'tools.sandbox'}):
             sandbox_only = self._contains_any(text, ['sandbox', 'probar herramienta', 'probar tool', 'validar herramienta'])
             intent = build(
                 intent_key='tools.sandbox' if sandbox_only else 'tools.local_workflow',

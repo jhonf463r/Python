@@ -342,7 +342,7 @@ Item {
                         onDismissed: visible = false
                     }
 
-                    AppTextArea { id: chatInput; width: chatCol.width; implicitHeight: 92; placeholderText: "Describe la tarea cotidiana que quieres resolver o automatizar por fases..." }
+                    AppTextArea { id: chatInput; width: chatCol.width; implicitHeight: 92; selectByMouse: true; placeholderText: "Describe la tarea cotidiana que quieres resolver o automatizar por fases..." }
                     Flow {
                         width: chatCol.width
                         spacing: 10

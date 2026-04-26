@@ -7749,7 +7749,6 @@ class ControlCenterViewModel(QObject):
             self._provider_refreshing = False
         else:
             self._working = False
-        self._busy_label = visible_message
         self._update_evolution_snapshot()
         self._diagnostic_text = (
             'Ultimo error\n'
@@ -7770,6 +7769,7 @@ class ControlCenterViewModel(QObject):
             self._refresh_autonomy_dock()
         except Exception:
             pass
+        self._busy_label = visible_message
         self.dataChanged.emit()
 
     def _build_provider_diagnostic(self) -> str:

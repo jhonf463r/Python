@@ -118,7 +118,7 @@ class ToolAdapter:
     # Cache for multi-source detection results to avoid re-probing
     # filesystem/process/window every ~50 seconds on each MCP session.
     _multi_source_cache: dict[str, tuple[float, bool]] = {}
-    _MULTI_SOURCE_CACHE_TTL = 120.0  # seconds — bumped at runtime by auto-correction
+    _MULTI_SOURCE_CACHE_TTL = 300.0  # seconds — bumped at runtime by auto-correction
     _TTL_PERSISTENCE_PATH: Path | None = None
     # Track which tool_ids have already been logged at INFO for disagreement.
     # After the first INFO log, subsequent identical disagreements are logged
