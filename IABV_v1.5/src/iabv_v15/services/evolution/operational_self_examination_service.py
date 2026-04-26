@@ -2782,6 +2782,38 @@ class OperationalSelfExaminationService:
             scores = kind_success.get(kind, [])
             return sum(scores) / max(len(scores), 1) if scores else 0.0
 
+        # G3: Si AdaptiveWeightLayer está disponible, usar pesos adaptativos
+        # refinados (recency, trend, reuse, latency) en vez de promedios crudos.
+        # Esto hace que las propuestas reflejen la "sabiduría acumulada".
+        adaptive_scores: dict[str, float] = {}
+        if self.adaptive_weight_layer is not None and experiment_runs:
+            try:
+                from iabv_v15.domain.models import EvaluationRoute
+                grouped_runs: dict[tuple[object, str, str], list[Any]] = defaultdict(list)
+                for run in experiment_runs:
+                    rk = str(run.assistant_kind or '').strip().lower()
+                    if rk:
+                        key = (run.route, rk, str(run.config_signature or '').strip())
+                        grouped_runs[key].append(run)
+                profiles = self.adaptive_weight_layer.suggest(grouped_runs=grouped_runs)
+                for (route, ak, cs), profile in profiles.items():
+                    weighted = float(profile.get('weighted_score') or 0.0)
+                    if weighted > adaptive_scores.get(ak, 0.0):
+                        adaptive_scores[ak] = weighted
+            except Exception:
+                pass
+
+        # G2: Filtrar propuestas ya intentadas por ValidationCycle
+        tried_keys: set[str] = set()
+        if self.autonomous_validation_cycle is not None:
+            try:
+                storage = getattr(self.autonomous_validation_cycle, 'storage', None)
+                if storage is not None:
+                    fb = storage.load_json('validation_feedback.json') or {}
+                    tried_keys = set(fb.get('tried_proposal_keys') or [])
+            except Exception:
+                pass
+
         recurring_failure_kinds: set[str] = set()
         for finding in findings:
             if finding.severity in {IssueSeverity.HIGH, IssueSeverity.MEDIUM}:
@@ -2810,6 +2842,7 @@ class OperationalSelfExaminationService:
                 continue
             proposals.append({
                 'type': 'route_substitution',
+                'proposal_key': proposal_key,
                 'title': f'Sustituir {failing_kind} por {best_alt} en tareas con fallos recurrentes',
                 'description': (
                     f'{failing_kind} tiene {fail_count} fallos recientes. '
@@ -2836,6 +2869,7 @@ class OperationalSelfExaminationService:
                 if primary_score > 0.3 and secondary_score > 0.3 and collab_key not in tried_keys:
                     proposals.append({
                         'type': 'collaborative_execution',
+                        'proposal_key': collab_key,
                         'title': f'Plan coordinado: {primary_kind} + {secondary_kind}',
                         'description': (
                             f'{primary_kind} (score {"ponderado" if primary_kind in kind_weighted_scores else "promedio"} {primary_score:.2f}, {primary_runs} éxitos) '

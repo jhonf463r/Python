@@ -617,6 +617,18 @@ class AutonomousValidationCycleService:
         if git_sync_status:
             sync_data['git_sync'] = git_sync_status
 
+        # G1: Auto-ejecución proactiva de propuestas — cuando hay
+        # propuestas action_ready con confianza >= 0.6, depositar una
+        # señal de ejecución para que el orchestrator las tome en el
+        # siguiente request sin esperar guidance explícita.
+        if sync_data.get('coordination_status') == 'action_ready':
+            self._maybe_auto_execute_proposals(sync_data)
+
+        # G2: Retroalimentar a SelfExamination con resultados de
+        # validación — cuando el tick procesó un experimento, persistir
+        # feedback para que propuestas futuras no repitan intentos.
+        self._persist_validation_feedback()
+
         with self._lock:
             current_snapshot = self._current_snapshot
             metadata = dict(current_snapshot.metadata or {})
@@ -1875,6 +1887,93 @@ class AutonomousValidationCycleService:
             )
             self._decision_log = self._persist_decision_log(updated)
         return len(new_entries)
+
+    # ------------------------------------------------------------------
+    # G1: Auto-ejecución proactiva de propuestas
+    # ------------------------------------------------------------------
+
+    _AUTO_EXEC_CONFIDENCE_THRESHOLD = 0.6
+
+    def _maybe_auto_execute_proposals(self, sync_data: dict[str, Any]) -> None:
+        """Deposit an execution signal when action_ready proposals exist.
+
+        Instead of waiting for a user request to trigger
+        ``_maybe_auto_execute_coordinated_plan`` in the orchestrator,
+        this method proactively records the best actionable proposal
+        as a pending execution signal in
+        ``data/evolution/pending_auto_execution.json``.
+
+        The orchestrator reads this file at the start of
+        ``govern_adaptive_payload`` and initiates the coordinated plan
+        automatically — closing the loop from introspection to action.
+        """
+        actionable = list(sync_data.get('actionable_proposals') or [])
+        if not actionable:
+            return
+        best = actionable[0]
+        confidence = float(best.get('estimated_confidence') or 0.0)
+        if confidence < self._AUTO_EXEC_CONFIDENCE_THRESHOLD:
+            return
+        if self.storage is None:
+            return
+        signal = {
+            'proposal': best,
+            'confidence': confidence,
+            'source': 'sync_pulse_auto_exec',
+            'timestamp_utc': datetime.now(timezone.utc).isoformat(),
+            'ia_availability': dict(sync_data.get('ia_availability') or {}),
+            'consumed': False,
+        }
+        try:
+            self.storage.save_json('pending_auto_execution.json', signal)
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------
+    # G2: Retroalimentar a SelfExamination con resultados de validación
+    # ------------------------------------------------------------------
+
+    def _persist_validation_feedback(self) -> None:
+        """Write validation results so SelfExamination can filter proposals.
+
+        After each tick that processes an experiment, persist the outcome
+        (promoted/rejected/unresolved + proposal_key) into
+        ``data/evolution/validation_feedback.json``.  SelfExamination
+        reads this when generating ``_solution_proposals()`` to skip
+        proposals that were already attempted.
+        """
+        if self.storage is None:
+            return
+        snapshot = self._current_snapshot
+        meta = dict(snapshot.metadata or {})
+        decision = str(meta.get('decision') or '').strip()
+        if not decision:
+            return
+        proposal_key = str(meta.get('proposal_key') or '').strip()
+        if not proposal_key:
+            return
+        entry = {
+            'proposal_key': proposal_key,
+            'decision': decision,
+            'winner': str(meta.get('winner') or ''),
+            'experiment_id': str(snapshot.last_experiment_id or ''),
+            'timestamp_utc': datetime.now(timezone.utc).isoformat(),
+        }
+        try:
+            existing = self.storage.load_json('validation_feedback.json') or {}
+        except Exception:
+            existing = {}
+        history = list(existing.get('history') or [])
+        history.append(entry)
+        history = history[-20:]
+        tried_keys = list(dict.fromkeys(
+            str(h.get('proposal_key') or '') for h in history if str(h.get('proposal_key') or '').strip()
+        ))
+        self.storage.save_json('validation_feedback.json', {
+            'history': history,
+            'tried_proposal_keys': tried_keys,
+            'last_updated_utc': datetime.now(timezone.utc).isoformat(),
+        })
 
     def _store_snapshot(self, snapshot: AutonomousValidationSnapshot) -> AutonomousValidationSnapshot:
         probes = self._load_pending_auto_probes()
