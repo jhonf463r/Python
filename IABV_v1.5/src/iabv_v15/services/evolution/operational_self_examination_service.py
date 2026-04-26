@@ -59,6 +59,7 @@ class OperationalSelfExaminationService:
         # encarnamiento en ``metadata['embodiment_violations']`` sin
         # cambiar el contrato del SelfExaminationSnapshot.
         self.embodiment_violation_provider: Any | None = None
+        self.decision_audit_trail: Any | None = None
         self._current_review: SelfExaminationSnapshot | None = None
 
     def current_review(
@@ -132,6 +133,7 @@ class OperationalSelfExaminationService:
         )
         findings.extend(self._weak_correction_findings(scenario_runs=scenario_runs))
         findings.extend(self._token_rotation_findings())
+        findings.extend(self._cloud_reasoning_findings())
         findings.extend(self._chat_research_backlog_findings())
         # Cognitive meta-patterns: fijación, incubación, atractores, ensambles
         findings.extend(
@@ -865,6 +867,152 @@ class OperationalSelfExaminationService:
                     },
                 )
             )
+        return findings
+
+    def _cloud_reasoning_findings(self) -> list[SelfExaminationFinding]:
+        """Analyze cloud reasoning decision trail for metacognitive findings.
+
+        Reads the ``DecisionAuditTrail`` and produces findings about:
+        - Provider degradation (success rate dropping)
+        - Rate limiting patterns (provider over-used)
+        - Fallback dependency (always falling back to lower-tier providers)
+        - No functional provider (all keys failing)
+        - Configuration improvement opportunities
+        """
+        audit = getattr(self, 'decision_audit_trail', None)
+        if audit is None:
+            return []
+        try:
+            summary = audit.self_examination_summary()
+        except Exception:
+            return []
+        if summary.get('status') == 'no_data':
+            return []
+
+        findings: list[SelfExaminationFinding] = []
+        trends = summary.get('trends', [])
+        health_score = summary.get('health_score', 0.0)
+        overall_trend = summary.get('overall_trend', 'stable')
+
+        # Finding: overall health degrading
+        if overall_trend == 'degrading' and health_score < 0.7:
+            findings.append(SelfExaminationFinding(
+                category='cloud_reasoning_degradation',
+                title='Cloud reasoning degradandose: exito global bajo',
+                summary=(
+                    f'El health score de cloud reasoning cayo a {health_score:.0%}. '
+                    f'La tendencia general es "degrading". Esto indica que las '
+                    f'configuraciones actuales de proveedores estan rindiendo peor '
+                    f'que antes. Revisar keys, cuotas y considerar rotar proveedores.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.85,
+                recommendation=(
+                    'Ejecutar "revisar api keys" para diagnosticar estado de cada '
+                    'proveedor. Si hay keys expiradas, usar "generar keys" para '
+                    'renovar. Considerar agregar proveedores backup (OpenRouter, '
+                    'Together AI).'
+                ),
+                source_refs=['DecisionAuditTrail'],
+                metadata={'health_score': health_score, 'overall_trend': overall_trend},
+            ))
+
+        for trend in trends:
+            if not isinstance(trend, dict):
+                continue
+            provider_id = trend.get('provider_id', '')
+            success_rate = trend.get('success_rate', 0.0)
+            rate_limited_count = trend.get('rate_limited_count', 0)
+            total_decisions = trend.get('total_decisions', 0)
+            trend_dir = trend.get('trend_direction', 'stable')
+
+            # Finding: specific provider degrading
+            if trend_dir == 'degrading' and total_decisions >= 6:
+                findings.append(SelfExaminationFinding(
+                    category='cloud_provider_degradation',
+                    title=f'Proveedor {provider_id} degradandose',
+                    summary=(
+                        f'{provider_id} tiene exito de {success_rate:.0%} con tendencia '
+                        f'"degrading" sobre {total_decisions} decisiones recientes. '
+                        f'La segunda mitad de las decisiones tiene peor resultado que la primera.'
+                    ),
+                    severity=IssueSeverity.MEDIUM,
+                    confidence=0.78,
+                    recommendation=(
+                        f'Verificar el estado de la API key de {provider_id}. Si '
+                        f'la cuota esta agotada, esperar reinicio diario o rotar '
+                        f'a otro proveedor. Si la key es invalida, renovarla.'
+                    ),
+                    source_refs=['DecisionAuditTrail'],
+                    metadata={'provider_id': provider_id, **trend},
+                ))
+
+            # Finding: heavy rate limiting
+            if total_decisions > 0 and rate_limited_count > total_decisions * 0.3:
+                findings.append(SelfExaminationFinding(
+                    category='cloud_rate_limiting',
+                    title=f'{provider_id} con rate limiting frecuente',
+                    summary=(
+                        f'{provider_id}: {rate_limited_count} de {total_decisions} decisiones '
+                        f'fueron rate-limited. El proveedor esta siendo sobre-utilizado '
+                        f'o la cuota del tier gratuito es insuficiente.'
+                    ),
+                    severity=IssueSeverity.MEDIUM,
+                    confidence=0.82,
+                    recommendation=(
+                        f'Reducir la frecuencia de consultas a {provider_id} o agregar '
+                        f'un proveedor adicional como backup para distribuir la carga. '
+                        f'Considerar OpenRouter o Together AI como alternativas gratuitas.'
+                    ),
+                    source_refs=['DecisionAuditTrail'],
+                    metadata={'provider_id': provider_id, **trend},
+                ))
+
+            # Finding: provider improving (positive reinforcement)
+            if trend_dir == 'improving' and total_decisions >= 6 and success_rate > 0.8:
+                findings.append(SelfExaminationFinding(
+                    category='cloud_provider_improving',
+                    title=f'{provider_id} mejorando: mantener configuracion',
+                    summary=(
+                        f'{provider_id} tiene exito de {success_rate:.0%} con tendencia '
+                        f'"improving". La configuracion actual esta funcionando bien. '
+                        f'Mantener como proveedor principal.'
+                    ),
+                    severity=IssueSeverity.LOW,
+                    confidence=0.80,
+                    recommendation=(
+                        f'Mantener {provider_id} como proveedor principal de cloud '
+                        f'reasoning. Registrar este resultado como referencia baseline '
+                        f'para futuras comparaciones.'
+                    ),
+                    source_refs=['DecisionAuditTrail'],
+                    metadata={'provider_id': provider_id, **trend},
+                ))
+
+        # Finding: no functional provider
+        if trends and not any(
+            isinstance(t, dict) and t.get('success_rate', 0) > 0.5
+            for t in trends
+        ):
+            findings.append(SelfExaminationFinding(
+                category='cloud_no_functional_provider',
+                title='Ningun proveedor cloud con exito aceptable',
+                summary=(
+                    'Ninguno de los proveedores configurados tiene tasa de exito '
+                    'mayor al 50%. Cloud reasoning no esta funcionando de forma '
+                    'confiable. Se necesita diagnostico y posible renovacion de keys.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.90,
+                recommendation=(
+                    'Ejecutar "revisar api keys" para diagnostico completo. '
+                    'Verificar conexion a internet. Renovar keys si es necesario. '
+                    'Considerar agregar multiples proveedores para redundancia.'
+                ),
+                source_refs=['DecisionAuditTrail'],
+                metadata={'trends': trends},
+            ))
+
         return findings
 
     def _chat_research_backlog_findings(self) -> list[SelfExaminationFinding]:

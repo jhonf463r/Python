@@ -58,6 +58,7 @@ class PortableContextService:
         self.task_context_assembler = task_context_assembler
         self.adaptive_task_orchestrator = adaptive_task_orchestrator
         self.adaptive_session_repository = adaptive_session_repository
+        self.decision_audit_trail: Any | None = None
         self._current_package: PortableContextPackage | None = None
 
     def current_package(
@@ -104,6 +105,7 @@ class PortableContextService:
         tool_evolution = self._tool_evolution_snapshot()
         tool_evolution_decisions = self._tool_evolution_decision_snapshot()
         self_examination = self._self_examination_snapshot()
+        cloud_reasoning_status = self._cloud_reasoning_snapshot()
         pending_items = self._pending_items()
         backlog_items = self._backlog_items()
         decision_history = self._decision_history(recommendations=recommendations)
@@ -141,6 +143,7 @@ class PortableContextService:
             self._tool_evolution_section(status=tool_evolution, now=now),
             self._tool_evolution_decisions_section(snapshot=tool_evolution_decisions, now=now),
             self._self_examination_section(review=self_examination, now=now),
+            self._cloud_reasoning_section(status=cloud_reasoning_status, now=now),
             self._recommended_routes_section(recommendations=recommendations, now=now),
             self._operational_blocks_section(world=world, recommendations=recommendations, now=now),
             self._validated_decisions_section(
@@ -179,6 +182,7 @@ class PortableContextService:
                 'tool_evolution_degraded_subjects': list(tool_evolution.get('degraded_subjects') or []),
                 'tool_evolution_decision_summary': dict(tool_evolution_decisions.get('summary_payload') or {}),
                 'tool_evolution_validated_proposals': list(tool_evolution_decisions.get('entries') or []),
+                'cloud_reasoning_status': dict(cloud_reasoning_status),
                 'autoexamination_summary': dict(self_examination.get('summary_payload') or {}),
                 'recurring_issues': list(self_examination.get('recurring_issues') or []),
                 'recommended_adjustments': list(self_examination.get('recommended_adjustments') or []),
@@ -467,6 +471,29 @@ class PortableContextService:
                 'recommendation_feedback': [],
                 'feedback_summary': {},
                 'unresolved_risks': ['UNRESOLVED:self_examination'],
+            }
+
+    def _cloud_reasoning_snapshot(self) -> dict[str, Any]:
+        audit = getattr(self, 'decision_audit_trail', None)
+        if audit is None:
+            return {
+                'status': 'not_configured',
+                'health_score': 0.0,
+                'overall_trend': 'unknown',
+                'total_decisions': 0,
+                'trends': [],
+                'recommendations': [],
+            }
+        try:
+            return audit.self_examination_summary()
+        except Exception:
+            return {
+                'status': 'error',
+                'health_score': 0.0,
+                'overall_trend': 'unknown',
+                'total_decisions': 0,
+                'trends': [],
+                'recommendations': [],
             }
 
     def _tool_discovery_snapshot(self) -> dict[str, Any]:
@@ -1067,6 +1094,61 @@ class PortableContextService:
                 'validated_improvements': list(review.get('validated_improvements') or []),
                 'recommendation_feedback': list(review.get('recommendation_feedback') or []),
                 'feedback_summary': dict(review.get('feedback_summary') or {}),
+            },
+        )
+
+    def _cloud_reasoning_section(self, *, status: dict[str, Any], now) -> PortableContextSection:
+        """Export cloud reasoning decision audit to portable context.
+
+        This ensures the next session (of any AI agent) has the full picture
+        of which cloud providers are working, which are degrading, and what
+        the system recommends — BEFORE it starts planning or modifying code.
+        """
+        items: list[dict[str, Any]] = []
+        for trend in list(status.get('trends') or [])[:5]:
+            if not isinstance(trend, dict):
+                continue
+            items.append({
+                'provider_id': trend.get('provider_id', ''),
+                'success_rate': trend.get('success_rate', 0.0),
+                'total_decisions': trend.get('total_decisions', 0),
+                'avg_latency_ms': trend.get('avg_latency_ms', 0.0),
+                'trend_direction': trend.get('trend_direction', 'unknown'),
+                'rate_limited_count': trend.get('rate_limited_count', 0),
+            })
+        for rec in list(status.get('recommendations') or [])[:3]:
+            items.append({
+                'label': 'Recomendacion',
+                'summary': str(rec),
+            })
+        health = status.get('health_score', 0.0)
+        total = status.get('total_decisions', 0)
+        overall = status.get('overall_trend', 'unknown')
+        st = status.get('status', 'not_configured')
+        if st == 'no_data':
+            summary = 'Sin decisiones registradas. Ejecutar "soluciona X" para iniciar el trail de auditoria.'
+        elif st == 'analyzed':
+            summary = (
+                f'Cloud reasoning: {total} decisiones, exito {health:.0%}, '
+                f'tendencia: {overall}.'
+            )
+        else:
+            summary = f'Cloud reasoning status: {st}'
+        best = status.get('best_provider') or {}
+        return self._section(
+            section_id='cloud_reasoning',
+            title='Estado de Cloud Reasoning',
+            summary=summary,
+            items=items,
+            source_kind='decision_audit',
+            source_refs=['DecisionAuditTrail', 'ApiKeyDiscoveryService'],
+            confidence=0.85 if st == 'analyzed' else 0.0,
+            last_updated=now,
+            metadata={
+                'health_score': health,
+                'overall_trend': overall,
+                'total_decisions': total,
+                'best_provider': best.get('provider_id', ''),
             },
         )
 
