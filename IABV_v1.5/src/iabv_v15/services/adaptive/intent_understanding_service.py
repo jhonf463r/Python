@@ -95,6 +95,11 @@ class IntentLearningLayer:
         except Exception as exc:
             logger.debug('intent_learning: failed to save: %s', exc)
 
+    def clear(self) -> None:
+        """Clear all in-memory patterns (useful for test isolation)."""
+        with self._lock:
+            self._patterns.clear()
+
     def lookup(self, normalized_text: str) -> dict[str, Any] | None:
         """Check if a normalized input matches a learned pattern.
 
@@ -531,6 +536,14 @@ class IntentUnderstandingService:
             detected_disposition = disposition_map.get(
                 learned_intent_key, IntentDisposition.ANSWER_NOW,
             )
+            learned_metadata: dict[str, Any] = {
+                'learned_pattern': True,
+                'learned_confirmations': confirmations,
+            }
+            if learned_intent_key == 'project.evolution' and self._is_code_generation_prompt(text):
+                learned_metadata['code_generation_prompt'] = True
+            sensitive_intents = {'wplay.casino', 'wplay.login'}
+            monetary_intents = {'wplay.casino'}
             intent = TaskIntent(
                 disposition=detected_disposition,
                 intent_key=learned_intent_key,
@@ -540,14 +553,13 @@ class IntentUnderstandingService:
                 site_hint=request.site_hint,
                 domain_hint=learned_intent_key.split('.')[0] if '.' in learned_intent_key else 'general',
                 confidence=max(0.1, learned_confidence - self._confidence_decay(learned_intent_key)),
+                sensitive=learned_intent_key in sensitive_intents,
+                monetary=learned_intent_key in monetary_intents,
                 reasoning=[
                     f'patrón aprendido con {confirmations} confirmaciones',
                     f'fuente: {learned.get("source", "unknown")}',
                 ],
-                metadata={
-                    'learned_pattern': True,
-                    'learned_confirmations': confirmations,
-                },
+                metadata=learned_metadata,
             )
             hypotheses = [IntentHypothesis(
                 intent_key=learned_intent_key,
@@ -785,7 +797,8 @@ class IntentUnderstandingService:
             )
             return finalize(intent, hypotheses)
 
-        _has_web_verb = self._contains_any(text, ['buscar', 'busca', 'navega', 'abre', 'abrir', 've a']) and self._contains_any(text, ['internet', 'web', 'en linea', 'online', 'pagina', 'sitio', 'url', 'http', 'google', 'mercadolibre', 'mercado libre'])
+        _sandbox_explicit = self._contains_any(text, ['sandbox', 'probar herramienta', 'probar tool', 'validar herramienta'])
+        _has_web_verb = not _sandbox_explicit and self._contains_any(text, ['buscar', 'busca', 'navega', 'abre', 'abrir', 've a']) and self._contains_any(text, ['internet', 'web', 'en linea', 'online', 'pagina', 'sitio', 'url', 'http', 'google', 'mercadolibre', 'mercado libre'])
         if not _has_web_verb and (self._is_tool_prompt(text, request.goal_parameters) or str(analysis.get('primary_intent') or '') in {'tools.local_workflow', 'tools.sandbox'}):
             sandbox_only = self._contains_any(text, ['sandbox', 'probar herramienta', 'probar tool', 'validar herramienta'])
             intent = build(

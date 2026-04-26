@@ -488,6 +488,7 @@ def test_evolution_center_emits_credential_prompt_requested() -> None:
     shutil.rmtree(workspace, ignore_errors=True)
     workspace.mkdir(parents=True, exist_ok=True)
     bootstrap = AppBootstrap(str(workspace))
+    bootstrap._build_ui_objects()
     try:
         viewmodel = bootstrap.evolution_center_viewmodel
         assert viewmodel is not None
@@ -512,6 +513,7 @@ def test_evolution_center_emits_clarification_requested() -> None:
     shutil.rmtree(workspace, ignore_errors=True)
     workspace.mkdir(parents=True, exist_ok=True)
     bootstrap = AppBootstrap(str(workspace))
+    bootstrap._build_ui_objects()
     try:
         viewmodel = bootstrap.evolution_center_viewmodel
         assert viewmodel is not None
@@ -536,6 +538,7 @@ def test_evolution_center_emits_missing_dependency_requested() -> None:
     shutil.rmtree(workspace, ignore_errors=True)
     workspace.mkdir(parents=True, exist_ok=True)
     bootstrap = AppBootstrap(str(workspace))
+    bootstrap._build_ui_objects()
     try:
         viewmodel = bootstrap.evolution_center_viewmodel
         assert viewmodel is not None
@@ -560,6 +563,7 @@ def test_evolution_center_emits_background_activity_changed() -> None:
     shutil.rmtree(workspace, ignore_errors=True)
     workspace.mkdir(parents=True, exist_ok=True)
     bootstrap = AppBootstrap(str(workspace))
+    bootstrap._build_ui_objects()
     try:
         viewmodel = bootstrap.evolution_center_viewmodel
         assert viewmodel is not None
@@ -584,6 +588,7 @@ def test_evolution_center_emits_provider_health_changed() -> None:
     shutil.rmtree(workspace, ignore_errors=True)
     workspace.mkdir(parents=True, exist_ok=True)
     bootstrap = AppBootstrap(str(workspace))
+    bootstrap._build_ui_objects()
     try:
         viewmodel = bootstrap.evolution_center_viewmodel
         assert viewmodel is not None
