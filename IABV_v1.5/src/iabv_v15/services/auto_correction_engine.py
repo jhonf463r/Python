@@ -221,6 +221,14 @@ _SECRET_PROVIDERS: dict[str, tuple[str, str, bool]] = {
         'https://console.anthropic.com/settings/keys',
         'Anthropic API Key', True,
     ),
+    'GROQ': (
+        'https://console.groq.com/keys',
+        'Groq API Key (Llama 3.3 70B, gratis)', True,
+    ),
+    'GEMINI': (
+        'https://aistudio.google.com/apikey',
+        'Google Gemini API Key (AI Studio, gratis)', True,
+    ),
     'CLOUDFLARE': (
         'https://dash.cloudflare.com/',
         'Cloudflare Zero Trust > Tunnels', True,

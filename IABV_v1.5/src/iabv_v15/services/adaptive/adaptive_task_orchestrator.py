@@ -166,6 +166,7 @@ class AdaptiveTaskOrchestrator:
         # descriptivo; nunca decide ruta operativa.
         self.experiment_lab = experiment_lab
         self.cloud_reasoning_planner: CloudReasoningPlannerService | None = None
+        self.api_key_discovery_service: Any | None = None
         self.control_master_service: Any | None = None
         self.control_master_digest_builder: Any | None = None
         self.self_examination_service: Any | None = None

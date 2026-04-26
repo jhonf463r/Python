@@ -3112,6 +3112,99 @@ class ControlCenterViewModel(QObject):
         except Exception:
             pass
 
+    # ------------------------------------------------------------------
+    # API key health check command
+    # ------------------------------------------------------------------
+
+    def _handle_api_key_health_command(self) -> None:
+        """Run API key health check and present results in chat."""
+        self._append_message(
+            'assistant', 'IABV',
+            'Revisando el estado de las API keys de cloud reasoning...',
+            'api-key-health: starting check',
+        )
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+
+        def _worker() -> None:
+            try:
+                discovery = None
+                if self.adaptive_orchestrator is not None:
+                    discovery = getattr(self.adaptive_orchestrator, 'api_key_discovery_service', None)
+                if discovery is None:
+                    from iabv_v15.services.evolution.api_key_discovery_service import ApiKeyDiscoveryService
+                    discovery = ApiKeyDiscoveryService()
+
+                report = discovery.full_health_report()
+
+                lines = ['**Reporte de API Keys para Cloud Reasoning**\n']
+                lines.append(f'Proveedores configurados: {report["configured_count"]}/{report["total_providers"]}')
+
+                if report['test_results']:
+                    lines.append('\n**Resultados de prueba:**')
+                    for r in report['test_results']:
+                        status = 'OK' if r['valid'] and 'RATE_LIMITED' not in (r.get('quota_info') or '') else (
+                            'RATE LIMITED' if r['valid'] else 'FALLO'
+                        )
+                        latency = f'{r["latency_ms"]:.0f}ms' if r['latency_ms'] else 'N/A'
+                        error_info = f' — {r["error"]}' if r['error'] else ''
+                        lines.append(f'  - **{r["provider_id"]}**: {status} ({latency}){error_info}')
+
+                if report['missing']:
+                    lines.append('\n**Proveedores sin configurar (gratis):**')
+                    for m in report['missing']:
+                        lines.append(f'  - {m["name"]}: {m["url"]}')
+
+                if report['best_provider']:
+                    bp = report['best_provider']
+                    lines.append(f'\n**Mejor proveedor actual:** {bp["provider_id"]} ({bp["latency_ms"]:.0f}ms)')
+                else:
+                    lines.append('\nNo hay proveedor funcional. Escribe "generar keys" para que te guie.')
+
+                lines.append(f'\n_{report["recommendation"]}_')
+
+                # Renewal guidance
+                guidance = discovery.renewal_guidance()
+                if guidance:
+                    lines.append('\n**Acciones recomendadas:**')
+                    for g in guidance[:3]:
+                        action = g.get('action', '')
+                        if action == 'create_key':
+                            lines.append(f'  - Crear key de {g["name"]}: {g["signup_url"]}')
+                        elif action == 'renew_key':
+                            lines.append(f'  - Renovar key de {g["name"]}: {g.get("error", "")}')
+                        elif action == 'wait_or_upgrade':
+                            lines.append(f'  - {g["name"]} en rate limit: esperar o usar otro proveedor')
+
+                    self._assistant_action_buttons = [
+                        {'action': btn_action, 'label': btn_label}
+                        for btn_action, btn_label in [
+                            ('provision_missing_keys', 'Crear keys faltantes'),
+                        ]
+                        if any(g.get('action') == 'create_key' for g in guidance)
+                    ]
+
+                self._append_message('assistant', 'IABV', '\n'.join(lines), 'api-key-health: report complete')
+            except Exception as exc:
+                logger.warning('api key health check failed: %s', exc)
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Error al revisar las API keys: {exc}',
+                    'api-key-health: failed',
+                )
+            finally:
+                self._working = False
+                self._set_live_status('idle')
+                try:
+                    self.dataChanged.emit()
+                except Exception:
+                    pass
+
+        self._working = True
+        threading.Thread(target=_worker, daemon=True).start()
+
     def _is_general_conversation_session(self, payload: dict[str, Any], intent: dict[str, Any], context: dict[str, Any]) -> bool:
         intent_key = str(intent.get('intent_key') or '').strip()
         site_name = str(context.get('site_display_name') or context.get('site_id') or '').strip().lower()
@@ -5602,6 +5695,29 @@ class ControlCenterViewModel(QObject):
         if action == 'abort':
             self.abortAdaptive()
             return True
+        if action == 'provision_missing_keys':
+            from iabv_v15.services.auto_correction_engine import auto_provision_missing_secrets
+            discovery = None
+            if self.adaptive_orchestrator is not None:
+                discovery = getattr(self.adaptive_orchestrator, 'api_key_discovery_service', None)
+            if discovery is not None:
+                missing = discovery.find_missing_keys()
+                missing_names = [m['env_key'] for m in missing]
+            else:
+                missing_names = []
+            context = {'account_scan': {'secrets': {'missing': missing_names}}}
+            result = auto_provision_missing_secrets(context, open_browser=True)
+            opened = result.get('opened_count', 0)
+            if announce:
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Se abrieron {opened} paginas para crear API keys. '
+                    'Cuando tengas cada token, pegalo en el dialogo de IABV.',
+                    f'provision: {opened} pages opened',
+                )
+            self._assistant_action_buttons = []
+            return True
+
         if action == 'execute_cloud_plan':
             def _cloud_exec() -> None:
                 try:
@@ -5701,6 +5817,9 @@ class ControlCenterViewModel(QObject):
         if 'revisar stack' in command or 'revisa stack' in command or 'actualizar stack' in command or 'actualiza stack' in command or 'estado del stack' in command:
             self._append_message('assistant', 'IABV', 'Voy a revisar el stack local en segundo plano y te dejo el diagnostico actualizado.', 'Chequeo automatico solicitado por chat.')
             self.refreshProviderHealth()
+            return True
+        if any(token in command for token in ('revisar api keys', 'revisa api keys', 'estado de las keys', 'health check keys', 'probar keys', 'verificar keys', 'buscar keys', 'generar keys', 'renovar keys')):
+            self._handle_api_key_health_command()
             return True
         if 'auditar autonomia' in command or 'audita autonomia' in command or 'revisar autonomia' in command or 'revisa autonomia' in command:
             self.auditAutonomy()
