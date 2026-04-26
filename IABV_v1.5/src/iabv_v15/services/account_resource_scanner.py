@@ -710,6 +710,37 @@ def verify_account_sessions() -> dict[str, Any]:
             'tool_count': len(tools_available),
         })
 
+    # Fix 38: For browsers with sessions but NO detected Google accounts,
+    # create anonymous workers so the pool doesn't miss active sessions.
+    matched_profiles = {(acc.get('browser', ''), acc.get('profile', '')) for acc in accounts.get('accounts', [])}
+    for (browser, profile), profile_sessions in session_index.items():
+        if (browser, profile) in matched_profiles:
+            continue
+        # This browser/profile has sessions but no Google account detected
+        tools_access = []
+        tools_available = []
+        for tool_name in ('chatgpt', 'claude', 'codex', 'github'):
+            matching = [s for s in profile_sessions if s.get('tool') == tool_name]
+            has_session = len(matching) > 0
+            tools_access.append({
+                'tool': tool_name,
+                'has_session': has_session,
+                'cookie_count': sum(s.get('cookie_count', 0) for s in matching),
+            })
+            if has_session:
+                tools_available.append(tool_name)
+
+        if tools_available:
+            verified.append({
+                'email': f'(sesion activa en {browser})',
+                'full_name': '',
+                'browser': browser,
+                'profile': profile,
+                'tools': tools_access,
+                'tools_available': tools_available,
+                'tool_count': len(tools_available),
+            })
+
     # Summary: which tools have at least one account with an active session
     tools_with_accounts: dict[str, list[str]] = {}
     for v in verified:
@@ -821,7 +852,7 @@ def format_worker_pool_report() -> str:
     if not pool['workers'] and not pool['exhausted']:
         lines.append('No hay asistentes con sesión activa detectados.')
         lines.append('Para activar asistentes, inicia sesión en ChatGPT, Claude o Codex')
-        lines.append('en tu navegador Chrome o Edge.')
+        lines.append('en cualquier navegador (Chrome, Edge, Opera, Firefox, Brave, Vivaldi).')
         return '\n'.join(lines)
 
     if pool['workers']:
@@ -1095,7 +1126,19 @@ def format_account_resource_report(scan: dict[str, Any]) -> str:
 
 
 # ──────────────────────────────────────────────────────────────
-# Ollama-based chat intent classifier (Fix 37)
+# Dual-brain intent classifier (Fix 37 + Fix 40-41)
+#
+# Architecture:
+#   1. Patterns (0ms) — fast hardcoded check, done by caller
+#   2. Local model (Ollama, ~200ms) — always available, no quotas
+#   3. Cloud model (ChatGPT/Claude, ~1s) — best quality, limited
+#
+# Strategy:
+#   - When internet + free messages available: query both in parallel
+#   - Compare results; if local disagrees with cloud, save the cloud
+#     answer as a training example so local learns over time
+#   - When no internet or no messages: use local only (already trained)
+#   - Training examples persist to data/evolution/intent_training.jsonl
 # ──────────────────────────────────────────────────────────────
 
 _INTENT_CLASSIFIER_PROMPT = """\
@@ -1119,13 +1162,68 @@ RESPONDE SOLO con un JSON asi (sin explicacion, sin markdown):
 """
 
 
-def classify_chat_intent(message: str) -> dict[str, Any] | None:
-    """Use Ollama to classify a chat message into intent categories.
+def _intent_training_path() -> Path:
+    """Path to the intent training examples file."""
+    data_dir = Path(os.environ.get('IABV_DATA_DIR', 'data'))
+    training_dir = data_dir / 'evolution'
+    training_dir.mkdir(parents=True, exist_ok=True)
+    return training_dir / 'intent_training.jsonl'
 
-    Returns ``{"category": str, "confidence": float}`` or ``None`` on failure.
-    This is a lightweight call (~200ms) used as fallback when pattern
-    matching doesn't catch an ambiguous user message.
-    """
+
+def _load_training_examples() -> list[dict[str, str]]:
+    """Load persisted training examples for the local model."""
+    path = _intent_training_path()
+    if not path.exists():
+        return []
+    examples: list[dict[str, str]] = []
+    try:
+        with open(path, 'r', encoding='utf-8', errors='replace') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    examples.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+    except Exception:
+        pass
+    return examples
+
+
+def _save_training_example(message: str, category: str, source: str) -> None:
+    """Persist a training example from a cloud classification."""
+    from datetime import datetime, timezone
+    path = _intent_training_path()
+    record = {
+        'message': message,
+        'category': category,
+        'source': source,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        with open(path, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(record, ensure_ascii=False) + '\n')
+    except Exception:
+        pass
+
+
+def _build_enriched_prompt(base_prompt: str) -> str:
+    """Add recent training examples to the system prompt so the local
+    model learns from cloud corrections."""
+    examples = _load_training_examples()
+    if not examples:
+        return base_prompt
+    # Use last 20 examples as few-shot demonstrations
+    recent = examples[-20:]
+    few_shot = '\n\nEJEMPLOS DE CLASIFICACIONES CONFIRMADAS:\n'
+    for ex in recent:
+        few_shot += f'Mensaje: "{ex["message"]}" → {{"category": "{ex["category"]}"}}\n'
+    return base_prompt + few_shot
+
+
+def _query_local_model(message: str) -> dict[str, Any] | None:
+    """Query the local Ollama model for intent classification."""
     base_url = os.environ.get('IABV_OLLAMA_BASE_URL', 'http://127.0.0.1:11434/v1')
     model = os.environ.get('IABV_OLLAMA_MODEL', 'qwen3:8b')
 
@@ -1134,8 +1232,9 @@ def classify_chat_intent(message: str) -> dict[str, Any] | None:
     except ImportError:
         return None
 
+    enriched_prompt = _build_enriched_prompt(_INTENT_CLASSIFIER_PROMPT)
     messages = [
-        {'role': 'system', 'content': _INTENT_CLASSIFIER_PROMPT},
+        {'role': 'system', 'content': enriched_prompt},
         {'role': 'user', 'content': message},
     ]
     payload = {
@@ -1156,8 +1255,254 @@ def classify_chat_intent(message: str) -> dict[str, Any] | None:
         if json_match:
             result = json.loads(json_match.group())
             if 'category' in result:
+                result['source'] = 'local'
                 return result
         return None
     except Exception as exc:
-        logger.debug('classify_chat_intent failed: %s', exc)
+        logger.debug('local intent classifier failed: %s', exc)
         return None
+
+
+def _query_cloud_model(message: str) -> dict[str, Any] | None:
+    """Query a cloud model (ChatGPT via OpenAI-compatible API) for intent
+    classification.  Uses the same prompt but a more capable model.
+
+    Returns None if internet is unavailable, no API key, or quota exhausted.
+    """
+    # Check for OpenAI-compatible API key (ChatGPT)
+    api_key = os.environ.get('OPENAI_API_KEY', '')
+    base_url = 'https://api.openai.com/v1'
+    model = 'gpt-4o-mini'
+
+    if not api_key:
+        # Try Anthropic (Claude) as alternative
+        api_key = os.environ.get('ANTHROPIC_API_KEY', '')
+        if api_key:
+            base_url = 'https://api.anthropic.com/v1'
+            model = 'claude-3-haiku-20240307'
+        else:
+            return None
+
+    try:
+        import httpx
+    except ImportError:
+        return None
+
+    messages = [
+        {'role': 'system', 'content': _INTENT_CLASSIFIER_PROMPT},
+        {'role': 'user', 'content': message},
+    ]
+    payload = {
+        'model': model,
+        'messages': messages,
+        'stream': False,
+        'temperature': 0.1,
+        'max_tokens': 100,
+    }
+    headers = {
+        'Authorization': f'Bearer {api_key}',
+        'Content-Type': 'application/json',
+    }
+
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.post(
+                f'{base_url}/chat/completions',
+                json=payload,
+                headers=headers,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+        raw_text = data['choices'][0]['message']['content'].strip()
+        json_match = re.search(r'\{[\s\S]*?\}', raw_text)
+        if json_match:
+            result = json.loads(json_match.group())
+            if 'category' in result:
+                result['source'] = 'cloud'
+                result['model'] = model
+                return result
+        return None
+    except Exception as exc:
+        logger.debug('cloud intent classifier failed: %s', exc)
+        return None
+
+
+def classify_chat_intent(message: str) -> dict[str, Any] | None:
+    """Dual-brain intent classifier.
+
+    Strategy:
+    1. Always query local model (Ollama) — instant, no quotas
+    2. If cloud API key available, query cloud in parallel
+    3. If both respond, cloud wins and trains local via saved examples
+    4. If only local responds, use it (enriched with past cloud examples)
+
+    Returns ``{"category": str, "confidence": float, "source": str}``
+    or ``None`` on failure.
+    """
+    import concurrent.futures
+
+    local_result: dict[str, Any] | None = None
+    cloud_result: dict[str, Any] | None = None
+
+    # Check if cloud is available (has API key)
+    has_cloud = bool(
+        os.environ.get('OPENAI_API_KEY')
+        or os.environ.get('ANTHROPIC_API_KEY')
+    )
+
+    if has_cloud:
+        # Run both in parallel
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            local_future = pool.submit(_query_local_model, message)
+            cloud_future = pool.submit(_query_cloud_model, message)
+
+            try:
+                local_result = local_future.result(timeout=16)
+            except Exception:
+                pass
+            try:
+                cloud_result = cloud_future.result(timeout=11)
+            except Exception:
+                pass
+    else:
+        # Local only
+        local_result = _query_local_model(message)
+
+    # Decision logic + Fix 44: benchmark tracking
+    if cloud_result and cloud_result.get('category'):
+        cloud_cat = cloud_result['category']
+        local_cat = local_result.get('category') if local_result else None
+
+        agreed = local_cat == cloud_cat
+        if not agreed:
+            _save_training_example(message, cloud_cat, cloud_result.get('model', 'cloud'))
+            logger.info(
+                'intent_dual_brain: local=%s cloud=%s → training local with cloud answer',
+                local_cat, cloud_cat,
+            )
+        else:
+            logger.debug(
+                'intent_dual_brain: both agree on %s', cloud_cat,
+            )
+
+        # Record benchmark comparison for ExperimentLab consumption
+        _record_classifier_benchmark(
+            message=message,
+            local_category=local_cat,
+            cloud_category=cloud_cat,
+            cloud_model=cloud_result.get('model', 'unknown'),
+            local_confidence=float(local_result.get('confidence', 0)) if local_result else 0,
+            cloud_confidence=float(cloud_result.get('confidence', 0)),
+            agreed=agreed,
+        )
+
+        return cloud_result
+
+    if local_result and local_result.get('category'):
+        return local_result
+
+    return None
+
+
+def _classifier_benchmark_path() -> Path:
+    """Path to the classifier benchmark log."""
+    data_dir = Path(os.environ.get('IABV_DATA_DIR', 'data'))
+    bench_dir = data_dir / 'evolution'
+    bench_dir.mkdir(parents=True, exist_ok=True)
+    return bench_dir / 'classifier_benchmarks.jsonl'
+
+
+def _record_classifier_benchmark(
+    *,
+    message: str,
+    local_category: str | None,
+    cloud_category: str,
+    cloud_model: str,
+    local_confidence: float,
+    cloud_confidence: float,
+    agreed: bool,
+) -> None:
+    """Record a benchmark comparison between local and cloud classifiers.
+
+    This data feeds into OperationalSelfExaminationService and can be
+    consumed by ExperimentLab to determine which model performs best
+    on IABV's cognitive metadata.
+    """
+    from datetime import datetime, timezone
+    path = _classifier_benchmark_path()
+    record = {
+        'message': message[:200],
+        'local_category': local_category,
+        'cloud_category': cloud_category,
+        'cloud_model': cloud_model,
+        'local_confidence': round(local_confidence, 3),
+        'cloud_confidence': round(cloud_confidence, 3),
+        'agreed': agreed,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        with open(path, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(record, ensure_ascii=False) + '\n')
+    except Exception:
+        pass
+
+
+def get_classifier_benchmark_summary() -> dict[str, Any]:
+    """Summarize classifier benchmark results for self-examination.
+
+    Returns agreement rate, per-model accuracy stats, and which model
+    is performing best on IABV's cognitive metadata.
+    """
+    path = _classifier_benchmark_path()
+    if not path.exists():
+        return {'total_comparisons': 0, 'agreement_rate': 0.0}
+
+    records: list[dict[str, Any]] = []
+    try:
+        with open(path, 'r', encoding='utf-8', errors='replace') as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        records.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        continue
+    except Exception:
+        return {'total_comparisons': 0, 'agreement_rate': 0.0}
+
+    if not records:
+        return {'total_comparisons': 0, 'agreement_rate': 0.0}
+
+    total = len(records)
+    agreed = sum(1 for r in records if r.get('agreed'))
+    agreement_rate = agreed / total if total > 0 else 0.0
+
+    # Per cloud model stats
+    by_model: dict[str, dict[str, int]] = {}
+    for r in records:
+        model = r.get('cloud_model', 'unknown')
+        by_model.setdefault(model, {'total': 0, 'agreed': 0})
+        by_model[model]['total'] += 1
+        if r.get('agreed'):
+            by_model[model]['agreed'] += 1
+
+    model_stats = {
+        model: {
+            'total': stats['total'],
+            'agreement_rate': round(stats['agreed'] / stats['total'], 3) if stats['total'] > 0 else 0,
+        }
+        for model, stats in by_model.items()
+    }
+
+    # Average confidences
+    avg_local = sum(r.get('local_confidence', 0) for r in records) / total
+    avg_cloud = sum(r.get('cloud_confidence', 0) for r in records) / total
+
+    return {
+        'total_comparisons': total,
+        'agreement_rate': round(agreement_rate, 3),
+        'avg_local_confidence': round(avg_local, 3),
+        'avg_cloud_confidence': round(avg_cloud, 3),
+        'model_stats': model_stats,
+        'local_learning_improving': agreement_rate > 0.7,
+    }

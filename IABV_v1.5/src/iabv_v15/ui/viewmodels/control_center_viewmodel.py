@@ -6434,7 +6434,8 @@ class ControlCenterViewModel(QObject):
         if allow_chat_shortcuts and self._is_learning_question(message):
             self._answer_learning_question(message)
             return
-        if allow_chat_shortcuts and self._is_account_resource_question(message):
+        # Account resource questions always resolve locally — bypass shortcut gate.
+        if self._is_account_resource_question(message):
             self._answer_account_resource_question(message)
             return
         if allow_chat_shortcuts and self._is_general_chat_message(message) and not self._seems_task_like_message(message):
