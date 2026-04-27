@@ -395,14 +395,19 @@ class OperationalSelfExaminationService:
         for kind, latencies in kind_latencies.items():
             if len(latencies) < 5:
                 continue
-            mean_lat = sum(latencies) / len(latencies)
+            last_latency = latencies[0]  # most recent
+            # Exclude the observation under test from the reference
+            # distribution to avoid self-masking the z-score.
+            ref = latencies[1:]
+            if len(ref) < 4:
+                continue
+            mean_lat = sum(ref) / len(ref)
             if mean_lat <= 0:
                 continue
-            variance = sum((x - mean_lat) ** 2 for x in latencies) / len(latencies)
+            variance = sum((x - mean_lat) ** 2 for x in ref) / len(ref)
             std_dev = math.sqrt(variance) if variance > 0 else 0
             if std_dev <= 0:
                 continue
-            last_latency = latencies[0]  # most recent
             z_score = (last_latency - mean_lat) / std_dev
             if z_score > 2.0:
                 findings.append(SelfExaminationFinding(

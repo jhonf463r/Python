@@ -200,8 +200,8 @@ def test_temporal_awareness_detects_latency_anomaly() -> None:
         runs = [
             _make_experiment_run(assistant_kind='ollama', execution_ms=5000),
         ] + [
-            _make_experiment_run(assistant_kind='ollama', execution_ms=100)
-            for _ in range(10)
+            _make_experiment_run(assistant_kind='ollama', execution_ms=90 + i * 2)
+            for i in range(10)
         ]
         recent_runs = [_make_run_record() for _ in range(5)]
         findings = oses._temporal_awareness_findings(

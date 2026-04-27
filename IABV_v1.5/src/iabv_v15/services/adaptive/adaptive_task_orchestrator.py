@@ -1260,20 +1260,22 @@ class AdaptiveTaskOrchestrator:
         decision_context = DecisionContext.model_validate(
             session.metadata.get('decision_context') or session.context.metadata.get('decision_context') or {}
         )
-        saved_session = self.task_outcome_recorder.record(session)
-        route = self._build_route(saved_session, decision_context)
-        result = self._build_result(request=request, session=saved_session, pack=pack, route=route)
 
-        # TemporalAwareness: record task timing and check for anomalies.
+        # TemporalAwareness: compute timing and inject anomaly BEFORE
+        # persistence so the temporal_anomaly key is saved with the session.
         _elapsed = _time.monotonic() - _t0
         _intent_key = str(getattr(intent, 'intent_key', '') or '')
         if _intent_key:
             anomaly = self._check_temporal_anomaly(_intent_key, _elapsed)
             self._record_task_timing(_intent_key, _elapsed)
             if anomaly is not None:
-                meta = dict(saved_session.metadata or {})
+                meta = dict(session.metadata or {})
                 meta['temporal_anomaly'] = anomaly
-                saved_session.metadata = meta
+                session.metadata = meta
+
+        saved_session = self.task_outcome_recorder.record(session)
+        route = self._build_route(saved_session, decision_context)
+        result = self._build_result(request=request, session=saved_session, pack=pack, route=route)
 
         return route, result, saved_session
 
