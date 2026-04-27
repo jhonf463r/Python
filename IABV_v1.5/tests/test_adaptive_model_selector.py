@@ -200,10 +200,12 @@ class TestAdaptiveCloudPlanner:
     def test_try_provider_returns_none_for_missing_key(self):
         from iabv_v15.services.adaptive.cloud_reasoning_planner import CloudReasoningPlannerService
         with patch.dict(os.environ, {'GEMINI_API_KEY': ''}, clear=False):
-            result = CloudReasoningPlannerService._try_provider(
+            result, err_info = CloudReasoningPlannerService._try_provider(
                 'gemini', [{'role': 'user', 'content': 'test'}],
             )
             assert result is None
+            assert err_info is not None
+            assert 'no API key' in err_info.get('error', '')
 
     def test_selector_wiring_respects_chain(self):
         from iabv_v15.services.adaptive.cloud_reasoning_planner import CloudReasoningPlannerService

@@ -232,7 +232,7 @@ class CloudReasoningPlannerService:
 
         for provider_id in chain:
             started = _time.monotonic()
-            result = CloudReasoningPlannerService._try_provider(
+            result, err_info = CloudReasoningPlannerService._try_provider(
                 provider_id, messages,
             )
             elapsed_ms = (_time.monotonic() - started) * 1000
@@ -248,14 +248,15 @@ class CloudReasoningPlannerService:
                     )
                 return result
 
-            # Record failure for adaptive learning
+            # Record failure with real error + status code for quota detection
             if selector is not None:
                 selector.record_result(
                     provider_id=provider_id,
                     task_type='planning',
                     latency_ms=elapsed_ms,
                     success=False,
-                    error=f'{provider_id} failed',
+                    error=err_info.get('error', f'{provider_id} failed') if err_info else f'{provider_id} failed',
+                    status_code=err_info.get('status_code', 0) if err_info else 0,
                 )
 
         return None
@@ -264,17 +265,22 @@ class CloudReasoningPlannerService:
     def _try_provider(
         provider_id: str,
         messages: list[dict[str, str]],
-    ) -> dict[str, Any] | None:
-        """Try a single provider and return parsed JSON or None."""
+    ) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+        """Try a single provider. Returns (result, error_info).
+
+        error_info includes 'error' (str) and 'status_code' (int) so the
+        caller can pass real HTTP status codes to the adaptive selector
+        for proper quota cooldown detection (e.g. 429).
+        """
         try:
             import httpx
         except ImportError:
-            return None
+            return None, {'error': 'httpx not installed', 'status_code': 0}
 
         if provider_id == 'gemini':
             key = os.environ.get('GEMINI_API_KEY', '')
             if not key:
-                return None
+                return None, {'error': 'no API key', 'status_code': 0}
             try:
                 with httpx.Client(timeout=30.0) as client:
                     resp = client.post(
@@ -285,15 +291,19 @@ class CloudReasoningPlannerService:
                     CloudReasoningPlannerService._record_api_health('gemini', resp.status_code)
                     resp.raise_for_status()
                     data = resp.json()
-                return CloudReasoningPlannerService._extract_json(data, 'gemini')
+                parsed = CloudReasoningPlannerService._extract_json(data, 'gemini')
+                if parsed is not None:
+                    return parsed, None
+                return None, {'error': 'JSON parse failed on 2xx response', 'status_code': resp.status_code}
             except Exception as exc:
                 logger.debug('cloud-planner gemini failed: %s', exc)
-                return None
+                sc = getattr(getattr(exc, 'response', None), 'status_code', 0)
+                return None, {'error': str(exc)[:200], 'status_code': sc}
 
         if provider_id == 'groq':
             key = os.environ.get('GROQ_API_KEY', '')
             if not key:
-                return None
+                return None, {'error': 'no API key', 'status_code': 0}
             try:
                 with httpx.Client(timeout=30.0) as client:
                     resp = client.post(
@@ -304,10 +314,14 @@ class CloudReasoningPlannerService:
                     CloudReasoningPlannerService._record_api_health('groq', resp.status_code)
                     resp.raise_for_status()
                     data = resp.json()
-                return CloudReasoningPlannerService._extract_json(data, 'groq')
+                parsed = CloudReasoningPlannerService._extract_json(data, 'groq')
+                if parsed is not None:
+                    return parsed, None
+                return None, {'error': 'JSON parse failed on 2xx response', 'status_code': resp.status_code}
             except Exception as exc:
                 logger.debug('cloud-planner groq failed: %s', exc)
-                return None
+                sc = getattr(getattr(exc, 'response', None), 'status_code', 0)
+                return None, {'error': str(exc)[:200], 'status_code': sc}
 
         if provider_id in ('ollama_local', 'ollama'):
             base_url = os.environ.get('IABV_OLLAMA_BASE_URL', 'http://127.0.0.1:11434/v1')
@@ -320,15 +334,19 @@ class CloudReasoningPlannerService:
                     )
                     resp.raise_for_status()
                     data = resp.json()
-                return CloudReasoningPlannerService._extract_json(data, 'ollama_local')
+                parsed = CloudReasoningPlannerService._extract_json(data, 'ollama_local')
+                if parsed is not None:
+                    return parsed, None
+                return None, {'error': 'JSON parse failed on 2xx response', 'status_code': resp.status_code}
             except Exception as exc:
                 logger.debug('cloud-planner ollama failed: %s', exc)
-                return None
+                sc = getattr(getattr(exc, 'response', None), 'status_code', 0)
+                return None, {'error': str(exc)[:200], 'status_code': sc}
 
         if provider_id == 'openrouter':
             key = os.environ.get('OPENROUTER_API_KEY', '')
             if not key:
-                return None
+                return None, {'error': 'no API key', 'status_code': 0}
             try:
                 with httpx.Client(timeout=30.0) as client:
                     resp = client.post(
@@ -339,15 +357,19 @@ class CloudReasoningPlannerService:
                     CloudReasoningPlannerService._record_api_health('openrouter', resp.status_code)
                     resp.raise_for_status()
                     data = resp.json()
-                return CloudReasoningPlannerService._extract_json(data, 'openrouter')
+                parsed = CloudReasoningPlannerService._extract_json(data, 'openrouter')
+                if parsed is not None:
+                    return parsed, None
+                return None, {'error': 'JSON parse failed on 2xx response', 'status_code': resp.status_code}
             except Exception as exc:
                 logger.debug('cloud-planner openrouter failed: %s', exc)
-                return None
+                sc = getattr(getattr(exc, 'response', None), 'status_code', 0)
+                return None, {'error': str(exc)[:200], 'status_code': sc}
 
         if provider_id == 'together':
             key = os.environ.get('TOGETHER_API_KEY', '')
             if not key:
-                return None
+                return None, {'error': 'no API key', 'status_code': 0}
             try:
                 with httpx.Client(timeout=30.0) as client:
                     resp = client.post(
@@ -358,12 +380,16 @@ class CloudReasoningPlannerService:
                     CloudReasoningPlannerService._record_api_health('together', resp.status_code)
                     resp.raise_for_status()
                     data = resp.json()
-                return CloudReasoningPlannerService._extract_json(data, 'together')
+                parsed = CloudReasoningPlannerService._extract_json(data, 'together')
+                if parsed is not None:
+                    return parsed, None
+                return None, {'error': 'JSON parse failed on 2xx response', 'status_code': resp.status_code}
             except Exception as exc:
                 logger.debug('cloud-planner together failed: %s', exc)
-                return None
+                sc = getattr(getattr(exc, 'response', None), 'status_code', 0)
+                return None, {'error': str(exc)[:200], 'status_code': sc}
 
-        return None
+        return None, {'error': f'unknown provider: {provider_id}', 'status_code': 0}
 
     @staticmethod
     def _extract_json(data: dict[str, Any], source: str) -> dict[str, Any] | None:
