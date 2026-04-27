@@ -245,8 +245,12 @@ if ($rotateExit -ne 0) {
 
 # 5.5. Desktop shortcut (idempotent — overwrites if exists).
 Write-Section 'Acceso directo en escritorio'
-. (Join-Path $scriptDir 'install_shortcut.ps1')
-Install-IABVShortcut -ScriptDir $scriptDir | Out-Null
+try {
+    . (Join-Path $scriptDir 'install_shortcut.ps1')
+    Install-IABVShortcut -ScriptDir $scriptDir | Out-Null
+} catch {
+    Write-Warn2 "No se pudo crear acceso directo: $_"
+}
 
 # 6. Start (opcional).
 if ($NoStart) {
