@@ -12,7 +12,7 @@ function Install-IABVShortcut {
 
     $iabvRoot = Split-Path -Parent $ScriptDir
     $vbsPath  = Join-Path $ScriptDir 'IABV.vbs'
-    $icoPath  = Join-Path $iabvRoot 'assets' 'burve.ico'
+    $icoPath  = Join-Path (Join-Path $iabvRoot 'assets') 'burve.ico'
 
     # Fallback: legacy icon location
     if (-not (Test-Path $icoPath)) {
