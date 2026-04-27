@@ -275,6 +275,9 @@ from iabv_v15.services.evolution.api_key_discovery_service import ApiKeyDiscover
 from iabv_v15.services.evolution.decision_audit_trail import DecisionAuditTrail
 from iabv_v15.services.evolution.autonomous_evolution_service import AutonomousEvolutionService
 from iabv_v15.services.evolution.runtime_signal_collector import RuntimeSignalCollector
+from iabv_v15.services.evolution.decision_simplifier_engine import DecisionSimplifierEngine
+from iabv_v15.services.evolution.platform_learning_orchestrator import PlatformLearningOrchestrator
+from iabv_v15.services.evolution.metacognition_evolution_mixin import MetacognitionEvolutionMixin
 from iabv_v15.services.evolution.self_check_orchestrator import SelfCheckOrchestrator
 from iabv_v15.services.evolution.session_health_service import SessionHealthService
 from iabv_v15.services.evolution.user_clue_service import UserClueService
@@ -1167,6 +1170,44 @@ class AppBootstrap:
         self.adaptive_task_orchestrator._tool_teach_service = self.tool_teach_service
         self.adaptive_task_orchestrator._tool_operational_executor = self.operational_executor
         self._seed_control_master_from_agents_md()
+
+        # --- Evolution services: DecisionSimplifier + PlatformLearning + Metacognition ---
+        try:
+            self.decision_simplifier = DecisionSimplifierEngine(data_root=self.config.data_dir)
+            self.decision_simplifier.world_model_service = self.world_model_service
+            self.decision_simplifier.tool_registry = self.tool_registry
+            self.decision_simplifier.api_key_discovery = self.api_key_discovery_service
+            self.decision_simplifier.auto_correction_engine = getattr(self, 'auto_correction_engine', None)
+        except Exception as exc:
+            logger.warning('bootstrap: DecisionSimplifierEngine init failed: %s', exc)
+            self.decision_simplifier = None
+
+        try:
+            self.platform_learning = PlatformLearningOrchestrator(data_root=self.config.data_dir)
+            self.platform_learning.browser_teach = self.browser_teach_session_service
+            self.platform_learning.site_exploration = self.site_exploration_service
+            self.platform_learning.universal_perception = self.universal_perception_service
+            self.platform_learning.replay_confidence = self.replay_confidence_service
+            self.platform_learning.decision_simplifier = self.decision_simplifier
+            self.platform_learning.api_key_discovery = self.api_key_discovery_service
+        except Exception as exc:
+            logger.warning('bootstrap: PlatformLearningOrchestrator init failed: %s', exc)
+            self.platform_learning = None
+
+        try:
+            self.metacognition_evolution = MetacognitionEvolutionMixin()
+            self.metacognition_evolution.decision_simplifier = self.decision_simplifier
+            self.metacognition_evolution.platform_learning = self.platform_learning
+            self.metacognition_evolution.api_key_discovery = self.api_key_discovery_service
+            self.metacognition_evolution.auto_correction_engine = getattr(self, 'auto_correction_engine', None)
+        except Exception as exc:
+            logger.warning('bootstrap: MetacognitionEvolutionMixin init failed: %s', exc)
+            self.metacognition_evolution = None
+
+        # Wire metacognition into OSES so build_review() picks up evolution findings
+        if self.metacognition_evolution is not None:
+            self.operational_self_examination_service.metacognition_evolution = self.metacognition_evolution
+
         self.inference_service = InferenceService(
             self.role_router,
             self.run_repository,
