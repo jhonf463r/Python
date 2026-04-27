@@ -2331,6 +2331,18 @@ class AppBootstrap:
 
             app, _engine = self.create_engine()
 
+            # Explicitly show + raise the main window.  When the process is
+            # launched via Start-Process -WindowStyle Hidden (to hide the
+            # console), Windows applies SW_HIDE to every window the process
+            # creates.  The splash escapes this because it has
+            # Qt.WindowStaysOnTopHint, but the main ApplicationWindow does
+            # not — so we must force it visible from Python.
+            if _engine.rootObjects():
+                main_win = _engine.rootObjects()[0]
+                main_win.show()
+                main_win.raise_()
+                main_win.requestActivate()
+
             # Signal splash that we're ready — it will fade out
             if self._splash:
                 self._splash.set_ready()
