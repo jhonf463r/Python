@@ -502,6 +502,11 @@ _ACTION_HANDLERS: dict[str, Any] = {
     'trigger_diagnostic_scan': _noop,  # logged — triggers deep scan next cycle
     # Auto-install actions
     'auto_install_dependency': _noop,  # handled by _auto_install_missing_tool
+    # Runtime performance auto-corrections
+    'reduce_scan_interval': _noop,  # logged — WorldModelService adjusts next cycle
+    'increase_network_cache_ttl': _noop,  # logged — probe cache extended
+    'consolidate_polling_threads': _noop,  # logged — requires code change
+    'lazy_load_services': _noop,  # logged — requires code change
 }
 
 

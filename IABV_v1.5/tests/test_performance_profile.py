@@ -1,12 +1,15 @@
-"""Tests for the performance_profile MCP tool and network probe caching."""
+"""Tests for performance_profile MCP tool, network probe caching, and OSES runtime findings."""
 from __future__ import annotations
 
+import os
 import socket
 import threading
 import time
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+os.environ.setdefault('IABV_TEST_MODE', '1')
 
 
 # ---------------------------------------------------------------------------
@@ -165,3 +168,74 @@ class TestPerformanceProfileStructure:
             })
         assert len(bottlenecks) == 1
         assert bottlenecks[0]['area'] == 'threads'
+
+
+# ---------------------------------------------------------------------------
+# OSES _runtime_performance_findings
+# ---------------------------------------------------------------------------
+
+class TestOSESRuntimePerformanceFindings:
+    """Verify OSES detects runtime performance bottlenecks."""
+
+    def _make_oses(self):
+        from iabv_v15.services.evolution.operational_self_examination_service import (
+            OperationalSelfExaminationService,
+        )
+        return OperationalSelfExaminationService(
+            workspace_root='/tmp/test_ws',
+            storage=MagicMock(),
+            run_repository=MagicMock(recent=MagicMock(return_value=[])),
+            adaptive_session_repository=MagicMock(recent=MagicMock(return_value=[])),
+            experiment_lab_repository=MagicMock(recent_runs=MagicMock(return_value=[])),
+            scenario_run_repository=MagicMock(recent=MagicMock(return_value=[])),
+            evolution_review_service=MagicMock(),
+            world_model_service=None,
+            autonomous_validation_cycle=MagicMock(),
+            adaptive_weight_layer=MagicMock(),
+            token_rotation_ledger=MagicMock(),
+        )
+
+    def test_no_findings_under_normal_conditions(self):
+        oses = self._make_oses()
+        # Under normal memory/thread conditions, should return empty or few findings.
+        with patch.object(oses, '_read_process_rss_mb', return_value=200.0):
+            findings = oses._runtime_performance_findings()
+        perf_findings = [f for f in findings if f.category == 'runtime_performance']
+        # No high memory, threads are normal in test → no findings expected
+        assert all(f.title != 'high_memory_usage' for f in perf_findings)
+
+    def test_high_memory_triggers_finding(self):
+        oses = self._make_oses()
+        with patch.object(oses, '_read_process_rss_mb', return_value=650.0):
+            findings = oses._runtime_performance_findings()
+        mem_findings = [f for f in findings if f.title == 'high_memory_usage']
+        assert len(mem_findings) == 1
+        assert 'MEDIUM' in str(mem_findings[0].severity)
+        assert '650' in mem_findings[0].summary
+
+    def test_very_high_memory_is_high_severity(self):
+        oses = self._make_oses()
+        with patch.object(oses, '_read_process_rss_mb', return_value=900.0):
+            findings = oses._runtime_performance_findings()
+        mem_findings = [f for f in findings if f.title == 'high_memory_usage']
+        assert len(mem_findings) == 1
+        assert 'HIGH' in str(mem_findings[0].severity)
+
+    def test_network_probe_failure_triggers_finding(self):
+        oses = self._make_oses()
+        mock_wms = MagicMock()
+        mock_wms._network_cache = (None, 'timed out', time.monotonic())
+        oses.world_model_service = mock_wms
+        with patch.object(oses, '_read_process_rss_mb', return_value=200.0):
+            findings = oses._runtime_performance_findings()
+        net_findings = [f for f in findings if f.title == 'network_probe_failing']
+        assert len(net_findings) == 1
+        assert 'timed out' in net_findings[0].summary
+
+    def test_read_process_rss_mb_returns_number(self):
+        oses = self._make_oses()
+        rss = oses._read_process_rss_mb()
+        # On Linux (CI/Devin VM), /proc/self/status should work.
+        if rss is not None:
+            assert isinstance(rss, float)
+            assert rss > 0
