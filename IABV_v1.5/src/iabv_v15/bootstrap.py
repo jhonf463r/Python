@@ -2021,8 +2021,11 @@ class AppBootstrap:
             time.sleep(5)  # Let UI load first
             logger.info('startup_evolution: beginning background cycle')
             try:
-                # Step 0: Detect if code was updated since last run
+                # Step 0a: Detect if code was updated since last run
                 self._detect_code_update()
+
+                # Step 0b: Analyze startup console log for warnings/errors
+                self._analyze_startup_log()
 
                 # Step 1: Scan configured API keys
                 if api_discovery is not None:
@@ -2165,6 +2168,58 @@ class AppBootstrap:
 
         except Exception as exc:
             logger.debug('startup_evolution: code update detection failed: %s', exc)
+
+    def _analyze_startup_log(self) -> None:
+        """Read the startup console log and generate OSES findings for warnings/errors.
+
+        The startup script (start_iabv.ps1) captures all console output to
+        data/logs/startup_console.log via Start-Transcript. This method reads
+        that log and surfaces any warnings or errors as OSES findings so the
+        program can self-examine its own startup process.
+        """
+        log_path = Path(self.config.workspace_dir) / 'data' / 'logs' / 'startup_console.log'
+        if not log_path.exists():
+            return
+
+        try:
+            content = log_path.read_text(encoding='utf-8', errors='replace')
+            lines = content.splitlines()
+
+            warnings = [l.strip() for l in lines if '[warn]' in l.lower() or '[auto-pull]' in l.lower() and 'fallo' in l.lower()]
+            errors = [l.strip() for l in lines if '[err]' in l.lower() or 'error' in l.lower() and 'exit' in l.lower()]
+
+            oses = getattr(self, 'operational_self_examination_service', None)
+            if oses is None:
+                return
+
+            if errors:
+                oses.add_external_finding({
+                    'category': 'startup_health',
+                    'title': f'Errores detectados en arranque ({len(errors)} lineas)',
+                    'summary': '\n'.join(errors[:5]),
+                    'severity': 'HIGH',
+                    'confidence': 0.9,
+                    'recommendation': 'Revisar data/logs/startup_console.log para detalles completos',
+                    'metadata': {'log_file': str(log_path), 'error_lines': errors[:10]},
+                })
+
+            if warnings and not errors:
+                oses.add_external_finding({
+                    'category': 'startup_health',
+                    'title': f'Advertencias en arranque ({len(warnings)} lineas)',
+                    'summary': '\n'.join(warnings[:5]),
+                    'severity': 'LOW',
+                    'confidence': 0.8,
+                    'recommendation': 'Revisar si las advertencias afectan funcionalidad',
+                    'metadata': {'log_file': str(log_path), 'warning_lines': warnings[:10]},
+                })
+
+            logger.info(
+                'startup_evolution: startup log analyzed — %d errors, %d warnings',
+                len(errors), len(warnings),
+            )
+        except Exception as exc:
+            logger.debug('startup_evolution: startup log analysis failed: %s', exc)
 
     def _is_mcp_port_in_use(self, port: int = 8000) -> bool:
         """Check if the MCP port is already in use (another instance running)."""

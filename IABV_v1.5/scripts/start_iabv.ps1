@@ -62,6 +62,21 @@ if ($NoAutoPull) {
 
 $ErrorActionPreference = 'Stop'
 
+# --- Console log capture ---------------------------------------------------
+# All console output is captured to a log file so the program can self-examine
+# its own startup (OSES, auditing, diagnostics). The user never sees the console
+# but the program reads this log internally.
+$iabvRoot   = Split-Path -Parent $PSScriptRoot
+$logsDir    = Join-Path (Join-Path $iabvRoot 'data') 'logs'
+if (-not (Test-Path $logsDir)) { New-Item -ItemType Directory -Path $logsDir -Force | Out-Null }
+$startupLog = Join-Path $logsDir 'startup_console.log'
+try {
+    Start-Transcript -Path $startupLog -Force | Out-Null
+} catch {
+    # Transcript already running or not available — continue anyway
+}
+# ---------------------------------------------------------------------------
+
 function Write-Info($msg) { if (-not $Quiet) { Write-Host $msg -ForegroundColor Cyan } }
 function Write-Warn($msg) { Write-Host $msg -ForegroundColor Yellow }
 function Write-Err ($msg) { Write-Host $msg -ForegroundColor Red }
@@ -242,15 +257,22 @@ if ($StartUI) {
         $pythonwExe = $pythonExe -replace 'python\.exe$','pythonw.exe' -replace 'python$','pythonw'
         $usePythonw = $false
         try { $usePythonw = [bool](Get-Command $pythonwExe -ErrorAction SilentlyContinue) } catch {}
+        # Redirect UI stdout/stderr to log files for self-examination
+        $uiStdout = Join-Path $logsDir 'ui_stdout.log'
+        $uiStderr = Join-Path $logsDir 'ui_stderr.log'
         if ($usePythonw) {
             $uiProc = Start-Process -FilePath $pythonwExe `
                 -ArgumentList '-m','iabv_v15','app' `
-                -PassThru
+                -PassThru `
+                -RedirectStandardOutput $uiStdout `
+                -RedirectStandardError $uiStderr
         } else {
             $uiProc = Start-Process -FilePath $pythonExe `
                 -ArgumentList '-m','iabv_v15','app' `
                 -PassThru `
-                -WindowStyle Hidden
+                -WindowStyle Hidden `
+                -RedirectStandardOutput $uiStdout `
+                -RedirectStandardError $uiStderr
         }
         Write-Info "  UI PID     : $($uiProc.Id)"
     } catch {
