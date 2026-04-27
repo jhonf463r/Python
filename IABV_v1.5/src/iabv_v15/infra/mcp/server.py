@@ -2040,6 +2040,199 @@ class IABVMCPServer:
             return client.call("navigate", page=page)
 
         # ------------------------------------------------------------
+        # performance_profile — bottleneck detection for bootstrap/runtime
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def performance_profile(
+            include_object_sizes: bool = False,
+        ) -> dict[str, Any]:
+            """Profila el rendimiento y uso de memoria de IABV en runtime.
+
+            Mide tiempo y memoria de cada servicio/componente instanciado
+            en el container (AppBootstrap). Identifica cuellos de botella
+            y sugiere optimizaciones.
+
+            Args:
+                include_object_sizes: si True, estima el tamano en memoria
+                    de cada atributo del container (mas lento pero mas detallado).
+
+            Returns:
+                Diccionario con:
+                - process_memory_mb: memoria total del proceso
+                - service_count: cantidad de servicios instanciados
+                - heavy_services: servicios que consumen mas memoria
+                - active_threads: hilos activos y su estado
+                - background_timers: timers/polling activos
+                - recommendations: lista de optimizaciones sugeridas
+                - bottlenecks: cuellos de botella detectados
+            """
+            import sys as _sys
+            import threading as _threading
+            import time as _time
+
+            result: dict[str, Any] = {
+                'timestamp': _time.strftime('%Y-%m-%dT%H:%M:%S%z'),
+            }
+
+            # --- Process memory ---
+            try:
+                import psutil
+                proc = psutil.Process()
+                mem_info = proc.memory_info()
+                result['process_memory_mb'] = round(mem_info.rss / (1024 * 1024), 1)
+                result['process_memory_vms_mb'] = round(mem_info.vms / (1024 * 1024), 1)
+                result['cpu_percent'] = proc.cpu_percent(interval=0.5)
+                result['open_files'] = len(proc.open_files())
+                result['num_fds'] = getattr(proc, 'num_fds', lambda: -1)()
+                children = proc.children(recursive=True)
+                result['child_processes'] = [
+                    {'pid': c.pid, 'name': c.name(), 'memory_mb': round(c.memory_info().rss / (1024 * 1024), 1)}
+                    for c in children
+                ]
+            except ImportError:
+                # psutil not available — fallback to /proc on Linux
+                try:
+                    with open('/proc/self/status') as f:
+                        for line in f:
+                            if line.startswith('VmRSS:'):
+                                result['process_memory_mb'] = round(int(line.split()[1]) / 1024, 1)
+                            elif line.startswith('VmSize:'):
+                                result['process_memory_vms_mb'] = round(int(line.split()[1]) / 1024, 1)
+                except Exception:
+                    result['process_memory_mb'] = -1
+                result['child_processes'] = []
+            except Exception as exc:
+                result['process_memory_error'] = str(exc)
+
+            # --- Active threads ---
+            threads = _threading.enumerate()
+            result['active_thread_count'] = len(threads)
+            thread_details = []
+            for t in threads:
+                thread_details.append({
+                    'name': t.name,
+                    'daemon': t.daemon,
+                    'alive': t.is_alive(),
+                })
+            result['active_threads'] = thread_details
+
+            # --- Container service inventory ---
+            container = self.container
+            service_attrs: list[dict[str, Any]] = []
+            total_attrs = 0
+            for attr_name in sorted(dir(container)):
+                if attr_name.startswith('_'):
+                    continue
+                try:
+                    obj = getattr(container, attr_name)
+                except Exception:
+                    continue
+                if callable(obj) and not hasattr(obj, '__dict__'):
+                    continue
+                entry: dict[str, Any] = {
+                    'name': attr_name,
+                    'type': type(obj).__name__,
+                }
+                if include_object_sizes:
+                    try:
+                        entry['shallow_size_bytes'] = _sys.getsizeof(obj)
+                    except Exception:
+                        entry['shallow_size_bytes'] = -1
+                service_attrs.append(entry)
+                total_attrs += 1
+            result['service_count'] = total_attrs
+
+            # --- Detect polling/timer threads (bottlenecks) ---
+            polling_threads = [
+                t for t in thread_details
+                if any(kw in t['name'].lower() for kw in
+                       ('scan', 'poll', 'monitor', 'timer', 'refresh',
+                        'world_model', 'health', 'bridge', 'bg-install'))
+            ]
+            result['background_polling_threads'] = polling_threads
+
+            # --- WorldModel scan config ---
+            wms = getattr(container, 'world_model_service', None)
+            if wms is not None:
+                result['world_model_config'] = {
+                    'scan_interval_s': getattr(wms, '_scan_interval', None),
+                    'full_scan_interval_s': getattr(wms, '_full_scan_interval', None),
+                    'network_timeout_s': getattr(wms, '_NETWORK_TIMEOUT_SECONDS', None),
+                }
+
+            # --- Heavy services (by object dict size) ---
+            if include_object_sizes:
+                sized = [s for s in service_attrs if s.get('shallow_size_bytes', 0) > 0]
+                sized.sort(key=lambda x: x['shallow_size_bytes'], reverse=True)
+                result['heavy_services_by_size'] = sized[:15]
+
+            # --- Recommendations ---
+            recommendations = []
+            bottlenecks = []
+
+            mem_mb = result.get('process_memory_mb', 0)
+            if isinstance(mem_mb, (int, float)) and mem_mb > 500:
+                bottlenecks.append({
+                    'area': 'memory',
+                    'severity': 'high',
+                    'detail': f'Proceso consume {mem_mb}MB RSS — considerar lazy loading de servicios no criticos',
+                })
+                recommendations.append(
+                    'Implementar lazy loading: no instanciar todos los servicios en __init__. '
+                    'Usar @property con cache para servicios pesados como EmbeddingIndexService, '
+                    'SiteExplorationService, BrowserSessionController.'
+                )
+
+            if len(polling_threads) > 3:
+                bottlenecks.append({
+                    'area': 'threads',
+                    'severity': 'medium',
+                    'detail': f'{len(polling_threads)} hilos de polling activos — cada uno consume CPU y memoria',
+                })
+                recommendations.append(
+                    'Consolidar hilos de polling: WorldModelService, EnvironmentSelfAwareness y '
+                    'HealthRouter podrian compartir un unico hilo de scan con diferentes intervalos.'
+                )
+
+            thread_count = result.get('active_thread_count', 0)
+            if thread_count > 15:
+                bottlenecks.append({
+                    'area': 'threads',
+                    'severity': 'medium',
+                    'detail': f'{thread_count} hilos activos total — overhead de context switching',
+                })
+
+            children = result.get('child_processes', [])
+            if len(children) > 3:
+                bottlenecks.append({
+                    'area': 'subprocesses',
+                    'severity': 'medium',
+                    'detail': f'{len(children)} subprocesos hijos (MCP, tunnel, pip, etc.)',
+                })
+                recommendations.append(
+                    'Reducir subprocesos: considerar ejecutar MCP in-process en vez de subprocess.'
+                )
+
+            if total_attrs > 50:
+                recommendations.append(
+                    f'{total_attrs} objetos instanciados en bootstrap. Considerar agrupar servicios '
+                    'relacionados en modulos lazy-loaded y solo instanciar bajo demanda.'
+                )
+
+            recommendations.append(
+                'Network probe: si el firewall bloquea port 53, los 3 fallbacks '
+                'agregan hasta 7s de latencia al WorldModel scan. Considerar cache '
+                'del resultado de conectividad por 60s.'
+            )
+
+            result['recommendations'] = recommendations
+            result['bottlenecks'] = bottlenecks
+            result['services'] = service_attrs
+
+            return result
+
+        # ------------------------------------------------------------
         # deep_environment_scan — periféricos, BIOS, seguridad, red
         # ------------------------------------------------------------
 
