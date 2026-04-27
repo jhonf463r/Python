@@ -2261,7 +2261,7 @@ class AppBootstrap:
                 QQuickStyle.setStyle('Basic')
                 splash_app = QGuiApplication.instance() or QGuiApplication(sys.argv)
                 self._splash = SplashController(
-                    workspace_dir=self.config.workspace_dir,
+                    workspace_dir=self.config.workspace_root,
                 )
                 splash_engine = QQmlApplicationEngine()
                 splash_engine.rootContext().setContextProperty('splashController', self._splash)
