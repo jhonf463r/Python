@@ -603,15 +603,6 @@ def _auto_install_missing_tool(tool_id: str) -> dict[str, Any]:
 
 def _install_in_background(tool_id: str, pip_pkg: str) -> dict[str, Any]:
     """Launch a pip install in a daemon thread. Non-blocking."""
-    with _background_install_lock:
-        existing = _background_install_threads.get(tool_id)
-        if existing is not None and existing.is_alive():
-            return {
-                'action': 'auto_install_dependency',
-                'status': 'already_installing',
-                'tool_id': tool_id,
-                'package': pip_pkg,
-            }
 
     def _worker() -> None:
         try:
@@ -624,14 +615,23 @@ def _install_in_background(tool_id: str, pip_pkg: str) -> dict[str, Any]:
                 logger.info('auto_install_bg: %s installed via pip (%s)', tool_id, pip_pkg)
             else:
                 logger.warning(
-                    'auto_install_bg: %s failed — %s', tool_id, result.stderr[:200],
+                    'auto_install_bg: %s failed -- %s', tool_id, result.stderr[:200],
                 )
         except Exception as exc:
-            logger.warning('auto_install_bg: %s exception — %s', tool_id, exc)
+            logger.warning('auto_install_bg: %s exception -- %s', tool_id, exc)
 
-    t = threading.Thread(target=_worker, name=f'bg-install-{tool_id}', daemon=True)
     with _background_install_lock:
+        existing = _background_install_threads.get(tool_id)
+        if existing is not None and existing.is_alive():
+            return {
+                'action': 'auto_install_dependency',
+                'status': 'already_installing',
+                'tool_id': tool_id,
+                'package': pip_pkg,
+            }
+        t = threading.Thread(target=_worker, name=f'bg-install-{tool_id}', daemon=True)
         _background_install_threads[tool_id] = t
+
     t.start()
     logger.info('auto_install_bg: %s queued for background install (%s)', tool_id, pip_pkg)
     return {

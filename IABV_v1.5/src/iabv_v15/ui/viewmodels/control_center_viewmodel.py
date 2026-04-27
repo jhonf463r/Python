@@ -346,7 +346,7 @@ class ControlCenterViewModel(QObject):
         Called by MCP agents via the UIBridgeServer TCP connection.
         The message appears in the UI as coming from an external agent.
         """
-        self._append_chat_message(
+        self._append_message(
             role='bridge',
             speaker='MCP Agent',
             text=text,
