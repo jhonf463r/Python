@@ -1,45 +1,45 @@
 # install_shortcut.ps1
 #
-# Creates a desktop shortcut for IABV v1.5 with the BURVE icon
-# and offers to pin it to the taskbar.
-#
-# Usage:
-#   powershell -ExecutionPolicy Bypass -File scripts\install_shortcut.ps1
+# Creates a desktop shortcut for IABV v1.5 with the BURVE icon.
+# Called automatically by iabv_bootstrap.ps1 — no manual execution needed.
+# Idempotent: safe to call multiple times (overwrites existing shortcut).
 
-$ErrorActionPreference = 'Stop'
+function Install-IABVShortcut {
+    param(
+        [string]$ScriptDir = $PSScriptRoot,
+        [switch]$Quiet
+    )
 
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$iabvRoot  = Split-Path -Parent $scriptDir
+    $iabvRoot = Split-Path -Parent $ScriptDir
+    $vbsPath  = Join-Path $ScriptDir 'IABV.vbs'
+    $icoPath  = Join-Path $ScriptDir 'iabv.ico'
+    $lnkPath  = Join-Path ([Environment]::GetFolderPath('Desktop')) 'IABV v1.5.lnk'
 
-$vbsPath  = Join-Path $scriptDir 'IABV.vbs'
-$icoPath  = Join-Path $scriptDir 'iabv.ico'
-$lnkPath  = Join-Path ([Environment]::GetFolderPath('Desktop')) 'IABV v1.5.lnk'
+    if (-not (Test-Path $vbsPath)) {
+        if (-not $Quiet) { Write-Host "[warn] No encontre $vbsPath — omitiendo acceso directo." -ForegroundColor Yellow }
+        return $false
+    }
 
-if (-not (Test-Path $vbsPath)) {
-    Write-Error "No encontre $vbsPath. Asegurate de estar en el repo correcto."
+    $WshShell = New-Object -ComObject WScript.Shell
+    $shortcut = $WshShell.CreateShortcut($lnkPath)
+    $shortcut.TargetPath       = 'wscript.exe'
+    $shortcut.Arguments        = """$vbsPath"""
+    $shortcut.WorkingDirectory = $iabvRoot
+    $shortcut.Description      = 'IABV v1.5 - Asistente IA Autonomo'
+
+    if (Test-Path $icoPath) {
+        $shortcut.IconLocation = "$icoPath,0"
+    }
+
+    $shortcut.Save()
+
+    if (-not $Quiet) {
+        Write-Host "[ok]   Acceso directo creado: $lnkPath" -ForegroundColor Green
+    }
+    return $true
 }
 
-Write-Host '=== IABV v1.5 — Instalando acceso directo ===' -ForegroundColor Cyan
-
-$WshShell = New-Object -ComObject WScript.Shell
-$shortcut = $WshShell.CreateShortcut($lnkPath)
-$shortcut.TargetPath       = 'wscript.exe'
-$shortcut.Arguments        = """$vbsPath"""
-$shortcut.WorkingDirectory = $iabvRoot
-$shortcut.Description      = 'IABV v1.5 - Asistente IA Autonomo'
-
-if (Test-Path $icoPath) {
-    $shortcut.IconLocation = "$icoPath,0"
-    Write-Host "  Icono      : $icoPath" -ForegroundColor Green
-} else {
-    Write-Host '  Icono      : (no encontrado, usando default)' -ForegroundColor Yellow
+# Allow direct invocation for testing, but primary use is via iabv_bootstrap.ps1
+if ($MyInvocation.InvocationName -ne '.') {
+    Install-IABVShortcut
 }
-
-$shortcut.Save()
-
-Write-Host "  Acceso directo creado: $lnkPath" -ForegroundColor Green
-Write-Host ''
-Write-Host 'Para anclar a la barra de tareas:' -ForegroundColor Cyan
-Write-Host '  Click derecho en el icono del escritorio > "Anclar a la barra de tareas"'
-Write-Host ''
-Write-Host 'Listo! Doble-click en el icono para iniciar IABV.' -ForegroundColor Green
