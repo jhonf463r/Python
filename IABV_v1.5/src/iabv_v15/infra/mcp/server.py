@@ -1283,6 +1283,7 @@ class IABVMCPServer:
         def synaptic_route(
             task_kind: str,
             candidate_assistant_kinds: str = "",
+            user_goal: str = "",
         ) -> dict[str, Any]:
             """Calcula la preferencia sináptica (PCS v1) para un task_kind.
 
@@ -1300,6 +1301,9 @@ class IABVMCPServer:
                     ``"task_kind_unknown"``.
                 candidate_assistant_kinds: kinds separados por coma; si
                     está vacío se usan todos los kinds del registry.
+                user_goal: texto libre del objetivo del usuario. Si
+                    menciona un proveedor explícito (e.g. "gemini",
+                    "claude"), ese candidato recibe un bonus de scoring.
 
             Returns:
                 ``SynapticRoutingDecision`` serializado como dict, o
@@ -1328,6 +1332,7 @@ class IABVMCPServer:
             decision = router.decide(
                 task_kind=str(task_kind or ""),
                 candidate_assistant_kinds=kinds,
+                user_goal=str(user_goal or ""),
             )
             return decision.model_dump(mode="json")
 
@@ -1666,6 +1671,157 @@ class IABVMCPServer:
             """Escaneo COMPLETO del sistema: navegadores, programas, modelos IA, configuraciones optimas."""
             from iabv_v15.services.full_system_metacognition import full_system_metacognition_report
             return _to_jsonable(_run_sync_off_event_loop(full_system_metacognition_report))
+
+        # ------------------------------------------------------------
+        # self_audit — IABV tests itself by running a goal through
+        # its own pipeline and verifying the full chain works.
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def self_audit(
+            test_goal: str = "explica brevemente que eres y que puedes hacer",
+        ) -> dict[str, Any]:
+            """IABV se auto-audita: envía un objetivo de prueba por su
+            propio pipeline y verifica que orquestación, routing, contexto
+            portable, world model y OSES funcionan correctamente.
+
+            Esto implementa la auto-auditoría: el sistema se mete en sus
+            propios zapatos y verifica que todo funciona de punta a punta.
+
+            Args:
+                test_goal: objetivo de prueba a enviar por el pipeline.
+
+            Returns:
+                Reporte con resultados de cada subsistema auditado.
+            """
+            import time as _time
+            from datetime import datetime as _dt, timezone as _tz
+            from iabv_v15.domain.models import InferenceRequest
+
+            report: dict[str, Any] = {
+                'test_goal': test_goal,
+                'timestamp_utc': _dt.now(_tz.utc).isoformat(),
+                'subsystems': {},
+            }
+            t0 = _time.monotonic()
+
+            # 1. Orchestrator preview — does intent classification work?
+            try:
+                orch = self._adaptive_orchestrator()
+                request = InferenceRequest(user_goal=test_goal)
+                preview = orch.build_decision_context_preview(request)
+                preview_data = _to_jsonable(preview) or {}
+                report['subsystems']['orchestrator'] = {
+                    'status': 'ok',
+                    'intent': preview_data.get('intent_schema', {}).get('primary_intent', ''),
+                    'route': preview_data.get('route_decision', ''),
+                    'confidence': preview_data.get('confidence', 0),
+                }
+            except Exception as exc:
+                report['subsystems']['orchestrator'] = {'status': 'error', 'detail': str(exc)[:200]}
+
+            # 2. Synaptic routing — does provider selection work?
+            try:
+                router = getattr(self.container, 'synaptic_router', None)
+                if router:
+                    decision = router.decide(
+                        task_kind='code_generation',
+                        user_goal=test_goal,
+                    )
+                    report['subsystems']['synaptic_router'] = {
+                        'status': 'ok',
+                        'selected': decision.selected_assistant_kind,
+                        'score': decision.total_score,
+                        'provider_hint': (decision.metadata or {}).get('provider_hint', ''),
+                        'candidates': len(decision.alternatives or []),
+                    }
+                else:
+                    report['subsystems']['synaptic_router'] = {'status': 'not_wired'}
+            except Exception as exc:
+                report['subsystems']['synaptic_router'] = {'status': 'error', 'detail': str(exc)[:200]}
+
+            # 3. World Model — is it alive?
+            try:
+                wm = self._world_model_snapshot()
+                report['subsystems']['world_model'] = {
+                    'status': 'ok',
+                    'windows_count': len(wm.get('open_windows', [])) if isinstance(wm, dict) else 0,
+                    'tools_count': len(wm.get('tool_live_status', [])) if isinstance(wm, dict) else 0,
+                }
+            except Exception as exc:
+                report['subsystems']['world_model'] = {'status': 'error', 'detail': str(exc)[:200]}
+
+            # 4. OSES — self-examination working?
+            try:
+                oses = getattr(self.container, 'operational_self_examination_service', None)
+                if oses:
+                    review = oses.current_review(refresh=False, max_age_seconds=600)
+                    report['subsystems']['oses'] = {
+                        'status': 'ok',
+                        'review_status': review.status,
+                        'findings_count': len(review.findings),
+                        'top_finding': review.findings[0].title if review.findings else 'none',
+                        'has_auto_probes': bool((review.metadata or {}).get('pending_auto_probes')),
+                    }
+                else:
+                    report['subsystems']['oses'] = {'status': 'not_wired'}
+            except Exception as exc:
+                report['subsystems']['oses'] = {'status': 'error', 'detail': str(exc)[:200]}
+
+            # 5. Portable context — can it build a package?
+            try:
+                pcs = getattr(self.container, 'portable_context_service', None)
+                if pcs:
+                    pkg = pcs.build_package()
+                    sections = list((pkg.sections or {}).keys()) if hasattr(pkg, 'sections') else []
+                    report['subsystems']['portable_context'] = {
+                        'status': 'ok',
+                        'sections': sections[:10],
+                        'section_count': len(sections),
+                    }
+                else:
+                    report['subsystems']['portable_context'] = {'status': 'not_wired'}
+            except Exception as exc:
+                report['subsystems']['portable_context'] = {'status': 'error', 'detail': str(exc)[:200]}
+
+            # 6. CommonSense — can it extract facts?
+            try:
+                from iabv_v15.services.common_sense_engine import extract_environment_facts
+                facts = extract_environment_facts()
+                report['subsystems']['common_sense'] = {
+                    'status': 'ok',
+                    'facts_count': len(facts) if isinstance(facts, (set, list)) else 0,
+                    'sample_facts': sorted(list(facts))[:8] if isinstance(facts, set) else [],
+                }
+            except Exception as exc:
+                report['subsystems']['common_sense'] = {'status': 'error', 'detail': str(exc)[:200]}
+
+            # 7. UI state — is the UI running?
+            try:
+                provider = self._ui_screenshot_provider()
+                from iabv_v15.infra.mcp import audit_tools
+                ui_result = audit_tools.capture_ui_screenshot(provider, region='control_center')
+                report['subsystems']['ui'] = {
+                    'status': 'ok' if not ui_result.get('error') else 'not_running',
+                    'detail': ui_result.get('error', 'screenshot_captured'),
+                }
+            except Exception as exc:
+                report['subsystems']['ui'] = {'status': 'not_running', 'detail': str(exc)[:200]}
+
+            elapsed = _time.monotonic() - t0
+            report['elapsed_ms'] = round(elapsed * 1000)
+
+            # Verdict
+            statuses = [s.get('status', 'error') for s in report['subsystems'].values()]
+            ok_count = sum(1 for s in statuses if s == 'ok')
+            report['verdict'] = {
+                'ok': ok_count,
+                'total': len(statuses),
+                'healthy': ok_count >= len(statuses) - 1,
+                'summary': f'{ok_count}/{len(statuses)} subsystems operational',
+            }
+
+            return report
 
         # ------------------------------------------------------------
         # deep_environment_scan — periféricos, BIOS, seguridad, red

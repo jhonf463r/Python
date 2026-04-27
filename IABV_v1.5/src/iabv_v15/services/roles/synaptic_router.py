@@ -88,6 +88,37 @@ def _normalize_kind(value: str) -> str:
     return (value or "").strip().lower()
 
 
+# ---------------------------------------------------------------------------
+# Provider-hint extraction — when the user_goal explicitly mentions a
+# provider ("consulta con gemini", "preguntale a claude", etc.) we give
+# that candidate a bonus so the router respects the user's preference.
+# ---------------------------------------------------------------------------
+_PROVIDER_KEYWORDS: dict[str, list[str]] = {
+    "gemini": ["gemini", "google ai", "aistudio"],
+    "groq": ["groq"],
+    "ollama_local": ["ollama", "local", "llama"],
+    "chatgpt_web": ["chatgpt", "openai", "gpt-4", "gpt4"],
+    "claude_web": ["claude", "anthropic"],
+    "codex": ["codex"],
+    "devin": ["devin"],
+    "windsurf": ["windsurf"],
+}
+
+_PROVIDER_HINT_BONUS = 0.35
+
+
+def _extract_provider_hint(user_goal: str) -> str | None:
+    """Return the assistant_kind the user explicitly mentioned, or None."""
+    if not user_goal:
+        return None
+    lower = user_goal.lower()
+    for kind, keywords in _PROVIDER_KEYWORDS.items():
+        for kw in keywords:
+            if kw in lower:
+                return kind
+    return None
+
+
 # H8 — Alias para variantes comunes de ``task_kind``.
 # El router ya matcheaba por substring (``code`` → ``code_generation`` +
 # ``code_review``), pero quedaban huecos donde el nombre usado en PCS v1 / UI
@@ -275,6 +306,7 @@ class SynapticRouter:
         *,
         task_kind: str,
         candidate_assistant_kinds: list[str] | None = None,
+        user_goal: str = "",
     ) -> SynapticRoutingDecision:
         task_kind_clean = (task_kind or "").strip()
         routing_enabled = self._routing_enabled()
@@ -288,15 +320,19 @@ class SynapticRouter:
         world_model = self._safe_world_model()
         weights = self._safe_weights()
 
+        provider_hint = _extract_provider_hint(user_goal)
+
         scored: list[dict[str, Any]] = []
         for kind, profile in profiles:
             fit = _fit_score(profile, relevant)
             weight = _weight_score(kind, weights)
             availability = _availability_score(kind, world_model)
+            hint_bonus = _PROVIDER_HINT_BONUS if (provider_hint and _normalize_kind(kind) == _normalize_kind(provider_hint)) else 0.0
             total = round(
                 fit * _FIT_WEIGHT
                 + weight * _WEIGHT_WEIGHT
-                + availability * _AVAILABILITY_WEIGHT,
+                + availability * _AVAILABILITY_WEIGHT
+                + hint_bonus,
                 4,
             )
             scored.append(
@@ -305,6 +341,7 @@ class SynapticRouter:
                     "fit_score": fit,
                     "weight_score": weight,
                     "availability_score": availability,
+                    "hint_bonus": hint_bonus,
                     "total_score": total,
                     "profile_confidence": profile.confidence,
                     "profile_known": profile.assistant_kind != "unknown",
@@ -384,13 +421,32 @@ class SynapticRouter:
             }
             for row in scored[1:]
         ]
+        hint_part = f", hint_bonus={winner.get('hint_bonus', 0):.2f}" if winner.get('hint_bonus') else ""
         reason = (
             f"Selected '{winner['assistant_kind']}' for task_kind="
             f"'{task_kind_clean}' with total_score={winner['total_score']:.4f} "
             f"(fit={winner['fit_score']:.2f}, "
             f"weight={winner['weight_score']:.2f}, "
-            f"availability={winner['availability_score']:.2f})."
+            f"availability={winner['availability_score']:.2f}"
+            f"{hint_part})."
         )
+        if provider_hint:
+            evidence_refs.append(f"provider_hint:{provider_hint}")
+
+        meta: dict[str, Any] = {
+            "routing_enabled": True,
+            "task_kind": task_kind_clean,
+            "candidate_count": len(scored),
+            "scoring_weights": {
+                "fit": _FIT_WEIGHT,
+                "weight": _WEIGHT_WEIGHT,
+                "availability": _AVAILABILITY_WEIGHT,
+            },
+            "winner_profile_known": bool(winner["profile_known"]),
+        }
+        if provider_hint:
+            meta["provider_hint"] = provider_hint
+            meta["provider_hint_bonus"] = _PROVIDER_HINT_BONUS
 
         return SynapticRoutingDecision(
             selected_assistant_kind=str(winner["assistant_kind"]),
@@ -403,17 +459,7 @@ class SynapticRouter:
             reason=reason,
             evidence_refs=evidence_refs,
             unresolved_fields=unresolved,
-            metadata={
-                "routing_enabled": True,
-                "task_kind": task_kind_clean,
-                "candidate_count": len(scored),
-                "scoring_weights": {
-                    "fit": _FIT_WEIGHT,
-                    "weight": _WEIGHT_WEIGHT,
-                    "availability": _AVAILABILITY_WEIGHT,
-                },
-                "winner_profile_known": bool(winner["profile_known"]),
-            },
+            metadata=meta,
         )
 
     # ------------------------------------------------------------------
