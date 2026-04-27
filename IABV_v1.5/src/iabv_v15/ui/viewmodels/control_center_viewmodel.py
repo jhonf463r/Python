@@ -1770,6 +1770,18 @@ class ControlCenterViewModel(QObject):
         normalized = self._normalized_command_text(message)
         if not normalized:
             return False
+        # Guard: questions about a specific API key or provider are NOT
+        # account_resource — they should go through the general chat IA
+        # which has system context to answer precisely.
+        _specific_provider_tokens = (
+            'groq', 'gemini', 'openrouter', 'together', 'deepseek',
+            'api key', 'apikey', 'api_key',
+            'que modelo', 'qué modelo', 'estas usando', 'estás usando',
+            'usa groq', 'usa gemini', 'usa openrouter',
+            'key de groq', 'key de gemini', 'key de openrouter',
+        )
+        if any(tok in normalized for tok in _specific_provider_tokens):
+            return False
         direct_phrases = (
             'que cuentas tienes',
             'qué cuentas tienes',
@@ -3060,11 +3072,76 @@ class ControlCenterViewModel(QObject):
             return cloud_reply
         return 'Te leo. Cuentame que necesitas y te respondo de forma clara, sin cargarte con detalle tecnico interno.'
 
+    def _build_cloud_reply_context(self) -> str:
+        """Build a concise system context string for cloud quick replies.
+
+        Includes: configured API keys, active provider, tools status,
+        Ollama models.  Kept short to fit in a system prompt.
+        """
+        import os
+        parts: list[str] = ['ESTADO DEL SISTEMA:']
+
+        # API keys status
+        key_map = {
+            'GROQ_API_KEY': 'Groq',
+            'GEMINI_API_KEY': 'Gemini',
+            'OPENROUTER_API_KEY': 'OpenRouter',
+            'OPENAI_API_KEY': 'OpenAI',
+            'ANTHROPIC_API_KEY': 'Anthropic',
+        }
+        configured = []
+        not_configured = []
+        for env_var, name in key_map.items():
+            if os.environ.get(env_var):
+                configured.append(name)
+            else:
+                not_configured.append(name)
+        if configured:
+            parts.append(f'API keys configuradas: {", ".join(configured)}')
+        if not_configured:
+            parts.append(f'API keys NO configuradas: {", ".join(not_configured)}')
+
+        # Active provider from AdaptiveModelSelector
+        try:
+            selector = getattr(self, '_bootstrap', None)
+            if selector:
+                selector = getattr(selector, 'adaptive_model_selector', None)
+            if selector:
+                best = selector.select_best_provider(task_type='reasoning')
+                parts.append(f'Mejor proveedor razonamiento: {best.get("provider_id", "?")} ({best.get("reason", "?")})')
+        except Exception:
+            pass
+
+        # Ollama models
+        try:
+            import httpx
+            with httpx.Client(timeout=2.0) as client:
+                resp = client.get('http://127.0.0.1:11434/api/tags')
+                if resp.status_code == 200:
+                    models = [m.get('name', '?') for m in resp.json().get('models', [])]
+                    if models:
+                        parts.append(f'Modelos Ollama: {", ".join(models[:6])}')
+        except Exception:
+            pass
+
+        # Tools summary
+        try:
+            registry = getattr(self, 'tool_registry', None)
+            if registry:
+                available = [t.tool_id for t in registry.list_tools() if t.status.available]
+                parts.append(f'Herramientas disponibles: {len(available)}')
+        except Exception:
+            pass
+
+        return '\n'.join(parts)
+
     def _try_cloud_quick_reply(self, message: str) -> str | None:
         """Attempt a fast cloud reply (Groq/Gemini) for general conversation.
 
         Returns the cloud response or None if unavailable. Timeout: 8s.
         Does NOT decide routes — just generates a conversational reply.
+        Includes live system context so the IA can answer specific questions
+        about API keys, providers, tools, etc.
         """
         try:
             import httpx
@@ -3080,9 +3157,13 @@ class ControlCenterViewModel(QObject):
             ('OPENROUTER_API_KEY', 'https://openrouter.ai/api/v1/chat/completions', 'meta-llama/llama-3.3-70b-instruct:free', 'openrouter'),
         ]
 
+        system_context = self._build_cloud_reply_context()
         system_prompt = (
-            'Eres IABV, un asistente tecnico local. Responde en español, breve y util. '
-            'No inventes datos del sistema — solo responde la conversacion general del usuario.'
+            'Eres IABV, un asistente tecnico local. Responde en español, breve y directo. '
+            'Responde SOLO lo que el usuario pregunta — no listes informacion que no pidio. '
+            'Si pregunta por una API key especifica, di si esta configurada y si se esta usando. '
+            'No inventes datos — usa solo el contexto del sistema que tienes abajo.\n\n'
+            f'{system_context}'
         )
 
         for env_var, url, model, prov_name in providers:
