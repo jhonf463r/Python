@@ -2926,10 +2926,14 @@ class ControlCenterViewModel(QObject):
 
             if not _infer_done.is_set():
                 logger.warning(
-                    '_answer_general_chat: timeout (%ds)',
+                    '_answer_general_chat: timeout (%ds) — trying cloud fallback',
                     _CHAT_TIMEOUT_S,
                 )
-                fallback = self._general_chat_reply(message)
+                # Cloud-first fallback: try a fast cloud call (Groq ~200ms)
+                # before falling back to static text.
+                fallback = self._try_cloud_quick_reply(message)
+                if not fallback:
+                    fallback = self._general_chat_reply(message)
                 if not fallback:
                     fallback = (
                         'Mi modelo local tardo demasiado. Puede ser que el '
@@ -3050,7 +3054,64 @@ class ControlCenterViewModel(QObject):
         greeting_prefixes = ('hola', 'buenas', 'buenos dias', 'buenas tardes', 'buenas noches')
         if len(normalized.split()) <= 5 and any(normalized.startswith(prefix) for prefix in greeting_prefixes):
             return 'Hola. Estoy aqui para ayudarte. Dime que quieres revisar o resolver y lo trabajamos desde aqui.'
+        # Cloud-first fallback: try a fast cloud call before returning static text.
+        cloud_reply = self._try_cloud_quick_reply(message)
+        if cloud_reply:
+            return cloud_reply
         return 'Te leo. Cuentame que necesitas y te respondo de forma clara, sin cargarte con detalle tecnico interno.'
+
+    def _try_cloud_quick_reply(self, message: str) -> str | None:
+        """Attempt a fast cloud reply (Groq/Gemini) for general conversation.
+
+        Returns the cloud response or None if unavailable. Timeout: 8s.
+        Does NOT decide routes — just generates a conversational reply.
+        """
+        try:
+            import httpx
+            import os
+            import json as _json
+        except ImportError:
+            return None
+
+        providers: list[tuple[str, str, str, str]] = [
+            # (env_var, base_url, model, provider_name)
+            ('GROQ_API_KEY', 'https://api.groq.com/openai/v1/chat/completions', 'llama-3.3-70b-versatile', 'groq'),
+            ('GEMINI_API_KEY', 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', 'gemini-2.0-flash', 'gemini'),
+            ('OPENROUTER_API_KEY', 'https://openrouter.ai/api/v1/chat/completions', 'meta-llama/llama-3.3-70b-instruct:free', 'openrouter'),
+        ]
+
+        system_prompt = (
+            'Eres IABV, un asistente tecnico local. Responde en español, breve y util. '
+            'No inventes datos del sistema — solo responde la conversacion general del usuario.'
+        )
+
+        for env_var, url, model, prov_name in providers:
+            key = os.environ.get(env_var)
+            if not key:
+                continue
+            try:
+                headers = {'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'}
+                body = {
+                    'model': model,
+                    'messages': [
+                        {'role': 'system', 'content': system_prompt},
+                        {'role': 'user', 'content': message},
+                    ],
+                    'max_tokens': 300,
+                    'temperature': 0.7,
+                }
+                with httpx.Client(timeout=8.0) as client:
+                    resp = client.post(url, headers=headers, json=body)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+                        if content and len(content) > 10:
+                            logger.info('cloud_quick_reply: %s responded (%d chars)', prov_name, len(content))
+                            return content.strip()
+            except Exception as exc:
+                logger.debug('cloud_quick_reply: %s failed: %s', prov_name, exc)
+                continue
+        return None
 
     def _seems_task_like_message(self, message: str) -> bool:
         normalized = self._normalized_command_text(message)
@@ -7464,19 +7525,26 @@ class ControlCenterViewModel(QObject):
 
                     if not _infer_done.is_set():
                         logger.warning(
-                            'sendChat: inference timeout (%ds) — returning '
-                            'fallback response. The model may be overloaded.',
+                            'sendChat: inference timeout (%ds) — trying cloud fallback',
                             _INFERENCE_HARD_TIMEOUT_S,
                         )
-                        self._append_message(
-                            'assistant', 'IABV',
-                            'Mi modelo local tardo demasiado en responder. '
-                            'Esto puede pasar cuando el modelo es muy grande '
-                            'para la RAM disponible. Intenta de nuevo o usa '
-                            'un modelo mas liviano (ej: gemma3:4b). '
-                            'Puedes verificar con: model_selection_status',
-                            'Timeout de inferencia local.',
-                        )
+                        cloud_fallback = self._try_cloud_quick_reply(message)
+                        if cloud_fallback:
+                            self._append_message(
+                                'assistant', 'IABV',
+                                cloud_fallback,
+                                'Cloud fallback (modelo local ocupado).',
+                            )
+                        else:
+                            self._append_message(
+                                'assistant', 'IABV',
+                                'Mi modelo local tardo demasiado en responder. '
+                                'Esto puede pasar cuando el modelo es muy grande '
+                                'para la RAM disponible. Intenta de nuevo o usa '
+                                'un modelo mas liviano (ej: gemma3:4b). '
+                                'Puedes verificar con: model_selection_status',
+                                'Timeout de inferencia local.',
+                            )
                         self._latest_response_text = ''
                         self._latest_response_meta = 'Timeout de inferencia local.'
                         return
