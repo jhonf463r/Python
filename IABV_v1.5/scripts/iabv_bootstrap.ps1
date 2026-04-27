@@ -17,6 +17,8 @@
 #   6. Corre scripts\rotate_tokens.ps1 si detecta tokens placeholder o
 #      invalidos. Si gh no esta logueado, dispara device-flow (click
 #      "Authorize" en el browser = unico paso manual).
+#   6.5 Crea acceso directo en el escritorio con icono BURVE
+#      (idempotente, sobreescribe si existe).
 #   7. Antes de arrancar, detecta y mata cualquier MCP zombi previo que
 #      siga ocupando el puerto 8000 (capa 2.1.1: relanzado idempotente).
 #   8. Arranca scripts\start_iabv.ps1 (MCP + tunnel cloudflared) salvo
@@ -239,6 +241,15 @@ $rotateExit = $LASTEXITCODE
 if ($rotateExit -ne 0) {
     Write-Warn2 "rotate_tokens.ps1 salio con exit=$rotateExit. Revisa mensajes arriba."
     Write-Warn2 "Podes seguir e intentar arrancar igual, pero algun adapter reportara 'missing'."
+}
+
+# 5.5. Desktop shortcut (idempotent — overwrites if exists).
+Write-Section 'Acceso directo en escritorio'
+try {
+    . (Join-Path $scriptDir 'install_shortcut.ps1')
+    Install-IABVShortcut -ScriptDir $scriptDir | Out-Null
+} catch {
+    Write-Warn2 "No se pudo crear acceso directo: $_"
 }
 
 # 6. Start (opcional).
