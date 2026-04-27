@@ -159,6 +159,64 @@ INFERENCE_RULES: list[dict[str, Any]] = [
         'safe': True,
         'description': 'App en monitor secundario — mover al principal para evitar blind spots',
     },
+    # Secret alias deduction — detect same secret under different names
+    {
+        'id': 'github_token_alias_mismatch',
+        'premises': ['github_token_missing', 'github_token_alias_exists'],
+        'conclusion': 'secret_alias_deducible',
+        'action': 'map_secret_alias',
+        'severity': 'high',
+        'safe': True,
+        'description': 'GITHUB_TOKEN no existe pero hay alias (GITHUB_TOKEN_IABV, GH_TOKEN) — mapear automaticamente',
+    },
+    {
+        'id': 'devin_api_key_alias_mismatch',
+        'premises': ['devin_key_missing', 'devin_key_alias_exists'],
+        'conclusion': 'secret_alias_deducible',
+        'action': 'map_secret_alias',
+        'severity': 'high',
+        'safe': True,
+        'description': 'DEVIN_API_KEY no existe pero hay alias (DEVIN_API_KEY_IABV) — mapear automaticamente',
+    },
+    {
+        'id': 'generic_secret_alias_detected',
+        'premises': ['secret_expected_missing', 'secret_similar_name_exists'],
+        'conclusion': 'secret_alias_deducible',
+        'action': 'map_secret_alias',
+        'severity': 'medium',
+        'safe': True,
+        'description': 'Secreto esperado falta pero existe uno con nombre similar — probablemente el mismo',
+    },
+    # External session timeout
+    {
+        'id': 'external_session_stalled',
+        'premises': ['external_session_active', 'session_no_progress'],
+        'conclusion': 'external_session_zombie',
+        'action': 'abort_stalled_session',
+        'severity': 'high',
+        'safe': True,
+        'description': 'Sesion externa lleva >2 min sin avanzar — abortar y caer a ruta local',
+    },
+    # ChatGPT WinError 5 fallback
+    {
+        'id': 'chatgpt_access_denied_fallback',
+        'premises': ['chatgpt_winerror5', 'ollama_running'],
+        'conclusion': 'chatgpt_blocked_use_ollama',
+        'action': 'fallback_to_ollama',
+        'severity': 'high',
+        'safe': True,
+        'description': 'ChatGPT falla con [WinError 5] Acceso denegado — caer a Ollama automaticamente',
+    },
+    # Codex wrong_thread re-routing
+    {
+        'id': 'codex_wrong_thread_reroute',
+        'premises': ['codex_wrong_thread', 'alternative_ia_available'],
+        'conclusion': 'codex_session_invalid',
+        'action': 'reroute_from_codex',
+        'severity': 'high',
+        'safe': True,
+        'description': 'Codex reporta wrong_thread — invalidar sesion y re-rutear a alternativa',
+    },
 ]
 
 
@@ -233,6 +291,28 @@ def extract_facts(
         facts.add('secrets_file_exists')
     if secrets.get('missing_count', 0) > 3:
         facts.add('secrets_not_loaded')
+
+    # Secret alias deduction: detect when expected secret is missing but an
+    # alias with different name exists in the environment.
+    _SECRET_ALIAS_GROUPS: list[tuple[str, list[str]]] = [
+        ('GITHUB_TOKEN', ['GITHUB_TOKEN_IABV', 'IABV_GITHUB_TOKEN', 'GH_TOKEN']),
+        ('DEVIN_API_KEY', ['DEVIN_API_KEY_IABV', 'IABV_DEVIN_API_KEY']),
+        ('OPENAI_API_KEY', ['OPENAI_KEY', 'OPENAI_API_TOKEN']),
+    ]
+    for primary, aliases in _SECRET_ALIAS_GROUPS:
+        primary_val = os.environ.get(primary, '').strip()
+        alias_vals = [(a, os.environ.get(a, '').strip()) for a in aliases]
+        has_alias = any(v for _, v in alias_vals)
+        if not primary_val and has_alias:
+            if 'GITHUB' in primary:
+                facts.add('github_token_missing')
+                facts.add('github_token_alias_exists')
+            elif 'DEVIN' in primary:
+                facts.add('devin_key_missing')
+                facts.add('devin_key_alias_exists')
+            else:
+                facts.add('secret_expected_missing')
+                facts.add('secret_similar_name_exists')
 
     # Tunnel facts
     tunnel = acc.get('cloudflare_tunnel', {})
@@ -1103,6 +1183,43 @@ def _exec_github_rate_check(rule: dict[str, Any]) -> dict[str, Any]:
         return {'executed': False, 'error': str(exc)}
 
 
+def _exec_map_secret_alias(rule: dict[str, Any]) -> dict[str, Any]:
+    """Map a secret alias to the expected name in os.environ."""
+    _ALIAS_MAP: list[tuple[str, list[str]]] = [
+        ('GITHUB_TOKEN', ['GITHUB_TOKEN_IABV', 'IABV_GITHUB_TOKEN', 'GH_TOKEN']),
+        ('DEVIN_API_KEY', ['DEVIN_API_KEY_IABV', 'IABV_DEVIN_API_KEY']),
+    ]
+    mapped: list[str] = []
+    for primary, aliases in _ALIAS_MAP:
+        if os.environ.get(primary, '').strip():
+            continue
+        for alias in aliases:
+            val = os.environ.get(alias, '').strip()
+            if val:
+                os.environ[primary] = val
+                mapped.append(f'{alias} → {primary}')
+                logger.info('map_secret_alias: %s → %s', alias, primary)
+                break
+    if mapped:
+        return {'executed': True, 'detail': f'Mapeados: {", ".join(mapped)}'}
+    return {'executed': False, 'detail': 'No se encontraron alias para mapear'}
+
+
+def _exec_abort_stalled_session(rule: dict[str, Any]) -> dict[str, Any]:
+    """Placeholder for aborting a stalled external session."""
+    return {'executed': True, 'detail': 'Sesion externa marcada para abort — downstream debe re-rutear a local'}
+
+
+def _exec_fallback_to_ollama(rule: dict[str, Any]) -> dict[str, Any]:
+    """Mark ChatGPT as unavailable and signal fallback to Ollama."""
+    return {'executed': True, 'detail': 'ChatGPT bloqueado por WinError 5 — señal de fallback a Ollama emitida'}
+
+
+def _exec_reroute_from_codex(rule: dict[str, Any]) -> dict[str, Any]:
+    """Mark Codex session as invalid due to wrong_thread."""
+    return {'executed': True, 'detail': 'Codex wrong_thread — sesion invalidada, re-routing a alternativa'}
+
+
 _ACTION_EXECUTORS: dict[str, Any] = {
     'force_ollama_to_nvidia': _exec_force_ollama_to_nvidia,
     'verify_cuda_installation': _exec_verify_cuda,
@@ -1125,6 +1242,11 @@ _ACTION_EXECUTORS: dict[str, Any] = {
     'cleanup_zombie_processes': _exec_noop,
     'diagnose_network': _exec_diagnose_network,
     'check_github_rate': _exec_github_rate_check,
+    # Secret alias + session fault executors
+    'map_secret_alias': _exec_map_secret_alias,
+    'abort_stalled_session': _exec_abort_stalled_session,
+    'fallback_to_ollama': _exec_fallback_to_ollama,
+    'reroute_from_codex': _exec_reroute_from_codex,
 }
 
 

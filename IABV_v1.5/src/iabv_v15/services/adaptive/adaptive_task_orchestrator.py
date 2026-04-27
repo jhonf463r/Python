@@ -176,6 +176,10 @@ class AdaptiveTaskOrchestrator:
         # Maps intent_key -> list of elapsed_seconds (most recent first).
         self._task_timing_history: dict[str, list[float]] = {}
         self._TIMING_HISTORY_MAX = 30
+        # CognitiveLoad: queue depth tracking for prioritization.
+        self._pending_queue: list[dict[str, Any]] = []
+        self._COGNITIVE_LOAD_THRESHOLD = 5
+        self._processing_count: int = 0
 
     def _maybe_synaptic_decision(self, intent: TaskIntent | None) -> SynapticRoutingDecision | None:
         """Consulta ``SynapticRouter.decide`` si el intent es external-worthy.
@@ -557,6 +561,123 @@ class AdaptiveTaskOrchestrator:
                 ),
             }
         return None
+
+    # ------------------------------------------------------------------
+    # CognitiveLoad: queue depth check and priority sorting
+    # ------------------------------------------------------------------
+
+    _PRIORITY_WEIGHTS: dict[str, int] = {
+        'critical': 4,
+        'high': 3,
+        'medium': 2,
+        'low': 1,
+    }
+
+    def _estimate_priority(self, request: InferenceRequest) -> int:
+        """Estimate priority score for a request based on metadata signals."""
+        meta = dict(request.metadata or {})
+        explicit = str(meta.get('priority') or '').lower()
+        if explicit in self._PRIORITY_WEIGHTS:
+            return self._PRIORITY_WEIGHTS[explicit]
+        resource_pressure = meta.get('resource_pressure') or {}
+        if resource_pressure.get('critical'):
+            return self._PRIORITY_WEIGHTS['critical']
+        goal = str(request.user_goal or '').lower()
+        urgent_keywords = ('urgente', 'urgent', 'error', 'fix', 'hotfix', 'crash', 'fallo')
+        if any(kw in goal for kw in urgent_keywords):
+            return self._PRIORITY_WEIGHTS['high']
+        return self._PRIORITY_WEIGHTS['medium']
+
+    def _cognitive_load_assessment(self) -> dict[str, Any]:
+        """Return current cognitive load status: queue depth, processing count, overloaded flag."""
+        depth = len(self._pending_queue)
+        return {
+            'queue_depth': depth,
+            'processing_count': self._processing_count,
+            'total_load': depth + self._processing_count,
+            'overloaded': (depth + self._processing_count) >= self._COGNITIVE_LOAD_THRESHOLD,
+            'threshold': self._COGNITIVE_LOAD_THRESHOLD,
+            'recommendation': (
+                'defer_low_priority' if depth >= self._COGNITIVE_LOAD_THRESHOLD
+                else 'normal_processing'
+            ),
+        }
+
+    def _enqueue_request(self, request: InferenceRequest) -> int:
+        """Add a request to the pending queue and return its priority rank."""
+        priority = self._estimate_priority(request)
+        entry = {
+            'user_goal': str(request.user_goal or '')[:200],
+            'priority': priority,
+            'enqueued_at': datetime.now(timezone.utc).isoformat(),
+        }
+        self._pending_queue.append(entry)
+        self._pending_queue.sort(key=lambda e: e.get('priority', 0), reverse=True)
+        return priority
+
+    def _dequeue_request(self) -> None:
+        """Remove the first (highest-priority) item from the pending queue."""
+        if self._pending_queue:
+            self._pending_queue.pop(0)
+
+    # ------------------------------------------------------------------
+    # Proactive IA exploration: try multiple IAs on idle
+    # ------------------------------------------------------------------
+
+    def _proactive_exploration_candidates(self, request: InferenceRequest) -> list[dict[str, Any]]:
+        """Identify candidate IAs for proactive parallel exploration.
+
+        Only activates when:
+        - System is not under resource pressure
+        - SynapticRouter is wired and provides >= 2 candidates
+        - Governance allows parallel comparison
+        Returns a list of candidate dicts (name, score) or empty list.
+        """
+        if self.synaptic_router is None:
+            return []
+        pressure = self._assess_resource_pressure()
+        if pressure.get('under_pressure'):
+            return []
+        intent, _ = self.intent_service.classify_with_schema(
+            request.user_goal,
+            request.goal_parameters,
+        )
+        synaptic = self._maybe_synaptic_decision(intent)
+        if synaptic is None:
+            return []
+        ranked = self._ranked_candidates_from_synaptic(synaptic)
+        if len(ranked) < 2:
+            return []
+        allowed, _ = self._parallel_comparison_allowed()
+        if not allowed:
+            return []
+        return ranked[:3]
+
+    def _run_proactive_exploration(
+        self,
+        request: InferenceRequest,
+        candidates: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
+        """Execute proactive parallel IA comparison using existing infrastructure.
+
+        Delegates to ``_parallel_ia_comparison`` with the synaptic decision.
+        Returns comparison result or None if not feasible.
+        """
+        if len(candidates) < 2:
+            return None
+        intent, _ = self.intent_service.classify_with_schema(
+            request.user_goal,
+            request.goal_parameters,
+        )
+        synaptic = self._maybe_synaptic_decision(intent)
+        if synaptic is None:
+            return None
+        try:
+            return self._parallel_ia_comparison(
+                None, request, synaptic, decision_context=None,
+            )
+        except Exception:
+            return None
 
     # ------------------------------------------------------------------
     # B: Leer sync_pulse del ciclo de validación para inyectar en el flujo
@@ -1104,6 +1225,12 @@ class AdaptiveTaskOrchestrator:
     def handle_request(self, request: InferenceRequest) -> tuple[RoleRoute, InferenceResult, AdaptiveSession]:
         import time as _time
         _t0 = _time.monotonic()
+
+        # CognitiveLoad: track queue depth and inject load info into metadata.
+        _priority = self._enqueue_request(request)
+        self._processing_count += 1
+        _cognitive_load = self._cognitive_load_assessment()
+
         # ETAPA 2: Clasificación semántica mejorada con IntentSchema
         intent, intent_schema = self.intent_service.classify_with_schema(
             request.user_goal,
@@ -1133,12 +1260,14 @@ class AdaptiveTaskOrchestrator:
         if sync_pulse:
             self._inject_sync_coordination_into_context(context, sync_pulse)
 
-        # Depositar pressure assessment en el contexto para que downstream
-        # (planner, governance, UI) pueda observar el estado de recursos.
+        # Depositar pressure assessment y cognitive load en el contexto
+        # para que downstream (planner, governance, UI) observe el estado.
+        ctx_meta = dict(context.metadata or {})
         if resource_pressure.get('under_pressure'):
-            ctx_meta = dict(context.metadata or {})
             ctx_meta['resource_pressure'] = resource_pressure
-            context.metadata = ctx_meta
+        ctx_meta['cognitive_load'] = _cognitive_load
+        ctx_meta['request_priority'] = _priority
+        context.metadata = ctx_meta
 
         # PR I — cotejo en paralelo de las top-2 IAs rankeadas por el
         # ``SynapticRouter`` cuando la politica lo permite y existen al menos
@@ -1276,6 +1405,10 @@ class AdaptiveTaskOrchestrator:
         saved_session = self.task_outcome_recorder.record(session)
         route = self._build_route(saved_session, decision_context)
         result = self._build_result(request=request, session=saved_session, pack=pack, route=route)
+
+        # CognitiveLoad: release queue slot.
+        self._dequeue_request()
+        self._processing_count = max(0, self._processing_count - 1)
 
         return route, result, saved_session
 
