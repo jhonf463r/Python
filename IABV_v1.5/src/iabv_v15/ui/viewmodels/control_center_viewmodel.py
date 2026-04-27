@@ -2871,6 +2871,8 @@ class ControlCenterViewModel(QObject):
         self._last_user_goal = message
         self._update_adaptive_state(self._general_conversation_payload(message=message))
         self._working = True
+        import time as _time_mod
+        self._working_since = _time_mod.time()
         self._busy_label = 'Consultando al modelo local con contexto del sistema vivo.'
         self._set_autonomy_activity_override(
             visible=True,
@@ -2886,33 +2888,65 @@ class ControlCenterViewModel(QObject):
         )
         self.dataChanged.emit()
 
+        _CHAT_TIMEOUT_S = 25
+
         def worker() -> None:
-            try:
-                request = self._build_request(message)
-                record = self.inference_service.infer_task(request)
-                adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
-                self.taskResolved.emit(
-                    'chat',
-                    {
-                        'summary': record.result.summary,
-                        'provider_name': record.result.provider_name,
-                        'reasoning_mode': record.result.reasoning_mode.value,
-                        'confidence': f'{record.result.confidence:.2f}',
-                        'route_reason': record.route.reason,
-                        'report_kind': record.result.report_kind.value,
-                        'role_title': self._role_title_from_task(record.result.detected_role or record.route.task_role),
-                        'sources': record.result.sources,
-                        'follow_up_teachings': record.result.follow_up_teachings,
-                        'used_tools': [tool.value for tool in record.result.used_tools],
-                        'planner_used': record.result.planner_used,
-                        'executor_model': record.result.executor_model or record.route.model_name,
-                        'chosen_pack': record.result.chosen_pack,
-                        'adaptive_session': adaptive_session,
-                        'assistant_guidance': (record.result.raw_output or {}).get('assistant_guidance') if isinstance(record.result.raw_output, dict) else None,
-                        'local_chat_llm': (record.result.raw_output or {}).get('local_chat_llm') if isinstance(record.result.raw_output, dict) else None,
-                    },
+            _infer_result: dict[str, Any] = {}
+            _infer_error: list[str] = []
+            _infer_done = threading.Event()
+
+            def _infer_inner() -> None:
+                try:
+                    req = self._build_request(message)
+                    rec = self.inference_service.infer_task(req)
+                    _infer_result['record'] = rec
+                except Exception as exc:
+                    _infer_error.append(str(exc))
+                finally:
+                    _infer_done.set()
+
+            threading.Thread(target=_infer_inner, daemon=True).start()
+
+            _waited = 0
+            while not _infer_done.wait(timeout=5):
+                _waited += 5
+                if _waited >= _CHAT_TIMEOUT_S:
+                    break
+                self._set_autonomy_activity_override(
+                    visible=True,
+                    title='Respondiendo con contexto vivo',
+                    status='active',
+                    stage='consultando LLM local',
+                    progress=min(0.2 + _waited * 0.03, 0.9),
+                    detail=f'Procesando... ({_waited}s)',
+                    tool='ollama_llm',
+                    mode='local',
                 )
-            except Exception:
+                self.dataChanged.emit()
+
+            if not _infer_done.is_set():
+                logger.warning(
+                    '_answer_general_chat: timeout (%ds)',
+                    _CHAT_TIMEOUT_S,
+                )
+                fallback = self._general_chat_reply(message)
+                if not fallback:
+                    fallback = (
+                        'Mi modelo local tardo demasiado. Puede ser que el '
+                        'modelo actual sea muy grande para la RAM disponible. '
+                        'Intenta de nuevo o usa model_selection_status para '
+                        'ver si hay un modelo mas rapido.'
+                    )
+                self._append_message('assistant', 'IABV', fallback, 'Timeout — fallback local.')
+                self._latest_response_text = fallback
+                self._latest_response_meta = 'Timeout — fallback local.'
+                self._working = False
+                self._busy_label = 'Respuesta lista.'
+                self._clear_autonomy_activity_override()
+                self.dataChanged.emit()
+                return
+
+            if _infer_error:
                 fallback = self._general_chat_reply(message)
                 self._append_message('assistant', 'IABV', fallback, 'Conversacion general (fallback local).')
                 self._latest_response_text = fallback
@@ -2921,6 +2955,42 @@ class ControlCenterViewModel(QObject):
                 self._busy_label = 'Respuesta lista.'
                 self._clear_autonomy_activity_override()
                 self.dataChanged.emit()
+                return
+
+            record = _infer_result.get('record')
+            if record is None:
+                fallback = self._general_chat_reply(message)
+                self._append_message('assistant', 'IABV', fallback, 'Conversacion general (fallback local).')
+                self._latest_response_text = fallback
+                self._latest_response_meta = 'Conversacion general (fallback local).'
+                self._working = False
+                self._busy_label = 'Respuesta lista.'
+                self._clear_autonomy_activity_override()
+                self.dataChanged.emit()
+                return
+
+            adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
+            self.taskResolved.emit(
+                'chat',
+                {
+                    'summary': record.result.summary,
+                    'provider_name': record.result.provider_name,
+                    'reasoning_mode': record.result.reasoning_mode.value,
+                    'confidence': f'{record.result.confidence:.2f}',
+                    'route_reason': record.route.reason,
+                    'report_kind': record.result.report_kind.value,
+                    'role_title': self._role_title_from_task(record.result.detected_role or record.route.task_role),
+                    'sources': record.result.sources,
+                    'follow_up_teachings': record.result.follow_up_teachings,
+                    'used_tools': [tool.value for tool in record.result.used_tools],
+                    'planner_used': record.result.planner_used,
+                    'executor_model': record.result.executor_model or record.route.model_name,
+                    'chosen_pack': record.result.chosen_pack,
+                    'adaptive_session': adaptive_session,
+                    'assistant_guidance': (record.result.raw_output or {}).get('assistant_guidance') if isinstance(record.result.raw_output, dict) else None,
+                    'local_chat_llm': (record.result.raw_output or {}).get('local_chat_llm') if isinstance(record.result.raw_output, dict) else None,
+                },
+            )
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -7214,16 +7284,14 @@ class ControlCenterViewModel(QObject):
         message = text.strip()
         if not message:
             return
-        # Safety: si _working quedo stuck de una llamada anterior (>60s),
+        # Safety: si _working quedo stuck de una llamada anterior (>30s),
         # resetearlo para no bloquear al usuario permanentemente.
-        # APRENDIDO: _working puede quedar en True si worker() lanza excepcion
-        # no capturada o si el signal taskFailed no se emite correctamente.
+        # Reducido de 60s a 30s: el usuario percibe >30s como congelamiento.
         if self._working:
             import time
             elapsed = time.time() - getattr(self, '_working_since', 0)
-            if elapsed < 60:
+            if elapsed < 30:
                 return
-            # Reset forzado: _working stuck por mas de 60 segundos
             self._working = False
             self._set_live_status('idle')
             self._clear_autonomy_activity_override()
@@ -7261,6 +7329,10 @@ class ControlCenterViewModel(QObject):
         import time as _time_mod
         self._working = True
         self._working_since = _time_mod.time()
+
+        # Hard timeout: if the entire _route_and_answer takes longer than
+        # _INFERENCE_HARD_TIMEOUT_S, we abort and show a fallback message.
+        _INFERENCE_HARD_TIMEOUT_S = 25
 
         def _route_and_answer() -> None:
             _inner_worker_took_over = False
@@ -7334,8 +7406,80 @@ class ControlCenterViewModel(QObject):
                 self.dataChanged.emit()
 
                 try:
-                    request = self._build_request(message)
-                    record = self.inference_service.infer_task(request)
+                    # Run inference with hard timeout to prevent UI freeze.
+                    _infer_result: dict[str, Any] = {}
+                    _infer_error: list[str] = []
+                    _infer_done = threading.Event()
+
+                    def _infer_worker() -> None:
+                        try:
+                            req = self._build_request(message)
+                            rec = self.inference_service.infer_task(req)
+                            _infer_result['record'] = rec
+                        except Exception as exc:
+                            _infer_error.append(str(exc))
+                        finally:
+                            _infer_done.set()
+
+                    _infer_thread = threading.Thread(target=_infer_worker, daemon=True)
+                    _infer_thread.start()
+
+                    # Heartbeat: emit progress updates every 5s while waiting
+                    _heartbeat_stages = [
+                        (0.3, 'clasificando intencion'),
+                        (0.5, 'construyendo contexto'),
+                        (0.7, 'consultando modelo'),
+                        (0.85, 'finalizando respuesta'),
+                    ]
+                    _stage_idx = 0
+                    _waited = 0
+                    while not _infer_done.wait(timeout=5):
+                        _waited += 5
+                        if _waited >= _INFERENCE_HARD_TIMEOUT_S:
+                            break
+                        if _stage_idx < len(_heartbeat_stages):
+                            _prog, _stage_label = _heartbeat_stages[_stage_idx]
+                            self._set_autonomy_activity_override(
+                                visible=True,
+                                title='Analizando consulta',
+                                status='active',
+                                stage=_stage_label,
+                                progress=_prog,
+                                detail=f'Procesando... ({_waited}s)',
+                                tool='motor local',
+                                mode='local',
+                            )
+                            self.dataChanged.emit()
+                            _stage_idx += 1
+
+                    if not _infer_done.is_set():
+                        logger.warning(
+                            'sendChat: inference timeout (%ds) — returning '
+                            'fallback response. The model may be overloaded.',
+                            _INFERENCE_HARD_TIMEOUT_S,
+                        )
+                        self._append_message(
+                            'assistant', 'IABV',
+                            'Mi modelo local tardo demasiado en responder. '
+                            'Esto puede pasar cuando el modelo es muy grande '
+                            'para la RAM disponible. Intenta de nuevo o usa '
+                            'un modelo mas liviano (ej: gemma3:4b). '
+                            'Puedes verificar con: model_selection_status',
+                            'Timeout de inferencia local.',
+                        )
+                        self._latest_response_text = ''
+                        self._latest_response_meta = 'Timeout de inferencia local.'
+                        return
+
+                    if _infer_error:
+                        self.taskFailed.emit('chat', f'No pude completar la consulta local: {_infer_error[0]}')
+                        return
+
+                    record = _infer_result.get('record')
+                    if record is None:
+                        self.taskFailed.emit('chat', 'No pude completar la consulta local: resultado vacio.')
+                        return
+
                     adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
                     self.taskResolved.emit(
                         'chat',
@@ -7364,12 +7508,10 @@ class ControlCenterViewModel(QObject):
                 logger.warning('_route_and_answer failed: %s', exc)
                 self.taskFailed.emit('chat', f'Error en clasificacion: {exc}')
             finally:
-                # Reset _working unless an inner worker took over (e.g.
-                # _answer_general_chat spawns its own thread that will
-                # reset _working when done).
                 if not _inner_worker_took_over:
                     self._working = False
                     self._set_live_status('idle')
+                    self._clear_autonomy_activity_override()
 
         threading.Thread(target=_route_and_answer, daemon=True).start()
 
