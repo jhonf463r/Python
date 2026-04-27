@@ -243,7 +243,7 @@ if ($rotateExit -ne 0) {
     Write-Warn2 "Podes seguir e intentar arrancar igual, pero algun adapter reportara 'missing'."
 }
 
-# 5.5. Desktop shortcut (idempotent — overwrites if exists).
+# 5.5. Desktop shortcut (idempotent -- overwrites if exists).
 Write-Section 'Acceso directo en escritorio'
 try {
     . (Join-Path $scriptDir 'install_shortcut.ps1')

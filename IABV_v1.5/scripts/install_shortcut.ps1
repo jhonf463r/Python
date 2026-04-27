@@ -1,7 +1,7 @@
 # install_shortcut.ps1
 #
 # Creates a desktop shortcut for IABV v1.5 with the BURVE icon.
-# Called automatically by iabv_bootstrap.ps1 — no manual execution needed.
+# Called automatically by iabv_bootstrap.ps1 -- no manual execution needed.
 # Idempotent: safe to call multiple times (overwrites existing shortcut).
 
 function Install-IABVShortcut {
@@ -16,7 +16,7 @@ function Install-IABVShortcut {
     $lnkPath  = Join-Path ([Environment]::GetFolderPath('Desktop')) 'IABV v1.5.lnk'
 
     if (-not (Test-Path $vbsPath)) {
-        if (-not $Quiet) { Write-Host "[warn] No encontre $vbsPath — omitiendo acceso directo." -ForegroundColor Yellow }
+        if (-not $Quiet) { Write-Host "[warn] No encontre $vbsPath -- omitiendo acceso directo." -ForegroundColor Yellow }
         return $false
     }
 
