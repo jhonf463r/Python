@@ -883,9 +883,9 @@ class WorldModelService:
             import urllib.request
             started3 = time.perf_counter()
             req = urllib.request.Request('https://www.google.com', method='HEAD')
-            urllib.request.urlopen(req, timeout=self._NETWORK_TIMEOUT_SECONDS + 1)
-            latency_ms = (time.perf_counter() - started3) * 1000.0
-            return latency_ms, ''
+            with urllib.request.urlopen(req, timeout=self._NETWORK_TIMEOUT_SECONDS + 1):
+                latency_ms = (time.perf_counter() - started3) * 1000.0
+                return latency_ms, ''
         except Exception as exc:
             return None, str(exc)
 
