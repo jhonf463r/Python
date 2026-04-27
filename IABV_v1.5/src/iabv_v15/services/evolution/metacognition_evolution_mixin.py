@@ -5,6 +5,7 @@ This mixin aggregates findings from:
 - ``PlatformLearningOrchestrator`` — platform learning status
 - ``ApiKeyDiscoveryService`` (existing) — provider health
 - ``AutoCorrectionEngine`` (existing) — auto-correction capabilities
+- ``ResourceMetacognitionService`` — RAM/GPU/process resource state
 
 It also reacts to actionable findings autonomously:
 - Auto-provision missing API keys
@@ -32,6 +33,7 @@ class MetacognitionEvolutionMixin:
     - ``platform_learning``: ``PlatformLearningOrchestrator``
     - ``api_key_discovery``: ``ApiKeyDiscoveryService``
     - ``auto_correction_engine``: ``AutoCorrectionEngine``
+    - ``resource_metacognition``: ``ResourceMetacognitionService``
     """
 
     def __init__(self) -> None:
@@ -39,6 +41,7 @@ class MetacognitionEvolutionMixin:
         self.platform_learning: Any = None
         self.api_key_discovery: Any = None
         self.auto_correction_engine: Any = None
+        self.resource_metacognition: Any = None
 
     def all_findings(self) -> list[dict[str, Any]]:
         """Aggregate findings from all evolution services.
@@ -61,6 +64,13 @@ class MetacognitionEvolutionMixin:
                 findings.extend(self.platform_learning.oses_findings())
             except Exception as exc:
                 logger.warning('metacognition: platform_learning findings error: %s', exc)
+
+        # ResourceMetacognitionService findings
+        if self.resource_metacognition:
+            try:
+                findings.extend(self.resource_metacognition.oses_findings())
+            except Exception as exc:
+                logger.warning('metacognition: resource_metacognition findings error: %s', exc)
 
         # ApiKeyDiscoveryService — check for missing/failing providers
         if self.api_key_discovery:
