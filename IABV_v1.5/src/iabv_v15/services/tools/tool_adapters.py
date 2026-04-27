@@ -74,6 +74,75 @@ class ToolAdapter:
         )
         return any(bool(value) for value in candidates)
 
+    # ------------------------------------------------------------------
+    # Tool Resilience: timeout, fallback, and error detection
+    # ------------------------------------------------------------------
+
+    _EXTERNAL_SESSION_TIMEOUT_S = 120.0
+    _STALL_PATTERNS: tuple[str, ...] = (
+        'just a moment',
+        'un momento',
+        'loading',
+        'browser_input_missing',
+        'browser_security_verification',
+    )
+    _WINERROR5_PATTERNS: tuple[str, ...] = (
+        '[winerror 5]',
+        'access is denied',
+        'acceso denegado',
+        'permissionerror',
+    )
+    _WRONG_THREAD_PATTERNS: tuple[str, ...] = (
+        'wrong_thread',
+        'thread_mismatch',
+        'invalid_thread',
+    )
+
+    @staticmethod
+    def _detect_stall(result: dict[str, Any], elapsed_s: float, timeout_s: float) -> bool:
+        """Detect if an external session is stalled (no progress for >timeout)."""
+        if elapsed_s < timeout_s:
+            return False
+        error_msg = str(result.get('error_message') or '').lower()
+        output = str(result.get('output_text') or '').lower()
+        meta = result.get('metadata') or {}
+        progress = meta.get('progress_percent')
+        if isinstance(progress, (int, float)) and 20 <= progress <= 40:
+            return True
+        combined = f'{error_msg} {output}'
+        return any(p in combined for p in ToolAdapter._STALL_PATTERNS)
+
+    @staticmethod
+    def _detect_winerror5(result: dict[str, Any]) -> bool:
+        """Detect [WinError 5] access denied in tool execution result."""
+        error_msg = str(result.get('error_message') or '').lower()
+        output = str(result.get('output_text') or '').lower()
+        combined = f'{error_msg} {output}'
+        return any(p in combined for p in ToolAdapter._WINERROR5_PATTERNS)
+
+    @staticmethod
+    def _detect_wrong_thread(result: dict[str, Any]) -> bool:
+        """Detect wrong_thread blocking condition in Codex session."""
+        error_msg = str(result.get('error_message') or '').lower()
+        output = str(result.get('output_text') or '').lower()
+        meta = result.get('metadata') or {}
+        flags = [str(f).lower() for f in (meta.get('external_state_flags') or [])]
+        combined = f'{error_msg} {output} {" ".join(flags)}'
+        return any(p in combined for p in ToolAdapter._WRONG_THREAD_PATTERNS)
+
+    @staticmethod
+    def _annotate_resilience(result: dict[str, Any], *, fault_type: str, recommendation: str) -> dict[str, Any]:
+        """Add resilience metadata to a tool result without mutating original."""
+        annotated = dict(result)
+        meta = dict(annotated.get('metadata') or {})
+        meta['resilience'] = {
+            'fault_type': fault_type,
+            'recommendation': recommendation,
+            'detected_at': datetime.now(timezone.utc).isoformat(),
+        }
+        annotated['metadata'] = meta
+        return annotated
+
     def _request_login_credentials(self, card: ToolCard) -> None:
         """Emite el prompt de credenciales si el broker esta disponible y aun faltan.
 

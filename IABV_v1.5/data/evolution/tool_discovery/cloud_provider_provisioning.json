@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "last_updated": "2026-04-27T00:30:00Z",
+  "description": "Conocimiento aprendido sobre como provisionar proveedores cloud para el cerebro",
+  "providers": {
+    "gemini": {
+      "name": "Google Gemini",
+      "api_key_env": "GEMINI_API_KEY",
+      "key_prefix": "AIza",
+      "signup_url": "https://aistudio.google.com/apikey",
+      "billing_url": "https://console.cloud.google.com/billing",
+      "api_endpoint": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      "model": "gemini-2.0-flash",
+      "free_tier": true,
+      "known_issues": {
+        "429_limit_0": {
+          "symptom": "HTTP 429 con 'limit: 0' en free tier",
+          "cause": "El proyecto de Google Cloud asociado agoto su cuota gratuita o nunca tuvo cuota habilitada",
+          "solution": "Crear la API key en un PROYECTO NUEVO de Google Cloud via AI Studio",
+          "steps": [
+            "Abrir https://aistudio.google.com/apikey",
+            "Click 'Create API key'",
+            "Seleccionar 'Create API key in new project' (NO reusar proyecto existente)",
+            "Copiar la key generada (empieza con AIza)",
+            "Guardar via save_secret_to_profile('GEMINI_API_KEY', key)",
+            "Verificar con test call al endpoint"
+          ],
+          "alternative": "Habilitar billing en console.cloud.google.com/billing ($300 creditos gratis)",
+          "learned_from": "sesion 2026-04-27, error repetido en 3 keys distintas del mismo proyecto"
+        }
+      },
+      "token_renewal": {
+        "detection": ["HTTP 401 (expired)", "HTTP 403 (revoked)", "HTTP 429 (quota)"],
+        "auto_action": "Abrir AI Studio para regenerar o crear en nuevo proyecto",
+        "save_method": "save_secret_to_profile('GEMINI_API_KEY', new_key)"
+      }
+    },
+    "groq": {
+      "name": "Groq",
+      "api_key_env": "GROQ_API_KEY",
+      "key_prefix": "gsk_",
+      "signup_url": "https://console.groq.com/keys",
+      "api_endpoint": "https://api.groq.com/openai/v1/chat/completions",
+      "model": "llama-3.3-70b-versatile",
+      "free_tier": true,
+      "known_issues": {},
+      "token_renewal": {
+        "detection": ["HTTP 401 (expired)", "HTTP 403 (revoked)"],
+        "auto_action": "Abrir console.groq.com/keys para regenerar",
+        "save_method": "save_secret_to_profile('GROQ_API_KEY', new_key)"
+      }
+    },
+    "github": {
+      "name": "GitHub",
+      "api_key_env": "GITHUB_TOKEN",
+      "key_prefix": "ghp_",
+      "signup_url": "https://github.com/settings/tokens/new?scopes=repo&description=IABV",
+      "api_endpoint": "https://api.github.com/user",
+      "free_tier": true,
+      "token_renewal": {
+        "detection": ["HTTP 401 (expired/revoked)"],
+        "auto_action": "Abrir settings/tokens para crear PAT nuevo",
+        "save_method": "save_secret_to_profile('GITHUB_TOKEN', new_token)"
+      }
+    }
+  },
+  "browser_detection": {
+    "opera": {
+      "recognized": true,
+      "profile_path_windows": "%LOCALAPPDATA%/Opera Software/Opera Stable",
+      "google_account_check": "profiles → accounts → type == 'google'"
+    }
+  }
+}

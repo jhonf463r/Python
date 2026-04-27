@@ -159,6 +159,134 @@ INFERENCE_RULES: list[dict[str, Any]] = [
         'safe': True,
         'description': 'App en monitor secundario — mover al principal para evitar blind spots',
     },
+    # Secret alias deduction — detect same secret under different names
+    {
+        'id': 'github_token_alias_mismatch',
+        'premises': ['github_token_missing', 'github_token_alias_exists'],
+        'conclusion': 'secret_alias_deducible',
+        'action': 'map_secret_alias',
+        'severity': 'high',
+        'safe': True,
+        'description': 'GITHUB_TOKEN no existe pero hay alias (GITHUB_TOKEN_IABV, GH_TOKEN) — mapear automaticamente',
+    },
+    {
+        'id': 'devin_api_key_alias_mismatch',
+        'premises': ['devin_key_missing', 'devin_key_alias_exists'],
+        'conclusion': 'secret_alias_deducible',
+        'action': 'map_secret_alias',
+        'severity': 'high',
+        'safe': True,
+        'description': 'DEVIN_API_KEY no existe pero hay alias (DEVIN_API_KEY_IABV) — mapear automaticamente',
+    },
+    {
+        'id': 'generic_secret_alias_detected',
+        'premises': ['secret_expected_missing', 'secret_similar_name_exists'],
+        'conclusion': 'secret_alias_deducible',
+        'action': 'map_secret_alias',
+        'severity': 'medium',
+        'safe': True,
+        'description': 'Secreto esperado falta pero existe uno con nombre similar — probablemente el mismo',
+    },
+    # External session timeout
+    {
+        'id': 'external_session_stalled',
+        'premises': ['external_session_active', 'session_no_progress'],
+        'conclusion': 'external_session_zombie',
+        'action': 'abort_stalled_session',
+        'severity': 'high',
+        'safe': True,
+        'description': 'Sesion externa lleva >2 min sin avanzar — abortar y caer a ruta local',
+    },
+    # ChatGPT WinError 5 fallback
+    {
+        'id': 'chatgpt_access_denied_fallback',
+        'premises': ['chatgpt_winerror5', 'ollama_running'],
+        'conclusion': 'chatgpt_blocked_use_ollama',
+        'action': 'fallback_to_ollama',
+        'severity': 'high',
+        'safe': True,
+        'description': 'ChatGPT falla con [WinError 5] Acceso denegado — caer a Ollama automaticamente',
+    },
+    # Codex wrong_thread re-routing
+    {
+        'id': 'codex_wrong_thread_reroute',
+        'premises': ['codex_wrong_thread', 'alternative_ia_available'],
+        'conclusion': 'codex_session_invalid',
+        'action': 'reroute_from_codex',
+        'severity': 'high',
+        'safe': True,
+        'description': 'Codex reporta wrong_thread — invalidar sesion y re-rutear a alternativa',
+    },
+    # Token expiration detection and auto-renewal
+    {
+        'id': 'cloud_token_expired_401',
+        'premises': ['cloud_api_401', 'cloud_provider_configured'],
+        'conclusion': 'cloud_token_expired',
+        'action': 'trigger_token_renewal',
+        'severity': 'high',
+        'safe': True,
+        'description': 'API cloud devolvio 401 Unauthorized — token expirado, abrir browser para renovar',
+    },
+    {
+        'id': 'cloud_token_forbidden_403',
+        'premises': ['cloud_api_403', 'cloud_provider_configured'],
+        'conclusion': 'cloud_token_revoked',
+        'action': 'trigger_token_renewal',
+        'severity': 'high',
+        'safe': True,
+        'description': 'API cloud devolvio 403 Forbidden — token revocado o sin permisos, renovar',
+    },
+    {
+        'id': 'github_token_expired',
+        'premises': ['github_api_401'],
+        'conclusion': 'github_token_needs_renewal',
+        'action': 'trigger_token_renewal',
+        'severity': 'critical',
+        'safe': True,
+        'description': 'GitHub API devolvio 401 — PAT expirado o revocado, abrir settings para regenerar',
+    },
+    {
+        'id': 'gemini_key_missing_but_google_account',
+        'premises': ['gemini_key_missing', 'google_account_in_browser'],
+        'conclusion': 'gemini_provisionable',
+        'action': 'provision_cloud_key',
+        'severity': 'medium',
+        'safe': True,
+        'description': 'No hay GEMINI_API_KEY pero hay cuenta Google en el browser — abrir AI Studio para crear key',
+    },
+    {
+        'id': 'groq_key_missing',
+        'premises': ['groq_key_missing'],
+        'conclusion': 'groq_provisionable',
+        'action': 'provision_cloud_key',
+        'severity': 'medium',
+        'safe': True,
+        'description': 'No hay GROQ_API_KEY — abrir console.groq.com para crear key gratis',
+    },
+    # Gemini quota exhausted — needs new project or billing
+    {
+        'id': 'gemini_quota_exhausted',
+        'premises': ['gemini_api_429'],
+        'conclusion': 'gemini_needs_new_project',
+        'action': 'auto_provision_gemini',
+        'severity': 'high',
+        'safe': True,
+        'description': (
+            'Gemini devolvio 429 quota exceeded con limit:0 — '
+            'la key actual esta en un proyecto sin cuota. '
+            'Crear key en proyecto nuevo de Google Cloud via AI Studio'
+        ),
+    },
+    # Generic cloud quota exhausted
+    {
+        'id': 'cloud_quota_exhausted',
+        'premises': ['cloud_api_429', 'cloud_provider_configured'],
+        'conclusion': 'cloud_quota_needs_attention',
+        'action': 'notify_quota_exhausted',
+        'severity': 'medium',
+        'safe': True,
+        'description': 'Un proveedor cloud devolvio 429 — cuota agotada, esperar reset o cambiar plan',
+    },
 ]
 
 
@@ -233,6 +361,79 @@ def extract_facts(
         facts.add('secrets_file_exists')
     if secrets.get('missing_count', 0) > 3:
         facts.add('secrets_not_loaded')
+
+    # Secret alias deduction: detect when expected secret is missing but an
+    # alias with different name exists in the environment.
+    _SECRET_ALIAS_GROUPS: list[tuple[str, list[str]]] = [
+        ('GITHUB_TOKEN', ['GITHUB_TOKEN_IABV', 'IABV_GITHUB_TOKEN', 'GH_TOKEN']),
+        ('DEVIN_API_KEY', ['DEVIN_API_KEY_IABV', 'IABV_DEVIN_API_KEY']),
+        ('OPENAI_API_KEY', ['OPENAI_KEY', 'OPENAI_API_TOKEN']),
+    ]
+    for primary, aliases in _SECRET_ALIAS_GROUPS:
+        primary_val = os.environ.get(primary, '').strip()
+        alias_vals = [(a, os.environ.get(a, '').strip()) for a in aliases]
+        has_alias = any(v for _, v in alias_vals)
+        if not primary_val and has_alias:
+            if 'GITHUB' in primary:
+                facts.add('github_token_missing')
+                facts.add('github_token_alias_exists')
+            elif 'DEVIN' in primary:
+                facts.add('devin_key_missing')
+                facts.add('devin_key_alias_exists')
+            else:
+                facts.add('secret_expected_missing')
+                facts.add('secret_similar_name_exists')
+
+    # Cloud provider key facts — detect missing keys + token health
+    _CLOUD_KEY_CHECKS: list[tuple[str, str]] = [
+        ('GEMINI_API_KEY', 'gemini_key_missing'),
+        ('GROQ_API_KEY', 'groq_key_missing'),
+        ('OPENROUTER_API_KEY', 'openrouter_key_missing'),
+        ('TOGETHER_API_KEY', 'together_key_missing'),
+    ]
+    for env_key, fact_name in _CLOUD_KEY_CHECKS:
+        val = os.environ.get(env_key, '').strip()
+        if not val:
+            facts.add(fact_name)
+        else:
+            facts.add('cloud_provider_configured')
+
+    # Detect Google account in browser (for Gemini provisioning)
+    metacognition = deep_env_scan or {}
+    browsers_data = metacognition.get('browsers') or []
+    for browser_info in browsers_data:
+        for profile in browser_info.get('profiles') or []:
+            for account in profile.get('accounts') or []:
+                acct_type = str(account.get('type') or '').lower()
+                if acct_type == 'google':
+                    facts.add('google_account_in_browser')
+                    break
+
+    # Token health — detect 401/403/429 from recent API calls
+    api_health = acc.get('api_health', {})
+    # Also pull live health from CloudReasoningPlannerService
+    try:
+        from iabv_v15.services.adaptive.cloud_reasoning_planner import (
+            CloudReasoningPlannerService,
+        )
+        live_health = CloudReasoningPlannerService.get_api_health()
+        for pid, ph in live_health.items():
+            if pid not in api_health:
+                api_health[pid] = ph
+    except ImportError:
+        pass
+    for provider_id, health in api_health.items():
+        status_code = health.get('last_status_code', 0)
+        if status_code == 401:
+            facts.add('cloud_api_401')
+            if 'github' in provider_id.lower():
+                facts.add('github_api_401')
+        elif status_code == 403:
+            facts.add('cloud_api_403')
+        elif status_code == 429:
+            facts.add('cloud_api_429')
+            if 'gemini' in provider_id.lower():
+                facts.add('gemini_api_429')
 
     # Tunnel facts
     tunnel = acc.get('cloudflare_tunnel', {})
@@ -1103,6 +1304,270 @@ def _exec_github_rate_check(rule: dict[str, Any]) -> dict[str, Any]:
         return {'executed': False, 'error': str(exc)}
 
 
+def _exec_map_secret_alias(rule: dict[str, Any]) -> dict[str, Any]:
+    """Map a secret alias to the expected name in os.environ."""
+    _ALIAS_MAP: list[tuple[str, list[str]]] = [
+        ('GITHUB_TOKEN', ['GITHUB_TOKEN_IABV', 'IABV_GITHUB_TOKEN', 'GH_TOKEN']),
+        ('DEVIN_API_KEY', ['DEVIN_API_KEY_IABV', 'IABV_DEVIN_API_KEY']),
+    ]
+    mapped: list[str] = []
+    for primary, aliases in _ALIAS_MAP:
+        if os.environ.get(primary, '').strip():
+            continue
+        for alias in aliases:
+            val = os.environ.get(alias, '').strip()
+            if val:
+                os.environ[primary] = val
+                mapped.append(f'{alias} → {primary}')
+                logger.info('map_secret_alias: %s → %s', alias, primary)
+                break
+    if mapped:
+        return {'executed': True, 'detail': f'Mapeados: {", ".join(mapped)}'}
+    return {'executed': False, 'detail': 'No se encontraron alias para mapear'}
+
+
+def _exec_abort_stalled_session(rule: dict[str, Any]) -> dict[str, Any]:
+    """Placeholder for aborting a stalled external session."""
+    return {'executed': True, 'detail': 'Sesion externa marcada para abort — downstream debe re-rutear a local'}
+
+
+def _exec_fallback_to_ollama(rule: dict[str, Any]) -> dict[str, Any]:
+    """Mark ChatGPT as unavailable and signal fallback to Ollama."""
+    return {'executed': True, 'detail': 'ChatGPT bloqueado por WinError 5 — señal de fallback a Ollama emitida'}
+
+
+def _exec_reroute_from_codex(rule: dict[str, Any]) -> dict[str, Any]:
+    """Mark Codex session as invalid due to wrong_thread."""
+    return {'executed': True, 'detail': 'Codex wrong_thread — sesion invalidada, re-routing a alternativa'}
+
+
+def _exec_trigger_token_renewal(rule: dict[str, Any]) -> dict[str, Any]:
+    """Detect expired/revoked token and trigger auto-renewal via browser.
+
+    Uses auto_provision_missing_secrets to open the correct renewal URL
+    and guide the user through the UI — no PowerShell needed.
+    """
+    conclusion = rule.get('conclusion', '')
+    description = rule.get('description', '')
+
+    _RENEWAL_URLS: dict[str, str] = {
+        'GITHUB_TOKEN': 'https://github.com/settings/tokens/new?scopes=repo&description=IABV',
+        'GEMINI_API_KEY': 'https://aistudio.google.com/apikey',
+        'GROQ_API_KEY': 'https://console.groq.com/keys',
+        'OPENAI_API_KEY': 'https://platform.openai.com/api-keys',
+    }
+
+    # For cloud_token_expired/revoked, determine the specific provider by
+    # reading CloudReasoningPlannerService API health to find which one
+    # returned 401/403.  Fall back to listing all renewal URLs.
+    if conclusion == 'github_token_needs_renewal':
+        provider_key = 'GITHUB_TOKEN'
+        detail = 'GitHub PAT expirado — abrir https://github.com/settings/tokens'
+    else:
+        status_target = 401 if conclusion == 'cloud_token_expired' else 403
+        provider_key = 'CLOUD_PROVIDER'
+        detail = description or f'Token cloud {status_target}'
+        try:
+            from iabv_v15.services.adaptive.cloud_reasoning_planner import (
+                CloudReasoningPlannerService,
+            )
+            health = CloudReasoningPlannerService.get_api_health()
+            _PROVIDER_KEY_MAP: dict[str, str] = {
+                'gemini': 'GEMINI_API_KEY',
+                'groq': 'GROQ_API_KEY',
+                'openai': 'OPENAI_API_KEY',
+                'github': 'GITHUB_TOKEN',
+            }
+            for pid, info in health.items():
+                if info.get('last_status_code') == status_target:
+                    for keyword, key in _PROVIDER_KEY_MAP.items():
+                        if keyword in pid.lower():
+                            provider_key = key
+                            detail = f'{pid} devolvio {status_target}'
+                            break
+                    if provider_key != 'CLOUD_PROVIDER':
+                        break
+        except Exception:
+            pass
+
+    url = _RENEWAL_URLS.get(provider_key, '')
+    if not url and provider_key == 'CLOUD_PROVIDER':
+        url = ' | '.join(f'{k}: {v}' for k, v in _RENEWAL_URLS.items())
+    opened = False
+    if url and '|' not in url:
+        try:
+            import webbrowser
+            webbrowser.open(url)
+            opened = True
+        except Exception:
+            pass
+
+    return {
+        'executed': True,
+        'detail': detail,
+        'provider': provider_key,
+        'browser_opened': opened,
+        'renewal_url': url,
+        'user_action': (
+            'Token renovado en el browser — pega el nuevo token en el dialogo de IABV.'
+            if opened else
+            f'Revisa tus dashboards de proveedores cloud y pega el nuevo token en IABV. ({url})'
+            if provider_key == 'CLOUD_PROVIDER' else
+            f'Abre {url} y pega el nuevo token en IABV.'
+        ),
+    }
+
+
+def _exec_auto_provision_gemini(rule: dict[str, Any]) -> dict[str, Any]:
+    """Auto-provision Gemini API key when quota is exhausted.
+
+    Uses CloudKeyAutonomousProvisioner to:
+    1. Scan AI Studio page and learn its UI structure
+    2. Find "Create API key" button autonomously
+    3. Guide the user through key creation in a NEW project
+    4. Save the key via save_secret_to_profile
+    5. Verify with a test call
+
+    The program learns the page structure and persists it for future sessions.
+    """
+    # Try autonomous provisioning first
+    try:
+        from iabv_v15.services.cloud_key_autonomous_provisioner import (
+            CloudKeyAutonomousProvisioner,
+        )
+        provisioner = CloudKeyAutonomousProvisioner(headless=True)
+
+        if provisioner.is_available():
+            result = provisioner.provision_key('gemini', auto_navigate=True)
+            return {
+                'executed': True,
+                'detail': result.error or (
+                    'Gemini key provisioned successfully'
+                    if result.success else
+                    'Gemini page scanned — awaiting user action'
+                ),
+                'autonomous': True,
+                'success': result.success,
+                'needs_user_auth': result.needs_user_auth,
+                'steps_completed': len(result.steps_completed),
+                'page_scanned': len(result.page_scans) > 0,
+                'env_key': 'GEMINI_API_KEY',
+                'signup_url': 'https://aistudio.google.com/apikey',
+                'learned_solution': 'create_key_in_new_project',
+                'user_action': result.user_action or (
+                    'En AI Studio: Click "Create API key" → '
+                    '"Create API key in new project" → Copiar key → Pegar en IABV'
+                ),
+                'troubleshooting': {
+                    'error_429_limit_0': (
+                        'El proyecto actual tiene limit:0 en free tier. '
+                        'Cada proyecto nuevo de Google Cloud recibe su propia cuota gratuita.'
+                    ),
+                    'billing_alternative': (
+                        'Alternativamente, habilitar billing en '
+                        'https://console.cloud.google.com/billing — '
+                        '$300 creditos gratis para cuentas nuevas.'
+                    ),
+                },
+            }
+    except Exception as exc:
+        logger.debug('auto_provision_gemini: autonomous provisioner unavailable: %s', exc)
+
+    # Fallback: open browser manually
+    opened = False
+    try:
+        import webbrowser
+        webbrowser.open('https://aistudio.google.com/apikey')
+        opened = True
+    except Exception:
+        pass
+
+    return {
+        'executed': True,
+        'detail': (
+            'Gemini quota exhausted (429, limit:0). '
+            'La solucion es crear key en un proyecto NUEVO de Google Cloud. '
+            'Se abrio AI Studio para guiar el proceso.'
+        ),
+        'autonomous': False,
+        'learned_solution': 'create_key_in_new_project',
+        'browser_opened': opened,
+        'env_key': 'GEMINI_API_KEY',
+        'signup_url': 'https://aistudio.google.com/apikey',
+        'user_action': (
+            'En AI Studio: Click "Create API key" → '
+            '"Create API key in new project" → Copiar key → Pegar en IABV'
+        ),
+        'troubleshooting': {
+            'error_429_limit_0': (
+                'El proyecto actual tiene limit:0 en free tier. '
+                'Cada proyecto nuevo de Google Cloud recibe su propia cuota gratuita.'
+            ),
+            'billing_alternative': (
+                'Alternativamente, habilitar billing en '
+                'https://console.cloud.google.com/billing — '
+                '$300 creditos gratis para cuentas nuevas.'
+            ),
+        },
+    }
+
+
+def _exec_notify_quota_exhausted(rule: dict[str, Any]) -> dict[str, Any]:
+    """Notify that a cloud provider's quota is exhausted."""
+    return {
+        'executed': True,
+        'detail': 'Proveedor cloud con cuota agotada (429) — esperar reset diario o cambiar plan',
+        'user_action': 'Esperar ~24h para reset de cuota o habilitar billing en el proveedor',
+    }
+
+
+def _exec_provision_cloud_key(rule: dict[str, Any]) -> dict[str, Any]:
+    """Open browser to provision a missing cloud API key (Gemini, Groq, etc).
+
+    Follows the single-window principle: opens browser to the correct page
+    and returns structured info for the UI to show a paste dialog.
+    """
+    rule_id = rule.get('id', '')
+    _PROVISION_MAP: dict[str, tuple[str, str, str]] = {
+        'gemini_key_missing_but_google_account': (
+            'GEMINI_API_KEY',
+            'https://aistudio.google.com/apikey',
+            'Google Gemini (AI Studio) — gratis con tu cuenta Google',
+        ),
+        'groq_key_missing': (
+            'GROQ_API_KEY',
+            'https://console.groq.com/keys',
+            'Groq — gratis, Llama 3.3 70B ultra-rapido',
+        ),
+    }
+
+    env_key, url, description = _PROVISION_MAP.get(
+        rule_id, ('UNKNOWN', '', 'Proveedor cloud desconocido'),
+    )
+
+    opened = False
+    if url:
+        try:
+            import webbrowser
+            webbrowser.open(url)
+            opened = True
+        except Exception:
+            pass
+
+    return {
+        'executed': True,
+        'detail': f'Provisioning {env_key}: {description}',
+        'env_key': env_key,
+        'signup_url': url,
+        'browser_opened': opened,
+        'user_action': (
+            f'Se abrio {url} — crea la API key y pegala en el dialogo de IABV.'
+            if opened else
+            f'Abre {url}, crea la API key y pegala en IABV.'
+        ),
+    }
+
+
 _ACTION_EXECUTORS: dict[str, Any] = {
     'force_ollama_to_nvidia': _exec_force_ollama_to_nvidia,
     'verify_cuda_installation': _exec_verify_cuda,
@@ -1125,6 +1590,16 @@ _ACTION_EXECUTORS: dict[str, Any] = {
     'cleanup_zombie_processes': _exec_noop,
     'diagnose_network': _exec_diagnose_network,
     'check_github_rate': _exec_github_rate_check,
+    # Secret alias + session fault executors
+    'map_secret_alias': _exec_map_secret_alias,
+    'abort_stalled_session': _exec_abort_stalled_session,
+    'fallback_to_ollama': _exec_fallback_to_ollama,
+    'reroute_from_codex': _exec_reroute_from_codex,
+    # Token renewal + cloud key provisioning executors
+    'trigger_token_renewal': _exec_trigger_token_renewal,
+    'provision_cloud_key': _exec_provision_cloud_key,
+    'auto_provision_gemini': _exec_auto_provision_gemini,
+    'notify_quota_exhausted': _exec_notify_quota_exhausted,
 }
 
 

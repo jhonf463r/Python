@@ -155,6 +155,8 @@ class PortableContextService:
             self._pending_section(pending_items=pending_items, backlog_items=backlog_items, now=now),
             self._unresolved_section(unresolved=unresolved, now=now),
             self._hard_rules_section(now=now),
+            self._user_identity_section(now=now),
+            self._long_term_goals_section(now=now),
         ]
         package = PortableContextPackage(
             created_at_utc=now,
@@ -1330,6 +1332,114 @@ class PortableContextService:
             confidence=1.0,
             last_updated=now,
         )
+
+    # ------------------------------------------------------------------
+    # User Identity & Long-term Goals
+    # ------------------------------------------------------------------
+
+    _IDENTITY_FILE = 'portable_context/user_identity.json'
+    _GOALS_FILE = 'portable_context/long_term_goals.json'
+
+    def _user_identity_section(self, *, now) -> PortableContextSection:
+        """Persistent user identity: preferences, habits, and environment profile."""
+        identity = self._load_identity()
+        items: list[dict[str, Any]] = []
+        if identity.get('preferred_language'):
+            items.append({'label': 'preferred_language', 'value': identity['preferred_language']})
+        if identity.get('preferred_ia'):
+            items.append({'label': 'preferred_ia', 'value': identity['preferred_ia']})
+        if identity.get('environment_os'):
+            items.append({'label': 'environment_os', 'value': identity['environment_os']})
+        for pref_key, pref_val in (identity.get('custom_preferences') or {}).items():
+            items.append({'label': pref_key, 'value': str(pref_val)})
+        if not items:
+            items.append({'label': 'status', 'value': 'No identity profile persisted yet'})
+        return self._section(
+            section_id='user_identity',
+            title='Identidad persistente del usuario',
+            summary='Preferencias, hábitos y perfil del entorno que persisten entre sesiones.',
+            items=items,
+            source_kind='user_identity',
+            source_refs=[self._IDENTITY_FILE],
+            confidence=0.9 if len(items) > 1 else 0.3,
+            last_updated=now,
+        )
+
+    def _long_term_goals_section(self, *, now) -> PortableContextSection:
+        """Long-term objectives that persist across sessions."""
+        goals = self._load_goals()
+        items: list[dict[str, Any]] = []
+        for goal in goals:
+            items.append({
+                'title': str(goal.get('title') or ''),
+                'status': str(goal.get('status') or 'active'),
+                'priority': str(goal.get('priority') or 'medium'),
+                'created_at': str(goal.get('created_at') or ''),
+            })
+        if not items:
+            items.append({'title': 'No long-term goals defined', 'status': 'empty', 'priority': '', 'created_at': ''})
+        return self._section(
+            section_id='long_term_goals',
+            title='Objetivos a largo plazo',
+            summary='Metas persistentes del usuario que sobreviven entre sesiones.',
+            items=items,
+            source_kind='user_goals',
+            source_refs=[self._GOALS_FILE],
+            confidence=0.9 if len(items) > 1 else 0.3,
+            last_updated=now,
+        )
+
+    def _load_identity(self) -> dict[str, Any]:
+        """Load user identity from persisted JSON."""
+        try:
+            import json
+            path = self.storage.resolve(self._IDENTITY_FILE)
+            if path.is_file():
+                return json.loads(path.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+        return {}
+
+    def _load_goals(self) -> list[dict[str, Any]]:
+        """Load long-term goals from persisted JSON."""
+        try:
+            import json
+            path = self.storage.resolve(self._GOALS_FILE)
+            if path.is_file():
+                data = json.loads(path.read_text(encoding='utf-8'))
+                if isinstance(data, list):
+                    return data
+        except Exception:
+            pass
+        return []
+
+    def save_identity(self, identity: dict[str, Any]) -> None:
+        """Persist user identity profile."""
+        import json
+        path = self.storage.resolve(self._IDENTITY_FILE)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(identity, indent=2, ensure_ascii=False), encoding='utf-8')
+
+    def save_goals(self, goals: list[dict[str, Any]]) -> None:
+        """Persist long-term goals."""
+        import json
+        path = self.storage.resolve(self._GOALS_FILE)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(goals, indent=2, ensure_ascii=False), encoding='utf-8')
+
+    def add_goal(self, title: str, *, priority: str = 'medium') -> dict[str, Any]:
+        """Add a new long-term goal and persist."""
+        from datetime import datetime, timezone
+        goals = self._load_goals()
+        goal = {
+            'title': title,
+            'status': 'active',
+            'priority': priority,
+            'created_at': datetime.now(timezone.utc).isoformat(),
+        }
+        goals.append(goal)
+        self.save_goals(goals)
+        return goal
 
     def _package_summary(
         self,

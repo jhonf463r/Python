@@ -3983,6 +3983,516 @@ class OperationalSelfExaminationService:
 
         return findings
 
+    # ==================================================================
+    # Audit Platform — Algorithmic Analysis & Optimization
+    # Extends OSES with statistical, structural, and validation tooling.
+    # ==================================================================
+
+    # ---- MathEngine: statistical analysis on system data ----
+
+    @staticmethod
+    def math_engine_moving_average(values: list[float], window: int = 5) -> list[float]:
+        """Compute simple moving average over a window."""
+        if not values or window < 1:
+            return []
+        result: list[float] = []
+        for i in range(len(values)):
+            start = max(0, i - window + 1)
+            segment = values[start:i + 1]
+            result.append(sum(segment) / len(segment))
+        return result
+
+    @staticmethod
+    def math_engine_exponential_smoothing(values: list[float], alpha: float = 0.3) -> list[float]:
+        """Compute exponential smoothing (EMA)."""
+        if not values:
+            return []
+        result = [values[0]]
+        for val in values[1:]:
+            result.append(alpha * val + (1 - alpha) * result[-1])
+        return result
+
+    @staticmethod
+    def math_engine_z_scores(values: list[float]) -> list[float]:
+        """Compute z-scores for anomaly detection."""
+        if len(values) < 2:
+            return [0.0] * len(values)
+        import math
+        mean = sum(values) / len(values)
+        variance = sum((x - mean) ** 2 for x in values) / len(values)
+        std_dev = math.sqrt(variance) if variance > 0 else 0.0
+        if std_dev == 0:
+            return [0.0] * len(values)
+        return [(x - mean) / std_dev for x in values]
+
+    @staticmethod
+    def math_engine_iqr_outliers(values: list[float], factor: float = 1.5) -> list[int]:
+        """Return indices of IQR outliers."""
+        if len(values) < 4:
+            return []
+        sorted_v = sorted(values)
+        n = len(sorted_v)
+        q1 = sorted_v[n // 4]
+        q3 = sorted_v[(3 * n) // 4]
+        iqr = q3 - q1
+        lower = q1 - factor * iqr
+        upper = q3 + factor * iqr
+        return [i for i, v in enumerate(values) if v < lower or v > upper]
+
+    @staticmethod
+    def math_engine_correlation(x: list[float], y: list[float]) -> float:
+        """Compute Pearson correlation coefficient between two series."""
+        import math
+        n = min(len(x), len(y))
+        if n < 3:
+            return 0.0
+        x, y = x[:n], y[:n]
+        mean_x = sum(x) / n
+        mean_y = sum(y) / n
+        cov = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y)) / n
+        std_x = math.sqrt(sum((xi - mean_x) ** 2 for xi in x) / n)
+        std_y = math.sqrt(sum((yi - mean_y) ** 2 for yi in y) / n)
+        if std_x == 0 or std_y == 0:
+            return 0.0
+        return cov / (std_x * std_y)
+
+    @staticmethod
+    def math_engine_confidence(success_count: int, total: int) -> float:
+        """Wilson score lower bound for confidence estimation."""
+        if total == 0:
+            return 0.0
+        import math
+        z = 1.96  # 95% confidence
+        p = success_count / total
+        denominator = 1 + z * z / total
+        centre = p + z * z / (2 * total)
+        adjustment = z * math.sqrt((p * (1 - p) + z * z / (4 * total)) / total)
+        return max(0.0, (centre - adjustment) / denominator)
+
+    def math_engine_report(self, recent_runs: list[RunRecord] | None = None) -> dict[str, Any]:
+        """Generate a statistical report from system data."""
+        runs = recent_runs or self._recent_runs()
+        latencies = [float(getattr(r, 'elapsed_ms', 0) or 0) for r in runs if getattr(r, 'elapsed_ms', None)]
+        successes = [1.0 if r.status == RunStatus.SUCCESS else 0.0 for r in runs]
+        report: dict[str, Any] = {
+            'sample_size': len(runs),
+            'success_rate': sum(successes) / len(successes) if successes else 0.0,
+        }
+        if latencies:
+            report['latency_ema'] = self.math_engine_exponential_smoothing(latencies)[-1] if latencies else 0.0
+            report['latency_z_scores'] = self.math_engine_z_scores(latencies)
+            report['latency_iqr_outliers'] = self.math_engine_iqr_outliers(latencies)
+            report['latency_sma'] = self.math_engine_moving_average(latencies)[-1] if latencies else 0.0
+        if successes:
+            report['success_confidence'] = self.math_engine_confidence(
+                int(sum(successes)), len(successes),
+            )
+        return report
+
+    # ---- AlgorithmAnalyzer: structural code analysis ----
+
+    @staticmethod
+    def algorithm_analyzer_cyclomatic_complexity(source_code: str) -> int:
+        """Estimate cyclomatic complexity of Python source code."""
+        import re
+        decision_keywords = re.findall(
+            r'\b(if|elif|for|while|except|and|or)\b', source_code,
+        )
+        return 1 + len(decision_keywords)
+
+    @staticmethod
+    def algorithm_analyzer_dead_code(source_code: str) -> list[dict[str, Any]]:
+        """Detect potentially dead code patterns."""
+        import re
+        issues: list[dict[str, Any]] = []
+        lines = source_code.splitlines()
+        for i, line in enumerate(lines, 1):
+            stripped = line.strip()
+            if stripped.startswith('# TODO') or stripped.startswith('# FIXME'):
+                issues.append({'line': i, 'type': 'todo_comment', 'text': stripped[:80]})
+            if re.match(r'^\s*(return|raise)\b', line):
+                if i < len(lines):
+                    next_stripped = lines[i].strip() if i < len(lines) else ''
+                    if next_stripped and not next_stripped.startswith(('#', 'def ', 'class ', 'except', 'elif', 'else', ')', ']', '}')):
+                        issues.append({'line': i + 1, 'type': 'unreachable_after_return', 'text': next_stripped[:80]})
+        return issues
+
+    @staticmethod
+    def algorithm_analyzer_dependency_map(module_source: str) -> list[str]:
+        """Extract import dependencies from Python source."""
+        import re
+        deps: list[str] = []
+        for match in re.finditer(r'^(?:from\s+([\w.]+)\s+import|import\s+([\w.]+))', module_source, re.MULTILINE):
+            dep = match.group(1) or match.group(2)
+            if dep:
+                deps.append(dep)
+        return sorted(set(deps))
+
+    @staticmethod
+    def algorithm_analyzer_antipatterns(source_code: str) -> list[dict[str, Any]]:
+        """Detect common anti-patterns in Python source."""
+        import re
+        issues: list[dict[str, Any]] = []
+        lines = source_code.splitlines()
+        for i, line in enumerate(lines, 1):
+            if re.search(r'\bexcept\s*:', line) and 'pragma' not in line:
+                issues.append({'line': i, 'type': 'bare_except', 'text': line.strip()[:80]})
+            if re.search(r'\bgetattr\s*\(.*,\s*["\']', line) and 'pragma' not in line:
+                issues.append({'line': i, 'type': 'dynamic_getattr', 'text': line.strip()[:80]})
+            if len(line) > 200:
+                issues.append({'line': i, 'type': 'long_line', 'length': len(line)})
+        return issues
+
+    def algorithm_analysis_report(self, source_code: str) -> dict[str, Any]:
+        """Full structural analysis of given source code."""
+        return {
+            'cyclomatic_complexity': self.algorithm_analyzer_cyclomatic_complexity(source_code),
+            'dead_code': self.algorithm_analyzer_dead_code(source_code),
+            'dependencies': self.algorithm_analyzer_dependency_map(source_code),
+            'antipatterns': self.algorithm_analyzer_antipatterns(source_code),
+        }
+
+    # ---- AlgorithmTestBench: systematic test case generation ----
+
+    @staticmethod
+    def test_bench_edge_cases(func: Any, test_inputs: list[Any]) -> list[dict[str, Any]]:
+        """Run a function against test inputs and record outcomes."""
+        results: list[dict[str, Any]] = []
+        for inp in test_inputs:
+            try:
+                output = func(inp)
+                results.append({'input': repr(inp), 'output': repr(output), 'status': 'ok', 'error': None})
+            except Exception as exc:
+                results.append({'input': repr(inp), 'output': None, 'status': 'error', 'error': str(exc)})
+        return results
+
+    @staticmethod
+    def test_bench_null_inputs(func: Any) -> list[dict[str, Any]]:
+        """Test function with None, empty string, empty list, 0, etc."""
+        null_inputs: list[Any] = [None, '', [], {}, 0, 0.0, False, set()]
+        results: list[dict[str, Any]] = []
+        for inp in null_inputs:
+            try:
+                output = func(inp)
+                results.append({'input': repr(inp), 'output': repr(output), 'status': 'ok', 'error': None})
+            except Exception as exc:
+                results.append({'input': repr(inp), 'output': None, 'status': 'error', 'error': str(exc)})
+        return results
+
+    @staticmethod
+    def test_bench_overflow(func: Any) -> list[dict[str, Any]]:
+        """Test function with extreme numeric values."""
+        overflow_inputs = [10**18, -10**18, float('inf'), float('-inf'), float('nan'), 2**63 - 1]
+        results: list[dict[str, Any]] = []
+        for inp in overflow_inputs:
+            try:
+                output = func(inp)
+                results.append({'input': repr(inp), 'output': repr(output), 'status': 'ok', 'error': None})
+            except Exception as exc:
+                results.append({'input': repr(inp), 'output': None, 'status': 'error', 'error': str(exc)})
+        return results
+
+    @staticmethod
+    def test_bench_performance(func: Any, input_val: Any, iterations: int = 100) -> dict[str, Any]:
+        """Benchmark function execution time."""
+        import time as _t
+        times: list[float] = []
+        for _ in range(iterations):
+            t0 = _t.perf_counter()
+            try:
+                func(input_val)
+            except Exception:
+                pass
+            times.append(_t.perf_counter() - t0)
+        import math
+        mean_t = sum(times) / len(times)
+        std_t = math.sqrt(sum((t - mean_t) ** 2 for t in times) / len(times)) if len(times) > 1 else 0.0
+        return {
+            'iterations': iterations,
+            'mean_ms': round(mean_t * 1000, 3),
+            'std_ms': round(std_t * 1000, 3),
+            'min_ms': round(min(times) * 1000, 3),
+            'max_ms': round(max(times) * 1000, 3),
+        }
+
+    def test_bench_report(self, func: Any, test_inputs: list[Any] | None = None) -> dict[str, Any]:
+        """Full test bench report for a function."""
+        inputs = test_inputs or []
+        return {
+            'edge_cases': self.test_bench_edge_cases(func, inputs),
+            'null_inputs': self.test_bench_null_inputs(func),
+            'overflow': self.test_bench_overflow(func),
+            'performance': self.test_bench_performance(func, inputs[0] if inputs else None),
+        }
+
+    # ---- AlgorithmValidator: contract and rule validation ----
+
+    @staticmethod
+    def validator_check_contracts(
+        source_code: str,
+        *,
+        required_preconditions: list[str] | None = None,
+        required_postconditions: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Verify that source code contains expected pre/postconditions."""
+        import re
+        found_pre = [p for p in (required_preconditions or []) if re.search(re.escape(p), source_code)]
+        found_post = [p for p in (required_postconditions or []) if re.search(re.escape(p), source_code)]
+        missing_pre = [p for p in (required_preconditions or []) if p not in found_pre]
+        missing_post = [p for p in (required_postconditions or []) if p not in found_post]
+        return {
+            'preconditions_found': found_pre,
+            'preconditions_missing': missing_pre,
+            'postconditions_found': found_post,
+            'postconditions_missing': missing_post,
+            'valid': not missing_pre and not missing_post,
+        }
+
+    @staticmethod
+    def validator_check_exceptions(source_code: str) -> list[dict[str, Any]]:
+        """Check that exceptions are properly handled (not bare except)."""
+        import re
+        issues: list[dict[str, Any]] = []
+        for i, line in enumerate(source_code.splitlines(), 1):
+            if re.search(r'\bexcept\s*:', line) and 'pragma' not in line:
+                issues.append({'line': i, 'issue': 'bare_except', 'text': line.strip()[:80]})
+            if re.search(r'\bpass\s*$', line):
+                context_start = max(0, i - 3)
+                context = source_code.splitlines()[context_start:i]
+                if any('except' in cl for cl in context):
+                    issues.append({'line': i, 'issue': 'silent_exception', 'text': line.strip()[:80]})
+        return issues
+
+    @staticmethod
+    def validator_check_agents_rules(source_code: str) -> list[dict[str, Any]]:
+        """Check for AGENTS.md violations in source code."""
+        violations: list[dict[str, Any]] = []
+        lines = source_code.splitlines()
+        for i, line in enumerate(lines, 1):
+            lower = line.lower()
+            if 'class' in lower and 'orchestrator' in lower and 'adaptive' not in lower:
+                violations.append({'line': i, 'rule': 'no_new_orchestrator', 'text': line.strip()[:80]})
+            if 'perceptionsnapshot' in lower and 'class' in lower:
+                violations.append({'line': i, 'rule': 'no_duplicate_perception', 'text': line.strip()[:80]})
+        return violations
+
+    @staticmethod
+    def validator_check_types(source_code: str) -> list[dict[str, Any]]:
+        """Check for lazy typing patterns (Any, getattr)."""
+        import re
+        issues: list[dict[str, Any]] = []
+        for i, line in enumerate(source_code.splitlines(), 1):
+            if re.search(r'\bAny\b', line) and 'import' not in line and '#' not in line.split('Any')[0]:
+                pass  # Any in type hints is acceptable in this codebase
+            if re.search(r'\bsetattr\s*\(', line) and 'pragma' not in line:
+                issues.append({'line': i, 'issue': 'setattr_usage', 'text': line.strip()[:80]})
+        return issues
+
+    def validation_report(self, source_code: str) -> dict[str, Any]:
+        """Full validation report for source code."""
+        return {
+            'contracts': self.validator_check_contracts(source_code),
+            'exceptions': self.validator_check_exceptions(source_code),
+            'agents_rules': self.validator_check_agents_rules(source_code),
+            'types': self.validator_check_types(source_code),
+        }
+
+    # ---- AlgorithmOptimizer: parameter tuning and A/B testing ----
+
+    @staticmethod
+    def optimizer_grid_search(
+        func: Any,
+        param_grid: dict[str, list[Any]],
+        eval_func: Any,
+        base_input: Any = None,
+    ) -> list[dict[str, Any]]:
+        """Simple grid search over parameter combinations."""
+        import itertools
+        keys = list(param_grid.keys())
+        values = list(param_grid.values())
+        results: list[dict[str, Any]] = []
+        for combo in itertools.product(*values):
+            params = dict(zip(keys, combo))
+            try:
+                output = func(base_input, **params) if base_input is not None else func(**params)
+                score = eval_func(output) if eval_func else 0.0
+                results.append({'params': params, 'score': score, 'status': 'ok', 'error': None})
+            except Exception as exc:
+                results.append({'params': params, 'score': 0.0, 'status': 'error', 'error': str(exc)})
+        results.sort(key=lambda r: r['score'], reverse=True)
+        return results
+
+    @staticmethod
+    def optimizer_ab_test(
+        func_a: Any,
+        func_b: Any,
+        test_inputs: list[Any],
+        eval_func: Any,
+    ) -> dict[str, Any]:
+        """Compare two implementations on the same inputs."""
+        scores_a: list[float] = []
+        scores_b: list[float] = []
+        for inp in test_inputs:
+            try:
+                out_a = func_a(inp)
+                scores_a.append(float(eval_func(out_a)))
+            except Exception:
+                scores_a.append(0.0)
+            try:
+                out_b = func_b(inp)
+                scores_b.append(float(eval_func(out_b)))
+            except Exception:
+                scores_b.append(0.0)
+        mean_a = sum(scores_a) / len(scores_a) if scores_a else 0.0
+        mean_b = sum(scores_b) / len(scores_b) if scores_b else 0.0
+        return {
+            'variant_a_mean': round(mean_a, 4),
+            'variant_b_mean': round(mean_b, 4),
+            'winner': 'a' if mean_a >= mean_b else 'b',
+            'margin': round(abs(mean_a - mean_b), 4),
+            'sample_size': len(test_inputs),
+        }
+
+    def optimization_proposal(
+        self,
+        func: Any,
+        param_grid: dict[str, list[Any]],
+        eval_func: Any,
+        base_input: Any = None,
+    ) -> dict[str, Any]:
+        """Generate an optimization proposal with best parameters."""
+        results = self.optimizer_grid_search(func, param_grid, eval_func, base_input)
+        best = results[0] if results else None
+        return {
+            'best_params': best['params'] if best else {},
+            'best_score': best['score'] if best else 0.0,
+            'total_combinations': len(results),
+            'top_3': results[:3],
+        }
+
+    # ---- ExperimentSimulator: scenario simulation ----
+
+    @staticmethod
+    def simulator_fault_injection(
+        func: Any,
+        fault_scenarios: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Simulate fault scenarios and record system behavior."""
+        results: list[dict[str, Any]] = []
+        for scenario in fault_scenarios:
+            name = str(scenario.get('name') or 'unnamed')
+            fault_input = scenario.get('input')
+            try:
+                output = func(fault_input)
+                results.append({
+                    'scenario': name,
+                    'status': 'completed',
+                    'output': repr(output)[:200],
+                    'graceful': True,
+                })
+            except Exception as exc:
+                results.append({
+                    'scenario': name,
+                    'status': 'error',
+                    'error': str(exc),
+                    'graceful': 'handled' in str(type(exc).__name__).lower(),
+                })
+        return results
+
+    @staticmethod
+    def simulator_stress_test(
+        func: Any,
+        concurrent_count: int = 10,
+        input_factory: Any = None,
+    ) -> dict[str, Any]:
+        """Simulate concurrent execution stress."""
+        import time as _t
+        results: list[dict[str, Any]] = []
+        t0 = _t.perf_counter()
+        for i in range(concurrent_count):
+            inp = input_factory(i) if input_factory else i
+            start = _t.perf_counter()
+            try:
+                func(inp)
+                results.append({'index': i, 'status': 'ok', 'elapsed_ms': round((_t.perf_counter() - start) * 1000, 2)})
+            except Exception as exc:
+                results.append({'index': i, 'status': 'error', 'error': str(exc), 'elapsed_ms': round((_t.perf_counter() - start) * 1000, 2)})
+        total_ms = round((_t.perf_counter() - t0) * 1000, 2)
+        ok_count = sum(1 for r in results if r['status'] == 'ok')
+        return {
+            'total_runs': concurrent_count,
+            'success_count': ok_count,
+            'failure_count': concurrent_count - ok_count,
+            'total_ms': total_ms,
+            'avg_ms': round(total_ms / concurrent_count, 2) if concurrent_count else 0,
+            'results': results,
+        }
+
+    @staticmethod
+    def simulator_monte_carlo(
+        func: Any,
+        param_sampler: Any,
+        iterations: int = 100,
+    ) -> dict[str, Any]:
+        """Monte Carlo simulation: run func with random parameters."""
+        import random
+        random.seed(42)
+        outputs: list[Any] = []
+        errors: list[str] = []
+        for _ in range(iterations):
+            params = param_sampler()
+            try:
+                result = func(**params) if isinstance(params, dict) else func(params)
+                outputs.append(result)
+            except Exception as exc:
+                errors.append(str(exc))
+        numeric_outputs = [float(o) for o in outputs if isinstance(o, (int, float))]
+        return {
+            'iterations': iterations,
+            'success_count': len(outputs),
+            'error_count': len(errors),
+            'numeric_mean': sum(numeric_outputs) / len(numeric_outputs) if numeric_outputs else None,
+            'numeric_min': min(numeric_outputs) if numeric_outputs else None,
+            'numeric_max': max(numeric_outputs) if numeric_outputs else None,
+        }
+
+    @staticmethod
+    def simulator_what_if(
+        current_config: dict[str, Any],
+        changes: dict[str, Any],
+        impact_estimator: Any,
+    ) -> dict[str, Any]:
+        """Estimate impact of config changes without applying them."""
+        proposed = {**current_config, **changes}
+        try:
+            current_score = impact_estimator(current_config)
+            proposed_score = impact_estimator(proposed)
+            return {
+                'current_score': current_score,
+                'proposed_score': proposed_score,
+                'delta': proposed_score - current_score,
+                'improvement': proposed_score > current_score,
+                'changes': changes,
+            }
+        except Exception as exc:
+            return {
+                'error': str(exc),
+                'changes': changes,
+                'improvement': False,
+            }
+
+    def simulation_report(
+        self,
+        func: Any,
+        fault_scenarios: list[dict[str, Any]] | None = None,
+        stress_count: int = 10,
+    ) -> dict[str, Any]:
+        """Full simulation report combining fault injection and stress testing."""
+        return {
+            'fault_injection': self.simulator_fault_injection(func, fault_scenarios or []),
+            'stress_test': self.simulator_stress_test(func, stress_count),
+        }
+
 
 # ---------------------------------------------------------------------------
 # Lightweight accessor for functional-gap findings without full service init.
