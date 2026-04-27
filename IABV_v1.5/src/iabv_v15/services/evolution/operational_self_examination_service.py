@@ -4004,6 +4004,65 @@ class OperationalSelfExaminationService:
                     source_refs=['WorldModelService._network_connectivity_probe'],
                 ))
 
+        # --- Model/provider degradation (from AdaptiveModelSelector) ---
+        ams = getattr(self, 'adaptive_model_selector', None)
+        if ams is not None:
+            try:
+                degradations = ams.detect_degradation()
+                for d in degradations:
+                    dtype = d.get('type', '')
+                    pid = d.get('provider_id', '')
+                    if dtype == 'very_slow':
+                        findings.append(SelfExaminationFinding(
+                            category='runtime_performance',
+                            title='model_too_slow',
+                            summary=(
+                                f'El proveedor {pid} promedia '
+                                f'{d.get("avg_latency_ms", 0):.0f}ms de latencia. '
+                                f'Esto degrada la experiencia del usuario.'
+                            ),
+                            severity=IssueSeverity.MEDIUM,
+                            confidence=0.85,
+                            recommendation=d.get('recommendation', ''),
+                            evidence_refs=[f'avg_latency_ms:{d.get("avg_latency_ms", 0):.0f}'],
+                            source_refs=['AdaptiveModelSelector'],
+                        ))
+                    elif dtype == 'high_failure_rate':
+                        findings.append(SelfExaminationFinding(
+                            category='runtime_performance',
+                            title='provider_failing',
+                            summary=(
+                                f'El proveedor {pid} tiene solo '
+                                f'{d.get("success_rate", 0):.0%} de exito. '
+                                f'Rotando automaticamente al siguiente proveedor.'
+                            ),
+                            severity=IssueSeverity.HIGH,
+                            confidence=0.90,
+                            recommendation=d.get('recommendation', ''),
+                            evidence_refs=[
+                                f'success_rate:{d.get("success_rate", 0):.2f}',
+                            ] + [f'error:{e[:60]}' for e in d.get('recent_errors', [])[:2]],
+                            source_refs=['AdaptiveModelSelector'],
+                        ))
+                    elif dtype == 'quota_exhausted':
+                        findings.append(SelfExaminationFinding(
+                            category='runtime_performance',
+                            title='provider_quota_exhausted',
+                            summary=(
+                                f'El proveedor {pid} agoto su cuota '
+                                f'({d.get("count", 0)} errores 429). '
+                                f'IABV roto automaticamente al siguiente '
+                                f'proveedor disponible.'
+                            ),
+                            severity=IssueSeverity.HIGH,
+                            confidence=0.95,
+                            recommendation=d.get('recommendation', ''),
+                            evidence_refs=[f'quota_errors:{d.get("count", 0)}'],
+                            source_refs=['AdaptiveModelSelector'],
+                        ))
+            except Exception:
+                pass
+
         return findings
 
     def _read_process_rss_mb(self) -> float | None:

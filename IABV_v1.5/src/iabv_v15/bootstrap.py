@@ -201,6 +201,7 @@ from iabv_v15.infra.persistence.user_clue_repository import UserClueRepository
 from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
 from iabv_v15.services.adaptive.adaptive_planner_service import AdaptivePlannerService
 from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+from iabv_v15.services.adaptive.adaptive_model_selector import AdaptiveModelSelector
 from iabv_v15.services.adaptive.cloud_reasoning_planner import CloudReasoningPlannerService
 from iabv_v15.services.adaptive.adaptive_weight_layer import AdaptiveWeightLayer
 from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
@@ -1150,7 +1151,10 @@ class AppBootstrap:
         self.portable_context_service.decision_audit_trail = self.decision_audit_trail
         self.autonomous_validation_cycle.decision_audit_trail = self.decision_audit_trail
         self.autonomous_validation_cycle.api_key_discovery_service = self.api_key_discovery_service
+        self.adaptive_model_selector = AdaptiveModelSelector(data_dir=self.config.data_dir)
+        CloudReasoningPlannerService._model_selector = self.adaptive_model_selector
         self.adaptive_task_orchestrator.cloud_reasoning_planner = CloudReasoningPlannerService()
+        self.operational_self_examination_service.adaptive_model_selector = self.adaptive_model_selector
         self.adaptive_task_orchestrator.api_key_discovery_service = self.api_key_discovery_service
         self.adaptive_task_orchestrator.decision_audit_trail = self.decision_audit_trail
         self.adaptive_task_orchestrator.control_master_service = self.control_master_service

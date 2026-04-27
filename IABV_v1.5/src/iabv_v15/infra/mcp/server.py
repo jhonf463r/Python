@@ -2233,6 +2233,54 @@ class IABVMCPServer:
             return result
 
         # ------------------------------------------------------------
+        # model_selection_status — adaptive provider selection
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def model_selection_status(
+            task_type: str = 'general',
+        ) -> dict[str, Any]:
+            """Estado de seleccion adaptativa de modelos/proveedores.
+
+            Muestra que proveedor (cloud o local) es el mejor para el
+            tipo de tarea actual, con scores, latencias, tasas de exito
+            y cooldowns activos por cuota agotada.
+
+            Args:
+                task_type: tipo de tarea (general, coding, planning, etc.)
+
+            Returns:
+                Diccionario con:
+                - selected: proveedor seleccionado
+                - fallback_chain: orden de proveedores
+                - scores: puntuacion de cada proveedor
+                - performance_summary: resumen de rendimiento historico
+                - local_model_recommendation: modelo Ollama recomendado
+                - degradation_findings: problemas detectados
+            """
+            from iabv_v15.services.adaptive.adaptive_model_selector import AdaptiveModelSelector as _AMS
+            from iabv_v15.services.adaptive.cloud_reasoning_planner import CloudReasoningPlannerService as _CRP
+
+            selector = _CRP._model_selector
+            if selector is None:
+                selector = _AMS()
+
+            selection = selector.select_best_provider(task_type=task_type)
+            summary = selector.performance_summary()
+            degradation = selector.detect_degradation()
+            local_rec = selector.recommend_local_model(task_type=task_type)
+
+            return _to_jsonable({
+                'selected': selection.get('provider_id'),
+                'reason': selection.get('reason'),
+                'fallback_chain': selection.get('fallback_chain'),
+                'scores': selection.get('scores'),
+                'performance_summary': summary,
+                'local_model_recommendation': local_rec,
+                'degradation_findings': degradation,
+            })
+
+        # ------------------------------------------------------------
         # deep_environment_scan — periféricos, BIOS, seguridad, red
         # ------------------------------------------------------------
 
