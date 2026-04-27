@@ -718,6 +718,30 @@ class OperationalSelfExaminationService:
                 experiment_runs=experiment_runs,
                 recent_runs=recent_runs,
             ))
+        # MetacognitionEvolution: aggregate findings from DecisionSimplifier,
+        # PlatformLearning, and provider health monitoring.
+        metacog = getattr(self, 'metacognition_evolution', None)
+        if metacog is not None:
+            try:
+                from iabv_v15.domain.models import SelfExaminationFinding, IssueSeverity
+                for raw in metacog.all_findings():
+                    sev_str = str(raw.get('severity', 'MEDIUM')).upper()
+                    try:
+                        sev = IssueSeverity(sev_str)
+                    except (ValueError, KeyError):
+                        sev = IssueSeverity.MEDIUM
+                    findings.append(SelfExaminationFinding(
+                        category=raw.get('category', 'metacognition_evolution'),
+                        title=raw.get('title', ''),
+                        summary=raw.get('summary', ''),
+                        severity=sev,
+                        confidence=raw.get('confidence', 0.5),
+                        recommendation=raw.get('recommendation', ''),
+                        metadata=raw.get('metadata', {}),
+                    ))
+            except Exception as exc:
+                logger.warning('oses: metacognition_evolution findings error: %s', exc)
+
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
