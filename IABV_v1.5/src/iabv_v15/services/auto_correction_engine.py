@@ -507,6 +507,11 @@ _ACTION_HANDLERS: dict[str, Any] = {
     'increase_network_cache_ttl': _noop,  # logged — probe cache extended
     'consolidate_polling_threads': _noop,  # logged — requires code change
     'lazy_load_services': _noop,  # logged — requires code change
+    # Adaptive model selection auto-corrections
+    'switch_provider': _noop,  # logged — AdaptiveModelSelector handles
+    'rotate_api_key': _noop,  # logged — next call uses new provider
+    'cooldown_provider': _noop,  # logged — provider in quota cooldown
+    'recommend_local_model': _noop,  # logged — suggest better Ollama model
 }
 
 

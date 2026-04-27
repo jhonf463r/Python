@@ -197,8 +197,11 @@ class CloudReasoningPlannerService:
         return plan
 
     # ------------------------------------------------------------------
-    # Cloud query (same tier as Fix 60: Gemini -> Groq -> Ollama)
+    # Cloud query — adaptive provider selection
     # ------------------------------------------------------------------
+
+    # Class-level selector: set by bootstrap or test harness.
+    _model_selector: Any = None
 
     @staticmethod
     def _query_cloud_for_plan(context: str, system_prompt: str) -> dict[str, Any] | None:
@@ -207,81 +210,175 @@ class CloudReasoningPlannerService:
         except ImportError:
             return None
 
+        import time as _time
+
         messages = [
             {'role': 'system', 'content': system_prompt},
             {'role': 'user', 'content': context},
         ]
 
-        # --- Gemini ---
-        gemini_key = os.environ.get('GEMINI_API_KEY', '')
-        if gemini_key:
+        selector = CloudReasoningPlannerService._model_selector
+
+        # Build ordered provider chain: adaptive selector reorders or
+        # falls back to the default Gemini → Groq → Ollama chain.
+        if selector is not None:
+            try:
+                selection = selector.select_best_provider(task_type='planning')
+                chain = selection.get('fallback_chain', ['gemini', 'groq', 'ollama_local'])
+            except Exception:
+                chain = ['gemini', 'groq', 'ollama_local']
+        else:
+            chain = ['gemini', 'groq', 'ollama_local']
+
+        for provider_id in chain:
+            started = _time.monotonic()
+            result = CloudReasoningPlannerService._try_provider(
+                provider_id, messages,
+            )
+            elapsed_ms = (_time.monotonic() - started) * 1000
+
+            if result is not None:
+                if selector is not None:
+                    selector.record_result(
+                        provider_id=provider_id,
+                        task_type='planning',
+                        latency_ms=elapsed_ms,
+                        success=True,
+                        model_used=result.get('_cloud_source', provider_id),
+                    )
+                return result
+
+            # Record failure for adaptive learning
+            if selector is not None:
+                selector.record_result(
+                    provider_id=provider_id,
+                    task_type='planning',
+                    latency_ms=elapsed_ms,
+                    success=False,
+                    error=f'{provider_id} failed',
+                )
+
+        return None
+
+    @staticmethod
+    def _try_provider(
+        provider_id: str,
+        messages: list[dict[str, str]],
+    ) -> dict[str, Any] | None:
+        """Try a single provider and return parsed JSON or None."""
+        try:
+            import httpx
+        except ImportError:
+            return None
+
+        if provider_id == 'gemini':
+            key = os.environ.get('GEMINI_API_KEY', '')
+            if not key:
+                return None
             try:
                 with httpx.Client(timeout=30.0) as client:
                     resp = client.post(
                         'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
                         json={'model': 'gemini-2.0-flash', 'messages': messages, 'temperature': 0.15},
-                        headers={'Authorization': f'Bearer {gemini_key}', 'Content-Type': 'application/json'},
+                        headers={'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'},
                     )
                     CloudReasoningPlannerService._record_api_health('gemini', resp.status_code)
                     resp.raise_for_status()
                     data = resp.json()
-                raw = data['choices'][0]['message']['content'].strip()
-                raw = _re.sub(r'<think>.*?</think>', '', raw, flags=_re.DOTALL).strip()
-                match = _re.search(r'\{[\s\S]*\}', raw)
-                if match:
-                    parsed = _json.loads(match.group())
-                    parsed['_cloud_source'] = 'gemini'
-                    logger.info('cloud-planner: Gemini plan generated')
-                    return parsed
+                return CloudReasoningPlannerService._extract_json(data, 'gemini')
             except Exception as exc:
                 logger.debug('cloud-planner gemini failed: %s', exc)
+                return None
 
-        # --- Groq ---
-        groq_key = os.environ.get('GROQ_API_KEY', '')
-        if groq_key:
+        if provider_id == 'groq':
+            key = os.environ.get('GROQ_API_KEY', '')
+            if not key:
+                return None
             try:
                 with httpx.Client(timeout=30.0) as client:
                     resp = client.post(
                         'https://api.groq.com/openai/v1/chat/completions',
                         json={'model': 'llama-3.3-70b-versatile', 'messages': messages, 'temperature': 0.15},
-                        headers={'Authorization': f'Bearer {groq_key}', 'Content-Type': 'application/json'},
+                        headers={'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'},
                     )
                     CloudReasoningPlannerService._record_api_health('groq', resp.status_code)
                     resp.raise_for_status()
                     data = resp.json()
-                raw = data['choices'][0]['message']['content'].strip()
-                raw = _re.sub(r'<think>.*?</think>', '', raw, flags=_re.DOTALL).strip()
-                match = _re.search(r'\{[\s\S]*\}', raw)
-                if match:
-                    parsed = _json.loads(match.group())
-                    parsed['_cloud_source'] = 'groq'
-                    logger.info('cloud-planner: Groq plan generated')
-                    return parsed
+                return CloudReasoningPlannerService._extract_json(data, 'groq')
             except Exception as exc:
                 logger.debug('cloud-planner groq failed: %s', exc)
+                return None
 
-        # --- Ollama local fallback ---
-        base_url = os.environ.get('IABV_OLLAMA_BASE_URL', 'http://127.0.0.1:11434/v1')
-        model = os.environ.get('IABV_OLLAMA_MODEL', 'qwen3:8b')
+        if provider_id in ('ollama_local', 'ollama'):
+            base_url = os.environ.get('IABV_OLLAMA_BASE_URL', 'http://127.0.0.1:11434/v1')
+            model = os.environ.get('IABV_OLLAMA_MODEL', 'qwen3:8b')
+            try:
+                with httpx.Client(timeout=35.0) as client:
+                    resp = client.post(
+                        f'{base_url}/chat/completions',
+                        json={'model': model, 'messages': messages, 'stream': False, 'temperature': 0.15},
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
+                return CloudReasoningPlannerService._extract_json(data, 'ollama_local')
+            except Exception as exc:
+                logger.debug('cloud-planner ollama failed: %s', exc)
+                return None
+
+        if provider_id == 'openrouter':
+            key = os.environ.get('OPENROUTER_API_KEY', '')
+            if not key:
+                return None
+            try:
+                with httpx.Client(timeout=30.0) as client:
+                    resp = client.post(
+                        'https://openrouter.ai/api/v1/chat/completions',
+                        json={'model': 'meta-llama/llama-3.3-70b-instruct:free', 'messages': messages, 'temperature': 0.15},
+                        headers={'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'},
+                    )
+                    CloudReasoningPlannerService._record_api_health('openrouter', resp.status_code)
+                    resp.raise_for_status()
+                    data = resp.json()
+                return CloudReasoningPlannerService._extract_json(data, 'openrouter')
+            except Exception as exc:
+                logger.debug('cloud-planner openrouter failed: %s', exc)
+                return None
+
+        if provider_id == 'together':
+            key = os.environ.get('TOGETHER_API_KEY', '')
+            if not key:
+                return None
+            try:
+                with httpx.Client(timeout=30.0) as client:
+                    resp = client.post(
+                        'https://api.together.xyz/v1/chat/completions',
+                        json={'model': 'meta-llama/Llama-3.3-70B-Instruct-Turbo', 'messages': messages, 'temperature': 0.15},
+                        headers={'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'},
+                    )
+                    CloudReasoningPlannerService._record_api_health('together', resp.status_code)
+                    resp.raise_for_status()
+                    data = resp.json()
+                return CloudReasoningPlannerService._extract_json(data, 'together')
+            except Exception as exc:
+                logger.debug('cloud-planner together failed: %s', exc)
+                return None
+
+        return None
+
+    @staticmethod
+    def _extract_json(data: dict[str, Any], source: str) -> dict[str, Any] | None:
+        """Extract JSON from LLM response, stripping <think> blocks."""
         try:
-            with httpx.Client(timeout=35.0) as client:
-                resp = client.post(
-                    f'{base_url}/chat/completions',
-                    json={'model': model, 'messages': messages, 'stream': False, 'temperature': 0.15},
-                )
-                resp.raise_for_status()
-                data = resp.json()
             raw = data['choices'][0]['message']['content'].strip()
             raw = _re.sub(r'<think>.*?</think>', '', raw, flags=_re.DOTALL).strip()
             match = _re.search(r'\{[\s\S]*\}', raw)
             if match:
                 parsed = _json.loads(match.group())
-                parsed['_cloud_source'] = 'ollama_local'
-                logger.info('cloud-planner: Ollama local plan generated')
+                parsed['_cloud_source'] = source
+                logger.info('cloud-planner: %s plan generated', source)
                 return parsed
-        except Exception as exc:
-            logger.debug('cloud-planner ollama failed: %s', exc)
-
+        except Exception:
+            pass
         return None
 
     # ------------------------------------------------------------------
