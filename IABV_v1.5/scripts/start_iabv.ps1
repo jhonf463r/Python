@@ -143,7 +143,7 @@ if ($AutoPull) {
                 if ($StartUI)  { $relaunchArgs += '-StartUI' }
                 if ($Quiet)    { $relaunchArgs += '-Quiet' }
                 $relaunchArgs += '-NoAutoPull'
-                Start-Process powershell.exe -ArgumentList $relaunchArgs -WindowStyle Normal
+                Start-Process powershell.exe -ArgumentList $relaunchArgs -WindowStyle Hidden
                 exit 0
             }
         } else {
@@ -238,10 +238,20 @@ if ($StartUI) {
     try {
         $pythonExe = 'python'
         if ($env:IABV_PYTHON) { $pythonExe = $env:IABV_PYTHON }
-        $uiProc = Start-Process -FilePath $pythonExe `
-            -ArgumentList '-m','iabv_v15','app' `
-            -PassThru `
-            -WindowStyle Normal
+        # Try pythonw.exe first (no console window) — falls back to python.exe hidden
+        $pythonwExe = $pythonExe -replace 'python\.exe$','pythonw.exe' -replace 'python$','pythonw'
+        $usePythonw = $false
+        try { $usePythonw = [bool](Get-Command $pythonwExe -ErrorAction SilentlyContinue) } catch {}
+        if ($usePythonw) {
+            $uiProc = Start-Process -FilePath $pythonwExe `
+                -ArgumentList '-m','iabv_v15','app' `
+                -PassThru
+        } else {
+            $uiProc = Start-Process -FilePath $pythonExe `
+                -ArgumentList '-m','iabv_v15','app' `
+                -PassThru `
+                -WindowStyle Hidden
+        }
         Write-Info "  UI PID     : $($uiProc.Id)"
     } catch {
         Write-Warn "[warn] No se pudo lanzar la UI con -StartUI: $_"
