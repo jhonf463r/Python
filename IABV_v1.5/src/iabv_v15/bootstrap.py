@@ -2021,6 +2021,9 @@ class AppBootstrap:
             time.sleep(5)  # Let UI load first
             logger.info('startup_evolution: beginning background cycle')
             try:
+                # Step 0: Detect if code was updated since last run
+                self._detect_code_update()
+
                 # Step 1: Scan configured API keys
                 if api_discovery is not None:
                     try:
@@ -2081,6 +2084,87 @@ class AppBootstrap:
             name='startup-evolution',
             daemon=True,
         ).start()
+
+    def _detect_code_update(self) -> None:
+        """Detect if code was updated since last recorded commit.
+
+        Generates an OSES finding when the commit has changed and checks
+        whether critical files were modified (potential auto-restart trigger).
+        """
+        import subprocess as _sp
+        state_file = Path(self.config.evolution_dir) / 'last_known_commit.txt'
+        try:
+            result = _sp.run(
+                ['git', 'rev-parse', 'HEAD'],
+                capture_output=True, text=True, timeout=10,
+                cwd=str(self.config.workspace_dir),
+            )
+            if result.returncode != 0:
+                return
+            current_sha = result.stdout.strip()
+            if not current_sha:
+                return
+
+            last_sha = ''
+            if state_file.exists():
+                last_sha = state_file.read_text(encoding='utf-8').strip()
+
+            if last_sha and last_sha != current_sha:
+                # Determine changed files
+                diff_result = _sp.run(
+                    ['git', 'diff', '--name-only', last_sha, current_sha],
+                    capture_output=True, text=True, timeout=15,
+                    cwd=str(self.config.workspace_dir),
+                )
+                changed_files = diff_result.stdout.strip().splitlines() if diff_result.returncode == 0 else []
+                n_files = len(changed_files)
+
+                logger.info(
+                    'startup_evolution: code updated %s -> %s (%d files)',
+                    last_sha[:8], current_sha[:8], n_files,
+                )
+
+                # Generate OSES finding
+                oses = getattr(self, 'operational_self_examination_service', None)
+                if oses is not None:
+                    try:
+                        oses.add_external_finding({
+                            'category': 'auto_update',
+                            'title': f'Codigo actualizado: {last_sha[:8]} -> {current_sha[:8]} ({n_files} archivos)',
+                            'summary': (
+                                f'Se detecto actualizacion de codigo. '
+                                f'Archivos cambiados: {n_files}. '
+                                f'Commit anterior: {last_sha[:8]}, actual: {current_sha[:8]}.'
+                            ),
+                            'severity': 'LOW',
+                            'confidence': 1.0,
+                            'recommendation': 'Revisar cambios si hay comportamiento inesperado',
+                            'metadata': {
+                                'old_commit': last_sha,
+                                'new_commit': current_sha,
+                                'files_changed': n_files,
+                                'changed_files': changed_files[:20],
+                            },
+                        })
+                    except Exception as exc:
+                        logger.debug('startup_evolution: OSES finding failed: %s', exc)
+
+                # Check for critical file changes that warrant restart
+                critical_patterns = ('bootstrap.py', 'control_center_viewmodel.py',
+                                     'adaptive_task_orchestrator.py', 'domain/models.py')
+                critical_changed = [f for f in changed_files if any(p in f for p in critical_patterns)]
+                if critical_changed:
+                    logger.warning(
+                        'startup_evolution: critical files changed: %s — restart recommended',
+                        critical_changed,
+                    )
+
+            # Save current commit
+            state_file.parent.mkdir(parents=True, exist_ok=True)
+            state_file.write_text(current_sha, encoding='utf-8')
+
+        except Exception as exc:
+            logger.debug('startup_evolution: code update detection failed: %s', exc)
 
     def _is_mcp_port_in_use(self, port: int = 8000) -> bool:
         """Check if the MCP port is already in use (another instance running)."""
