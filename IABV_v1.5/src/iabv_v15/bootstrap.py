@@ -1906,6 +1906,147 @@ class AppBootstrap:
             logger.warning('mcp_autostart: failed to launch tunnel: %s', exc)
             return None
 
+    def _auto_optimize_brain(self) -> None:
+        """Auto-optimize the reasoning brain on startup.
+
+        Tests each configured cloud provider with a quick inference call
+        and records latency to ``AdaptiveModelSelector`` so the best
+        provider is always used for reasoning tasks.
+
+        This runs in background — no UI blocking.  Only providers with
+        configured API keys are tested.
+        """
+        selector = getattr(self, 'adaptive_model_selector', None)
+        api_discovery = getattr(self, 'api_key_discovery_service', None)
+        if selector is None:
+            return
+
+        logger.info('startup_evolution: optimizing brain — benchmarking configured providers')
+
+        providers_to_test: list[tuple[str, str, str, str]] = [
+            # (provider_id, env_var, url, model)
+            ('groq', 'GROQ_API_KEY', 'https://api.groq.com/openai/v1/chat/completions', 'llama-3.3-70b-versatile'),
+            ('gemini', 'GEMINI_API_KEY', 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', 'gemini-2.0-flash'),
+            ('openrouter', 'OPENROUTER_API_KEY', 'https://openrouter.ai/api/v1/chat/completions', 'meta-llama/llama-3.3-70b-instruct:free'),
+        ]
+
+        test_prompt = [
+            {'role': 'system', 'content': 'Respond in one sentence.'},
+            {'role': 'user', 'content': 'What is 2+2?'},
+        ]
+
+        try:
+            import httpx
+        except ImportError:
+            logger.debug('startup_evolution: httpx not available, skipping brain benchmark')
+            return
+
+        import time as _time
+
+        for provider_id, env_var, url, model in providers_to_test:
+            key = os.environ.get(env_var)
+            if not key:
+                continue
+            try:
+                headers = {'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'}
+                body = {
+                    'model': model,
+                    'messages': test_prompt,
+                    'max_tokens': 20,
+                    'temperature': 0.0,
+                }
+                t0 = _time.monotonic()
+                with httpx.Client(timeout=10.0) as client:
+                    resp = client.post(url, headers=headers, json=body)
+                latency_ms = (_time.monotonic() - t0) * 1000
+                success = 200 <= resp.status_code < 400
+
+                selector.record_result(
+                    provider_id=provider_id,
+                    task_type='reasoning',
+                    latency_ms=latency_ms,
+                    success=success,
+                )
+                logger.info(
+                    'startup_evolution: brain benchmark %s — %s, %.0fms',
+                    provider_id, 'OK' if success else f'HTTP {resp.status_code}', latency_ms,
+                )
+            except Exception as exc:
+                logger.debug('startup_evolution: brain benchmark %s failed: %s', provider_id, exc)
+                selector.record_result(
+                    provider_id=provider_id,
+                    task_type='reasoning',
+                    latency_ms=10000.0,
+                    success=False,
+                )
+
+        # Log the current best provider
+        try:
+            best = selector.select_best_provider(task_type='reasoning')
+            logger.info(
+                'startup_evolution: best reasoning provider = %s (%s)',
+                best.get('provider_id', '?'), best.get('reason', '?'),
+            )
+        except Exception:
+            pass
+
+    def _schedule_startup_evolution(self) -> None:
+        """Run evolution cycle in background after startup.
+
+        Discovers providers, benchmarks them, runs metacognition findings,
+        and logs results.  Does NOT block the UI — runs in a daemon thread
+        after a 5-second delay to let the UI load first.
+        """
+        metacog = getattr(self, 'metacognition_evolution', None)
+        api_discovery = getattr(self, 'api_key_discovery_service', None)
+        if metacog is None and api_discovery is None:
+            return
+
+        def _run_startup_cycle() -> None:
+            import time
+            time.sleep(5)  # Let UI load first
+            logger.info('startup_evolution: beginning background cycle')
+            try:
+                # Step 1: Scan configured API keys
+                if api_discovery is not None:
+                    try:
+                        scan = api_discovery.scan_configured_keys()
+                        configured = [s['provider_id'] for s in scan if s.get('configured')]
+                        missing = [s['provider_id'] for s in scan if not s.get('configured')]
+                        logger.info(
+                            'startup_evolution: API keys — configured=%s, missing=%s',
+                            configured or 'none', missing or 'none',
+                        )
+                    except Exception as exc:
+                        logger.warning('startup_evolution: API key scan failed: %s', exc)
+
+                # Step 2: Run metacognition evolution cycle
+                if metacog is not None:
+                    try:
+                        result = metacog.run_evolution_cycle()
+                        logger.info(
+                            'startup_evolution: metacognition — %d findings, %d actions',
+                            result.get('findings_count', 0),
+                            len(result.get('actions_taken', [])),
+                        )
+                        for action in result.get('actions_taken', []):
+                            logger.info('startup_evolution: action — %s', action)
+                    except Exception as exc:
+                        logger.warning('startup_evolution: metacognition cycle failed: %s', exc)
+
+                # Step 3: Optimize brain — benchmark providers for best reasoning
+                self._auto_optimize_brain()
+
+                logger.info('startup_evolution: background cycle complete')
+            except Exception as exc:
+                logger.warning('startup_evolution: unexpected error: %s', exc)
+
+        threading.Thread(
+            target=_run_startup_cycle,
+            name='startup-evolution',
+            daemon=True,
+        ).start()
+
     def _is_mcp_port_in_use(self, port: int = 8000) -> bool:
         """Check if the MCP port is already in use (another instance running)."""
         import socket
@@ -1940,6 +2081,9 @@ class AppBootstrap:
                 ).start()
             else:
                 logger.info('mcp_autostart: port %d already in use, skipping MCP launch', mcp_port)
+
+            # --- Startup evolution: background cycle after services are ready ---
+            self._schedule_startup_evolution()
 
             app, _engine = self.create_engine()
             return app.exec()
