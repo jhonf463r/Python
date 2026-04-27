@@ -265,7 +265,7 @@ Stop-McpZombies -Port $McpPort
 Write-Section 'Arrancando MCP + tunnel'
 if ($PrintTunnelUrl) {
     # start_iabv.ps1 delega a run_mcp_bridge que es interactivo. Para capturar
-    # la URL del tunnel hace falta otro diseño (pipe + regex). Dejamos la
+    # la URL del tunnel hace falta otro diseno (pipe + regex). Dejamos la
     # captura como UNRESOLVED en este PR: por ahora imprimimos una nota.
     Write-Warn2 '-PrintTunnelUrl: captura automatica de URL del tunnel pendiente.'
     Write-Warn2 'Por ahora: la URL aparece en stdout cuando cloudflared imprime'

@@ -340,6 +340,20 @@ class ControlCenterViewModel(QObject):
         self._refresh_contextual_suggestions()
         self._validate_ui_reflects_reality()
 
+    def send_message_from_bridge(self, text: str) -> None:
+        """Receive a message from UIBridgeService and inject it into the chat.
+
+        Called by MCP agents via the UIBridgeServer TCP connection.
+        The message appears in the UI as coming from an external agent.
+        """
+        self._append_message(
+            role='bridge',
+            speaker='MCP Agent',
+            text=text,
+            meta='via UIBridge IPC',
+        )
+        self.dataChanged.emit()
+
     def _count_payloads(self) -> int:
         payload_dir = Path(self.config.payloads_dir)
         return len(list(payload_dir.glob('*.json'))) if payload_dir.exists() else 0
