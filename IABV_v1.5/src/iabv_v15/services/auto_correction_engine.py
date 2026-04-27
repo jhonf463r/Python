@@ -322,6 +322,8 @@ def auto_provision_missing_secrets(
                 if prov_result.needs_user_auth:
                     provision['opened'] = True
                     provision['user_action'] = prov_result.user_action
+                    provisions.append(provision)
+                    continue
             except Exception as exc:
                 logger.debug('auto_provision: autonomous failed for %s: %s', name, exc)
 

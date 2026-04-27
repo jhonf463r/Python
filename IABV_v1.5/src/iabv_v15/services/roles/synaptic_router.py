@@ -96,7 +96,7 @@ def _normalize_kind(value: str) -> str:
 _PROVIDER_KEYWORDS: dict[str, list[str]] = {
     "gemini": ["gemini", "google ai", "aistudio"],
     "groq": ["groq"],
-    "ollama_local": ["ollama", "local", "llama"],
+    "ollama_local": ["ollama"],
     "chatgpt_web": ["chatgpt", "openai", "gpt-4", "gpt4"],
     "claude_web": ["claude", "anthropic"],
     "codex": ["codex"],
