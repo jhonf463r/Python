@@ -3854,6 +3854,53 @@ class ControlCenterViewModel(QObject):
         self._working = True
         threading.Thread(target=_worker, daemon=True).start()
 
+    def _handle_startup_log_command(self) -> None:
+        """Handle 'ver log de arranque' chat command — show startup console log."""
+        try:
+            workspace = getattr(self.config, 'workspace_dir', None)
+            if workspace is None:
+                self._append_message('assistant', 'IABV', 'No se pudo determinar el directorio de trabajo.', 'startup-log: no workspace')
+                return
+
+            from pathlib import Path
+            log_path = Path(str(workspace)) / 'data' / 'logs' / 'startup_console.log'
+            if not log_path.exists():
+                self._append_message(
+                    'assistant', 'IABV',
+                    'No existe log de arranque todavia. Se genera automaticamente al iniciar con start_iabv.ps1.',
+                    'startup-log: not found',
+                )
+                return
+
+            content = log_path.read_text(encoding='utf-8', errors='replace')
+            lines = content.splitlines()
+
+            # Extract key info: warnings, errors, and last 30 lines
+            warnings = [l.strip() for l in lines if '[warn]' in l.lower()]
+            errors = [l.strip() for l in lines if '[err]' in l.lower() or ('error' in l.lower() and 'exit' in l.lower())]
+            tail = lines[-30:] if len(lines) > 30 else lines
+
+            parts: list[str] = []
+            parts.append(f'Log de arranque ({len(lines)} lineas):')
+            if errors:
+                parts.append(f'\nErrores ({len(errors)}):')
+                for e in errors[:5]:
+                    parts.append(f'  {e}')
+            if warnings:
+                parts.append(f'\nAdvertencias ({len(warnings)}):')
+                for w in warnings[:5]:
+                    parts.append(f'  {w}')
+            if not errors and not warnings:
+                parts.append('\nSin errores ni advertencias.')
+            parts.append(f'\nUltimas lineas:')
+            for t in tail[-15:]:
+                parts.append(f'  {t.strip()}')
+
+            self._append_message('assistant', 'IABV', '\n'.join(parts), 'startup-log: displayed')
+        except Exception as exc:
+            logger.warning('startup log command failed: %s', exc)
+            self._append_message('assistant', 'IABV', f'Error al leer log de arranque: {exc}', 'startup-log: failed')
+
     def _handle_decision_audit_command(self) -> None:
         """Show decision audit trail report in chat."""
         self._append_message(
@@ -6635,6 +6682,9 @@ class ControlCenterViewModel(QObject):
             return True
         if any(token in command for token in ('estas actualizado', 'estás actualizado', 'hay actualizaciones', 'hay updates', 'version actual', 'que version eres', 'qué version eres')):
             self._handle_update_check_command()
+            return True
+        if any(token in command for token in ('ver log de arranque', 'log de inicio', 'log startup', 'que paso al arrancar', 'qué paso al arrancar', 'mostrar log arranque')):
+            self._handle_startup_log_command()
             return True
         if self._is_self_code_analysis_request(command):
             self._run_self_code_analysis()
