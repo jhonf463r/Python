@@ -268,6 +268,18 @@ if ($StartUI) {
     # Tell the UI bootstrap NOT to auto-start MCP+tunnel -- this script
     # manages them externally.  Prevents port-8000 conflict (Errno 10048).
     $env:IABV_SKIP_MCP_AUTOSTART = '1'
+    # Ensure PYTHONPATH includes src/ so `python -m iabv_v15` resolves correctly.
+    # run_mcp_bridge.ps1 sets this for the MCP server, but the UI process needs
+    # it too — Start-Process inherits the parent env so we set it here.
+    $uiSrcPath = Join-Path $iabvRoot 'src'
+    if (-not $env:PYTHONPATH -or $env:PYTHONPATH -notlike "*$uiSrcPath*") {
+        if ($env:PYTHONPATH) {
+            $env:PYTHONPATH = "$uiSrcPath;$env:PYTHONPATH"
+        } else {
+            $env:PYTHONPATH = $uiSrcPath
+        }
+    }
+    $env:IABV_WORKSPACE_ROOT = $iabvRoot
     try {
         $pythonExe = 'python'
         if ($env:IABV_PYTHON) { $pythonExe = $env:IABV_PYTHON }
@@ -276,11 +288,14 @@ if ($StartUI) {
         # hides the console but PySide6/QML windows still render normally.
         # DO NOT add -RedirectStandardOutput/-RedirectStandardError — those
         # flags prevent PySide6 GUI windows from appearing on Windows.
+        # -WorkingDirectory ensures relative paths resolve correctly.
         $uiProc = Start-Process -FilePath $pythonExe `
             -ArgumentList '-m','iabv_v15','app' `
             -PassThru `
-            -WindowStyle Hidden
+            -WindowStyle Hidden `
+            -WorkingDirectory $iabvRoot
         Write-Info "  UI PID     : $($uiProc.Id)"
+        Write-Info "  PYTHONPATH : $env:PYTHONPATH"
     } catch {
         Write-Warn "[warn] No se pudo lanzar la UI con -StartUI: $_"
         Write-Warn "       El MCP sigue vivo. Podes lanzar la UI manual con:"
