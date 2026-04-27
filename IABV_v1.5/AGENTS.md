@@ -67,6 +67,14 @@ El sistema regula su profundidad de procesamiento segun la presion de recursos:
 - El `sync_pulse` integra conscientemente risk signals, propuestas y recomendaciones (funcion talamica)
 - El estado de presion se deposita en `context.metadata['resource_pressure']` para que downstream lo observe
 
+### Meta-Observacion Continua Y Conciencia Temporal
+El sistema se observa a si mismo en background y detecta anomalias temporales:
+- `_background_decision_review_findings()` en OSES lee `DecisionAuditTrail` y detecta: proveedores con tasa de exito baja, decisiones de baja confianza que fallan, y errores que se repiten sin correccion
+- `_temporal_awareness_findings()` en OSES detecta: anomalias de latencia (z-score > 2.0), regresion de latencia (runs cada vez mas lentos), y operaciones estancadas (> 5 min sin completar)
+- `_deep_analysis_queue_findings()` en OSES (solo bajo carga baja) ejecuta analisis estadistico diferido: EMA drift detection, fallos correlacionados entre proveedores, y outliers de latencia via IQR
+- `_record_task_timing()` y `_check_temporal_anomaly()` en Orchestrator registran el tiempo de cada tarea por intent_key y depositan `temporal_anomaly` en session metadata cuando z-score > 2.0
+- Estos mecanismos extienden servicios existentes (OSES, Orchestrator) sin crear nuevos servicios ni otro cerebro
+
 ### Sandbox Y Validacion
 - `SandboxExperimentService`: valida cambios o rutas candidatas sin tocar el sistema vivo
 - `AutonomousValidationCycleService`: revisa candidatos y promueve solo lo que tenga evidencia

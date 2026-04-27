@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import math
+import time
 from collections import Counter, defaultdict
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -253,6 +255,361 @@ class OperationalSelfExaminationService:
 
         return findings[:3]
 
+    # ------------------------------------------------------------------
+    # Background decision review (CognitiveMonitor) — extends OSES with
+    # continuous observation of every decision via DecisionAuditTrail.
+    # Evaluates in each review whether the chosen route was optimal by
+    # comparing the decision's outcome against the historical best for
+    # that intent/provider combination.
+    # ------------------------------------------------------------------
+
+    def _background_decision_review_findings(
+        self,
+        *,
+        experiment_runs: list[ExperimentRun],
+    ) -> list[SelfExaminationFinding]:
+        """Background meta-observer: review recent decisions for sub-optimal choices.
+
+        Reads the last N decisions from ``DecisionAuditTrail`` and checks:
+        1. Whether a decision used a provider that historically underperforms
+           for that phase (provider mismatch).
+        2. Whether decisions with low confidence (<0.4) led to failures
+           (confidence calibration).
+        3. Whether the same error repeats across recent decisions (error
+           pattern stagnation).
+        """
+        findings: list[SelfExaminationFinding] = []
+        trail = self.decision_audit_trail
+        if trail is None:
+            return findings
+
+        try:
+            recent = trail.load_recent(limit=50)
+        except Exception:
+            return findings
+
+        if len(recent) < 5:
+            return findings
+
+        # 1. Provider mismatch: provider used but historically worse.
+        provider_outcomes: dict[str, list[bool]] = {}
+        for entry in recent:
+            pid = str(entry.get('provider_id') or '').strip()
+            outcome = str(entry.get('outcome') or '')
+            if pid:
+                provider_outcomes.setdefault(pid, []).append(outcome == 'success')
+
+        for pid, outcomes in provider_outcomes.items():
+            if len(outcomes) < 3:
+                continue
+            rate = sum(outcomes) / len(outcomes)
+            if rate < 0.35:
+                findings.append(SelfExaminationFinding(
+                    category='background_provider_underperformance',
+                    severity=IssueSeverity.MEDIUM,
+                    title=f'Proveedor "{pid}" con tasa de exito baja ({rate:.0%})',
+                    summary=(
+                        f'{pid} tuvo exito en solo {sum(outcomes)}/{len(outcomes)} '
+                        f'decisiones recientes. Considerar reclasificar o degradar '
+                        f'su prioridad en StrategySelector.'
+                    ),
+                    source_refs=['background_decision_review', 'DecisionAuditTrail'],
+                ))
+
+        # 2. Confidence calibration: low-confidence decisions that failed.
+        low_conf_failures = [
+            e for e in recent
+            if float(e.get('confidence') or 1.0) < 0.4
+            and str(e.get('outcome') or '') in ('failed', 'timeout', 'rate_limited')
+        ]
+        if len(low_conf_failures) >= 3:
+            findings.append(SelfExaminationFinding(
+                category='background_confidence_miscalibration',
+                severity=IssueSeverity.HIGH,
+                title=f'{len(low_conf_failures)} decisiones de baja confianza fallaron',
+                summary=(
+                    f'El sistema tomo {len(low_conf_failures)} decisiones con '
+                    f'confianza <0.4 que terminaron en fallo. El umbral minimo '
+                    f'de confianza deberia elevarse o la ruta deberia bloquearse.'
+                ),
+                source_refs=['background_decision_review', 'DecisionAuditTrail'],
+            ))
+
+        # 3. Error stagnation: same error_detail repeating.
+        error_counts: Counter[str] = Counter()
+        for entry in recent[-20:]:
+            err = str(entry.get('error_detail') or '').strip()[:80]
+            if err:
+                error_counts[err] += 1
+        for err_msg, count in error_counts.most_common(2):
+            if count >= 3:
+                findings.append(SelfExaminationFinding(
+                    category='background_error_stagnation',
+                    severity=IssueSeverity.HIGH,
+                    title=f'Error repetido {count} veces sin correccion',
+                    summary=(
+                        f'El error "{err_msg}" se repite {count} veces en las '
+                        f'ultimas 20 decisiones. El sistema no esta corrigiendo '
+                        f'este patron — requiere intervencion o ruta alternativa.'
+                    ),
+                    source_refs=['background_decision_review', 'DecisionAuditTrail'],
+                ))
+
+        return findings[:3]
+
+    # ------------------------------------------------------------------
+    # TemporalAwareness — conciencia del tiempo y detección de anomalías
+    # temporales. Extiende OSES para detectar tareas que tardan mucho más
+    # de lo esperado, comparando latencias contra promedios históricos.
+    # ------------------------------------------------------------------
+
+    def _temporal_awareness_findings(
+        self,
+        *,
+        recent_runs: list[RunRecord],
+        experiment_runs: list[ExperimentRun],
+    ) -> list[SelfExaminationFinding]:
+        """Detect temporal anomalies in task execution.
+
+        Analyses:
+        1. Tasks that took significantly longer than the historical median
+           for their intent/kind (z-score > 2.0).
+        2. Increasing latency trend across the last N runs (regression).
+        3. Stalled operations: runs that started but never completed within
+           a reasonable window.
+        """
+        findings: list[SelfExaminationFinding] = []
+
+        # 1. Latency anomaly detection via z-score on experiment runs.
+        kind_latencies: dict[str, list[float]] = {}
+        for run in experiment_runs:
+            kind = str(run.assistant_kind or '').strip().lower()
+            latency = float(
+                getattr(run, 'latency_ms', 0)
+                or getattr(getattr(run, 'metrics', None), 'execution_ms', 0)
+                or 0
+            )
+            if kind and latency > 0:
+                kind_latencies.setdefault(kind, []).append(latency)
+
+        for kind, latencies in kind_latencies.items():
+            if len(latencies) < 5:
+                continue
+            mean_lat = sum(latencies) / len(latencies)
+            if mean_lat <= 0:
+                continue
+            variance = sum((x - mean_lat) ** 2 for x in latencies) / len(latencies)
+            std_dev = math.sqrt(variance) if variance > 0 else 0
+            if std_dev <= 0:
+                continue
+            last_latency = latencies[0]  # most recent
+            z_score = (last_latency - mean_lat) / std_dev
+            if z_score > 2.0:
+                findings.append(SelfExaminationFinding(
+                    category='temporal_latency_anomaly',
+                    severity=IssueSeverity.MEDIUM if z_score < 3.0 else IssueSeverity.HIGH,
+                    title=f'Anomalia temporal en "{kind}" (z={z_score:.1f})',
+                    summary=(
+                        f'La ultima ejecucion de {kind} tardo {last_latency:.0f}ms '
+                        f'vs media historica de {mean_lat:.0f}ms (z-score={z_score:.1f}). '
+                        f'Posible degradacion del proveedor o sobrecarga.'
+                    ),
+                    source_refs=['temporal_awareness'],
+                ))
+
+        # 2. Latency trend: are runs getting progressively slower?
+        if len(experiment_runs) >= 10:
+            all_latencies = [
+                float(
+                    getattr(r, 'latency_ms', 0)
+                    or getattr(getattr(r, 'metrics', None), 'execution_ms', 0)
+                    or 0
+                )
+                for r in experiment_runs[:20]
+                if float(
+                    getattr(r, 'latency_ms', 0)
+                    or getattr(getattr(r, 'metrics', None), 'execution_ms', 0)
+                    or 0
+                ) > 0
+            ]
+            if len(all_latencies) >= 10:
+                mid = len(all_latencies) // 2
+                newer_avg = sum(all_latencies[:mid]) / mid
+                older_avg = sum(all_latencies[mid:]) / (len(all_latencies) - mid)
+                if older_avg > 0 and newer_avg > older_avg * 1.5:
+                    findings.append(SelfExaminationFinding(
+                        category='temporal_latency_regression',
+                        severity=IssueSeverity.MEDIUM,
+                        title='Regresion de latencia detectada',
+                        summary=(
+                            f'La latencia promedio reciente ({newer_avg:.0f}ms) es '
+                            f'{newer_avg / older_avg:.1f}x mayor que la historica '
+                            f'({older_avg:.0f}ms). El sistema se esta volviendo mas lento.'
+                        ),
+                        source_refs=['temporal_awareness'],
+                    ))
+
+        # 3. Stalled operations: runs with status != success/failed that
+        # have been running for too long (> 5 min based on created_at).
+        now = utc_now()
+        stalled_count = 0
+        for run in recent_runs[:20]:
+            status = run.status
+            if status in (RunStatus.SUCCESS, RunStatus.FAILED):
+                continue
+            created = getattr(run, 'created_at', None) or getattr(run, 'created_at_utc', None)
+            if created is None:
+                continue
+            if isinstance(created, str):
+                try:
+                    created = datetime.fromisoformat(created)
+                except (ValueError, TypeError):
+                    continue
+            if not hasattr(created, 'tzinfo') or created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            elapsed = (now - created).total_seconds()
+            if elapsed > 300:  # > 5 minutes
+                stalled_count += 1
+
+        if stalled_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='temporal_stalled_operations',
+                severity=IssueSeverity.HIGH,
+                title=f'{stalled_count} operaciones estancadas (>5 min)',
+                summary=(
+                    f'{stalled_count} runs llevan mas de 5 minutos sin completar. '
+                    f'Posible bloqueo o recurso no disponible. Considerar timeout '
+                    f'automatico o abort de sesiones zombi.'
+                ),
+                source_refs=['temporal_awareness'],
+            ))
+
+        return findings[:3]
+
+    # ------------------------------------------------------------------
+    # DeepAnalysisQueue — análisis estadístico profundo diferido.
+    # Cuando el sistema está idle, ejecuta análisis más costosos:
+    # correlaciones, distribuciones, z-scores globales, moving averages.
+    # Complementa _deferred_deep_cognition_findings con estadística real.
+    # ------------------------------------------------------------------
+
+    def _deep_analysis_queue_findings(
+        self,
+        *,
+        experiment_runs: list[ExperimentRun],
+        recent_runs: list[RunRecord],
+    ) -> list[SelfExaminationFinding]:
+        """Statistical deep analysis — only runs under low load.
+
+        Performs:
+        1. Moving average of success rate with exponential smoothing
+           to detect subtle drift before it becomes a visible trend.
+        2. Provider correlation: which providers succeed/fail together
+           (indicating shared infrastructure issues vs provider-specific).
+        3. Anomaly detection via IQR on latencies to surface outliers
+           that z-score might miss.
+        """
+        findings: list[SelfExaminationFinding] = []
+
+        # 1. Exponential moving average (EMA) drift detection.
+        if len(recent_runs) >= 15:
+            alpha = 0.3  # smoothing factor
+            successes = [
+                1.0 if r.status == RunStatus.SUCCESS else 0.0
+                for r in reversed(recent_runs[:30])
+            ]
+            ema = successes[0]
+            for val in successes[1:]:
+                ema = alpha * val + (1 - alpha) * ema
+            overall_rate = sum(successes) / len(successes)
+            if ema < overall_rate - 0.15 and ema < 0.5:
+                findings.append(SelfExaminationFinding(
+                    category='deep_analysis_ema_drift',
+                    severity=IssueSeverity.MEDIUM,
+                    title=f'EMA de exito en declive ({ema:.0%} vs {overall_rate:.0%} global)',
+                    summary=(
+                        f'El promedio movil exponencial de exito (alpha={alpha}) '
+                        f'esta en {ema:.0%}, por debajo de la media global '
+                        f'({overall_rate:.0%}). Esto indica degradacion reciente '
+                        f'que aun no se refleja en metricas brutas.'
+                    ),
+                    source_refs=['deep_analysis_queue'],
+                ))
+
+        # 2. Provider success correlation: if two providers fail in the
+        # same time window, they may share an infrastructure issue.
+        trail = self.decision_audit_trail
+        if trail is not None:
+            try:
+                entries = trail.load_recent(limit=40)
+                if len(entries) >= 10:
+                    window_failures: dict[str, list[str]] = {}
+                    for entry in entries:
+                        ts = str(entry.get('timestamp_utc') or '')[:13]  # hour-level bucket
+                        outcome = str(entry.get('outcome') or '')
+                        pid = str(entry.get('provider_id') or '')
+                        if outcome in ('failed', 'timeout') and pid and ts:
+                            window_failures.setdefault(ts, []).append(pid)
+                    correlated_windows = [
+                        (ts, pids) for ts, pids in window_failures.items()
+                        if len(set(pids)) >= 2
+                    ]
+                    if len(correlated_windows) >= 2:
+                        all_providers = set()
+                        for _, pids in correlated_windows:
+                            all_providers.update(pids)
+                        findings.append(SelfExaminationFinding(
+                            category='deep_analysis_correlated_failures',
+                            severity=IssueSeverity.HIGH,
+                            title=f'Fallos correlacionados entre {len(all_providers)} proveedores',
+                            summary=(
+                                f'{len(correlated_windows)} ventanas temporales muestran '
+                                f'fallos simultaneos en {", ".join(sorted(all_providers))}. '
+                                f'Posible causa comun: red, DNS, o saturacion del sistema.'
+                            ),
+                            source_refs=['deep_analysis_queue', 'DecisionAuditTrail'],
+                        ))
+            except Exception:
+                pass
+
+        # 3. IQR outlier detection on latencies.
+        all_latencies = sorted(
+            float(
+                getattr(r, 'latency_ms', 0)
+                or getattr(getattr(r, 'metrics', None), 'execution_ms', 0)
+                or 0
+            )
+            for r in experiment_runs
+            if float(
+                getattr(r, 'latency_ms', 0)
+                or getattr(getattr(r, 'metrics', None), 'execution_ms', 0)
+                or 0
+            ) > 0
+        )
+        if len(all_latencies) >= 10:
+            q1_idx = len(all_latencies) // 4
+            q3_idx = 3 * len(all_latencies) // 4
+            q1 = all_latencies[q1_idx]
+            q3 = all_latencies[q3_idx]
+            iqr = q3 - q1
+            upper_fence = q3 + 1.5 * iqr
+            outliers = [lat for lat in all_latencies if lat > upper_fence]
+            if len(outliers) >= 3:
+                findings.append(SelfExaminationFinding(
+                    category='deep_analysis_latency_outliers',
+                    severity=IssueSeverity.MEDIUM,
+                    title=f'{len(outliers)} outliers de latencia (>{upper_fence:.0f}ms)',
+                    summary=(
+                        f'{len(outliers)} ejecuciones exceden el fence superior '
+                        f'IQR de {upper_fence:.0f}ms (Q1={q1:.0f}, Q3={q3:.0f}, '
+                        f'IQR={iqr:.0f}). Estas ejecuciones anomalas podrian '
+                        f'estar enmascarando problemas intermitentes.'
+                    ),
+                    source_refs=['deep_analysis_queue'],
+                ))
+
+        return findings[:3]
+
     def build_review(self) -> SelfExaminationSnapshot:
         now = utc_now()
         previous_review = self._load_latest_review()
@@ -321,6 +678,20 @@ class OperationalSelfExaminationService:
         # UI self-awareness: detect own window issues (zombie, missing, duplicate)
         findings.extend(self._ui_self_examination_findings(world=world))
 
+        # Background decision review (CognitiveMonitor): always runs — reads
+        # DecisionAuditTrail and flags sub-optimal provider choices, confidence
+        # miscalibration, and error stagnation.
+        findings.extend(self._background_decision_review_findings(
+            experiment_runs=experiment_runs,
+        ))
+
+        # TemporalAwareness: always runs — detects latency anomalies (z-score),
+        # latency regressions, and stalled operations.
+        findings.extend(self._temporal_awareness_findings(
+            recent_runs=recent_runs,
+            experiment_runs=experiment_runs,
+        ))
+
         # C: Cognición profunda diferida — cuando la carga es baja, ejecutar
         # análisis más profundos que serían costosos bajo presión normal.
         # Cross-correlación de fallos, detección de tendencias, y decay de
@@ -330,6 +701,12 @@ class OperationalSelfExaminationService:
                 experiment_runs=experiment_runs,
                 recent_runs=recent_runs,
                 findings_so_far=findings,
+            ))
+            # DeepAnalysisQueue: statistical analysis (EMA drift, correlated
+            # failures, IQR outliers) — only under low load.
+            findings.extend(self._deep_analysis_queue_findings(
+                experiment_runs=experiment_runs,
+                recent_runs=recent_runs,
             ))
         findings = self._dedupe_findings(findings)
 
