@@ -3783,6 +3783,77 @@ class ControlCenterViewModel(QObject):
         self._working = True
         threading.Thread(target=_worker, daemon=True).start()
 
+    def _handle_update_check_command(self) -> None:
+        """Handle 'estás actualizado?' / 'hay actualizaciones?' chat commands."""
+        self._append_message(
+            'assistant', 'IABV',
+            'Verificando actualizaciones...',
+            'update-check: fetching',
+        )
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+
+        def _worker() -> None:
+            import subprocess as _sp
+            try:
+                workspace = getattr(self.config, 'workspace_dir', None)
+                cwd = str(workspace) if workspace else None
+
+                # Get current commit
+                r = _sp.run(['git', 'rev-parse', '--short', 'HEAD'],
+                            capture_output=True, text=True, timeout=10, cwd=cwd)
+                current = r.stdout.strip() if r.returncode == 0 else '?'
+
+                # Get current branch
+                r = _sp.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                            capture_output=True, text=True, timeout=10, cwd=cwd)
+                branch = r.stdout.strip() if r.returncode == 0 else '?'
+
+                # Fetch without modifying anything
+                r = _sp.run(['git', 'fetch', 'origin', 'main', '--dry-run'],
+                            capture_output=True, text=True, timeout=30, cwd=cwd)
+                has_updates = bool(r.stdout.strip() or r.stderr.strip())
+
+                # Count commits behind
+                behind = 0
+                if has_updates:
+                    r = _sp.run(['git', 'rev-list', '--count', 'HEAD..origin/main'],
+                                capture_output=True, text=True, timeout=10, cwd=cwd)
+                    try:
+                        behind = int(r.stdout.strip()) if r.returncode == 0 else 0
+                    except ValueError:
+                        behind = 0
+
+                lines: list[str] = []
+                lines.append(f'Version actual: commit {current} (rama {branch})')
+                if behind > 0:
+                    lines.append(f'Hay {behind} commit(s) nuevos en origin/main.')
+                    lines.append('Para actualizar: git pull --rebase=false')
+                    lines.append('O reinicia con start_iabv.ps1 (auto-pull por defecto).')
+                else:
+                    lines.append('Estas al dia — no hay actualizaciones pendientes.')
+
+                self._append_message('assistant', 'IABV', '\n'.join(lines), 'update-check: complete')
+            except Exception as exc:
+                logger.warning('update check failed: %s', exc)
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Error al verificar actualizaciones: {exc}',
+                    'update-check: failed',
+                )
+            finally:
+                self._working = False
+                self._set_live_status('idle')
+                try:
+                    self.dataChanged.emit()
+                except Exception:
+                    pass
+
+        self._working = True
+        threading.Thread(target=_worker, daemon=True).start()
+
     def _handle_decision_audit_command(self) -> None:
         """Show decision audit trail report in chat."""
         self._append_message(
@@ -6561,6 +6632,9 @@ class ControlCenterViewModel(QObject):
             return True
         if any(token in command for token in ('liberar ram', 'libera ram', 'liberar recursos', 'libera recursos', 'optimizar memoria', 'optimiza memoria', 'cerrar programas innecesarios')):
             self._handle_resource_liberation_command()
+            return True
+        if any(token in command for token in ('estas actualizado', 'estás actualizado', 'hay actualizaciones', 'hay updates', 'version actual', 'que version eres', 'qué version eres')):
+            self._handle_update_check_command()
             return True
         if self._is_self_code_analysis_request(command):
             self._run_self_code_analysis()

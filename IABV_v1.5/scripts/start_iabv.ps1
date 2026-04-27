@@ -121,6 +121,31 @@ if ($AutoPull) {
             } finally {
                 $env:PYTHONPATH = $prevPy
             }
+
+            # Auto-restart detection: if critical files changed, relaunch
+            $criticalPatterns = @('bootstrap.py', 'control_center_viewmodel.py',
+                                  'adaptive_task_orchestrator.py', 'models.py',
+                                  'start_iabv.ps1')
+            $changedFiles = @()
+            try {
+                $changedFiles = (& git -C $repoRoot diff --name-only $oldSha $newSha 2>$null) -split "`n" | Where-Object { $_ }
+            } catch {}
+            $criticalChanged = $changedFiles | Where-Object {
+                $file = $_
+                ($criticalPatterns | Where-Object { $file -like "*$_" }).Count -gt 0
+            }
+            if ($criticalChanged) {
+                Write-Warn "[auto-pull] Archivos criticos cambiaron:"
+                foreach ($cf in $criticalChanged) { Write-Warn "  - $cf" }
+                Write-Warn "[auto-pull] Relanzando el proceso para cargar los cambios..."
+                # Re-invoke ourselves with -NoAutoPull to avoid infinite loop
+                $relaunchArgs = @('-ExecutionPolicy', 'Bypass', '-File', $MyInvocation.MyCommand.Path)
+                if ($StartUI)  { $relaunchArgs += '-StartUI' }
+                if ($Quiet)    { $relaunchArgs += '-Quiet' }
+                $relaunchArgs += '-NoAutoPull'
+                Start-Process powershell.exe -ArgumentList $relaunchArgs -WindowStyle Normal
+                exit 0
+            }
         } else {
             Write-Info "Sin cambios nuevos (HEAD ya estaba actualizado)."
         }
