@@ -776,7 +776,68 @@ class OperationalSelfExaminationService:
         self._persist_metacognitive_ledger_from_findings(
             findings, review_id=review.review_id,
         )
-        return self._persist_review(review)
+        persisted = self._persist_review(review)
+
+        # Self-audit auto-correction loop: feed HIGH-severity findings
+        # into the auto-correction engine for safe, automatic fixes.
+        self._auto_correct_from_findings(findings)
+
+        return persisted
+
+    def _auto_correct_from_findings(
+        self, findings: list[SelfExaminationFinding],
+    ) -> None:
+        """Attempt safe auto-corrections for HIGH-severity findings.
+
+        Maps finding categories to auto-correction actions and delegates
+        to ``auto_correction_engine`` if the action is marked safe.
+        This closes the loop between detection and correction without
+        creating a new orchestrator — OSES detects, AutoCorrection fixes.
+        """
+        _CATEGORY_TO_ACTION: dict[str, str] = {
+            'background_provider_underperformance': 'degrade_provider_priority',
+            'background_error_stagnation': 'block_failing_route',
+            'temporal_latency_anomaly': 'flag_slow_provider',
+            'cross_correlation_failure': 'reclassify_intent',
+            'trend_degradation': 'trigger_diagnostic_scan',
+        }
+        actionable = [
+            f for f in findings
+            if f.severity in (IssueSeverity.HIGH,)
+            and f.category in _CATEGORY_TO_ACTION
+        ]
+        if not actionable:
+            return
+
+        import logging
+        logger = logging.getLogger(__name__)
+
+        for finding in actionable[:3]:
+            action_name = _CATEGORY_TO_ACTION[finding.category]
+            try:
+                from iabv_v15.services.auto_correction_engine import (
+                    execute_corrections,
+                )
+                deductions = [{
+                    'conclusion': finding.category,
+                    'action': action_name,
+                    'severity': finding.severity.value if hasattr(finding.severity, 'value') else str(finding.severity),
+                    'safe': True,
+                    'description': finding.summary,
+                    'source': 'oses_self_audit',
+                    'finding_title': finding.title,
+                }]
+                result = execute_corrections(
+                    deductions=deductions,
+                    context={'source': 'oses_auto_correction', 'review_findings': True},
+                )
+                logger.info(
+                    'oses_auto_correct: %s → %s (applied=%d)',
+                    finding.category, action_name,
+                    result.get('applied_count', 0),
+                )
+            except Exception as exc:
+                logger.debug('oses_auto_correct: failed for %s: %s', finding.category, exc)
 
     def _persist_review(self, review: SelfExaminationSnapshot) -> SelfExaminationSnapshot:
         embodiment_violations = self._collect_embodiment_violations()

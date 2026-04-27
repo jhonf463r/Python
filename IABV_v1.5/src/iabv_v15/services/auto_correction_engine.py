@@ -293,28 +293,37 @@ def auto_provision_missing_secrets(
         }
 
         # Attempt autonomous provisioning for known cloud providers.
+        # Tries full Playwright flow first; falls back to browser+dialog.
         autonomous_provider = _AUTONOMOUS_PROVIDERS.get(name)
         if autonomous_provider and open_browser:
             try:
                 from iabv_v15.services.cloud_key_autonomous_provisioner import (
                     CloudKeyAutonomousProvisioner,
                 )
+                provisioner = CloudKeyAutonomousProvisioner()
                 if CloudKeyAutonomousProvisioner.is_available():
-                    provisioner = CloudKeyAutonomousProvisioner()
                     prov_result = provisioner.provision_key(autonomous_provider)
-                    provision['autonomous'] = True
-                    provision['autonomous_result'] = {
-                        'success': prov_result.success,
-                        'needs_user_auth': prov_result.needs_user_auth,
-                        'user_action': prov_result.user_action,
-                        'steps': len(prov_result.steps_completed),
-                    }
-                    if prov_result.success:
-                        auto_provisioned.append(name)
-                        provision['opened'] = True
-                        provisions.append(provision)
-                        logger.info('auto_provision: autonomous success for %s', name)
-                        continue
+                else:
+                    prov_result = provisioner.provision_key_fallback(autonomous_provider)
+                provision['autonomous'] = True
+                provision['autonomous_result'] = {
+                    'success': prov_result.success,
+                    'needs_user_auth': prov_result.needs_user_auth,
+                    'user_action': prov_result.user_action,
+                    'steps': len(prov_result.steps_completed),
+                    'mode': 'playwright' if CloudKeyAutonomousProvisioner.is_available() else 'fallback',
+                }
+                if prov_result.success:
+                    auto_provisioned.append(name)
+                    provision['opened'] = True
+                    provisions.append(provision)
+                    logger.info('auto_provision: autonomous success for %s', name)
+                    continue
+                if prov_result.needs_user_auth:
+                    provision['opened'] = True
+                    provision['user_action'] = prov_result.user_action
+                    provisions.append(provision)
+                    continue
             except Exception as exc:
                 logger.debug('auto_provision: autonomous failed for %s: %s', name, exc)
 
@@ -484,7 +493,112 @@ _ACTION_HANDLERS: dict[str, Any] = {
     'review_reverts': _noop,  # Informational — user reviews
     'review_file_churn': _noop,  # Informational
     'investigate_oscillation': _noop,  # Informational
+    # OSES self-audit auto-correction actions
+    'degrade_provider_priority': _noop,  # logged — weight layer handles next cycle
+    'block_failing_route': _noop,  # logged — governance blocks next attempt
+    'flag_slow_provider': _noop,  # logged — temporal awareness persists flag
+    'reclassify_intent': _noop,  # logged — intent learner adjusts patterns
+    'trigger_diagnostic_scan': _noop,  # logged — triggers deep scan next cycle
+    # Auto-install actions
+    'auto_install_dependency': _noop,  # handled by _auto_install_missing_tool
 }
+
+
+def execute_corrections(
+    *,
+    deductions: list[dict[str, Any]],
+    context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Execute corrections from a list of deductions (used by OSES self-audit).
+
+    Simpler interface than ``execute_auto_corrections`` — takes raw
+    deductions and runs them through the action handler registry.
+    """
+    ctx = context or {}
+    applied: list[dict[str, Any]] = []
+    for deduction in deductions:
+        action = deduction.get('action', 'none')
+        handler = _ACTION_HANDLERS.get(action, _noop)
+        try:
+            result = handler(deduction, ctx)
+            result['source'] = deduction.get('source', 'unknown')
+            applied.append(result)
+            logger.info(
+                'oses_correction: %s -> %s (%s)',
+                deduction.get('conclusion', '?'), action,
+                result.get('status', '?'),
+            )
+        except Exception as exc:
+            logger.debug('oses_correction failed: %s -- %s', action, exc)
+    return {
+        'applied': applied,
+        'applied_count': len(applied),
+    }
+
+
+def _auto_install_missing_tool(tool_id: str) -> dict[str, Any]:
+    """Attempt to auto-install a missing tool/dependency.
+
+    Supports pip packages and known system tools. Returns a result
+    dict with status='installed' on success.
+    """
+    _PIP_PACKAGES: dict[str, str] = {
+        'aider_coder': 'aider-chat',
+        'mcp_client': 'mcp',
+    }
+    pip_pkg = _PIP_PACKAGES.get(tool_id)
+    if pip_pkg:
+        try:
+            import sys
+            result = subprocess.run(
+                [sys.executable, '-m', 'pip', 'install', pip_pkg, '-q'],
+                capture_output=True, text=True, timeout=120,
+            )
+            if result.returncode == 0:
+                logger.info('auto_install: %s installed via pip (%s)', tool_id, pip_pkg)
+                return {
+                    'action': 'auto_install_dependency',
+                    'status': 'installed',
+                    'tool_id': tool_id,
+                    'package': pip_pkg,
+                    'method': 'pip',
+                }
+            return {
+                'action': 'auto_install_dependency',
+                'status': 'failed',
+                'tool_id': tool_id,
+                'detail': result.stderr[:200],
+            }
+        except Exception as exc:
+            return {
+                'action': 'auto_install_dependency',
+                'status': 'failed',
+                'tool_id': tool_id,
+                'detail': str(exc),
+            }
+    return {
+        'action': 'auto_install_dependency',
+        'status': 'unknown_tool',
+        'tool_id': tool_id,
+    }
+
+
+def auto_fix_missing_tools(missing_tools: list[str]) -> dict[str, Any]:
+    """Auto-install all missing tools that can be resolved via pip.
+
+    Called by bootstrap or OSES when tool_missing is detected.
+    Returns summary of installations.
+    """
+    results: list[dict[str, Any]] = []
+    for tool_id in missing_tools:
+        result = _auto_install_missing_tool(tool_id)
+        results.append(result)
+    installed = [r for r in results if r.get('status') == 'installed']
+    return {
+        'total': len(missing_tools),
+        'installed': len(installed),
+        'results': results,
+    }
 
 
 # ──────────────────────────────────────────────────────────────

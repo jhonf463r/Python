@@ -1309,6 +1309,29 @@ class AppBootstrap:
             ', '.join(sorted(ready)),
             f' | missing=[{", ".join(sorted(missing))}]' if missing else '',
         )
+
+        # Auto-install missing pip-installable tools (AGENTS.md: user
+        # should never install tools manually).
+        if missing:
+            try:
+                from iabv_v15.services.auto_correction_engine import auto_fix_missing_tools
+                install_result = auto_fix_missing_tools(missing)
+                installed_count = install_result.get('installed', 0)
+                if installed_count:
+                    logger.info(
+                        'auto_install: %d/%d tools installed automatically',
+                        installed_count, len(missing),
+                    )
+                    # Re-check availability for installed tools
+                    for r in install_result.get('results', []):
+                        if r.get('status') == 'installed':
+                            tid = r.get('tool_id', '')
+                            if tid in missing:
+                                missing.remove(tid)
+                                ready.append(tid)
+            except Exception as exc:
+                logger.debug('auto_install: failed — %s', exc)
+
         self._startup_self_examination()
 
     def _startup_self_examination(self) -> None:

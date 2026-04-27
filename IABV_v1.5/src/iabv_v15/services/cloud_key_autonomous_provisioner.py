@@ -233,7 +233,13 @@ class CloudKeyAutonomousProvisioner:
 
     @staticmethod
     def is_available() -> bool:
+        """Full Playwright-based provisioning is available."""
         return sync_playwright is not None
+
+    @staticmethod
+    def is_fallback_available() -> bool:
+        """Lightweight fallback (webbrowser + UI dialog) is always available."""
+        return True
 
     def scan_provider_page(
         self,
@@ -593,6 +599,65 @@ class CloudKeyAutonomousProvisioner:
             logger.info('cloud_provisioner: saved page learning for %s → %s', provider, learning_file)
         except Exception as exc:
             logger.debug('cloud_provisioner: could not save learning: %s', exc)
+
+    def provision_key_fallback(
+        self,
+        provider: str,
+        *,
+        save_to_profile: bool = True,
+    ) -> ProvisioningResult:
+        """Fallback provisioning when Playwright is not available.
+
+        Opens the provider page in the default browser and returns a
+        result with ``needs_user_auth=True`` and clear instructions.
+        The UI dialog will accept the key from the user and call
+        ``save_secret_to_profile`` to persist it.
+
+        This implements the AGENTS.md principle: user never opens
+        PowerShell — IABV opens the browser and accepts the key
+        via its own dialog.
+        """
+        knowledge = _PROVIDER_KNOWLEDGE.get(provider)
+        if not knowledge:
+            return ProvisioningResult(
+                provider=provider, env_key='', success=False,
+                error=f'Unknown provider: {provider}',
+            )
+
+        env_key = knowledge['env_key']
+        start_url = knowledge['start_url']
+        result = ProvisioningResult(
+            provider=provider, env_key=env_key, success=False,
+        )
+
+        # Open browser to provider page
+        opened = False
+        try:
+            import webbrowser
+            webbrowser.open(start_url)
+            opened = True
+            logger.info('cloud_provisioner_fallback: opened %s for %s', start_url, provider)
+        except Exception as exc:
+            logger.debug('cloud_provisioner_fallback: browser open failed: %s', exc)
+
+        result.steps_completed.append(ProvisioningStep(
+            action='open_browser',
+            target=start_url,
+            description=f'Opened provider page in browser (fallback mode)',
+            completed=opened,
+            result='browser_opened' if opened else 'browser_failed',
+        ))
+
+        result.needs_user_auth = True
+        prefix = knowledge.get('key_prefix', '')
+        prefix_hint = f' (empieza con {prefix})' if prefix else ''
+        result.user_action = (
+            f'IABV abrio {start_url} en tu browser. '
+            f'Crea una API key{prefix_hint} y pegala en el dialogo de IABV. '
+            f'IABV la guardara automaticamente.'
+        )
+
+        return result
 
     @staticmethod
     def get_provider_knowledge() -> dict[str, dict[str, Any]]:
