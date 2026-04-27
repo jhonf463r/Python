@@ -172,6 +172,10 @@ class AdaptiveTaskOrchestrator:
         self.control_master_digest_builder: Any | None = None
         self.self_examination_service: Any | None = None
         self.validation_cycle_service: Any | None = None
+        # TemporalAwareness: track task timing for anomaly detection.
+        # Maps intent_key -> list of elapsed_seconds (most recent first).
+        self._task_timing_history: dict[str, list[float]] = {}
+        self._TIMING_HISTORY_MAX = 30
 
     def _maybe_synaptic_decision(self, intent: TaskIntent | None) -> SynapticRoutingDecision | None:
         """Consulta ``SynapticRouter.decide`` si el intent es external-worthy.
@@ -510,6 +514,49 @@ class AdaptiveTaskOrchestrator:
         except Exception:
             pass
         return result
+
+    # ------------------------------------------------------------------
+    # TemporalAwareness: track and detect task timing anomalies
+    # ------------------------------------------------------------------
+
+    def _record_task_timing(self, intent_key: str, elapsed_seconds: float) -> None:
+        """Record elapsed time for a task intent, keeping a bounded history."""
+        history = self._task_timing_history.setdefault(intent_key, [])
+        history.insert(0, elapsed_seconds)
+        if len(history) > self._TIMING_HISTORY_MAX:
+            del history[self._TIMING_HISTORY_MAX:]
+
+    def _check_temporal_anomaly(self, intent_key: str, elapsed_seconds: float) -> dict[str, Any] | None:
+        """Check if the current task duration is anomalous vs history.
+
+        Returns a dict with anomaly details if z-score > 2.0, else None.
+        """
+        history = self._task_timing_history.get(intent_key) or []
+        if len(history) < 4:
+            return None
+        import math
+        mean_t = sum(history) / len(history)
+        if mean_t <= 0:
+            return None
+        variance = sum((x - mean_t) ** 2 for x in history) / len(history)
+        std_dev = math.sqrt(variance) if variance > 0 else 0
+        if std_dev <= 0:
+            return None
+        z_score = (elapsed_seconds - mean_t) / std_dev
+        if z_score > 2.0:
+            return {
+                'intent_key': intent_key,
+                'elapsed_seconds': round(elapsed_seconds, 2),
+                'mean_seconds': round(mean_t, 2),
+                'std_dev': round(std_dev, 2),
+                'z_score': round(z_score, 2),
+                'anomaly': True,
+                'recommendation': (
+                    'slow_task_detected' if z_score < 3.0
+                    else 'possible_stall_detected'
+                ),
+            }
+        return None
 
     # ------------------------------------------------------------------
     # B: Leer sync_pulse del ciclo de validación para inyectar en el flujo
@@ -1055,6 +1102,8 @@ class AdaptiveTaskOrchestrator:
         return perception.decision_context
 
     def handle_request(self, request: InferenceRequest) -> tuple[RoleRoute, InferenceResult, AdaptiveSession]:
+        import time as _time
+        _t0 = _time.monotonic()
         # ETAPA 2: Clasificación semántica mejorada con IntentSchema
         intent, intent_schema = self.intent_service.classify_with_schema(
             request.user_goal,
@@ -1211,9 +1260,23 @@ class AdaptiveTaskOrchestrator:
         decision_context = DecisionContext.model_validate(
             session.metadata.get('decision_context') or session.context.metadata.get('decision_context') or {}
         )
+
+        # TemporalAwareness: compute timing and inject anomaly BEFORE
+        # persistence so the temporal_anomaly key is saved with the session.
+        _elapsed = _time.monotonic() - _t0
+        _intent_key = str(getattr(intent, 'intent_key', '') or '')
+        if _intent_key:
+            anomaly = self._check_temporal_anomaly(_intent_key, _elapsed)
+            self._record_task_timing(_intent_key, _elapsed)
+            if anomaly is not None:
+                meta = dict(session.metadata or {})
+                meta['temporal_anomaly'] = anomaly
+                session.metadata = meta
+
         saved_session = self.task_outcome_recorder.record(session)
         route = self._build_route(saved_session, decision_context)
         result = self._build_result(request=request, session=saved_session, pack=pack, route=route)
+
         return route, result, saved_session
 
     def govern_adaptive_payload(self, adaptive_payload: dict[str, Any], *, user_goal: str, source: str) -> dict[str, Any]:
