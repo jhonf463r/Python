@@ -62,13 +62,31 @@ if ($NoAutoPull) {
 
 $ErrorActionPreference = 'Stop'
 
+# --- Paths used throughout ---
+$iabvRoot   = Split-Path -Parent $PSScriptRoot
+$logsDir    = Join-Path (Join-Path $iabvRoot 'data') 'logs'
+if (-not (Test-Path $logsDir)) { New-Item -ItemType Directory -Path $logsDir -Force | Out-Null }
+
+# --- Single-instance guard ---------------------------------------------------
+# Prevents zombie processes when the user double-clicks the shortcut rapidly.
+# A lock file with a 45-second TTL ensures only one start_iabv.ps1 runs at a time.
+$lockFile = Join-Path $logsDir 'iabv_start.lock'
+if (Test-Path $lockFile) {
+    $lockAge = (Get-Date) - (Get-Item $lockFile).LastWriteTime
+    if ($lockAge.TotalSeconds -lt 45) {
+        # Another instance is already starting — exit silently
+        exit 0
+    }
+}
+Set-Content -Path $lockFile -Value "$PID $(Get-Date -Format o)" -Force
+# Clean up the lock when this script exits (normal or error)
+trap { Remove-Item -Path $lockFile -Force -ErrorAction SilentlyContinue }
+# ---------------------------------------------------------------------------
+
 # --- Console log capture ---------------------------------------------------
 # All console output is captured to a log file so the program can self-examine
 # its own startup (OSES, auditing, diagnostics). The user never sees the console
 # but the program reads this log internally.
-$iabvRoot   = Split-Path -Parent $PSScriptRoot
-$logsDir    = Join-Path (Join-Path $iabvRoot 'data') 'logs'
-if (-not (Test-Path $logsDir)) { New-Item -ItemType Directory -Path $logsDir -Force | Out-Null }
 $startupLog = Join-Path $logsDir 'startup_console.log'
 try {
     Start-Transcript -Path $startupLog -Force | Out-Null
@@ -253,27 +271,15 @@ if ($StartUI) {
     try {
         $pythonExe = 'python'
         if ($env:IABV_PYTHON) { $pythonExe = $env:IABV_PYTHON }
-        # Try pythonw.exe first (no console window) — falls back to python.exe hidden
-        $pythonwExe = $pythonExe -replace 'python\.exe$','pythonw.exe' -replace 'python$','pythonw'
-        $usePythonw = $false
-        try { $usePythonw = [bool](Get-Command $pythonwExe -ErrorAction SilentlyContinue) } catch {}
-        # Redirect UI stdout/stderr to log files for self-examination
-        $uiStdout = Join-Path $logsDir 'ui_stdout.log'
-        $uiStderr = Join-Path $logsDir 'ui_stderr.log'
-        if ($usePythonw) {
-            $uiProc = Start-Process -FilePath $pythonwExe `
-                -ArgumentList '-m','iabv_v15','app' `
-                -PassThru `
-                -RedirectStandardOutput $uiStdout `
-                -RedirectStandardError $uiStderr
-        } else {
-            $uiProc = Start-Process -FilePath $pythonExe `
-                -ArgumentList '-m','iabv_v15','app' `
-                -PassThru `
-                -WindowStyle Hidden `
-                -RedirectStandardOutput $uiStdout `
-                -RedirectStandardError $uiStderr
-        }
+        # Use python.exe (NOT pythonw.exe) — pythonw swallows all errors silently
+        # and the UI dies without any trace. python.exe with -WindowStyle Hidden
+        # hides the console but PySide6/QML windows still render normally.
+        # DO NOT add -RedirectStandardOutput/-RedirectStandardError — those
+        # flags prevent PySide6 GUI windows from appearing on Windows.
+        $uiProc = Start-Process -FilePath $pythonExe `
+            -ArgumentList '-m','iabv_v15','app' `
+            -PassThru `
+            -WindowStyle Hidden
         Write-Info "  UI PID     : $($uiProc.Id)"
     } catch {
         Write-Warn "[warn] No se pudo lanzar la UI con -StartUI: $_"

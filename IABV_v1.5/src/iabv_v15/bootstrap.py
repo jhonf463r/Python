@@ -2249,6 +2249,11 @@ class AppBootstrap:
         # Holder for subprocesses; written from background thread.
         self._mcp_proc = None
         self._tunnel_proc = None
+
+        # Crash log: capture fatal errors so they survive even if the console
+        # is hidden (launched via shortcut / pythonw / -WindowStyle Hidden).
+        crash_log = Path(self.config.logs_dir) / 'ui_crash.log'
+
         try:
             # --- Splash screen: show immediately while services load ---
             if PYSIDE_AVAILABLE:
@@ -2262,6 +2267,13 @@ class AppBootstrap:
                 splash_engine.rootContext().setContextProperty('splashController', self._splash)
                 splash_qml = Path(__file__).resolve().parent / 'ui' / 'qml' / 'SplashScreen.qml'
                 splash_engine.load(QUrl.fromLocalFile(str(splash_qml)))
+                if not splash_engine.rootObjects():
+                    logger.error('splash_screen: QML failed to load from %s', splash_qml)
+                    if self._splash:
+                        self._splash.set_error(
+                            'Error cargando splash',
+                            f'QML no cargó desde {splash_qml}',
+                        )
                 # Process events so the splash actually renders
                 splash_app.processEvents()
             else:
@@ -2324,6 +2336,19 @@ class AppBootstrap:
                 self._splash.set_ready()
 
             return app.exec()
+        except Exception as fatal:
+            # Write crash log so the error survives hidden-console launches
+            import traceback
+            try:
+                crash_log.write_text(
+                    f'=== BURVE CRASH {time.strftime("%Y-%m-%d %H:%M:%S")} ===\n'
+                    f'{traceback.format_exc()}\n',
+                    encoding='utf-8',
+                )
+            except Exception:
+                pass
+            logger.critical('bootstrap.run() crashed: %s', fatal, exc_info=True)
+            raise
         finally:
             for proc in (self._tunnel_proc, self._mcp_proc):
                 if proc and proc.poll() is None:
