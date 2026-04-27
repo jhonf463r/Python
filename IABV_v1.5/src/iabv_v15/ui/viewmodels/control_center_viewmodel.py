@@ -3070,6 +3070,10 @@ class ControlCenterViewModel(QObject):
         cloud_reply = self._try_cloud_quick_reply(message)
         if cloud_reply:
             return cloud_reply
+        # Context-based fallback: answer provider/key questions from live data.
+        context_reply = self._try_context_based_reply(message)
+        if context_reply:
+            return context_reply
         return 'Te leo. Cuentame que necesitas y te respondo de forma clara, sin cargarte con detalle tecnico interno.'
 
     def _build_cloud_reply_context(self) -> str:
@@ -3192,6 +3196,68 @@ class ControlCenterViewModel(QObject):
             except Exception as exc:
                 logger.debug('cloud_quick_reply: %s failed: %s', prov_name, exc)
                 continue
+        return None
+
+    def _try_context_based_reply(self, message: str) -> str | None:
+        """Answer specific provider/key questions using only local context.
+
+        When both cloud IA and local Ollama are unavailable, this method
+        can still answer questions about API keys, providers, and models
+        by reading environment variables and system state directly.
+        Returns None if the question doesn't match known patterns.
+        """
+        import os
+        normalized = self._normalized_command_text(message)
+        if not normalized:
+            return None
+
+        # Detect which provider the user is asking about
+        _provider_env = {
+            'groq': 'GROQ_API_KEY',
+            'gemini': 'GEMINI_API_KEY',
+            'openrouter': 'OPENROUTER_API_KEY',
+            'openai': 'OPENAI_API_KEY',
+            'anthropic': 'ANTHROPIC_API_KEY',
+            'together': 'TOGETHER_API_KEY',
+            'deepseek': 'DEEPSEEK_API_KEY',
+        }
+
+        asked_provider = None
+        for prov_name, env_var in _provider_env.items():
+            if prov_name in normalized:
+                asked_provider = (prov_name, env_var)
+                break
+
+        # Asking about a specific provider's API key
+        if asked_provider:
+            prov_name, env_var = asked_provider
+            key = os.environ.get(env_var, '')
+            if key:
+                masked = key[:6] + '...' + key[-4:] if len(key) > 12 else '***'
+                return (
+                    f'Si, la API key de {prov_name.capitalize()} esta configurada ({masked}). '
+                    f'El sistema la puede usar para respuestas rapidas via cloud.'
+                )
+            else:
+                return (
+                    f'No, la API key de {prov_name.capitalize()} NO esta configurada. '
+                    f'Para activarla, crea una en la pagina del proveedor y usa '
+                    f'"ingresar clave" en este chat para configurarla.'
+                )
+
+        # Asking about which model/provider is being used
+        if any(tok in normalized for tok in ('que modelo', 'qué modelo', 'estas usando', 'estás usando', 'que usas', 'qué usas')):
+            ctx = self._build_cloud_reply_context()
+            return (
+                f'Actualmente el sistema usa lo siguiente:\n\n{ctx}\n\n'
+                f'Sin API keys de cloud, todas las respuestas pasan por Ollama local.'
+            )
+
+        # General API key question (not about a specific provider)
+        if any(tok in normalized for tok in ('api key', 'apikey', 'api_key', 'claves', 'keys configurad')):
+            ctx = self._build_cloud_reply_context()
+            return ctx
+
         return None
 
     def _seems_task_like_message(self, message: str) -> bool:
@@ -7617,15 +7683,24 @@ class ControlCenterViewModel(QObject):
                                 'Cloud fallback (modelo local ocupado).',
                             )
                         else:
-                            self._append_message(
-                                'assistant', 'IABV',
-                                'Mi modelo local tardo demasiado en responder. '
-                                'Esto puede pasar cuando el modelo es muy grande '
-                                'para la RAM disponible. Intenta de nuevo o usa '
-                                'un modelo mas liviano (ej: gemma3:4b). '
-                                'Puedes verificar con: model_selection_status',
-                                'Timeout de inferencia local.',
-                            )
+                            # Try context-based reply for provider/key questions
+                            context_fallback = self._try_context_based_reply(message)
+                            if context_fallback:
+                                self._append_message(
+                                    'assistant', 'IABV',
+                                    context_fallback,
+                                    'Respuesta por contexto local (sin IA).',
+                                )
+                            else:
+                                self._append_message(
+                                    'assistant', 'IABV',
+                                    'Mi modelo local tardo demasiado en responder. '
+                                    'Esto puede pasar cuando el modelo es muy grande '
+                                    'para la RAM disponible. Intenta de nuevo o usa '
+                                    'un modelo mas liviano (ej: gemma3:4b). '
+                                    'Puedes verificar con: model_selection_status',
+                                    'Timeout de inferencia local.',
+                                )
                         self._latest_response_text = ''
                         self._latest_response_meta = 'Timeout de inferencia local.'
                         return
