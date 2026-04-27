@@ -328,6 +328,7 @@ from iabv_v15.ui.controllers.main_window_bridge import MainWindowBridge
 from iabv_v15.ui.controllers.navigation_controller import NavigationController
 from iabv_v15.ui.controllers.theme_controller import ThemeController
 from iabv_v15.ui.qt import PYSIDE_AVAILABLE, QGuiApplication, QQmlApplicationEngine, QQuickStyle, QUrl
+from iabv_v15.ui.splash_controller import SplashController
 from iabv_v15.ui.viewmodels.capture_studio_viewmodel import CaptureStudioViewModel
 from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
 from iabv_v15.ui.viewmodels.dashboard_viewmodel import DashboardViewModel
@@ -1800,7 +1801,23 @@ class AppBootstrap:
         os.environ.setdefault('QT_QUICK_CONTROLS_STYLE', 'Basic')
         QQuickStyle.setStyle('Basic')
         app = QGuiApplication.instance() or QGuiApplication(sys.argv)
+
+        splash = getattr(self, '_splash', None)
+        if splash:
+            splash.set_status('Construyendo ViewModels...')
+            try:
+                app.processEvents()
+            except Exception:
+                pass
+
         self._build_ui_objects()
+
+        if splash:
+            splash.set_status('Montando motor QML...')
+            try:
+                app.processEvents()
+            except Exception:
+                pass
 
         engine = QQmlApplicationEngine()
         context = engine.rootContext()
@@ -2233,15 +2250,42 @@ class AppBootstrap:
         self._mcp_proc = None
         self._tunnel_proc = None
         try:
-            # When launched via start_iabv.ps1 -StartUI, the script manages
-            # MCP + tunnel externally.  Skip autostart to avoid port conflict.
+            # --- Splash screen: show immediately while services load ---
+            if PYSIDE_AVAILABLE:
+                os.environ.setdefault('QT_QUICK_CONTROLS_STYLE', 'Basic')
+                QQuickStyle.setStyle('Basic')
+                splash_app = QGuiApplication.instance() or QGuiApplication(sys.argv)
+                self._splash = SplashController(
+                    workspace_dir=self.config.workspace_dir,
+                )
+                splash_engine = QQmlApplicationEngine()
+                splash_engine.rootContext().setContextProperty('splashController', self._splash)
+                splash_qml = Path(__file__).resolve().parent / 'ui' / 'qml' / 'SplashScreen.qml'
+                splash_engine.load(QUrl.fromLocalFile(str(splash_qml)))
+                # Process events so the splash actually renders
+                splash_app.processEvents()
+            else:
+                self._splash = None
+
+            # --- MCP autostart ---
+            if self._splash:
+                self._splash.set_status('Verificando servicios MCP...')
+                try:
+                    QGuiApplication.instance().processEvents()
+                except Exception:
+                    pass
+
             skip_mcp = os.environ.get('IABV_SKIP_MCP_AUTOSTART', '') == '1'
             mcp_port = int(os.environ.get('FASTMCP_PORT', '8000'))
             if skip_mcp:
                 logger.info('mcp_autostart: skipped (IABV_SKIP_MCP_AUTOSTART=1)')
             elif not self._is_mcp_port_in_use(mcp_port):
-                # Launch MCP + tunnel in background so the UI doesn't freeze
-                # waiting for the 2-second MCP warm-up.
+                if self._splash:
+                    self._splash.set_status('Iniciando servidor MCP...')
+                    try:
+                        QGuiApplication.instance().processEvents()
+                    except Exception:
+                        pass
                 def _deferred_mcp_start() -> None:
                     self._mcp_proc = self._start_mcp_subprocess()
                     if self._mcp_proc:
@@ -2257,9 +2301,28 @@ class AppBootstrap:
                 logger.info('mcp_autostart: port %d already in use, skipping MCP launch', mcp_port)
 
             # --- Startup evolution: background cycle after services are ready ---
+            if self._splash:
+                self._splash.set_status('Preparando ciclo evolutivo...')
+                try:
+                    QGuiApplication.instance().processEvents()
+                except Exception:
+                    pass
             self._schedule_startup_evolution()
 
+            # --- Load main UI ---
+            if self._splash:
+                self._splash.set_status('Cargando interfaz principal...')
+                try:
+                    QGuiApplication.instance().processEvents()
+                except Exception:
+                    pass
+
             app, _engine = self.create_engine()
+
+            # Signal splash that we're ready — it will fade out
+            if self._splash:
+                self._splash.set_ready()
+
             return app.exec()
         finally:
             for proc in (self._tunnel_proc, self._mcp_proc):
