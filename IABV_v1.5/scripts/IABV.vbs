@@ -1,4 +1,4 @@
-' IABV v1.5 — One-click launcher
+' IABV v1.5 -- One-click launcher
 ' Double-click this file to start IABV.
 ' The MCP server + Cloudflare tunnel run hidden in the background.
 ' Only the IABV UI window is visible.
