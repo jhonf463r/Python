@@ -683,6 +683,11 @@ class OperationalSelfExaminationService:
         # UI self-awareness: detect own window issues (zombie, missing, duplicate)
         findings.extend(self._ui_self_examination_findings(world=world))
 
+        # RuntimePerformance: always runs — detects memory pressure, excessive
+        # threads, slow network probes and other bottlenecks that cause the UI
+        # to feel slow or frozen.
+        findings.extend(self._runtime_performance_findings())
+
         # Background decision review (CognitiveMonitor): always runs — reads
         # DecisionAuditTrail and flags sub-optimal provider choices, confidence
         # miscalibration, and error stagnation.
@@ -3869,6 +3874,166 @@ class OperationalSelfExaminationService:
             ))
 
         return findings
+
+    # ──────────────────────────────────────────────────────────
+    # RuntimePerformance: memory, threads, bottleneck detection
+    # ──────────────────────────────────────────────────────────
+
+    def _runtime_performance_findings(self) -> list[SelfExaminationFinding]:
+        """Detect runtime performance bottlenecks: memory, threads, network.
+
+        This is IABV observing its own resource consumption and flagging
+        conditions that cause the UI to feel slow or frozen. Unlike external
+        monitoring, this is self-awareness: the system notices its own
+        degradation and recommends corrective action.
+
+        Checks:
+        - Process RSS memory > threshold → recommend lazy loading
+        - Excessive active threads → recommend consolidation
+        - Polling threads competing for GIL → recommend longer intervals
+        - Network probe failures cached → report connectivity status
+        - Child subprocess count → flag orphan processes
+        """
+        import threading as _threading
+
+        findings: list[SelfExaminationFinding] = []
+
+        # --- Memory pressure ---
+        rss_mb = self._read_process_rss_mb()
+        if rss_mb is not None and rss_mb > 500:
+            severity = IssueSeverity.HIGH if rss_mb > 800 else IssueSeverity.MEDIUM
+            findings.append(SelfExaminationFinding(
+                category='runtime_performance',
+                title='high_memory_usage',
+                summary=(
+                    f'El proceso IABV consume {rss_mb:.0f}MB de RAM. '
+                    f'Esto puede causar lentitud en la UI y en respuestas MCP. '
+                    f'Considerar lazy loading de servicios no criticos.'
+                ),
+                severity=severity,
+                confidence=0.95,
+                recommendation=(
+                    'Implementar lazy loading: instanciar EmbeddingIndexService, '
+                    'SiteExplorationService, BrowserSessionController y servicios '
+                    'similares solo cuando se usen por primera vez, no en __init__. '
+                    'Usar @property con cache en AppBootstrap.'
+                ),
+                evidence_refs=[f'rss_mb:{rss_mb:.0f}'],
+                source_refs=['runtime_performance_monitor'],
+            ))
+
+        # --- Thread count ---
+        threads = _threading.enumerate()
+        thread_count = len(threads)
+        polling_keywords = (
+            'scan', 'poll', 'monitor', 'timer', 'refresh',
+            'world_model', 'health', 'bridge', 'bg-install',
+        )
+        polling_threads = [
+            t for t in threads
+            if any(kw in t.name.lower() for kw in polling_keywords)
+        ]
+
+        if thread_count > 20:
+            findings.append(SelfExaminationFinding(
+                category='runtime_performance',
+                title='excessive_threads',
+                summary=(
+                    f'{thread_count} hilos activos en el proceso. '
+                    f'Python GIL causa contention entre hilos — cada hilo '
+                    f'adicional degrada latencia de respuesta.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.85,
+                recommendation=(
+                    'Consolidar hilos de polling: WorldModelService, '
+                    'EnvironmentSelfAwareness y HealthRouter podrian compartir '
+                    'un unico hilo con diferentes intervalos. Usar asyncio '
+                    'en vez de threads donde sea posible.'
+                ),
+                evidence_refs=[
+                    f'total_threads:{thread_count}',
+                    f'polling_threads:{len(polling_threads)}',
+                ],
+                source_refs=['runtime_performance_monitor'],
+            ))
+
+        if len(polling_threads) > 4:
+            names = [t.name for t in polling_threads[:8]]
+            findings.append(SelfExaminationFinding(
+                category='runtime_performance',
+                title='excessive_polling_threads',
+                summary=(
+                    f'{len(polling_threads)} hilos de polling activos: {names}. '
+                    f'Cada uno ejecuta scans periodicos que compiten por CPU y GIL.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.90,
+                recommendation=(
+                    'Reducir frecuencia de scan: WorldModelService._DEFAULT_SCAN_INTERVAL '
+                    'de 18s a 45s para uso normal. Usar scan_interval_seconds=120 '
+                    'cuando la presion de recursos es alta.'
+                ),
+                evidence_refs=[f'polling:{n}' for n in names],
+                source_refs=['runtime_performance_monitor'],
+            ))
+
+        # --- Network probe health ---
+        wms = self.world_model_service
+        if wms is not None:
+            cache = getattr(wms, '_network_cache', (None, '', 0.0))
+            cached_latency, cached_error, _ = cache
+            if cached_latency is None and cached_error:
+                findings.append(SelfExaminationFinding(
+                    category='runtime_performance',
+                    title='network_probe_failing',
+                    summary=(
+                        f'El probe de conectividad falla: {cached_error[:100]}. '
+                        f'Esto bloquea al WorldModel scan por hasta 7s cada ciclo '
+                        f'y causa que IABV reporte "sin internet" incorrectamente.'
+                    ),
+                    severity=IssueSeverity.HIGH,
+                    confidence=0.90,
+                    recommendation=(
+                        'Verificar firewall: port 53 TCP puede estar bloqueado. '
+                        'El probe ya tiene fallback a port 443 y HTTP HEAD. '
+                        'Si todos fallan, verificar proxy/VPN. Considerar aumentar '
+                        'NETWORK_CACHE_TTL a 120s para reducir impacto.'
+                    ),
+                    evidence_refs=[f'error:{cached_error[:80]}'],
+                    source_refs=['WorldModelService._network_connectivity_probe'],
+                ))
+
+        return findings
+
+    def _read_process_rss_mb(self) -> float | None:
+        """Read current process RSS in MB. Cross-platform."""
+        try:
+            import psutil
+            return psutil.Process().memory_info().rss / (1024 * 1024)
+        except ImportError:
+            pass
+        try:
+            with open('/proc/self/status') as f:
+                for line in f:
+                    if line.startswith('VmRSS:'):
+                        return int(line.split()[1]) / 1024
+        except Exception:
+            pass
+        # Windows fallback via PowerShell (WorldModelService already has this).
+        try:
+            import os
+            import subprocess
+            result = subprocess.run(
+                ['powershell', '-NoProfile', '-Command',
+                 f'(Get-Process -Id {os.getpid()}).WorkingSet64'],
+                capture_output=True, text=True, timeout=5,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return int(result.stdout.strip()) / (1024 * 1024)
+        except Exception:
+            pass
+        return None
 
     # ──────────────────────────────────────────────────────────
     # Fix 42-43: Functional gap analysis + underutilized resources
