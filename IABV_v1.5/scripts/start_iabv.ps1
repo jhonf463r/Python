@@ -144,12 +144,12 @@ $issues = @()
 if (-not $env:GITHUB_TOKEN_IABV) {
     $issues += "GITHUB_TOKEN_IABV no esta seteado."
 } elseif ($env:GITHUB_TOKEN_IABV -match 'REEMPLAZAR') {
-    $issues += "GITHUB_TOKEN_IABV todavia tiene el placeholder; editá $secretsPath."
+    $issues += "GITHUB_TOKEN_IABV todavia tiene el placeholder; edita $secretsPath."
 }
 if (-not $env:DEVIN_API_KEY) {
     $issues += "DEVIN_API_KEY no esta seteado (opcional para github pero necesario para cross-IA)."
 } elseif ($env:DEVIN_API_KEY -match 'REEMPLAZAR') {
-    $issues += "DEVIN_API_KEY todavia tiene el placeholder; editá $secretsPath."
+    $issues += "DEVIN_API_KEY todavia tiene el placeholder; edita $secretsPath."
 }
 
 if ($issues.Count -gt 0) {
@@ -157,7 +157,7 @@ if ($issues.Count -gt 0) {
     foreach ($i in $issues) { Write-Warn "  - $i" }
     Write-Warn "Tip: rotacion asistida sin copy-paste con"
     Write-Warn "     powershell -ExecutionPolicy Bypass -File scripts\rotate_tokens.ps1"
-    Write-Warn "Podés arrancar igual (los adapters reportaran 'missing' en run_self_audit)."
+    Write-Warn "Podes arrancar igual (los adapters reportaran 'missing' en run_self_audit)."
 }
 
 # Health checks opcionales (HTTP rapido).
@@ -207,7 +207,7 @@ if (-not (Test-Path $bridge)) {
 if ($StartUI) {
     Write-Info ""
     Write-Info "Lanzando ControlCenter UI (python -m iabv_v15 app) en proceso aparte..."
-    # Tell the UI bootstrap NOT to auto-start MCP+tunnel — this script
+    # Tell the UI bootstrap NOT to auto-start MCP+tunnel -- this script
     # manages them externally.  Prevents port-8000 conflict (Errno 10048).
     $env:IABV_SKIP_MCP_AUTOSTART = '1'
     try {

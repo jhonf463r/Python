@@ -1191,7 +1191,7 @@ class AppBootstrap:
         self.run_history_viewmodel = None
 
     _TOOL_INSTALL_GUIDANCE: dict[str, str] = {
-        'aider_coder': 'pip install aider-chat',
+        'aider_coder': 'pip install aider-chat (optional, heavy ~200MB; installed in background)',
         'claude_installed': 'Descargar Claude Desktop desde https://claude.ai/download',
         'mcp_client': 'Iniciar MCP server (default: http://127.0.0.1:8000) o ajustar server_url en metadata',
     }
@@ -1446,6 +1446,20 @@ class AppBootstrap:
                     daemon=True,
                 ).start()
 
+        # --- UIBridgeService: puente IPC entre MCP server y UI PySide6.
+        # Permite a agentes externos (via MCP) enviar mensajes al chat,
+        # leer respuestas, capturar screenshots y navegar tabs de la UI.
+        # El server TCP arranca en un hilo daemon; si falla, queda None.
+        if getattr(self, 'ui_bridge_server', None) is None:
+            try:
+                from iabv_v15.services.ui_bridge_service import (
+                    build_ui_bridge_server,
+                )
+                self.ui_bridge_server = build_ui_bridge_server()
+            except Exception:
+                logger.exception('No se pudo construir UIBridgeServer; bridge UI desactivado')
+                self.ui_bridge_server = None
+
         # --- UIScreenshotProvider: permite que la tool MCP
         # `capture_ui_screenshot` devuelva bytes reales cuando la UI está
         # corriendo en este proceso (Qt) o cuando hay display server activo
@@ -1537,6 +1551,22 @@ class AppBootstrap:
             universal_perception_service=self.universal_perception_service,
         )
         self.control_center_viewmodel.capture_studio_viewmodel = self.capture_studio_viewmodel
+
+        # Wire UIBridgeServer with the ControlCenterViewModel so that
+        # MCP agents can interact with the UI chat. The server starts
+        # in a daemon thread; if it fails, IABV continues without it.
+        if getattr(self, 'ui_bridge_server', None) is not None:
+            try:
+                from iabv_v15.services.ui_bridge_service import build_ui_bridge_server
+                self.ui_bridge_server = build_ui_bridge_server(
+                    control_center_viewmodel=self.control_center_viewmodel,
+                )
+                self.ui_bridge_server.start()
+                logger.info('UIBridgeServer started with ControlCenterViewModel')
+            except Exception:
+                logger.exception('UIBridgeServer failed to start with VM wiring')
+                self.ui_bridge_server = None
+
         # Deferred: refreshAutonomyDock runs inside the VM's deferred
         # startup thread to avoid blocking UI creation.
         self.evolution_center_viewmodel = EvolutionCenterViewModel(

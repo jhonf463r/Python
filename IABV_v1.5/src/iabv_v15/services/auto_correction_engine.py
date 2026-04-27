@@ -27,6 +27,7 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -536,11 +537,24 @@ def execute_corrections(
     }
 
 
+# Heavy pip packages that should be installed in background (non-blocking).
+# aider-chat is ~200MB+ and can fail on low-RAM machines; installing it
+# synchronously during bootstrap freezes the UI and may OOM.
+_HEAVY_PIP_PACKAGES: set[str] = {'aider_coder'}
+
+# Track background installs so we don't double-launch.
+_background_install_threads: dict[str, threading.Thread] = {}
+_background_install_lock = threading.Lock()
+
+
 def _auto_install_missing_tool(tool_id: str) -> dict[str, Any]:
     """Attempt to auto-install a missing tool/dependency.
 
     Supports pip packages and known system tools. Returns a result
     dict with status='installed' on success.
+
+    Heavy packages (aider-chat) are installed in a background thread
+    and return status='installing_background' immediately.
     """
     _PIP_PACKAGES: dict[str, str] = {
         'aider_coder': 'aider-chat',
@@ -548,6 +562,10 @@ def _auto_install_missing_tool(tool_id: str) -> dict[str, Any]:
     }
     pip_pkg = _PIP_PACKAGES.get(tool_id)
     if pip_pkg:
+        # Heavy packages: install in background thread to avoid
+        # blocking bootstrap / freezing the UI.
+        if tool_id in _HEAVY_PIP_PACKAGES:
+            return _install_in_background(tool_id, pip_pkg)
         try:
             import sys
             result = subprocess.run(
@@ -580,6 +598,48 @@ def _auto_install_missing_tool(tool_id: str) -> dict[str, Any]:
         'action': 'auto_install_dependency',
         'status': 'unknown_tool',
         'tool_id': tool_id,
+    }
+
+
+def _install_in_background(tool_id: str, pip_pkg: str) -> dict[str, Any]:
+    """Launch a pip install in a daemon thread. Non-blocking."""
+    with _background_install_lock:
+        existing = _background_install_threads.get(tool_id)
+        if existing is not None and existing.is_alive():
+            return {
+                'action': 'auto_install_dependency',
+                'status': 'already_installing',
+                'tool_id': tool_id,
+                'package': pip_pkg,
+            }
+
+    def _worker() -> None:
+        try:
+            import sys as _sys
+            result = subprocess.run(
+                [_sys.executable, '-m', 'pip', 'install', pip_pkg, '-q'],
+                capture_output=True, text=True, timeout=600,
+            )
+            if result.returncode == 0:
+                logger.info('auto_install_bg: %s installed via pip (%s)', tool_id, pip_pkg)
+            else:
+                logger.warning(
+                    'auto_install_bg: %s failed — %s', tool_id, result.stderr[:200],
+                )
+        except Exception as exc:
+            logger.warning('auto_install_bg: %s exception — %s', tool_id, exc)
+
+    t = threading.Thread(target=_worker, name=f'bg-install-{tool_id}', daemon=True)
+    with _background_install_lock:
+        _background_install_threads[tool_id] = t
+    t.start()
+    logger.info('auto_install_bg: %s queued for background install (%s)', tool_id, pip_pkg)
+    return {
+        'action': 'auto_install_dependency',
+        'status': 'installing_background',
+        'tool_id': tool_id,
+        'package': pip_pkg,
+        'detail': f'{pip_pkg} is heavy (~200MB); installing in background thread',
     }
 
 

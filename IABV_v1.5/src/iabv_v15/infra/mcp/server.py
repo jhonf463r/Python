@@ -1826,6 +1826,220 @@ class IABVMCPServer:
             return report
 
         # ------------------------------------------------------------
+        # self_audit_incremental — version incremental que reporta
+        # subsistema por subsistema para evitar timeout de tunnel
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def self_audit_incremental(
+            subsystems: list[str] | None = None,
+        ) -> dict[str, Any]:
+            """Auto-auditoria incremental: audita subsistemas individuales.
+
+            A diferencia de ``self_audit`` que audita los 7 subsistemas
+            de una vez (y puede superar el timeout de ~100s del tunnel),
+            esta version permite seleccionar que subsistemas auditar.
+
+            Llamar sin ``subsystems`` audita solo los 3 mas rapidos
+            (orchestrator, world_model, common_sense). Para una auditoria
+            completa, hacer multiples llamadas con diferentes subsistemas.
+
+            Subsistemas disponibles: orchestrator, synaptic_router,
+            world_model, oses, portable_context, common_sense, ui.
+
+            Args:
+                subsystems: lista de subsistemas a auditar. Si None,
+                    audita orchestrator + world_model + common_sense.
+
+            Returns:
+                Reporte parcial con resultados de los subsistemas pedidos.
+            """
+            import time as _time
+            from datetime import datetime as _dt, timezone as _tz
+            from iabv_v15.domain.models import InferenceRequest
+
+            available = {
+                'orchestrator', 'synaptic_router', 'world_model',
+                'oses', 'portable_context', 'common_sense', 'ui',
+            }
+            if subsystems is None:
+                subsystems = ['orchestrator', 'world_model', 'common_sense']
+            else:
+                subsystems = [s for s in subsystems if s in available]
+                if not subsystems:
+                    return {
+                        'error': 'no_valid_subsystems',
+                        'available': sorted(available),
+                    }
+
+            report: dict[str, Any] = {
+                'mode': 'incremental',
+                'requested': subsystems,
+                'timestamp_utc': _dt.now(_tz.utc).isoformat(),
+                'subsystems': {},
+            }
+            t0 = _time.monotonic()
+
+            test_goal = "explica brevemente que eres y que puedes hacer"
+
+            for sub in subsystems:
+                sub_t0 = _time.monotonic()
+                try:
+                    if sub == 'orchestrator':
+                        orch = self._adaptive_orchestrator()
+                        request = InferenceRequest(user_goal=test_goal)
+                        preview = orch.build_decision_context_preview(request)
+                        preview_data = _to_jsonable(preview) or {}
+                        report['subsystems']['orchestrator'] = {
+                            'status': 'ok',
+                            'intent': preview_data.get('intent_schema', {}).get('primary_intent', ''),
+                            'route': preview_data.get('route_decision', ''),
+                            'elapsed_ms': round((_time.monotonic() - sub_t0) * 1000),
+                        }
+                    elif sub == 'synaptic_router':
+                        router = getattr(self.container, 'synaptic_router', None)
+                        if router:
+                            decision = router.decide(task_kind='code_generation', user_goal=test_goal)
+                            report['subsystems']['synaptic_router'] = {
+                                'status': 'ok',
+                                'selected': decision.selected_assistant_kind,
+                                'score': decision.total_score,
+                                'elapsed_ms': round((_time.monotonic() - sub_t0) * 1000),
+                            }
+                        else:
+                            report['subsystems']['synaptic_router'] = {'status': 'not_wired'}
+                    elif sub == 'world_model':
+                        svc = self._world_model_service()
+                        wm_obj = svc.current_model()
+                        wm = _to_jsonable(wm_obj) or {}
+                        report['subsystems']['world_model'] = {
+                            'status': 'ok',
+                            'windows_count': len(wm.get('open_windows', [])) if isinstance(wm, dict) else 0,
+                            'tools_count': len(wm.get('tool_live_status', [])) if isinstance(wm, dict) else 0,
+                            'elapsed_ms': round((_time.monotonic() - sub_t0) * 1000),
+                        }
+                    elif sub == 'oses':
+                        oses = getattr(self.container, 'operational_self_examination_service', None)
+                        if oses:
+                            review = oses.current_review(refresh=False, max_age_seconds=600)
+                            report['subsystems']['oses'] = {
+                                'status': 'ok',
+                                'findings_count': len(review.findings),
+                                'elapsed_ms': round((_time.monotonic() - sub_t0) * 1000),
+                            }
+                        else:
+                            report['subsystems']['oses'] = {'status': 'not_wired'}
+                    elif sub == 'portable_context':
+                        pcs = getattr(self.container, 'portable_context_service', None)
+                        if pcs:
+                            pkg = pcs.build_package()
+                            sections = list((pkg.sections or {}).keys()) if hasattr(pkg, 'sections') else []
+                            report['subsystems']['portable_context'] = {
+                                'status': 'ok',
+                                'section_count': len(sections),
+                                'elapsed_ms': round((_time.monotonic() - sub_t0) * 1000),
+                            }
+                        else:
+                            report['subsystems']['portable_context'] = {'status': 'not_wired'}
+                    elif sub == 'common_sense':
+                        from iabv_v15.services.common_sense_engine import extract_environment_facts
+                        facts = extract_environment_facts()
+                        report['subsystems']['common_sense'] = {
+                            'status': 'ok',
+                            'facts_count': len(facts) if isinstance(facts, (set, list)) else 0,
+                            'elapsed_ms': round((_time.monotonic() - sub_t0) * 1000),
+                        }
+                    elif sub == 'ui':
+                        provider = self._ui_screenshot_provider()
+                        ui_result = audit_tools.capture_ui_screenshot(provider, region='control_center')
+                        report['subsystems']['ui'] = {
+                            'status': 'ok' if not ui_result.get('error') else 'not_running',
+                            'detail': ui_result.get('error', 'screenshot_captured'),
+                            'elapsed_ms': round((_time.monotonic() - sub_t0) * 1000),
+                        }
+                except Exception as exc:
+                    report['subsystems'][sub] = {
+                        'status': 'error',
+                        'detail': str(exc)[:200],
+                        'elapsed_ms': round((_time.monotonic() - sub_t0) * 1000),
+                    }
+
+            elapsed = _time.monotonic() - t0
+            report['elapsed_ms'] = round(elapsed * 1000)
+
+            statuses = [s.get('status', 'error') for s in report['subsystems'].values()]
+            ok_count = sum(1 for s in statuses if s == 'ok')
+            report['verdict'] = {
+                'ok': ok_count,
+                'total': len(statuses),
+                'healthy': ok_count == len(statuses),
+                'summary': f'{ok_count}/{len(statuses)} subsystems operational',
+            }
+
+            return report
+
+        # ------------------------------------------------------------
+        # ui_bridge — interaccion con la UI PySide6 via IPC
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def ui_bridge_send_message(text: str) -> dict[str, Any]:
+            """Envia un mensaje al chat de la UI PySide6 via UIBridgeService.
+
+            El MCP server se conecta al UIBridgeServer (TCP localhost:18921)
+            que corre en el proceso de la UI y despacha el mensaje al chat.
+
+            Args:
+                text: texto a enviar al chat.
+
+            Returns:
+                Estado del envio o error si la UI no esta disponible.
+            """
+            from iabv_v15.services.ui_bridge_service import UIBridgeClient
+            client = UIBridgeClient()
+            return client.call("send_message", text=text)
+
+        @mcp.tool()
+        def ui_bridge_read_messages(limit: int = 20) -> dict[str, Any]:
+            """Lee los ultimos N mensajes del chat de la UI via UIBridgeService.
+
+            Args:
+                limit: cantidad maxima de mensajes a retornar.
+
+            Returns:
+                Lista de mensajes o error si la UI no esta disponible.
+            """
+            from iabv_v15.services.ui_bridge_service import UIBridgeClient
+            client = UIBridgeClient()
+            return client.call("read_messages", limit=limit)
+
+        @mcp.tool()
+        def ui_bridge_get_state() -> dict[str, Any]:
+            """Obtiene el estado actual de la UI PySide6 (pagina activa, etc.).
+
+            Returns:
+                Estado de la UI o error si no esta disponible.
+            """
+            from iabv_v15.services.ui_bridge_service import UIBridgeClient
+            client = UIBridgeClient()
+            return client.call("get_ui_state")
+
+        @mcp.tool()
+        def ui_bridge_navigate(page: str) -> dict[str, Any]:
+            """Navega a una pagina/tab de la UI PySide6.
+
+            Args:
+                page: nombre de la pagina (ej: 'control_center',
+                    'evolution_center', 'capture_studio').
+
+            Returns:
+                Estado de la navegacion o error.
+            """
+            from iabv_v15.services.ui_bridge_service import UIBridgeClient
+            client = UIBridgeClient()
+            return client.call("navigate", page=page)
+
+        # ------------------------------------------------------------
         # deep_environment_scan — periféricos, BIOS, seguridad, red
         # ------------------------------------------------------------
 
