@@ -3740,6 +3740,49 @@ class ControlCenterViewModel(QObject):
     # Decision audit trail command
     # ------------------------------------------------------------------
 
+    def _handle_resource_liberation_command(self) -> None:
+        """Handle 'liberar ram' / 'optimizar memoria' chat commands."""
+        self._append_message(
+            'assistant', 'IABV',
+            'Analizando recursos del sistema...',
+            'resource-metacognition: observing',
+        )
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+
+        def _worker() -> None:
+            try:
+                resource_svc = getattr(self, 'resource_metacognition_service', None)
+                if resource_svc is None:
+                    self._append_message(
+                        'assistant', 'IABV',
+                        'El servicio de metacognicion de recursos no esta disponible.',
+                        'resource-metacognition: service not wired',
+                    )
+                    return
+
+                text = resource_svc.chat_execute_liberation()
+                self._append_message('assistant', 'IABV', text, 'resource-metacognition: liberation complete')
+            except Exception as exc:
+                logger.warning('resource liberation command failed: %s', exc)
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Error al liberar recursos: {exc}',
+                    'resource-metacognition: failed',
+                )
+            finally:
+                self._working = False
+                self._set_live_status('idle')
+                try:
+                    self.dataChanged.emit()
+                except Exception:
+                    pass
+
+        self._working = True
+        threading.Thread(target=_worker, daemon=True).start()
+
     def _handle_decision_audit_command(self) -> None:
         """Show decision audit trail report in chat."""
         self._append_message(
@@ -6515,6 +6558,9 @@ class ControlCenterViewModel(QObject):
             return True
         if 'ciclo pbt' in command or 'ejecutar pbt' in command:
             self.runQuickPbt()
+            return True
+        if any(token in command for token in ('liberar ram', 'libera ram', 'liberar recursos', 'libera recursos', 'optimizar memoria', 'optimiza memoria', 'cerrar programas innecesarios')):
+            self._handle_resource_liberation_command()
             return True
         if self._is_self_code_analysis_request(command):
             self._run_self_code_analysis()

@@ -258,6 +258,7 @@ from iabv_v15.services.evolution.intent_scoped_briefing_service import (
     IntentScopedBriefingService,
 )
 from iabv_v15.services.evolution.portable_context_service import PortableContextService
+from iabv_v15.services.evolution.resource_metacognition_service import ResourceMetacognitionService
 from iabv_v15.services.evolution.self_audit_service import SelfAuditService
 from iabv_v15.services.evolution.token_rotation_ledger import TokenRotationLedger
 from iabv_v15.services.evolution.session_start_briefing_service import (
@@ -1195,11 +1196,23 @@ class AppBootstrap:
             self.platform_learning = None
 
         try:
+            self.resource_metacognition_service = ResourceMetacognitionService(
+                evolution_dir=self.config.evolution_dir,
+                environment_service=self.environment_self_awareness_service,
+                experiment_lab=self.experiment_lab,
+                decision_audit_trail=getattr(self, 'decision_audit_trail', None),
+            )
+        except Exception as exc:
+            logger.warning('bootstrap: ResourceMetacognitionService init failed: %s', exc)
+            self.resource_metacognition_service = None
+
+        try:
             self.metacognition_evolution = MetacognitionEvolutionMixin()
             self.metacognition_evolution.decision_simplifier = self.decision_simplifier
             self.metacognition_evolution.platform_learning = self.platform_learning
             self.metacognition_evolution.api_key_discovery = self.api_key_discovery_service
             self.metacognition_evolution.auto_correction_engine = getattr(self, 'auto_correction_engine', None)
+            self.metacognition_evolution.resource_metacognition = self.resource_metacognition_service
         except Exception as exc:
             logger.warning('bootstrap: MetacognitionEvolutionMixin init failed: %s', exc)
             self.metacognition_evolution = None
@@ -1596,6 +1609,7 @@ class AppBootstrap:
             universal_perception_service=self.universal_perception_service,
         )
         self.control_center_viewmodel.capture_studio_viewmodel = self.capture_studio_viewmodel
+        self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
 
         # Wire UIBridgeServer with the ControlCenterViewModel so that
         # MCP agents can interact with the UI chat. The server starts
@@ -2036,6 +2050,27 @@ class AppBootstrap:
 
                 # Step 3: Optimize brain — benchmark providers for best reasoning
                 self._auto_optimize_brain()
+
+                # Step 4: Resource metacognition — observe, liberate, select model
+                resource_meta = getattr(self, 'resource_metacognition_service', None)
+                if resource_meta:
+                    try:
+                        snapshot = resource_meta.observe_resources()
+                        plan = resource_meta.analyze_liberation_plan(snapshot)
+                        if plan.should_liberate:
+                            result = resource_meta.execute_liberation(plan, mode='auto')
+                            resource_meta.record_outcome(result)
+                            logger.info(
+                                'startup_evolution: resource liberation — freed %.1fGB, model=%s',
+                                result.ram_freed_gb, result.selected_model,
+                            )
+                        else:
+                            logger.info(
+                                'startup_evolution: resource check — %s',
+                                plan.reason,
+                            )
+                    except Exception as exc:
+                        logger.warning('startup_evolution: resource metacognition failed: %s', exc)
 
                 logger.info('startup_evolution: background cycle complete')
             except Exception as exc:
