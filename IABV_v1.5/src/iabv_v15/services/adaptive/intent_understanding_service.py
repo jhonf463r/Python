@@ -95,6 +95,11 @@ class IntentLearningLayer:
         except Exception as exc:
             logger.debug('intent_learning: failed to save: %s', exc)
 
+    def clear(self) -> None:
+        """Clear all in-memory patterns (useful for test isolation)."""
+        with self._lock:
+            self._patterns.clear()
+
     def lookup(self, normalized_text: str) -> dict[str, Any] | None:
         """Check if a normalized input matches a learned pattern.
 

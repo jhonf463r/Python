@@ -1465,10 +1465,10 @@ class ControlCenterViewModel(QObject):
         word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
         asks_about_windows = any(token in word_tokens for token in ('ventana', 'ventanas', 'foco', 'abierto', 'abiertas'))
         asks_about_network = any(token in word_tokens for token in ('internet', 'red', 'conexion', 'conexión'))
-        asks_about_live_tool = (
-            any(token in word_tokens for token in ('codex', 'chatgpt', 'claude', 'ollama'))
-            and any(token in word_tokens for token in ('responde', 'bloqueado', 'hilo', 'mensajes', 'agotados', 'abierto', 'abierta'))
-        )
+        mentions_tool = any(token in word_tokens for token in ('codex', 'chatgpt', 'claude', 'ollama'))
+        asks_tool_state = any(token in word_tokens for token in ('responde', 'bloqueado', 'hilo', 'mensajes', 'agotados', 'abierto', 'abierta'))
+        requests_consultation = any(token in word_tokens for token in ('consulta', 'consultar', 'usa', 'usar'))
+        asks_about_live_tool = mentions_tool and asks_tool_state and not requests_consultation
         asks_current_state = any(phrase in normalized for phrase in ('que esta pasando', 'qué está pasando'))
         # "navegadores" + visibility words → world model (open browsers), not accounts
         asks_about_browsers = (
@@ -1479,7 +1479,7 @@ class ControlCenterViewModel(QObject):
 
     _COMPOUND_CONJUNCTIONS = (' y ', ' y,', ' pero ', ' con eso ', ' ademas ', ' tambien ', ' además ', ' también ', ' revisa ', ' revisá ')
 
-    def _is_self_awareness_question(self, message: str) -> bool:
+    def _is_self_awareness_question(self, message: str, *, fast_only: bool = False) -> bool:
         normalized = self._normalized_command_text(message)
         if not normalized:
             return False
@@ -1526,6 +1526,8 @@ class ControlCenterViewModel(QObject):
         asks_directly = any(token in normalized for token in ('conoces', 'sabes', 'tienes', 'disponibles', 'te conectas', 'te puedes conectar', 'consciente', 'que tan bien', 'como estas', 'cómo estás'))
         if asks_system_state and asks_directly:
             return True
+        if fast_only:
+            return False
         # Ollama fallback
         try:
             from iabv_v15.services.account_resource_scanner import classify_chat_intent
@@ -1536,7 +1538,7 @@ class ControlCenterViewModel(QObject):
             pass
         return False
 
-    def _is_learning_question(self, message: str) -> bool:
+    def _is_learning_question(self, message: str, *, fast_only: bool = False) -> bool:
         normalized = self._normalized_command_text(message)
         if not normalized:
             return False
@@ -1574,6 +1576,8 @@ class ControlCenterViewModel(QObject):
             and any(token in word_tokens for token in ('mejor', 'mejores', 'aprendido', 'cambiaste', 'aprendiste'))
         ):
             return True
+        if fast_only:
+            return False
         # Ollama fallback
         try:
             from iabv_v15.services.account_resource_scanner import classify_chat_intent
@@ -1748,7 +1752,7 @@ class ControlCenterViewModel(QObject):
         has_problem = any(token in word_tokens for token in ('bloqueos', 'bloqueo', 'problemas', 'problema', 'pendientes', 'pendiente', 'caducadas', 'caducados', 'caducada', 'errores', 'fallos', 'fallas'))
         return asks_fix and has_problem
 
-    def _is_account_resource_question(self, message: str) -> bool:
+    def _is_account_resource_question(self, message: str, *, fast_only: bool = False) -> bool:
         normalized = self._normalized_command_text(message)
         if not normalized:
             return False
@@ -1851,6 +1855,10 @@ class ControlCenterViewModel(QObject):
 
         # Fallback: Ollama-based classification for ambiguous messages.
         # Only invoked when the fast pattern check above didn't match.
+        # Skipped in fast_only mode (synchronous shortcut path) to avoid
+        # blocking the UI thread with LLM calls.
+        if fast_only:
+            return False
         try:
             from iabv_v15.services.account_resource_scanner import classify_chat_intent
             result = classify_chat_intent(normalized)
@@ -6068,6 +6076,46 @@ class ControlCenterViewModel(QObject):
     def _normalized_command_text(self, message: str) -> str:
         return ' '.join(message.lower().strip().split())
 
+    def _try_synchronous_shortcut(self, message: str) -> bool:
+        """Try to answer via keyword-only shortcut detection (no LLM).
+
+        Returns True if the message was handled synchronously. This
+        avoids spawning a background thread for simple questions like
+        "conoces tu entorno?" or "que aprendiste?". Only uses fast
+        keyword matching — no Ollama or LLM calls.
+
+        Compound messages (long texts with conjunctions and action
+        verbs) are skipped so they go through the full inference path.
+        """
+        import re as _re
+        normalized = self._normalized_command_text(message)
+        words = normalized.split() if normalized else []
+        if len(words) > 12:
+            has_conjunction = bool(_re.search(r'\b(y|pero|ademas|tambien|sin embargo)\b', normalized))
+            action_verbs = ('revisa', 'analiza', 'diagnostica', 'corrige', 'ejecuta', 'planifica', 'soluciona')
+            has_action = any(v in normalized for v in action_verbs)
+            if has_conjunction and has_action:
+                return False
+        if self._is_world_model_question(message):
+            self._answer_world_model_question(message)
+            return True
+        if self._is_self_awareness_question(message, fast_only=True):
+            self._answer_self_awareness_question(message)
+            return True
+        if self._is_evolution_status_question(message):
+            self._answer_evolution_status_question(message)
+            return True
+        if self._is_self_examination_question(message):
+            self._answer_self_examination_question(message)
+            return True
+        if self._is_learning_question(message, fast_only=True):
+            self._answer_learning_question(message)
+            return True
+        if self._is_account_resource_question(message, fast_only=True):
+            self._answer_account_resource_question(message)
+            return True
+        return False
+
     def _try_handle_chat_command(self, message: str) -> bool:
         command = self._normalized_command_text(message)
         if not command:
@@ -7183,6 +7231,15 @@ class ControlCenterViewModel(QObject):
         if self._try_handle_chat_command(message):
             return
 
+        # Fast synchronous shortcut detection: keyword-only matching
+        # (no Ollama, no LLM). If a shortcut matches here, answer
+        # immediately without spawning a background thread. This keeps
+        # the UI responsive for simple questions while the background
+        # thread (Fix 55) handles the heavy inference path.
+        if self._try_synchronous_shortcut(message):
+            self._set_live_status('idle')
+            return
+
         # Fix 55: move ALL classification + routing + answer logic to a
         # background thread.  Both _chat_shortcut_analysis (up to 3 s)
         # and the _is_* classifiers (Ollama fallback, 5-16 s each) were
@@ -7726,10 +7783,11 @@ class ControlCenterViewModel(QObject):
             self._agent_cards = self._build_agent_cards()
         except Exception:
             pass
-        try:
-            self._refresh_development_packet()
-        except Exception:
-            pass
+        if task_name != 'provider_health':
+            try:
+                self._refresh_development_packet()
+            except Exception:
+                pass
         try:
             self._refresh_autonomy_dock()
         except Exception:
