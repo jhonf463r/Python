@@ -862,10 +862,30 @@ class WorldModelService:
 
     def _network_connectivity_probe(self) -> tuple[float | None, str]:
         started = time.perf_counter()
+        # Primary: TCP to Cloudflare DNS (fast, no HTTP overhead).
         try:
             with socket.create_connection(('1.1.1.1', 53), timeout=self._NETWORK_TIMEOUT_SECONDS):
                 latency_ms = (time.perf_counter() - started) * 1000.0
                 return latency_ms, ''
+        except Exception:
+            pass
+        # Fallback: TCP to Google DNS on port 443 (works when port 53
+        # is blocked by firewall, which is common on Windows).
+        try:
+            started2 = time.perf_counter()
+            with socket.create_connection(('8.8.8.8', 443), timeout=self._NETWORK_TIMEOUT_SECONDS):
+                latency_ms = (time.perf_counter() - started2) * 1000.0
+                return latency_ms, ''
+        except Exception:
+            pass
+        # Last resort: HTTP HEAD to a reliable endpoint.
+        try:
+            import urllib.request
+            started3 = time.perf_counter()
+            req = urllib.request.Request('https://www.google.com', method='HEAD')
+            urllib.request.urlopen(req, timeout=self._NETWORK_TIMEOUT_SECONDS + 1)
+            latency_ms = (time.perf_counter() - started3) * 1000.0
+            return latency_ms, ''
         except Exception as exc:
             return None, str(exc)
 
