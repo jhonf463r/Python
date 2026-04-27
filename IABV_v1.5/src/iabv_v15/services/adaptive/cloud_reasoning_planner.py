@@ -149,6 +149,34 @@ Respond ONLY with a JSON object (no markdown fences) with this schema:
 class CloudReasoningPlannerService:
     """Generates execution plans using cloud reasoning models."""
 
+    # Class-level API health tracking — shared across instances.
+    # Maps provider_id → {'last_status_code': int, 'last_checked': str}
+    _api_health: dict[str, dict[str, Any]] = {}
+
+    @classmethod
+    def _record_api_health(cls, provider_id: str, status_code: int) -> None:
+        """Record the HTTP status code from the last API call for a provider.
+
+        This feeds into CommonSenseEngine fact extraction to detect
+        expired/revoked tokens (401/403) and trigger auto-renewal.
+        """
+        from datetime import datetime, timezone
+        cls._api_health[provider_id] = {
+            'last_status_code': status_code,
+            'last_checked': datetime.now(timezone.utc).isoformat(),
+            'healthy': 200 <= status_code < 400,
+        }
+        if status_code in (401, 403):
+            logger.warning(
+                'cloud-planner: %s returned %d — token may be expired or revoked',
+                provider_id, status_code,
+            )
+
+    @classmethod
+    def get_api_health(cls) -> dict[str, dict[str, Any]]:
+        """Return current API health status for all tracked providers."""
+        return dict(cls._api_health)
+
     def generate_plan(self, user_goal: str, *, context: str = '') -> CloudPlan | None:
         """Ask cloud models to decompose *user_goal* into steps.
 
@@ -194,6 +222,7 @@ class CloudReasoningPlannerService:
                         json={'model': 'gemini-2.0-flash', 'messages': messages, 'temperature': 0.15},
                         headers={'Authorization': f'Bearer {gemini_key}', 'Content-Type': 'application/json'},
                     )
+                    CloudReasoningPlannerService._record_api_health('gemini', resp.status_code)
                     resp.raise_for_status()
                     data = resp.json()
                 raw = data['choices'][0]['message']['content'].strip()
@@ -217,6 +246,7 @@ class CloudReasoningPlannerService:
                         json={'model': 'llama-3.3-70b-versatile', 'messages': messages, 'temperature': 0.15},
                         headers={'Authorization': f'Bearer {groq_key}', 'Content-Type': 'application/json'},
                     )
+                    CloudReasoningPlannerService._record_api_health('groq', resp.status_code)
                     resp.raise_for_status()
                     data = resp.json()
                 raw = data['choices'][0]['message']['content'].strip()

@@ -217,6 +217,76 @@ INFERENCE_RULES: list[dict[str, Any]] = [
         'safe': True,
         'description': 'Codex reporta wrong_thread — invalidar sesion y re-rutear a alternativa',
     },
+    # Token expiration detection and auto-renewal
+    {
+        'id': 'cloud_token_expired_401',
+        'premises': ['cloud_api_401', 'cloud_provider_configured'],
+        'conclusion': 'cloud_token_expired',
+        'action': 'trigger_token_renewal',
+        'severity': 'high',
+        'safe': True,
+        'description': 'API cloud devolvio 401 Unauthorized — token expirado, abrir browser para renovar',
+    },
+    {
+        'id': 'cloud_token_forbidden_403',
+        'premises': ['cloud_api_403', 'cloud_provider_configured'],
+        'conclusion': 'cloud_token_revoked',
+        'action': 'trigger_token_renewal',
+        'severity': 'high',
+        'safe': True,
+        'description': 'API cloud devolvio 403 Forbidden — token revocado o sin permisos, renovar',
+    },
+    {
+        'id': 'github_token_expired',
+        'premises': ['github_api_401'],
+        'conclusion': 'github_token_needs_renewal',
+        'action': 'trigger_token_renewal',
+        'severity': 'critical',
+        'safe': True,
+        'description': 'GitHub API devolvio 401 — PAT expirado o revocado, abrir settings para regenerar',
+    },
+    {
+        'id': 'gemini_key_missing_but_google_account',
+        'premises': ['gemini_key_missing', 'google_account_in_browser'],
+        'conclusion': 'gemini_provisionable',
+        'action': 'provision_cloud_key',
+        'severity': 'medium',
+        'safe': True,
+        'description': 'No hay GEMINI_API_KEY pero hay cuenta Google en el browser — abrir AI Studio para crear key',
+    },
+    {
+        'id': 'groq_key_missing',
+        'premises': ['groq_key_missing'],
+        'conclusion': 'groq_provisionable',
+        'action': 'provision_cloud_key',
+        'severity': 'medium',
+        'safe': True,
+        'description': 'No hay GROQ_API_KEY — abrir console.groq.com para crear key gratis',
+    },
+    # Gemini quota exhausted — needs new project or billing
+    {
+        'id': 'gemini_quota_exhausted',
+        'premises': ['gemini_api_429'],
+        'conclusion': 'gemini_needs_new_project',
+        'action': 'auto_provision_gemini',
+        'severity': 'high',
+        'safe': True,
+        'description': (
+            'Gemini devolvio 429 quota exceeded con limit:0 — '
+            'la key actual esta en un proyecto sin cuota. '
+            'Crear key en proyecto nuevo de Google Cloud via AI Studio'
+        ),
+    },
+    # Generic cloud quota exhausted
+    {
+        'id': 'cloud_quota_exhausted',
+        'premises': ['cloud_api_429', 'cloud_provider_configured'],
+        'conclusion': 'cloud_quota_needs_attention',
+        'action': 'notify_quota_exhausted',
+        'severity': 'medium',
+        'safe': True,
+        'description': 'Un proveedor cloud devolvio 429 — cuota agotada, esperar reset o cambiar plan',
+    },
 ]
 
 
@@ -313,6 +383,57 @@ def extract_facts(
             else:
                 facts.add('secret_expected_missing')
                 facts.add('secret_similar_name_exists')
+
+    # Cloud provider key facts — detect missing keys + token health
+    _CLOUD_KEY_CHECKS: list[tuple[str, str]] = [
+        ('GEMINI_API_KEY', 'gemini_key_missing'),
+        ('GROQ_API_KEY', 'groq_key_missing'),
+        ('OPENROUTER_API_KEY', 'openrouter_key_missing'),
+        ('TOGETHER_API_KEY', 'together_key_missing'),
+    ]
+    for env_key, fact_name in _CLOUD_KEY_CHECKS:
+        val = os.environ.get(env_key, '').strip()
+        if not val:
+            facts.add(fact_name)
+        else:
+            facts.add('cloud_provider_configured')
+
+    # Detect Google account in browser (for Gemini provisioning)
+    metacognition = deep_env_scan or {}
+    browsers_data = metacognition.get('browsers') or []
+    for browser_info in browsers_data:
+        for profile in browser_info.get('profiles') or []:
+            for account in profile.get('accounts') or []:
+                acct_type = str(account.get('type') or '').lower()
+                if acct_type == 'google':
+                    facts.add('google_account_in_browser')
+                    break
+
+    # Token health — detect 401/403/429 from recent API calls
+    api_health = acc.get('api_health', {})
+    # Also pull live health from CloudReasoningPlannerService
+    try:
+        from iabv_v15.services.adaptive.cloud_reasoning_planner import (
+            CloudReasoningPlannerService,
+        )
+        live_health = CloudReasoningPlannerService.get_api_health()
+        for pid, ph in live_health.items():
+            if pid not in api_health:
+                api_health[pid] = ph
+    except ImportError:
+        pass
+    for provider_id, health in api_health.items():
+        status_code = health.get('last_status_code', 0)
+        if status_code == 401:
+            facts.add('cloud_api_401')
+            if 'github' in provider_id.lower():
+                facts.add('github_api_401')
+        elif status_code == 403:
+            facts.add('cloud_api_403')
+        elif status_code == 429:
+            facts.add('cloud_api_429')
+            if 'gemini' in provider_id.lower():
+                facts.add('gemini_api_429')
 
     # Tunnel facts
     tunnel = acc.get('cloudflare_tunnel', {})
@@ -1220,6 +1341,208 @@ def _exec_reroute_from_codex(rule: dict[str, Any]) -> dict[str, Any]:
     return {'executed': True, 'detail': 'Codex wrong_thread — sesion invalidada, re-routing a alternativa'}
 
 
+def _exec_trigger_token_renewal(rule: dict[str, Any]) -> dict[str, Any]:
+    """Detect expired/revoked token and trigger auto-renewal via browser.
+
+    Uses auto_provision_missing_secrets to open the correct renewal URL
+    and guide the user through the UI — no PowerShell needed.
+    """
+    conclusion = rule.get('conclusion', '')
+    description = rule.get('description', '')
+
+    # Map conclusion to the provider that needs renewal
+    _RENEWAL_MAP: dict[str, tuple[str, str]] = {
+        'cloud_token_expired': ('CLOUD_PROVIDER', 'Token expirado (401)'),
+        'cloud_token_revoked': ('CLOUD_PROVIDER', 'Token revocado (403)'),
+        'github_token_needs_renewal': (
+            'GITHUB_TOKEN',
+            'GitHub PAT expirado — abrir https://github.com/settings/tokens',
+        ),
+    }
+
+    provider_key, detail = _RENEWAL_MAP.get(conclusion, ('UNKNOWN', description))
+
+    # Try to open browser for renewal
+    renewal_urls: dict[str, str] = {
+        'GITHUB_TOKEN': 'https://github.com/settings/tokens/new?scopes=repo&description=IABV',
+        'GEMINI_API_KEY': 'https://aistudio.google.com/apikey',
+        'GROQ_API_KEY': 'https://console.groq.com/keys',
+    }
+
+    url = renewal_urls.get(provider_key, '')
+    opened = False
+    if url:
+        try:
+            import webbrowser
+            webbrowser.open(url)
+            opened = True
+        except Exception:
+            pass
+
+    return {
+        'executed': True,
+        'detail': detail,
+        'provider': provider_key,
+        'browser_opened': opened,
+        'renewal_url': url,
+        'user_action': (
+            'Token renovado en el browser — pega el nuevo token en el dialogo de IABV.'
+            if opened else
+            f'Abre {url} y pega el nuevo token en IABV.'
+        ),
+    }
+
+
+def _exec_auto_provision_gemini(rule: dict[str, Any]) -> dict[str, Any]:
+    """Auto-provision Gemini API key when quota is exhausted.
+
+    Uses CloudKeyAutonomousProvisioner to:
+    1. Scan AI Studio page and learn its UI structure
+    2. Find "Create API key" button autonomously
+    3. Guide the user through key creation in a NEW project
+    4. Save the key via save_secret_to_profile
+    5. Verify with a test call
+
+    The program learns the page structure and persists it for future sessions.
+    """
+    # Try autonomous provisioning first
+    try:
+        from iabv_v15.services.cloud_key_autonomous_provisioner import (
+            CloudKeyAutonomousProvisioner,
+        )
+        provisioner = CloudKeyAutonomousProvisioner(headless=True)
+
+        if provisioner.is_available():
+            result = provisioner.provision_key('gemini', auto_navigate=True)
+            return {
+                'executed': True,
+                'detail': result.error or (
+                    'Gemini key provisioned successfully'
+                    if result.success else
+                    'Gemini page scanned — awaiting user action'
+                ),
+                'autonomous': True,
+                'success': result.success,
+                'needs_user_auth': result.needs_user_auth,
+                'steps_completed': len(result.steps_completed),
+                'page_scanned': len(result.page_scans) > 0,
+                'env_key': 'GEMINI_API_KEY',
+                'signup_url': 'https://aistudio.google.com/apikey',
+                'learned_solution': 'create_key_in_new_project',
+                'user_action': result.user_action or (
+                    'En AI Studio: Click "Create API key" → '
+                    '"Create API key in new project" → Copiar key → Pegar en IABV'
+                ),
+                'troubleshooting': {
+                    'error_429_limit_0': (
+                        'El proyecto actual tiene limit:0 en free tier. '
+                        'Cada proyecto nuevo de Google Cloud recibe su propia cuota gratuita.'
+                    ),
+                    'billing_alternative': (
+                        'Alternativamente, habilitar billing en '
+                        'https://console.cloud.google.com/billing — '
+                        '$300 creditos gratis para cuentas nuevas.'
+                    ),
+                },
+            }
+    except Exception as exc:
+        logger.debug('auto_provision_gemini: autonomous provisioner unavailable: %s', exc)
+
+    # Fallback: open browser manually
+    opened = False
+    try:
+        import webbrowser
+        webbrowser.open('https://aistudio.google.com/apikey')
+        opened = True
+    except Exception:
+        pass
+
+    return {
+        'executed': True,
+        'detail': (
+            'Gemini quota exhausted (429, limit:0). '
+            'La solucion es crear key en un proyecto NUEVO de Google Cloud. '
+            'Se abrio AI Studio para guiar el proceso.'
+        ),
+        'autonomous': False,
+        'learned_solution': 'create_key_in_new_project',
+        'browser_opened': opened,
+        'env_key': 'GEMINI_API_KEY',
+        'signup_url': 'https://aistudio.google.com/apikey',
+        'user_action': (
+            'En AI Studio: Click "Create API key" → '
+            '"Create API key in new project" → Copiar key → Pegar en IABV'
+        ),
+        'troubleshooting': {
+            'error_429_limit_0': (
+                'El proyecto actual tiene limit:0 en free tier. '
+                'Cada proyecto nuevo de Google Cloud recibe su propia cuota gratuita.'
+            ),
+            'billing_alternative': (
+                'Alternativamente, habilitar billing en '
+                'https://console.cloud.google.com/billing — '
+                '$300 creditos gratis para cuentas nuevas.'
+            ),
+        },
+    }
+
+
+def _exec_notify_quota_exhausted(rule: dict[str, Any]) -> dict[str, Any]:
+    """Notify that a cloud provider's quota is exhausted."""
+    return {
+        'executed': True,
+        'detail': 'Proveedor cloud con cuota agotada (429) — esperar reset diario o cambiar plan',
+        'user_action': 'Esperar ~24h para reset de cuota o habilitar billing en el proveedor',
+    }
+
+
+def _exec_provision_cloud_key(rule: dict[str, Any]) -> dict[str, Any]:
+    """Open browser to provision a missing cloud API key (Gemini, Groq, etc).
+
+    Follows the single-window principle: opens browser to the correct page
+    and returns structured info for the UI to show a paste dialog.
+    """
+    rule_id = rule.get('id', '')
+    _PROVISION_MAP: dict[str, tuple[str, str, str]] = {
+        'gemini_key_missing_but_google_account': (
+            'GEMINI_API_KEY',
+            'https://aistudio.google.com/apikey',
+            'Google Gemini (AI Studio) — gratis con tu cuenta Google',
+        ),
+        'groq_key_missing': (
+            'GROQ_API_KEY',
+            'https://console.groq.com/keys',
+            'Groq — gratis, Llama 3.3 70B ultra-rapido',
+        ),
+    }
+
+    env_key, url, description = _PROVISION_MAP.get(
+        rule_id, ('UNKNOWN', '', 'Proveedor cloud desconocido'),
+    )
+
+    opened = False
+    if url:
+        try:
+            import webbrowser
+            webbrowser.open(url)
+            opened = True
+        except Exception:
+            pass
+
+    return {
+        'executed': True,
+        'detail': f'Provisioning {env_key}: {description}',
+        'env_key': env_key,
+        'signup_url': url,
+        'browser_opened': opened,
+        'user_action': (
+            f'Se abrio {url} — crea la API key y pegala en el dialogo de IABV.'
+            if opened else
+            f'Abre {url}, crea la API key y pegala en IABV.'
+        ),
+    }
+
+
 _ACTION_EXECUTORS: dict[str, Any] = {
     'force_ollama_to_nvidia': _exec_force_ollama_to_nvidia,
     'verify_cuda_installation': _exec_verify_cuda,
@@ -1247,6 +1570,11 @@ _ACTION_EXECUTORS: dict[str, Any] = {
     'abort_stalled_session': _exec_abort_stalled_session,
     'fallback_to_ollama': _exec_fallback_to_ollama,
     'reroute_from_codex': _exec_reroute_from_codex,
+    # Token renewal + cloud key provisioning executors
+    'trigger_token_renewal': _exec_trigger_token_renewal,
+    'provision_cloud_key': _exec_provision_cloud_key,
+    'auto_provision_gemini': _exec_auto_provision_gemini,
+    'notify_quota_exhausted': _exec_notify_quota_exhausted,
 }
 
 

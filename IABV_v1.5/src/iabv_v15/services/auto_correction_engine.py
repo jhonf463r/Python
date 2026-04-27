@@ -1694,6 +1694,21 @@ def verify_tool_access_deductive(
     return result
 
 
+def _record_cloud_api_health(provider_id: str, status_code: int) -> None:
+    """Record HTTP status from cloud API calls for token health tracking.
+
+    Feeds into CommonSenseEngine to detect expired/revoked tokens.
+    Delegates to CloudReasoningPlannerService._record_api_health.
+    """
+    try:
+        from iabv_v15.services.adaptive.cloud_reasoning_planner import (
+            CloudReasoningPlannerService,
+        )
+        CloudReasoningPlannerService._record_api_health(provider_id, status_code)
+    except ImportError:
+        pass
+
+
 def _query_cloud_reasoning(context: str, system_prompt: str) -> dict[str, Any] | None:
     """Fix 60: try cloud reasoning models (Gemini, Groq) before falling back
     to local Ollama.  The best available model is used for metacognition,
@@ -1729,6 +1744,7 @@ def _query_cloud_reasoning(context: str, system_prompt: str) -> dict[str, Any] |
                         'Content-Type': 'application/json',
                     },
                 )
+                _record_cloud_api_health('gemini', resp.status_code)
                 resp.raise_for_status()
                 data = resp.json()
             raw = data['choices'][0]['message']['content'].strip()
@@ -1760,6 +1776,7 @@ def _query_cloud_reasoning(context: str, system_prompt: str) -> dict[str, Any] |
                         'Content-Type': 'application/json',
                     },
                 )
+                _record_cloud_api_health('groq', resp.status_code)
                 resp.raise_for_status()
                 data = resp.json()
             raw = data['choices'][0]['message']['content'].strip()

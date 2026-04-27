@@ -650,3 +650,301 @@ class TestExperimentSimulator:
         )
         assert 'fault_injection' in report
         assert 'stress_test' in report
+
+
+# =====================================================================
+# Token Renewal & Cloud Key Provisioning
+# =====================================================================
+
+class TestTokenRenewalRules:
+    """Tests for token expiration detection and auto-renewal rules."""
+
+    def test_cloud_token_expired_rule_exists(self):
+        from iabv_v15.services.common_sense_engine import INFERENCE_RULES
+        rule_ids = [r['id'] for r in INFERENCE_RULES]
+        assert 'cloud_token_expired_401' in rule_ids
+        assert 'cloud_token_forbidden_403' in rule_ids
+        assert 'github_token_expired' in rule_ids
+
+    def test_cloud_key_provisioning_rules_exist(self):
+        from iabv_v15.services.common_sense_engine import INFERENCE_RULES
+        rule_ids = [r['id'] for r in INFERENCE_RULES]
+        assert 'gemini_key_missing_but_google_account' in rule_ids
+        assert 'groq_key_missing' in rule_ids
+
+    def test_token_renewal_executor_registered(self):
+        from iabv_v15.services.common_sense_engine import _ACTION_EXECUTORS
+        assert 'trigger_token_renewal' in _ACTION_EXECUTORS
+        assert 'provision_cloud_key' in _ACTION_EXECUTORS
+
+    def test_exec_trigger_token_renewal(self):
+        from iabv_v15.services.common_sense_engine import _exec_trigger_token_renewal
+        rule = {'conclusion': 'github_token_needs_renewal', 'description': 'test'}
+        result = _exec_trigger_token_renewal(rule)
+        assert result['executed'] is True
+        assert result['provider'] == 'GITHUB_TOKEN'
+        assert 'github.com' in result['renewal_url']
+
+    def test_exec_provision_cloud_key_gemini(self):
+        from iabv_v15.services.common_sense_engine import _exec_provision_cloud_key
+        rule = {'id': 'gemini_key_missing_but_google_account'}
+        result = _exec_provision_cloud_key(rule)
+        assert result['executed'] is True
+        assert result['env_key'] == 'GEMINI_API_KEY'
+        assert 'aistudio.google.com' in result['signup_url']
+
+    def test_exec_provision_cloud_key_groq(self):
+        from iabv_v15.services.common_sense_engine import _exec_provision_cloud_key
+        rule = {'id': 'groq_key_missing'}
+        result = _exec_provision_cloud_key(rule)
+        assert result['executed'] is True
+        assert result['env_key'] == 'GROQ_API_KEY'
+        assert 'console.groq.com' in result['signup_url']
+
+    def test_cloud_key_missing_facts_extracted(self):
+        """When GEMINI_API_KEY is not set, gemini_key_missing should be in facts."""
+        from iabv_v15.services.common_sense_engine import extract_facts
+        old_gemini = os.environ.pop('GEMINI_API_KEY', None)
+        old_groq = os.environ.pop('GROQ_API_KEY', None)
+        try:
+            facts = extract_facts(account_scan={'secrets': {'secrets_file_exists': True}})
+            assert 'gemini_key_missing' in facts
+            assert 'groq_key_missing' in facts
+        finally:
+            if old_gemini is not None:
+                os.environ['GEMINI_API_KEY'] = old_gemini
+            if old_groq is not None:
+                os.environ['GROQ_API_KEY'] = old_groq
+
+    def test_cloud_provider_configured_fact(self):
+        """When a cloud key IS set, cloud_provider_configured should be in facts."""
+        from iabv_v15.services.common_sense_engine import extract_facts
+        os.environ['GROQ_API_KEY'] = 'gsk_test_key_12345'
+        try:
+            facts = extract_facts(account_scan={'secrets': {'secrets_file_exists': True}})
+            assert 'cloud_provider_configured' in facts
+        finally:
+            os.environ.pop('GROQ_API_KEY', None)
+
+    def test_api_health_401_triggers_fact(self):
+        """When api_health shows 401, cloud_api_401 fact should be extracted."""
+        from iabv_v15.services.common_sense_engine import extract_facts
+        facts = extract_facts(
+            account_scan={
+                'secrets': {'secrets_file_exists': True},
+                'api_health': {'github_api': {'last_status_code': 401}},
+            },
+        )
+        assert 'cloud_api_401' in facts
+        assert 'github_api_401' in facts
+
+    def test_api_health_403_triggers_fact(self):
+        from iabv_v15.services.common_sense_engine import extract_facts
+        facts = extract_facts(
+            account_scan={
+                'secrets': {'secrets_file_exists': True},
+                'api_health': {'gemini': {'last_status_code': 403}},
+            },
+        )
+        assert 'cloud_api_403' in facts
+
+    def test_google_account_in_browser_fact(self):
+        """Detect Google account in browser scan for Gemini provisioning."""
+        from iabv_v15.services.common_sense_engine import extract_facts
+        deep_env = {
+            'browsers': [{
+                'profiles': [{
+                    'accounts': [{'type': 'google'}],
+                }],
+            }],
+        }
+        facts = extract_facts(
+            account_scan={'secrets': {'secrets_file_exists': True}},
+            deep_env_scan=deep_env,
+        )
+        assert 'google_account_in_browser' in facts
+
+
+    def test_gemini_quota_exhausted_rule_exists(self):
+        from iabv_v15.services.common_sense_engine import INFERENCE_RULES
+        rule_ids = [r['id'] for r in INFERENCE_RULES]
+        assert 'gemini_quota_exhausted' in rule_ids
+
+    def test_gemini_429_fact_extracted(self):
+        from iabv_v15.services.common_sense_engine import extract_facts
+        facts = extract_facts(
+            account_scan={
+                'secrets': {'secrets_file_exists': True},
+                'api_health': {'gemini': {'last_status_code': 429}},
+            },
+        )
+        assert 'cloud_api_429' in facts
+        assert 'gemini_api_429' in facts
+
+    def test_exec_auto_provision_gemini(self):
+        from iabv_v15.services.common_sense_engine import _exec_auto_provision_gemini
+        rule = {'id': 'gemini_quota_exhausted'}
+        result = _exec_auto_provision_gemini(rule)
+        assert result['executed'] is True
+        assert result['learned_solution'] == 'create_key_in_new_project'
+        assert result['env_key'] == 'GEMINI_API_KEY'
+        assert 'aistudio.google.com' in result['signup_url']
+        assert 'troubleshooting' in result
+        assert 'error_429_limit_0' in result['troubleshooting']
+
+    def test_auto_provision_gemini_executor_registered(self):
+        from iabv_v15.services.common_sense_engine import _ACTION_EXECUTORS
+        assert 'auto_provision_gemini' in _ACTION_EXECUTORS
+        assert 'notify_quota_exhausted' in _ACTION_EXECUTORS
+
+    def test_cloud_provisioning_knowledge_file_exists(self):
+        knowledge_path = Path(__file__).parent.parent / 'data' / 'evolution' / 'tool_discovery' / 'cloud_provider_provisioning.json'
+        assert knowledge_path.exists()
+        data = json.loads(knowledge_path.read_text())
+        assert 'gemini' in data['providers']
+        assert 'groq' in data['providers']
+        assert '429_limit_0' in data['providers']['gemini']['known_issues']
+
+
+class TestCloudReasoningPlannerHealth:
+    """Tests for API health tracking in CloudReasoningPlannerService."""
+
+    def test_record_api_health(self):
+        from iabv_v15.services.adaptive.cloud_reasoning_planner import (
+            CloudReasoningPlannerService,
+        )
+        CloudReasoningPlannerService._api_health.clear()
+        CloudReasoningPlannerService._record_api_health('groq', 200)
+        health = CloudReasoningPlannerService.get_api_health()
+        assert 'groq' in health
+        assert health['groq']['last_status_code'] == 200
+        assert health['groq']['healthy'] is True
+
+    def test_record_api_health_401(self):
+        from iabv_v15.services.adaptive.cloud_reasoning_planner import (
+            CloudReasoningPlannerService,
+        )
+        CloudReasoningPlannerService._api_health.clear()
+        CloudReasoningPlannerService._record_api_health('gemini', 401)
+        health = CloudReasoningPlannerService.get_api_health()
+        assert health['gemini']['last_status_code'] == 401
+        assert health['gemini']['healthy'] is False
+
+    def test_record_api_health_429(self):
+        from iabv_v15.services.adaptive.cloud_reasoning_planner import (
+            CloudReasoningPlannerService,
+        )
+        CloudReasoningPlannerService._api_health.clear()
+        CloudReasoningPlannerService._record_api_health('gemini', 429)
+        health = CloudReasoningPlannerService.get_api_health()
+        assert health['gemini']['last_status_code'] == 429
+        assert health['gemini']['healthy'] is False
+
+
+class TestCloudKeyAutonomousProvisioner:
+    """Tests for autonomous cloud key provisioning."""
+
+    def test_provisioner_imports(self):
+        from iabv_v15.services.cloud_key_autonomous_provisioner import (
+            CloudKeyAutonomousProvisioner,
+            PageScanResult,
+            ProvisioningResult,
+            ProvisioningStep,
+        )
+        assert CloudKeyAutonomousProvisioner is not None
+        assert PageScanResult is not None
+
+    def test_known_providers(self):
+        from iabv_v15.services.cloud_key_autonomous_provisioner import (
+            CloudKeyAutonomousProvisioner,
+        )
+        providers = CloudKeyAutonomousProvisioner.get_known_providers()
+        assert 'gemini' in providers
+        assert 'groq' in providers
+
+    def test_provider_knowledge_structure(self):
+        from iabv_v15.services.cloud_key_autonomous_provisioner import (
+            CloudKeyAutonomousProvisioner,
+        )
+        knowledge = CloudKeyAutonomousProvisioner.get_provider_knowledge()
+        for provider_id in ('gemini', 'groq'):
+            pk = knowledge[provider_id]
+            assert 'env_key' in pk
+            assert 'key_prefix' in pk
+            assert 'start_url' in pk
+            assert 'verify_url' in pk
+            assert 'steps_pattern' in pk
+            assert 'known_errors' in pk
+
+    def test_find_create_key_button(self):
+        from iabv_v15.services.cloud_key_autonomous_provisioner import (
+            CloudKeyAutonomousProvisioner,
+            PageScanResult,
+        )
+        scan = PageScanResult(
+            url='https://aistudio.google.com/apikey',
+            title='AI Studio',
+            buttons=[
+                {'text': 'Create API key', 'ariaLabel': '', 'disabled': False},
+                {'text': 'Settings', 'ariaLabel': '', 'disabled': False},
+            ],
+        )
+        provisioner = CloudKeyAutonomousProvisioner()
+        button = provisioner.find_create_key_button(scan)
+        assert button is not None
+        assert 'Create API key' in button['text']
+
+    def test_find_api_key_on_page(self):
+        from iabv_v15.services.cloud_key_autonomous_provisioner import (
+            CloudKeyAutonomousProvisioner,
+            PageScanResult,
+        )
+        scan = PageScanResult(
+            url='https://aistudio.google.com/apikey',
+            title='AI Studio',
+            key_displays=[
+                {'text': 'AIzaSyD1234567890abcdefghijklmnopqrstuvwxyz', 'className': 'api-key'},
+            ],
+        )
+        provisioner = CloudKeyAutonomousProvisioner()
+        key = provisioner.find_api_key_on_page(scan, prefix='AIza')
+        assert key is not None
+        assert key.startswith('AIza')
+
+    def test_detect_auth_required(self):
+        from iabv_v15.services.cloud_key_autonomous_provisioner import (
+            CloudKeyAutonomousProvisioner,
+            PageScanResult,
+        )
+        scan_auth = PageScanResult(
+            url='https://accounts.google.com',
+            title='Sign in - Google Accounts',
+            buttons=[{'text': 'Sign in', 'ariaLabel': '', 'disabled': False}],
+        )
+        scan_no_auth = PageScanResult(
+            url='https://aistudio.google.com/apikey',
+            title='API Keys - AI Studio',
+            buttons=[{'text': 'Create API key', 'ariaLabel': '', 'disabled': False}],
+        )
+        provisioner = CloudKeyAutonomousProvisioner()
+        assert provisioner.detect_auth_required(scan_auth) is True
+        assert provisioner.detect_auth_required(scan_no_auth) is False
+
+    def test_provision_unknown_provider(self):
+        from iabv_v15.services.cloud_key_autonomous_provisioner import (
+            CloudKeyAutonomousProvisioner,
+        )
+        provisioner = CloudKeyAutonomousProvisioner()
+        result = provisioner.provision_key('unknown_provider')
+        assert result.success is False
+        assert 'Unknown provider' in result.error
+
+    def test_gemini_known_errors(self):
+        from iabv_v15.services.cloud_key_autonomous_provisioner import (
+            CloudKeyAutonomousProvisioner,
+        )
+        knowledge = CloudKeyAutonomousProvisioner.get_provider_knowledge()
+        gemini = knowledge['gemini']
+        assert 429 in gemini['known_errors']
+        assert 401 in gemini['known_errors']
+        assert 'new project' in gemini['known_errors'][429].lower()
