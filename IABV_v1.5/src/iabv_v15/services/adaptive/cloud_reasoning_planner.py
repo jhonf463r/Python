@@ -291,7 +291,10 @@ class CloudReasoningPlannerService:
                     CloudReasoningPlannerService._record_api_health('gemini', resp.status_code)
                     resp.raise_for_status()
                     data = resp.json()
-                return CloudReasoningPlannerService._extract_json(data, 'gemini'), None
+                parsed = CloudReasoningPlannerService._extract_json(data, 'gemini')
+                if parsed is not None:
+                    return parsed, None
+                return None, {'error': 'JSON parse failed on 2xx response', 'status_code': resp.status_code}
             except Exception as exc:
                 logger.debug('cloud-planner gemini failed: %s', exc)
                 sc = getattr(getattr(exc, 'response', None), 'status_code', 0)
@@ -311,7 +314,10 @@ class CloudReasoningPlannerService:
                     CloudReasoningPlannerService._record_api_health('groq', resp.status_code)
                     resp.raise_for_status()
                     data = resp.json()
-                return CloudReasoningPlannerService._extract_json(data, 'groq'), None
+                parsed = CloudReasoningPlannerService._extract_json(data, 'groq')
+                if parsed is not None:
+                    return parsed, None
+                return None, {'error': 'JSON parse failed on 2xx response', 'status_code': resp.status_code}
             except Exception as exc:
                 logger.debug('cloud-planner groq failed: %s', exc)
                 sc = getattr(getattr(exc, 'response', None), 'status_code', 0)
@@ -328,7 +334,10 @@ class CloudReasoningPlannerService:
                     )
                     resp.raise_for_status()
                     data = resp.json()
-                return CloudReasoningPlannerService._extract_json(data, 'ollama_local'), None
+                parsed = CloudReasoningPlannerService._extract_json(data, 'ollama_local')
+                if parsed is not None:
+                    return parsed, None
+                return None, {'error': 'JSON parse failed on 2xx response', 'status_code': resp.status_code}
             except Exception as exc:
                 logger.debug('cloud-planner ollama failed: %s', exc)
                 sc = getattr(getattr(exc, 'response', None), 'status_code', 0)
@@ -348,7 +357,10 @@ class CloudReasoningPlannerService:
                     CloudReasoningPlannerService._record_api_health('openrouter', resp.status_code)
                     resp.raise_for_status()
                     data = resp.json()
-                return CloudReasoningPlannerService._extract_json(data, 'openrouter'), None
+                parsed = CloudReasoningPlannerService._extract_json(data, 'openrouter')
+                if parsed is not None:
+                    return parsed, None
+                return None, {'error': 'JSON parse failed on 2xx response', 'status_code': resp.status_code}
             except Exception as exc:
                 logger.debug('cloud-planner openrouter failed: %s', exc)
                 sc = getattr(getattr(exc, 'response', None), 'status_code', 0)
@@ -368,7 +380,10 @@ class CloudReasoningPlannerService:
                     CloudReasoningPlannerService._record_api_health('together', resp.status_code)
                     resp.raise_for_status()
                     data = resp.json()
-                return CloudReasoningPlannerService._extract_json(data, 'together'), None
+                parsed = CloudReasoningPlannerService._extract_json(data, 'together')
+                if parsed is not None:
+                    return parsed, None
+                return None, {'error': 'JSON parse failed on 2xx response', 'status_code': resp.status_code}
             except Exception as exc:
                 logger.debug('cloud-planner together failed: %s', exc)
                 sc = getattr(getattr(exc, 'response', None), 'status_code', 0)

@@ -2969,28 +2969,38 @@ class ControlCenterViewModel(QObject):
                 self.dataChanged.emit()
                 return
 
-            adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
-            self.taskResolved.emit(
-                'chat',
-                {
-                    'summary': record.result.summary,
-                    'provider_name': record.result.provider_name,
-                    'reasoning_mode': record.result.reasoning_mode.value,
-                    'confidence': f'{record.result.confidence:.2f}',
-                    'route_reason': record.route.reason,
-                    'report_kind': record.result.report_kind.value,
-                    'role_title': self._role_title_from_task(record.result.detected_role or record.route.task_role),
-                    'sources': record.result.sources,
-                    'follow_up_teachings': record.result.follow_up_teachings,
-                    'used_tools': [tool.value for tool in record.result.used_tools],
-                    'planner_used': record.result.planner_used,
-                    'executor_model': record.result.executor_model or record.route.model_name,
-                    'chosen_pack': record.result.chosen_pack,
-                    'adaptive_session': adaptive_session,
-                    'assistant_guidance': (record.result.raw_output or {}).get('assistant_guidance') if isinstance(record.result.raw_output, dict) else None,
-                    'local_chat_llm': (record.result.raw_output or {}).get('local_chat_llm') if isinstance(record.result.raw_output, dict) else None,
-                },
-            )
+            try:
+                adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
+                self.taskResolved.emit(
+                    'chat',
+                    {
+                        'summary': record.result.summary,
+                        'provider_name': record.result.provider_name,
+                        'reasoning_mode': record.result.reasoning_mode.value,
+                        'confidence': f'{record.result.confidence:.2f}',
+                        'route_reason': record.route.reason,
+                        'report_kind': record.result.report_kind.value,
+                        'role_title': self._role_title_from_task(record.result.detected_role or record.route.task_role),
+                        'sources': record.result.sources,
+                        'follow_up_teachings': record.result.follow_up_teachings,
+                        'used_tools': [tool.value for tool in record.result.used_tools],
+                        'planner_used': record.result.planner_used,
+                        'executor_model': record.result.executor_model or record.route.model_name,
+                        'chosen_pack': record.result.chosen_pack,
+                        'adaptive_session': adaptive_session,
+                        'assistant_guidance': (record.result.raw_output or {}).get('assistant_guidance') if isinstance(record.result.raw_output, dict) else None,
+                        'local_chat_llm': (record.result.raw_output or {}).get('local_chat_llm') if isinstance(record.result.raw_output, dict) else None,
+                    },
+                )
+            except Exception:
+                fallback = self._general_chat_reply(message)
+                self._append_message('assistant', 'IABV', fallback, 'Conversacion general (fallback local).')
+                self._latest_response_text = fallback
+                self._latest_response_meta = 'Conversacion general (fallback local).'
+                self._working = False
+                self._busy_label = 'Respuesta lista.'
+                self._clear_autonomy_activity_override()
+                self.dataChanged.emit()
 
         threading.Thread(target=worker, daemon=True).start()
 
