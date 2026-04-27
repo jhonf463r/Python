@@ -1742,7 +1742,9 @@ class IABVMCPServer:
 
             # 3. World Model — is it alive?
             try:
-                wm = self._world_model_snapshot()
+                svc = self._world_model_service()
+                wm_obj = svc.current_model()
+                wm = _to_jsonable(wm_obj) or {}
                 report['subsystems']['world_model'] = {
                     'status': 'ok',
                     'windows_count': len(wm.get('open_windows', [])) if isinstance(wm, dict) else 0,
