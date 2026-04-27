@@ -1679,6 +1679,12 @@ class AppBootstrap:
                 bridge.shutdown()
             except Exception:
                 logger.exception('Error al cerrar MCPBridgeService')
+        ui_bridge = getattr(self, 'ui_bridge_server', None)
+        if ui_bridge is not None:
+            try:
+                ui_bridge.stop()
+            except Exception:
+                logger.exception('Error al cerrar UIBridgeServer')
         self.stop()
 
     def export_portable_context(self, *, refresh: bool = True) -> dict[str, object]:
