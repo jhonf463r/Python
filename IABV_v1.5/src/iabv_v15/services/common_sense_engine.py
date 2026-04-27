@@ -1350,28 +1350,51 @@ def _exec_trigger_token_renewal(rule: dict[str, Any]) -> dict[str, Any]:
     conclusion = rule.get('conclusion', '')
     description = rule.get('description', '')
 
-    # Map conclusion to the provider that needs renewal
-    _RENEWAL_MAP: dict[str, tuple[str, str]] = {
-        'cloud_token_expired': ('CLOUD_PROVIDER', 'Token expirado (401)'),
-        'cloud_token_revoked': ('CLOUD_PROVIDER', 'Token revocado (403)'),
-        'github_token_needs_renewal': (
-            'GITHUB_TOKEN',
-            'GitHub PAT expirado — abrir https://github.com/settings/tokens',
-        ),
-    }
-
-    provider_key, detail = _RENEWAL_MAP.get(conclusion, ('UNKNOWN', description))
-
-    # Try to open browser for renewal
-    renewal_urls: dict[str, str] = {
+    _RENEWAL_URLS: dict[str, str] = {
         'GITHUB_TOKEN': 'https://github.com/settings/tokens/new?scopes=repo&description=IABV',
         'GEMINI_API_KEY': 'https://aistudio.google.com/apikey',
         'GROQ_API_KEY': 'https://console.groq.com/keys',
+        'OPENAI_API_KEY': 'https://platform.openai.com/api-keys',
     }
 
-    url = renewal_urls.get(provider_key, '')
+    # For cloud_token_expired/revoked, determine the specific provider by
+    # reading CloudReasoningPlannerService API health to find which one
+    # returned 401/403.  Fall back to listing all renewal URLs.
+    if conclusion == 'github_token_needs_renewal':
+        provider_key = 'GITHUB_TOKEN'
+        detail = 'GitHub PAT expirado — abrir https://github.com/settings/tokens'
+    else:
+        status_target = 401 if conclusion == 'cloud_token_expired' else 403
+        provider_key = 'CLOUD_PROVIDER'
+        detail = description or f'Token cloud {status_target}'
+        try:
+            from iabv_v15.services.adaptive.cloud_reasoning_planner import (
+                CloudReasoningPlannerService,
+            )
+            health = CloudReasoningPlannerService.get_api_health()
+            _PROVIDER_KEY_MAP: dict[str, str] = {
+                'gemini': 'GEMINI_API_KEY',
+                'groq': 'GROQ_API_KEY',
+                'openai': 'OPENAI_API_KEY',
+                'github': 'GITHUB_TOKEN',
+            }
+            for pid, info in health.items():
+                if info.get('last_status_code') == status_target:
+                    for keyword, key in _PROVIDER_KEY_MAP.items():
+                        if keyword in pid.lower():
+                            provider_key = key
+                            detail = f'{pid} devolvio {status_target}'
+                            break
+                    if provider_key != 'CLOUD_PROVIDER':
+                        break
+        except Exception:
+            pass
+
+    url = _RENEWAL_URLS.get(provider_key, '')
+    if not url and provider_key == 'CLOUD_PROVIDER':
+        url = ' | '.join(f'{k}: {v}' for k, v in _RENEWAL_URLS.items())
     opened = False
-    if url:
+    if url and '|' not in url:
         try:
             import webbrowser
             webbrowser.open(url)
@@ -1388,6 +1411,8 @@ def _exec_trigger_token_renewal(rule: dict[str, Any]) -> dict[str, Any]:
         'user_action': (
             'Token renovado en el browser — pega el nuevo token en el dialogo de IABV.'
             if opened else
+            f'Revisa tus dashboards de proveedores cloud y pega el nuevo token en IABV. ({url})'
+            if provider_key == 'CLOUD_PROVIDER' else
             f'Abre {url} y pega el nuevo token en IABV.'
         ),
     }

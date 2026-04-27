@@ -1230,6 +1230,20 @@ class AdaptiveTaskOrchestrator:
         _priority = self._enqueue_request(request)
         self._processing_count += 1
         _cognitive_load = self._cognitive_load_assessment()
+        try:
+            return self._handle_request_body(request, _t0, _priority, _cognitive_load)
+        finally:
+            self._dequeue_request()
+            self._processing_count = max(0, self._processing_count - 1)
+
+    def _handle_request_body(
+        self,
+        request: InferenceRequest,
+        _t0: float,
+        _priority: int,
+        _cognitive_load: dict[str, Any],
+    ) -> tuple[RoleRoute, InferenceResult, AdaptiveSession]:
+        import time as _time
 
         # ETAPA 2: Clasificación semántica mejorada con IntentSchema
         intent, intent_schema = self.intent_service.classify_with_schema(
@@ -1405,10 +1419,6 @@ class AdaptiveTaskOrchestrator:
         saved_session = self.task_outcome_recorder.record(session)
         route = self._build_route(saved_session, decision_context)
         result = self._build_result(request=request, session=saved_session, pack=pack, route=route)
-
-        # CognitiveLoad: release queue slot.
-        self._dequeue_request()
-        self._processing_count = max(0, self._processing_count - 1)
 
         return route, result, saved_session
 

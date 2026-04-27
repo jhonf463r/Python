@@ -273,6 +273,13 @@ def auto_provision_missing_secrets(
 
     provisions: list[dict[str, Any]] = []
     opened_urls: list[str] = []
+    auto_provisioned: list[str] = []
+
+    # Try autonomous provisioning first when Playwright is available.
+    _AUTONOMOUS_PROVIDERS: dict[str, str] = {
+        'GEMINI_API_KEY': 'gemini',
+        'GROQ_API_KEY': 'groq',
+    }
 
     for name in missing:
         url, description, can_open = _resolve_secret_provider(name)
@@ -282,7 +289,34 @@ def auto_provision_missing_secrets(
             'url': url,
             'auto_openable': can_open,
             'opened': False,
+            'autonomous': False,
         }
+
+        # Attempt autonomous provisioning for known cloud providers.
+        autonomous_provider = _AUTONOMOUS_PROVIDERS.get(name)
+        if autonomous_provider and open_browser:
+            try:
+                from iabv_v15.services.cloud_key_autonomous_provisioner import (
+                    CloudKeyAutonomousProvisioner,
+                )
+                if CloudKeyAutonomousProvisioner.is_available():
+                    provisioner = CloudKeyAutonomousProvisioner()
+                    prov_result = provisioner.provision_key(autonomous_provider)
+                    provision['autonomous'] = True
+                    provision['autonomous_result'] = {
+                        'success': prov_result.success,
+                        'needs_user_auth': prov_result.needs_user_auth,
+                        'user_action': prov_result.user_action,
+                        'steps': len(prov_result.steps_completed),
+                    }
+                    if prov_result.success:
+                        auto_provisioned.append(name)
+                        provision['opened'] = True
+                        provisions.append(provision)
+                        logger.info('auto_provision: autonomous success for %s', name)
+                        continue
+            except Exception as exc:
+                logger.debug('auto_provision: autonomous failed for %s: %s', name, exc)
 
         if open_browser and can_open and url:
             try:
@@ -296,12 +330,26 @@ def auto_provision_missing_secrets(
 
         provisions.append(provision)
 
+    if auto_provisioned and not opened_urls:
+        return {
+            'action': 'provision_secrets',
+            'status': 'auto_provisioned',
+            'provisions': provisions,
+            'count': len(provisions),
+            'auto_provisioned': auto_provisioned,
+            'user_action': (
+                f'IABV provisiono automaticamente: {", ".join(auto_provisioned)}. '
+                f'No se requiere accion manual.'
+            ),
+        }
+
     return {
         'action': 'provision_secrets',
         'status': 'needs_user',
         'provisions': provisions,
         'count': len(provisions),
         'opened_count': len(opened_urls),
+        'auto_provisioned': auto_provisioned,
         'user_action': (
             'Se abrieron las páginas para crear los tokens. '
             'Pega cada token en el diálogo de IABV cuando lo tengas.'
