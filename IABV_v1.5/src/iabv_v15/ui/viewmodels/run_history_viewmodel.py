@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import logging
+
 from iabv_v15.infra.persistence.execution_dossier_repository import ExecutionDossierRepository
 from iabv_v15.infra.persistence.run_repository import RunRepository
 from iabv_v15.ui.qt import QObject, Property, Signal, Slot
+
+logger = logging.getLogger(__name__)
 
 
 class RunHistoryViewModel(QObject):
@@ -33,8 +37,11 @@ class RunHistoryViewModel(QObject):
             payload = record.model_dump(mode='json')
             dossier = None
             if self.dossier_repository is not None:
-                dossiers = self.dossier_repository.find_by_run(record.run_id)
-                dossier = dossiers[0].model_dump(mode='json') if dossiers else None
+                try:
+                    dossiers = self.dossier_repository.find_by_run(record.run_id)
+                    dossier = dossiers[0].model_dump(mode='json') if dossiers else None
+                except Exception as exc:
+                    logger.warning('run_history: dossier load failed for run %s: %s', record.run_id, exc)
             role_value = ((payload.get('result') or {}).get('detected_role') or (payload.get('route') or {}).get('task_role') or 'training')
             payload['role_label'] = role_value.replace('_', ' ')
             payload['duration_label'] = f"{int(payload.get('duration_ms') or 0)} ms" if payload.get('duration_ms') is not None else 'sin medicion'
@@ -69,8 +76,12 @@ class RunHistoryViewModel(QObject):
     def _load_dossier(self, run_id: str) -> dict:
         if not run_id or self.dossier_repository is None:
             return {}
-        dossiers = self.dossier_repository.find_by_run(run_id)
-        return dossiers[0].model_dump(mode='json') if dossiers else {}
+        try:
+            dossiers = self.dossier_repository.find_by_run(run_id)
+            return dossiers[0].model_dump(mode='json') if dossiers else {}
+        except Exception as exc:
+            logger.warning('run_history: dossier load failed for run %s: %s', run_id, exc)
+            return {}
 
     runs = Property(list, get_runs, notify=dataChanged)
     selectedRun = Property(dict, get_selected_run, notify=dataChanged)

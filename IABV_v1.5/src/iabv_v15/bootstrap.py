@@ -2121,7 +2121,7 @@ class AppBootstrap:
             result = _sp.run(
                 ['git', 'rev-parse', 'HEAD'],
                 capture_output=True, text=True, timeout=10,
-                cwd=str(self.config.workspace_dir),
+                cwd=str(self.config.workspace_root),
             )
             if result.returncode != 0:
                 return
@@ -2138,7 +2138,7 @@ class AppBootstrap:
                 diff_result = _sp.run(
                     ['git', 'diff', '--name-only', last_sha, current_sha],
                     capture_output=True, text=True, timeout=15,
-                    cwd=str(self.config.workspace_dir),
+                    cwd=str(self.config.workspace_root),
                 )
                 changed_files = diff_result.stdout.strip().splitlines() if diff_result.returncode == 0 else []
                 n_files = len(changed_files)
@@ -2198,7 +2198,7 @@ class AppBootstrap:
         that log and surfaces any warnings or errors as OSES findings so the
         program can self-examine its own startup process.
         """
-        log_path = Path(self.config.workspace_dir) / 'data' / 'logs' / 'startup_console.log'
+        log_path = Path(self.config.workspace_root) / 'data' / 'logs' / 'startup_console.log'
         if not log_path.exists():
             return
 

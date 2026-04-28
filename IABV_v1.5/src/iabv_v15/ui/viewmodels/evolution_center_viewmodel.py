@@ -596,23 +596,26 @@ class EvolutionCenterViewModel(QObject):
         tool_repo = self.tool_record_repository
 
         def worker() -> None:
-            ordered = ['ollama_llm', 'playwright_browser', 'desktop_human_runner', 'codex_installed', 'chatgpt_installed', 'chatgpt_web_assisted']
-            sections: list[str] = []
-            audited = 0
-            for tool_id in ordered:
-                card = tool_repo.get_card(tool_id)
-                if card is None:
-                    continue
-                audited += 1
-                try:
-                    sections.append(self._run_tool_sandbox(card))
-                except Exception as exc:
-                    sections.append(f'Herramienta {tool_id}: error — {exc}')
-            if audited == 0:
-                self.taskFailed.emit('audit_base_tools', 'No encontre herramientas base para auditar en esta sesion.')
-                return
-            header = f'Auditoria base completada. Herramientas auditadas: {audited}.'
-            self.taskResolved.emit('audit_base_tools', {'status': header, 'sections': sections})
+            try:
+                ordered = ['ollama_llm', 'playwright_browser', 'desktop_human_runner', 'codex_installed', 'chatgpt_installed', 'chatgpt_web_assisted']
+                sections: list[str] = []
+                audited = 0
+                for tool_id in ordered:
+                    card = tool_repo.get_card(tool_id)
+                    if card is None:
+                        continue
+                    audited += 1
+                    try:
+                        sections.append(self._run_tool_sandbox(card))
+                    except Exception as exc:
+                        sections.append(f'Herramienta {tool_id}: error — {exc}')
+                if audited == 0:
+                    self.taskFailed.emit('audit_base_tools', 'No encontre herramientas base para auditar en esta sesion.')
+                    return
+                header = f'Auditoria base completada. Herramientas auditadas: {audited}.'
+                self.taskResolved.emit('audit_base_tools', {'status': header, 'sections': sections})
+            except Exception as exc:
+                self.taskFailed.emit('audit_base_tools', str(exc))
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -902,6 +905,8 @@ class EvolutionCenterViewModel(QObject):
         if task_name == 'publish_pr':
             self._publish_pr_status = f'No pude publicar el PR: {message}'
             self._publish_pr_result = {'success': False, 'error': message}
+        elif task_name == 'audit_base_tools':
+            self._latest_tool_status = f'Error en auditoria base de herramientas: {message}'
         self.dataChanged.emit()
 
     @staticmethod
