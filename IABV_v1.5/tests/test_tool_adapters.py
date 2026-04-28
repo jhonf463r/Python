@@ -747,3 +747,58 @@ def test_external_assistant_adapter_defaults_reingest_only_to_false() -> None:
 
     assert calls[0]['reingest_only'] is False
     assert calls[0]['submit_after_paste'] is True
+
+
+# ── Fix 5: multi_source_disagreement log demotion ──────────
+
+
+def test_multi_source_disagreement_log_demotion(monkeypatch, tmp_path) -> None:
+    """First disagreement logs at INFO; subsequent identical ones at DEBUG."""
+    import logging
+
+    monkeypatch.setenv('LOCALAPPDATA', str(tmp_path))
+    card = ToolCard(
+        tool_id='test_tool_log_demotion',
+        title='Test tool',
+        tool_type=ToolType.CUSTOM,
+        adapter_key='external_assistant',
+        metadata={
+            'launch_mode': 'desktop_app',
+            'command_name': 'test_tool',
+        },
+    )
+
+    adapter = ExternalAssistantToolAdapter()
+    # Clear class-level state from prior tests
+    adapter._multi_source_cache.pop('test_tool_log_demotion', None)
+    adapter._disagreement_logged.pop('test_tool_log_demotion', None)
+
+    log_records: list[logging.LogRecord] = []
+    logger = logging.getLogger('iabv_v15.services.tools.tool_adapters')
+    handler = logging.Handler()
+    handler.emit = lambda record: log_records.append(record)
+    logger.addHandler(handler)
+    old_level = logger.level
+    logger.setLevel(logging.DEBUG)
+    try:
+        monkeypatch.setattr('os.name', 'nt')
+        # Stub filesystem to return True, process/window to False
+        monkeypatch.setattr(adapter, '_resolve_launch_target', lambda c: '/fake/path')
+        monkeypatch.setattr(adapter, '_detect_running_process', lambda c: False)
+        monkeypatch.setattr(adapter, '_detect_by_window_title', lambda c: False)
+
+        # First call — should be INFO
+        adapter._multi_source_detect(card, force=True)
+        info_records = [r for r in log_records if 'multi_source_disagreement' in r.getMessage()]
+        assert len(info_records) == 1
+        assert info_records[0].levelno == logging.INFO
+
+        # Second call with same result — should be DEBUG
+        log_records.clear()
+        adapter._multi_source_detect(card, force=True)
+        debug_records = [r for r in log_records if 'multi_source_disagreement' in r.getMessage()]
+        assert len(debug_records) == 1
+        assert debug_records[0].levelno == logging.DEBUG
+    finally:
+        logger.removeHandler(handler)
+        logger.setLevel(old_level)

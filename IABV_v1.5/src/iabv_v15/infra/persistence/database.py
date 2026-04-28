@@ -311,6 +311,7 @@ class AppDatabase:
                     success INTEGER NOT NULL,
                     score REAL NOT NULL,
                     path TEXT NOT NULL,
+                    metadata_json TEXT NOT NULL DEFAULT '{}',
                     created_at_utc TEXT NOT NULL
                 );
 
@@ -492,6 +493,7 @@ class AppDatabase:
             )
             self._ensure_column(conn, 'run_records', 'duration_ms', 'INTEGER')
             self._ensure_column(conn, 'run_records', 'error_summary', "TEXT NOT NULL DEFAULT ''")
+            self._ensure_column(conn, 'experiment_runs', 'metadata_json', "TEXT NOT NULL DEFAULT '{}'")
 
     def _ensure_column(self, conn: sqlite3.Connection, table: str, column: str, definition: str) -> None:
         existing = {row['name'] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
@@ -510,4 +512,3 @@ class AppDatabase:
     def fetchone(self, sql: str, parameters: Iterable[object] = ()) -> sqlite3.Row | None:
         with self.connect() as conn:
             return conn.execute(sql, tuple(parameters)).fetchone()
-

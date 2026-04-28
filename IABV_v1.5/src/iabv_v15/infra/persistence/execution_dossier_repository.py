@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 
 from iabv_v15.domain.models import ExecutionDossier
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.storage import ArtifactStorage
+
+logger = logging.getLogger(__name__)
 
 
 class ExecutionDossierRepository:

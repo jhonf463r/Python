@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from iabv_v15.domain.models import ExperimentRecommendation, ExperimentRun
+from iabv_v15.domain.models import ExperimentRecommendation, ExperimentRun, IATraceEntry
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 
@@ -20,8 +20,8 @@ class ExperimentLabRepository:
         self.db.execute(
             """
             INSERT OR REPLACE INTO experiment_runs
-            (run_id, domain, suite_name, subject_key, route, success, score, path, created_at_utc)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (run_id, domain, suite_name, subject_key, route, success, score, path, metadata_json, created_at_utc)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 run.run_id,
@@ -32,6 +32,7 @@ class ExperimentLabRepository:
                 int(run.success),
                 float(run.metrics.total_score),
                 saved_path,
+                json.dumps(run.metadata, ensure_ascii=False, default=str),
                 run.created_at_utc.isoformat(),
             ),
         )
@@ -68,6 +69,56 @@ class ExperimentLabRepository:
             if loaded is not None:
                 items.append(loaded)
         return items
+
+    def list_runs_by_scope_key(self, scope_key: str, *, limit: int = 20) -> list[ExperimentRun]:
+        rows = self.db.fetchall(
+            """
+            SELECT run_id, path FROM experiment_runs
+            WHERE json_extract(metadata_json, '$.comparison_scope_key') = ?
+            ORDER BY created_at_utc DESC LIMIT ?
+            """,
+            (scope_key, limit),
+        )
+        items: list[ExperimentRun] = []
+        for row in rows:
+            loaded = self._load_run_optional(row['run_id'], row['path'])
+            if loaded is not None:
+                items.append(loaded)
+        return items
+
+    def list_candidate_traces_for_scope(self, scope_key: str, *, limit: int = 20) -> list[IATraceEntry]:
+        traces: list[IATraceEntry] = []
+        for run in self.list_runs_by_scope_key(scope_key, limit=limit):
+            raw_trace = run.metadata.get('ia_trace_entry')
+            if isinstance(raw_trace, dict):
+                traces.append(IATraceEntry.model_validate(raw_trace))
+                continue
+            traces.append(
+                IATraceEntry(
+                    trace_id=str(run.metadata.get('trace_id') or run.run_id),
+                    assistant_kind=str(run.assistant_kind or run.metadata.get('assistant_kind') or ''),
+                    requested_assistant_kind=str(run.metadata.get('requested_assistant_kind') or run.assistant_kind or ''),
+                    actual_assistant_kind=str(run.metadata.get('actual_assistant_kind') or run.assistant_kind or ''),
+                    assistant_configuration=run.assistant_configuration,
+                    config_signature=str(run.config_signature or run.metadata.get('config_signature') or ''),
+                    comparison_scope_key=str(run.metadata.get('comparison_scope_key') or scope_key),
+                    source_trace_ids=list(run.metadata.get('source_trace_ids') or []),
+                    route=run.route.value,
+                    tool_id=str(run.metadata.get('tool_id') or ''),
+                    task_id=str(run.metadata.get('task_id') or ''),
+                    result_id=str(run.metadata.get('result_id') or ''),
+                    proposal_summary=str(run.metadata.get('proposal_summary') or run.objective or '')[:240],
+                    outcome_summary=str(run.metadata.get('outcome_summary') or run.observed_summary or '')[:240],
+                    result_label=str(run.candidate_label or run.metadata.get('result_label') or ''),
+                    success=bool(run.success),
+                    execution_ms=int(run.metrics.execution_ms or 0),
+                    confidence=float(run.metrics.total_score or 0.0),
+                    evidence_refs=list(run.evidence_refs or []),
+                    reused_later=bool(run.reused_later),
+                    metadata=dict(run.metadata or {}),
+                )
+            )
+        return traces
 
     def save_recommendation(self, recommendation: ExperimentRecommendation) -> ExperimentRecommendation:
         relative_path = f"experiment_recommendations/{recommendation.recommendation_id}.json"

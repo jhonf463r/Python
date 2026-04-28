@@ -3017,6 +3017,7 @@ def test_control_center_self_awareness_chat_bypasses_inference_and_uses_live_sta
         viewmodel._maybe_run_autonomous_evolution = _fail_autonomy  # type: ignore[method-assign]
 
         viewmodel.sendChat('conoces tu entorno?')
+        _drain_ui(viewmodel)
 
         messages = viewmodel.get_chat_messages()
         assert viewmodel.get_working() is False
@@ -3141,6 +3142,7 @@ def test_control_center_world_model_chat_bypasses_inference_and_uses_live_state(
         viewmodel._maybe_run_autonomous_evolution = _fail_autonomy  # type: ignore[method-assign]
 
         viewmodel.sendChat('por que no responde codex?')
+        _drain_ui(viewmodel)
 
         messages = viewmodel.get_chat_messages()
         assert viewmodel.get_working() is False
@@ -3271,6 +3273,7 @@ def test_control_center_learning_chat_bypasses_inference_and_uses_persisted_evid
         viewmodel._maybe_run_autonomous_evolution = _fail_autonomy  # type: ignore[method-assign]
 
         viewmodel.sendChat('que aprendiste')
+        _drain_ui(viewmodel)
 
         messages = viewmodel.get_chat_messages()
         assert viewmodel.get_working() is False
@@ -3323,6 +3326,7 @@ def test_control_center_learning_chat_recognizes_que_va_mejor_without_running_au
         viewmodel._maybe_run_autonomous_evolution = _fail_autonomy  # type: ignore[method-assign]
 
         viewmodel.sendChat('que va mejor ahora')
+        _drain_ui(viewmodel)
 
         messages = viewmodel.get_chat_messages()
         assert viewmodel.get_working() is False
@@ -3378,6 +3382,7 @@ def test_control_center_evolution_status_chat_bypasses_inference_and_uses_valida
         viewmodel._maybe_run_autonomous_evolution = _fail_autonomy  # type: ignore[method-assign]
 
         viewmodel.sendChat('que herramienta va ganando ahora y que esta en validacion?')
+        _drain_ui(viewmodel)
 
         messages = viewmodel.get_chat_messages()
         assert viewmodel.get_working() is False
@@ -3432,6 +3437,7 @@ def test_control_center_evolution_status_chat_uses_discovery_state_without_auton
         viewmodel._maybe_run_autonomous_evolution = _fail_autonomy  # type: ignore[method-assign]
 
         viewmodel.sendChat('que herramienta nueva vale la pena probar y que fue descartado?')
+        _drain_ui(viewmodel)
 
         messages = viewmodel.get_chat_messages()
         assert viewmodel.get_working() is False
@@ -3494,6 +3500,7 @@ def test_control_center_self_examination_chat_bypasses_inference_and_uses_review
         viewmodel._maybe_run_autonomous_evolution = _fail_autonomy  # type: ignore[method-assign]
 
         viewmodel.sendChat('que esta fallando mas')
+        _drain_ui(viewmodel)
 
         messages = viewmodel.get_chat_messages()
         assert viewmodel.get_working() is False
@@ -3542,6 +3549,7 @@ def test_control_center_self_examination_chat_recognizes_examinate_without_infer
         viewmodel._maybe_run_autonomous_evolution = _fail_autonomy  # type: ignore[method-assign]
 
         viewmodel.sendChat('examinate')
+        _drain_ui(viewmodel)
 
         messages = viewmodel.get_chat_messages()
         assert viewmodel.get_working() is False
@@ -3584,6 +3592,7 @@ def test_control_center_self_examination_chat_recognizes_recommended_changes_wit
         viewmodel._maybe_run_autonomous_evolution = _fail_autonomy  # type: ignore[method-assign]
 
         viewmodel.sendChat('que cambios recomiendas')
+        _drain_ui(viewmodel)
 
         messages = viewmodel.get_chat_messages()
         assert viewmodel.get_working() is False
@@ -3622,6 +3631,7 @@ def test_control_center_self_examination_phrase_has_priority_over_learning_phras
         viewmodel.inference_service.infer_task = _fail_infer_task  # type: ignore[assignment]
 
         viewmodel.sendChat('que aprendiste al revisarte')
+        _drain_ui(viewmodel)
 
         messages = viewmodel.get_chat_messages()
         assert messages[-1]['speaker'] == 'IABV'
@@ -3781,12 +3791,18 @@ class _FakeAuditServiceForVM:
 
 def _wait_for(predicate, *, timeout_seconds: float = 5.0) -> bool:
     import time
+    from iabv_v15.ui.qt import QGuiApplication
 
+    app = QGuiApplication.instance()
     deadline = time.time() + timeout_seconds
     while time.time() < deadline:
+        if app is not None:
+            app.processEvents()
         if predicate():
             return True
         time.sleep(0.02)
+    if app is not None:
+        app.processEvents()
     return predicate()
 
 

@@ -25,6 +25,7 @@ from iabv_v15.domain.models import (  # noqa: E402
     PortableContextPackage,
     SelfExaminationSnapshot,
     WorldModelSnapshot,
+    IATraceEntry,
 )
 from iabv_v15.infra.mcp.server import IABVMCPServer, _to_jsonable  # noqa: E402
 from iabv_v15.services.tools.site_exploration_service import (  # noqa: E402
@@ -113,6 +114,34 @@ class _FakeUIExecutionRunner:
         }
 
 
+class _FakeConsensusService:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    def fuse(self, *, candidate_traces: list[IATraceEntry], strategy: str = "weighted_vote"):
+        self.calls.append({"candidate_traces": candidate_traces, "strategy": strategy})
+        from iabv_v15.domain.models import ConsensusResult
+
+        return ConsensusResult(
+            comparison_scope_key=candidate_traces[0].comparison_scope_key,
+            winning_trace_id=candidate_traces[0].trace_id,
+            winning_assistant_kind=candidate_traces[0].assistant_kind,
+            winning_label=candidate_traces[0].result_label,
+            strategy_used=strategy,
+            considered_trace_ids=[trace.trace_id for trace in candidate_traces],
+        )
+
+
+class _FakeExperimentLab:
+    def __init__(self, traces: list[IATraceEntry]) -> None:
+        self.traces = traces
+        self.calls: list[str] = []
+
+    def list_candidate_traces_for_scope(self, scope_key: str) -> list[IATraceEntry]:
+        self.calls.append(scope_key)
+        return [trace for trace in self.traces if trace.comparison_scope_key == scope_key]
+
+
 class _FakeContainer:
     def __init__(
         self,
@@ -131,6 +160,8 @@ class _FakeContainer:
         self_audit_service: object | None = None,
         capability_audit_harness: object | None = None,
         perception_ground_truth_comparator: object | None = None,
+        consensus_fusion_service: object | None = None,
+        experiment_lab: object | None = None,
     ) -> None:
         self.world_model_service = world_model_service
         self.portable_context_service = portable_context_service
@@ -149,6 +180,8 @@ class _FakeContainer:
         self.self_audit_service = self_audit_service
         self.capability_audit_harness = capability_audit_harness
         self.perception_ground_truth_comparator = perception_ground_truth_comparator
+        self.consensus_fusion_service = consensus_fusion_service
+        self.experiment_lab = experiment_lab
         # F2.1 — se inyecta solo cuando el test lo pide.
         self.github_remote_service: object | None = None
 
@@ -232,6 +265,28 @@ def test_server_registers_core_tools() -> None:
         "consensus_fuse",
     }
     assert expected <= registered, f"faltan tools: {expected - registered}"
+
+
+def test_consensus_fuse_loads_candidate_traces_from_experiment_lab_scope() -> None:
+    trace = IATraceEntry(
+        trace_id="trace-1",
+        assistant_kind="devin",
+        comparison_scope_key="iabv:scope",
+        result_label="pass",
+        confidence=0.9,
+        success=True,
+    )
+    consensus = _FakeConsensusService()
+    lab = _FakeExperimentLab([trace])
+    server = IABVMCPServer(
+        _build_container(consensus_fusion_service=consensus, experiment_lab=lab)
+    )
+
+    payload = _call_tool(server, "consensus_fuse", scope_key="iabv:scope")
+
+    assert payload["winning_trace_id"] == "trace-1"
+    assert lab.calls == ["iabv:scope"]
+    assert consensus.calls[0]["strategy"] == "weighted_vote"
 
 
 def test_world_model_snapshot_returns_current_without_refresh() -> None:
@@ -1553,11 +1608,8 @@ def test_self_auto_merge_returns_governance_block_when_network_down() -> None:
 
     # Snapshot con red desconectada.
     snapshot = _default_snapshot()
-    snapshot = snapshot.__class__(
-        **{
-            **{k: getattr(snapshot, k) for k in snapshot.__dataclass_fields__},
-            "network_status": NetworkStatusSnapshot(connected=False, status="offline"),
-        }
+    snapshot = snapshot.model_copy(
+        update={"network_status": NetworkStatusSnapshot(connected=False, status="offline")},
     )
     container = _build_container(_snapshot=snapshot)
     server = IABVMCPServer(container)

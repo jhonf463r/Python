@@ -241,7 +241,7 @@ def test_portable_context_service_builds_and_persists_package_from_live_state() 
         section_ids = {section.section_id for section in package.sections}
         assert package.summary
         assert 'Codex' in package.assistant_brief or 'codex' in package.assistant_brief
-        assert {'project_state', 'architecture', 'recommended_routes', 'pending', 'hard_rules', 'self_examination', 'tool_discovery', 'tool_evolution', 'tool_evolution_decisions'} <= section_ids
+        assert {'project_state', 'architecture', 'user_metacognitive_intent', 'recommended_routes', 'pending', 'hard_rules', 'self_examination', 'tool_discovery', 'tool_evolution', 'tool_evolution_decisions'} <= section_ids
         assert Path(package.package_path).exists()
         assert Path(package.markdown_path).exists()
         assert package.metadata['tool_discovery_summary']['promoted_signals'][0]['tool_id'] == 'codex_installed'
@@ -262,6 +262,9 @@ def test_portable_context_service_builds_and_persists_package_from_live_state() 
         assert package.metadata['recommended_adjustments']
         assert package.metadata['recommendation_feedback'][0]['status'] == 'false_improvement'
         assert package.metadata['feedback_summary']['false_improvement'] == 1
+        intent_section = next(section for section in package.sections if section.section_id == 'user_metacognitive_intent')
+        assert any(item.get('label') == 'no_repetir_intencion' for item in intent_section.items)
+        assert 'todas las IAs' in package.assistant_brief
         operational_blocks = next(section for section in package.sections if section.section_id == 'operational_blocks')
         assert any(
             item.get('kind') == 'permission_gate'

@@ -38,6 +38,7 @@ from iabv_v15.domain.models import (
 )
 from iabv_v15.infra.persistence.adaptive_session_repository import AdaptiveSessionRepository
 from iabv_v15.services.adaptive.adaptive_planner_service import AdaptivePlannerService
+from iabv_v15.services.adaptive.cloud_reasoning_planner import CloudReasoningPlannerService, CloudPlan
 from iabv_v15.services.adaptive.approval_gate_service import ApprovalGateService
 from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
 from iabv_v15.services.adaptive.capability_readiness_service import CapabilityReadinessService
@@ -164,10 +165,21 @@ class AdaptiveTaskOrchestrator:
         # ``ExperimentRun`` persistidos en su repositorio. Es puramente
         # descriptivo; nunca decide ruta operativa.
         self.experiment_lab = experiment_lab
+        self.cloud_reasoning_planner: CloudReasoningPlannerService | None = None
+        self.api_key_discovery_service: Any | None = None
+        self.decision_audit_trail: Any | None = None
         self.control_master_service: Any | None = None
         self.control_master_digest_builder: Any | None = None
         self.self_examination_service: Any | None = None
         self.validation_cycle_service: Any | None = None
+        # TemporalAwareness: track task timing for anomaly detection.
+        # Maps intent_key -> list of elapsed_seconds (most recent first).
+        self._task_timing_history: dict[str, list[float]] = {}
+        self._TIMING_HISTORY_MAX = 30
+        # CognitiveLoad: queue depth tracking for prioritization.
+        self._pending_queue: list[dict[str, Any]] = []
+        self._COGNITIVE_LOAD_THRESHOLD = 5
+        self._processing_count: int = 0
 
     def _maybe_synaptic_decision(self, intent: TaskIntent | None) -> SynapticRoutingDecision | None:
         """Consulta ``SynapticRouter.decide`` si el intent es external-worthy.
@@ -453,6 +465,221 @@ class AdaptiveTaskOrchestrator:
         }
 
     # ------------------------------------------------------------------
+    # A: Stimulus awareness — conciencia de carga y presión de recursos
+    # ------------------------------------------------------------------
+
+    def _assess_resource_pressure(self) -> dict[str, Any]:
+        """Read environment risk signals and return a pressure assessment.
+
+        Consults the latest ``EnvironmentSelfModel`` via the context
+        assembler's environment service (if wired) to detect active
+        ``EnvironmentRiskSignal`` entries.  Returns a dict with:
+        - ``under_pressure``: bool — True when any CRITICAL or HIGH signal
+        - ``critical``: bool — True when any CRITICAL signal (ram/disk/gpu)
+        - ``active_signals``: list of signal kinds currently firing
+        - ``recommendation``: str — what the orchestrator should avoid
+
+        This is purely descriptive: downstream code uses it to skip
+        expensive operations (parallel comparison, deep experimentation)
+        when the system is resource-constrained.
+        """
+        result: dict[str, Any] = {
+            'under_pressure': False,
+            'critical': False,
+            'active_signals': [],
+            'recommendation': 'normal_processing',
+        }
+        try:
+            env_service = getattr(self.context_assembler, 'environment_self_awareness_service', None)
+            if env_service is None:
+                return result
+            env_model = env_service.current_model() if hasattr(env_service, 'current_model') else None
+            if env_model is None:
+                return result
+            risk_signals = list(getattr(env_model, 'risk_signals', None) or [])
+            if not risk_signals:
+                return result
+            signal_kinds = [str(getattr(s, 'kind', '') or '') for s in risk_signals]
+            severities = [str(getattr(s, 'severity', '') or '').upper() for s in risk_signals]
+            has_critical = 'CRITICAL' in severities or any(
+                str(getattr(s, 'severity', None)) == 'critical' for s in risk_signals
+            )
+            has_high = 'HIGH' in severities or any(
+                str(getattr(s, 'severity', None)) == 'high' for s in risk_signals
+            )
+            result['active_signals'] = signal_kinds
+            if has_critical:
+                result['under_pressure'] = True
+                result['critical'] = True
+                result['recommendation'] = 'reduce_depth_critical'
+            elif has_high:
+                result['under_pressure'] = True
+                result['recommendation'] = 'reduce_depth_high'
+        except Exception:
+            pass
+        return result
+
+    # ------------------------------------------------------------------
+    # TemporalAwareness: track and detect task timing anomalies
+    # ------------------------------------------------------------------
+
+    def _record_task_timing(self, intent_key: str, elapsed_seconds: float) -> None:
+        """Record elapsed time for a task intent, keeping a bounded history."""
+        history = self._task_timing_history.setdefault(intent_key, [])
+        history.insert(0, elapsed_seconds)
+        if len(history) > self._TIMING_HISTORY_MAX:
+            del history[self._TIMING_HISTORY_MAX:]
+
+    def _check_temporal_anomaly(self, intent_key: str, elapsed_seconds: float) -> dict[str, Any] | None:
+        """Check if the current task duration is anomalous vs history.
+
+        Returns a dict with anomaly details if z-score > 2.0, else None.
+        """
+        history = self._task_timing_history.get(intent_key) or []
+        if len(history) < 4:
+            return None
+        import math
+        mean_t = sum(history) / len(history)
+        if mean_t <= 0:
+            return None
+        variance = sum((x - mean_t) ** 2 for x in history) / len(history)
+        std_dev = math.sqrt(variance) if variance > 0 else 0
+        if std_dev <= 0:
+            return None
+        z_score = (elapsed_seconds - mean_t) / std_dev
+        if z_score > 2.0:
+            return {
+                'intent_key': intent_key,
+                'elapsed_seconds': round(elapsed_seconds, 2),
+                'mean_seconds': round(mean_t, 2),
+                'std_dev': round(std_dev, 2),
+                'z_score': round(z_score, 2),
+                'anomaly': True,
+                'recommendation': (
+                    'slow_task_detected' if z_score < 3.0
+                    else 'possible_stall_detected'
+                ),
+            }
+        return None
+
+    # ------------------------------------------------------------------
+    # CognitiveLoad: queue depth check and priority sorting
+    # ------------------------------------------------------------------
+
+    _PRIORITY_WEIGHTS: dict[str, int] = {
+        'critical': 4,
+        'high': 3,
+        'medium': 2,
+        'low': 1,
+    }
+
+    def _estimate_priority(self, request: InferenceRequest) -> int:
+        """Estimate priority score for a request based on metadata signals."""
+        meta = dict(request.metadata or {})
+        explicit = str(meta.get('priority') or '').lower()
+        if explicit in self._PRIORITY_WEIGHTS:
+            return self._PRIORITY_WEIGHTS[explicit]
+        resource_pressure = meta.get('resource_pressure') or {}
+        if resource_pressure.get('critical'):
+            return self._PRIORITY_WEIGHTS['critical']
+        goal = str(request.user_goal or '').lower()
+        urgent_keywords = ('urgente', 'urgent', 'error', 'fix', 'hotfix', 'crash', 'fallo')
+        if any(kw in goal for kw in urgent_keywords):
+            return self._PRIORITY_WEIGHTS['high']
+        return self._PRIORITY_WEIGHTS['medium']
+
+    def _cognitive_load_assessment(self) -> dict[str, Any]:
+        """Return current cognitive load status: queue depth, processing count, overloaded flag."""
+        depth = len(self._pending_queue)
+        return {
+            'queue_depth': depth,
+            'processing_count': self._processing_count,
+            'total_load': depth + self._processing_count,
+            'overloaded': (depth + self._processing_count) >= self._COGNITIVE_LOAD_THRESHOLD,
+            'threshold': self._COGNITIVE_LOAD_THRESHOLD,
+            'recommendation': (
+                'defer_low_priority' if depth >= self._COGNITIVE_LOAD_THRESHOLD
+                else 'normal_processing'
+            ),
+        }
+
+    def _enqueue_request(self, request: InferenceRequest) -> int:
+        """Add a request to the pending queue and return its priority rank."""
+        priority = self._estimate_priority(request)
+        entry = {
+            'user_goal': str(request.user_goal or '')[:200],
+            'priority': priority,
+            'enqueued_at': datetime.now(timezone.utc).isoformat(),
+        }
+        self._pending_queue.append(entry)
+        self._pending_queue.sort(key=lambda e: e.get('priority', 0), reverse=True)
+        return priority
+
+    def _dequeue_request(self) -> None:
+        """Remove the first (highest-priority) item from the pending queue."""
+        if self._pending_queue:
+            self._pending_queue.pop(0)
+
+    # ------------------------------------------------------------------
+    # Proactive IA exploration: try multiple IAs on idle
+    # ------------------------------------------------------------------
+
+    def _proactive_exploration_candidates(self, request: InferenceRequest) -> list[dict[str, Any]]:
+        """Identify candidate IAs for proactive parallel exploration.
+
+        Only activates when:
+        - System is not under resource pressure
+        - SynapticRouter is wired and provides >= 2 candidates
+        - Governance allows parallel comparison
+        Returns a list of candidate dicts (name, score) or empty list.
+        """
+        if self.synaptic_router is None:
+            return []
+        pressure = self._assess_resource_pressure()
+        if pressure.get('under_pressure'):
+            return []
+        intent, _ = self.intent_service.classify_with_schema(
+            request.user_goal,
+            request.goal_parameters,
+        )
+        synaptic = self._maybe_synaptic_decision(intent)
+        if synaptic is None:
+            return []
+        ranked = self._ranked_candidates_from_synaptic(synaptic)
+        if len(ranked) < 2:
+            return []
+        allowed, _ = self._parallel_comparison_allowed()
+        if not allowed:
+            return []
+        return ranked[:3]
+
+    def _run_proactive_exploration(
+        self,
+        request: InferenceRequest,
+        candidates: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
+        """Execute proactive parallel IA comparison using existing infrastructure.
+
+        Delegates to ``_parallel_ia_comparison`` with the synaptic decision.
+        Returns comparison result or None if not feasible.
+        """
+        if len(candidates) < 2:
+            return None
+        intent, _ = self.intent_service.classify_with_schema(
+            request.user_goal,
+            request.goal_parameters,
+        )
+        synaptic = self._maybe_synaptic_decision(intent)
+        if synaptic is None:
+            return None
+        try:
+            return self._parallel_ia_comparison(
+                None, request, synaptic, decision_context=None,
+            )
+        except Exception:
+            return None
+
+    # ------------------------------------------------------------------
     # B: Leer sync_pulse del ciclo de validación para inyectar en el flujo
     # ------------------------------------------------------------------
 
@@ -594,6 +821,12 @@ class AdaptiveTaskOrchestrator:
         ``plan_or_execute`` with the plan's primary IA, then chaining
         to the secondary IA if the primary succeeds.
 
+        G1 extension: also checks ``pending_auto_execution.json`` deposited
+        by the sync_pulse heartbeat.  If a proactive signal exists with
+        ``consumed == False``, treat it as an implicit coordinated action
+        even without explicit guidance — closing the introspection→action
+        loop.
+
         Returns the enriched payload with coordinated results, or ``None``
         if no plan qualifies for auto-execution.
         """
@@ -606,10 +839,23 @@ class AdaptiveTaskOrchestrator:
             if isinstance(action, dict) and action.get('action') == 'execute_coordinated_plan':
                 coordinated_action = action
                 break
+        # G1: if no explicit guidance action, check proactive signal from
+        # sync_pulse auto-execution deposited by ValidationCycle.
+        if coordinated_action is None:
+            proactive_signal = self._read_pending_auto_execution()
+            if proactive_signal is not None:
+                coordinated_action = {
+                    'action': 'execute_coordinated_plan',
+                    'source': 'sync_pulse_proactive',
+                    'proposal': proactive_signal.get('proposal'),
+                }
         if coordinated_action is None:
             return None
         sync_pulse = self._read_sync_pulse()
         actionable = list(sync_pulse.get('actionable_proposals') or [])
+        # G1: also check the proactive signal's proposal
+        if not actionable and isinstance(coordinated_action.get('proposal'), dict):
+            actionable = [coordinated_action['proposal']]
         if not actionable:
             return None
         best_proposal = actionable[0]
@@ -744,6 +990,51 @@ class AdaptiveTaskOrchestrator:
             'chained_result': dict(chained_result) if chained_result else None,
             'coordination_status': 'auto_executed',
         }
+
+    # ------------------------------------------------------------------
+    # G1: Read proactive auto-execution signal from sync_pulse
+    # ------------------------------------------------------------------
+
+    def _read_pending_auto_execution(self) -> dict[str, Any] | None:
+        """Read the pending auto-execution signal deposited by sync_pulse.
+
+        Returns the signal dict if it exists and has not been consumed yet.
+        Uses a compare-and-swap pattern: re-reads the file immediately
+        before writing to verify the signal hasn't been replaced by the
+        heartbeat between the initial read and the write.
+        """
+        service = self.validation_cycle_service
+        if service is None:
+            return None
+        storage = getattr(service, 'storage', None)
+        if storage is None:
+            return None
+        try:
+            signal = storage.load_json('pending_auto_execution.json')
+        except Exception:
+            return None
+        if not isinstance(signal, dict):
+            return None
+        if signal.get('consumed'):
+            return None
+        original_id = signal.get('signal_id') or signal.get('timestamp_utc') or ''
+        if not original_id:
+            return None
+        try:
+            pre_write = storage.load_json('pending_auto_execution.json')
+            if not isinstance(pre_write, dict):
+                return None
+            pre_id = pre_write.get('signal_id') or pre_write.get('timestamp_utc') or ''
+            if pre_id != original_id or pre_write.get('consumed'):
+                return None
+        except Exception:
+            return None
+        signal['consumed'] = True
+        try:
+            storage.save_json('pending_auto_execution.json', signal)
+        except Exception:
+            return None
+        return signal
 
     def _register_parallel_results(
         self,
@@ -932,6 +1223,28 @@ class AdaptiveTaskOrchestrator:
         return perception.decision_context
 
     def handle_request(self, request: InferenceRequest) -> tuple[RoleRoute, InferenceResult, AdaptiveSession]:
+        import time as _time
+        _t0 = _time.monotonic()
+
+        # CognitiveLoad: track queue depth and inject load info into metadata.
+        _priority = self._enqueue_request(request)
+        self._processing_count += 1
+        _cognitive_load = self._cognitive_load_assessment()
+        try:
+            return self._handle_request_body(request, _t0, _priority, _cognitive_load)
+        finally:
+            self._dequeue_request()
+            self._processing_count = max(0, self._processing_count - 1)
+
+    def _handle_request_body(
+        self,
+        request: InferenceRequest,
+        _t0: float,
+        _priority: int,
+        _cognitive_load: dict[str, Any],
+    ) -> tuple[RoleRoute, InferenceResult, AdaptiveSession]:
+        import time as _time
+
         # ETAPA 2: Clasificación semántica mejorada con IntentSchema
         intent, intent_schema = self.intent_service.classify_with_schema(
             request.user_goal,
@@ -948,6 +1261,12 @@ class AdaptiveTaskOrchestrator:
         self._inject_synaptic_into_decision_context(perception.decision_context, synaptic_decision)
         context = perception.task_context
 
+        # A: Stimulus awareness — evaluar presión de recursos ANTES de
+        # decidir la profundidad de procesamiento. Bajo presión CRITICAL
+        # se omiten operaciones costosas (comparación paralela, deep
+        # experimentation). Bajo presión HIGH se limitan candidatos.
+        resource_pressure = self._assess_resource_pressure()
+
         # B: Inyectar datos de sync_pulse del heartbeat en el contexto
         # para que P2 (playbook multi-IA) y P6 (guidance coordinado) puedan
         # usar las proposals activas y recomendaciones del pulso.
@@ -955,15 +1274,28 @@ class AdaptiveTaskOrchestrator:
         if sync_pulse:
             self._inject_sync_coordination_into_context(context, sync_pulse)
 
+        # Depositar pressure assessment y cognitive load en el contexto
+        # para que downstream (planner, governance, UI) observe el estado.
+        ctx_meta = dict(context.metadata or {})
+        if resource_pressure.get('under_pressure'):
+            ctx_meta['resource_pressure'] = resource_pressure
+        ctx_meta['cognitive_load'] = _cognitive_load
+        ctx_meta['request_priority'] = _priority
+        context.metadata = ctx_meta
+
         # PR I — cotejo en paralelo de las top-2 IAs rankeadas por el
         # ``SynapticRouter`` cuando la politica lo permite y existen al menos
         # dos candidatos. El resultado es puramente descriptivo; queda en
         # ``session.metadata['parallel_ia_comparison']`` para que downstream
         # (UI, portable context, experiment_lab) lo observe. Si la politica
         # bloquea o solo hay un candidato, el flujo cae al camino de IA unica.
+        # A: Bajo presión CRITICAL se omite la comparación paralela para
+        # reducir carga de CPU/RAM/red.
         parallel_comparison_result: dict[str, Any] | None = None
         parallel_comparison_block_reason: str | None = None
-        if synaptic_decision is not None:
+        if resource_pressure.get('critical'):
+            parallel_comparison_block_reason = 'resource_pressure_critical'
+        elif synaptic_decision is not None:
             ranked_candidates = self._ranked_candidates_from_synaptic(synaptic_decision)
             if len(ranked_candidates) >= 2:
                 allowed, block_reason = self._parallel_comparison_allowed()
@@ -1071,9 +1403,23 @@ class AdaptiveTaskOrchestrator:
         decision_context = DecisionContext.model_validate(
             session.metadata.get('decision_context') or session.context.metadata.get('decision_context') or {}
         )
+
+        # TemporalAwareness: compute timing and inject anomaly BEFORE
+        # persistence so the temporal_anomaly key is saved with the session.
+        _elapsed = _time.monotonic() - _t0
+        _intent_key = str(getattr(intent, 'intent_key', '') or '')
+        if _intent_key:
+            anomaly = self._check_temporal_anomaly(_intent_key, _elapsed)
+            self._record_task_timing(_intent_key, _elapsed)
+            if anomaly is not None:
+                meta = dict(session.metadata or {})
+                meta['temporal_anomaly'] = anomaly
+                session.metadata = meta
+
         saved_session = self.task_outcome_recorder.record(session)
         route = self._build_route(saved_session, decision_context)
         result = self._build_result(request=request, session=saved_session, pack=pack, route=route)
+
         return route, result, saved_session
 
     def govern_adaptive_payload(self, adaptive_payload: dict[str, Any], *, user_goal: str, source: str) -> dict[str, Any]:
@@ -1443,6 +1789,157 @@ class AdaptiveTaskOrchestrator:
         replanned.metadata['replanned_from_session_id'] = session.session_id
         replanned.metadata['replan_count'] = int(session.metadata.get('replan_count') or 0) + 1
         return self.task_outcome_recorder.record(replanned)
+
+    # ------------------------------------------------------------------
+    # Cloud reasoning plan generation ("cerebro central")
+    # ------------------------------------------------------------------
+
+    def generate_cloud_plan(
+        self,
+        user_goal: str,
+        *,
+        context_summary: str = '',
+    ) -> CloudPlan | None:
+        """Use cloud reasoning to decompose *user_goal* into executable steps.
+
+        This is the main entry point for the "cerebro central" feature.
+        The orchestrator delegates plan generation to ``CloudReasoningPlannerService``
+        and enriches the result with world-model and tool-registry context.
+        """
+        if self.cloud_reasoning_planner is None:
+            return None
+
+        # Build context from world model and portable context if available
+        context_parts: list[str] = []
+        if context_summary:
+            context_parts.append(context_summary)
+
+        # Append world model summary if available
+        try:
+            if hasattr(self, 'context_assembler') and self.context_assembler is not None:
+                wm = getattr(self.context_assembler, 'world_model_service', None)
+                if wm is not None:
+                    snapshot = wm.snapshot()
+                    if snapshot is not None:
+                        active_tools = [
+                            t.get('name', t.get('tool_id', ''))
+                            for t in (getattr(snapshot, 'available_tools', None) or [])
+                            if isinstance(t, dict)
+                        ]
+                        if active_tools:
+                            context_parts.append(f"Available tools on this machine: {', '.join(active_tools[:10])}")
+                        blockers = getattr(snapshot, 'active_blockers', None) or []
+                        if blockers:
+                            blocker_strs = [str(b.get('description', b)) if isinstance(b, dict) else str(b) for b in blockers[:5]]
+                            context_parts.append(f"Active blockers: {'; '.join(blocker_strs)}")
+        except Exception:
+            pass
+
+        # Pre-scan: inject decision audit trail context so the planner
+        # has the full picture before generating a plan (which provider
+        # is working, which is degrading, recent outcomes)
+        if self.decision_audit_trail is not None:
+            try:
+                audit_summary = self.decision_audit_trail.self_examination_summary()
+                if audit_summary.get('status') == 'analyzed':
+                    best = audit_summary.get('best_provider') or {}
+                    best_id = best.get('provider_id', '')
+                    health = audit_summary.get('health_score', 0)
+                    trend = audit_summary.get('overall_trend', 'unknown')
+                    recs = audit_summary.get('recommendations', [])
+                    context_parts.append(
+                        f'Cloud reasoning status: health={health:.0%}, trend={trend}.'
+                        + (f' Best provider: {best_id}.' if best_id else '')
+                        + (f' Issues: {"; ".join(recs[:2])}' if recs else '')
+                    )
+            except Exception:
+                pass
+
+        # Pre-scan: inject OSES cloud findings if available
+        if self.self_examination_service is not None:
+            try:
+                review = self.self_examination_service.current_review(refresh=False)
+                if review is not None:
+                    cloud_findings = [
+                        f for f in (getattr(review, 'findings', None) or [])
+                        if hasattr(f, 'category') and str(getattr(f, 'category', '')).startswith('cloud_')
+                    ]
+                    for finding in cloud_findings[:3]:
+                        title = getattr(finding, 'title', '')
+                        rec = getattr(finding, 'recommendation', '')
+                        if title:
+                            context_parts.append(f'OSES finding: {title}. Recommendation: {rec[:120]}')
+            except Exception:
+                pass
+
+        import time as _time
+        _t0 = _time.monotonic()
+        plan = self.cloud_reasoning_planner.generate_plan(
+            user_goal,
+            context='\n'.join(context_parts),
+        )
+        _elapsed = (_time.monotonic() - _t0) * 1000
+
+        # Record in decision audit trail
+        if self.decision_audit_trail is not None:
+            try:
+                from iabv_v15.services.evolution.decision_audit_trail import (
+                    DecisionRecord, DecisionPhase, DecisionOutcome,
+                )
+                outcome = DecisionOutcome.SUCCESS if plan is not None else DecisionOutcome.FAILED
+                source = plan.cloud_source if plan else ''
+                confidence = plan.confidence if plan else 0.0
+                steps_total = len(plan.steps) if plan else 0
+                fallback_chain = []
+                if plan and plan.cloud_source == 'groq':
+                    fallback_chain = ['gemini_failed', 'groq']
+                elif plan and plan.cloud_source == 'ollama_local':
+                    fallback_chain = ['gemini_failed', 'groq_failed', 'ollama']
+                    outcome = DecisionOutcome.FALLBACK_USED
+                self.decision_audit_trail.record(DecisionRecord(
+                    phase=DecisionPhase.PLAN_GENERATION,
+                    provider_id=source,
+                    model_used=source,
+                    user_goal=user_goal[:200],
+                    outcome=outcome,
+                    latency_ms=_elapsed,
+                    confidence=confidence,
+                    steps_total=steps_total,
+                    fallback_chain=fallback_chain,
+                ))
+            except Exception as _audit_exc:
+                logger.debug('decision-audit recording failed: %s', _audit_exc)
+
+        return plan
+
+    def cloud_plan_to_playbook_steps(self, plan: CloudPlan) -> list[PlaybookStep]:
+        """Convert a ``CloudPlan`` into ``PlaybookStep`` instances.
+
+        This bridges the cloud-generated plan with the existing playbook
+        execution infrastructure.  Each step carries the assigned tool
+        in its metadata so that ``ExecutionPlaybookService`` and the UI
+        know which tool to invoke.
+        """
+        from iabv_v15.domain.models import PlaybookStep, RunStatus
+        steps: list[PlaybookStep] = []
+        for ps in plan.steps:
+            steps.append(PlaybookStep(
+                phase_key=f'cloud_plan_step_{ps.order}',
+                title=ps.title,
+                description=ps.description,
+                status=RunStatus.PENDING if ps.status == 'pending' else RunStatus.SUCCESS,
+                requires_approval=ps.requires_approval,
+                executable=True,
+                detail=ps.tool_rationale,
+                metadata={
+                    'assigned_tool': ps.assigned_tool,
+                    'estimated_seconds': ps.estimated_seconds,
+                    'cloud_plan_id': plan.plan_id,
+                    'cloud_source': plan.cloud_source,
+                    'step_order': ps.order,
+                },
+            ))
+        return steps
 
     def _refresh_session_metadata(
         self,
@@ -2276,6 +2773,7 @@ class AdaptiveTaskOrchestrator:
                 'validation_learning_summary': dict(context.metadata.get('validation_learning_summary') or {}),
                 'world_model_summary': self._world_model_summary(world_model),
                 'portable_context_summary': portable_context_summary,
+                'worker_pool': self._worker_pool_snapshot(),
             },
         )
 
@@ -2416,6 +2914,36 @@ class AdaptiveTaskOrchestrator:
         if corrective:
             summary['corrective_guidance'] = corrective
         return summary
+
+    def _worker_pool_snapshot(self) -> dict[str, Any]:
+        """Return a lightweight snapshot of the multi-account worker pool.
+
+        Used by the decision context so that coordinated plans and the
+        autonomous evolution service can see which accounts have active
+        sessions and remaining free-tier messages.  Failures are silently
+        swallowed to avoid disrupting the decision pipeline.
+        """
+        try:
+            from iabv_v15.services.account_resource_scanner import estimate_available_workers
+            pool = estimate_available_workers()
+            return {
+                'available_count': pool.get('available_count', 0),
+                'exhausted_count': pool.get('exhausted_count', 0),
+                'total_remaining_messages': pool.get('total_remaining_messages', 0),
+                'tools_available': pool.get('tools_available', []),
+                'workers': [
+                    {
+                        'email': w['email'],
+                        'tool': w['tool'],
+                        'remaining': w['remaining_messages'],
+                        'limit': w['limit'],
+                        'exhausted': w['exhausted'],
+                    }
+                    for w in pool.get('workers', [])[:20]
+                ],
+            }
+        except Exception:
+            return {'available_count': 0, 'error': 'scanner_unavailable'}
 
     @classmethod
     def _corrective_guidance_for_blocks(

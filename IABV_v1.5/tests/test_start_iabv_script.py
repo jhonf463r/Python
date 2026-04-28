@@ -9,7 +9,7 @@ Cubre tres contratos que viven en el mismo script:
   zombis en el puerto antes de delegar en ``run_mcp_bridge.ps1``, via la
   utilidad compartida ``_mcp_port_utils.ps1``.
 - Flags ``-AutoPull`` / ``-NoAutoPull`` (issue #139 / PR #141): auto
-  ``git pull --ff-only`` con resumen humano, sin forzar merges.
+  ``git pull --rebase=false`` con resumen humano, sin forzar merges.
 
 No lanzamos PowerShell (no esta garantizado en CI Linux). Validamos que el
 script existe y que contiene los fragmentos necesarios.
@@ -197,28 +197,28 @@ def test_noautopull_disables_autopull(script_text: str) -> None:
 
 
 def test_pull_lives_inside_autopull_branch(script_text: str) -> None:
-    """El ``git pull --ff-only`` solo debe ocurrir si ``$AutoPull`` es true.
+    """El ``git pull --rebase=false`` solo debe ocurrir si ``$AutoPull`` es true.
 
     Verificamos por orden de aparicion (mas robusto que intentar parsear
     llaves balanceadas de PowerShell con regex):
 
-    1. Debe aparecer ``if ($AutoPull)`` antes de ``git pull --ff-only``.
+    1. Debe aparecer ``if ($AutoPull)`` antes de ``git pull --rebase=false``.
     2. Debe aparecer el branch ``else`` (del mismo if) despues del pull
        (el else reporta 'Auto-pull : OFF').
-    3. No debe haber NINGUN ``git pull --ff-only`` fuera de ese rango.
+    3. No debe haber NINGUN ``git pull --rebase=false`` fuera de ese rango.
     """
 
     if_pos = script_text.find("if ($AutoPull)")
     assert if_pos != -1, "se espera un bloque 'if ($AutoPull)'"
 
     # Buscamos la INVOCACION real del pull (lineas que empiezan con '& git'
-    # o '& git -C ... pull --ff-only'), no las menciones en comentarios.
+    # o '& git -C ... pull --rebase=false'), no las menciones en comentarios.
     invocation_pattern = re.compile(
-        r"^[ \t]*&\s*git\b[^\n]*\bpull\s+--ff-only", re.MULTILINE
+        r"^[ \t]*&\s*git\b[^\n]*\bpull\s+--rebase=false", re.MULTILINE
     )
     invocations = [m.start() for m in invocation_pattern.finditer(script_text)]
     assert len(invocations) == 1, (
-        f"se espera exactamente una invocacion real de git pull --ff-only, "
+        f"se espera exactamente una invocacion real de git pull --rebase=false, "
         f"se encontraron {len(invocations)}"
     )
     pull_pos = invocations[0]
@@ -232,7 +232,7 @@ def test_pull_lives_inside_autopull_branch(script_text: str) -> None:
 
 def test_aborts_on_pull_failure_without_forcing(script_text: str) -> None:
     # Si el pull falla, abortamos. No hay rastro de --force ni reset --hard.
-    assert re.search(r"git pull --ff-only", script_text), "debe usar --ff-only"
+    assert re.search(r"git pull --rebase=false", script_text), "debe usar --rebase=false"
     assert "exit 1" in script_text, "debe abortar con exit 1 cuando el pull falla"
     assert "--force" not in script_text, "NO debe forzar merges"
     assert "reset --hard" not in script_text, "NO debe resetear a la fuerza"

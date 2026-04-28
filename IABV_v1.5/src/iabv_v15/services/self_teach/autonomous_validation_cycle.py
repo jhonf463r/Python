@@ -66,6 +66,8 @@ class AutonomousValidationCycleService:
         self.tool_registry = tool_registry
         self.autonomy_governance_policy = autonomy_governance_policy
         self.research_backlog_root = Path(research_backlog_root) if research_backlog_root else None
+        self.api_key_discovery_service: Any | None = None
+        self.decision_audit_trail: Any | None = None
         self.interval_seconds = max(float(interval_seconds), 60.0)
         self._auto_start = (not self._in_test_mode()) if auto_start is None else bool(auto_start)
         self._lock = threading.RLock()
@@ -482,6 +484,12 @@ class AutonomousValidationCycleService:
             self._auto_research_pass(reason=reason)
         except Exception:
             pass
+        # Cloud provider health: test configured keys and register results
+        # as ExperimentRun so ExperimentLab tracks provider comparison over time.
+        try:
+            self._cloud_provider_health_pass()
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # P4: Heartbeat de sincronización
@@ -584,6 +592,14 @@ class AutonomousValidationCycleService:
             except Exception:
                 pass
 
+        # B: Integración consciente — cruzar risk signals del entorno con
+        # propuestas y recomendaciones para priorizar conscientemente.
+        # El sync_pulse no solo lee estado: INTEGRA información de múltiples
+        # fuentes y decide qué es relevante AHORA (función talámica).
+        resource_pressure = self._assess_environment_pressure()
+        if resource_pressure.get('under_pressure'):
+            sync_data['resource_pressure'] = resource_pressure
+
         # Determine coordination_status based on actionability
         available_ias = [
             k for k, v in (sync_data.get('ia_availability') or {}).items()
@@ -594,14 +610,30 @@ class AutonomousValidationCycleService:
             if isinstance(p, dict) and float(p.get('estimated_confidence') or 0.0) >= 0.5
             and p.get('primary_ia') in available_ias
         ]
+
+        # B: Bajo presión CRITICAL, inhibir action_ready para que el sistema
+        # no lance operaciones costosas (auto-ejecución de propuestas,
+        # comparación paralela). Bajo presión HIGH, solo permitir propuestas
+        # de confianza >= 0.7 (más selectivo).
+        if resource_pressure.get('critical'):
+            actionable_proposals = []
+            sync_data['coordination_status'] = 'inhibited_by_pressure'
+            sync_data['inhibition_reason'] = 'resource_pressure_critical'
+        elif resource_pressure.get('under_pressure'):
+            actionable_proposals = [
+                p for p in actionable_proposals
+                if float(p.get('estimated_confidence') or 0.0) >= 0.7
+            ]
+
         if actionable_proposals and len(available_ias) >= 2:
             sync_data['coordination_status'] = 'action_ready'
             sync_data['actionable_proposals'] = actionable_proposals[:2]
             sync_data['available_ia_count'] = len(available_ias)
-        elif sync_data.get('active_proposals'):
-            sync_data['coordination_status'] = 'proposals_pending'
-        else:
-            sync_data['coordination_status'] = 'synced'
+        elif sync_data.get('coordination_status') != 'inhibited_by_pressure':
+            if sync_data.get('active_proposals'):
+                sync_data['coordination_status'] = 'proposals_pending'
+            else:
+                sync_data['coordination_status'] = 'synced'
 
         # E: Auto-pull gobernado — si hay commits nuevos en origin/main,
         # sincronizar automáticamente para aplicar auto-modificaciones.
@@ -620,6 +652,55 @@ class AutonomousValidationCycleService:
         # iniciar la ejecución coordinada sin esperar request del usuario.
         # Esto cierra el loop: introspección → acción autónoma.
         self._maybe_auto_execute_proposals(sync_data)
+
+    def _assess_environment_pressure(self) -> dict[str, Any]:
+        """Read environment risk signals and return a pressure assessment.
+
+        Uses the ``environment_self_awareness_service`` (if wired) to detect
+        active ``EnvironmentRiskSignal`` entries. Returns a dict with:
+        - ``under_pressure``: bool
+        - ``critical``: bool (any CRITICAL signal)
+        - ``active_signals``: list of signal kinds
+        - ``recommendation``: str
+
+        This enables the sync_pulse to make conscious decisions about what
+        operations to inhibit or prioritize based on current resource state.
+        """
+        result: dict[str, Any] = {
+            'under_pressure': False,
+            'critical': False,
+            'active_signals': [],
+            'recommendation': 'normal_processing',
+        }
+        env_service = self.environment_self_awareness_service
+        if env_service is None:
+            return result
+        try:
+            env_model = env_service.current_model() if hasattr(env_service, 'current_model') else None
+            if env_model is None:
+                return result
+            risk_signals = list(getattr(env_model, 'risk_signals', None) or [])
+            if not risk_signals:
+                return result
+            signal_kinds = [str(getattr(s, 'kind', '') or '') for s in risk_signals]
+            severities = [str(getattr(s, 'severity', '') or '').upper() for s in risk_signals]
+            has_critical = 'CRITICAL' in severities or any(
+                str(getattr(s, 'severity', None)) == 'critical' for s in risk_signals
+            )
+            has_high = 'HIGH' in severities or any(
+                str(getattr(s, 'severity', None)) == 'high' for s in risk_signals
+            )
+            result['active_signals'] = signal_kinds
+            if has_critical:
+                result['under_pressure'] = True
+                result['critical'] = True
+                result['recommendation'] = 'reduce_depth_critical'
+            elif has_high:
+                result['under_pressure'] = True
+                result['recommendation'] = 'reduce_depth_high'
+        except Exception:
+            pass
+        return result
 
     def _maybe_git_auto_sync(self) -> dict[str, Any] | None:
         """Check for remote updates and auto-pull when safe.
@@ -814,6 +895,109 @@ class AutonomousValidationCycleService:
         'external_account': (),
         'local_runtime': (),
     }
+
+    # ------------------------------------------------------------------
+    # Cloud provider health check (feeds into ExperimentLab)
+    # ------------------------------------------------------------------
+
+    _CLOUD_HEALTH_EVERY_N_TICKS = 10
+    _cloud_health_tick_counter = 0
+
+    def _cloud_provider_health_pass(self) -> None:
+        """Periodically test cloud provider keys and register results as
+        ExperimentRun entries in ExperimentLab so the comparison pipeline
+        (StrategySelector, AdaptiveWeightLayer) can reason about provider
+        quality over time. Also records outcomes in DecisionAuditTrail.
+        """
+        self._cloud_health_tick_counter += 1
+        if self._cloud_health_tick_counter % self._CLOUD_HEALTH_EVERY_N_TICKS != 0:
+            return
+        if self.api_key_discovery_service is None:
+            return
+        api_svc = self.api_key_discovery_service
+        audit = self.decision_audit_trail
+
+        try:
+            comparison = api_svc.compare_all()
+        except Exception:
+            return
+        if not comparison:
+            return
+
+        # Register each provider test as an ExperimentRun
+        for result in comparison:
+            if not isinstance(result, dict):
+                if hasattr(result, 'to_dict'):
+                    result = result.to_dict()
+                else:
+                    continue
+
+            provider_id = str(result.get('provider_id', ''))
+            latency = float(result.get('latency_ms', 0) or 0)
+            valid_flag = result.get('valid', False)
+            is_success = bool(valid_flag)
+            status = 'valid' if is_success else 'invalid'
+
+            # Record in ExperimentLab as ExperimentCandidate
+            try:
+                from iabv_v15.domain.models import (
+                    ExperimentCandidate,
+                    ExperimentDomain,
+                    EvaluationRoute,
+                )
+                candidate = ExperimentCandidate(
+                    label=provider_id,
+                    route=EvaluationRoute.CLOUD,
+                    execution_ms=int(latency),
+                    metadata={
+                        'provider_id': provider_id,
+                        'status': status,
+                        'assistant_kind': 'cloud_provider',
+                        'config_signature': f'cloud:{provider_id}',
+                    },
+                )
+                self.experiment_lab.run_experiment(
+                    domain=ExperimentDomain.CLOUD_REASONING,
+                    objective='cloud_provider_health_check',
+                    subject_key=f'cloud_provider:{provider_id}',
+                    expected={'status': 'valid'},
+                    candidates=[candidate],
+                    metadata={
+                        'source': 'cloud_provider_health_pass',
+                        'latency_ms': latency,
+                        'key_status': status,
+                    },
+                )
+            except Exception:
+                pass
+
+            # Record in DecisionAuditTrail
+            if audit is not None:
+                try:
+                    from iabv_v15.services.evolution.decision_audit_trail import (
+                        DecisionRecord,
+                        DecisionOutcome,
+                        DecisionPhase,
+                    )
+                    error_str = str(result.get('error', '')).lower()
+                    quota_str = str(result.get('quota_info', '')).upper()
+                    outcome = DecisionOutcome.SUCCESS if is_success else DecisionOutcome.FAILED
+                    if 'rate' in error_str or 'RATE_LIMITED' in quota_str:
+                        outcome = DecisionOutcome.RATE_LIMITED
+                    elif 'timeout' in error_str:
+                        outcome = DecisionOutcome.TIMEOUT
+                    audit.record(DecisionRecord(
+                        phase=DecisionPhase.KEY_VALIDATION,
+                        provider_id=provider_id,
+                        model_used=str(result.get('model_used', '')),
+                        user_goal='autonomous_key_health_check',
+                        outcome=outcome,
+                        latency_ms=latency,
+                        confidence=1.0 if is_success else 0.0,
+                        error_detail=str(result.get('error', ''))[:200],
+                    ))
+                except Exception:
+                    pass
 
     def _auto_research_enabled(self) -> bool:
         raw = os.getenv('IABV_AUTO_RESEARCH_ENABLED', '1').strip().lower()

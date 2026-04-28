@@ -74,6 +74,75 @@ class ToolAdapter:
         )
         return any(bool(value) for value in candidates)
 
+    # ------------------------------------------------------------------
+    # Tool Resilience: timeout, fallback, and error detection
+    # ------------------------------------------------------------------
+
+    _EXTERNAL_SESSION_TIMEOUT_S = 120.0
+    _STALL_PATTERNS: tuple[str, ...] = (
+        'just a moment',
+        'un momento',
+        'loading',
+        'browser_input_missing',
+        'browser_security_verification',
+    )
+    _WINERROR5_PATTERNS: tuple[str, ...] = (
+        '[winerror 5]',
+        'access is denied',
+        'acceso denegado',
+        'permissionerror',
+    )
+    _WRONG_THREAD_PATTERNS: tuple[str, ...] = (
+        'wrong_thread',
+        'thread_mismatch',
+        'invalid_thread',
+    )
+
+    @staticmethod
+    def _detect_stall(result: dict[str, Any], elapsed_s: float, timeout_s: float) -> bool:
+        """Detect if an external session is stalled (no progress for >timeout)."""
+        if elapsed_s < timeout_s:
+            return False
+        error_msg = str(result.get('error_message') or '').lower()
+        output = str(result.get('output_text') or '').lower()
+        meta = result.get('metadata') or {}
+        progress = meta.get('progress_percent')
+        if isinstance(progress, (int, float)) and 20 <= progress <= 40:
+            return True
+        combined = f'{error_msg} {output}'
+        return any(p in combined for p in ToolAdapter._STALL_PATTERNS)
+
+    @staticmethod
+    def _detect_winerror5(result: dict[str, Any]) -> bool:
+        """Detect [WinError 5] access denied in tool execution result."""
+        error_msg = str(result.get('error_message') or '').lower()
+        output = str(result.get('output_text') or '').lower()
+        combined = f'{error_msg} {output}'
+        return any(p in combined for p in ToolAdapter._WINERROR5_PATTERNS)
+
+    @staticmethod
+    def _detect_wrong_thread(result: dict[str, Any]) -> bool:
+        """Detect wrong_thread blocking condition in Codex session."""
+        error_msg = str(result.get('error_message') or '').lower()
+        output = str(result.get('output_text') or '').lower()
+        meta = result.get('metadata') or {}
+        flags = [str(f).lower() for f in (meta.get('external_state_flags') or [])]
+        combined = f'{error_msg} {output} {" ".join(flags)}'
+        return any(p in combined for p in ToolAdapter._WRONG_THREAD_PATTERNS)
+
+    @staticmethod
+    def _annotate_resilience(result: dict[str, Any], *, fault_type: str, recommendation: str) -> dict[str, Any]:
+        """Add resilience metadata to a tool result without mutating original."""
+        annotated = dict(result)
+        meta = dict(annotated.get('metadata') or {})
+        meta['resilience'] = {
+            'fault_type': fault_type,
+            'recommendation': recommendation,
+            'detected_at': datetime.now(timezone.utc).isoformat(),
+        }
+        annotated['metadata'] = meta
+        return annotated
+
     def _request_login_credentials(self, card: ToolCard) -> None:
         """Emite el prompt de credenciales si el broker esta disponible y aun faltan.
 
@@ -101,7 +170,7 @@ class ToolAdapter:
             # simplemente seguimos con el mensaje de espera ya existente.
             return
 
-    def is_available(self, card: ToolCard) -> bool:
+    def is_available(self, card: ToolCard, *, force: bool = False) -> bool:
         launch_mode = str(card.metadata.get('launch_mode') or '').strip().lower()
         response_capture_mode = str(card.metadata.get('response_capture_mode') or '').strip().lower()
         direct_response_text = str(card.metadata.get('direct_response_text') or '').strip()
@@ -110,12 +179,99 @@ class ToolAdapter:
         if launch_mode == 'web_assisted':
             return bool(str(card.metadata.get('web_url') or '').strip())
         if launch_mode == 'desktop_app' and os.name == 'nt':
-            return self._multi_source_detect(card)
+            return self._multi_source_detect(card, force=force)
         if self._resolve_launch_target(card):
             return True
         return False
 
-    def _multi_source_detect(self, card: ToolCard) -> bool:
+    # Cache for multi-source detection results to avoid re-probing
+    # filesystem/process/window every ~50 seconds on each MCP session.
+    _multi_source_cache: dict[str, tuple[float, bool]] = {}
+    _MULTI_SOURCE_CACHE_TTL = 300.0  # seconds — bumped at runtime by auto-correction
+    _TTL_PERSISTENCE_PATH: Path | None = None
+    # Track which tool_ids have already been logged at INFO for disagreement.
+    # After the first INFO log, subsequent identical disagreements are logged
+    # at DEBUG to stop the console/log spam the user reported.
+    # Uses a cross-process marker file so the MCP subprocess (which has its
+    # own class scope) also suppresses the INFO log when the main UI process
+    # already logged the same disagreement.
+    _disagreement_logged: dict[str, tuple[list[str], list[str]]] = {}
+    _DISAGREEMENT_MARKER_DIR: Path | None = None
+
+    @classmethod
+    def invalidate_multi_source_cache(cls, tool_id: str) -> None:
+        """Clear cached detection result for a specific tool."""
+        cls._multi_source_cache.pop(tool_id, None)
+
+    @classmethod
+    def set_disagreement_marker_dir(cls, path: Path) -> None:
+        """Set the directory for cross-process disagreement markers."""
+        cls._DISAGREEMENT_MARKER_DIR = path
+        cls._TTL_PERSISTENCE_PATH = path
+        cls._load_persisted_ttl()
+
+    @classmethod
+    def _load_persisted_ttl(cls) -> None:
+        """Load persisted TTL from previous session to avoid re-bumping."""
+        if cls._TTL_PERSISTENCE_PATH is None:
+            return
+        ttl_file = cls._TTL_PERSISTENCE_PATH / '.multi_source_ttl'
+        if not ttl_file.exists():
+            return
+        try:
+            value = float(ttl_file.read_text(encoding='utf-8').strip())
+            if 120.0 <= value <= 600.0:
+                cls._MULTI_SOURCE_CACHE_TTL = value
+                logger.debug('multi_source_cache: loaded persisted TTL=%.0fs', value)
+        except (ValueError, OSError):
+            pass
+
+    @classmethod
+    def persist_ttl(cls) -> None:
+        """Persist current TTL so next session starts with the learned value."""
+        if cls._TTL_PERSISTENCE_PATH is None:
+            return
+        try:
+            cls._TTL_PERSISTENCE_PATH.mkdir(parents=True, exist_ok=True)
+            (cls._TTL_PERSISTENCE_PATH / '.multi_source_ttl').write_text(
+                str(cls._MULTI_SOURCE_CACHE_TTL), encoding='utf-8',
+            )
+        except OSError:
+            pass
+
+    def _has_cross_process_marker(self, tool_id: str) -> bool:
+        """Check if another process already logged this disagreement.
+
+        Uses a generous 2× TTL window so that MCP sub-processes (which
+        start with an empty ``_disagreement_logged`` dict) see the marker
+        left by the main process and suppress the redundant INFO log.
+        """
+        marker_dir = self._DISAGREEMENT_MARKER_DIR
+        if marker_dir is None:
+            return False
+        marker = marker_dir / f'.disagreement_{tool_id}.marker'
+        if not marker.exists():
+            return False
+        try:
+            age = time.time() - marker.stat().st_mtime
+            return age < self._MULTI_SOURCE_CACHE_TTL * 2
+        except OSError:
+            return False
+
+    def _write_cross_process_marker(self, tool_id: str) -> None:
+        """Write a marker so other processes know we logged this."""
+        marker_dir = self._DISAGREEMENT_MARKER_DIR
+        if marker_dir is None:
+            return
+        try:
+            marker_dir.mkdir(parents=True, exist_ok=True)
+            (marker_dir / f'.disagreement_{tool_id}.marker').write_text(
+                str(time.time()), encoding='utf-8',
+            )
+        except OSError:
+            pass
+
+    def _multi_source_detect(self, card: ToolCard, *, force: bool = False) -> bool:
         """Multi-source availability check for desktop apps.
 
         Never declares a tool missing based on a single source.  Checks
@@ -123,7 +279,17 @@ class ToolAdapter:
         If ANY source confirms presence the tool is considered available.
         Disagreements between sources are logged so the meta-cognition
         layer can learn from them.
+
+        Results are cached for 120 seconds to avoid redundant probes on
+        each MCP session reconnect.
         """
+        if not force:
+            cached = self._multi_source_cache.get(card.tool_id)
+            now = time.monotonic()
+            if cached and (now - cached[0]) < self._MULTI_SOURCE_CACHE_TTL:
+                return cached[1]
+        now = time.monotonic()
+
         sources: dict[str, bool] = {}
         sources['filesystem'] = bool(self._resolve_launch_target(card))
         sources['process'] = self._detect_running_process(card)
@@ -133,7 +299,11 @@ class ToolAdapter:
         negatives = [s for s, v in sources.items() if not v]
 
         if positives and negatives:
-            logger.info(
+            prev = self._disagreement_logged.get(card.tool_id)
+            same_as_before = prev is not None and sorted(prev[0]) == sorted(positives) and sorted(prev[1]) == sorted(negatives)
+            cross_process_logged = self._has_cross_process_marker(card.tool_id)
+            log_fn = logger.debug if (same_as_before or cross_process_logged) else logger.info
+            log_fn(
                 'multi_source_disagreement: %s — positives=%s negatives=%s'
                 ' | La herramienta existe segun %s pero no segun %s.'
                 ' Declarando available=True (optimistic).',
@@ -143,7 +313,44 @@ class ToolAdapter:
                 positives,
                 negatives,
             )
-        return bool(positives)
+            self._disagreement_logged[card.tool_id] = (positives, negatives)
+            if not cross_process_logged:
+                self._write_cross_process_marker(card.tool_id)
+        result = bool(positives)
+        self._multi_source_cache[card.tool_id] = (now, result)
+        return result
+
+    _process_snapshot: list[tuple[str, str]] | None = None
+    _process_snapshot_time: float = 0.0
+    _PROCESS_SNAPSHOT_TTL: float = 10.0
+
+    @classmethod
+    def _get_process_snapshot(cls) -> list[tuple[str, str]]:
+        """Return a cached snapshot of (name, exe) for all running processes.
+
+        Enumerating processes via psutil is expensive (~200-500ms on Windows).
+        This cache avoids repeating the enumeration for every tool card during
+        startup probes.  The snapshot expires after ``_PROCESS_SNAPSHOT_TTL``
+        seconds so runtime re-checks still reflect current state.
+        """
+        now = time.monotonic()
+        if cls._process_snapshot is not None and (now - cls._process_snapshot_time) < cls._PROCESS_SNAPSHOT_TTL:
+            return cls._process_snapshot
+        snapshot: list[tuple[str, str]] = []
+        try:
+            import psutil
+            for proc in psutil.process_iter(['name', 'exe']):
+                try:
+                    name = str(proc.info.get('name') or '').lower()
+                    exe = str(proc.info.get('exe') or '').lower()
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+                snapshot.append((name, exe))
+        except Exception:
+            pass
+        cls._process_snapshot = snapshot
+        cls._process_snapshot_time = now
+        return snapshot
 
     def _detect_running_process(self, card: ToolCard) -> bool:
         """Detect desktop apps by running process (e.g. MSIX installs)."""
@@ -158,39 +365,27 @@ class ToolAdapter:
                 keywords.append(val)
         if not keywords:
             return False
-        try:
-            import psutil
-            for proc in psutil.process_iter(['name', 'exe']):
-                try:
-                    name = str(proc.info.get('name') or '').lower()
-                    exe = str(proc.info.get('exe') or '').lower()
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    continue
-                for kw in keywords:
-                    if kw in name or kw in exe:
-                        return True
-        except Exception:
-            pass
+        for name, exe in self._get_process_snapshot():
+            for kw in keywords:
+                if kw in name or kw in exe:
+                    return True
         return False
 
-    def _detect_by_window_title(self, card: ToolCard) -> bool:
-        """Detect desktop apps by matching visible window titles.
+    _window_titles_snapshot: str | None = None
+    _window_titles_snapshot_time: float = 0.0
 
-        Third source of truth: even if the filesystem and process list
-        miss an app, an open window whose title contains the tool's
-        display name or assistant_kind confirms it is present.
+    @classmethod
+    def _get_window_titles_snapshot(cls) -> str:
+        """Return a cached concatenation of visible window titles.
+
+        Enumerating windows via Win32 ``EnumWindows`` is moderately expensive
+        (~50-150ms).  Caching the result across cards during startup avoids
+        repeating the syscall for every external assistant tool.
         """
-        if os.name != 'nt':
-            return False
-        keywords: list[str] = []
-        assistant_kind = str(card.metadata.get('assistant_kind') or '').strip().lower()
-        if assistant_kind:
-            keywords.append(assistant_kind)
-        title_lower = card.title.lower() if card.title else ''
-        if title_lower and title_lower not in keywords:
-            keywords.append(title_lower)
-        if not keywords:
-            return False
+        now = time.monotonic()
+        if cls._window_titles_snapshot is not None and (now - cls._window_titles_snapshot_time) < cls._PROCESS_SNAPSHOT_TTL:
+            return cls._window_titles_snapshot
+        all_titles = ''
         try:
             import ctypes
             user32 = ctypes.windll.user32  # type: ignore[attr-defined]
@@ -211,11 +406,34 @@ class ToolAdapter:
 
             EnumWindows(_enum_cb, 0)
             all_titles = ' '.join(titles)
-            for kw in keywords:
-                if kw in all_titles:
-                    return True
         except Exception:
             pass
+        cls._window_titles_snapshot = all_titles
+        cls._window_titles_snapshot_time = now
+        return all_titles
+
+    def _detect_by_window_title(self, card: ToolCard) -> bool:
+        """Detect desktop apps by matching visible window titles.
+
+        Third source of truth: even if the filesystem and process list
+        miss an app, an open window whose title contains the tool's
+        display name or assistant_kind confirms it is present.
+        """
+        if os.name != 'nt':
+            return False
+        keywords: list[str] = []
+        assistant_kind = str(card.metadata.get('assistant_kind') or '').strip().lower()
+        if assistant_kind:
+            keywords.append(assistant_kind)
+        title_lower = card.title.lower() if card.title else ''
+        if title_lower and title_lower not in keywords:
+            keywords.append(title_lower)
+        if not keywords:
+            return False
+        all_titles = self._get_window_titles_snapshot()
+        for kw in keywords:
+            if kw in all_titles:
+                return True
         return False
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
@@ -329,25 +547,26 @@ class ToolAdapter:
                     prompt_text=prompt_text,
                     reingest_only=reingest_only,
                 )
-                # Fallback a clipboard si browser_dom falla por verificación de seguridad o falta de input
+                # Fallback cuando browser_dom falla
+                # METACOGNICION: NO abrir ventanas visibles durante consultas
+                # autonomas — el usuario no debe ver ventanas de Chrome
+                # apareciendo en su escritorio sin su intervencion.
+                # Solo registrar el fallo y retornar para que el sistema
+                # busque otra ruta (API, retry headless, etc.)
                 if not captured.get('response_captured') and browser_dom_capture:
                     fallback_error = str(captured.get('error_message') or '').strip().lower()
                     if fallback_error in {'browser_security_verification', 'browser_input_missing', 'browser_dom_capture_pending'}:
-                        clipboard_fallback = self.runner_factory(workspace_root).capture_response_from_app(
-                            launch_target=launch_target,
-                            title_hints=self._title_hints(card=card, task=task),
-                            prompt_text=prompt_text,
-                            launch_mode=launch_mode,
-                            submit_after_paste=bool(task.metadata.get('submit_prompt_after_paste', card.metadata.get('submit_prompt_after_paste', True))) and not reingest_only,
-                            launch_wait_seconds=float(task.metadata.get('launch_wait_seconds') or card.metadata.get('launch_wait_seconds') or 1.2),
-                            window_wait_seconds=float(task.metadata.get('window_wait_seconds') or card.metadata.get('window_wait_seconds') or 8.0),
-                            response_wait_seconds=float(task.metadata.get('response_wait_seconds') or card.metadata.get('response_wait_seconds') or 4.0),
-                            background_capture_mode='',  # Forzar modo clipboard
-                            reingest_only=reingest_only,
+                        import logging as _fb_log
+                        _fb_log.getLogger(__name__).info(
+                            'browser_dom_capture failed (%s) — skipping visible fallback to avoid interrupting user',
+                            fallback_error,
                         )
-                        if clipboard_fallback.get('response_captured'):
-                            captured = clipboard_fallback
-                            captured['capture_source'] = 'clipboard_fallback'
+                        captured['metadata'] = {
+                            **(captured.get('metadata') or {}),
+                            'visible_fallback_skipped': True,
+                            'skip_reason': 'autonomous queries must not open visible windows',
+                            'original_error': fallback_error,
+                        }
                 if captured.get('response_captured'):
                     capture_source = str(captured.get('capture_source') or response_capture_mode).strip().lower() or response_capture_mode
                     captured_text = str(captured.get('captured_text') or '').strip()
@@ -1151,11 +1370,16 @@ class MCPToolAdapter:
         server_url = str(card.metadata.get('server_url') or '').strip()
         if not server_url:
             return False
+        # When the MCP server runs in-process, use a shorter timeout
+        # so bootstrap doesn't block long if the server isn't ready yet.
+        import sys
+        in_process = 'iabv_v15.infra.mcp.server' in sys.modules
         if httpx is None:
             return False
         base = server_url.rstrip('/')
         try:
-            with httpx.Client(timeout=3.0) as client:
+            probe_timeout = 0.5 if in_process else 3.0
+            with httpx.Client(timeout=probe_timeout) as client:
                 resp = client.post(
                     base + '/mcp',
                     json={

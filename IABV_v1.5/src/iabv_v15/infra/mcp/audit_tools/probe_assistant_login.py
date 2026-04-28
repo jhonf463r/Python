@@ -518,6 +518,16 @@ def probe_assistant_login(
 
     heuristic = PROVIDER_HEURISTICS[kind]
 
+    # If the deductive reasoning engine has determined that CDP is preferred
+    # (e.g., because Cloudflare blocks isolated sessions and the user has
+    # active browser accounts), respect that decision automatically.
+    if os.environ.get('IABV_PREFER_CDP_SESSION') == '1' and use_browser_session:
+        logger.info(
+            'probe_assistant_login: IABV_PREFER_CDP_SESSION=1 — '
+            'switching to shared CDP mode (deduced by metacognition)'
+        )
+        use_browser_session = False
+
     if controller_factory is None:
         controller_factory = (
             _default_isolated_controller_factory

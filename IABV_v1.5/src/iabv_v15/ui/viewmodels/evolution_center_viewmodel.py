@@ -1,7 +1,10 @@
 ﻿from __future__ import annotations
 
+import logging
 import threading
 from typing import Any, Mapping
+
+logger = logging.getLogger(__name__)
 
 from iabv_v15.domain.models import InferenceRequest, IncidentQuery, RunStatus, TaskRole
 from iabv_v15.infra.persistence.execution_dossier_repository import ExecutionDossierRepository
@@ -212,39 +215,83 @@ class EvolutionCenterViewModel(QObject):
 
     @Slot()
     def refresh(self) -> None:
-        snapshot = self.evolution_review_service.build_project_health()
-        dossiers = [item.model_dump(mode='json') for item in self.dossier_repository.list_recent(limit=24)]
-        incidents = [item.model_dump(mode='json') for item in self.hidden_incident_repository.list_recent(limit=30)]
+        snapshot = None
+        try:
+            snapshot = self.evolution_review_service.build_project_health()
+        except Exception as exc:
+            logger.warning('evolution_center: build_project_health failed: %s', exc)
+        try:
+            dossiers = [item.model_dump(mode='json') for item in self.dossier_repository.list_recent(limit=24)]
+        except Exception as exc:
+            logger.warning('evolution_center: dossier list_recent failed: %s', exc)
+            dossiers = []
+        try:
+            incidents = [item.model_dump(mode='json') for item in self.hidden_incident_repository.list_recent(limit=30)]
+        except Exception as exc:
+            logger.warning('evolution_center: incident list_recent failed: %s', exc)
+            incidents = []
         filtered_incidents = self._filter_incidents(incidents, self._incident_filter)
-        backlog = [item.model_dump(mode='json') for item in self.evolution_review_service.build_improvement_backlog(limit=8)]
-        pending = [item.model_dump(mode='json') for item in self.pending_issue_repository.list_recent(limit=10)] if self.pending_issue_repository is not None else []
-        tool_cards = [item.model_dump(mode='json') for item in self.tool_record_repository.list_cards()] if self.tool_record_repository is not None else []
+        try:
+            backlog = [item.model_dump(mode='json') for item in self.evolution_review_service.build_improvement_backlog(limit=8)]
+        except Exception as exc:
+            logger.warning('evolution_center: build_improvement_backlog failed: %s', exc)
+            backlog = []
+        try:
+            pending = [item.model_dump(mode='json') for item in self.pending_issue_repository.list_recent(limit=10)] if self.pending_issue_repository is not None else []
+        except Exception as exc:
+            logger.warning('evolution_center: pending list_recent failed: %s', exc)
+            pending = []
+        try:
+            tool_cards = [item.model_dump(mode='json') for item in self.tool_record_repository.list_cards()] if self.tool_record_repository is not None else []
+        except Exception as exc:
+            logger.warning('evolution_center: tool list_cards failed: %s', exc)
+            tool_cards = []
         ia_comparisons = self._build_ia_comparisons()
-        environment_self_model = (
-            self.environment_self_awareness_service.current_model().model_dump(mode='json')
-            if self.environment_self_awareness_service is not None
-            else {}
-        )
-        world_model = (
-            self.world_model_service.current_model().model_dump(mode='json')
-            if self.world_model_service is not None
-            else {}
-        )
-        autonomous_validation = (
-            self.autonomous_validation_cycle.current_snapshot().model_dump(mode='json')
-            if self.autonomous_validation_cycle is not None
-            else {}
-        )
-        portable_context = (
-            self.portable_context_service.current_package(refresh=False).model_dump(mode='json')
-            if self.portable_context_service is not None and hasattr(self.portable_context_service, 'current_package')
-            else {}
-        )
-        self_examination = (
-            self.self_examination_service.current_review(refresh=False).model_dump(mode='json')
-            if self.self_examination_service is not None and hasattr(self.self_examination_service, 'current_review')
-            else {}
-        )
+        try:
+            environment_self_model = (
+                self.environment_self_awareness_service.current_model().model_dump(mode='json')
+                if self.environment_self_awareness_service is not None
+                else {}
+            )
+        except Exception as exc:
+            logger.warning('evolution_center: environment_self_model failed: %s', exc)
+            environment_self_model = {}
+        try:
+            world_model = (
+                self.world_model_service.current_model().model_dump(mode='json')
+                if self.world_model_service is not None
+                else {}
+            )
+        except Exception as exc:
+            logger.warning('evolution_center: world_model failed: %s', exc)
+            world_model = {}
+        try:
+            autonomous_validation = (
+                self.autonomous_validation_cycle.current_snapshot().model_dump(mode='json')
+                if self.autonomous_validation_cycle is not None
+                else {}
+            )
+        except Exception as exc:
+            logger.warning('evolution_center: autonomous_validation failed: %s', exc)
+            autonomous_validation = {}
+        try:
+            portable_context = (
+                self.portable_context_service.current_package(refresh=False).model_dump(mode='json')
+                if self.portable_context_service is not None and hasattr(self.portable_context_service, 'current_package')
+                else {}
+            )
+        except Exception as exc:
+            logger.warning('evolution_center: portable_context failed: %s', exc)
+            portable_context = {}
+        try:
+            self_examination = (
+                self.self_examination_service.current_review(refresh=False).model_dump(mode='json')
+                if self.self_examination_service is not None and hasattr(self.self_examination_service, 'current_review')
+                else {}
+            )
+        except Exception as exc:
+            logger.warning('evolution_center: self_examination failed: %s', exc)
+            self_examination = {}
         control_master_digest: dict[str, Any] = {}
         if self.control_master_service is not None and self.control_master_digest_builder is not None:
             try:
@@ -252,7 +299,7 @@ class EvolutionCenterViewModel(QObject):
                 control_master_digest = self.control_master_digest_builder.build(state).model_dump(mode='json')
             except Exception:
                 control_master_digest = {}
-        self._health_snapshot = snapshot.model_dump(mode='json')
+        self._health_snapshot = snapshot.model_dump(mode='json') if snapshot is not None else self._health_snapshot
         self._recent_dossiers = dossiers
         self._recent_incidents = filtered_incidents
         self._improvement_backlog = backlog
@@ -297,7 +344,7 @@ class EvolutionCenterViewModel(QObject):
             self._pinned_incident_selection = False
         self._latest_packet = self._build_current_packet()
         self._evidence_preview = self._build_evidence_preview()
-        self._status_text = snapshot.summary
+        self._status_text = snapshot.summary if snapshot is not None else self._status_text
         validation_summary = str((autonomous_validation or {}).get('summary') or '').strip()
         if validation_summary:
             self._status_text = f'{self._status_text} | Validacion autonoma: {validation_summary}'
@@ -540,23 +587,37 @@ class EvolutionCenterViewModel(QObject):
             self._latest_tool_status = 'La capa Tool Teaching no esta disponible en esta sesion.'
             self.dataChanged.emit()
             return
-        ordered = ['ollama_llm', 'playwright_browser', 'desktop_human_runner', 'codex_installed', 'chatgpt_installed', 'chatgpt_web_assisted']
-        sections: list[str] = []
-        audited = 0
-        for tool_id in ordered:
-            card = self.tool_record_repository.get_card(tool_id)
-            if card is None:
-                continue
-            audited += 1
-            sections.append(self._run_tool_sandbox(card))
-        if audited == 0:
-            self._latest_tool_status = 'No encontre herramientas base para auditar en esta sesion.'
-            self.dataChanged.emit()
+        if self._working:
             return
-        header = f'Auditoria base completada. Herramientas auditadas: {audited}.'
-        self._latest_tool_status = header + '\n\n' + '\n\n'.join(sections)
-        self._status_text = 'Auditoria base de herramientas completada.'
-        self.refresh()
+        self._working = True
+        self._status_text = 'Ejecutando auditoria base de herramientas en segundo plano...'
+        self.dataChanged.emit()
+
+        tool_repo = self.tool_record_repository
+
+        def worker() -> None:
+            try:
+                ordered = ['ollama_llm', 'playwright_browser', 'desktop_human_runner', 'codex_installed', 'chatgpt_installed', 'chatgpt_web_assisted']
+                sections: list[str] = []
+                audited = 0
+                for tool_id in ordered:
+                    card = tool_repo.get_card(tool_id)
+                    if card is None:
+                        continue
+                    audited += 1
+                    try:
+                        sections.append(self._run_tool_sandbox(card))
+                    except Exception as exc:
+                        sections.append(f'Herramienta {tool_id}: error — {exc}')
+                if audited == 0:
+                    self.taskFailed.emit('audit_base_tools', 'No encontre herramientas base para auditar en esta sesion.')
+                    return
+                header = f'Auditoria base completada. Herramientas auditadas: {audited}.'
+                self.taskResolved.emit('audit_base_tools', {'status': header, 'sections': sections})
+            except Exception as exc:
+                self.taskFailed.emit('audit_base_tools', str(exc))
+
+        threading.Thread(target=worker, daemon=True).start()
 
     @Slot(str, str, str, str, int, bool)
     def publishBranchAsPR(
@@ -825,6 +886,15 @@ class EvolutionCenterViewModel(QObject):
             self._working = False
             self.dataChanged.emit()
             return
+        if task_name == 'audit_base_tools':
+            data = dict(payload) if isinstance(payload, Mapping) else {}
+            sections = list(data.get('sections') or [])
+            header = str(data.get('status') or f'Auditoria base completada.')
+            self._latest_tool_status = header + '\n\n' + '\n\n'.join(sections) if sections else header
+            self._status_text = 'Auditoria base de herramientas completada.'
+            self._working = False
+            self.refresh()
+            return
         self._working = False
         self.dataChanged.emit()
 
@@ -835,6 +905,8 @@ class EvolutionCenterViewModel(QObject):
         if task_name == 'publish_pr':
             self._publish_pr_status = f'No pude publicar el PR: {message}'
             self._publish_pr_result = {'success': False, 'error': message}
+        elif task_name == 'audit_base_tools':
+            self._latest_tool_status = f'Error en auditoria base de herramientas: {message}'
         self.dataChanged.emit()
 
     @staticmethod

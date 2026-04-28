@@ -131,7 +131,9 @@ class IABVMCPServer:
         if mcp is None:
             from mcp.server.fastmcp import FastMCP  # lazy import
 
-            fastmcp_kwargs: dict[str, Any] = {}
+            fastmcp_kwargs: dict[str, Any] = {
+                'log_level': 'WARNING',
+            }
             # MCP Python SDK >= 1.x introdujo DNS rebinding protection en
             # ``streamable-http`` que rechaza cualquier Host distinto a
             # localhost con ``HTTP/2 421 Invalid Host header`` (issue
@@ -206,6 +208,12 @@ class IABVMCPServer:
             if workspace_root is None:
                 workspace_root = os.getcwd()
             return UIExecutionRunner(workspace_root=str(workspace_root))
+        return svc
+
+    def _code_audit_trail(self) -> Any:
+        svc = getattr(self.container, "code_audit_trail", None)
+        if svc is None:
+            raise RuntimeError("code_audit_trail no está disponible en el container")
         return svc
 
     def _workspace_root(self) -> str:
@@ -651,7 +659,7 @@ class IABVMCPServer:
             response_wait_seconds: float = 45.0,
             reingest_only: bool = False,
             browser_profile_dir: str | None = None,
-            browser_headless: bool = False,
+            browser_headless: bool = True,
             input_selectors: list[str] | None = None,
             response_selectors: list[str] | None = None,
             submit_selectors: list[str] | None = None,
@@ -667,7 +675,7 @@ class IABVMCPServer:
                 response_wait_seconds: tope de espera de respuesta estable.
                 reingest_only: si True, sólo relee DOM sin pegar prompt.
                 browser_profile_dir: ruta del perfil persistente (opcional).
-                browser_headless: si True, corre sin ventana visible.
+                browser_headless: si True, corre sin ventana visible (default).
                 input_selectors / response_selectors / submit_selectors:
                     selectores del card (defaults = oficiales del ToolCard).
             """
@@ -1281,6 +1289,7 @@ class IABVMCPServer:
         def synaptic_route(
             task_kind: str,
             candidate_assistant_kinds: str = "",
+            user_goal: str = "",
         ) -> dict[str, Any]:
             """Calcula la preferencia sináptica (PCS v1) para un task_kind.
 
@@ -1298,6 +1307,9 @@ class IABVMCPServer:
                     ``"task_kind_unknown"``.
                 candidate_assistant_kinds: kinds separados por coma; si
                     está vacío se usan todos los kinds del registry.
+                user_goal: texto libre del objetivo del usuario. Si
+                    menciona un proveedor explícito (e.g. "gemini",
+                    "claude"), ese candidato recibe un bonus de scoring.
 
             Returns:
                 ``SynapticRoutingDecision`` serializado como dict, o
@@ -1326,6 +1338,7 @@ class IABVMCPServer:
             decision = router.decide(
                 task_kind=str(task_kind or ""),
                 candidate_assistant_kinds=kinds,
+                user_goal=str(user_goal or ""),
             )
             return decision.model_dump(mode="json")
 
@@ -1962,6 +1975,31 @@ class IABVMCPServer:
             )
             return result.to_dict()
 
+        @mcp.tool()
+        def tool_version_scan() -> dict[str, Any]:
+            """Escanea versiones de todas las herramientas que IABV usa.
+
+            Retorna version instalada, disponibilidad y estado de cada
+            tool (Ollama, git, gh, cloudflared, APIs). Persiste el log
+            en data/metacognition/tool_versions_log.jsonl.
+            """
+
+            block = self._governance_block_for_route(
+                assistant_kind="audit",
+                requires_network=True,
+            )
+            if block is not None:
+                return block
+
+            from iabv_v15.services.tools.tool_version_monitor import (
+                full_version_scan, persist_version_log,
+            )
+            scan = full_version_scan()
+            ws = self._workspace_root() or ''
+            if ws:
+                persist_version_log(ws, scan)
+            return _to_jsonable(scan)
+
     # ------------------------------------------------------------------
     # Ciclo de vida
 
@@ -2076,6 +2114,12 @@ def main() -> None:
         level=os.environ.get("IABV_MCP_LOG_LEVEL", "INFO"),
         format="%(asctime)s %(levelname)s %(name)s - %(message)s",
     )
+    # Suppress noisy transport/access messages from the MCP SDK, uvicorn,
+    # and httpx in the subprocess — the main UI process already logs these.
+    for noisy_logger in ('mcp', 'mcp.server', 'mcp.server.streamable_http',
+                         'fastmcp', 'uvicorn', 'uvicorn.access', 'uvicorn.error',
+                         'httpx', 'httpcore'):
+        logging.getLogger(noisy_logger).setLevel(logging.WARNING)
     transport = os.environ.get("IABV_MCP_TRANSPORT", "stdio")
     name = os.environ.get("IABV_MCP_NAME", DEFAULT_SERVER_NAME)
     workspace_root = os.environ.get("IABV_WORKSPACE_ROOT")

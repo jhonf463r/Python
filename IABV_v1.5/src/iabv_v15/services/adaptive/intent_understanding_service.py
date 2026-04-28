@@ -1,11 +1,257 @@
 ﻿from __future__ import annotations
 
+import json
+import logging
+import os
 import re
 import threading
 import time
+from pathlib import Path
 from typing import Any
 
 from iabv_v15.domain.models import InferenceRequest, IntentDisposition, IntentHypothesis, IntentSchema, TaskIntent, TaskRole
+
+logger = logging.getLogger(__name__)
+
+
+# ──────────────────────────────────────────────────────────────
+# IntentLearningLayer — aprendizaje persistente de patrones
+# ──────────────────────────────────────────────────────────────
+
+def _intent_learning_path() -> Path:
+    """Return path to the learned intent patterns JSONL file."""
+    env_val = os.environ.get('IABV_DATA_DIR', '').strip()
+    data_dir = Path(env_val) if env_val else (
+        Path(os.path.expanduser('~')) / 'IABV_v1.5' / 'data'
+    )
+    learning_dir = data_dir / 'evolution' / 'intent_learning'
+    learning_dir.mkdir(parents=True, exist_ok=True)
+    return learning_dir / 'learned_patterns.jsonl'
+
+
+class IntentLearningLayer:
+    """Persistent layer that learns intent patterns from user interactions.
+
+    When the system classifies an intent with low confidence or falls back
+    to ``general.assistance``, and the user subsequently reformulates or
+    the system detects a correction, the learning layer records the mapping:
+
+        normalized_input → confirmed_intent_key
+
+    On startup, learned patterns are loaded and consulted BEFORE the
+    hardcoded pattern matching, giving them priority. Patterns that
+    accumulate enough confirmations (``_MIN_CONFIRMATIONS``) are promoted
+    to "trusted" and bypass the static classification entirely.
+    """
+
+    _MIN_CONFIRMATIONS = 3
+    _MAX_LEARNED_PATTERNS = 2000
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._patterns: dict[str, dict[str, Any]] = {}
+        self._load()
+
+    def _load(self) -> None:
+        """Load learned patterns from JSONL file."""
+        try:
+            path = _intent_learning_path()
+        except Exception as exc:
+            logger.debug('intent_learning: failed to resolve path: %s', exc)
+            return
+        if not path.exists():
+            return
+        try:
+            with open(path, 'r', encoding='utf-8', errors='replace') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        record = json.loads(line)
+                        key = record.get('pattern', '').strip().lower()
+                        if key:
+                            self._patterns[key] = record
+                    except json.JSONDecodeError:
+                        continue
+            logger.info(
+                'intent_learning: loaded %d learned patterns from %s',
+                len(self._patterns), path,
+            )
+        except Exception as exc:
+            logger.debug('intent_learning: failed to load: %s', exc)
+
+    def _save(self) -> None:
+        """Persist all learned patterns to JSONL file (requires lock held)."""
+        self._save_snapshot(list(self._patterns.values()))
+
+    def _save_snapshot(self, records: list[dict[str, Any]]) -> None:
+        """Write a snapshot of records to disk (lock-free)."""
+        path = _intent_learning_path()
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                for record in records:
+                    f.write(json.dumps(record, ensure_ascii=False) + '\n')
+        except Exception as exc:
+            logger.debug('intent_learning: failed to save: %s', exc)
+
+    def clear(self) -> None:
+        """Clear all in-memory patterns (useful for test isolation)."""
+        with self._lock:
+            self._patterns.clear()
+
+    def lookup(self, normalized_text: str) -> dict[str, Any] | None:
+        """Check if a normalized input matches a learned pattern.
+
+        Returns the learned record if found and confirmed enough times,
+        otherwise None. Uses substring matching for flexibility:
+        if "dame los comandos para ejecutar" was learned, it also
+        matches "dame los comandos para ejecutar mi programa".
+        """
+        text_lower = normalized_text.strip().lower()
+        with self._lock:
+            # Exact match first
+            exact = self._patterns.get(text_lower)
+            if exact and exact.get('confirmations', 0) >= self._MIN_CONFIRMATIONS:
+                return exact
+
+            # Substring match — check if any learned pattern is contained
+            # in the input or vice versa
+            best_match: dict[str, Any] | None = None
+            best_score = 0.0
+            for pattern_key, record in self._patterns.items():
+                if record.get('confirmations', 0) < self._MIN_CONFIRMATIONS:
+                    continue
+                if pattern_key in text_lower or text_lower in pattern_key:
+                    # Bidirectional overlap ratio (0..1)
+                    overlap = min(len(pattern_key), len(text_lower)) / max(len(pattern_key), len(text_lower), 1)
+                    if overlap > best_score and overlap > 0.5:
+                        best_score = overlap
+                        best_match = record
+            return best_match
+
+    def record(
+        self,
+        normalized_text: str,
+        intent_key: str,
+        *,
+        confidence: float = 0.0,
+        source: str = 'user_correction',
+    ) -> None:
+        """Record or reinforce a learned pattern.
+
+        Called when:
+        - The user reformulates and the system classifies differently
+        - The system falls back to general.assistance and the user
+          provides a clearer instruction that resolves to a specific intent
+        - An action succeeds after being classified with a specific intent
+        """
+        text_lower = normalized_text.strip().lower()
+        if not text_lower or not intent_key:
+            return
+
+        with self._lock:
+            existing = self._patterns.get(text_lower)
+            if existing:
+                if existing.get('intent_key') == intent_key:
+                    existing['confirmations'] = existing.get('confirmations', 0) + 1
+                    existing['last_seen'] = time.time()
+                    existing['confidence'] = max(
+                        existing.get('confidence', 0.0), confidence,
+                    )
+                else:
+                    # Intent changed — could be a correction. If the new
+                    # intent has higher confidence, override.
+                    if confidence > existing.get('confidence', 0.0):
+                        existing['intent_key'] = intent_key
+                        existing['confirmations'] = 1
+                        existing['last_seen'] = time.time()
+                        existing['confidence'] = confidence
+                        existing['source'] = source
+            else:
+                if len(self._patterns) >= self._MAX_LEARNED_PATTERNS:
+                    # Evict least-confirmed pattern
+                    weakest = min(
+                        self._patterns,
+                        key=lambda k: self._patterns[k].get('confirmations', 0),
+                    )
+                    del self._patterns[weakest]
+
+                self._patterns[text_lower] = {
+                    'pattern': text_lower,
+                    'intent_key': intent_key,
+                    'confirmations': 1,
+                    'confidence': confidence,
+                    'first_seen': time.time(),
+                    'last_seen': time.time(),
+                    'source': source,
+                }
+
+            snapshot = list(self._patterns.values())
+
+        # Write outside the lock so lookup() isn't blocked by file I/O
+        self._save_snapshot(snapshot)
+
+    def record_failure(
+        self,
+        normalized_text: str,
+        failed_intent_key: str,
+    ) -> None:
+        """Decay confidence for a pattern whose intent was wrong.
+
+        Called when the system classified with *failed_intent_key* but the
+        user corrected or the outcome was clearly wrong.  Reduces
+        confirmations (never below 0) so the pattern naturally loses
+        priority and eventually gets evicted.
+        """
+        text_lower = normalized_text.strip().lower()
+        if not text_lower:
+            return
+
+        with self._lock:
+            existing = self._patterns.get(text_lower)
+            if not existing:
+                return
+            if existing.get('intent_key') != failed_intent_key:
+                return
+            existing['confirmations'] = max(
+                0, existing.get('confirmations', 0) - 1,
+            )
+            existing['confidence'] = max(
+                0.0, (existing.get('confidence', 0.0) or 0.0) * 0.7,
+            )
+            existing['last_decay'] = time.time()
+            snapshot = list(self._patterns.values())
+
+        self._save_snapshot(snapshot)
+
+    def get_stats(self) -> dict[str, Any]:
+        """Return statistics about learned patterns for reporting."""
+        with self._lock:
+            total = len(self._patterns)
+            trusted = sum(
+                1 for p in self._patterns.values()
+                if p.get('confirmations', 0) >= self._MIN_CONFIRMATIONS
+            )
+            decayed = sum(
+                1 for p in self._patterns.values()
+                if p.get('last_decay')
+            )
+            by_intent: dict[str, int] = {}
+            for p in self._patterns.values():
+                ik = p.get('intent_key', 'unknown')
+                by_intent[ik] = by_intent.get(ik, 0) + 1
+            return {
+                'total_patterns': total,
+                'trusted_patterns': trusted,
+                'learning_patterns': total - trusted,
+                'decayed_patterns': decayed,
+                'by_intent': by_intent,
+            }
+
+
+# Singleton instance — loaded once at import time, persists across calls
+_intent_learning_layer = IntentLearningLayer()
 
 
 class IntentUnderstandingService:
@@ -235,6 +481,135 @@ class IntentUnderstandingService:
 
     def classify(self, request: InferenceRequest) -> tuple[TaskIntent, list[IntentHypothesis]]:
         text = self._normalize(request.user_goal)
+
+        # ── Learned pattern lookup (BEFORE static patterns) ──
+        # Skip learned patterns for compound messages that need full
+        # conversation analysis (multiple intents joined by connectors).
+        _compound_connectors = (' y, ', ' y con ', ' pero ', ' con eso ',
+                                ' ademas ', ' tambien ', ' sin embargo ',
+                                ', y ')
+        is_compound = any(c in text for c in _compound_connectors)
+        has_conversation_context = bool(request.conversation_context)
+        learned = _intent_learning_layer.lookup(text) if not is_compound and not has_conversation_context else None
+        # Don't let learned patterns override explicit sandbox/tool signals
+        if learned:
+            _has_sandbox_signal = any(w in text for w in ('sandbox', 'probar herramienta', 'probar tool'))
+            if _has_sandbox_signal and learned.get('intent_key') not in ('tools.sandbox', 'tools.local_workflow'):
+                learned = None
+        if learned:
+            learned_intent_key = str(learned.get('intent_key', ''))
+            learned_confidence = min(float(learned.get('confidence', 0.85)), 0.95)
+            confirmations = int(learned.get('confirmations', 0))
+            logger.info(
+                'intent_learning: matched learned pattern — intent=%s '
+                'confirmations=%d confidence=%.2f',
+                learned_intent_key, confirmations, learned_confidence,
+            )
+            # Map known intent_keys to their TaskRole (must match static paths)
+            role_map: dict[str, TaskRole] = {
+                'general.assistance': TaskRole.KNOWLEDGE,
+                'knowledge.query': TaskRole.KNOWLEDGE,
+                'system.self_awareness': TaskRole.KNOWLEDGE,
+                'system.metacognition': TaskRole.TOOL_USE,
+                'consulta_estado_evolutivo': TaskRole.KNOWLEDGE,
+                'project.evolution': TaskRole.PROJECT_EVOLUTION,
+                'research.local': TaskRole.RESEARCH,
+                'research.external_consultation': TaskRole.RESEARCH,
+                'tools.local_workflow': TaskRole.TOOL_USE,
+                'tools.sandbox': TaskRole.TOOL_SANDBOX,
+                'wplay.login': TaskRole.TRAINING,
+                'wplay.core': TaskRole.TRAINING,
+                'wplay.casino': TaskRole.TRAINING,
+                'browser.search': TaskRole.TOOL_USE,
+                'browser.navigate': TaskRole.TOOL_USE,
+                'analytics.strategy': TaskRole.ANALYTICS,
+                'customer.support': TaskRole.CUSTOMER_SUPPORT,
+            }
+            disposition_map: dict[str, IntentDisposition] = {
+                'general.assistance': IntentDisposition.ANSWER_NOW,
+                'knowledge.query': IntentDisposition.ANSWER_NOW,
+                'system.self_awareness': IntentDisposition.ANSWER_NOW,
+                'system.metacognition': IntentDisposition.ANSWER_NOW,
+                'consulta_estado_evolutivo': IntentDisposition.ANSWER_NOW,
+                'project.evolution': IntentDisposition.PLAN_THEN_EXECUTE,
+                'research.local': IntentDisposition.PLAN_THEN_EXECUTE,
+                'research.external_consultation': IntentDisposition.PLAN_THEN_EXECUTE,
+                'tools.local_workflow': IntentDisposition.PLAN_THEN_EXECUTE,
+                'tools.sandbox': IntentDisposition.PLAN_THEN_EXECUTE,
+                'wplay.login': IntentDisposition.PLAN_THEN_EXECUTE,
+                'wplay.core': IntentDisposition.PLAN_THEN_EXECUTE,
+                'wplay.casino': IntentDisposition.PLAN_THEN_EXECUTE,
+                'browser.search': IntentDisposition.PLAN_THEN_EXECUTE,
+                'browser.navigate': IntentDisposition.PLAN_THEN_EXECUTE,
+                'analytics.strategy': IntentDisposition.ANSWER_NOW,
+                'customer.support': IntentDisposition.ANSWER_NOW,
+            }
+            detected_role = role_map.get(learned_intent_key, TaskRole.KNOWLEDGE)
+            detected_disposition = disposition_map.get(
+                learned_intent_key, IntentDisposition.ANSWER_NOW,
+            )
+            # Preserve domain-specific metadata that the static path
+            # would have set — learned patterns must not strip flags
+            # that downstream handlers depend on.
+            domain_metadata: dict[str, Any] = {
+                'learned_pattern': True,
+                'learned_confirmations': confirmations,
+            }
+            if learned_intent_key == 'consulta_estado_evolutivo':
+                domain_metadata['conversational_prompt'] = True
+                domain_metadata['evolution_status_prompt'] = True
+            elif learned_intent_key == 'system.self_awareness':
+                domain_metadata['conversational_prompt'] = True
+                domain_metadata['self_awareness_prompt'] = True
+            elif learned_intent_key == 'system.metacognition':
+                domain_metadata['conversational_prompt'] = True
+                domain_metadata['metacognition_prompt'] = True
+            if learned_intent_key == 'project.evolution' and self._is_code_generation_prompt(text):
+                domain_metadata['code_generation_prompt'] = True
+            # Preserve sensitivity flags that the static path would set
+            _sensitive_intents = {'wplay.login', 'wplay.casino'}
+            _monetary_intents = {'wplay.casino'}
+            is_sensitive = learned_intent_key in _sensitive_intents
+            is_monetary = learned_intent_key in _monetary_intents
+            intent = TaskIntent(
+                disposition=detected_disposition,
+                intent_key=learned_intent_key,
+                title=f'Learned: {learned_intent_key}',
+                summary=f'Clasificado por patrón aprendido ({confirmations} confirmaciones)',
+                detected_role=detected_role,
+                site_hint=request.site_hint,
+                domain_hint=learned_intent_key.split('.')[0] if '.' in learned_intent_key else 'general',
+                confidence=max(0.1, learned_confidence - self._confidence_decay(learned_intent_key)),
+                sensitive=is_sensitive,
+                monetary=is_monetary,
+                reasoning=[
+                    f'patrón aprendido con {confirmations} confirmaciones',
+                    f'fuente: {learned.get("source", "unknown")}',
+                ] + (['patrones explicitos de generacion o modificacion de codigo detectados'] if domain_metadata.get('code_generation_prompt') else []),
+                metadata=domain_metadata,
+            )
+            hypotheses = [IntentHypothesis(
+                intent_key=learned_intent_key,
+                title=f'Learned: {learned_intent_key}',
+                confidence=learned_confidence,
+                rationale=f'Patrón aprendido previamente ({confirmations} confirmaciones)',
+            )]
+            if learned_intent_key == 'consulta_estado_evolutivo':
+                hypotheses.append(IntentHypothesis(
+                    intent_key='knowledge.query',
+                    title='Consulta de conocimiento',
+                    confidence=max(0.1, learned_confidence - 0.15),
+                    rationale='consulta evolutiva implica consulta de conocimiento',
+                ))
+            elif learned_intent_key in ('system.self_awareness', 'system.metacognition'):
+                hypotheses.append(IntentHypothesis(
+                    intent_key='knowledge.query',
+                    title='Consulta de conocimiento',
+                    confidence=max(0.1, learned_confidence - 0.20),
+                    rationale='autoconciencia implica consulta de conocimiento interno',
+                ))
+            return intent, hypotheses
+
         conversation_text = self._conversation_context_text(request.conversation_context)
         detected_site, context_carried_from_history = self._detect_site_with_history(
             text,
@@ -319,6 +694,21 @@ class IntentUnderstandingService:
                         'metadata': {**intent.metadata, 'requires_clarification': True},
                     }
                 )
+
+            # ── Intent Learning: record pattern for future use ──
+            # Only record specific intents with high confidence.
+            # NEVER record general.assistance — it would create a
+            # self-reinforcing lock-in where fallback inputs get
+            # promoted to "trusted" and permanently bypass static
+            # pattern matching.
+            if intent.confidence >= 0.7 and intent.intent_key != 'general.assistance':
+                _intent_learning_layer.record(
+                    text,
+                    intent.intent_key,
+                    confidence=intent.confidence,
+                    source='high_confidence_classification',
+                )
+
             return intent, merged_hypotheses
 
         if self._contains_any(text, ['hola', 'que sabes hacer', 'quÃ© sabes hacer']) and len(text.split()) <= 8 and not bool(analysis.get('compound')):
@@ -449,7 +839,8 @@ class IntentUnderstandingService:
             return finalize(intent, hypotheses)
 
         _has_web_verb = self._contains_any(text, ['buscar', 'busca', 'navega', 'abre', 'abrir', 've a']) and self._contains_any(text, ['internet', 'web', 'en linea', 'online', 'pagina', 'sitio', 'url', 'http', 'google', 'mercadolibre', 'mercado libre'])
-        if not _has_web_verb and (self._is_tool_prompt(text, request.goal_parameters) or str(analysis.get('primary_intent') or '') in {'tools.local_workflow', 'tools.sandbox'}):
+        _sandbox_explicit = self._contains_any(text, ['sandbox', 'probar herramienta', 'probar tool', 'validar herramienta'])
+        if (_sandbox_explicit or not _has_web_verb) and (self._is_tool_prompt(text, request.goal_parameters) or str(analysis.get('primary_intent') or '') in {'tools.local_workflow', 'tools.sandbox'}):
             sandbox_only = self._contains_any(text, ['sandbox', 'probar herramienta', 'probar tool', 'validar herramienta'])
             intent = build(
                 intent_key='tools.sandbox' if sandbox_only else 'tools.local_workflow',
@@ -680,12 +1071,45 @@ class IntentUnderstandingService:
             )
         intent, hypotheses = self.classify(request)
         intent = intent.model_copy(update={'hypotheses': hypotheses})
+
+        # ── Cross-turn learning: ONLY when the previous turn was a
+        #    fallback (general.assistance) or low-confidence, and THIS
+        #    turn resolved to a specific intent with high confidence ──
+        if (
+            intent.intent_key != 'general.assistance'
+            and intent.confidence >= 0.7
+            and conversation_history
+        ):
+            for prev_msg in reversed(conversation_history[-3:]):
+                prev_role = str(prev_msg.get('role', '')).strip().lower()
+                if prev_role in ('user', 'human'):
+                    prev_intent = str(prev_msg.get('intent_key', '')).strip()
+                    prev_confidence = float(prev_msg.get('confidence', 1.0))
+                    was_fallback = (
+                        prev_intent == 'general.assistance'
+                        or prev_confidence < 0.65
+                    )
+                    if not was_fallback:
+                        break
+                    prev_text = self._normalize(str(prev_msg.get('content', '')))
+                    if prev_text and len(prev_text.split()) >= 3:
+                        _intent_learning_layer.record(
+                            prev_text,
+                            intent.intent_key,
+                            confidence=intent.confidence * 0.8,
+                            source='cross_turn_correction',
+                        )
+                    break
+
         analysis: dict[str, Any] = dict(intent.metadata.get('conversation_analysis') or {})
         sub_intents = list(analysis.get('sub_intents') or [])
         ambiguity_score = float(analysis.get('ambiguity_score') or 0.0)
         risk_level = 'high' if intent.sensitive or intent.monetary else (
             'medium' if ambiguity_score >= 0.5 or intent.multi_step else 'low'
         )
+        semantic_source = 'conversation_analysis'
+        if intent.metadata.get('learned_pattern'):
+            semantic_source = 'learned_pattern'
         schema = IntentSchema(
             primary_intent=intent.intent_key,
             sub_intents=sub_intents,
@@ -694,13 +1118,39 @@ class IntentUnderstandingService:
             clarification_prompt=str(analysis.get('clarification_prompt') or ''),
             risk_level=risk_level,
             confidence=intent.confidence,
-            semantic_source='conversation_analysis',
+            semantic_source=semantic_source,
             compound=bool(analysis.get('compound')),
             constraints=list(analysis.get('constraints') or []),
             objective_summary=str(analysis.get('objective_summary') or ''),
             context_carried_from_history=bool(analysis.get('context_carried_from_history')),
         )
         return intent, schema
+
+    @staticmethod
+    def get_learning_stats() -> dict[str, Any]:
+        """Return statistics about learned intent patterns."""
+        return _intent_learning_layer.get_stats()
+
+    @staticmethod
+    def record_intent_correction(
+        normalized_text: str,
+        correct_intent_key: str,
+        confidence: float = 0.9,
+    ) -> None:
+        """Manually teach the system a correct intent for an input.
+
+        Called by external services (e.g., ControlCenterViewModel) when
+        the user explicitly corrects a misclassification.
+        """
+        if correct_intent_key == 'general.assistance':
+            logger.info('record_intent_correction: refusing to record general.assistance (lock-in risk)')
+            return
+        _intent_learning_layer.record(
+            normalized_text,
+            correct_intent_key,
+            confidence=confidence,
+            source='explicit_user_correction',
+        )
 
     def _analyze_conversation(
         self,
@@ -754,14 +1204,19 @@ class IntentUnderstandingService:
                 4.0,
                 'mensaje asociado a herramientas locales o sandbox',
             )
-        if site_hint == 'wplay' and self._contains_any(text, ['casino', 'juega', 'jugar', 'apuesta', 'estrategia', 'algoritmo']):
+        # Skip site-specific and browser registrations when the current
+        # text is about an internal/system topic (secrets, config, GPU, etc.).
+        # This prevents spurious wplay/browser scores when the site_hint was
+        # carried from a previous conversation about a completely different topic.
+        _internal = self._is_internal_topic(text)
+        if not _internal and site_hint == 'wplay' and self._contains_any(text, ['casino', 'juega', 'jugar', 'apuesta', 'estrategia', 'algoritmo']):
             register('wplay.casino', 5.0, 'flujo Wplay orientado a casino o estrategia')
-        if site_hint == 'wplay' and self._contains_any(text, ['inicia sesion', 'iniciar sesion', 'login', 'loguea', 'abre wplay']):
+        if not _internal and site_hint == 'wplay' and self._contains_any(text, ['inicia sesion', 'iniciar sesion', 'login', 'loguea', 'abre wplay']):
             register('wplay.login', 5.0, 'flujo Wplay orientado a login')
-        if site_hint == 'wplay' and self._contains_any(text, ['abre', 'abrir', 'pagina', 'p?gina', 'entra', 'ingresa', 've a']):
+        if not _internal and site_hint == 'wplay' and self._contains_any(text, ['abre', 'abrir', 'pagina', 'p?gina', 'entra', 'ingresa', 've a']):
             register('wplay.core', 4.0, 'flujo Wplay orientado a navegacion base')
         _web_ctx = self._contains_any(text, ['internet', 'web', 'en linea', 'online', 'pagina', 'sitio', 'url', 'http'])
-        if self._contains_any(text, ['abre', 'abrir', 've a', 'buscar', 'busca', 'navega']) and (site_hint is not None or self._contains_any(text, ['google', 'mercadolibre', 'mercado libre']) or _web_ctx):
+        if not _internal and self._contains_any(text, ['abre', 'abrir', 've a', 'buscar', 'busca', 'navega']) and (site_hint is not None or self._contains_any(text, ['google', 'mercadolibre', 'mercado libre']) or _web_ctx):
             register(
                 'browser.search' if self._contains_any(text, ['buscar', 'busca']) else 'browser.navigate',
                 3.5,
@@ -1237,6 +1692,24 @@ class IntentUnderstandingService:
         site_hint, _ = self._detect_site_with_history(text, goal_parameters, '')
         return site_hint
 
+    # Signals that indicate the user is asking about the program itself.
+    # When any of these appear in the current text, site_hint must NOT be
+    # inherited from conversation history — the question is internal.
+    _INTERNAL_TOPIC_SIGNALS: tuple[str, ...] = (
+        'secreto', 'secretos', 'token', 'tokens', 'configuracion',
+        'configurar', 'entorno', 'variable', 'variables', 'bootstrap',
+        'analiza por que', 'analiza por qué', 'faltantes', 'faltante',
+        'auto-correccion', 'autocorreccion', 'auto correccion',
+        'tu codigo', 'tu código', 'tu algoritmo', 'tus algoritmos',
+        'tu sistema', 'tu configuracion', 'tu configuración',
+        'metacognicion', 'metacognición', 'autoanalisis', 'autoanálisis',
+        'autodiagnostico', 'autodiagnóstico', 'tu estado', 'tu gpu',
+        'tu rendimiento', 'tus herramientas', 'tus conexiones',
+    )
+
+    def _is_internal_topic(self, text: str) -> bool:
+        return any(signal in text for signal in self._INTERNAL_TOPIC_SIGNALS)
+
     def _detect_site_with_history(
         self,
         text: str,
@@ -1250,6 +1723,12 @@ class IntentUnderstandingService:
             if any(alias in merged for alias in aliases):
                 return site_id, False
         if conversation_text:
+            # Do NOT inherit site_hint from history when the current
+            # message is about internal/system topics (secrets, config,
+            # metacognition, etc.).  This prevents e.g. a previous Wplay
+            # conversation from polluting a question about missing tokens.
+            if self._is_internal_topic(text):
+                return None, False
             for site_id, aliases in self.SITE_ALIASES.items():
                 if any(alias in conversation_text for alias in aliases):
                     return site_id, True

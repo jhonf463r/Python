@@ -21,7 +21,7 @@ except ImportError:  # pragma: no cover - handled at runtime
 class OpenAICompatLocalProvider(LLMProvider):
     """Provider para runtimes locales compatibles con la API estilo OpenAI."""
 
-    def __init__(self, config: ProviderConfig, timeout_seconds: float = 45.0) -> None:
+    def __init__(self, config: ProviderConfig, timeout_seconds: float = 20.0) -> None:
         self.config = config
         self.timeout_seconds = timeout_seconds
 

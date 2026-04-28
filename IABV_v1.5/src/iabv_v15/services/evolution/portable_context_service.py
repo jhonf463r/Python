@@ -58,6 +58,8 @@ class PortableContextService:
         self.task_context_assembler = task_context_assembler
         self.adaptive_task_orchestrator = adaptive_task_orchestrator
         self.adaptive_session_repository = adaptive_session_repository
+        self.decision_audit_trail: Any | None = None
+        self.code_audit_trail: Any | None = None
         self._current_package: PortableContextPackage | None = None
 
     def current_package(
@@ -104,6 +106,8 @@ class PortableContextService:
         tool_evolution = self._tool_evolution_snapshot()
         tool_evolution_decisions = self._tool_evolution_decision_snapshot()
         self_examination = self._self_examination_snapshot()
+        cloud_reasoning_status = self._cloud_reasoning_snapshot()
+        code_audit_status = self._code_audit_snapshot()
         pending_items = self._pending_items()
         backlog_items = self._backlog_items()
         decision_history = self._decision_history(recommendations=recommendations)
@@ -124,6 +128,7 @@ class PortableContextService:
                 now=now,
             ),
             self._architecture_section(now=now),
+            self._user_metacognitive_intent_section(now=now),
             self._implemented_capabilities_section(
                 recommendations=recommendations,
                 validation=validation,
@@ -140,6 +145,8 @@ class PortableContextService:
             self._tool_evolution_section(status=tool_evolution, now=now),
             self._tool_evolution_decisions_section(snapshot=tool_evolution_decisions, now=now),
             self._self_examination_section(review=self_examination, now=now),
+            self._code_audit_section(status=code_audit_status, now=now),
+            self._cloud_reasoning_section(status=cloud_reasoning_status, now=now),
             self._recommended_routes_section(recommendations=recommendations, now=now),
             self._operational_blocks_section(world=world, recommendations=recommendations, now=now),
             self._validated_decisions_section(
@@ -151,6 +158,8 @@ class PortableContextService:
             self._pending_section(pending_items=pending_items, backlog_items=backlog_items, now=now),
             self._unresolved_section(unresolved=unresolved, now=now),
             self._hard_rules_section(now=now),
+            self._user_identity_section(now=now),
+            self._long_term_goals_section(now=now),
         ]
         package = PortableContextPackage(
             created_at_utc=now,
@@ -178,6 +187,7 @@ class PortableContextService:
                 'tool_evolution_degraded_subjects': list(tool_evolution.get('degraded_subjects') or []),
                 'tool_evolution_decision_summary': dict(tool_evolution_decisions.get('summary_payload') or {}),
                 'tool_evolution_validated_proposals': list(tool_evolution_decisions.get('entries') or []),
+                'cloud_reasoning_status': dict(cloud_reasoning_status),
                 'autoexamination_summary': dict(self_examination.get('summary_payload') or {}),
                 'recurring_issues': list(self_examination.get('recurring_issues') or []),
                 'recommended_adjustments': list(self_examination.get('recommended_adjustments') or []),
@@ -466,6 +476,29 @@ class PortableContextService:
                 'recommendation_feedback': [],
                 'feedback_summary': {},
                 'unresolved_risks': ['UNRESOLVED:self_examination'],
+            }
+
+    def _cloud_reasoning_snapshot(self) -> dict[str, Any]:
+        audit = getattr(self, 'decision_audit_trail', None)
+        if audit is None:
+            return {
+                'status': 'not_configured',
+                'health_score': 0.0,
+                'overall_trend': 'unknown',
+                'total_decisions': 0,
+                'trends': [],
+                'recommendations': [],
+            }
+        try:
+            return audit.self_examination_summary()
+        except Exception:
+            return {
+                'status': 'error',
+                'health_score': 0.0,
+                'overall_trend': 'unknown',
+                'total_decisions': 0,
+                'trends': [],
+                'recommendations': [],
             }
 
     def _tool_discovery_snapshot(self) -> dict[str, Any]:
@@ -789,6 +822,40 @@ class PortableContextService:
             unresolved_fields=unresolved,
         )
 
+    def _user_metacognitive_intent_section(self, *, now) -> PortableContextSection:
+        items = [
+            {
+                'label': 'centro_metacognitivo_local',
+                'detail': 'IABV debe ser el centro local-first que observa laptop, nube, herramientas, sesiones y resultados sin crear otro cerebro.',
+            },
+            {
+                'label': 'ias_como_organos_externos',
+                'detail': 'Devin, Codex, ChatGPT, Claude y otros asistentes deben aportar evidencia, trazas y rendimiento al ExperimentLab.',
+            },
+            {
+                'label': 'no_repetir_intencion',
+                'detail': 'Las ideas recurrentes del usuario se condensan en contexto portable para que cada sesion arranque con la misma direccion.',
+            },
+            {
+                'label': 'evolucion_gobernada',
+                'detail': 'Toda incubacion cognitiva, algoritmo mutable o ajuste de prompts pasa por sandbox, consenso y validacion antes de promoverse.',
+            },
+            {
+                'label': 'percepcion_segura_de_cuentas',
+                'detail': 'El sistema puede detectar presencia/sesion y recomendar rutas, pero no extrae contrasenas, cookies ni tokens; pide permiso cuando corresponda.',
+            },
+        ]
+        return self._section(
+            section_id='user_metacognitive_intent',
+            title='Intencion persistente del usuario',
+            summary='Direccion estable: todas las IAs deben alimentar la metacognicion de IABV para mejorar coherencia, memoria operativa y autonomia gobernada.',
+            items=items,
+            source_kind='user_intent',
+            source_refs=['chat:metacognicion_extendida', 'AGENTS.md', 'portable_context'],
+            confidence=0.9,
+            last_updated=now,
+        )
+
     def _implemented_capabilities_section(
         self,
         *,
@@ -1035,6 +1102,133 @@ class PortableContextService:
             },
         )
 
+    def _code_audit_snapshot(self) -> dict[str, Any]:
+        """Build code audit summary from CodeAuditTrail."""
+        trail = getattr(self, 'code_audit_trail', None)
+        if trail is None:
+            return {'status': 'not_configured'}
+        try:
+            return trail.summary_for_portable_context()
+        except Exception:
+            return {'status': 'error'}
+
+    def _code_audit_section(self, *, status: dict[str, Any], now) -> PortableContextSection:
+        """Export code audit trail to portable context.
+
+        Ensures new sessions know what was audited, by whom, what bugs
+        were found, what patterns recur, and what needs cross-verification
+        on a different environment (Linux vs Windows).
+        """
+        items: list[dict[str, Any]] = []
+        coverage = status.get('coverage') or {}
+        for r in list(status.get('recent_rounds') or [])[:5]:
+            items.append({
+                'label': f"Ronda {r.get('round_number', '?')} ({r.get('auditor', '?')})",
+                'environment': r.get('environment', ''),
+                'modules': r.get('modules', [])[:4],
+                'bugs_found': r.get('bugs_found', 0),
+                'loc_audited': r.get('loc_audited', 0),
+                'pr_url': r.get('pr_url', ''),
+            })
+        for pattern in list(status.get('recurring_patterns') or [])[:3]:
+            items.append({
+                'label': f"Patron: {pattern.get('pattern_tag', '')}",
+                'occurrences': pattern.get('occurrences', 0),
+                'affected_modules': pattern.get('affected_modules', []),
+                'all_fixed': pattern.get('all_fixed', True),
+            })
+        for cv in list(status.get('pending_cross_verifications') or [])[:3]:
+            items.append({
+                'label': f"Cross-verificacion pendiente: {cv.get('title', '')}",
+                'module_path': cv.get('module_path', ''),
+                'needs_windows': cv.get('needs_windows', False),
+                'needs_linux': cv.get('needs_linux', False),
+            })
+        total_rounds = coverage.get('total_rounds', 0)
+        total_bugs = coverage.get('total_bugs_fixed', 0)
+        total_loc = coverage.get('total_loc_audited', 0)
+        pending_cv = coverage.get('pending_cross_verifications', 0)
+        if total_rounds == 0:
+            summary = 'Sin auditorias registradas. Usar register_audit_finding via MCP para registrar hallazgos.'
+        else:
+            summary = (
+                f'{total_rounds} rondas, {total_loc} LOC auditadas, '
+                f'{total_bugs} bugs fixeados, {pending_cv} verificaciones cruzadas pendientes.'
+            )
+        return self._section(
+            section_id='code_audit_trail',
+            title='Historial de auditorias de codigo',
+            summary=summary,
+            items=items,
+            source_kind='code_audit',
+            source_refs=['CodeAuditTrail'],
+            confidence=0.90 if total_rounds > 0 else 0.0,
+            last_updated=now,
+            metadata={
+                'total_rounds': total_rounds,
+                'total_bugs_fixed': total_bugs,
+                'total_loc_audited': total_loc,
+                'auditors': coverage.get('auditors', []),
+                'environments_used': coverage.get('environments_used', []),
+                'pending_cross_verifications': pending_cv,
+            },
+        )
+
+    def _cloud_reasoning_section(self, *, status: dict[str, Any], now) -> PortableContextSection:
+        """Export cloud reasoning decision audit to portable context.
+
+        This ensures the next session (of any AI agent) has the full picture
+        of which cloud providers are working, which are degrading, and what
+        the system recommends — BEFORE it starts planning or modifying code.
+        """
+        items: list[dict[str, Any]] = []
+        for trend in list(status.get('trends') or [])[:5]:
+            if not isinstance(trend, dict):
+                continue
+            items.append({
+                'provider_id': trend.get('provider_id', ''),
+                'success_rate': trend.get('success_rate', 0.0),
+                'total_decisions': trend.get('total_decisions', 0),
+                'avg_latency_ms': trend.get('avg_latency_ms', 0.0),
+                'trend_direction': trend.get('trend_direction', 'unknown'),
+                'rate_limited_count': trend.get('rate_limited_count', 0),
+            })
+        for rec in list(status.get('recommendations') or [])[:3]:
+            items.append({
+                'label': 'Recomendacion',
+                'summary': str(rec),
+            })
+        health = status.get('health_score', 0.0)
+        total = status.get('total_decisions', 0)
+        overall = status.get('overall_trend', 'unknown')
+        st = status.get('status', 'not_configured')
+        if st == 'no_data':
+            summary = 'Sin decisiones registradas. Ejecutar "soluciona X" para iniciar el trail de auditoria.'
+        elif st == 'analyzed':
+            summary = (
+                f'Cloud reasoning: {total} decisiones, exito {health:.0%}, '
+                f'tendencia: {overall}.'
+            )
+        else:
+            summary = f'Cloud reasoning status: {st}'
+        best = status.get('best_provider') or {}
+        return self._section(
+            section_id='cloud_reasoning',
+            title='Estado de Cloud Reasoning',
+            summary=summary,
+            items=items,
+            source_kind='decision_audit',
+            source_refs=['DecisionAuditTrail', 'ApiKeyDiscoveryService'],
+            confidence=0.85 if st == 'analyzed' else 0.0,
+            last_updated=now,
+            metadata={
+                'health_score': health,
+                'overall_trend': overall,
+                'total_decisions': total,
+                'best_provider': best.get('provider_id', ''),
+            },
+        )
+
     def _recommended_routes_section(self, *, recommendations: list[dict[str, Any]], now) -> PortableContextSection:
         items = [
             {
@@ -1214,6 +1408,114 @@ class PortableContextService:
             last_updated=now,
         )
 
+    # ------------------------------------------------------------------
+    # User Identity & Long-term Goals
+    # ------------------------------------------------------------------
+
+    _IDENTITY_FILE = 'portable_context/user_identity.json'
+    _GOALS_FILE = 'portable_context/long_term_goals.json'
+
+    def _user_identity_section(self, *, now) -> PortableContextSection:
+        """Persistent user identity: preferences, habits, and environment profile."""
+        identity = self._load_identity()
+        items: list[dict[str, Any]] = []
+        if identity.get('preferred_language'):
+            items.append({'label': 'preferred_language', 'value': identity['preferred_language']})
+        if identity.get('preferred_ia'):
+            items.append({'label': 'preferred_ia', 'value': identity['preferred_ia']})
+        if identity.get('environment_os'):
+            items.append({'label': 'environment_os', 'value': identity['environment_os']})
+        for pref_key, pref_val in (identity.get('custom_preferences') or {}).items():
+            items.append({'label': pref_key, 'value': str(pref_val)})
+        if not items:
+            items.append({'label': 'status', 'value': 'No identity profile persisted yet'})
+        return self._section(
+            section_id='user_identity',
+            title='Identidad persistente del usuario',
+            summary='Preferencias, hábitos y perfil del entorno que persisten entre sesiones.',
+            items=items,
+            source_kind='user_identity',
+            source_refs=[self._IDENTITY_FILE],
+            confidence=0.9 if len(items) > 1 else 0.3,
+            last_updated=now,
+        )
+
+    def _long_term_goals_section(self, *, now) -> PortableContextSection:
+        """Long-term objectives that persist across sessions."""
+        goals = self._load_goals()
+        items: list[dict[str, Any]] = []
+        for goal in goals:
+            items.append({
+                'title': str(goal.get('title') or ''),
+                'status': str(goal.get('status') or 'active'),
+                'priority': str(goal.get('priority') or 'medium'),
+                'created_at': str(goal.get('created_at') or ''),
+            })
+        if not items:
+            items.append({'title': 'No long-term goals defined', 'status': 'empty', 'priority': '', 'created_at': ''})
+        return self._section(
+            section_id='long_term_goals',
+            title='Objetivos a largo plazo',
+            summary='Metas persistentes del usuario que sobreviven entre sesiones.',
+            items=items,
+            source_kind='user_goals',
+            source_refs=[self._GOALS_FILE],
+            confidence=0.9 if len(items) > 1 else 0.3,
+            last_updated=now,
+        )
+
+    def _load_identity(self) -> dict[str, Any]:
+        """Load user identity from persisted JSON."""
+        try:
+            import json
+            path = self.storage.resolve(self._IDENTITY_FILE)
+            if path.is_file():
+                return json.loads(path.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+        return {}
+
+    def _load_goals(self) -> list[dict[str, Any]]:
+        """Load long-term goals from persisted JSON."""
+        try:
+            import json
+            path = self.storage.resolve(self._GOALS_FILE)
+            if path.is_file():
+                data = json.loads(path.read_text(encoding='utf-8'))
+                if isinstance(data, list):
+                    return data
+        except Exception:
+            pass
+        return []
+
+    def save_identity(self, identity: dict[str, Any]) -> None:
+        """Persist user identity profile."""
+        import json
+        path = self.storage.resolve(self._IDENTITY_FILE)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(identity, indent=2, ensure_ascii=False), encoding='utf-8')
+
+    def save_goals(self, goals: list[dict[str, Any]]) -> None:
+        """Persist long-term goals."""
+        import json
+        path = self.storage.resolve(self._GOALS_FILE)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(goals, indent=2, ensure_ascii=False), encoding='utf-8')
+
+    def add_goal(self, title: str, *, priority: str = 'medium') -> dict[str, Any]:
+        """Add a new long-term goal and persist."""
+        from datetime import datetime, timezone
+        goals = self._load_goals()
+        goal = {
+            'title': title,
+            'status': 'active',
+            'priority': priority,
+            'created_at': datetime.now(timezone.utc).isoformat(),
+        }
+        goals.append(goal)
+        self.save_goals(goals)
+        return goal
+
     def _package_summary(
         self,
         *,
@@ -1254,7 +1556,7 @@ class PortableContextService:
                     lines.append(f"- {str(item.get('component') or 'n/d')}: {str(item.get('status') or 'n/d')} | {str(item.get('detail') or '').strip()}")
                 elif section.section_id == 'implemented_capabilities':
                     lines.append(f"- {str(item.get('capability') or 'n/d')}: {str(item.get('status') or 'n/d')} | {str(item.get('detail') or '').strip()}")
-                elif section.section_id in {'learning', 'tool_discovery', 'tool_evolution', 'tool_evolution_decisions', 'self_examination', 'recommended_routes', 'validated_decisions', 'decision_history'}:
+                elif section.section_id in {'learning', 'tool_discovery', 'tool_evolution', 'tool_evolution_decisions', 'self_examination', 'recommended_routes', 'validated_decisions', 'decision_history', 'user_metacognitive_intent'}:
                     label = str(item.get('label') or item.get('decision') or item.get('subject_key') or item.get('assistant_kind') or 'n/d')
                     detail = str(item.get('value') or item.get('route') or item.get('summary') or item.get('recommendation') or item.get('why') or item.get('detail') or '').strip()
                     assistant = str(item.get('assistant_kind') or '').strip()

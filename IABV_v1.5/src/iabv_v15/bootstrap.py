@@ -201,6 +201,8 @@ from iabv_v15.infra.persistence.user_clue_repository import UserClueRepository
 from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
 from iabv_v15.services.adaptive.adaptive_planner_service import AdaptivePlannerService
 from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+from iabv_v15.services.adaptive.adaptive_model_selector import AdaptiveModelSelector
+from iabv_v15.services.adaptive.cloud_reasoning_planner import CloudReasoningPlannerService
 from iabv_v15.services.adaptive.adaptive_weight_layer import AdaptiveWeightLayer
 from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
 from iabv_v15.services.adaptive.approval_gate_service import ApprovalGateService
@@ -256,6 +258,7 @@ from iabv_v15.services.evolution.intent_scoped_briefing_service import (
     IntentScopedBriefingService,
 )
 from iabv_v15.services.evolution.portable_context_service import PortableContextService
+from iabv_v15.services.evolution.resource_metacognition_service import ResourceMetacognitionService
 from iabv_v15.services.evolution.self_audit_service import SelfAuditService
 from iabv_v15.services.evolution.token_rotation_ledger import TokenRotationLedger
 from iabv_v15.services.evolution.session_start_briefing_service import (
@@ -269,8 +272,14 @@ from iabv_v15.services.security.proactive_dashboard_service import (
 from iabv_v15.services.capture.ui_screenshot_service import UIScreenshotService
 from iabv_v15.services.evolution.tool_discovery_service import ToolDiscoveryService
 from iabv_v15.services.evolution.tool_evolution_monitor import ToolEvolutionMonitor
+from iabv_v15.services.evolution.api_key_discovery_service import ApiKeyDiscoveryService
+from iabv_v15.services.evolution.code_audit_trail import CodeAuditTrail
+from iabv_v15.services.evolution.decision_audit_trail import DecisionAuditTrail
 from iabv_v15.services.evolution.autonomous_evolution_service import AutonomousEvolutionService
 from iabv_v15.services.evolution.runtime_signal_collector import RuntimeSignalCollector
+from iabv_v15.services.evolution.decision_simplifier_engine import DecisionSimplifierEngine
+from iabv_v15.services.evolution.platform_learning_orchestrator import PlatformLearningOrchestrator
+from iabv_v15.services.evolution.metacognition_evolution_mixin import MetacognitionEvolutionMixin
 from iabv_v15.services.evolution.self_check_orchestrator import SelfCheckOrchestrator
 from iabv_v15.services.evolution.session_health_service import SessionHealthService
 from iabv_v15.services.evolution.user_clue_service import UserClueService
@@ -287,7 +296,7 @@ from iabv_v15.services.self_teach.sandbox_experiment_service import SandboxExper
 from iabv_v15.services.self_teach.self_teach_orchestrator import SelfTeachOrchestrator
 from iabv_v15.infra.persistence.site_manual_repository import SiteManualRepository
 from iabv_v15.services.tools.site_exploration_service import SiteExplorationService
-from iabv_v15.services.tools.tool_adapters import AiderToolAdapter, DevinApiToolAdapter, DesktopHumanToolAdapter, ExternalAssistantToolAdapter, GitHubApiToolAdapter, LocalCliToolAdapter, MCPToolAdapter, OllamaToolAdapter, PlaywrightToolAdapter, ShellToolAdapter, SiteExplorerToolAdapter
+from iabv_v15.services.tools.tool_adapters import AiderToolAdapter, DevinApiToolAdapter, DesktopHumanToolAdapter, ExternalAssistantToolAdapter, GitHubApiToolAdapter, LocalCliToolAdapter, MCPToolAdapter, OllamaToolAdapter, PlaywrightToolAdapter, ShellToolAdapter, SiteExplorerToolAdapter, ToolAdapter
 from iabv_v15.services.tools.tool_approval_policy import ToolApprovalPolicy
 from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
 from iabv_v15.services.tools.interaction_mode_selector import InteractionModeSelector
@@ -320,6 +329,7 @@ from iabv_v15.ui.controllers.main_window_bridge import MainWindowBridge
 from iabv_v15.ui.controllers.navigation_controller import NavigationController
 from iabv_v15.ui.controllers.theme_controller import ThemeController
 from iabv_v15.ui.qt import PYSIDE_AVAILABLE, QGuiApplication, QQmlApplicationEngine, QQuickStyle, QUrl
+from iabv_v15.ui.splash_controller import SplashController
 from iabv_v15.ui.viewmodels.capture_studio_viewmodel import CaptureStudioViewModel
 from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
 from iabv_v15.ui.viewmodels.dashboard_viewmodel import DashboardViewModel
@@ -457,6 +467,11 @@ class AppBootstrap:
             # binario, los ``allowed_verbs`` y rutas Windows tipicas.
             'local_cli': LocalCliToolAdapter(),
         }
+        # Wire cross-process disagreement marker directory so the MCP
+        # subprocess suppresses INFO logs already emitted by the UI process.
+        ToolAdapter.set_disagreement_marker_dir(
+            Path(self.config.data_dir) / 'logs',
+        )
         self.tool_validator = ToolValidator()
         self.tool_sandbox = ToolSandbox(self.tool_validator)
         self.tool_registry = ToolRegistry(self.tool_record_repository, self.tool_adapters)
@@ -468,6 +483,13 @@ class AppBootstrap:
             role_router=None,
             tool_registry=self.tool_registry,
         )
+        # The MCP subprocess inherits the persisted world model snapshot from
+        # the main UI process.  It doesn't need its own aggressive 18-second
+        # background scan (which re-probes Ollama, Devin API, GitHub API each
+        # cycle).  Disable bootstrap_scan entirely (the snapshot on disk is
+        # fresh from the UI process) and use 300s/600s intervals for the
+        # background thread to cut redundant API calls from ~70/hour to ~12.
+        _is_mcp_sub = os.environ.get('IABV_MCP_SUBPROCESS') == '1'
         self.world_model_service = WorldModelService(
             workspace_root=self.config.workspace_root,
             evolution_dir=self.config.evolution_dir,
@@ -476,6 +498,9 @@ class AppBootstrap:
             environment_self_awareness_service=self.environment_self_awareness_service,
             universal_perception_service=self.universal_perception_service,
             role_router=None,
+            bootstrap_scan=not _is_mcp_sub,
+            scan_interval_seconds=300.0 if _is_mcp_sub else WorldModelService._DEFAULT_SCAN_INTERVAL,
+            full_scan_interval_seconds=600.0 if _is_mcp_sub else WorldModelService._DEFAULT_FULL_SCAN_INTERVAL,
         )
         self.interaction_learning_service = InteractionLearningService(self.tool_record_repository)
         self.interaction_mode_selector = InteractionModeSelector(self.tool_registry, self.tool_record_repository)
@@ -486,6 +511,54 @@ class AppBootstrap:
         self.decision_scoring_engine = DecisionScoringEngine()
         self.adaptive_weight_layer = AdaptiveWeightLayer()
         self.lab_strategy_selector = StrategySelector(adaptive_weight_layer=self.adaptive_weight_layer)
+        # PCS v1 dependencies are created before ToolTeachService so external
+        # tool selection can consume SynapticRouter hints without replacing
+        # LocalRoleRouter or AdaptiveTaskOrchestrator.
+        try:
+            from iabv_v15.services.adaptive.consensus_fusion_service import (
+                ConsensusFusionService,
+            )
+            from iabv_v15.services.roles.assistant_capability_registry import (
+                AssistantCapabilityRegistry,
+            )
+            from iabv_v15.services.roles.cognitive_frame_translator import (
+                CognitiveFrameTranslator,
+            )
+            from iabv_v15.services.roles.synaptic_router import SynapticRouter
+
+            self.assistant_capability_registry = AssistantCapabilityRegistry.with_defaults()
+            self.cognitive_frame_translator = CognitiveFrameTranslator(
+                capability_registry=self.assistant_capability_registry,
+            )
+
+            world_model_service = self.world_model_service
+
+            def _synaptic_world_model_provider() -> WorldModelSnapshot | None:
+                try:
+                    return world_model_service.current_model()
+                except Exception:  # pragma: no cover - defensive
+                    return None
+
+            self.synaptic_router = SynapticRouter(
+                capability_registry=self.assistant_capability_registry,
+                adaptive_weight_layer=self.adaptive_weight_layer,
+                world_model_provider=_synaptic_world_model_provider,
+                experiment_lab_repository=self.experiment_lab_repository,
+                enabled_override=getattr(
+                    self.config, "synaptic_routing_enabled", None
+                ),
+            )
+            self.consensus_fusion_service = ConsensusFusionService(
+                adaptive_weight_layer=self.adaptive_weight_layer,
+            )
+        except Exception:  # pragma: no cover - defensive
+            logger.exception(
+                "No se pudo wirear PCS v1 temprano; las tools MCP PCS reportarán *_unavailable"
+            )
+            self.assistant_capability_registry = None
+            self.cognitive_frame_translator = None
+            self.synaptic_router = None
+            self.consensus_fusion_service = None
         self.experiment_lab = ExperimentLab(
             repository=self.experiment_lab_repository,
             registry=self.algorithm_benchmark_registry,
@@ -534,6 +607,7 @@ class AppBootstrap:
             mode_selector=self.interaction_mode_selector,
             experiment_lab=self.experiment_lab,
             live_audit_supervisor=self.live_audit_supervisor,
+            synaptic_router=self.synaptic_router,
         )
         self.embedding_service = EmbeddingIndexService(
             base_url=self.config.ollama_base_url,
@@ -937,82 +1011,6 @@ class AppBootstrap:
             )
             self.perception_ground_truth_comparator = None
 
-        # PCS v1 — Protocolo Cognitivo Sináptico Inter-IA.
-        # Registro de capacidades + traductor de frame cognitivo. Son
-        # servicios puros (sin estado mutable compartido, sin red) que
-        # alimentan la tool MCP ``cognitive_frame_translate``. Si alguna
-        # dependencia fallara (no debería: ambos son puramente en memoria)
-        # degradamos a ``None`` para no romper el bootstrap.
-        try:
-            from iabv_v15.services.roles.assistant_capability_registry import (
-                AssistantCapabilityRegistry,
-            )
-            from iabv_v15.services.roles.cognitive_frame_translator import (
-                CognitiveFrameTranslator,
-            )
-
-            self.assistant_capability_registry = AssistantCapabilityRegistry.with_defaults()
-            self.cognitive_frame_translator = CognitiveFrameTranslator(
-                capability_registry=self.assistant_capability_registry,
-            )
-        except Exception:  # pragma: no cover - defensive
-            logger.exception(
-                "No se pudo wirear AssistantCapabilityRegistry/CognitiveFrameTranslator; "
-                "la tool MCP cognitive_frame_translate reportará translator_unavailable"
-            )
-            self.assistant_capability_registry = None
-            self.cognitive_frame_translator = None
-
-        # PCS v1 — Piezas 4 y 5: SynapticRouter + ConsensusFusionService.
-        # Son adaptadores puramente descriptivos, read-only, sin red ni
-        # mutación de estado vivo. El `SynapticRouter` depende de
-        # `AssistantCapabilityRegistry`, `AdaptiveWeightLayer` y un
-        # callable que devuelva el WorldModel vivo; si alguna dependencia
-        # faltara degradamos a ``None`` para que las tools MCP devuelvan
-        # ``router_unavailable`` / ``consensus_unavailable`` (fail-observable)
-        # en vez de romper el bootstrap.
-        #
-        # NOTA: NO reemplaza ni toca `LocalRoleRouter` ni
-        # `AdaptiveTaskOrchestrator`. Feature flag ``SYNAPTIC_ROUTING``
-        # por default en ``false`` preserva comportamiento previo.
-        try:
-            from iabv_v15.services.adaptive.consensus_fusion_service import (
-                ConsensusFusionService,
-            )
-            from iabv_v15.services.roles.synaptic_router import SynapticRouter
-
-            if self.assistant_capability_registry is None:
-                self.synaptic_router = None
-            else:
-                world_model_service = self.world_model_service
-
-                def _synaptic_world_model_provider() -> WorldModelSnapshot | None:
-                    try:
-                        return world_model_service.current_model()
-                    except Exception:  # pragma: no cover - defensive
-                        return None
-
-                self.synaptic_router = SynapticRouter(
-                    capability_registry=self.assistant_capability_registry,
-                    adaptive_weight_layer=self.adaptive_weight_layer,
-                    world_model_provider=_synaptic_world_model_provider,
-                    experiment_lab_repository=self.experiment_lab_repository,
-                    enabled_override=getattr(
-                        self.config, "synaptic_routing_enabled", None
-                    ),
-                )
-            self.consensus_fusion_service = ConsensusFusionService(
-                adaptive_weight_layer=self.adaptive_weight_layer,
-            )
-        except Exception:  # pragma: no cover - defensive
-            logger.exception(
-                "No se pudo wirear SynapticRouter/ConsensusFusionService; "
-                "las tools MCP synaptic_route/consensus_fuse reportarán "
-                "*_unavailable"
-            )
-            self.synaptic_router = None
-            self.consensus_fusion_service = None
-
         self.control_master_repository = ControlMasterRepository(self.evolution_storage)
         self.control_master_service = ControlMasterService(
             repository=self.control_master_repository,
@@ -1153,6 +1151,22 @@ class AppBootstrap:
         )
         self.portable_context_service.task_context_assembler = self.task_context_assembler
         self.portable_context_service.adaptive_task_orchestrator = self.adaptive_task_orchestrator
+        self.api_key_discovery_service = ApiKeyDiscoveryService(data_root=self.config.data_dir)
+        self.code_audit_trail = CodeAuditTrail(data_root=self.config.data_dir)
+        self.code_audit_trail.experiment_lab = self.experiment_lab
+        self.decision_audit_trail = DecisionAuditTrail(data_root=self.config.data_dir)
+        self.operational_self_examination_service.decision_audit_trail = self.decision_audit_trail
+        self.operational_self_examination_service.code_audit_trail = self.code_audit_trail
+        self.portable_context_service.decision_audit_trail = self.decision_audit_trail
+        self.portable_context_service.code_audit_trail = self.code_audit_trail
+        self.autonomous_validation_cycle.decision_audit_trail = self.decision_audit_trail
+        self.autonomous_validation_cycle.api_key_discovery_service = self.api_key_discovery_service
+        self.adaptive_model_selector = AdaptiveModelSelector(data_dir=self.config.data_dir)
+        CloudReasoningPlannerService._model_selector = self.adaptive_model_selector
+        self.adaptive_task_orchestrator.cloud_reasoning_planner = CloudReasoningPlannerService()
+        self.operational_self_examination_service.adaptive_model_selector = self.adaptive_model_selector
+        self.adaptive_task_orchestrator.api_key_discovery_service = self.api_key_discovery_service
+        self.adaptive_task_orchestrator.decision_audit_trail = self.decision_audit_trail
         self.adaptive_task_orchestrator.control_master_service = self.control_master_service
         self.adaptive_task_orchestrator.control_master_digest_builder = self.control_master_digest_builder
         self.adaptive_task_orchestrator.self_examination_service = self.operational_self_examination_service
@@ -1163,6 +1177,56 @@ class AppBootstrap:
         self.adaptive_task_orchestrator._tool_teach_service = self.tool_teach_service
         self.adaptive_task_orchestrator._tool_operational_executor = self.operational_executor
         self._seed_control_master_from_agents_md()
+
+        # --- Evolution services: DecisionSimplifier + PlatformLearning + Metacognition ---
+        try:
+            self.decision_simplifier = DecisionSimplifierEngine(data_root=self.config.data_dir)
+            self.decision_simplifier.world_model_service = self.world_model_service
+            self.decision_simplifier.tool_registry = self.tool_registry
+            self.decision_simplifier.api_key_discovery = self.api_key_discovery_service
+            self.decision_simplifier.auto_correction_engine = getattr(self, 'auto_correction_engine', None)
+        except Exception as exc:
+            logger.warning('bootstrap: DecisionSimplifierEngine init failed: %s', exc)
+            self.decision_simplifier = None
+
+        try:
+            self.platform_learning = PlatformLearningOrchestrator(data_root=self.config.data_dir)
+            self.platform_learning.browser_teach = self.browser_teach_session_service
+            self.platform_learning.site_exploration = self.site_exploration_service
+            self.platform_learning.universal_perception = self.universal_perception_service
+            self.platform_learning.replay_confidence = self.replay_confidence_service
+            self.platform_learning.decision_simplifier = self.decision_simplifier
+            self.platform_learning.api_key_discovery = self.api_key_discovery_service
+        except Exception as exc:
+            logger.warning('bootstrap: PlatformLearningOrchestrator init failed: %s', exc)
+            self.platform_learning = None
+
+        try:
+            self.resource_metacognition_service = ResourceMetacognitionService(
+                evolution_dir=self.config.evolution_dir,
+                environment_service=self.environment_self_awareness_service,
+                experiment_lab=self.experiment_lab,
+                decision_audit_trail=getattr(self, 'decision_audit_trail', None),
+            )
+        except Exception as exc:
+            logger.warning('bootstrap: ResourceMetacognitionService init failed: %s', exc)
+            self.resource_metacognition_service = None
+
+        try:
+            self.metacognition_evolution = MetacognitionEvolutionMixin()
+            self.metacognition_evolution.decision_simplifier = self.decision_simplifier
+            self.metacognition_evolution.platform_learning = self.platform_learning
+            self.metacognition_evolution.api_key_discovery = self.api_key_discovery_service
+            self.metacognition_evolution.auto_correction_engine = getattr(self, 'auto_correction_engine', None)
+            self.metacognition_evolution.resource_metacognition = self.resource_metacognition_service
+        except Exception as exc:
+            logger.warning('bootstrap: MetacognitionEvolutionMixin init failed: %s', exc)
+            self.metacognition_evolution = None
+
+        # Wire metacognition into OSES so build_review() picks up evolution findings
+        if self.metacognition_evolution is not None:
+            self.operational_self_examination_service.metacognition_evolution = self.metacognition_evolution
+
         self.inference_service = InferenceService(
             self.role_router,
             self.run_repository,
@@ -1191,7 +1255,7 @@ class AppBootstrap:
         self.run_history_viewmodel = None
 
     _TOOL_INSTALL_GUIDANCE: dict[str, str] = {
-        'aider_coder': 'pip install aider-chat',
+        'aider_coder': 'pip install aider-chat (optional, heavy ~200MB; installed in background)',
         'claude_installed': 'Descargar Claude Desktop desde https://claude.ai/download',
         'mcp_client': 'Iniciar MCP server (default: http://127.0.0.1:8000) o ajustar server_url en metadata',
     }
@@ -1203,7 +1267,19 @@ class AppBootstrap:
         el probe de startup para que la confianza base suba por encima
         del minimo (0.26).  Solo toca cards cuyo campo era ``None``.
         Diagnostica por que cada tool faltante no esta disponible.
+
+        Los probes de disponibilidad se ejecutan en paralelo usando un
+        ``ThreadPoolExecutor`` para reducir el tiempo de arranque cuando
+        hay adapters que hacen I/O de red (Ollama, Devin API, GitHub API)
+        o enumeracion de procesos (ExternalAssistantToolAdapter).
+
+        In the MCP subprocess the main UI process already did this work;
+        repeating it just adds duplicate logs and redundant API calls.
         """
+        if os.environ.get('IABV_MCP_SUBPROCESS') == '1':
+            logger.debug('tool_availability: skipped (MCP subprocess)')
+            return
+        from concurrent.futures import ThreadPoolExecutor, as_completed
         from datetime import datetime, timezone
 
         cards = self.tool_registry.list_cards()
@@ -1229,21 +1305,22 @@ class AppBootstrap:
         missing = []
         now = datetime.now(timezone.utc)
         for card in cards:
-            refreshed = self.tool_registry.refresh_card(card, force=True)
-            if refreshed.available:
-                ready.append(refreshed.tool_id)
+            available = results.get(card.tool_id, False)
+            refreshed = refreshed_cards.get(card.tool_id, card)
+            if available:
+                ready.append(card.tool_id)
                 if refreshed.last_validated_at_utc is None:
                     stamped = refreshed.model_copy(
                         update={'last_validated_at_utc': now},
                     )
                     self.tool_registry.repository.save_card(stamped)
             else:
-                missing.append(refreshed.tool_id)
-                guidance = self._TOOL_INSTALL_GUIDANCE.get(refreshed.tool_id, '')
+                missing.append(card.tool_id)
+                guidance = self._TOOL_INSTALL_GUIDANCE.get(card.tool_id, '')
                 logger.info(
                     'tool_missing: %s — adapter=%s%s',
-                    refreshed.tool_id,
-                    refreshed.adapter_key,
+                    card.tool_id,
+                    refreshed.adapter_key if hasattr(refreshed, 'adapter_key') else card.adapter_key,
                     f' | fix: {guidance}' if guidance else '',
                 )
         logger.info(
@@ -1253,6 +1330,74 @@ class AppBootstrap:
             ', '.join(sorted(ready)),
             f' | missing=[{", ".join(sorted(missing))}]' if missing else '',
         )
+
+        # Auto-install missing pip-installable tools (AGENTS.md: user
+        # should never install tools manually).
+        if missing:
+            try:
+                from iabv_v15.services.auto_correction_engine import auto_fix_missing_tools
+                install_result = auto_fix_missing_tools(missing)
+                installed_count = install_result.get('installed', 0)
+                if installed_count:
+                    logger.info(
+                        'auto_install: %d/%d tools installed automatically',
+                        installed_count, len(missing),
+                    )
+                    # Re-check availability for installed tools
+                    for r in install_result.get('results', []):
+                        if r.get('status') == 'installed':
+                            tid = r.get('tool_id', '')
+                            if tid in missing:
+                                missing.remove(tid)
+                                ready.append(tid)
+            except Exception as exc:
+                logger.debug('auto_install: failed — %s', exc)
+
+        self._startup_self_examination()
+
+    def _startup_self_examination(self) -> None:
+        """Run a lightweight self-examination at startup.
+
+        Executes the perception cross-validator (if wired) to detect
+        UI anomalies (zombie windows, missing IABV window, duplicates)
+        and logs the results. This gives the program self-awareness
+        about its own state immediately after boot.
+        """
+        if os.environ.get('IABV_MCP_SUBPROCESS') == '1':
+            return
+        validator = getattr(self, 'perception_cross_validator', None)
+        if validator is None:
+            return
+        try:
+            result = validator.run_cross_validation()
+            n_issues = result.get('total_inconsistencies', 0)
+            checks = result.get('checks_passed', [])
+            ui_issues = [
+                i for i in result.get('inconsistencies', [])
+                if i.get('check') == 'ui_self_awareness'
+            ]
+            if ui_issues:
+                for issue in ui_issues:
+                    logger.warning(
+                        'startup_ui_issue: %s — %s',
+                        issue.get('actual', ''),
+                        issue.get('detail', ''),
+                    )
+            if n_issues == 0:
+                logger.info(
+                    'startup_self_check: %d/%d checks passed — all consistent',
+                    len(checks),
+                    result.get('total_checks', 0),
+                )
+            else:
+                logger.warning(
+                    'startup_self_check: %d inconsistencies found (%d/%d passed)',
+                    n_issues,
+                    len(checks),
+                    result.get('total_checks', 0),
+                )
+        except Exception as exc:
+            logger.debug('startup_self_check: skipped (%s)', exc)
 
     def _ensure_directories(self) -> None:
         for path in (
@@ -1321,6 +1466,20 @@ class AppBootstrap:
                     name='mcp-bridge-autostart',
                     daemon=True,
                 ).start()
+
+        # --- UIBridgeService: puente IPC entre MCP server y UI PySide6.
+        # Permite a agentes externos (via MCP) enviar mensajes al chat,
+        # leer respuestas, capturar screenshots y navegar tabs de la UI.
+        # El server TCP arranca en un hilo daemon; si falla, queda None.
+        if getattr(self, 'ui_bridge_server', None) is None:
+            try:
+                from iabv_v15.services.ui_bridge_service import (
+                    build_ui_bridge_server,
+                )
+                self.ui_bridge_server = build_ui_bridge_server()
+            except Exception:
+                logger.exception('No se pudo construir UIBridgeServer; bridge UI desactivado')
+                self.ui_bridge_server = None
 
         # --- UIScreenshotProvider: permite que la tool MCP
         # `capture_ui_screenshot` devuelva bytes reales cuando la UI está
@@ -1413,7 +1572,25 @@ class AppBootstrap:
             universal_perception_service=self.universal_perception_service,
         )
         self.control_center_viewmodel.capture_studio_viewmodel = self.capture_studio_viewmodel
-        self.control_center_viewmodel.refreshAutonomyDock()
+        self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
+
+        # Wire UIBridgeServer with the ControlCenterViewModel so that
+        # MCP agents can interact with the UI chat. The server starts
+        # in a daemon thread; if it fails, IABV continues without it.
+        if getattr(self, 'ui_bridge_server', None) is not None:
+            try:
+                from iabv_v15.services.ui_bridge_service import build_ui_bridge_server
+                self.ui_bridge_server = build_ui_bridge_server(
+                    control_center_viewmodel=self.control_center_viewmodel,
+                )
+                self.ui_bridge_server.start()
+                logger.info('UIBridgeServer started with ControlCenterViewModel')
+            except Exception:
+                logger.exception('UIBridgeServer failed to start with VM wiring')
+                self.ui_bridge_server = None
+
+        # Deferred: refreshAutonomyDock runs inside the VM's deferred
+        # startup thread to avoid blocking UI creation.
         self.evolution_center_viewmodel = EvolutionCenterViewModel(
             dossier_repository=self.execution_dossier_repository,
             hidden_incident_repository=self.hidden_incident_repository,
@@ -1524,6 +1701,12 @@ class AppBootstrap:
                 bridge.shutdown()
             except Exception:
                 logger.exception('Error al cerrar MCPBridgeService')
+        ui_bridge = getattr(self, 'ui_bridge_server', None)
+        if ui_bridge is not None:
+            try:
+                ui_bridge.stop()
+            except Exception:
+                logger.exception('Error al cerrar UIBridgeServer')
         self.stop()
 
     def export_portable_context(self, *, refresh: bool = True) -> dict[str, object]:
@@ -1562,10 +1745,41 @@ class AppBootstrap:
         if not PYSIDE_AVAILABLE:
             raise RuntimeError('PySide6 is required to run the desktop UI.')
 
+        # Ensure PySide6's QML plugins are discoverable.  Conda/miniconda
+        # installs may place them in a non-default path, causing
+        # "qtquick2plugin not found" at engine load time.
+        try:
+            import PySide6
+            pyside_dir = Path(PySide6.__file__).resolve().parent
+            qml_dir = pyside_dir / 'qml'
+            plugin_dir = pyside_dir / 'plugins'
+            if qml_dir.is_dir():
+                os.environ.setdefault('QML2_IMPORT_PATH', str(qml_dir))
+            if plugin_dir.is_dir():
+                os.environ.setdefault('QT_PLUGIN_PATH', str(plugin_dir))
+        except Exception:
+            pass
+
         os.environ.setdefault('QT_QUICK_CONTROLS_STYLE', 'Basic')
         QQuickStyle.setStyle('Basic')
         app = QGuiApplication.instance() or QGuiApplication(sys.argv)
+
+        splash = getattr(self, '_splash', None)
+        if splash:
+            splash.set_status('Construyendo ViewModels...')
+            try:
+                app.processEvents()
+            except Exception:
+                pass
+
         self._build_ui_objects()
+
+        if splash:
+            splash.set_status('Montando motor QML...')
+            try:
+                app.processEvents()
+            except Exception:
+                pass
 
         engine = QQmlApplicationEngine()
         context = engine.rootContext()
@@ -1587,12 +1801,538 @@ class AppBootstrap:
             raise RuntimeError('Failed to load Main.qml.')
         return app, engine
 
+    # ------------------------------------------------------------------
+    # Integrated MCP server + Cloudflare tunnel auto-start
+    # ------------------------------------------------------------------
+    # When the user launches ``python -m iabv_v15``, the full stack must
+    # come alive autonomously: secrets, MCP server, tunnel (if internet
+    # is available), and the PySide6 UI — all from a single invocation.
+    # The MCP server and tunnel run as daemon subprocesses so they die
+    # automatically when the UI (main process) exits.
+    # ------------------------------------------------------------------
+
+    def _start_mcp_subprocess(self) -> 'subprocess.Popen[bytes] | None':
+        """Launch the MCP server as a background subprocess."""
+        import shutil
+        import subprocess
+
+        python_exe = sys.executable
+        workspace = str(self.config.workspace_root)
+        src_dir = str(Path(workspace) / 'src')
+
+        env = {**os.environ}
+        if 'PYTHONPATH' not in env or src_dir not in env.get('PYTHONPATH', ''):
+            env['PYTHONPATH'] = src_dir + os.pathsep + env.get('PYTHONPATH', '')
+        env.setdefault('IABV_MCP_TRANSPORT', 'streamable-http')
+        env.setdefault('IABV_MCP_NAME', 'iabv-v15')
+        env.setdefault('FASTMCP_HOST', '127.0.0.1')
+        env.setdefault('FASTMCP_PORT', '8000')
+        env['IABV_WORKSPACE_ROOT'] = workspace
+        # Signal that this bootstrap runs inside the MCP subprocess so it
+        # can reduce redundant scans and log noise.
+        env['IABV_MCP_SUBPROCESS'] = '1'
+
+        # Inject portable CLI tools into PATH (same as run_mcp_bridge.ps1)
+        iabv_tools = Path.home() / '.iabv' / 'tools'
+        if iabv_tools.is_dir():
+            extra_paths = []
+            for candidate in ['gh/bin', 'cloudflared']:
+                p = iabv_tools / candidate
+                if p.is_dir():
+                    extra_paths.append(str(p))
+            if extra_paths:
+                env['PATH'] = os.pathsep.join(extra_paths) + os.pathsep + env.get('PATH', '')
+
+        try:
+            proc = subprocess.Popen(
+                [python_exe, '-m', 'iabv_v15.infra.mcp.server'],
+                cwd=workspace,
+                env=env,
+                stdout=None,
+                stderr=None,
+            )
+            logger.info('mcp_autostart: MCP server launched (PID %d)', proc.pid)
+            return proc
+        except Exception as exc:
+            logger.warning('mcp_autostart: failed to launch MCP server: %s', exc)
+            return None
+
+    def _start_tunnel_subprocess(self) -> 'subprocess.Popen[bytes] | None':
+        """Launch Cloudflare tunnel as a background subprocess if available."""
+        import shutil
+        import subprocess
+
+        cloudflared = shutil.which('cloudflared')
+        if not cloudflared:
+            # Check portable install
+            portable = Path.home() / '.iabv' / 'tools' / 'cloudflared'
+            if portable.is_dir():
+                for name in ('cloudflared.exe', 'cloudflared'):
+                    candidate = portable / name
+                    if candidate.is_file():
+                        cloudflared = str(candidate)
+                        break
+        if not cloudflared:
+            logger.info('mcp_autostart: cloudflared not found, skipping tunnel')
+            return None
+
+        bind_host = os.environ.get('FASTMCP_HOST', '127.0.0.1')
+        bind_port = os.environ.get('FASTMCP_PORT', '8000')
+        origin = f'http://{bind_host}:{bind_port}'
+        host_header = f'{bind_host}:{bind_port}'
+
+        try:
+            proc = subprocess.Popen(
+                [
+                    cloudflared, 'tunnel',
+                    '--url', origin,
+                    '--no-autoupdate',
+                    '--loglevel', 'info',
+                    '--http-host-header', host_header,
+                ],
+                stdout=None,
+                stderr=None,
+            )
+            logger.info('mcp_autostart: Cloudflare tunnel launched (PID %d)', proc.pid)
+            return proc
+        except Exception as exc:
+            logger.warning('mcp_autostart: failed to launch tunnel: %s', exc)
+            return None
+
+    def _auto_optimize_brain(self) -> None:
+        """Auto-optimize the reasoning brain on startup.
+
+        Tests each configured cloud provider with a quick inference call
+        and records latency to ``AdaptiveModelSelector`` so the best
+        provider is always used for reasoning tasks.
+
+        This runs in background — no UI blocking.  Only providers with
+        configured API keys are tested.
+        """
+        selector = getattr(self, 'adaptive_model_selector', None)
+        if selector is None:
+            return
+
+        logger.info('startup_evolution: optimizing brain — benchmarking configured providers')
+
+        providers_to_test: list[tuple[str, str, str, str]] = [
+            # (provider_id, env_var, url, model)
+            ('groq', 'GROQ_API_KEY', 'https://api.groq.com/openai/v1/chat/completions', 'llama-3.3-70b-versatile'),
+            ('gemini', 'GEMINI_API_KEY', 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', 'gemini-2.0-flash'),
+            ('openrouter', 'OPENROUTER_API_KEY', 'https://openrouter.ai/api/v1/chat/completions', 'meta-llama/llama-3.3-70b-instruct:free'),
+        ]
+
+        test_prompt = [
+            {'role': 'system', 'content': 'Respond in one sentence.'},
+            {'role': 'user', 'content': 'What is 2+2?'},
+        ]
+
+        try:
+            import httpx
+        except ImportError:
+            logger.debug('startup_evolution: httpx not available, skipping brain benchmark')
+            return
+
+        import time as _time
+
+        for provider_id, env_var, url, model in providers_to_test:
+            key = os.environ.get(env_var)
+            if not key:
+                continue
+            try:
+                headers = {'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'}
+                body = {
+                    'model': model,
+                    'messages': test_prompt,
+                    'max_tokens': 20,
+                    'temperature': 0.0,
+                }
+                t0 = _time.monotonic()
+                with httpx.Client(timeout=10.0) as client:
+                    resp = client.post(url, headers=headers, json=body)
+                latency_ms = (_time.monotonic() - t0) * 1000
+                success = 200 <= resp.status_code < 400
+
+                selector.record_result(
+                    provider_id=provider_id,
+                    task_type='reasoning',
+                    latency_ms=latency_ms,
+                    success=success,
+                )
+                logger.info(
+                    'startup_evolution: brain benchmark %s — %s, %.0fms',
+                    provider_id, 'OK' if success else f'HTTP {resp.status_code}', latency_ms,
+                )
+            except Exception as exc:
+                logger.debug('startup_evolution: brain benchmark %s failed: %s', provider_id, exc)
+                selector.record_result(
+                    provider_id=provider_id,
+                    task_type='reasoning',
+                    latency_ms=10000.0,
+                    success=False,
+                )
+
+        # Log the current best provider
+        try:
+            best = selector.select_best_provider(task_type='reasoning')
+            logger.info(
+                'startup_evolution: best reasoning provider = %s (%s)',
+                best.get('provider_id', '?'), best.get('reason', '?'),
+            )
+        except Exception:
+            pass
+
+    def _schedule_startup_evolution(self) -> None:
+        """Run evolution cycle in background after startup.
+
+        Discovers providers, benchmarks them, runs metacognition findings,
+        and logs results.  Does NOT block the UI — runs in a daemon thread
+        after a 5-second delay to let the UI load first.
+        """
+        metacog = getattr(self, 'metacognition_evolution', None)
+        api_discovery = getattr(self, 'api_key_discovery_service', None)
+        if metacog is None and api_discovery is None:
+            return
+
+        def _run_startup_cycle() -> None:
+            import time
+            time.sleep(5)  # Let UI load first
+            logger.info('startup_evolution: beginning background cycle')
+            try:
+                # Step 0a: Detect if code was updated since last run
+                self._detect_code_update()
+
+                # Step 0b: Analyze startup console log for warnings/errors
+                self._analyze_startup_log()
+
+                # Step 1: Scan configured API keys
+                if api_discovery is not None:
+                    try:
+                        scan = api_discovery.scan_configured_keys()
+                        configured = [s['provider_id'] for s in scan if s.get('configured')]
+                        missing = [s['provider_id'] for s in scan if not s.get('configured')]
+                        logger.info(
+                            'startup_evolution: API keys — configured=%s, missing=%s',
+                            configured or 'none', missing or 'none',
+                        )
+                    except Exception as exc:
+                        logger.warning('startup_evolution: API key scan failed: %s', exc)
+
+                # Step 2: Run metacognition evolution cycle
+                if metacog is not None:
+                    try:
+                        result = metacog.run_evolution_cycle()
+                        logger.info(
+                            'startup_evolution: metacognition — %d findings, %d actions',
+                            result.get('findings_count', 0),
+                            len(result.get('actions_taken', [])),
+                        )
+                        for action in result.get('actions_taken', []):
+                            logger.info('startup_evolution: action — %s', action)
+                    except Exception as exc:
+                        logger.warning('startup_evolution: metacognition cycle failed: %s', exc)
+
+                # Step 3: Optimize brain — benchmark providers for best reasoning
+                self._auto_optimize_brain()
+
+                # Step 4: Resource metacognition — observe, liberate, select model
+                resource_meta = getattr(self, 'resource_metacognition_service', None)
+                if resource_meta:
+                    try:
+                        snapshot = resource_meta.observe_resources()
+                        plan = resource_meta.analyze_liberation_plan(snapshot)
+                        if plan.should_liberate:
+                            result = resource_meta.execute_liberation(plan, mode='auto')
+                            resource_meta.record_outcome(result)
+                            logger.info(
+                                'startup_evolution: resource liberation — freed %.1fGB, model=%s',
+                                result.ram_freed_gb, result.selected_model,
+                            )
+                        else:
+                            logger.info(
+                                'startup_evolution: resource check — %s',
+                                plan.reason,
+                            )
+                    except Exception as exc:
+                        logger.warning('startup_evolution: resource metacognition failed: %s', exc)
+
+                logger.info('startup_evolution: background cycle complete')
+            except Exception as exc:
+                logger.warning('startup_evolution: unexpected error: %s', exc)
+
+        threading.Thread(
+            target=_run_startup_cycle,
+            name='startup-evolution',
+            daemon=True,
+        ).start()
+
+    def _detect_code_update(self) -> None:
+        """Detect if code was updated since last recorded commit.
+
+        Generates an OSES finding when the commit has changed and checks
+        whether critical files were modified (potential auto-restart trigger).
+        """
+        import subprocess as _sp
+        state_file = Path(self.config.evolution_dir) / 'last_known_commit.txt'
+        try:
+            result = _sp.run(
+                ['git', 'rev-parse', 'HEAD'],
+                capture_output=True, text=True, timeout=10,
+                cwd=str(self.config.workspace_root),
+            )
+            if result.returncode != 0:
+                return
+            current_sha = result.stdout.strip()
+            if not current_sha:
+                return
+
+            last_sha = ''
+            if state_file.exists():
+                last_sha = state_file.read_text(encoding='utf-8').strip()
+
+            if last_sha and last_sha != current_sha:
+                # Determine changed files
+                diff_result = _sp.run(
+                    ['git', 'diff', '--name-only', last_sha, current_sha],
+                    capture_output=True, text=True, timeout=15,
+                    cwd=str(self.config.workspace_root),
+                )
+                changed_files = diff_result.stdout.strip().splitlines() if diff_result.returncode == 0 else []
+                n_files = len(changed_files)
+
+                logger.info(
+                    'startup_evolution: code updated %s -> %s (%d files)',
+                    last_sha[:8], current_sha[:8], n_files,
+                )
+
+                # Generate OSES finding
+                oses = getattr(self, 'operational_self_examination_service', None)
+                if oses is not None:
+                    try:
+                        oses.add_external_finding({
+                            'category': 'auto_update',
+                            'title': f'Codigo actualizado: {last_sha[:8]} -> {current_sha[:8]} ({n_files} archivos)',
+                            'summary': (
+                                f'Se detecto actualizacion de codigo. '
+                                f'Archivos cambiados: {n_files}. '
+                                f'Commit anterior: {last_sha[:8]}, actual: {current_sha[:8]}.'
+                            ),
+                            'severity': 'LOW',
+                            'confidence': 1.0,
+                            'recommendation': 'Revisar cambios si hay comportamiento inesperado',
+                            'metadata': {
+                                'old_commit': last_sha,
+                                'new_commit': current_sha,
+                                'files_changed': n_files,
+                                'changed_files': changed_files[:20],
+                            },
+                        })
+                    except Exception as exc:
+                        logger.debug('startup_evolution: OSES finding failed: %s', exc)
+
+                # Check for critical file changes that warrant restart
+                critical_patterns = ('bootstrap.py', 'control_center_viewmodel.py',
+                                     'adaptive_task_orchestrator.py', 'domain/models.py')
+                critical_changed = [f for f in changed_files if any(p in f for p in critical_patterns)]
+                if critical_changed:
+                    logger.warning(
+                        'startup_evolution: critical files changed: %s — restart recommended',
+                        critical_changed,
+                    )
+
+            # Save current commit
+            state_file.parent.mkdir(parents=True, exist_ok=True)
+            state_file.write_text(current_sha, encoding='utf-8')
+
+        except Exception as exc:
+            logger.debug('startup_evolution: code update detection failed: %s', exc)
+
+    def _analyze_startup_log(self) -> None:
+        """Read the startup console log and generate OSES findings for warnings/errors.
+
+        The startup script (start_iabv.ps1) captures all console output to
+        data/logs/startup_console.log via Start-Transcript. This method reads
+        that log and surfaces any warnings or errors as OSES findings so the
+        program can self-examine its own startup process.
+        """
+        log_path = Path(self.config.workspace_root) / 'data' / 'logs' / 'startup_console.log'
+        if not log_path.exists():
+            return
+
+        try:
+            content = log_path.read_text(encoding='utf-8', errors='replace')
+            lines = content.splitlines()
+
+            warnings = [l.strip() for l in lines if '[warn]' in l.lower() or '[auto-pull]' in l.lower() and 'fallo' in l.lower()]
+            errors = [l.strip() for l in lines if '[err]' in l.lower() or 'error' in l.lower() and 'exit' in l.lower()]
+
+            oses = getattr(self, 'operational_self_examination_service', None)
+            if oses is None:
+                return
+
+            if errors:
+                oses.add_external_finding({
+                    'category': 'startup_health',
+                    'title': f'Errores detectados en arranque ({len(errors)} lineas)',
+                    'summary': '\n'.join(errors[:5]),
+                    'severity': 'HIGH',
+                    'confidence': 0.9,
+                    'recommendation': 'Revisar data/logs/startup_console.log para detalles completos',
+                    'metadata': {'log_file': str(log_path), 'error_lines': errors[:10]},
+                })
+
+            if warnings and not errors:
+                oses.add_external_finding({
+                    'category': 'startup_health',
+                    'title': f'Advertencias en arranque ({len(warnings)} lineas)',
+                    'summary': '\n'.join(warnings[:5]),
+                    'severity': 'LOW',
+                    'confidence': 0.8,
+                    'recommendation': 'Revisar si las advertencias afectan funcionalidad',
+                    'metadata': {'log_file': str(log_path), 'warning_lines': warnings[:10]},
+                })
+
+            logger.info(
+                'startup_evolution: startup log analyzed — %d errors, %d warnings',
+                len(errors), len(warnings),
+            )
+        except Exception as exc:
+            logger.debug('startup_evolution: startup log analysis failed: %s', exc)
+
+    def _is_mcp_port_in_use(self, port: int = 8000) -> bool:
+        """Check if the MCP port is already in use (another instance running)."""
+        import socket
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(0.5)
+            return s.connect_ex(('127.0.0.1', port)) == 0
+
     def run(self) -> int:
-        app, _engine = self.create_engine()
-        return app.exec()
+        # Holder for subprocesses; written from background thread.
+        self._mcp_proc = None
+        self._tunnel_proc = None
 
+        # Crash log: capture fatal errors so they survive even if the console
+        # is hidden (launched via shortcut / pythonw / -WindowStyle Hidden).
+        crash_log = Path(self.config.logs_dir) / 'ui_crash.log'
 
+        try:
+            # --- Splash screen: show immediately while services load ---
+            if PYSIDE_AVAILABLE:
+                os.environ.setdefault('QT_QUICK_CONTROLS_STYLE', 'Basic')
+                QQuickStyle.setStyle('Basic')
+                splash_app = QGuiApplication.instance() or QGuiApplication(sys.argv)
+                self._splash = SplashController(
+                    workspace_dir=self.config.workspace_root,
+                )
+                splash_engine = QQmlApplicationEngine()
+                splash_engine.rootContext().setContextProperty('splashController', self._splash)
+                splash_qml = Path(__file__).resolve().parent / 'ui' / 'qml' / 'SplashScreen.qml'
+                splash_engine.load(QUrl.fromLocalFile(str(splash_qml)))
+                if not splash_engine.rootObjects():
+                    logger.error('splash_screen: QML failed to load from %s', splash_qml)
+                    if self._splash:
+                        self._splash.set_error(
+                            'Error cargando splash',
+                            f'QML no cargó desde {splash_qml}',
+                        )
+                # Process events so the splash actually renders
+                splash_app.processEvents()
+            else:
+                self._splash = None
 
+            # --- MCP autostart ---
+            if self._splash:
+                self._splash.set_status('Verificando servicios MCP...')
+                try:
+                    QGuiApplication.instance().processEvents()
+                except Exception:
+                    pass
+
+            skip_mcp = os.environ.get('IABV_SKIP_MCP_AUTOSTART', '') == '1'
+            mcp_port = int(os.environ.get('FASTMCP_PORT', '8000'))
+            if skip_mcp:
+                logger.info('mcp_autostart: skipped (IABV_SKIP_MCP_AUTOSTART=1)')
+            elif not self._is_mcp_port_in_use(mcp_port):
+                if self._splash:
+                    self._splash.set_status('Iniciando servidor MCP...')
+                    try:
+                        QGuiApplication.instance().processEvents()
+                    except Exception:
+                        pass
+                def _deferred_mcp_start() -> None:
+                    self._mcp_proc = self._start_mcp_subprocess()
+                    if self._mcp_proc:
+                        import time
+                        time.sleep(2)
+                        self._tunnel_proc = self._start_tunnel_subprocess()
+                threading.Thread(
+                    target=_deferred_mcp_start,
+                    name='mcp-deferred-start',
+                    daemon=True,
+                ).start()
+            else:
+                logger.info('mcp_autostart: port %d already in use, skipping MCP launch', mcp_port)
+
+            # --- Startup evolution: background cycle after services are ready ---
+            if self._splash:
+                self._splash.set_status('Preparando ciclo evolutivo...')
+                try:
+                    QGuiApplication.instance().processEvents()
+                except Exception:
+                    pass
+            self._schedule_startup_evolution()
+
+            # --- Load main UI ---
+            if self._splash:
+                self._splash.set_status('Cargando interfaz principal...')
+                try:
+                    QGuiApplication.instance().processEvents()
+                except Exception:
+                    pass
+
+            app, _engine = self.create_engine()
+
+            # Explicitly show + raise the main window.  When the process is
+            # launched via Start-Process -WindowStyle Hidden (to hide the
+            # console), Windows applies SW_HIDE to every window the process
+            # creates.  The splash escapes this because it has
+            # Qt.WindowStaysOnTopHint, but the main ApplicationWindow does
+            # not — so we must force it visible from Python.
+            if _engine.rootObjects():
+                main_win = _engine.rootObjects()[0]
+                main_win.show()
+                main_win.raise_()
+                main_win.requestActivate()
+
+            # Signal splash that we're ready — it will fade out
+            if self._splash:
+                self._splash.set_ready()
+
+            return app.exec()
+        except Exception as fatal:
+            # Write crash log so the error survives hidden-console launches
+            import traceback
+            try:
+                crash_log.write_text(
+                    f'=== BURVE CRASH {time.strftime("%Y-%m-%d %H:%M:%S")} ===\n'
+                    f'{traceback.format_exc()}\n',
+                    encoding='utf-8',
+                )
+            except Exception:
+                pass
+            logger.critical('bootstrap.run() crashed: %s', fatal, exc_info=True)
+            raise
+        finally:
+            for proc in (self._tunnel_proc, self._mcp_proc):
+                if proc and proc.poll() is None:
+                    try:
+                        proc.terminate()
+                        proc.wait(timeout=5)
+                    except Exception:
+                        try:
+                            proc.kill()
+                        except Exception:
+                            pass
 
 
 

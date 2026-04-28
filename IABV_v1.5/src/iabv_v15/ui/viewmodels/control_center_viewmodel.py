@@ -1,11 +1,14 @@
 ﻿from __future__ import annotations
 
 from datetime import datetime, timezone
+import logging
 from pathlib import Path
 import re
 import threading
 import uuid
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 def _generate_chat_session_id() -> str:
@@ -175,6 +178,7 @@ class ControlCenterViewModel(QObject):
         self._agent_cards: list[dict[str, Any]] = []
         self._legacy_cards = self._build_legacy_cards()
         self._role_cards = [profile.model_dump(mode='json') for profile in self.role_router.role_profiles]
+        self._ui_state_lock = threading.Lock()
         self._chat_messages: list[dict[str, str]] = []
         self._attached_files: list[dict[str, Any]] = []
         self._live_status: str = 'idle'
@@ -201,6 +205,7 @@ class ControlCenterViewModel(QObject):
         self._assistant_guidance_text = 'Describe una tarea y te dire si me falta ensenanza, aprobacion, revision evolutiva o apoyo de Codex.'
         self._assistant_action_buttons: list[dict[str, str]] = []
         self._last_adaptive_payload: dict[str, Any] = {}
+        self._pending_cloud_plan: Any = None
         self._autonomy_activity_override: dict[str, Any] = {}
         self._live_process_summary: dict[str, Any] = {}
         self._live_work_items: list[dict[str, Any]] = []
@@ -253,8 +258,31 @@ class ControlCenterViewModel(QObject):
         self.taskFailed.connect(self._apply_task_failure)
         self._seed_messages()
         self._seed_development_packet()
-        self.refresh()
-        self._refresh_provider_health(announce=False)
+        # Defer heavy refresh to a background thread so the QML engine
+        # can load and render the UI immediately.  The seed message and
+        # placeholder cards are already set so the chat area is visible
+        # from the first frame; the full data arrives shortly after.
+        # In test environments (no QGuiApplication), run synchronously
+        # to avoid races with test assertions.
+        has_gui = QGuiApplication.instance() is not None
+        if has_gui:
+            def _deferred_startup() -> None:
+                try:
+                    self.refresh()
+                except Exception:
+                    logger.exception('deferred startup refresh failed')
+                try:
+                    self.refreshAutonomyDock()
+                except Exception:
+                    logger.exception('deferred autonomy dock refresh failed')
+                try:
+                    self._refresh_provider_health(announce=False)
+                except Exception:
+                    logger.exception('deferred provider health failed')
+            threading.Thread(target=_deferred_startup, name='vm-deferred-startup', daemon=True).start()
+        else:
+            self.refresh()
+            self._refresh_provider_health(announce=False)
 
     def _placeholder_provider_cards(self) -> list[dict[str, Any]]:
         return [
@@ -843,6 +871,12 @@ class ControlCenterViewModel(QObject):
         }
 
     def _update_evolution_snapshot(self) -> None:
+        try:
+            self._update_evolution_snapshot_inner()
+        except Exception as exc:
+            logger.debug('_update_evolution_snapshot failed (non-critical): %s', exc)
+
+    def _update_evolution_snapshot_inner(self) -> None:
         health_snapshot = self.evolution_review_service.build_project_health().model_dump(mode='json') if self.evolution_review_service is not None else {}
         experiment_runs = self.experiment_lab_repository.list_runs(limit=12) if self.experiment_lab_repository is not None else []
         experiment_recommendations = self.experiment_lab_repository.list_recommendations(limit=3) if self.experiment_lab_repository is not None else []
@@ -1409,20 +1443,42 @@ class ControlCenterViewModel(QObject):
             'por qué no responde claude',
             'por que no responde ollama',
             'por qué no responde ollama',
+            'puedes ver los navegadores',
+            'puedes ver mis navegadores',
+            'que navegadores tengo abiertos',
+            'qué navegadores tengo abiertos',
+            'que navegadores hay abiertos',
+            'qué navegadores hay abiertos',
+            'que navegadores estan abiertos',
+            'qué navegadores están abiertos',
+            'que navegadores tienes abiertos',
+            'qué navegadores tienes abiertos',
+            'que navegadores ves',
+            'qué navegadores ves',
+            'ves mis navegadores',
+            'ves los navegadores',
+            'navegadores abiertos',
         )
         if any(phrase in normalized for phrase in direct_phrases):
             return True
         word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
         asks_about_windows = any(token in word_tokens for token in ('ventana', 'ventanas', 'foco', 'abierto', 'abiertas'))
         asks_about_network = any(token in word_tokens for token in ('internet', 'red', 'conexion', 'conexión'))
-        asks_about_live_tool = (
-            any(token in word_tokens for token in ('codex', 'chatgpt', 'claude', 'ollama'))
-            and any(token in word_tokens for token in ('responde', 'bloqueado', 'hilo', 'mensajes', 'agotados', 'abierto', 'abierta'))
-        )
+        mentions_tool = any(token in word_tokens for token in ('codex', 'chatgpt', 'claude', 'ollama'))
+        asks_tool_state = any(token in word_tokens for token in ('responde', 'bloqueado', 'hilo', 'mensajes', 'agotados', 'abierto', 'abierta'))
+        requests_consultation = any(token in word_tokens for token in ('consulta', 'consultar', 'usa', 'usar'))
+        asks_about_live_tool = mentions_tool and asks_tool_state and not requests_consultation
         asks_current_state = any(phrase in normalized for phrase in ('que esta pasando', 'qué está pasando'))
-        return asks_about_windows or asks_about_network or asks_about_live_tool or asks_current_state
+        # "navegadores" + visibility words → world model (open browsers), not accounts
+        asks_about_browsers = (
+            any(token in word_tokens for token in ('navegador', 'navegadores', 'browser', 'browsers'))
+            and any(token in word_tokens for token in ('abierto', 'abiertos', 'abiertas', 'abierta', 'ves', 'ver', 'puedes', 'tienes'))
+        )
+        return asks_about_windows or asks_about_network or asks_about_live_tool or asks_current_state or asks_about_browsers
 
-    def _is_self_awareness_question(self, message: str) -> bool:
+    _COMPOUND_CONJUNCTIONS = (' y ', ' y,', ' pero ', ' con eso ', ' ademas ', ' tambien ', ' además ', ' también ', ' revisa ', ' revisá ')
+
+    def _is_self_awareness_question(self, message: str, *, fast_only: bool = False) -> bool:
         normalized = self._normalized_command_text(message)
         if not normalized:
             return False
@@ -1458,14 +1514,30 @@ class ControlCenterViewModel(QObject):
             'que tienes disponible',
             'qué tienes disponible',
         )
-        if any(phrase in normalized for phrase in direct_phrases):
-            return True
+        for phrase in direct_phrases:
+            if phrase in normalized:
+                remainder = normalized[normalized.index(phrase) + len(phrase):]
+                if any(conj in remainder for conj in self._COMPOUND_CONJUNCTIONS) and len(remainder.split()) > 5:
+                    return False
+                return True
         word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
         asks_system_state = any(token in word_tokens for token in ('entorno', 'arquitectura', 'herramienta', 'herramientas', 'ias', 'ia', 'estado', 'conexiones'))
         asks_directly = any(token in normalized for token in ('conoces', 'sabes', 'tienes', 'disponibles', 'te conectas', 'te puedes conectar', 'consciente', 'que tan bien', 'como estas', 'cómo estás'))
-        return asks_system_state and asks_directly
+        if asks_system_state and asks_directly:
+            return True
+        if fast_only:
+            return False
+        # Ollama fallback
+        try:
+            from iabv_v15.services.account_resource_scanner import classify_chat_intent
+            result = classify_chat_intent(normalized)
+            if result and result.get('category') == 'self_awareness' and float(result.get('confidence', 0)) >= 0.6:
+                return True
+        except Exception:
+            pass
+        return False
 
-    def _is_learning_question(self, message: str) -> bool:
+    def _is_learning_question(self, message: str, *, fast_only: bool = False) -> bool:
         normalized = self._normalized_command_text(message)
         if not normalized:
             return False
@@ -1496,13 +1568,24 @@ class ControlCenterViewModel(QObject):
         if any(phrase in normalized for phrase in direct_phrases):
             return True
         word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
-        return (
-            'aprend' in normalized
-            or (
-                any(token in word_tokens for token in ('herramienta', 'herramientas', 'rutas', 'ruta', 'ias', 'ia', 'probando', 'funcionando'))
-                and any(token in word_tokens for token in ('mejor', 'mejores', 'aprendido', 'cambiaste', 'aprendiste'))
-            )
-        )
+        if 'aprend' in normalized:
+            return True
+        if (
+            any(token in word_tokens for token in ('herramienta', 'herramientas', 'rutas', 'ruta', 'ias', 'ia', 'probando', 'funcionando'))
+            and any(token in word_tokens for token in ('mejor', 'mejores', 'aprendido', 'cambiaste', 'aprendiste'))
+        ):
+            return True
+        if fast_only:
+            return False
+        # Ollama fallback
+        try:
+            from iabv_v15.services.account_resource_scanner import classify_chat_intent
+            result = classify_chat_intent(normalized)
+            if result and result.get('category') == 'learning' and float(result.get('confidence', 0)) >= 0.6:
+                return True
+        except Exception:
+            pass
+        return False
 
     def _is_evolution_status_question(self, message: str) -> bool:
         normalized = self._normalized_command_text(message)
@@ -1608,13 +1691,200 @@ class ControlCenterViewModel(QObject):
             'qué recomiendas cambiar',
             'que deberias corregir',
             'qué deberías corregir',
+            # Log self-inspection / runtime self-diagnosis
+            'analiza tus logs',
+            'analiza tus propios logs',
+            'revisa tus logs',
+            'que anomalias detectas',
+            'qué anomalías detectas',
+            'diagnosticate',
+            'diagnostícate',
+            'autodiagnostico',
+            'autodiagnóstico',
+            'que ves en tus logs',
+            'qué ves en tus logs',
+            'que detectas en tu log',
+            'qué detectas en tu log',
+            'analiza tu log',
+            'revisa tu log',
+            'lee tus logs',
+            # Fix 58: action-oriented self-examination phrases
+            'soluciona los bloqueos',
+            'arregla los bloqueos',
+            'corrige los bloqueos',
+            'resuelve los bloqueos',
+            'soluciona los problemas',
+            'arregla los problemas',
+            'corrige los problemas',
+            'resuelve los problemas',
+            'soluciona los pendientes',
+            'arregla los pendientes',
+            'secciones caducadas',
+            'informacion caducada',
+            'información caducada',
+            'datos caducados',
+            'trabajo en vivo',
+            'que esta bloqueado',
+            'qué está bloqueado',
+            'que bloqueos hay',
+            'qué bloqueos hay',
+            'que bloqueos tienes',
+            'qué bloqueos tienes',
+            'soluciona todo',
+            'arregla todo',
+            'corrige todo',
+            'que pendientes tienes',
+            'qué pendientes tienes',
+            'que tareas pendientes',
+            'qué tareas pendientes',
+            'resuelve lo pendiente',
         )
         if any(phrase in normalized for phrase in direct_phrases):
             return True
         word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
-        asks_review = any(token in word_tokens for token in ('fallando', 'falla', 'repitiendo', 'mejorar', 'cambios', 'cambiar', 'corregir', 'revisarte', 'autoexaminacion'))
-        asks_meta = any(token in word_tokens for token in ('recomiendas', 'recomendar', 'aprendiste', 'aprendido', 'deberias', 'debería', 'deberias'))
-        return asks_review and asks_meta
+        asks_review = any(token in word_tokens for token in ('fallando', 'falla', 'repitiendo', 'mejorar', 'cambios', 'cambiar', 'corregir', 'revisarte', 'autoexaminacion', 'anomalias', 'anomalías', 'diagnostica', 'logs'))
+        asks_meta = any(token in word_tokens for token in ('recomiendas', 'recomendar', 'aprendiste', 'aprendido', 'deberias', 'debería', 'deberias', 'detectas', 'analiza', 'revisa', 'dime'))
+        if asks_review and asks_meta:
+            return True
+        # Fix 58: action verbs + system-problem nouns
+        asks_fix = any(token in word_tokens for token in ('soluciona', 'solucionar', 'arregla', 'arreglar', 'corrige', 'corregir', 'resuelve', 'resolver', 'repara', 'reparar'))
+        has_problem = any(token in word_tokens for token in ('bloqueos', 'bloqueo', 'problemas', 'problema', 'pendientes', 'pendiente', 'caducadas', 'caducados', 'caducada', 'errores', 'fallos', 'fallas'))
+        return asks_fix and has_problem
+
+    def _is_account_resource_question(self, message: str, *, fast_only: bool = False) -> bool:
+        normalized = self._normalized_command_text(message)
+        if not normalized:
+            return False
+        # Guard: questions about a specific API key or provider are NOT
+        # account_resource — they should go through the general chat IA
+        # which has system context to answer precisely.
+        _specific_provider_tokens = (
+            'groq', 'gemini', 'openrouter', 'together', 'deepseek',
+            'api key', 'apikey', 'api_key',
+            'que modelo', 'qué modelo', 'estas usando', 'estás usando',
+            'usa groq', 'usa gemini', 'usa openrouter',
+            'key de groq', 'key de gemini', 'key de openrouter',
+        )
+        if any(tok in normalized for tok in _specific_provider_tokens):
+            return False
+        direct_phrases = (
+            'que cuentas tienes',
+            'qué cuentas tienes',
+            'que cuentas tengo',
+            'qué cuentas tengo',
+            'que cuentas hay',
+            'qué cuentas hay',
+            'verifica acceso',
+            'verificar acceso',
+            'escanea cuentas',
+            'escanear cuentas',
+            'escanea mis cuentas',
+            'escanear mis cuentas',
+            'diagnostico de cuentas',
+            'diagnóstico de cuentas',
+            'que correos tienes',
+            'qué correos tienes',
+            'que correos tengo',
+            'qué correos tengo',
+            'que programas puedo usar',
+            'qué programas puedo usar',
+            'que sesiones activas hay',
+            'qué sesiones activas hay',
+            'cuantos mensajes me quedan',
+            'cuántos mensajes me quedan',
+            'cuantos mensajes quedan',
+            'cuántos mensajes quedan',
+            'estado de cuotas',
+            'estado de mis cuotas',
+            'que cuentas estan agotadas',
+            'qué cuentas están agotadas',
+            'que limites tengo',
+            'qué límites tengo',
+            'limites de mensajes',
+            'límites de mensajes',
+            'escanea navegadores',
+            'escanear navegadores',
+            'revisa mis navegadores',
+            'que ves en mis navegadores',
+            'qué ves en mis navegadores',
+            'te falto las demas cuentas',
+            'te faltó las demás cuentas',
+            'te falto las demas cuentas en los demas navegadores',
+            'te faltó las demás cuentas en los demás navegadores',
+            'cuentas en los demas navegadores',
+            'cuentas en los demás navegadores',
+            'cuentas en otros navegadores',
+            'falta escanear navegadores',
+            'faltan navegadores',
+            'faltan cuentas',
+            'te faltan cuentas',
+            'que asistentes tengo',
+            'qué asistentes tengo',
+            'que asistentes hay disponibles',
+            'qué asistentes hay disponibles',
+            'pool de asistentes',
+            'muestra los asistentes',
+            'muestra asistentes disponibles',
+            'cuantos asistentes disponibles',
+            'cuántos asistentes disponibles',
+            'cuales cuentas tienen sesion',
+            'cuáles cuentas tienen sesión',
+            'que cuentas tienen acceso',
+            'qué cuentas tienen acceso',
+        )
+        if any(phrase in normalized for phrase in direct_phrases):
+            return True
+        word_tokens = set(re.findall(r'[a-z0-9áéíóúñü_]+', normalized))
+        account_nouns = ('cuentas', 'correos', 'sesiones', 'navegadores', 'cuotas',
+                         'limites', 'límites', 'asistentes', 'workers', 'pool')
+        action_verbs = ('escanea', 'escanear', 'verifica', 'verificar', 'revisa',
+                        'revisar', 'diagnostico', 'diagnóstico', 'muestra', 'mostrar',
+                        'dime', 'tienes', 'tengo', 'quedan', 'agotadas', 'agotados',
+                        'falto', 'faltó', 'falta', 'faltan', 'faltaron',
+                        'busca', 'buscar', 'detecta', 'detectar', 'analiza',
+                        'analizar', 'lista', 'listar', 'dame', 'muestrame',
+                        'disponibles', 'activas', 'activos', 'hay', 'cuales',
+                        'cuáles', 'cuantas', 'cuántas')
+        asks_accounts = any(token in word_tokens for token in account_nouns)
+        asks_action = any(token in word_tokens for token in action_verbs)
+        # Disambiguate: "navegadores" + visibility words → world model, not accounts.
+        # If the user asks about open/visible browsers, _is_world_model_question
+        # handles it.  Only treat "navegadores" as account_resource when combined
+        # with account-specific verbs (escanea, cuentas, correos, etc.).
+        if asks_accounts and asks_action:
+            browser_visibility_words = ('abierto', 'abiertos', 'abiertas', 'abierta',
+                                        'ves', 'ver', 'puedes')
+            browser_tokens = ('navegador', 'navegadores', 'browser', 'browsers')
+            is_browser_visibility = (
+                any(token in word_tokens for token in browser_tokens)
+                and any(token in word_tokens for token in browser_visibility_words)
+                and not any(token in word_tokens for token in ('cuentas', 'correos', 'sesiones'))
+            )
+            if is_browser_visibility:
+                return False
+            return True
+
+        # Fallback: Ollama-based classification for ambiguous messages.
+        # Only invoked when the fast pattern check above didn't match.
+        # Skipped in fast_only mode (synchronous shortcut path) to avoid
+        # blocking the UI thread with LLM calls.
+        if fast_only:
+            return False
+        try:
+            from iabv_v15.services.account_resource_scanner import classify_chat_intent
+            result = classify_chat_intent(normalized)
+            if result and result.get('category') == 'account_resource':
+                confidence = float(result.get('confidence', 0))
+                if confidence >= 0.6:
+                    logger.info(
+                        'ollama_intent_fallback: classified as account_resource '
+                        '(confidence=%.2f) for: %s',
+                        confidence, normalized[:80],
+                    )
+                    return True
+        except Exception:
+            pass
+        return False
 
     def _human_join(self, items: list[str], *, limit: int = 4) -> str:
         cleaned = [str(item).strip() for item in items if str(item).strip()]
@@ -1666,6 +1936,8 @@ class ControlCenterViewModel(QObject):
             return 'repetition'
         if any(token in normalized for token in ('cambios recomiendas', 'recomiendas cambiar', 'deberias mejorar', 'deberías mejorar', 'deberias corregir', 'deberías corregir')):
             return 'adjustments'
+        if any(token in normalized for token in ('logs', 'log', 'anomalias', 'anomalías', 'diagnostica', 'diagnostico', 'autodiagnostico')):
+            return 'runtime_logs'
         return 'general'
 
     def _format_percent(self, value: Any) -> str:
@@ -2308,6 +2580,27 @@ class ControlCenterViewModel(QObject):
                     response += f" Despues vendria {str(recommended_adjustments[1].get('recommended_change') or '').strip()}."
                 return response, 'Ajustes recomendados por evidencia.'
             return ('Todavia no tengo cambios recomendados con evidencia suficiente para proponerlos en serio.', 'Sin ajuste fuerte.')
+        if focus == 'runtime_logs':
+            runtime_categories = {'runtime_noise', 'external_consultation_failure', 'tool_availability', 'ghost_session'}
+            log_findings = [f for f in findings if str(f.get('category') or '') in runtime_categories]
+            if log_findings:
+                parts = []
+                for lf in log_findings[:4]:
+                    title = str(lf.get('title') or 'anomalia sin nombre')
+                    summary = str(lf.get('summary') or '').strip()
+                    recommendation = str(lf.get('recommendation') or '').strip()
+                    entry = f"- {title}"
+                    if summary:
+                        entry += f": {summary}"
+                    if recommendation:
+                        entry += f" Recomendacion: {recommendation}"
+                    parts.append(entry)
+                header = f"Encontre {len(log_findings)} anomalia(s) en mis logs de runtime:"
+                return (f"{header}\n" + '\n'.join(parts), 'Autodiagnostico de logs en vivo.')
+            # No runtime findings — fall through to check regular findings
+            if findings:
+                return (f"No encontre anomalias de runtime en mis logs recientes, pero tengo {len(findings)} hallazgo(s) de autoexaminacion: {str(findings[0].get('title') or 'hallazgo sin nombre')}.", 'Sin anomalias de runtime; hay hallazgos regulares.')
+            return ('Revise mis logs recientes y no encontre anomalias activas. Todo parece estable por ahora.', 'Sin anomalias detectadas.')
         if findings or recommended_adjustments or validated_improvements:
             parts = []
             if findings:
@@ -2373,6 +2666,147 @@ class ControlCenterViewModel(QObject):
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._self_examination_conversation_payload(message=message))
         reply, meta = self._self_examination_reply(message)
+        # Fix 59: run auto-correction engine on findings and present
+        # remaining issues as action buttons.
+        auto_fixes_applied: list[str] = []
+        try:
+            from iabv_v15.services.auto_correction_engine import (
+                apply_runtime_log_corrections, apply_deductive_corrections,
+            )
+            review_data = self._current_self_examination_snapshot()
+            findings = list(review_data.get('top_findings') or [])
+            if findings:
+                rt_result = apply_runtime_log_corrections(findings)
+                for c in (rt_result.get('corrections_applied') or []):
+                    label = str(c.get('action') or c.get('detail') or 'correccion aplicada')
+                    auto_fixes_applied.append(label)
+                dd_result = apply_deductive_corrections(findings)
+                for c in (dd_result.get('executed') or []):
+                    label = str(c.get('action') or c.get('detail') or 'correccion deductiva')
+                    auto_fixes_applied.append(label)
+        except Exception:
+            pass
+        if auto_fixes_applied:
+            reply += f"\n\nAuto-correcciones aplicadas ({len(auto_fixes_applied)}):"
+            for fix_label in auto_fixes_applied[:5]:
+                reply += f"\n  - {fix_label}"
+            meta = 'Autoexaminacion con correcciones automaticas.'
+        # Set guidance with action buttons for remaining issues
+        review = self._current_self_examination_snapshot()
+        remaining = list(review.get('recommended_adjustments') or [])
+        unresolved = list(review.get('unresolved_risks') or [])
+        if remaining or unresolved:
+            guidance_prompt = 'Hay ajustes pendientes que puedo aplicar o que necesitan tu aprobacion.'
+            if unresolved:
+                guidance_prompt += f' Tambien hay {len(unresolved)} riesgo(s) sin resolver.'
+            self._apply_assistant_guidance({
+                'mode': 'need_approval',
+                'title': 'Ajustes pendientes',
+                'prompt': guidance_prompt,
+                'actions': [
+                    self._assistant_action('run_self_test', 'Autotest', 'Correr diagnostico completo con autoajuste.'),
+                    self._assistant_action('open_evolution_center', 'Ver evolutivo', 'Revisar hallazgos y backlog.'),
+                    self._assistant_action('review_stack', 'Revisar stack', 'Actualizar estado de herramientas.'),
+                ],
+            })
+        self._append_message('assistant', 'IABV', reply, meta)
+        self._latest_response_text = reply
+        self._latest_response_meta = meta
+        self._busy_label = 'Respuesta lista.'
+        self.dataChanged.emit()
+
+    def _account_resource_reply(self, message: str) -> tuple[str, str]:
+        """Build a reply with the full account/resource diagnostic."""
+        parts: list[str] = []
+
+        # 1. Browser accounts
+        try:
+            from iabv_v15.services.account_resource_scanner import scan_browser_accounts
+            browser = scan_browser_accounts()
+            if browser.get('count', 0) > 0:
+                parts.append(f"Detecto {browser['count']} cuenta(s) en tus navegadores:")
+                for acc in browser.get('accounts', []):
+                    name = acc.get('full_name', '')
+                    email = acc.get('email', '?')
+                    label = f"{name} <{email}>" if name else email
+                    parts.append(f"  [{acc.get('browser', '?')}] {acc.get('profile', '?')} — {label}")
+            else:
+                parts.append("No detecto cuentas en tus navegadores.")
+        except Exception as exc:
+            parts.append(f"Error escaneando cuentas: {exc}")
+
+        # 2. Active sessions (cookies)
+        try:
+            from iabv_v15.services.account_resource_scanner import scan_browser_sessions
+            sess = scan_browser_sessions()
+            if sess.get('session_count', 0) > 0:
+                parts.append(f"\nSesiones activas detectadas ({sess['session_count']}):")
+                for tool, tool_sessions in sess.get('by_tool', {}).items():
+                    for s in tool_sessions:
+                        parts.append(
+                            f"  {tool.upper()} en [{s['browser']}] {s['profile']} — "
+                            f"{s['domain']} ({s['cookie_count']} cookies)"
+                        )
+            else:
+                parts.append("\nNo detecto sesiones activas en cookies de navegador.")
+        except Exception:
+            pass
+
+        # 3. Quota status
+        try:
+            from iabv_v15.services.account_resource_scanner import format_quota_report
+            quota_report = format_quota_report()
+            parts.append(f"\n{quota_report}")
+        except Exception:
+            parts.append("\nCuotas: sin datos de rastreo todavia.")
+
+        # 4. Worker pool (sessions + quotas cross-reference)
+        try:
+            from iabv_v15.services.account_resource_scanner import format_worker_pool_report
+            worker_report = format_worker_pool_report()
+            parts.append(f"\n{worker_report}")
+        except Exception:
+            pass
+
+        # 5. APIs
+        try:
+            from iabv_v15.services.account_resource_scanner import (
+                scan_ollama_api, scan_github_api, scan_devin_api,
+            )
+            parts.append("\nAPIs:")
+            ollama = scan_ollama_api()
+            parts.append(f"  Ollama: {'disponible' if ollama.get('available') else 'no disponible'}")
+            github = scan_github_api()
+            if github.get('available'):
+                parts.append(f"  GitHub: OK ({github.get('remaining', '?')}/{github.get('rate_limit', '?')} requests)")
+            else:
+                parts.append(f"  GitHub: no disponible")
+            devin = scan_devin_api()
+            parts.append(f"  Devin: {'disponible' if devin.get('available') else 'no disponible'}")
+        except Exception:
+            pass
+
+        # 6. Functional gap analysis (self-examination lite)
+        try:
+            from iabv_v15.services.evolution.operational_self_examination_service import (
+                get_functional_gap_summary,
+            )
+            gaps = get_functional_gap_summary()
+            if gaps:
+                parts.append("\nAnalisis de gaps funcionales:")
+                for g in gaps:
+                    parts.append(f"  - {g['title']}: {g['detail']}")
+        except Exception:
+            pass
+
+        response = '\n'.join(parts)
+        return response, 'Diagnostico de cuentas y recursos.'
+
+    def _answer_account_resource_question(self, message: str) -> None:
+        self._last_user_goal = message
+        self._clear_autonomy_activity_override()
+        self._update_adaptive_state(self._general_conversation_payload(message=message))
+        reply, meta = self._account_resource_reply(message)
         self._append_message('assistant', 'IABV', reply, meta)
         self._latest_response_text = reply
         self._latest_response_meta = meta
@@ -2434,6 +2868,8 @@ class ControlCenterViewModel(QObject):
         self._last_user_goal = message
         self._update_adaptive_state(self._general_conversation_payload(message=message))
         self._working = True
+        import time as _time_mod
+        self._working_since = _time_mod.time()
         self._busy_label = 'Consultando al modelo local con contexto del sistema vivo.'
         self._set_autonomy_activity_override(
             visible=True,
@@ -2449,10 +2885,92 @@ class ControlCenterViewModel(QObject):
         )
         self.dataChanged.emit()
 
+        _CHAT_TIMEOUT_S = 25
+
         def worker() -> None:
+            _infer_result: dict[str, Any] = {}
+            _infer_error: list[str] = []
+            _infer_done = threading.Event()
+
+            def _infer_inner() -> None:
+                try:
+                    req = self._build_request(message)
+                    rec = self.inference_service.infer_task(req)
+                    _infer_result['record'] = rec
+                except Exception as exc:
+                    _infer_error.append(str(exc))
+                finally:
+                    _infer_done.set()
+
+            threading.Thread(target=_infer_inner, daemon=True).start()
+
+            _waited = 0
+            while not _infer_done.wait(timeout=5):
+                _waited += 5
+                if _waited >= _CHAT_TIMEOUT_S:
+                    break
+                self._set_autonomy_activity_override(
+                    visible=True,
+                    title='Respondiendo con contexto vivo',
+                    status='active',
+                    stage='consultando LLM local',
+                    progress=min(0.2 + _waited * 0.03, 0.9),
+                    detail=f'Procesando... ({_waited}s)',
+                    tool='ollama_llm',
+                    mode='local',
+                )
+                self.dataChanged.emit()
+
+            if not _infer_done.is_set():
+                logger.warning(
+                    '_answer_general_chat: timeout (%ds) — trying cloud fallback',
+                    _CHAT_TIMEOUT_S,
+                )
+                # Cloud-first fallback: try a fast cloud call (Groq ~200ms)
+                # before falling back to static text.
+                fallback = self._try_cloud_quick_reply(message)
+                if not fallback:
+                    fallback = self._general_chat_reply(message)
+                if not fallback:
+                    fallback = (
+                        'Mi modelo local tardo demasiado. Puede ser que el '
+                        'modelo actual sea muy grande para la RAM disponible. '
+                        'Intenta de nuevo o usa model_selection_status para '
+                        'ver si hay un modelo mas rapido.'
+                    )
+                self._append_message('assistant', 'IABV', fallback, 'Timeout — fallback local.')
+                self._latest_response_text = fallback
+                self._latest_response_meta = 'Timeout — fallback local.'
+                self._working = False
+                self._busy_label = 'Respuesta lista.'
+                self._clear_autonomy_activity_override()
+                self.dataChanged.emit()
+                return
+
+            if _infer_error:
+                fallback = self._general_chat_reply(message)
+                self._append_message('assistant', 'IABV', fallback, 'Conversacion general (fallback local).')
+                self._latest_response_text = fallback
+                self._latest_response_meta = 'Conversacion general (fallback local).'
+                self._working = False
+                self._busy_label = 'Respuesta lista.'
+                self._clear_autonomy_activity_override()
+                self.dataChanged.emit()
+                return
+
+            record = _infer_result.get('record')
+            if record is None:
+                fallback = self._general_chat_reply(message)
+                self._append_message('assistant', 'IABV', fallback, 'Conversacion general (fallback local).')
+                self._latest_response_text = fallback
+                self._latest_response_meta = 'Conversacion general (fallback local).'
+                self._working = False
+                self._busy_label = 'Respuesta lista.'
+                self._clear_autonomy_activity_override()
+                self.dataChanged.emit()
+                return
+
             try:
-                request = self._build_request(message)
-                record = self.inference_service.infer_task(request)
                 adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
                 self.taskResolved.emit(
                     'chat',
@@ -2505,6 +3023,8 @@ class ControlCenterViewModel(QObject):
             return self._self_examination_reply(message)[0]
         if self._is_learning_question(normalized):
             return self._learning_reply(message)[0]
+        if self._is_account_resource_question(normalized):
+            return self._account_resource_reply(message)[0]
         asks_about_assistants = (
             any(token in normalized for token in ('codex', 'chatgpt', 'claude', 'ollama', 'ia', 'ias'))
             and any(token in normalized for token in ('puedes', 'puede', 'sabes', 'manejas', 'manejar', 'manej', 'aca adentro', 'automatic'))
@@ -2531,7 +3051,199 @@ class ControlCenterViewModel(QObject):
         greeting_prefixes = ('hola', 'buenas', 'buenos dias', 'buenas tardes', 'buenas noches')
         if len(normalized.split()) <= 5 and any(normalized.startswith(prefix) for prefix in greeting_prefixes):
             return 'Hola. Estoy aqui para ayudarte. Dime que quieres revisar o resolver y lo trabajamos desde aqui.'
+        # Cloud-first fallback: try a fast cloud call before returning static text.
+        cloud_reply = self._try_cloud_quick_reply(message)
+        if cloud_reply:
+            return cloud_reply
+        # Context-based fallback: answer provider/key questions from live data.
+        context_reply = self._try_context_based_reply(message)
+        if context_reply:
+            return context_reply
         return 'Te leo. Cuentame que necesitas y te respondo de forma clara, sin cargarte con detalle tecnico interno.'
+
+    def _build_cloud_reply_context(self) -> str:
+        """Build a concise system context string for cloud quick replies.
+
+        Includes: configured API keys, active provider, tools status,
+        Ollama models.  Kept short to fit in a system prompt.
+        """
+        import os
+        parts: list[str] = ['ESTADO DEL SISTEMA:']
+
+        # API keys status
+        key_map = {
+            'GROQ_API_KEY': 'Groq',
+            'GEMINI_API_KEY': 'Gemini',
+            'OPENROUTER_API_KEY': 'OpenRouter',
+            'OPENAI_API_KEY': 'OpenAI',
+            'ANTHROPIC_API_KEY': 'Anthropic',
+        }
+        configured = []
+        not_configured = []
+        for env_var, name in key_map.items():
+            if os.environ.get(env_var):
+                configured.append(name)
+            else:
+                not_configured.append(name)
+        if configured:
+            parts.append(f'API keys configuradas: {", ".join(configured)}')
+        if not_configured:
+            parts.append(f'API keys NO configuradas: {", ".join(not_configured)}')
+
+        # Active provider from AdaptiveModelSelector
+        try:
+            selector = getattr(self, '_bootstrap', None)
+            if selector:
+                selector = getattr(selector, 'adaptive_model_selector', None)
+            if selector:
+                best = selector.select_best_provider(task_type='reasoning')
+                parts.append(f'Mejor proveedor razonamiento: {best.get("provider_id", "?")} ({best.get("reason", "?")})')
+        except Exception:
+            pass
+
+        # Ollama models
+        try:
+            import httpx
+            with httpx.Client(timeout=2.0) as client:
+                resp = client.get('http://127.0.0.1:11434/api/tags')
+                if resp.status_code == 200:
+                    models = [m.get('name', '?') for m in resp.json().get('models', [])]
+                    if models:
+                        parts.append(f'Modelos Ollama: {", ".join(models[:6])}')
+        except Exception:
+            pass
+
+        # Tools summary
+        try:
+            registry = getattr(self, 'tool_registry', None)
+            if registry:
+                available = [t.tool_id for t in registry.list_tools() if t.status.available]
+                parts.append(f'Herramientas disponibles: {len(available)}')
+        except Exception:
+            pass
+
+        return '\n'.join(parts)
+
+    def _try_cloud_quick_reply(self, message: str) -> str | None:
+        """Attempt a fast cloud reply (Groq/Gemini) for general conversation.
+
+        Returns the cloud response or None if unavailable. Timeout: 8s.
+        Does NOT decide routes — just generates a conversational reply.
+        Includes live system context so the IA can answer specific questions
+        about API keys, providers, tools, etc.
+        """
+        try:
+            import httpx
+            import os
+            import json as _json
+        except ImportError:
+            return None
+
+        providers: list[tuple[str, str, str, str]] = [
+            # (env_var, base_url, model, provider_name)
+            ('GROQ_API_KEY', 'https://api.groq.com/openai/v1/chat/completions', 'llama-3.3-70b-versatile', 'groq'),
+            ('GEMINI_API_KEY', 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', 'gemini-2.0-flash', 'gemini'),
+            ('OPENROUTER_API_KEY', 'https://openrouter.ai/api/v1/chat/completions', 'meta-llama/llama-3.3-70b-instruct:free', 'openrouter'),
+        ]
+
+        system_context = self._build_cloud_reply_context()
+        system_prompt = (
+            'Eres IABV, un asistente tecnico local. Responde en español, breve y directo. '
+            'Responde SOLO lo que el usuario pregunta — no listes informacion que no pidio. '
+            'Si pregunta por una API key especifica, di si esta configurada y si se esta usando. '
+            'No inventes datos — usa solo el contexto del sistema que tienes abajo.\n\n'
+            f'{system_context}'
+        )
+
+        for env_var, url, model, prov_name in providers:
+            key = os.environ.get(env_var)
+            if not key:
+                continue
+            try:
+                headers = {'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'}
+                body = {
+                    'model': model,
+                    'messages': [
+                        {'role': 'system', 'content': system_prompt},
+                        {'role': 'user', 'content': message},
+                    ],
+                    'max_tokens': 300,
+                    'temperature': 0.7,
+                }
+                with httpx.Client(timeout=8.0) as client:
+                    resp = client.post(url, headers=headers, json=body)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+                        if content and len(content) > 10:
+                            logger.info('cloud_quick_reply: %s responded (%d chars)', prov_name, len(content))
+                            return content.strip()
+            except Exception as exc:
+                logger.debug('cloud_quick_reply: %s failed: %s', prov_name, exc)
+                continue
+        return None
+
+    def _try_context_based_reply(self, message: str) -> str | None:
+        """Answer specific provider/key questions using only local context.
+
+        When both cloud IA and local Ollama are unavailable, this method
+        can still answer questions about API keys, providers, and models
+        by reading environment variables and system state directly.
+        Returns None if the question doesn't match known patterns.
+        """
+        import os
+        normalized = self._normalized_command_text(message)
+        if not normalized:
+            return None
+
+        # Detect which provider the user is asking about
+        _provider_env = {
+            'groq': 'GROQ_API_KEY',
+            'gemini': 'GEMINI_API_KEY',
+            'openrouter': 'OPENROUTER_API_KEY',
+            'openai': 'OPENAI_API_KEY',
+            'anthropic': 'ANTHROPIC_API_KEY',
+            'together': 'TOGETHER_API_KEY',
+            'deepseek': 'DEEPSEEK_API_KEY',
+        }
+
+        asked_provider = None
+        for prov_name, env_var in _provider_env.items():
+            if prov_name in normalized:
+                asked_provider = (prov_name, env_var)
+                break
+
+        # Asking about a specific provider's API key
+        if asked_provider:
+            prov_name, env_var = asked_provider
+            key = os.environ.get(env_var, '')
+            if key:
+                masked = key[:6] + '...' + key[-4:] if len(key) > 12 else '***'
+                return (
+                    f'Si, la API key de {prov_name.capitalize()} esta configurada ({masked}). '
+                    f'El sistema la puede usar para respuestas rapidas via cloud.'
+                )
+            else:
+                return (
+                    f'No, la API key de {prov_name.capitalize()} NO esta configurada. '
+                    f'Para activarla, crea una en la pagina del proveedor y usa '
+                    f'"ingresar clave" en este chat para configurarla.'
+                )
+
+        # Asking about which model/provider is being used
+        if any(tok in normalized for tok in ('que modelo', 'qué modelo', 'estas usando', 'estás usando', 'que usas', 'qué usas')):
+            ctx = self._build_cloud_reply_context()
+            return (
+                f'Actualmente el sistema usa lo siguiente:\n\n{ctx}\n\n'
+                f'Sin API keys de cloud, todas las respuestas pasan por Ollama local.'
+            )
+
+        # General API key question (not about a specific provider)
+        if any(tok in normalized for tok in ('api key', 'apikey', 'api_key', 'claves', 'keys configurad')):
+            ctx = self._build_cloud_reply_context()
+            return ctx
+
+        return None
 
     def _seems_task_like_message(self, message: str) -> bool:
         normalized = self._normalized_command_text(message)
@@ -2560,6 +3272,660 @@ class ControlCenterViewModel(QObject):
                 'que pasa',
             )
         )
+
+    # ------------------------------------------------------------------
+    # Cloud plan detection ("cerebro central")
+    # ------------------------------------------------------------------
+
+    _CLOUD_PLAN_TRIGGERS = (
+        'soluciona', 'solucioname', 'solucionar',
+        'planifica', 'planificar', 'haz un plan',
+        'genera un plan', 'arma un plan', 'coordina',
+        'resuelve esto', 'necesito que resuelvas',
+        'ejecuta un plan', 'plan de accion',
+    )
+
+    def _is_cloud_plan_request(self, message: str) -> bool:
+        normalized = self._normalized_command_text(message)
+        return any(trigger in normalized for trigger in self._CLOUD_PLAN_TRIGGERS)
+
+    def _handle_cloud_plan_request(self, message: str) -> None:
+        """Generate a cloud-reasoning plan and present it with action buttons."""
+        self._set_autonomy_activity_override(
+            visible=True,
+            title='Generando plan inteligente',
+            status='active',
+            stage='consultando modelos cloud',
+            progress=0.20,
+            detail='Descomponiendo tu solicitud en pasos concretos con asignacion de herramientas.',
+            tool='cloud reasoning (Gemini/Groq)',
+            next_step='Voy a generar un plan paso a paso y mostrartelo para que lo apruebes.',
+            learning_note='Se usa razonamiento cloud para planes complejos; el resultado se persiste para aprendizaje local.',
+            mode='cloud',
+        )
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+
+        plan = None
+        if self.adaptive_orchestrator is not None:
+            try:
+                plan = self.adaptive_orchestrator.generate_cloud_plan(message)
+            except Exception as exc:
+                logger.warning('cloud plan generation failed: %s', exc)
+
+        if plan is None:
+            self._append_message(
+                'assistant', 'IABV',
+                'No pude generar un plan en este momento. Los modelos cloud no estan disponibles o no pude descomponer la solicitud. '
+                'Intenta reformular tu objetivo o verifica que las API keys esten configuradas.',
+                'cloud-plan: no plan generated',
+            )
+            return
+
+        # Build chat message with plan steps
+        lines = [f'**Plan generado** ({plan.cloud_source}) — confianza: {plan.confidence:.0%}\n']
+        lines.append(f'_{plan.summary}_\n')
+        for step in plan.steps:
+            approval_tag = ' **[requiere aprobacion]**' if step.requires_approval else ''
+            lines.append(
+                f'{step.order}. **{step.title}** → _{step.assigned_tool}_{approval_tag}\n'
+                f'   {step.description}'
+            )
+        lines.append('\n¿Quieres que ejecute este plan?')
+
+        self._append_message('assistant', 'IABV', '\n'.join(lines), 'cloud-plan: plan presented')
+
+        # Store plan in metadata for later execution
+        self._pending_cloud_plan = plan
+        self._last_user_goal = message
+
+        # Set action buttons for the plan
+        self._assistant_action_buttons = [
+            {'action': 'execute_cloud_plan', 'label': 'Ejecutar plan'},
+            {'action': 'replan_cloud', 'label': 'Regenerar plan'},
+        ]
+        self._set_autonomy_activity_override(
+            visible=True,
+            title='Plan listo',
+            status='awaiting_approval',
+            stage='esperando tu decision',
+            progress=1.0,
+            detail=plan.summary,
+            tool=plan.cloud_source,
+            next_step='Aprueba el plan o pideme que lo regenere.',
+            mode='cloud',
+        )
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+
+    def _execute_cloud_plan(self) -> None:
+        """Execute the pending cloud plan step by step."""
+        plan = getattr(self, '_pending_cloud_plan', None)
+        if plan is None:
+            self._append_message('assistant', 'IABV', 'No hay un plan pendiente para ejecutar.', 'cloud-plan: no pending plan')
+            return
+
+        self._pending_cloud_plan = None
+        self._assistant_action_buttons = []
+
+        total = len(plan.steps)
+        for i, step in enumerate(plan.steps):
+            progress = (i + 1) / total
+            self._set_autonomy_activity_override(
+                visible=True,
+                title=f'Ejecutando paso {step.order}/{total}',
+                status='active',
+                stage=step.title,
+                progress=progress,
+                detail=step.description,
+                tool=step.assigned_tool,
+                next_step=plan.steps[i + 1].title if i + 1 < total else 'Finalizar plan',
+                mode='cloud',
+            )
+            try:
+                self.dataChanged.emit()
+            except Exception:
+                pass
+
+            if step.requires_approval:
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'**Paso {step.order}** requiere aprobacion: {step.title}\n{step.description}\n\n'
+                    f'Herramienta: {step.assigned_tool} — {step.tool_rationale}',
+                    f'cloud-plan step {step.order}: awaiting approval',
+                )
+                step.status = 'awaiting_approval'
+                break
+
+            # Execute step via the appropriate tool
+            try:
+                if step.assigned_tool in ('codex', 'chatgpt', 'claude', 'devin'):
+                    if self.adaptive_orchestrator is not None and hasattr(self.adaptive_orchestrator, 'autonomous_evolution_service'):
+                        aes = self.adaptive_orchestrator.autonomous_evolution_service
+                        if aes is not None:
+                            from iabv_v15.domain.models import DecisionContext
+                            result = aes.plan_or_execute(
+                                adaptive_payload={
+                                    'user_goal': step.description,
+                                    'metadata': {
+                                        'assistant_kind': step.assigned_tool,
+                                        'cloud_plan_step': step.order,
+                                        'cloud_plan_id': plan.plan_id,
+                                    },
+                                },
+                                user_goal=step.description,
+                                source='cloud_plan_execution',
+                                decision_context=DecisionContext(),
+                            )
+                            step.status = 'completed'
+                            step.result_summary = str(result.get('summary', result.get('status', 'done')))
+                            self._append_message(
+                                'assistant', 'IABV',
+                                f'Paso {step.order} completado ({step.assigned_tool}): {step.result_summary[:200]}',
+                                f'cloud-plan step {step.order}: completed via {step.assigned_tool}',
+                            )
+                            continue
+                # Local/ollama or fallback
+                step.status = 'completed'
+                step.result_summary = 'Ejecutado localmente'
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Paso {step.order} completado (local): {step.title}',
+                    f'cloud-plan step {step.order}: completed locally',
+                )
+            except Exception as exc:
+                step.status = 'failed'
+                step.result_summary = str(exc)[:200]
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Paso {step.order} fallo: {exc}',
+                    f'cloud-plan step {step.order}: failed',
+                )
+                logger.warning('cloud plan step %d failed: %s', step.order, exc)
+
+        # Finalize
+        completed = sum(1 for s in plan.steps if s.status == 'completed')
+        failed = sum(1 for s in plan.steps if s.status == 'failed')
+        self._append_message(
+            'assistant', 'IABV',
+            f'Plan finalizado: {completed}/{total} pasos completados.',
+            f'cloud-plan: {completed}/{total} steps completed',
+        )
+        self._set_autonomy_activity_override(
+            visible=True,
+            title='Plan finalizado',
+            status='completed',
+            stage='resumen',
+            progress=1.0,
+            detail=f'{completed}/{total} pasos completados',
+            tool=plan.cloud_source,
+            next_step='Puedes pedirme otro plan o preguntar lo que necesites.',
+            mode='cloud',
+        )
+
+        # Record execution outcome in decision audit trail
+        try:
+            orch = self.adaptive_orchestrator
+            audit = getattr(orch, 'decision_audit_trail', None) if orch else None
+            if audit is not None:
+                from iabv_v15.services.evolution.decision_audit_trail import (
+                    DecisionRecord, DecisionPhase, DecisionOutcome,
+                )
+                if completed == total:
+                    exec_outcome = DecisionOutcome.SUCCESS
+                elif completed > 0:
+                    exec_outcome = DecisionOutcome.PARTIAL
+                else:
+                    exec_outcome = DecisionOutcome.FAILED
+                audit.record(DecisionRecord(
+                    phase=DecisionPhase.PLAN_EXECUTION,
+                    provider_id=plan.cloud_source,
+                    model_used=plan.cloud_source,
+                    user_goal=plan.summary[:200],
+                    outcome=exec_outcome,
+                    confidence=plan.confidence,
+                    steps_total=total,
+                    steps_completed=completed,
+                    steps_failed=failed,
+                ))
+        except Exception:
+            pass
+
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------
+    # API key health check command
+    # ------------------------------------------------------------------
+
+    def _handle_api_key_health_command(self) -> None:
+        """Run API key health check and present results in chat."""
+        self._append_message(
+            'assistant', 'IABV',
+            'Revisando el estado de las API keys de cloud reasoning...',
+            'api-key-health: starting check',
+        )
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+
+        def _worker() -> None:
+            try:
+                discovery = None
+                if self.adaptive_orchestrator is not None:
+                    discovery = getattr(self.adaptive_orchestrator, 'api_key_discovery_service', None)
+                if discovery is None:
+                    from iabv_v15.services.evolution.api_key_discovery_service import ApiKeyDiscoveryService
+                    discovery = ApiKeyDiscoveryService()
+
+                report = discovery.full_health_report()
+
+                lines = ['**Reporte de API Keys para Cloud Reasoning**\n']
+                lines.append(f'Proveedores configurados: {report["configured_count"]}/{report["total_providers"]}')
+
+                if report['test_results']:
+                    lines.append('\n**Resultados de prueba:**')
+                    for r in report['test_results']:
+                        status = 'OK' if r['valid'] and 'RATE_LIMITED' not in (r.get('quota_info') or '') else (
+                            'RATE LIMITED' if r['valid'] else 'FALLO'
+                        )
+                        latency = f'{r["latency_ms"]:.0f}ms' if r['latency_ms'] else 'N/A'
+                        error_info = f' — {r["error"]}' if r['error'] else ''
+                        lines.append(f'  - **{r["provider_id"]}**: {status} ({latency}){error_info}')
+
+                if report['missing']:
+                    lines.append('\n**Proveedores sin configurar (gratis):**')
+                    for m in report['missing']:
+                        lines.append(f'  - {m["name"]}: {m["url"]}')
+
+                if report['best_provider']:
+                    bp = report['best_provider']
+                    lines.append(f'\n**Mejor proveedor actual:** {bp["provider_id"]} ({bp["latency_ms"]:.0f}ms)')
+                else:
+                    lines.append('\nNo hay proveedor funcional. Escribe "generar keys" para que te guie.')
+
+                lines.append(f'\n_{report["recommendation"]}_')
+
+                # Renewal guidance
+                guidance = discovery.renewal_guidance()
+                if guidance:
+                    lines.append('\n**Acciones recomendadas:**')
+                    for g in guidance[:3]:
+                        action = g.get('action', '')
+                        if action == 'create_key':
+                            lines.append(f'  - Crear key de {g["name"]}: {g["signup_url"]}')
+                        elif action == 'renew_key':
+                            lines.append(f'  - Renovar key de {g["name"]}: {g.get("error", "")}')
+                        elif action == 'wait_or_upgrade':
+                            lines.append(f'  - {g["name"]} en rate limit: esperar o usar otro proveedor')
+
+                    self._assistant_action_buttons = [
+                        {'action': btn_action, 'label': btn_label}
+                        for btn_action, btn_label in [
+                            ('provision_missing_keys', 'Crear keys faltantes'),
+                        ]
+                        if any(g.get('action') == 'create_key' for g in guidance)
+                    ]
+
+                self._append_message('assistant', 'IABV', '\n'.join(lines), 'api-key-health: report complete')
+            except Exception as exc:
+                logger.warning('api key health check failed: %s', exc)
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Error al revisar las API keys: {exc}',
+                    'api-key-health: failed',
+                )
+            finally:
+                self._working = False
+                self._set_live_status('idle')
+                try:
+                    self.dataChanged.emit()
+                except Exception:
+                    pass
+
+        self._working = True
+        threading.Thread(target=_worker, daemon=True).start()
+
+    # ------------------------------------------------------------------
+    # Interactive API key generation
+    # ------------------------------------------------------------------
+
+    _API_KEY_PROVIDERS: ClassVar[list[dict[str, str]]] = [
+        {
+            'id': 'groq', 'name': 'Groq', 'env_key': 'GROQ_API_KEY',
+            'url': 'https://console.groq.com/keys',
+            'detail': 'Llama 3.3 70B gratis, rapido, 30 req/min',
+        },
+        {
+            'id': 'gemini', 'name': 'Google Gemini', 'env_key': 'GEMINI_API_KEY',
+            'url': 'https://aistudio.google.com/apikey',
+            'detail': 'Gemini 2.0 Flash gratis, 15 req/min',
+        },
+        {
+            'id': 'openrouter', 'name': 'OpenRouter', 'env_key': 'OPENROUTER_API_KEY',
+            'url': 'https://openrouter.ai/keys',
+            'detail': 'Multiples modelos, tier gratis disponible',
+        },
+        {
+            'id': 'together', 'name': 'Together AI', 'env_key': 'TOGETHER_API_KEY',
+            'url': 'https://api.together.xyz/settings/api-keys',
+            'detail': 'Llama, Mixtral gratis por $5 de credito inicial',
+        },
+        {
+            'id': 'github', 'name': 'GitHub', 'env_key': 'GITHUB_TOKEN_IABV',
+            'url': 'https://github.com/settings/tokens/new?scopes=repo&description=IABV',
+            'detail': 'PAT con scope repo para auto-merge PRs',
+        },
+        {
+            'id': 'devin', 'name': 'Devin (Cognition)', 'env_key': 'DEVIN_API_KEY',
+            'url': 'https://app.devin.ai/settings/api-keys',
+            'detail': 'API key para consultas a Devin',
+        },
+    ]
+
+    def _handle_interactive_key_generation(self) -> None:
+        """Show provider selection, then prompt for the key inline."""
+        import os
+        lines = ['**Selecciona el proveedor para generar o agregar la API key:**\n']
+        buttons: list[dict[str, str]] = []
+        for prov in self._API_KEY_PROVIDERS:
+            current = os.environ.get(prov['env_key'], '').strip()
+            status = 'configurada' if current else 'no configurada'
+            icon = 'OK' if current else 'FALTA'
+            lines.append(f'  - **{prov["name"]}** [{icon}]: {prov["detail"]}')
+            if not current:
+                buttons.append({
+                    'action': f'setup_key_{prov["id"]}',
+                    'label': f'Configurar {prov["name"]}',
+                })
+        if not buttons:
+            lines.append('\nTodas las keys estan configuradas. Escribe "revisar api keys" para probarlas.')
+        else:
+            lines.append('\nHaz clic en el proveedor que quieras configurar. '
+                         'Se abrira la pagina en tu navegador y podras pegar la key aqui.')
+        self._append_message('assistant', 'IABV', '\n'.join(lines),
+                             'interactive-key-setup: provider selection')
+        self._assistant_action_buttons = buttons
+        self.dataChanged.emit()
+
+    @Slot(str, str, bool)
+    def submitCredential(self, provider: str, value: str, remember: bool = True) -> None:
+        """Handle a credential submitted from InlineCredentialPrompt QML."""
+        self._save_api_key(provider, value, remember)
+
+    @Slot(object)
+    def onCredentialProvided(self, payload: dict) -> None:
+        """Handle credential from CredentialPromptDialog QML."""
+        domain = str(payload.get('domain', '')).strip()
+        password = str(payload.get('password', '')).strip()
+        if domain and password:
+            self._save_api_key(domain, password, bool(payload.get('remember', True)))
+
+    @Slot(object)
+    def onCredentialDelegated(self, payload: dict) -> None:
+        """User chose to handle credential manually."""
+        domain = str(payload.get('domain', '')).strip()
+        self._append_message('assistant', 'IABV',
+                             f'Entendido — {domain} queda pendiente. Puedes escribir '
+                             '"generar keys" cuando quieras configurarlo.',
+                             'credential: delegated to user')
+        self.dataChanged.emit()
+
+    def _save_api_key(self, provider_id: str, value: str, persist: bool) -> None:
+        """Save an API key for a provider, update env, confirm in chat."""
+        from iabv_v15.services.auto_correction_engine import save_secret_to_profile
+        env_key = ''
+        display_name = provider_id
+        for prov in self._API_KEY_PROVIDERS:
+            if prov['id'] == provider_id or prov['env_key'] == provider_id:
+                env_key = prov['env_key']
+                display_name = prov['name']
+                break
+        if not env_key:
+            env_key = provider_id.upper().replace(' ', '_')
+            if not env_key.endswith('_KEY') and not env_key.endswith('_TOKEN'):
+                env_key += '_API_KEY'
+        if persist:
+            result = save_secret_to_profile(env_key, value)
+            if result.get('status') == 'saved':
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Key de {display_name} guardada y activada. '
+                    f'Persistida en ~/.iabv_secrets.ps1 — no necesitas configurarla de nuevo.',
+                    f'credential: {env_key} saved',
+                )
+            else:
+                import os
+                os.environ[env_key] = value
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Key de {display_name} activada en esta sesion (no se pudo persistir: '
+                    f'{result.get("detail", "error desconocido")}).',
+                    f'credential: {env_key} session-only',
+                )
+        else:
+            import os
+            os.environ[env_key] = value
+            self._append_message(
+                'assistant', 'IABV',
+                f'Key de {display_name} activada para esta sesion.',
+                f'credential: {env_key} session-only',
+            )
+        self._assistant_action_buttons = []
+        self.dataChanged.emit()
+
+    # ------------------------------------------------------------------
+    # Decision audit trail command
+    # ------------------------------------------------------------------
+
+    def _handle_resource_liberation_command(self) -> None:
+        """Handle 'liberar ram' / 'optimizar memoria' chat commands."""
+        self._append_message(
+            'assistant', 'IABV',
+            'Analizando recursos del sistema...',
+            'resource-metacognition: observing',
+        )
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+
+        def _worker() -> None:
+            try:
+                resource_svc = getattr(self, 'resource_metacognition_service', None)
+                if resource_svc is None:
+                    self._append_message(
+                        'assistant', 'IABV',
+                        'El servicio de metacognicion de recursos no esta disponible.',
+                        'resource-metacognition: service not wired',
+                    )
+                    return
+
+                text = resource_svc.chat_execute_liberation()
+                self._append_message('assistant', 'IABV', text, 'resource-metacognition: liberation complete')
+            except Exception as exc:
+                logger.warning('resource liberation command failed: %s', exc)
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Error al liberar recursos: {exc}',
+                    'resource-metacognition: failed',
+                )
+            finally:
+                self._working = False
+                self._set_live_status('idle')
+                try:
+                    self.dataChanged.emit()
+                except Exception:
+                    pass
+
+        self._working = True
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _handle_update_check_command(self) -> None:
+        """Handle 'estás actualizado?' / 'hay actualizaciones?' chat commands."""
+        self._append_message(
+            'assistant', 'IABV',
+            'Verificando actualizaciones...',
+            'update-check: fetching',
+        )
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+
+        def _worker() -> None:
+            import subprocess as _sp
+            try:
+                workspace = getattr(self.config, 'workspace_dir', None)
+                cwd = str(workspace) if workspace else None
+
+                # Get current commit
+                r = _sp.run(['git', 'rev-parse', '--short', 'HEAD'],
+                            capture_output=True, text=True, timeout=10, cwd=cwd)
+                current = r.stdout.strip() if r.returncode == 0 else '?'
+
+                # Get current branch
+                r = _sp.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                            capture_output=True, text=True, timeout=10, cwd=cwd)
+                branch = r.stdout.strip() if r.returncode == 0 else '?'
+
+                # Fetch without modifying anything
+                r = _sp.run(['git', 'fetch', 'origin', 'main', '--dry-run'],
+                            capture_output=True, text=True, timeout=30, cwd=cwd)
+                has_updates = bool(r.stdout.strip() or r.stderr.strip())
+
+                # Count commits behind
+                behind = 0
+                if has_updates:
+                    r = _sp.run(['git', 'rev-list', '--count', 'HEAD..origin/main'],
+                                capture_output=True, text=True, timeout=10, cwd=cwd)
+                    try:
+                        behind = int(r.stdout.strip()) if r.returncode == 0 else 0
+                    except ValueError:
+                        behind = 0
+
+                lines: list[str] = []
+                lines.append(f'Version actual: commit {current} (rama {branch})')
+                if behind > 0:
+                    lines.append(f'Hay {behind} commit(s) nuevos en origin/main.')
+                    lines.append('Para actualizar: git pull --rebase=false')
+                    lines.append('O reinicia con start_iabv.ps1 (auto-pull por defecto).')
+                else:
+                    lines.append('Estas al dia — no hay actualizaciones pendientes.')
+
+                self._append_message('assistant', 'IABV', '\n'.join(lines), 'update-check: complete')
+            except Exception as exc:
+                logger.warning('update check failed: %s', exc)
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Error al verificar actualizaciones: {exc}',
+                    'update-check: failed',
+                )
+            finally:
+                self._working = False
+                self._set_live_status('idle')
+                try:
+                    self.dataChanged.emit()
+                except Exception:
+                    pass
+
+        self._working = True
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _handle_startup_log_command(self) -> None:
+        """Handle 'ver log de arranque' chat command — show startup console log."""
+        try:
+            workspace = getattr(self.config, 'workspace_dir', None)
+            if workspace is None:
+                self._append_message('assistant', 'IABV', 'No se pudo determinar el directorio de trabajo.', 'startup-log: no workspace')
+                return
+
+            from pathlib import Path
+            log_path = Path(str(workspace)) / 'data' / 'logs' / 'startup_console.log'
+            if not log_path.exists():
+                self._append_message(
+                    'assistant', 'IABV',
+                    'No existe log de arranque todavia. Se genera automaticamente al iniciar con start_iabv.ps1.',
+                    'startup-log: not found',
+                )
+                return
+
+            content = log_path.read_text(encoding='utf-8', errors='replace')
+            lines = content.splitlines()
+
+            # Extract key info: warnings, errors, and last 30 lines
+            warnings = [l.strip() for l in lines if '[warn]' in l.lower()]
+            errors = [l.strip() for l in lines if '[err]' in l.lower() or ('error' in l.lower() and 'exit' in l.lower())]
+            tail = lines[-30:] if len(lines) > 30 else lines
+
+            parts: list[str] = []
+            parts.append(f'Log de arranque ({len(lines)} lineas):')
+            if errors:
+                parts.append(f'\nErrores ({len(errors)}):')
+                for e in errors[:5]:
+                    parts.append(f'  {e}')
+            if warnings:
+                parts.append(f'\nAdvertencias ({len(warnings)}):')
+                for w in warnings[:5]:
+                    parts.append(f'  {w}')
+            if not errors and not warnings:
+                parts.append('\nSin errores ni advertencias.')
+            parts.append(f'\nUltimas lineas:')
+            for t in tail[-15:]:
+                parts.append(f'  {t.strip()}')
+
+            self._append_message('assistant', 'IABV', '\n'.join(parts), 'startup-log: displayed')
+        except Exception as exc:
+            logger.warning('startup log command failed: %s', exc)
+            self._append_message('assistant', 'IABV', f'Error al leer log de arranque: {exc}', 'startup-log: failed')
+
+    def _handle_decision_audit_command(self) -> None:
+        """Show decision audit trail report in chat."""
+        self._append_message(
+            'assistant', 'IABV',
+            'Analizando el historial de decisiones...',
+            'decision-audit: loading trail',
+        )
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+
+        def _worker() -> None:
+            try:
+                audit = None
+                if self.adaptive_orchestrator is not None:
+                    audit = getattr(self.adaptive_orchestrator, 'decision_audit_trail', None)
+                if audit is None:
+                    from iabv_v15.services.evolution.decision_audit_trail import DecisionAuditTrail
+                    audit = DecisionAuditTrail()
+
+                report = audit.format_chat_report()
+                self._append_message('assistant', 'IABV', report, 'decision-audit: report complete')
+            except Exception as exc:
+                logger.warning('decision audit report failed: %s', exc)
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Error al generar el reporte de decisiones: {exc}',
+                    'decision-audit: failed',
+                )
+            finally:
+                self._working = False
+                self._set_live_status('idle')
+                try:
+                    self.dataChanged.emit()
+                except Exception:
+                    pass
+
+        self._working = True
+        threading.Thread(target=_worker, daemon=True).start()
 
     def _is_general_conversation_session(self, payload: dict[str, Any], intent: dict[str, Any], context: dict[str, Any]) -> bool:
         intent_key = str(intent.get('intent_key') or '').strip()
@@ -2823,6 +4189,7 @@ class ControlCenterViewModel(QObject):
         world_model_question = self._is_world_model_question(message)
         learning_question = self._is_learning_question(message)
         self_examination_question = self._is_self_examination_question(message)
+        account_resource_question = self._is_account_resource_question(message)
         if self_awareness:
             return self._self_awareness_reply(message)
         if world_model_question:
@@ -2831,6 +4198,8 @@ class ControlCenterViewModel(QObject):
             return self._self_examination_reply(message)
         if learning_question:
             return self._learning_reply(message)
+        if account_resource_question:
+            return self._account_resource_reply(message)
         local_chat_llm = dict(payload.get('local_chat_llm') or {})
         llm_answered = bool(local_chat_llm.get('available')) and bool(str(raw_summary or '').strip()) and not local_chat_llm.get('error')
         vm_small_talk = self._is_general_chat_message(message)
@@ -3344,6 +4713,18 @@ class ControlCenterViewModel(QObject):
             return False
         if self._is_general_chat_message(message):
             return False
+        # Internal/system topics should never inherit a site hint from
+        # previous conversations — they are about the program itself.
+        internal_signals = (
+            'secreto', 'secretos', 'token', 'tokens', 'configuracion',
+            'configurar', 'entorno', 'variable', 'variables', 'bootstrap',
+            'analiza por que', 'analiza por qué', 'faltantes', 'faltante',
+            'auto-correccion', 'autocorreccion', 'auto correccion',
+            'tu codigo', 'tu código', 'tu algoritmo', 'tus algoritmos',
+            'tu sistema', 'tu configuracion', 'tu configuración',
+        )
+        if any(signal in normalized for signal in internal_signals):
+            return False
         follow_up_phrases = (
             'empecemos',
             'seguimos',
@@ -3834,6 +5215,7 @@ class ControlCenterViewModel(QObject):
             evolution_status_question = self._is_evolution_status_session(intent) or self._is_evolution_status_question(current_goal)
             learning_question = self._is_learning_question(current_goal)
             self_examination_question = self._is_self_examination_question(current_goal)
+            account_resource_question = self._is_account_resource_question(current_goal)
             self._apply_human_general_adaptive_texts(
                 status=status,
                 governance=governance,
@@ -3936,7 +5318,8 @@ class ControlCenterViewModel(QObject):
         self._refresh_autonomy_dock()
 
     def get_chat_messages(self) -> list[dict[str, str]]:
-        return self._chat_messages
+        with self._ui_state_lock:
+            return list(self._chat_messages)
 
     def get_provider_cards(self) -> list[dict[str, Any]]:
         return self._provider_cards
@@ -4391,7 +5774,29 @@ class ControlCenterViewModel(QObject):
         evolution_status_prompt = intent_key == 'consulta_estado_evolutivo' or bool(intent_metadata.get('evolution_status_prompt')) or self._is_evolution_status_question(user_goal)
         learning_prompt = self._is_learning_question(user_goal)
         self_examination_prompt = self._is_self_examination_question(user_goal) or bool(intent_metadata.get('self_examination_prompt'))
-        if source == 'chat' and (self_awareness_prompt or world_model_prompt or evolution_status_prompt or learning_prompt or self_examination_prompt):
+        account_resource_prompt = self._is_account_resource_question(user_goal)
+        # Internal/system topics (secrets, bootstrap config, metacognition)
+        # should NEVER trigger an external consultation — the program must
+        # resolve these by introspecting its own code and config, not by
+        # asking ChatGPT or Codex.
+        _internal_signals = (
+            'secreto', 'secretos', 'token', 'tokens', 'configuracion',
+            'configurar', 'bootstrap', 'faltantes', 'faltante',
+            'tu codigo', 'tu código', 'tu algoritmo', 'tu sistema',
+            'tus logs', 'tus propios', 'tu log', 'tu propio',
+            'metacognicion', 'metacognición', 'autoanalisis', 'autoanálisis',
+            'autodiagnostico', 'autodiagnóstico', 'auto-diagnostico',
+            'anomalias', 'anomalías', 'diagnostica', 'diagnostico',
+            'tu estado', 'tu salud', 'tu rendimiento',
+            'autoexamina', 'autoexaminacion', 'autoexaminación',
+            'autoevalua', 'autoevaluacion', 'autoevaluación',
+            'que detectas', 'que ves en ti', 'revisa tu',
+            'analiza tu', 'analízate', 'examinat',
+            'cuentas', 'cuotas', 'navegadores', 'sesiones activas',
+        )
+        user_goal_lower = user_goal.lower()
+        internal_system_topic = any(s in user_goal_lower for s in _internal_signals)
+        if source == 'chat' and (self_awareness_prompt or world_model_prompt or evolution_status_prompt or learning_prompt or self_examination_prompt or account_resource_prompt or internal_system_topic):
             return None
         if source == 'chat' and intent_key in {'general.assistance', 'knowledge.query'} and intent_disposition in {'answer_now', 'need_info'} and ((structured_conversational_prompt is True) or fallback_conversational_prompt) and not explicit_assistant:
             return None
@@ -4864,9 +6269,16 @@ class ControlCenterViewModel(QObject):
         self.dataChanged.emit()
         return self._run_external_consultation(assistant_kind, announce=False)
 
+    # Maximum seconds an external consultation can run before being
+    # considered a ghost session.  After this deadline the _working flag
+    # is auto-reset so the user can continue interacting with the UI.
+    _CONSULTATION_TIMEOUT_S: int = 180
+
     def _run_external_consultation(self, assistant_kind: str, *, announce: bool = True) -> bool:
         assistant_title = self._assistant_display_name(assistant_kind)
         self._working = True
+        import time as _time
+        self._working_since = _time.time()
         self._busy_label = f'Voy a preparar una consulta con {assistant_title}.'
         self._latest_response_text = (
             f'Consulta externa aceptada para {assistant_title}. '
@@ -4889,6 +6301,8 @@ class ControlCenterViewModel(QObject):
             self._append_message('assistant', 'IABV', self._latest_response_text, self._latest_response_meta)
         self.dataChanged.emit()
 
+        consultation_epoch = _time.time()
+
         def worker() -> None:
             try:
                 result_payload = self._execute_external_consultation_sync(assistant_kind)
@@ -4896,7 +6310,31 @@ class ControlCenterViewModel(QObject):
             except Exception as exc:
                 self.taskFailed.emit('external_consultation', f'No pude completar la consulta externa guiada: {exc}')
 
+        def _ghost_session_watchdog() -> None:
+            """Auto-reset _working if the consultation exceeds the deadline.
+
+            Without this, a stuck external session (e.g. ChatGPT browser
+            tab that never responds) keeps _working=True forever and the
+            user cannot send new messages until the 60 s reset in sendChat.
+            """
+            if not self._working:
+                return
+            import time as _tw
+            if (_tw.time() - consultation_epoch) < self._CONSULTATION_TIMEOUT_S:
+                return
+            self._working = False
+            self._busy_label = (
+                f'La consulta con {assistant_title} excedio {self._CONSULTATION_TIMEOUT_S}s '
+                'sin respuesta. Puedes seguir interactuando.'
+            )
+            self._set_live_status('idle')
+            self._clear_autonomy_activity_override()
+            self.dataChanged.emit()
+
         threading.Thread(target=worker, daemon=True).start()
+        threading.Timer(
+            self._CONSULTATION_TIMEOUT_S, _ghost_session_watchdog,
+        ).start()
         return True
 
     def _perform_guidance_action(self, action: str, *, announce: bool = True) -> bool:
@@ -4979,15 +6417,166 @@ class ControlCenterViewModel(QObject):
         if action == 'abort':
             self.abortAdaptive()
             return True
+        if action == 'provision_missing_keys':
+            from iabv_v15.services.auto_correction_engine import auto_provision_missing_secrets
+            discovery = None
+            if self.adaptive_orchestrator is not None:
+                discovery = getattr(self.adaptive_orchestrator, 'api_key_discovery_service', None)
+            if discovery is not None:
+                missing = discovery.find_missing_keys()
+                missing_names = [m['env_key'] for m in missing]
+            else:
+                missing_names = []
+            context = {'account_scan': {'secrets': {'missing': missing_names}}}
+            result = auto_provision_missing_secrets(context, open_browser=True)
+            opened = result.get('opened_count', 0)
+            if announce:
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Se abrieron {opened} paginas para crear API keys. '
+                    'Cuando tengas cada token, pegalo en el dialogo de IABV.',
+                    f'provision: {opened} pages opened',
+                )
+            self._assistant_action_buttons = []
+            return True
+
+        if action == 'execute_cloud_plan':
+            def _cloud_exec() -> None:
+                try:
+                    self._execute_cloud_plan()
+                finally:
+                    self._working = False
+                    self._set_live_status('idle')
+            self._working = True
+            threading.Thread(target=_cloud_exec, daemon=True).start()
+            return True
+
+        if action == 'replan_cloud':
+            goal = getattr(self, '_last_user_goal', '')
+            if goal:
+                self._pending_cloud_plan = None
+                self._assistant_action_buttons = []
+                def _replan() -> None:
+                    try:
+                        self._handle_cloud_plan_request(goal)
+                    finally:
+                        self._working = False
+                        self._set_live_status('idle')
+                self._working = True
+                threading.Thread(target=_replan, daemon=True).start()
+            return True
+
+        if action == 'execute_coordinated_plan':
+            # Fix 56: handle the coordinated plan action generated by
+            # AdaptiveTaskOrchestrator._maybe_coordinated_plan_action().
+            # Delegates to the adaptive orchestrator's auto-execute path
+            # which chains primary IA → secondary IA.
+            if self._adaptive_session_id and self.adaptive_orchestrator is not None:
+                self._run_adaptive_action(
+                    action_name='execute',
+                    busy_text='Ejecutando plan coordinado multi-IA.',
+                )
+            elif self._last_user_goal:
+                # No active adaptive session — re-submit the last goal
+                # so the orchestrator creates one with the coordinated plan.
+                self.sendChat(self._last_user_goal)
+            if announce:
+                self._append_message(
+                    'assistant', 'IABV',
+                    'Ejecutando plan coordinado. Voy a consultar las IAs en secuencia.',
+                    'Plan coordinado activado desde gesto sugerido.',
+                )
+            return True
+
+        # Interactive key setup — buttons generated by _handle_interactive_key_generation
+        if action.startswith('setup_key_'):
+            provider_id = action[len('setup_key_'):]
+            prov = next((p for p in self._API_KEY_PROVIDERS if p['id'] == provider_id), None)
+            if prov is not None:
+                import webbrowser
+                try:
+                    webbrowser.open(prov['url'])
+                except Exception:
+                    pass
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Abri la pagina de {prov["name"]} en tu navegador.\n\n'
+                    f'1. Crea o copia tu API key de ahi\n'
+                    f'2. Pegala aqui en el chat con el formato:\n'
+                    f'   `key {provider_id} TU_KEY_AQUI`\n\n'
+                    f'IABV la guarda automaticamente en ~/.iabv_secrets.ps1.',
+                    f'interactive-key-setup: opened {prov["name"]}',
+                )
+                self._assistant_action_buttons = []
+                self.dataChanged.emit()
+                # Emit credential prompt signal for the inline secure input
+                try:
+                    self.credentialPromptRequested.emit({
+                        'domain': prov['id'],
+                        'reason': f'API key de {prov["name"]} para cloud reasoning',
+                        'username_hint': prov['env_key'],
+                    })
+                except Exception:
+                    pass
+            return True
         return False
 
     def _normalized_command_text(self, message: str) -> str:
         return ' '.join(message.lower().strip().split())
 
+    def _try_synchronous_shortcut(self, message: str) -> bool:
+        """Try to answer via keyword-only shortcut detection (no LLM).
+
+        Returns True if the message was handled synchronously. This
+        avoids spawning a background thread for simple questions like
+        "conoces tu entorno?" or "que aprendiste?". Only uses fast
+        keyword matching — no Ollama or LLM calls.
+
+        Compound messages (long texts with conjunctions and action
+        verbs) are skipped so they go through the full inference path.
+        """
+        import re as _re
+        normalized = self._normalized_command_text(message)
+        words = normalized.split() if normalized else []
+        if len(words) > 12:
+            has_conjunction = bool(_re.search(r'\b(y|pero|ademas|tambien|sin embargo)\b', normalized))
+            action_verbs = ('revisa', 'analiza', 'diagnostica', 'corrige', 'ejecuta', 'planifica', 'soluciona')
+            has_action = any(v in normalized for v in action_verbs)
+            if has_conjunction and has_action:
+                return False
+        if self._is_world_model_question(message):
+            self._answer_world_model_question(message)
+            return True
+        if self._is_self_awareness_question(message, fast_only=True):
+            self._answer_self_awareness_question(message)
+            return True
+        if self._is_evolution_status_question(message):
+            self._answer_evolution_status_question(message)
+            return True
+        if self._is_self_examination_question(message):
+            self._answer_self_examination_question(message)
+            return True
+        if self._is_learning_question(message, fast_only=True):
+            self._answer_learning_question(message)
+            return True
+        if self._is_account_resource_question(message, fast_only=True):
+            self._answer_account_resource_question(message)
+            return True
+        return False
+
     def _try_handle_chat_command(self, message: str) -> bool:
         command = self._normalized_command_text(message)
         if not command:
             return False
+
+        # Inline key pasting: "key groq gsk_..." or "key gemini AIza..."
+        if command.startswith('key '):
+            parts = command.split(None, 2)
+            if len(parts) >= 3:
+                provider_id = parts[1]
+                raw_value = message.split(None, 2)[2].strip()  # preserve original case
+                self._save_api_key(provider_id, raw_value, persist=True)
+                return True
 
         if any(token in command for token in ('mostrar avanzado', 'ver avanzado', 'abrir avanzado')):
             self._advanced_visible = True
@@ -5031,6 +6620,15 @@ class ControlCenterViewModel(QObject):
         if 'revisar stack' in command or 'revisa stack' in command or 'actualizar stack' in command or 'actualiza stack' in command or 'estado del stack' in command:
             self._append_message('assistant', 'IABV', 'Voy a revisar el stack local en segundo plano y te dejo el diagnostico actualizado.', 'Chequeo automatico solicitado por chat.')
             self.refreshProviderHealth()
+            return True
+        if any(token in command for token in ('generar keys', 'crear keys', 'configurar keys', 'agregar keys', 'agregar api', 'configurar api')):
+            self._handle_interactive_key_generation()
+            return True
+        if any(token in command for token in ('revisar api keys', 'revisa api keys', 'estado de las keys', 'health check keys', 'probar keys', 'verificar keys', 'buscar keys', 'renovar keys')):
+            self._handle_api_key_health_command()
+            return True
+        if any(token in command for token in ('auditar decisiones', 'audita decisiones', 'ver historial', 'historial de decisiones', 'decision audit', 'ver audit trail', 'como van las decisiones', 'esta mejorando')):
+            self._handle_decision_audit_command()
             return True
         if 'auditar autonomia' in command or 'audita autonomia' in command or 'revisar autonomia' in command or 'revisa autonomia' in command:
             self.auditAutonomy()
@@ -5760,36 +7358,206 @@ class ControlCenterViewModel(QObject):
         )
         self.dataChanged.emit()
 
-        def worker() -> None:
-            try:
-                request = self._build_request(message)
-                record = self.inference_service.infer_task(request)
-                adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
-                self.taskResolved.emit(
-                    'chat',
-                    {
-                        'summary': record.result.summary,
-                        'provider_name': record.result.provider_name,
-                        'reasoning_mode': record.result.reasoning_mode.value,
-                        'confidence': f'{record.result.confidence:.2f}',
-                        'route_reason': record.route.reason,
-                        'report_kind': record.result.report_kind.value,
-                        'role_title': self._role_title_from_task(record.result.detected_role or record.route.task_role),
-                        'sources': record.result.sources,
-                        'follow_up_teachings': record.result.follow_up_teachings,
-                        'used_tools': [tool.value for tool in record.result.used_tools],
-                        'planner_used': record.result.planner_used,
-                        'executor_model': record.result.executor_model or record.route.model_name,
-                        'chosen_pack': record.result.chosen_pack,
-                        'adaptive_session': adaptive_session,
-                        'assistant_guidance': (record.result.raw_output or {}).get('assistant_guidance') if isinstance(record.result.raw_output, dict) else None,
-                        'local_chat_llm': (record.result.raw_output or {}).get('local_chat_llm') if isinstance(record.result.raw_output, dict) else None,
-                    },
-                )
-            except Exception as exc:
-                self.taskFailed.emit('chat', f'No pude completar la consulta local: {exc}')
+        # Hard timeout: if the entire _route_and_answer takes longer than
+        # _INFERENCE_HARD_TIMEOUT_S, we abort and show a fallback message.
+        _INFERENCE_HARD_TIMEOUT_S = 25
 
-        threading.Thread(target=worker, daemon=True).start()
+        def _route_and_answer() -> None:
+            _inner_worker_took_over = False
+            # Shortcut analysis (may call LLM, give it 3 s)
+            shortcut_analysis: dict[str, Any] = {}
+            _sa_result: dict[str, Any] = {}
+            _sa_done = threading.Event()
+            def _sa_worker() -> None:
+                try:
+                    _sa_result.update(self._chat_shortcut_analysis(message))
+                except Exception:
+                    pass
+                finally:
+                    _sa_done.set()
+            _sa_thread = threading.Thread(target=_sa_worker, daemon=True)
+            _sa_thread.start()
+            if _sa_done.wait(timeout=3):
+                shortcut_analysis = _sa_result
+            allow_chat_shortcuts = not bool(shortcut_analysis.get('mixed_actionable')) and not bool(shortcut_analysis.get('requires_clarification'))
+            try:
+                if allow_chat_shortcuts and self._is_world_model_question(message):
+                    self._answer_world_model_question(message)
+                    return
+                if allow_chat_shortcuts and self._is_self_awareness_question(message):
+                    self._answer_self_awareness_question(message)
+                    return
+                if allow_chat_shortcuts and self._is_evolution_status_question(message):
+                    self._answer_evolution_status_question(message)
+                    return
+                if allow_chat_shortcuts and self._is_self_examination_question(message):
+                    self._answer_self_examination_question(message)
+                    return
+                if allow_chat_shortcuts and self._is_learning_question(message):
+                    self._answer_learning_question(message)
+                    return
+                # Account resource questions always resolve locally — bypass shortcut gate.
+                if self._is_account_resource_question(message):
+                    self._answer_account_resource_question(message)
+                    return
+                if allow_chat_shortcuts and self._is_general_chat_message(message) and not self._seems_task_like_message(message):
+                    self._answer_general_chat(message)
+                    _inner_worker_took_over = True
+                    return
+                # Cloud plan detection: if the user asks to "solve" or
+                # "plan" something, generate a cloud-reasoning plan with
+                # step-by-step tool assignment instead of the normal flow.
+                if self._is_cloud_plan_request(message):
+                    self._handle_cloud_plan_request(message)
+                    _inner_worker_took_over = True
+                    return
+
+                explicit_assistant = self._explicit_assistant_preference(message)
+                if explicit_assistant:
+                    self._last_user_goal = message
+                    self._run_external_consultation(explicit_assistant, announce=True)
+                    _inner_worker_took_over = True
+                    return
+                self._busy_label = 'Estoy entendiendo tu mensaje y preparando la mejor respuesta.'
+                self._set_autonomy_activity_override(
+                    visible=True,
+                    title='Analizando consulta',
+                    status='active',
+                    stage='orquestando decision local',
+                    progress=0.14,
+                    detail='Estoy detectando la intencion, el pack y si conviene resolver localmente o consultar otra herramienta.',
+                    tool='motor local',
+                    next_step='Primero cierro el analisis local y luego decido si hace falta apoyo externo.',
+                    learning_note='La memoria del objetivo y los patrones previos se tienen en cuenta antes de responder.',
+                    mode='local',
+                )
+                self.dataChanged.emit()
+
+                try:
+                    # Run inference with hard timeout to prevent UI freeze.
+                    _infer_result: dict[str, Any] = {}
+                    _infer_error: list[str] = []
+                    _infer_done = threading.Event()
+
+                    def _infer_worker() -> None:
+                        try:
+                            req = self._build_request(message)
+                            rec = self.inference_service.infer_task(req)
+                            _infer_result['record'] = rec
+                        except Exception as exc:
+                            _infer_error.append(str(exc))
+                        finally:
+                            _infer_done.set()
+
+                    _infer_thread = threading.Thread(target=_infer_worker, daemon=True)
+                    _infer_thread.start()
+
+                    # Heartbeat: emit progress updates every 5s while waiting
+                    _heartbeat_stages = [
+                        (0.3, 'clasificando intencion'),
+                        (0.5, 'construyendo contexto'),
+                        (0.7, 'consultando modelo'),
+                        (0.85, 'finalizando respuesta'),
+                    ]
+                    _stage_idx = 0
+                    _waited = 0
+                    while not _infer_done.wait(timeout=5):
+                        _waited += 5
+                        if _waited >= _INFERENCE_HARD_TIMEOUT_S:
+                            break
+                        if _stage_idx < len(_heartbeat_stages):
+                            _prog, _stage_label = _heartbeat_stages[_stage_idx]
+                            self._set_autonomy_activity_override(
+                                visible=True,
+                                title='Analizando consulta',
+                                status='active',
+                                stage=_stage_label,
+                                progress=_prog,
+                                detail=f'Procesando... ({_waited}s)',
+                                tool='motor local',
+                                mode='local',
+                            )
+                            self.dataChanged.emit()
+                            _stage_idx += 1
+
+                    if not _infer_done.is_set():
+                        logger.warning(
+                            'sendChat: inference timeout (%ds) — trying cloud fallback',
+                            _INFERENCE_HARD_TIMEOUT_S,
+                        )
+                        cloud_fallback = self._try_cloud_quick_reply(message)
+                        if cloud_fallback:
+                            self._append_message(
+                                'assistant', 'IABV',
+                                cloud_fallback,
+                                'Cloud fallback (modelo local ocupado).',
+                            )
+                        else:
+                            # Try context-based reply for provider/key questions
+                            context_fallback = self._try_context_based_reply(message)
+                            if context_fallback:
+                                self._append_message(
+                                    'assistant', 'IABV',
+                                    context_fallback,
+                                    'Respuesta por contexto local (sin IA).',
+                                )
+                            else:
+                                self._append_message(
+                                    'assistant', 'IABV',
+                                    'Mi modelo local tardo demasiado en responder. '
+                                    'Esto puede pasar cuando el modelo es muy grande '
+                                    'para la RAM disponible. Intenta de nuevo o usa '
+                                    'un modelo mas liviano (ej: gemma3:4b). '
+                                    'Puedes verificar con: model_selection_status',
+                                    'Timeout de inferencia local.',
+                                )
+                        self._latest_response_text = ''
+                        self._latest_response_meta = 'Timeout de inferencia local.'
+                        return
+
+                    if _infer_error:
+                        self.taskFailed.emit('chat', f'No pude completar la consulta local: {_infer_error[0]}')
+                        return
+
+                    record = _infer_result.get('record')
+                    if record is None:
+                        self.taskFailed.emit('chat', 'No pude completar la consulta local: resultado vacio.')
+                        return
+
+                    adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
+                    self.taskResolved.emit(
+                        'chat',
+                        {
+                            'summary': record.result.summary,
+                            'provider_name': record.result.provider_name,
+                            'reasoning_mode': record.result.reasoning_mode.value,
+                            'confidence': f'{record.result.confidence:.2f}',
+                            'route_reason': record.route.reason,
+                            'report_kind': record.result.report_kind.value,
+                            'role_title': self._role_title_from_task(record.result.detected_role or record.route.task_role),
+                            'sources': record.result.sources,
+                            'follow_up_teachings': record.result.follow_up_teachings,
+                            'used_tools': [tool.value for tool in record.result.used_tools],
+                            'planner_used': record.result.planner_used,
+                            'executor_model': record.result.executor_model or record.route.model_name,
+                            'chosen_pack': record.result.chosen_pack,
+                            'adaptive_session': adaptive_session,
+                            'assistant_guidance': (record.result.raw_output or {}).get('assistant_guidance') if isinstance(record.result.raw_output, dict) else None,
+                            'local_chat_llm': (record.result.raw_output or {}).get('local_chat_llm') if isinstance(record.result.raw_output, dict) else None,
+                        },
+                    )
+                except Exception as exc:
+                    self.taskFailed.emit('chat', f'No pude completar la consulta local: {exc}')
+            except Exception as exc:
+                logger.warning('_route_and_answer failed: %s', exc)
+                self.taskFailed.emit('chat', f'Error en clasificacion: {exc}')
+            finally:
+                if not _inner_worker_took_over:
+                    self._working = False
+                    self._set_live_status('idle')
+                    self._clear_autonomy_activity_override()
+
+        threading.Thread(target=_route_and_answer, daemon=True).start()
 
     def _role_title_from_task(self, role: TaskRole) -> str:
         return next((profile.title for profile in self.role_router.role_profiles if profile.role == role), role.value)
@@ -6070,25 +7838,36 @@ class ControlCenterViewModel(QObject):
             )
             self._update_adaptive_state(adaptive_payload)
             if adaptive_payload:
+                # Fix 57: move autonomy evaluation to a background thread.
+                # _maybe_run_autonomous_evolution calls govern_adaptive_payload
+                # which may invoke plan_or_execute (Ollama / cloud APIs).
+                # Running it on the UI thread freezes the window and leaves
+                # the progress bar stuck at ~58%.
                 self._busy_label = 'Ya tengo una primera respuesta. Estoy viendo si conviene apoyarme en otra herramienta o seguir por aqui.'
-                self._set_autonomy_activity_override(
-                    visible=True,
-                    title='Evaluando autonomia',
-                    status='active',
-                    stage='decidiendo si escalo o sigo local',
-                    progress=0.56,
-                    detail='Ya resolvi la primera respuesta local. Ahora contrasto gobernanza, evidencia y objetivo persistente antes de cerrar la respuesta.',
-                    tool='motor local',
-                    next_step='Si la evidencia lo pide, abrire Codex, ChatGPT, Claude u Ollama con el contexto redactado.',
-                    learning_note='La respuesta local aun puede enriquecerse con consulta externa antes de consolidarse.',
-                    mode='local',
-                )
                 self.dataChanged.emit()
-                self._process_ui_events()
-                autonomy_result = self._maybe_run_autonomous_evolution(adaptive_payload, source='chat')
-                if autonomy_result is None:
-                    self._busy_label = 'Respuesta lista.'
-                self._clear_autonomy_activity_override()
+                _ap = dict(adaptive_payload)
+                def _autonomy_worker() -> None:
+                    try:
+                        autonomy_result = self._maybe_run_autonomous_evolution(_ap, source='chat')
+                        if autonomy_result is None:
+                            self._busy_label = 'Respuesta lista.'
+                    except Exception as exc:
+                        logger.warning('autonomy evaluation failed: %s', exc)
+                        self._busy_label = 'Respuesta lista.'
+                    finally:
+                        self._clear_autonomy_activity_override()
+                        self._working = False
+                        self._set_live_status('idle')
+                        self.dataChanged.emit()
+                threading.Thread(target=_autonomy_worker, daemon=True).start()
+                # Return early so the code below (self._working = False)
+                # does NOT run — the worker thread handles cleanup.
+                self._update_progress_cards()
+                self._update_evolution_snapshot()
+                self._agent_cards = self._build_agent_cards()
+                threading.Thread(target=self._refresh_development_packet, daemon=True).start()
+                self.dataChanged.emit()
+                return
         elif task_name == 'adaptive_action':
             self._clear_autonomy_activity_override()
             session_payload = dict(payload)
@@ -6200,9 +7979,19 @@ class ControlCenterViewModel(QObject):
             self._working = False
         self._update_progress_cards()
         self._update_evolution_snapshot()
-        self._agent_cards = self._build_agent_cards()
-        self._refresh_development_packet()
-        self._refresh_autonomy_dock()
+        try:
+            self._agent_cards = self._build_agent_cards()
+        except Exception:
+            pass
+        if task_name != 'provider_health':
+            try:
+                self._refresh_development_packet()
+            except Exception:
+                pass
+        try:
+            self._refresh_autonomy_dock()
+        except Exception:
+            pass
         self.dataChanged.emit()
 
     @Slot(str, str)
@@ -6218,7 +8007,6 @@ class ControlCenterViewModel(QObject):
             self._provider_refreshing = False
         else:
             self._working = False
-        self._busy_label = visible_message
         self._update_evolution_snapshot()
         self._diagnostic_text = (
             'Ultimo error\n'
@@ -6231,8 +8019,15 @@ class ControlCenterViewModel(QObject):
             f"Sesion adaptativa: {self._adaptive_session_id or 'n/d'}\n"
             f"Detalle: {message}"
         )
-        self._refresh_development_packet()
-        self._refresh_autonomy_dock()
+        try:
+            self._refresh_development_packet()
+        except Exception:
+            pass
+        try:
+            self._refresh_autonomy_dock()
+        except Exception:
+            pass
+        self._busy_label = visible_message
         self.dataChanged.emit()
 
     def _build_provider_diagnostic(self) -> str:
@@ -6248,12 +8043,12 @@ class ControlCenterViewModel(QObject):
         if active_title:
             lines.append(f"Objetivo activo: {active_title} | estado {goal_context.get('status') or 'pending'} | progreso {float(goal_context.get('progress') or 0.0):.2f}")
         for card in self._provider_cards:
-            lines.append(f"- {card['provider_name']}: {card['status']} | {card['detail']}")
+            lines.append(f"- {card.get('provider_name', '')}: {card.get('status', '')} | {card.get('detail', '')}")
         assistant_cards = self._assistant_tool_cards()
         if assistant_cards:
             lines.append('Asistentes y vias externas')
             for card in assistant_cards:
-                lines.append(f"- {card['name']}: {card['status']} | {card['detail']}")
+                lines.append(f"- {card.get('name', '')}: {card.get('status', '')} | {card.get('detail', '')}")
         return '\n'.join(lines)
 
     chatMessages = Property(list, get_chat_messages, notify=dataChanged)
@@ -6516,7 +8311,6 @@ class ControlCenterViewModel(QObject):
         get_last_self_audit_summary,
         notify=dataChanged,
     )
-
 
 
 

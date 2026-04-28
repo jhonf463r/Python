@@ -42,16 +42,38 @@ Regla operativa:
 - `WorldModelSnapshot`: panorama operativo vivo del sistema, herramientas, red, ventanas y bloqueos
 - `UniversalPerceptionSignal`: observacion puntual de programa o pagina
 
+### Cloud Reasoning Y Auditoria De Decisiones
+- `CloudReasoningPlannerService`: genera planes multi-paso usando modelos cloud (Gemini → Groq → Ollama)
+- `DecisionAuditTrail`: registra cada decision cloud (proveedor, latencia, confianza, resultado, tendencia) en `data/evolution/decision_audit/decisions.jsonl`. Es SALIDA del framework y ENTRADA de la metacognicion — no es un servicio independiente
+- `ApiKeyDiscoveryService`: descubre, prueba, compara y monitorea API keys de proveedores cloud
+
 ### Aprendizaje, Contexto Y Revision
-- `ExperimentLab`: compara rutas, asistentes y configuraciones
+- `ExperimentLab`: compara rutas, asistentes y configuraciones (incluyendo `domain=CLOUD_REASONING` para proveedores cloud)
 - `StrategySelector`: recomienda rutas por historial y evidencia
 - `AdaptiveWeightLayer`: ajusta preferencia futura con base en resultados reales
 - `TaskOutcomeRecorder`: cierra el loop de aprendizaje desde la ejecucion normal
-- `PortableContextService`: exporta contexto comprimido y portable para nuevas sesiones
-- `OperationalSelfExaminationService`: revisa patrones repetidos, degradaciones y ajustes recomendados
+- `PortableContextService`: exporta contexto comprimido y portable para nuevas sesiones (incluye seccion `cloud_reasoning` con health score, trends y recomendaciones)
+- `OperationalSelfExaminationService`: revisa patrones repetidos, degradaciones y ajustes recomendados (incluye `_cloud_reasoning_findings()` que lee el audit trail)
 - `ia_trace_summary`: resumen de que IA o configuracion rindio mejor
 - `comparison_scope_key`: agrupa problemas comparables para evaluar ganadores reales
 - `adaptive_learning_summary`, `learned_patterns`, `validation_summary`: resumen operativo reusable
+
+### Conciencia De Estimulos Y Regulacion Cognitiva
+El sistema regula su profundidad de procesamiento segun la presion de recursos:
+- `_assess_resource_pressure()` en Orchestrator y ValidationCycle lee `EnvironmentRiskSignal` y clasifica presion (CRITICAL, HIGH, normal)
+- Bajo presion CRITICAL: se omite comparacion paralela de IAs y se inhibe auto-ejecucion de propuestas
+- Bajo presion HIGH: solo se ejecutan propuestas con confianza >= 0.7 (mas selectivo)
+- Sin presion: se activa cognicion profunda diferida en `OperationalSelfExaminationService` (cross-correlacion de fallos, deteccion de tendencias, decay de estrategias)
+- El `sync_pulse` integra conscientemente risk signals, propuestas y recomendaciones (funcion talamica)
+- El estado de presion se deposita en `context.metadata['resource_pressure']` para que downstream lo observe
+
+### Meta-Observacion Continua Y Conciencia Temporal
+El sistema se observa a si mismo en background y detecta anomalias temporales:
+- `_background_decision_review_findings()` en OSES lee `DecisionAuditTrail` y detecta: proveedores con tasa de exito baja, decisiones de baja confianza que fallan, y errores que se repiten sin correccion
+- `_temporal_awareness_findings()` en OSES detecta: anomalias de latencia (z-score > 2.0), regresion de latencia (runs cada vez mas lentos), y operaciones estancadas (> 5 min sin completar)
+- `_deep_analysis_queue_findings()` en OSES (solo bajo carga baja) ejecuta analisis estadistico diferido: EMA drift detection, fallos correlacionados entre proveedores, y outliers de latencia via IQR
+- `_record_task_timing()` y `_check_temporal_anomaly()` en Orchestrator registran el tiempo de cada tarea por intent_key y depositan `temporal_anomaly` en session metadata cuando z-score > 2.0
+- Estos mecanismos extienden servicios existentes (OSES, Orchestrator) sin crear nuevos servicios ni otro cerebro
 
 ### Sandbox Y Validacion
 - `SandboxExperimentService`: valida cambios o rutas candidatas sin tocar el sistema vivo
@@ -228,18 +250,102 @@ Infra de arranque operativo para el usuario:
   ``$ErrorActionPreference`` localmente alrededor de esa llamada para no
   matarse antes de leer el exit code.
 
+## Principio Central De Autonomia — UNA SOLA VENTANA
+
+IABV es **una unica ventana** con la que el usuario interactua al prender
+su laptop. Todo lo demas lo hace el programa solo.
+
+Reglas absolutas:
+1. **El usuario NUNCA debe abrir PowerShell para configurar tokens.** Si
+   falta un secreto, IABV abre el browser a la pagina correcta (GitHub
+   settings, Devin API keys, etc.) y le pide al usuario que pegue el
+   token en un dialogo dentro de la UI. IABV lo guarda automaticamente
+   en ``~/.iabv_secrets.ps1`` via ``save_secret_to_profile()``.
+2. **El usuario NUNCA debe instalar herramientas manualmente.** Si falta
+   algo (gh, cloudflared, paquete pip), IABV lo instala solo. Si necesita
+   admin, lo explica en la UI y ofrece un boton para elevacion.
+3. **El usuario NUNCA debe editar archivos de configuracion.** Todo se
+   configura desde la UI o se auto-detecta.
+4. **Cada sesion de agente debe entender este principio.** No sugerir al
+   usuario que ejecute comandos manuales, edite archivos, o copie tokens
+   en una terminal. Si el agente necesita algo del usuario, lo pide via
+   la UI de IABV o via un mecanismo automatico (device-flow, browser).
+
+Funciones clave para autonomia de secretos:
+- ``auto_correction_engine.auto_provision_missing_secrets()``: detecta
+  secretos faltantes y abre el browser automaticamente para crearlos.
+- ``auto_correction_engine.save_secret_to_profile(name, value)``: guarda
+  un token en ``~/.iabv_secrets.ps1`` y lo activa en ``os.environ``.
+  Llamado desde la UI cuando el usuario pega un token.
+- ``auto_correction_engine._SECRET_PROVIDERS``: mapa de patrones de
+  nombre de secreto a URLs de creacion (GitHub, Devin, OpenAI, etc.).
+
+El bootstrap desde PowerShell (``iabv_bootstrap.ps1``) existe como
+fallback para la primera instalacion o maquinas sin UI. Pero una vez
+que la UI esta corriendo, **todo pasa por la ventana**.
+
+## Contrato De Pre-Scan Metacognitivo
+
+**OBLIGATORIO antes de modificar, planificar o evolucionar codigo.**
+
+Cualquier agente (Devin, Codex, Claude, ChatGPT, o el propio IABV) debe
+leer el panorama completo antes de tocar el codigo. Esto previene:
+- duplicar logica que ya existe en los algoritmos de metacognicion
+- romper la cadena de retroalimentacion entre servicios
+- crear codigo aparte que deberia estar integrado en OSES, ExperimentLab o ValidationCycle
+
+### Lecturas obligatorias antes de planificar cambios
+
+1. **Audit trail**: `DecisionAuditTrail.self_examination_summary()` — estado de salud cloud, tendencias por proveedor, recomendaciones
+2. **OSES**: `OperationalSelfExaminationService.current_review()` — hallazgos de degradacion, patrones repetidos, ajustes previos y si funcionaron
+3. **Contexto portable**: `PortableContextService.build_package()` — incluye seccion `cloud_reasoning` con health score y trends
+4. **Ciclo de validacion**: `AutonomousValidationCycleService` — estado actual de experimentos sandbox y candidatos en evaluacion
+5. **ExperimentLab**: comparaciones activas, especialmente `domain=CLOUD_REASONING` para proveedores cloud
+
+### Pipeline de decision cloud (no romper esta cadena)
+
+```
+CloudReasoningPlanner.generate_plan()
+    → mide latencia, confianza, proveedor
+    → DecisionAuditTrail.record() [SALIDA del framework]
+    → OSES._cloud_reasoning_findings() [ENTRADA a metacognicion]
+    → PortableContextService._cloud_reasoning_section() [exporta al contexto]
+    → proxima sesion lee contexto → panorama completo
+    → AdaptiveTaskOrchestrator.generate_cloud_plan() [pre-scan: lee audit + OSES]
+
+AutonomousValidationCycle._cloud_provider_health_pass()
+    → ApiKeyDiscoveryService.compare_all()
+    → ExperimentLab.run_experiment(domain=CLOUD_REASONING) [comparacion real]
+    → DecisionAuditTrail.record(phase=KEY_VALIDATION)
+    → StrategySelector + AdaptiveWeightLayer [razonan sobre calidad]
+```
+
+### Regla: no crear codigo aparte
+
+Si necesitas agregar logica de monitoreo, comparacion o decision sobre
+proveedores cloud:
+- NO crees un servicio nuevo. Usa `DecisionAuditTrail` para registrar,
+  `OSES._cloud_reasoning_findings()` para analizar, `ExperimentLab` para
+  comparar, y `PortableContextService` para exportar.
+- Si el audit trail no tiene un campo que necesitas, extiende
+  `DecisionRecord` (no crees otro modelo).
+- Si OSES no detecta un patron que importa, agrega un hallazgo en
+  `_cloud_reasoning_findings()` (no crees otro analizador).
+
 ## Forma De Trabajo En Sesiones Nuevas
 1. lee este archivo primero
-2. inspecciona `bootstrap.py` y los archivos del slice relevante
-3. identifica contratos involucrados
-4. busca el cambio minimo que preserve arquitectura
-5. valida con pruebas focalizadas y luego regresion razonable
-6. si algo falla, diagnostica y corrige antes de seguir
-7. reporta resultado, pruebas, riesgos y `UNRESOLVED`
+2. **ejecuta el pre-scan metacognitivo** (ver seccion anterior) para entender el estado actual del sistema antes de planificar cambios
+3. inspecciona `bootstrap.py` y los archivos del slice relevante
+4. identifica contratos involucrados
+5. busca el cambio minimo que preserve arquitectura
+6. valida con pruebas focalizadas y luego regresion razonable
+7. si algo falla, diagnostica y corrige antes de seguir
+8. reporta resultado, pruebas, riesgos y `UNRESOLVED`
 
 ## Prompt De Arranque
 Al empezar una sesion nueva:
 - lee `AGENTS.md`
+- ejecuta el pre-scan metacognitivo: lee audit trail, OSES findings, contexto portable y estado de validacion
 - despues inspecciona los archivos relevantes del repo
 - usa primero estado vivo y contratos reales
 - evita releer todo el historial si `PortableContextService` o `OperationalSelfExaminationService` ya condensan lo necesario

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import math
+import time
 from collections import Counter, defaultdict
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -59,6 +61,8 @@ class OperationalSelfExaminationService:
         # encarnamiento en ``metadata['embodiment_violations']`` sin
         # cambiar el contrato del SelfExaminationSnapshot.
         self.embodiment_violation_provider: Any | None = None
+        self.decision_audit_trail: Any | None = None
+        self.code_audit_trail: Any | None = None
         self._current_review: SelfExaminationSnapshot | None = None
 
     def current_review(
@@ -102,6 +106,516 @@ class OperationalSelfExaminationService:
             'markdown_path': resolved.markdown_path,
         }
 
+    def _is_low_load(self, world: WorldModelSnapshot) -> bool:
+        """Determine if the system is under low load (idle or near-idle).
+
+        Low load is detected when:
+        - No CRITICAL or HIGH risk signals from ``EnvironmentSelfModel``
+          (fetched via ``world_model_service.environment_self_awareness_service``)
+        - The world model has <= 3 active ``block_records``
+
+        When load is low, ``build_review`` activates deferred deep
+        cognition: additional analysis passes that are too expensive
+        to run under normal or high load.
+
+        Note: ``risk_signals`` lives on ``EnvironmentSelfModel``, NOT on
+        ``WorldModelSnapshot``.  ``WorldModelSnapshot`` has ``block_records``
+        (list[OperationalBlockRecord]) and ``detected_blocks`` (list[str]).
+        """
+        # Check risk signals from EnvironmentSelfModel (if accessible).
+        try:
+            wm_service = self.world_model_service
+            if wm_service is not None:
+                env_service = getattr(wm_service, 'environment_self_awareness_service', None)
+                if env_service is not None and hasattr(env_service, 'current_model'):
+                    env_model = env_service.current_model()
+                    if env_model is not None:
+                        for signal in (env_model.risk_signals or []):
+                            severity = str(getattr(signal, 'severity', '') or '').upper()
+                            if severity in {'CRITICAL', 'HIGH'}:
+                                return False
+        except Exception:
+            pass
+
+        # Check operational blocks from WorldModelSnapshot.block_records.
+        active_blocks = [
+            b for b in (world.block_records or [])
+            if str(getattr(b, 'status', '') or '') == 'active'
+        ]
+        if len(active_blocks) > 3:
+            return False
+        return True
+
+    def _deferred_deep_cognition_findings(
+        self,
+        *,
+        experiment_runs: list[ExperimentRun],
+        recent_runs: list[RunRecord],
+        findings_so_far: list[SelfExaminationFinding],
+    ) -> list[SelfExaminationFinding]:
+        """Deep cognition pass — only runs when the system is under low load.
+
+        This is the "when I have free time, think deeply" mechanism. It
+        performs analysis that would be too expensive under normal load:
+
+        1. Cross-correlation between failure patterns across different IAs
+        2. Long-window trend detection (are things getting better or worse?)
+        3. Strategy effectiveness decay (is a once-good strategy degrading?)
+
+        These findings are tagged with ``source='deferred_deep_cognition'``
+        so downstream consumers know they came from a deep analysis pass.
+        """
+        findings: list[SelfExaminationFinding] = []
+
+        # 1. Cross-correlation: if two different IAs fail on the same intent
+        # pattern, the problem is likely in the intent/context, not the IA.
+        if len(experiment_runs) >= 6:
+            intent_failures: dict[str, set[str]] = {}
+            for run in experiment_runs:
+                if bool(run.success):
+                    continue
+                intent_key = str(getattr(run, 'intent_key', '') or run.domain or '').strip()
+                kind = str(run.assistant_kind or '').strip().lower()
+                if intent_key and kind:
+                    intent_failures.setdefault(intent_key, set()).add(kind)
+            for intent_key, failing_kinds in intent_failures.items():
+                if len(failing_kinds) >= 2:
+                    findings.append(SelfExaminationFinding(
+                        category='cross_correlation_failure',
+                        severity=IssueSeverity.HIGH,
+                        title=f'Multiples IAs fallan en "{intent_key}"',
+                        summary=(
+                            f'{len(failing_kinds)} IAs distintas ({", ".join(sorted(failing_kinds))}) '
+                            f'fallan en el mismo patron de intent. El problema probablemente '
+                            f'esta en el contexto o la clasificacion, no en las IAs.'
+                        ),
+                        source_refs=['deferred_deep_cognition'],
+                    ))
+
+        # 2. Trend detection: compare success rate of last N runs vs previous N.
+        if len(recent_runs) >= 10:
+            mid = len(recent_runs) // 2
+            older_runs = recent_runs[mid:]
+            newer_runs = recent_runs[:mid]
+            older_success = sum(1 for r in older_runs if r.status == RunStatus.SUCCESS) / max(len(older_runs), 1)
+            newer_success = sum(1 for r in newer_runs if r.status == RunStatus.SUCCESS) / max(len(newer_runs), 1)
+            delta = newer_success - older_success
+            if delta <= -0.15:
+                findings.append(SelfExaminationFinding(
+                    category='trend_degradation',
+                    severity=IssueSeverity.HIGH,
+                    title='Tendencia de degradacion detectada',
+                    summary=(
+                        f'La tasa de exito cayo de {older_success:.0%} '
+                        f'a {newer_success:.0%} (delta={delta:+.0%}). '
+                        f'Revisar cambios recientes en configuracion o entorno.'
+                    ),
+                    source_refs=['deferred_deep_cognition'],
+                ))
+            elif delta >= 0.15:
+                findings.append(SelfExaminationFinding(
+                    category='trend_improvement',
+                    severity=IssueSeverity.LOW,
+                    title='Tendencia de mejora detectada',
+                    summary=(
+                        f'La tasa de exito subio de {older_success:.0%} '
+                        f'a {newer_success:.0%} (delta={delta:+.0%}). '
+                        f'Los ajustes recientes estan funcionando.'
+                    ),
+                    source_refs=['deferred_deep_cognition'],
+                ))
+
+        # 3. Strategy effectiveness decay: a strategy that was good but is
+        # now producing mixed results.
+        if len(experiment_runs) >= 8:
+            kind_runs: dict[str, list[ExperimentRun]] = {}
+            for run in experiment_runs:
+                kind = str(run.assistant_kind or '').strip().lower()
+                if kind:
+                    kind_runs.setdefault(kind, []).append(run)
+            for kind, runs in kind_runs.items():
+                if len(runs) < 4:
+                    continue
+                mid = len(runs) // 2
+                older = runs[mid:]
+                newer = runs[:mid]
+                older_rate = sum(1 for r in older if bool(r.success)) / max(len(older), 1)
+                newer_rate = sum(1 for r in newer if bool(r.success)) / max(len(newer), 1)
+                if older_rate >= 0.6 and newer_rate <= 0.35:
+                    findings.append(SelfExaminationFinding(
+                        category='strategy_decay',
+                        severity=IssueSeverity.MEDIUM,
+                        title=f'Estrategia "{kind}" en decadencia',
+                        summary=(
+                            f'{kind} tenia {older_rate:.0%} exito y ahora tiene '
+                            f'{newer_rate:.0%}. Considerar reclasificar o '
+                            f'investigar cambios en el proveedor.'
+                        ),
+                        source_refs=['deferred_deep_cognition'],
+                    ))
+
+        return findings[:3]
+
+    # ------------------------------------------------------------------
+    # Background decision review (CognitiveMonitor) — extends OSES with
+    # continuous observation of every decision via DecisionAuditTrail.
+    # Evaluates in each review whether the chosen route was optimal by
+    # comparing the decision's outcome against the historical best for
+    # that intent/provider combination.
+    # ------------------------------------------------------------------
+
+    def _background_decision_review_findings(
+        self,
+        *,
+        experiment_runs: list[ExperimentRun],
+    ) -> list[SelfExaminationFinding]:
+        """Background meta-observer: review recent decisions for sub-optimal choices.
+
+        Reads the last N decisions from ``DecisionAuditTrail`` and checks:
+        1. Whether a decision used a provider that historically underperforms
+           for that phase (provider mismatch).
+        2. Whether decisions with low confidence (<0.4) led to failures
+           (confidence calibration).
+        3. Whether the same error repeats across recent decisions (error
+           pattern stagnation).
+        """
+        findings: list[SelfExaminationFinding] = []
+        trail = self.decision_audit_trail
+        if trail is None:
+            return findings
+
+        try:
+            recent = trail.load_recent(limit=50)
+        except Exception:
+            return findings
+
+        if len(recent) < 5:
+            return findings
+
+        # 1. Provider mismatch: provider used but historically worse.
+        provider_outcomes: dict[str, list[bool]] = {}
+        for entry in recent:
+            pid = str(entry.get('provider_id') or '').strip()
+            outcome = str(entry.get('outcome') or '')
+            if pid:
+                provider_outcomes.setdefault(pid, []).append(outcome == 'success')
+
+        for pid, outcomes in provider_outcomes.items():
+            if len(outcomes) < 3:
+                continue
+            rate = sum(outcomes) / len(outcomes)
+            if rate < 0.35:
+                findings.append(SelfExaminationFinding(
+                    category='background_provider_underperformance',
+                    severity=IssueSeverity.MEDIUM,
+                    title=f'Proveedor "{pid}" con tasa de exito baja ({rate:.0%})',
+                    summary=(
+                        f'{pid} tuvo exito en solo {sum(outcomes)}/{len(outcomes)} '
+                        f'decisiones recientes. Considerar reclasificar o degradar '
+                        f'su prioridad en StrategySelector.'
+                    ),
+                    source_refs=['background_decision_review', 'DecisionAuditTrail'],
+                ))
+
+        # 2. Confidence calibration: low-confidence decisions that failed.
+        low_conf_failures = [
+            e for e in recent
+            if float(e.get('confidence') or 1.0) < 0.4
+            and str(e.get('outcome') or '') in ('failed', 'timeout', 'rate_limited')
+        ]
+        if len(low_conf_failures) >= 3:
+            findings.append(SelfExaminationFinding(
+                category='background_confidence_miscalibration',
+                severity=IssueSeverity.HIGH,
+                title=f'{len(low_conf_failures)} decisiones de baja confianza fallaron',
+                summary=(
+                    f'El sistema tomo {len(low_conf_failures)} decisiones con '
+                    f'confianza <0.4 que terminaron en fallo. El umbral minimo '
+                    f'de confianza deberia elevarse o la ruta deberia bloquearse.'
+                ),
+                source_refs=['background_decision_review', 'DecisionAuditTrail'],
+            ))
+
+        # 3. Error stagnation: same error_detail repeating.
+        error_counts: Counter[str] = Counter()
+        for entry in recent[-20:]:
+            err = str(entry.get('error_detail') or '').strip()[:80]
+            if err:
+                error_counts[err] += 1
+        for err_msg, count in error_counts.most_common(2):
+            if count >= 3:
+                findings.append(SelfExaminationFinding(
+                    category='background_error_stagnation',
+                    severity=IssueSeverity.HIGH,
+                    title=f'Error repetido {count} veces sin correccion',
+                    summary=(
+                        f'El error "{err_msg}" se repite {count} veces en las '
+                        f'ultimas 20 decisiones. El sistema no esta corrigiendo '
+                        f'este patron — requiere intervencion o ruta alternativa.'
+                    ),
+                    source_refs=['background_decision_review', 'DecisionAuditTrail'],
+                ))
+
+        return findings[:3]
+
+    # ------------------------------------------------------------------
+    # TemporalAwareness — conciencia del tiempo y detección de anomalías
+    # temporales. Extiende OSES para detectar tareas que tardan mucho más
+    # de lo esperado, comparando latencias contra promedios históricos.
+    # ------------------------------------------------------------------
+
+    def _temporal_awareness_findings(
+        self,
+        *,
+        recent_runs: list[RunRecord],
+        experiment_runs: list[ExperimentRun],
+    ) -> list[SelfExaminationFinding]:
+        """Detect temporal anomalies in task execution.
+
+        Analyses:
+        1. Tasks that took significantly longer than the historical median
+           for their intent/kind (z-score > 2.0).
+        2. Increasing latency trend across the last N runs (regression).
+        3. Stalled operations: runs that started but never completed within
+           a reasonable window.
+        """
+        findings: list[SelfExaminationFinding] = []
+
+        # 1. Latency anomaly detection via z-score on experiment runs.
+        kind_latencies: dict[str, list[float]] = {}
+        for run in experiment_runs:
+            kind = str(run.assistant_kind or '').strip().lower()
+            latency = float(
+                getattr(run, 'latency_ms', 0)
+                or getattr(getattr(run, 'metrics', None), 'execution_ms', 0)
+                or 0
+            )
+            if kind and latency > 0:
+                kind_latencies.setdefault(kind, []).append(latency)
+
+        for kind, latencies in kind_latencies.items():
+            if len(latencies) < 5:
+                continue
+            last_latency = latencies[0]  # most recent
+            # Exclude the observation under test from the reference
+            # distribution to avoid self-masking the z-score.
+            ref = latencies[1:]
+            if len(ref) < 4:
+                continue
+            mean_lat = sum(ref) / len(ref)
+            if mean_lat <= 0:
+                continue
+            variance = sum((x - mean_lat) ** 2 for x in ref) / len(ref)
+            std_dev = math.sqrt(variance) if variance > 0 else 0
+            if std_dev <= 0:
+                continue
+            z_score = (last_latency - mean_lat) / std_dev
+            if z_score > 2.0:
+                findings.append(SelfExaminationFinding(
+                    category='temporal_latency_anomaly',
+                    severity=IssueSeverity.MEDIUM if z_score < 3.0 else IssueSeverity.HIGH,
+                    title=f'Anomalia temporal en "{kind}" (z={z_score:.1f})',
+                    summary=(
+                        f'La ultima ejecucion de {kind} tardo {last_latency:.0f}ms '
+                        f'vs media historica de {mean_lat:.0f}ms (z-score={z_score:.1f}). '
+                        f'Posible degradacion del proveedor o sobrecarga.'
+                    ),
+                    source_refs=['temporal_awareness'],
+                ))
+
+        # 2. Latency trend: are runs getting progressively slower?
+        if len(experiment_runs) >= 10:
+            all_latencies = [
+                float(
+                    getattr(r, 'latency_ms', 0)
+                    or getattr(getattr(r, 'metrics', None), 'execution_ms', 0)
+                    or 0
+                )
+                for r in experiment_runs[:20]
+                if float(
+                    getattr(r, 'latency_ms', 0)
+                    or getattr(getattr(r, 'metrics', None), 'execution_ms', 0)
+                    or 0
+                ) > 0
+            ]
+            if len(all_latencies) >= 10:
+                mid = len(all_latencies) // 2
+                newer_avg = sum(all_latencies[:mid]) / mid
+                older_avg = sum(all_latencies[mid:]) / (len(all_latencies) - mid)
+                if older_avg > 0 and newer_avg > older_avg * 1.5:
+                    findings.append(SelfExaminationFinding(
+                        category='temporal_latency_regression',
+                        severity=IssueSeverity.MEDIUM,
+                        title='Regresion de latencia detectada',
+                        summary=(
+                            f'La latencia promedio reciente ({newer_avg:.0f}ms) es '
+                            f'{newer_avg / older_avg:.1f}x mayor que la historica '
+                            f'({older_avg:.0f}ms). El sistema se esta volviendo mas lento.'
+                        ),
+                        source_refs=['temporal_awareness'],
+                    ))
+
+        # 3. Stalled operations: runs with status != success/failed that
+        # have been running for too long (> 5 min based on created_at).
+        now = utc_now()
+        stalled_count = 0
+        for run in recent_runs[:20]:
+            status = run.status
+            if status in (RunStatus.SUCCESS, RunStatus.FAILED):
+                continue
+            created = getattr(run, 'created_at', None) or getattr(run, 'created_at_utc', None)
+            if created is None:
+                continue
+            if isinstance(created, str):
+                try:
+                    created = datetime.fromisoformat(created)
+                except (ValueError, TypeError):
+                    continue
+            if not hasattr(created, 'tzinfo') or created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            elapsed = (now - created).total_seconds()
+            if elapsed > 300:  # > 5 minutes
+                stalled_count += 1
+
+        if stalled_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='temporal_stalled_operations',
+                severity=IssueSeverity.HIGH,
+                title=f'{stalled_count} operaciones estancadas (>5 min)',
+                summary=(
+                    f'{stalled_count} runs llevan mas de 5 minutos sin completar. '
+                    f'Posible bloqueo o recurso no disponible. Considerar timeout '
+                    f'automatico o abort de sesiones zombi.'
+                ),
+                source_refs=['temporal_awareness'],
+            ))
+
+        return findings[:3]
+
+    # ------------------------------------------------------------------
+    # DeepAnalysisQueue — análisis estadístico profundo diferido.
+    # Cuando el sistema está idle, ejecuta análisis más costosos:
+    # correlaciones, distribuciones, z-scores globales, moving averages.
+    # Complementa _deferred_deep_cognition_findings con estadística real.
+    # ------------------------------------------------------------------
+
+    def _deep_analysis_queue_findings(
+        self,
+        *,
+        experiment_runs: list[ExperimentRun],
+        recent_runs: list[RunRecord],
+    ) -> list[SelfExaminationFinding]:
+        """Statistical deep analysis — only runs under low load.
+
+        Performs:
+        1. Moving average of success rate with exponential smoothing
+           to detect subtle drift before it becomes a visible trend.
+        2. Provider correlation: which providers succeed/fail together
+           (indicating shared infrastructure issues vs provider-specific).
+        3. Anomaly detection via IQR on latencies to surface outliers
+           that z-score might miss.
+        """
+        findings: list[SelfExaminationFinding] = []
+
+        # 1. Exponential moving average (EMA) drift detection.
+        if len(recent_runs) >= 15:
+            alpha = 0.3  # smoothing factor
+            successes = [
+                1.0 if r.status == RunStatus.SUCCESS else 0.0
+                for r in reversed(recent_runs[:30])
+            ]
+            ema = successes[0]
+            for val in successes[1:]:
+                ema = alpha * val + (1 - alpha) * ema
+            overall_rate = sum(successes) / len(successes)
+            if ema < overall_rate - 0.15 and ema < 0.5:
+                findings.append(SelfExaminationFinding(
+                    category='deep_analysis_ema_drift',
+                    severity=IssueSeverity.MEDIUM,
+                    title=f'EMA de exito en declive ({ema:.0%} vs {overall_rate:.0%} global)',
+                    summary=(
+                        f'El promedio movil exponencial de exito (alpha={alpha}) '
+                        f'esta en {ema:.0%}, por debajo de la media global '
+                        f'({overall_rate:.0%}). Esto indica degradacion reciente '
+                        f'que aun no se refleja en metricas brutas.'
+                    ),
+                    source_refs=['deep_analysis_queue'],
+                ))
+
+        # 2. Provider success correlation: if two providers fail in the
+        # same time window, they may share an infrastructure issue.
+        trail = self.decision_audit_trail
+        if trail is not None:
+            try:
+                entries = trail.load_recent(limit=40)
+                if len(entries) >= 10:
+                    window_failures: dict[str, list[str]] = {}
+                    for entry in entries:
+                        ts = str(entry.get('timestamp_utc') or '')[:13]  # hour-level bucket
+                        outcome = str(entry.get('outcome') or '')
+                        pid = str(entry.get('provider_id') or '')
+                        if outcome in ('failed', 'timeout') and pid and ts:
+                            window_failures.setdefault(ts, []).append(pid)
+                    correlated_windows = [
+                        (ts, pids) for ts, pids in window_failures.items()
+                        if len(set(pids)) >= 2
+                    ]
+                    if len(correlated_windows) >= 2:
+                        all_providers = set()
+                        for _, pids in correlated_windows:
+                            all_providers.update(pids)
+                        findings.append(SelfExaminationFinding(
+                            category='deep_analysis_correlated_failures',
+                            severity=IssueSeverity.HIGH,
+                            title=f'Fallos correlacionados entre {len(all_providers)} proveedores',
+                            summary=(
+                                f'{len(correlated_windows)} ventanas temporales muestran '
+                                f'fallos simultaneos en {", ".join(sorted(all_providers))}. '
+                                f'Posible causa comun: red, DNS, o saturacion del sistema.'
+                            ),
+                            source_refs=['deep_analysis_queue', 'DecisionAuditTrail'],
+                        ))
+            except Exception:
+                pass
+
+        # 3. IQR outlier detection on latencies.
+        all_latencies = sorted(
+            float(
+                getattr(r, 'latency_ms', 0)
+                or getattr(getattr(r, 'metrics', None), 'execution_ms', 0)
+                or 0
+            )
+            for r in experiment_runs
+            if float(
+                getattr(r, 'latency_ms', 0)
+                or getattr(getattr(r, 'metrics', None), 'execution_ms', 0)
+                or 0
+            ) > 0
+        )
+        if len(all_latencies) >= 10:
+            q1_idx = len(all_latencies) // 4
+            q3_idx = 3 * len(all_latencies) // 4
+            q1 = all_latencies[q1_idx]
+            q3 = all_latencies[q3_idx]
+            iqr = q3 - q1
+            upper_fence = q3 + 1.5 * iqr
+            outliers = [lat for lat in all_latencies if lat > upper_fence]
+            if len(outliers) >= 3:
+                findings.append(SelfExaminationFinding(
+                    category='deep_analysis_latency_outliers',
+                    severity=IssueSeverity.MEDIUM,
+                    title=f'{len(outliers)} outliers de latencia (>{upper_fence:.0f}ms)',
+                    summary=(
+                        f'{len(outliers)} ejecuciones exceden el fence superior '
+                        f'IQR de {upper_fence:.0f}ms (Q1={q1:.0f}, Q3={q3:.0f}, '
+                        f'IQR={iqr:.0f}). Estas ejecuciones anomalas podrian '
+                        f'estar enmascarando problemas intermitentes.'
+                    ),
+                    source_refs=['deep_analysis_queue'],
+                ))
+
+        return findings[:3]
+
     def build_review(self) -> SelfExaminationSnapshot:
         now = utc_now()
         previous_review = self._load_latest_review()
@@ -132,6 +646,7 @@ class OperationalSelfExaminationService:
         )
         findings.extend(self._weak_correction_findings(scenario_runs=scenario_runs))
         findings.extend(self._token_rotation_findings())
+        findings.extend(self._cloud_reasoning_findings())
         findings.extend(self._chat_research_backlog_findings())
         # Cognitive meta-patterns: fijación, incubación, atractores, ensambles
         findings.extend(
@@ -863,6 +1378,152 @@ class OperationalSelfExaminationService:
             )
         return findings
 
+    def _cloud_reasoning_findings(self) -> list[SelfExaminationFinding]:
+        """Analyze cloud reasoning decision trail for metacognitive findings.
+
+        Reads the ``DecisionAuditTrail`` and produces findings about:
+        - Provider degradation (success rate dropping)
+        - Rate limiting patterns (provider over-used)
+        - Fallback dependency (always falling back to lower-tier providers)
+        - No functional provider (all keys failing)
+        - Configuration improvement opportunities
+        """
+        audit = getattr(self, 'decision_audit_trail', None)
+        if audit is None:
+            return []
+        try:
+            summary = audit.self_examination_summary()
+        except Exception:
+            return []
+        if summary.get('status') == 'no_data':
+            return []
+
+        findings: list[SelfExaminationFinding] = []
+        trends = summary.get('trends', [])
+        health_score = summary.get('health_score', 0.0)
+        overall_trend = summary.get('overall_trend', 'stable')
+
+        # Finding: overall health degrading
+        if overall_trend == 'degrading' and health_score < 0.7:
+            findings.append(SelfExaminationFinding(
+                category='cloud_reasoning_degradation',
+                title='Cloud reasoning degradandose: exito global bajo',
+                summary=(
+                    f'El health score de cloud reasoning cayo a {health_score:.0%}. '
+                    f'La tendencia general es "degrading". Esto indica que las '
+                    f'configuraciones actuales de proveedores estan rindiendo peor '
+                    f'que antes. Revisar keys, cuotas y considerar rotar proveedores.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.85,
+                recommendation=(
+                    'Ejecutar "revisar api keys" para diagnosticar estado de cada '
+                    'proveedor. Si hay keys expiradas, usar "generar keys" para '
+                    'renovar. Considerar agregar proveedores backup (OpenRouter, '
+                    'Together AI).'
+                ),
+                source_refs=['DecisionAuditTrail'],
+                metadata={'health_score': health_score, 'overall_trend': overall_trend},
+            ))
+
+        for trend in trends:
+            if not isinstance(trend, dict):
+                continue
+            provider_id = trend.get('provider_id', '')
+            success_rate = trend.get('success_rate', 0.0)
+            rate_limited_count = trend.get('rate_limited_count', 0)
+            total_decisions = trend.get('total_decisions', 0)
+            trend_dir = trend.get('trend_direction', 'stable')
+
+            # Finding: specific provider degrading
+            if trend_dir == 'degrading' and total_decisions >= 6:
+                findings.append(SelfExaminationFinding(
+                    category='cloud_provider_degradation',
+                    title=f'Proveedor {provider_id} degradandose',
+                    summary=(
+                        f'{provider_id} tiene exito de {success_rate:.0%} con tendencia '
+                        f'"degrading" sobre {total_decisions} decisiones recientes. '
+                        f'La segunda mitad de las decisiones tiene peor resultado que la primera.'
+                    ),
+                    severity=IssueSeverity.MEDIUM,
+                    confidence=0.78,
+                    recommendation=(
+                        f'Verificar el estado de la API key de {provider_id}. Si '
+                        f'la cuota esta agotada, esperar reinicio diario o rotar '
+                        f'a otro proveedor. Si la key es invalida, renovarla.'
+                    ),
+                    source_refs=['DecisionAuditTrail'],
+                    metadata={'provider_id': provider_id, **trend},
+                ))
+
+            # Finding: heavy rate limiting
+            if total_decisions > 0 and rate_limited_count > total_decisions * 0.3:
+                findings.append(SelfExaminationFinding(
+                    category='cloud_rate_limiting',
+                    title=f'{provider_id} con rate limiting frecuente',
+                    summary=(
+                        f'{provider_id}: {rate_limited_count} de {total_decisions} decisiones '
+                        f'fueron rate-limited. El proveedor esta siendo sobre-utilizado '
+                        f'o la cuota del tier gratuito es insuficiente.'
+                    ),
+                    severity=IssueSeverity.MEDIUM,
+                    confidence=0.82,
+                    recommendation=(
+                        f'Reducir la frecuencia de consultas a {provider_id} o agregar '
+                        f'un proveedor adicional como backup para distribuir la carga. '
+                        f'Considerar OpenRouter o Together AI como alternativas gratuitas.'
+                    ),
+                    source_refs=['DecisionAuditTrail'],
+                    metadata={'provider_id': provider_id, **trend},
+                ))
+
+            # Finding: provider improving (positive reinforcement)
+            if trend_dir == 'improving' and total_decisions >= 6 and success_rate > 0.8:
+                findings.append(SelfExaminationFinding(
+                    category='cloud_provider_improving',
+                    title=f'{provider_id} mejorando: mantener configuracion',
+                    summary=(
+                        f'{provider_id} tiene exito de {success_rate:.0%} con tendencia '
+                        f'"improving". La configuracion actual esta funcionando bien. '
+                        f'Mantener como proveedor principal.'
+                    ),
+                    severity=IssueSeverity.LOW,
+                    confidence=0.80,
+                    recommendation=(
+                        f'Mantener {provider_id} como proveedor principal de cloud '
+                        f'reasoning. Registrar este resultado como referencia baseline '
+                        f'para futuras comparaciones.'
+                    ),
+                    source_refs=['DecisionAuditTrail'],
+                    metadata={'provider_id': provider_id, **trend},
+                ))
+
+        # Finding: no functional provider
+        if trends and not any(
+            isinstance(t, dict) and t.get('success_rate', 0) > 0.5
+            for t in trends
+        ):
+            findings.append(SelfExaminationFinding(
+                category='cloud_no_functional_provider',
+                title='Ningun proveedor cloud con exito aceptable',
+                summary=(
+                    'Ninguno de los proveedores configurados tiene tasa de exito '
+                    'mayor al 50%. Cloud reasoning no esta funcionando de forma '
+                    'confiable. Se necesita diagnostico y posible renovacion de keys.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.90,
+                recommendation=(
+                    'Ejecutar "revisar api keys" para diagnostico completo. '
+                    'Verificar conexion a internet. Renovar keys si es necesario. '
+                    'Considerar agregar multiples proveedores para redundancia.'
+                ),
+                source_refs=['DecisionAuditTrail'],
+                metadata={'trends': trends},
+            ))
+
+        return findings
+
     def _chat_research_backlog_findings(self) -> list[SelfExaminationFinding]:
         """Consume ``data/chat_research_backlog/<session>.jsonl`` y produce
         hallazgos de ``research_gap`` por cada ``kind`` unico con entradas
@@ -988,6 +1649,367 @@ class OperationalSelfExaminationService:
                     },
                 )
             )
+        return findings
+
+    # ------------------------------------------------------------------
+    # Runtime log self-inspection
+    # ------------------------------------------------------------------
+    _LOG_TAIL_LINES = 500
+    _LOG_ANOMALY_PATTERNS: tuple[tuple[str, str, str, str], ...] = (
+        # (substring_to_match, category, title, recommendation)
+        (
+            'multi_source_disagreement',
+            'runtime_noise',
+            'multi_source_disagreement repetido en logs',
+            'El cache de 300s puede no ser suficiente o el MCP polling '
+            'recrea instancias que pierden el cache. Considerar aumentar '
+            'TTL o mover cache a nivel de clase persistente.',
+        ),
+        (
+            'No pude completar la consulta externa',
+            'external_consultation_failure',
+            'Consulta externa fallida detectada en logs',
+            'Revisar si la herramienta externa estaba realmente disponible '
+            'antes de intentar la consulta. Preferir via local cuando el '
+            'tema es interno (secretos, configuracion, metacognicion).',
+        ),
+        (
+            'tool_missing',
+            'tool_availability',
+            'Herramienta faltante reportada en logs',
+            'Verificar si la herramienta faltante es necesaria para el '
+            'flujo actual o si existe un fallback disponible.',
+        ),
+        (
+            'ghost_session_watchdog',
+            'ghost_session',
+            'Watchdog de sesion fantasma se activo',
+            'Una consulta externa excedio el timeout y fue cancelada. '
+            'Investigar por que la herramienta no respondio.',
+        ),
+        (
+            'HTTP Request:',
+            'http_noise',
+            'Ruido excesivo de logs HTTP (httpx)',
+            'Demasiadas lineas de httpx poluciona el log y dificulta '
+            'encontrar hallazgos importantes. Auto-suprimir httpx a '
+            'WARNING cuando exceda el umbral.',
+        ),
+        (
+            'cloudflare_challenge',
+            'cloudflare_blocked',
+            'Sesion bloqueada por Cloudflare challenge',
+            'La sesion aislada no puede pasar la verificacion de Cloudflare. '
+            'El programa deberia usar CDP contra el Chrome del usuario '
+            '(use_browser_session=False) donde ya hay sesion activa.',
+        ),
+        (
+            'wrong_thread',
+            'wrong_thread',
+            'Captura en hilo incorrecto del asistente',
+            'La sesion se abrio pero capturo respuesta de un hilo diferente '
+            'al esperado. Verificar que el thread_key apunte al hilo '
+            'correcto o crear un hilo nuevo dedicado.',
+        ),
+        (
+            'verificacion del sitio',
+            'session_verification_failed',
+            'Sesion no paso verificacion del sitio',
+            'La sesion aislada quedo bloqueada en la pagina de verificacion '
+            'sin poder acceder al chat. Esto indica que se necesita reusar '
+            'la sesion del navegador del usuario, no una sesion aislada.',
+        ),
+        (
+            'adapter_missing',
+            'adapter_missing',
+            'Falta adaptador operativo para fase de ejecucion',
+            'Hay estrategia y contexto listos pero no existe un adaptador '
+            'que ejecute la fase. Verificar ToolRegistry y considerar usar '
+            'un executor local disponible.',
+        ),
+    )
+
+    def _runtime_log_findings(self) -> list[SelfExaminationFinding]:
+        """Read the tail of the runtime log file and detect anomaly patterns.
+
+        This is the core of the "program sees itself" capability: instead
+        of requiring the user to copy-paste logs into the chat, the
+        autoexamination service reads its own log output and produces
+        findings from patterns like repeated errors, ghost sessions,
+        tool disagreements, and failed external consultations.
+        """
+        # Primary path: data/logs/iabv_v15.log (matches configure_logging)
+        log_path = Path(self.workspace_root) / 'data' / 'logs' / 'iabv_v15.log'
+        if not log_path.exists():
+            # Legacy fallback: some old setups used src/data/
+            log_path = Path(self.workspace_root) / 'src' / 'data' / 'iabv_v15.log'
+        if not log_path.exists():
+            log_path = Path(self.workspace_root) / 'iabv_v15.log'
+        if not log_path.exists():
+            return []
+
+        try:
+            with log_path.open('r', encoding='utf-8', errors='replace') as fh:
+                # Read only last N lines to avoid loading huge files
+                lines = fh.readlines()[-self._LOG_TAIL_LINES:]
+        except OSError:
+            return []
+
+        if not lines:
+            return []
+
+        findings: list[SelfExaminationFinding] = []
+        for pattern_str, category, title, recommendation in self._LOG_ANOMALY_PATTERNS:
+            matching_lines = [
+                line.strip() for line in lines
+                if pattern_str in line
+            ]
+            if not matching_lines:
+                continue
+            count = len(matching_lines)
+            severity = IssueSeverity.HIGH if count > 10 else (
+                IssueSeverity.MEDIUM if count > 3 else IssueSeverity.LOW
+            )
+            sample = matching_lines[-3:]  # last 3 occurrences as evidence
+            findings.append(
+                SelfExaminationFinding(
+                    category=category,
+                    title=title,
+                    summary=(
+                        f'Detectadas {count} ocurrencias de "{pattern_str}" '
+                        f'en las ultimas {self._LOG_TAIL_LINES} lineas del log. '
+                        f'Ejemplo reciente: {sample[-1][:200]}'
+                    ),
+                    severity=severity,
+                    confidence=0.9,
+                    recommendation=recommendation,
+                    evidence_refs=[f'log_occurrences={count}'] + [
+                        line[:120] for line in sample
+                    ],
+                    source_refs=['runtime_log', str(log_path)],
+                    metadata={
+                        'pattern': pattern_str,
+                        'occurrences': count,
+                        'log_path': str(log_path),
+                    },
+                )
+            )
+
+        # Enrich with browser account awareness: the program should know
+        # what accounts the user has in their browsers to make better
+        # decisions about using isolated vs shared sessions.
+        try:
+            from iabv_v15.services.account_resource_scanner import scan_browser_accounts
+            browser_info = scan_browser_accounts()
+            acct_count = browser_info.get('count', 0)
+            if acct_count > 0:
+                accounts = browser_info.get('accounts', [])
+                account_summary = ', '.join(
+                    f"{a.get('email', '?')} ({a.get('browser', '?')})"
+                    for a in accounts[:5]
+                )
+                # Only report if there are cloudflare/session issues
+                has_session_issues = any(
+                    f.category in ('cloudflare_blocked', 'session_verification_failed', 'wrong_thread')
+                    for f in findings
+                )
+                if has_session_issues:
+                    findings.append(
+                        SelfExaminationFinding(
+                            category='browser_accounts_available',
+                            title=f'{acct_count} cuenta(s) de navegador detectadas',
+                            summary=(
+                                f'El usuario tiene {acct_count} cuenta(s) activa(s) en sus '
+                                f'navegadores: {account_summary}. Estas sesiones pueden '
+                                f'usarse via CDP para evitar bloqueos de Cloudflare.'
+                            ),
+                            severity=IssueSeverity.LOW,
+                            confidence=0.95,
+                            recommendation=(
+                                'Usar connect_over_cdp al Chrome del usuario en vez de '
+                                'sesiones aisladas para herramientas web (ChatGPT, Claude, Codex).'
+                            ),
+                            evidence_refs=[
+                                f'{a.get("browser", "?")}: {a.get("email", "?")}'
+                                for a in accounts[:5]
+                            ],
+                            source_refs=['account_resource_scanner'],
+                            metadata={'browser_accounts': browser_info},
+                        )
+                    )
+        except Exception:
+            pass  # scanner not available or failed — not critical
+
+        # Auto-correction loop: when the program detects anomalies in its
+        # own logs, attempt corrective actions automatically.
+        if findings:
+            try:
+                from iabv_v15.services.auto_correction_engine import (
+                    apply_runtime_log_corrections,
+                )
+                corrections = apply_runtime_log_corrections(
+                    [
+                        {
+                            'category': f.category,
+                            'occurrences': (f.metadata or {}).get('occurrences', 0),
+                        }
+                        for f in findings
+                    ],
+                    workspace=str(self.workspace_root),
+                )
+                applied = corrections.get('corrections_count', 0)
+                if applied > 0:
+                    findings.append(
+                        SelfExaminationFinding(
+                            category='self_correction',
+                            title=f'Auto-correcciones aplicadas desde log: {applied}',
+                            summary=(
+                                f'El programa detecto {len(findings)} anomalias en su '
+                                f'propio log y aplico {applied} correcciones automaticas.'
+                            ),
+                            severity=IssueSeverity.LOW,
+                            confidence=1.0,
+                            recommendation='Verificar que las correcciones fueron efectivas en el proximo ciclo.',
+                            evidence_refs=[
+                                f'{c.get("action", "?")}: {c.get("detail", "?")}'
+                                for c in corrections.get('corrections_applied', [])
+                            ],
+                            source_refs=['auto_correction_engine'],
+                            metadata={'corrections': corrections},
+                        )
+                    )
+            except Exception as exc:
+                logger.debug('runtime log auto-correction failed: %s', exc)
+
+        # Deductive reasoning: instead of only matching patterns to hardcoded
+        # handlers, ask Ollama to reason about ALL findings and deduce what
+        # corrections to make using available tools and resources.
+        # This gives the program general-purpose "intuition" — the ability
+        # to solve NEW problems without a human programming each case.
+        if findings:
+            try:
+                from iabv_v15.services.auto_correction_engine import (
+                    apply_deductive_corrections,
+                )
+                finding_dicts = [
+                    {
+                        'category': f.category,
+                        'occurrences': (f.metadata or {}).get('occurrences', 0),
+                        'title': f.title,
+                        'summary': f.summary,
+                    }
+                    for f in findings
+                    if f.category != 'self_correction'
+                ]
+                if finding_dicts:
+                    deductive = apply_deductive_corrections(
+                        finding_dicts,
+                        workspace=str(self.workspace_root),
+                    )
+                    ded_applied = deductive.get('corrections_count', 0)
+                    reasoning = deductive.get('deductive_reasoning', '')
+                    if ded_applied > 0 or reasoning:
+                        findings.append(
+                            SelfExaminationFinding(
+                                category='deductive_self_correction',
+                                title=f'Razonamiento deductivo: {ded_applied} correcciones',
+                                summary=(
+                                    f'El programa uso Ollama para razonar sobre '
+                                    f'{len(finding_dicts)} hallazgo(s) y dedujo '
+                                    f'{ded_applied} correccion(es). '
+                                    f'Razonamiento: {reasoning[:300]}'
+                                ),
+                                severity=IssueSeverity.LOW,
+                                confidence=0.85,
+                                recommendation=(
+                                    'El programa ahora puede razonar sobre problemas '
+                                    'nuevos sin necesitar programacion especifica.'
+                                ),
+                                evidence_refs=[
+                                    f'{c.get("action", "?")}: {c.get("detail", "?")}'
+                                    for c in deductive.get('corrections_applied', [])
+                                ],
+                                source_refs=['deductive_reasoning_engine', 'ollama'],
+                                metadata={
+                                    'deductive_corrections': deductive,
+                                    'ollama_available': deductive.get('ollama_available', False),
+                                },
+                            )
+                        )
+            except Exception as exc:
+                logger.debug('deductive reasoning failed: %s', exc)
+
+        # Intelligent tool verification: when there are disagreements about
+        # tool availability, the program deep-probes each tool and asks
+        # Ollama to deduce the best configuration.  This is the program
+        # auditing its OWN tool access autonomously.
+        disagreement_tools = [
+            f for f in findings
+            if f.category in ('multi_source_disagreement', 'runtime_noise')
+            and 'disagreement' in (f.summary or '').lower()
+        ]
+        if disagreement_tools:
+            try:
+                from iabv_v15.services.auto_correction_engine import (
+                    verify_tool_access_deductive,
+                )
+                # Extract tool_ids from disagreement findings
+                verified_tools: list[str] = []
+                for f in disagreement_tools:
+                    refs = f.evidence_refs or []
+                    for ref in refs:
+                        ref_str = str(ref)
+                        if '_installed' in ref_str:
+                            tid = ref_str.split(' ')[0].split(':')[0].strip()
+                            if tid and tid not in verified_tools:
+                                verified_tools.append(tid)
+                    # Also try extracting from metadata
+                    meta = f.metadata or {}
+                    for key in ('tool_id', 'tool_ids'):
+                        val = meta.get(key, '')
+                        if isinstance(val, str) and val and val not in verified_tools:
+                            verified_tools.append(val)
+                        elif isinstance(val, list):
+                            for v in val:
+                                if v and v not in verified_tools:
+                                    verified_tools.append(str(v))
+
+                # If we couldn't extract specific tool_ids, check common ones
+                if not verified_tools:
+                    verified_tools = ['codex_installed', 'chatgpt_installed', 'claude_installed', 'ollama_llm']
+
+                for tid in verified_tools[:5]:
+                    verification = verify_tool_access_deductive(
+                        tid, workspace=str(self.workspace_root),
+                    )
+                    if verification.get('reasoning'):
+                        findings.append(
+                            SelfExaminationFinding(
+                                category='tool_access_verification',
+                                title=f'Verificacion inteligente: {tid}',
+                                summary=(
+                                    f"truly_available={verification.get('truly_available', '?')}, "
+                                    f"best_mode={verification.get('best_mode', '?')}. "
+                                    f"{verification.get('reasoning', '')[:300]}"
+                                ),
+                                severity=IssueSeverity.LOW,
+                                confidence=0.85,
+                                recommendation=(
+                                    f"Configuracion optima deducida: "
+                                    f"{verification.get('configuration', {})}"
+                                ),
+                                evidence_refs=[
+                                    f"filesystem={verification.get('probe', {}).get('filesystem', {}).get('any_exists', '?')}",
+                                    f"process={verification.get('probe', {}).get('process', {}).get('is_running', '?')}",
+                                    f"session={verification.get('probe', {}).get('session', {}).get('state_exists', '?')}",
+                                ],
+                                source_refs=['verify_tool_access_deductive', 'ollama'],
+                                metadata={'verification': verification},
+                            )
+                        )
+            except Exception as exc:
+                logger.debug('tool access verification failed: %s', exc)
+
         return findings
 
     def _dedupe_findings(self, findings: list[SelfExaminationFinding]) -> list[SelfExaminationFinding]:
@@ -2295,6 +3317,7 @@ class OperationalSelfExaminationService:
                 continue
             proposals.append({
                 'type': 'route_substitution',
+                'proposal_key': proposal_key,
                 'title': f'Sustituir {failing_kind} por {best_alt} en tareas con fallos recurrentes',
                 'description': (
                     f'{failing_kind} tiene {fail_count} fallos recientes. '
@@ -2321,6 +3344,7 @@ class OperationalSelfExaminationService:
                 if primary_score > 0.3 and secondary_score > 0.3 and collab_key not in tried_keys:
                     proposals.append({
                         'type': 'collaborative_execution',
+                        'proposal_key': collab_key,
                         'title': f'Plan coordinado: {primary_kind} + {secondary_kind}',
                         'description': (
                             f'{primary_kind} (score {"ponderado" if primary_kind in kind_weighted_scores else "promedio"} {primary_score:.2f}, {primary_runs} éxitos) '
@@ -2352,6 +3376,7 @@ class OperationalSelfExaminationService:
                     if vc_key not in tried_keys:
                         proposals.append({
                             'type': 'validated_collaboration',
+                            'proposal_key': vc_key,
                             'title': f'Extender éxito validado de {rec_kind} con {complementary[0]}',
                             'description': (
                                 f'{rec_kind} fue validado con confianza {rec_confidence:.2f}. '
@@ -2648,3 +3673,1175 @@ class OperationalSelfExaminationService:
             IssueSeverity.CRITICAL.value: 4,
         }
         return order.get(value, 0)
+
+    # ──────────────────────────────────────────────────────────
+    # UI Self-Awareness: detect own window anomalies
+    # ──────────────────────────────────────────────────────────
+
+    _IABV_TITLE_MARKERS = ('iabv', 'iabv v1.5', 'centro de control', 'centro vivo')
+    _ZOMBIE_MARKERS = ('no responde', 'not responding')
+
+    def _ui_self_examination_findings(
+        self, *, world: WorldModelSnapshot,
+    ) -> list[SelfExaminationFinding]:
+        """Detect anomalies in IABV's own UI windows.
+
+        Uses the WorldModel's active_windows to check:
+        - Zombie IABV windows ("No responde")
+        - Missing IABV window entirely
+        - Duplicate IABV instances
+        """
+        findings: list[SelfExaminationFinding] = []
+        if not world.active_windows:
+            return findings
+
+        iabv_windows: list[Any] = []
+        zombie_windows: list[Any] = []
+
+        for w in world.active_windows:
+            title_lower = (w.title or '').lower()
+            is_iabv = any(m in title_lower for m in self._IABV_TITLE_MARKERS)
+            if not is_iabv:
+                continue
+            is_zombie = any(z in title_lower for z in self._ZOMBIE_MARKERS)
+            if is_zombie:
+                zombie_windows.append(w)
+            else:
+                iabv_windows.append(w)
+
+        if zombie_windows:
+            zombie_titles = [w.title for w in zombie_windows]
+            findings.append(SelfExaminationFinding(
+                category='ui_self_awareness',
+                title='zombie_iabv_window',
+                summary=(
+                    f'{len(zombie_windows)} ventana(s) IABV en estado '
+                    f'"No responde": {zombie_titles}. El event loop de la UI '
+                    f'esta bloqueado o el proceso esta colgado.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.95,
+                recommendation=(
+                    'Terminar el proceso zombie y reiniciar la UI. '
+                    'Investigar que operacion bloqueo el hilo principal.'
+                ),
+                evidence_refs=[f'window:{t}' for t in zombie_titles],
+                source_refs=['WorldModelSnapshot.active_windows'],
+            ))
+
+        if not iabv_windows and not zombie_windows and len(world.active_windows) > 0:
+            findings.append(SelfExaminationFinding(
+                category='ui_self_awareness',
+                title='iabv_window_missing',
+                summary=(
+                    'No se detecta ninguna ventana IABV entre las '
+                    f'{len(world.active_windows)} ventanas activas. '
+                    'La UI puede no haberse iniciado o el titulo no '
+                    'coincide con los marcadores conocidos.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.80,
+                recommendation=(
+                    'Verificar que el proceso UI (python -m iabv_v15 app) '
+                    'esta corriendo. Si esta corriendo, revisar el titulo '
+                    'de la ventana.'
+                ),
+                evidence_refs=[
+                    f'total_windows:{len(world.active_windows)}',
+                ],
+                source_refs=['WorldModelSnapshot.active_windows'],
+            ))
+
+        if len(iabv_windows) > 1:
+            titles = [w.title for w in iabv_windows]
+            findings.append(SelfExaminationFinding(
+                category='ui_self_awareness',
+                title='duplicate_iabv_windows',
+                summary=(
+                    f'{len(iabv_windows)} instancias IABV activas: {titles}. '
+                    f'Solo deberia haber una instancia corriendo.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.85,
+                recommendation=(
+                    'Cerrar las instancias duplicadas. Verificar que '
+                    'start_iabv.ps1 no lance multiples procesos.'
+                ),
+                evidence_refs=[f'window:{t}' for t in titles],
+                source_refs=['WorldModelSnapshot.active_windows'],
+            ))
+
+        return findings
+
+    # ──────────────────────────────────────────────────────────
+    # CodeAuditTrail cross-referencing
+    # ──────────────────────────────────────────────────────────
+
+    def _code_audit_cross_reference_findings(self) -> list[SelfExaminationFinding]:
+        """Cross-reference external audit findings with internal observations.
+
+        Detects:
+        - Recurring bug patterns across audit rounds (same pattern_tag)
+        - Findings that need cross-verification on this environment
+        - Modules audited externally that OSES also flagged
+        """
+        trail = getattr(self, 'code_audit_trail', None)
+        if trail is None:
+            return []
+        findings: list[SelfExaminationFinding] = []
+        try:
+            patterns = trail.analyze_bug_patterns()
+            for pattern in patterns[:3]:
+                if pattern.get('occurrences', 0) >= 2 and not pattern.get('all_fixed'):
+                    findings.append(SelfExaminationFinding(
+                        category='code_audit_recurring_pattern',
+                        title=f"Patron recurrente en auditorias: {pattern.get('pattern_tag', '')}",
+                        summary=(
+                            f"Detectado {pattern.get('occurrences', 0)} veces en "
+                            f"{len(pattern.get('affected_modules', []))} modulos. "
+                            f"{pattern.get('description', '')[:200]}"
+                        ),
+                        severity=IssueSeverity.HIGH,
+                        confidence=0.85,
+                        recommendation=(
+                            'Buscar este patron en modulos no auditados aun. '
+                            'Considerar agregar validacion automatica en tests.'
+                        ),
+                        source_refs=['CodeAuditTrail', 'analyze_bug_patterns'],
+                    ))
+
+            cross_verifications = trail.pending_cross_verifications()
+            windows_pending = [
+                f for f in cross_verifications
+                if f.get('needs_windows_verification')
+            ]
+            if windows_pending:
+                titles = [f.get('title', '') for f in windows_pending[:3]]
+                findings.append(SelfExaminationFinding(
+                    category='code_audit_cross_verification',
+                    title=f'{len(windows_pending)} hallazgo(s) necesitan verificacion en Windows',
+                    summary=(
+                        'Auditorias externas (Linux) encontraron hallazgos que '
+                        'requieren verificacion en el entorno real Windows: '
+                        + '; '.join(t for t in titles if t)
+                    ),
+                    severity=IssueSeverity.MEDIUM,
+                    confidence=0.75,
+                    recommendation=(
+                        'Ejecutar tests focalizados en Windows para verificar '
+                        'estos hallazgos en el entorno de produccion real.'
+                    ),
+                    source_refs=['CodeAuditTrail', 'pending_cross_verifications'],
+                ))
+        except Exception as exc:
+            import logging as _logging
+            _logging.getLogger(__name__).warning('oses: code_audit_cross_reference error: %s', exc)
+        return findings
+
+    # ──────────────────────────────────────────────────────────
+    # RuntimePerformance: memory, threads, bottleneck detection
+    # ──────────────────────────────────────────────────────────
+
+    def _runtime_performance_findings(self) -> list[SelfExaminationFinding]:
+        """Detect runtime performance bottlenecks: memory, threads, network.
+
+        This is IABV observing its own resource consumption and flagging
+        conditions that cause the UI to feel slow or frozen. Unlike external
+        monitoring, this is self-awareness: the system notices its own
+        degradation and recommends corrective action.
+
+        Checks:
+        - Process RSS memory > threshold → recommend lazy loading
+        - Excessive active threads → recommend consolidation
+        - Polling threads competing for GIL → recommend longer intervals
+        - Network probe failures cached → report connectivity status
+        - Child subprocess count → flag orphan processes
+        """
+        import threading as _threading
+
+        findings: list[SelfExaminationFinding] = []
+
+        # --- Memory pressure ---
+        rss_mb = self._read_process_rss_mb()
+        if rss_mb is not None and rss_mb > 500:
+            severity = IssueSeverity.HIGH if rss_mb > 800 else IssueSeverity.MEDIUM
+            findings.append(SelfExaminationFinding(
+                category='runtime_performance',
+                title='high_memory_usage',
+                summary=(
+                    f'El proceso IABV consume {rss_mb:.0f}MB de RAM. '
+                    f'Esto puede causar lentitud en la UI y en respuestas MCP. '
+                    f'Considerar lazy loading de servicios no criticos.'
+                ),
+                severity=severity,
+                confidence=0.95,
+                recommendation=(
+                    'Implementar lazy loading: instanciar EmbeddingIndexService, '
+                    'SiteExplorationService, BrowserSessionController y servicios '
+                    'similares solo cuando se usen por primera vez, no en __init__. '
+                    'Usar @property con cache en AppBootstrap.'
+                ),
+                evidence_refs=[f'rss_mb:{rss_mb:.0f}'],
+                source_refs=['runtime_performance_monitor'],
+            ))
+
+        # --- Thread count ---
+        threads = _threading.enumerate()
+        thread_count = len(threads)
+        polling_keywords = (
+            'scan', 'poll', 'monitor', 'timer', 'refresh',
+            'world_model', 'health', 'bridge', 'bg-install',
+        )
+        polling_threads = [
+            t for t in threads
+            if any(kw in t.name.lower() for kw in polling_keywords)
+        ]
+
+        if thread_count > 20:
+            findings.append(SelfExaminationFinding(
+                category='runtime_performance',
+                title='excessive_threads',
+                summary=(
+                    f'{thread_count} hilos activos en el proceso. '
+                    f'Python GIL causa contention entre hilos — cada hilo '
+                    f'adicional degrada latencia de respuesta.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.85,
+                recommendation=(
+                    'Consolidar hilos de polling: WorldModelService, '
+                    'EnvironmentSelfAwareness y HealthRouter podrian compartir '
+                    'un unico hilo con diferentes intervalos. Usar asyncio '
+                    'en vez de threads donde sea posible.'
+                ),
+                evidence_refs=[
+                    f'total_threads:{thread_count}',
+                    f'polling_threads:{len(polling_threads)}',
+                ],
+                source_refs=['runtime_performance_monitor'],
+            ))
+
+        if len(polling_threads) > 4:
+            names = [t.name for t in polling_threads[:8]]
+            findings.append(SelfExaminationFinding(
+                category='runtime_performance',
+                title='excessive_polling_threads',
+                summary=(
+                    f'{len(polling_threads)} hilos de polling activos: {names}. '
+                    f'Cada uno ejecuta scans periodicos que compiten por CPU y GIL.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.90,
+                recommendation=(
+                    'Reducir frecuencia de scan: WorldModelService._DEFAULT_SCAN_INTERVAL '
+                    'de 18s a 45s para uso normal. Usar scan_interval_seconds=120 '
+                    'cuando la presion de recursos es alta.'
+                ),
+                evidence_refs=[f'polling:{n}' for n in names],
+                source_refs=['runtime_performance_monitor'],
+            ))
+
+        # --- Network probe health ---
+        wms = self.world_model_service
+        if wms is not None:
+            cache = getattr(wms, '_network_cache', (None, '', 0.0))
+            cached_latency, cached_error, _ = cache
+            if cached_latency is None and cached_error:
+                findings.append(SelfExaminationFinding(
+                    category='runtime_performance',
+                    title='network_probe_failing',
+                    summary=(
+                        f'El probe de conectividad falla: {cached_error[:100]}. '
+                        f'Esto bloquea al WorldModel scan por hasta 7s cada ciclo '
+                        f'y causa que IABV reporte "sin internet" incorrectamente.'
+                    ),
+                    severity=IssueSeverity.HIGH,
+                    confidence=0.90,
+                    recommendation=(
+                        'Verificar firewall: port 53 TCP puede estar bloqueado. '
+                        'El probe ya tiene fallback a port 443 y HTTP HEAD. '
+                        'Si todos fallan, verificar proxy/VPN. Considerar aumentar '
+                        'NETWORK_CACHE_TTL a 120s para reducir impacto.'
+                    ),
+                    evidence_refs=[f'error:{cached_error[:80]}'],
+                    source_refs=['WorldModelService._network_connectivity_probe'],
+                ))
+
+        # --- Model/provider degradation (from AdaptiveModelSelector) ---
+        ams = getattr(self, 'adaptive_model_selector', None)
+        if ams is not None:
+            try:
+                degradations = ams.detect_degradation()
+                for d in degradations:
+                    dtype = d.get('type', '')
+                    pid = d.get('provider_id', '')
+                    if dtype == 'very_slow':
+                        findings.append(SelfExaminationFinding(
+                            category='runtime_performance',
+                            title='model_too_slow',
+                            summary=(
+                                f'El proveedor {pid} promedia '
+                                f'{d.get("avg_latency_ms", 0):.0f}ms de latencia. '
+                                f'Esto degrada la experiencia del usuario.'
+                            ),
+                            severity=IssueSeverity.MEDIUM,
+                            confidence=0.85,
+                            recommendation=d.get('recommendation', ''),
+                            evidence_refs=[f'avg_latency_ms:{d.get("avg_latency_ms", 0):.0f}'],
+                            source_refs=['AdaptiveModelSelector'],
+                        ))
+                    elif dtype == 'high_failure_rate':
+                        findings.append(SelfExaminationFinding(
+                            category='runtime_performance',
+                            title='provider_failing',
+                            summary=(
+                                f'El proveedor {pid} tiene solo '
+                                f'{d.get("success_rate", 0):.0%} de exito. '
+                                f'Rotando automaticamente al siguiente proveedor.'
+                            ),
+                            severity=IssueSeverity.HIGH,
+                            confidence=0.90,
+                            recommendation=d.get('recommendation', ''),
+                            evidence_refs=[
+                                f'success_rate:{d.get("success_rate", 0):.2f}',
+                            ] + [f'error:{e[:60]}' for e in d.get('recent_errors', [])[:2]],
+                            source_refs=['AdaptiveModelSelector'],
+                        ))
+                    elif dtype == 'quota_exhausted':
+                        findings.append(SelfExaminationFinding(
+                            category='runtime_performance',
+                            title='provider_quota_exhausted',
+                            summary=(
+                                f'El proveedor {pid} agoto su cuota '
+                                f'({d.get("count", 0)} errores 429). '
+                                f'IABV roto automaticamente al siguiente '
+                                f'proveedor disponible.'
+                            ),
+                            severity=IssueSeverity.HIGH,
+                            confidence=0.95,
+                            recommendation=d.get('recommendation', ''),
+                            evidence_refs=[f'quota_errors:{d.get("count", 0)}'],
+                            source_refs=['AdaptiveModelSelector'],
+                        ))
+            except Exception:
+                pass
+
+        return findings
+
+    def _read_process_rss_mb(self) -> float | None:
+        """Read current process RSS in MB. Cross-platform."""
+        try:
+            import psutil
+            return psutil.Process().memory_info().rss / (1024 * 1024)
+        except ImportError:
+            pass
+        try:
+            with open('/proc/self/status') as f:
+                for line in f:
+                    if line.startswith('VmRSS:'):
+                        return int(line.split()[1]) / 1024
+        except Exception:
+            pass
+        # Windows fallback via PowerShell (WorldModelService already has this).
+        try:
+            import os
+            import subprocess
+            result = subprocess.run(
+                ['powershell', '-NoProfile', '-Command',
+                 f'(Get-Process -Id {os.getpid()}).WorkingSet64'],
+                capture_output=True, text=True, timeout=5,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return int(result.stdout.strip()) / (1024 * 1024)
+        except Exception:
+            pass
+        return None
+
+    # ──────────────────────────────────────────────────────────
+    # Fix 42-43: Functional gap analysis + underutilized resources
+    # ──────────────────────────────────────────────────────────
+
+    def _functional_gap_findings(self) -> list[SelfExaminationFinding]:
+        """Detect functional gaps and underutilized resources.
+
+        Unlike other findings that look at errors/failures, this method
+        proactively analyzes what the system COULD be doing better:
+        - Sessions in browsers without associated accounts (worker pool gap)
+        - API keys available but not used by the intent classifier
+        - Cloud models available but only local model being used
+        - Training examples accumulating but not being applied
+        """
+        import os
+        findings: list[SelfExaminationFinding] = []
+
+        # Gap 1: Sessions without accounts (Opera/Brave/Firefox)
+        try:
+            from iabv_v15.services.account_resource_scanner import (
+                scan_browser_accounts,
+                scan_browser_sessions,
+                verify_account_sessions,
+            )
+            accounts = scan_browser_accounts()
+            sessions = scan_browser_sessions()
+            verified = verify_account_sessions()
+
+            session_browsers = {s.get('browser', '') for s in sessions.get('sessions', [])}
+            account_browsers = {a.get('browser', '') for a in accounts.get('accounts', [])}
+            orphan_browsers = session_browsers - account_browsers
+
+            if orphan_browsers and sessions.get('session_count', 0) > 0:
+                findings.append(SelfExaminationFinding(
+                    category='functional_gap',
+                    title='Sesiones activas en navegadores sin cuentas asociadas',
+                    summary=(
+                        f'Se detectaron sesiones activas en {", ".join(orphan_browsers)} '
+                        f'pero no hay cuentas de Google asociadas en esos navegadores. '
+                        f'El pool de asistentes usa workers anonimos para estas sesiones.'
+                    ),
+                    severity=IssueSeverity.LOW,
+                    confidence=0.9,
+                    recommendation=(
+                        'Considerar asociar cuentas a los navegadores con sesiones '
+                        'para mejor tracking de cuotas por cuenta.'
+                    ),
+                    evidence_refs=[
+                        f'session_browsers={list(session_browsers)}',
+                        f'account_browsers={list(account_browsers)}',
+                    ],
+                    metadata={
+                        'gap_type': 'orphan_browser_sessions',
+                        'orphan_browsers': list(orphan_browsers),
+                    },
+                ))
+
+            # Gap 2: Workers with sessions but no quota tracking
+            pool_accounts = verified.get('accounts', [])
+            accounts_with_sessions = [
+                a for a in pool_accounts if a.get('tool_count', 0) > 0
+            ]
+            if accounts_with_sessions:
+                from iabv_v15.services.account_resource_scanner import get_all_quota_status
+                quotas = get_all_quota_status()
+                tracked_count = len(quotas.get('statuses', []))
+                if tracked_count == 0 and len(accounts_with_sessions) > 0:
+                    findings.append(SelfExaminationFinding(
+                        category='functional_gap',
+                        title='Asistentes con sesion activa sin rastreo de cuotas',
+                        summary=(
+                            f'{len(accounts_with_sessions)} asistentes tienen sesion activa '
+                            f'pero ninguno tiene cuotas rastreadas. El rastreo se activa '
+                            f'automaticamente al enviar mensajes.'
+                        ),
+                        severity=IssueSeverity.LOW,
+                        confidence=0.85,
+                        recommendation=(
+                            'Iniciar uso de las herramientas (ChatGPT, Claude, Codex) '
+                            'para que el rastreo de cuotas comience automaticamente.'
+                        ),
+                        metadata={
+                            'gap_type': 'untracked_quotas',
+                            'accounts_with_sessions': len(accounts_with_sessions),
+                        },
+                    ))
+        except Exception:
+            pass
+
+        # Gap 3: Cloud API keys available but not used by intent classifier
+        try:
+            has_openai = bool(os.environ.get('OPENAI_API_KEY'))
+            has_anthropic = bool(os.environ.get('ANTHROPIC_API_KEY'))
+            from iabv_v15.services.account_resource_scanner import _load_training_examples
+            training_count = len(_load_training_examples())
+
+            if (has_openai or has_anthropic) and training_count == 0:
+                cloud_name = 'OpenAI' if has_openai else 'Anthropic'
+                findings.append(SelfExaminationFinding(
+                    category='underutilized_resource',
+                    title=f'API key de {cloud_name} disponible sin ejemplos de entrenamiento',
+                    summary=(
+                        f'Hay una API key de {cloud_name} configurada pero el '
+                        f'clasificador dual aun no ha generado ejemplos de entrenamiento. '
+                        f'El modelo local se beneficiaria de clasificaciones del modelo '
+                        f'de la nube para mejorar su precision.'
+                    ),
+                    severity=IssueSeverity.LOW,
+                    confidence=0.8,
+                    recommendation=(
+                        'El clasificador dual se activara automaticamente la proxima vez '
+                        'que una pregunta ambigua pase por el chat. Los ejemplos de '
+                        'entrenamiento se acumularan en data/evolution/intent_training.jsonl.'
+                    ),
+                    metadata={
+                        'gap_type': 'unused_cloud_api',
+                        'cloud_provider': cloud_name,
+                        'training_examples': training_count,
+                    },
+                ))
+
+            if training_count > 0:
+                findings.append(SelfExaminationFinding(
+                    category='learning_progress',
+                    title=f'Clasificador dual: {training_count} ejemplos de entrenamiento acumulados',
+                    summary=(
+                        f'El modelo local ha aprendido de {training_count} clasificaciones '
+                        f'del modelo de la nube. Estos ejemplos se inyectan como few-shot '
+                        f'al prompt del modelo local para mejorar su precision.'
+                    ),
+                    severity=IssueSeverity.LOW,
+                    confidence=0.95,
+                    recommendation='Continuar usando el chat normalmente para acumular mas ejemplos.',
+                    metadata={
+                        'gap_type': 'training_progress',
+                        'training_examples': training_count,
+                    },
+                ))
+        except Exception:
+            pass
+
+        # Gap 4: Ollama available but not being leveraged for all classifiers
+        try:
+            import httpx
+            with httpx.Client(timeout=3.0) as client:
+                resp = client.get('http://127.0.0.1:11434/api/tags')
+                if resp.status_code == 200:
+                    models = resp.json().get('models', [])
+                    model_names = [m.get('name', '') for m in models]
+                    if len(models) > 1:
+                        findings.append(SelfExaminationFinding(
+                            category='underutilized_resource',
+                            title=f'{len(models)} modelos Ollama disponibles',
+                            summary=(
+                                f'Modelos instalados: {", ".join(model_names[:5])}. '
+                                f'El clasificador usa solo el modelo por defecto. '
+                                f'Modelos mas grandes podrian dar mejor precision local.'
+                            ),
+                            severity=IssueSeverity.LOW,
+                            confidence=0.7,
+                            recommendation=(
+                                'Considerar ejecutar benchmarks con diferentes modelos '
+                                'para determinar cual clasifica mejor los metadatos de IABV.'
+                            ),
+                            metadata={
+                                'gap_type': 'multiple_local_models',
+                                'models': model_names[:10],
+                            },
+                        ))
+        except Exception:
+            pass
+
+        return findings
+
+    # ==================================================================
+    # Audit Platform — Algorithmic Analysis & Optimization
+    # Extends OSES with statistical, structural, and validation tooling.
+    # ==================================================================
+
+    # ---- MathEngine: statistical analysis on system data ----
+
+    @staticmethod
+    def math_engine_moving_average(values: list[float], window: int = 5) -> list[float]:
+        """Compute simple moving average over a window."""
+        if not values or window < 1:
+            return []
+        result: list[float] = []
+        for i in range(len(values)):
+            start = max(0, i - window + 1)
+            segment = values[start:i + 1]
+            result.append(sum(segment) / len(segment))
+        return result
+
+    @staticmethod
+    def math_engine_exponential_smoothing(values: list[float], alpha: float = 0.3) -> list[float]:
+        """Compute exponential smoothing (EMA)."""
+        if not values:
+            return []
+        result = [values[0]]
+        for val in values[1:]:
+            result.append(alpha * val + (1 - alpha) * result[-1])
+        return result
+
+    @staticmethod
+    def math_engine_z_scores(values: list[float]) -> list[float]:
+        """Compute z-scores for anomaly detection."""
+        if len(values) < 2:
+            return [0.0] * len(values)
+        import math
+        mean = sum(values) / len(values)
+        variance = sum((x - mean) ** 2 for x in values) / len(values)
+        std_dev = math.sqrt(variance) if variance > 0 else 0.0
+        if std_dev == 0:
+            return [0.0] * len(values)
+        return [(x - mean) / std_dev for x in values]
+
+    @staticmethod
+    def math_engine_iqr_outliers(values: list[float], factor: float = 1.5) -> list[int]:
+        """Return indices of IQR outliers."""
+        if len(values) < 4:
+            return []
+        sorted_v = sorted(values)
+        n = len(sorted_v)
+        q1 = sorted_v[n // 4]
+        q3 = sorted_v[(3 * n) // 4]
+        iqr = q3 - q1
+        lower = q1 - factor * iqr
+        upper = q3 + factor * iqr
+        return [i for i, v in enumerate(values) if v < lower or v > upper]
+
+    @staticmethod
+    def math_engine_correlation(x: list[float], y: list[float]) -> float:
+        """Compute Pearson correlation coefficient between two series."""
+        import math
+        n = min(len(x), len(y))
+        if n < 3:
+            return 0.0
+        x, y = x[:n], y[:n]
+        mean_x = sum(x) / n
+        mean_y = sum(y) / n
+        cov = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y)) / n
+        std_x = math.sqrt(sum((xi - mean_x) ** 2 for xi in x) / n)
+        std_y = math.sqrt(sum((yi - mean_y) ** 2 for yi in y) / n)
+        if std_x == 0 or std_y == 0:
+            return 0.0
+        return cov / (std_x * std_y)
+
+    @staticmethod
+    def math_engine_confidence(success_count: int, total: int) -> float:
+        """Wilson score lower bound for confidence estimation."""
+        if total == 0:
+            return 0.0
+        import math
+        z = 1.96  # 95% confidence
+        p = success_count / total
+        denominator = 1 + z * z / total
+        centre = p + z * z / (2 * total)
+        adjustment = z * math.sqrt((p * (1 - p) + z * z / (4 * total)) / total)
+        return max(0.0, (centre - adjustment) / denominator)
+
+    def math_engine_report(self, recent_runs: list[RunRecord] | None = None) -> dict[str, Any]:
+        """Generate a statistical report from system data."""
+        runs = recent_runs or self._recent_runs()
+        latencies = [float(getattr(r, 'elapsed_ms', 0) or 0) for r in runs if getattr(r, 'elapsed_ms', None)]
+        successes = [1.0 if r.status == RunStatus.SUCCESS else 0.0 for r in runs]
+        report: dict[str, Any] = {
+            'sample_size': len(runs),
+            'success_rate': sum(successes) / len(successes) if successes else 0.0,
+        }
+        if latencies:
+            report['latency_ema'] = self.math_engine_exponential_smoothing(latencies)[-1] if latencies else 0.0
+            report['latency_z_scores'] = self.math_engine_z_scores(latencies)
+            report['latency_iqr_outliers'] = self.math_engine_iqr_outliers(latencies)
+            report['latency_sma'] = self.math_engine_moving_average(latencies)[-1] if latencies else 0.0
+        if successes:
+            report['success_confidence'] = self.math_engine_confidence(
+                int(sum(successes)), len(successes),
+            )
+        return report
+
+    # ---- AlgorithmAnalyzer: structural code analysis ----
+
+    @staticmethod
+    def algorithm_analyzer_cyclomatic_complexity(source_code: str) -> int:
+        """Estimate cyclomatic complexity of Python source code."""
+        import re
+        decision_keywords = re.findall(
+            r'\b(if|elif|for|while|except|and|or)\b', source_code,
+        )
+        return 1 + len(decision_keywords)
+
+    @staticmethod
+    def algorithm_analyzer_dead_code(source_code: str) -> list[dict[str, Any]]:
+        """Detect potentially dead code patterns."""
+        import re
+        issues: list[dict[str, Any]] = []
+        lines = source_code.splitlines()
+        for i, line in enumerate(lines, 1):
+            stripped = line.strip()
+            if stripped.startswith('# TODO') or stripped.startswith('# FIXME'):
+                issues.append({'line': i, 'type': 'todo_comment', 'text': stripped[:80]})
+            if re.match(r'^\s*(return|raise)\b', line):
+                if i < len(lines):
+                    next_stripped = lines[i].strip() if i < len(lines) else ''
+                    if next_stripped and not next_stripped.startswith(('#', 'def ', 'class ', 'except', 'elif', 'else', ')', ']', '}')):
+                        issues.append({'line': i + 1, 'type': 'unreachable_after_return', 'text': next_stripped[:80]})
+        return issues
+
+    @staticmethod
+    def algorithm_analyzer_dependency_map(module_source: str) -> list[str]:
+        """Extract import dependencies from Python source."""
+        import re
+        deps: list[str] = []
+        for match in re.finditer(r'^(?:from\s+([\w.]+)\s+import|import\s+([\w.]+))', module_source, re.MULTILINE):
+            dep = match.group(1) or match.group(2)
+            if dep:
+                deps.append(dep)
+        return sorted(set(deps))
+
+    @staticmethod
+    def algorithm_analyzer_antipatterns(source_code: str) -> list[dict[str, Any]]:
+        """Detect common anti-patterns in Python source."""
+        import re
+        issues: list[dict[str, Any]] = []
+        lines = source_code.splitlines()
+        for i, line in enumerate(lines, 1):
+            if re.search(r'\bexcept\s*:', line) and 'pragma' not in line:
+                issues.append({'line': i, 'type': 'bare_except', 'text': line.strip()[:80]})
+            if re.search(r'\bgetattr\s*\(.*,\s*["\']', line) and 'pragma' not in line:
+                issues.append({'line': i, 'type': 'dynamic_getattr', 'text': line.strip()[:80]})
+            if len(line) > 200:
+                issues.append({'line': i, 'type': 'long_line', 'length': len(line)})
+        return issues
+
+    def algorithm_analysis_report(self, source_code: str) -> dict[str, Any]:
+        """Full structural analysis of given source code."""
+        return {
+            'cyclomatic_complexity': self.algorithm_analyzer_cyclomatic_complexity(source_code),
+            'dead_code': self.algorithm_analyzer_dead_code(source_code),
+            'dependencies': self.algorithm_analyzer_dependency_map(source_code),
+            'antipatterns': self.algorithm_analyzer_antipatterns(source_code),
+        }
+
+    # ---- AlgorithmTestBench: systematic test case generation ----
+
+    @staticmethod
+    def test_bench_edge_cases(func: Any, test_inputs: list[Any]) -> list[dict[str, Any]]:
+        """Run a function against test inputs and record outcomes."""
+        results: list[dict[str, Any]] = []
+        for inp in test_inputs:
+            try:
+                output = func(inp)
+                results.append({'input': repr(inp), 'output': repr(output), 'status': 'ok', 'error': None})
+            except Exception as exc:
+                results.append({'input': repr(inp), 'output': None, 'status': 'error', 'error': str(exc)})
+        return results
+
+    @staticmethod
+    def test_bench_null_inputs(func: Any) -> list[dict[str, Any]]:
+        """Test function with None, empty string, empty list, 0, etc."""
+        null_inputs: list[Any] = [None, '', [], {}, 0, 0.0, False, set()]
+        results: list[dict[str, Any]] = []
+        for inp in null_inputs:
+            try:
+                output = func(inp)
+                results.append({'input': repr(inp), 'output': repr(output), 'status': 'ok', 'error': None})
+            except Exception as exc:
+                results.append({'input': repr(inp), 'output': None, 'status': 'error', 'error': str(exc)})
+        return results
+
+    @staticmethod
+    def test_bench_overflow(func: Any) -> list[dict[str, Any]]:
+        """Test function with extreme numeric values."""
+        overflow_inputs = [10**18, -10**18, float('inf'), float('-inf'), float('nan'), 2**63 - 1]
+        results: list[dict[str, Any]] = []
+        for inp in overflow_inputs:
+            try:
+                output = func(inp)
+                results.append({'input': repr(inp), 'output': repr(output), 'status': 'ok', 'error': None})
+            except Exception as exc:
+                results.append({'input': repr(inp), 'output': None, 'status': 'error', 'error': str(exc)})
+        return results
+
+    @staticmethod
+    def test_bench_performance(func: Any, input_val: Any, iterations: int = 100) -> dict[str, Any]:
+        """Benchmark function execution time."""
+        import time as _t
+        times: list[float] = []
+        for _ in range(iterations):
+            t0 = _t.perf_counter()
+            try:
+                func(input_val)
+            except Exception:
+                pass
+            times.append(_t.perf_counter() - t0)
+        import math
+        mean_t = sum(times) / len(times)
+        std_t = math.sqrt(sum((t - mean_t) ** 2 for t in times) / len(times)) if len(times) > 1 else 0.0
+        return {
+            'iterations': iterations,
+            'mean_ms': round(mean_t * 1000, 3),
+            'std_ms': round(std_t * 1000, 3),
+            'min_ms': round(min(times) * 1000, 3),
+            'max_ms': round(max(times) * 1000, 3),
+        }
+
+    def test_bench_report(self, func: Any, test_inputs: list[Any] | None = None) -> dict[str, Any]:
+        """Full test bench report for a function."""
+        inputs = test_inputs or []
+        return {
+            'edge_cases': self.test_bench_edge_cases(func, inputs),
+            'null_inputs': self.test_bench_null_inputs(func),
+            'overflow': self.test_bench_overflow(func),
+            'performance': self.test_bench_performance(func, inputs[0] if inputs else None),
+        }
+
+    # ---- AlgorithmValidator: contract and rule validation ----
+
+    @staticmethod
+    def validator_check_contracts(
+        source_code: str,
+        *,
+        required_preconditions: list[str] | None = None,
+        required_postconditions: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Verify that source code contains expected pre/postconditions."""
+        import re
+        found_pre = [p for p in (required_preconditions or []) if re.search(re.escape(p), source_code)]
+        found_post = [p for p in (required_postconditions or []) if re.search(re.escape(p), source_code)]
+        missing_pre = [p for p in (required_preconditions or []) if p not in found_pre]
+        missing_post = [p for p in (required_postconditions or []) if p not in found_post]
+        return {
+            'preconditions_found': found_pre,
+            'preconditions_missing': missing_pre,
+            'postconditions_found': found_post,
+            'postconditions_missing': missing_post,
+            'valid': not missing_pre and not missing_post,
+        }
+
+    @staticmethod
+    def validator_check_exceptions(source_code: str) -> list[dict[str, Any]]:
+        """Check that exceptions are properly handled (not bare except)."""
+        import re
+        issues: list[dict[str, Any]] = []
+        for i, line in enumerate(source_code.splitlines(), 1):
+            if re.search(r'\bexcept\s*:', line) and 'pragma' not in line:
+                issues.append({'line': i, 'issue': 'bare_except', 'text': line.strip()[:80]})
+            if re.search(r'\bpass\s*$', line):
+                context_start = max(0, i - 3)
+                context = source_code.splitlines()[context_start:i]
+                if any('except' in cl for cl in context):
+                    issues.append({'line': i, 'issue': 'silent_exception', 'text': line.strip()[:80]})
+        return issues
+
+    @staticmethod
+    def validator_check_agents_rules(source_code: str) -> list[dict[str, Any]]:
+        """Check for AGENTS.md violations in source code."""
+        violations: list[dict[str, Any]] = []
+        lines = source_code.splitlines()
+        for i, line in enumerate(lines, 1):
+            lower = line.lower()
+            if 'class' in lower and 'orchestrator' in lower and 'adaptive' not in lower:
+                violations.append({'line': i, 'rule': 'no_new_orchestrator', 'text': line.strip()[:80]})
+            if 'perceptionsnapshot' in lower and 'class' in lower:
+                violations.append({'line': i, 'rule': 'no_duplicate_perception', 'text': line.strip()[:80]})
+        return violations
+
+    @staticmethod
+    def validator_check_types(source_code: str) -> list[dict[str, Any]]:
+        """Check for lazy typing patterns (Any, getattr)."""
+        import re
+        issues: list[dict[str, Any]] = []
+        for i, line in enumerate(source_code.splitlines(), 1):
+            if re.search(r'\bAny\b', line) and 'import' not in line and '#' not in line.split('Any')[0]:
+                pass  # Any in type hints is acceptable in this codebase
+            if re.search(r'\bsetattr\s*\(', line) and 'pragma' not in line:
+                issues.append({'line': i, 'issue': 'setattr_usage', 'text': line.strip()[:80]})
+        return issues
+
+    def validation_report(self, source_code: str) -> dict[str, Any]:
+        """Full validation report for source code."""
+        return {
+            'contracts': self.validator_check_contracts(source_code),
+            'exceptions': self.validator_check_exceptions(source_code),
+            'agents_rules': self.validator_check_agents_rules(source_code),
+            'types': self.validator_check_types(source_code),
+        }
+
+    # ---- AlgorithmOptimizer: parameter tuning and A/B testing ----
+
+    @staticmethod
+    def optimizer_grid_search(
+        func: Any,
+        param_grid: dict[str, list[Any]],
+        eval_func: Any,
+        base_input: Any = None,
+    ) -> list[dict[str, Any]]:
+        """Simple grid search over parameter combinations."""
+        import itertools
+        keys = list(param_grid.keys())
+        values = list(param_grid.values())
+        results: list[dict[str, Any]] = []
+        for combo in itertools.product(*values):
+            params = dict(zip(keys, combo))
+            try:
+                output = func(base_input, **params) if base_input is not None else func(**params)
+                score = eval_func(output) if eval_func else 0.0
+                results.append({'params': params, 'score': score, 'status': 'ok', 'error': None})
+            except Exception as exc:
+                results.append({'params': params, 'score': 0.0, 'status': 'error', 'error': str(exc)})
+        results.sort(key=lambda r: r['score'], reverse=True)
+        return results
+
+    @staticmethod
+    def optimizer_ab_test(
+        func_a: Any,
+        func_b: Any,
+        test_inputs: list[Any],
+        eval_func: Any,
+    ) -> dict[str, Any]:
+        """Compare two implementations on the same inputs."""
+        scores_a: list[float] = []
+        scores_b: list[float] = []
+        for inp in test_inputs:
+            try:
+                out_a = func_a(inp)
+                scores_a.append(float(eval_func(out_a)))
+            except Exception:
+                scores_a.append(0.0)
+            try:
+                out_b = func_b(inp)
+                scores_b.append(float(eval_func(out_b)))
+            except Exception:
+                scores_b.append(0.0)
+        mean_a = sum(scores_a) / len(scores_a) if scores_a else 0.0
+        mean_b = sum(scores_b) / len(scores_b) if scores_b else 0.0
+        return {
+            'variant_a_mean': round(mean_a, 4),
+            'variant_b_mean': round(mean_b, 4),
+            'winner': 'a' if mean_a >= mean_b else 'b',
+            'margin': round(abs(mean_a - mean_b), 4),
+            'sample_size': len(test_inputs),
+        }
+
+    def optimization_proposal(
+        self,
+        func: Any,
+        param_grid: dict[str, list[Any]],
+        eval_func: Any,
+        base_input: Any = None,
+    ) -> dict[str, Any]:
+        """Generate an optimization proposal with best parameters."""
+        results = self.optimizer_grid_search(func, param_grid, eval_func, base_input)
+        best = results[0] if results else None
+        return {
+            'best_params': best['params'] if best else {},
+            'best_score': best['score'] if best else 0.0,
+            'total_combinations': len(results),
+            'top_3': results[:3],
+        }
+
+    # ---- ExperimentSimulator: scenario simulation ----
+
+    @staticmethod
+    def simulator_fault_injection(
+        func: Any,
+        fault_scenarios: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Simulate fault scenarios and record system behavior."""
+        results: list[dict[str, Any]] = []
+        for scenario in fault_scenarios:
+            name = str(scenario.get('name') or 'unnamed')
+            fault_input = scenario.get('input')
+            try:
+                output = func(fault_input)
+                results.append({
+                    'scenario': name,
+                    'status': 'completed',
+                    'output': repr(output)[:200],
+                    'graceful': True,
+                })
+            except Exception as exc:
+                results.append({
+                    'scenario': name,
+                    'status': 'error',
+                    'error': str(exc),
+                    'graceful': 'handled' in str(type(exc).__name__).lower(),
+                })
+        return results
+
+    @staticmethod
+    def simulator_stress_test(
+        func: Any,
+        concurrent_count: int = 10,
+        input_factory: Any = None,
+    ) -> dict[str, Any]:
+        """Simulate concurrent execution stress."""
+        import time as _t
+        results: list[dict[str, Any]] = []
+        t0 = _t.perf_counter()
+        for i in range(concurrent_count):
+            inp = input_factory(i) if input_factory else i
+            start = _t.perf_counter()
+            try:
+                func(inp)
+                results.append({'index': i, 'status': 'ok', 'elapsed_ms': round((_t.perf_counter() - start) * 1000, 2)})
+            except Exception as exc:
+                results.append({'index': i, 'status': 'error', 'error': str(exc), 'elapsed_ms': round((_t.perf_counter() - start) * 1000, 2)})
+        total_ms = round((_t.perf_counter() - t0) * 1000, 2)
+        ok_count = sum(1 for r in results if r['status'] == 'ok')
+        return {
+            'total_runs': concurrent_count,
+            'success_count': ok_count,
+            'failure_count': concurrent_count - ok_count,
+            'total_ms': total_ms,
+            'avg_ms': round(total_ms / concurrent_count, 2) if concurrent_count else 0,
+            'results': results,
+        }
+
+    @staticmethod
+    def simulator_monte_carlo(
+        func: Any,
+        param_sampler: Any,
+        iterations: int = 100,
+    ) -> dict[str, Any]:
+        """Monte Carlo simulation: run func with random parameters."""
+        import random
+        random.seed(42)
+        outputs: list[Any] = []
+        errors: list[str] = []
+        for _ in range(iterations):
+            params = param_sampler()
+            try:
+                result = func(**params) if isinstance(params, dict) else func(params)
+                outputs.append(result)
+            except Exception as exc:
+                errors.append(str(exc))
+        numeric_outputs = [float(o) for o in outputs if isinstance(o, (int, float))]
+        return {
+            'iterations': iterations,
+            'success_count': len(outputs),
+            'error_count': len(errors),
+            'numeric_mean': sum(numeric_outputs) / len(numeric_outputs) if numeric_outputs else None,
+            'numeric_min': min(numeric_outputs) if numeric_outputs else None,
+            'numeric_max': max(numeric_outputs) if numeric_outputs else None,
+        }
+
+    @staticmethod
+    def simulator_what_if(
+        current_config: dict[str, Any],
+        changes: dict[str, Any],
+        impact_estimator: Any,
+    ) -> dict[str, Any]:
+        """Estimate impact of config changes without applying them."""
+        proposed = {**current_config, **changes}
+        try:
+            current_score = impact_estimator(current_config)
+            proposed_score = impact_estimator(proposed)
+            return {
+                'current_score': current_score,
+                'proposed_score': proposed_score,
+                'delta': proposed_score - current_score,
+                'improvement': proposed_score > current_score,
+                'changes': changes,
+            }
+        except Exception as exc:
+            return {
+                'error': str(exc),
+                'changes': changes,
+                'improvement': False,
+            }
+
+    def simulation_report(
+        self,
+        func: Any,
+        fault_scenarios: list[dict[str, Any]] | None = None,
+        stress_count: int = 10,
+    ) -> dict[str, Any]:
+        """Full simulation report combining fault injection and stress testing."""
+        return {
+            'fault_injection': self.simulator_fault_injection(func, fault_scenarios or []),
+            'stress_test': self.simulator_stress_test(func, stress_count),
+        }
+
+
+# ---------------------------------------------------------------------------
+# Lightweight accessor for functional-gap findings without full service init.
+# Used by ``_account_resource_reply`` so the chat response can include gaps.
+# ---------------------------------------------------------------------------
+
+def get_functional_gap_summary() -> list[dict[str, str]]:
+    """Return functional-gap findings as simple dicts (title + detail).
+
+    Runs only the cheap checks (browser account scan, env vars, Ollama
+    tags) without requiring the full OperationalSelfExaminationService
+    dependency graph.
+    """
+    import logging
+    import os
+
+    _log = logging.getLogger(__name__)
+    gaps: list[dict[str, str]] = []
+
+    # Gap 1 & 2: orphan browser sessions / untracked quotas
+    try:
+        from iabv_v15.services.account_resource_scanner import (
+            scan_browser_accounts,
+            scan_browser_sessions,
+            verify_account_sessions,
+            get_all_quota_status,
+        )
+        accounts = scan_browser_accounts()
+        sessions = scan_browser_sessions()
+
+        session_browsers = {s.get('browser', '') for s in sessions.get('sessions', [])}
+        account_browsers = {a.get('browser', '') for a in accounts.get('accounts', [])}
+        orphan_browsers = session_browsers - account_browsers
+        if orphan_browsers and sessions.get('session_count', 0) > 0:
+            gaps.append({
+                'title': 'Sesiones sin cuenta asociada',
+                'detail': (
+                    f'Navegadores con sesiones pero sin cuenta: '
+                    f'{", ".join(sorted(orphan_browsers))}.'
+                ),
+            })
+
+        verified = verify_account_sessions()
+        pool_accounts = verified.get('accounts', [])
+        active = [a for a in pool_accounts if a.get('tool_count', 0) > 0]
+        if active:
+            quotas = get_all_quota_status()
+            if len(quotas.get('statuses', [])) == 0:
+                gaps.append({
+                    'title': 'Workers sin rastreo de cuotas',
+                    'detail': (
+                        f'{len(active)} asistentes tienen sesion activa '
+                        f'pero ninguno tiene cuotas rastreadas aun.'
+                    ),
+                })
+    except Exception as exc:
+        _log.debug('functional gap scan (browsers) skipped: %s', exc)
+
+    # Gap 3: cloud API keys unused
+    try:
+        has_openai = bool(os.environ.get('OPENAI_API_KEY'))
+        has_anthropic = bool(os.environ.get('ANTHROPIC_API_KEY'))
+        if has_openai or has_anthropic:
+            from iabv_v15.services.account_resource_scanner import _load_training_examples
+            training_count = len(_load_training_examples())
+            if training_count == 0:
+                cloud_name = 'OpenAI' if has_openai else 'Anthropic'
+                gaps.append({
+                    'title': f'API {cloud_name} sin uso por clasificador',
+                    'detail': (
+                        f'Hay una API key de {cloud_name} pero el clasificador '
+                        f'dual aun no tiene ejemplos de entrenamiento.'
+                    ),
+                })
+            elif training_count > 0:
+                gaps.append({
+                    'title': f'Clasificador dual: {training_count} ejemplos acumulados',
+                    'detail': (
+                        f'El modelo local aprendio de {training_count} '
+                        f'clasificaciones de la nube.'
+                    ),
+                })
+    except Exception as exc:
+        _log.debug('functional gap scan (cloud) skipped: %s', exc)
+
+    # Gap 4: multiple Ollama models
+    try:
+        import httpx
+        with httpx.Client(timeout=3.0) as client:
+            resp = client.get('http://127.0.0.1:11434/api/tags')
+            if resp.status_code == 200:
+                models = resp.json().get('models', [])
+                if len(models) > 1:
+                    names = [m.get('name', '?') for m in models[:5]]
+                    gaps.append({
+                        'title': f'{len(models)} modelos Ollama disponibles',
+                        'detail': (
+                            f'Modelos: {", ".join(names)}. Se usa solo el default.'
+                        ),
+                    })
+    except Exception:
+        pass
+
+    return gaps

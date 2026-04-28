@@ -1991,7 +1991,9 @@ class EvaluationRoute(str, Enum):
     MATH_EVALUATION = "math_evaluation"
     OCR_VISION = "ocr_vision"
     LANGUAGE_UNDERSTANDING = "language_understanding"
+    CLOUD = "cloud"
     FALLBACK = "fallback"
+    CODE_AUDIT = "code_audit"
 
 
 class ExperimentMetric(BaseModel):
@@ -2672,6 +2674,7 @@ class SelfAuditSnapshot:
     pending_issues: list[str]
     world_model_digest: dict[str, Any]
     summary_markdown: str
+    cross_source_truth: dict[str, Any] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------

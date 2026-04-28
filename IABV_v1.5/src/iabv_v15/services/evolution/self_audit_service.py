@@ -5,6 +5,9 @@ Consolida en un `SelfAuditSnapshot` la revisión viva de:
 - coherencia entre `EnvironmentSelfModel` y el `WorldModelSnapshot`;
 - issues live del `OperationalSelfExaminationService` + del último
   `PortableContextPackage`.
+- cruce de fuentes de verdad local/externa: laptop local, modelo vivo,
+  código/contratos, pruebas, contexto portable e IA externa. Si una fuente
+  no es observable desde este entorno queda `UNRESOLVED`.
 
 Contratos que preserva (AGENTS.md):
 - NO es otro cerebro: no decide rutas, no toca red, no llama a proveedores.
@@ -96,6 +99,12 @@ class SelfAuditService:
         environment_match = self._compare_environment_vs_world(environment, world_model)
         pending_issues = self._collect_pending_issues()
         world_model_digest = self._world_model_digest(world_model)
+        cross_source_truth = self._build_cross_source_truth(
+            environment=environment,
+            world_model=world_model,
+            pending_issues=pending_issues,
+            world_model_digest=world_model_digest,
+        )
 
         summary_markdown = self._build_summary(
             generated_at=generated_at,
@@ -103,6 +112,7 @@ class SelfAuditService:
             tool_checks=tool_checks,
             environment_match=environment_match,
             pending_issues=pending_issues,
+            cross_source_truth=cross_source_truth,
         )
 
         snapshot = SelfAuditSnapshot(
@@ -113,6 +123,7 @@ class SelfAuditService:
             pending_issues=list(pending_issues),
             world_model_digest=dict(world_model_digest),
             summary_markdown=summary_markdown,
+            cross_source_truth=cross_source_truth,
         )
         self._persist(snapshot)
         self._feed_token_rotation_ledger(tool_checks=tool_checks, observed_at=generated_at)
@@ -409,6 +420,58 @@ class SelfAuditService:
             ],
         }
 
+    def _build_cross_source_truth(
+        self,
+        *,
+        environment: EnvironmentSelfModel | None,
+        world_model: WorldModelSnapshot | None,
+        pending_issues: list[str],
+        world_model_digest: dict[str, Any],
+    ) -> dict[str, Any]:
+        local_laptop_observed = bool(world_model is not None and world_model_digest.get("available"))
+        permission_gates = list(getattr(world_model, "permission_gates", []) or []) if world_model is not None else []
+        pending_gates = [
+            str(getattr(gate, "assistant_kind", "") or getattr(gate, "scope", "") or "*").strip() or "*"
+            for gate in permission_gates
+            if str(getattr(gate, "status", "") or "") == "requerido" and not bool(getattr(gate, "granted", False))
+        ]
+        unresolved: list[str] = []
+        if not local_laptop_observed:
+            unresolved.append("UNRESOLVED:requires_local_laptop_audit")
+        if pending_gates:
+            unresolved.append("UNRESOLVED:requires_observation_permission")
+        if world_model is not None:
+            unresolved.extend(str(item) for item in list(getattr(world_model, "unresolved_fields", []) or []) if str(item).strip())
+        source_order = [
+            "WorldModelSnapshot",
+            "EnvironmentSelfModel",
+            "source_contracts",
+            "PortableContextPackage",
+            "SelfExaminationSnapshot",
+            "tests",
+            "ExperimentLab",
+            "external_ia_audit",
+        ]
+        return {
+            "purpose": "Cruzar como ve IABV la laptop local, como lo audita Devin/IA externa y que evidencian codigo/pruebas.",
+            "source_order": source_order,
+            "local_laptop_observed": local_laptop_observed,
+            "environment_self_model_observed": environment is not None,
+            "world_model_observed": world_model is not None,
+            "code_contracts_observed": True,
+            "tests_observed": False,
+            "external_ia_audit_observed": False,
+            "requires_external_ia": True,
+            "requires_local_runtime": True,
+            "pending_permission_gates": pending_gates,
+            "pending_issue_count": len(pending_issues),
+            "unresolved": unresolved,
+            "recommendation": (
+                "Ejecutar autoauditoria en la laptop real y fusionarla con auditoria externa; "
+                "lo no observable desde la VM debe quedar UNRESOLVED."
+            ),
+        }
+
     # ------------------------------------------------------------------
     # Summary markdown (<=1500 chars)
 
@@ -420,6 +483,7 @@ class SelfAuditService:
         tool_checks: list[ToolCheckResult],
         environment_match: EnvironmentMatchResult,
         pending_issues: list[str],
+        cross_source_truth: dict[str, Any],
     ) -> str:
         ok = [r for r in tool_checks if r.status == "ready"]
         bad = [r for r in tool_checks if r.status != "ready"]
@@ -447,6 +511,13 @@ class SelfAuditService:
                 lines.append(f"- {item}")
         else:
             lines.append("- (ninguno reportado)")
+        lines.append("## Cruce de fuentes")
+        observed = "sí" if bool(cross_source_truth.get("local_laptop_observed")) else "no"
+        lines.append(f"- Laptop local observada por WorldModel: {observed}")
+        unresolved = list(cross_source_truth.get("unresolved") or [])
+        if unresolved:
+            lines.append(f"- {', '.join(str(item) for item in unresolved[:3])}")
+        lines.append("- Orden: WorldModel/Environment > contratos > contexto/autoexamen > pruebas > ExperimentLab > auditoría externa")
 
         summary = "\n".join(lines)
         if len(summary) > _MAX_SUMMARY_CHARS:

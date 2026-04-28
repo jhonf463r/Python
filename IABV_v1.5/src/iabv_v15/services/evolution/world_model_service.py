@@ -74,6 +74,8 @@ class WorldModelService:
         self._last_full_scan_monotonic = 0.0
         self._current_snapshot = self._load_latest_snapshot() or WorldModelSnapshot()
         self._observation_permissions: dict[str, dict[str, Any]] = {}
+        self._network_cache: tuple[float | None, str, float] = (None, '', 0.0)  # (latency, error, monotonic_ts)
+        self._NETWORK_CACHE_TTL = 60.0  # cache result for 60s
         self._user32 = self._load_user32()
         if bootstrap_scan:
             self.scan_now(reason='startup', full=not self._in_test_mode())
@@ -861,12 +863,42 @@ class WorldModelService:
         )
 
     def _network_connectivity_probe(self) -> tuple[float | None, str]:
+        # Return cached result if fresh enough (avoids repeated slow probes).
+        cached_latency, cached_error, cached_ts = self._network_cache
+        now_mono = time.monotonic()
+        if cached_ts > 0 and (now_mono - cached_ts) < self._NETWORK_CACHE_TTL:
+            return cached_latency, cached_error
+
         started = time.perf_counter()
+        # Primary: TCP to Cloudflare DNS (fast, no HTTP overhead).
         try:
             with socket.create_connection(('1.1.1.1', 53), timeout=self._NETWORK_TIMEOUT_SECONDS):
                 latency_ms = (time.perf_counter() - started) * 1000.0
+                self._network_cache = (latency_ms, '', time.monotonic())
+                return latency_ms, ''
+        except Exception:
+            pass
+        # Fallback: TCP to Google DNS on port 443 (works when port 53
+        # is blocked by firewall, which is common on Windows).
+        try:
+            started2 = time.perf_counter()
+            with socket.create_connection(('8.8.8.8', 443), timeout=self._NETWORK_TIMEOUT_SECONDS):
+                latency_ms = (time.perf_counter() - started2) * 1000.0
+                self._network_cache = (latency_ms, '', time.monotonic())
+                return latency_ms, ''
+        except Exception:
+            pass
+        # Last resort: HTTP HEAD to a reliable endpoint.
+        try:
+            import urllib.request
+            started3 = time.perf_counter()
+            req = urllib.request.Request('https://www.google.com', method='HEAD')
+            with urllib.request.urlopen(req, timeout=self._NETWORK_TIMEOUT_SECONDS + 1):
+                latency_ms = (time.perf_counter() - started3) * 1000.0
+                self._network_cache = (latency_ms, '', time.monotonic())
                 return latency_ms, ''
         except Exception as exc:
+            self._network_cache = (None, str(exc), time.monotonic())
             return None, str(exc)
 
     def _background_processes(self, *, full: bool) -> list[BackgroundProcessSnapshot]:
