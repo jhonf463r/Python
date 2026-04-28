@@ -142,6 +142,7 @@ def deduce_priorities(
     3. Demote tasks for areas that are already working
     """
     backlog = load_backlog(workspace)
+    _ensure_resource_tasks(backlog, workspace)
     env = environment_scan or {}
     hol = holistic_scan or {}
     env_summary = env.get('summary', {})
@@ -439,3 +440,48 @@ def format_backlog_report(workspace: str | None = None) -> str:
                     lines.append(f'      (razon: {t["priority_reason"][:60]})')
 
     return '\n'.join(lines)
+
+
+def _ensure_resource_tasks(
+    backlog: list[dict[str, Any]],
+    workspace: str | None,
+) -> None:
+    """Add resource management tasks to backlog if not already present."""
+    existing_titles = {t.get('title', '') for t in backlog}
+
+    resource_tasks = [
+        {
+            'title': 'Administracion inteligente de recursos: monitorear RAM/CPU y auto-throttle',
+            'area': 'resource_management',
+            'priority': 'high',
+            'evidence': 'El programa debe detectar presion de RAM/CPU y diferir tareas pesadas automaticamente.',
+        },
+        {
+            'title': 'Deteccion de inactividad: ejecutar tareas internas cuando el usuario esta ausente',
+            'area': 'resource_management',
+            'priority': 'high',
+            'evidence': 'Entrenamiento, merges y analisis profundo deben correr cuando el usuario no interactua.',
+        },
+        {
+            'title': 'Diagnostico de congelamientos: registrar freezes y aprender configuraciones optimas',
+            'area': 'resource_management',
+            'priority': 'high',
+            'evidence': 'El programa debe saber por que se congela y ajustar configuraciones futuras.',
+        },
+    ]
+
+    added = False
+    for task in resource_tasks:
+        if task['title'] not in existing_titles:
+            backlog.append({
+                'title': task['title'],
+                'area': task['area'],
+                'priority': task['priority'],
+                'status': 'pending',
+                'evidence': task['evidence'],
+                'added_by': 'resource_management_deduction',
+            })
+            added = True
+
+    if added:
+        save_backlog(backlog, workspace)

@@ -164,6 +164,21 @@ class ControlCenterViewModel(QObject):
         self._chat_session_id = _generate_chat_session_id()
         self._pending_capability_notice: list[str] = []
 
+        # Resource monitor — lightweight daemon thread that snapshots
+        # RAM/CPU every 15s so the holistic scan can diagnose bottlenecks.
+        try:
+            from iabv_v15.services.intelligent_resource_manager import (
+                AdaptiveResourceOrchestrator,
+            )
+            _ws = getattr(config, 'workspace_root', None) or ''
+            _data = str(Path(_ws) / 'src' / 'data') if _ws else None
+            self._resource_orchestrator = AdaptiveResourceOrchestrator(
+                config_path=_data,
+            )
+            self._resource_orchestrator.start_monitoring()
+        except Exception:
+            self._resource_orchestrator = None  # type: ignore[assignment]
+
         self._selected_role = config.default_task_role.value
         self._auto_route_enabled = True
         self._advanced_visible = False
@@ -7155,6 +7170,23 @@ class ControlCenterViewModel(QObject):
                 except Exception as reg_exc:
                     logger.debug('Regression scan failed: %s', reg_exc)
 
+                # 4.5pre Capture resource snapshot before holistic scan
+                _resource_report: dict = {}
+                try:
+                    from iabv_v15.services.intelligent_resource_manager import (
+                        AdaptiveResourceOrchestrator,
+                    )
+                    if hasattr(self, '_resource_orchestrator') and self._resource_orchestrator:
+                        _resource_report = self._resource_orchestrator.get_scheduling_report()
+                    else:
+                        _data_path = Path(ws) / 'src' / 'data' if ws else None
+                        _tmp_orch = AdaptiveResourceOrchestrator(
+                            config_path=str(_data_path) if _data_path else None,
+                        )
+                        _resource_report = _tmp_orch.get_scheduling_report()
+                except Exception as res_pre_exc:
+                    logger.debug('Resource pre-scan failed: %s', res_pre_exc)
+
                 # 4.5 Holistic metacognition: cross-reference ALL sources
                 try:
                     from iabv_v15.services.self_code_analysis import holistic_metacognition_scan
@@ -7181,6 +7213,7 @@ class ControlCenterViewModel(QObject):
                         account_state=_account_scan if _account_scan else None,
                         regression_state=_regression_scan if _regression_scan else None,
                         deep_env_state=_deep_scan if '_deep_scan' in locals() and _deep_scan else None,
+                        resource_state=_resource_report if _resource_report else None,
                     )
                     sections.append('')
                     sections.append('== CRUCE DE FUENTES DE VERDAD ==')
@@ -7241,6 +7274,18 @@ class ControlCenterViewModel(QObject):
                     sections.append(format_limits_report(_limits_scan))
                 except Exception as lim_exc:
                     sections.append(f'\nError en reporte de limites: {lim_exc}')
+
+                # 4.6d Resource management report — uses data already captured
+                # in 4.5pre so we don't snapshot twice.
+                try:
+                    if _resource_report:
+                        from iabv_v15.services.intelligent_resource_manager import (
+                            format_resource_report,
+                        )
+                        sections.append('')
+                        sections.append(format_resource_report(_resource_report))
+                except Exception as res_exc:
+                    sections.append(f'\nError en recursos del sistema: {res_exc}')
 
                 # 4.7 Evolution backlog — tareas pendientes priorizadas
                 try:
@@ -7672,6 +7717,9 @@ class ControlCenterViewModel(QObject):
         message = text.strip()
         if not message:
             return
+        # Record user interaction for resource orchestration
+        if hasattr(self, '_resource_orchestrator') and self._resource_orchestrator:
+            self._resource_orchestrator.record_user_typing()
         # Safety: si _working quedo stuck de una llamada anterior (>30s),
         # resetearlo para no bloquear al usuario permanentemente.
         # Reducido de 60s a 30s: el usuario percibe >30s como congelamiento.

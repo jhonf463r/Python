@@ -839,6 +839,7 @@ def holistic_metacognition_scan(
     account_state: dict[str, Any] | None = None,
     regression_state: dict[str, Any] | None = None,
     deep_env_state: dict[str, Any] | None = None,
+    resource_state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Cross-reference ALL sources of truth and deduce metacognitive gaps.
 
@@ -1099,10 +1100,51 @@ def holistic_metacognition_scan(
             })
     cross_validations.append('git_reverts × file_churn × backlog_oscillation')
 
+    # --- Resource monitoring × system health ---
+    rs = resource_state or {}
+    rs_resources = rs.get('resources', {})
+    rs_ram_pct = rs_resources.get('ram_used_pct', 0)
+    rs_monitoring = rs.get('monitoring', {})
+    if rs_ram_pct > 85:
+        deductions.append({
+            'severity': 'warning',
+            'area': 'resource_pressure',
+            'finding': (
+                f'RAM en {rs_ram_pct}% — tareas pesadas deben diferirse '
+                'para evitar congelamiento'
+            ),
+            'action': 'defer_heavy_tasks',
+        })
+    if rs_monitoring.get('status') == 'ok':
+        ram_trend = rs_monitoring.get('ram', {}).get('trend', 'stable')
+        if ram_trend == 'rising':
+            deductions.append({
+                'severity': 'info',
+                'area': 'resource_trend',
+                'finding': 'Tendencia de RAM creciente detectada por monitoreo en fondo',
+                'action': 'investigate_memory_growth',
+            })
+        anomaly_count = rs_monitoring.get('anomalies', 0)
+        if anomaly_count > 0:
+            deductions.append({
+                'severity': 'warning' if anomaly_count >= 3 else 'info',
+                'area': 'resource_anomaly',
+                'finding': f'{anomaly_count} anomalias de recursos detectadas (picos RAM, umbrales criticos)',
+                'action': 'review_resource_anomalies',
+            })
+    for bd in rs.get('bottleneck_diagnoses', []):
+        deductions.append({
+            'severity': bd.get('severity', 'info'),
+            'area': bd.get('area', 'resource_bottleneck'),
+            'finding': bd.get('finding', ''),
+            'action': bd.get('action', 'none'),
+        })
+    cross_validations.append('resource_monitor × ram_pressure × cpu_load')
+
     all_sources = [
         git_state, gpu_state, test_state, version_state,
         branch_state, stalled_sessions, account_state,
-        regression_state, deep_env_state,
+        regression_state, deep_env_state, resource_state,
     ]
     total_sources = len(all_sources)
     sources_with_data = sum(1 for x in all_sources if x is not None)
