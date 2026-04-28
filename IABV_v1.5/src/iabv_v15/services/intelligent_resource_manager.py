@@ -83,25 +83,47 @@ def take_resource_snapshot() -> ResourceSnapshot:
                 snap.ram_available_mb = avail_kb // 1024
                 snap.ram_used_pct = round((1 - avail_kb / max(total_kb, 1)) * 100, 1)
         else:
-            # Windows: wmic
-            r = subprocess.run(
-                ['wmic', 'OS', 'get',
-                 'FreePhysicalMemory,TotalVisibleMemorySize',
-                 '/format:csv'],
-                capture_output=True, text=True, timeout=10,
-            )
-            if r.returncode == 0:
-                for line in r.stdout.strip().splitlines()[1:]:
-                    parts = [p.strip() for p in line.split(',') if p.strip()]
-                    if len(parts) >= 3:
-                        free_kb = int(parts[1]) if parts[1].isdigit() else 0
-                        total_kb = int(parts[2]) if parts[2].isdigit() else 1
-                        snap.ram_total_mb = total_kb // 1024
-                        snap.ram_available_mb = free_kb // 1024
+            # Windows: try PowerShell first (more reliable), fall back to wmic
+            _ram_ok = False
+            try:
+                r = subprocess.run(
+                    ['powershell', '-Command',
+                     '[math]::Round((Get-CimInstance Win32_OperatingSystem).TotalVisibleMemorySize/1024),'
+                     '[math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory/1024)'],
+                    capture_output=True, text=True, timeout=10,
+                )
+                if r.returncode == 0:
+                    nums = [x.strip() for x in r.stdout.strip().splitlines() if x.strip().isdigit()]
+                    if len(nums) >= 2:
+                        snap.ram_total_mb = int(nums[0])
+                        snap.ram_available_mb = int(nums[1])
                         snap.ram_used_pct = round(
-                            (1 - free_kb / max(total_kb, 1)) * 100, 1,
+                            (1 - snap.ram_available_mb / max(snap.ram_total_mb, 1)) * 100, 1,
                         )
-                        break
+                        _ram_ok = True
+            except Exception:
+                pass
+            if not _ram_ok:
+                r = subprocess.run(
+                    ['wmic', 'OS', 'get',
+                     'FreePhysicalMemory,TotalVisibleMemorySize',
+                     '/format:csv'],
+                    capture_output=True, text=True, timeout=10,
+                )
+                if r.returncode == 0:
+                    for line in r.stdout.strip().splitlines():
+                        parts = [p.strip() for p in line.split(',') if p.strip()]
+                        # Find the line with numeric data
+                        nums = [p for p in parts if p.isdigit()]
+                        if len(nums) >= 2:
+                            free_kb = int(nums[0])
+                            total_kb = int(nums[1])
+                            snap.ram_total_mb = total_kb // 1024
+                            snap.ram_available_mb = free_kb // 1024
+                            snap.ram_used_pct = round(
+                                (1 - free_kb / max(total_kb, 1)) * 100, 1,
+                            )
+                            break
     except Exception as exc:
         logger.debug('RAM snapshot failed: %s', exc)
 
@@ -111,16 +133,32 @@ def take_resource_snapshot() -> ResourceSnapshot:
         if loadavg.exists():
             snap.cpu_load_1m = float(loadavg.read_text().split()[0])
         else:
-            r = subprocess.run(
-                ['wmic', 'cpu', 'get', 'LoadPercentage', '/format:csv'],
-                capture_output=True, text=True, timeout=10,
-            )
-            if r.returncode == 0:
-                for line in r.stdout.strip().splitlines()[1:]:
-                    parts = [p.strip() for p in line.split(',') if p.strip()]
-                    if len(parts) >= 2 and parts[-1].isdigit():
-                        snap.cpu_load_1m = float(parts[-1]) / 100 * snap.cpu_count
-                        break
+            _cpu_ok = False
+            try:
+                r = subprocess.run(
+                    ['powershell', '-Command',
+                     '(Get-CimInstance Win32_Processor).LoadPercentage'],
+                    capture_output=True, text=True, timeout=10,
+                )
+                if r.returncode == 0:
+                    val = r.stdout.strip()
+                    if val.isdigit():
+                        snap.cpu_load_1m = float(val) / 100 * snap.cpu_count
+                        _cpu_ok = True
+            except Exception:
+                pass
+            if not _cpu_ok:
+                r = subprocess.run(
+                    ['wmic', 'cpu', 'get', 'LoadPercentage', '/format:csv'],
+                    capture_output=True, text=True, timeout=10,
+                )
+                if r.returncode == 0:
+                    for line in r.stdout.strip().splitlines():
+                        parts = [p.strip() for p in line.split(',') if p.strip()]
+                        nums = [p for p in parts if p.isdigit()]
+                        if nums:
+                            snap.cpu_load_1m = float(nums[0]) / 100 * snap.cpu_count
+                            break
     except Exception as exc:
         logger.debug('CPU snapshot failed: %s', exc)
 
