@@ -1216,6 +1216,7 @@ def _build_deductive_context(
     findings: list[dict[str, Any]],
     *,
     workspace: str = '',
+    tool_registry: Any = None,
 ) -> str:
     """Build a context string for the deductive reasoning engine."""
     parts: list[str] = []
@@ -1231,11 +1232,12 @@ def _build_deductive_context(
     # Available tools
     parts.append('\n== HERRAMIENTAS DISPONIBLES ==')
     try:
-        from iabv_v15.services.tools.tool_registry import ToolRegistry
-        registry = ToolRegistry(workspace_root=workspace or '.')
-        cards = registry.list_cards()
-        for card in cards[:20]:
-            parts.append(f"- {card.tool_id}: available={card.available}")
+        if tool_registry is not None:
+            cards = tool_registry.list_cards()
+            for card in cards[:20]:
+                parts.append(f"- {card.tool_id}: available={card.available}")
+        else:
+            parts.append('- (ToolRegistry no inyectado)')
     except Exception:
         parts.append('- (no se pudo leer ToolRegistry)')
 
@@ -1487,6 +1489,7 @@ def apply_deductive_corrections(
     findings: list[dict[str, Any]],
     *,
     workspace: str = '',
+    tool_registry: Any = None,
 ) -> dict[str, Any]:
     """Use Ollama to reason about findings and execute deduced corrections.
 
@@ -1499,7 +1502,7 @@ def apply_deductive_corrections(
     Falls back to the pattern-based handlers if Ollama is unavailable.
     """
     # Build context for the LLM
-    context = _build_deductive_context(findings, workspace=workspace)
+    context = _build_deductive_context(findings, workspace=workspace, tool_registry=tool_registry)
 
     # Query Ollama
     deduction = _query_ollama_for_deduction(context)
@@ -1593,7 +1596,7 @@ FORMATO DE RESPUESTA:
 """
 
 
-def _deep_tool_probe(tool_id: str, *, workspace: str = '') -> dict[str, Any]:
+def _deep_tool_probe(tool_id: str, *, workspace: str = '', tool_registry: Any = None) -> dict[str, Any]:
     """Gather deep diagnostic info about a tool's real state.
 
     Goes beyond the 3-source check (filesystem/process/window) to inspect:
@@ -1617,9 +1620,7 @@ def _deep_tool_probe(tool_id: str, *, workspace: str = '') -> dict[str, Any]:
 
     # 1. ToolRegistry card info
     try:
-        from iabv_v15.services.tools.tool_registry import ToolRegistry
-        registry = ToolRegistry(workspace_root=workspace or '.')
-        card = registry.get_card(tool_id)
+        card = tool_registry.get_card(tool_id) if tool_registry is not None else None
         if card:
             info['card'] = {
                 'title': card.title,
@@ -1782,9 +1783,7 @@ def _deep_tool_probe(tool_id: str, *, workspace: str = '') -> dict[str, Any]:
     web_tool_id = f'{assistant_kind}_web_assisted'
     web_url = ''
     try:
-        from iabv_v15.services.tools.tool_registry import ToolRegistry
-        registry = ToolRegistry(workspace_root=workspace or '.')
-        web_card = registry.get_card(web_tool_id)
+        web_card = tool_registry.get_card(web_tool_id) if tool_registry is not None else None
         if web_card:
             web_url = web_card.metadata.get('web_url', '')
     except Exception:
@@ -1808,6 +1807,7 @@ def verify_tool_access_deductive(
     tool_id: str,
     *,
     workspace: str = '',
+    tool_registry: Any = None,
 ) -> dict[str, Any]:
     """Perform an intelligent, deep verification of real access to a tool.
 
@@ -1819,7 +1819,7 @@ def verify_tool_access_deductive(
     The program calls this ITSELF when it detects disagreements — no human
     needs to program the verification logic for each tool.
     """
-    probe = _deep_tool_probe(tool_id, workspace=workspace)
+    probe = _deep_tool_probe(tool_id, workspace=workspace, tool_registry=tool_registry)
 
     # Build a readable summary for Ollama
     parts: list[str] = [f'== VERIFICACION PROFUNDA: {tool_id} ==']
