@@ -906,7 +906,7 @@ class EvolutionCenterViewModel(QObject):
             self._publish_pr_status = f'No pude publicar el PR: {message}'
             self._publish_pr_result = {'success': False, 'error': message}
         elif task_name == 'audit_base_tools':
-            self._latest_tool_status = f'No encontre herramientas base para auditar en esta sesion. ({message})'
+            self._latest_tool_status = f'Error en auditoria base de herramientas: {message}'
         self.dataChanged.emit()
 
     @staticmethod
