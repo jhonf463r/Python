@@ -3965,7 +3965,8 @@ class OperationalSelfExaminationService:
                     source_refs=['CodeAuditTrail', 'pending_cross_verifications'],
                 ))
         except Exception as exc:
-            logger.warning('oses: code_audit_cross_reference error: %s', exc)
+            import logging as _logging
+            _logging.getLogger(__name__).warning('oses: code_audit_cross_reference error: %s', exc)
         return findings
 
     # ──────────────────────────────────────────────────────────
