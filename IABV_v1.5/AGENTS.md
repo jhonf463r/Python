@@ -257,9 +257,11 @@ su laptop. Todo lo demas lo hace el programa solo.
 
 Reglas absolutas:
 1. **El usuario NUNCA debe abrir PowerShell para configurar tokens.** Si
-   falta un secreto, IABV abre el browser a la pagina correcta (GitHub
-   settings, Devin API keys, etc.) y le pide al usuario que pegue el
-   token en un dialogo dentro de la UI. IABV lo guarda automaticamente
+   falta un secreto y el usuario lo solicita, IABV abre el browser a la
+   pagina correcta (GitHub settings, Devin API keys, etc.) y le pide al
+   usuario que pegue el token en un dialogo dentro de la UI. Los procesos
+   autonomos/background NO abren ventanas visibles — retornan la URL
+   para que la UI la muestre. IABV guarda automaticamente los tokens
    en ``~/.iabv_secrets.ps1`` via ``save_secret_to_profile()``.
 2. **El usuario NUNCA debe instalar herramientas manualmente.** Si falta
    algo (gh, cloudflared, paquete pip), IABV lo instala solo. Si necesita
@@ -273,7 +275,9 @@ Reglas absolutas:
 
 Funciones clave para autonomia de secretos:
 - ``auto_correction_engine.auto_provision_missing_secrets()``: detecta
-  secretos faltantes y abre el browser automaticamente para crearlos.
+  secretos faltantes. Con ``open_browser=True`` (accion del usuario) abre
+  el browser; con ``open_browser=False`` (procesos autonomos) retorna las
+  URLs sin abrir ventanas visibles.
 - ``auto_correction_engine.save_secret_to_profile(name, value)``: guarda
   un token en ``~/.iabv_secrets.ps1`` y lo activa en ``os.environ``.
   Llamado desde la UI cuando el usuario pega un token.

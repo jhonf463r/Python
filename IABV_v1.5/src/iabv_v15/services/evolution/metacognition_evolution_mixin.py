@@ -116,7 +116,7 @@ class MetacognitionEvolutionMixin:
             # Auto-provision missing API keys
             if 'not configured' in title and self.auto_correction_engine:
                 try:
-                    self.auto_correction_engine.auto_provision_missing_secrets()
+                    self.auto_correction_engine.auto_provision_missing_secrets(open_browser=False)
                     actions_taken.append(f'Auto-provisioned missing keys ({title})')
                     logger.info('metacognition: auto-provisioned missing keys')
                 except Exception as exc:

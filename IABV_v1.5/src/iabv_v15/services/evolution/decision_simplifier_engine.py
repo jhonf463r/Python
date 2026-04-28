@@ -426,7 +426,7 @@ class DecisionSimplifierEngine:
 
         if action == 'provision_key' and self.auto_correction_engine:
             try:
-                self.auto_correction_engine.auto_provision_missing_secrets()
+                self.auto_correction_engine.auto_provision_missing_secrets(open_browser=False)
                 return True
             except Exception:
                 return False

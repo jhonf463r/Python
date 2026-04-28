@@ -918,15 +918,14 @@ class ToolAdapter:
             elif process_detected_running:
                 launched = True
             elif launch_mode == 'web_assisted':
-                # Do NOT open visible browser windows during autonomous
-                # consultations — log the target and mark as not launched
-                # so the system falls back to reporting the URL to the user.
                 import logging as _launch_log
                 _launch_log.getLogger(__name__).info(
                     'external_consultation: skipping visible webbrowser.open for %s — autonomous queries must not interrupt user',
                     launch_target,
                 )
                 launched = False
+                consultation_metadata['pending_url'] = str(launch_target)
+                consultation_metadata['url_ready'] = True
             else:
                 resolved = Path(launch_target)
                 if os.name == 'nt' and resolved.exists():
@@ -975,7 +974,7 @@ class ToolAdapter:
                 'output_text': output_text,
                 'extracted_data': {'assistant_kind': assistant_kind, 'launch_target': launch_target, 'prompt_preview': prompt_preview},
                 'artifacts': [],
-                'error_message': '' if launched else 'assistant_launch_failed',
+                'error_message': '' if launched else ('url_pending' if consultation_metadata.get('url_ready') else 'assistant_launch_failed'),
                 'execution_ms': int((time.perf_counter() - start) * 1000),
                 'metadata': {
                     'sandbox': sandbox,
