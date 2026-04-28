@@ -332,14 +332,12 @@ def auto_provision_missing_secrets(
                 logger.debug('auto_provision: autonomous failed for %s: %s', name, exc)
 
         if open_browser and can_open and url:
-            try:
-                import webbrowser
-                webbrowser.open(url)
-                provision['opened'] = True
-                opened_urls.append(url)
-                logger.info('auto_provision: opened browser for %s → %s', name, url)
-            except Exception as exc:
-                logger.debug('auto_provision: could not open browser for %s: %s', name, exc)
+            # Do NOT open visible browser windows autonomously —
+            # the user should not see Chrome popping up without their action.
+            # Instead, record the URL so the UI can show it to the user.
+            provision['opened'] = False
+            provision['url_ready'] = True
+            logger.info('auto_provision: %s needs user action at %s (no visible browser opened)', name, url)
 
         provisions.append(provision)
 

@@ -1395,24 +1395,15 @@ def _exec_trigger_token_renewal(rule: dict[str, Any]) -> dict[str, Any]:
     url = _RENEWAL_URLS.get(provider_key, '')
     if not url and provider_key == 'CLOUD_PROVIDER':
         url = ' | '.join(f'{k}: {v}' for k, v in _RENEWAL_URLS.items())
-    opened = False
-    if url and '|' not in url:
-        try:
-            import webbrowser
-            webbrowser.open(url)
-            opened = True
-        except Exception:
-            pass
-
+    # Do NOT open visible browser windows autonomously.
+    # Just return the URL so the UI can show it to the user.
     return {
         'executed': True,
         'detail': detail,
         'provider': provider_key,
-        'browser_opened': opened,
+        'browser_opened': False,
         'renewal_url': url,
         'user_action': (
-            'Token renovado en el browser — pega el nuevo token en el dialogo de IABV.'
-            if opened else
             f'Revisa tus dashboards de proveedores cloud y pega el nuevo token en IABV. ({url})'
             if provider_key == 'CLOUD_PROVIDER' else
             f'Abre {url} y pega el nuevo token en IABV.'
@@ -1475,14 +1466,8 @@ def _exec_auto_provision_gemini(rule: dict[str, Any]) -> dict[str, Any]:
     except Exception as exc:
         logger.debug('auto_provision_gemini: autonomous provisioner unavailable: %s', exc)
 
-    # Fallback: open browser manually
+    # Fallback: do NOT open visible browser — return URL for the UI.
     opened = False
-    try:
-        import webbrowser
-        webbrowser.open('https://aistudio.google.com/apikey')
-        opened = True
-    except Exception:
-        pass
 
     return {
         'executed': True,
@@ -1547,26 +1532,15 @@ def _exec_provision_cloud_key(rule: dict[str, Any]) -> dict[str, Any]:
         rule_id, ('UNKNOWN', '', 'Proveedor cloud desconocido'),
     )
 
-    opened = False
-    if url:
-        try:
-            import webbrowser
-            webbrowser.open(url)
-            opened = True
-        except Exception:
-            pass
-
+    # Do NOT open visible browser windows autonomously.
+    # Return URL so the UI can present it to the user.
     return {
         'executed': True,
         'detail': f'Provisioning {env_key}: {description}',
         'env_key': env_key,
         'signup_url': url,
-        'browser_opened': opened,
-        'user_action': (
-            f'Se abrio {url} — crea la API key y pegala en el dialogo de IABV.'
-            if opened else
-            f'Abre {url}, crea la API key y pegala en IABV.'
-        ),
+        'browser_opened': False,
+        'user_action': f'Abre {url}, crea la API key y pegala en IABV.',
     }
 
 
