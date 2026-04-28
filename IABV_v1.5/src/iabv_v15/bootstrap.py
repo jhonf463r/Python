@@ -1948,7 +1948,6 @@ class AppBootstrap:
         configured API keys are tested.
         """
         selector = getattr(self, 'adaptive_model_selector', None)
-        api_discovery = getattr(self, 'api_key_discovery_service', None)
         if selector is None:
             return
 
