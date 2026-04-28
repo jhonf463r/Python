@@ -5132,6 +5132,7 @@ class ControlCenterViewModel(QObject):
             'Entendido. Primero me actualizo (git pull), luego analizo mi codigo, GPU, y busco mejoras pendientes...',
             'Metacognicion: auto-update + auto-analisis iniciado.',
         )
+        self._working = True
         self._set_live_status('processing')
         self.dataChanged.emit()
 
@@ -5417,6 +5418,7 @@ class ControlCenterViewModel(QObject):
                     'Metacognicion: error en auto-analisis.',
                 )
             finally:
+                self._working = False
                 self._set_live_status('idle')
                 self.dataChanged.emit()
 

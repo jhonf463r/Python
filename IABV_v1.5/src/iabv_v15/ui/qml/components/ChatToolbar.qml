@@ -386,7 +386,6 @@ Rectangle {
                     background: Rectangle { color: "transparent" }
                     onTextChanged: {
                         toolbar.searchQuery = text
-                        toolbar.searchQueryChanged(text)
                     }
                 }
 
