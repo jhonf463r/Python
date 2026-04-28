@@ -1209,6 +1209,7 @@ class AppBootstrap:
         cards = self.tool_registry.list_cards()
         if not cards:
             logger.info('tool_availability: sin tools registradas')
+            return
 
         # GPU Metacognition: verify GPU health at startup
         try:
@@ -1224,7 +1225,6 @@ class AppBootstrap:
         except Exception as _gpu_exc:
             logger.warning('gpu_startup_check failed: %s', _gpu_exc)
 
-            return
         ready = []
         missing = []
         now = datetime.now(timezone.utc)
