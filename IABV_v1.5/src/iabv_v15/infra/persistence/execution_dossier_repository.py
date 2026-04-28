@@ -4,6 +4,8 @@ import json
 import logging
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from iabv_v15.domain.models import ExecutionDossier
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.storage import ArtifactStorage
@@ -114,6 +116,6 @@ class ExecutionDossierRepository:
                 relative = f'dossiers/{dossier_id}.json'
                 payload = self.storage.load_json(relative)
             return ExecutionDossier.model_validate(payload)
-        except (FileNotFoundError, json.JSONDecodeError, ValueError) as exc:
+        except (FileNotFoundError, json.JSONDecodeError, ValidationError) as exc:
             logger.warning('dossier %s: file missing or corrupt — %s', dossier_id, exc)
             return None
