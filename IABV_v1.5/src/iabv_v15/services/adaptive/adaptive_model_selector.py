@@ -403,7 +403,15 @@ class AdaptiveModelSelector:
                 return []
             lines = self._performance_log.read_text(encoding='utf-8').strip().split('\n')
             recent = lines[-_HISTORY_WINDOW:]
-            return [json.loads(line) for line in recent if line.strip()]
+            entries: list[dict[str, Any]] = []
+            for line in recent:
+                if not line.strip():
+                    continue
+                try:
+                    entries.append(json.loads(line))
+                except (json.JSONDecodeError, ValueError):
+                    continue
+            return entries
         except Exception:
             return []
 

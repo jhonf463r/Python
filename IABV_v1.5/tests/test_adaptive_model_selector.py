@@ -169,6 +169,31 @@ class TestAdaptiveModelSelector:
             # Groq (with key) should score higher than ollama_local
             assert scores.get('groq', 0) > scores.get('ollama_local', 0)
 
+    def test_read_recent_performance_survives_corrupted_line(self, tmp_path):
+        """R15-1: _read_recent_performance must not discard all history when
+        one JSONL line is corrupted.  Before the fix, the list comprehension
+        raised json.JSONDecodeError on the bad line and the outer
+        try/except returned [], losing all healthy entries."""
+        sel = self._make_selector(tmp_path)
+        log_file = tmp_path / 'evolution' / 'model_selection' / 'performance.jsonl'
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        good_entry = json.dumps({
+            'provider_id': 'groq',
+            'latency_ms': 120.0,
+            'success': True,
+            'task_type': 'general',
+        })
+        with open(log_file, 'w', encoding='utf-8') as f:
+            f.write(good_entry + '\n')
+            f.write('THIS IS NOT VALID JSON\n')
+            f.write(good_entry + '\n')
+        entries = sel._read_recent_performance()
+        assert len(entries) == 2, (
+            f'Expected 2 healthy entries after corrupted line, got {len(entries)}. '
+            'Before the fix, a single corrupted line discarded all history.'
+        )
+        assert entries[0]['provider_id'] == 'groq'
+
 
 # ---------------------------------------------------------------------------
 # CloudReasoningPlannerService adaptive chain tests
@@ -196,6 +221,17 @@ class TestAdaptiveCloudPlanner:
         data = {'choices': [{'message': {'content': 'no json here'}}]}
         result = CloudReasoningPlannerService._extract_json(data, 'test')
         assert result is None
+
+    def test_tool_descriptors_include_windsurf(self):
+        """R15-2: windsurf is a recognized assistant_kind in
+        AssistantCapabilityRegistry but was missing from TOOL_DESCRIPTORS,
+        so the cloud planner could never assign tasks to it."""
+        from iabv_v15.services.adaptive.cloud_reasoning_planner import TOOL_DESCRIPTORS
+        ids = {t['id'] for t in TOOL_DESCRIPTORS}
+        assert 'windsurf' in ids, (
+            'windsurf must be in TOOL_DESCRIPTORS so the cloud planner '
+            'can assign tasks to it'
+        )
 
     def test_try_provider_returns_none_for_missing_key(self):
         from iabv_v15.services.adaptive.cloud_reasoning_planner import CloudReasoningPlannerService

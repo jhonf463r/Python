@@ -94,6 +94,12 @@ TOOL_DESCRIPTORS: list[dict[str, str]] = [
         'strengths': 'fast, private, no quota limits, good for classification and short tasks',
         'limitations': 'smaller model, weaker reasoning on complex problems',
     },
+    {
+        'id': 'windsurf',
+        'name': 'Windsurf (Codeium)',
+        'strengths': 'IDE-integrated coding, real-time autocomplete, multi-file edits, project-aware context',
+        'limitations': 'requires desktop IDE, no standalone API, heavier for non-code tasks',
+    },
 ]
 
 _TOOL_BLOCK = '\n'.join(
