@@ -551,7 +551,7 @@ class CodeAuditTrail:
             all_modules.extend(r.get('modules_audited', []))
             total_loc += r.get('total_loc_audited', 0)
             total_bugs_found += len(r.get('findings', []))
-            total_bugs_fixed += r.get('bugs_found', 0)
+            total_bugs_fixed += r.get('bugs_fixed', 0)
             total_tests_added += r.get('tests_added', 0)
             if r.get('auditor_name'):
                 auditors.add(r['auditor_name'])
