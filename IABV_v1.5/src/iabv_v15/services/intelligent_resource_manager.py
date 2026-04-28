@@ -64,11 +64,86 @@ class ResourceSnapshot:
         return 'low'
 
 
+def _win32_ram_ctypes() -> tuple[int, int, float]:
+    """Read RAM via Win32 GlobalMemoryStatusEx (instant, no subprocess).
+
+    Returns (total_mb, available_mb, used_pct).  Falls back to (0, 0, 0.0)
+    on non-Windows or on error.
+    """
+    try:
+        import ctypes
+
+        class MEMORYSTATUSEX(ctypes.Structure):
+            _fields_ = [
+                ('dwLength', ctypes.c_ulong),
+                ('dwMemoryLoad', ctypes.c_ulong),
+                ('ullTotalPhys', ctypes.c_ulonglong),
+                ('ullAvailPhys', ctypes.c_ulonglong),
+                ('ullTotalPageFile', ctypes.c_ulonglong),
+                ('ullAvailPageFile', ctypes.c_ulonglong),
+                ('ullTotalVirtual', ctypes.c_ulonglong),
+                ('ullAvailVirtual', ctypes.c_ulonglong),
+                ('ullAvailExtendedVirtual', ctypes.c_ulonglong),
+            ]
+
+        status = MEMORYSTATUSEX()
+        status.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status)):  # type: ignore[union-attr]
+            return 0, 0, 0.0
+        total_mb = int(status.ullTotalPhys) // (1024 * 1024)
+        avail_mb = int(status.ullAvailPhys) // (1024 * 1024)
+        used_pct = round(float(status.dwMemoryLoad), 1)
+        return total_mb, avail_mb, used_pct
+    except Exception:
+        return 0, 0, 0.0
+
+
+def _win32_cpu_pct() -> float:
+    """Read CPU load percentage via Win32 GetSystemTimes (two-sample delta).
+
+    Returns a pseudo-load value comparable to Unix load: pct/100 * cores.
+    Falls back to 0.0 on error.
+    """
+    try:
+        import ctypes
+
+        class FILETIME(ctypes.Structure):
+            _fields_ = [('lo', ctypes.c_ulong), ('hi', ctypes.c_ulong)]
+
+        def _ft_val(ft: 'FILETIME') -> int:
+            return ft.hi << 32 | ft.lo
+
+        kernel32 = ctypes.windll.kernel32  # type: ignore[union-attr]
+        idle1, kern1, user1 = FILETIME(), FILETIME(), FILETIME()
+        kernel32.GetSystemTimes(
+            ctypes.byref(idle1), ctypes.byref(kern1), ctypes.byref(user1),
+        )
+        time.sleep(0.25)
+        idle2, kern2, user2 = FILETIME(), FILETIME(), FILETIME()
+        kernel32.GetSystemTimes(
+            ctypes.byref(idle2), ctypes.byref(kern2), ctypes.byref(user2),
+        )
+        idle_d = _ft_val(idle2) - _ft_val(idle1)
+        total_d = (_ft_val(kern2) + _ft_val(user2)) - (_ft_val(kern1) + _ft_val(user1))
+        if total_d <= 0:
+            return 0.0
+        busy_pct = (1 - idle_d / total_d) * 100
+        cores = os.cpu_count() or 1
+        return round(busy_pct / 100 * cores, 2)
+    except Exception:
+        return 0.0
+
+
 def take_resource_snapshot() -> ResourceSnapshot:
-    """Capture current system resource state (cross-platform)."""
+    """Capture current system resource state (cross-platform).
+
+    On Windows uses ctypes for instant kernel32 calls (no subprocess,
+    no locale issues, no WMI timeout).  On Linux reads /proc directly.
+    """
     snap = ResourceSnapshot()
     snap.cpu_count = os.cpu_count() or 1
 
+    # --- RAM ---
     try:
         meminfo = Path('/proc/meminfo')
         if meminfo.exists():
@@ -82,83 +157,22 @@ def take_resource_snapshot() -> ResourceSnapshot:
                 snap.ram_total_mb = total_kb // 1024
                 snap.ram_available_mb = avail_kb // 1024
                 snap.ram_used_pct = round((1 - avail_kb / max(total_kb, 1)) * 100, 1)
-        else:
-            # Windows: try PowerShell first (more reliable), fall back to wmic
-            _ram_ok = False
-            try:
-                r = subprocess.run(
-                    ['powershell', '-Command',
-                     '[math]::Round((Get-CimInstance Win32_OperatingSystem).TotalVisibleMemorySize/1024),'
-                     '[math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory/1024)'],
-                    capture_output=True, text=True, timeout=10,
-                )
-                if r.returncode == 0:
-                    nums = [x.strip() for x in r.stdout.strip().splitlines() if x.strip().isdigit()]
-                    if len(nums) >= 2:
-                        snap.ram_total_mb = int(nums[0])
-                        snap.ram_available_mb = int(nums[1])
-                        snap.ram_used_pct = round(
-                            (1 - snap.ram_available_mb / max(snap.ram_total_mb, 1)) * 100, 1,
-                        )
-                        _ram_ok = True
-            except Exception:
-                pass
-            if not _ram_ok:
-                r = subprocess.run(
-                    ['wmic', 'OS', 'get',
-                     'FreePhysicalMemory,TotalVisibleMemorySize',
-                     '/format:csv'],
-                    capture_output=True, text=True, timeout=10,
-                )
-                if r.returncode == 0:
-                    for line in r.stdout.strip().splitlines():
-                        parts = [p.strip() for p in line.split(',') if p.strip()]
-                        # Find the line with numeric data
-                        nums = [p for p in parts if p.isdigit()]
-                        if len(nums) >= 2:
-                            free_kb = int(nums[0])
-                            total_kb = int(nums[1])
-                            snap.ram_total_mb = total_kb // 1024
-                            snap.ram_available_mb = free_kb // 1024
-                            snap.ram_used_pct = round(
-                                (1 - free_kb / max(total_kb, 1)) * 100, 1,
-                            )
-                            break
+        elif os.name == 'nt':
+            total_mb, avail_mb, used_pct = _win32_ram_ctypes()
+            if total_mb > 0:
+                snap.ram_total_mb = total_mb
+                snap.ram_available_mb = avail_mb
+                snap.ram_used_pct = used_pct
     except Exception as exc:
         logger.debug('RAM snapshot failed: %s', exc)
 
-    # CPU load
+    # --- CPU load ---
     try:
         loadavg = Path('/proc/loadavg')
         if loadavg.exists():
             snap.cpu_load_1m = float(loadavg.read_text().split()[0])
-        else:
-            _cpu_ok = False
-            try:
-                r = subprocess.run(
-                    ['powershell', '-Command',
-                     '(Get-CimInstance Win32_Processor).LoadPercentage'],
-                    capture_output=True, text=True, timeout=10,
-                )
-                if r.returncode == 0:
-                    val = r.stdout.strip()
-                    if val.isdigit():
-                        snap.cpu_load_1m = float(val) / 100 * snap.cpu_count
-                        _cpu_ok = True
-            except Exception:
-                pass
-            if not _cpu_ok:
-                r = subprocess.run(
-                    ['wmic', 'cpu', 'get', 'LoadPercentage', '/format:csv'],
-                    capture_output=True, text=True, timeout=10,
-                )
-                if r.returncode == 0:
-                    for line in r.stdout.strip().splitlines():
-                        parts = [p.strip() for p in line.split(',') if p.strip()]
-                        nums = [p for p in parts if p.isdigit()]
-                        if nums:
-                            snap.cpu_load_1m = float(nums[0]) / 100 * snap.cpu_count
-                            break
+        elif os.name == 'nt':
+            snap.cpu_load_1m = _win32_cpu_pct()
     except Exception as exc:
         logger.debug('CPU snapshot failed: %s', exc)
 
