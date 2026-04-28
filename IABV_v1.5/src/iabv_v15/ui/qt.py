@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 try:  # pragma: no cover - exercised only when PySide6 is available
-    from PySide6.QtCore import QObject, Property, Signal, Slot, QUrl
+    from PySide6.QtCore import QObject, Property, Signal, Slot, QUrl, QTimer
     from PySide6.QtGui import QGuiApplication
     from PySide6.QtQml import QQmlApplicationEngine
     from PySide6.QtQuickControls2 import QQuickStyle
@@ -90,11 +90,19 @@ except ImportError:  # pragma: no cover - fallback for non-UI test environments
         def setContextProperty(self, name, value):
             setattr(self, name, value)
 
+        def addImportPath(self, path: str):
+            pass
+
         def load(self, url):
             self._root_objects = [url]
 
         def rootObjects(self):
             return self._root_objects
+
+    class QTimer:
+        @staticmethod
+        def singleShot(msec: int, callback):
+            callback()
 
     class QQuickStyle:
         @staticmethod
