@@ -1153,6 +1153,7 @@ class AppBootstrap:
         self.api_key_discovery_service = ApiKeyDiscoveryService(data_root=self.config.data_dir)
         self.decision_audit_trail = DecisionAuditTrail(data_root=self.config.data_dir)
         self.operational_self_examination_service.decision_audit_trail = self.decision_audit_trail
+        self.operational_self_examination_service.tool_registry = self.tool_registry
         self.portable_context_service.decision_audit_trail = self.decision_audit_trail
         self.autonomous_validation_cycle.decision_audit_trail = self.decision_audit_trail
         self.autonomous_validation_cycle.api_key_discovery_service = self.api_key_discovery_service

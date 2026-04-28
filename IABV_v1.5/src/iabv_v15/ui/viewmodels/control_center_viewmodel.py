@@ -2695,7 +2695,7 @@ class ControlCenterViewModel(QObject):
                 for c in (rt_result.get('corrections_applied') or []):
                     label = str(c.get('action') or c.get('detail') or 'correccion aplicada')
                     auto_fixes_applied.append(label)
-                dd_result = apply_deductive_corrections(findings)
+                dd_result = apply_deductive_corrections(findings, tool_registry=self._tool_registry())
                 for c in (dd_result.get('executed') or []):
                     label = str(c.get('action') or c.get('detail') or 'correccion deductiva')
                     auto_fixes_applied.append(label)

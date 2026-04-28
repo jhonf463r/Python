@@ -62,6 +62,7 @@ class OperationalSelfExaminationService:
         # cambiar el contrato del SelfExaminationSnapshot.
         self.embodiment_violation_provider: Any | None = None
         self.decision_audit_trail: Any | None = None
+        self.tool_registry: Any | None = None
         self._current_review: SelfExaminationSnapshot | None = None
 
     def current_review(
@@ -2031,6 +2032,7 @@ class OperationalSelfExaminationService:
                     deductive = apply_deductive_corrections(
                         finding_dicts,
                         workspace=str(self.workspace_root),
+                        tool_registry=self.tool_registry,
                     )
                     ded_applied = deductive.get('corrections_count', 0)
                     reasoning = deductive.get('deductive_reasoning', '')
@@ -2107,6 +2109,7 @@ class OperationalSelfExaminationService:
                 for tid in verified_tools[:5]:
                     verification = verify_tool_access_deductive(
                         tid, workspace=str(self.workspace_root),
+                        tool_registry=self.tool_registry,
                     )
                     if verification.get('reasoning'):
                         findings.append(
