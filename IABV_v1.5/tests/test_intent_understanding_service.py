@@ -330,3 +330,50 @@ def test_intent_learning_layer_records_failure_and_decays() -> None:
     assert record is not None
     assert record['confirmations'] == 2  # was 3, decayed to 2
     assert record['confidence'] < 0.8   # 0.8 * 0.7 = 0.56
+
+
+# ---------------------------------------------------------------------------
+# Secret provisioning intent — "configura los secretos faltantes" must route
+# to system.secret_provisioning, NOT system.metacognition.
+# ---------------------------------------------------------------------------
+
+def test_intent_classifier_routes_configura_secretos_to_secret_provisioning() -> None:
+    service = IntentUnderstandingService()
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='configura los secretos faltantes')
+    )
+    assert intent.intent_key == 'system.secret_provisioning', (
+        f'expected system.secret_provisioning, got {intent.intent_key}'
+    )
+    assert intent.metadata.get('secret_provisioning_prompt') is True
+
+
+def test_intent_classifier_routes_api_key_gemini_to_secret_provisioning() -> None:
+    service = IntentUnderstandingService()
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='necesito configurar la api key de gemini para cloud reasoning')
+    )
+    assert intent.intent_key == 'system.secret_provisioning', (
+        f'expected system.secret_provisioning, got {intent.intent_key}'
+    )
+
+
+def test_intent_classifier_routes_faltan_tokens_to_secret_provisioning() -> None:
+    service = IntentUnderstandingService()
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='faltan tokens de openai y anthropic')
+    )
+    assert intent.intent_key == 'system.secret_provisioning', (
+        f'expected system.secret_provisioning, got {intent.intent_key}'
+    )
+
+
+def test_intent_classifier_analizate_still_routes_to_metacognition() -> None:
+    """Ensure 'analizate' still routes to metacognition, not secret provisioning."""
+    service = IntentUnderstandingService()
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='analizate')
+    )
+    assert intent.intent_key == 'system.metacognition', (
+        f'expected system.metacognition, got {intent.intent_key}'
+    )

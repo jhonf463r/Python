@@ -270,6 +270,7 @@ class IntentUnderstandingService:
         'knowledge.query',
         'system.self_awareness',
         'system.metacognition',
+        'system.secret_provisioning',
         'consulta_estado_evolutivo',
     }
     ACTIONABLE_INTENT_KEYS = {
@@ -285,6 +286,7 @@ class IntentUnderstandingService:
         'browser.navigate',
         'analytics.strategy',
         'customer.support',
+        'system.secret_provisioning',
     }
     PROJECT_SIGNAL_PATTERNS = [
         'proyecto',
@@ -519,6 +521,7 @@ class IntentUnderstandingService:
                 'browser.navigate': TaskRole.TOOL_USE,
                 'analytics.strategy': TaskRole.ANALYTICS,
                 'customer.support': TaskRole.CUSTOMER_SUPPORT,
+                'system.secret_provisioning': TaskRole.TOOL_USE,
             }
             disposition_map: dict[str, IntentDisposition] = {
                 'general.assistance': IntentDisposition.ANSWER_NOW,
@@ -538,6 +541,7 @@ class IntentUnderstandingService:
                 'browser.navigate': IntentDisposition.PLAN_THEN_EXECUTE,
                 'analytics.strategy': IntentDisposition.ANSWER_NOW,
                 'customer.support': IntentDisposition.ANSWER_NOW,
+                'system.secret_provisioning': IntentDisposition.ANSWER_NOW,
             }
             detected_role = role_map.get(learned_intent_key, TaskRole.KNOWLEDGE)
             detected_disposition = disposition_map.get(
@@ -559,6 +563,8 @@ class IntentUnderstandingService:
             elif learned_intent_key == 'system.metacognition':
                 domain_metadata['conversational_prompt'] = True
                 domain_metadata['metacognition_prompt'] = True
+            elif learned_intent_key == 'system.secret_provisioning':
+                domain_metadata['secret_provisioning_prompt'] = True
             if learned_intent_key == 'project.evolution' and self._is_code_generation_prompt(text):
                 domain_metadata['code_generation_prompt'] = True
             # Preserve sensitivity flags that the static path would set
@@ -719,6 +725,31 @@ class IntentUnderstandingService:
                 metadata={'conversational_prompt': True, 'meta_assistant_prompt': self._contains_any(text, ['codex', 'chatgpt', 'claude', 'ollama', 'devin', 'windsurf', 'ia', 'ias'])},
             )
             hypotheses.append(IntentHypothesis(intent_key='knowledge.query', title='Consulta local', confidence=0.44, rationale='Pregunta abierta sin sitio especifico.'))
+            return finalize(intent, hypotheses)
+
+        if self._is_secret_provisioning_prompt(text):
+            intent = build(
+                intent_key='system.secret_provisioning',
+                title='Provisionar secretos o API keys faltantes',
+                detected_role=TaskRole.TOOL_USE,
+                disposition=IntentDisposition.ANSWER_NOW,
+                confidence=0.97,
+                domain_hint='system',
+                summary='Detectar secretos faltantes, abrir el browser a la pagina de cada proveedor y guardar las keys via save_secret_to_profile().',
+                reasoning=['peticion explicita de configurar, crear o provisionar secretos o API keys'],
+                metadata={
+                    'secret_provisioning_prompt': True,
+                    'requires_action': 'provision_missing_keys',
+                },
+            )
+            hypotheses.append(
+                IntentHypothesis(
+                    intent_key='system.metacognition',
+                    title='Auto-analisis de estado',
+                    confidence=0.40,
+                    rationale='Podria querer diagnostico general, pero la peticion pide accion sobre secretos.',
+                )
+            )
             return finalize(intent, hypotheses)
 
         if self._is_metacognition_prompt(text):
@@ -1180,6 +1211,8 @@ class IntentUnderstandingService:
                 reasons.append(reason)
             bucket['reasons'] = reasons
 
+        if self._is_secret_provisioning_prompt(text):
+            register('system.secret_provisioning', 7.0, 'peticion de configurar, crear o provisionar secretos o API keys')
         if self._is_metacognition_prompt(text):
             register('system.metacognition', 6.0, 'peticion de auto-analisis, diagnostico de codigo, o metacognicion')
         if self._is_self_awareness_prompt(text):
@@ -1480,6 +1513,7 @@ class IntentUnderstandingService:
             'browser.navigate': 'Navegacion web guiada',
             'analytics.strategy': 'Analitica y estrategia',
             'customer.support': 'Atencion al cliente',
+            'system.secret_provisioning': 'Provisionar secretos o API keys',
         }.get(intent_key, intent_key)
 
     def _is_tool_prompt(self, text: str, goal_parameters: dict[str, Any]) -> bool:
@@ -1539,6 +1573,61 @@ class IntentUnderstandingService:
             or architecture_request
         )
 
+    def _is_secret_provisioning_prompt(self, text: str) -> bool:
+        """Detecta peticiones de configurar, crear o provisionar secretos/API keys."""
+        if not text:
+            return False
+        direct_phrases = (
+            'configura los secretos',
+            'configurar los secretos',
+            'configura secretos',
+            'configurar secretos',
+            'configura los tokens',
+            'configurar los tokens',
+            'secretos faltantes',
+            'tokens faltantes',
+            'configurar api key',
+            'configura api key',
+            'configurar la api key',
+            'configura la api key',
+            'necesito configurar la api',
+            'necesito la api key',
+            'agregar api key',
+            'agregar secreto',
+            'agregar token',
+            'provisionar secretos',
+            'provisionar tokens',
+            'faltan secretos',
+            'faltan tokens',
+            'faltan api keys',
+            'crear api key',
+            'crear secreto',
+            'generar api key',
+            'api key de gemini',
+            'api key de openai',
+            'api key de anthropic',
+            'api key de groq',
+            'key de gemini',
+            'key de openai',
+            'key de anthropic',
+            'key de groq',
+            'configurar gemini',
+            'configurar openai',
+            'configurar anthropic',
+            'configurar groq',
+            'configura gemini',
+            'configura openai',
+            'configura anthropic',
+            'configura groq',
+        )
+        if any(phrase in text for phrase in direct_phrases):
+            return True
+        has_config = any(w in text for w in ('configura', 'configurar', 'agregar', 'crear', 'provisionar', 'necesito'))
+        has_secret = any(w in text for w in ('secreto', 'secretos', 'token', 'tokens', 'api key', 'api keys', 'apikey'))
+        if has_config and has_secret:
+            return True
+        return False
+
     def _is_metacognition_prompt(self, text: str) -> bool:
         """Detecta peticiones de auto-analisis de codigo, diagnostico de rendimiento,
         revision de GPU, o metacognicion general. Diferencia clave vs self_awareness:
@@ -1562,7 +1651,7 @@ class IntentUnderstandingService:
             'self code analysis', 'self_code_analysis', 'actualizate y analizate',
             'actualízate y analízate', 'analiza tu rendimiento', 'analiza tu salud',
             'corrige lo que puedas', 'tu codigo tiene errores', 'tu código tiene errores',
-            'secretos faltantes', 'secretos que me pide', 'tokens faltantes',
+            'secretos que me pide',
             'por que no encuentra', 'por qué no encuentra', 'por que no los encuentra',
             'por qué no los encuentra', 'analiza por que', 'analiza por qué',
             'corrigelo', 'corrígelo', 'los tengo configurados',

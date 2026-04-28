@@ -6166,8 +6166,64 @@ class ControlCenterViewModel(QObject):
         if 'ciclo pbt' in command or 'ejecutar pbt' in command:
             self.runQuickPbt()
             return True
+        if self._is_secret_provisioning_request(command):
+            self._handle_action('provision_missing_keys', announce=True)
+            return True
         if self._is_self_code_analysis_request(command):
             self._run_self_code_analysis()
+            return True
+        return False
+
+    def _is_secret_provisioning_request(self, command: str) -> bool:
+        """Detecta si el usuario pide configurar, crear o provisionar secretos/API keys."""
+        direct_phrases = (
+            'configura los secretos',
+            'configurar los secretos',
+            'configura secretos',
+            'configurar secretos',
+            'configura los tokens',
+            'configurar los tokens',
+            'secretos faltantes',
+            'tokens faltantes',
+            'configurar api key',
+            'configura api key',
+            'configurar la api key',
+            'configura la api key',
+            'necesito configurar la api',
+            'necesito la api key',
+            'agregar api key',
+            'agregar secreto',
+            'agregar token',
+            'provisionar secretos',
+            'provisionar tokens',
+            'faltan secretos',
+            'faltan tokens',
+            'faltan api keys',
+            'crear api key',
+            'crear secreto',
+            'generar api key',
+            'api key de gemini',
+            'api key de openai',
+            'api key de anthropic',
+            'api key de groq',
+            'key de gemini',
+            'key de openai',
+            'key de anthropic',
+            'key de groq',
+            'configurar gemini',
+            'configurar openai',
+            'configurar anthropic',
+            'configurar groq',
+            'configura gemini',
+            'configura openai',
+            'configura anthropic',
+            'configura groq',
+        )
+        if any(phrase in command for phrase in direct_phrases):
+            return True
+        has_config = any(w in command for w in ('configura', 'configurar', 'agregar', 'crear', 'provisionar', 'necesito'))
+        has_secret = any(w in command for w in ('secreto', 'secretos', 'token', 'tokens', 'api key', 'api keys', 'apikey'))
+        if has_config and has_secret:
             return True
         return False
 
