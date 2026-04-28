@@ -38,7 +38,7 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
 
     def _safe_path(relative_path: str) -> Path | None:
         """Resolve and validate a relative path within the workspace."""
-        ws = workspace_root_fn()
+        ws = Path(workspace_root_fn())
         resolved = (ws / relative_path).resolve()
         try:
             resolved.relative_to(ws.resolve())

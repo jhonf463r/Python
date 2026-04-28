@@ -1706,6 +1706,10 @@ class IABVMCPServer:
             if branch.startswith('-') or _re.search(r'[;&|`$\n]|--force|\.\.', branch):
                 return _to_jsonable({'ok': False, 'error': 'branch name rejected (unsafe chars or flag injection)'})
 
+            safe_prefixes = ('devin/', 'origin/devin/', 'iabv-auto/', 'origin/iabv-auto/')
+            if not any(branch.startswith(p) for p in safe_prefixes):
+                return _to_jsonable({'ok': False, 'error': f'branch {branch!r} does not match required prefix (devin/* or iabv-auto/*) per AGENTS.md'})
+
             ws = self._workspace_root()
             try:
                 merge_result = _sp.run(
