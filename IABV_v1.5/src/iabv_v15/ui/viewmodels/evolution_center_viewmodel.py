@@ -344,7 +344,7 @@ class EvolutionCenterViewModel(QObject):
             self._pinned_incident_selection = False
         self._latest_packet = self._build_current_packet()
         self._evidence_preview = self._build_evidence_preview()
-        self._status_text = snapshot.summary
+        self._status_text = snapshot.summary if snapshot is not None else self._status_text
         validation_summary = str((autonomous_validation or {}).get('summary') or '').strip()
         if validation_summary:
             self._status_text = f'{self._status_text} | Validacion autonoma: {validation_summary}'
