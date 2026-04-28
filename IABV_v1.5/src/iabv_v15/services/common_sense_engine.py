@@ -1474,7 +1474,7 @@ def _exec_auto_provision_gemini(rule: dict[str, Any]) -> dict[str, Any]:
         'detail': (
             'Gemini quota exhausted (429, limit:0). '
             'La solucion es crear key en un proyecto NUEVO de Google Cloud. '
-            'Se abrio AI Studio para guiar el proceso.'
+            'Abre AI Studio con el link de abajo para crear la key.'
         ),
         'autonomous': False,
         'learned_solution': 'create_key_in_new_project',

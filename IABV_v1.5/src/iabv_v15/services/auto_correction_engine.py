@@ -276,7 +276,6 @@ def auto_provision_missing_secrets(
         }
 
     provisions: list[dict[str, Any]] = []
-    opened_urls: list[str] = []
     auto_provisioned: list[str] = []
 
     # Try autonomous provisioning first when Playwright is available.
@@ -341,7 +340,9 @@ def auto_provision_missing_secrets(
 
         provisions.append(provision)
 
-    if auto_provisioned and not opened_urls:
+    urls_ready = sum(1 for p in provisions if p.get('url_ready'))
+
+    if auto_provisioned and urls_ready == 0:
         return {
             'action': 'provision_secrets',
             'status': 'auto_provisioned',
@@ -359,12 +360,12 @@ def auto_provision_missing_secrets(
         'status': 'needs_user',
         'provisions': provisions,
         'count': len(provisions),
-        'opened_count': len(opened_urls),
+        'urls_ready_count': urls_ready,
         'auto_provisioned': auto_provisioned,
         'user_action': (
-            'Se abrieron las páginas para crear los tokens. '
-            'Pega cada token en el diálogo de IABV cuando lo tengas.'
-            if opened_urls else
+            f'Hay {urls_ready} links listos para crear API keys. '
+            'Abre cada uno y pega el token en IABV.'
+            if urls_ready else
             'Abre los links indicados y pega los tokens en IABV.'
         ),
     }

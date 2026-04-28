@@ -4978,6 +4978,7 @@ class ControlCenterViewModel(QObject):
         if action == 'abort':
             self.abortAdaptive()
             return True
+
         return False
 
     def _normalized_command_text(self, message: str) -> str:
