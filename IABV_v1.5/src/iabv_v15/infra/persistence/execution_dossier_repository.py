@@ -8,7 +8,7 @@ from iabv_v15.domain.models import ExecutionDossier
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 class ExecutionDossierRepository:
@@ -40,6 +40,32 @@ class ExecutionDossierRepository:
         )
         return dossier.model_copy(update={'metadata': {**dossier.metadata, 'storage_path': saved_path}})
 
+    def _collect(self, rows: list[dict[str, str]]) -> list[ExecutionDossier]:
+        results: list[ExecutionDossier] = []
+        orphan_ids: list[str] = []
+        for row in rows:
+            dossier = self._load_from_path(row['dossier_id'], row['path'])
+            if dossier is not None:
+                results.append(dossier)
+            else:
+                orphan_ids.append(row['dossier_id'])
+        if orphan_ids:
+            self._prune_orphans(orphan_ids)
+        return results
+
+    def _prune_orphans(self, ids: list[str]) -> None:
+        if not ids:
+            return
+        placeholders = ','.join('?' for _ in ids)
+        try:
+            self.db.execute(
+                f"DELETE FROM execution_dossiers WHERE dossier_id IN ({placeholders})",
+                tuple(ids),
+            )
+            _log.info("dossier_cleanup: pruned %d orphaned DB entries", len(ids))
+        except Exception:
+            pass
+
     def list_recent(self, limit: int = 30) -> list[ExecutionDossier]:
         rows = self.db.fetchall(
             """
@@ -50,7 +76,7 @@ class ExecutionDossierRepository:
             """,
             (limit,),
         )
-        return [d for row in rows if (d := self._load_from_path(row['dossier_id'], row['path'])) is not None]
+        return self._collect(rows)
 
     def find_by_run(self, run_id: str) -> list[ExecutionDossier]:
         rows = self.db.fetchall(
@@ -62,7 +88,7 @@ class ExecutionDossierRepository:
             """,
             (run_id,),
         )
-        return [d for row in rows if (d := self._load_from_path(row['dossier_id'], row['path'])) is not None]
+        return self._collect(rows)
 
     def find_by_episode(self, episode_id: str) -> list[ExecutionDossier]:
         rows = self.db.fetchall(
@@ -74,7 +100,7 @@ class ExecutionDossierRepository:
             """,
             (episode_id,),
         )
-        return [d for row in rows if (d := self._load_from_path(row['dossier_id'], row['path'])) is not None]
+        return self._collect(rows)
 
     def find_by_issue(self, issue_hint: str, limit: int = 20) -> list[ExecutionDossier]:
         probe = (issue_hint or '').strip().lower()
@@ -90,7 +116,7 @@ class ExecutionDossierRepository:
             """,
             (f'%{probe}%', f'%{probe}%', limit),
         )
-        return [d for row in rows if (d := self._load_from_path(row['dossier_id'], row['path'])) is not None]
+        return self._collect(rows)
 
     def get(self, dossier_id: str) -> ExecutionDossier | None:
         row = self.db.fetchone(
@@ -106,14 +132,14 @@ class ExecutionDossierRepository:
         return self._load_from_path(row['dossier_id'], row['path'])
 
     def _load_from_path(self, dossier_id: str, path: str) -> ExecutionDossier | None:
+        candidate = Path(path)
         try:
-            candidate = Path(path)
             if candidate.is_absolute() and candidate.exists():
                 payload = json.loads(candidate.read_text(encoding='utf-8'))
             else:
                 relative = f'dossiers/{dossier_id}.json'
                 payload = self.storage.load_json(relative)
             return ExecutionDossier.model_validate(payload)
-        except (FileNotFoundError, json.JSONDecodeError) as exc:
-            logger.warning('dossier %s: file missing or corrupt — %s', dossier_id, exc)
+        except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
+            _log.warning("dossier %s: file missing or corrupt — %s", dossier_id, exc)
             return None
