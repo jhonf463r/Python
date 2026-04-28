@@ -512,68 +512,69 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
         )
         stashed = stash_r.returncode == 0
 
-    for b_info in branches:
-        branch = b_info.get('branch', '')
-        if not any(branch.startswith(p) for p in safe_prefixes):
-            skipped.append(branch)
-            continue
+    try:
+        for b_info in branches:
+            branch = b_info.get('branch', '')
+            if not any(branch.startswith(p) for p in safe_prefixes):
+                skipped.append(branch)
+                continue
 
-        # Check if branch touches closed-layer contracts
-        try:
-            diff_stat = _run_cmd(['git', '-C', ws, 'diff', '--name-only', f'HEAD...{branch}'])
-        except Exception:
-            diff_stat = ''
-        closed_layer_files = ('domain/models.py', 'governance', 'world_model')
-        touches_closed = any(cl in diff_stat for cl in closed_layer_files)
-        if touches_closed:
-            skipped.append(f'{branch} (touches closed layer)')
-            continue
+            # Check if branch touches closed-layer contracts
+            try:
+                diff_stat = _run_cmd(['git', '-C', ws, 'diff', '--name-only', f'HEAD...{branch}'])
+            except Exception:
+                diff_stat = ''
+            closed_layer_files = ('domain/models.py', 'governance', 'world_model')
+            touches_closed = any(cl in diff_stat for cl in closed_layer_files)
+            if touches_closed:
+                skipped.append(f'{branch} (touches closed layer)')
+                continue
 
-        try:
-            # First try clean merge
-            result = subprocess.run(
-                ['git', '-C', ws, 'merge', '--no-edit', branch],
-                capture_output=True, text=True, timeout=30,
-            )
-            if result.returncode == 0:
-                merged.append(branch)
-                logger.info('auto_merge: merged %s successfully', branch)
-            else:
-                # Conflict — abort and retry with -X theirs (take most recent)
-                subprocess.run(
-                    ['git', '-C', ws, 'merge', '--abort'],
-                    capture_output=True, timeout=10,
-                )
-                result2 = subprocess.run(
-                    ['git', '-C', ws, 'merge', '--no-edit', '-X', 'theirs', branch],
+            try:
+                # First try clean merge
+                result = subprocess.run(
+                    ['git', '-C', ws, 'merge', '--no-edit', branch],
                     capture_output=True, text=True, timeout=30,
                 )
-                if result2.returncode == 0:
-                    merged_with_theirs.append(branch)
-                    logger.info('auto_merge: merged %s with -X theirs', branch)
+                if result.returncode == 0:
+                    merged.append(branch)
+                    logger.info('auto_merge: merged %s successfully', branch)
                 else:
+                    # Conflict — abort and retry with -X theirs (take most recent)
                     subprocess.run(
                         ['git', '-C', ws, 'merge', '--abort'],
                         capture_output=True, timeout=10,
                     )
-                    failed.append({
-                        'branch': branch,
-                        'reason': result2.stderr.strip()[:200] or 'merge failed even with -X theirs',
-                    })
-                    logger.warning('auto_merge: failed %s even with -X theirs', branch)
-        except Exception as exc:
-            try:
-                subprocess.run(['git', '-C', ws, 'merge', '--abort'], capture_output=True, timeout=10)
-            except Exception:
-                pass
-            failed.append({'branch': branch, 'reason': str(exc)})
-
-    # Restore stashed changes
-    if stashed:
-        subprocess.run(
-            ['git', '-C', ws, 'stash', 'pop'],
-            capture_output=True, text=True, timeout=60,
-        )
+                    result2 = subprocess.run(
+                        ['git', '-C', ws, 'merge', '--no-edit', '-X', 'theirs', branch],
+                        capture_output=True, text=True, timeout=30,
+                    )
+                    if result2.returncode == 0:
+                        merged_with_theirs.append(branch)
+                        logger.info('auto_merge: merged %s with -X theirs', branch)
+                    else:
+                        subprocess.run(
+                            ['git', '-C', ws, 'merge', '--abort'],
+                            capture_output=True, timeout=10,
+                        )
+                        failed.append({
+                            'branch': branch,
+                            'reason': result2.stderr.strip()[:200] or 'merge failed even with -X theirs',
+                        })
+                        logger.warning('auto_merge: failed %s even with -X theirs', branch)
+            except Exception as exc:
+                try:
+                    subprocess.run(['git', '-C', ws, 'merge', '--abort'], capture_output=True, timeout=10)
+                except Exception:
+                    pass
+                failed.append({'branch': branch, 'reason': str(exc)})
+    finally:
+        # Restore stashed changes — always runs even if merge loop crashes
+        if stashed:
+            subprocess.run(
+                ['git', '-C', ws, 'stash', 'pop'],
+                capture_output=True, text=True, timeout=60,
+            )
 
     total_merged = len(merged) + len(merged_with_theirs)
     return {

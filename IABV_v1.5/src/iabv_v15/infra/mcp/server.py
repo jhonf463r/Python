@@ -1652,6 +1652,9 @@ class IABVMCPServer:
             Returns:
                 dict con gpus_detected, ollama_state, issues, recommendations.
             """
+            gate = self._governance_block_for_route(assistant_kind='gpu_metacognition', requires_network=False)
+            if gate:
+                return _to_jsonable(gate)
             from iabv_v15.services.gpu_metacognition import gpu_metacognition_report
             return _to_jsonable(gpu_metacognition_report())
 
@@ -1662,6 +1665,9 @@ class IABVMCPServer:
         @mcp.tool()
         def full_system_metacognition_scan() -> dict[str, Any]:
             """Escaneo COMPLETO del sistema: navegadores, programas, modelos IA, configuraciones optimas."""
+            gate = self._governance_block_for_route(assistant_kind='system_scan', requires_network=False)
+            if gate:
+                return _to_jsonable(gate)
             from iabv_v15.services.full_system_metacognition import full_system_metacognition_report
             return _to_jsonable(full_system_metacognition_report())
 
@@ -1678,6 +1684,9 @@ class IABVMCPServer:
             indentación en tools MCP, llamadas bloqueantes en UI, y otros
             patrones que degradan rendimiento o funcionalidad.
             """
+            gate = self._governance_block_for_route(assistant_kind='self_code_analysis', requires_network=False)
+            if gate:
+                return _to_jsonable(gate)
             from iabv_v15.services.self_code_analysis import full_self_analysis_report
             ws = self._workspace_root()
             return _to_jsonable(full_self_analysis_report(ws))

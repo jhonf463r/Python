@@ -1115,9 +1115,9 @@ class IntentUnderstandingService:
         )
         if any(phrase in text for phrase in direct_phrases):
             return True
-        word_tokens = set(re.findall(r'[a-z0-9_]+', text))
-        asks_self = any(t in word_tokens for t in ('analizate', 'analízate', 'autoanalisis', 'diagnosticate', 'metacognicion'))
-        asks_code = any(t in word_tokens for t in ('codigo', 'código', 'errores', 'fallas', 'bugs', 'sintaxis'))
+        word_tokens = set(re.findall(r'[a-z0-9_\u00e0-\u00ff]+', text))
+        asks_self = any(t in word_tokens for t in ('analizate', 'autoanalisis', 'diagnosticate', 'metacognicion'))
+        asks_code = any(t in word_tokens for t in ('codigo', 'errores', 'fallas', 'bugs', 'sintaxis'))
         asks_perf = any(t in word_tokens for t in ('lento', 'congela', 'congelas', 'rendimiento', 'lentitud'))
         asks_analyze = any(t in text for t in ('analiza', 'revisa', 'examina', 'diagnostica', 'busca'))
         if asks_analyze and (asks_code or asks_perf):

@@ -5114,9 +5114,9 @@ class ControlCenterViewModel(QObject):
         )
         if any(phrase in command for phrase in direct_phrases):
             return True
-        word_tokens = set(re.findall(r'[a-z0-9_]+', command))
-        asks_self = any(t in word_tokens for t in ('analizate', 'analízate', 'autoanalisis', 'diagnosticate'))
-        asks_code = any(t in word_tokens for t in ('codigo', 'código', 'errores', 'fallas', 'bugs', 'sintaxis'))
+        word_tokens = set(re.findall(r'[a-z0-9_\u00e0-\u00ff]+', command))
+        asks_self = any(t in word_tokens for t in ('analizate', 'autoanalisis', 'diagnosticate'))
+        asks_code = any(t in word_tokens for t in ('codigo', 'errores', 'fallas', 'bugs', 'sintaxis'))
         asks_perf = any(t in word_tokens for t in ('lento', 'congela', 'congelas', 'rendimiento', 'lentitud'))
         asks_analyze = any(t in command for t in ('analiza', 'revisa', 'examina', 'diagnostica', 'busca'))
         if asks_analyze and (asks_code or asks_perf):
@@ -5617,18 +5617,9 @@ class ControlCenterViewModel(QObject):
         corresponde a lo que realmente tiene/sabe."""
         findings: list[dict[str, str]] = []
         
-        # Verificar que los mensajes del chat tienen la estructura esperada
-        for i, msg in enumerate(self._chat_messages):
-            if 'status' not in msg:
-                findings.append({
-                    'severity': 'info',
-                    'description': f'Mensaje {i} sin campo status — se asume complete',
-                    'auto_fix': 'applied',
-                })
-                msg['status'] = 'complete'
-            if 'timestamp' not in msg:
-                from datetime import datetime, timezone
-                msg['timestamp'] = datetime.now(timezone.utc).strftime('%H:%M')
+        # Note: message-level validation (status/timestamp) removed here because
+        # _append_message already populates both fields at creation time (line 301-302).
+        # Mutating shared list from background threads caused data races with QML rendering.
         
         # Verificar consistencia de live_status
         if self._working and self._live_status == 'idle':
