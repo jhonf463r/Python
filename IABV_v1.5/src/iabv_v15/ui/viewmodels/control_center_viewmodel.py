@@ -2568,7 +2568,7 @@ class ControlCenterViewModel(QObject):
         site_name = str(context.get('site_display_name') or context.get('site_id') or '').strip().lower()
         metadata = dict(intent.get('metadata') or {})
         return (
-            intent_key in {'general.assistance', 'system.self_awareness', 'consulta_estado_evolutivo'}
+            intent_key in {'general.assistance', 'system.self_awareness', 'system.metacognition', 'consulta_estado_evolutivo'}
             and (not site_name or site_name == 'general')
             and bool(metadata.get('conversational_prompt', True))
         )
@@ -4402,11 +4402,12 @@ class ControlCenterViewModel(QObject):
         structured_conversational_prompt = self._structured_conversational_prompt_from_payload(payload)
         fallback_conversational_prompt = structured_conversational_prompt is None and self._is_general_chat_message(user_goal)
         self_awareness_prompt = intent_key == 'system.self_awareness' or bool(intent_metadata.get('self_awareness_prompt'))
+        metacognition_prompt = intent_key == 'system.metacognition' or bool(intent_metadata.get('metacognition_prompt'))
         world_model_prompt = self._is_world_model_question(user_goal)
         evolution_status_prompt = intent_key == 'consulta_estado_evolutivo' or bool(intent_metadata.get('evolution_status_prompt')) or self._is_evolution_status_question(user_goal)
         learning_prompt = self._is_learning_question(user_goal)
         self_examination_prompt = self._is_self_examination_question(user_goal) or bool(intent_metadata.get('self_examination_prompt'))
-        if source == 'chat' and (self_awareness_prompt or world_model_prompt or evolution_status_prompt or learning_prompt or self_examination_prompt):
+        if source == 'chat' and (self_awareness_prompt or metacognition_prompt or world_model_prompt or evolution_status_prompt or learning_prompt or self_examination_prompt):
             return None
         if source == 'chat' and intent_key in {'general.assistance', 'knowledge.query'} and intent_disposition in {'answer_now', 'need_info'} and ((structured_conversational_prompt is True) or fallback_conversational_prompt) and not explicit_assistant:
             return None
@@ -5126,6 +5127,13 @@ class ControlCenterViewModel(QObject):
             'tu gpu esta funcionando',
             'tu gpu está funcionando',
             'revisa tu gpu',
+            'secretos faltantes',
+            'secretos que me pide',
+            'tokens faltantes',
+            'por que no los encuentra',
+            'por qué no los encuentra',
+            'analiza por que no',
+            'analiza por qué no',
         )
         if any(phrase in command for phrase in direct_phrases):
             return True
@@ -5133,8 +5141,9 @@ class ControlCenterViewModel(QObject):
         asks_self = any(t in word_tokens for t in ('analizate', 'analízate', 'autoanalisis', 'diagnosticate'))
         asks_code = any(t in word_tokens for t in ('codigo', 'código', 'errores', 'fallas', 'bugs', 'sintaxis'))
         asks_perf = any(t in word_tokens for t in ('lento', 'congela', 'congelas', 'rendimiento', 'lentitud'))
+        asks_config = any(t in word_tokens for t in ('secretos', 'secreto', 'tokens', 'token', 'faltantes', 'faltante', 'bootstrap', 'configurados'))
         asks_analyze = any(t in command for t in ('analiza', 'revisa', 'examina', 'diagnostica', 'busca'))
-        if asks_analyze and (asks_code or asks_perf):
+        if asks_analyze and (asks_code or asks_perf or asks_config):
             return True
         if asks_self:
             return True
