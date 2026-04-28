@@ -1301,6 +1301,37 @@ class AppBootstrap:
         except Exception as _gpu_exc:
             logger.warning('gpu_startup_check failed: %s', _gpu_exc)
 
+        # --- Parallel tool availability probes ---
+        from collections import defaultdict
+        adapter_groups: dict[str, list] = defaultdict(list)
+        for card in cards:
+            adapter_groups[card.adapter_key].append(card)
+
+        results: dict[str, bool] = {}
+        refreshed_cards: dict[str, object] = {}
+
+        def _probe_group(group_cards: list) -> list[tuple[str, bool, object]]:
+            out: list[tuple[str, bool, object]] = []
+            for c in group_cards:
+                refreshed = self.tool_registry.refresh_card(c, max_age_seconds=60.0)
+                out.append((refreshed.tool_id, refreshed.available, refreshed))
+            return out
+
+        max_workers = min(len(adapter_groups), 8) or 1
+        with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix='iabv-tool-probe') as pool:
+            futures = {
+                pool.submit(_probe_group, group_cards): adapter_key
+                for adapter_key, group_cards in adapter_groups.items()
+            }
+            for future in as_completed(futures):
+                try:
+                    for tool_id, available, refreshed in future.result():
+                        results[tool_id] = available
+                        refreshed_cards[tool_id] = refreshed
+                except Exception as exc:
+                    adapter_key = futures[future]
+                    logger.warning('tool_probe failed for adapter %s: %s', adapter_key, exc)
+
         ready = []
         missing = []
         now = datetime.now(timezone.utc)
@@ -1309,7 +1340,7 @@ class AppBootstrap:
             refreshed = refreshed_cards.get(card.tool_id, card)
             if available:
                 ready.append(card.tool_id)
-                if refreshed.last_validated_at_utc is None:
+                if getattr(refreshed, 'last_validated_at_utc', None) is None:
                     stamped = refreshed.model_copy(
                         update={'last_validated_at_utc': now},
                     )
@@ -1320,7 +1351,7 @@ class AppBootstrap:
                 logger.info(
                     'tool_missing: %s — adapter=%s%s',
                     card.tool_id,
-                    refreshed.adapter_key if hasattr(refreshed, 'adapter_key') else card.adapter_key,
+                    getattr(refreshed, 'adapter_key', card.adapter_key),
                     f' | fix: {guidance}' if guidance else '',
                 )
         logger.info(
