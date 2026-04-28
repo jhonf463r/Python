@@ -210,6 +210,12 @@ class IABVMCPServer:
             return UIExecutionRunner(workspace_root=str(workspace_root))
         return svc
 
+    def _code_audit_trail(self) -> Any:
+        svc = getattr(self.container, "code_audit_trail", None)
+        if svc is None:
+            raise RuntimeError("code_audit_trail no está disponible en el container")
+        return svc
+
     def _workspace_root(self) -> str:
         """Resuelve el `workspace_root` que usan las audit tools.
 
@@ -1671,6 +1677,93 @@ class IABVMCPServer:
             """Escaneo COMPLETO del sistema: navegadores, programas, modelos IA, configuraciones optimas."""
             from iabv_v15.services.full_system_metacognition import full_system_metacognition_report
             return _to_jsonable(_run_sync_off_event_loop(full_system_metacognition_report))
+
+        # ------------------------------------------------------------
+        # Code audit trail — registro y consulta de auditorías de código
+        # ------------------------------------------------------------
+
+        @mcp.tool()
+        def register_audit_finding(
+            module_path: str = '',
+            title: str = '',
+            description: str = '',
+            impact: str = '',
+            severity: str = 'medium',
+            status: str = 'found',
+            fix_description: str = '',
+            pr_url: str = '',
+            pattern_tag: str = '',
+            category: str = '',
+            bug_id: str = '',
+            round_number: int = 0,
+            auditor_name: str = '',
+            source: str = 'external_agent',
+            environment: str = 'unknown',
+            needs_windows_verification: bool = False,
+            needs_linux_verification: bool = False,
+            confidence: float = 0.9,
+        ) -> dict[str, Any]:
+            """Registra un hallazgo de auditoría de código.
+
+            Cualquier agente (Devin, Codex, IABV self-examination, humano)
+            puede registrar hallazgos para que el sistema aprenda y
+            cruce información entre auditorías.
+
+            Args:
+                module_path: ruta del módulo auditado (ej: services/auto_correction_engine.py)
+                title: título corto del hallazgo
+                description: descripción detallada del bug o hallazgo
+                impact: impacto en el sistema
+                severity: low, medium, high, critical
+                status: found, fixed, unresolved, wont_fix, needs_cross_verification
+                fix_description: cómo se fixeó (si aplica)
+                pr_url: URL del PR que contiene el fix
+                pattern_tag: etiqueta de patrón (ej: jsonl_resilience, constructor_mismatch)
+                category: categoría general (ej: wiring, persistence, security)
+                bug_id: identificador del bug (ej: R18-1)
+                round_number: número de ronda de auditoría
+                auditor_name: nombre del auditor (ej: devin, codex, human)
+                source: external_agent, self_examination, human
+                environment: linux_vm, windows_native, unknown
+                needs_windows_verification: True si necesita verificación en Windows
+                needs_linux_verification: True si necesita verificación en Linux
+                confidence: nivel de confianza del hallazgo (0.0-1.0)
+            """
+            trail = self._code_audit_trail()
+            return trail.record_finding(
+                module_path=module_path,
+                title=title,
+                description=description,
+                impact=impact,
+                severity=severity,
+                status=status,
+                fix_description=fix_description,
+                pr_url=pr_url,
+                pattern_tag=pattern_tag,
+                category=category,
+                bug_id=bug_id,
+                round_number=round_number,
+                auditor_name=auditor_name,
+                source=source,
+                environment=environment,
+                needs_windows_verification=needs_windows_verification,
+                needs_linux_verification=needs_linux_verification,
+                confidence=confidence,
+            )
+
+        @mcp.tool()
+        def code_audit_summary() -> dict[str, Any]:
+            """Resumen completo de las auditorías de código registradas.
+
+            Incluye: cobertura, patrones recurrentes, rondas recientes,
+            verificaciones cruzadas pendientes.
+
+            Útil para que un agente nuevo sepa qué ya se auditó, qué
+            patrones de bugs se repiten, y qué necesita verificación
+            en otro entorno (Linux vs Windows).
+            """
+            trail = self._code_audit_trail()
+            return trail.summary_for_portable_context()
 
         # ------------------------------------------------------------
         # self_audit — IABV tests itself by running a goal through

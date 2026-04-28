@@ -59,6 +59,7 @@ class PortableContextService:
         self.adaptive_task_orchestrator = adaptive_task_orchestrator
         self.adaptive_session_repository = adaptive_session_repository
         self.decision_audit_trail: Any | None = None
+        self.code_audit_trail: Any | None = None
         self._current_package: PortableContextPackage | None = None
 
     def current_package(
@@ -106,6 +107,7 @@ class PortableContextService:
         tool_evolution_decisions = self._tool_evolution_decision_snapshot()
         self_examination = self._self_examination_snapshot()
         cloud_reasoning_status = self._cloud_reasoning_snapshot()
+        code_audit_status = self._code_audit_snapshot()
         pending_items = self._pending_items()
         backlog_items = self._backlog_items()
         decision_history = self._decision_history(recommendations=recommendations)
@@ -143,6 +145,7 @@ class PortableContextService:
             self._tool_evolution_section(status=tool_evolution, now=now),
             self._tool_evolution_decisions_section(snapshot=tool_evolution_decisions, now=now),
             self._self_examination_section(review=self_examination, now=now),
+            self._code_audit_section(status=code_audit_status, now=now),
             self._cloud_reasoning_section(status=cloud_reasoning_status, now=now),
             self._recommended_routes_section(recommendations=recommendations, now=now),
             self._operational_blocks_section(world=world, recommendations=recommendations, now=now),
@@ -1096,6 +1099,78 @@ class PortableContextService:
                 'validated_improvements': list(review.get('validated_improvements') or []),
                 'recommendation_feedback': list(review.get('recommendation_feedback') or []),
                 'feedback_summary': dict(review.get('feedback_summary') or {}),
+            },
+        )
+
+    def _code_audit_snapshot(self) -> dict[str, Any]:
+        """Build code audit summary from CodeAuditTrail."""
+        trail = getattr(self, 'code_audit_trail', None)
+        if trail is None:
+            return {'status': 'not_configured'}
+        try:
+            return trail.summary_for_portable_context()
+        except Exception:
+            return {'status': 'error'}
+
+    def _code_audit_section(self, *, status: dict[str, Any], now) -> PortableContextSection:
+        """Export code audit trail to portable context.
+
+        Ensures new sessions know what was audited, by whom, what bugs
+        were found, what patterns recur, and what needs cross-verification
+        on a different environment (Linux vs Windows).
+        """
+        items: list[dict[str, Any]] = []
+        coverage = status.get('coverage') or {}
+        for r in list(status.get('recent_rounds') or [])[:5]:
+            items.append({
+                'label': f"Ronda {r.get('round_number', '?')} ({r.get('auditor', '?')})",
+                'environment': r.get('environment', ''),
+                'modules': r.get('modules', [])[:4],
+                'bugs_found': r.get('bugs_found', 0),
+                'loc_audited': r.get('loc_audited', 0),
+                'pr_url': r.get('pr_url', ''),
+            })
+        for pattern in list(status.get('recurring_patterns') or [])[:3]:
+            items.append({
+                'label': f"Patron: {pattern.get('pattern_tag', '')}",
+                'occurrences': pattern.get('occurrences', 0),
+                'affected_modules': pattern.get('affected_modules', []),
+                'all_fixed': pattern.get('all_fixed', True),
+            })
+        for cv in list(status.get('pending_cross_verifications') or [])[:3]:
+            items.append({
+                'label': f"Cross-verificacion pendiente: {cv.get('title', '')}",
+                'module_path': cv.get('module_path', ''),
+                'needs_windows': cv.get('needs_windows', False),
+                'needs_linux': cv.get('needs_linux', False),
+            })
+        total_rounds = coverage.get('total_rounds', 0)
+        total_bugs = coverage.get('total_bugs_fixed', 0)
+        total_loc = coverage.get('total_loc_audited', 0)
+        pending_cv = coverage.get('pending_cross_verifications', 0)
+        if total_rounds == 0:
+            summary = 'Sin auditorias registradas. Usar register_audit_finding via MCP para registrar hallazgos.'
+        else:
+            summary = (
+                f'{total_rounds} rondas, {total_loc} LOC auditadas, '
+                f'{total_bugs} bugs fixeados, {pending_cv} verificaciones cruzadas pendientes.'
+            )
+        return self._section(
+            section_id='code_audit_trail',
+            title='Historial de auditorias de codigo',
+            summary=summary,
+            items=items,
+            source_kind='code_audit',
+            source_refs=['CodeAuditTrail'],
+            confidence=0.90 if total_rounds > 0 else 0.0,
+            last_updated=now,
+            metadata={
+                'total_rounds': total_rounds,
+                'total_bugs_fixed': total_bugs,
+                'total_loc_audited': total_loc,
+                'auditors': coverage.get('auditors', []),
+                'environments_used': coverage.get('environments_used', []),
+                'pending_cross_verifications': pending_cv,
             },
         )
 

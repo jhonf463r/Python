@@ -273,6 +273,7 @@ from iabv_v15.services.capture.ui_screenshot_service import UIScreenshotService
 from iabv_v15.services.evolution.tool_discovery_service import ToolDiscoveryService
 from iabv_v15.services.evolution.tool_evolution_monitor import ToolEvolutionMonitor
 from iabv_v15.services.evolution.api_key_discovery_service import ApiKeyDiscoveryService
+from iabv_v15.services.evolution.code_audit_trail import CodeAuditTrail
 from iabv_v15.services.evolution.decision_audit_trail import DecisionAuditTrail
 from iabv_v15.services.evolution.autonomous_evolution_service import AutonomousEvolutionService
 from iabv_v15.services.evolution.runtime_signal_collector import RuntimeSignalCollector
@@ -1151,9 +1152,12 @@ class AppBootstrap:
         self.portable_context_service.task_context_assembler = self.task_context_assembler
         self.portable_context_service.adaptive_task_orchestrator = self.adaptive_task_orchestrator
         self.api_key_discovery_service = ApiKeyDiscoveryService(data_root=self.config.data_dir)
+        self.code_audit_trail = CodeAuditTrail(data_root=self.config.data_dir)
         self.decision_audit_trail = DecisionAuditTrail(data_root=self.config.data_dir)
         self.operational_self_examination_service.decision_audit_trail = self.decision_audit_trail
+        self.operational_self_examination_service.code_audit_trail = self.code_audit_trail
         self.portable_context_service.decision_audit_trail = self.decision_audit_trail
+        self.portable_context_service.code_audit_trail = self.code_audit_trail
         self.autonomous_validation_cycle.decision_audit_trail = self.decision_audit_trail
         self.autonomous_validation_cycle.api_key_discovery_service = self.api_key_discovery_service
         self.adaptive_model_selector = AdaptiveModelSelector(data_dir=self.config.data_dir)
