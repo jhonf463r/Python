@@ -2,7 +2,7 @@
 
 Servicio minimalista que respeta AGENTS.md:
     * nunca hace git reset --hard ni git clean,
-    * solo ``git pull --ff-only`` cuando el working tree esta limpio,
+    * ``git pull --no-rebase`` cuando el working tree esta limpio,
     * consulta a ``AutonomyGovernancePolicy`` antes de aplicar cambios,
     * registra UNRESOLVED en ``ControlMasterService`` cuando bloquea.
 
@@ -103,9 +103,9 @@ class GitSyncService:
         elif tree_dirty:
             can_sync = False
             block_reason = "working tree has uncommitted changes"
-        elif ahead > 0:
+        elif ahead > 0 and behind == 0:
             can_sync = False
-            block_reason = f"local branch has {ahead} unpushed commit(s)"
+            block_reason = f"local branch has {ahead} unpushed commit(s), no remote changes"
         elif behind == 0:
             can_sync = False
             block_reason = "already up to date"
@@ -147,7 +147,7 @@ class GitSyncService:
             self._register_unresolved(status, extra_reason=blocked[-1])
             return GitSyncResult(status_before=status, applied=False, blocked_reasons=tuple(blocked))
 
-        pull = self._run(["git", "pull", "--ff-only", "origin", self.branch])
+        pull = self._run(["git", "pull", "--no-rebase", "origin", self.branch])
         if pull.returncode != 0:
             pull_error = (pull.stderr or pull.stdout or "").strip()
             blocked.append(f"pull failed: {pull_error}")

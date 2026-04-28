@@ -47,7 +47,7 @@ class ExecutionDossierRepository:
             """,
             (limit,),
         )
-        return [self._load_from_path(row['dossier_id'], row['path']) for row in rows]
+        return [d for row in rows if (d := self._load_from_path(row['dossier_id'], row['path'])) is not None]
 
     def find_by_run(self, run_id: str) -> list[ExecutionDossier]:
         rows = self.db.fetchall(
@@ -59,7 +59,7 @@ class ExecutionDossierRepository:
             """,
             (run_id,),
         )
-        return [self._load_from_path(row['dossier_id'], row['path']) for row in rows]
+        return [d for row in rows if (d := self._load_from_path(row['dossier_id'], row['path'])) is not None]
 
     def find_by_episode(self, episode_id: str) -> list[ExecutionDossier]:
         rows = self.db.fetchall(
@@ -71,7 +71,7 @@ class ExecutionDossierRepository:
             """,
             (episode_id,),
         )
-        return [self._load_from_path(row['dossier_id'], row['path']) for row in rows]
+        return [d for row in rows if (d := self._load_from_path(row['dossier_id'], row['path'])) is not None]
 
     def find_by_issue(self, issue_hint: str, limit: int = 20) -> list[ExecutionDossier]:
         probe = (issue_hint or '').strip().lower()
@@ -87,7 +87,7 @@ class ExecutionDossierRepository:
             """,
             (f'%{probe}%', f'%{probe}%', limit),
         )
-        return [self._load_from_path(row['dossier_id'], row['path']) for row in rows]
+        return [d for row in rows if (d := self._load_from_path(row['dossier_id'], row['path'])) is not None]
 
     def get(self, dossier_id: str) -> ExecutionDossier | None:
         row = self.db.fetchone(
@@ -102,11 +102,14 @@ class ExecutionDossierRepository:
             return None
         return self._load_from_path(row['dossier_id'], row['path'])
 
-    def _load_from_path(self, dossier_id: str, path: str) -> ExecutionDossier:
-        candidate = Path(path)
-        if candidate.is_absolute() and candidate.exists():
-            payload = json.loads(candidate.read_text(encoding='utf-8'))
-        else:
-            relative = f'dossiers/{dossier_id}.json'
-            payload = self.storage.load_json(relative)
-        return ExecutionDossier.model_validate(payload)
+    def _load_from_path(self, dossier_id: str, path: str) -> ExecutionDossier | None:
+        try:
+            candidate = Path(path)
+            if candidate.is_absolute() and candidate.exists():
+                payload = json.loads(candidate.read_text(encoding='utf-8'))
+            else:
+                relative = f'dossiers/{dossier_id}.json'
+                payload = self.storage.load_json(relative)
+            return ExecutionDossier.model_validate(payload)
+        except (FileNotFoundError, OSError):
+            return None

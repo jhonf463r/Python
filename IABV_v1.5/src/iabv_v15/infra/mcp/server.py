@@ -1795,16 +1795,46 @@ class IABVMCPServer:
                         }
                     current_branch = branch
 
-                result = _sp.run(
-                    ["git", "pull", "--ff-only"],
+                # Stash dirty working tree before pull
+                st = _sp.run(
+                    ["git", "status", "--porcelain"],
+                    capture_output=True, text=True, timeout=10,
+                    cwd=ws, check=False,
+                )
+                dirty = bool(st.stdout.strip())
+                stashed = False
+                if dirty:
+                    sr = _sp.run(
+                        ["git", "stash", "--include-untracked"],
+                        capture_output=True, text=True, timeout=30,
+                        cwd=ws, check=False,
+                    )
+                    stashed = sr.returncode == 0
+
+                _sp.run(
+                    ["git", "fetch", "--all"],
                     capture_output=True, text=True, timeout=60,
                     cwd=ws, check=False,
                 )
+                result = _sp.run(
+                    ["git", "pull", "--no-rebase"],
+                    capture_output=True, text=True, timeout=60,
+                    cwd=ws, check=False,
+                )
+
+                if stashed:
+                    _sp.run(
+                        ["git", "stash", "pop"],
+                        capture_output=True, text=True, timeout=30,
+                        cwd=ws, check=False,
+                    )
+
                 return {
                     "status": "ok" if result.returncode == 0 else "error",
                     "branch": current_branch,
                     "output": result.stdout.strip(),
                     "error": result.stderr.strip() if result.returncode != 0 else None,
+                    "had_local_changes": dirty,
                 }
             except Exception as exc:
                 return {"status": "error", "detail": str(exc)}

@@ -5146,20 +5146,49 @@ class ControlCenterViewModel(QObject):
                 # 0. Auto-update: git pull antes de analizar
                 import subprocess as _sp
                 try:
+                    # Stash local changes if working tree is dirty
+                    status_check = _sp.run(
+                        ['git', '-C', ws, 'status', '--porcelain'],
+                        capture_output=True, text=True, timeout=10,
+                    )
+                    dirty = bool(status_check.stdout.strip())
+                    stashed = False
+                    if dirty:
+                        stash_result = _sp.run(
+                            ['git', '-C', ws, 'stash', '--include-untracked'],
+                            capture_output=True, text=True, timeout=30,
+                        )
+                        stashed = stash_result.returncode == 0
+
+                    # Fetch first, then merge (handles diverging branches)
+                    _sp.run(
+                        ['git', '-C', ws, 'fetch', '--all'],
+                        capture_output=True, text=True, timeout=60,
+                    )
                     pull_result = _sp.run(
-                        ['git', '-C', ws, 'pull', '--ff-only'],
-                        capture_output=True, text=True, timeout=30,
+                        ['git', '-C', ws, 'pull', '--no-rebase'],
+                        capture_output=True, text=True, timeout=60,
                     )
                     pull_out = pull_result.stdout.strip()
+
+                    # Restore stashed changes
+                    if stashed:
+                        _sp.run(
+                            ['git', '-C', ws, 'stash', 'pop'],
+                            capture_output=True, text=True, timeout=30,
+                        )
+
                     if pull_result.returncode == 0:
                         if 'Already up to date' in pull_out or 'Already up-to-date' in pull_out:
                             sections.append('== AUTO-UPDATE ==')
                             sections.append('Ya estoy actualizado (git pull: up to date)')
                         else:
                             sections.append('== AUTO-UPDATE ==')
-                            sections.append(f'Me actualice exitosamente:')
+                            sections.append('Me actualice exitosamente:')
                             for line in pull_out.splitlines()[-5:]:
                                 sections.append(f'  {line}')
+                            if dirty:
+                                sections.append('  (cambios locales preservados via stash)')
                     else:
                         sections.append('== AUTO-UPDATE ==')
                         sections.append(f'Error al actualizar: {pull_result.stderr.strip()[:200]}')
