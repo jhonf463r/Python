@@ -235,9 +235,9 @@ class ToolAdapter:
             process_detected_running = True
         clipboard_capture = response_capture_mode == 'clipboard_capture' and launch_mode == 'desktop_app'
         background_capture_mode = str(card.metadata.get('background_capture_mode') or task.metadata.get('background_capture_mode') or '').strip().lower()
-        # Auto-promote web_assisted to browser_dom when running autonomously
-        # to avoid opening visible browser tabs that interrupt the user
-        if launch_mode == 'web_assisted' and not background_capture_mode and response_capture_mode not in {'dom_capture', 'browser_dom'}:
+        # Only auto-promote to browser_dom when explicitly requested via task/card metadata
+        autonomous_capture = bool(task.metadata.get('autonomous_capture', card.metadata.get('autonomous_capture', False)))
+        if launch_mode == 'web_assisted' and autonomous_capture and not background_capture_mode and response_capture_mode not in {'dom_capture', 'browser_dom'}:
             background_capture_mode = 'browser_dom'
         browser_dom_capture = (response_capture_mode in {'dom_capture', 'browser_dom'} or background_capture_mode == 'browser_dom') and launch_mode == 'web_assisted'
         workspace_root = str(task.metadata.get('workspace_root') or card.metadata.get('workspace_root') or Path.cwd())
