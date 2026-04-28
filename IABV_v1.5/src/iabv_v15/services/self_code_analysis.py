@@ -443,7 +443,7 @@ def run_test_suite(workspace: str | None = None) -> dict[str, Any]:
         result = subprocess.run(
             ['python', '-m', 'pytest', '-p', 'no:cacheprovider', 'tests/', '-q', '--tb=short', '-x'],
             capture_output=True, text=True, timeout=300,
-            cwd=ws, env=env,
+            cwd=ws, env=env, encoding='utf-8', errors='replace',
         )
         output = result.stdout[-2000:] if len(result.stdout) > 2000 else result.stdout
         error_output = result.stderr[-1000:] if len(result.stderr) > 1000 else result.stderr
@@ -491,6 +491,20 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
     if not ws:
         return {'ok': False, 'error': 'workspace not found', 'merged': [], 'failed': [], 'skipped': []}
 
+    # AGENTS.md: never auto-merge directly into main — requires human approval
+    current_branch = _run_cmd(['git', '-C', ws, 'rev-parse', '--abbrev-ref', 'HEAD'])
+    if current_branch in ('main', 'master'):
+        return {
+            'ok': False,
+            'error': f'auto-merge blocked: current branch is {current_branch} (requires human approval per AGENTS.md)',
+            'merged': [], 'merged_count': 0,
+            'merged_with_theirs': [], 'merged_with_theirs_count': 0,
+            'total_merged': 0,
+            'failed': [], 'failed_count': 0,
+            'skipped': [], 'skipped_count': 0,
+            'summary': f'blocked — cannot auto-merge into {current_branch}',
+        }
+
     branches = scan_unmerged_branches(ws)
     safe_prefixes = ('origin/devin/', 'origin/iabv-auto/')
     merged: list[str] = []
@@ -508,9 +522,23 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
     if tree_dirty:
         stash_r = subprocess.run(
             ['git', '-C', ws, 'stash'],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True, text=True, timeout=120,
         )
         stashed = stash_r.returncode == 0
+        if not stashed:
+            logger.warning('auto_merge: git stash failed (rc=%d): %s', stash_r.returncode, stash_r.stderr.strip()[:200])
+            # Cannot merge with dirty tree — return early
+            return {
+                'ok': False,
+                'error': f'git stash failed: {stash_r.stderr.strip()[:200]}',
+                'merged': [], 'merged_count': 0,
+                'merged_with_theirs': [], 'merged_with_theirs_count': 0,
+                'total_merged': 0,
+                'failed': [{'branch': '(all)', 'reason': 'working tree dirty and stash failed'}],
+                'failed_count': 1,
+                'skipped': [], 'skipped_count': 0,
+                'summary': '0 merged, stash failed — working tree is dirty',
+            }
 
     try:
         for b_info in branches:
@@ -524,7 +552,7 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
                 diff_stat = _run_cmd(['git', '-C', ws, 'diff', '--name-only', f'HEAD...{branch}'])
             except Exception:
                 diff_stat = ''
-            closed_layer_files = ('domain/models.py', 'governance', 'world_model')
+            closed_layer_files = ('domain/models.py', 'governance', 'world_model', 'portable_context', 'self_examination', 'autonomy_governance')
             touches_closed = any(cl in diff_stat for cl in closed_layer_files)
             if touches_closed:
                 skipped.append(f'{branch} (touches closed layer)')

@@ -337,7 +337,6 @@ class ControlCenterViewModel(QObject):
         self._chat_messages.append(msg)
         self._chat_messages = self._chat_messages[-30:]
         self._refresh_contextual_suggestions()
-        self._validate_ui_reflects_reality()
 
     def _count_payloads(self) -> int:
         payload_dir = Path(self.config.payloads_dir)
@@ -7210,50 +7209,32 @@ class ControlCenterViewModel(QObject):
 
     # ── Auto-validación de interfaz ──────────────────────────
     def _validate_ui_reflects_reality(self) -> dict[str, Any]:
-        """Cruza la percepción del sistema con la realidad para detectar inconsistencias.
-        El sistema debe ser capaz de verificar que lo que muestra en su interfaz
-        corresponde a lo que realmente tiene/sabe."""
+        """Read-only diagnostic: checks UI state consistency without mutating.
+
+        Called only from the main thread at explicit checkpoints (e.g. refresh()),
+        NOT from _append_message (which runs on background threads).
+        No auto-fix mutations — just reports findings for logging/debugging."""
         findings: list[dict[str, str]] = []
-        
-        # Note: message-level validation (status/timestamp) removed here because
-        # _append_message already populates both fields at creation time (line 301-302).
-        # Mutating shared list from background threads caused data races with QML rendering.
-        
-        # Verificar consistencia de live_status
+
         if self._working and self._live_status == 'idle':
             findings.append({
                 'severity': 'warning',
                 'description': 'ViewModel._working=True pero _live_status=idle — desincronizado',
-                'auto_fix': 'applied',
             })
-            self._set_live_status('processing')
         elif not self._working and self._live_status == 'processing':
             findings.append({
                 'severity': 'warning',
                 'description': 'ViewModel._working=False pero _live_status=processing — desincronizado',
-                'auto_fix': 'applied',
             })
-            self._set_live_status('idle')
-        
-        # Verificar que attached_files es consistente
+
         if self._attached_files:
             for f in self._attached_files:
                 if not all(k in f for k in ('name', 'path', 'size', 'type')):
                     findings.append({
                         'severity': 'error',
                         'description': f'Archivo adjunto con campos faltantes: {f}',
-                        'auto_fix': 'none',
                     })
-        
-        # Verificar que contextual_suggestions se actualizaron
-        if not self._contextual_suggestions:
-            self._refresh_contextual_suggestions()
-            findings.append({
-                'severity': 'info',
-                'description': 'Sugerencias contextuales estaban vacias — refrescadas',
-                'auto_fix': 'applied',
-            })
-        
+
         return {
             'valid': len([f for f in findings if f['severity'] == 'error']) == 0,
             'findings': findings,
@@ -7297,39 +7278,47 @@ class ControlCenterViewModel(QObject):
         threading.Thread(target=self._refresh_development_packet, args=(message,), daemon=True).start()
         if self._try_handle_chat_command(message):
             return
-        # _chat_shortcut_analysis puede llamar a LLM — ejecutar con timeout
-        # APRENDIDO: NO usar 'with ThreadPoolExecutor' en hilo de UI porque
-        # pool.shutdown(wait=True) bloquea al salir del with aunque el timeout
-        # se haya cumplido. Usar Thread + Event en su lugar.
-        shortcut_analysis = {}
-        _sa_result: dict[str, Any] = {}
-        _sa_done = threading.Event()
-        def _sa_worker() -> None:
-            try:
-                _sa_result.update(self._chat_shortcut_analysis(message))
-            except Exception:
-                pass
-            finally:
-                _sa_done.set()
-        _sa_thread = threading.Thread(target=_sa_worker, daemon=True)
-        _sa_thread.start()
-        if _sa_done.wait(timeout=3):
-            shortcut_analysis = _sa_result
+        # Mark working before dispatching so _drain_ui / tests can wait.
+        import time as _time_sc
+        self._working = True
+        self._working_since = _time_sc.time()
+        # Dispatch shortcut analysis + inference to background thread so
+        # sendChat returns immediately and the QML main thread is never blocked.
+        threading.Thread(target=self._sendChat_background, args=(message,), daemon=True).start()
+
+    def _sendChat_background(self, message: str) -> None:
+        """Background continuation of sendChat — runs shortcut analysis and inference off the UI thread."""
+        shortcut_analysis: dict[str, Any] = {}
+        try:
+            shortcut_analysis = self._chat_shortcut_analysis(message)
+        except Exception:
+            pass
         allow_chat_shortcuts = not bool(shortcut_analysis.get('mixed_actionable')) and not bool(shortcut_analysis.get('requires_clarification'))
+
+        def _shortcut_done() -> None:
+            """Reset _working for synchronous shortcuts that don't spawn their own workers."""
+            self._working = False
+            self.dataChanged.emit()
+
         if allow_chat_shortcuts and self._is_world_model_question(message):
             self._answer_world_model_question(message)
+            _shortcut_done()
             return
         if allow_chat_shortcuts and self._is_self_awareness_question(message):
             self._answer_self_awareness_question(message)
+            _shortcut_done()
             return
         if allow_chat_shortcuts and self._is_evolution_status_question(message):
             self._answer_evolution_status_question(message)
+            _shortcut_done()
             return
         if allow_chat_shortcuts and self._is_self_examination_question(message):
             self._answer_self_examination_question(message)
+            _shortcut_done()
             return
         if allow_chat_shortcuts and self._is_learning_question(message):
             self._answer_learning_question(message)
+            _shortcut_done()
             return
         if allow_chat_shortcuts and self._is_general_chat_message(message) and not self._seems_task_like_message(message):
             self._answer_general_chat(message)
