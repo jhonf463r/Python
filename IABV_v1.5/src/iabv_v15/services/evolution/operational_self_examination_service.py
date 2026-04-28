@@ -62,6 +62,7 @@ class OperationalSelfExaminationService:
         # cambiar el contrato del SelfExaminationSnapshot.
         self.embodiment_violation_provider: Any | None = None
         self.decision_audit_trail: Any | None = None
+        self.code_audit_trail: Any | None = None
         self._current_review: SelfExaminationSnapshot | None = None
 
     def current_review(
@@ -741,6 +742,10 @@ class OperationalSelfExaminationService:
                     ))
             except Exception as exc:
                 logger.warning('oses: metacognition_evolution findings error: %s', exc)
+
+        # CodeAuditTrail cross-referencing: detect recurring bug patterns
+        # across external audits and flag modules needing cross-verification.
+        findings.extend(self._code_audit_cross_reference_findings())
 
         findings = self._dedupe_findings(findings)
 
@@ -3897,6 +3902,71 @@ class OperationalSelfExaminationService:
                 source_refs=['WorldModelSnapshot.active_windows'],
             ))
 
+        return findings
+
+    # ──────────────────────────────────────────────────────────
+    # CodeAuditTrail cross-referencing
+    # ──────────────────────────────────────────────────────────
+
+    def _code_audit_cross_reference_findings(self) -> list[SelfExaminationFinding]:
+        """Cross-reference external audit findings with internal observations.
+
+        Detects:
+        - Recurring bug patterns across audit rounds (same pattern_tag)
+        - Findings that need cross-verification on this environment
+        - Modules audited externally that OSES also flagged
+        """
+        trail = getattr(self, 'code_audit_trail', None)
+        if trail is None:
+            return []
+        findings: list[SelfExaminationFinding] = []
+        try:
+            patterns = trail.analyze_bug_patterns()
+            for pattern in patterns[:3]:
+                if pattern.get('occurrences', 0) >= 2 and not pattern.get('all_fixed'):
+                    findings.append(SelfExaminationFinding(
+                        category='code_audit_recurring_pattern',
+                        title=f"Patron recurrente en auditorias: {pattern.get('pattern_tag', '')}",
+                        summary=(
+                            f"Detectado {pattern.get('occurrences', 0)} veces en "
+                            f"{len(pattern.get('affected_modules', []))} modulos. "
+                            f"{pattern.get('description', '')[:200]}"
+                        ),
+                        severity=IssueSeverity.HIGH,
+                        confidence=0.85,
+                        recommendation=(
+                            'Buscar este patron en modulos no auditados aun. '
+                            'Considerar agregar validacion automatica en tests.'
+                        ),
+                        source_refs=['CodeAuditTrail', 'analyze_bug_patterns'],
+                    ))
+
+            cross_verifications = trail.pending_cross_verifications()
+            windows_pending = [
+                f for f in cross_verifications
+                if f.get('needs_windows_verification')
+            ]
+            if windows_pending:
+                titles = [f.get('title', '') for f in windows_pending[:3]]
+                findings.append(SelfExaminationFinding(
+                    category='code_audit_cross_verification',
+                    title=f'{len(windows_pending)} hallazgo(s) necesitan verificacion en Windows',
+                    summary=(
+                        'Auditorias externas (Linux) encontraron hallazgos que '
+                        'requieren verificacion en el entorno real Windows: '
+                        + '; '.join(t for t in titles if t)
+                    ),
+                    severity=IssueSeverity.MEDIUM,
+                    confidence=0.75,
+                    recommendation=(
+                        'Ejecutar tests focalizados en Windows para verificar '
+                        'estos hallazgos en el entorno de produccion real.'
+                    ),
+                    source_refs=['CodeAuditTrail', 'pending_cross_verifications'],
+                ))
+        except Exception as exc:
+            import logging as _logging
+            _logging.getLogger(__name__).warning('oses: code_audit_cross_reference error: %s', exc)
         return findings
 
     # ──────────────────────────────────────────────────────────

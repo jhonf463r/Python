@@ -1981,6 +1981,7 @@ class ExperimentDomain(str, Enum):
     CODE = "code"
     INFERENCE_BENCHMARK = "inference_benchmark"
     CLOUD_REASONING = "cloud_reasoning"
+    CODE_AUDIT = "code_audit"
 
 
 class EvaluationRoute(str, Enum):
@@ -1994,6 +1995,7 @@ class EvaluationRoute(str, Enum):
     LANGUAGE_UNDERSTANDING = "language_understanding"
     CLOUD = "cloud"
     FALLBACK = "fallback"
+    CODE_AUDIT = "code_audit"
 
 
 class ExperimentMetric(BaseModel):
