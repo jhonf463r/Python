@@ -112,5 +112,5 @@ class ScenarioRunRepository:
                 payload = self.storage.load_json(f'scenario_runs/{scenario_run_id}.json')
             return ScenarioRun.model_validate(payload)
         except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
-            _log.warning("scenario_run %s: file missing or corrupt — %s", scenario_run_id, exc)
+            _log.debug("scenario_run %s: file missing or corrupt — %s", scenario_run_id, exc)
             return None

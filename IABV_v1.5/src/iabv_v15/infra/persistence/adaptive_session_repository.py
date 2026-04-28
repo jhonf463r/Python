@@ -133,5 +133,5 @@ class AdaptiveSessionRepository:
                 payload = self.storage.load_json(f'adaptive_sessions/{session_id}.json')
             return AdaptiveSession.model_validate(payload)
         except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
-            _log.warning("session %s: file missing or corrupt — %s", session_id, exc)
+            _log.debug("session %s: file missing or corrupt — %s", session_id, exc)
             return None
