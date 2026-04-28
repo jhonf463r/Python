@@ -1,11 +1,14 @@
 ﻿from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 
 from iabv_v15.domain.models import AdaptiveSession
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.storage import ArtifactStorage
+
+_log = logging.getLogger(__name__)
 
 
 class AdaptiveSessionRepository:
@@ -45,6 +48,32 @@ class AdaptiveSessionRepository:
         )
         return session
 
+    def _collect(self, rows: list[dict[str, str]]) -> list[AdaptiveSession]:
+        results: list[AdaptiveSession] = []
+        orphan_ids: list[str] = []
+        for row in rows:
+            session = self._load(row['session_id'], row['path'])
+            if session is not None:
+                results.append(session)
+            else:
+                orphan_ids.append(row['session_id'])
+        if orphan_ids:
+            self._prune_orphans(orphan_ids)
+        return results
+
+    def _prune_orphans(self, ids: list[str]) -> None:
+        if not ids:
+            return
+        placeholders = ','.join('?' for _ in ids)
+        try:
+            self.db.execute(
+                f"DELETE FROM adaptive_sessions WHERE session_id IN ({placeholders})",
+                tuple(ids),
+            )
+            _log.info("session_cleanup: pruned %d orphaned DB entries", len(ids))
+        except Exception:
+            pass
+
     def list_recent(self, limit: int = 20) -> list[AdaptiveSession]:
         rows = self.db.fetchall(
             """
@@ -55,7 +84,7 @@ class AdaptiveSessionRepository:
             """,
             (limit,),
         )
-        return [self._load(row['session_id'], row['path']) for row in rows]
+        return self._collect(rows)
 
     def get(self, session_id: str) -> AdaptiveSession | None:
         row = self.db.fetchone(
@@ -80,7 +109,7 @@ class AdaptiveSessionRepository:
             """,
             (run_id,),
         )
-        return [self._load(row['session_id'], row['path']) for row in rows]
+        return self._collect(rows)
 
     def find_by_pack(self, pack_id: str, limit: int = 20) -> list[AdaptiveSession]:
         rows = self.db.fetchall(
@@ -93,12 +122,16 @@ class AdaptiveSessionRepository:
             """,
             (pack_id, limit),
         )
-        return [self._load(row['session_id'], row['path']) for row in rows]
+        return self._collect(rows)
 
-    def _load(self, session_id: str, path: str) -> AdaptiveSession:
+    def _load(self, session_id: str, path: str) -> AdaptiveSession | None:
         candidate = Path(path)
-        if candidate.is_absolute() and candidate.exists():
-            payload = json.loads(candidate.read_text(encoding='utf-8'))
-        else:
-            payload = self.storage.load_json(f'adaptive_sessions/{session_id}.json')
-        return AdaptiveSession.model_validate(payload)
+        try:
+            if candidate.is_absolute() and candidate.exists():
+                payload = json.loads(candidate.read_text(encoding='utf-8'))
+            else:
+                payload = self.storage.load_json(f'adaptive_sessions/{session_id}.json')
+            return AdaptiveSession.model_validate(payload)
+        except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
+            _log.warning("session %s: file missing or corrupt — %s", session_id, exc)
+            return None

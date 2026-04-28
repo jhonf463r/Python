@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Iterable
 
 from iabv_v15.domain.models import ObjectiveNode, ObjectiveNodeKind, ObjectiveStatus
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.storage import ArtifactStorage
+
+_log = logging.getLogger(__name__)
 
 
 class ObjectiveRepository:
@@ -79,7 +82,7 @@ class ObjectiveRepository:
         sql += ' ORDER BY updated_at_utc DESC LIMIT ?'
         parameters.append(limit)
         rows = self.db.fetchall(sql, tuple(parameters))
-        return [self._load(row['objective_id'], row['path']) for row in rows]
+        return self._collect(rows)
 
     def list_children(
         self,
@@ -100,7 +103,7 @@ class ObjectiveRepository:
         sql += ' ORDER BY priority ASC, updated_at_utc DESC LIMIT ?'
         parameters.append(limit)
         rows = self.db.fetchall(sql, tuple(parameters))
-        return [self._load(row['objective_id'], row['path']) for row in rows]
+        return self._collect(rows)
 
     def latest_active(self, *, kind: ObjectiveNodeKind | None = None, site_id: str | None = None) -> ObjectiveNode | None:
         candidates: list[ObjectiveStatus] = [ObjectiveStatus.ACTIVE, ObjectiveStatus.BLOCKED, ObjectiveStatus.PENDING, ObjectiveStatus.PAUSED]
@@ -140,7 +143,7 @@ class ObjectiveRepository:
         matches: list[ObjectiveNode] = []
         for row in rows:
             node = self._load(row['objective_id'], row['path'])
-            if self._normalize_title(node.title) == probe:
+            if node is not None and self._normalize_title(node.title) == probe:
                 matches.append(node)
         return matches
 
@@ -150,13 +153,43 @@ class ObjectiveRepository:
             saved.append(self.save(node))
         return saved
 
+    def _collect(self, rows: list[dict[str, str]]) -> list[ObjectiveNode]:
+        results: list[ObjectiveNode] = []
+        orphan_ids: list[str] = []
+        for row in rows:
+            node = self._load(row['objective_id'], row['path'])
+            if node is not None:
+                results.append(node)
+            else:
+                orphan_ids.append(row['objective_id'])
+        if orphan_ids:
+            self._prune_orphans(orphan_ids)
+        return results
+
+    def _prune_orphans(self, ids: list[str]) -> None:
+        if not ids:
+            return
+        placeholders = ','.join('?' for _ in ids)
+        try:
+            self.db.execute(
+                f"DELETE FROM objective_nodes WHERE objective_id IN ({placeholders})",
+                tuple(ids),
+            )
+            _log.info("objective_cleanup: pruned %d orphaned DB entries", len(ids))
+        except Exception:
+            pass
+
     def _normalize_title(self, title: str) -> str:
         return ' '.join((title or '').strip().lower().split())
 
-    def _load(self, objective_id: str, path: str) -> ObjectiveNode:
+    def _load(self, objective_id: str, path: str) -> ObjectiveNode | None:
         candidate = Path(path)
-        if candidate.is_absolute() and candidate.exists():
-            payload = json.loads(candidate.read_text(encoding='utf-8'))
-        else:
-            payload = self.storage.load_json(f'objectives/{objective_id}.json')
-        return ObjectiveNode.model_validate(payload)
+        try:
+            if candidate.is_absolute() and candidate.exists():
+                payload = json.loads(candidate.read_text(encoding='utf-8'))
+            else:
+                payload = self.storage.load_json(f'objectives/{objective_id}.json')
+            return ObjectiveNode.model_validate(payload)
+        except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
+            _log.warning("objective %s: file missing or corrupt — %s", objective_id, exc)
+            return None
