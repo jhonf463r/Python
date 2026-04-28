@@ -56,7 +56,9 @@ def test_control_center_ui_prioritizes_chat_and_compact_default_view() -> None:
     assert 'Automatico' in qml
     assert 'Popup {' in qml
     assert 'Puedes seleccionar texto del chat con el cursor.' in qml
-    assert 'selectByMouse: true' in qml
+    # selectByMouse moved to ChatMessageDelegate component
+    delegate_qml = (REPO_ROOT / 'src' / 'iabv_v15' / 'ui' / 'qml' / 'components' / 'ChatMessageDelegate.qml').read_text(encoding='utf-8')
+    assert 'selectByMouse: true' in delegate_qml
     assert 'Siguiente gesto sugerido' in qml
     assert 'applySuggestedAction(modelData.action)' in qml
     assert 'assistantGuidanceTextValue' in qml
