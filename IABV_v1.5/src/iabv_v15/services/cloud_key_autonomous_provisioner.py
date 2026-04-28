@@ -694,15 +694,11 @@ class CloudKeyAutonomousProvisioner:
             provider=provider, env_key=env_key, success=False,
         )
 
-        # Open browser to provider page
+        # Do NOT open visible browser windows autonomously —
+        # the user should not see Chrome popping up without their action.
+        # Return the URL so the UI can present it to the user.
         opened = False
-        try:
-            import webbrowser
-            webbrowser.open(start_url)
-            opened = True
-            logger.info('cloud_provisioner_fallback: opened %s for %s', start_url, provider)
-        except Exception as exc:
-            logger.debug('cloud_provisioner_fallback: browser open failed: %s', exc)
+        logger.info('cloud_provisioner_fallback: %s needs user action at %s (no visible browser opened)', provider, start_url)
 
         result.steps_completed.append(ProvisioningStep(
             action='open_browser',
