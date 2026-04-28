@@ -498,6 +498,20 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
     failed: list[dict[str, str]] = []
     skipped: list[str] = []
 
+    # Stash dirty working tree so merges can proceed
+    status_chk = subprocess.run(
+        ['git', '-C', ws, 'status', '--porcelain'],
+        capture_output=True, text=True, timeout=10,
+    )
+    tree_dirty = bool(status_chk.stdout.strip())
+    stashed = False
+    if tree_dirty:
+        stash_r = subprocess.run(
+            ['git', '-C', ws, 'stash'],
+            capture_output=True, text=True, timeout=60,
+        )
+        stashed = stash_r.returncode == 0
+
     for b_info in branches:
         branch = b_info.get('branch', '')
         if not any(branch.startswith(p) for p in safe_prefixes):
@@ -553,6 +567,13 @@ def auto_merge_safe_branches(workspace: str | None = None) -> dict[str, Any]:
             except Exception:
                 pass
             failed.append({'branch': branch, 'reason': str(exc)})
+
+    # Restore stashed changes
+    if stashed:
+        subprocess.run(
+            ['git', '-C', ws, 'stash', 'pop'],
+            capture_output=True, text=True, timeout=60,
+        )
 
     total_merged = len(merged) + len(merged_with_theirs)
     return {

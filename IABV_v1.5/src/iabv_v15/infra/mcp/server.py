@@ -1805,8 +1805,8 @@ class IABVMCPServer:
                 stashed = False
                 if dirty:
                     sr = _sp.run(
-                        ["git", "stash", "--include-untracked"],
-                        capture_output=True, text=True, timeout=30,
+                        ["git", "stash"],
+                        capture_output=True, text=True, timeout=60,
                         cwd=ws, check=False,
                     )
                     stashed = sr.returncode == 0

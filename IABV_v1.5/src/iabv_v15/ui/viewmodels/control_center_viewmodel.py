@@ -5155,8 +5155,8 @@ class ControlCenterViewModel(QObject):
                     stashed = False
                     if dirty:
                         stash_result = _sp.run(
-                            ['git', '-C', ws, 'stash', '--include-untracked'],
-                            capture_output=True, text=True, timeout=30,
+                            ['git', '-C', ws, 'stash'],
+                            capture_output=True, text=True, timeout=60,
                         )
                         stashed = stash_result.returncode == 0
 

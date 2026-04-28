@@ -55,7 +55,7 @@ class AdaptiveSessionRepository:
             """,
             (limit,),
         )
-        return [self._load(row['session_id'], row['path']) for row in rows]
+        return [s for row in rows if (s := self._load(row['session_id'], row['path'])) is not None]
 
     def get(self, session_id: str) -> AdaptiveSession | None:
         row = self.db.fetchone(
@@ -80,7 +80,7 @@ class AdaptiveSessionRepository:
             """,
             (run_id,),
         )
-        return [self._load(row['session_id'], row['path']) for row in rows]
+        return [s for row in rows if (s := self._load(row['session_id'], row['path'])) is not None]
 
     def find_by_pack(self, pack_id: str, limit: int = 20) -> list[AdaptiveSession]:
         rows = self.db.fetchall(
@@ -93,12 +93,15 @@ class AdaptiveSessionRepository:
             """,
             (pack_id, limit),
         )
-        return [self._load(row['session_id'], row['path']) for row in rows]
+        return [s for row in rows if (s := self._load(row['session_id'], row['path'])) is not None]
 
-    def _load(self, session_id: str, path: str) -> AdaptiveSession:
-        candidate = Path(path)
-        if candidate.is_absolute() and candidate.exists():
-            payload = json.loads(candidate.read_text(encoding='utf-8'))
-        else:
-            payload = self.storage.load_json(f'adaptive_sessions/{session_id}.json')
-        return AdaptiveSession.model_validate(payload)
+    def _load(self, session_id: str, path: str) -> AdaptiveSession | None:
+        try:
+            candidate = Path(path)
+            if candidate.is_absolute() and candidate.exists():
+                payload = json.loads(candidate.read_text(encoding='utf-8'))
+            else:
+                payload = self.storage.load_json(f'adaptive_sessions/{session_id}.json')
+            return AdaptiveSession.model_validate(payload)
+        except (FileNotFoundError, OSError):
+            return None
