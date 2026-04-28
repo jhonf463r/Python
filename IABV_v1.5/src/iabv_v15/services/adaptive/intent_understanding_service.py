@@ -1091,7 +1091,7 @@ class IntentUnderstandingService:
                     )
                     if not was_fallback:
                         break
-                    prev_text = self._normalize(str(prev_msg.get('content', '')))
+                    prev_text = self._normalize(str(prev_msg.get('text', prev_msg.get('content', ''))))
                     if prev_text and len(prev_text.split()) >= 3:
                         _intent_learning_layer.record(
                             prev_text,

@@ -1101,6 +1101,8 @@ def _exec_source_secrets(rule: dict[str, Any]) -> dict[str, Any]:
                 m = re.match(r'\$env:(\w+)\s*=\s*["\']?(.+?)["\']?\s*$', line.strip())
                 if m:
                     name, value = m.group(1), m.group(2)
+                    # Reverse PowerShell single-quote escaping ('' → ')
+                    value = value.replace("''", "'")
                     if not os.environ.get(name):
                         os.environ[name] = value
                         loaded += 1
