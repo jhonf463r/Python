@@ -380,7 +380,7 @@ Rectangle {
                     Layout.preferredHeight: 24
                     placeholderText: "Buscar en historial del chat..."
                     placeholderTextColor: "#4a5560"
-                    color: textPrimary
+                    color: "#f7fbfd"
                     font.pixelSize: 11
                     font.family: "Segoe UI"
                     background: Rectangle { color: "transparent" }

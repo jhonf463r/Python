@@ -5198,6 +5198,7 @@ class ControlCenterViewModel(QObject):
                 sections.append('')
 
                 # 1. Full self code analysis (includes syntax, slots, routing, tests, perf)
+                report: dict = {}
                 syntax: dict = {}
                 mcp: dict = {}
                 perf: dict = {}

@@ -1703,8 +1703,8 @@ class IABVMCPServer:
 
             import re as _re
             import subprocess as _sp
-            if _re.search(r'[;&|`$\n]|--force|\.\.', branch):
-                return _to_jsonable({'ok': False, 'error': 'branch name rejected (unsafe chars)'})
+            if branch.startswith('-') or _re.search(r'[;&|`$\n]|--force|\.\.', branch):
+                return _to_jsonable({'ok': False, 'error': 'branch name rejected (unsafe chars or flag injection)'})
 
             ws = self._workspace_root()
             try:
