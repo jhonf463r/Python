@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 
 from iabv_v15.domain.models import ReplayAnnotation
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.storage import ArtifactStorage
+
+_log = logging.getLogger(__name__)
 
 
 class ReplayAnnotationRepository:
@@ -46,7 +49,7 @@ class ReplayAnnotationRepository:
             """,
             (episode_id,),
         )
-        return [self._load(row['annotation_id'], row['path']) for row in rows]
+        return self._collect(rows)
 
     def find_by_step(self, step_id: str) -> list[ReplayAnnotation]:
         rows = self.db.fetchall(
@@ -58,7 +61,7 @@ class ReplayAnnotationRepository:
             """,
             (step_id,),
         )
-        return [self._load(row['annotation_id'], row['path']) for row in rows]
+        return self._collect(rows)
 
     def get(self, annotation_id: str) -> ReplayAnnotation | None:
         row = self.db.fetchone(
@@ -84,10 +87,40 @@ class ReplayAnnotationRepository:
             (annotation_id,),
         )
 
-    def _load(self, annotation_id: str, path: str) -> ReplayAnnotation:
+    def _collect(self, rows: list[dict[str, str]]) -> list[ReplayAnnotation]:
+        results: list[ReplayAnnotation] = []
+        orphan_ids: list[str] = []
+        for row in rows:
+            item = self._load(row['annotation_id'], row['path'])
+            if item is not None:
+                results.append(item)
+            else:
+                orphan_ids.append(row['annotation_id'])
+        if orphan_ids:
+            self._prune_orphans(orphan_ids)
+        return results
+
+    def _prune_orphans(self, ids: list[str]) -> None:
+        if not ids:
+            return
+        placeholders = ','.join('?' for _ in ids)
+        try:
+            self.db.execute(
+                f"DELETE FROM replay_annotations WHERE annotation_id IN ({placeholders})",
+                tuple(ids),
+            )
+            _log.info("annotation_cleanup: pruned %d orphaned DB entries", len(ids))
+        except Exception:
+            pass
+
+    def _load(self, annotation_id: str, path: str) -> ReplayAnnotation | None:
         candidate = Path(path)
-        if candidate.is_absolute() and candidate.exists():
-            payload = json.loads(candidate.read_text(encoding='utf-8'))
-        else:
-            payload = self.storage.load_json(f"annotations/{annotation_id}.json")
-        return ReplayAnnotation.model_validate(payload)
+        try:
+            if candidate.is_absolute() and candidate.exists():
+                payload = json.loads(candidate.read_text(encoding='utf-8'))
+            else:
+                payload = self.storage.load_json(f"annotations/{annotation_id}.json")
+            return ReplayAnnotation.model_validate(payload)
+        except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
+            _log.warning("annotation %s: file missing or corrupt — %s", annotation_id, exc)
+            return None

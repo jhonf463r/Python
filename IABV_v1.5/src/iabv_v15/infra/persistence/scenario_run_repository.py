@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 
 from iabv_v15.domain.models import ScenarioRun
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.storage import ArtifactStorage
+
+_log = logging.getLogger(__name__)
 
 
 class ScenarioRunRepository:
@@ -47,7 +50,7 @@ class ScenarioRunRepository:
             """,
             (limit,),
         )
-        return [self._load(row['scenario_run_id'], row['path']) for row in rows]
+        return self._collect(rows)
 
     def find_by_run(self, run_id: str) -> list[ScenarioRun]:
         rows = self.db.fetchall(
@@ -59,7 +62,7 @@ class ScenarioRunRepository:
             """,
             (run_id,),
         )
-        return [self._load(row['scenario_run_id'], row['path']) for row in rows]
+        return self._collect(rows)
 
     def get(self, scenario_run_id: str) -> ScenarioRun | None:
         row = self.db.fetchone(
@@ -74,10 +77,40 @@ class ScenarioRunRepository:
             return None
         return self._load(row['scenario_run_id'], row['path'])
 
-    def _load(self, scenario_run_id: str, path: str) -> ScenarioRun:
+    def _collect(self, rows: list[dict[str, str]]) -> list[ScenarioRun]:
+        results: list[ScenarioRun] = []
+        orphan_ids: list[str] = []
+        for row in rows:
+            item = self._load(row['scenario_run_id'], row['path'])
+            if item is not None:
+                results.append(item)
+            else:
+                orphan_ids.append(row['scenario_run_id'])
+        if orphan_ids:
+            self._prune_orphans(orphan_ids)
+        return results
+
+    def _prune_orphans(self, ids: list[str]) -> None:
+        if not ids:
+            return
+        placeholders = ','.join('?' for _ in ids)
+        try:
+            self.db.execute(
+                f"DELETE FROM scenario_runs WHERE scenario_run_id IN ({placeholders})",
+                tuple(ids),
+            )
+            _log.info("scenario_cleanup: pruned %d orphaned DB entries", len(ids))
+        except Exception:
+            pass
+
+    def _load(self, scenario_run_id: str, path: str) -> ScenarioRun | None:
         candidate = Path(path)
-        if candidate.is_absolute() and candidate.exists():
-            payload = json.loads(candidate.read_text(encoding='utf-8'))
-        else:
-            payload = self.storage.load_json(f'scenario_runs/{scenario_run_id}.json')
-        return ScenarioRun.model_validate(payload)
+        try:
+            if candidate.is_absolute() and candidate.exists():
+                payload = json.loads(candidate.read_text(encoding='utf-8'))
+            else:
+                payload = self.storage.load_json(f'scenario_runs/{scenario_run_id}.json')
+            return ScenarioRun.model_validate(payload)
+        except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
+            _log.warning("scenario_run %s: file missing or corrupt — %s", scenario_run_id, exc)
+            return None
