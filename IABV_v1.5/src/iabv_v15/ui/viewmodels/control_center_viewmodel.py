@@ -3418,7 +3418,7 @@ class ControlCenterViewModel(QObject):
 
             # Execute step via the appropriate tool
             try:
-                if step.assigned_tool in ('codex', 'chatgpt', 'claude', 'devin'):
+                if step.assigned_tool in ('codex', 'chatgpt', 'claude', 'devin', 'windsurf'):
                     if self.adaptive_orchestrator is not None and hasattr(self.adaptive_orchestrator, 'autonomous_evolution_service'):
                         aes = self.adaptive_orchestrator.autonomous_evolution_service
                         if aes is not None:
