@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import logging
 import os
@@ -328,7 +328,7 @@ from iabv_v15.services.training.training_orchestrator import TrainingOrchestrato
 from iabv_v15.ui.controllers.main_window_bridge import MainWindowBridge
 from iabv_v15.ui.controllers.navigation_controller import NavigationController
 from iabv_v15.ui.controllers.theme_controller import ThemeController
-from iabv_v15.ui.qt import PYSIDE_AVAILABLE, QGuiApplication, QQmlApplicationEngine, QQuickStyle, QUrl
+from iabv_v15.ui.qt import PYSIDE_AVAILABLE, QGuiApplication, QQmlApplicationEngine, QQuickStyle, QTimer, QUrl
 from iabv_v15.ui.splash_controller import SplashController
 from iabv_v15.ui.viewmodels.capture_studio_viewmodel import CaptureStudioViewModel
 from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
@@ -1684,15 +1684,6 @@ class AppBootstrap:
         # los dialogos QML (Task B) los reciban.
         self._wire_task_a_signals()
 
-        for service_name in ('autonomous_validation_cycle', 'world_model_service', 'environment_self_awareness_service'):
-            service = getattr(self, service_name, None)
-            if service is None or not hasattr(service, 'stop'):
-                continue
-            try:
-                service.stop(timeout_seconds=2.0)
-            except TypeError:
-                service.stop()
-
     def _wire_task_a_signals(self) -> None:
         """Conecta handlers de los 4 servicios backend (Task A) a ambos ViewModels.
 
@@ -1784,64 +1775,118 @@ class AppBootstrap:
             except Exception:
                 continue
 
-    def create_engine(self):
+    def create_engine(self, *, defer_vm_creation: bool = False):
         if not PYSIDE_AVAILABLE:
             raise RuntimeError('PySide6 is required to run the desktop UI.')
 
         # Ensure PySide6's QML plugins are discoverable.  Conda/miniconda
         # installs may place them in a non-default path, causing
-        # "qtquick2plugin not found" at engine load time.
+        # "qtquick2plugin not found" at engine load time.  Force-set (not
+        # setdefault) because conda may point these to a conflicting Qt.
         try:
             import PySide6
             pyside_dir = Path(PySide6.__file__).resolve().parent
             qml_dir = pyside_dir / 'qml'
             plugin_dir = pyside_dir / 'plugins'
             if qml_dir.is_dir():
-                os.environ.setdefault('QML2_IMPORT_PATH', str(qml_dir))
+                os.environ['QML2_IMPORT_PATH'] = str(qml_dir)
+                os.environ['QML_IMPORT_PATH'] = str(qml_dir)
             if plugin_dir.is_dir():
-                os.environ.setdefault('QT_PLUGIN_PATH', str(plugin_dir))
+                os.environ['QT_PLUGIN_PATH'] = str(plugin_dir)
         except Exception:
             pass
 
-        os.environ.setdefault('QT_QUICK_CONTROLS_STYLE', 'Basic')
+        os.environ['QT_QUICK_CONTROLS_STYLE'] = 'Basic'
         QQuickStyle.setStyle('Basic')
         app = QGuiApplication.instance() or QGuiApplication(sys.argv)
 
         splash = getattr(self, '_splash', None)
-        if splash:
-            splash.set_status('Construyendo ViewModels...')
-            try:
-                app.processEvents()
-            except Exception:
-                pass
-
-        self._build_ui_objects()
-
-        if splash:
-            splash.set_status('Montando motor QML...')
-            try:
-                app.processEvents()
-            except Exception:
-                pass
 
         engine = QQmlApplicationEngine()
-        context = engine.rootContext()
-        context.setContextProperty('navigationController', self.navigation_controller)
-        context.setContextProperty('themeController', self.theme_controller)
-        context.setContextProperty('mainWindowBridge', self.main_window_bridge)
-        context.setContextProperty('dashboardViewModel', self.dashboard_viewmodel)
-        context.setContextProperty('controlCenterViewModel', self.control_center_viewmodel)
-        context.setContextProperty('captureStudioViewModel', self.capture_studio_viewmodel)
-        context.setContextProperty('evolutionCenterViewModel', self.evolution_center_viewmodel)
-        context.setContextProperty('knowledgeBaseViewModel', self.knowledge_base_viewmodel)
-        context.setContextProperty('providerSettingsViewModel', self.provider_settings_viewmodel)
-        context.setContextProperty('runHistoryViewModel', self.run_history_viewmodel)
-        context.setContextProperty('centroVivoViewModel', self.centro_vivo_viewmodel)
 
-        main_qml = Path(__file__).resolve().parent / 'ui' / 'qml' / 'Main.qml'
-        engine.load(QUrl.fromLocalFile(str(main_qml)))
-        if not engine.rootObjects():
-            raise RuntimeError('Failed to load Main.qml.')
+        # Add PySide6 QML import path directly on the engine as well,
+        # which is more reliable than env vars for resolving QtQuick.
+        try:
+            import PySide6
+            pyside_dir = Path(PySide6.__file__).resolve().parent
+            qml_dir = pyside_dir / 'qml'
+            if qml_dir.is_dir():
+                engine.addImportPath(str(qml_dir))
+        except Exception:
+            pass
+
+        def _set_context_properties(ctx) -> None:
+            ctx.setContextProperty('navigationController', self.navigation_controller)
+            ctx.setContextProperty('themeController', self.theme_controller)
+            ctx.setContextProperty('mainWindowBridge', self.main_window_bridge)
+            ctx.setContextProperty('dashboardViewModel', self.dashboard_viewmodel)
+            ctx.setContextProperty('controlCenterViewModel', self.control_center_viewmodel)
+            ctx.setContextProperty('captureStudioViewModel', self.capture_studio_viewmodel)
+            ctx.setContextProperty('evolutionCenterViewModel', self.evolution_center_viewmodel)
+            ctx.setContextProperty('knowledgeBaseViewModel', self.knowledge_base_viewmodel)
+            ctx.setContextProperty('providerSettingsViewModel', self.provider_settings_viewmodel)
+            ctx.setContextProperty('runHistoryViewModel', self.run_history_viewmodel)
+            ctx.setContextProperty('centroVivoViewModel', self.centro_vivo_viewmodel)
+
+        context = engine.rootContext()
+
+        if defer_vm_creation:
+            # Set all context properties to None so QML can load immediately.
+            _vm_names = [
+                'navigationController', 'themeController', 'mainWindowBridge',
+                'dashboardViewModel', 'controlCenterViewModel',
+                'captureStudioViewModel', 'evolutionCenterViewModel',
+                'knowledgeBaseViewModel', 'providerSettingsViewModel',
+                'runHistoryViewModel', 'centroVivoViewModel',
+            ]
+            for name in _vm_names:
+                context.setContextProperty(name, None)
+
+            if splash:
+                splash.set_status('Montando motor QML...')
+                try:
+                    app.processEvents()
+                except Exception:
+                    pass
+
+            main_qml = Path(__file__).resolve().parent / 'ui' / 'qml' / 'Main.qml'
+            engine.load(QUrl.fromLocalFile(str(main_qml)))
+            if not engine.rootObjects():
+                raise RuntimeError('Failed to load Main.qml.')
+
+            # Defer heavy VM creation to after the event loop starts so the
+            # window appears instantly.  QTimer.singleShot(0, ...) fires on
+            # the very first iteration of app.exec().
+            def _populate_ui() -> None:
+                if splash:
+                    splash.set_status('Construyendo ViewModels...')
+                self._build_ui_objects()
+                _set_context_properties(context)
+                logger.info('ui_populated: all ViewModels loaded and context properties set')
+            QTimer.singleShot(0, _populate_ui)
+        else:
+            # Synchronous path (used by tests that don't call app.exec()).
+            if splash:
+                splash.set_status('Construyendo ViewModels...')
+                try:
+                    app.processEvents()
+                except Exception:
+                    pass
+            self._build_ui_objects()
+            _set_context_properties(context)
+
+            if splash:
+                splash.set_status('Montando motor QML...')
+                try:
+                    app.processEvents()
+                except Exception:
+                    pass
+
+            main_qml = Path(__file__).resolve().parent / 'ui' / 'qml' / 'Main.qml'
+            engine.load(QUrl.fromLocalFile(str(main_qml)))
+            if not engine.rootObjects():
+                raise RuntimeError('Failed to load Main.qml.')
+
         return app, engine
 
     # ------------------------------------------------------------------
@@ -2333,14 +2378,9 @@ class AppBootstrap:
                 except Exception:
                     pass
 
-            app, _engine = self.create_engine()
+            app, _engine = self.create_engine(defer_vm_creation=True)
 
-            # Explicitly show + raise the main window.  When the process is
-            # launched via Start-Process -WindowStyle Hidden (to hide the
-            # console), Windows applies SW_HIDE to every window the process
-            # creates.  The splash escapes this because it has
-            # Qt.WindowStaysOnTopHint, but the main ApplicationWindow does
-            # not — so we must force it visible from Python.
+            # Explicitly show + raise the main window.
             if _engine.rootObjects():
                 main_win = _engine.rootObjects()[0]
                 main_win.show()
