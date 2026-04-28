@@ -80,7 +80,7 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
             return {"status": "error", "detail": "path escapes workspace (directory traversal)"}
 
         # Reject sensitive paths
-        sensitive = ['.git/config', '.git/hooks', '.env', 'secrets']
+        sensitive = ['.git/', '.env', 'secrets']
         for s in sensitive:
             if s in str(target):
                 return {"status": "error", "detail": f"cannot write to sensitive path containing '{s}'"}

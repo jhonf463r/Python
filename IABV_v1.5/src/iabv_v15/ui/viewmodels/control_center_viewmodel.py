@@ -5198,6 +5198,14 @@ class ControlCenterViewModel(QObject):
                 sections.append('')
 
                 # 1. Full self code analysis (includes syntax, slots, routing, tests, perf)
+                syntax: dict = {}
+                mcp: dict = {}
+                perf: dict = {}
+                slots: dict = {}
+                routing: dict = {}
+                tests: dict = {}
+                branches: list = []
+                branch_count = 0
                 try:
                     from iabv_v15.services.self_code_analysis import full_self_analysis_report
                     report = full_self_analysis_report(ws)
@@ -5690,8 +5698,8 @@ class ControlCenterViewModel(QObject):
         # y ExperimentLab las consuman despues como areas de investigacion. No
         # modifica el ruteo; solo anota y avisa al usuario en una linea corta
         # para que sepa que su dato quedo registrado (antes se perdian en memoria).
-        # Ingerir capabilities en background para no bloquear UI
-        threading.Thread(target=self._ingest_chat_capabilities, args=(message,), daemon=True).start()
+        # Ingerir capabilities synchronously (fast regex, no I/O — safe on UI thread)
+        self._ingest_chat_capabilities(message)
         # Actualizar packet en background sin bloquear UI
         threading.Thread(target=self._refresh_development_packet, args=(message,), daemon=True).start()
         if self._try_handle_chat_command(message):
