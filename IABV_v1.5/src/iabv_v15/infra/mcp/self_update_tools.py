@@ -40,7 +40,9 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
         """Resolve and validate a relative path within the workspace."""
         ws = workspace_root_fn()
         resolved = (ws / relative_path).resolve()
-        if not str(resolved).startswith(str(ws.resolve())):
+        try:
+            resolved.relative_to(ws.resolve())
+        except ValueError:
             return None  # directory traversal attempt
         return resolved
 

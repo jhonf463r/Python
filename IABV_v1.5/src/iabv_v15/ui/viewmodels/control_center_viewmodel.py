@@ -5685,7 +5685,6 @@ class ControlCenterViewModel(QObject):
                             attachments=user_attachments)
         if self._attached_files:
             self._attached_files.clear()
-        self._set_live_status('processing')
         # Escucha pasiva de capacidades declaradas (GPU, modelos, cuentas, runtimes).
         # Persiste detecciones a data/chat_research_backlog/*.jsonl para que OSES
         # y ExperimentLab las consuman despues como areas de investigacion. No
@@ -5739,6 +5738,7 @@ class ControlCenterViewModel(QObject):
             self._last_user_goal = message
             self._run_external_consultation(explicit_assistant, announce=True)
             return
+        self._set_live_status('processing')
         import time as _time
         self._working = True
         self._working_since = _time.time()

@@ -103,9 +103,9 @@ class GitSyncService:
         elif tree_dirty:
             can_sync = False
             block_reason = "working tree has uncommitted changes"
-        elif ahead > 0 and behind == 0:
+        elif ahead > 0:
             can_sync = False
-            block_reason = f"local branch has {ahead} unpushed commit(s), no remote changes"
+            block_reason = f"local branch has {ahead} unpushed commit(s)"
         elif behind == 0:
             can_sync = False
             block_reason = "already up to date"
@@ -122,11 +122,12 @@ class GitSyncService:
         )
 
     def sync(self) -> GitSyncResult:
-        """Runs fast-forward-only pull when safe. Reports result structurally.
+        """Pull remote changes when safe using ``--no-rebase``.
 
-        Never runs destructive ops. On block, registers an UNRESOLVED item in
-        ``ControlMasterService`` (if provided) so operators see the state in
-        the next digest.
+        Never runs destructive ops. Blocks when tree is dirty or local
+        branch has unpushed commits. On block, registers an UNRESOLVED
+        item in ``ControlMasterService`` (if provided) so operators see
+        the state in the next digest.
         """
 
         status = self.check()
