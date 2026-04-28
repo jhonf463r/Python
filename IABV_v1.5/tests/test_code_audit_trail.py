@@ -91,7 +91,17 @@ class TestAuditRound:
         assert d['environment'] == 'linux_vm'
         assert d['findings_count'] == 1
         assert d['bugs_found'] == 1
+        assert d['bugs_fixed'] == 1
         assert d['tests_added'] == 5
+
+    def test_bugs_found_counts_all_findings(self):
+        f_found = _make_finding(status=FindingStatus.FOUND)
+        f_fixed = _make_finding(status=FindingStatus.FIXED)
+        f_unresolved = _make_finding(status=FindingStatus.UNRESOLVED)
+        r = _make_round(findings=[f_found, f_fixed, f_unresolved])
+        d = r.to_dict()
+        assert d['bugs_found'] == 3
+        assert d['bugs_fixed'] == 1
 
     def test_timestamp_auto_generated(self):
         r = _make_round()

@@ -209,7 +209,8 @@ class AuditRound:
             'total_loc_audited': self.total_loc_audited,
             'findings': [f.to_dict() for f in self.findings],
             'findings_count': len(self.findings),
-            'bugs_found': sum(1 for f in self.findings if f.status == FindingStatus.FIXED),
+            'bugs_found': len(self.findings),
+            'bugs_fixed': sum(1 for f in self.findings if f.status == FindingStatus.FIXED),
             'tests_added': self.tests_added,
             'tests_passed': self.tests_passed,
             'tests_failed': self.tests_failed,
@@ -334,7 +335,8 @@ class CodeAuditTrail:
                 EvaluationRoute,
                 ExperimentDomain,
             )
-            bugs_found = sum(
+            bugs_found = len(audit_round.findings)
+            bugs_fixed = sum(
                 1 for f in audit_round.findings
                 if f.status == FindingStatus.FIXED
             )
@@ -351,9 +353,9 @@ class CodeAuditTrail:
                 subject_key=f'code_audit:{audit_round.auditor_name or "unknown"}',
                 route=EvaluationRoute.CODE_AUDIT,
                 candidate_label=audit_round.auditor_name or 'unknown',
-                success=bugs_found > 0 or len(audit_round.findings) == 0,
+                success=True,
                 observed_summary=(
-                    f'R{audit_round.round_number}: {bugs_found} bugs in '
+                    f'R{audit_round.round_number}: {bugs_found} found, {bugs_fixed} fixed in '
                     f'{modules_count} modules, {audit_round.total_loc_audited} LOC, '
                     f'{audit_round.tests_added} tests added'
                 ),
@@ -370,6 +372,7 @@ class CodeAuditTrail:
                     'source': audit_round.source.value,
                     'modules_audited': audit_round.modules_audited[:10],
                     'bugs_found': bugs_found,
+                    'bugs_fixed': bugs_fixed,
                     'findings_count': len(audit_round.findings),
                     'tests_added': audit_round.tests_added,
                     'pattern_tags': list({
@@ -683,6 +686,7 @@ class CodeAuditTrail:
                 by_auditor[auditor] = {
                     'rounds': 0,
                     'bugs_found': 0,
+                    'bugs_fixed': 0,
                     'findings_total': 0,
                     'loc_audited': 0,
                     'modules_audited': [],
@@ -696,6 +700,7 @@ class CodeAuditTrail:
             stats = by_auditor[auditor]
             stats['rounds'] += 1
             stats['bugs_found'] += r.get('bugs_found', 0)
+            stats['bugs_fixed'] += r.get('bugs_fixed', 0)
             stats['findings_total'] += len(r.get('findings', []))
             stats['loc_audited'] += r.get('total_loc_audited', 0)
             stats['modules_audited'].extend(r.get('modules_audited', []))
@@ -726,6 +731,7 @@ class CodeAuditTrail:
             auditor_summaries[auditor] = {
                 'rounds': stats['rounds'],
                 'bugs_found': bugs,
+                'bugs_fixed': stats['bugs_fixed'],
                 'findings_total': stats['findings_total'],
                 'loc_audited': stats['loc_audited'],
                 'modules_audited': len(unique_modules),
