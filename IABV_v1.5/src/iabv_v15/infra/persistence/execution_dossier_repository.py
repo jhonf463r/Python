@@ -114,5 +114,5 @@ class ExecutionDossierRepository:
                 relative = f'dossiers/{dossier_id}.json'
                 payload = self.storage.load_json(relative)
             return ExecutionDossier.model_validate(payload)
-        except (FileNotFoundError, OSError):
+        except (FileNotFoundError, OSError, json.JSONDecodeError):
             return None
