@@ -16,6 +16,8 @@ from iabv_v15.services.evolution.code_audit_trail import (
     FindingStatus,
 )
 
+# AuditEnvironment is also used by TestAuditorPerformanceSummary
+
 
 @pytest.fixture
 def trail(tmp_path: Path) -> CodeAuditTrail:
@@ -232,3 +234,97 @@ class TestOSESCrossReference:
         assert results[0]['source'] == 'external_agent'
         assert results[0]['environment'] == 'linux_vm'
         assert results[0]['pattern_tag'] == 'constructor_mismatch'
+
+
+class TestAuditorPerformanceSummary:
+    def test_single_auditor(self, trail: CodeAuditTrail):
+        trail.record_round(_make_round(round_number=14, auditor_name='devin'))
+        trail.record_round(_make_round(round_number=15, auditor_name='devin'))
+        summary = trail.auditor_performance_summary()
+        assert 'devin' in summary['auditors']
+        devin = summary['auditors']['devin']
+        assert devin['rounds'] == 2
+        assert devin['bugs_found'] == 2
+        assert len(summary['comparison']) == 1
+        assert 'Solo devin' in summary['recommendation']
+
+    def test_multiple_auditors_comparison(self, trail: CodeAuditTrail):
+        f1 = _make_finding(bug_id='R14-1', pattern_tag='jsonl_resilience')
+        f2 = _make_finding(bug_id='R14-2', pattern_tag='jsonl_resilience')
+        f3 = _make_finding(bug_id='R18-1', pattern_tag='constructor_mismatch')
+        trail.record_round(_make_round(
+            round_number=14, auditor_name='devin',
+            findings=[f1, f2], total_loc_audited=3000, tests_added=4,
+        ))
+        trail.record_round(_make_round(
+            round_number=20, auditor_name='codex',
+            findings=[f3], total_loc_audited=1500, tests_added=2,
+        ))
+        summary = trail.auditor_performance_summary()
+        assert 'devin' in summary['auditors']
+        assert 'codex' in summary['auditors']
+        assert len(summary['comparison']) == 2
+        assert summary['comparison'][0]['auditor'] == 'devin'
+        assert summary['comparison'][0]['bugs_found'] == 2
+        assert summary['comparison'][1]['auditor'] == 'codex'
+        assert summary['comparison'][1]['bugs_found'] == 1
+        assert 'devin' in summary['recommendation']
+
+    def test_pattern_specialties(self, trail: CodeAuditTrail):
+        f1 = _make_finding(pattern_tag='jsonl_resilience')
+        f2 = _make_finding(pattern_tag='jsonl_resilience')
+        f3 = _make_finding(pattern_tag='wiring')
+        trail.record_round(_make_round(
+            auditor_name='devin', findings=[f1, f2, f3],
+        ))
+        summary = trail.auditor_performance_summary()
+        devin = summary['auditors']['devin']
+        assert 'jsonl_resilience' in devin['pattern_specialties']
+        assert devin['pattern_specialties']['jsonl_resilience'] == 2
+
+    def test_environments_tracked(self, trail: CodeAuditTrail):
+        trail.record_round(_make_round(
+            auditor_name='devin',
+            environment=AuditEnvironment.LINUX_VM,
+        ))
+        trail.record_round(_make_round(
+            auditor_name='iabv_self',
+            environment=AuditEnvironment.WINDOWS_NATIVE,
+        ))
+        summary = trail.auditor_performance_summary()
+        assert 'linux_vm' in summary['auditors']['devin']['environments']
+        assert 'windows_native' in summary['auditors']['iabv_self']['environments']
+
+    def test_empty_trail(self, trail: CodeAuditTrail):
+        summary = trail.auditor_performance_summary()
+        assert summary['auditors'] == {}
+        assert summary['comparison'] == []
+
+
+class TestExperimentLabPublishing:
+    def test_publishes_when_lab_available(self, trail: CodeAuditTrail, tmp_path):
+        from unittest.mock import MagicMock
+        mock_lab = MagicMock()
+        mock_lab.record_outcome = MagicMock(return_value=(MagicMock(), MagicMock()))
+        trail.experiment_lab = mock_lab
+
+        trail.record_round(_make_round(round_number=18, auditor_name='devin'))
+
+        mock_lab.record_outcome.assert_called_once()
+        call_kwargs = mock_lab.record_outcome.call_args.kwargs
+        assert call_kwargs['candidate_label'] == 'devin'
+        assert call_kwargs['suite_name'] == 'code_audit'
+        assert call_kwargs['metadata']['assistant_kind'] == 'devin'
+        assert call_kwargs['metadata']['comparison_scope_key'] == 'code_audit'
+        assert call_kwargs['metadata']['round_number'] == 18
+
+    def test_skips_when_no_lab(self, trail: CodeAuditTrail):
+        trail.experiment_lab = None
+        trail.record_round(_make_round())
+
+    def test_survives_lab_error(self, trail: CodeAuditTrail):
+        from unittest.mock import MagicMock
+        mock_lab = MagicMock()
+        mock_lab.record_outcome = MagicMock(side_effect=RuntimeError('boom'))
+        trail.experiment_lab = mock_lab
+        trail.record_round(_make_round())

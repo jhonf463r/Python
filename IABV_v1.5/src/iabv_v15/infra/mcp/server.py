@@ -1765,6 +1765,22 @@ class IABVMCPServer:
             trail = self._code_audit_trail()
             return trail.summary_for_portable_context()
 
+        @mcp.tool()
+        def auditor_comparison() -> dict[str, Any]:
+            """Comparación de rendimiento entre auditores (Devin, Codex, IABV, humano).
+
+            Muestra por cada auditor:
+            - Rondas realizadas, bugs encontrados, LOC auditados
+            - Detection rate (bugs/módulos), coverage depth (tests/bugs)
+            - Especialidades por patrón de bugs
+            - Entornos cubiertos (Linux, Windows)
+
+            Usa esto para saber quién es mejor en qué tipo de auditoría
+            y alimentar la decisión de a quién asignar la siguiente.
+            """
+            trail = self._code_audit_trail()
+            return trail.auditor_performance_summary()
+
         # ------------------------------------------------------------
         # self_audit — IABV tests itself by running a goal through
         # its own pipeline and verifying the full chain works.

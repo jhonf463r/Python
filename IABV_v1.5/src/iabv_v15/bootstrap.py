@@ -1153,6 +1153,7 @@ class AppBootstrap:
         self.portable_context_service.adaptive_task_orchestrator = self.adaptive_task_orchestrator
         self.api_key_discovery_service = ApiKeyDiscoveryService(data_root=self.config.data_dir)
         self.code_audit_trail = CodeAuditTrail(data_root=self.config.data_dir)
+        self.code_audit_trail.experiment_lab = self.experiment_lab
         self.decision_audit_trail = DecisionAuditTrail(data_root=self.config.data_dir)
         self.operational_self_examination_service.decision_audit_trail = self.decision_audit_trail
         self.operational_self_examination_service.code_audit_trail = self.code_audit_trail

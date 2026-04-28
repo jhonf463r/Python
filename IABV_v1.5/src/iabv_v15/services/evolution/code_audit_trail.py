@@ -288,6 +288,7 @@ class CodeAuditTrail:
             self._data_root = Path(env_dir)
         else:
             self._data_root = Path.home() / 'IABV_v1.5' / 'data'
+        self.experiment_lab: Any | None = None
 
     @property
     def _audit_dir(self) -> Path:
@@ -314,6 +315,71 @@ class CodeAuditTrail:
             len(audit_round.modules_audited), audit_round.total_loc_audited,
             bugs, audit_round.tests_added,
         )
+        self._publish_to_experiment_lab(audit_round)
+
+    def _publish_to_experiment_lab(self, audit_round: AuditRound) -> None:
+        """Publish audit round as ExperimentRun so ExperimentLab can
+        compare auditor effectiveness across assistant_kinds.
+
+        Each auditor (devin, codex, iabv_self, human) gets scored by:
+        - precision: bugs found / modules audited (detection rate)
+        - robustness: tests added / bugs found (coverage depth)
+        - execution_ms: LOC audited (throughput proxy)
+        """
+        lab = self.experiment_lab
+        if lab is None:
+            return
+        try:
+            from iabv_v15.domain.models import (
+                EvaluationRoute,
+                ExperimentDomain,
+            )
+            bugs_found = sum(
+                1 for f in audit_round.findings
+                if f.status == FindingStatus.FIXED
+            )
+            modules_count = max(len(audit_round.modules_audited), 1)
+            precision = min(bugs_found / modules_count, 1.0)
+            robustness = (
+                min(audit_round.tests_added / max(bugs_found, 1), 1.0)
+                if audit_round.tests_added > 0
+                else 0.0
+            )
+            lab.record_outcome(
+                domain=ExperimentDomain.CODE_AUDIT,
+                objective=f'audit_round_{audit_round.round_number}',
+                subject_key=f'code_audit:{audit_round.auditor_name or "unknown"}',
+                route=EvaluationRoute.CODE_AUDIT,
+                candidate_label=audit_round.auditor_name or 'unknown',
+                success=bugs_found > 0 or len(audit_round.findings) == 0,
+                observed_summary=(
+                    f'R{audit_round.round_number}: {bugs_found} bugs in '
+                    f'{modules_count} modules, {audit_round.total_loc_audited} LOC, '
+                    f'{audit_round.tests_added} tests added'
+                ),
+                precision=precision,
+                robustness=robustness,
+                execution_ms=audit_round.total_loc_audited,
+                evidence_refs=[audit_round.pr_url] if audit_round.pr_url else [],
+                suite_name='code_audit',
+                metadata={
+                    'assistant_kind': audit_round.auditor_name or 'unknown',
+                    'comparison_scope_key': 'code_audit',
+                    'round_number': audit_round.round_number,
+                    'environment': audit_round.environment.value,
+                    'source': audit_round.source.value,
+                    'modules_audited': audit_round.modules_audited[:10],
+                    'bugs_found': bugs_found,
+                    'findings_count': len(audit_round.findings),
+                    'tests_added': audit_round.tests_added,
+                    'pattern_tags': list({
+                        f.pattern_tag for f in audit_round.findings
+                        if f.pattern_tag
+                    }),
+                },
+            )
+        except Exception as exc:
+            logger.warning('code-audit-trail: failed to publish to ExperimentLab: %s', exc)
 
     def record_finding(
         self,
@@ -580,3 +646,135 @@ class CodeAuditTrail:
             }
             for f in findings
         ]
+
+    # ------------------------------------------------------------------
+    # Auditor performance comparison
+    # ------------------------------------------------------------------
+
+    def auditor_performance_summary(self) -> dict[str, Any]:
+        """Compare auditor effectiveness across all registered rounds.
+
+        Groups by auditor_name and computes per-auditor metrics:
+        - rounds: how many audit rounds this auditor did
+        - bugs_found: total bugs found and fixed
+        - loc_audited: total lines of code reviewed
+        - detection_rate: bugs / modules (how effective at finding bugs)
+        - tests_added: total tests contributed
+        - coverage_depth: tests_added / bugs_found (testing rigor)
+        - pattern_specialties: which pattern_tags this auditor finds most
+        - environments: which environments this auditor covers
+        - categories: which bug categories this auditor detects
+
+        This feeds ExperimentLab's comparison_scope_key='code_audit'
+        so StrategySelector can recommend the best auditor per task.
+        """
+        rounds = self.load_rounds()
+        if not rounds:
+            return {
+                'auditors': {},
+                'comparison': [],
+                'recommendation': 'Sin datos de auditoria registrados.',
+            }
+
+        by_auditor: dict[str, dict[str, Any]] = {}
+        for r in rounds:
+            auditor = r.get('auditor_name', 'unknown') or 'unknown'
+            if auditor not in by_auditor:
+                by_auditor[auditor] = {
+                    'rounds': 0,
+                    'bugs_found': 0,
+                    'findings_total': 0,
+                    'loc_audited': 0,
+                    'modules_audited': [],
+                    'tests_added': 0,
+                    'environments': set(),
+                    'sources': set(),
+                    'pattern_tags': Counter(),
+                    'categories': Counter(),
+                    'severities': Counter(),
+                }
+            stats = by_auditor[auditor]
+            stats['rounds'] += 1
+            stats['bugs_found'] += r.get('bugs_found', 0)
+            stats['findings_total'] += len(r.get('findings', []))
+            stats['loc_audited'] += r.get('total_loc_audited', 0)
+            stats['modules_audited'].extend(r.get('modules_audited', []))
+            stats['tests_added'] += r.get('tests_added', 0)
+            if r.get('environment'):
+                stats['environments'].add(r['environment'])
+            if r.get('source'):
+                stats['sources'].add(r['source'])
+            for f in r.get('findings', []):
+                if f.get('pattern_tag'):
+                    stats['pattern_tags'][f['pattern_tag']] += 1
+                if f.get('category'):
+                    stats['categories'][f['category']] += 1
+                if f.get('severity'):
+                    stats['severities'][f['severity']] += 1
+
+        auditor_summaries: dict[str, dict[str, Any]] = {}
+        for auditor, stats in by_auditor.items():
+            unique_modules = list(set(stats['modules_audited']))
+            modules_count = max(len(unique_modules), 1)
+            bugs = stats['bugs_found']
+            detection_rate = bugs / modules_count if modules_count > 0 else 0.0
+            coverage_depth = (
+                stats['tests_added'] / max(bugs, 1)
+                if stats['tests_added'] > 0
+                else 0.0
+            )
+            auditor_summaries[auditor] = {
+                'rounds': stats['rounds'],
+                'bugs_found': bugs,
+                'findings_total': stats['findings_total'],
+                'loc_audited': stats['loc_audited'],
+                'modules_audited': len(unique_modules),
+                'unique_modules': unique_modules[:20],
+                'tests_added': stats['tests_added'],
+                'detection_rate': round(detection_rate, 3),
+                'coverage_depth': round(coverage_depth, 2),
+                'environments': sorted(stats['environments']),
+                'sources': sorted(stats['sources']),
+                'pattern_specialties': dict(stats['pattern_tags'].most_common(5)),
+                'category_distribution': dict(stats['categories'].most_common(5)),
+                'severity_distribution': dict(stats['severities'].most_common()),
+            }
+
+        comparison: list[dict[str, Any]] = []
+        for auditor, summary in sorted(
+            auditor_summaries.items(),
+            key=lambda x: x[1]['bugs_found'],
+            reverse=True,
+        ):
+            comparison.append({
+                'auditor': auditor,
+                'bugs_found': summary['bugs_found'],
+                'detection_rate': summary['detection_rate'],
+                'loc_audited': summary['loc_audited'],
+                'tests_added': summary['tests_added'],
+                'coverage_depth': summary['coverage_depth'],
+                'pattern_specialties': list(summary['pattern_specialties'].keys()),
+                'environments': summary['environments'],
+            })
+
+        if len(comparison) >= 2:
+            best = comparison[0]
+            recommendation = (
+                f"{best['auditor']} lidera con {best['bugs_found']} bugs encontrados "
+                f"y detection_rate {best['detection_rate']}. "
+                f"Especialidades: {', '.join(best['pattern_specialties'][:3])}."
+            )
+        elif len(comparison) == 1:
+            only = comparison[0]
+            recommendation = (
+                f"Solo {only['auditor']} ha auditado hasta ahora. "
+                f"Agregar mas auditores para comparar efectividad."
+            )
+        else:
+            recommendation = 'Sin datos de auditoria registrados.'
+
+        return {
+            'auditors': auditor_summaries,
+            'comparison': comparison,
+            'recommendation': recommendation,
+        }
