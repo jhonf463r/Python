@@ -79,10 +79,11 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
         if target is None:
             return {"status": "error", "detail": "path escapes workspace (directory traversal)"}
 
-        # Reject sensitive paths
-        sensitive = ['.git/', '.env', 'secrets']
+        # Reject sensitive paths (normalize to forward slashes for Windows compat)
+        sensitive = ['.git/', '.git\\', '.env', 'secrets']
+        target_str = str(target).replace('\\', '/')
         for s in sensitive:
-            if s in str(target):
+            if s.replace('\\', '/') in target_str:
                 return {"status": "error", "detail": f"cannot write to sensitive path containing '{s}'"}
 
         try:
@@ -134,6 +135,14 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
         target = _safe_path(relative_path)
         if target is None:
             return {"status": "error", "detail": "path escapes workspace"}
+
+        # Reject sensitive paths (same check as write_repo_file)
+        sensitive = ['.git/', '.git\\', '.env', 'secrets']
+        target_str = str(target).replace('\\', '/')
+        for s in sensitive:
+            if s.replace('\\', '/') in target_str:
+                return {"status": "error", "detail": f"cannot patch sensitive path containing '{s}'"}
+
         if not target.is_file():
             return {"status": "error", "detail": f"file not found: {relative_path}"}
 
@@ -198,7 +207,9 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
         try:
             # git add
             file_list = [f.strip() for f in files.split(",") if f.strip()]
-            add_cmd = ["git", "add"] + file_list
+            if any(f.startswith('-') for f in file_list):
+                return {"status": "error", "detail": "file paths cannot start with '-' (flag injection)"}
+            add_cmd = ["git", "add", "--"] + file_list
             add_result = subprocess.run(
                 add_cmd, capture_output=True, text=True,
                 timeout=30, cwd=str(ws),
