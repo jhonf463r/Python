@@ -344,7 +344,7 @@ class PlatformLearningOrchestrator:
 
             # Phase 4: VERIFY (source-of-truth crossing)
             attempt.phase = LearningPhase.VERIFY
-            v_passed, v_total, v_sources = self._verify(profile, goal)
+            v_passed, v_total, v_sources, v_failed = self._verify(profile, goal)
             attempt.verification_passed = v_passed
             attempt.verification_total = v_total
             attempt.verification_sources_used = v_sources
@@ -357,7 +357,7 @@ class PlatformLearningOrchestrator:
             else:
                 # Phase 5: ADJUST
                 attempt.phase = LearningPhase.ADJUST
-                adjustments = self._adjust(profile, goal, v_sources)
+                adjustments = self._adjust(profile, goal, v_failed)
                 attempt.adjustments_made = adjustments
                 profile.failure_count += 1
                 profile.confidence = max(0.0, profile.confidence - 0.05)
@@ -451,43 +451,57 @@ class PlatformLearningOrchestrator:
         self,
         profile: PlatformProfile,
         goal: str,
-    ) -> tuple[int, int, list[str]]:
-        """Cross-check sources of truth. Returns (passed, total, sources_used)."""
+    ) -> tuple[int, int, list[str], list[str]]:
+        """Cross-check sources of truth. Returns (passed, total, sources_used, failed_sources)."""
         sources_used: list[str] = []
+        failed_sources: list[str] = []
         passed = 0
         total = 0
 
         # Source 1: URL / API response check
         if profile.platform_type == PlatformType.API and profile.url:
             total += 1
-            sources_used.append(VerificationSource.API_RESPONSE.value)
+            source_name = VerificationSource.API_RESPONSE.value
+            sources_used.append(source_name)
+            source_passed = False
             try:
                 import httpx
                 with httpx.Client(timeout=10.0) as client:
                     resp = client.get(profile.url)
                     if resp.status_code < 500:
                         passed += 1
+                        source_passed = True
             except Exception:
                 pass
+            if not source_passed:
+                failed_sources.append(source_name)
 
         # Source 2: State change (API key configured after goal)
         if self.api_key_discovery and 'key' in goal.lower():
             total += 1
-            sources_used.append(VerificationSource.STATE_CHANGE.value)
+            source_name = VerificationSource.STATE_CHANGE.value
+            sources_used.append(source_name)
             scan = self.api_key_discovery.scan_configured_keys()
             if any(s['configured'] for s in scan):
                 passed += 1
+            else:
+                failed_sources.append(source_name)
 
         # Source 3: Replay confidence (if browser interaction)
         if profile.platform_type == PlatformType.BROWSER and self.replay_confidence:
             total += 1
-            sources_used.append(VerificationSource.VISUAL.value)
+            source_name = VerificationSource.VISUAL.value
+            sources_used.append(source_name)
+            source_passed = False
             try:
                 conf = self.replay_confidence.current_confidence()
                 if conf and conf >= 0.5:
                     passed += 1
+                    source_passed = True
             except Exception:
                 pass
+            if not source_passed:
+                failed_sources.append(source_name)
 
         # Minimum: always have at least one check (existence)
         if total == 0:
@@ -495,7 +509,7 @@ class PlatformLearningOrchestrator:
             sources_used.append('existence')
             passed = 1  # platform exists
 
-        return passed, total, sources_used
+        return passed, total, sources_used, failed_sources
 
     def _adjust(
         self,
