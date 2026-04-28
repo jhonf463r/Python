@@ -5133,6 +5133,7 @@ class ControlCenterViewModel(QObject):
             'Metacognicion: auto-update + auto-analisis iniciado.',
         )
         self._working = True
+        self._working_since = __import__('time').time()
         self._set_live_status('processing')
         self.dataChanged.emit()
 
