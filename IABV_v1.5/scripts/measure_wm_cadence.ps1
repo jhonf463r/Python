@@ -25,16 +25,17 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$resultsDir = Join-Path $WorkspaceRoot "data\perf_evidence"
-$runFile = Join-Path $resultsDir "$RunLabel`_$(Get-Date -Format 'yyyyMMdd_HHmmss').json"
+$resultsDir = Join-Path $WorkspaceRoot 'data\perf_evidence'
+$runTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$runFile = Join-Path $resultsDir ('{0}_{1}.json' -f $RunLabel, $runTimestamp)
 $mcpUrl = 'http://127.0.0.1:8000/mcp'
 
 if (-not (Test-Path $resultsDir)) { New-Item -ItemType Directory -Path $resultsDir -Force | Out-Null }
 
-Write-Host "[measure] Run:       $RunLabel"
-Write-Host "[measure] Workspace: $WorkspaceRoot"
-Write-Host "[measure] Results:   $runFile"
-Write-Host ""
+Write-Host ('[measure] Run:       {0}' -f $RunLabel)
+Write-Host ('[measure] Workspace: {0}' -f $WorkspaceRoot)
+Write-Host ('[measure] Results:   {0}' -f $runFile)
+Write-Host ''
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -43,7 +44,7 @@ Write-Host ""
 function Get-IABVMemory {
     <# Uses CIM Win32_Process to capture both python.exe AND pythonw.exe
        belonging to the IABV workspace. The UI runs as pythonw.exe, MCP
-       helpers as python.exe — both must be counted. #>
+       helpers as python.exe -- both must be counted. #>
     $wsNorm = $WorkspaceRoot.Replace('\', '\\').TrimEnd('\')
     $cimProcs = Get-CimInstance Win32_Process -Filter "Name='python.exe' OR Name='pythonw.exe'" -ErrorAction SilentlyContinue |
         Where-Object { $_.CommandLine -match 'iabv_v15' -or $_.CommandLine -match [regex]::Escape($wsNorm) }
@@ -132,16 +133,18 @@ function Extract-ScanStats($wm) {
 # --- Detached HEAD safety ---
 $gitHeadRef = & git -C $WorkspaceRoot rev-parse --abbrev-ref HEAD 2>$null
 if ($gitHeadRef -eq 'HEAD') {
-    Write-Host "[measure] WARN: workspace is in detached HEAD — auto-pull would fail; forcing -NoAutoPull"
+    Write-Host '[measure] WARN: workspace is in detached HEAD -- auto-pull would fail'
 }
 
-Write-Host "[measure] Limpiando procesos previos..."
+Write-Host '[measure] Limpiando procesos previos...'
 Get-Process python, pythonw, cloudflared -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Seconds 2
 
-Write-Host "[measure] Arrancando IABV (-NoAutoPull -SkipHealthChecks)..."
+Write-Host '[measure] Arrancando IABV (-NoAutoPull -SkipHealthChecks)...'
 $startTime = Get-Date
-Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -File `"$WorkspaceRoot\scripts\start_iabv.ps1`" -StartUI -Quiet -NoAutoPull -SkipHealthChecks" -WindowStyle Minimized
+$startScript = Join-Path $WorkspaceRoot 'scripts\start_iabv.ps1'
+$startArgs = '-ExecutionPolicy Bypass -File "{0}" -StartUI -Quiet -NoAutoPull -SkipHealthChecks' -f $startScript
+Start-Process powershell -ArgumentList $startArgs -WindowStyle Minimized
 
 # --- Wait for bridge ---
 $bridgeReady = $false
@@ -150,8 +153,12 @@ for ($i = 0; $i -lt 60; $i++) {
     Start-Sleep -Seconds 1
     if (Test-UIBridge) { $bridgeReady = $true; break }
 }
-$bridgeReadyS = if ($bridgeReady) { [math]::Round(((Get-Date) - $bridgeWaitStart).TotalSeconds, 1) } else { -1 }
-Write-Host "[measure] Bridge ready: $bridgeReady (${bridgeReadyS}s)"
+if ($bridgeReady) {
+    $bridgeReadyS = [math]::Round(((Get-Date) - $bridgeWaitStart).TotalSeconds, 1)
+} else {
+    $bridgeReadyS = -1
+}
+Write-Host ('[measure] Bridge ready: {0} ({1}s)' -f $bridgeReady, $bridgeReadyS)
 
 # --- Snapshot at each mark ---
 $snapshots = @{}
@@ -164,25 +171,26 @@ foreach ($mark in @(30, 60, 120)) {
     $fresh = Extract-Freshness $wm
     $stats = Extract-ScanStats $wm
 
-    $snapshots["${mark}s"] = @{
+    $key = '{0}s' -f $mark
+    $snapshots[$key] = @{
         memory    = $mem
         freshness = $fresh
         scan_stats = $stats
     }
-    Write-Host "[measure] ${mark}s: WS=$($mem.working_set_mb)MB PM=$($mem.private_memory_mb)MB procs=$($mem.process_count) pids=$($mem.pids -join ',') scans=$($stats.scan_count) full=$($stats.scan_count_full) windows=$($fresh.windows_count) focus=$($fresh.has_focus)"
+    Write-Host ('[measure] {0}s: WS={1}MB PM={2}MB procs={3} pids={4} scans={5} full={6} windows={7} focus={8}' -f $mark, $mem.working_set_mb, $mem.private_memory_mb, $mem.process_count, ($mem.pids -join ','), $stats.scan_count, $stats.scan_count_full, $fresh.windows_count, $fresh.has_focus)
 }
 
 # --- Final scan stats at 180s ---
 $elapsed = ((Get-Date) - $startTime).TotalSeconds
 if ($elapsed -lt 180) {
-    Write-Host "[measure] Esperando hasta 180s para conteo final de scans..."
+    Write-Host '[measure] Esperando hasta 180s para conteo final de scans...'
     Start-Sleep -Seconds (180 - $elapsed)
 }
 $wmFinal = Get-WorldModelWithStats
 $statsFinal = Extract-ScanStats $wmFinal
 $freshFinal = Extract-Freshness $wmFinal
 
-Write-Host "[measure] 180s (final): scans=$($statsFinal.scan_count) full=$($statsFinal.scan_count_full) windows=$($freshFinal.windows_count) focus=$($freshFinal.has_focus)"
+Write-Host ('[measure] 180s (final): scans={0} full={1} windows={2} focus={3}' -f $statsFinal.scan_count, $statsFinal.scan_count_full, $freshFinal.windows_count, $freshFinal.has_focus)
 
 # --- Build result ---
 $result = @{
@@ -199,17 +207,19 @@ $result = @{
 
 $result | ConvertTo-Json -Depth 6 | Set-Content $runFile -Encoding UTF8
 
-Write-Host ""
-Write-Host "[measure] Resultado guardado: $runFile"
-Write-Host ""
-Write-Host "[measure] === RESUMEN ==="
-Write-Host "  Bridge ready:   ${bridgeReadyS}s"
-Write-Host "  Memory 30s:     WS=$($snapshots['30s'].memory.working_set_mb)MB PM=$($snapshots['30s'].memory.private_memory_mb)MB"
-Write-Host "  Memory 60s:     WS=$($snapshots['60s'].memory.working_set_mb)MB PM=$($snapshots['60s'].memory.private_memory_mb)MB"
-Write-Host "  Memory 120s:    WS=$($snapshots['120s'].memory.working_set_mb)MB PM=$($snapshots['120s'].memory.private_memory_mb)MB"
-Write-Host "  Scans total:    $($statsFinal.scan_count) (full: $($statsFinal.scan_count_full))"
-Write-Host "  Interval:       $($statsFinal.scan_interval_s)s (full: $($statsFinal.full_scan_interval_s)s)"
-Write-Host "  Frescura 180s:  windows=$($freshFinal.windows_count) focus=$($freshFinal.has_focus) page=$($freshFinal.has_current_page)"
-Write-Host ""
-Write-Host "[measure] Para comparar:"
-Write-Host "  Get-ChildItem '$resultsDir' -Filter '*.json' | ForEach-Object { Write-Host `$_.Name; (Get-Content `$_.FullName | ConvertFrom-Json).snapshots.'120s'.scan_stats }"
+Write-Host ''
+Write-Host ('[measure] Resultado guardado: {0}' -f $runFile)
+Write-Host ''
+Write-Host '[measure] === RESUMEN ==='
+$mem30  = $snapshots['30s'].memory
+$mem60  = $snapshots['60s'].memory
+$mem120 = $snapshots['120s'].memory
+Write-Host ('  Bridge ready:   {0}s' -f $bridgeReadyS)
+Write-Host ('  Memory 30s:     WS={0}MB PM={1}MB' -f $mem30.working_set_mb, $mem30.private_memory_mb)
+Write-Host ('  Memory 60s:     WS={0}MB PM={1}MB' -f $mem60.working_set_mb, $mem60.private_memory_mb)
+Write-Host ('  Memory 120s:    WS={0}MB PM={1}MB' -f $mem120.working_set_mb, $mem120.private_memory_mb)
+Write-Host ('  Scans total:    {0} (full: {1})' -f $statsFinal.scan_count, $statsFinal.scan_count_full)
+Write-Host ('  Interval:       {0}s (full: {1}s)' -f $statsFinal.scan_interval_s, $statsFinal.full_scan_interval_s)
+Write-Host ('  Frescura 180s:  windows={0} focus={1} page={2}' -f $freshFinal.windows_count, $freshFinal.has_focus, $freshFinal.has_current_page)
+Write-Host ''
+Write-Host ('[measure] Resultados en: {0}' -f $resultsDir)
