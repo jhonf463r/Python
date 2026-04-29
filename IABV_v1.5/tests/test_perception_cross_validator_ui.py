@@ -37,6 +37,9 @@ def test_no_iabv_window_detected() -> None:
         WindowObservation(title='Microsoft Edge', pid=100),
         WindowObservation(title='Explorer', pid=200),
     ])
+    # Backdate _created_at so the timing heuristic considers this a
+    # non-early-startup scan (>60s uptime) and severity stays HIGH.
+    validator._created_at -= 120.0
     issues = validator._cross_ui_self_awareness()
     assert len(issues) == 1
     assert issues[0]['check'] == 'ui_self_awareness'
