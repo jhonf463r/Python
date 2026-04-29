@@ -1311,6 +1311,65 @@ class AppBootstrap:
         except Exception:
             pass
 
+    def _handle_shell_loader_ready(self) -> None:
+        """Punto de aterrizaje honesto para el readiness real del shell.
+
+        Disparado por ``MainWindowBridge.shellLoaderReady`` cuando QML
+        confirma que ``mainShellLoader`` (asincrono) termino de
+        instanciar el contenido real del shell (no la
+        ``ApplicationWindow`` vacia).  Aqui — y solo aqui — marcamos el
+        hito ``shell_loader_ready`` y disparamos
+        ``splashController.set_ready()`` para que el splash empiece a
+        desvanecer.
+
+        Idempotente: si la senal QML llega dos veces (por ejemplo
+        cuando el ``sourceComponent`` se re-evalua tras un cambio de
+        contexto), solo el primer disparo cuenta.
+        """
+        if getattr(self, '_shell_loader_ready_handled', False):
+            return
+        self._shell_loader_ready_handled = True
+        try:
+            self._timeline.mark('shell_loader_ready')
+        except Exception:
+            pass
+        splash = getattr(self, '_splash', None)
+        if splash is not None:
+            try:
+                splash.set_ready()
+                self._timeline.mark('splash_set_ready')
+            except Exception:
+                logger.exception('splash.set_ready fallo desde shell_loader_ready')
+
+    def _force_splash_ready_fallback(self) -> None:
+        """Fallback determinista si QML nunca emite ``shellLoaderReady``.
+
+        Llamado via ``QTimer.singleShot`` despues de un timeout largo
+        (configurable via ``IABV_SHELL_READY_FALLBACK_MS``, default
+        45000 ms).  Marca el hito como ``shell_loader_ready_fallback``
+        para que la auditoria distinga un cierre honesto de uno por
+        timeout.  De este modo el splash siempre cierra: nunca se queda
+        congelado por una conexion QML que no llego.
+        """
+        if getattr(self, '_shell_loader_ready_handled', False):
+            return
+        logger.warning(
+            'shell_loader_ready no llego en el timeout esperado; '
+            'forzando cierre del splash via fallback'
+        )
+        self._shell_loader_ready_handled = True
+        try:
+            self._timeline.mark('shell_loader_ready_fallback')
+        except Exception:
+            pass
+        splash = getattr(self, '_splash', None)
+        if splash is not None:
+            try:
+                splash.set_ready()
+                self._timeline.mark('splash_set_ready')
+            except Exception:
+                logger.exception('splash.set_ready fallo desde fallback')
+
     _TOOL_INSTALL_GUIDANCE: dict[str, str] = {
         'aider_coder': 'pip install aider-chat (optional, heavy ~200MB; installed in background)',
         'claude_installed': 'Descargar Claude Desktop desde https://claude.ai/download',
@@ -1527,6 +1586,17 @@ class AppBootstrap:
         self.navigation_controller = NavigationController()
         self.theme_controller = ThemeController(self.theme)
         self.main_window_bridge = MainWindowBridge(self.config.app_name, self.config.workspace_root)
+        # El shell QML emite ``shellLoaderReady`` cuando ``mainShellLoader``
+        # (asincrono) instancia el contenido real (no solo la
+        # ``ApplicationWindow`` vacia).  Conectamos aqui, no dentro de
+        # ``run()``, asi la senal llega aunque el bridge ya este vivo
+        # antes de la primera carga del engine.
+        try:
+            self.main_window_bridge.shellLoaderReady.connect(
+                self._handle_shell_loader_ready
+            )
+        except Exception:
+            logger.exception('No se pudo conectar shellLoaderReady -> _handle_shell_loader_ready')
         self.dashboard_viewmodel = DashboardViewModel(
             self.episode_repository,
             self.knowledge_repository,
@@ -2548,10 +2618,22 @@ class AppBootstrap:
             if not self._tool_availability_logged:
                 QTimer.singleShot(2000, self._run_deferred_post_window_setup)
 
-            # Signal splash that we're ready — it will fade out
-            if self._splash:
-                self._splash.set_ready()
-                self._timeline.mark('splash_set_ready')
+            # ``splash.set_ready()`` ya NO se dispara aqui.  Antes era
+            # deshonesto: la ventana visible aun era una ``ApplicationWindow``
+            # con todos los VMs en ``None`` y un ``mainShellLoader`` inactivo.
+            # Ahora el splash solo recibe ``ready`` cuando QML reporta
+            # ``shellLoaderReady`` via ``MainWindowBridge`` (ver
+            # ``_handle_shell_loader_ready``), o por fallback determinista si
+            # esa senal nunca llega.
+            if self._splash is not None:
+                fallback_ms = 45000
+                try:
+                    raw = os.environ.get('IABV_SHELL_READY_FALLBACK_MS')
+                    if raw is not None:
+                        fallback_ms = max(1000, int(raw))
+                except Exception:
+                    fallback_ms = 45000
+                QTimer.singleShot(fallback_ms, self._force_splash_ready_fallback)
 
             self._timeline.mark('app_exec_about_to_start')
             return app.exec()

@@ -74,6 +74,15 @@ ApplicationWindow {
         active: false
         asynchronous: true
         sourceComponent: mainShellComponent
+        // Hito honesto de readiness: solo cuando el contenido async del
+        // shell termino de instanciarse, le avisamos a Python que el
+        // splash puede empezar a desvanecer.  Antes el splash recibia
+        // `ready` mientras esto seguia compilando en background.
+        onStatusChanged: {
+            if (status === Loader.Ready && mainWindowBridge) {
+                mainWindowBridge.signal_shell_loader_ready()
+            }
+        }
     }
 
     Component {

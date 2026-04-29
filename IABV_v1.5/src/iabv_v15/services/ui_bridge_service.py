@@ -362,13 +362,34 @@ def build_ui_bridge_server(
         return {"messages": messages, "total": len(_chat_buffer), "source": "buffer"}
 
     def _on_get_ui_state() -> dict[str, Any]:
-        """Retorna el estado actual de la UI."""
+        """Retorna el estado actual de la UI.
+
+        ``current_page`` ahora se lee desde el ``NavigationController``
+        real (``current_route``) — antes leia ``_current_page`` que NO
+        existe como atributo en ``ControlCenterViewModel`` y siempre
+        devolvia ``"unknown"``.  Mantenemos el fallback al atributo
+        viejo por si algun consumer externo lo seteo a mano.
+        """
         state: dict[str, Any] = {"ui_running": True}
         if control_center_viewmodel is not None:
             try:
-                state["current_page"] = getattr(
-                    control_center_viewmodel, "_current_page", "unknown"
-                )
+                page: str = "unknown"
+                nav = getattr(control_center_viewmodel, "navigation_controller", None)
+                if nav is not None:
+                    getter = getattr(nav, "get_current_route", None)
+                    if callable(getter):
+                        try:
+                            page = str(getter() or "unknown")
+                        except Exception:
+                            page = "unknown"
+                    else:
+                        page = str(getattr(nav, "_current_route", page) or page)
+                if page == "unknown":
+                    page = str(
+                        getattr(control_center_viewmodel, "_current_page", "unknown")
+                        or "unknown"
+                    )
+                state["current_page"] = page
                 state["chat_session_id"] = getattr(
                     control_center_viewmodel, "_chat_session_id", ""
                 )

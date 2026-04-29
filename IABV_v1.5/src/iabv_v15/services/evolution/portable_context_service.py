@@ -591,6 +591,35 @@ class PortableContextService:
         if deferred_ms is not None and deferred_ms > 5000.0:
             recent_blockers.append({'phase': 'deferred_post_window', 'ms': deferred_ms})
 
+        # False-ready detection: ``splash_set_ready`` honesto debe llegar
+        # *despues* de ``populate_ui_done`` y de ``shell_loader_ready``.
+        # Si el splash declaro ready antes que esos hitos (o sin que
+        # llegue ``shell_loader_ready`` antes del fallback), el arranque
+        # es deshonesto: la UI declara readiness sin que el shell real
+        # este disponible — exactamente el bug que la evidencia live
+        # del 2026-04-28 captura a 80s en Windows pythonw.
+        false_ready = False
+        false_ready_reason: list[str] = []
+        splash_ms = phase_to_ms.get('splash_set_ready')
+        populate_done_ms = phase_to_ms.get('populate_ui_done')
+        shell_ready_ms = phase_to_ms.get('shell_loader_ready')
+        shell_ready_fallback_ms = phase_to_ms.get('shell_loader_ready_fallback')
+        if splash_ms is not None and populate_done_ms is not None:
+            if splash_ms < populate_done_ms:
+                false_ready = True
+                false_ready_reason.append('splash_set_ready_before_populate_ui_done')
+        if splash_ms is not None and shell_ready_ms is None and shell_ready_fallback_ms is None:
+            false_ready = True
+            false_ready_reason.append('splash_set_ready_without_shell_loader_ready')
+        if shell_ready_fallback_ms is not None:
+            false_ready = True
+            false_ready_reason.append('shell_loader_ready_fallback_used')
+        if false_ready:
+            recent_blockers.append({
+                'phase': 'startup_false_ready',
+                'reasons': false_ready_reason,
+            })
+
         return {
             'status': 'analyzed',
             'init_ms': init_ms,
@@ -601,6 +630,8 @@ class PortableContextService:
             'phases_seen': list(phase_to_ms.keys()),
             'event_count': len(last_run),
             'recent_blockers': recent_blockers,
+            'false_ready_detected': false_ready,
+            'false_ready_reasons': false_ready_reason,
             'unresolved_fields': unresolved,
         }
 
