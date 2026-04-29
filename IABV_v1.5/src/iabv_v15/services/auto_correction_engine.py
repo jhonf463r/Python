@@ -307,7 +307,7 @@ def auto_provision_missing_secrets(
                 if CloudKeyAutonomousProvisioner.is_available():
                     prov_result = provisioner.provision_key(autonomous_provider)
                 else:
-                    prov_result = provisioner.provision_key_fallback(autonomous_provider)
+                    prov_result = provisioner.provision_key_fallback(autonomous_provider, open_browser=open_browser)
                 provision['autonomous'] = True
                 provision['autonomous_result'] = {
                     'success': prov_result.success,

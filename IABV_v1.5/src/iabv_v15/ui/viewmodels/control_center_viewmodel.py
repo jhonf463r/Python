@@ -2866,7 +2866,14 @@ class ControlCenterViewModel(QObject):
         detail = str(failure_detail or '').strip()
         lowered = detail.lower()
         external_notice = self._external_state_notice(external_state_flags)
-        if 'browser_security_verification' in lowered:
+        if 'url_pending' in lowered:
+            message = (
+                f'No pude completar la consulta externa en este momento. '
+                'Voy a seguir con lo que ya tenemos aqui y, si hace falta, preparo otra via.'
+            )
+            meta = f'Consulta con {assistant_title}: URL disponible pero no auto-abierta.'
+            busy = message
+        elif 'browser_security_verification' in lowered:
             message = (
                 f'No pude completar la consulta con {assistant_title} porque el sitio activo una verificacion de seguridad '
                 'antes de abrir el chat. Sigo con la mejor via disponible y dejo el bloqueo trazado.'

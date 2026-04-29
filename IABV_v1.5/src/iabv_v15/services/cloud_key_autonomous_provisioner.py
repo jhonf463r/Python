@@ -669,6 +669,7 @@ class CloudKeyAutonomousProvisioner:
         provider: str,
         *,
         save_to_profile: bool = True,
+        open_browser: bool = False,
     ) -> ProvisioningResult:
         """Fallback provisioning when Playwright is not available.
 
@@ -694,11 +695,17 @@ class CloudKeyAutonomousProvisioner:
             provider=provider, env_key=env_key, success=False,
         )
 
-        # Do NOT open visible browser windows autonomously —
-        # the user should not see Chrome popping up without their action.
-        # Return the URL so the UI can present it to the user.
         opened = False
-        logger.info('cloud_provisioner_fallback: %s needs user action at %s (no visible browser opened)', provider, start_url)
+        if open_browser:
+            try:
+                import webbrowser
+                webbrowser.open(start_url)
+                opened = True
+                logger.info('cloud_provisioner_fallback: opened %s for %s (user-triggered)', start_url, provider)
+            except Exception as exc:
+                logger.debug('cloud_provisioner_fallback: browser open failed: %s', exc)
+        else:
+            logger.info('cloud_provisioner_fallback: %s needs user action at %s (autonomous mode, no browser opened)', provider, start_url)
 
         result.steps_completed.append(ProvisioningStep(
             action='provide_url',
