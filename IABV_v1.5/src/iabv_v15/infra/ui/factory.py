@@ -5,8 +5,9 @@ efectiva. En caso de duda, devolver ``None`` para que la tool MCP degrade
 de forma explícita a ``{error: "ui_not_running"}``.
 
 Orden de preferencia:
-    1. ``QtScreenshotProvider`` si `QApplication.instance()` está viva
-       (caso IABV UI corriendo en el mismo proceso).
+    1. ``QtScreenshotProvider`` si ``QGuiApplication.instance()`` está viva
+       (caso IABV UI corriendo en el mismo proceso).  IABV usa
+       ``QGuiApplication`` (no ``QApplication`` de QtWidgets).
     2. ``MssScreenshotProvider`` si python-mss está importable y hay
        display (sistema con GUI real).
     3. ``None`` (headless CI, Linux sin X, sin forma de capturar).
@@ -35,10 +36,10 @@ def build_ui_screenshot_provider() -> Any | None:
 
 def _try_qt_provider() -> Any | None:
     try:
-        from PySide6.QtWidgets import QApplication  # type: ignore
+        from PySide6.QtGui import QGuiApplication  # type: ignore
     except Exception:
         return None
-    app = QApplication.instance()
+    app = QGuiApplication.instance()
     if app is None:
         return None
     try:

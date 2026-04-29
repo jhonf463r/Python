@@ -1418,6 +1418,14 @@ class AppBootstrap:
         del splash a veces hace que el main window quede debajo aunque
         ``main_win.show()`` ya se llamo.  Reaplicamos ``raise_()`` y
         ``activateWindow()`` cuando llegan los hitos honestos.
+
+        Adicionalmente, en Windows, si el proceso fue lanzado con
+        ``Start-Process -WindowStyle Hidden`` (que setea
+        ``STARTUPINFO.wShowWindow = SW_HIDE``), el primer
+        ``ShowWindow()`` que Qt hace es overrideado por el OS con
+        ``SW_HIDE``.  Reaplicamos ``ShowWindow(hwnd, SW_SHOW)`` via
+        ctypes para forzar visibilidad independientemente del
+        ``STARTUPINFO`` del proceso padre.
         """
         main_win = getattr(self, '_main_win', None)
         if main_win is None:
@@ -1428,9 +1436,136 @@ class AppBootstrap:
                 main_win.requestActivate()
             except Exception:
                 pass
+            self._force_win32_visibility(main_win, source)
             self._timeline.mark('main_window_raised_after_ready', source=source)
         except Exception:
             logger.exception('main_win.raise_/activate fallo desde %s', source)
+
+    def _force_win32_visibility(self, window: object, source: str) -> None:
+        """Fuerza visibilidad Win32 del HWND nativo via ctypes.
+
+        Cuando ``Start-Process -WindowStyle Hidden`` lanza el proceso,
+        Windows setea ``STARTUPINFO.wShowWindow = SW_HIDE``.  El primer
+        ``ShowWindow(hwnd, nCmdShow)`` que Qt invoca es overrideado por
+        el OS con ``SW_HIDE`` en lugar del ``SW_SHOW`` que Qt pide.
+
+        Esta funcion llama ``ShowWindow(hwnd, SW_SHOW)`` una segunda
+        vez (que ya no es overrideada) para hacer visible el HWND.
+        Tambien llama ``SetForegroundWindow`` para traerlo al frente.
+
+        En plataformas no-Windows es un no-op.
+        """
+        if sys.platform != 'win32':
+            return
+        try:
+            import ctypes
+            hwnd = int(window.winId())
+            if not hwnd:
+                self._timeline.mark(
+                    'win32_force_visibility_skip',
+                    source=source,
+                    reason='winId_is_zero',
+                )
+                return
+            user32 = ctypes.windll.user32
+            SW_SHOW = 5
+            SW_SHOWNORMAL = 1
+            was_visible = user32.ShowWindow(hwnd, SW_SHOWNORMAL)
+            user32.ShowWindow(hwnd, SW_SHOW)
+            user32.SetForegroundWindow(hwnd)
+            self._timeline.mark(
+                'win32_force_visibility_done',
+                source=source,
+                hwnd=hwnd,
+                was_visible=bool(was_visible),
+            )
+        except Exception:
+            logger.exception(
+                'win32_force_visibility fallo desde %s', source,
+            )
+
+    def _connect_window_lifecycle_signals(self, window: object) -> None:
+        """Conecta senales de ciclo de vida de la ventana principal al timeline.
+
+        Instrumenta: visibleChanged, activeChanged, closing, y
+        screenChanged para que el JSONL muestre exactamente que pasa
+        con la ventana nativa en Windows.  Si la ventana se oculta, se
+        destruye o cambia de screen, queda registrado.
+        """
+        try:
+            window.visibleChanged.connect(
+                lambda visible: self._on_window_lifecycle(
+                    'visibleChanged', visible=visible,
+                )
+            )
+        except Exception:
+            pass
+        try:
+            window.activeChanged.connect(
+                lambda: self._on_window_lifecycle(
+                    'activeChanged',
+                    active=window.isActive() if hasattr(window, 'isActive') else None,
+                )
+            )
+        except Exception:
+            pass
+        try:
+            window.closing.connect(
+                lambda close_event: self._on_window_lifecycle(
+                    'closing',
+                )
+            )
+        except Exception:
+            pass
+        try:
+            window.screenChanged.connect(
+                lambda screen: self._on_window_lifecycle(
+                    'screenChanged',
+                    screen_name=screen.name() if screen and hasattr(screen, 'name') else None,
+                )
+            )
+        except Exception:
+            pass
+        # Log initial state
+        try:
+            wid = int(window.winId()) if hasattr(window, 'winId') else 0
+            top_level_count = 0
+            try:
+                from PySide6.QtGui import QGuiApplication as _QGA
+                top_level_count = len(_QGA.topLevelWindows())
+            except Exception:
+                pass
+            self._timeline.mark(
+                'window_lifecycle_connected',
+                winId=wid,
+                visible=window.isVisible() if hasattr(window, 'isVisible') else None,
+                top_level_windows=top_level_count,
+            )
+        except Exception:
+            pass
+
+    def _on_window_lifecycle(self, event_name: str, **kwargs: object) -> None:
+        """Registra un evento de ciclo de vida de la ventana en el timeline."""
+        try:
+            main_win = getattr(self, '_main_win', None)
+            extra = dict(kwargs)
+            if main_win is not None:
+                try:
+                    extra['winId'] = int(main_win.winId())
+                except Exception:
+                    pass
+                try:
+                    extra['visible'] = main_win.isVisible()
+                except Exception:
+                    pass
+                try:
+                    from PySide6.QtGui import QGuiApplication as _QGA
+                    extra['top_level_windows'] = len(_QGA.topLevelWindows())
+                except Exception:
+                    pass
+            self._timeline.mark(f'window_{event_name}', **extra)
+        except Exception:
+            pass
 
     def _force_splash_ready_fallback(self) -> None:
         """Fallback determinista si QML nunca emite ``shellLoaderReady``.
@@ -2731,7 +2866,9 @@ class AppBootstrap:
                 main_win.show()
                 main_win.raise_()
                 main_win.requestActivate()
+                self._force_win32_visibility(main_win, 'initial_show')
                 self._timeline.mark('main_window_shown')
+                self._connect_window_lifecycle_signals(main_win)
 
             QTimer.singleShot(1200, self._schedule_startup_evolution)
 

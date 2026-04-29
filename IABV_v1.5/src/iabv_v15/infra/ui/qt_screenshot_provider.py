@@ -7,11 +7,14 @@ Cumple el Protocol ``UIScreenshotProvider`` definido en
         def capture(self, region: str) -> bytes: ...
 
 Estrategia:
-    * Si ya hay una `QApplication` viva (caso típico: el proceso IABV
-      con la UI corriendo), se usa esa instancia.
-    * Si no hay `QApplication` (caso MCP server arrancado standalone),
+    * Si ya hay una ``QGuiApplication`` viva (caso típico: el proceso IABV
+      con la UI corriendo), se usa esa instancia.  IABV usa
+      ``QGuiApplication`` (no ``QApplication`` de QtWidgets), así que
+      buscamos ventanas via ``QGuiApplication.topLevelWindows()`` en vez
+      de ``QApplication.topLevelWidgets()``.
+    * Si no hay ``QGuiApplication`` (caso MCP server arrancado standalone),
       el provider no puede capturar sin pisarle el event loop al host,
-      así que devuelve `b""` (la tool de MCP lo traduce a
+      así que devuelve ``b""`` (la tool de MCP lo traduce a
       ``{error: "ui_not_running"}``).
 
 Regiones soportadas (mapeo mínimo, extensible sin romper contrato):
@@ -27,7 +30,6 @@ MCP degrade explícitamente en vez de crashear.
 
 from __future__ import annotations
 
-import io
 import logging
 from typing import Any
 
@@ -48,8 +50,8 @@ class QtScreenshotProvider:
 
     def __init__(self, *, app_factory: Any | None = None) -> None:
         """Args:
-            app_factory: callable opcional que devuelve la `QApplication`.
-                Por defecto usa `QApplication.instance()` para NO crear un
+            app_factory: callable opcional que devuelve la ``QGuiApplication``.
+                Por defecto usa ``QGuiApplication.instance()`` para NO crear un
                 event loop nuevo (crear uno desde el MCP server rompería
                 el proceso de UI si estuviera corriendo).
         """
@@ -71,23 +73,20 @@ class QtScreenshotProvider:
     def _capture_impl(self, region: str) -> bytes:
         try:
             from PySide6.QtCore import QBuffer, QIODevice
-            from PySide6.QtGui import QGuiApplication, QPixmap  # noqa: F401 (QPixmap usado por grab)
-            from PySide6.QtWidgets import QApplication
+            from PySide6.QtGui import QGuiApplication
         except Exception as exc:  # pragma: no cover - depende del entorno
             logger.debug("PySide6 no disponible: %r", exc)
             return b""
 
-        app = self._resolve_app(QApplication, QGuiApplication)
+        app = self._resolve_app(QGuiApplication)
         if app is None:
-            # No hay QApplication viva; este provider no crea una porque eso
-            # rompería el event loop de la UI real. Cae a `ui_not_running`.
             return b""
 
         region_key = (region or "").strip().lower()
         pixmap = None
 
         if region_key in _WINDOW_REGIONS or region_key == "":
-            pixmap = self._grab_iabv_window(QApplication)
+            pixmap = self._grab_iabv_window(QGuiApplication)
 
         if pixmap is None or pixmap.isNull():
             pixmap = self._grab_primary_screen(QGuiApplication)
@@ -103,33 +102,40 @@ class QtScreenshotProvider:
         buffer.close()
         return data
 
-    def _resolve_app(self, QApplication: Any, QGuiApplication: Any) -> Any:
+    def _resolve_app(self, QGuiApplication: Any) -> Any:
         if self._app_factory is not None:
             try:
                 return self._app_factory()
             except Exception as exc:  # pragma: no cover - defensa
                 logger.debug("app_factory falló: %r", exc)
                 return None
-        return QApplication.instance() or QGuiApplication.instance()
+        return QGuiApplication.instance()
 
-    def _grab_iabv_window(self, QApplication: Any) -> Any:
-        app = QApplication.instance()
+    def _grab_iabv_window(self, QGuiApplication: Any) -> Any:
+        """Captura la ventana IABV usando QGuiApplication.topLevelWindows().
+
+        IABV usa ``QGuiApplication`` (no ``QApplication``), así que
+        ``topLevelWidgets()`` no existe.  Usamos ``topLevelWindows()``
+        que devuelve ``list[QWindow]``.  ``QWindow`` no tiene ``.grab()``
+        directo, así que usamos ``QScreen.grabWindow(winId)`` para
+        capturar el contenido de la ventana.
+        """
+        app = QGuiApplication.instance()
         if app is None:
             return None
-        windows = list(app.topLevelWidgets() or [])
+        windows = list(app.topLevelWindows() or [])
         if not windows:
             return None
         target = None
         for w in windows:
             try:
-                title = (w.windowTitle() or "").strip()
+                title = (w.title() or "").strip()
             except Exception:  # pragma: no cover
                 title = ""
             if title and "iabv" in title.lower():
                 target = w
                 break
         if target is None:
-            # Primera visible con tamaño razonable.
             for w in windows:
                 try:
                     if w.isVisible() and w.width() > 0 and w.height() > 0:
@@ -140,9 +146,15 @@ class QtScreenshotProvider:
         if target is None:
             return None
         try:
-            return target.grab()
+            screen = target.screen()
+            if screen is None:
+                return None
+            wid = int(target.winId())
+            if not wid:
+                return None
+            return screen.grabWindow(wid)
         except Exception as exc:  # pragma: no cover
-            logger.debug("window.grab() falló: %r", exc)
+            logger.debug("screen.grabWindow(winId) falló: %r", exc)
             return None
 
     def _grab_primary_screen(self, QGuiApplication: Any) -> Any:
