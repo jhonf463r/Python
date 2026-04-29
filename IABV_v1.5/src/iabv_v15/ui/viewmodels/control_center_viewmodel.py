@@ -195,6 +195,8 @@ class ControlCenterViewModel(QObject):
         self._last_goal_context: dict[str, Any] = {}
         self._clipboard_notice = 'Todavia no se ha copiado nada al portapapeles.'
         self._development_packet = ''
+        self._dev_packet_last_ts: float = 0.0
+        self._dev_packet_cooldown_s: float = 30.0
         self._latest_response_text = 'Todavia no hay respuesta final en esta sesion.'
         self._latest_response_meta = 'Cuando completes una consulta, aqui veras el rol detectado, el pack usado y si hubo aprobaciones.'
         self._approval_dialog_visible = False
@@ -3401,12 +3403,20 @@ class ControlCenterViewModel(QObject):
             },
         )
 
-    def _refresh_development_packet(self, user_goal: str | None = None) -> None:
+    def _refresh_development_packet(
+        self, user_goal: str | None = None, *, force: bool = False,
+    ) -> None:
+        import time as _time
         if user_goal is not None:
             self._last_user_goal = user_goal.strip()
+        now = _time.monotonic()
+        if not force and (now - self._dev_packet_last_ts) < self._dev_packet_cooldown_s:
+            return
+        self._dev_packet_last_ts = now
         self._development_packet = self.engineering_review_service.build_codex_packet(
             user_goal=self._last_user_goal,
             selected_role_title='Automatico' if self._auto_route_enabled else self._selected_role_title(),
+            force=force,
         )
 
     def _seed_development_packet(self, user_goal: str | None = None) -> None:
@@ -4504,7 +4514,7 @@ class ControlCenterViewModel(QObject):
             for item in evidence_refs[:6]:
                 lines.append(f"- {item}")
         if assistant_kind == 'codex':
-            self._refresh_development_packet(self._last_user_goal or intent.get('title') or 'caso actual')
+            self._refresh_development_packet(self._last_user_goal or intent.get('title') or 'caso actual', force=True)
             lines.append('Paquete local para Codex:')
             lines.append(self._development_packet.strip())
         else:
@@ -5781,6 +5791,10 @@ class ControlCenterViewModel(QObject):
         el chat pueda mostrarle al usuario "anotado: ..." en la siguiente
         respuesta. Si el service no esta inyectado (tests antiguos o bootstrap
         minimo), es no-op silencioso.
+
+        NOTE: NO debounce here — each message carries unique text that must be
+        processed individually. Skipping messages would permanently lose
+        capability detections (e.g. "tengo GPU RTX 4090").
         """
         service = getattr(self, 'chat_capability_ingestion_service', None)
         if service is None:
@@ -6377,7 +6391,7 @@ class ControlCenterViewModel(QObject):
 
     @Slot(str)
     def buildDevelopmentPacket(self, text: str) -> None:
-        self._refresh_development_packet(text)
+        self._refresh_development_packet(text, force=True)
         self._busy_label = 'Paquete para Codex actualizado.'
         self.dataChanged.emit()
 
