@@ -33,8 +33,8 @@ from iabv_v15.domain.models import (
 class WorldModelService:
     """Keeps a lightweight operational picture of windows, tools, network and blockers."""
 
-    _DEFAULT_SCAN_INTERVAL = 18.0
-    _DEFAULT_FULL_SCAN_INTERVAL = 120.0
+    _DEFAULT_SCAN_INTERVAL = 45.0
+    _DEFAULT_FULL_SCAN_INTERVAL = 180.0
     _NETWORK_TIMEOUT_SECONDS = 1.4
     _HIGH_MEMORY_MB = 900.0
 

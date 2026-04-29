@@ -30,6 +30,10 @@ class RunRepository:
         )
         return run_record
 
+    def count(self) -> int:
+        row = self.db.fetchone("SELECT COUNT(*) AS cnt FROM run_records")
+        return int(row["cnt"]) if row else 0
+
     def list_recent(self, limit: int = 30) -> list[RunRecord]:
         rows = self.db.fetchall(
             """

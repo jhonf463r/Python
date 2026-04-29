@@ -45,6 +45,10 @@ class KnowledgeRepository:
         )
         return [KnowledgeItem.model_validate_json(row["payload_json"]) for row in rows]
 
+    def count(self) -> int:
+        row = self.db.fetchone("SELECT COUNT(*) AS cnt FROM knowledge_items")
+        return int(row["cnt"]) if row else 0
+
     def list_recent(self, limit: int = 20) -> list[KnowledgeItem]:
         rows = self.db.fetchall(
             "SELECT payload_json FROM knowledge_items ORDER BY updated_at_utc DESC LIMIT ?",

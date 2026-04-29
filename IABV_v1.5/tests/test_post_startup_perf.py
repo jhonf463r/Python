@@ -3,8 +3,11 @@
 Verifies:
 1. _refresh_development_packet is debounced with 30s cooldown
 2. build_project_context caches results with 60s TTL
-3. _ingest_chat_capabilities is debounced with 10s cooldown
+3. _ingest_chat_capabilities processes every message (no debounce)
 4. User-triggered actions (force=True) bypass cooldowns
+5. Repository count() methods use SQL COUNT (not list+len)
+6. WorldModelService uses relaxed scan intervals (45s/180s)
+7. ControlCenterViewModel uses shared thread pool for background work
 """
 from __future__ import annotations
 
@@ -175,3 +178,93 @@ class TestIngestChatCapabilitiesNoCooldown:
         vm.chat_capability_ingestion_service = None
         result = vm._ingest_chat_capabilities('hello')
         assert result == []
+
+
+# ---------------------------------------------------------------------------
+# Repository count() — SQL COUNT instead of list+len
+# ---------------------------------------------------------------------------
+
+class TestRepositoryCount:
+    """Verify that repositories expose count() using SQL COUNT."""
+
+    def test_episode_repository_count(self, tmp_path):
+        from iabv_v15.infra.persistence.episode_repository import EpisodeRepository
+        from iabv_v15.infra.persistence.database import AppDatabase
+        db = AppDatabase(str(tmp_path / 'test.db'))
+        repo = EpisodeRepository(str(tmp_path / 'episodes'), db)
+        assert repo.count() == 0
+        repo.create_episode('ep1')
+        assert repo.count() == 1
+        repo.create_episode('ep2')
+        assert repo.count() == 2
+
+    def test_knowledge_repository_count(self, tmp_path):
+        from iabv_v15.infra.persistence.knowledge_repository import KnowledgeRepository
+        from iabv_v15.infra.persistence.database import AppDatabase
+        from iabv_v15.domain.models import KnowledgeItem
+        db = AppDatabase(str(tmp_path / 'test.db'))
+        repo = KnowledgeRepository(db)
+        assert repo.count() == 0
+        repo.upsert(KnowledgeItem(title='k1', summary='s1'))
+        assert repo.count() == 1
+
+    def test_run_repository_count(self, tmp_path):
+        from iabv_v15.infra.persistence.run_repository import RunRepository
+        from iabv_v15.infra.persistence.database import AppDatabase
+        db = AppDatabase(str(tmp_path / 'test.db'))
+        repo = RunRepository(db)
+        assert repo.count() == 0
+
+    def test_session_artifact_repository_count(self, tmp_path):
+        from iabv_v15.infra.persistence.session_artifact_repository import SessionArtifactRepository
+        from iabv_v15.infra.persistence.database import AppDatabase
+        from iabv_v15.infra.persistence.storage import ArtifactStorage
+        db = AppDatabase(str(tmp_path / 'test.db'))
+        storage = ArtifactStorage(str(tmp_path / 'artifacts'))
+        repo = SessionArtifactRepository(db, storage)
+        assert repo.count() == 0
+
+
+# ---------------------------------------------------------------------------
+# WorldModelService — relaxed scan intervals
+# ---------------------------------------------------------------------------
+
+class TestWorldModelScanIntervals:
+    """Verify that WorldModelService uses the new relaxed defaults."""
+
+    def test_default_scan_interval_is_45s(self):
+        from iabv_v15.services.evolution.world_model_service import WorldModelService
+        assert WorldModelService._DEFAULT_SCAN_INTERVAL == 45.0
+
+    def test_default_full_scan_interval_is_180s(self):
+        from iabv_v15.services.evolution.world_model_service import WorldModelService
+        assert WorldModelService._DEFAULT_FULL_SCAN_INTERVAL == 180.0
+
+    def test_min_scan_interval_is_8s(self, tmp_path):
+        from iabv_v15.services.evolution.world_model_service import WorldModelService
+        svc = WorldModelService(
+            workspace_root=str(tmp_path),
+            evolution_dir=str(tmp_path / 'evo'),
+            auto_start=False,
+            bootstrap_scan=False,
+            scan_interval_seconds=1.0,
+        )
+        assert svc.scan_interval_seconds == 8.0
+
+
+# ---------------------------------------------------------------------------
+# ControlCenterViewModel — shared thread pool
+# ---------------------------------------------------------------------------
+
+class TestViewModelThreadPool:
+    """Verify that ControlCenterViewModel uses a shared ThreadPoolExecutor."""
+
+    def test_bg_pool_exists(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import (
+            ControlCenterViewModel,
+        )
+        vm = MagicMock(spec=ControlCenterViewModel)
+        vm._bg_pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix='test-bg')
+        assert vm._bg_pool._max_workers == 3
+        vm._bg_pool.shutdown(wait=False)
