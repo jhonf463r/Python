@@ -345,7 +345,12 @@ from iabv_v15.ui.viewmodels.run_history_viewmodel import RunHistoryViewModel
 
 
 class AppBootstrap:
-    def __init__(self, workspace_root: str | None = None) -> None:
+    def __init__(
+        self,
+        workspace_root: str | None = None,
+        *,
+        _defer_services: bool = False,
+    ) -> None:
         # Startup timeline: anchored on the first call.  Marks 'init_start'
         # before any heavy work so even imports counted before this point
         # can be inferred from main.py.
@@ -362,6 +367,49 @@ class AppBootstrap:
         # Now that logs_dir exists, attach JSONL sink so every future
         # mark() call also persists to data/logs/startup_timeline.jsonl.
         configure_global_timeline(Path(self.config.logs_dir))
+
+        self._services_wired = False
+        self._defer_services = _defer_services
+
+        # VM placeholders needed by create_engine(defer_vm_creation=True)
+        # which sets context properties to these (initially None) values.
+        self.navigation_controller = None
+        self.theme_controller = None
+        self.main_window_bridge = None
+        self.dashboard_viewmodel = None
+        self.control_center_viewmodel = None
+        self.capture_studio_viewmodel = None
+        self.evolution_center_viewmodel = None
+        self.knowledge_base_viewmodel = None
+        self.provider_settings_viewmodel = None
+        self.run_history_viewmodel = None
+        self.centro_vivo_viewmodel = None
+
+        if not _defer_services:
+            self._wire_services()
+
+        self._timeline.mark(
+            'bootstrap_init_done',
+            services_deferred=_defer_services,
+            tool_availability_deferred=not getattr(self, '_tool_availability_logged', False),
+        )
+
+    # ------------------------------------------------------------------
+    # Service wiring — extracted from __init__ to allow deferral.
+    #
+    # When ``_defer_services=True`` (real app via main.py), ``__init__``
+    # finishes in <1 s so ``run()`` can show the splash immediately.
+    # ``_wire_services()`` is then called from ``run()`` while the splash
+    # is already visible.  Tests call ``AppBootstrap(tmp_path)`` without
+    # the flag and get the old behaviour (everything wired in __init__).
+    # ------------------------------------------------------------------
+    def _wire_services(self) -> None:
+        if self._services_wired:
+            return
+        self._services_wired = True
+        self._timeline.mark('wire_services_start')
+
+        _defer_scans = self._defer_services
 
         self.db = AppDatabase(self.config.sqlite_path)
         self.screenshot_storage = ArtifactStorage(self.config.screenshots_dir)
@@ -508,6 +556,7 @@ class AppBootstrap:
             evolution_dir=self.config.evolution_dir,
             role_router=None,
             tool_registry=self.tool_registry,
+            bootstrap_scan=not _defer_scans,
         )
         # The MCP subprocess inherits the persisted world model snapshot from
         # the main UI process.  It doesn't need its own aggressive 18-second
@@ -524,7 +573,7 @@ class AppBootstrap:
             environment_self_awareness_service=self.environment_self_awareness_service,
             universal_perception_service=self.universal_perception_service,
             role_router=None,
-            bootstrap_scan=not _is_mcp_sub,
+            bootstrap_scan=not _is_mcp_sub and not _defer_scans,
             scan_interval_seconds=300.0 if _is_mcp_sub else WorldModelService._DEFAULT_SCAN_INTERVAL,
             full_scan_interval_seconds=600.0 if _is_mcp_sub else WorldModelService._DEFAULT_FULL_SCAN_INTERVAL,
         )
@@ -1269,20 +1318,28 @@ class AppBootstrap:
             artifact_repository=self.session_artifact_repository,
         )
 
-        self.navigation_controller = None
-        self.theme_controller = None
-        self.main_window_bridge = None
-        self.dashboard_viewmodel = None
-        self.control_center_viewmodel = None
-        self.capture_studio_viewmodel = None
-        self.evolution_center_viewmodel = None
-        self.knowledge_base_viewmodel = None
-        self.provider_settings_viewmodel = None
-        self.run_history_viewmodel = None
+        # If scans were deferred, trigger an async refresh now that all
+        # services are wired.  The background threads (already started by
+        # auto_start=True inside the constructors) will pick up the signal
+        # and perform their first scan without blocking the GUI thread.
+        if _defer_scans:
+            try:
+                self.environment_self_awareness_service.request_refresh(
+                    reason='deferred_bootstrap', full=True,
+                )
+            except Exception:
+                pass
+            try:
+                self.world_model_service.request_refresh(
+                    reason='deferred_bootstrap', full=True,
+                )
+            except Exception:
+                pass
 
         self._timeline.mark(
-            'bootstrap_init_done',
+            'wire_services_done',
             tool_availability_deferred=not self._tool_availability_logged,
+            scans_deferred=_defer_scans,
         )
 
     def _run_deferred_post_window_setup(self) -> None:
@@ -2801,6 +2858,21 @@ class AppBootstrap:
                 self._timeline.mark('splash_visible')
             else:
                 self._splash = None
+
+            # --- Wire services (deferred from __init__ when _defer_services=True) ---
+            if not self._services_wired:
+                if self._splash:
+                    self._splash.set_status('Inicializando servicios...')
+                    try:
+                        QGuiApplication.instance().processEvents()
+                    except Exception:
+                        pass
+                self._wire_services()
+                if self._splash:
+                    try:
+                        QGuiApplication.instance().processEvents()
+                    except Exception:
+                        pass
 
             # --- MCP autostart ---
             if self._splash:

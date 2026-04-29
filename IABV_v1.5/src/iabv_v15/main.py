@@ -11,7 +11,7 @@ def main() -> int:
     # to a crash log so it survives hidden-console launches (shortcut / VBS).
     try:
         from iabv_v15.bootstrap import AppBootstrap
-        return AppBootstrap().run()
+        return AppBootstrap(_defer_services=True).run()
     except Exception:
         crash_msg = (
             f'=== BURVE CRASH {time.strftime("%Y-%m-%d %H:%M:%S")} ===\n'
