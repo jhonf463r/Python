@@ -1659,6 +1659,64 @@ class OperationalSelfExaminationService:
                     'phases_seen': list(phase_to_ms.keys()),
                 },
             ))
+
+        # ``startup_false_ready`` — el bug raiz que la evidencia live del
+        # 2026-04-28 captura a 80s en Windows pythonw: la UI declara
+        # ``splash_set_ready`` antes de que ``populate_ui_done`` y
+        # ``shell_loader_ready`` hayan llegado.  Esta deteccion no depende
+        # de umbrales de tiempo: depende del ORDEN de los hitos.  Es
+        # cualitativamente distinta de ``startup_degradation`` (que mide
+        # si algo fue lento); aqui medimos si algo mintio.
+        splash_ms = phase_to_ms.get('splash_set_ready')
+        populate_done_ms = phase_to_ms.get('populate_ui_done')
+        shell_ready_ms = phase_to_ms.get('shell_loader_ready')
+        shell_ready_fallback_ms = phase_to_ms.get('shell_loader_ready_fallback')
+        false_ready_reasons: list[str] = []
+        if splash_ms is not None and populate_done_ms is not None and splash_ms < populate_done_ms:
+            false_ready_reasons.append('splash_set_ready_before_populate_ui_done')
+        if (
+            splash_ms is not None
+            and shell_ready_ms is None
+            and shell_ready_fallback_ms is None
+        ):
+            false_ready_reasons.append('splash_set_ready_without_shell_loader_ready')
+        if shell_ready_fallback_ms is not None:
+            false_ready_reasons.append('shell_loader_ready_fallback_used')
+        if false_ready_reasons:
+            findings.append(SelfExaminationFinding(
+                category='startup_false_ready',
+                title='Splash declaro ready antes de que el shell estuviera vivo',
+                summary=(
+                    'splash.set_ready() se emitio sin que el shell QML real '
+                    '(mainShellLoader) estuviera disponible. La ventana visible '
+                    'fue una ApplicationWindow vacia con ViewModels en None. '
+                    f'Razones: {", ".join(false_ready_reasons)}.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.95,
+                recommendation=(
+                    'Diferir splash.set_ready() hasta que MainWindowBridge '
+                    'reciba shellLoaderReady desde QML (Loader.onStatusChanged '
+                    '== Loader.Ready en mainShellLoader). Mantener fallback '
+                    'determinista (IABV_SHELL_READY_FALLBACK_MS, default 45s) '
+                    'para no congelar el splash si la senal QML nunca llega.'
+                ),
+                source_refs=[
+                    'data/logs/startup_timeline.jsonl',
+                    'iabv_v15.bootstrap._handle_shell_loader_ready',
+                    'iabv_v15.ui.controllers.main_window_bridge',
+                    'src/iabv_v15/ui/qml/Main.qml',
+                ],
+                metadata={
+                    'phase': 'startup_false_ready',
+                    'reasons': false_ready_reasons,
+                    'splash_set_ready_ms': splash_ms,
+                    'populate_ui_done_ms': populate_done_ms,
+                    'shell_loader_ready_ms': shell_ready_ms,
+                    'shell_loader_ready_fallback_ms': shell_ready_fallback_ms,
+                    'phases_seen': list(phase_to_ms.keys()),
+                },
+            ))
         return findings
 
     def _cloud_reasoning_findings(self) -> list[SelfExaminationFinding]:

@@ -233,3 +233,85 @@ class TestAiderBackgroundInstall:
         result = _auto_install_missing_tool('aider_coder')
         assert result['status'] in ('installing_background', 'already_installing', 'cooldown_active')
         assert result['tool_id'] == 'aider_coder'
+
+
+class TestGetUIStateCurrentPage:
+    """current_page must read from navigation_controller.get_current_route().
+
+    Antes leia ``_current_page`` que NO existe en ControlCenterViewModel y
+    siempre devolvia ``"unknown"`` — exactamente el bug que la auditoria
+    live reporta.
+    """
+
+    def test_current_page_reads_from_navigation_controller(self) -> None:
+        class _FakeNav:
+            def __init__(self, route: str) -> None:
+                self._route = route
+
+            def get_current_route(self) -> str:
+                return self._route
+
+        class _FakeVM:
+            def __init__(self) -> None:
+                self.navigation_controller = _FakeNav('control_center')
+                self._chat_session_id = 's1'
+                self._live_status = 'idle'
+                self.messages: list[dict[str, str]] = []
+
+            def get_chat_messages(self) -> list[dict[str, str]]:
+                return list(self.messages)
+
+        port = _find_free_port()
+        server = build_ui_bridge_server(_FakeVM(), port=port)
+        server.start()
+        try:
+            client = UIBridgeClient(port=port)
+            res = client.call('get_ui_state')
+            payload = res.get('result', {})
+            assert payload.get('ui_running') is True
+            assert payload.get('current_page') == 'control_center'
+        finally:
+            server.stop()
+
+    def test_current_page_unknown_when_navigation_controller_missing(self) -> None:
+        class _FakeVM:
+            def __init__(self) -> None:
+                self._chat_session_id = ''
+                self._live_status = 'idle'
+                self.messages: list[dict[str, str]] = []
+
+            def get_chat_messages(self) -> list[dict[str, str]]:
+                return []
+
+        port = _find_free_port()
+        server = build_ui_bridge_server(_FakeVM(), port=port)
+        server.start()
+        try:
+            client = UIBridgeClient(port=port)
+            res = client.call('get_ui_state')
+            payload = res.get('result', {})
+            assert payload.get('current_page') == 'unknown'
+        finally:
+            server.stop()
+
+    def test_current_page_falls_back_to_legacy_attribute(self) -> None:
+        class _FakeVM:
+            def __init__(self) -> None:
+                self._current_page = 'evolution_center'
+                self._chat_session_id = ''
+                self._live_status = 'idle'
+                self.messages: list[dict[str, str]] = []
+
+            def get_chat_messages(self) -> list[dict[str, str]]:
+                return []
+
+        port = _find_free_port()
+        server = build_ui_bridge_server(_FakeVM(), port=port)
+        server.start()
+        try:
+            client = UIBridgeClient(port=port)
+            res = client.call('get_ui_state')
+            payload = res.get('result', {})
+            assert payload.get('current_page') == 'evolution_center'
+        finally:
+            server.stop()

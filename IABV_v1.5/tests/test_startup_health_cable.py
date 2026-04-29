@@ -250,3 +250,147 @@ def test_oses_startup_health_findings_emits_only_for_crossed_thresholds() -> Non
     assert len(findings) == 1
     assert findings[0].metadata['phase'] == 'run_to_main_window'
     assert findings[0].metadata['observed_ms'] == 10790.0
+
+
+# --------------------------------------------------------------------------- #
+# False-ready detection (cable: false-ready -> PortableContext + OSES)
+# --------------------------------------------------------------------------- #
+# These tests cover the slice that catches the live-audit bug: ``splash_set_ready``
+# being emitted before the QML ``mainShellLoader`` actually instantiated the
+# real shell.  The detection lives entirely on top of ``startup_timeline.jsonl``
+# and the existing PortableContext/OSES surfaces — no new service, no parallel
+# memory.
+
+
+def test_startup_health_snapshot_detects_false_ready_when_splash_before_populate() -> None:
+    """splash_set_ready < populate_ui_done is dishonest; snapshot must flag it."""
+    root = _workspace('startup_false_ready_order')
+    events = [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+        {'phase': 'bootstrap_init_done', 't_ms_from_start': 1500.0, 'rss_mb': 100.0},
+        {'phase': 'run_start', 't_ms_from_start': 1510.0, 'rss_mb': 100.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 3000.0, 'rss_mb': 150.0},
+        # splash declared ready BEFORE populate_ui_done — exactly the bug
+        {'phase': 'splash_set_ready', 't_ms_from_start': 3010.0, 'rss_mb': 150.0},
+        {'phase': 'populate_ui_done', 't_ms_from_start': 41000.0, 'rss_mb': 320.0},
+    ]
+    _write_timeline(root, events)
+    svc = _make_portable_service(root)
+    snap = svc._startup_health_snapshot()
+    assert snap['false_ready_detected'] is True
+    assert 'splash_set_ready_before_populate_ui_done' in snap['false_ready_reasons']
+    blocker_phases = {b.get('phase') for b in snap['recent_blockers']}
+    assert 'startup_false_ready' in blocker_phases
+
+
+def test_startup_health_snapshot_detects_false_ready_when_no_shell_loader_ready() -> None:
+    """splash declared ready but neither shell_loader_ready nor fallback ever fired."""
+    root = _workspace('startup_false_ready_missing_shell')
+    events = [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+        {'phase': 'bootstrap_init_done', 't_ms_from_start': 1200.0, 'rss_mb': 100.0},
+        {'phase': 'run_start', 't_ms_from_start': 1210.0, 'rss_mb': 100.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 2500.0, 'rss_mb': 150.0},
+        {'phase': 'populate_ui_done', 't_ms_from_start': 2900.0, 'rss_mb': 220.0},
+        # splash_set_ready arrived but the shell loader signal never did
+        {'phase': 'splash_set_ready', 't_ms_from_start': 3000.0, 'rss_mb': 220.0},
+    ]
+    _write_timeline(root, events)
+    svc = _make_portable_service(root)
+    snap = svc._startup_health_snapshot()
+    assert snap['false_ready_detected'] is True
+    assert 'splash_set_ready_without_shell_loader_ready' in snap['false_ready_reasons']
+
+
+def test_startup_health_snapshot_flags_fallback_as_dishonest() -> None:
+    """If the fallback fired, splash never received the honest QML signal."""
+    root = _workspace('startup_false_ready_fallback')
+    events = [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+        {'phase': 'bootstrap_init_done', 't_ms_from_start': 1200.0, 'rss_mb': 100.0},
+        {'phase': 'run_start', 't_ms_from_start': 1210.0, 'rss_mb': 100.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 2500.0, 'rss_mb': 150.0},
+        {'phase': 'populate_ui_done', 't_ms_from_start': 2900.0, 'rss_mb': 220.0},
+        {'phase': 'shell_loader_ready_fallback', 't_ms_from_start': 47500.0, 'rss_mb': 380.0},
+        {'phase': 'splash_set_ready', 't_ms_from_start': 47510.0, 'rss_mb': 380.0},
+    ]
+    _write_timeline(root, events)
+    svc = _make_portable_service(root)
+    snap = svc._startup_health_snapshot()
+    assert snap['false_ready_detected'] is True
+    assert 'shell_loader_ready_fallback_used' in snap['false_ready_reasons']
+
+
+def test_startup_health_snapshot_clean_when_shell_loader_ready_arrived_in_order() -> None:
+    """Honest startup: populate_ui_done -> shell_loader_ready -> splash_set_ready."""
+    root = _workspace('startup_honest_ready')
+    events = [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+        {'phase': 'bootstrap_init_done', 't_ms_from_start': 1500.0, 'rss_mb': 100.0},
+        {'phase': 'run_start', 't_ms_from_start': 1510.0, 'rss_mb': 100.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 3000.0, 'rss_mb': 150.0},
+        {'phase': 'populate_ui_done', 't_ms_from_start': 3500.0, 'rss_mb': 220.0},
+        {'phase': 'shell_loader_ready', 't_ms_from_start': 4200.0, 'rss_mb': 240.0},
+        {'phase': 'splash_set_ready', 't_ms_from_start': 4210.0, 'rss_mb': 240.0},
+    ]
+    _write_timeline(root, events)
+    svc = _make_portable_service(root)
+    snap = svc._startup_health_snapshot()
+    assert snap['false_ready_detected'] is False
+    assert snap['false_ready_reasons'] == []
+
+
+def test_oses_emits_startup_false_ready_finding_when_order_violated() -> None:
+    root = _workspace('oses_false_ready')
+    events = [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+        {'phase': 'bootstrap_init_done', 't_ms_from_start': 1500.0, 'rss_mb': 100.0},
+        {'phase': 'run_start', 't_ms_from_start': 1510.0, 'rss_mb': 100.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 3000.0, 'rss_mb': 150.0},
+        {'phase': 'splash_set_ready', 't_ms_from_start': 3010.0, 'rss_mb': 150.0},
+        {'phase': 'populate_ui_done', 't_ms_from_start': 41000.0, 'rss_mb': 320.0},
+    ]
+    _write_timeline(root, events)
+    oses = _make_oses(root)
+    findings = oses._startup_health_findings()
+    false_ready = [f for f in findings if f.category == 'startup_false_ready']
+    assert len(false_ready) == 1
+    f = false_ready[0]
+    assert 'splash_set_ready_before_populate_ui_done' in f.metadata['reasons']
+    assert f.severity.name == 'HIGH'
+
+
+def test_oses_does_not_emit_false_ready_when_order_is_honest() -> None:
+    root = _workspace('oses_honest_ready')
+    events = [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+        {'phase': 'bootstrap_init_done', 't_ms_from_start': 1500.0, 'rss_mb': 100.0},
+        {'phase': 'run_start', 't_ms_from_start': 1510.0, 'rss_mb': 100.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 3000.0, 'rss_mb': 150.0},
+        {'phase': 'populate_ui_done', 't_ms_from_start': 3500.0, 'rss_mb': 220.0},
+        {'phase': 'shell_loader_ready', 't_ms_from_start': 4200.0, 'rss_mb': 240.0},
+        {'phase': 'splash_set_ready', 't_ms_from_start': 4210.0, 'rss_mb': 240.0},
+    ]
+    _write_timeline(root, events)
+    oses = _make_oses(root)
+    findings = oses._startup_health_findings()
+    assert [f for f in findings if f.category == 'startup_false_ready'] == []
+
+
+def test_oses_emits_false_ready_with_high_severity_for_fallback_path() -> None:
+    root = _workspace('oses_fallback_path')
+    events = [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+        {'phase': 'bootstrap_init_done', 't_ms_from_start': 1500.0, 'rss_mb': 100.0},
+        {'phase': 'run_start', 't_ms_from_start': 1510.0, 'rss_mb': 100.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 3000.0, 'rss_mb': 150.0},
+        {'phase': 'populate_ui_done', 't_ms_from_start': 3500.0, 'rss_mb': 220.0},
+        {'phase': 'shell_loader_ready_fallback', 't_ms_from_start': 47500.0, 'rss_mb': 380.0},
+        {'phase': 'splash_set_ready', 't_ms_from_start': 47510.0, 'rss_mb': 380.0},
+    ]
+    _write_timeline(root, events)
+    oses = _make_oses(root)
+    findings = oses._startup_health_findings()
+    false_ready = [f for f in findings if f.category == 'startup_false_ready']
+    assert len(false_ready) == 1
+    assert 'shell_loader_ready_fallback_used' in false_ready[0].metadata['reasons']

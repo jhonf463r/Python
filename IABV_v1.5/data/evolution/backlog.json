@@ -425,5 +425,19 @@
     "source": "user_goal_2026_04_28",
     "created_at": "2026-04-28T00:00:00+00:00",
     "evidence": "Despues de estabilizar la laptop, el sistema debe poder iniciar sesion en rutas aprobadas, obtener API keys gratis cuando sea viable, rotar cuentas/cuotas y combinar esos providers con shadow local para recopilar corpus util para la IA local."
+  },
+  {
+    "id": "startup-false-ready-fix-2026-04-29",
+    "title": "False-ready fix: handshake honesto splash <- shell_loader_ready",
+    "area": "ui_startup",
+    "priority": "high",
+    "status": "in_progress",
+    "source": "live_audit_2026-04-28",
+    "created_at": "2026-04-29T03:18:42.311023+00:00",
+    "evidence": "data/audit/startup_live_80s_no_bridge_noise.png muestra splash a 80s pese a hitos main_window_shown/splash_set_ready/populate_ui_done/deferred_post_window_setup_done. Causa raiz: splash.set_ready() corria antes de app.exec() y antes de que mainShellLoader (asincrono) terminara. Fix: handshake QML.onStatusChanged -> MainWindowBridge.shellLoaderReady -> AppBootstrap._handle_shell_loader_ready -> splash.set_ready honesto. Fallback determinista IABV_SHELL_READY_FALLBACK_MS=45s marca hito distinto (shell_loader_ready_fallback). PortableContext._startup_health_snapshot ahora detecta false-ready (orden roto, sin shell_loader_ready, fallback usado). OSES._startup_health_findings emite category='startup_false_ready' severity=HIGH. Tests focalizados: 70 nuevos/extendidos, 80 passed con regresion. PR: devin/startup-false-ready-fix. Verificacion live pendiente en Windows.",
+    "depends_on": [
+      "cable-a-startup-timeline-portable-context-oses"
+    ],
+    "owner": "devin"
   }
 ]
