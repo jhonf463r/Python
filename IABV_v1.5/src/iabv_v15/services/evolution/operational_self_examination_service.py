@@ -1699,7 +1699,7 @@ class OperationalSelfExaminationService:
                     'Diferir splash.set_ready() hasta que MainWindowBridge '
                     'reciba shellLoaderReady desde QML (Loader.onStatusChanged '
                     '== Loader.Ready en mainShellLoader). Mantener fallback '
-                    'determinista (IABV_SHELL_READY_FALLBACK_MS, default 45s) '
+                    'determinista (IABV_SHELL_READY_FALLBACK_MS, default 15s) '
                     'para no congelar el splash si la senal QML nunca llega.'
                 ),
                 source_refs=[
@@ -1718,6 +1718,59 @@ class OperationalSelfExaminationService:
                     'phases_seen': list(phase_to_ms.keys()),
                 },
             ))
+
+        # Process-start readiness metrics for metacognitive tracking.
+        # Extract t_ms_from_process when available.
+        phase_to_process_ms: dict[str, float] = {}
+        for evt in last_run:
+            phase = str(evt.get('phase') or '')
+            if phase and 't_ms_from_process' in evt:
+                try:
+                    phase_to_process_ms[phase] = float(evt['t_ms_from_process'])
+                except (TypeError, ValueError):
+                    pass
+
+        readiness_metadata: dict[str, Any] = {
+            'phases_seen': list(phase_to_ms.keys()),
+            'fallback_used': shell_ready_fallback_ms is not None,
+        }
+        for key, phases in [
+            ('process_to_shell_loader_ready_ms', ['shell_loader_ready', 'shell_loader_ready_fallback']),
+            ('process_to_page_loader_ready_ms', ['page_loader_ready']),
+            ('process_to_splash_window_closing_ms', ['splash_window_closing']),
+        ]:
+            val: float | None = None
+            for phase in phases:
+                if phase in phase_to_process_ms:
+                    val = round(phase_to_process_ms[phase], 1)
+                    break
+                if phase in phase_to_ms:
+                    val = round(phase_to_ms[phase], 1)
+                    break
+            readiness_metadata[key] = val
+
+        # If shell_loader_ready took >12s from process start, flag it.
+        slr_ms = readiness_metadata.get('process_to_shell_loader_ready_ms')
+        if slr_ms is not None and slr_ms > 12000.0:
+            findings.append(SelfExaminationFinding(
+                category='startup_degradation',
+                title=f'Shell readiness lenta: {slr_ms:.0f}ms desde process start',
+                summary=(
+                    f'process_to_shell_loader_ready_ms = {slr_ms:.0f}ms. '
+                    f'El shell QML tardo mas de 12s en estar listo. '
+                    f'Verificar si deferred_post_window_setup bloquea '
+                    f'el event loop (debe correr en background thread).'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.85,
+                recommendation=(
+                    'Mover _run_deferred_post_window_setup a un thread '
+                    'background para no bloquear el QML incubator.'
+                ),
+                source_refs=['data/logs/startup_timeline.jsonl'],
+                metadata=readiness_metadata,
+            ))
+
         return findings
 
     def _cloud_reasoning_findings(self) -> list[SelfExaminationFinding]:
