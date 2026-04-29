@@ -335,5 +335,45 @@
     "created_at": "2026-04-29T01:34:56.944058+00:00",
     "evidence": "Handoff 2026-04-28: splash->shell se queda 45-75s. PR de esta sesion: (1) StartupTimeline persistida a data/logs/startup_timeline.jsonl con 11 hitos del camino real (bootstrap_init_start/done, run_start, splash_visible, engine_load_main_qml_start/done, populate_ui_start/done, main_window_shown, splash_set_ready, app_exec_about_to_start, deferred_post_window_setup_start/done). (2) _log_tool_availability() (700ms+pip install mcp_client) movido de __init__ a QTimer.singleShot(2000) post-window. Tests focalizados 13/13 verde. Falta evidencia Windows-real para cerrar Fase 1.",
     "depends_on": []
+  },
+  {
+    "id": "6b6b42f8-f420-457b-b4ff-39de931b99af",
+    "title": "Unificar el marco de simbiosis IA-IA sobre el aprendizaje existente",
+    "area": "metacognition",
+    "priority": "high",
+    "status": "pending",
+    "source": "codex_simbiosis_review_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "Ya existen ExperimentLab, StrategySelector, AdaptiveWeightLayer, TaskOutcomeRecorder, DecisionAuditTrail y PortableContext para aprender de asistentes/rutas. Falta conectarlos como un solo marco soberano de simbiosis en vez de tener piezas separadas."
+  },
+  {
+    "id": "9de52e89-8aaf-4de3-b154-4b2a779a631e",
+    "title": "Integrar quota tracker y worker pool al selector central de razonamiento",
+    "area": "cloud_reasoning",
+    "priority": "high",
+    "status": "pending",
+    "source": "codex_simbiosis_review_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "account_resource_scanner ya tiene best_account_for_tool, estimate_available_workers, verify_account_sessions y quota_tracker. Falta que el selector soberano use ese pool real para rotar cuentas/sesiones/cuotas sin reinventar otro coordinador."
+  },
+  {
+    "id": "0a4af16a-4e08-4ed0-b398-88a8873ee316",
+    "title": "Registrar interacciones con otras IAs como aprendizaje operativo reusable",
+    "area": "learning",
+    "priority": "high",
+    "status": "pending",
+    "source": "user_goal_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "El usuario quiere que IABV aprenda de la mejor simbiosis con otras IAs. Falta convertir conversaciones, correcciones y resultados de colaboraciones externas en trazas/evidencia estructurada reutilizable por ExperimentLab, OSES y PortableContext."
+  },
+  {
+    "id": "3aabdd48-5f36-427c-a675-b2df19635d36",
+    "title": "Conectar startup_timeline y telemetria live al ciclo metacognitivo",
+    "area": "live_startup",
+    "priority": "medium",
+    "status": "partial",
+    "source": "codex_simbiosis_review_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "La instrumentacion del arranque no debe quedar como JSONL aislado. Debe alimentar OSES, PortableContext, backlog y la autoauditoria para que el programa aprenda por que se congela y que ajustes funcionaron. PR #258 cierra Cable A: PortableContextService._startup_health_snapshot/_section + OperationalSelfExaminationService._startup_health_findings con thresholds publicos (4s/8s/5s). 11 tests focalizados verde. D1-D7 documentados como gaps abiertos."
   }
 ]

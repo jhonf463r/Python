@@ -6,6 +6,12 @@ Dejar evidencia durable de lo que ya se corrigio, de lo que se comprobo en runti
 
 Este documento resume la auditoria real ejecutada sobre la laptop del usuario, no solo pruebas aisladas.
 
+Contrato complementario para cualquier IA que continue esta linea:
+
+- `docs/rfcs/unified_audit_evolution_contract.md`
+
+Ese RFC deja explicito que auditoria, aprendizaje, startup telemetry y simbiosis multi-IA deben converger en la arquitectura metacognitiva existente, no en carriles paralelos.
+
 ## Fuente de verdad usada
 
 Prioridad aplicada en esta auditoria:
