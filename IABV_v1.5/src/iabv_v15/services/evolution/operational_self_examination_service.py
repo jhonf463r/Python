@@ -23,6 +23,16 @@ from iabv_v15.domain.models import (
 )
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 
+# Startup health thresholds (in milliseconds).  Crossing any of these emits a
+# ``startup_degradation`` finding from :meth:`_startup_health_findings`.  They
+# are intentionally module-level constants so any operator can grep + tune
+# without hunting through method bodies.  The values come from the live audit
+# handoff ("splash 45-75s en algunas corridas") and the deferred-tool-probe
+# baseline introduced in PR #257.
+STARTUP_INIT_MS_DEGRADED = 4000.0
+STARTUP_RUN_TO_WINDOW_MS_DEGRADED = 8000.0
+STARTUP_DEFERRED_MS_DEGRADED = 5000.0
+
 
 class OperationalSelfExaminationService:
     def __init__(
@@ -647,6 +657,7 @@ class OperationalSelfExaminationService:
         findings.extend(self._weak_correction_findings(scenario_runs=scenario_runs))
         findings.extend(self._token_rotation_findings())
         findings.extend(self._cloud_reasoning_findings())
+        findings.extend(self._startup_health_findings())
         findings.extend(self._chat_research_backlog_findings())
         # Cognitive meta-patterns: fijación, incubación, atractores, ensambles
         findings.extend(
@@ -1507,6 +1518,147 @@ class OperationalSelfExaminationService:
                     },
                 )
             )
+        return findings
+
+    def _startup_health_findings(self) -> list[SelfExaminationFinding]:
+        """Read ``data/logs/startup_timeline.jsonl`` and emit degradation findings.
+
+        Cable A del marco de simbiosis: el JSONL deja de ser log suelto.  Esta
+        funcion lo lee, identifica la ultima corrida contigua y emite un
+        ``SelfExaminationFinding`` por cada umbral cruzado.  Sin servicio nuevo,
+        sin memoria paralela.
+
+        Thresholds at module top: ``STARTUP_INIT_MS_DEGRADED``,
+        ``STARTUP_RUN_TO_WINDOW_MS_DEGRADED``, ``STARTUP_DEFERRED_MS_DEGRADED``.
+
+        If the JSONL is missing or has no parseable events, no finding is
+        emitted (the PortableContext snapshot will already carry the
+        ``UNRESOLVED:startup_timeline_*`` flag).
+        """
+        log_path = Path(self.workspace_root) / 'data' / 'logs' / 'startup_timeline.jsonl'
+        if not log_path.exists():
+            return []
+        events: list[dict[str, Any]] = []
+        try:
+            with log_path.open('r', encoding='utf-8') as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        events.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        continue
+        except OSError:
+            return []
+        if not events:
+            return []
+        last_run: list[dict[str, Any]] = [events[-1]]
+        for evt in reversed(events[:-1]):
+            try:
+                if float(evt.get('t_ms_from_start') or 0.0) <= float(last_run[0].get('t_ms_from_start') or 0.0):
+                    last_run.insert(0, evt)
+                else:
+                    break
+            except (TypeError, ValueError):
+                break
+        phase_to_ms: dict[str, float] = {}
+        for evt in last_run:
+            phase = str(evt.get('phase') or '')
+            if not phase:
+                continue
+            try:
+                phase_to_ms[phase] = float(evt.get('t_ms_from_start') or 0.0)
+            except (TypeError, ValueError):
+                continue
+
+        def _delta(a: str, b: str) -> float | None:
+            if a in phase_to_ms and b in phase_to_ms:
+                return phase_to_ms[b] - phase_to_ms[a]
+            return None
+
+        init_ms = _delta('bootstrap_init_start', 'bootstrap_init_done')
+        run_to_window_ms = _delta('run_start', 'main_window_shown')
+        if run_to_window_ms is None:
+            run_to_window_ms = _delta('bootstrap_init_done', 'main_window_shown')
+        deferred_ms = _delta('deferred_post_window_setup_start', 'deferred_post_window_setup_done')
+
+        findings: list[SelfExaminationFinding] = []
+        if init_ms is not None and init_ms > STARTUP_INIT_MS_DEGRADED:
+            findings.append(SelfExaminationFinding(
+                category='startup_degradation',
+                title=f'Bootstrap init lento: {init_ms:.0f}ms',
+                summary=(
+                    f'El paso bootstrap_init_start->bootstrap_init_done duro '
+                    f'{init_ms:.0f}ms (umbral {STARTUP_INIT_MS_DEGRADED:.0f}ms). '
+                    f'Esto retiene el GUI thread antes de que aparezca el splash.'
+                ),
+                severity=IssueSeverity.HIGH if init_ms > STARTUP_INIT_MS_DEGRADED * 2 else IssueSeverity.MEDIUM,
+                confidence=0.9,
+                recommendation=(
+                    'Diferir scans de cuentas, instalacion de mcp_client y probes '
+                    'de proveedores de bootstrap.__init__ a un QTimer post-show. '
+                    'Patron ya aplicado a _log_tool_availability en PR #257.'
+                ),
+                source_refs=['data/logs/startup_timeline.jsonl', 'iabv_v15.infra.startup_timeline'],
+                metadata={
+                    'phase': 'bootstrap_init',
+                    'observed_ms': round(init_ms, 1),
+                    'threshold_ms': STARTUP_INIT_MS_DEGRADED,
+                    'phases_seen': list(phase_to_ms.keys()),
+                },
+            ))
+        if run_to_window_ms is not None and run_to_window_ms > STARTUP_RUN_TO_WINDOW_MS_DEGRADED:
+            findings.append(SelfExaminationFinding(
+                category='startup_degradation',
+                title=f'Run -> ventana visible lento: {run_to_window_ms:.0f}ms',
+                summary=(
+                    f'El tramo desde run_start hasta main_window_shown duro '
+                    f'{run_to_window_ms:.0f}ms (umbral '
+                    f'{STARTUP_RUN_TO_WINDOW_MS_DEGRADED:.0f}ms). El usuario ve '
+                    f'splash congelado durante ese tiempo.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.9,
+                recommendation=(
+                    'Verificar que engine.load(Main.qml), construccion de '
+                    'ViewModels y poblacion inicial no corran en GUI thread '
+                    'sincronicamente. Mover trabajos pesados al QTimer.singleShot '
+                    'post-show o a workers QThread.'
+                ),
+                source_refs=['data/logs/startup_timeline.jsonl', 'iabv_v15.infra.startup_timeline'],
+                metadata={
+                    'phase': 'run_to_main_window',
+                    'observed_ms': round(run_to_window_ms, 1),
+                    'threshold_ms': STARTUP_RUN_TO_WINDOW_MS_DEGRADED,
+                    'phases_seen': list(phase_to_ms.keys()),
+                },
+            ))
+        if deferred_ms is not None and deferred_ms > STARTUP_DEFERRED_MS_DEGRADED:
+            findings.append(SelfExaminationFinding(
+                category='startup_degradation',
+                title=f'Setup post-ventana lento: {deferred_ms:.0f}ms',
+                summary=(
+                    f'deferred_post_window_setup duro {deferred_ms:.0f}ms '
+                    f'(umbral {STARTUP_DEFERRED_MS_DEGRADED:.0f}ms). Aunque la '
+                    f'ventana ya es visible, el sistema sigue cargado y la '
+                    f'primera interaccion puede sentirse lenta.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.85,
+                recommendation=(
+                    'Revisar _log_tool_availability, scans de providers e '
+                    'instalaciones automaticas que arrancan post-show. Mover a '
+                    'QTimer encadenados o gating por demanda real.'
+                ),
+                source_refs=['data/logs/startup_timeline.jsonl', 'iabv_v15.infra.startup_timeline'],
+                metadata={
+                    'phase': 'deferred_post_window',
+                    'observed_ms': round(deferred_ms, 1),
+                    'threshold_ms': STARTUP_DEFERRED_MS_DEGRADED,
+                    'phases_seen': list(phase_to_ms.keys()),
+                },
+            ))
         return findings
 
     def _cloud_reasoning_findings(self) -> list[SelfExaminationFinding]:
