@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 
+import atexit
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
@@ -180,6 +181,7 @@ class ControlCenterViewModel(QObject):
         self._role_cards = [profile.model_dump(mode='json') for profile in self.role_router.role_profiles]
         self._ui_state_lock = threading.Lock()
         self._bg_pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix='ccvm-bg')
+        atexit.register(self._shutdown_bg_pool)
         self._chat_messages: list[dict[str, str]] = []
         self._attached_files: list[dict[str, Any]] = []
         self._live_status: str = 'idle'
@@ -269,6 +271,10 @@ class ControlCenterViewModel(QObject):
         else:
             self.refresh()
             self._refresh_provider_health(announce=False)
+
+    def _shutdown_bg_pool(self) -> None:
+        """Gracefully shutdown the background thread pool on process exit."""
+        self._bg_pool.shutdown(wait=False)
 
     def _placeholder_provider_cards(self) -> list[dict[str, Any]]:
         return [

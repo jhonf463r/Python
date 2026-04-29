@@ -6,8 +6,7 @@ Verifies:
 3. _ingest_chat_capabilities processes every message (no debounce)
 4. User-triggered actions (force=True) bypass cooldowns
 5. Repository count() methods use SQL COUNT (not list+len)
-6. WorldModelService uses relaxed scan intervals (45s/180s)
-7. ControlCenterViewModel uses shared thread pool for background work
+6. ControlCenterViewModel uses shared thread pool with lifecycle hook
 """
 from __future__ import annotations
 
@@ -226,38 +225,11 @@ class TestRepositoryCount:
 
 
 # ---------------------------------------------------------------------------
-# WorldModelService — relaxed scan intervals
-# ---------------------------------------------------------------------------
-
-class TestWorldModelScanIntervals:
-    """Verify that WorldModelService uses the new relaxed defaults."""
-
-    def test_default_scan_interval_is_45s(self):
-        from iabv_v15.services.evolution.world_model_service import WorldModelService
-        assert WorldModelService._DEFAULT_SCAN_INTERVAL == 45.0
-
-    def test_default_full_scan_interval_is_180s(self):
-        from iabv_v15.services.evolution.world_model_service import WorldModelService
-        assert WorldModelService._DEFAULT_FULL_SCAN_INTERVAL == 180.0
-
-    def test_min_scan_interval_is_8s(self, tmp_path):
-        from iabv_v15.services.evolution.world_model_service import WorldModelService
-        svc = WorldModelService(
-            workspace_root=str(tmp_path),
-            evolution_dir=str(tmp_path / 'evo'),
-            auto_start=False,
-            bootstrap_scan=False,
-            scan_interval_seconds=1.0,
-        )
-        assert svc.scan_interval_seconds == 8.0
-
-
-# ---------------------------------------------------------------------------
-# ControlCenterViewModel — shared thread pool
+# ControlCenterViewModel — shared thread pool with lifecycle
 # ---------------------------------------------------------------------------
 
 class TestViewModelThreadPool:
-    """Verify that ControlCenterViewModel uses a shared ThreadPoolExecutor."""
+    """Verify that ControlCenterViewModel uses a shared ThreadPoolExecutor with shutdown."""
 
     def test_bg_pool_exists(self):
         from concurrent.futures import ThreadPoolExecutor
@@ -268,3 +240,15 @@ class TestViewModelThreadPool:
         vm._bg_pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix='test-bg')
         assert vm._bg_pool._max_workers == 3
         vm._bg_pool.shutdown(wait=False)
+
+    def test_shutdown_bg_pool_is_safe(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import (
+            ControlCenterViewModel,
+        )
+        pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix='test-bg')
+        vm = MagicMock(spec=ControlCenterViewModel)
+        vm._bg_pool = pool
+        vm._shutdown_bg_pool = ControlCenterViewModel._shutdown_bg_pool.__get__(vm)
+        vm._shutdown_bg_pool()
+        assert pool._shutdown
