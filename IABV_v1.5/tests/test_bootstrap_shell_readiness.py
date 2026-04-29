@@ -31,9 +31,23 @@ from iabv_v15.bootstrap import AppBootstrap
 class _RecordingTimeline:
     def __init__(self) -> None:
         self.marks: list[str] = []
+        self.events: list[dict[str, Any]] = []
 
-    def mark(self, phase: str, **_kwargs: Any) -> None:
+    def mark(self, phase: str, **kwargs: Any) -> None:
         self.marks.append(phase)
+        self.events.append({'phase': phase, 'extra': kwargs})
+
+
+class _FakeMainWindow:
+    def __init__(self) -> None:
+        self.raise_calls = 0
+        self.activate_calls = 0
+
+    def raise_(self) -> None:
+        self.raise_calls += 1
+
+    def requestActivate(self) -> None:
+        self.activate_calls += 1
 
 
 class _FakeSplash:
@@ -44,11 +58,13 @@ class _FakeSplash:
         self.ready_calls += 1
 
 
-def _make_bootstrap_stub() -> AppBootstrap:
-    """Bypass __init__ — we are testing two methods in isolation."""
+def _make_bootstrap_stub(*, with_main_win: bool = False) -> AppBootstrap:
+    """Bypass __init__ — we are testing handler methods in isolation."""
     stub = AppBootstrap.__new__(AppBootstrap)
     stub._timeline = _RecordingTimeline()  # type: ignore[attr-defined]
     stub._splash = _FakeSplash()  # type: ignore[attr-defined]
+    if with_main_win:
+        stub._main_win = _FakeMainWindow()  # type: ignore[attr-defined]
     return stub
 
 
@@ -126,3 +142,147 @@ def test_main_window_bridge_emits_shell_loader_ready_signal() -> None:
     bridge.signal_shell_loader_ready()
     bridge.signal_shell_loader_ready()
     assert fired == [True]
+
+
+# --- Diagnostic instrumentation ------------------------------------------- #
+
+
+def test_handle_qml_loader_event_marks_granular_hito() -> None:
+    """Cada transicion de Loader QML genera un hito en el timeline.
+
+    El nombre del hito incluye el loader y el valor de status, asi la
+    auditoria distingue ``mainShellLoader_status_2`` (Loading) de
+    ``mainShellLoader_status_1`` (Ready) en el JSONL.
+    """
+    boot = _make_bootstrap_stub()
+    boot._handle_qml_loader_event('mainShellLoader', 2, True)
+    boot._handle_qml_loader_event('mainShellLoader', 1, True)
+    boot._handle_qml_loader_event('pageLoader', 2, True)
+    marks = boot._timeline.marks  # type: ignore[attr-defined]
+    assert 'qml_loader_mainShellLoader_status_2' in marks
+    assert 'qml_loader_mainShellLoader_status_1' in marks
+    assert 'qml_loader_pageLoader_status_2' in marks
+    # Extra debe incluir loader, status, active
+    events = boot._timeline.events  # type: ignore[attr-defined]
+    payload = next(e for e in events if e['phase'] == 'qml_loader_mainShellLoader_status_1')
+    assert payload['extra']['loader'] == 'mainShellLoader'
+    assert payload['extra']['status'] == 1
+    assert payload['extra']['active'] is True
+
+
+def test_handle_main_qml_completed_marks_hito() -> None:
+    boot = _make_bootstrap_stub()
+    boot._handle_main_qml_completed()
+    assert 'main_qml_completed' in boot._timeline.marks  # type: ignore[attr-defined]
+
+
+def test_handle_page_loader_ready_marks_hito_and_raises_main_window() -> None:
+    boot = _make_bootstrap_stub(with_main_win=True)
+    boot._handle_page_loader_ready()
+    assert 'page_loader_ready' in boot._timeline.marks  # type: ignore[attr-defined]
+    assert boot._main_win.raise_calls == 1  # type: ignore[attr-defined]
+    assert boot._main_win.activate_calls == 1  # type: ignore[attr-defined]
+    assert 'main_window_raised_after_ready' in boot._timeline.marks  # type: ignore[attr-defined]
+
+
+def test_handle_splash_closing_marks_hito() -> None:
+    boot = _make_bootstrap_stub()
+    boot._handle_splash_closing()
+    assert 'splash_window_closing' in boot._timeline.marks  # type: ignore[attr-defined]
+
+
+def test_shell_loader_ready_raises_main_window_after_set_ready() -> None:
+    """Z-order fight: set_ready DEBE ir seguido de raise_/activate."""
+    boot = _make_bootstrap_stub(with_main_win=True)
+    boot._handle_shell_loader_ready()
+    # Splash fue marcado ready
+    assert boot._splash.ready_calls == 1  # type: ignore[attr-defined]
+    # Y main_win fue subido por encima
+    assert boot._main_win.raise_calls == 1  # type: ignore[attr-defined]
+    assert boot._main_win.activate_calls == 1  # type: ignore[attr-defined]
+    marks = boot._timeline.marks  # type: ignore[attr-defined]
+    assert marks.index('shell_loader_ready') < marks.index('splash_set_ready')
+    assert marks.index('splash_set_ready') < marks.index('main_window_raised_after_ready')
+
+
+def test_fallback_also_raises_main_window() -> None:
+    boot = _make_bootstrap_stub(with_main_win=True)
+    boot._force_splash_ready_fallback()
+    assert boot._main_win.raise_calls == 1  # type: ignore[attr-defined]
+    marks = boot._timeline.marks  # type: ignore[attr-defined]
+    assert 'shell_loader_ready_fallback' in marks
+    assert 'main_window_raised_after_ready' in marks
+
+
+def test_raise_main_window_tolerates_missing_main_win() -> None:
+    boot = _make_bootstrap_stub()  # no main_win
+    # No debe romper aun cuando _main_win nunca fue seteado
+    boot._raise_main_window_now('test')
+    assert 'main_window_raised_after_ready' not in boot._timeline.marks  # type: ignore[attr-defined]
+
+
+# --- MainWindowBridge new slots ------------------------------------------- #
+
+
+def test_main_window_bridge_emits_page_loader_ready_signal_once() -> None:
+    from iabv_v15.ui.controllers.main_window_bridge import MainWindowBridge
+
+    bridge = MainWindowBridge('IABV', '/tmp/iabv_test_root')
+    fired: list[bool] = []
+    bridge.pageLoaderReady.connect(lambda: fired.append(True))
+    bridge.signal_page_loader_ready()
+    bridge.signal_page_loader_ready()
+    assert fired == [True]
+
+
+def test_main_window_bridge_emits_qml_loader_event() -> None:
+    from iabv_v15.ui.controllers.main_window_bridge import MainWindowBridge
+
+    bridge = MainWindowBridge('IABV', '/tmp/iabv_test_root')
+    received: list[tuple[str, int, bool]] = []
+    bridge.qmlLoaderEvent.connect(
+        lambda name, status, active: received.append((str(name), int(status), bool(active)))
+    )
+    bridge.signal_qml_loader_event('mainShellLoader', 2, True)
+    bridge.signal_qml_loader_event('pageLoader', 1, True)
+    assert received == [
+        ('mainShellLoader', 2, True),
+        ('pageLoader', 1, True),
+    ]
+
+
+def test_main_window_bridge_emits_main_qml_completed() -> None:
+    from iabv_v15.ui.controllers.main_window_bridge import MainWindowBridge
+
+    bridge = MainWindowBridge('IABV', '/tmp/iabv_test_root')
+    fired: list[bool] = []
+    bridge.mainQmlCompleted.connect(lambda: fired.append(True))
+    bridge.signal_main_qml_completed()
+    bridge.signal_main_qml_completed()
+    # Sin idempotencia aqui — onCompleted es un evento por instancia QML;
+    # si QML lo invoca dos veces (recompose), bridge re-emite.
+    assert fired == [True, True]
+
+
+def test_main_window_bridge_emits_splash_closing() -> None:
+    from iabv_v15.ui.controllers.main_window_bridge import MainWindowBridge
+
+    bridge = MainWindowBridge('IABV', '/tmp/iabv_test_root')
+    fired: list[bool] = []
+    bridge.splashClosing.connect(lambda: fired.append(True))
+    bridge.signal_splash_closing()
+    assert fired == [True]
+
+
+# --- SplashController close signal ---------------------------------------- #
+
+
+def test_splash_controller_emits_closing_now_signal() -> None:
+    from iabv_v15.ui.splash_controller import SplashController
+
+    splash = SplashController(workspace_dir=None)
+    fired: list[bool] = []
+    splash.closingNow.connect(lambda: fired.append(True))
+    splash.signal_closing()
+    splash.signal_closing()
+    assert fired == [True, True]

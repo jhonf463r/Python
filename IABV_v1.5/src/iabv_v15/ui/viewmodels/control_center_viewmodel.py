@@ -5970,10 +5970,27 @@ class ControlCenterViewModel(QObject):
 
         El UIBridgeServer corre en un hilo de background; emitir una signal
         permite despachar el envio real al chat sin tocar QML desde ese hilo.
+
+        Marca dos hitos en el ``startup_timeline`` para diagnosticar la
+        latencia de la queued connection:
+        - ``bridge_chat_queued`` en el hilo del bridge (al emitir la senal).
+        - ``bridge_chat_dispatched`` en ``_dispatch_bridge_chat`` cuando
+          el hilo GUI atiende la senal.  La diferencia de
+          ``t_ms_from_start`` entre ambos es la latencia real de la
+          queued connection — si es enorme, el GUI thread esta bloqueado.
         """
         message = (text or '').strip()
         if not message:
             return {'status': 'error', 'detail': 'text is required'}
+        try:
+            from iabv_v15.infra.startup_timeline import get_global_timeline
+            get_global_timeline().mark(
+                'bridge_chat_queued',
+                text_len=len(message),
+                chat_session_id=self._chat_session_id,
+            )
+        except Exception:
+            pass
         self.bridgeChatRequested.emit(message)
         return {
             'status': 'queued',
@@ -5983,6 +6000,15 @@ class ControlCenterViewModel(QObject):
 
     @Slot(str)
     def _dispatch_bridge_chat(self, text: str) -> None:
+        try:
+            from iabv_v15.infra.startup_timeline import get_global_timeline
+            get_global_timeline().mark(
+                'bridge_chat_dispatched',
+                text_len=len(text or ''),
+                chat_session_id=self._chat_session_id,
+            )
+        except Exception:
+            pass
         self.sendChat(text)
 
     def _try_handle_lightweight_chat(self, message: str) -> bool:
