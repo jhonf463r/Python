@@ -77,6 +77,22 @@ def test_configure_global_timeline_attaches_log_dir(tmp_path: Path):
     assert (tmp_path / 'startup_timeline.jsonl').exists()
 
 
+def test_configure_global_timeline_backfills_events_recorded_before_log_dir(tmp_path: Path):
+    reset_global_timeline_for_tests()
+    tl = get_global_timeline()
+    tl.mark('bootstrap_init_start')
+    tl.mark('bootstrap_mid')
+    configure_global_timeline(tmp_path)
+    tl.mark('bootstrap_init_done')
+    target = tmp_path / 'startup_timeline.jsonl'
+    lines = [json.loads(line) for line in target.read_text(encoding='utf-8').splitlines() if line.strip()]
+    assert [event['phase'] for event in lines] == [
+        'bootstrap_init_start',
+        'bootstrap_mid',
+        'bootstrap_init_done',
+    ]
+
+
 def test_mark_never_raises_when_log_dir_is_unwritable(tmp_path: Path):
     bogus = tmp_path / 'nonexistent' / 'subdir'
     tl = StartupTimeline(log_dir=bogus)

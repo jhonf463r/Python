@@ -2005,6 +2005,10 @@ class AppBootstrap:
         # Signal that this bootstrap runs inside the MCP subprocess so it
         # can reduce redundant scans and log noise.
         env['IABV_MCP_SUBPROCESS'] = '1'
+        # The startup timeline audits visible UI boot. If the MCP child writes
+        # into the same JSONL, it contaminates phase ordering and breaks the
+        # metacognitive snapshot for splash -> shell timings.
+        env['IABV_STARTUP_TIMELINE'] = '0'
 
         # Inject portable CLI tools into PATH (same as run_mcp_bridge.ps1)
         iabv_tools = Path.home() / '.iabv' / 'tools'

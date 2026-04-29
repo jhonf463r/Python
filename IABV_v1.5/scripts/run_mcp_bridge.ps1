@@ -87,6 +87,10 @@ $env:PYTHONPATH = "$workspaceRoot\src"
 $env:IABV_WORKSPACE_ROOT = $workspaceRoot
 $env:IABV_MCP_TRANSPORT = $transport
 $env:IABV_MCP_NAME = $serverName
+# El startup_timeline.jsonl audita el arranque visible de la UI. El MCP del
+# bridge externo no debe escribir en ese mismo archivo porque rompe el orden de
+# fases y falsea la metacognicion de splash -> shell.
+$env:IABV_STARTUP_TIMELINE = '0'
 # FastMCP lee FASTMCP_HOST / FASTMCP_PORT para streamable-http / sse
 $env:FASTMCP_HOST = $bindHost
 $env:FASTMCP_PORT = $bindPort

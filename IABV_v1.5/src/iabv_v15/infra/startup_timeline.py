@@ -144,7 +144,11 @@ def configure_global_timeline(log_dir: Path) -> StartupTimeline:
     """Attach a JSONL sink to the global timeline (idempotent)."""
     timeline = get_global_timeline()
     if timeline.log_dir is None:
-        timeline.log_dir = log_dir
+        with timeline._lock:
+            timeline.log_dir = log_dir
+            if timeline._enabled:
+                for event in timeline._events:
+                    timeline._append_jsonl(event)
     return timeline
 
 

@@ -145,6 +145,8 @@ class TestBackgroundSubprocessLaunch:
             command = args[0]
             assert command[0].lower().endswith('python.exe')
             assert command[1:] == ['-m', 'iabv_v15.infra.mcp.server']
+            assert kwargs['env']['IABV_MCP_SUBPROCESS'] == '1'
+            assert kwargs['env']['IABV_STARTUP_TIMELINE'] == '0'
             assert kwargs['stdin'] is not None
             assert kwargs['stderr'] == __import__('subprocess').STDOUT
             assert kwargs['stdout'].name.endswith('mcp_server_runtime.log')

@@ -375,5 +375,25 @@
     "source": "codex_simbiosis_review_2026_04_28",
     "created_at": "2026-04-28T00:00:00+00:00",
     "evidence": "La instrumentacion del arranque no debe quedar como JSONL aislado. Debe alimentar OSES, PortableContext, backlog y la autoauditoria para que el programa aprenda por que se congela y que ajustes funcionaron. PR #258 cierra Cable A: PortableContextService._startup_health_snapshot/_section + OperationalSelfExaminationService._startup_health_findings con thresholds publicos (4s/8s/5s). 11 tests focalizados verde. D1-D7 documentados como gaps abiertos."
+  },
+  {
+    "id": "229d4be5-8228-4532-ab57-63161c5390ea",
+    "title": "Corregir false ready del startup: splash sigue visible tras main_window_shown y ui_populated",
+    "area": "live_startup",
+    "priority": "high",
+    "status": "pending",
+    "source": "codex_live_startup_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "En corrida live con startup_timeline limpio, la UI declara main_window_shown, splash_set_ready, populate_ui_done y deferred_post_window_setup_done en ~47s, pero a los ~80s la ventana visible sigue siendo el splash BURVE con estado 'Listo'. Hay mismatch entre readiness interno y ventana humana real."
+  },
+  {
+    "id": "60e43991-6dc4-43ec-8178-09de18594b39",
+    "title": "Resolver cola del bridge sin respuesta mientras el splash sigue arriba",
+    "area": "ui_bridge",
+    "priority": "high",
+    "status": "pending",
+    "source": "codex_live_startup_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "Con UIBridgeServer escuchando en 127.0.0.1:18921 y live_status='idle', send_message devuelve queued pero read_messages sigue mostrando solo el mensaje inicial del chat. El shell no procesa el mensaje mientras el splash visible permanece activo."
   }
 ]
