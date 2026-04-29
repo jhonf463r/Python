@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any
 
 from iabv_v15.domain.models import (
@@ -108,6 +110,7 @@ class PortableContextService:
         self_examination = self._self_examination_snapshot()
         cloud_reasoning_status = self._cloud_reasoning_snapshot()
         code_audit_status = self._code_audit_snapshot()
+        startup_health = self._startup_health_snapshot()
         pending_items = self._pending_items()
         backlog_items = self._backlog_items()
         decision_history = self._decision_history(recommendations=recommendations)
@@ -147,6 +150,7 @@ class PortableContextService:
             self._self_examination_section(review=self_examination, now=now),
             self._code_audit_section(status=code_audit_status, now=now),
             self._cloud_reasoning_section(status=cloud_reasoning_status, now=now),
+            self._startup_health_section(status=startup_health, now=now),
             self._recommended_routes_section(recommendations=recommendations, now=now),
             self._operational_blocks_section(world=world, recommendations=recommendations, now=now),
             self._validated_decisions_section(
@@ -188,6 +192,7 @@ class PortableContextService:
                 'tool_evolution_decision_summary': dict(tool_evolution_decisions.get('summary_payload') or {}),
                 'tool_evolution_validated_proposals': list(tool_evolution_decisions.get('entries') or []),
                 'cloud_reasoning_status': dict(cloud_reasoning_status),
+                'startup_health': dict(startup_health),
                 'autoexamination_summary': dict(self_examination.get('summary_payload') or {}),
                 'recurring_issues': list(self_examination.get('recurring_issues') or []),
                 'recommended_adjustments': list(self_examination.get('recommended_adjustments') or []),
@@ -477,6 +482,127 @@ class PortableContextService:
                 'feedback_summary': {},
                 'unresolved_risks': ['UNRESOLVED:self_examination'],
             }
+
+    def _startup_health_snapshot(self) -> dict[str, Any]:
+        """Read ``data/logs/startup_timeline.jsonl`` and summarise the last boot.
+
+        The instrumentation in :mod:`iabv_v15.infra.startup_timeline` appends one
+        JSON line per milestone (``bootstrap_init_start``, ``main_window_shown``,
+        ``deferred_post_window_setup_done`` ...) with ``t_ms_from_start`` and
+        ``rss_mb``.  This snapshot picks the last contiguous boot run (events
+        whose ``t_ms_from_start`` is monotonically increasing) and exposes the
+        derived intervals so PortableContext consumers and OSES findings can
+        reason about startup degradation without re-parsing the file.
+
+        Sin servicio nuevo, sin memoria paralela: leemos el JSONL existente.
+
+        Returns a dict with:
+            - ``status``: ``no_log`` / ``no_data`` / ``analyzed`` / ``error``
+            - ``init_ms``: ``bootstrap_init_done - bootstrap_init_start``
+            - ``run_to_window_ms``: ``main_window_shown - run_start``
+            - ``deferred_ms``: ``deferred_post_window_setup_done -
+              deferred_post_window_setup_start`` (post-window cost)
+            - ``last_started_at_utc``: ISO timestamp of the latest jsonl mtime
+            - ``recent_blockers``: list of phases that exceed thresholds
+            - ``rss_mb_max``: peak RSS recorded across the run
+            - ``unresolved_fields``: tags emitted when evidence is missing
+        """
+        log_path = Path(self.workspace_root) / 'data' / 'logs' / 'startup_timeline.jsonl'
+        if not log_path.exists():
+            return {
+                'status': 'no_log',
+                'unresolved_fields': ['UNRESOLVED:startup_timeline_missing'],
+            }
+        try:
+            stat = log_path.stat()
+            last_mtime_utc = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
+        except OSError:
+            last_mtime_utc = ''
+        events: list[dict[str, Any]] = []
+        try:
+            with log_path.open('r', encoding='utf-8') as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        events.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        continue
+        except OSError:
+            return {
+                'status': 'error',
+                'unresolved_fields': ['UNRESOLVED:startup_timeline_unreadable'],
+            }
+        if not events:
+            return {
+                'status': 'no_data',
+                'last_started_at_utc': last_mtime_utc,
+                'unresolved_fields': ['UNRESOLVED:startup_timeline_empty'],
+            }
+        # Pick the last contiguous run: walk back from the tail while
+        # ``t_ms_from_start`` keeps decreasing or staying flat.  A non-monotonic
+        # jump signals a fresh process attached to the same file.
+        last_run: list[dict[str, Any]] = [events[-1]]
+        for evt in reversed(events[:-1]):
+            try:
+                if float(evt.get('t_ms_from_start') or 0.0) <= float(last_run[0].get('t_ms_from_start') or 0.0):
+                    last_run.insert(0, evt)
+                else:
+                    break
+            except (TypeError, ValueError):
+                break
+        phase_to_ms: dict[str, float] = {}
+        rss_max = 0.0
+        for evt in last_run:
+            phase = str(evt.get('phase') or '')
+            if not phase:
+                continue
+            try:
+                phase_to_ms[phase] = float(evt.get('t_ms_from_start') or 0.0)
+            except (TypeError, ValueError):
+                continue
+            try:
+                rss_max = max(rss_max, float(evt.get('rss_mb') or 0.0))
+            except (TypeError, ValueError):
+                continue
+
+        def _delta(a: str, b: str) -> float | None:
+            if a in phase_to_ms and b in phase_to_ms:
+                return round(phase_to_ms[b] - phase_to_ms[a], 1)
+            return None
+
+        init_ms = _delta('bootstrap_init_start', 'bootstrap_init_done')
+        run_to_window_ms = _delta('run_start', 'main_window_shown')
+        if run_to_window_ms is None:
+            run_to_window_ms = _delta('bootstrap_init_done', 'main_window_shown')
+        deferred_ms = _delta('deferred_post_window_setup_start', 'deferred_post_window_setup_done')
+
+        unresolved: list[str] = []
+        if init_ms is None:
+            unresolved.append('UNRESOLVED:startup_init_window_missing')
+        if run_to_window_ms is None:
+            unresolved.append('UNRESOLVED:startup_main_window_missing')
+        recent_blockers: list[dict[str, Any]] = []
+        if init_ms is not None and init_ms > 4000.0:
+            recent_blockers.append({'phase': 'bootstrap_init', 'ms': init_ms})
+        if run_to_window_ms is not None and run_to_window_ms > 8000.0:
+            recent_blockers.append({'phase': 'run_to_main_window', 'ms': run_to_window_ms})
+        if deferred_ms is not None and deferred_ms > 5000.0:
+            recent_blockers.append({'phase': 'deferred_post_window', 'ms': deferred_ms})
+
+        return {
+            'status': 'analyzed',
+            'init_ms': init_ms,
+            'run_to_window_ms': run_to_window_ms,
+            'deferred_ms': deferred_ms,
+            'rss_mb_max': round(rss_max, 1) if rss_max else None,
+            'last_started_at_utc': last_mtime_utc,
+            'phases_seen': list(phase_to_ms.keys()),
+            'event_count': len(last_run),
+            'recent_blockers': recent_blockers,
+            'unresolved_fields': unresolved,
+        }
 
     def _cloud_reasoning_snapshot(self) -> dict[str, Any]:
         audit = getattr(self, 'decision_audit_trail', None)
@@ -1226,6 +1352,83 @@ class PortableContextService:
                 'overall_trend': overall,
                 'total_decisions': total,
                 'best_provider': best.get('provider_id', ''),
+            },
+        )
+
+    def _startup_health_section(self, *, status: dict[str, Any], now) -> PortableContextSection:
+        """Export the latest startup timeline summary as a portable section.
+
+        Reads the snapshot built by :meth:`_startup_health_snapshot` and emits
+        a single section with the three core intervals (init / run-to-window /
+        deferred) plus any phase that crossed a degradation threshold.  This is
+        the cable that ensures ``data/logs/startup_timeline.jsonl`` stops being
+        a loose log: any new session opening the package sees the boot health
+        without re-parsing the JSONL.
+        """
+        st = str(status.get('status') or 'no_log')
+        unresolved = list(status.get('unresolved_fields') or [])
+        items: list[dict[str, Any]] = []
+        if st == 'analyzed':
+            items.append({
+                'phase': 'bootstrap_init',
+                'ms': status.get('init_ms'),
+                'note': 'bootstrap_init_done - bootstrap_init_start',
+            })
+            items.append({
+                'phase': 'run_to_main_window',
+                'ms': status.get('run_to_window_ms'),
+                'note': 'run_start (or bootstrap_init_done) - main_window_shown',
+            })
+            items.append({
+                'phase': 'deferred_post_window',
+                'ms': status.get('deferred_ms'),
+                'note': 'deferred_post_window_setup_done - start',
+            })
+            for blk in list(status.get('recent_blockers') or [])[:4]:
+                items.append({
+                    'label': 'startup_blocker',
+                    'phase': blk.get('phase'),
+                    'ms': blk.get('ms'),
+                })
+        if st == 'analyzed':
+            init = status.get('init_ms')
+            window = status.get('run_to_window_ms')
+            rss = status.get('rss_mb_max')
+            init_str = f'{init:.0f}ms' if isinstance(init, (int, float)) else 'n/d'
+            window_str = f'{window:.0f}ms' if isinstance(window, (int, float)) else 'n/d'
+            rss_str = f', RSS pico {rss:.0f}MB' if isinstance(rss, (int, float)) and rss > 0 else ''
+            summary = (
+                f'Startup ultimo: init {init_str}, run->window {window_str}{rss_str}. '
+                f'Eventos {status.get("event_count", 0)}.'
+            )
+        elif st == 'no_log':
+            summary = 'Sin data/logs/startup_timeline.jsonl. Lanzar la UI con IABV_STARTUP_TIMELINE=1 para registrar arranque.'
+        elif st == 'no_data':
+            summary = 'Archivo startup_timeline.jsonl vacio: no hay arranques registrados todavia.'
+        elif st == 'error':
+            summary = 'startup_timeline.jsonl ilegible. Revisar permisos del workspace.'
+        else:
+            summary = f'Startup status: {st}'
+        confidence = 0.85 if st == 'analyzed' and not unresolved else 0.0
+        return self._section(
+            section_id='startup_health',
+            title='Salud del arranque (startup_timeline)',
+            summary=summary,
+            items=items,
+            source_kind='startup_timeline_jsonl',
+            source_refs=['data/logs/startup_timeline.jsonl', 'iabv_v15.infra.startup_timeline'],
+            confidence=confidence,
+            last_updated=now,
+            unresolved_fields=unresolved,
+            metadata={
+                'status': st,
+                'init_ms': status.get('init_ms'),
+                'run_to_window_ms': status.get('run_to_window_ms'),
+                'deferred_ms': status.get('deferred_ms'),
+                'rss_mb_max': status.get('rss_mb_max'),
+                'last_started_at_utc': status.get('last_started_at_utc', ''),
+                'phases_seen': list(status.get('phases_seen') or []),
+                'recent_blockers': list(status.get('recent_blockers') or []),
             },
         )
 
