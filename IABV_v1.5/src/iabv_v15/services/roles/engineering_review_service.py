@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from typing import Any
 
@@ -46,8 +47,25 @@ class EngineeringReviewService:
         self.execution_dossier_repository = execution_dossier_repository
         self.evolution_review_service = evolution_review_service
         self.incident_packet_service = incident_packet_service
+        self._context_cache: dict[str, Any] | None = None
+        self._context_cache_ts: float = 0.0
+        self._context_cache_ttl: float = 60.0
 
-    def build_project_context(self) -> dict[str, Any]:
+    def build_project_context(self, *, force: bool = False) -> dict[str, Any]:
+        """Build project context with TTL cache.
+
+        Reads ~1120 items from disk (episodes, knowledge, runs, artifacts,
+        dossiers) and calls several analysis services.  Caching with a 60s
+        TTL avoids redundant I/O when called multiple times in quick
+        succession (e.g. ``_refresh_development_packet`` on every chat msg).
+        """
+        now = time.monotonic()
+        if (
+            not force
+            and self._context_cache is not None
+            and (now - self._context_cache_ts) < self._context_cache_ttl
+        ):
+            return self._context_cache
         episodes = self.episode_repository.list_recent(limit=200)
         knowledge = self.knowledge_repository.list_recent(limit=200)
         runs = self.run_repository.list_recent(limit=200)
@@ -63,7 +81,7 @@ class EngineeringReviewService:
         dossiers = self.execution_dossier_repository.list_recent(limit=120) if self.execution_dossier_repository is not None else []
         project_health = self.evolution_review_service.build_project_health() if self.evolution_review_service is not None else None
         backlog = self.evolution_review_service.build_improvement_backlog(limit=8) if self.evolution_review_service is not None else []
-        return {
+        ctx = {
             'episodes': len(episodes),
             'knowledge_items': len(knowledge),
             'runs': len(runs),
@@ -75,6 +93,9 @@ class EngineeringReviewService:
             'project_health': project_health.model_dump(mode='json') if project_health is not None else {},
             'improvement_backlog': [item.model_dump(mode='json') for item in backlog],
         }
+        self._context_cache = ctx
+        self._context_cache_ts = now
+        return ctx
 
     def build_codex_packet(self, *, user_goal: str, selected_role_title: str) -> str:
         context = self.build_project_context()
