@@ -326,6 +326,17 @@
     "evidence": "El usuario quiere que la auditoria quede disponible para otras IAs sin trabajo manual. Hace falta un flujo soberano que seleccione evidencia util, la redacte, y prepare commit/push o un paquete exportable desde la propia UI."
   },
   {
+    "id": "5f733439-7093-46d9-9e5b-fb51291dd349",
+    "title": "Startup timeline + diferimiento de _log_tool_availability fuera del camino critico (Fase 1 + Fase 3 minima)",
+    "area": "startup",
+    "priority": "high",
+    "status": "partial",
+    "source": "codex_live_audit_handoff",
+    "created_at": "2026-04-29T01:34:56.944058+00:00",
+    "evidence": "Handoff 2026-04-28: splash->shell se queda 45-75s. PR de esta sesion: (1) StartupTimeline persistida a data/logs/startup_timeline.jsonl con 11 hitos del camino real (bootstrap_init_start/done, run_start, splash_visible, engine_load_main_qml_start/done, populate_ui_start/done, main_window_shown, splash_set_ready, app_exec_about_to_start, deferred_post_window_setup_start/done). (2) _log_tool_availability() (700ms+pip install mcp_client) movido de __init__ a QTimer.singleShot(2000) post-window. Tests focalizados 13/13 verde. Falta evidencia Windows-real para cerrar Fase 1.",
+    "depends_on": []
+  },
+  {
     "id": "6b6b42f8-f420-457b-b4ff-39de931b99af",
     "title": "Unificar el marco de simbiosis IA-IA sobre el aprendizaje existente",
     "area": "metacognition",
@@ -360,9 +371,9 @@
     "title": "Conectar startup_timeline y telemetria live al ciclo metacognitivo",
     "area": "live_startup",
     "priority": "medium",
-    "status": "pending",
+    "status": "partial",
     "source": "codex_simbiosis_review_2026_04_28",
     "created_at": "2026-04-28T00:00:00+00:00",
-    "evidence": "La instrumentacion del arranque no debe quedar como JSONL aislado. Debe alimentar OSES, PortableContext, backlog y la autoauditoria para que el programa aprenda por que se congela y que ajustes funcionaron."
+    "evidence": "La instrumentacion del arranque no debe quedar como JSONL aislado. Debe alimentar OSES, PortableContext, backlog y la autoauditoria para que el programa aprenda por que se congela y que ajustes funcionaron. PR #258 cierra Cable A: PortableContextService._startup_health_snapshot/_section + OperationalSelfExaminationService._startup_health_findings con thresholds publicos (4s/8s/5s). 11 tests focalizados verde. D1-D7 documentados como gaps abiertos."
   }
 ]
