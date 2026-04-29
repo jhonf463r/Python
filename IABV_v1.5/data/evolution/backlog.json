@@ -395,5 +395,35 @@
     "source": "codex_live_startup_2026_04_28",
     "created_at": "2026-04-28T00:00:00+00:00",
     "evidence": "Con UIBridgeServer escuchando en 127.0.0.1:18921 y live_status='idle', send_message devuelve queued pero read_messages sigue mostrando solo el mensaje inicial del chat. El shell no procesa el mensaje mientras el splash visible permanece activo."
+  },
+  {
+    "id": "b0a9ad3f-48ab-43ba-81c8-84b8591323f9",
+    "title": "Formalizar control soberano de auditorias multi-herramienta e inter-IA",
+    "area": "audit",
+    "priority": "high",
+    "status": "pending",
+    "source": "user_goal_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "El usuario quiere que las auditorias con Codex, Devin y otras herramientas no queden dispersas. El programa debe concentrar evidencias, decisiones, prompts, resultados y gaps en una sola logica soberana reutilizable por ExperimentLab, DecisionAuditTrail, PortableContext y backlog."
+  },
+  {
+    "id": "487356fd-c857-4f40-aa31-7eb0eb78146d",
+    "title": "Aprender patrones de coordinacion entre IAs como conocimiento operativo reusable",
+    "area": "metacognition",
+    "priority": "high",
+    "status": "pending",
+    "source": "user_goal_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "El usuario esta coordinando slices entre Codex y Devin y quiere que IABV aprenda ese patron. Falta convertir handoffs, evidencias cruzadas, decisiones de merge, y secuencias de auditoria en trazas operativas que el sistema pueda reaplicar por si mismo."
+  },
+  {
+    "id": "331225c3-c4de-450d-b975-13ce31e8e1aa",
+    "title": "Login gobernado y rotacion de cuentas/API gratuitas para razonamiento cloud",
+    "area": "cloud_reasoning",
+    "priority": "high",
+    "status": "pending",
+    "source": "user_goal_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "Despues de estabilizar la laptop, el sistema debe poder iniciar sesion en rutas aprobadas, obtener API keys gratis cuando sea viable, rotar cuentas/cuotas y combinar esos providers con shadow local para recopilar corpus util para la IA local."
   }
 ]
