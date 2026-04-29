@@ -176,155 +176,187 @@ def _devin_send_message(adapter, session_id: str, content: str) -> bool:
         return False
 
 
-from iabv_v15.infra.persistence.adaptive_session_repository import AdaptiveSessionRepository
-from iabv_v15.infra.persistence.approval_checkpoint_repository import ApprovalCheckpointRepository
-from iabv_v15.infra.persistence.capability_repository import CapabilityRepository
-from iabv_v15.infra.persistence.database import AppDatabase
-from iabv_v15.infra.persistence.episode_repository import EpisodeRepository
-from iabv_v15.infra.persistence.execution_dossier_repository import ExecutionDossierRepository
-from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
-from iabv_v15.infra.persistence.hidden_incident_repository import HiddenIncidentRepository
-from iabv_v15.infra.persistence.knowledge_repository import KnowledgeRepository
-from iabv_v15.infra.persistence.objective_repository import ObjectiveRepository
-from iabv_v15.infra.persistence.pending_issue_repository import PendingIssueRepository
-from iabv_v15.infra.persistence.run_repository import RunRepository
-from iabv_v15.infra.persistence.runtime_tuning_repository import RuntimeTuningRepository
-from iabv_v15.infra.persistence.scenario_run_repository import ScenarioRunRepository
-from iabv_v15.infra.persistence.replay_annotation_repository import ReplayAnnotationRepository
-from iabv_v15.infra.persistence.screenshot_store import ScreenshotStore
-from iabv_v15.infra.persistence.session_artifact_repository import SessionArtifactRepository
-from iabv_v15.infra.persistence.session_state_store import SessionStateStore
-from iabv_v15.infra.persistence.snapshot_version_manager import SnapshotVersionManager
-from iabv_v15.infra.persistence.storage import ArtifactStorage
-from iabv_v15.infra.persistence.strategy_pack_repository import StrategyPackRepository
-from iabv_v15.infra.persistence.user_clue_repository import UserClueRepository
-from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
-from iabv_v15.services.adaptive.adaptive_planner_service import AdaptivePlannerService
-from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
-from iabv_v15.services.adaptive.adaptive_model_selector import AdaptiveModelSelector
-from iabv_v15.services.adaptive.cloud_reasoning_planner import CloudReasoningPlannerService
-from iabv_v15.services.adaptive.adaptive_weight_layer import AdaptiveWeightLayer
-from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
-from iabv_v15.services.adaptive.approval_gate_service import ApprovalGateService
-from iabv_v15.services.adaptive.capability_readiness_service import CapabilityReadinessService
-from iabv_v15.services.adaptive.execution_playbook_service import ExecutionPlaybookService, NullOperationalExecutor
-from iabv_v15.services.adaptive.goal_engine import GoalEngine
-from iabv_v15.services.adaptive.intent_understanding_service import IntentUnderstandingService
-from iabv_v15.services.adaptive.strategy_pack_registry import StrategyPackRegistry
-from iabv_v15.services.adaptive.task_context_assembler import TaskContextAssembler
-from iabv_v15.services.adaptive.task_outcome_recorder import TaskOutcomeRecorder
-from iabv_v15.services.capture.browser_learning_assembler import BrowserLearningAssembler
-from iabv_v15.services.capture.replay_annotation_service import ReplayAnnotationService
-from iabv_v15.services.capture.replay_confidence_service import ReplayConfidenceService
-from iabv_v15.services.capture.replay_learning_feedback_service import ReplayLearningFeedbackService
-from iabv_v15.services.capture.replay_visual_assembler import ReplayVisualAssembler
-from iabv_v15.services.capture.browser_session_controller import BrowserSessionController
-from iabv_v15.services.capture.browser_teach_session_service import BrowserTeachSessionService
-from iabv_v15.services.capture.redaction_engine import RedactionEngine
-from iabv_v15.services.capture.secret_vault import SecretVault
-from iabv_v15.services.environment.environment_bootstrap_service import EnvironmentBootstrapService
-from iabv_v15.services.providers.provider_health_router import ProviderHealthRouter, default_local_probes
-from iabv_v15.services.security.credential_broker import CredentialBroker
-from iabv_v15.services.ux.clarification_request_service import ClarificationRequestService
-from iabv_v15.services.capture.sensitive_field_detector import SensitiveFieldDetector
-from iabv_v15.services.capture.site_policy_registry import SitePolicyRegistry
-from iabv_v15.services.capture.site_session_manager import SiteSessionManager
-from iabv_v15.services.capture.training_profile_manager import TrainingProfileManager
-from iabv_v15.services.capture.universal_perception_service import UniversalPerceptionService
-from iabv_v15.services.development.development_assist_service import DevelopmentAssistService
-from iabv_v15.services.evolution.autonomy_activity_projector import AutonomyActivityProjector
-from iabv_v15.services.evolution.environment_self_awareness_service import EnvironmentSelfAwarenessService
-from iabv_v15.services.evolution.world_model_service import WorldModelService
-from iabv_v15.services.evolution.execution_dossier_service import ExecutionDossierService
-from iabv_v15.services.audit.audit_teach_verification_service import AuditTeachVerificationService
-from iabv_v15.services.evolution.evolution_review_service import EvolutionReviewService
-from iabv_v15.services.evolution.hidden_incident_detector import HiddenIncidentDetector
-from iabv_v15.services.evolution.incident_packet_service import IncidentPacketService
-from iabv_v15.services.evolution.live_audit_supervisor import LiveAuditSupervisor
-from iabv_v15.services.evolution.operational_self_examination_service import OperationalSelfExaminationService
-from iabv_v15.services.evolution.embodiment_violation_detector import EmbodimentViolationDetector
-from iabv_v15.infra.persistence.control_master_repository import ControlMasterRepository
-from iabv_v15.services.evolution.control_master_digest_builder import ControlMasterDigestBuilder
-from iabv_v15.services.evolution.control_master_service import ControlMasterService
-from iabv_v15.services.evolution.git_sync_service import GitSyncService
-from iabv_v15.services.evolution.mcp_bridge_service import (
-    MCPBridgeService,
-    build_mcp_bridge_service,
-)
-from iabv_v15.services.evolution.consensus_interpretation_service import (
-    ConsensusInterpretationService,
-)
-from iabv_v15.services.evolution.intent_scoped_briefing_service import (
-    IntentScopedBriefingService,
-)
-from iabv_v15.services.evolution.portable_context_service import PortableContextService
-from iabv_v15.services.evolution.resource_metacognition_service import ResourceMetacognitionService
-from iabv_v15.services.evolution.self_audit_service import SelfAuditService
-from iabv_v15.services.evolution.token_rotation_ledger import TokenRotationLedger
-from iabv_v15.services.evolution.session_start_briefing_service import (
-    SessionStartBriefingService,
-)
-from iabv_v15.services.security.approval_memory import ApprovalMemory
-from iabv_v15.services.security.human_approval_broker import HumanApprovalBroker
-from iabv_v15.services.security.proactive_dashboard_service import (
-    ProactiveDashboardService,
-)
-from iabv_v15.services.capture.ui_screenshot_service import UIScreenshotService
-from iabv_v15.services.evolution.tool_discovery_service import ToolDiscoveryService
-from iabv_v15.services.evolution.tool_evolution_monitor import ToolEvolutionMonitor
-from iabv_v15.services.evolution.api_key_discovery_service import ApiKeyDiscoveryService
-from iabv_v15.services.evolution.code_audit_trail import CodeAuditTrail
-from iabv_v15.services.evolution.decision_audit_trail import DecisionAuditTrail
-from iabv_v15.services.evolution.autonomous_evolution_service import AutonomousEvolutionService
-from iabv_v15.services.evolution.runtime_signal_collector import RuntimeSignalCollector
-from iabv_v15.services.evolution.decision_simplifier_engine import DecisionSimplifierEngine
-from iabv_v15.services.evolution.platform_learning_orchestrator import PlatformLearningOrchestrator
-from iabv_v15.services.evolution.metacognition_evolution_mixin import MetacognitionEvolutionMixin
-from iabv_v15.services.evolution.self_check_orchestrator import SelfCheckOrchestrator
-from iabv_v15.services.evolution.session_health_service import SessionHealthService
-from iabv_v15.services.evolution.user_clue_service import UserClueService
-from iabv_v15.services.inference.inference_service import InferenceService
-from iabv_v15.services.self_teach.execution_probe_service import ExecutionProbeService
-from iabv_v15.services.self_teach.expectation_matcher import ExpectationMatcher
-from iabv_v15.services.self_teach.pending_issue_service import PendingIssueService
-from iabv_v15.services.self_teach.result_comparator import ResultComparator
-from iabv_v15.services.self_teach.runtime_tuner import RuntimeTuner
-from iabv_v15.services.self_teach.scenario_auto_test_service import ScenarioAutoTestService
-from iabv_v15.services.self_teach.scenario_registry import ScenarioRegistry
-from iabv_v15.services.self_teach.autonomous_validation_cycle import AutonomousValidationCycleService
-from iabv_v15.services.self_teach.sandbox_experiment_service import SandboxExperimentService
-from iabv_v15.services.self_teach.self_teach_orchestrator import SelfTeachOrchestrator
-from iabv_v15.infra.persistence.site_manual_repository import SiteManualRepository
-from iabv_v15.services.tools.site_exploration_service import SiteExplorationService
-from iabv_v15.services.tools.tool_adapters import AiderToolAdapter, DevinApiToolAdapter, DesktopHumanToolAdapter, ExternalAssistantToolAdapter, GitHubApiToolAdapter, LocalCliToolAdapter, MCPToolAdapter, OllamaToolAdapter, PlaywrightToolAdapter, ShellToolAdapter, SiteExplorerToolAdapter, ToolAdapter
-from iabv_v15.services.tools.tool_approval_policy import ToolApprovalPolicy
-from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
-from iabv_v15.services.tools.interaction_mode_selector import InteractionModeSelector
-from iabv_v15.services.tools.tool_memory import ToolMemory
-from iabv_v15.services.tools.tool_operational_executor import ToolOperationalExecutor
-from iabv_v15.services.tools.tool_registry import ToolRegistry
-from iabv_v15.services.tools.tool_rollback_manager import ToolRollbackManager
-from iabv_v15.services.tools.tool_sandbox import ToolSandbox
-from iabv_v15.services.tools.tool_teach_service import ToolTeachService
-from iabv_v15.services.tools.tool_validator import ToolValidator
-from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
-from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
-from iabv_v15.services.lab.experiment_lab import ExperimentLab
-from iabv_v15.services.lab.gpu_model_benchmark_service import GpuModelBenchmarkService
-from iabv_v15.services.lab.strategy_selector import StrategySelector
-from iabv_v15.services.knowledge.knowledge_service import KnowledgeService
-from iabv_v15.services.knowledge.unified_memory_layer import UnifiedMemoryLayer
-from iabv_v15.services.providers.openai_compat_local_provider import OpenAICompatLocalProvider
-from iabv_v15.services.roles.analytics_strategy_service import AnalyticsStrategyService
-from iabv_v15.services.roles.customer_support_service import CustomerSupportService
-from iabv_v15.services.roles.embedding_index_service import EmbeddingIndexService
-from iabv_v15.services.roles.engineering_review_service import EngineeringReviewService
-from iabv_v15.services.roles.local_role_router import LocalRoleRouter
-from iabv_v15.services.roles.sql_query_advisor_service import SqlQueryAdvisorService
-from iabv_v15.services.roles.teaching_gap_analyzer import TeachingGapAnalyzer
-from iabv_v15.services.training.payload_archive_service import PayloadArchiveService
-from iabv_v15.services.training.pbt_control_service import PBTControlService
-from iabv_v15.services.training.training_orchestrator import TrainingOrchestrator
+# ---------------------------------------------------------------------------
+# Lazy service imports — deferred to first use (_wire_services / _load_service_modules)
+# ---------------------------------------------------------------------------
+# Previously these ~146 imports lived at module scope, which on Windows with
+# cold NTFS caches + antivirus could take 8-12 s before the splash appeared.
+# Moving them into _load_service_modules() (called at the start of
+# _wire_services) lets the splash render after just the lightweight imports
+# above, cutting time-to-splash from ~20 s to ~2-3 s.
+#
+# Every name previously available at module scope is injected into globals()
+# by _load_service_modules() so the rest of the file is unaffected.
+# ---------------------------------------------------------------------------
+
+_SERVICE_MODULES_LOADED = False
+
+
+def _load_service_modules() -> None:  # noqa: C901 — intentionally large
+    """Import all service/persistence modules on first call.
+
+    Idempotent.  Injects every imported name into the module-level
+    ``globals()`` dict so downstream code sees no difference vs. the
+    old module-scope imports.
+    """
+    global _SERVICE_MODULES_LOADED
+    if _SERVICE_MODULES_LOADED:
+        return
+    _SERVICE_MODULES_LOADED = True
+
+    import importlib
+    _g = globals()
+
+    _registry: list[tuple[str, list[str]]] = [
+        ('iabv_v15.infra.persistence.adaptive_session_repository', ['AdaptiveSessionRepository']),
+        ('iabv_v15.infra.persistence.approval_checkpoint_repository', ['ApprovalCheckpointRepository']),
+        ('iabv_v15.infra.persistence.capability_repository', ['CapabilityRepository']),
+        ('iabv_v15.infra.persistence.database', ['AppDatabase']),
+        ('iabv_v15.infra.persistence.episode_repository', ['EpisodeRepository']),
+        ('iabv_v15.infra.persistence.execution_dossier_repository', ['ExecutionDossierRepository']),
+        ('iabv_v15.infra.persistence.experiment_lab_repository', ['ExperimentLabRepository']),
+        ('iabv_v15.infra.persistence.hidden_incident_repository', ['HiddenIncidentRepository']),
+        ('iabv_v15.infra.persistence.knowledge_repository', ['KnowledgeRepository']),
+        ('iabv_v15.infra.persistence.objective_repository', ['ObjectiveRepository']),
+        ('iabv_v15.infra.persistence.pending_issue_repository', ['PendingIssueRepository']),
+        ('iabv_v15.infra.persistence.run_repository', ['RunRepository']),
+        ('iabv_v15.infra.persistence.runtime_tuning_repository', ['RuntimeTuningRepository']),
+        ('iabv_v15.infra.persistence.scenario_run_repository', ['ScenarioRunRepository']),
+        ('iabv_v15.infra.persistence.replay_annotation_repository', ['ReplayAnnotationRepository']),
+        ('iabv_v15.infra.persistence.screenshot_store', ['ScreenshotStore']),
+        ('iabv_v15.infra.persistence.session_artifact_repository', ['SessionArtifactRepository']),
+        ('iabv_v15.infra.persistence.session_state_store', ['SessionStateStore']),
+        ('iabv_v15.infra.persistence.snapshot_version_manager', ['SnapshotVersionManager']),
+        ('iabv_v15.infra.persistence.storage', ['ArtifactStorage']),
+        ('iabv_v15.infra.persistence.strategy_pack_repository', ['StrategyPackRepository']),
+        ('iabv_v15.infra.persistence.user_clue_repository', ['UserClueRepository']),
+        ('iabv_v15.infra.persistence.tool_record_repository', ['ToolRecordRepository']),
+        ('iabv_v15.infra.persistence.control_master_repository', ['ControlMasterRepository']),
+        ('iabv_v15.infra.persistence.site_manual_repository', ['SiteManualRepository']),
+        ('iabv_v15.services.adaptive.adaptive_planner_service', ['AdaptivePlannerService']),
+        ('iabv_v15.services.adaptive.adaptive_task_orchestrator', ['AdaptiveTaskOrchestrator']),
+        ('iabv_v15.services.adaptive.adaptive_model_selector', ['AdaptiveModelSelector']),
+        ('iabv_v15.services.adaptive.cloud_reasoning_planner', ['CloudReasoningPlannerService']),
+        ('iabv_v15.services.adaptive.adaptive_weight_layer', ['AdaptiveWeightLayer']),
+        ('iabv_v15.services.adaptive.autonomy_governance_policy', ['AutonomyGovernancePolicy']),
+        ('iabv_v15.services.adaptive.approval_gate_service', ['ApprovalGateService']),
+        ('iabv_v15.services.adaptive.capability_readiness_service', ['CapabilityReadinessService']),
+        ('iabv_v15.services.adaptive.execution_playbook_service', ['ExecutionPlaybookService', 'NullOperationalExecutor']),
+        ('iabv_v15.services.adaptive.goal_engine', ['GoalEngine']),
+        ('iabv_v15.services.adaptive.intent_understanding_service', ['IntentUnderstandingService']),
+        ('iabv_v15.services.adaptive.strategy_pack_registry', ['StrategyPackRegistry']),
+        ('iabv_v15.services.adaptive.task_context_assembler', ['TaskContextAssembler']),
+        ('iabv_v15.services.adaptive.task_outcome_recorder', ['TaskOutcomeRecorder']),
+        ('iabv_v15.services.capture.browser_learning_assembler', ['BrowserLearningAssembler']),
+        ('iabv_v15.services.capture.replay_annotation_service', ['ReplayAnnotationService']),
+        ('iabv_v15.services.capture.replay_confidence_service', ['ReplayConfidenceService']),
+        ('iabv_v15.services.capture.replay_learning_feedback_service', ['ReplayLearningFeedbackService']),
+        ('iabv_v15.services.capture.replay_visual_assembler', ['ReplayVisualAssembler']),
+        ('iabv_v15.services.capture.browser_session_controller', ['BrowserSessionController']),
+        ('iabv_v15.services.capture.browser_teach_session_service', ['BrowserTeachSessionService']),
+        ('iabv_v15.services.capture.redaction_engine', ['RedactionEngine']),
+        ('iabv_v15.services.capture.secret_vault', ['SecretVault']),
+        ('iabv_v15.services.capture.sensitive_field_detector', ['SensitiveFieldDetector']),
+        ('iabv_v15.services.capture.site_policy_registry', ['SitePolicyRegistry']),
+        ('iabv_v15.services.capture.site_session_manager', ['SiteSessionManager']),
+        ('iabv_v15.services.capture.training_profile_manager', ['TrainingProfileManager']),
+        ('iabv_v15.services.capture.universal_perception_service', ['UniversalPerceptionService']),
+        ('iabv_v15.services.capture.ui_screenshot_service', ['UIScreenshotService']),
+        ('iabv_v15.services.environment.environment_bootstrap_service', ['EnvironmentBootstrapService']),
+        ('iabv_v15.services.providers.provider_health_router', ['ProviderHealthRouter', 'default_local_probes']),
+        ('iabv_v15.services.providers.openai_compat_local_provider', ['OpenAICompatLocalProvider']),
+        ('iabv_v15.services.security.credential_broker', ['CredentialBroker']),
+        ('iabv_v15.services.security.approval_memory', ['ApprovalMemory']),
+        ('iabv_v15.services.security.human_approval_broker', ['HumanApprovalBroker']),
+        ('iabv_v15.services.security.proactive_dashboard_service', ['ProactiveDashboardService']),
+        ('iabv_v15.services.ux.clarification_request_service', ['ClarificationRequestService']),
+        ('iabv_v15.services.development.development_assist_service', ['DevelopmentAssistService']),
+        ('iabv_v15.services.evolution.autonomy_activity_projector', ['AutonomyActivityProjector']),
+        ('iabv_v15.services.evolution.environment_self_awareness_service', ['EnvironmentSelfAwarenessService']),
+        ('iabv_v15.services.evolution.world_model_service', ['WorldModelService']),
+        ('iabv_v15.services.evolution.execution_dossier_service', ['ExecutionDossierService']),
+        ('iabv_v15.services.audit.audit_teach_verification_service', ['AuditTeachVerificationService']),
+        ('iabv_v15.services.evolution.evolution_review_service', ['EvolutionReviewService']),
+        ('iabv_v15.services.evolution.hidden_incident_detector', ['HiddenIncidentDetector']),
+        ('iabv_v15.services.evolution.incident_packet_service', ['IncidentPacketService']),
+        ('iabv_v15.services.evolution.live_audit_supervisor', ['LiveAuditSupervisor']),
+        ('iabv_v15.services.evolution.operational_self_examination_service', ['OperationalSelfExaminationService']),
+        ('iabv_v15.services.evolution.embodiment_violation_detector', ['EmbodimentViolationDetector']),
+        ('iabv_v15.services.evolution.control_master_digest_builder', ['ControlMasterDigestBuilder']),
+        ('iabv_v15.services.evolution.control_master_service', ['ControlMasterService']),
+        ('iabv_v15.services.evolution.git_sync_service', ['GitSyncService']),
+        ('iabv_v15.services.evolution.mcp_bridge_service', ['MCPBridgeService', 'build_mcp_bridge_service']),
+        ('iabv_v15.services.evolution.consensus_interpretation_service', ['ConsensusInterpretationService']),
+        ('iabv_v15.services.evolution.intent_scoped_briefing_service', ['IntentScopedBriefingService']),
+        ('iabv_v15.services.evolution.portable_context_service', ['PortableContextService']),
+        ('iabv_v15.services.evolution.resource_metacognition_service', ['ResourceMetacognitionService']),
+        ('iabv_v15.services.evolution.self_audit_service', ['SelfAuditService']),
+        ('iabv_v15.services.evolution.token_rotation_ledger', ['TokenRotationLedger']),
+        ('iabv_v15.services.evolution.session_start_briefing_service', ['SessionStartBriefingService']),
+        ('iabv_v15.services.evolution.tool_discovery_service', ['ToolDiscoveryService']),
+        ('iabv_v15.services.evolution.tool_evolution_monitor', ['ToolEvolutionMonitor']),
+        ('iabv_v15.services.evolution.api_key_discovery_service', ['ApiKeyDiscoveryService']),
+        ('iabv_v15.services.evolution.code_audit_trail', ['CodeAuditTrail']),
+        ('iabv_v15.services.evolution.decision_audit_trail', ['DecisionAuditTrail']),
+        ('iabv_v15.services.evolution.autonomous_evolution_service', ['AutonomousEvolutionService']),
+        ('iabv_v15.services.evolution.runtime_signal_collector', ['RuntimeSignalCollector']),
+        ('iabv_v15.services.evolution.decision_simplifier_engine', ['DecisionSimplifierEngine']),
+        ('iabv_v15.services.evolution.platform_learning_orchestrator', ['PlatformLearningOrchestrator']),
+        ('iabv_v15.services.evolution.metacognition_evolution_mixin', ['MetacognitionEvolutionMixin']),
+        ('iabv_v15.services.evolution.self_check_orchestrator', ['SelfCheckOrchestrator']),
+        ('iabv_v15.services.evolution.session_health_service', ['SessionHealthService']),
+        ('iabv_v15.services.evolution.user_clue_service', ['UserClueService']),
+        ('iabv_v15.services.inference.inference_service', ['InferenceService']),
+        ('iabv_v15.services.self_teach.execution_probe_service', ['ExecutionProbeService']),
+        ('iabv_v15.services.self_teach.expectation_matcher', ['ExpectationMatcher']),
+        ('iabv_v15.services.self_teach.pending_issue_service', ['PendingIssueService']),
+        ('iabv_v15.services.self_teach.result_comparator', ['ResultComparator']),
+        ('iabv_v15.services.self_teach.runtime_tuner', ['RuntimeTuner']),
+        ('iabv_v15.services.self_teach.scenario_auto_test_service', ['ScenarioAutoTestService']),
+        ('iabv_v15.services.self_teach.scenario_registry', ['ScenarioRegistry']),
+        ('iabv_v15.services.self_teach.autonomous_validation_cycle', ['AutonomousValidationCycleService']),
+        ('iabv_v15.services.self_teach.sandbox_experiment_service', ['SandboxExperimentService']),
+        ('iabv_v15.services.self_teach.self_teach_orchestrator', ['SelfTeachOrchestrator']),
+        ('iabv_v15.services.tools.site_exploration_service', ['SiteExplorationService']),
+        ('iabv_v15.services.tools.tool_adapters', [
+            'AiderToolAdapter', 'DevinApiToolAdapter', 'DesktopHumanToolAdapter',
+            'ExternalAssistantToolAdapter', 'GitHubApiToolAdapter', 'LocalCliToolAdapter',
+            'MCPToolAdapter', 'OllamaToolAdapter', 'PlaywrightToolAdapter',
+            'ShellToolAdapter', 'SiteExplorerToolAdapter', 'ToolAdapter',
+        ]),
+        ('iabv_v15.services.tools.tool_approval_policy', ['ToolApprovalPolicy']),
+        ('iabv_v15.services.tools.interaction_learning_service', ['InteractionLearningService']),
+        ('iabv_v15.services.tools.interaction_mode_selector', ['InteractionModeSelector']),
+        ('iabv_v15.services.tools.tool_memory', ['ToolMemory']),
+        ('iabv_v15.services.tools.tool_operational_executor', ['ToolOperationalExecutor']),
+        ('iabv_v15.services.tools.tool_registry', ['ToolRegistry']),
+        ('iabv_v15.services.tools.tool_rollback_manager', ['ToolRollbackManager']),
+        ('iabv_v15.services.tools.tool_sandbox', ['ToolSandbox']),
+        ('iabv_v15.services.tools.tool_teach_service', ['ToolTeachService']),
+        ('iabv_v15.services.tools.tool_validator', ['ToolValidator']),
+        ('iabv_v15.services.lab.algorithm_benchmark_registry', ['AlgorithmBenchmarkRegistry']),
+        ('iabv_v15.services.lab.decision_scoring_engine', ['DecisionScoringEngine']),
+        ('iabv_v15.services.lab.experiment_lab', ['ExperimentLab']),
+        ('iabv_v15.services.lab.gpu_model_benchmark_service', ['GpuModelBenchmarkService']),
+        ('iabv_v15.services.lab.strategy_selector', ['StrategySelector']),
+        ('iabv_v15.services.knowledge.knowledge_service', ['KnowledgeService']),
+        ('iabv_v15.services.knowledge.unified_memory_layer', ['UnifiedMemoryLayer']),
+        ('iabv_v15.services.roles.analytics_strategy_service', ['AnalyticsStrategyService']),
+        ('iabv_v15.services.roles.customer_support_service', ['CustomerSupportService']),
+        ('iabv_v15.services.roles.embedding_index_service', ['EmbeddingIndexService']),
+        ('iabv_v15.services.roles.engineering_review_service', ['EngineeringReviewService']),
+        ('iabv_v15.services.roles.local_role_router', ['LocalRoleRouter']),
+        ('iabv_v15.services.roles.sql_query_advisor_service', ['SqlQueryAdvisorService']),
+        ('iabv_v15.services.roles.teaching_gap_analyzer', ['TeachingGapAnalyzer']),
+        ('iabv_v15.services.training.payload_archive_service', ['PayloadArchiveService']),
+        ('iabv_v15.services.training.pbt_control_service', ['PBTControlService']),
+        ('iabv_v15.services.training.training_orchestrator', ['TrainingOrchestrator']),
+    ]
+
+    for _mod_path, _names in _registry:
+        _mod = importlib.import_module(_mod_path)
+        for _name in _names:
+            _g[_name] = getattr(_mod, _name)
 from iabv_v15.ui.controllers.main_window_bridge import MainWindowBridge
 from iabv_v15.ui.controllers.navigation_controller import NavigationController
 from iabv_v15.ui.controllers.theme_controller import ThemeController
@@ -345,7 +377,7 @@ from iabv_v15.ui.viewmodels.run_history_viewmodel import RunHistoryViewModel
 
 
 class AppBootstrap:
-    def __init__(self, workspace_root: str | None = None) -> None:
+    def __init__(self, workspace_root: str | None = None, *, defer_services: bool = False) -> None:
         # Startup timeline: anchored on the first call.  Marks 'init_start'
         # before any heavy work so even imports counted before this point
         # can be inferred from main.py.
@@ -362,6 +394,55 @@ class AppBootstrap:
         # Now that logs_dir exists, attach JSONL sink so every future
         # mark() call also persists to data/logs/startup_timeline.jsonl.
         configure_global_timeline(Path(self.config.logs_dir))
+
+        self._services_wired = False
+
+        if defer_services:
+            # Production path: splash first, wire services later.
+            # Placeholder attributes that _wire_services() will populate.
+            self.navigation_controller = None
+            self.theme_controller = None
+            self.main_window_bridge = None
+            self.dashboard_viewmodel = None
+            self.control_center_viewmodel = None
+            self.capture_studio_viewmodel = None
+            self.evolution_center_viewmodel = None
+            self.knowledge_base_viewmodel = None
+            self.provider_settings_viewmodel = None
+            self.run_history_viewmodel = None
+            self._timeline.mark(
+                'bootstrap_init_done',
+                tool_availability_deferred=True,
+                services_deferred=True,
+            )
+            return
+
+        # Synchronous path: wire everything now (tests, MCP subprocess).
+        self._wire_services()
+
+    def _wire_services(self, splash_callback=None) -> None:
+        """Construct and wire all services.
+
+        When ``defer_services=True`` was passed to ``__init__``, this is
+        called from ``run()`` after the splash is visible.  The optional
+        *splash_callback* receives status strings for progress display.
+
+        Idempotent: a second call is a no-op.
+        """
+        if self._services_wired:
+            return
+        self._services_wired = True
+
+        self._timeline.mark('wire_services_start')
+
+        # Load all service modules on first use (lazy import).
+        _load_service_modules()
+
+        def _splash(msg: str) -> None:
+            if splash_callback is not None:
+                splash_callback(msg)
+
+        _splash('Conectando base de datos...')
 
         self.db = AppDatabase(self.config.sqlite_path)
         self.screenshot_storage = ArtifactStorage(self.config.screenshots_dir)
@@ -435,6 +516,9 @@ class AppBootstrap:
             Path(self.config.evolution_dir) / 'site_manuals'
         )
         self.site_exploration_service = SiteExplorationService()
+
+        _splash('Registrando herramientas...')
+
         self.tool_adapters = {
             'playwright': PlaywrightToolAdapter(),
             'ollama': OllamaToolAdapter(self.general_provider),
@@ -516,6 +600,9 @@ class AppBootstrap:
         # fresh from the UI process) and use 300s/600s intervals for the
         # background thread to cut redundant API calls from ~70/hour to ~12.
         _is_mcp_sub = os.environ.get('IABV_MCP_SUBPROCESS') == '1'
+
+        _splash('Construyendo world model...')
+
         self.world_model_service = WorldModelService(
             workspace_root=self.config.workspace_root,
             evolution_dir=self.config.evolution_dir,
@@ -585,6 +672,9 @@ class AppBootstrap:
             self.cognitive_frame_translator = None
             self.synaptic_router = None
             self.consensus_fusion_service = None
+
+        _splash('Inicializando laboratorio de experimentos...')
+
         self.experiment_lab = ExperimentLab(
             repository=self.experiment_lab_repository,
             registry=self.algorithm_benchmark_registry,
@@ -776,6 +866,9 @@ class AppBootstrap:
         self.intent_understanding_service = IntentUnderstandingService()
         self.autonomy_governance_policy = AutonomyGovernancePolicy()
         self.goal_engine = GoalEngine(self.objective_repository)
+
+        _splash('Conectando contexto portable...')
+
         self.portable_context_service = PortableContextService(
             workspace_root=self.config.workspace_root,
             storage=self.evolution_storage,
@@ -1203,6 +1296,8 @@ class AppBootstrap:
         self.adaptive_task_orchestrator._tool_teach_service = self.tool_teach_service
         self.adaptive_task_orchestrator._tool_operational_executor = self.operational_executor
         self._seed_control_master_from_agents_md()
+
+        _splash('Activando metacognición...')
 
         # --- Evolution services: DecisionSimplifier + PlatformLearning + Metacognition ---
         try:
@@ -2801,6 +2896,21 @@ class AppBootstrap:
                 self._timeline.mark('splash_visible')
             else:
                 self._splash = None
+
+            # --- Deferred service wiring (when defer_services=True) ---
+            # The splash is now visible; wire all services with progress.
+            if not self._services_wired:
+                _splash_obj = self._splash
+
+                def _splash_cb(msg: str) -> None:
+                    if _splash_obj is not None:
+                        _splash_obj.set_status(msg)
+                        try:
+                            QGuiApplication.instance().processEvents()
+                        except Exception:
+                            pass
+
+                self._wire_services(splash_callback=_splash_cb)
 
             # --- MCP autostart ---
             if self._splash:
