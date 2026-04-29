@@ -1346,27 +1346,42 @@ class AppBootstrap:
         """Run heavy probes that were skipped during ``__init__``.
 
         Called from ``run()`` via ``QTimer.singleShot`` *after* the main
-        window is shown.  At that point the GUI thread is free, the user
-        already sees the interactive shell, and any synchronous HTTP /
-        pip work no longer blocks splash rendering.
+        window is shown.  The actual work (tool probes, pip installs,
+        self-examination) runs in a **background thread** so it never
+        starves the Qt event loop — the QML async incubator that drives
+        ``mainShellLoader`` needs unblocked event-loop iterations to
+        progress from ``Loading`` to ``Ready``.
+
+        Previous behaviour ran ``_log_tool_availability()`` synchronously
+        on the GUI thread; this caused non-deterministic startup because
+        the shell loader could only finish incubating during the gaps
+        between ``as_completed()`` iterations.
 
         Idempotent: a second call is a no-op.
         """
         if self._tool_availability_logged:
             return
         self._tool_availability_logged = True
-        try:
-            self._timeline.mark('deferred_post_window_setup_start')
-        except Exception:
-            pass
-        try:
-            self._log_tool_availability()
-        except Exception as exc:
-            logger.warning('deferred_tool_availability_probe failed: %s', exc)
-        try:
-            self._timeline.mark('deferred_post_window_setup_done')
-        except Exception:
-            pass
+
+        def _bg_post_window_setup() -> None:
+            try:
+                self._timeline.mark('deferred_post_window_setup_start')
+            except Exception:
+                pass
+            try:
+                self._log_tool_availability()
+            except Exception as exc:
+                logger.warning('deferred_tool_availability_probe failed: %s', exc)
+            try:
+                self._timeline.mark('deferred_post_window_setup_done')
+            except Exception:
+                pass
+
+        threading.Thread(
+            target=_bg_post_window_setup,
+            name='iabv-deferred-post-window',
+            daemon=True,
+        ).start()
 
     def _handle_shell_loader_ready(self) -> None:
         """Punto de aterrizaje honesto para el readiness real del shell.
@@ -1399,6 +1414,11 @@ class AppBootstrap:
         en ``onStatusChanged`` y ``onActiveChanged`` de cada Loader
         relevante.  Sirve para ver en el JSONL si el QQmlIncubator
         avanza o se queda bloqueado en ``Loading=2`` en Windows.
+
+        Safety net: if we receive ``status=1`` (Ready) for the
+        ``mainShellLoader`` but ``_handle_shell_loader_ready`` was never
+        called (e.g. QML signal delivery race on Windows), we trigger
+        shell readiness from here.
         """
         try:
             phase = f'qml_loader_{loader_name}_status_{int(status)}'
@@ -1410,6 +1430,16 @@ class AppBootstrap:
             )
         except Exception:
             pass
+        # Belt-and-suspenders: status=1 is Loader.Ready.  If the direct
+        # shellLoaderReady signal was lost (observed on some Windows runs),
+        # trigger readiness from this parallel path.
+        if loader_name == 'mainShellLoader' and int(status) == 1:
+            if not getattr(self, '_shell_loader_ready_handled', False):
+                logger.info(
+                    'shell_loader_ready via qml_loader_event safety net '
+                    '(direct signal was not received)',
+                )
+                self._handle_shell_loader_ready()
 
     def _handle_main_qml_completed(self) -> None:
         """Marca ``main_qml_completed`` cuando ``Main.qml`` evaluo su tree.
@@ -2950,9 +2980,9 @@ class AppBootstrap:
             QTimer.singleShot(1200, self._schedule_startup_evolution)
 
             # Defer the heavy tool-availability probe (HTTP pings + pip
-            # install of mcp_client) until the user can already see the
-            # interactive shell.  2000ms gives the QML shell time to
-            # paint its first frame before we steal the GUI thread again.
+            # install of mcp_client).  The probe now runs in a background
+            # thread (never blocks the GUI event loop), but we still
+            # delay 2s so the QML shell has time to start incubating.
             if not self._tool_availability_logged:
                 QTimer.singleShot(2000, self._run_deferred_post_window_setup)
 
@@ -2964,13 +2994,13 @@ class AppBootstrap:
             # ``_handle_shell_loader_ready``), o por fallback determinista si
             # esa senal nunca llega.
             if self._splash is not None:
-                fallback_ms = 45000
+                fallback_ms = 15000
                 try:
                     raw = os.environ.get('IABV_SHELL_READY_FALLBACK_MS')
                     if raw is not None:
                         fallback_ms = max(1000, int(raw))
                 except Exception:
-                    fallback_ms = 45000
+                    fallback_ms = 15000
                 QTimer.singleShot(fallback_ms, self._force_splash_ready_fallback)
 
             self._timeline.mark('app_exec_about_to_start')

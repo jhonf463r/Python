@@ -553,6 +553,7 @@ class PortableContextService:
             except (TypeError, ValueError):
                 break
         phase_to_ms: dict[str, float] = {}
+        phase_to_process_ms: dict[str, float] = {}
         rss_max = 0.0
         for evt in last_run:
             phase = str(evt.get('phase') or '')
@@ -562,6 +563,11 @@ class PortableContextService:
                 phase_to_ms[phase] = float(evt.get('t_ms_from_start') or 0.0)
             except (TypeError, ValueError):
                 continue
+            if 't_ms_from_process' in evt:
+                try:
+                    phase_to_process_ms[phase] = float(evt['t_ms_from_process'])
+                except (TypeError, ValueError):
+                    pass
             try:
                 rss_max = max(rss_max, float(evt.get('rss_mb') or 0.0))
             except (TypeError, ValueError):
@@ -620,11 +626,49 @@ class PortableContextService:
                 'reasons': false_ready_reason,
             })
 
+        # Process-start metrics: use t_ms_from_process when available,
+        # otherwise fall back to t_ms_from_start.
+        process_to_shell_loader_ready_ms: float | None = None
+        process_to_page_loader_ready_ms: float | None = None
+        process_to_splash_window_closing_ms: float | None = None
+        fallback_used = shell_ready_fallback_ms is not None
+
+        if 'shell_loader_ready' in phase_to_process_ms:
+            process_to_shell_loader_ready_ms = round(
+                phase_to_process_ms['shell_loader_ready'], 1,
+            )
+        elif shell_ready_ms is not None:
+            process_to_shell_loader_ready_ms = round(shell_ready_ms, 1)
+        elif shell_ready_fallback_ms is not None:
+            process_to_shell_loader_ready_ms = round(shell_ready_fallback_ms, 1)
+
+        if 'page_loader_ready' in phase_to_process_ms:
+            process_to_page_loader_ready_ms = round(
+                phase_to_process_ms['page_loader_ready'], 1,
+            )
+        elif 'page_loader_ready' in phase_to_ms:
+            process_to_page_loader_ready_ms = round(
+                phase_to_ms['page_loader_ready'], 1,
+            )
+
+        if 'splash_window_closing' in phase_to_process_ms:
+            process_to_splash_window_closing_ms = round(
+                phase_to_process_ms['splash_window_closing'], 1,
+            )
+        elif 'splash_window_closing' in phase_to_ms:
+            process_to_splash_window_closing_ms = round(
+                phase_to_ms['splash_window_closing'], 1,
+            )
+
         return {
             'status': 'analyzed',
             'init_ms': init_ms,
             'run_to_window_ms': run_to_window_ms,
             'deferred_ms': deferred_ms,
+            'process_to_shell_loader_ready_ms': process_to_shell_loader_ready_ms,
+            'process_to_page_loader_ready_ms': process_to_page_loader_ready_ms,
+            'process_to_splash_window_closing_ms': process_to_splash_window_closing_ms,
+            'fallback_used': fallback_used,
             'rss_mb_max': round(rss_max, 1) if rss_max else None,
             'last_started_at_utc': last_mtime_utc,
             'phases_seen': list(phase_to_ms.keys()),
