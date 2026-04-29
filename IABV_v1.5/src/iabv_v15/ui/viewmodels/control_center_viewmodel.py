@@ -4702,7 +4702,8 @@ class ControlCenterViewModel(QObject):
                 'external_state_flags': external_state_flags,
             }
         failure_detail = str(result.error_message or result.execution_state.detail or 'sin detalle').strip()
-        pending_url = (result.metadata or {}).get('pending_url', '')
+        _exec_meta = getattr(result.execution_state, 'metadata', None) or {}
+        pending_url = _exec_meta.get('pending_url', '') or (result.metadata or {}).get('pending_url', '')
         message, failure_meta, failure_busy = self._human_external_consultation_failure(
             assistant_title,
             failure_detail,
