@@ -215,6 +215,83 @@ def test_control_center_chat_command_toggles_advanced() -> None:
         _cleanup_bootstrap(bootstrap)
 
 
+def test_control_center_bridge_message_routes_into_chat() -> None:
+    bootstrap = _make_bootstrap('test_control_center_bridge_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+
+        result = viewmodel.send_message_from_bridge('mostrar avanzado')
+        assert result['status'] == 'queued'
+
+        _drain_ui(viewmodel, timeout_seconds=3.0)
+
+        messages = viewmodel.get_chat_messages()
+        assert any(msg['text'].startswith('Modo avanzado visible.') for msg in messages)
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_control_center_greeting_stays_lightweight() -> None:
+    bootstrap = _make_bootstrap('test_control_center_greeting_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+
+        called = {'infer_task': 0}
+
+        def _unexpected_infer_task(request):
+            called['infer_task'] += 1
+            raise AssertionError('general greeting should not trigger infer_task')
+
+        viewmodel.inference_service.infer_task = _unexpected_infer_task  # type: ignore[method-assign]
+        viewmodel.sendChat('hola')
+
+        assert called['infer_task'] == 0
+        assert viewmodel.get_working() is False
+        assert viewmodel.get_chat_messages()[-1]['text'].startswith('Hola.')
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_control_center_browser_question_uses_world_model_shortcut() -> None:
+    bootstrap = _make_bootstrap('test_control_center_browser_question_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        _set_permissive_world_model(bootstrap)
+        assert bootstrap.world_model_service is not None
+        bootstrap.world_model_service._current_snapshot = WorldModelSnapshot(
+            active_windows=[
+                WindowObservation(title='Google Chrome - OpenAI', app_name='Chrome', pid=101, focused=False),
+                WindowObservation(title='Microsoft Edge - IABV docs', app_name='Edge', pid=202, focused=True),
+            ],
+            focused_window=WindowObservation(title='Microsoft Edge - IABV docs', app_name='Edge', pid=202, focused=True),
+            tool_live_status=list(bootstrap.world_model_service._current_snapshot.tool_live_status),
+            network_status=NetworkStatusSnapshot(connected=True, status='conectado', quality='buena', latency_ms=42.0),
+            detected_blocks=[],
+            inferred_state={'summary': 'Veo ventanas de navegadores activas.', 'deductions': []},
+            confidence=0.9,
+        )
+
+        called = {'infer_task': 0}
+
+        def _unexpected_infer_task(request):
+            called['infer_task'] += 1
+            raise AssertionError('browser visibility question should stay on world_model shortcut')
+
+        viewmodel.inference_service.infer_task = _unexpected_infer_task  # type: ignore[method-assign]
+        viewmodel.sendChat('puedes ver los navegadores que tengo?')
+
+        assert called['infer_task'] == 0
+        assert viewmodel.get_working() is False
+        reply = viewmodel.get_chat_messages()[-1]['text']
+        assert 'Google Chrome - OpenAI' in reply
+        assert 'Microsoft Edge - IABV docs' in reply
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
 def test_control_center_pending_approval_opens_dialog() -> None:
     bootstrap = _make_bootstrap('test_control_center_approval_workspace')
     try:

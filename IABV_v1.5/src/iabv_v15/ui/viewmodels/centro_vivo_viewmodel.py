@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from iabv_v15.ui.qt import QObject, Property, Signal, Slot
+from iabv_v15.ui.qt import QObject, Property, QTimer, Signal, Slot
 
 
 class CentroVivoViewModel(QObject):
@@ -37,6 +37,7 @@ class CentroVivoViewModel(QObject):
         portable_context_service: Any | None = None,
         evolution_review_service: Any | None = None,
         data_root: str | Path = '',
+        defer_initial_refresh: bool = False,
     ) -> None:
         super().__init__()
         self.adaptive_session_repository = adaptive_session_repository
@@ -58,7 +59,10 @@ class CentroVivoViewModel(QObject):
         self._status_text = 'Centro Vivo listo. Pulsa Actualizar para cargar el estado operativo.'
         self._working = False
         self._last_refresh_utc = ''
-        self.refresh()
+        if defer_initial_refresh:
+            QTimer.singleShot(0, self.refresh)
+        else:
+            self.refresh()
 
     # ------------------------------------------------------------------
     # Property getters

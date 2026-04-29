@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 try:  # pragma: no cover - exercised only when PySide6 is available
-    from PySide6.QtCore import QObject, Property, Signal, Slot, QUrl
+    from PySide6.QtCore import QObject, Property, Signal, Slot, QTimer, QUrl
     from PySide6.QtGui import QGuiApplication
     from PySide6.QtQml import QQmlApplicationEngine
     from PySide6.QtQuickControls2 import QQuickStyle
@@ -57,6 +57,11 @@ except ImportError:  # pragma: no cover - fallback for non-UI test environments
         def _decorator(func):
             return property(func)
         return _decorator
+
+    class QTimer:
+        @staticmethod
+        def singleShot(_msec: int, callback):
+            callback()
 
     class QUrl:
         def __init__(self, path: str):

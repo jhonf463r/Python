@@ -45,7 +45,7 @@ from iabv_v15.services.roles.local_role_router import LocalRoleRouter
 from iabv_v15.services.training.pbt_control_service import PBTControlService
 from iabv_v15.services.training.training_orchestrator import TrainingOrchestrator
 from iabv_v15.services.capture.universal_perception_service import UniversalPerceptionService
-from iabv_v15.ui.qt import QObject, Property, QGuiApplication, Signal, Slot
+from iabv_v15.ui.qt import QObject, Property, QGuiApplication, QTimer, Signal, Slot
 
 
 class ControlCenterViewModel(QObject):
@@ -76,6 +76,7 @@ class ControlCenterViewModel(QObject):
     liveStatusChanged = Signal(str)       # "idle"|"processing"|"streaming"|"error"
     codeApplyRequested = Signal(str, str) # (code, language)
     chatDownloadRequested = Signal(str, str)  # (content, filename)
+    bridgeChatRequested = Signal(str)     # texto inyectado por UIBridgeServer
 
     def __init__(
         self,
@@ -113,6 +114,7 @@ class ControlCenterViewModel(QObject):
         control_master_digest_builder: Any | None = None,
         self_audit_service: Any | None = None,
         chat_capability_ingestion_service: Any | None = None,
+        defer_initial_refresh: bool = False,
     ) -> None:
         super().__init__()
         self.config = config
@@ -252,10 +254,17 @@ class ControlCenterViewModel(QObject):
 
         self.taskResolved.connect(self._apply_task_result)
         self.taskFailed.connect(self._apply_task_failure)
+        self.bridgeChatRequested.connect(self._dispatch_bridge_chat)
         self._seed_messages()
         self._seed_development_packet()
-        self.refresh()
-        self._refresh_provider_health(announce=False)
+        if defer_initial_refresh:
+            if not self._working and not self._adaptive_session_id:
+                self._busy_label = self._startup_readiness_text(validating_local_stack=True)
+            QTimer.singleShot(250, self.refresh)
+            QTimer.singleShot(900, lambda: self._refresh_provider_health(announce=False))
+        else:
+            self.refresh()
+            self._refresh_provider_health(announce=False)
 
     def _placeholder_provider_cards(self) -> list[dict[str, Any]]:
         return [
@@ -1385,6 +1394,15 @@ class ControlCenterViewModel(QObject):
         if not normalized:
             return False
         direct_phrases = (
+            'que puedes ver en mi pantalla',
+            'qué puedes ver en mi pantalla',
+            'que ves en mi pantalla',
+            'qué ves en mi pantalla',
+            'puedes ver mi pantalla',
+            'puedes ver los navegadores que tengo',
+            'puedes ver que navegadores tengo',
+            'que navegadores tengo abiertos',
+            'qué navegadores tengo abiertos',
             'que esta pasando',
             'qué está pasando',
             'que pasa ahora',
@@ -1416,13 +1434,18 @@ class ControlCenterViewModel(QObject):
             return True
         word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
         asks_about_windows = any(token in word_tokens for token in ('ventana', 'ventanas', 'foco', 'abierto', 'abiertas'))
+        asks_about_screen = any(token in word_tokens for token in ('pantalla', 'monitor', 'monitores', 'escritorio'))
+        asks_about_browsers = (
+            any(token in word_tokens for token in ('navegador', 'navegadores', 'browser', 'browsers', 'chrome', 'edge', 'firefox', 'opera', 'brave'))
+            and any(token in word_tokens for token in ('ver', 'ves', 'abierto', 'abiertos', 'tengo', 'tienes'))
+        )
         asks_about_network = any(token in word_tokens for token in ('internet', 'red', 'conexion', 'conexión'))
         asks_about_live_tool = (
             any(token in word_tokens for token in ('codex', 'chatgpt', 'claude', 'ollama'))
             and any(token in word_tokens for token in ('responde', 'bloqueado', 'hilo', 'mensajes', 'agotados', 'abierto', 'abierta'))
         )
         asks_current_state = any(phrase in normalized for phrase in ('que esta pasando', 'qué está pasando'))
-        return asks_about_windows or asks_about_network or asks_about_live_tool or asks_current_state
+        return asks_about_windows or asks_about_screen or asks_about_browsers or asks_about_network or asks_about_live_tool or asks_current_state
 
     def _is_self_awareness_question(self, message: str) -> bool:
         normalized = self._normalized_command_text(message)
@@ -1790,7 +1813,7 @@ class ControlCenterViewModel(QObject):
         normalized = self._normalized_command_text(message)
         if any(token in normalized for token in ('internet', 'red', 'conexion', 'conexión')):
             return 'network'
-        if any(token in normalized for token in ('ventana', 'ventanas', 'foco', 'abierto', 'abiertas')):
+        if any(token in normalized for token in ('ventana', 'ventanas', 'foco', 'abierto', 'abiertas', 'pantalla', 'monitor', 'monitores', 'escritorio', 'navegador', 'navegadores', 'browser', 'chrome', 'edge', 'firefox', 'opera', 'brave')):
             return 'windows'
         if 'codex' in normalized:
             return 'codex'
@@ -2435,59 +2458,15 @@ class ControlCenterViewModel(QObject):
     def _answer_general_chat(self, message: str) -> None:
         self._last_user_goal = message
         self._update_adaptive_state(self._general_conversation_payload(message=message))
-        self._working = True
-        self._busy_label = 'Consultando al modelo local con contexto del sistema vivo.'
-        self._set_autonomy_activity_override(
-            visible=True,
-            title='Respondiendo con contexto vivo',
-            status='active',
-            stage='consultando LLM local',
-            progress=0.2,
-            detail='El modelo local esta recibiendo el world model, las herramientas disponibles y la governance para responder con datos reales.',
-            tool='ollama_llm',
-            next_step='Generar respuesta informada por el estado vivo del sistema.',
-            learning_note='Esta via usa SystemPromptBuilder para que el LLM vea tools, world model y governance.',
-            mode='local',
-        )
+        self._clear_autonomy_activity_override()
+        reply = self._general_chat_reply(message)
+        self._append_message('assistant', 'IABV', reply, 'Conversacion general local.')
+        self._latest_response_text = reply
+        self._latest_response_meta = 'Conversacion general local.'
+        self._working = False
+        self._set_live_status('idle')
+        self._busy_label = 'Respuesta lista.'
         self.dataChanged.emit()
-
-        def worker() -> None:
-            try:
-                request = self._build_request(message)
-                record = self.inference_service.infer_task(request)
-                adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
-                self.taskResolved.emit(
-                    'chat',
-                    {
-                        'summary': record.result.summary,
-                        'provider_name': record.result.provider_name,
-                        'reasoning_mode': record.result.reasoning_mode.value,
-                        'confidence': f'{record.result.confidence:.2f}',
-                        'route_reason': record.route.reason,
-                        'report_kind': record.result.report_kind.value,
-                        'role_title': self._role_title_from_task(record.result.detected_role or record.route.task_role),
-                        'sources': record.result.sources,
-                        'follow_up_teachings': record.result.follow_up_teachings,
-                        'used_tools': [tool.value for tool in record.result.used_tools],
-                        'planner_used': record.result.planner_used,
-                        'executor_model': record.result.executor_model or record.route.model_name,
-                        'chosen_pack': record.result.chosen_pack,
-                        'adaptive_session': adaptive_session,
-                        'assistant_guidance': (record.result.raw_output or {}).get('assistant_guidance') if isinstance(record.result.raw_output, dict) else None,
-                        'local_chat_llm': (record.result.raw_output or {}).get('local_chat_llm') if isinstance(record.result.raw_output, dict) else None,
-                    },
-                )
-            except Exception:
-                fallback = self._general_chat_reply(message)
-                self._append_message('assistant', 'IABV', fallback, 'Conversacion general (fallback local).')
-                self._latest_response_text = fallback
-                self._latest_response_meta = 'Conversacion general (fallback local).'
-                self._working = False
-                self._busy_label = 'Respuesta lista.'
-                self._clear_autonomy_activity_override()
-                self.dataChanged.emit()
-
-        threading.Thread(target=worker, daemon=True).start()
 
     def _human_hardware_notice(self, governance: dict[str, Any] | None) -> str:
         governance = dict(governance or {})
@@ -4179,7 +4158,11 @@ class ControlCenterViewModel(QObject):
             return
         self._provider_refreshing = True
         if not self._working:
-            self._busy_label = 'Consultando el stack local y los asistentes externos en segundo plano.' if announce else self._startup_readiness_text(validating_local_stack=True)
+            try:
+                startup_text = self._startup_readiness_text(validating_local_stack=True)
+            except Exception:
+                startup_text = 'Consultando el stack local y los asistentes externos en segundo plano.'
+            self._busy_label = 'Consultando el stack local y los asistentes externos en segundo plano.' if announce else startup_text
             self.dataChanged.emit()
 
         def worker() -> None:
@@ -5982,6 +5965,47 @@ class ControlCenterViewModel(QObject):
         message = action_map.get(action, text)
         self.sendChat(message)
 
+    def send_message_from_bridge(self, text: str) -> dict[str, Any]:
+        """Acepta texto del bridge TCP y lo encola hacia el hilo de UI.
+
+        El UIBridgeServer corre en un hilo de background; emitir una signal
+        permite despachar el envio real al chat sin tocar QML desde ese hilo.
+        """
+        message = (text or '').strip()
+        if not message:
+            return {'status': 'error', 'detail': 'text is required'}
+        self.bridgeChatRequested.emit(message)
+        return {
+            'status': 'queued',
+            'text': message,
+            'chat_session_id': self._chat_session_id,
+        }
+
+    @Slot(str)
+    def _dispatch_bridge_chat(self, text: str) -> None:
+        self.sendChat(text)
+
+    def _try_handle_lightweight_chat(self, message: str) -> bool:
+        if self._is_world_model_question(message):
+            self._answer_world_model_question(message)
+            return True
+        if self._is_self_awareness_question(message):
+            self._answer_self_awareness_question(message)
+            return True
+        if self._is_evolution_status_question(message):
+            self._answer_evolution_status_question(message)
+            return True
+        if self._is_self_examination_question(message):
+            self._answer_self_examination_question(message)
+            return True
+        if self._is_learning_question(message):
+            self._answer_learning_question(message)
+            return True
+        if self._is_general_chat_message(message) and not self._seems_task_like_message(message):
+            self._answer_general_chat(message)
+            return True
+        return False
+
     @Slot(str, str)
     def applyCode(self, code: str, language: str) -> None:
         self.codeApplyRequested.emit(code, language)
@@ -6093,6 +6117,10 @@ class ControlCenterViewModel(QObject):
         if self._attached_files:
             self._attached_files.clear()
         self._set_live_status('processing')
+        if self._try_handle_chat_command(message):
+            return
+        if self._try_handle_lightweight_chat(message):
+            return
         # Escucha pasiva de capacidades declaradas (GPU, modelos, cuentas, runtimes).
         # Persiste detecciones a data/chat_research_backlog/*.jsonl para que OSES
         # y ExperimentLab las consuman despues como areas de investigacion. No
@@ -6102,8 +6130,6 @@ class ControlCenterViewModel(QObject):
         threading.Thread(target=self._ingest_chat_capabilities, args=(message,), daemon=True).start()
         # Actualizar packet en background sin bloquear UI
         threading.Thread(target=self._refresh_development_packet, args=(message,), daemon=True).start()
-        if self._try_handle_chat_command(message):
-            return
         # _chat_shortcut_analysis puede llamar a LLM — ejecutar con timeout
         # APRENDIDO: NO usar 'with ThreadPoolExecutor' en hilo de UI porque
         # pool.shutdown(wait=True) bloquea al salir del with aunque el timeout

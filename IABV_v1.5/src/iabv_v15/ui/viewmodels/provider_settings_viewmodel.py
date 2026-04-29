@@ -5,7 +5,7 @@ import threading
 from iabv_v15.domain.models import ProviderConfig
 from iabv_v15.services.roles.embedding_index_service import EmbeddingIndexService
 from iabv_v15.services.roles.local_role_router import LocalRoleRouter
-from iabv_v15.ui.qt import QObject, Property, Signal, Slot
+from iabv_v15.ui.qt import QObject, Property, QTimer, Signal, Slot
 
 
 class ProviderSettingsViewModel(QObject):
@@ -13,7 +13,14 @@ class ProviderSettingsViewModel(QObject):
     healthResolved = Signal(object, str)
     healthFailed = Signal(str)
 
-    def __init__(self, configs: list[ProviderConfig], router: LocalRoleRouter, embedding_service: EmbeddingIndexService) -> None:
+    def __init__(
+        self,
+        configs: list[ProviderConfig],
+        router: LocalRoleRouter,
+        embedding_service: EmbeddingIndexService,
+        *,
+        defer_initial_refresh: bool = False,
+    ) -> None:
         super().__init__()
         self.configs = configs
         self.router = router
@@ -23,7 +30,10 @@ class ProviderSettingsViewModel(QObject):
         self._status_line = 'Consulta pendiente. Puedes revisar el stack local cuando quieras.'
         self.healthResolved.connect(self._apply_health)
         self.healthFailed.connect(self._apply_health_error)
-        self.refresh()
+        if defer_initial_refresh:
+            QTimer.singleShot(0, self.refresh)
+        else:
+            self.refresh()
 
     def _translate_status(self, status: str) -> str:
         mapping = {'ready': 'listo', 'degraded': 'degradado', 'unavailable': 'no disponible', 'optional_inactive': 'opcional no activo', 'idle': 'inactivo'}

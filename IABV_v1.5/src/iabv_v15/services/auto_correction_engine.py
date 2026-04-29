@@ -24,10 +24,13 @@ Acciones que requieren usuario:
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import subprocess
+import sys
 import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -551,10 +554,71 @@ def execute_corrections(
 # aider-chat is ~200MB+ and can fail on low-RAM machines; installing it
 # synchronously during bootstrap freezes the UI and may OOM.
 _HEAVY_PIP_PACKAGES: set[str] = {'aider_coder'}
+_HEAVY_INSTALL_COOLDOWN_SECONDS = 12 * 60 * 60  # 12h between attempts
 
 # Track background installs so we don't double-launch.
 _background_install_threads: dict[str, threading.Thread] = {}
 _background_install_lock = threading.Lock()
+
+
+def _preferred_python_executable() -> str:
+    python_exe = sys.executable
+    if os.name == 'nt' and python_exe.lower().endswith('pythonw.exe'):
+        python_candidate = Path(python_exe).with_name('python.exe')
+        if python_candidate.is_file():
+            return str(python_candidate)
+    return python_exe
+
+
+def _hidden_subprocess_kwargs() -> dict[str, Any]:
+    kwargs: dict[str, Any] = {}
+    if os.name == 'nt':
+        creationflags = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= getattr(subprocess, 'STARTF_USESHOWWINDOW', 0)
+        startupinfo.wShowWindow = 0
+        kwargs['creationflags'] = creationflags
+        kwargs['startupinfo'] = startupinfo
+    return kwargs
+
+
+def _auto_install_cooldown_path() -> Path:
+    workspace_root = Path(os.environ.get('IABV_WORKSPACE_ROOT') or Path.cwd())
+    return workspace_root / 'data' / 'evolution' / 'auto_install_cooldowns.json'
+
+
+def _load_auto_install_cooldowns() -> dict[str, dict[str, Any]]:
+    path = _auto_install_cooldown_path()
+    if not path.is_file():
+        return {}
+    try:
+        return dict(json.loads(path.read_text(encoding='utf-8')))
+    except Exception:
+        return {}
+
+
+def _save_auto_install_cooldowns(data: dict[str, dict[str, Any]]) -> None:
+    path = _auto_install_cooldown_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=True, indent=2), encoding='utf-8')
+
+
+def _is_heavy_install_cooldown_active(tool_id: str) -> bool:
+    data = _load_auto_install_cooldowns()
+    record = dict(data.get(tool_id) or {})
+    last_attempt_epoch = float(record.get('last_attempt_epoch') or 0.0)
+    if last_attempt_epoch <= 0:
+        return False
+    return (time.time() - last_attempt_epoch) < _HEAVY_INSTALL_COOLDOWN_SECONDS
+
+
+def _mark_heavy_install_attempt(tool_id: str, *, status: str) -> None:
+    data = _load_auto_install_cooldowns()
+    data[tool_id] = {
+        'last_attempt_epoch': time.time(),
+        'status': status,
+    }
+    _save_auto_install_cooldowns(data)
 
 
 def _auto_install_missing_tool(tool_id: str) -> dict[str, Any]:
@@ -577,10 +641,11 @@ def _auto_install_missing_tool(tool_id: str) -> dict[str, Any]:
         if tool_id in _HEAVY_PIP_PACKAGES:
             return _install_in_background(tool_id, pip_pkg)
         try:
-            import sys
             result = subprocess.run(
-                [sys.executable, '-m', 'pip', 'install', pip_pkg, '-q'],
+                [_preferred_python_executable(), '-m', 'pip', 'install', pip_pkg, '-q'],
                 capture_output=True, text=True, timeout=120,
+                stdin=subprocess.DEVNULL,
+                **_hidden_subprocess_kwargs(),
             )
             if result.returncode == 0:
                 logger.info('auto_install: %s installed via pip (%s)', tool_id, pip_pkg)
@@ -614,20 +679,38 @@ def _auto_install_missing_tool(tool_id: str) -> dict[str, Any]:
 def _install_in_background(tool_id: str, pip_pkg: str) -> dict[str, Any]:
     """Launch a pip install in a daemon thread. Non-blocking."""
 
+    if _is_heavy_install_cooldown_active(tool_id):
+        return {
+            'action': 'auto_install_dependency',
+            'status': 'cooldown_active',
+            'tool_id': tool_id,
+            'package': pip_pkg,
+            'detail': f'recent {tool_id} auto-install attempt is still in cooldown',
+        }
+
     def _worker() -> None:
         try:
-            import sys as _sys
-            result = subprocess.run(
-                [_sys.executable, '-m', 'pip', 'install', pip_pkg, '-q'],
-                capture_output=True, text=True, timeout=600,
-            )
+            log_path = _auto_install_cooldown_path().parent.parent / 'logs' / f'auto_install_{tool_id}.log'
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            with log_path.open('ab') as log_handle:
+                result = subprocess.run(
+                    [_preferred_python_executable(), '-m', 'pip', 'install', pip_pkg, '-q'],
+                    stdout=log_handle,
+                    stderr=subprocess.STDOUT,
+                    stdin=subprocess.DEVNULL,
+                    timeout=600,
+                    **_hidden_subprocess_kwargs(),
+                )
             if result.returncode == 0:
+                _mark_heavy_install_attempt(tool_id, status='installed')
                 logger.info('auto_install_bg: %s installed via pip (%s)', tool_id, pip_pkg)
             else:
+                _mark_heavy_install_attempt(tool_id, status='failed')
                 logger.warning(
-                    'auto_install_bg: %s failed -- %s', tool_id, result.stderr[:200],
+                    'auto_install_bg: %s failed with code %s', tool_id, result.returncode,
                 )
         except Exception as exc:
+            _mark_heavy_install_attempt(tool_id, status='exception')
             logger.warning('auto_install_bg: %s exception -- %s', tool_id, exc)
 
     with _background_install_lock:
@@ -642,6 +725,7 @@ def _install_in_background(tool_id: str, pip_pkg: str) -> dict[str, Any]:
         t = threading.Thread(target=_worker, name=f'bg-install-{tool_id}', daemon=True)
         _background_install_threads[tool_id] = t
 
+    _mark_heavy_install_attempt(tool_id, status='queued')
     t.start()
     logger.info('auto_install_bg: %s queued for background install (%s)', tool_id, pip_pkg)
     return {

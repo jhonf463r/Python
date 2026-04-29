@@ -15,7 +15,7 @@ from iabv_v15.infra.persistence.scenario_run_repository import ScenarioRunReposi
 from iabv_v15.services.evolution.evolution_review_service import EvolutionReviewService
 from iabv_v15.services.evolution.incident_packet_service import IncidentPacketService
 from iabv_v15.services.evolution.self_check_orchestrator import SelfCheckOrchestrator
-from iabv_v15.ui.qt import QObject, Property, QGuiApplication, Signal, Slot
+from iabv_v15.ui.qt import QObject, Property, QGuiApplication, QTimer, Signal, Slot
 
 
 class EvolutionCenterViewModel(QObject):
@@ -51,6 +51,7 @@ class EvolutionCenterViewModel(QObject):
         control_master_service: Any | None = None,
         control_master_digest_builder: Any | None = None,
         github_remote_service: Any | None = None,
+        defer_initial_refresh: bool = False,
     ) -> None:
         super().__init__()
         self.dossier_repository = dossier_repository
@@ -118,7 +119,10 @@ class EvolutionCenterViewModel(QObject):
         self._clipboard_notice = 'Nada copiado aun.'
         self.taskResolved.connect(self._apply_result)
         self.taskFailed.connect(self._apply_failure)
-        self.refresh()
+        if defer_initial_refresh:
+            QTimer.singleShot(0, self.refresh)
+        else:
+            self.refresh()
 
     def get_working(self) -> bool:
         return self._working

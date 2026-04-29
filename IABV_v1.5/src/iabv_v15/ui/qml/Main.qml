@@ -37,6 +37,8 @@ ApplicationWindow {
     title: appTitleText
     color: primaryBackground
 
+    Component.onCompleted: mainShellKickoff.start()
+
     function routeSource(route) {
         if (route === "control") return Qt.resolvedUrl("pages/ControlCenterPage.qml")
         if (route === "capture") return Qt.resolvedUrl("pages/CaptureStudioPage.qml")
@@ -57,81 +59,131 @@ ApplicationWindow {
         }
     }
 
-    RowLayout {
+    Timer {
+        id: mainShellKickoff
+        interval: 25
+        repeat: false
+        running: false
+        onTriggered: mainShellLoader.active = true
+    }
+
+    Loader {
+        id: mainShellLoader
+        objectName: "mainShellLoader"
         anchors.fill: parent
-        anchors.margins: 18
-        spacing: 16
+        active: false
+        asynchronous: true
+        sourceComponent: mainShellComponent
+    }
 
-        GlassPanel {
-            Layout.fillHeight: true
-            Layout.preferredWidth: 300
-            radius: 28
-            fillColor: "#18212a"
-            strokeColor: borderSoft
+    Component {
+        id: mainShellComponent
 
-            ScrollView {
-                id: navScroll
-                anchors.fill: parent
-                anchors.margins: 18
-                clip: true
-                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 18
+            spacing: 16
 
-                Column {
-                    width: navScroll.availableWidth
-                    spacing: 16
+            GlassPanel {
+                Layout.fillHeight: true
+                Layout.preferredWidth: 300
+                radius: 28
+                fillColor: "#18212a"
+                strokeColor: borderSoft
+
+                ScrollView {
+                    id: navScroll
+                    anchors.fill: parent
+                    anchors.margins: 18
+                    clip: true
+                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                     Column {
-                        width: parent.width
-                        spacing: 4
-                        Label {
-                            text: "IABV"
-                            color: textPrimary
-                            font.family: titleFontFamily
-                            font.pixelSize: 34
-                            font.bold: true
-                        }
-                        Label {
-                            text: "Nucleo de control local y entrenamiento"
-                            color: textSecondary
-                            font.family: bodyFontFamily
-                            font.pixelSize: 14
-                            wrapMode: Label.WordWrap
-                        }
-                    }
+                        width: navScroll.availableWidth
+                        spacing: 16
 
-                    Repeater {
-                        model: navRoutes
-                        delegate: Rectangle {
-                            width: navScroll.availableWidth
-                            radius: 18
-                            color: activeRoute === modelData.key ? "#263843" : "transparent"
-                            border.width: 1
-                            border.color: activeRoute === modelData.key ? accentCyan : borderSoft
-                            implicitHeight: navText.implicitHeight + 28
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: if (navigationController) navigationController.navigate(modelData.key)
+                        Column {
+                            width: parent.width
+                            spacing: 4
+                            Label {
+                                text: "IABV"
+                                color: textPrimary
+                                font.family: titleFontFamily
+                                font.pixelSize: 34
+                                font.bold: true
                             }
+                            Label {
+                                text: "Nucleo de control local y entrenamiento"
+                                color: textSecondary
+                                font.family: bodyFontFamily
+                                font.pixelSize: 14
+                                wrapMode: Label.WordWrap
+                            }
+                        }
+
+                        Repeater {
+                            model: navRoutes
+                            delegate: Rectangle {
+                                width: navScroll.availableWidth
+                                radius: 18
+                                color: activeRoute === modelData.key ? "#263843" : "transparent"
+                                border.width: 1
+                                border.color: activeRoute === modelData.key ? accentCyan : borderSoft
+                                implicitHeight: navText.implicitHeight + 28
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: if (navigationController) navigationController.navigate(modelData.key)
+                                }
+
+                                Column {
+                                    id: navText
+                                    anchors.fill: parent
+                                    anchors.margins: 14
+                                    spacing: 5
+                                    Label {
+                                        width: navText.width
+                                        text: modelData.title
+                                        color: textPrimary
+                                        font.family: titleFontFamily
+                                        font.pixelSize: 16
+                                        wrapMode: Label.WordWrap
+                                    }
+                                    Label {
+                                        width: navText.width
+                                        text: modelData.subtitle
+                                        color: textSecondary
+                                        font.family: bodyFontFamily
+                                        font.pixelSize: 12
+                                        wrapMode: Label.WordWrap
+                                    }
+                                }
+                            }
+                        }
+
+                        GlassPanel {
+                            width: navScroll.availableWidth
+                            radius: 20
+                            fillColor: "#21303a"
+                            strokeColor: borderSoft
+                            implicitHeight: workspaceInfo.implicitHeight + 28
 
                             Column {
-                                id: navText
+                                id: workspaceInfo
                                 anchors.fill: parent
                                 anchors.margins: 14
-                                spacing: 5
+                                spacing: 8
                                 Label {
-                                    width: navText.width
-                                    text: modelData.title
-                                    color: textPrimary
-                                    font.family: titleFontFamily
-                                    font.pixelSize: 16
-                                    wrapMode: Label.WordWrap
+                                    text: "Espacio de trabajo"
+                                    color: textSecondary
+                                    font.family: bodyFontFamily
+                                    font.pixelSize: 12
                                 }
                                 Label {
-                                    width: navText.width
-                                    text: modelData.subtitle
-                                    color: textSecondary
+                                    width: workspaceInfo.width
+                                    text: workspaceRootText
+                                    color: textPrimary
                                     font.family: bodyFontFamily
                                     font.pixelSize: 12
                                     wrapMode: Label.WordWrap
@@ -139,52 +191,33 @@ ApplicationWindow {
                             }
                         }
                     }
-
-                    GlassPanel {
-                        width: navScroll.availableWidth
-                        radius: 20
-                        fillColor: "#21303a"
-                        strokeColor: borderSoft
-                        implicitHeight: workspaceInfo.implicitHeight + 28
-
-                        Column {
-                            id: workspaceInfo
-                            anchors.fill: parent
-                            anchors.margins: 14
-                            spacing: 8
-                            Label {
-                                text: "Espacio de trabajo"
-                                color: textSecondary
-                                font.family: bodyFontFamily
-                                font.pixelSize: 12
-                            }
-                            Label {
-                                width: workspaceInfo.width
-                                text: workspaceRootText
-                                color: textPrimary
-                                font.family: bodyFontFamily
-                                font.pixelSize: 12
-                                wrapMode: Label.WordWrap
-                            }
-                        }
-                    }
                 }
             }
-        }
 
-        ColumnLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: 14
-
-
-            Loader {
-                id: pageLoader
-                objectName: "pageLoader"
+            ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                asynchronous: false
-                source: routeSource(activeRoute)
+                spacing: 14
+
+                Timer {
+                    id: initialPageKickoff
+                    interval: 50
+                    repeat: false
+                    running: false
+                    onTriggered: pageLoader.active = true
+                }
+
+                Loader {
+                    id: pageLoader
+                    objectName: "pageLoader"
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    active: false
+                    asynchronous: true
+                    source: routeSource(activeRoute)
+                }
+
+                Component.onCompleted: initialPageKickoff.start()
             }
         }
     }

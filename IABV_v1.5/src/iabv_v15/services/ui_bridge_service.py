@@ -319,14 +319,10 @@ def build_ui_bridge_server(
             return {"status": "error", "detail": "text is required"}
         if control_center_viewmodel is not None:
             try:
-                control_center_viewmodel.send_message_from_bridge(text)
-                with _chat_lock:
-                    _chat_buffer.append({
-                        "role": "bridge",
-                        "text": text,
-                        "timestamp": time.time(),
-                    })
-                return {"status": "sent", "text": text}
+                result = control_center_viewmodel.send_message_from_bridge(text)
+                if isinstance(result, dict):
+                    return result
+                return {"status": "queued", "text": text}
             except Exception as exc:
                 return {"status": "error", "detail": str(exc)[:200]}
         with _chat_lock:
@@ -339,9 +335,31 @@ def build_ui_bridge_server(
 
     def _on_read_messages(limit: int = 20) -> dict[str, Any]:
         """Lee los ultimos N mensajes del buffer del chat."""
+        if control_center_viewmodel is not None:
+            try:
+                live_messages = list(control_center_viewmodel.get_chat_messages())
+                if live_messages:
+                    serialized = [
+                        {
+                            "role": str(message.get("role") or "unknown"),
+                            "speaker": str(message.get("speaker") or ""),
+                            "text": str(message.get("text") or ""),
+                            "meta": str(message.get("meta") or ""),
+                            "status": str(message.get("status") or "complete"),
+                            "timestamp": str(message.get("timestamp") or ""),
+                        }
+                        for message in live_messages[-limit:]
+                    ]
+                    return {
+                        "messages": serialized,
+                        "total": len(live_messages),
+                        "source": "viewmodel",
+                    }
+            except Exception:
+                logger.debug("ui-bridge: fallback to buffer for read_messages", exc_info=True)
         with _chat_lock:
             messages = list(_chat_buffer[-limit:])
-        return {"messages": messages, "total": len(_chat_buffer)}
+        return {"messages": messages, "total": len(_chat_buffer), "source": "buffer"}
 
     def _on_get_ui_state() -> dict[str, Any]:
         """Retorna el estado actual de la UI."""

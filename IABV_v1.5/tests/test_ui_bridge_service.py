@@ -176,6 +176,41 @@ class TestBuildUIBridgeServer:
         finally:
             server.stop()
 
+    def test_build_with_viewmodel_reads_live_chat_state(self) -> None:
+        class _FakeViewModel:
+            def __init__(self) -> None:
+                self.messages = [
+                    {'role': 'assistant', 'speaker': 'IABV', 'text': 'inicio', 'timestamp': '10:00'},
+                ]
+                self._chat_session_id = 'session-1'
+                self._live_status = 'idle'
+
+            def send_message_from_bridge(self, text: str) -> dict[str, object]:
+                self.messages.append({'role': 'user', 'speaker': 'Bridge', 'text': text, 'timestamp': '10:01'})
+                self.messages.append({'role': 'assistant', 'speaker': 'IABV', 'text': 'ok', 'timestamp': '10:01'})
+                return {'status': 'queued', 'text': text}
+
+            def get_chat_messages(self) -> list[dict[str, str]]:
+                return list(self.messages)
+
+        port = _find_free_port()
+        server = build_ui_bridge_server(_FakeViewModel(), port=port)
+        server.start()
+        try:
+            client = UIBridgeClient(port=port)
+            send_result = client.call('send_message', text='audita esto')
+            assert send_result.get('result', {}).get('status') == 'queued'
+
+            read_result = client.call('read_messages', limit=10)
+            payload = read_result.get('result', {})
+            messages = payload.get('messages', [])
+            assert payload.get('source') == 'viewmodel'
+            assert payload.get('total') == 3
+            assert messages[-1]['text'] == 'ok'
+            assert messages[-1]['speaker'] == 'IABV'
+        finally:
+            server.stop()
+
 
 class TestSelfAuditIncremental:
     """Placeholder test to verify incremental audit concept."""
@@ -196,5 +231,5 @@ class TestAiderBackgroundInstall:
     def test_install_in_background_returns_immediately(self) -> None:
         from iabv_v15.services.auto_correction_engine import _auto_install_missing_tool
         result = _auto_install_missing_tool('aider_coder')
-        assert result['status'] in ('installing_background', 'already_installing')
+        assert result['status'] in ('installing_background', 'already_installing', 'cooldown_active')
         assert result['tool_id'] == 'aider_coder'

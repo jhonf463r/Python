@@ -22,6 +22,35 @@ def _workspace(name: str) -> Path:
     root.mkdir(parents=True, exist_ok=True)
     return root
 
+
+def _wait_for_loader_item(app, loader, *, timeout_seconds: float = 6.0) -> None:
+    import time
+
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        app.processEvents()
+        if loader.property('item') is not None:
+            return
+        time.sleep(0.05)
+    app.processEvents()
+
+
+def _wait_for_shell_loader(app, root, *, timeout_seconds: float = 6.0):
+    from PySide6.QtCore import QObject
+
+    import time
+
+    deadline = time.time() + timeout_seconds
+    shell_loader = None
+    while time.time() < deadline:
+        app.processEvents()
+        shell_loader = root.findChild(QObject, 'mainShellLoader')
+        if shell_loader is not None and shell_loader.property('item') is not None:
+            return shell_loader
+        time.sleep(0.05)
+    app.processEvents()
+    return shell_loader
+
 @pytest.mark.ui
 def test_ui_bootstrap_loads_main_qml() -> None:
     os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
@@ -163,11 +192,15 @@ def test_capture_route_materializes_loader_item() -> None:
         bootstrap = AppBootstrap(str(workspace))
         app, engine = bootstrap.create_engine()
         root = engine.rootObjects()[0]
-        bootstrap.navigation_controller.navigate('capture')
+        root.show()
         app.processEvents()
+        shell_loader = _wait_for_shell_loader(app, root)
+        assert shell_loader is not None
+        bootstrap.navigation_controller.navigate('capture')
         loader = root.findChild(QObject, 'pageLoader')
         assert loader is not None
         assert loader.property('source')
+        _wait_for_loader_item(app, loader)
         assert loader.property('item') is not None
         app.quit()
     finally:
@@ -186,11 +219,15 @@ def test_evolution_route_materializes_loader_item() -> None:
         bootstrap = AppBootstrap(str(workspace))
         app, engine = bootstrap.create_engine()
         root = engine.rootObjects()[0]
-        bootstrap.navigation_controller.navigate('evolution')
+        root.show()
         app.processEvents()
+        shell_loader = _wait_for_shell_loader(app, root)
+        assert shell_loader is not None
+        bootstrap.navigation_controller.navigate('evolution')
         loader = root.findChild(QObject, 'pageLoader')
         assert loader is not None
         assert loader.property('source')
+        _wait_for_loader_item(app, loader)
         assert loader.property('item') is not None
         app.quit()
     finally:

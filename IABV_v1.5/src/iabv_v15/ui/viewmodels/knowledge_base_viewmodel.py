@@ -1,18 +1,21 @@
 from __future__ import annotations
 
 from iabv_v15.infra.persistence.knowledge_repository import KnowledgeRepository
-from iabv_v15.ui.qt import QObject, Property, Signal, Slot
+from iabv_v15.ui.qt import QObject, Property, QTimer, Signal, Slot
 
 
 class KnowledgeBaseViewModel(QObject):
     dataChanged = Signal()
 
-    def __init__(self, repository: KnowledgeRepository) -> None:
+    def __init__(self, repository: KnowledgeRepository, *, defer_initial_refresh: bool = False) -> None:
         super().__init__()
         self.repository = repository
         self._search_term = ""
         self._items: list[dict] = []
-        self.refresh()
+        if defer_initial_refresh:
+            QTimer.singleShot(0, self.refresh)
+        else:
+            self.refresh()
 
     def get_items(self) -> list[dict]:
         return self._items

@@ -4,7 +4,7 @@ import logging
 
 from iabv_v15.infra.persistence.execution_dossier_repository import ExecutionDossierRepository
 from iabv_v15.infra.persistence.run_repository import RunRepository
-from iabv_v15.ui.qt import QObject, Property, Signal, Slot
+from iabv_v15.ui.qt import QObject, Property, QTimer, Signal, Slot
 
 logger = logging.getLogger(__name__)
 
@@ -12,14 +12,23 @@ logger = logging.getLogger(__name__)
 class RunHistoryViewModel(QObject):
     dataChanged = Signal()
 
-    def __init__(self, repository: RunRepository, dossier_repository: ExecutionDossierRepository | None = None) -> None:
+    def __init__(
+        self,
+        repository: RunRepository,
+        dossier_repository: ExecutionDossierRepository | None = None,
+        *,
+        defer_initial_refresh: bool = False,
+    ) -> None:
         super().__init__()
         self.repository = repository
         self.dossier_repository = dossier_repository
         self._runs: list[dict] = []
         self._selected_run: dict = {}
         self._selected_dossier: dict = {}
-        self.refresh()
+        if defer_initial_refresh:
+            QTimer.singleShot(0, self.refresh)
+        else:
+            self.refresh()
 
     def get_runs(self) -> list[dict]:
         return self._runs

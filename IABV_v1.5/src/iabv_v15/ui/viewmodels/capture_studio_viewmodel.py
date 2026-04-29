@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 import json
+import logging
 import re
 import shutil
 import time
@@ -43,7 +44,9 @@ from iabv_v15.services.evolution.session_health_service import SessionHealthServ
 from iabv_v15.services.evolution.live_audit_supervisor import LiveAuditSupervisor
 from iabv_v15.services.evolution.user_clue_service import UserClueService
 from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
-from iabv_v15.ui.qt import QObject, Property, QGuiApplication, Signal, Slot
+from iabv_v15.ui.qt import QObject, Property, QGuiApplication, QTimer, Signal, Slot
+
+logger = logging.getLogger(__name__)
 
 
 class CaptureStudioViewModel(QObject):
@@ -75,6 +78,7 @@ class CaptureStudioViewModel(QObject):
         live_audit_supervisor: LiveAuditSupervisor | None = None,
         audit_teach_verification_service: AuditTeachVerificationService | None = None,
         universal_perception_service: UniversalPerceptionService | None = None,
+        defer_initial_refresh: bool = False,
     ) -> None:
         super().__init__()
         self.config = config
@@ -155,7 +159,10 @@ class CaptureStudioViewModel(QObject):
             {'title': 'Memorizar', 'hint': 'Empaquetar episodios y artefactos redactados para aprender.'},
             {'title': 'Ejecutar', 'hint': 'Reutilizar el conocimiento con salvaguardas activas.'},
         ]
-        self.refresh()
+        if defer_initial_refresh:
+            QTimer.singleShot(0, self._safe_refresh)
+        else:
+            self.refresh()
 
     def get_episodes(self) -> list[dict]:
         return self._episodes
@@ -612,6 +619,12 @@ class CaptureStudioViewModel(QObject):
         self._refresh_session_health(capture_stats if isinstance(capture_stats, dict) else {})
         self._refresh_assistant_replay()
         self.dataChanged.emit()
+
+    def _safe_refresh(self) -> None:
+        try:
+            self.refresh()
+        except Exception as exc:
+            logger.warning('capture_studio: deferred refresh skipped: %s', exc)
 
     def _refresh_assistant_replay(self) -> None:
         if self.tool_record_repository is None:

@@ -328,7 +328,7 @@ from iabv_v15.services.training.training_orchestrator import TrainingOrchestrato
 from iabv_v15.ui.controllers.main_window_bridge import MainWindowBridge
 from iabv_v15.ui.controllers.navigation_controller import NavigationController
 from iabv_v15.ui.controllers.theme_controller import ThemeController
-from iabv_v15.ui.qt import PYSIDE_AVAILABLE, QGuiApplication, QQmlApplicationEngine, QQuickStyle, QUrl
+from iabv_v15.ui.qt import PYSIDE_AVAILABLE, QGuiApplication, QQmlApplicationEngine, QQuickStyle, QTimer, QUrl
 from iabv_v15.ui.splash_controller import SplashController
 from iabv_v15.ui.viewmodels.capture_studio_viewmodel import CaptureStudioViewModel
 from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
@@ -1588,6 +1588,7 @@ class AppBootstrap:
             control_master_digest_builder=self.control_master_digest_builder,
             self_audit_service=self.self_audit_service,
             chat_capability_ingestion_service=self.chat_capability_ingestion_service,
+            defer_initial_refresh=True,
         )
         self.capture_studio_viewmodel = CaptureStudioViewModel(
             config=self.config,
@@ -1613,6 +1614,7 @@ class AppBootstrap:
             live_audit_supervisor=self.live_audit_supervisor,
             audit_teach_verification_service=self.audit_teach_verification_service,
             universal_perception_service=self.universal_perception_service,
+            defer_initial_refresh=True,
         )
         self.control_center_viewmodel.capture_studio_viewmodel = self.capture_studio_viewmodel
         self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
@@ -1653,6 +1655,7 @@ class AppBootstrap:
             control_master_service=self.control_master_service,
             control_master_digest_builder=self.control_master_digest_builder,
             github_remote_service=self.github_remote_service,
+            defer_initial_refresh=True,
         )
         # Hook proactivo: el EvolutionCenter puede consultar el dashboard
         # para mostrar "que necesita del humano" al arrancar, sin romper
@@ -1664,9 +1667,21 @@ class AppBootstrap:
         # persiste a disco y el VM solo lee la foto (AGENTS.md: el VM no
         # decide rutas ni inventa datos).
         self.evolution_center_viewmodel.ui_screenshot_service = self.ui_screenshot_service
-        self.knowledge_base_viewmodel = KnowledgeBaseViewModel(self.knowledge_repository)
-        self.provider_settings_viewmodel = ProviderSettingsViewModel(self.provider_configs, self.role_router, self.embedding_service)
-        self.run_history_viewmodel = RunHistoryViewModel(self.run_repository, self.execution_dossier_repository)
+        self.knowledge_base_viewmodel = KnowledgeBaseViewModel(
+            self.knowledge_repository,
+            defer_initial_refresh=True,
+        )
+        self.provider_settings_viewmodel = ProviderSettingsViewModel(
+            self.provider_configs,
+            self.role_router,
+            self.embedding_service,
+            defer_initial_refresh=True,
+        )
+        self.run_history_viewmodel = RunHistoryViewModel(
+            self.run_repository,
+            self.execution_dossier_repository,
+            defer_initial_refresh=True,
+        )
         self.centro_vivo_viewmodel = CentroVivoViewModel(
             adaptive_session_repository=self.adaptive_session_repository,
             experiment_lab_repository=self.experiment_lab_repository,
@@ -1676,6 +1691,7 @@ class AppBootstrap:
             portable_context_service=self.portable_context_service,
             evolution_review_service=self.evolution_review_service,
             data_root=self.config.data_dir,
+            defer_initial_refresh=True,
         )
 
         # --- Task A: conectar handlers de backend a senales de ambos ViewModels ---
@@ -1860,6 +1876,10 @@ class AppBootstrap:
         import subprocess
 
         python_exe = sys.executable
+        if os.name == 'nt' and python_exe.lower().endswith('pythonw.exe'):
+            python_candidate = Path(python_exe).with_name('python.exe')
+            if python_candidate.is_file():
+                python_exe = str(python_candidate)
         workspace = str(self.config.workspace_root)
         src_dir = str(Path(workspace) / 'src')
 
@@ -1870,6 +1890,7 @@ class AppBootstrap:
         env.setdefault('IABV_MCP_NAME', 'iabv-v15')
         env.setdefault('FASTMCP_HOST', '127.0.0.1')
         env.setdefault('FASTMCP_PORT', '8000')
+        env.setdefault('PYTHONUNBUFFERED', '1')
         env['IABV_WORKSPACE_ROOT'] = workspace
         # Signal that this bootstrap runs inside the MCP subprocess so it
         # can reduce redundant scans and log noise.
@@ -1886,17 +1907,45 @@ class AppBootstrap:
             if extra_paths:
                 env['PATH'] = os.pathsep.join(extra_paths) + os.pathsep + env.get('PATH', '')
 
+        creationflags = 0
+        startupinfo = None
+        if os.name == 'nt':
+            creationflags = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= getattr(subprocess, 'STARTF_USESHOWWINDOW', 0)
+            startupinfo.wShowWindow = 0
+
+        previous_handle = getattr(self, '_mcp_runtime_log_handle', None)
+        if previous_handle is not None:
+            try:
+                previous_handle.close()
+            except Exception:
+                pass
+            self._mcp_runtime_log_handle = None
+        log_handle = None
         try:
+            log_path = Path(self.config.logs_dir) / 'mcp_server_runtime.log'
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            log_handle = log_path.open('ab')
             proc = subprocess.Popen(
                 [python_exe, '-m', 'iabv_v15.infra.mcp.server'],
                 cwd=workspace,
                 env=env,
-                stdout=None,
-                stderr=None,
+                stdin=subprocess.DEVNULL,
+                stdout=log_handle,
+                stderr=subprocess.STDOUT,
+                creationflags=creationflags,
+                startupinfo=startupinfo,
             )
+            self._mcp_runtime_log_handle = log_handle
             logger.info('mcp_autostart: MCP server launched (PID %d)', proc.pid)
             return proc
         except Exception as exc:
+            if log_handle is not None:
+                try:
+                    log_handle.close()
+                except Exception:
+                    pass
             logger.warning('mcp_autostart: failed to launch MCP server: %s', exc)
             return None
 
@@ -1924,7 +1973,26 @@ class AppBootstrap:
         origin = f'http://{bind_host}:{bind_port}'
         host_header = f'{bind_host}:{bind_port}'
 
+        creationflags = 0
+        startupinfo = None
+        if os.name == 'nt':
+            creationflags = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= getattr(subprocess, 'STARTF_USESHOWWINDOW', 0)
+            startupinfo.wShowWindow = 0
+
+        previous_handle = getattr(self, '_tunnel_runtime_log_handle', None)
+        if previous_handle is not None:
+            try:
+                previous_handle.close()
+            except Exception:
+                pass
+            self._tunnel_runtime_log_handle = None
+        log_handle = None
         try:
+            log_path = Path(self.config.logs_dir) / 'cloudflared_runtime.log'
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            log_handle = log_path.open('ab')
             proc = subprocess.Popen(
                 [
                     cloudflared, 'tunnel',
@@ -1933,12 +2001,21 @@ class AppBootstrap:
                     '--loglevel', 'info',
                     '--http-host-header', host_header,
                 ],
-                stdout=None,
-                stderr=None,
+                stdin=subprocess.DEVNULL,
+                stdout=log_handle,
+                stderr=subprocess.STDOUT,
+                creationflags=creationflags,
+                startupinfo=startupinfo,
             )
+            self._tunnel_runtime_log_handle = log_handle
             logger.info('mcp_autostart: Cloudflare tunnel launched (PID %d)', proc.pid)
             return proc
         except Exception as exc:
+            if log_handle is not None:
+                try:
+                    log_handle.close()
+                except Exception:
+                    pass
             logger.warning('mcp_autostart: failed to launch tunnel: %s', exc)
             return None
 
@@ -2253,6 +2330,8 @@ class AppBootstrap:
         # Holder for subprocesses; written from background thread.
         self._mcp_proc = None
         self._tunnel_proc = None
+        self._mcp_runtime_log_handle = None
+        self._tunnel_runtime_log_handle = None
 
         # Crash log: capture fatal errors so they survive even if the console
         # is hidden (launched via shortcut / pythonw / -WindowStyle Hidden).
@@ -2316,14 +2395,13 @@ class AppBootstrap:
             else:
                 logger.info('mcp_autostart: port %d already in use, skipping MCP launch', mcp_port)
 
-            # --- Startup evolution: background cycle after services are ready ---
+            # --- Startup evolution: defer until the main event loop is alive ---
             if self._splash:
                 self._splash.set_status('Preparando ciclo evolutivo...')
                 try:
                     QGuiApplication.instance().processEvents()
                 except Exception:
                     pass
-            self._schedule_startup_evolution()
 
             # --- Load main UI ---
             if self._splash:
@@ -2346,6 +2424,8 @@ class AppBootstrap:
                 main_win.show()
                 main_win.raise_()
                 main_win.requestActivate()
+
+            QTimer.singleShot(1200, self._schedule_startup_evolution)
 
             # Signal splash that we're ready — it will fade out
             if self._splash:
@@ -2376,6 +2456,14 @@ class AppBootstrap:
                             proc.kill()
                         except Exception:
                             pass
+            for handle_name in ('_tunnel_runtime_log_handle', '_mcp_runtime_log_handle'):
+                handle = getattr(self, handle_name, None)
+                if handle is not None:
+                    try:
+                        handle.close()
+                    except Exception:
+                        pass
+                    setattr(self, handle_name, None)
 
 
 

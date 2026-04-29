@@ -190,5 +190,139 @@
     "completed_at": "2026-04-27T01:11:18.212829+00:00",
     "evidence": "SandboxExperimentService existe pero es basico. Falta un simulador completo que permita simular escenarios complejos (ej: que pasa si ChatGPT se cae, si la GPU se satura, si llegan 10 tareas simultaneas) sin afectar el sistema real. Monte Carlo, stress testing, fault injection.",
     "depends_on": []
+  },
+  {
+    "title": "Administracion inteligente de recursos: monitorear RAM/CPU y auto-throttle",
+    "area": "resource_management",
+    "priority": "high",
+    "status": "pending",
+    "evidence": "El programa debe detectar presion de RAM/CPU y diferir tareas pesadas automaticamente.",
+    "added_by": "resource_management_deduction"
+  },
+  {
+    "title": "Deteccion de inactividad: ejecutar tareas internas cuando el usuario esta ausente",
+    "area": "resource_management",
+    "priority": "high",
+    "status": "pending",
+    "evidence": "Entrenamiento, merges y analisis profundo deben correr cuando el usuario no interactua.",
+    "added_by": "resource_management_deduction"
+  },
+  {
+    "title": "Diagnostico de congelamientos: registrar freezes y aprender configuraciones optimas",
+    "area": "resource_management",
+    "priority": "high",
+    "status": "pending",
+    "evidence": "El programa debe saber por que se congela y ajustar configuraciones futuras.",
+    "added_by": "resource_management_deduction"
+  },
+  {
+    "id": "e1a2b4dd-7ec4-4c3d-a77a-f0b7bb1e1101",
+    "title": "Destrabar la transicion visible splash -> shell principal",
+    "area": "live_startup",
+    "priority": "critical",
+    "status": "pending",
+    "source": "codex_live_audit_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "En auditoria live con UI visible el splash sigue quedandose entre 20% y 60% durante 45-75s o mas. En algunas corridas MCP y bridge ya estan arriba, pero la ventana principal no entra a estado interactivo real."
+  },
+  {
+    "id": "541f94e2-95dd-4e40-9d9b-0bc57f85c902",
+    "title": "Handshake de readiness entre bridge y UI principal",
+    "area": "live_startup",
+    "priority": "critical",
+    "status": "pending",
+    "source": "codex_live_audit_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "Cuando el bridge ya escucha pero el splash sigue arriba, send_message puede quedar encolado sin que el chat lo procese. Falta una senal soberana de shell listo antes de aceptar trafico de chat como si la UI estuviera operativa."
+  },
+  {
+    "id": "eb42d0b9-0448-4e85-9d18-d6f9d4f3f1cc",
+    "title": "Sacar scans e instalaciones no criticas del camino de arranque",
+    "area": "live_startup",
+    "priority": "high",
+    "status": "pending",
+    "source": "codex_live_audit_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "Tool availability, mcp_client auto-install y otros refreshes siguen metiendo costo temprano. Ya se difirio startup_evolution y varios ViewModels, pero todavia queda trabajo duro antes del shell interactivo."
+  },
+  {
+    "id": "5322a69d-f3ca-4adc-986e-f0d6f996d3f8",
+    "title": "Reducir pico de RAM en arranque y consultas ligeras",
+    "area": "performance",
+    "priority": "high",
+    "status": "pending",
+    "source": "codex_live_audit_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "Antes del recorte del chat, un simple 'hola' por bridge podia llevar pythonw a ~8.4 GB. Tras el fix bajo, pero el arranque live sigue en ~2.1-3.7 GB. Hay que identificar quien sigue cargando demasiado pronto."
+  },
+  {
+    "id": "8db889f0-6e3a-4d29-b16d-6f81266a9ce6",
+    "title": "Selector soberano unificado: API gratis + web session + local shadow",
+    "area": "cloud_reasoning",
+    "priority": "critical",
+    "status": "pending",
+    "source": "codex_reasoning_strategy_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "La metacognicion ya deduce faltantes y aprovisiona mejor APIs gratis, pero todavia no existe un ranking unico que compare rutas API, sesiones web gobernadas y fallback local shadow dentro del mismo selector."
+  },
+  {
+    "id": "d2ef6b17-4c8f-4a3f-b6bd-a7f9940f3cf4",
+    "title": "Rotacion gobernada de cuentas y cuotas gratuitas",
+    "area": "cloud_reasoning",
+    "priority": "critical",
+    "status": "pending",
+    "source": "user_goal_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "El objetivo del usuario es que IABV reutilice sesiones y mensajes gratis disponibles sin inventar credenciales. Falta una politica soberana para cambiar de cuenta/ruta cuando una cuota gratuita se agota."
+  },
+  {
+    "id": "32e1ee5b-6d4a-4f42-a4cb-4cb9bd8782f7",
+    "title": "Inventario vivo de sesiones, cuentas y cuotas en WorldModel",
+    "area": "world_model",
+    "priority": "high",
+    "status": "pending",
+    "source": "codex_reasoning_strategy_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "Para coordinar proveedores gratis sin alucinar, el WorldModel debe distinguir cuenta activa, sesion valida, cuota observable, gate de permiso y bloqueo por captcha o wrong_thread."
+  },
+  {
+    "id": "0b8584c3-2ba1-43e8-bf6a-9f9146e8219b",
+    "title": "Shadow learning local formal para razonamiento cloud",
+    "area": "learning",
+    "priority": "high",
+    "status": "pending",
+    "source": "codex_reasoning_strategy_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "El objetivo no es solo fallback local. Falta registrar acuerdo/desacuerdo cloud/local, latencias, ganadores y corpus util para que la ruta local aprenda sin bloquear UX."
+  },
+  {
+    "id": "99438d57-1e94-44b0-b7aa-bf46d0d4a75d",
+    "title": "Autoauditoria live guiada desde la UI con evidencia exportable",
+    "area": "audit",
+    "priority": "high",
+    "status": "pending",
+    "source": "codex_live_audit_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "El programa ya tiene autoauditoria parcial, pero todavia falta un flujo live guiado que marque readiness, capture evidencia visual/logica, y diferencie claramente 'observado' de 'no confirmado'."
+  },
+  {
+    "id": "8ca9e3e4-c6d8-497f-bffe-04666d32f093",
+    "title": "Supervision y autoreinicio de MCP + tunnel con heartbeat",
+    "area": "infra",
+    "priority": "high",
+    "status": "pending",
+    "source": "user_goal_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "MCP y cloudflared ya arrancan ocultos y con logs, pero falta supervision soberana: heartbeat, deteccion de caida, restart controlado y estado visible en UI para evitar sesiones muertas con Devin."
+  },
+  {
+    "id": "e9625043-5d2e-47d7-9a5f-5be6f98a01ff",
+    "title": "Exportar, versionar y pushear evidencia de auditoria desde una sola ventana",
+    "area": "audit",
+    "priority": "medium",
+    "status": "pending",
+    "source": "user_goal_2026_04_28",
+    "created_at": "2026-04-28T00:00:00+00:00",
+    "evidence": "El usuario quiere que la auditoria quede disponible para otras IAs sin trabajo manual. Hace falta un flujo soberano que seleccione evidencia util, la redacte, y prepare commit/push o un paquete exportable desde la propia UI."
   }
 ]

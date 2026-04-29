@@ -127,3 +127,56 @@ class TestAutoOptimizeBrain:
             assert not mock_selector.record_result.called
         finally:
             shutil.rmtree(workspace, ignore_errors=True)
+
+
+class TestBackgroundSubprocessLaunch:
+
+    def test_start_mcp_subprocess_uses_python_exe_and_hidden_runtime_log(self) -> None:
+        bootstrap, workspace = _make_bootstrap()
+        try:
+            fake_proc = MagicMock()
+            fake_proc.pid = 4242
+            with patch('subprocess.Popen', return_value=fake_proc) as popen_mock:
+                with patch('iabv_v15.bootstrap.sys.executable', 'C:\\Users\\faber\\miniconda3\\pythonw.exe'):
+                    proc = bootstrap._start_mcp_subprocess()
+
+            assert proc is fake_proc
+            args, kwargs = popen_mock.call_args
+            command = args[0]
+            assert command[0].lower().endswith('python.exe')
+            assert command[1:] == ['-m', 'iabv_v15.infra.mcp.server']
+            assert kwargs['stdin'] is not None
+            assert kwargs['stderr'] == __import__('subprocess').STDOUT
+            assert kwargs['stdout'].name.endswith('mcp_server_runtime.log')
+            assert kwargs.get('creationflags', 0) == getattr(__import__('subprocess'), 'CREATE_NO_WINDOW', 0)
+            kwargs['stdout'].close()
+        finally:
+            if getattr(bootstrap, '_mcp_runtime_log_handle', None) is not None:
+                bootstrap._mcp_runtime_log_handle.close()
+                bootstrap._mcp_runtime_log_handle = None
+            shutil.rmtree(workspace, ignore_errors=True)
+
+    def test_start_tunnel_subprocess_hides_console_and_redirects_logs(self) -> None:
+        bootstrap, workspace = _make_bootstrap()
+        try:
+            fake_proc = MagicMock()
+            fake_proc.pid = 9898
+            with patch('shutil.which', return_value='C:\\Users\\faber\\.iabv\\tools\\cloudflared\\cloudflared.exe'):
+                with patch('subprocess.Popen', return_value=fake_proc) as popen_mock:
+                    proc = bootstrap._start_tunnel_subprocess()
+
+            assert proc is fake_proc
+            args, kwargs = popen_mock.call_args
+            command = args[0]
+            assert command[0].lower().endswith('cloudflared.exe')
+            assert 'tunnel' in command
+            assert kwargs['stdin'] is not None
+            assert kwargs['stderr'] == __import__('subprocess').STDOUT
+            assert kwargs['stdout'].name.endswith('cloudflared_runtime.log')
+            assert kwargs.get('creationflags', 0) == getattr(__import__('subprocess'), 'CREATE_NO_WINDOW', 0)
+            kwargs['stdout'].close()
+        finally:
+            if getattr(bootstrap, '_tunnel_runtime_log_handle', None) is not None:
+                bootstrap._tunnel_runtime_log_handle.close()
+                bootstrap._tunnel_runtime_log_handle = None
+            shutil.rmtree(workspace, ignore_errors=True)
