@@ -280,7 +280,8 @@ class ApprovalMemory:
         try:
             with os.fdopen(tmp_fd, "w", encoding="utf-8") as f:
                 json.dump(payload, f, ensure_ascii=False, indent=2, sort_keys=True)
-            os.replace(tmp_path, self._storage_path)
+            from iabv_v15.infra.persistence.storage import _replace_with_retry
+            _replace_with_retry(tmp_path, self._storage_path)
         except Exception:
             try:
                 os.unlink(tmp_path)

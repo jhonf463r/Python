@@ -294,7 +294,8 @@ class UIScreenshotService:
     def _write_index_unlocked(self, index: list[dict]) -> None:
         tmp = self._index_path.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8")
-        os.replace(tmp, self._index_path)
+        from iabv_v15.infra.persistence.storage import _replace_with_retry
+        _replace_with_retry(tmp, self._index_path)
 
     def _prune_unlocked(self, index: list[dict]) -> list[dict]:
         if len(index) <= self._retention:

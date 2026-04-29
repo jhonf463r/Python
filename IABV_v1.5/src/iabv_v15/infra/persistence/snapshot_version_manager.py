@@ -33,7 +33,8 @@ class SnapshotVersionManager:
         payload["meta"]["snapshot_hash"] = _stable_hash(payload.get("payload", payload))
         temp = path.with_suffix(path.suffix + ".tmp")
         temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        os.replace(temp, path)
+        from iabv_v15.infra.persistence.storage import _replace_with_retry
+        _replace_with_retry(temp, path)
         return str(path)
 
     def load_snapshot(self, relative_path: str) -> dict[str, Any]:

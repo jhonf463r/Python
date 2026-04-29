@@ -9,15 +9,18 @@ Each milestone is appended as one JSON line to
     {
         "phase": "bootstrap_init_done",
         "t_ms_from_start": 2173.4,
+        "t_ms_from_process": 3456.7,
         "rss_mb": 122.7,
         "extra": {...}
     }
 
-The first call defines ``t0``; subsequent calls compute ``t_ms_from_start``
-as monotonic milliseconds from that anchor.
+``t_ms_from_start`` is relative to the first ``mark()`` call (usually
+``bootstrap_init_start``).
 
-Designed to be cheap (one JSON.dumps + one append) and crash-free: any
-I/O error is swallowed because instrumentation must never break boot.
+``t_ms_from_process`` is relative to the real process start captured in
+``__main__.py`` *before* any heavy imports.  This field lets us see
+the true cost of module imports, PySide6 DLL loading, and QML engine
+initialization that happen between ``python`` and ``splash_visible``.
 
 The user can opt out via ``IABV_STARTUP_TIMELINE=0`` (default ``1``).
 """
@@ -33,6 +36,10 @@ from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# Set by __main__.py before heavy imports; if not set, falls back to
+# the first mark()'s perf_counter.
+_PROCESS_T0: float | None = None
 
 
 def _get_rss_mb() -> float:
@@ -88,11 +95,15 @@ class StartupTimeline:
         """Record one milestone. Returns the appended event dict."""
         now = time.perf_counter()
         elapsed_ms = (now - self._t0) * 1000.0
-        event = {
+        event: dict[str, Any] = {
             'phase': phase,
             't_ms_from_start': round(elapsed_ms, 1),
             'rss_mb': round(_get_rss_mb(), 1),
         }
+        # Add real time from process start if available
+        process_t0 = _PROCESS_T0
+        if process_t0 is not None:
+            event['t_ms_from_process'] = round((now - process_t0) * 1000.0, 1)
         if extra:
             event['extra'] = extra
         with self._lock:
@@ -100,9 +111,12 @@ class StartupTimeline:
             if self._enabled and self.log_dir is not None:
                 self._append_jsonl(event)
         try:
+            proc_str = ''
+            if 't_ms_from_process' in event:
+                proc_str = f' (process: {event["t_ms_from_process"]:.1f}ms)'
             logger.info(
-                'startup_timeline %s @ %.1fms RSS=%.1fMB%s',
-                phase, elapsed_ms, event['rss_mb'],
+                'startup_timeline %s @ %.1fms%s RSS=%.1fMB%s',
+                phase, elapsed_ms, proc_str, event['rss_mb'],
                 f' {extra}' if extra else '',
             )
         except Exception:
