@@ -5,6 +5,8 @@
 .DESCRIPTION
     Corridas de evidencia para comparar cadencia de WorldModel.
     Consume scan_stats directamente via MCP (world_model_snapshot tool).
+    Usa scripts/mcp_probe.py como cliente real del protocolo MCP
+    streamable-http (no hand-rolled JSON-RPC).
     Mide: memoria 30s/60s/120s, bridge ready, scan counters, frescura P1.
 
 .PARAMETER RunLabel
@@ -28,18 +30,46 @@ $ErrorActionPreference = 'Stop'
 $resultsDir = Join-Path $WorkspaceRoot 'data\perf_evidence'
 $runTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 $runFile = Join-Path $resultsDir ('{0}_{1}.json' -f $RunLabel, $runTimestamp)
-$mcpUrl = 'http://127.0.0.1:8000/mcp'
+$probeScript = Join-Path $WorkspaceRoot 'scripts\mcp_probe.py'
+$pythonExe = 'python'
+if ($env:IABV_PYTHON) { $pythonExe = $env:IABV_PYTHON }
 
 if (-not (Test-Path $resultsDir)) { New-Item -ItemType Directory -Path $resultsDir -Force | Out-Null }
 
 Write-Host ('[measure] Run:       {0}' -f $RunLabel)
 Write-Host ('[measure] Workspace: {0}' -f $WorkspaceRoot)
 Write-Host ('[measure] Results:   {0}' -f $runFile)
+Write-Host ('[measure] Probe:     {0}' -f $probeScript)
 Write-Host ''
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+function Invoke-MCPTool {
+    <# Calls an MCP tool via mcp_probe.py (real streamable-http client).
+       Returns parsed PSObject or $null on failure. #>
+    param(
+        [string]$ToolName,
+        [string]$JsonArgs = '{}'
+    )
+    try {
+        $srcPath = Join-Path $WorkspaceRoot 'src'
+        $env:PYTHONPATH = $srcPath
+        $raw = & $pythonExe $probeScript $ToolName $JsonArgs 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $raw) { return $null }
+        $joined = $raw -join "`n"
+        return ($joined | ConvertFrom-Json)
+    } catch {
+        return $null
+    }
+}
+
+function Test-MCPBridge {
+    <# Returns $true if the MCP server responds to ui_bridge_get_state. #>
+    $r = Invoke-MCPTool -ToolName 'ui_bridge_get_state'
+    return ($null -ne $r)
+}
 
 function Get-IABVMemory {
     <# Uses CIM Win32_Process to capture both python.exe AND pythonw.exe
@@ -49,7 +79,6 @@ function Get-IABVMemory {
     $cimProcs = Get-CimInstance Win32_Process -Filter "Name='python.exe' OR Name='pythonw.exe'" -ErrorAction SilentlyContinue |
         Where-Object { $_.CommandLine -match 'iabv_v15' -or $_.CommandLine -match [regex]::Escape($wsNorm) }
     if (-not $cimProcs) {
-        # Broad fallback: any python/pythonw process
         $cimProcs = Get-CimInstance Win32_Process -Filter "Name='python.exe' OR Name='pythonw.exe'" -ErrorAction SilentlyContinue
     }
     if (-not $cimProcs) {
@@ -70,33 +99,12 @@ function Get-IABVMemory {
     }
 }
 
-function Test-UIBridge {
-    try {
-        $body = '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_ui_state","arguments":{}}}'
-        Invoke-RestMethod -Uri $mcpUrl -Method Post -ContentType 'application/json' -Body $body -TimeoutSec 3 | Out-Null
-        return $true
-    } catch { return $false }
-}
-
 function Get-WorldModelWithStats {
-    <# Calls world_model_snapshot MCP tool. Returns parsed object with scan_stats. #>
-    try {
-        $body = '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"world_model_snapshot","arguments":{"refresh":false}}}'
-        $resp = Invoke-RestMethod -Uri $mcpUrl -Method Post -ContentType 'application/json' -Body $body -TimeoutSec 5
-        $content = $resp.result.content
-        if ($content -is [array] -and $content.Count -gt 0) {
-            $text = $content[0].text
-            if ($text) { return ($text | ConvertFrom-Json) }
-        }
-        if ($resp.result -is [hashtable] -or $resp.result -is [PSCustomObject]) {
-            return $resp.result
-        }
-        return $null
-    } catch { return $null }
+    <# Calls world_model_snapshot via mcp_probe.py. #>
+    return Invoke-MCPTool -ToolName 'world_model_snapshot' -JsonArgs '{"refresh": false}'
 }
 
 function Extract-Freshness($wm) {
-    <# Extracts P1 freshness evidence from a world model snapshot. #>
     if (-not $wm) { return @{ available = $false; windows_count = 0; has_focus = $false; has_current_page = $false; detected_blocks = @() } }
     $windows = if ($wm.open_windows) { @($wm.open_windows).Count } else { 0 }
     $focus = [bool]($wm.focused_window -and $wm.focused_window -ne '' -and $wm.focused_window -ne 'unknown')
@@ -112,7 +120,6 @@ function Extract-Freshness($wm) {
 }
 
 function Extract-ScanStats($wm) {
-    <# Extracts scan_stats from world model snapshot response. #>
     if (-not $wm -or -not $wm.scan_stats) {
         return @{ scan_count = -1; scan_count_full = -1; scan_interval_s = -1; full_scan_interval_s = -1; last_scan_ago_s = -1 }
     }
@@ -149,9 +156,10 @@ Start-Process powershell -ArgumentList $startArgs -WindowStyle Minimized
 # --- Wait for bridge ---
 $bridgeReady = $false
 $bridgeWaitStart = Get-Date
-for ($i = 0; $i -lt 60; $i++) {
+Write-Host '[measure] Esperando MCP bridge (max 90s)...'
+for ($i = 0; $i -lt 90; $i++) {
     Start-Sleep -Seconds 1
-    if (Test-UIBridge) { $bridgeReady = $true; break }
+    if (Test-MCPBridge) { $bridgeReady = $true; break }
 }
 if ($bridgeReady) {
     $bridgeReadyS = [math]::Round(((Get-Date) - $bridgeWaitStart).TotalSeconds, 1)
@@ -159,6 +167,21 @@ if ($bridgeReady) {
     $bridgeReadyS = -1
 }
 Write-Host ('[measure] Bridge ready: {0} ({1}s)' -f $bridgeReady, $bridgeReadyS)
+
+# --- Smoke check ---
+if ($bridgeReady) {
+    $smokeWm = Get-WorldModelWithStats
+    $smokeStats = Extract-ScanStats $smokeWm
+    $smokeFresh = Extract-Freshness $smokeWm
+    Write-Host ('[measure] SMOKE: scan_count={0} freshness.available={1}' -f $smokeStats.scan_count, $smokeFresh.available)
+    if ($smokeStats.scan_count -lt 0) {
+        Write-Host '[measure] SMOKE FAILED: scan_stats not available via MCP -- aborting'
+        exit 1
+    }
+} else {
+    Write-Host '[measure] SMOKE FAILED: bridge never became ready -- aborting'
+    exit 1
+}
 
 # --- Snapshot at each mark ---
 $snapshots = @{}
