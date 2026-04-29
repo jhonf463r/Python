@@ -14,6 +14,11 @@ import time as _time
 # t_ms_from_process (wall time from Python process entry).
 _PROCESS_T0 = _time.perf_counter()
 
+# Suppress httpx/httpcore noise BEFORE any library import can log.
+from iabv_v15.infra.logging import suppress_noisy_http_loggers as _sqh
+_sqh()
+del _sqh
+
 import argparse
 import sys
 
