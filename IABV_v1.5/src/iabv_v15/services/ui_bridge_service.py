@@ -417,14 +417,14 @@ def build_ui_bridge_server(
             "detail": "navigation_controller not available",
         }
 
-    def _on_capture_screenshot() -> dict[str, Any]:
+    def _on_capture_screenshot(region: str = "main") -> dict[str, Any]:
         """Captura screenshot de la ventana UI."""
         try:
             from iabv_v15.infra.ui import build_ui_screenshot_provider
             provider = build_ui_screenshot_provider()
             if provider is None:
                 return {"status": "error", "detail": "ui_not_running"}
-            screenshot_data = provider.capture()
+            screenshot_data = provider.capture(region)
             if screenshot_data:
                 import base64
                 return {

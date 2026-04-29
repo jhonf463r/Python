@@ -86,10 +86,10 @@ class QtScreenshotProvider:
         pixmap = None
 
         if region_key in _WINDOW_REGIONS or region_key == "":
-            pixmap = self._grab_iabv_window(QGuiApplication)
+            pixmap = self._grab_iabv_window(app)
 
         if pixmap is None or pixmap.isNull():
-            pixmap = self._grab_primary_screen(QGuiApplication)
+            pixmap = self._grab_primary_screen(app)
 
         if pixmap is None or pixmap.isNull():
             return b""
@@ -111,19 +111,22 @@ class QtScreenshotProvider:
                 return None
         return QGuiApplication.instance()
 
-    def _grab_iabv_window(self, QGuiApplication: Any) -> Any:
-        """Captura la ventana IABV usando QGuiApplication.topLevelWindows().
+    def _grab_iabv_window(self, app: Any) -> Any:
+        """Captura la ventana IABV usando app.topLevelWindows().
 
         IABV usa ``QGuiApplication`` (no ``QApplication``), así que
         ``topLevelWidgets()`` no existe.  Usamos ``topLevelWindows()``
         que devuelve ``list[QWindow]``.  ``QWindow`` no tiene ``.grab()``
         directo, así que usamos ``QScreen.grabWindow(winId)`` para
         capturar el contenido de la ventana.
+
+        Recibe la instancia ya resuelta (via ``_resolve_app``) para
+        respetar ``app_factory`` cuando se inyecta en tests.
         """
-        app = QGuiApplication.instance()
-        if app is None:
+        try:
+            windows = list(app.topLevelWindows() or [])
+        except Exception:
             return None
-        windows = list(app.topLevelWindows() or [])
         if not windows:
             return None
         target = None
@@ -157,9 +160,9 @@ class QtScreenshotProvider:
             logger.debug("screen.grabWindow(winId) falló: %r", exc)
             return None
 
-    def _grab_primary_screen(self, QGuiApplication: Any) -> Any:
+    def _grab_primary_screen(self, app: Any) -> Any:
         try:
-            screen = QGuiApplication.primaryScreen()
+            screen = app.primaryScreen()
         except Exception as exc:  # pragma: no cover
             logger.debug("primaryScreen() falló: %r", exc)
             return None

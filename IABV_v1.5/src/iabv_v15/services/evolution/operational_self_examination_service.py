@@ -51,6 +51,7 @@ class OperationalSelfExaminationService:
         token_rotation_ledger: Any | None = None,
     ) -> None:
         self.workspace_root = workspace_root
+        self._created_at = time.time()
         self.storage = storage
         self.run_repository = run_repository
         self.adaptive_session_repository = adaptive_session_repository
@@ -4071,24 +4072,42 @@ class OperationalSelfExaminationService:
             ))
 
         if not iabv_windows and not zombie_windows and len(world.active_windows) > 0:
+            # El MCP server arranca ANTES de la UI. Durante los primeros
+            # ~60s de vida del servicio, es normal que la ventana IABV no
+            # exista todavia. Tambien, si start_iabv.ps1 no uso -StartUI,
+            # la UI no se lanzo y esta ausencia es esperada.
+            uptime_s = time.time() - self._created_at
+            is_early_startup = uptime_s < 60.0
+            severity = IssueSeverity.MEDIUM if is_early_startup else IssueSeverity.HIGH
+            confidence = 0.50 if is_early_startup else 0.80
+            timing_note = (
+                ' Nota: este hallazgo puede ser un falso positivo de '
+                'timing — el MCP arranca antes de la UI y el primer '
+                'scan de ventanas no la detecta. Deberia resolverse '
+                'en el siguiente sync_pulse.'
+            ) if is_early_startup else ''
             findings.append(SelfExaminationFinding(
                 category='ui_self_awareness',
                 title='iabv_window_missing',
                 summary=(
                     'No se detecta ninguna ventana IABV entre las '
                     f'{len(world.active_windows)} ventanas activas. '
-                    'La UI puede no haberse iniciado o el titulo no '
-                    'coincide con los marcadores conocidos.'
+                    'La UI puede no haberse iniciado, el titulo no '
+                    'coincide con los marcadores conocidos, o el scan '
+                    'corrio antes de que la ventana fuera visible.'
+                    + timing_note
                 ),
-                severity=IssueSeverity.HIGH,
-                confidence=0.80,
+                severity=severity,
+                confidence=confidence,
                 recommendation=(
                     'Verificar que el proceso UI (python -m iabv_v15 app) '
-                    'esta corriendo. Si esta corriendo, revisar el titulo '
-                    'de la ventana.'
+                    'esta corriendo y que la ventana es visible para Win32 '
+                    '(MainWindowHandle != 0). Si el MCP acaba de arrancar, '
+                    'esperar al siguiente sync_pulse para re-evaluar.'
                 ),
                 evidence_refs=[
                     f'total_windows:{len(world.active_windows)}',
+                    f'early_startup:{is_early_startup}',
                 ],
                 source_refs=['WorldModelSnapshot.active_windows'],
             ))
