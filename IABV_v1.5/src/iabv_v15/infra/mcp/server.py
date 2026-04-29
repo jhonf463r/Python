@@ -465,7 +465,9 @@ class IABVMCPServer:
                 snapshot = svc.request_refresh(reason="mcp_refresh", full=bool(full))
             else:
                 snapshot = svc.current_model()
-            return _to_jsonable(snapshot) or {}
+            result = _to_jsonable(snapshot) or {}
+            result['scan_stats'] = svc.scan_stats
+            return result
 
         @mcp.tool()
         def orchestrator_preview(
