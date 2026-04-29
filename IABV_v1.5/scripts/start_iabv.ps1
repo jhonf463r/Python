@@ -283,17 +283,28 @@ if ($StartUI) {
     try {
         $pythonExe = 'python'
         if ($env:IABV_PYTHON) { $pythonExe = $env:IABV_PYTHON }
-        # Use python.exe (NOT pythonw.exe) — pythonw swallows all errors silently
-        # and the UI dies without any trace. python.exe with -WindowStyle Hidden
-        # hides the console but PySide6/QML windows still render normally.
+        # IMPORTANT: DO NOT use Start-Process -WindowStyle Hidden here.
+        # -WindowStyle Hidden sets STARTUPINFO.wShowWindow = SW_HIDE which
+        # causes Windows to override the FIRST ShowWindow() call for EVERY
+        # top-level window in the process with SW_HIDE.  This kills the
+        # PySide6/QML window: Qt calls ShowWindow(hwnd, SW_SHOW) but
+        # Windows substitutes SW_HIDE from STARTUPINFO, so the HWND exists
+        # but is invisible (MainWindowHandle = 0, EnumWindows = 0 visible).
+        #
+        # Instead we use .NET ProcessStartInfo with CreateNoWindow = $true.
+        # CreateNoWindow adds CREATE_NO_WINDOW to the process creation flags
+        # which suppresses the console window WITHOUT touching STARTUPINFO
+        # .wShowWindow.  Qt windows appear normally.
+        #
         # DO NOT add -RedirectStandardOutput/-RedirectStandardError — those
-        # flags prevent PySide6 GUI windows from appearing on Windows.
-        # -WorkingDirectory ensures relative paths resolve correctly.
-        $uiProc = Start-Process -FilePath $pythonExe `
-            -ArgumentList '-m','iabv_v15','app' `
-            -PassThru `
-            -WindowStyle Hidden `
-            -WorkingDirectory $iabvRoot
+        # flags also prevent PySide6 GUI windows from appearing on Windows.
+        $psi = [System.Diagnostics.ProcessStartInfo]::new()
+        $psi.FileName = $pythonExe
+        $psi.Arguments = '-m iabv_v15 app'
+        $psi.WorkingDirectory = $iabvRoot
+        $psi.UseShellExecute = $false
+        $psi.CreateNoWindow = $true
+        $uiProc = [System.Diagnostics.Process]::Start($psi)
         Write-Info "  UI PID     : $($uiProc.Id)"
         Write-Info "  PYTHONPATH : $env:PYTHONPATH"
     } catch {

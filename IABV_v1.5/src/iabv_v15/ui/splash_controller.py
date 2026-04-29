@@ -25,6 +25,11 @@ class SplashController(QObject):
     hasErrorChanged = Signal()
     readyChanged = Signal()
     logChanged = Signal()
+    # Emitida desde QML justo antes de ``splashWindow.close()`` para que
+    # bootstrap pueda marcar el hito ``splash_window_closing`` en el
+    # startup_timeline.  Permite distinguir si el splash realmente se
+    # cierra o si Windows lo deja arriba por Z-order pese al fadeOut.
+    closingNow = Signal()
 
     def __init__(self, workspace_dir: str | Path | None = None, parent=None):
         super().__init__(parent)
@@ -165,3 +170,16 @@ class SplashController(QObject):
     def dismiss(self) -> None:
         """Called from QML when splash fade-out animation finishes."""
         pass
+
+    @Slot()
+    def signal_closing(self) -> None:
+        """Llamado desde QML justo antes de ``splashWindow.close()``.
+
+        Permite al bootstrap marcar el hito ``splash_window_closing`` en
+        el startup_timeline.  Idempotente: re-emisiones se ignoran sin
+        ruido.
+        """
+        try:
+            self.closingNow.emit()
+        except Exception:
+            pass

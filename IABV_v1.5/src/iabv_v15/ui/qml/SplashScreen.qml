@@ -53,7 +53,17 @@ Window {
         from: 1.0; to: 0.0
         duration: 600
         easing.type: Easing.InOutQuad
-        onFinished: splashWindow.close()
+        onFinished: {
+            // Avisamos a Python ANTES de cerrar para poder marcar el
+            // hito ``splash_window_closing`` en el startup_timeline.
+            // Si este hito aparece pero el splash sigue visible en
+            // pantalla, la causa es Z-order / Window Manager y no del
+            // codigo Python.
+            if (typeof splashController !== "undefined" && splashController) {
+                splashController.signal_closing()
+            }
+            splashWindow.close()
+        }
     }
 
     // Main card

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -35,6 +36,7 @@ class PerceptionCrossValidator:
     ) -> None:
         self.world_model_service = world_model_service
         self.tool_registry = tool_registry
+        self._created_at = time.time()
 
     def run_cross_validation(self) -> dict[str, Any]:
         """Execute full cross-validation and return structured results.
@@ -391,9 +393,13 @@ class PerceptionCrossValidator:
                 iabv_windows.append(w)
 
         if not iabv_windows and not zombie_windows:
+            # El MCP server arranca ANTES de la UI — durante los primeros
+            # ~60s es normal no encontrar la ventana IABV todavia.
+            uptime_s = time.time() - self._created_at
+            is_early = uptime_s < 60.0
             inconsistencies.append({
                 'check': 'ui_self_awareness',
-                'severity': 'high',
+                'severity': 'medium' if is_early else 'high',
                 'tool_id': 'iabv_ui',
                 'expected': 'IABV window should be visible in WorldModel',
                 'actual': 'No IABV window detected among active windows',
@@ -401,7 +407,11 @@ class PerceptionCrossValidator:
                     'The program cannot see its own window in the WorldModel. '
                     'Either the UI did not start, or the window enumeration '
                     'does not match IABV title markers.'
+                    + (' This may be a startup timing issue — the MCP starts '
+                       'before the UI process. Should resolve on next scan.'
+                       if is_early else '')
                 ),
+                'early_startup': is_early,
             })
 
         if zombie_windows:

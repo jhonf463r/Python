@@ -92,17 +92,12 @@ def test_qt_provider_captures_via_factory_with_fake_screen(monkeypatch: pytest.M
             return _FakeScreen()
 
         @staticmethod
-        def instance() -> object:
-            return object()
-
-    class _FakeQApplication:
-        @staticmethod
-        def instance() -> object | None:
-            return None
-
-        @staticmethod
-        def topLevelWidgets() -> list[object]:
+        def topLevelWindows() -> list[object]:
             return []
+
+        @staticmethod
+        def instance() -> "_FakeQGuiApplication":
+            return _FakeQGuiApplication()
 
     class _FakeIODeviceFlag:
         WriteOnly = 1
@@ -122,18 +117,13 @@ def test_qt_provider_captures_via_factory_with_fake_screen(monkeypatch: pytest.M
     pyside6_gui.QGuiApplication = _FakeQGuiApplication  # type: ignore[attr-defined]
     pyside6_gui.QPixmap = _FakePixmap  # type: ignore[attr-defined]
 
-    pyside6_widgets = _types.ModuleType("PySide6.QtWidgets")
-    pyside6_widgets.QApplication = _FakeQApplication  # type: ignore[attr-defined]
-
     pyside6_pkg = _types.ModuleType("PySide6")
     pyside6_pkg.QtCore = pyside6_core  # type: ignore[attr-defined]
     pyside6_pkg.QtGui = pyside6_gui  # type: ignore[attr-defined]
-    pyside6_pkg.QtWidgets = pyside6_widgets  # type: ignore[attr-defined]
 
     monkeypatch.setitem(sys.modules, "PySide6", pyside6_pkg)
     monkeypatch.setitem(sys.modules, "PySide6.QtCore", pyside6_core)
     monkeypatch.setitem(sys.modules, "PySide6.QtGui", pyside6_gui)
-    monkeypatch.setitem(sys.modules, "PySide6.QtWidgets", pyside6_widgets)
 
     provider = QtScreenshotProvider(app_factory=lambda: _FakeQGuiApplication())
     data = provider.capture("control_center")

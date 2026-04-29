@@ -37,7 +37,16 @@ ApplicationWindow {
     title: appTitleText
     color: primaryBackground
 
-    Component.onCompleted: mainShellKickoff.start()
+    Component.onCompleted: {
+        // Hito honesto temprano: avisar a Python que la ApplicationWindow
+        // root termino de evaluar su tree estatico (antes de los timers
+        // de kickoff de los Loaders async).  Permite ver en el JSONL
+        // si Component.onCompleted siquiera se ejecuta en Windows.
+        if (mainWindowBridge) {
+            mainWindowBridge.signal_main_qml_completed()
+        }
+        mainShellKickoff.start()
+    }
 
     function routeSource(route) {
         if (route === "control") return Qt.resolvedUrl("pages/ControlCenterPage.qml")
@@ -78,9 +87,22 @@ ApplicationWindow {
         // shell termino de instanciarse, le avisamos a Python que el
         // splash puede empezar a desvanecer.  Antes el splash recibia
         // `ready` mientras esto seguia compilando en background.
+        //
+        // Ademas reportamos cada transicion (status y active) para que
+        // el JSONL muestre exactamente que pasa con la incubacion del
+        // Loader async en Windows pythonw.exe (donde a veces el
+        // QQmlIncubator parece no llegar a Loader.Ready en >100s).
         onStatusChanged: {
+            if (mainWindowBridge) {
+                mainWindowBridge.signal_qml_loader_event("mainShellLoader", status, active)
+            }
             if (status === Loader.Ready && mainWindowBridge) {
                 mainWindowBridge.signal_shell_loader_ready()
+            }
+        }
+        onActiveChanged: {
+            if (mainWindowBridge) {
+                mainWindowBridge.signal_qml_loader_event("mainShellLoader", status, active)
             }
         }
     }
@@ -224,6 +246,24 @@ ApplicationWindow {
                     active: false
                     asynchronous: true
                     source: routeSource(activeRoute)
+                    // Cada transicion del page loader interno se reporta
+                    // tambien.  Cuando alcanza Loader.Ready el usuario
+                    // realmente ve la pagina (Dashboard u otra ruta) —
+                    // hito ``page_loader_ready`` mas honesto que el del
+                    // shell exterior.
+                    onStatusChanged: {
+                        if (mainWindowBridge) {
+                            mainWindowBridge.signal_qml_loader_event("pageLoader", status, active)
+                        }
+                        if (status === Loader.Ready && mainWindowBridge) {
+                            mainWindowBridge.signal_page_loader_ready()
+                        }
+                    }
+                    onActiveChanged: {
+                        if (mainWindowBridge) {
+                            mainWindowBridge.signal_qml_loader_event("pageLoader", status, active)
+                        }
+                    }
                 }
 
                 Component.onCompleted: initialPageKickoff.start()

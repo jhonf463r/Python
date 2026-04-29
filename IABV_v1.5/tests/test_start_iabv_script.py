@@ -59,7 +59,8 @@ def test_declares_start_ui_switch(start_iabv_src: str) -> None:
         # Spawn no bloqueante via Start-Process (paso 3 del issue).
         "Start-Process",
         # Comando hacia el modulo iabv_v15 (paso 2 del issue).
-        "'-m','iabv_v15','app'",
+        # ProcessStartInfo.Arguments usa string plano en vez de array.
+        "-m iabv_v15 app",
         # Seguridad: si la UI falla, NO matar el MCP.
         "try {",
         "} catch {",
@@ -75,15 +76,29 @@ def test_start_iabv_contains_expected_fragment(
 
 def test_start_ui_uses_start_process_with_iabv_module(start_iabv_src: str) -> None:
     """Con ``-StartUI``, el script debe invocar ``python -m iabv_v15 app``
-    via ``Start-Process`` (no bloqueante). Validamos que ambos fragmentos
-    caen dentro del bloque ``if ($StartUI) { ... }``."""
-    start = start_iabv_src.index("if ($StartUI)")
-    # Tomamos un pedazo generoso despues del if para cubrir el bloque completo.
-    block = start_iabv_src[start : start + 1500]
-    assert "Start-Process" in block, "Debe usarse Start-Process (no bloqueante)"
-    assert "'-m','iabv_v15','app'" in block, (
+    via un mecanismo no bloqueante (Start-Process o .NET Process::Start).
+    Validamos que el bloque principal ``if ($StartUI) {`` (no el relaunch
+    inline) contiene el comando y un spawn no bloqueante."""
+    # Hay dos ocurrencias de ``if ($StartUI)``: una inline dentro del
+    # auto-restart detection (que solo agrega '-StartUI' a relaunchArgs)
+    # y otra que es el bloque principal de lanzamiento de UI.  Buscamos
+    # la que tiene ``Write-Info`` justo despues (el bloque principal).
+    idx = 0
+    while True:
+        pos = start_iabv_src.find("if ($StartUI)", idx)
+        assert pos != -1, "No se encontro el bloque principal if ($StartUI)"
+        # El bloque principal tiene un '{' seguido de contenido con Write-Info.
+        candidate = start_iabv_src[pos : pos + 2500]
+        if "Write-Info" in candidate and "-m iabv_v15 app" in candidate:
+            block = candidate
+            break
+        idx = pos + 1
+    # Puede ser Start-Process o [System.Diagnostics.Process]::Start
+    has_spawn = "Start-Process" in block or "Process]::Start" in block
+    assert has_spawn, "Debe usarse Start-Process o Process::Start (no bloqueante)"
+    assert "-m iabv_v15 app" in block, (
         "Debe generarse el comando 'python -m iabv_v15 app' como argumentos "
-        "de Start-Process"
+        "del spawn no bloqueante"
     )
 
 

@@ -1333,13 +1333,239 @@ class AppBootstrap:
             self._timeline.mark('shell_loader_ready')
         except Exception:
             pass
+        self._fire_splash_ready_and_raise_main('shell_loader_ready')
+
+    def _handle_qml_loader_event(self, loader_name: str, status: int, active_now: bool) -> None:
+        """Marca cada transicion granular de un Loader QML al timeline.
+
+        Llega desde ``MainWindowBridge.qmlLoaderEvent`` que QML emite
+        en ``onStatusChanged`` y ``onActiveChanged`` de cada Loader
+        relevante.  Sirve para ver en el JSONL si el QQmlIncubator
+        avanza o se queda bloqueado en ``Loading=2`` en Windows.
+        """
+        try:
+            phase = f'qml_loader_{loader_name}_status_{int(status)}'
+            self._timeline.mark(
+                phase,
+                loader=loader_name,
+                status=int(status),
+                active=bool(active_now),
+            )
+        except Exception:
+            pass
+
+    def _handle_main_qml_completed(self) -> None:
+        """Marca ``main_qml_completed`` cuando ``Main.qml`` evaluo su tree.
+
+        Si este hito no aparece en el JSONL, significa que la
+        ``ApplicationWindow`` raiz nunca llamo ``Component.onCompleted``
+        y el problema esta antes del shell loader.
+        """
+        try:
+            self._timeline.mark('main_qml_completed')
+        except Exception:
+            pass
+
+    def _handle_page_loader_ready(self) -> None:
+        """Marca ``page_loader_ready`` (hito mas honesto aun que shell).
+
+        Cuando esto llega, el usuario realmente esta viendo la pagina
+        renderizada (Dashboard u otra ruta).  Si en una corrida
+        Windows ``shell_loader_ready`` llega pero ``page_loader_ready``
+        no, la incubacion del page loader es la atascada (no el shell
+        exterior).  Tambien dispara raise/activate del main window
+        como reasegurador del Z-order.
+        """
+        try:
+            self._timeline.mark('page_loader_ready')
+        except Exception:
+            pass
+        # Reasegurador: cuando el page loader esta listo el splash YA
+        # deberia estar fundiendose, pero forzamos raise/activate del
+        # main window por si Windows lo dejo debajo del splash.
+        self._raise_main_window_now('page_loader_ready')
+
+    def _handle_splash_closing(self) -> None:
+        """Marca ``splash_window_closing`` cuando QML va a llamar close().
+
+        Si este hito aparece pero el splash sigue visible en pantalla,
+        la causa es Z-order del Window Manager y no del codigo Python.
+        """
+        try:
+            self._timeline.mark('splash_window_closing')
+        except Exception:
+            pass
+
+    def _fire_splash_ready_and_raise_main(self, source: str) -> None:
+        """Common path: ``splash.set_ready()`` + raise/activate main_win.
+
+        Used by both honest (``_handle_shell_loader_ready``) and
+        fallback (``_force_splash_ready_fallback``) entry points.
+        """
         splash = getattr(self, '_splash', None)
         if splash is not None:
             try:
                 splash.set_ready()
-                self._timeline.mark('splash_set_ready')
+                self._timeline.mark('splash_set_ready', source=source)
             except Exception:
-                logger.exception('splash.set_ready fallo desde shell_loader_ready')
+                logger.exception('splash.set_ready fallo desde %s', source)
+        self._raise_main_window_now(source)
+
+    def _raise_main_window_now(self, source: str) -> None:
+        """Fuerza Z-order del main window por encima del splash.
+
+        En Windows pythonw.exe, ``Qt.SplashScreen | Qt.WindowStaysOnTopHint``
+        del splash a veces hace que el main window quede debajo aunque
+        ``main_win.show()`` ya se llamo.  Reaplicamos ``raise_()`` y
+        ``activateWindow()`` cuando llegan los hitos honestos.
+
+        Adicionalmente, en Windows, si el proceso fue lanzado con
+        ``Start-Process -WindowStyle Hidden`` (que setea
+        ``STARTUPINFO.wShowWindow = SW_HIDE``), el primer
+        ``ShowWindow()`` que Qt hace es overrideado por el OS con
+        ``SW_HIDE``.  Reaplicamos ``ShowWindow(hwnd, SW_SHOW)`` via
+        ctypes para forzar visibilidad independientemente del
+        ``STARTUPINFO`` del proceso padre.
+        """
+        main_win = getattr(self, '_main_win', None)
+        if main_win is None:
+            return
+        try:
+            main_win.raise_()
+            try:
+                main_win.requestActivate()
+            except Exception:
+                pass
+            self._force_win32_visibility(main_win, source)
+            self._timeline.mark('main_window_raised_after_ready', source=source)
+        except Exception:
+            logger.exception('main_win.raise_/activate fallo desde %s', source)
+
+    def _force_win32_visibility(self, window: object, source: str) -> None:
+        """Fuerza visibilidad Win32 del HWND nativo via ctypes.
+
+        Cuando ``Start-Process -WindowStyle Hidden`` lanza el proceso,
+        Windows setea ``STARTUPINFO.wShowWindow = SW_HIDE``.  El primer
+        ``ShowWindow(hwnd, nCmdShow)`` que Qt invoca es overrideado por
+        el OS con ``SW_HIDE`` en lugar del ``SW_SHOW`` que Qt pide.
+
+        Esta funcion llama ``ShowWindow(hwnd, SW_SHOW)`` una segunda
+        vez (que ya no es overrideada) para hacer visible el HWND.
+        Tambien llama ``SetForegroundWindow`` para traerlo al frente.
+
+        En plataformas no-Windows es un no-op.
+        """
+        if sys.platform != 'win32':
+            return
+        try:
+            import ctypes
+            hwnd = int(window.winId())
+            if not hwnd:
+                self._timeline.mark(
+                    'win32_force_visibility_skip',
+                    source=source,
+                    reason='winId_is_zero',
+                )
+                return
+            user32 = ctypes.windll.user32
+            SW_SHOW = 5
+            SW_SHOWNORMAL = 1
+            was_visible = user32.ShowWindow(hwnd, SW_SHOWNORMAL)
+            user32.ShowWindow(hwnd, SW_SHOW)
+            user32.SetForegroundWindow(hwnd)
+            self._timeline.mark(
+                'win32_force_visibility_done',
+                source=source,
+                hwnd=hwnd,
+                was_visible=bool(was_visible),
+            )
+        except Exception:
+            logger.exception(
+                'win32_force_visibility fallo desde %s', source,
+            )
+
+    def _connect_window_lifecycle_signals(self, window: object) -> None:
+        """Conecta senales de ciclo de vida de la ventana principal al timeline.
+
+        Instrumenta: visibleChanged, activeChanged, closing, y
+        screenChanged para que el JSONL muestre exactamente que pasa
+        con la ventana nativa en Windows.  Si la ventana se oculta, se
+        destruye o cambia de screen, queda registrado.
+        """
+        try:
+            window.visibleChanged.connect(
+                lambda visible: self._on_window_lifecycle(
+                    'visibleChanged', visible=visible,
+                )
+            )
+        except Exception:
+            pass
+        try:
+            window.activeChanged.connect(
+                lambda: self._on_window_lifecycle(
+                    'activeChanged',
+                    active=window.isActive() if hasattr(window, 'isActive') else None,
+                )
+            )
+        except Exception:
+            pass
+        try:
+            window.closing.connect(
+                lambda close_event: self._on_window_lifecycle(
+                    'closing',
+                )
+            )
+        except Exception:
+            pass
+        try:
+            window.screenChanged.connect(
+                lambda screen: self._on_window_lifecycle(
+                    'screenChanged',
+                    screen_name=screen.name() if screen and hasattr(screen, 'name') else None,
+                )
+            )
+        except Exception:
+            pass
+        # Log initial state
+        try:
+            wid = int(window.winId()) if hasattr(window, 'winId') else 0
+            top_level_count = 0
+            try:
+                from PySide6.QtGui import QGuiApplication as _QGA
+                top_level_count = len(_QGA.topLevelWindows())
+            except Exception:
+                pass
+            self._timeline.mark(
+                'window_lifecycle_connected',
+                winId=wid,
+                visible=window.isVisible() if hasattr(window, 'isVisible') else None,
+                top_level_windows=top_level_count,
+            )
+        except Exception:
+            pass
+
+    def _on_window_lifecycle(self, event_name: str, **kwargs: object) -> None:
+        """Registra un evento de ciclo de vida de la ventana en el timeline."""
+        try:
+            main_win = getattr(self, '_main_win', None)
+            extra = dict(kwargs)
+            if main_win is not None:
+                try:
+                    extra['winId'] = int(main_win.winId())
+                except Exception:
+                    pass
+                try:
+                    extra['visible'] = main_win.isVisible()
+                except Exception:
+                    pass
+                try:
+                    from PySide6.QtGui import QGuiApplication as _QGA
+                    extra['top_level_windows'] = len(_QGA.topLevelWindows())
+                except Exception:
+                    pass
+            self._timeline.mark(f'window_{event_name}', **extra)
+        except Exception:
+            pass
 
     def _force_splash_ready_fallback(self) -> None:
         """Fallback determinista si QML nunca emite ``shellLoaderReady``.
@@ -1362,13 +1588,7 @@ class AppBootstrap:
             self._timeline.mark('shell_loader_ready_fallback')
         except Exception:
             pass
-        splash = getattr(self, '_splash', None)
-        if splash is not None:
-            try:
-                splash.set_ready()
-                self._timeline.mark('splash_set_ready')
-            except Exception:
-                logger.exception('splash.set_ready fallo desde fallback')
+        self._fire_splash_ready_and_raise_main('shell_loader_ready_fallback')
 
     _TOOL_INSTALL_GUIDANCE: dict[str, str] = {
         'aider_coder': 'pip install aider-chat (optional, heavy ~200MB; installed in background)',
@@ -1597,6 +1817,33 @@ class AppBootstrap:
             )
         except Exception:
             logger.exception('No se pudo conectar shellLoaderReady -> _handle_shell_loader_ready')
+        # Hitos granulares para diagnosticar Windows pythonw.exe: cada
+        # transicion de Loader.status/active, Component.onCompleted del
+        # Main.qml, y el page loader interno (mas honesto que el shell).
+        try:
+            self.main_window_bridge.qmlLoaderEvent.connect(
+                self._handle_qml_loader_event
+            )
+        except Exception:
+            logger.exception('No se pudo conectar qmlLoaderEvent -> _handle_qml_loader_event')
+        try:
+            self.main_window_bridge.mainQmlCompleted.connect(
+                self._handle_main_qml_completed
+            )
+        except Exception:
+            logger.exception('No se pudo conectar mainQmlCompleted -> _handle_main_qml_completed')
+        try:
+            self.main_window_bridge.pageLoaderReady.connect(
+                self._handle_page_loader_ready
+            )
+        except Exception:
+            logger.exception('No se pudo conectar pageLoaderReady -> _handle_page_loader_ready')
+        try:
+            self.main_window_bridge.splashClosing.connect(
+                self._handle_splash_closing
+            )
+        except Exception:
+            logger.exception('No se pudo conectar splashClosing -> _handle_splash_closing')
         self.dashboard_viewmodel = DashboardViewModel(
             self.episode_repository,
             self.knowledge_repository,
@@ -2531,6 +2778,13 @@ class AppBootstrap:
                 self._splash = SplashController(
                     workspace_dir=self.config.workspace_root,
                 )
+                # Conexion para diagnosticar Z-order: QML emite
+                # ``closingNow`` antes de ``splashWindow.close()`` y
+                # bootstrap marca el hito en el timeline.
+                try:
+                    self._splash.closingNow.connect(self._handle_splash_closing)
+                except Exception:
+                    logger.exception('No se pudo conectar splash.closingNow -> _handle_splash_closing')
                 splash_engine = QQmlApplicationEngine()
                 splash_engine.rootContext().setContextProperty('splashController', self._splash)
                 splash_qml = Path(__file__).resolve().parent / 'ui' / 'qml' / 'SplashScreen.qml'
@@ -2601,13 +2855,20 @@ class AppBootstrap:
             app, _engine = self.create_engine(defer_vm_creation=True)
             self._timeline.mark('engine_load_main_qml_done')
 
-            # Explicitly show + raise the main window.
+            # Explicitly show + raise the main window.  Guardamos la
+            # referencia en ``self._main_win`` para que los handlers de
+            # readiness honestos puedan reaplicar raise/activate y pelearle
+            # el Z-order al splash en Windows pythonw.exe.
             if _engine.rootObjects():
                 main_win = _engine.rootObjects()[0]
+                self._main_win = main_win
+                self._engine = _engine
                 main_win.show()
                 main_win.raise_()
                 main_win.requestActivate()
+                self._force_win32_visibility(main_win, 'initial_show')
                 self._timeline.mark('main_window_shown')
+                self._connect_window_lifecycle_signals(main_win)
 
             QTimer.singleShot(1200, self._schedule_startup_evolution)
 
