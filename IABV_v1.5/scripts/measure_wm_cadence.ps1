@@ -41,13 +41,32 @@ Write-Host ""
 # ---------------------------------------------------------------------------
 
 function Get-IABVMemory {
-    $procs = Get-Process python -ErrorAction SilentlyContinue |
-        Where-Object { $_.CommandLine -match 'iabv_v15' -or $_.MainWindowTitle -match 'IABV' }
-    if (-not $procs) { $procs = Get-Process python -ErrorAction SilentlyContinue }
-    if (-not $procs) { return @{ working_set_mb = 0; private_memory_mb = 0; process_count = 0 } }
+    <# Uses CIM Win32_Process to capture both python.exe AND pythonw.exe
+       belonging to the IABV workspace. The UI runs as pythonw.exe, MCP
+       helpers as python.exe — both must be counted. #>
+    $wsNorm = $WorkspaceRoot.Replace('\', '\\').TrimEnd('\')
+    $cimProcs = Get-CimInstance Win32_Process -Filter "Name='python.exe' OR Name='pythonw.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -match 'iabv_v15' -or $_.CommandLine -match [regex]::Escape($wsNorm) }
+    if (-not $cimProcs) {
+        # Broad fallback: any python/pythonw process
+        $cimProcs = Get-CimInstance Win32_Process -Filter "Name='python.exe' OR Name='pythonw.exe'" -ErrorAction SilentlyContinue
+    }
+    if (-not $cimProcs) {
+        return @{ working_set_mb = 0; private_memory_mb = 0; process_count = 0; pids = @() }
+    }
+    $pids = @($cimProcs | ForEach-Object { $_.ProcessId })
+    $procs = $pids | ForEach-Object { Get-Process -Id $_ -ErrorAction SilentlyContinue } | Where-Object { $_ }
+    if (-not $procs) {
+        return @{ working_set_mb = 0; private_memory_mb = 0; process_count = 0; pids = @() }
+    }
     $ws = ($procs | Measure-Object WorkingSet64 -Sum).Sum / 1MB
     $pm = ($procs | Measure-Object PrivateMemorySize64 -Sum).Sum / 1MB
-    return @{ working_set_mb = [math]::Round($ws, 1); private_memory_mb = [math]::Round($pm, 1); process_count = $procs.Count }
+    return @{
+        working_set_mb    = [math]::Round($ws, 1)
+        private_memory_mb = [math]::Round($pm, 1)
+        process_count     = $procs.Count
+        pids              = $pids
+    }
 }
 
 function Test-UIBridge {
@@ -144,7 +163,7 @@ foreach ($mark in @(30, 60, 120)) {
         freshness = $fresh
         scan_stats = $stats
     }
-    Write-Host "[measure] ${mark}s: WS=$($mem.working_set_mb)MB PM=$($mem.private_memory_mb)MB scans=$($stats.scan_count) full=$($stats.scan_count_full) windows=$($fresh.windows_count) focus=$($fresh.has_focus)"
+    Write-Host "[measure] ${mark}s: WS=$($mem.working_set_mb)MB PM=$($mem.private_memory_mb)MB procs=$($mem.process_count) pids=$($mem.pids -join ',') scans=$($stats.scan_count) full=$($stats.scan_count_full) windows=$($fresh.windows_count) focus=$($fresh.has_focus)"
 }
 
 # --- Final scan stats at 180s ---
