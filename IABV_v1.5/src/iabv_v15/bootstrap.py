@@ -1659,7 +1659,7 @@ class AppBootstrap:
 
         Llamado via ``QTimer.singleShot`` despues de un timeout largo
         (configurable via ``IABV_SHELL_READY_FALLBACK_MS``, default
-        45000 ms).  Marca el hito como ``shell_loader_ready_fallback``
+        15000 ms).  Marca el hito como ``shell_loader_ready_fallback``
         para que la auditoria distinga un cierre honesto de uno por
         timeout.  De este modo el splash siempre cierra: nunca se queda
         congelado por una conexion QML que no llego.
