@@ -2862,15 +2862,21 @@ class ControlCenterViewModel(QObject):
             )
         return detail, 'Error en la ultima operacion local.'
 
-    def _human_external_consultation_failure(self, assistant_title: str, failure_detail: str, external_state_flags: list[str] | None = None) -> tuple[str, str, str]:
+    def _human_external_consultation_failure(self, assistant_title: str, failure_detail: str, external_state_flags: list[str] | None = None, *, pending_url: str = '') -> tuple[str, str, str]:
         detail = str(failure_detail or '').strip()
         lowered = detail.lower()
         external_notice = self._external_state_notice(external_state_flags)
         if 'url_pending' in lowered:
-            message = (
-                f'No pude completar la consulta externa en este momento. '
-                'Voy a seguir con lo que ya tenemos aqui y, si hace falta, preparo otra via.'
-            )
+            if pending_url:
+                message = (
+                    f'No pude abrir {assistant_title} automaticamente. '
+                    f'Puedes acceder directamente aqui: {pending_url}'
+                )
+            else:
+                message = (
+                    f'No pude completar la consulta externa en este momento. '
+                    'Voy a seguir con lo que ya tenemos aqui y, si hace falta, preparo otra via.'
+                )
             meta = f'Consulta con {assistant_title}: URL disponible pero no auto-abierta.'
             busy = message
         elif 'browser_security_verification' in lowered:
@@ -4696,10 +4702,12 @@ class ControlCenterViewModel(QObject):
                 'external_state_flags': external_state_flags,
             }
         failure_detail = str(result.error_message or result.execution_state.detail or 'sin detalle').strip()
+        pending_url = (result.metadata or {}).get('pending_url', '')
         message, failure_meta, failure_busy = self._human_external_consultation_failure(
             assistant_title,
             failure_detail,
             external_state_flags,
+            pending_url=pending_url,
         )
         self._latest_response_text = message
         self._latest_response_meta = failure_meta

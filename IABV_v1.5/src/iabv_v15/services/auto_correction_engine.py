@@ -348,8 +348,9 @@ def auto_provision_missing_secrets(
         provisions.append(provision)
 
     urls_ready = sum(1 for p in provisions if p.get('url_ready'))
+    opened_count = sum(1 for p in provisions if p.get('opened'))
 
-    if auto_provisioned and urls_ready == 0:
+    if auto_provisioned and urls_ready == 0 and opened_count == 0:
         return {
             'action': 'provision_secrets',
             'status': 'auto_provisioned',
@@ -362,19 +363,28 @@ def auto_provision_missing_secrets(
             ),
         }
 
+    if opened_count and not urls_ready:
+        user_action = (
+            f'Se abrieron {opened_count} paginas para crear API keys. '
+            'Pega cada token en el dialogo de IABV cuando lo tengas.'
+        )
+    elif urls_ready:
+        user_action = (
+            f'Hay {urls_ready} links listos para crear API keys. '
+            'Abre cada uno y pega el token en IABV.'
+        )
+    else:
+        user_action = 'Abre los links indicados y pega los tokens en IABV.'
+
     return {
         'action': 'provision_secrets',
         'status': 'needs_user',
         'provisions': provisions,
         'count': len(provisions),
+        'opened_count': opened_count,
         'urls_ready_count': urls_ready,
         'auto_provisioned': auto_provisioned,
-        'user_action': (
-            f'Hay {urls_ready} links listos para crear API keys. '
-            'Abre cada uno y pega el token en IABV.'
-            if urls_ready else
-            'Abre los links indicados y pega los tokens en IABV.'
-        ),
+        'user_action': user_action,
     }
 
 

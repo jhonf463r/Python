@@ -708,17 +708,26 @@ class CloudKeyAutonomousProvisioner:
             logger.info('cloud_provisioner_fallback: %s needs user action at %s (autonomous mode, no browser opened)', provider, start_url)
 
         result.steps_completed.append(ProvisioningStep(
-            action='provide_url',
+            action='open_browser' if opened else 'provide_url',
             target=start_url,
-            description='URL ready for user to open (autonomous browser disabled)',
+            description=(
+                'Opened provider page in browser (user-triggered)'
+                if opened
+                else 'URL ready for user to open (autonomous browser disabled)'
+            ),
             completed=True,
-            result='url_provided',
+            result='browser_opened' if opened else 'url_provided',
         ))
 
         result.needs_user_auth = True
         prefix = knowledge.get('key_prefix', '')
         prefix_hint = f' (empieza con {prefix})' if prefix else ''
         result.user_action = (
+            f'IABV abrio {start_url} en tu browser. '
+            f'Crea una API key{prefix_hint} y pegala en el dialogo de IABV. '
+            f'IABV la guardara automaticamente.'
+            if opened
+            else
             f'Abre {start_url} en tu browser. '
             f'Crea una API key{prefix_hint} y pegala en el dialogo de IABV. '
             f'IABV la guardara automaticamente.'
