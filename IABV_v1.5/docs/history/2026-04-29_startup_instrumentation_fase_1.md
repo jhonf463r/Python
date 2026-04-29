@@ -62,6 +62,56 @@ Y despues mandar:
 
 Con eso se cruza contra los hitos del timeline y se identifica con precision cual etapa retiene el hilo principal. Solo entonces se cierra Fase 1 y se abre Fase 2 con el cambio correcto.
 
+## Cable A (PR #258) — startup_timeline.jsonl → PortableContext + OSES
+
+PR #258 cierra el cable A del marco de simbiosis: el JSONL deja de ser un log suelto.
+
+### Que cambio
+- `PortableContextService._startup_health_snapshot()` lee `data/logs/startup_timeline.jsonl`, detecta la **ultima corrida contigua** (boundary por `t_ms_from_start` no monotonico) y expone `init_ms`, `run_to_window_ms`, `deferred_ms`, `rss_mb_max`, `recent_blockers`, `last_started_at_utc`.
+- `PortableContextService._startup_health_section()` agrega seccion `startup_health` al package portable. Sin JSONL → `confidence=0.0` + `UNRESOLVED:startup_timeline_missing`. Sin datos parseables → `UNRESOLVED:startup_timeline_empty`. **No inventa.**
+- `OperationalSelfExaminationService._startup_health_findings()` emite `SelfExaminationFinding(category='startup_degradation')` por umbral cruzado. Hook en `_findings_loop` tras `_cloud_reasoning_findings`.
+- Thresholds **publicos al tope del modulo** (greppables, sin entrar al metodo):
+  ```python
+  STARTUP_INIT_MS_DEGRADED = 4000.0
+  STARTUP_RUN_TO_WINDOW_MS_DEGRADED = 8000.0
+  STARTUP_DEFERRED_MS_DEGRADED = 5000.0
+  ```
+  `init_ms > 2*threshold` → severity HIGH; resto MEDIUM. Las constantes son los unicos puntos a tunear si la realidad Windows muestra otros umbrales.
+
+### Reglas que respeta
+- **Sin servicio nuevo** (lectura directa del JSONL en metodos privados de servicios existentes).
+- **Sin memoria paralela** (la fuente es el JSONL ya producido por la instrumentacion).
+- **Respeta P3** (PortableContext sigue siendo el unico generador del paquete portable).
+- **Respeta P4** (OSES sigue siendo el unico emisor de findings).
+
+### Pruebas
+`tests/test_startup_health_cable.py` (11 tests, 11/11 verde) cubre:
+- Snapshot: `no_log` / `no_data` / `analyzed`, fallback a `bootstrap_init_done` cuando falta `run_start`, blockers detectados.
+- Section: confidence + items + UNRESOLVED.
+- OSES: no log, healthy (sin findings), tres umbrales cruzados (3 findings), umbral parcial (1 finding).
+- Verifica que los thresholds son constantes de modulo importables.
+
+Regresion `tests/test_portable_context_service.py` + `tests/test_operational_self_examination_service.py`: 29/29 verde.
+
+## D1-D7 — gaps reales abiertos del marco de simbiosis
+
+Estos cables NO se tocaron en este slice. Siguen pendientes para Fase 5. **No abrir hasta que el arranque visible este estable.**
+
+| # | Gap | Cable concreto |
+|---|---|---|
+| D1 | chat ligero → `DecisionAuditTrail` | en `control_center_viewmodel.sendChat`, despues de elegir ruta y obtener respuesta, llamar `decision_audit_trail.record(DecisionRecord(phase=PROVIDER_SELECTION, provider_id=..., outcome=..., latency_ms=..., user_goal=msg))`. Sin servicio nuevo. |
+| D2 | chat ligero → `ExperimentLab` via `TaskOutcomeRecorder` | cada respuesta del chat alimenta un `RunRecord` minimal. Reusar el contrato existente. Asi `composite_recommendation` cubre la ruta del chat. |
+| D3 | `LocalRoleRouter` consulta worker_pool antes de rutear | una linea: si `account_resource_scanner.estimate_available_workers().total_remaining_messages > 0`, considerar shadow paralelo cloud/web. Sin crear nada. |
+| D4 | shadow learning formal | cuando el chat elige local, lanzar tambien una ruta web/api gratis y mandar ambas a `experiment_lab.run_experiment()` como candidatos del mismo `subject_key`. **BLOQUEADO** mientras el arranque siga inestable (decision del usuario). |
+| D5 | `PortableContext.account_inventory` | `_account_inventory_snapshot()` llamando `estimate_available_workers()`. Cable A cierra el otro half (`startup_health`); este queda pendiente. |
+| D6 | rotacion gobernada cruzando trends | `best_account_for_tool` ya rota por mensajes restantes; sumar tie-break por `decision_audit_trail.analyze_provider_trends()` (degradacion). 3 lineas. |
+| D7 | OSES findings de startup_timeline | **CERRADO en PR #258.** |
+
+Reglas duras al avanzar Fase 5:
+- No crear servicio "simbiosis" nuevo. Todo va sobre las 8 piezas: ExperimentLab + StrategySelector + AdaptiveWeightLayer + TaskOutcomeRecorder + DecisionAuditTrail + PortableContext + account_resource_scanner + OSES.
+- No memoria paralela. Persistir en repos existentes (`ExperimentLabRepository`, `decision_audit/decisions.jsonl`, `quota_tracker.json`, `portable_context/latest.json`).
+- `WorldModelSnapshot` sigue como fuente viva; `account_inventory` se compone desde scanner, no se duplica.
+
 ## UNRESOLVED / honestos
 1. La medicion en Linux offscreen no reproduce el bloqueo Windows-specifico (pythonw + miniconda + red lenta). Necesita evidencia real del usuario.
 2. Las 13 pruebas pre-existentes rojas en `test_control_center_viewmodel.py` y derivados no son objetivo de este slice; quedan documentadas. Algunas indican `sqlite3.OperationalError: unable to open database file` cuando varios tests comparten state.
