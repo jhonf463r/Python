@@ -330,6 +330,10 @@ from iabv_v15.ui.controllers.navigation_controller import NavigationController
 from iabv_v15.ui.controllers.theme_controller import ThemeController
 from iabv_v15.ui.qt import PYSIDE_AVAILABLE, QGuiApplication, QQmlApplicationEngine, QQuickStyle, QTimer, QUrl
 from iabv_v15.ui.splash_controller import SplashController
+from iabv_v15.infra.startup_timeline import (
+    configure_global_timeline,
+    get_global_timeline,
+)
 from iabv_v15.ui.viewmodels.capture_studio_viewmodel import CaptureStudioViewModel
 from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
 from iabv_v15.ui.viewmodels.dashboard_viewmodel import DashboardViewModel
@@ -342,6 +346,12 @@ from iabv_v15.ui.viewmodels.run_history_viewmodel import RunHistoryViewModel
 
 class AppBootstrap:
     def __init__(self, workspace_root: str | None = None) -> None:
+        # Startup timeline: anchored on the first call.  Marks 'init_start'
+        # before any heavy work so even imports counted before this point
+        # can be inferred from main.py.
+        self._timeline = get_global_timeline()
+        self._timeline.mark('bootstrap_init_start')
+
         # Auto-cargar secretos ANTES de leer config (que consulta os.environ).
         _auto_load_secrets()
 
@@ -349,6 +359,9 @@ class AppBootstrap:
         self.theme = load_theme_config()
         self._ensure_directories()
         configure_logging(self.config.logs_dir)
+        # Now that logs_dir exists, attach JSONL sink so every future
+        # mark() call also persists to data/logs/startup_timeline.jsonl.
+        configure_global_timeline(Path(self.config.logs_dir))
 
         self.db = AppDatabase(self.config.sqlite_path)
         self.screenshot_storage = ArtifactStorage(self.config.screenshots_dir)
@@ -475,7 +488,20 @@ class AppBootstrap:
         self.tool_validator = ToolValidator()
         self.tool_sandbox = ToolSandbox(self.tool_validator)
         self.tool_registry = ToolRegistry(self.tool_record_repository, self.tool_adapters)
-        self._log_tool_availability()
+        # Tool-availability probe is **deferred** by default: it does HTTP
+        # pings (Devin/GitHub/Ollama), enumerates external assistant
+        # processes, AND triggers ``auto_fix_missing_tools`` (pip install
+        # mcp_client, queue aider-chat).  All that runs synchronously on
+        # the main thread; left here it added ~1-2s on Linux (and far
+        # more on Windows with cold pip and slow networks) BEFORE the
+        # splash window can render.  Schedule it post-window via
+        # ``_run_deferred_post_window_setup`` instead.  Tests / MCP
+        # subprocess can opt out via ``IABV_DEFER_TOOL_PROBE=0`` to
+        # preserve legacy synchronous behavior.
+        self._tool_availability_logged = False
+        if os.environ.get('IABV_DEFER_TOOL_PROBE', '1') == '0':
+            self._log_tool_availability()
+            self._tool_availability_logged = True
         self.universal_perception_service = UniversalPerceptionService(tool_registry=self.tool_registry)
         self.environment_self_awareness_service = EnvironmentSelfAwarenessService(
             workspace_root=self.config.workspace_root,
@@ -1254,6 +1280,37 @@ class AppBootstrap:
         self.provider_settings_viewmodel = None
         self.run_history_viewmodel = None
 
+        self._timeline.mark(
+            'bootstrap_init_done',
+            tool_availability_deferred=not self._tool_availability_logged,
+        )
+
+    def _run_deferred_post_window_setup(self) -> None:
+        """Run heavy probes that were skipped during ``__init__``.
+
+        Called from ``run()`` via ``QTimer.singleShot`` *after* the main
+        window is shown.  At that point the GUI thread is free, the user
+        already sees the interactive shell, and any synchronous HTTP /
+        pip work no longer blocks splash rendering.
+
+        Idempotent: a second call is a no-op.
+        """
+        if self._tool_availability_logged:
+            return
+        self._tool_availability_logged = True
+        try:
+            self._timeline.mark('deferred_post_window_setup_start')
+        except Exception:
+            pass
+        try:
+            self._log_tool_availability()
+        except Exception as exc:
+            logger.warning('deferred_tool_availability_probe failed: %s', exc)
+        try:
+            self._timeline.mark('deferred_post_window_setup_done')
+        except Exception:
+            pass
+
     _TOOL_INSTALL_GUIDANCE: dict[str, str] = {
         'aider_coder': 'pip install aider-chat (optional, heavy ~200MB; installed in background)',
         'claude_installed': 'Descargar Claude Desktop desde https://claude.ai/download',
@@ -1874,11 +1931,19 @@ class AppBootstrap:
             # window appears instantly.  QTimer.singleShot(0, ...) fires on
             # the very first iteration of app.exec().
             def _populate_ui() -> None:
+                try:
+                    self._timeline.mark('populate_ui_start')
+                except Exception:
+                    pass
                 if splash:
                     splash.set_status('Construyendo ViewModels...')
                 self._build_ui_objects()
                 _set_context_properties(context)
                 logger.info('ui_populated: all ViewModels loaded and context properties set')
+                try:
+                    self._timeline.mark('populate_ui_done')
+                except Exception:
+                    pass
             QTimer.singleShot(0, _populate_ui)
         else:
             # Synchronous path (used by tests that don't call app.exec()).
@@ -2372,6 +2437,7 @@ class AppBootstrap:
             return s.connect_ex(('127.0.0.1', port)) == 0
 
     def run(self) -> int:
+        self._timeline.mark('run_start')
         # Holder for subprocesses; written from background thread.
         self._mcp_proc = None
         self._tunnel_proc = None
@@ -2404,6 +2470,7 @@ class AppBootstrap:
                         )
                 # Process events so the splash actually renders
                 splash_app.processEvents()
+                self._timeline.mark('splash_visible')
             else:
                 self._splash = None
 
@@ -2456,7 +2523,9 @@ class AppBootstrap:
                 except Exception:
                     pass
 
+            self._timeline.mark('engine_load_main_qml_start')
             app, _engine = self.create_engine(defer_vm_creation=True)
+            self._timeline.mark('engine_load_main_qml_done')
 
             # Explicitly show + raise the main window.
             if _engine.rootObjects():
@@ -2464,13 +2533,23 @@ class AppBootstrap:
                 main_win.show()
                 main_win.raise_()
                 main_win.requestActivate()
+                self._timeline.mark('main_window_shown')
 
             QTimer.singleShot(1200, self._schedule_startup_evolution)
+
+            # Defer the heavy tool-availability probe (HTTP pings + pip
+            # install of mcp_client) until the user can already see the
+            # interactive shell.  2000ms gives the QML shell time to
+            # paint its first frame before we steal the GUI thread again.
+            if not self._tool_availability_logged:
+                QTimer.singleShot(2000, self._run_deferred_post_window_setup)
 
             # Signal splash that we're ready — it will fade out
             if self._splash:
                 self._splash.set_ready()
+                self._timeline.mark('splash_set_ready')
 
+            self._timeline.mark('app_exec_about_to_start')
             return app.exec()
         except Exception as fatal:
             # Write crash log so the error survives hidden-console launches
