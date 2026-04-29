@@ -197,8 +197,6 @@ class ControlCenterViewModel(QObject):
         self._development_packet = ''
         self._dev_packet_last_ts: float = 0.0
         self._dev_packet_cooldown_s: float = 30.0
-        self._capability_ingest_last_ts: float = 0.0
-        self._capability_ingest_cooldown_s: float = 10.0
         self._latest_response_text = 'Todavia no hay respuesta final en esta sesion.'
         self._latest_response_meta = 'Cuando completes una consulta, aqui veras el rol detectado, el pack usado y si hubo aprobaciones.'
         self._approval_dialog_visible = False
@@ -3418,6 +3416,7 @@ class ControlCenterViewModel(QObject):
         self._development_packet = self.engineering_review_service.build_codex_packet(
             user_goal=self._last_user_goal,
             selected_role_title='Automatico' if self._auto_route_enabled else self._selected_role_title(),
+            force=force,
         )
 
     def _seed_development_packet(self, user_goal: str | None = None) -> None:
@@ -5793,14 +5792,10 @@ class ControlCenterViewModel(QObject):
         respuesta. Si el service no esta inyectado (tests antiguos o bootstrap
         minimo), es no-op silencioso.
 
-        Debounced: skips if called within ``_capability_ingest_cooldown_s``
-        of the last run to avoid redundant I/O on rapid-fire messages.
+        NOTE: NO debounce here — each message carries unique text that must be
+        processed individually. Skipping messages would permanently lose
+        capability detections (e.g. "tengo GPU RTX 4090").
         """
-        import time as _time
-        now = _time.monotonic()
-        if (now - self._capability_ingest_last_ts) < self._capability_ingest_cooldown_s:
-            return []
-        self._capability_ingest_last_ts = now
         service = getattr(self, 'chat_capability_ingestion_service', None)
         if service is None:
             return []

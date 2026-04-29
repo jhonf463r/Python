@@ -97,8 +97,8 @@ class EngineeringReviewService:
         self._context_cache_ts = now
         return ctx
 
-    def build_codex_packet(self, *, user_goal: str, selected_role_title: str) -> str:
-        context = self.build_project_context()
+    def build_codex_packet(self, *, user_goal: str, selected_role_title: str, force: bool = False) -> str:
+        context = self.build_project_context(force=force)
         packet = self.development_assist_service.build_codex_packet(
             user_goal=user_goal,
             selected_role_title=selected_role_title,

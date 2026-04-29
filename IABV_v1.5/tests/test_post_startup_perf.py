@@ -131,16 +131,14 @@ class TestRefreshDevelopmentPacketCooldown:
 
 
 # ---------------------------------------------------------------------------
-# _ingest_chat_capabilities cooldown
+# _ingest_chat_capabilities — no debounce (each message must be processed)
 # ---------------------------------------------------------------------------
 
-class TestIngestChatCapabilitiesCooldown:
-    """Verify that _ingest_chat_capabilities is debounced."""
+class TestIngestChatCapabilitiesNoCooldown:
+    """Verify that _ingest_chat_capabilities processes every message."""
 
     def _make_viewmodel(self) -> SimpleNamespace:
         vm = SimpleNamespace(
-            _capability_ingest_last_ts=0.0,
-            _capability_ingest_cooldown_s=10.0,
             chat_capability_ingestion_service=MagicMock(
                 ingest=MagicMock(return_value=[]),
             ),
@@ -160,19 +158,17 @@ class TestIngestChatCapabilitiesCooldown:
         vm._ingest_chat_capabilities('hello')
         assert vm.chat_capability_ingestion_service.ingest.call_count == 1
 
-    def test_second_call_within_cooldown_is_skipped(self):
+    def test_every_call_executes(self):
         vm = self._make_viewmodel()
         vm._ingest_chat_capabilities('hello')
-        vm._ingest_chat_capabilities('world')
-        assert vm.chat_capability_ingestion_service.ingest.call_count == 1
-
-    def test_call_after_cooldown_executes(self):
-        vm = self._make_viewmodel()
-        vm._capability_ingest_cooldown_s = 0.05
-        vm._ingest_chat_capabilities('hello')
-        time.sleep(0.06)
         vm._ingest_chat_capabilities('world')
         assert vm.chat_capability_ingestion_service.ingest.call_count == 2
+
+    def test_rapid_fire_all_processed(self):
+        vm = self._make_viewmodel()
+        for i in range(5):
+            vm._ingest_chat_capabilities(f'message {i}')
+        assert vm.chat_capability_ingestion_service.ingest.call_count == 5
 
     def test_no_service_is_noop(self):
         vm = self._make_viewmodel()
