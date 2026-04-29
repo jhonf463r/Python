@@ -2903,12 +2903,14 @@ class IABVMCPServer:
         except Exception as _sut_exc:
             logger.warning("self_update_tools: failed to register: %s", _sut_exc)
 
-        # Suppress noisy per-session transport logs from the MCP SDK,
-        # uvicorn access lines, and httpx HTTP request logs.
+        # Suppress noisy per-session transport logs from the MCP SDK
+        # and uvicorn access lines.
         for noisy in ('mcp', 'mcp.server', 'mcp.server.streamable_http',
-                       'fastmcp', 'uvicorn', 'uvicorn.access', 'uvicorn.error',
-                       'httpx', 'httpcore'):
+                       'fastmcp', 'uvicorn', 'uvicorn.access', 'uvicorn.error'):
             logging.getLogger(noisy).setLevel(logging.WARNING)
+        # httpx/httpcore handled by shared suppress_noisy_http_loggers().
+        from iabv_v15.infra.logging import suppress_noisy_http_loggers
+        suppress_noisy_http_loggers()
 
         logger.info("IABV MCP server starting (transport=%s, name=%s)", transport, self.name)
         self._log_github_api_adapter_status()
@@ -3004,12 +3006,14 @@ def main() -> None:
         level=os.environ.get("IABV_MCP_LOG_LEVEL", "INFO"),
         format="%(asctime)s %(levelname)s %(name)s - %(message)s",
     )
-    # Suppress noisy transport/access messages from the MCP SDK, uvicorn,
-    # and httpx in the subprocess — the main UI process already logs these.
+    # Suppress noisy transport/access messages from the MCP SDK and uvicorn
+    # in the subprocess — the main UI process already logs these.
     for noisy_logger in ('mcp', 'mcp.server', 'mcp.server.streamable_http',
-                         'fastmcp', 'uvicorn', 'uvicorn.access', 'uvicorn.error',
-                         'httpx', 'httpcore'):
+                         'fastmcp', 'uvicorn', 'uvicorn.access', 'uvicorn.error'):
         logging.getLogger(noisy_logger).setLevel(logging.WARNING)
+    # httpx/httpcore handled by shared suppress_noisy_http_loggers().
+    from iabv_v15.infra.logging import suppress_noisy_http_loggers
+    suppress_noisy_http_loggers()
     transport = os.environ.get("IABV_MCP_TRANSPORT", "stdio")
     name = os.environ.get("IABV_MCP_NAME", DEFAULT_SERVER_NAME)
     workspace_root = os.environ.get("IABV_WORKSPACE_ROOT")

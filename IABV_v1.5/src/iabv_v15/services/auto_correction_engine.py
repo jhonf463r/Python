@@ -814,26 +814,33 @@ def _correct_ghost_session(
 def _correct_http_noise(
     finding: dict[str, Any], context: dict[str, Any],
 ) -> dict[str, Any]:
-    """Auto-suppress httpx/httpcore loggers when HTTP log lines exceed threshold."""
+    """Re-apply httpx/httpcore suppression if noise is detected in logs.
+
+    The primary suppression happens at startup via
+    ``suppress_noisy_http_loggers()`` in ``infra/logging.py``.
+    This handler acts as a safety net: if something resets the log
+    levels at runtime, the auto-correction loop will re-suppress.
+    """
     count = finding.get('occurrences', 0)
     if count <= 20:
         return {'action': 'suppress_httpx', 'status': 'no_action_needed',
                 'detail': f'{count} HTTP lines — within threshold'}
     try:
+        from iabv_v15.infra.logging import suppress_noisy_http_loggers
         import logging as _logging
         httpx_logger = _logging.getLogger('httpx')
-        if httpx_logger.level >= _logging.WARNING:
+        already_suppressed = httpx_logger.level >= _logging.WARNING
+        suppress_noisy_http_loggers()
+        if already_suppressed:
             return {'action': 'suppress_httpx', 'status': 'no_action_needed',
-                    'detail': 'httpx already at WARNING or higher'}
-        httpx_logger.setLevel(_logging.WARNING)
-        _logging.getLogger('httpcore').setLevel(_logging.WARNING)
+                    'detail': 'httpx already at WARNING or higher (noise is from before suppression)'}
         logger.info(
-            'auto-correction: suppressed httpx/httpcore to WARNING '
-            'due to %d HTTP log lines (metacognition detected noise)',
+            'auto-correction: re-suppressed httpx/httpcore to WARNING '
+            'due to %d HTTP log lines (levels were reset at runtime)',
             count,
         )
         return {'action': 'suppress_httpx', 'status': 'corrected',
-                'detail': f'httpx→WARNING (triggered by {count} HTTP lines in log tail)'}
+                'detail': f'httpx→WARNING re-applied (triggered by {count} HTTP lines in log tail)'}
     except Exception as exc:
         return {'action': 'suppress_httpx', 'status': 'failed', 'detail': str(exc)}
 
