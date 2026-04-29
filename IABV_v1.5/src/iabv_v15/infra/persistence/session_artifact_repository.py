@@ -57,6 +57,10 @@ class SessionArtifactRepository:
         )
         return [self._row_to_model(row) for row in rows]
 
+    def count(self) -> int:
+        row = self.db.fetchone("SELECT COUNT(*) AS cnt FROM session_artifacts")
+        return int(row["cnt"]) if row else 0
+
     def list_recent(self, limit: int = 50) -> list[SessionArtifact]:
         rows = self.db.fetchall(
             """

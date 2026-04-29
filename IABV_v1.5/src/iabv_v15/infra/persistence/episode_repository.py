@@ -86,6 +86,10 @@ class EpisodeRepository:
             raise FileNotFoundError(f"Episode {episode_id} not found.")
         return EpisodeManifest.model_validate_json(row["manifest_json"])
 
+    def count(self) -> int:
+        row = self.db.fetchone("SELECT COUNT(*) AS cnt FROM episodes")
+        return int(row["cnt"]) if row else 0
+
     def list_recent(self, limit: int = 20) -> list[EpisodeManifest]:
         rows = self.db.fetchall(
             "SELECT manifest_json FROM episodes ORDER BY updated_at_utc DESC LIMIT ?",

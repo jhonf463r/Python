@@ -1,5 +1,7 @@
 ﻿from __future__ import annotations
 
+import atexit
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 import re
@@ -178,6 +180,8 @@ class ControlCenterViewModel(QObject):
         self._legacy_cards = self._build_legacy_cards()
         self._role_cards = [profile.model_dump(mode='json') for profile in self.role_router.role_profiles]
         self._ui_state_lock = threading.Lock()
+        self._bg_pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix='ccvm-bg')
+        atexit.register(self._shutdown_bg_pool)
         self._chat_messages: list[dict[str, str]] = []
         self._attached_files: list[dict[str, Any]] = []
         self._live_status: str = 'idle'
@@ -268,6 +272,10 @@ class ControlCenterViewModel(QObject):
             self.refresh()
             self._refresh_provider_health(announce=False)
 
+    def _shutdown_bg_pool(self) -> None:
+        """Gracefully shutdown the background thread pool on process exit."""
+        self._bg_pool.shutdown(wait=False)
+
     def _placeholder_provider_cards(self) -> list[dict[str, Any]]:
         return [
             {'provider_name': 'Ollama', 'status': 'inactivo', 'available': False, 'detail': 'Chequeo pendiente.', 'role': 'generalista principal'},
@@ -330,10 +338,10 @@ class ControlCenterViewModel(QObject):
 
     def _collect_metrics(self) -> dict[str, int]:
         return {
-            'episodes': len(self.episode_repository.list_recent(limit=200)),
-            'knowledge': len(self.knowledge_repository.list_recent(limit=200)),
-            'artifacts': len(self.artifact_repository.list_recent(limit=400)),
-            'runs': len(self.run_repository.list_recent(limit=200)),
+            'episodes': self.episode_repository.count(),
+            'knowledge': self.knowledge_repository.count(),
+            'artifacts': self.artifact_repository.count(),
+            'runs': self.run_repository.count(),
             'payloads': self._count_payloads(),
             'profiles': len([item for item in Path(self.config.browser_profiles_dir).glob('*') if item.is_dir()]),
         }
@@ -4146,16 +4154,14 @@ class ControlCenterViewModel(QObject):
         if role == 'auto':
             self._auto_route_enabled = True
             self._busy_label = 'Modo automatico restaurado. La consola detectara intencion, pack y aprobaciones.'
-            import threading as _th
-            _th.Thread(target=self._refresh_development_packet, daemon=True).start()
+            self._bg_pool.submit(self._refresh_development_packet)
             self.dataChanged.emit()
             return
         if role in valid_roles:
             self._selected_role = role
             self._auto_route_enabled = False
             self._busy_label = f'Rol forzado a {self._selected_role_title()}.'
-            import threading as _th
-            _th.Thread(target=self._refresh_development_packet, daemon=True).start()
+            self._bg_pool.submit(self._refresh_development_packet)
             self.dataChanged.emit()
 
     @Slot()
@@ -6166,10 +6172,10 @@ class ControlCenterViewModel(QObject):
         # y ExperimentLab las consuman despues como areas de investigacion. No
         # modifica el ruteo; solo anota y avisa al usuario en una linea corta
         # para que sepa que su dato quedo registrado (antes se perdian en memoria).
-        # Ingerir capabilities en background para no bloquear UI
-        threading.Thread(target=self._ingest_chat_capabilities, args=(message,), daemon=True).start()
-        # Actualizar packet en background sin bloquear UI
-        threading.Thread(target=self._refresh_development_packet, args=(message,), daemon=True).start()
+        # Ingerir capabilities y actualizar packet en background (thread pool
+        # compartido — evita crear 2+ threads por mensaje).
+        self._bg_pool.submit(self._ingest_chat_capabilities, message)
+        self._bg_pool.submit(self._refresh_development_packet, message)
         # _chat_shortcut_analysis puede llamar a LLM — ejecutar con timeout
         # APRENDIDO: NO usar 'with ThreadPoolExecutor' en hilo de UI porque
         # pool.shutdown(wait=True) bloquea al salir del with aunque el timeout
