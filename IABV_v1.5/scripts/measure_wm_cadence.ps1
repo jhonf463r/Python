@@ -129,13 +129,19 @@ function Extract-ScanStats($wm) {
 # Execution
 # ---------------------------------------------------------------------------
 
+# --- Detached HEAD safety ---
+$gitHeadRef = & git -C $WorkspaceRoot rev-parse --abbrev-ref HEAD 2>$null
+if ($gitHeadRef -eq 'HEAD') {
+    Write-Host "[measure] WARN: workspace is in detached HEAD — auto-pull would fail; forcing -NoAutoPull"
+}
+
 Write-Host "[measure] Limpiando procesos previos..."
 Get-Process python, pythonw, cloudflared -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Seconds 2
 
-Write-Host "[measure] Arrancando IABV..."
+Write-Host "[measure] Arrancando IABV (-NoAutoPull -SkipHealthChecks)..."
 $startTime = Get-Date
-Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -File `"$WorkspaceRoot\scripts\start_iabv.ps1`" -StartUI -Quiet" -WindowStyle Minimized
+Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -File `"$WorkspaceRoot\scripts\start_iabv.ps1`" -StartUI -Quiet -NoAutoPull -SkipHealthChecks" -WindowStyle Minimized
 
 # --- Wait for bridge ---
 $bridgeReady = $false
