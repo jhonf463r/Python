@@ -5,8 +5,12 @@ Verifies:
 2. Minimum scan interval floor of 8s is respected
 3. scan_stats property exposes counters correctly
 4. scan_now increments counters
+5. measure_wm_cadence.ps1 has no PS 5.1-incompatible syntax
 """
 from __future__ import annotations
+
+import re
+from pathlib import Path
 
 import pytest
 
@@ -104,3 +108,47 @@ class TestScanStats:
         stats = svc.scan_stats
         assert stats['last_scan_ago_s'] is not None
         assert stats['last_scan_ago_s'] >= 0.0
+
+
+class TestHarnessPS51Compat:
+    """Verify measure_wm_cadence.ps1 is free of PS 5.1 parser pitfalls."""
+
+    _SCRIPT = Path(__file__).resolve().parent.parent / 'scripts' / 'measure_wm_cadence.ps1'
+
+    def _read_script(self) -> str:
+        assert self._SCRIPT.exists(), f'Harness script not found: {self._SCRIPT}'
+        return self._SCRIPT.read_text(encoding='utf-8')
+
+    def test_no_dollar_brace_interpolation(self):
+        """${var} inside double-quoted strings breaks PS 5.1 parser."""
+        text = self._read_script()
+        # Match ${...} but not inside single-quoted strings or comments
+        for i, line in enumerate(text.splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith('#') or stripped.startswith('<#'):
+                continue
+            # Skip single-quoted strings entirely (they don't interpolate)
+            if '${' in line and not line.strip().startswith("'"):
+                assert False, f'Line {i} uses ${{...}} interpolation (fragile in PS 5.1): {line.strip()}'
+
+    def test_no_non_ascii_characters(self):
+        """Em-dashes and other non-ASCII in .ps1 break PS 5.1 without BOM."""
+        text = self._read_script()
+        for i, line in enumerate(text.splitlines(), 1):
+            for ch in line:
+                assert ord(ch) < 128, (
+                    f'Line {i} has non-ASCII char U+{ord(ch):04X} ({ch!r}): {line.strip()}'
+                )
+
+    def test_no_dotted_quoted_property_access(self):
+        """Patterns like .snapshots.'120s'.scan_stats can confuse PS 5.1 parser."""
+        text = self._read_script()
+        pattern = re.compile(r"\.\w+\.'[^']+'\.")
+        for i, line in enumerate(text.splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith('#'):
+                continue
+            match = pattern.search(line)
+            assert match is None, (
+                f"Line {i} has dotted-quoted property chain (PS 5.1 fragile): {match.group()}"
+            )
