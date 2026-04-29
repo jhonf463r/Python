@@ -2831,10 +2831,13 @@ class AppBootstrap:
             if PYSIDE_AVAILABLE:
                 os.environ.setdefault('QT_QUICK_CONTROLS_STYLE', 'Basic')
                 QQuickStyle.setStyle('Basic')
+                self._timeline.mark('qt_style_set')
                 splash_app = QGuiApplication.instance() or QGuiApplication(sys.argv)
+                self._timeline.mark('qt_app_created')
                 self._splash = SplashController(
                     workspace_dir=self.config.workspace_root,
                 )
+                self._timeline.mark('splash_controller_created')
                 # Conexion para diagnosticar Z-order: QML emite
                 # ``closingNow`` antes de ``splashWindow.close()`` y
                 # bootstrap marca el hito en el timeline.
@@ -2843,9 +2846,11 @@ class AppBootstrap:
                 except Exception:
                     logger.exception('No se pudo conectar splash.closingNow -> _handle_splash_closing')
                 splash_engine = QQmlApplicationEngine()
+                self._timeline.mark('splash_qml_engine_created')
                 splash_engine.rootContext().setContextProperty('splashController', self._splash)
                 splash_qml = Path(__file__).resolve().parent / 'ui' / 'qml' / 'SplashScreen.qml'
                 splash_engine.load(QUrl.fromLocalFile(str(splash_qml)))
+                self._timeline.mark('splash_qml_loaded')
                 if not splash_engine.rootObjects():
                     logger.error('splash_screen: QML failed to load from %s', splash_qml)
                     if self._splash:

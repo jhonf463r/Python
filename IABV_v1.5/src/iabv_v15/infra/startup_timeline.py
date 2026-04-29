@@ -34,6 +34,11 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# Set by __main__.py to the perf_counter() captured at process entry,
+# BEFORE any heavy imports.  When available, marks include
+# ``t_ms_from_process`` — the real wall time from Python process start.
+_PROCESS_T0: float | None = None
+
 
 def _get_rss_mb() -> float:
     """Return current process RSS in MiB. ``-1.0`` if unavailable."""
@@ -88,11 +93,14 @@ class StartupTimeline:
         """Record one milestone. Returns the appended event dict."""
         now = time.perf_counter()
         elapsed_ms = (now - self._t0) * 1000.0
-        event = {
+        event: dict[str, Any] = {
             'phase': phase,
             't_ms_from_start': round(elapsed_ms, 1),
             'rss_mb': round(_get_rss_mb(), 1),
         }
+        process_t0 = _PROCESS_T0
+        if process_t0 is not None:
+            event['t_ms_from_process'] = round((now - process_t0) * 1000.0, 1)
         if extra:
             event['extra'] = extra
         with self._lock:
