@@ -4,11 +4,11 @@ Connects to the local IABV MCP server via streamable-http and calls
 a single tool, printing the JSON result to stdout.
 
 Usage:
-    python mcp_probe.py <tool_name> [<json_args>]
+    python mcp_probe.py <tool_name>
 
 Examples:
     python mcp_probe.py ui_bridge_get_state
-    python mcp_probe.py world_model_snapshot '{"refresh": false}'
+    python mcp_probe.py world_model_snapshot
 
 Exit codes:
     0  success (JSON on stdout)
@@ -46,20 +46,13 @@ async def probe(tool_name: str, arguments: dict | None = None, url: str = 'http:
 
 def main() -> None:
     if len(sys.argv) < 2:
-        print('Usage: python mcp_probe.py <tool_name> [<json_args>]', file=sys.stderr)
+        print('Usage: python mcp_probe.py <tool_name>', file=sys.stderr)
         sys.exit(1)
 
     tool_name = sys.argv[1]
-    arguments = None
-    if len(sys.argv) >= 3:
-        try:
-            arguments = json.loads(sys.argv[2])
-        except json.JSONDecodeError as exc:
-            print('Invalid JSON arguments: {0}'.format(exc), file=sys.stderr)
-            sys.exit(1)
 
     try:
-        result = asyncio.run(probe(tool_name, arguments))
+        result = asyncio.run(probe(tool_name))
         print(json.dumps(result, indent=2, default=str, ensure_ascii=False))
     except Exception as exc:
         print('MCP probe failed: {0}'.format(exc), file=sys.stderr)

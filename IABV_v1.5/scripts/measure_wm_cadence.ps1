@@ -46,21 +46,30 @@ Write-Host ''
 # Helpers
 # ---------------------------------------------------------------------------
 
+$script:lastProbeError = ''
+
 function Invoke-MCPTool {
     <# Calls an MCP tool via mcp_probe.py (real streamable-http client).
-       Returns parsed PSObject or $null on failure. #>
+       Returns parsed PSObject or $null on failure.
+       Stores last stderr in $script:lastProbeError for diagnostics. #>
     param(
-        [string]$ToolName,
-        [string]$JsonArgs = '{}'
+        [string]$ToolName
     )
     try {
         $srcPath = Join-Path $WorkspaceRoot 'src'
         $env:PYTHONPATH = $srcPath
-        $raw = & $pythonExe $probeScript $ToolName $JsonArgs 2>$null
+        $errFile = Join-Path $env:TEMP ('mcp_probe_err_{0}.txt' -f [guid]::NewGuid().ToString('N').Substring(0,8))
+        $raw = & $pythonExe $probeScript $ToolName 2>$errFile
+        $script:lastProbeError = ''
+        if (Test-Path $errFile) {
+            $script:lastProbeError = (Get-Content $errFile -Raw -ErrorAction SilentlyContinue)
+            Remove-Item $errFile -Force -ErrorAction SilentlyContinue
+        }
         if ($LASTEXITCODE -ne 0 -or -not $raw) { return $null }
         $joined = $raw -join "`n"
         return ($joined | ConvertFrom-Json)
     } catch {
+        $script:lastProbeError = $_.Exception.Message
         return $null
     }
 }
@@ -100,8 +109,8 @@ function Get-IABVMemory {
 }
 
 function Get-WorldModelWithStats {
-    <# Calls world_model_snapshot via mcp_probe.py. #>
-    return Invoke-MCPTool -ToolName 'world_model_snapshot' -JsonArgs '{"refresh": false}'
+    <# Calls world_model_snapshot via mcp_probe.py (no args needed). #>
+    return Invoke-MCPTool -ToolName 'world_model_snapshot'
 }
 
 function Extract-Freshness($wm) {
@@ -160,6 +169,9 @@ Write-Host '[measure] Esperando MCP bridge (max 90s)...'
 for ($i = 0; $i -lt 90; $i++) {
     Start-Sleep -Seconds 1
     if (Test-MCPBridge) { $bridgeReady = $true; break }
+    if ($i % 15 -eq 14) {
+        Write-Host ('[measure]   ... {0}s elapsed, last error: {1}' -f ($i + 1), $script:lastProbeError)
+    }
 }
 if ($bridgeReady) {
     $bridgeReadyS = [math]::Round(((Get-Date) - $bridgeWaitStart).TotalSeconds, 1)
@@ -168,20 +180,41 @@ if ($bridgeReady) {
 }
 Write-Host ('[measure] Bridge ready: {0} ({1}s)' -f $bridgeReady, $bridgeReadyS)
 
-# --- Smoke check ---
-if ($bridgeReady) {
-    $smokeWm = Get-WorldModelWithStats
-    $smokeStats = Extract-ScanStats $smokeWm
-    $smokeFresh = Extract-Freshness $smokeWm
-    Write-Host ('[measure] SMOKE: scan_count={0} freshness.available={1}' -f $smokeStats.scan_count, $smokeFresh.available)
-    if ($smokeStats.scan_count -lt 0) {
-        Write-Host '[measure] SMOKE FAILED: scan_stats not available via MCP -- aborting'
-        exit 1
-    }
+# --- Smoke check (3 gates) ---
+$smokePass = $true
+
+# Gate 1: ui_bridge_get_state != null
+$smokeUI = Invoke-MCPTool -ToolName 'ui_bridge_get_state'
+if ($null -eq $smokeUI) {
+    Write-Host ('[measure] SMOKE GATE 1 FAILED: ui_bridge_get_state returned null -- {0}' -f $script:lastProbeError)
+    $smokePass = $false
 } else {
-    Write-Host '[measure] SMOKE FAILED: bridge never became ready -- aborting'
+    Write-Host '[measure] SMOKE GATE 1 OK: ui_bridge_get_state responded'
+}
+
+# Gate 2: world_model_snapshot != null
+$smokeWm = Get-WorldModelWithStats
+if ($null -eq $smokeWm) {
+    Write-Host ('[measure] SMOKE GATE 2 FAILED: world_model_snapshot returned null -- {0}' -f $script:lastProbeError)
+    $smokePass = $false
+} else {
+    Write-Host '[measure] SMOKE GATE 2 OK: world_model_snapshot responded'
+}
+
+# Gate 3: scan_stats.scan_count >= 0
+$smokeStats = Extract-ScanStats $smokeWm
+if ($smokeStats.scan_count -lt 0) {
+    Write-Host ('[measure] SMOKE GATE 3 FAILED: scan_count={0} (expected >= 0)' -f $smokeStats.scan_count)
+    $smokePass = $false
+} else {
+    Write-Host ('[measure] SMOKE GATE 3 OK: scan_count={0}' -f $smokeStats.scan_count)
+}
+
+if (-not $smokePass) {
+    Write-Host '[measure] SMOKE FAILED -- aborting run. Fix probe errors above before retrying.'
     exit 1
 }
+Write-Host '[measure] SMOKE PASSED -- proceeding with measurement'
 
 # --- Snapshot at each mark ---
 $snapshots = @{}
