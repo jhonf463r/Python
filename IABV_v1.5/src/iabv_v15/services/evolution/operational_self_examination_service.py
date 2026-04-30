@@ -4758,8 +4758,8 @@ class OperationalSelfExaminationService:
                     confidence=0.95,
                     recommendation=(
                         'Configurar los secretos faltantes via la UI de IABV '
-                        '(auto_provision_missing_secrets) o manualmente en '
-                        '~/.iabv_secrets.ps1.'
+                        '(auto_provision_missing_secrets). IABV abrira el browser '
+                        'a la pagina correcta y guardara el token automaticamente.'
                     ),
                     metadata={
                         'gap_type': 'missing_critical_secrets',

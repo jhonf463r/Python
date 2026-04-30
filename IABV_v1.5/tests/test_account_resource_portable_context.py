@@ -171,7 +171,8 @@ def test_snapshot_survives_quota_read_failure() -> None:
          patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets):
         snap = svc._account_resource_snapshot()
 
-    assert snap['status'] == 'ok'
+    assert snap['status'] == 'partial_failure'
+    assert 'quota_read_failed' in snap['read_failures']
     assert snap['worker_available_count'] == 0
 
 

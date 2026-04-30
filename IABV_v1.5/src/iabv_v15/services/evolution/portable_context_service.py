@@ -716,6 +716,14 @@ class PortableContextService:
         except Exception:
             secrets = {'error': 'secrets_read_failed'}
 
+        failures: list[str] = []
+        if 'error' in quotas:
+            failures.append('quota_read_failed')
+        if 'error' in workers:
+            failures.append('worker_read_failed')
+        if 'error' in secrets:
+            failures.append('secrets_read_failed')
+
         exhausted = [
             {'tool': s['tool'], 'email': s['email'], 'resets_at': s.get('resets_at', '')}
             for s in quotas.get('statuses', []) if s.get('exhausted')
@@ -730,8 +738,10 @@ class PortableContextService:
             for w in workers.get('workers', [])[:15]
         ]
 
+        status = 'partial_failure' if failures else 'ok'
         return {
-            'status': 'ok',
+            'status': status,
+            'read_failures': failures,
             'quota_total_tracked': quotas.get('total_tracked', 0),
             'quota_exhausted_count': quotas.get('exhausted_count', 0),
             'quota_available_count': quotas.get('available_count', 0),
@@ -755,7 +765,7 @@ class PortableContextService:
         items: list[dict[str, Any]] = []
         st = str(status.get('status') or 'scanner_unavailable')
 
-        if st == 'ok':
+        if st in ('ok', 'partial_failure'):
             for w in status.get('available_workers', [])[:8]:
                 items.append({
                     'label': f"{w['tool']}: {w['email']}",
@@ -781,8 +791,18 @@ class PortableContextService:
         tools = status.get('workers_by_tool', [])
         missing_secrets = status.get('secrets_missing', [])
 
-        if st != 'ok':
+        read_failures = status.get('read_failures', [])
+
+        if st == 'scanner_unavailable':
             summary = 'AccountResourceScanner no disponible. Cuotas y workers desconocidos.'
+        elif st == 'partial_failure':
+            failed = ', '.join(read_failures) if read_failures else 'lectura parcial'
+            parts = [f'Lectura parcial ({failed})']
+            if avail > 0:
+                parts.append(f'{avail} workers disponibles')
+            if exhausted > 0:
+                parts.append(f'{exhausted} cuentas agotadas')
+            summary = ' | '.join(parts)
         elif avail == 0 and exhausted == 0:
             summary = 'Sin cuentas rastreadas. El rastreo comienza al enviar mensajes.'
         else:
@@ -804,7 +824,7 @@ class PortableContextService:
             items=items,
             source_kind='account_resource_scanner',
             source_refs=['account_resource_scanner', 'quota_tracker.json'],
-            confidence=0.85 if st == 'ok' else 0.0,
+            confidence=0.85 if st == 'ok' else (0.5 if st == 'partial_failure' else 0.0),
             last_updated=now,
             metadata={
                 'status': st,
