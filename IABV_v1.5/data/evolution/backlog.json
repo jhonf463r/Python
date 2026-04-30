@@ -499,5 +499,25 @@
     "source": "user_goal_2026_04_29",
     "created_at": "2026-04-29T00:00:00+00:00",
     "evidence": "IABV debe compartir aprendizaje entre dispositivos sin crear dos cerebros. La memoria local debe seguir siendo la fuente soberana de runtime y la nube debe actuar como replica/sync de contexto portable, patrones validados, perfiles por dispositivo y auditorias utiles, con reglas claras de conflicto, privacidad y precedencia de verdad viva."
+  },
+  {
+    "id": "cross-ia-message-budget-orchestrator-2026-04-29",
+    "title": "Orquestar presupuestos de mensajes/cuotas entre cuentas, IAs y herramientas",
+    "area": "cloud_reasoning",
+    "priority": "high",
+    "status": "pending",
+    "source": "user_goal_2026_04_29",
+    "created_at": "2026-04-29T00:00:00+00:00",
+    "evidence": "El sistema debe sumar mensajes, cuotas y disponibilidad real de cuentas del usuario para decidir a que IA delegar cada trabajo. Esto no debe crear otro coordinador: debe montarse sobre account_resource_scanner, quota_tracker, best_account_for_tool, estimate_available_workers, StrategySelector y DecisionAuditTrail para usar cada canal donde tenga mejor rendimiento y mas presupuesto disponible."
+  },
+  {
+    "id": "account-auth-visibility-2026-04-29",
+    "title": "Visibilidad soberana de autenticacion por cuenta/correo y bloqueo por IP",
+    "area": "world_model",
+    "priority": "high",
+    "status": "pending",
+    "source": "user_goal_2026_04_29",
+    "created_at": "2026-04-29T00:00:00+00:00",
+    "evidence": "El usuario quiere que IABV detecte que cuentas/correos estan autenticados, cuales quedaron bloqueados por IP/VPN y cuales requieren reautenticacion. Falta exponer ese estado en una vista soberana usando account_resource_scanner, WorldModel y OSES para notificar fallos de sesion sin pedir al usuario que adivine donde esta el bloqueo."
   }
 ]
