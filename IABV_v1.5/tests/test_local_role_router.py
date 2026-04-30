@@ -410,6 +410,30 @@ def test_worker_health_gate_caches_result() -> None:
     assert refreshed['usable'] is True
 
 
+def test_worker_health_gate_different_targets_not_cross_contaminated() -> None:
+    """Cache stores raw pool; different target_assistant values filter independently."""
+    call_count = {'n': 0}
+
+    def _counting_scanner() -> dict[str, Any]:
+        call_count['n'] += 1
+        return _fake_pool_healthy()
+
+    router = _router(
+        _workspace('whg_cross_target'),
+        account_resource_scanner=_counting_scanner,
+    )
+    chatgpt_gate = router.worker_health_gate(target_assistant='chatgpt')
+    codex_gate = router.worker_health_gate(target_assistant='codex')
+
+    assert call_count['n'] == 1, 'scanner should be called once (raw pool cached)'
+    assert chatgpt_gate['usable'] is True
+    assert chatgpt_gate['available_count'] == 1
+    assert chatgpt_gate['workers'][0]['tool'] == 'chatgpt'
+    assert codex_gate['usable'] is True
+    assert codex_gate['available_count'] == 1
+    assert codex_gate['workers'][0]['tool'] == 'codex'
+
+
 def test_route_from_decision_falls_back_when_external_no_worker() -> None:
     router = _router(
         _workspace('whg_route_fallback'),

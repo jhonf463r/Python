@@ -79,8 +79,8 @@ class LocalRoleRouter:
         self._health_snapshot_cache: list[ProviderHealth] = []
         self._health_snapshot_checked_at = 0.0
         self._worker_health_lock = threading.RLock()
-        self._worker_health_cache: dict[str, Any] | None = None
-        self._worker_health_checked_at = 0.0
+        self._worker_pool_cache: dict[str, Any] | None = None
+        self._worker_pool_cached_at: float = 0.0
         self._WORKER_HEALTH_TTL = 30.0
         self._model_profiles = self._build_model_profiles()
         self._role_profiles = self._build_role_profiles()
@@ -115,6 +115,36 @@ class LocalRoleRouter:
     # Worker / account health gate for external-route viability
     # ------------------------------------------------------------------
 
+    def _get_worker_pool(self, *, refresh: bool = False) -> dict[str, Any]:
+        """Return the raw scanner pool, cached with a 30 s TTL.
+
+        The cache stores the **unfiltered** pool so that
+        ``worker_health_gate`` can filter by ``target_assistant`` on every
+        call without re-scanning.
+        """
+        now = time.monotonic()
+        if not refresh:
+            with self._worker_health_lock:
+                if (
+                    self._worker_pool_cache is not None
+                    and (now - self._worker_pool_cached_at) <= self._WORKER_HEALTH_TTL
+                ):
+                    return dict(self._worker_pool_cache)
+
+        try:
+            pool = self._account_resource_scanner()
+        except Exception as exc:
+            pool = {
+                'available_count': 0,
+                'workers': [],
+                'error': str(exc),
+            }
+
+        with self._worker_health_lock:
+            self._worker_pool_cache = dict(pool)
+            self._worker_pool_cached_at = now
+        return pool
+
     def worker_health_gate(
         self,
         *,
@@ -124,9 +154,12 @@ class LocalRoleRouter:
         """Check whether at least one external worker is usable.
 
         Returns ``{'usable': bool, 'reason': str, 'available_count': int,
-        'workers': [...]}`` with a TTL cache.  When no scanner is wired the
-        gate returns ``usable=False`` with an UNRESOLVED reason so that
-        callers never silently assume cloud availability.
+        'workers': [...]}`` filtering from a cached raw pool.  The raw pool
+        is cached with a 30 s TTL; the per-target filter runs on every call
+        so different ``target_assistant`` values never cross-contaminate.
+
+        When no scanner is wired the gate returns ``usable=False`` with an
+        UNRESOLVED reason so callers never silently assume cloud availability.
         """
         if self._account_resource_scanner is None:
             return {
@@ -136,28 +169,15 @@ class LocalRoleRouter:
                 'workers': [],
             }
 
-        now = time.monotonic()
-        if not refresh:
-            with self._worker_health_lock:
-                if (
-                    self._worker_health_cache is not None
-                    and (now - self._worker_health_checked_at) <= self._WORKER_HEALTH_TTL
-                ):
-                    return dict(self._worker_health_cache)
+        pool = self._get_worker_pool(refresh=refresh)
 
-        try:
-            pool = self._account_resource_scanner()
-        except Exception as exc:
-            result: dict[str, Any] = {
+        if 'error' in pool:
+            return {
                 'usable': False,
-                'reason': f'Error al escanear workers: {exc}',
+                'reason': f'Error al escanear workers: {pool["error"]}',
                 'available_count': 0,
                 'workers': [],
             }
-            with self._worker_health_lock:
-                self._worker_health_cache = dict(result)
-                self._worker_health_checked_at = now
-            return result
 
         available = pool.get('available_count', 0)
         workers = pool.get('workers', [])
@@ -179,31 +199,26 @@ class LocalRoleRouter:
                 reason = f'No hay worker usable para {target} (agotados o sin sesion).'
             else:
                 reason = 'Todos los workers estan agotados o sin sesion activa.'
-            result = {
+            return {
                 'usable': False,
                 'reason': reason,
                 'available_count': 0,
                 'workers': [],
             }
-        else:
-            result = {
-                'usable': True,
-                'reason': '',
-                'available_count': len(matching),
-                'workers': [
-                    {
-                        'tool': w.get('tool', ''),
-                        'email': w.get('email', ''),
-                        'remaining': w.get('remaining_messages', 0),
-                    }
-                    for w in matching[:10]
-                ],
-            }
 
-        with self._worker_health_lock:
-            self._worker_health_cache = dict(result)
-            self._worker_health_checked_at = now
-        return result
+        return {
+            'usable': True,
+            'reason': '',
+            'available_count': len(matching),
+            'workers': [
+                {
+                    'tool': w.get('tool', ''),
+                    'email': w.get('email', ''),
+                    'remaining': w.get('remaining_messages', 0),
+                }
+                for w in matching[:10]
+            ],
+        }
 
     def infer_task(self, request: InferenceRequest) -> tuple[RoleRoute, InferenceResult]:
         decision_context = self._decision_context_from_request(request)
