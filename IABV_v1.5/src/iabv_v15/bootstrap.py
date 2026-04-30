@@ -1445,6 +1445,11 @@ class AppBootstrap:
             except Exception as exc:
                 logger.warning('deferred_tool_availability_probe failed: %s', exc)
             try:
+                self.role_router.health_snapshot(refresh=True, max_age_seconds=0.0)
+                logger.debug('deferred_post_window: provider health cache pre-seeded')
+            except Exception as exc:
+                logger.debug('deferred_post_window: provider health pre-seed skipped: %s', exc)
+            try:
                 self._timeline.mark('deferred_post_window_setup_done')
             except Exception:
                 pass
