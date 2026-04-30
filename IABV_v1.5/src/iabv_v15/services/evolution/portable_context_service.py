@@ -111,6 +111,7 @@ class PortableContextService:
         cloud_reasoning_status = self._cloud_reasoning_snapshot()
         code_audit_status = self._code_audit_snapshot()
         startup_health = self._startup_health_snapshot()
+        account_resource = self._account_resource_snapshot()
         pending_items = self._pending_items()
         backlog_items = self._backlog_items()
         decision_history = self._decision_history(recommendations=recommendations)
@@ -151,6 +152,7 @@ class PortableContextService:
             self._code_audit_section(status=code_audit_status, now=now),
             self._cloud_reasoning_section(status=cloud_reasoning_status, now=now),
             self._startup_health_section(status=startup_health, now=now),
+            self._account_resource_section(status=account_resource, now=now),
             self._recommended_routes_section(recommendations=recommendations, now=now),
             self._operational_blocks_section(world=world, recommendations=recommendations, now=now),
             self._validated_decisions_section(
@@ -193,6 +195,7 @@ class PortableContextService:
                 'tool_evolution_validated_proposals': list(tool_evolution_decisions.get('entries') or []),
                 'cloud_reasoning_status': dict(cloud_reasoning_status),
                 'startup_health': dict(startup_health),
+                'account_resource': dict(account_resource),
                 'autoexamination_summary': dict(self_examination.get('summary_payload') or {}),
                 'recurring_issues': list(self_examination.get('recurring_issues') or []),
                 'recommended_adjustments': list(self_examination.get('recommended_adjustments') or []),
@@ -678,6 +681,141 @@ class PortableContextService:
             'false_ready_reasons': false_ready_reason,
             'unresolved_fields': unresolved,
         }
+
+    def _account_resource_snapshot(self) -> dict[str, Any]:
+        """Build a lightweight summary of account health, quotas and workers.
+
+        Reads existing functions from ``account_resource_scanner`` — no new
+        persistence, no new service.  Failures are swallowed so the portable
+        context build never crashes because of a scanner issue.
+        """
+        try:
+            from iabv_v15.services.account_resource_scanner import (
+                get_all_quota_status,
+                estimate_available_workers,
+                scan_configured_secrets,
+            )
+        except Exception:
+            return {'status': 'scanner_unavailable'}
+
+        quotas: dict[str, Any] = {}
+        try:
+            quotas = get_all_quota_status()
+        except Exception:
+            quotas = {'error': 'quota_read_failed'}
+
+        workers: dict[str, Any] = {}
+        try:
+            workers = estimate_available_workers()
+        except Exception:
+            workers = {'error': 'worker_read_failed'}
+
+        secrets: dict[str, Any] = {}
+        try:
+            secrets = scan_configured_secrets()
+        except Exception:
+            secrets = {'error': 'secrets_read_failed'}
+
+        exhausted = [
+            {'tool': s['tool'], 'email': s['email'], 'resets_at': s.get('resets_at', '')}
+            for s in quotas.get('statuses', []) if s.get('exhausted')
+        ]
+        available_workers = [
+            {
+                'tool': w['tool'],
+                'email': w['email'],
+                'remaining': w['remaining_messages'],
+                'limit': w['limit'],
+            }
+            for w in workers.get('workers', [])[:15]
+        ]
+
+        return {
+            'status': 'ok',
+            'quota_total_tracked': quotas.get('total_tracked', 0),
+            'quota_exhausted_count': quotas.get('exhausted_count', 0),
+            'quota_available_count': quotas.get('available_count', 0),
+            'exhausted_accounts': exhausted[:10],
+            'worker_available_count': workers.get('available_count', 0),
+            'worker_exhausted_count': workers.get('exhausted_count', 0),
+            'worker_total_remaining_messages': workers.get('total_remaining_messages', 0),
+            'workers_by_tool': list(workers.get('tools_available', [])),
+            'available_workers': available_workers,
+            'secrets_configured': secrets.get('configured_count', 0),
+            'secrets_missing': list(secrets.get('missing', []))[:5],
+        }
+
+    def _account_resource_section(self, *, status: dict[str, Any], now) -> PortableContextSection:
+        """Export account/quota/worker health to portable context.
+
+        Ensures the next session knows: which accounts have messages left,
+        which are exhausted, what tools have active workers, and what
+        secrets are missing — without re-scanning everything.
+        """
+        items: list[dict[str, Any]] = []
+        st = str(status.get('status') or 'scanner_unavailable')
+
+        if st == 'ok':
+            for w in status.get('available_workers', [])[:8]:
+                items.append({
+                    'label': f"{w['tool']}: {w['email']}",
+                    'remaining': w['remaining'],
+                    'limit': w['limit'],
+                    'status': 'available',
+                })
+            for e in status.get('exhausted_accounts', [])[:5]:
+                items.append({
+                    'label': f"{e['tool']}: {e['email']}",
+                    'status': 'exhausted',
+                    'resets_at': e.get('resets_at', ''),
+                })
+            for m in status.get('secrets_missing', [])[:3]:
+                items.append({
+                    'label': f'Secreto faltante: {m}',
+                    'status': 'missing',
+                })
+
+        avail = status.get('worker_available_count', 0)
+        exhausted = status.get('quota_exhausted_count', 0)
+        remaining = status.get('worker_total_remaining_messages', 0)
+        tools = status.get('workers_by_tool', [])
+        missing_secrets = status.get('secrets_missing', [])
+
+        if st != 'ok':
+            summary = 'AccountResourceScanner no disponible. Cuotas y workers desconocidos.'
+        elif avail == 0 and exhausted == 0:
+            summary = 'Sin cuentas rastreadas. El rastreo comienza al enviar mensajes.'
+        else:
+            parts = [f'{avail} workers disponibles']
+            if remaining > 0:
+                parts.append(f'{remaining} mensajes restantes')
+            if exhausted > 0:
+                parts.append(f'{exhausted} cuentas agotadas')
+            if tools:
+                parts.append(f'tools: {", ".join(tools)}')
+            if missing_secrets:
+                parts.append(f'{len(missing_secrets)} secretos faltantes')
+            summary = ' | '.join(parts)
+
+        return self._section(
+            section_id='account_resource_health',
+            title='Salud de cuentas, cuotas y workers',
+            summary=summary,
+            items=items,
+            source_kind='account_resource_scanner',
+            source_refs=['account_resource_scanner', 'quota_tracker.json'],
+            confidence=0.85 if st == 'ok' else 0.0,
+            last_updated=now,
+            metadata={
+                'status': st,
+                'worker_available_count': avail,
+                'quota_exhausted_count': exhausted,
+                'total_remaining_messages': remaining,
+                'tools_available': tools,
+                'secrets_configured': status.get('secrets_configured', 0),
+                'secrets_missing': missing_secrets,
+            },
+        )
 
     def _cloud_reasoning_snapshot(self) -> dict[str, Any]:
         audit = getattr(self, 'decision_audit_trail', None)

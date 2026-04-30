@@ -693,6 +693,9 @@ class OperationalSelfExaminationService:
         findings.extend(self._runtime_log_findings())
         # Fix 42-43: Functional gap analysis and underutilized resource detection
         findings.extend(self._functional_gap_findings())
+        # Account/quota/worker health: detect exhausted quotas, API issues,
+        # missing critical secrets — feeds cross-session learning.
+        findings.extend(self._account_resource_health_findings())
         # UI self-awareness: detect own window issues (zombie, missing, duplicate)
         findings.extend(self._ui_self_examination_findings(world=world))
 
@@ -4639,6 +4642,130 @@ class OperationalSelfExaminationService:
                                 'models': model_names[:10],
                             },
                         ))
+        except Exception:
+            pass
+
+        return findings
+
+    def _account_resource_health_findings(self) -> list[SelfExaminationFinding]:
+        """Detect account/quota/worker health issues for cross-session learning.
+
+        Complements ``_functional_gap_findings`` (which detects orphan sessions
+        and untracked quotas) by looking at ACTIONABLE health problems:
+        - Accounts with ALL quotas exhausted (no remaining capacity)
+        - APIs configured but failing (GitHub, Devin, Ollama)
+        - High ratio of exhausted vs available workers
+        - Missing critical secrets that block tool usage
+
+        No new service, no new persistence — reads existing scanner data.
+        """
+        findings: list[SelfExaminationFinding] = []
+
+        try:
+            from iabv_v15.services.account_resource_scanner import (
+                get_all_quota_status,
+                scan_configured_secrets,
+                scan_github_api,
+                scan_ollama_api,
+            )
+        except Exception:
+            return findings
+
+        # Finding 1: Exhausted quotas blocking execution
+        try:
+            quotas = get_all_quota_status()
+            exhausted_count = quotas.get('exhausted_count', 0)
+            available_count = quotas.get('available_count', 0)
+            total = exhausted_count + available_count
+
+            if total > 0 and exhausted_count > 0:
+                ratio = exhausted_count / total
+                if ratio >= 0.5:
+                    exhausted_keys = quotas.get('exhausted_keys', [])
+                    severity = IssueSeverity.HIGH if ratio >= 1.0 else IssueSeverity.MEDIUM
+                    findings.append(SelfExaminationFinding(
+                        category='resource_exhaustion',
+                        title=f'{exhausted_count}/{total} cuentas con cuota agotada',
+                        summary=(
+                            f'{exhausted_count} de {total} cuentas rastreadas tienen '
+                            f'la cuota de mensajes agotada. '
+                            + ('No quedan workers disponibles para consultas externas. '
+                               if ratio >= 1.0
+                               else f'Solo {available_count} cuenta(s) disponible(s). ')
+                            + 'El sistema deberia priorizar rutas locales (Ollama) '
+                            'hasta que las cuotas se reactiven.'
+                        ),
+                        severity=severity,
+                        confidence=0.9,
+                        recommendation=(
+                            'Esperar reactivacion de cuotas o rotar a cuentas '
+                            'frescas. Mientras tanto, usar Ollama como ruta principal.'
+                        ),
+                        evidence_refs=[f'exhausted_keys:{",".join(exhausted_keys[:5])}'],
+                        metadata={
+                            'gap_type': 'quota_exhaustion',
+                            'exhausted_count': exhausted_count,
+                            'available_count': available_count,
+                            'exhaustion_ratio': round(ratio, 2),
+                        },
+                    ))
+        except Exception:
+            pass
+
+        # Finding 2: API health issues
+        try:
+            gh = scan_github_api()
+            if gh.get('available') and gh.get('remaining', 5000) < 50:
+                findings.append(SelfExaminationFinding(
+                    category='resource_degradation',
+                    title=f'GitHub API: solo {gh["remaining"]} requests restantes',
+                    summary=(
+                        f'GitHub API tiene solo {gh["remaining"]}/{gh.get("rate_limit", "?")} '
+                        f'requests restantes. Se reinicia en {gh.get("reset_at", "?")}. '
+                        f'Operaciones que dependan de GitHub podrian fallar.'
+                    ),
+                    severity=IssueSeverity.MEDIUM,
+                    confidence=0.95,
+                    recommendation='Reducir consultas a GitHub API hasta reinicio de rate limit.',
+                    metadata={
+                        'gap_type': 'api_rate_limit',
+                        'remaining': gh.get('remaining', 0),
+                        'limit': gh.get('rate_limit', 0),
+                        'reset_at': gh.get('reset_at', ''),
+                    },
+                ))
+        except Exception:
+            pass
+
+        # Finding 3: Critical secrets missing
+        try:
+            secrets = scan_configured_secrets()
+            missing = secrets.get('missing', [])
+            critical_missing = [
+                s for s in missing
+                if s in ('GITHUB_TOKEN_IABV', 'DEVIN_API_KEY_IABV')
+            ]
+            if critical_missing:
+                findings.append(SelfExaminationFinding(
+                    category='configuration_gap',
+                    title=f'Secretos criticos faltantes: {", ".join(critical_missing)}',
+                    summary=(
+                        f'{len(critical_missing)} secreto(s) critico(s) no configurado(s): '
+                        f'{", ".join(critical_missing)}. Esto bloquea funcionalidad '
+                        f'esencial (GitHub, Devin API).'
+                    ),
+                    severity=IssueSeverity.HIGH,
+                    confidence=0.95,
+                    recommendation=(
+                        'Configurar los secretos faltantes via la UI de IABV '
+                        '(auto_provision_missing_secrets) o manualmente en '
+                        '~/.iabv_secrets.ps1.'
+                    ),
+                    metadata={
+                        'gap_type': 'missing_critical_secrets',
+                        'missing_secrets': critical_missing,
+                    },
+                ))
         except Exception:
             pass
 
