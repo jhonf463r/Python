@@ -2277,9 +2277,14 @@ class AdaptiveTaskOrchestrator:
         )
 
     def _build_route(self, session: AdaptiveSession, decision_context: DecisionContext) -> RoleRoute:
+        governance = dict(decision_context.governance or {})
+        requires_external = bool(governance.get('should_consult'))
+        target_assistant = str(governance.get('assistant_kind') or '').strip().lower()
         route = self.role_router.route_from_decision(
             decision_context.route_decision,
             provider_name='Adaptive local orchestrator',
+            requires_external=requires_external,
+            target_assistant=target_assistant,
         )
         route.reason = f"{route.reason} Pack: {session.chosen_pack_title or session.chosen_pack_id} ({session.intent.disposition.value}).".strip()
         return route
@@ -3026,14 +3031,23 @@ class AdaptiveTaskOrchestrator:
                     },
                 )
             )
+        worker_gate = self.role_router.worker_health_gate(
+            target_assistant=normalized_assistant,
+        )
+        blocked = bool(governance.get('block_risky_action') or governance.get('approval_required'))
+        reason = str(governance.get('reason') or '')
+        if not blocked and not worker_gate.get('usable', False):
+            blocked = True
+            reason = str(worker_gate.get('reason') or 'No hay worker usable para esta ruta.')
         return {
             'assistant_kind': normalized_assistant,
             'world_model': world_model.model_dump(mode='json'),
             'world_model_summary': self._world_model_summary(world_model),
             'governance': governance,
             'approval_checkpoints': [item.model_dump(mode='json') for item in approval_checkpoints],
-            'blocked': bool(governance.get('block_risky_action') or governance.get('approval_required')),
-            'reason': str(governance.get('reason') or ''),
+            'blocked': blocked,
+            'reason': reason,
+            'worker_health': worker_gate,
         }
 
     def _build_governance(

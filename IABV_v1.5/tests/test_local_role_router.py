@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 from iabv_v15.domain.models import (
@@ -86,7 +87,13 @@ def _workspace(name: str) -> Path:
     return root
 
 
-def _router(root: Path, *, general_fail: bool = False, visual_fail: bool = False) -> LocalRoleRouter:
+def _router(
+    root: Path,
+    *,
+    general_fail: bool = False,
+    visual_fail: bool = False,
+    account_resource_scanner: Any | None = None,
+) -> LocalRoleRouter:
     db = AppDatabase(str(root / 'app.sqlite'))
     episodes = EpisodeRepository(str(root / 'episodes'), db)
     knowledge = KnowledgeRepository(db)
@@ -130,6 +137,7 @@ def _router(root: Path, *, general_fail: bool = False, visual_fail: bool = False
         knowledge_repository=knowledge,
         run_repository=runs,
         artifact_repository=artifacts,
+        account_resource_scanner=account_resource_scanner,
     )
 
 
@@ -282,3 +290,179 @@ def test_local_role_router_caches_health_snapshot_until_forced() -> None:
     assert router.visual_provider.health_calls == 2
     assert router.optional_provider.health_calls == 2
     assert embedding_calls['count'] == 2
+
+
+# ─────────────────────────────────────────────────────────────────
+# Worker health gate tests
+# ─────────────────────────────────────────────────────────────────
+
+def _fake_pool_healthy() -> dict[str, Any]:
+    return {
+        'available_count': 2,
+        'exhausted_count': 0,
+        'total_remaining_messages': 30,
+        'workers': [
+            {'email': 'a@test.com', 'tool': 'chatgpt', 'remaining_messages': 20, 'exhausted': False},
+            {'email': 'b@test.com', 'tool': 'codex', 'remaining_messages': 10, 'exhausted': False},
+        ],
+        'exhausted': [],
+        'tools_available': ['chatgpt', 'codex'],
+    }
+
+
+def _fake_pool_exhausted() -> dict[str, Any]:
+    return {
+        'available_count': 0,
+        'exhausted_count': 2,
+        'total_remaining_messages': 0,
+        'workers': [
+            {'email': 'a@test.com', 'tool': 'chatgpt', 'remaining_messages': 0, 'exhausted': True},
+            {'email': 'b@test.com', 'tool': 'codex', 'remaining_messages': 0, 'exhausted': True},
+        ],
+        'exhausted': [],
+        'tools_available': [],
+    }
+
+
+def _fake_pool_error() -> dict[str, Any]:
+    raise RuntimeError('scanner offline')
+
+
+def test_worker_health_gate_no_scanner_returns_unresolved() -> None:
+    router = _router(_workspace('whg_no_scanner'))
+    gate = router.worker_health_gate()
+    assert gate['usable'] is False
+    assert 'UNRESOLVED' in gate['reason']
+    assert gate['available_count'] == 0
+
+
+def test_worker_health_gate_healthy_pool_returns_usable() -> None:
+    router = _router(
+        _workspace('whg_healthy'),
+        account_resource_scanner=_fake_pool_healthy,
+    )
+    gate = router.worker_health_gate()
+    assert gate['usable'] is True
+    assert gate['available_count'] == 2
+    assert len(gate['workers']) == 2
+
+
+def test_worker_health_gate_healthy_pool_filters_by_target() -> None:
+    router = _router(
+        _workspace('whg_target'),
+        account_resource_scanner=_fake_pool_healthy,
+    )
+    gate = router.worker_health_gate(target_assistant='codex')
+    assert gate['usable'] is True
+    assert gate['available_count'] == 1
+    assert gate['workers'][0]['tool'] == 'codex'
+
+
+def test_worker_health_gate_target_not_found_returns_not_usable() -> None:
+    router = _router(
+        _workspace('whg_target_miss'),
+        account_resource_scanner=_fake_pool_healthy,
+    )
+    gate = router.worker_health_gate(target_assistant='claude')
+    assert gate['usable'] is False
+    assert 'claude' in gate['reason']
+
+
+def test_worker_health_gate_exhausted_pool_returns_not_usable() -> None:
+    router = _router(
+        _workspace('whg_exhausted'),
+        account_resource_scanner=_fake_pool_exhausted,
+    )
+    gate = router.worker_health_gate()
+    assert gate['usable'] is False
+    assert gate['available_count'] == 0
+
+
+def test_worker_health_gate_scanner_error_returns_not_usable() -> None:
+    router = _router(
+        _workspace('whg_error'),
+        account_resource_scanner=_fake_pool_error,
+    )
+    gate = router.worker_health_gate()
+    assert gate['usable'] is False
+    assert 'scanner offline' in gate['reason']
+
+
+def test_worker_health_gate_caches_result() -> None:
+    call_count = {'n': 0}
+
+    def _counting_scanner() -> dict[str, Any]:
+        call_count['n'] += 1
+        return _fake_pool_healthy()
+
+    router = _router(
+        _workspace('whg_cache'),
+        account_resource_scanner=_counting_scanner,
+    )
+    first = router.worker_health_gate()
+    second = router.worker_health_gate()
+
+    assert first == second
+    assert call_count['n'] == 1
+
+    refreshed = router.worker_health_gate(refresh=True)
+    assert call_count['n'] == 2
+    assert refreshed['usable'] is True
+
+
+def test_route_from_decision_falls_back_when_external_no_worker() -> None:
+    router = _router(
+        _workspace('whg_route_fallback'),
+        account_resource_scanner=_fake_pool_exhausted,
+    )
+    decision = IntentRouteDecision(
+        detected_role=TaskRole.PROJECT_EVOLUTION,
+        planner_required=False,
+        visual_required=False,
+        tool_chain=[],
+        reason='Codex consultation needed.',
+    )
+    route = router.route_from_decision(
+        decision,
+        requires_external=True,
+        target_assistant='codex',
+    )
+    assert 'Fallback local' in route.reason
+    assert route.provider_name == 'Ollama'
+
+
+def test_route_from_decision_passes_through_when_external_worker_available() -> None:
+    router = _router(
+        _workspace('whg_route_pass'),
+        account_resource_scanner=_fake_pool_healthy,
+    )
+    decision = IntentRouteDecision(
+        detected_role=TaskRole.PROJECT_EVOLUTION,
+        planner_required=False,
+        visual_required=False,
+        tool_chain=[],
+        reason='Codex consultation needed.',
+    )
+    route = router.route_from_decision(
+        decision,
+        requires_external=True,
+        target_assistant='codex',
+    )
+    assert 'Fallback local' not in route.reason
+    assert route.provider_name == 'Adaptive local orchestrator'
+
+
+def test_route_from_decision_no_external_skips_gate() -> None:
+    router = _router(
+        _workspace('whg_route_no_ext'),
+        account_resource_scanner=_fake_pool_exhausted,
+    )
+    decision = IntentRouteDecision(
+        detected_role=TaskRole.TRAINING,
+        planner_required=False,
+        visual_required=False,
+        tool_chain=[],
+        reason='Local training.',
+    )
+    route = router.route_from_decision(decision)
+    assert 'Fallback local' not in route.reason
