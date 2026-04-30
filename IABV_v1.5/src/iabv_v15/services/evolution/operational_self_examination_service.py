@@ -75,8 +75,9 @@ class OperationalSelfExaminationService:
         self.decision_audit_trail: Any | None = None
         self.code_audit_trail: Any | None = None
         self._current_review: SelfExaminationSnapshot | None = None
-        # TTL cache for scan_github_api() — avoids a live HTTP probe on
-        # every build_review().  60 s matches the PortableContext TTL.
+        # Read-only cache for GitHub API rate-limit data.  Populated
+        # externally (e.g. auto-correction scan); _account_resource_health_findings
+        # never probes — it only reads if fresh, otherwise skips the finding.
         self._gh_api_cache: dict[str, Any] | None = None
         self._gh_api_cached_at: float = 0.0
         self._GH_API_TTL: float = 60.0
@@ -4658,14 +4659,15 @@ class OperationalSelfExaminationService:
         Complements ``_functional_gap_findings`` (which detects orphan sessions
         and untracked quotas) by looking at ACTIONABLE health problems:
         - Accounts with >= 50% quotas exhausted (HIGH if 100%)
-        - GitHub API rate limit running low (< 50 requests) — **cached**, no
-          live probe per rebuild
+        - GitHub API rate limit running low (< 50 requests) — **read-only
+          from prior cache**, this method never calls ``scan_github_api()``
         - Missing critical secrets (GITHUB_TOKEN_IABV, DEVIN_API_KEY_IABV)
 
         ``get_all_quota_status`` and ``scan_configured_secrets`` are cheap
-        (local JSON / env vars).  ``scan_github_api`` is a live HTTP call so
-        we read from a 60 s TTL cache instead; if no cached data exists we
-        skip the finding rather than issuing a network request.
+        (local JSON / env vars).  The GitHub API finding consumes
+        ``_gh_api_cache`` populated externally (e.g. by the auto-correction
+        scan or a dedicated refresh task).  If no fresh cache exists the
+        finding is simply not emitted — no live HTTP probe from here.
         """
         findings: list[SelfExaminationFinding] = []
 
@@ -4673,7 +4675,6 @@ class OperationalSelfExaminationService:
             from iabv_v15.services.account_resource_scanner import (
                 get_all_quota_status,
                 scan_configured_secrets,
-                scan_github_api,
             )
         except Exception:
             return findings
@@ -4719,18 +4720,16 @@ class OperationalSelfExaminationService:
         except Exception:
             pass
 
-        # Finding 2: API health — read from TTL cache, never live probe here
+        # Finding 2: API health — consume prior cache only, never probe here.
+        # _gh_api_cache is populated externally; if absent or stale we skip.
         now = time.monotonic()
         gh = self._gh_api_cache
-        if gh is None or (now - self._gh_api_cached_at) > self._GH_API_TTL:
-            try:
-                gh = scan_github_api()
-                self._gh_api_cache = gh
-                self._gh_api_cached_at = now
-            except Exception:
-                gh = None
+        cache_fresh = (
+            gh is not None
+            and (now - self._gh_api_cached_at) <= self._GH_API_TTL
+        )
 
-        if gh is not None and gh.get('available') and gh.get('remaining', 5000) < 50:
+        if cache_fresh and gh.get('available') and gh.get('remaining', 5000) < 50:
             findings.append(SelfExaminationFinding(
                 category='resource_degradation',
                 title=f'GitHub API: solo {gh["remaining"]} requests restantes',

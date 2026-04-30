@@ -407,10 +407,11 @@ def test_oses_no_finding_when_quotas_healthy() -> None:
     assert len(exhaustion_findings) == 0
 
 
-def test_oses_finding_github_rate_limit_low() -> None:
-    """OSES detects when GitHub API rate limit is critically low."""
-    root = _workspace('oses_gh_rate_low')
+def test_oses_gh_no_cache_no_probe_no_finding() -> None:
+    """Without prior cache, scan_github_api is NOT called and no GitHub finding emitted."""
+    root = _workspace('oses_gh_no_cache')
     oses = _make_oses(root)
+    call_count = 0
 
     def mock_quotas():
         return {'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
@@ -419,12 +420,40 @@ def test_oses_finding_github_rate_limit_low() -> None:
         return {'configured': [], 'missing': [], 'configured_count': 0, 'missing_count': 0}
 
     def mock_gh():
-        return {'available': True, 'remaining': 12, 'rate_limit': 5000,
-                'reset_at': '2026-04-21T01:00:00Z'}
+        nonlocal call_count
+        call_count += 1
+        return {'available': True, 'remaining': 12, 'rate_limit': 5000}
 
     with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
          patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets), \
          patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh):
+        findings = oses._account_resource_health_findings()
+
+    assert call_count == 0, f'scan_github_api should never be called, but was called {call_count}x'
+    api_findings = [f for f in findings if f.category == 'resource_degradation']
+    assert len(api_findings) == 0
+
+
+def test_oses_gh_fresh_cache_emits_finding() -> None:
+    """With fresh cache pre-loaded showing low rate limit, OSES emits finding."""
+    root = _workspace('oses_gh_fresh_cache')
+    oses = _make_oses(root)
+
+    # Pre-load cache externally (simulating auto-correction scan or similar)
+    oses._gh_api_cache = {
+        'available': True, 'remaining': 12, 'rate_limit': 5000,
+        'reset_at': '2026-04-21T01:00:00Z',
+    }
+    oses._gh_api_cached_at = time.monotonic()
+
+    def mock_quotas():
+        return {'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
+
+    def mock_secrets():
+        return {'configured': [], 'missing': [], 'configured_count': 0, 'missing_count': 0}
+
+    with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
+         patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets):
         findings = oses._account_resource_health_findings()
 
     api_findings = [f for f in findings if f.category == 'resource_degradation']
@@ -432,8 +461,41 @@ def test_oses_finding_github_rate_limit_low() -> None:
     assert '12' in api_findings[0].title
 
 
+def test_oses_gh_expired_cache_no_probe_no_finding() -> None:
+    """With expired cache, scan_github_api is NOT called and no GitHub finding emitted."""
+    root = _workspace('oses_gh_expired')
+    oses = _make_oses(root)
+    oses._GH_API_TTL = 0.0  # TTL = 0 → cache always stale
+
+    # Pre-load stale cache
+    oses._gh_api_cache = {'available': True, 'remaining': 5, 'rate_limit': 5000}
+    oses._gh_api_cached_at = time.monotonic() - 999
+
+    call_count = 0
+
+    def mock_quotas():
+        return {'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
+
+    def mock_secrets():
+        return {'configured': [], 'missing': [], 'configured_count': 0, 'missing_count': 0}
+
+    def mock_gh():
+        nonlocal call_count
+        call_count += 1
+        return {'available': True, 'remaining': 3, 'rate_limit': 5000}
+
+    with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
+         patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets), \
+         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh):
+        findings = oses._account_resource_health_findings()
+
+    assert call_count == 0, f'scan_github_api should never be called, but was called {call_count}x'
+    api_findings = [f for f in findings if f.category == 'resource_degradation']
+    assert len(api_findings) == 0
+
+
 def test_oses_finding_critical_secrets_missing() -> None:
-    """OSES detects missing critical secrets."""
+    """OSES detects missing critical secrets (no scan_github_api involved)."""
     root = _workspace('oses_secrets_missing')
     oses = _make_oses(root)
 
@@ -444,12 +506,8 @@ def test_oses_finding_critical_secrets_missing() -> None:
         return {'configured': [], 'missing': ['GITHUB_TOKEN_IABV', 'OPENAI_API_KEY'],
                 'configured_count': 0, 'missing_count': 2}
 
-    def mock_gh():
-        return {'available': False, 'reason': 'no_token'}
-
     with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
-         patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets), \
-         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh):
+         patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets):
         findings = oses._account_resource_health_findings()
 
     config_findings = [f for f in findings if f.category == 'configuration_gap']
@@ -470,70 +528,12 @@ def test_oses_no_finding_when_non_critical_secrets_missing() -> None:
         return {'configured': ['GITHUB_TOKEN_IABV'], 'missing': ['OPENAI_API_KEY'],
                 'configured_count': 1, 'missing_count': 1}
 
-    def mock_gh():
-        return {'available': True, 'remaining': 5000, 'rate_limit': 5000}
-
     with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
-         patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets), \
-         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh):
+         patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets):
         findings = oses._account_resource_health_findings()
 
     config_findings = [f for f in findings if f.category == 'configuration_gap']
     assert len(config_findings) == 0
-
-
-def test_oses_github_api_uses_ttl_cache() -> None:
-    """scan_github_api is called once; second call within TTL reuses cache."""
-    root = _workspace('oses_gh_ttl')
-    oses = _make_oses(root)
-    call_count = 0
-
-    def mock_quotas():
-        return {'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
-
-    def mock_secrets():
-        return {'configured': [], 'missing': [], 'configured_count': 0, 'missing_count': 0}
-
-    def mock_gh():
-        nonlocal call_count
-        call_count += 1
-        return {'available': True, 'remaining': 12, 'rate_limit': 5000,
-                'reset_at': '2026-04-21T01:00:00Z'}
-
-    with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
-         patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets), \
-         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh):
-        oses._account_resource_health_findings()
-        oses._account_resource_health_findings()
-
-    assert call_count == 1, f'scan_github_api called {call_count} times, expected 1 (TTL cache)'
-
-
-def test_oses_github_api_cache_expires() -> None:
-    """After TTL expires, scan_github_api is called again."""
-    root = _workspace('oses_gh_ttl_expire')
-    oses = _make_oses(root)
-    oses._GH_API_TTL = 0.0  # expire immediately
-    call_count = 0
-
-    def mock_quotas():
-        return {'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
-
-    def mock_secrets():
-        return {'configured': [], 'missing': [], 'configured_count': 0, 'missing_count': 0}
-
-    def mock_gh():
-        nonlocal call_count
-        call_count += 1
-        return {'available': True, 'remaining': 4999, 'rate_limit': 5000}
-
-    with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
-         patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets), \
-         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh):
-        oses._account_resource_health_findings()
-        oses._account_resource_health_findings()
-
-    assert call_count == 2, f'scan_github_api called {call_count} times, expected 2 (cache expired)'
 
 
 def test_oses_survives_scanner_failure() -> None:
