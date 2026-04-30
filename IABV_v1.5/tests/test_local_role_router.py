@@ -466,3 +466,51 @@ def test_route_from_decision_no_external_skips_gate() -> None:
     )
     route = router.route_from_decision(decision)
     assert 'Fallback local' not in route.reason
+
+
+# ── Bootstrap wiring tests ──────────────────────────────────────
+
+
+def test_bootstrap_wiring_scanner_callable_produces_real_gate() -> None:
+    """Verify that passing estimate_available_workers as the scanner
+    produces a real gate result (not UNRESOLVED) — this mirrors the
+    bootstrap.py wiring pattern."""
+    from iabv_v15.services.account_resource_scanner import estimate_available_workers
+
+    router = _router(
+        _workspace('whg_bootstrap_wiring'),
+        account_resource_scanner=estimate_available_workers,
+    )
+    gate = router.worker_health_gate()
+    # On a Linux CI box there are no browser sessions, so available_count
+    # will be 0 — but the gate must still report a REAL result (not
+    # UNRESOLVED) because the scanner *is* wired and callable.
+    assert 'UNRESOLVED' not in gate['reason']
+    assert isinstance(gate['usable'], bool)
+    assert isinstance(gate['available_count'], int)
+
+
+def test_bootstrap_wiring_route_with_real_scanner_no_workers() -> None:
+    """When the real scanner is wired but returns 0 workers (Linux CI),
+    route_from_decision with requires_external must fallback to local."""
+    from iabv_v15.services.account_resource_scanner import estimate_available_workers
+
+    router = _router(
+        _workspace('whg_bootstrap_route'),
+        account_resource_scanner=estimate_available_workers,
+    )
+    decision = IntentRouteDecision(
+        detected_role=TaskRole.PROJECT_EVOLUTION,
+        planner_required=False,
+        visual_required=False,
+        tool_chain=[],
+        reason='External consultation.',
+    )
+    route = router.route_from_decision(
+        decision,
+        requires_external=True,
+        target_assistant='codex',
+    )
+    # On Linux CI: no browser sessions → 0 workers → fallback local
+    assert 'Fallback local' in route.reason
+    assert route.provider_name == 'Ollama'
