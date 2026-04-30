@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 from iabv_v15.domain.models import (
@@ -86,7 +87,13 @@ def _workspace(name: str) -> Path:
     return root
 
 
-def _router(root: Path, *, general_fail: bool = False, visual_fail: bool = False) -> LocalRoleRouter:
+def _router(
+    root: Path,
+    *,
+    general_fail: bool = False,
+    visual_fail: bool = False,
+    account_resource_scanner: Any | None = None,
+) -> LocalRoleRouter:
     db = AppDatabase(str(root / 'app.sqlite'))
     episodes = EpisodeRepository(str(root / 'episodes'), db)
     knowledge = KnowledgeRepository(db)
@@ -130,6 +137,7 @@ def _router(root: Path, *, general_fail: bool = False, visual_fail: bool = False
         knowledge_repository=knowledge,
         run_repository=runs,
         artifact_repository=artifacts,
+        account_resource_scanner=account_resource_scanner,
     )
 
 
@@ -282,3 +290,251 @@ def test_local_role_router_caches_health_snapshot_until_forced() -> None:
     assert router.visual_provider.health_calls == 2
     assert router.optional_provider.health_calls == 2
     assert embedding_calls['count'] == 2
+
+
+# ─────────────────────────────────────────────────────────────────
+# Worker health gate tests
+# ─────────────────────────────────────────────────────────────────
+
+def _fake_pool_healthy() -> dict[str, Any]:
+    return {
+        'available_count': 2,
+        'exhausted_count': 0,
+        'total_remaining_messages': 30,
+        'workers': [
+            {'email': 'a@test.com', 'tool': 'chatgpt', 'remaining_messages': 20, 'exhausted': False},
+            {'email': 'b@test.com', 'tool': 'codex', 'remaining_messages': 10, 'exhausted': False},
+        ],
+        'exhausted': [],
+        'tools_available': ['chatgpt', 'codex'],
+    }
+
+
+def _fake_pool_exhausted() -> dict[str, Any]:
+    return {
+        'available_count': 0,
+        'exhausted_count': 2,
+        'total_remaining_messages': 0,
+        'workers': [
+            {'email': 'a@test.com', 'tool': 'chatgpt', 'remaining_messages': 0, 'exhausted': True},
+            {'email': 'b@test.com', 'tool': 'codex', 'remaining_messages': 0, 'exhausted': True},
+        ],
+        'exhausted': [],
+        'tools_available': [],
+    }
+
+
+def _fake_pool_error() -> dict[str, Any]:
+    raise RuntimeError('scanner offline')
+
+
+def test_worker_health_gate_no_scanner_returns_unresolved() -> None:
+    router = _router(_workspace('whg_no_scanner'))
+    gate = router.worker_health_gate()
+    assert gate['usable'] is False
+    assert 'UNRESOLVED' in gate['reason']
+    assert gate['available_count'] == 0
+
+
+def test_worker_health_gate_healthy_pool_returns_usable() -> None:
+    router = _router(
+        _workspace('whg_healthy'),
+        account_resource_scanner=_fake_pool_healthy,
+    )
+    gate = router.worker_health_gate()
+    assert gate['usable'] is True
+    assert gate['available_count'] == 2
+    assert len(gate['workers']) == 2
+
+
+def test_worker_health_gate_healthy_pool_filters_by_target() -> None:
+    router = _router(
+        _workspace('whg_target'),
+        account_resource_scanner=_fake_pool_healthy,
+    )
+    gate = router.worker_health_gate(target_assistant='codex')
+    assert gate['usable'] is True
+    assert gate['available_count'] == 1
+    assert gate['workers'][0]['tool'] == 'codex'
+
+
+def test_worker_health_gate_target_not_found_returns_not_usable() -> None:
+    router = _router(
+        _workspace('whg_target_miss'),
+        account_resource_scanner=_fake_pool_healthy,
+    )
+    gate = router.worker_health_gate(target_assistant='claude')
+    assert gate['usable'] is False
+    assert 'claude' in gate['reason']
+
+
+def test_worker_health_gate_exhausted_pool_returns_not_usable() -> None:
+    router = _router(
+        _workspace('whg_exhausted'),
+        account_resource_scanner=_fake_pool_exhausted,
+    )
+    gate = router.worker_health_gate()
+    assert gate['usable'] is False
+    assert gate['available_count'] == 0
+
+
+def test_worker_health_gate_scanner_error_returns_not_usable() -> None:
+    router = _router(
+        _workspace('whg_error'),
+        account_resource_scanner=_fake_pool_error,
+    )
+    gate = router.worker_health_gate()
+    assert gate['usable'] is False
+    assert 'scanner offline' in gate['reason']
+
+
+def test_worker_health_gate_caches_result() -> None:
+    call_count = {'n': 0}
+
+    def _counting_scanner() -> dict[str, Any]:
+        call_count['n'] += 1
+        return _fake_pool_healthy()
+
+    router = _router(
+        _workspace('whg_cache'),
+        account_resource_scanner=_counting_scanner,
+    )
+    first = router.worker_health_gate()
+    second = router.worker_health_gate()
+
+    assert first == second
+    assert call_count['n'] == 1
+
+    refreshed = router.worker_health_gate(refresh=True)
+    assert call_count['n'] == 2
+    assert refreshed['usable'] is True
+
+
+def test_worker_health_gate_different_targets_not_cross_contaminated() -> None:
+    """Cache stores raw pool; different target_assistant values filter independently."""
+    call_count = {'n': 0}
+
+    def _counting_scanner() -> dict[str, Any]:
+        call_count['n'] += 1
+        return _fake_pool_healthy()
+
+    router = _router(
+        _workspace('whg_cross_target'),
+        account_resource_scanner=_counting_scanner,
+    )
+    chatgpt_gate = router.worker_health_gate(target_assistant='chatgpt')
+    codex_gate = router.worker_health_gate(target_assistant='codex')
+
+    assert call_count['n'] == 1, 'scanner should be called once (raw pool cached)'
+    assert chatgpt_gate['usable'] is True
+    assert chatgpt_gate['available_count'] == 1
+    assert chatgpt_gate['workers'][0]['tool'] == 'chatgpt'
+    assert codex_gate['usable'] is True
+    assert codex_gate['available_count'] == 1
+    assert codex_gate['workers'][0]['tool'] == 'codex'
+
+
+def test_route_from_decision_falls_back_when_external_no_worker() -> None:
+    router = _router(
+        _workspace('whg_route_fallback'),
+        account_resource_scanner=_fake_pool_exhausted,
+    )
+    decision = IntentRouteDecision(
+        detected_role=TaskRole.PROJECT_EVOLUTION,
+        planner_required=False,
+        visual_required=False,
+        tool_chain=[],
+        reason='Codex consultation needed.',
+    )
+    route = router.route_from_decision(
+        decision,
+        requires_external=True,
+        target_assistant='codex',
+    )
+    assert 'Fallback local' in route.reason
+    assert route.provider_name == 'Ollama'
+
+
+def test_route_from_decision_passes_through_when_external_worker_available() -> None:
+    router = _router(
+        _workspace('whg_route_pass'),
+        account_resource_scanner=_fake_pool_healthy,
+    )
+    decision = IntentRouteDecision(
+        detected_role=TaskRole.PROJECT_EVOLUTION,
+        planner_required=False,
+        visual_required=False,
+        tool_chain=[],
+        reason='Codex consultation needed.',
+    )
+    route = router.route_from_decision(
+        decision,
+        requires_external=True,
+        target_assistant='codex',
+    )
+    assert 'Fallback local' not in route.reason
+    assert route.provider_name == 'Adaptive local orchestrator'
+
+
+def test_route_from_decision_no_external_skips_gate() -> None:
+    router = _router(
+        _workspace('whg_route_no_ext'),
+        account_resource_scanner=_fake_pool_exhausted,
+    )
+    decision = IntentRouteDecision(
+        detected_role=TaskRole.TRAINING,
+        planner_required=False,
+        visual_required=False,
+        tool_chain=[],
+        reason='Local training.',
+    )
+    route = router.route_from_decision(decision)
+    assert 'Fallback local' not in route.reason
+
+
+# ── Bootstrap wiring tests ──────────────────────────────────────
+
+
+def test_bootstrap_wiring_scanner_callable_produces_real_gate() -> None:
+    """Verify that passing estimate_available_workers as the scanner
+    produces a real gate result (not UNRESOLVED) — this mirrors the
+    bootstrap.py wiring pattern."""
+    from iabv_v15.services.account_resource_scanner import estimate_available_workers
+
+    router = _router(
+        _workspace('whg_bootstrap_wiring'),
+        account_resource_scanner=estimate_available_workers,
+    )
+    gate = router.worker_health_gate()
+    # On a Linux CI box there are no browser sessions, so available_count
+    # will be 0 — but the gate must still report a REAL result (not
+    # UNRESOLVED) because the scanner *is* wired and callable.
+    assert 'UNRESOLVED' not in gate['reason']
+    assert isinstance(gate['usable'], bool)
+    assert isinstance(gate['available_count'], int)
+
+
+def test_bootstrap_wiring_route_with_real_scanner_no_workers() -> None:
+    """When the real scanner is wired but returns 0 workers (Linux CI),
+    route_from_decision with requires_external must fallback to local."""
+    from iabv_v15.services.account_resource_scanner import estimate_available_workers
+
+    router = _router(
+        _workspace('whg_bootstrap_route'),
+        account_resource_scanner=estimate_available_workers,
+    )
+    decision = IntentRouteDecision(
+        detected_role=TaskRole.PROJECT_EVOLUTION,
+        planner_required=False,
+        visual_required=False,
+        tool_chain=[],
+        reason='External consultation.',
+    )
+    route = router.route_from_decision(
+        decision,
+        requires_external=True,
+        target_assistant='codex',
+    )
+    # On Linux CI: no browser sessions → 0 workers → fallback local
+    assert 'Fallback local' in route.reason
+    assert route.provider_name == 'Ollama'

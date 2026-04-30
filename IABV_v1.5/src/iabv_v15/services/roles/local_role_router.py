@@ -1,9 +1,12 @@
 ﻿from __future__ import annotations
 
 from pathlib import Path
+import logging
 import threading
 import time
 from typing import Any, Callable
+
+logger = logging.getLogger(__name__)
 
 from iabv_v15.domain.models import (
     AmbiguityLevel,
@@ -54,6 +57,7 @@ class LocalRoleRouter:
         run_repository: RunRepository,
         artifact_repository: SessionArtifactRepository,
         tool_teach_service: Any | None = None,
+        account_resource_scanner: Callable[[], dict[str, Any]] | None = None,
     ) -> None:
         self.workspace_root = Path(workspace_root)
         self.general_provider = general_provider
@@ -70,9 +74,14 @@ class LocalRoleRouter:
         self.run_repository = run_repository
         self.artifact_repository = artifact_repository
         self.tool_teach_service = tool_teach_service
+        self._account_resource_scanner = account_resource_scanner
         self._health_snapshot_lock = threading.RLock()
         self._health_snapshot_cache: list[ProviderHealth] = []
         self._health_snapshot_checked_at = 0.0
+        self._worker_health_lock = threading.RLock()
+        self._worker_pool_cache: dict[str, Any] | None = None
+        self._worker_pool_cached_at: float = 0.0
+        self._WORKER_HEALTH_TTL = 30.0
         self._model_profiles = self._build_model_profiles()
         self._role_profiles = self._build_role_profiles()
 
@@ -101,6 +110,115 @@ class LocalRoleRouter:
             self._health_snapshot_cache = [item.model_copy(deep=True) for item in snapshot]
             self._health_snapshot_checked_at = time.monotonic()
         return snapshot
+
+    # ------------------------------------------------------------------
+    # Worker / account health gate for external-route viability
+    # ------------------------------------------------------------------
+
+    def _get_worker_pool(self, *, refresh: bool = False) -> dict[str, Any]:
+        """Return the raw scanner pool, cached with a 30 s TTL.
+
+        The cache stores the **unfiltered** pool so that
+        ``worker_health_gate`` can filter by ``target_assistant`` on every
+        call without re-scanning.
+        """
+        now = time.monotonic()
+        if not refresh:
+            with self._worker_health_lock:
+                if (
+                    self._worker_pool_cache is not None
+                    and (now - self._worker_pool_cached_at) <= self._WORKER_HEALTH_TTL
+                ):
+                    return dict(self._worker_pool_cache)
+
+        try:
+            pool = self._account_resource_scanner()
+        except Exception as exc:
+            pool = {
+                'available_count': 0,
+                'workers': [],
+                'error': str(exc),
+            }
+
+        with self._worker_health_lock:
+            self._worker_pool_cache = dict(pool)
+            self._worker_pool_cached_at = now
+        return pool
+
+    def worker_health_gate(
+        self,
+        *,
+        target_assistant: str = '',
+        refresh: bool = False,
+    ) -> dict[str, Any]:
+        """Check whether at least one external worker is usable.
+
+        Returns ``{'usable': bool, 'reason': str, 'available_count': int,
+        'workers': [...]}`` filtering from a cached raw pool.  The raw pool
+        is cached with a 30 s TTL; the per-target filter runs on every call
+        so different ``target_assistant`` values never cross-contaminate.
+
+        When no scanner is wired the gate returns ``usable=False`` with an
+        UNRESOLVED reason so callers never silently assume cloud availability.
+        """
+        if self._account_resource_scanner is None:
+            return {
+                'usable': False,
+                'reason': 'UNRESOLVED:account_resource_scanner no disponible — no se puede verificar worker pool.',
+                'available_count': 0,
+                'workers': [],
+            }
+
+        pool = self._get_worker_pool(refresh=refresh)
+
+        if 'error' in pool:
+            return {
+                'usable': False,
+                'reason': f'Error al escanear workers: {pool["error"]}',
+                'available_count': 0,
+                'workers': [],
+            }
+
+        available = pool.get('available_count', 0)
+        workers = pool.get('workers', [])
+        target = str(target_assistant or '').strip().lower()
+
+        if target:
+            matching = [
+                w for w in workers
+                if str(w.get('tool', '')).strip().lower() == target
+                and not w.get('exhausted', True)
+            ]
+        else:
+            matching = [w for w in workers if not w.get('exhausted', True)]
+
+        if not matching:
+            if available == 0:
+                reason = 'No hay workers con sesion activa y cuota disponible.'
+            elif target:
+                reason = f'No hay worker usable para {target} (agotados o sin sesion).'
+            else:
+                reason = 'Todos los workers estan agotados o sin sesion activa.'
+            return {
+                'usable': False,
+                'reason': reason,
+                'available_count': 0,
+                'workers': [],
+            }
+
+        return {
+            'usable': True,
+            'reason': '',
+            'available_count': len(matching),
+            'workers': [
+                {
+                    'tool': w.get('tool', ''),
+                    'email': w.get('email', ''),
+                    'remaining': w.get('remaining_messages', 0),
+                }
+                for w in matching[:10]
+            ],
+        }
 
     def infer_task(self, request: InferenceRequest) -> tuple[RoleRoute, InferenceResult]:
         decision_context = self._decision_context_from_request(request)
@@ -149,10 +267,17 @@ class LocalRoleRouter:
             reason=reason,
         )
 
-    def route_from_decision(self, decision: IntentRouteDecision, *, provider_name: str = 'Adaptive local orchestrator') -> RoleRoute:
+    def route_from_decision(
+        self,
+        decision: IntentRouteDecision,
+        *,
+        provider_name: str = 'Adaptive local orchestrator',
+        requires_external: bool = False,
+        target_assistant: str = '',
+    ) -> RoleRoute:
         role_profile = next((item for item in self.role_profiles if item.role == decision.detected_role), self.role_profiles[0])
         model_profile = next((item for item in self.model_profiles if item.profile_id == role_profile.preferred_model_profile_id), self.model_profiles[0])
-        return RoleRoute(
+        route = RoleRoute(
             task_role=decision.detected_role,
             role_title=role_profile.title,
             provider_name=provider_name,
@@ -161,6 +286,17 @@ class LocalRoleRouter:
             tool_chain=list(dict.fromkeys(list(role_profile.default_tools) + list(decision.tool_chain))),
             reason=str(decision.reason or ''),
         )
+        if requires_external:
+            gate = self.worker_health_gate(target_assistant=target_assistant)
+            if not gate['usable']:
+                route.reason = f"{route.reason} Fallback local: {gate['reason']}".strip()
+                route.provider_name = self.general_provider.name
+                route.model_name = model_profile.model_name
+                logger.info(
+                    'worker_health_gate bloqueó ruta externa (target=%s): %s',
+                    target_assistant or 'any', gate['reason'],
+                )
+        return route
 
     def _decision_context_from_request(self, request: InferenceRequest) -> DecisionContext | None:
         payload = request.metadata.get('decision_context') if isinstance(request.metadata, dict) else None
