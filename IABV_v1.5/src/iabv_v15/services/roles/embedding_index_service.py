@@ -2,6 +2,7 @@
 
 import json
 import re
+import threading
 import time
 from pathlib import Path
 from typing import Iterable
@@ -30,6 +31,10 @@ class EmbeddingIndexService:
         self.state_path = Path(state_path)
         self.timeout_seconds = timeout_seconds
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
+        self._health_cache: ProviderHealth | None = None
+        self._health_cached_at: float = 0.0
+        self._health_lock = threading.Lock()
+        self._HEALTH_TTL: float = 30.0
 
     def refresh_metadata(self, *, knowledge_count: int, artifact_count: int, last_query: str = '') -> dict[str, object]:
         payload = {
@@ -43,7 +48,26 @@ class EmbeddingIndexService:
         self.state_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
         return payload
 
-    def health_check(self) -> ProviderHealth:
+    def health_check(self, *, max_age_seconds: float | None = None) -> ProviderHealth:
+        """Check embedding provider health, with optional TTL cache.
+
+        When *max_age_seconds* is ``None`` (default) the instance-level
+        ``_HEALTH_TTL`` (30 s) is used.  Pass ``0`` to force a fresh HTTP
+        probe — this is what explicit user-initiated refreshes should do.
+        """
+        ttl = self._HEALTH_TTL if max_age_seconds is None else max(float(max_age_seconds), 0.0)
+        if ttl > 0.0:
+            with self._health_lock:
+                if self._health_cache is not None and (time.monotonic() - self._health_cached_at) <= ttl:
+                    return self._health_cache.model_copy(deep=True)
+        result = self._probe_health()
+        with self._health_lock:
+            self._health_cache = result
+            self._health_cached_at = time.monotonic()
+        return result
+
+    def _probe_health(self) -> ProviderHealth:
+        """Perform the actual HTTP probe against the Ollama ``/models`` endpoint."""
         if httpx is None:
             return ProviderHealth(provider_name='Embeddings', status=ProviderStatus.DEGRADED, available=False, detail='httpx no esta instalado.')
         start = time.perf_counter()
