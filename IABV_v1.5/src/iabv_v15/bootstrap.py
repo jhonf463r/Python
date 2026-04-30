@@ -345,6 +345,41 @@ from iabv_v15.ui.viewmodels.centro_vivo_viewmodel import CentroVivoViewModel
 from iabv_v15.ui.viewmodels.run_history_viewmodel import RunHistoryViewModel
 
 
+class _LazyServiceRef:
+    """Transparent proxy that defers service construction until first use.
+
+    Wraps a zero-arg callable; attribute access on the proxy triggers the
+    callable, caches the result, and forwards the lookup to the real
+    service.  This lets ``_wire_services`` pass a lazy reference to
+    adapters / consumers that store a service ref but only call methods
+    on it at runtime (e.g. ``SiteExplorerToolAdapter.run``).
+    """
+    __slots__ = ('_factory', '_instance')
+
+    def __init__(self, factory):
+        object.__setattr__(self, '_factory', factory)
+        object.__setattr__(self, '_instance', None)
+
+    def _resolve(self):
+        inst = object.__getattribute__(self, '_instance')
+        if inst is None:
+            inst = object.__getattribute__(self, '_factory')()
+            object.__setattr__(self, '_instance', inst)
+        return inst
+
+    def __getattr__(self, name):
+        return getattr(self._resolve(), name)
+
+    def __setattr__(self, name, value):
+        setattr(self._resolve(), name, value)
+
+    def __repr__(self):
+        inst = object.__getattribute__(self, '_instance')
+        if inst is not None:
+            return repr(inst)
+        return f'<_LazyServiceRef(pending)>'
+
+
 class AppBootstrap:
     def __init__(
         self,
@@ -452,15 +487,11 @@ class AppBootstrap:
         self.replay_visual_assembler = ReplayVisualAssembler(self.replay_confidence_service)
         self.replay_learning_feedback_service = ReplayLearningFeedbackService()
         self.browser_learning_assembler = BrowserLearningAssembler(self.replay_confidence_service)
-        self.browser_session_controller = BrowserSessionController()
-        self.browser_teach_session_service = BrowserTeachSessionService(
-            controller=self.browser_session_controller,
-            episode_repository=self.episode_repository,
-            screenshot_store=self.screenshot_store,
-            artifact_repository=self.session_artifact_repository,
-            redaction_engine=self.redaction_engine,
-            site_session_manager=self.site_session_manager,
-        )
+        # BrowserSessionController + BrowserTeachSessionService: lazy-loaded
+        # via @property.  Not needed for splash or shell/chat basic — only
+        # accessed when browser teach mode or site exploration is activated.
+        self._browser_session_controller_cache = None
+        self._browser_teach_session_service_cache = None
         self.development_assist_service = DevelopmentAssistService(self.config.workspace_root)
         self.pbt_control_service = PBTControlService(self.config.models_dir)
         self.runtime_signal_collector = RuntimeSignalCollector()
@@ -483,7 +514,9 @@ class AppBootstrap:
         self.site_manual_repository = SiteManualRepository(
             Path(self.config.evolution_dir) / 'site_manuals'
         )
-        self.site_exploration_service = SiteExplorationService()
+        # SiteExplorationService: lazy-loaded via @property.  Only needed
+        # when the user explores external sites (not for splash/chat).
+        self._site_exploration_service_cache = None
         self.tool_adapters = {
             'playwright': PlaywrightToolAdapter(),
             'ollama': OllamaToolAdapter(self.general_provider),
@@ -519,7 +552,7 @@ class AppBootstrap:
                 repo=os.environ.get('GITHUB_REPO', 'jhonf463r/Python'),
             ),
             'site_explorer': SiteExplorerToolAdapter(
-                self.site_exploration_service,
+                _LazyServiceRef(lambda: self.site_exploration_service),
                 self.site_manual_repository,
             ),
             # Adapter read-only compartido por los ToolCards de CLIs locales
@@ -1195,8 +1228,9 @@ class AppBootstrap:
         self.autonomous_evolution_service.clarification_request_service = self.clarification_request_service
         self.autonomous_evolution_service.environment_bootstrap_service = self.environment_bootstrap_service
         self.autonomous_evolution_service.provider_health_router = self.provider_health_router
-        self.browser_teach_session_service.credential_broker = self.credential_broker
-        self.browser_teach_session_service.clarification_request_service = self.clarification_request_service
+        # credential_broker + clarification_request_service injection on
+        # browser_teach_session_service is deferred to its @property getter
+        # to avoid forcing eager construction here.
         self.operational_executor.credential_broker = self.credential_broker
         self.operational_executor.clarification_request_service = self.clarification_request_service
         self.operational_executor.environment_bootstrap_service = self.environment_bootstrap_service
@@ -1268,8 +1302,8 @@ class AppBootstrap:
 
         try:
             self.platform_learning = PlatformLearningOrchestrator(data_root=self.config.data_dir)
-            self.platform_learning.browser_teach = self.browser_teach_session_service
-            self.platform_learning.site_exploration = self.site_exploration_service
+            self.platform_learning.browser_teach = _LazyServiceRef(lambda: self.browser_teach_session_service)
+            self.platform_learning.site_exploration = _LazyServiceRef(lambda: self.site_exploration_service)
             self.platform_learning.universal_perception = self.universal_perception_service
             self.platform_learning.replay_confidence = self.replay_confidence_service
             self.platform_learning.decision_simplifier = self.decision_simplifier
@@ -1343,6 +1377,42 @@ class AppBootstrap:
             tool_availability_deferred=not self._tool_availability_logged,
             scans_deferred=_defer_scans,
         )
+
+    # ------------------------------------------------------------------
+    # Lazy-loaded services — constructed on first access, not at wiring
+    # time.  Saves memory when these subsystems are never activated in a
+    # given session (e.g. browser teach mode, site exploration).
+    # ------------------------------------------------------------------
+
+    @property
+    def browser_session_controller(self):
+        if self._browser_session_controller_cache is None:
+            self._browser_session_controller_cache = BrowserSessionController()
+        return self._browser_session_controller_cache
+
+    @property
+    def browser_teach_session_service(self):
+        if self._browser_teach_session_service_cache is None:
+            svc = BrowserTeachSessionService(
+                controller=self.browser_session_controller,
+                episode_repository=self.episode_repository,
+                screenshot_store=self.screenshot_store,
+                artifact_repository=self.session_artifact_repository,
+                redaction_engine=self.redaction_engine,
+                site_session_manager=self.site_session_manager,
+            )
+            if hasattr(self, 'credential_broker'):
+                svc.credential_broker = self.credential_broker
+            if hasattr(self, 'clarification_request_service'):
+                svc.clarification_request_service = self.clarification_request_service
+            self._browser_teach_session_service_cache = svc
+        return self._browser_teach_session_service_cache
+
+    @property
+    def site_exploration_service(self):
+        if self._site_exploration_service_cache is None:
+            self._site_exploration_service_cache = SiteExplorationService()
+        return self._site_exploration_service_cache
 
     def _run_deferred_post_window_setup(self) -> None:
         """Run heavy probes that were skipped during ``__init__``.
