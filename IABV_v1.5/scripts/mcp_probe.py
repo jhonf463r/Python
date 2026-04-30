@@ -40,8 +40,14 @@ async def probe(tool_name: str, arguments: dict | None = None, url: str = 'http:
                 else:
                     parts.append(str(item))
             if len(parts) == 1:
-                return parts[0]
-            return parts
+                payload = parts[0]
+            else:
+                payload = parts
+            # Some tools wrap their response in {"id": ..., "result": {...}}.
+            # Unwrap so callers always get the actual data.
+            if isinstance(payload, dict) and 'result' in payload and 'id' in payload:
+                payload = payload['result']
+            return payload
 
 
 def main() -> None:
