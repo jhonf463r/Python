@@ -33,8 +33,8 @@ from iabv_v15.domain.models import (
 class WorldModelService:
     """Keeps a lightweight operational picture of windows, tools, network and blockers."""
 
-    _DEFAULT_SCAN_INTERVAL = 18.0
-    _DEFAULT_FULL_SCAN_INTERVAL = 120.0
+    _DEFAULT_SCAN_INTERVAL = 45.0
+    _DEFAULT_FULL_SCAN_INTERVAL = 180.0
     _NETWORK_TIMEOUT_SECONDS = 1.4
     _HIGH_MEMORY_MB = 900.0
 
@@ -72,6 +72,8 @@ class WorldModelService:
         self._pending_full_refresh = False
         self._last_scan_monotonic = 0.0
         self._last_full_scan_monotonic = 0.0
+        self._scan_count = 0
+        self._scan_count_full = 0
         self._current_snapshot = self._load_latest_snapshot() or WorldModelSnapshot()
         self._observation_permissions: dict[str, dict[str, Any]] = {}
         self._network_cache: tuple[float | None, str, float] = (None, '', 0.0)  # (latency, error, monotonic_ts)
@@ -120,10 +122,24 @@ class WorldModelService:
             self._current_snapshot = snapshot
             now_monotonic = time.monotonic()
             self._last_scan_monotonic = now_monotonic
+            self._scan_count += 1
             if full:
                 self._last_full_scan_monotonic = now_monotonic
+                self._scan_count_full += 1
         self._persist_snapshot(snapshot)
         return self._decorate_snapshot(snapshot)
+
+    @property
+    def scan_stats(self) -> dict[str, Any]:
+        """Counters for performance measurement (light scans, full scans, intervals)."""
+        with self._lock:
+            return {
+                'scan_count': self._scan_count,
+                'scan_count_full': self._scan_count_full,
+                'scan_interval_s': self.scan_interval_seconds,
+                'full_scan_interval_s': self.full_scan_interval_seconds,
+                'last_scan_ago_s': round(time.monotonic() - self._last_scan_monotonic, 1) if self._last_scan_monotonic else None,
+            }
 
     def grant_observation_permission(
         self,
