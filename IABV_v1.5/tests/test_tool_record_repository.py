@@ -156,6 +156,7 @@ def test_tool_record_repository_round_trip() -> None:
         stored_card = repository.get_card('shell_command')
         stored_task = repository.get_task(task.task_id)
         stored_results = repository.list_results(task_id=task.task_id)
+        latest_result = repository.latest_result(task_id=task.task_id)
         stored_patterns = repository.list_interaction_patterns(tool_id='shell_command')
         stored_episodes = repository.list_interaction_episodes(tool_id='shell_command')
         stored_observations = repository.list_interaction_observations(tool_id='shell_command')
@@ -170,8 +171,13 @@ def test_tool_record_repository_round_trip() -> None:
         assert len(stored_results) == 1
         assert stored_results[0].validation_status == ToolValidationStatus.APPROVED
         assert stored_results[0].execution_state.state == 'executed'
+        assert latest_result is not None
+        assert latest_result.result_id == result.result_id
+        assert repository.count_results(task_id=task.task_id) == 1
         assert len(stored_patterns) == 1
         assert stored_patterns[0].channel == InteractionChannel.BACKGROUND
+        assert repository.count_interaction_patterns(tool_id='shell_command') == 1
+        assert repository.count_interaction_patterns(tool_id='shell_command', reusable=True) == 1
         assert len(stored_episodes) == 1
         assert stored_episodes[0].mode_used == InteractionChannel.BACKGROUND
         assert stored_episodes[0].result is not None
@@ -179,9 +185,12 @@ def test_tool_record_repository_round_trip() -> None:
         assert stored_episodes[0].selector_name == 'universal_mode_selector'
         assert stored_episodes[0].selector_reason == 'Ya existe un patron exitoso en background.'
         assert stored_episodes[0].learning_signals[0].label == 'pattern:background:shell_command'
+        assert repository.count_interaction_episodes(tool_id='shell_command') == 1
+        assert repository.count_interaction_episodes(tool_id='shell_command', reused_pattern=False) == 1
         assert len(stored_observations) == 1
         assert stored_observations[0].pattern_id == pattern.pattern_id
         assert stored_observations[0].episode_id == episode.interaction_episode_id
+        assert repository.count_interaction_observations(tool_id='shell_command') == 1
         assert len(stored_log) == 1
         assert stored_log[0]['log_id'] == log_id
         assert stored_log[0]['payload']['ok'] is True

@@ -439,5 +439,65 @@
       "cable-a-startup-timeline-portable-context-oses"
     ],
     "owner": "devin"
+  },
+  {
+    "id": "cross-device-validation-learning-2026-04-29",
+    "title": "Aprendizaje reusable de testing y auditoria multi-dispositivo",
+    "area": "validation",
+    "priority": "high",
+    "status": "pending",
+    "source": "codex_architecture_review_2026_04_29",
+    "created_at": "2026-04-29T00:00:00+00:00",
+    "evidence": "Ya existen TaskOutcomeRecorder, ScenarioAutoTestService, AutonomousValidationCycleService, OSES y PortableContext, pero aun no hay una metodologia soberana cerrada para aprender patrones de testing por entorno (windows_desktop, android, web) y reusarlos cuando IABV ayude a construir otras apps."
+  },
+  {
+    "id": "audit-session-ingestion-code-audit-trail-2026-04-29",
+    "title": "Ingerir auditorias live en CodeAuditTrail y ExperimentLab",
+    "area": "audit",
+    "priority": "high",
+    "status": "pending",
+    "source": "codex_architecture_review_2026_04_29",
+    "created_at": "2026-04-29T00:00:00+00:00",
+    "evidence": "Las auditorias reales con Codex, Devin y el propio IABV ya producen evidencia util, pero PortableContext aun reporta 'Sin auditorias registradas. Usar register_audit_finding via MCP'. Falta que esa evidencia entre de forma automatica a CodeAuditTrail, register_audit_finding y ExperimentLab."
+  },
+  {
+    "id": "qa-playbooks-truth-sources-2026-04-29",
+    "title": "Playbooks de QA con verdad cruzada usuario-maquina-programa",
+    "area": "metacognition",
+    "priority": "medium",
+    "status": "pending",
+    "source": "codex_architecture_review_2026_04_29",
+    "created_at": "2026-04-29T00:00:00+00:00",
+    "evidence": "La auditoria reciente mostro el patron correcto: cruzar lo que ve el usuario, lo que ve la maquina y lo que cree el propio programa. Falta formalizar ese playbook en capas soberanas para detectar discrepancias como splash visible con readiness interno, bridge vivo sin chat usable o UI viva sin ventana humana real."
+  },
+  {
+    "id": "boot-awakening-state-machine-2026-04-29",
+    "title": "Algoritmo de despertar por fases para primer arranque en cada dispositivo",
+    "area": "startup",
+    "priority": "critical",
+    "status": "pending",
+    "source": "user_goal_2026_04_29",
+    "created_at": "2026-04-29T00:00:00+00:00",
+    "evidence": "IABV debio arrancar desde conciencia minima: censar hardware/runtime, medir presupuesto de RAM/CPU/IO, abrir una UI minima honesta, y habilitar capas pesadas solo cuando el dispositivo lo permita. Falta una maquina de estados de despertar que gobierne bootstrap, readiness, scans diferidos y escalado de servicios sin fingir que ya esta listo."
+  },
+  {
+    "id": "device-adaptive-boot-profile-2026-04-29",
+    "title": "Perfil adaptativo por dispositivo para aprender la mejor configuracion de arranque",
+    "area": "metacognition",
+    "priority": "high",
+    "status": "pending",
+    "source": "user_goal_2026_04_29",
+    "created_at": "2026-04-29T00:00:00+00:00",
+    "evidence": "El sistema ya tiene conciencia temporal y de recursos, pero todavia no aprende un perfil de arranque por laptop/PC. Falta persistir timings, picos de RAM, scans utiles, pasos fallidos y ajustes exitosos por environment_id para que el siguiente encendido se autoregule mejor desde el primer minuto."
+  },
+  {
+    "id": "hybrid-memory-local-cloud-2026-04-29",
+    "title": "Memoria hibrida: local soberana + contexto cloud compartido entre dispositivos",
+    "area": "portable_context",
+    "priority": "high",
+    "status": "pending",
+    "source": "user_goal_2026_04_29",
+    "created_at": "2026-04-29T00:00:00+00:00",
+    "evidence": "IABV debe compartir aprendizaje entre dispositivos sin crear dos cerebros. La memoria local debe seguir siendo la fuente soberana de runtime y la nube debe actuar como replica/sync de contexto portable, patrones validados, perfiles por dispositivo y auditorias utiles, con reglas claras de conflicto, privacidad y precedencia de verdad viva."
   }
 ]

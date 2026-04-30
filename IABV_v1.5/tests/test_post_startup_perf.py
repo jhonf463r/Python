@@ -252,3 +252,73 @@ class TestViewModelThreadPool:
         vm._shutdown_bg_pool = ControlCenterViewModel._shutdown_bg_pool.__get__(vm)
         vm._shutdown_bg_pool()
         assert pool._shutdown
+
+
+# ---------------------------------------------------------------------------
+# DashboardViewModel / LocalRoleRouter count()-based lightweight summaries
+# ---------------------------------------------------------------------------
+
+
+class TestDashboardAndRouterCountPaths:
+    def test_dashboard_refresh_uses_count_not_list_recent(self):
+        from iabv_v15.ui.viewmodels.dashboard_viewmodel import DashboardViewModel
+
+        class _Repo:
+            def __init__(self, total: int) -> None:
+                self.total = total
+
+            def count(self) -> int:
+                return self.total
+
+            def list_recent(self, limit: int = 100):  # pragma: no cover - must not be called
+                raise AssertionError('dashboard refresh should not call list_recent() for summary counts')
+
+        vm = SimpleNamespace(
+            episode_repository=_Repo(11),
+            knowledge_repository=_Repo(22),
+            run_repository=_Repo(33),
+            embedding_service=MagicMock(describe_index=MagicMock(return_value={'knowledge_count': 44})),
+            _summary_cards=[],
+            dataChanged=SimpleNamespace(emit=lambda: None),
+        )
+        vm.refresh = DashboardViewModel.refresh.__get__(vm)
+
+        vm.refresh()
+
+        assert [item['value'] for item in vm._summary_cards] == ['11', '22', '33', '44']
+
+    def test_route_training_uses_knowledge_count(self, tmp_path):
+        from tests.test_local_role_router import _router
+
+        router = _router(tmp_path / 'role_router_training_count')
+        request = SimpleNamespace(user_goal='ensename la siguiente mejora', metadata={}, prompt='')
+
+        router.knowledge_repository.list_recent = MagicMock(side_effect=AssertionError('knowledge list_recent should not be used for count'))
+        router.knowledge_repository.count = MagicMock(return_value=7)
+        router.teaching_gap_analyzer.analyze = MagicMock(return_value={'summary': 'ok', 'follow_up_teachings': []})
+        router._run_general = MagicMock(return_value=(SimpleNamespace(), SimpleNamespace(raw_output={}, follow_up_teachings=[])))
+
+        router._route_training(request)
+
+        assert router.teaching_gap_analyzer.analyze.call_args.kwargs['knowledge_count'] == 7
+
+    def test_route_knowledge_refresh_metadata_uses_count(self, tmp_path):
+        from tests.test_local_role_router import _router
+
+        router = _router(tmp_path / 'role_router_knowledge_count')
+        request = SimpleNamespace(user_goal='que sabes del sistema', metadata={}, prompt='')
+
+        router.knowledge_repository.search = MagicMock(return_value=[])
+        router.knowledge_repository.list_recent = MagicMock(side_effect=AssertionError('knowledge list_recent should not be used for metadata count'))
+        router.knowledge_repository.count = MagicMock(return_value=12)
+        router.artifact_repository.list_recent = MagicMock(side_effect=AssertionError('artifact list_recent should not be used for metadata count'))
+        router.artifact_repository.count = MagicMock(return_value=34)
+        router.embedding_service.search = MagicMock(return_value=[])
+        router.embedding_service.refresh_metadata = MagicMock()
+        router._run_general = MagicMock(return_value=(SimpleNamespace(), SimpleNamespace(raw_output={})))
+
+        router._route_knowledge(request)
+
+        kwargs = router.embedding_service.refresh_metadata.call_args.kwargs
+        assert kwargs['knowledge_count'] == 12
+        assert kwargs['artifact_count'] == 34

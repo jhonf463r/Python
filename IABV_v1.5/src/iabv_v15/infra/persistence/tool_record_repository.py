@@ -176,6 +176,35 @@ class ToolRecordRepository:
                 items.append(loaded)
         return items
 
+    def latest_result(self, *, tool_id: str | None = None, task_id: str | None = None) -> ToolResult | None:
+        sql = 'SELECT result_id, path FROM tool_results'
+        parameters: list[object] = []
+        clauses: list[str] = []
+        if tool_id:
+            clauses.append('tool_id = ?')
+            parameters.append(tool_id)
+        if task_id:
+            clauses.append('task_id = ?')
+            parameters.append(task_id)
+        if clauses:
+            sql += ' WHERE ' + ' AND '.join(clauses)
+        sql += ' ORDER BY created_at_utc DESC LIMIT 1'
+        row = self.db.fetchone(sql, tuple(parameters))
+        if row is None:
+            return None
+        return self._load_result_safe(row['result_id'], row['path'])
+
+    def count_results(self, *, tool_id: str | None = None, task_id: str | None = None) -> int:
+        clauses: list[str] = []
+        parameters: list[object] = []
+        if tool_id:
+            clauses.append('tool_id = ?')
+            parameters.append(tool_id)
+        if task_id:
+            clauses.append('task_id = ?')
+            parameters.append(task_id)
+        return self._count_rows('tool_results', clauses=clauses, parameters=parameters)
+
     def log_execution(self, *, tool_id: str, task_id: str | None, action_type: str, state: str, payload: dict[str, Any], created_at_utc: str) -> str:
         log_id = str(uuid4())
         relative_path = f"log/{log_id}.json"
@@ -305,6 +334,30 @@ class ToolRecordRepository:
                 items.append(loaded)
         return items
 
+    def count_interaction_patterns(
+        self,
+        *,
+        channel: str | None = None,
+        tool_id: str | None = None,
+        site_id: str | None = None,
+        reusable: bool | None = None,
+    ) -> int:
+        clauses: list[str] = []
+        parameters: list[object] = []
+        if channel:
+            clauses.append('channel = ?')
+            parameters.append(channel)
+        if tool_id:
+            clauses.append('tool_id = ?')
+            parameters.append(tool_id)
+        if site_id:
+            clauses.append('site_id = ?')
+            parameters.append(site_id)
+        if reusable is not None:
+            clauses.append('reusable = ?')
+            parameters.append(int(reusable))
+        return self._count_rows('interaction_patterns', clauses=clauses, parameters=parameters)
+
     def save_interaction_observation(self, observation: InteractionObservation) -> InteractionObservation:
         relative_path = f"interaction_observations/{observation.observation_id}.json"
         saved_path = self.storage.save_json_atomic(relative_path, observation.model_dump(mode='json'))
@@ -356,6 +409,22 @@ class ToolRecordRepository:
             if loaded is not None:
                 items.append(loaded)
         return items
+
+    def count_interaction_observations(
+        self,
+        *,
+        pattern_id: str | None = None,
+        tool_id: str | None = None,
+    ) -> int:
+        clauses: list[str] = []
+        parameters: list[object] = []
+        if pattern_id:
+            clauses.append('pattern_id = ?')
+            parameters.append(pattern_id)
+        if tool_id:
+            clauses.append('tool_id = ?')
+            parameters.append(tool_id)
+        return self._count_rows('interaction_observations', clauses=clauses, parameters=parameters)
 
     def save_interaction_episode(self, episode: InteractionEpisode) -> InteractionEpisode:
         episode_relative_path = f"interaction_episodes/{episode.interaction_episode_id}.json"
@@ -453,6 +522,30 @@ class ToolRecordRepository:
                 items.append(loaded)
         return items
 
+    def count_interaction_episodes(
+        self,
+        *,
+        tool_id: str | None = None,
+        mode_used: str | None = None,
+        site_id: str | None = None,
+        reused_pattern: bool | None = None,
+    ) -> int:
+        clauses: list[str] = []
+        parameters: list[object] = []
+        if tool_id:
+            clauses.append('tool_id = ?')
+            parameters.append(tool_id)
+        if mode_used:
+            clauses.append('mode_used = ?')
+            parameters.append(mode_used)
+        if site_id:
+            clauses.append('site_id = ?')
+            parameters.append(site_id)
+        if reused_pattern is not None:
+            clauses.append('reused_pattern = ?')
+            parameters.append(int(reused_pattern))
+        return self._count_rows('interaction_episodes', clauses=clauses, parameters=parameters)
+
     def get_interaction_episode(self, interaction_episode_id: str) -> InteractionEpisode | None:
         row = self.db.fetchone(
             """
@@ -531,6 +624,21 @@ class ToolRecordRepository:
         if candidate.is_absolute() and candidate.exists():
             return json.loads(candidate.read_text(encoding='utf-8'))
         return self.storage.load_json(relative_path)
+
+    def _count_rows(
+        self,
+        table: str,
+        *,
+        clauses: list[str] | None = None,
+        parameters: list[object] | None = None,
+    ) -> int:
+        sql = f'SELECT COUNT(*) AS total FROM {table}'
+        query_clauses = list(clauses or [])
+        query_params = list(parameters or [])
+        if query_clauses:
+            sql += ' WHERE ' + ' AND '.join(query_clauses)
+        row = self.db.fetchone(sql, tuple(query_params))
+        return int(row['total']) if row is not None else 0
 
     def _load_log_safe(self, log_id: str, path: str) -> dict[str, Any] | None:
         try:

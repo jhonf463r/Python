@@ -263,6 +263,7 @@ class ControlCenterViewModel(QObject):
         self.bridgeChatRequested.connect(self._dispatch_bridge_chat)
         self._seed_messages()
         self._seed_development_packet()
+        self._seed_evolution_snapshot()
         if defer_initial_refresh:
             if not self._working and not self._adaptive_session_id:
                 self._busy_label = self._startup_readiness_text(validating_local_stack=True)
@@ -291,6 +292,101 @@ class ControlCenterViewModel(QObject):
             {'version': 'IABV 1.3', 'module': 'PBT y checkpoints', 'detail': 'Scheduler, selector, mutacion y snapshots para afinar estrategias locales.'},
             {'version': 'IABV 1.3', 'module': 'SQLite y feature-store', 'detail': 'Consulta segura, analitica y paquetes estructurados sin cargar legacy en runtime.'},
         ]
+
+    def _seed_evolution_snapshot(self) -> None:
+        """Provide an honest zero-state before deferred refresh fills live data."""
+        area_cards = [
+            {
+                'title': 'Aprendizaje',
+                'status': 'idle',
+                'trend': 'sin historial',
+                'summary': '0 autotests | 0 ajustes',
+                'detail': 'Todavia no hay un autotest reciente con diagnostico detallado.',
+                'blocker': '',
+                'help': 'Ejecuta un autotest o revisa el pending issue asociado.',
+            },
+            {
+                'title': 'Algoritmos probados',
+                'status': 'idle',
+                'trend': 'sin base',
+                'summary': '0 experimentos | foco general | recomendacion n/d',
+                'detail': 'Todavia no hay experimentos registrados.',
+                'blocker': 'Todavia no hay experimentos recientes para comparar rutas.',
+                'help': 'Lanza un experimento o deja que el auditor contraste candidatos.',
+            },
+            {
+                'title': 'Variables exploradas',
+                'status': 'idle',
+                'trend': 'sin explorar',
+                'summary': 'generacion 0 | candidatos 0 | mejor score 0.00',
+                'detail': 'Todavia no hay generaciones PBT registradas.',
+                'blocker': 'PBT aun no ha explorado generaciones en esta sesion.',
+                'help': 'Ejecuta un ciclo PBT cuando quieras afinar defaults y thresholds.',
+            },
+            {
+                'title': 'Investigaciones utiles',
+                'status': 'idle',
+                'trend': 'sin base',
+                'summary': '0 consultas registradas | asistente n/d',
+                'detail': 'Todavia no hay consultas externas recientes.',
+                'blocker': '',
+                'help': 'Ingiere la respuesta externa o vuelve a auditar la autonomia.',
+            },
+            {
+                'title': 'Objetivos y tareas',
+                'status': 'idle',
+                'trend': 'sin objetivo',
+                'summary': 'Sin objetivo activo.',
+                'detail': 'Objetivo: Sin objetivo activo. | proyecto: n/d | tarea: n/d | pack: sin pack | estado adaptativo: sin_sesion | progreso 0.00 | confianza 0.00',
+                'blocker': '',
+                'help': 'Aprueba la fase siguiente o refuerza la evidencia de la capacidad debil.',
+            },
+            {
+                'title': 'Auditoria y coherencia',
+                'status': 'idle',
+                'trend': 'sin evidencia',
+                'summary': 'sin auditoria reciente',
+                'detail': 'audit_status sin auditoria | confianza 0.00 | matching 0 | diverging 0',
+                'blocker': '',
+                'help': 'Abrir replay auditado o revisar la ultima discrepancia.',
+            },
+            {
+                'title': 'Memoria y reutilizacion',
+                'status': 'idle',
+                'trend': 'sin base',
+                'summary': 'reutilizables 0 | conocimiento 0',
+                'detail': 'patrones 0 | observaciones 0 | episodios 0 | reutilizados 0 | autonomia sin_gobernanza | confianza 0.00',
+                'blocker': '',
+                'help': 'Convierte ejecuciones repetidas en patrones reutilizables y evidencia estable.',
+            },
+        ]
+        blockers = [
+            {
+                'title': card['title'],
+                'detail': card['blocker'],
+                'help': card['help'],
+            }
+            for card in area_cards
+            if str(card.get('blocker') or '').strip()
+        ][:4]
+        self._evolution_overview = {
+            'title': 'Pulso evolutivo',
+            'status': 'idle',
+            'trend': 'sin base',
+            'summary': '0/7 areas con evidencia operativa | bloqueos 2 | objetivo Sin objetivo activo. | progreso 0.00 | autonomia sin_gobernanza',
+            'detail': 'Todavia no hay suficiente evidencia para resumir la evolucion. Progreso longitudinal: sin_objetivo | confianza 0.00.',
+            'latest_experiment': 'Todavia no hay experimentos registrados.',
+            'human_help': blockers[0]['help'] if blockers else 'Seguir capturando evidencia y ejecutando tareas reales.',
+            'current_goal': 'Sin objetivo activo.',
+            'compact_cards': [
+                {'title': 'Aprendizaje', 'value': '0', 'detail': 'autotests recientes'},
+                {'title': 'Experimentos', 'value': '0', 'detail': 'general | sin_gobernanza'},
+                {'title': 'Bloqueos', 'value': str(len(blockers)), 'detail': 'autonomia sin_gobernanza | confianza 0.00'},
+                {'title': 'Reutilizacion', 'value': '0', 'detail': 'patrones o reusos detectados'},
+            ],
+        }
+        self._evolution_area_cards = area_cards
+        self._evolution_blockers = blockers
 
     def _seed_messages(self) -> None:
         if self._chat_messages:
@@ -863,16 +959,82 @@ class ControlCenterViewModel(QObject):
             'focus': focus,
         }
 
+    def _interaction_pattern_stats(self) -> tuple[int, int]:
+        repo = self.tool_record_repository
+        if repo is None:
+            return 0, 0
+        counter = getattr(repo, 'count_interaction_patterns', None)
+        if callable(counter):
+            try:
+                return int(counter()), int(counter(reusable=True))
+            except Exception:
+                pass
+        patterns = repo.list_interaction_patterns(limit=24)
+        return len(patterns), sum(1 for item in patterns if getattr(item, 'reusable', False))
+
+    def _interaction_observation_count(self) -> int:
+        repo = self.tool_record_repository
+        if repo is None:
+            return 0
+        counter = getattr(repo, 'count_interaction_observations', None)
+        if callable(counter):
+            try:
+                return int(counter())
+            except Exception:
+                pass
+        return len(repo.list_interaction_observations(limit=24))
+
+    def _interaction_episode_stats(self) -> tuple[int, int]:
+        repo = self.tool_record_repository
+        if repo is None:
+            return 0, 0
+        counter = getattr(repo, 'count_interaction_episodes', None)
+        if callable(counter):
+            try:
+                return int(counter()), int(counter(reused_pattern=True))
+            except Exception:
+                pass
+        episodes = repo.list_interaction_episodes(limit=24)
+        return len(episodes), sum(1 for item in episodes if getattr(item, 'reused_pattern', False))
+
+    def _recent_assistant_results(self, *, limit: int = 6) -> list[Any]:
+        repo = self.tool_record_repository
+        if repo is None:
+            return []
+        try:
+            results = repo.list_results(limit=limit)
+        except Exception:
+            return []
+        return [
+            item for item in results
+            if str(item.metadata.get('assistant_kind') or item.execution_state.metadata.get('assistant_kind') or '').strip()
+        ]
+
+    def _latest_assistant_result(self) -> Any | None:
+        repo = self.tool_record_repository
+        if repo is None:
+            return None
+        getter = getattr(repo, 'latest_result', None)
+        if callable(getter):
+            try:
+                latest = getter()
+            except Exception:
+                latest = None
+            if latest is not None:
+                assistant_kind = str(latest.metadata.get('assistant_kind') or latest.execution_state.metadata.get('assistant_kind') or '').strip()
+                if assistant_kind:
+                    return latest
+        recent = self._recent_assistant_results(limit=1)
+        return recent[0] if recent else None
+
     def _update_evolution_snapshot(self) -> None:
         health_snapshot = self.evolution_review_service.build_project_health().model_dump(mode='json') if self.evolution_review_service is not None else {}
-        experiment_runs = self.experiment_lab_repository.list_runs(limit=12) if self.experiment_lab_repository is not None else []
-        experiment_recommendations = self.experiment_lab_repository.list_recommendations(limit=3) if self.experiment_lab_repository is not None else []
-        latest_recommendation = experiment_recommendations[0] if experiment_recommendations else None
         scenario_runs = self.scenario_run_repository.list_recent(limit=12) if self.scenario_run_repository is not None else []
-        patterns = self.tool_record_repository.list_interaction_patterns(limit=24) if self.tool_record_repository is not None else []
-        observations = self.tool_record_repository.list_interaction_observations(limit=24) if self.tool_record_repository is not None else []
-        interaction_episodes = self.tool_record_repository.list_interaction_episodes(limit=24) if self.tool_record_repository is not None else []
-        tool_results = self.tool_record_repository.list_results(limit=24) if self.tool_record_repository is not None else []
+        pattern_count, reusable_patterns = self._interaction_pattern_stats()
+        observation_count = self._interaction_observation_count()
+        interaction_episode_count, reused_episodes = self._interaction_episode_stats()
+        assistant_results = self._recent_assistant_results(limit=6)
+        latest_result = self._latest_assistant_result()
         replay_summary = self._latest_replay_visual_summary()
         replay_metadata = dict(replay_summary.get('metadata') or {})
         live_audit = self._latest_live_audit()
@@ -905,14 +1067,7 @@ class ControlCenterViewModel(QObject):
         autonomy_level = str(governance.get('autonomy_level') or 'sin_gobernanza')
         autonomy_confidence = float(governance.get('confidence') or 0.0)
         weak_capabilities = [item for item in self._adaptive_capability_cards if item.get('status') in {'insufficient', 'partial'}]
-        reusable_patterns = sum(1 for item in patterns if getattr(item, 'reusable', False))
-        reused_episodes = sum(1 for item in interaction_episodes if getattr(item, 'reused_pattern', False))
-        assistant_results = [
-            item for item in tool_results
-            if str(item.metadata.get('assistant_kind') or item.execution_state.metadata.get('assistant_kind') or '').strip()
-        ]
         latest_scenario = scenario_runs[0] if scenario_runs else None
-        latest_result = assistant_results[0] if assistant_results else None
         latest_issue = str((replay_metadata.get('audit_findings') or [''])[0] or replay_metadata.get('audit_rationale') or '')
         strategy_labels = self._strategy_history_labels(
             experiment_runs=experiment_runs,
@@ -993,12 +1148,12 @@ class ControlCenterViewModel(QObject):
         )
         audit_blocker = latest_issue or str(live_audit.get('summary') or '') if (latest_issue or live_audit) else ''
 
-        memory_status = 'active' if reusable_patterns or reused_episodes else 'warning' if patterns or interaction_episodes else 'idle'
-        memory_trend = 'reutilizando' if reused_episodes else 'acumulando' if patterns or interaction_episodes else 'sin base'
+        memory_status = 'active' if reusable_patterns or reused_episodes else 'warning' if pattern_count or interaction_episode_count else 'idle'
+        memory_trend = 'reutilizando' if reused_episodes else 'acumulando' if pattern_count or interaction_episode_count else 'sin base'
         memory_detail = (
-            f"patrones {len(patterns)} | observaciones {len(observations)} | episodios {len(interaction_episodes)} | reutilizados {reused_episodes}"
+            f"patrones {pattern_count} | observaciones {observation_count} | episodios {interaction_episode_count} | reutilizados {reused_episodes}"
         )
-        memory_blocker = 'Aun no hay patrones reutilizados en ejecuciones recientes.' if patterns and not reused_episodes else ''
+        memory_blocker = 'Aun no hay patrones reutilizados en ejecuciones recientes.' if pattern_count and not reused_episodes else ''
 
         maturity_status = 'warning' if governance.get('approval_required') or governance.get('block_risky_action') else 'active' if autonomy_level not in {'', 'sin_gobernanza'} else 'idle'
         maturity_trend = 'replanificando' if governance.get('should_replan') else 'investigando' if governance.get('research_needed') else 'estable' if autonomy_level not in {'', 'sin_gobernanza'} else 'sin base'
