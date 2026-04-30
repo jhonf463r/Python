@@ -65,14 +65,14 @@ class DashboardViewModel(QObject):
 
     @Slot()
     def refresh(self) -> None:
-        episodes = self.episode_repository.list_recent(limit=100)
-        knowledge = self.knowledge_repository.list_recent(limit=100)
-        runs = self.run_repository.list_recent(limit=100)
+        episode_count = self.episode_repository.count()
+        knowledge_count = self.knowledge_repository.count()
+        run_count = self.run_repository.count()
         index_state = self.embedding_service.describe_index()
         self._summary_cards = [
-            {'title': 'Episodios', 'value': str(len(episodes)), 'hint': 'Sesiones capturadas y listas para revisar'},
-            {'title': 'Conocimiento', 'value': str(len(knowledge)), 'hint': 'Memoria confirmada para reutilizacion'},
-            {'title': 'Ejecuciones', 'value': str(len(runs)), 'hint': 'Respuestas por rol ya registradas'},
+            {'title': 'Episodios', 'value': str(episode_count), 'hint': 'Sesiones capturadas y listas para revisar'},
+            {'title': 'Conocimiento', 'value': str(knowledge_count), 'hint': 'Memoria confirmada para reutilizacion'},
+            {'title': 'Ejecuciones', 'value': str(run_count), 'hint': 'Respuestas por rol ya registradas'},
             {'title': 'Indexado', 'value': str(index_state.get('knowledge_count', 0)), 'hint': 'Elementos de conocimiento reflejados por el indice local'},
         ]
         self.dataChanged.emit()
