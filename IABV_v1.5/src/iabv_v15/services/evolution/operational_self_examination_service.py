@@ -4652,10 +4652,9 @@ class OperationalSelfExaminationService:
 
         Complements ``_functional_gap_findings`` (which detects orphan sessions
         and untracked quotas) by looking at ACTIONABLE health problems:
-        - Accounts with ALL quotas exhausted (no remaining capacity)
-        - APIs configured but failing (GitHub, Devin, Ollama)
-        - High ratio of exhausted vs available workers
-        - Missing critical secrets that block tool usage
+        - Accounts with >= 50% quotas exhausted (HIGH if 100%)
+        - GitHub API rate limit running low (< 50 requests)
+        - Missing critical secrets (GITHUB_TOKEN_IABV, DEVIN_API_KEY_IABV)
 
         No new service, no new persistence — reads existing scanner data.
         """
@@ -4666,7 +4665,6 @@ class OperationalSelfExaminationService:
                 get_all_quota_status,
                 scan_configured_secrets,
                 scan_github_api,
-                scan_ollama_api,
             )
         except Exception:
             return findings

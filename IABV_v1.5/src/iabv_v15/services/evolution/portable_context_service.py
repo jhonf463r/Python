@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -63,6 +64,9 @@ class PortableContextService:
         self.decision_audit_trail: Any | None = None
         self.code_audit_trail: Any | None = None
         self._current_package: PortableContextPackage | None = None
+        self._account_resource_cache: dict[str, Any] | None = None
+        self._account_resource_cached_at: float = 0.0
+        self._ACCOUNT_RESOURCE_TTL: float = 60.0
 
     def current_package(
         self,
@@ -683,11 +687,37 @@ class PortableContextService:
         }
 
     def _account_resource_snapshot(self) -> dict[str, Any]:
-        """Build a lightweight summary of account health, quotas and workers.
+        """Return a cached summary of account health, quotas and workers.
 
-        Reads existing functions from ``account_resource_scanner`` — no new
-        persistence, no new service.  Failures are swallowed so the portable
-        context build never crashes because of a scanner issue.
+        This is **observability only** — it never triggers browser/cookie
+        scans on its own.  The data comes from ``get_all_quota_status`` and
+        ``scan_configured_secrets`` which read lightweight JSON/env state.
+
+        ``estimate_available_workers()`` is the expensive call (it copies
+        browser SQLite cookies).  Instead of calling it inside every
+        ``build_package()``, we cache the result with a 60 s TTL so that
+        repeated refreshes reuse the same data.
+
+        If the cache is warm the method returns instantly with zero I/O.
+        """
+        now = time.monotonic()
+        if (
+            self._account_resource_cache is not None
+            and (now - self._account_resource_cached_at) < self._ACCOUNT_RESOURCE_TTL
+        ):
+            return self._account_resource_cache
+
+        result = self._account_resource_scan()
+        self._account_resource_cache = result
+        self._account_resource_cached_at = now
+        return result
+
+    def _account_resource_scan(self) -> dict[str, Any]:
+        """Execute the actual scanner calls (quota + secrets + workers).
+
+        Separated from ``_account_resource_snapshot`` so the TTL cache
+        logic stays clean.  Failures are swallowed — the portable context
+        build never crashes because of a scanner issue.
         """
         try:
             from iabv_v15.services.account_resource_scanner import (

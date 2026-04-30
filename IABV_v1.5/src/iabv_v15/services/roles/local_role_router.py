@@ -290,7 +290,7 @@ class LocalRoleRouter:
             episodes=episodes,
             artifacts=artifacts,
             runs=runs,
-            knowledge_count=self.knowledge_repository.count(),
+            knowledge_count=len(self.knowledge_repository.list_recent(limit=120)),
         )
         prompt = (
             'Rol: entrenamiento y mejora de ensenanzas. '
@@ -319,8 +319,8 @@ class LocalRoleRouter:
         ]
         semantic_hits = self.embedding_service.search(request.user_goal, documents, limit=5)
         self.embedding_service.refresh_metadata(
-            knowledge_count=self.knowledge_repository.count(),
-            artifact_count=self.artifact_repository.count(),
+            knowledge_count=len(self.knowledge_repository.list_recent(limit=500)),
+            artifact_count=len(self.artifact_repository.list_recent(limit=500)),
             last_query=request.user_goal,
         )
         prompt = (

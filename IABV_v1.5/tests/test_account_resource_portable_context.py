@@ -1,9 +1,13 @@
 """Focalized tests for account/resource health in PortableContext + OSES.
 
 Covers the slice added in this PR:
-- :meth:`PortableContextService._account_resource_snapshot`
+- :meth:`PortableContextService._account_resource_snapshot` (with TTL cache)
 - :meth:`PortableContextService._account_resource_section`
 - :meth:`OperationalSelfExaminationService._account_resource_health_findings`
+
+This section is **observability only** — it never triggers browser/cookie
+scans on its own.  ``_account_resource_snapshot`` caches scanner results
+with a 60 s TTL so ``build_package()`` never re-scans on every call.
 
 No new service, no new persistence — reads existing scanner functions.
 """
@@ -11,6 +15,7 @@ No new service, no new persistence — reads existing scanner functions.
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from unittest.mock import patch
 from uuid import uuid4
@@ -136,6 +141,73 @@ def test_snapshot_includes_exhausted_accounts() -> None:
     assert snap['worker_available_count'] == 1
     assert snap['worker_total_remaining_messages'] == 15
     assert 'claude' in snap['workers_by_tool']
+
+
+def test_snapshot_uses_ttl_cache() -> None:
+    """Repeated calls within TTL return cached result without re-scanning."""
+    root = _workspace('acct_snap_cache')
+    svc = _make_portable_service(root)
+
+    call_count = 0
+
+    def mock_quotas():
+        nonlocal call_count
+        call_count += 1
+        return {'statuses': [], 'total_tracked': 0, 'exhausted_count': 0,
+                'available_count': 0, 'exhausted_keys': [], 'available_keys': []}
+
+    def mock_workers():
+        return {'workers': [], 'exhausted': [], 'available_count': 0,
+                'exhausted_count': 0, 'by_tool': {}, 'total_remaining_messages': 0,
+                'tools_available': []}
+
+    def mock_secrets():
+        return {'configured': [], 'missing': [], 'configured_count': 0,
+                'missing_count': 0, 'secrets_file_exists': False, 'secrets_in_file': []}
+
+    with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
+         patch('iabv_v15.services.account_resource_scanner.estimate_available_workers', mock_workers), \
+         patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets):
+        snap1 = svc._account_resource_snapshot()
+        snap2 = svc._account_resource_snapshot()
+
+    assert snap1 is snap2
+    assert call_count == 1
+
+
+def test_snapshot_cache_expires_after_ttl() -> None:
+    """After TTL expires, the next call re-scans."""
+    root = _workspace('acct_snap_cache_expire')
+    svc = _make_portable_service(root)
+    svc._ACCOUNT_RESOURCE_TTL = 0.01  # 10ms for test speed
+
+    call_count = 0
+
+    def mock_quotas():
+        nonlocal call_count
+        call_count += 1
+        return {'statuses': [], 'total_tracked': call_count, 'exhausted_count': 0,
+                'available_count': 0, 'exhausted_keys': [], 'available_keys': []}
+
+    def mock_workers():
+        return {'workers': [], 'exhausted': [], 'available_count': 0,
+                'exhausted_count': 0, 'by_tool': {}, 'total_remaining_messages': 0,
+                'tools_available': []}
+
+    def mock_secrets():
+        return {'configured': [], 'missing': [], 'configured_count': 0,
+                'missing_count': 0, 'secrets_file_exists': False, 'secrets_in_file': []}
+
+    with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
+         patch('iabv_v15.services.account_resource_scanner.estimate_available_workers', mock_workers), \
+         patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets):
+        snap1 = svc._account_resource_snapshot()
+        time.sleep(0.02)
+        snap2 = svc._account_resource_snapshot()
+
+    assert call_count == 2
+    assert snap1['quota_total_tracked'] == 1
+    assert snap2['quota_total_tracked'] == 2
 
 
 def test_snapshot_survives_scanner_import_failure() -> None:
@@ -273,8 +345,7 @@ def test_oses_finding_when_all_quotas_exhausted() -> None:
 
     with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
          patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets), \
-         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh), \
-         patch('iabv_v15.services.account_resource_scanner.scan_ollama_api', lambda: {'available': True}):
+         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh):
         findings = oses._account_resource_health_findings()
 
     exhaustion_findings = [f for f in findings if f.category == 'resource_exhaustion']
@@ -303,8 +374,7 @@ def test_oses_finding_when_half_quotas_exhausted() -> None:
 
     with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
          patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets), \
-         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh), \
-         patch('iabv_v15.services.account_resource_scanner.scan_ollama_api', lambda: {'available': True}):
+         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh):
         findings = oses._account_resource_health_findings()
 
     exhaustion_findings = [f for f in findings if f.category == 'resource_exhaustion']
@@ -330,8 +400,7 @@ def test_oses_no_finding_when_quotas_healthy() -> None:
 
     with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
          patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets), \
-         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh), \
-         patch('iabv_v15.services.account_resource_scanner.scan_ollama_api', lambda: {'available': True}):
+         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh):
         findings = oses._account_resource_health_findings()
 
     exhaustion_findings = [f for f in findings if f.category == 'resource_exhaustion']
@@ -355,8 +424,7 @@ def test_oses_finding_github_rate_limit_low() -> None:
 
     with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
          patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets), \
-         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh), \
-         patch('iabv_v15.services.account_resource_scanner.scan_ollama_api', lambda: {'available': True}):
+         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh):
         findings = oses._account_resource_health_findings()
 
     api_findings = [f for f in findings if f.category == 'resource_degradation']
@@ -381,8 +449,7 @@ def test_oses_finding_critical_secrets_missing() -> None:
 
     with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
          patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets), \
-         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh), \
-         patch('iabv_v15.services.account_resource_scanner.scan_ollama_api', lambda: {'available': True}):
+         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh):
         findings = oses._account_resource_health_findings()
 
     config_findings = [f for f in findings if f.category == 'configuration_gap']
@@ -408,8 +475,7 @@ def test_oses_no_finding_when_non_critical_secrets_missing() -> None:
 
     with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
          patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets), \
-         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh), \
-         patch('iabv_v15.services.account_resource_scanner.scan_ollama_api', lambda: {'available': True}):
+         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh):
         findings = oses._account_resource_health_findings()
 
     config_findings = [f for f in findings if f.category == 'configuration_gap']
