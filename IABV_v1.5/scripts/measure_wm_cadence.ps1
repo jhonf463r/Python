@@ -113,18 +113,40 @@ function Get-WorldModelWithStats {
     return Invoke-MCPTool -ToolName 'world_model_snapshot'
 }
 
-function Extract-Freshness($wm) {
-    if (-not $wm) { return @{ available = $false; windows_count = 0; has_focus = $false; has_current_page = $false; detected_blocks = @() } }
-    $windows = if ($wm.open_windows) { @($wm.open_windows).Count } else { 0 }
-    $focus = [bool]($wm.focused_window -and $wm.focused_window -ne '' -and $wm.focused_window -ne 'unknown')
-    $page = [bool]($wm.current_page -and $wm.current_page -ne '' -and $wm.current_page -ne 'unknown')
+function Extract-WMFreshness($wm) {
+    <# Extracts world model freshness from world_model_snapshot.
+       Keys: active_windows (list), focused_window (object with .title),
+       detected_blocks (list of strings). #>
+    if (-not $wm) { return @{ available = $false; active_window_count = 0; has_focus = $false; focused_window = ''; detected_blocks = @() } }
+    $winCount = 0
+    if ($wm.active_windows) { $winCount = @($wm.active_windows).Count }
+    $focusTitle = ''
+    if ($wm.focused_window) {
+        if ($wm.focused_window.title) { $focusTitle = [string]$wm.focused_window.title }
+        elseif ($wm.focused_window -is [string]) { $focusTitle = $wm.focused_window }
+    }
+    $hasFocus = [bool]($focusTitle -and $focusTitle -ne '' -and $focusTitle -ne 'unknown')
     $blocks = if ($wm.detected_blocks) { @($wm.detected_blocks) } else { @() }
     return @{
-        available      = $true
-        windows_count  = $windows
-        has_focus      = $focus
-        has_current_page = $page
-        detected_blocks = $blocks
+        available           = $true
+        active_window_count = $winCount
+        has_focus           = $hasFocus
+        focused_window      = $focusTitle
+        detected_blocks     = $blocks
+    }
+}
+
+function Get-UIBridgeState {
+    <# Calls ui_bridge_get_state via mcp_probe.py.
+       Returns: current_page, ui_running, etc. #>
+    $raw = Invoke-MCPTool -ToolName 'ui_bridge_get_state'
+    if (-not $raw) { return @{ available = $false; current_page = 'unknown'; ui_running = $false } }
+    $page = 'unknown'
+    if ($raw.current_page) { $page = [string]$raw.current_page }
+    return @{
+        available    = $true
+        current_page = $page
+        ui_running   = [bool]$raw.ui_running
     }
 }
 
@@ -224,16 +246,18 @@ foreach ($mark in @(30, 60, 120)) {
 
     $mem = Get-IABVMemory
     $wm  = Get-WorldModelWithStats
-    $fresh = Extract-Freshness $wm
+    $wmFresh = Extract-WMFreshness $wm
     $stats = Extract-ScanStats $wm
+    $uiState = Get-UIBridgeState
 
     $key = '{0}s' -f $mark
     $snapshots[$key] = @{
-        memory    = $mem
-        freshness = $fresh
-        scan_stats = $stats
+        memory      = $mem
+        wm_freshness = $wmFresh
+        scan_stats  = $stats
+        ui_state    = $uiState
     }
-    Write-Host ('[measure] {0}s: WS={1}MB PM={2}MB procs={3} pids={4} scans={5} full={6} windows={7} focus={8}' -f $mark, $mem.working_set_mb, $mem.private_memory_mb, $mem.process_count, ($mem.pids -join ','), $stats.scan_count, $stats.scan_count_full, $fresh.windows_count, $fresh.has_focus)
+    Write-Host ('[measure] {0}s: WS={1}MB PM={2}MB procs={3} scans={4} full={5} windows={6} focus={7} page={8}' -f $mark, $mem.working_set_mb, $mem.private_memory_mb, $mem.process_count, $stats.scan_count, $stats.scan_count_full, $wmFresh.active_window_count, $wmFresh.has_focus, $uiState.current_page)
 }
 
 # --- Final scan stats at 180s ---
@@ -244,9 +268,10 @@ if ($elapsed -lt 180) {
 }
 $wmFinal = Get-WorldModelWithStats
 $statsFinal = Extract-ScanStats $wmFinal
-$freshFinal = Extract-Freshness $wmFinal
+$wmFreshFinal = Extract-WMFreshness $wmFinal
+$uiStateFinal = Get-UIBridgeState
 
-Write-Host ('[measure] 180s (final): scans={0} full={1} windows={2} focus={3}' -f $statsFinal.scan_count, $statsFinal.scan_count_full, $freshFinal.windows_count, $freshFinal.has_focus)
+Write-Host ('[measure] 180s (final): scans={0} full={1} windows={2} focus={3} page={4}' -f $statsFinal.scan_count, $statsFinal.scan_count_full, $wmFreshFinal.active_window_count, $wmFreshFinal.has_focus, $uiStateFinal.current_page)
 
 # --- Build result ---
 $result = @{
@@ -256,8 +281,9 @@ $result = @{
     bridge_ready_s   = $bridgeReadyS
     snapshots        = $snapshots
     final_180s       = @{
-        scan_stats = $statsFinal
-        freshness  = $freshFinal
+        scan_stats    = $statsFinal
+        wm_freshness  = $wmFreshFinal
+        ui_state      = $uiStateFinal
     }
 }
 
@@ -276,6 +302,7 @@ Write-Host ('  Memory 60s:     WS={0}MB PM={1}MB' -f $mem60.working_set_mb, $mem
 Write-Host ('  Memory 120s:    WS={0}MB PM={1}MB' -f $mem120.working_set_mb, $mem120.private_memory_mb)
 Write-Host ('  Scans total:    {0} (full: {1})' -f $statsFinal.scan_count, $statsFinal.scan_count_full)
 Write-Host ('  Interval:       {0}s (full: {1}s)' -f $statsFinal.scan_interval_s, $statsFinal.full_scan_interval_s)
-Write-Host ('  Frescura 180s:  windows={0} focus={1} page={2}' -f $freshFinal.windows_count, $freshFinal.has_focus, $freshFinal.has_current_page)
+Write-Host ('  WM Freshness:   windows={0} focus={1} focused={2}' -f $wmFreshFinal.active_window_count, $wmFreshFinal.has_focus, $wmFreshFinal.focused_window)
+Write-Host ('  UI Bridge:      page={0} ui_running={1}' -f $uiStateFinal.current_page, $uiStateFinal.ui_running)
 Write-Host ''
 Write-Host ('[measure] Resultados en: {0}' -f $resultsDir)
