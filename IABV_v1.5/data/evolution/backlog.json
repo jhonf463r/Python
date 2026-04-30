@@ -529,5 +529,15 @@
     "source": "chatgpt_protocol_review_2026_04_29",
     "created_at": "2026-04-29T00:00:00+00:00",
     "evidence": "La arquitectura ya tiene WorldModel, PortableContext, DecisionAuditTrail, TaskOutcomeRecorder y ExperimentLab, pero aun no existe un Task Packet canonico con estado, presupuesto, fuente de verdad, handoff y unresolved. Falta formalizar ese contrato para que Codex, Devin, ChatGPT, Claude, tools y rutas locales trabajen sin duplicar tarea ni perder contexto."
+  },
+  {
+    "id": "external-context-packaging-fallback-2026-04-29",
+    "title": "Empaquetado automatico de contexto cuando una IA/canal no puede leer el proyecto directo",
+    "area": "metacognition",
+    "priority": "medium",
+    "status": "pending",
+    "source": "user_runtime_observation_2026_04_29",
+    "created_at": "2026-04-29T00:00:00+00:00",
+    "evidence": "Claude local se trabo leyendo el proyecto y la via web solo pudo avanzar cuando el usuario comprimio y adjunto una version del repo. IABV debe poder detectar cuando una IA/canal no puede consumir el workspace directo y generar solo, de forma gobernada, un paquete minimo de contexto/archivos para cambiar de canal sin perder trazabilidad."
   }
 ]
