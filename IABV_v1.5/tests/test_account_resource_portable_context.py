@@ -482,6 +482,60 @@ def test_oses_no_finding_when_non_critical_secrets_missing() -> None:
     assert len(config_findings) == 0
 
 
+def test_oses_github_api_uses_ttl_cache() -> None:
+    """scan_github_api is called once; second call within TTL reuses cache."""
+    root = _workspace('oses_gh_ttl')
+    oses = _make_oses(root)
+    call_count = 0
+
+    def mock_quotas():
+        return {'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
+
+    def mock_secrets():
+        return {'configured': [], 'missing': [], 'configured_count': 0, 'missing_count': 0}
+
+    def mock_gh():
+        nonlocal call_count
+        call_count += 1
+        return {'available': True, 'remaining': 12, 'rate_limit': 5000,
+                'reset_at': '2026-04-21T01:00:00Z'}
+
+    with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
+         patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets), \
+         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh):
+        oses._account_resource_health_findings()
+        oses._account_resource_health_findings()
+
+    assert call_count == 1, f'scan_github_api called {call_count} times, expected 1 (TTL cache)'
+
+
+def test_oses_github_api_cache_expires() -> None:
+    """After TTL expires, scan_github_api is called again."""
+    root = _workspace('oses_gh_ttl_expire')
+    oses = _make_oses(root)
+    oses._GH_API_TTL = 0.0  # expire immediately
+    call_count = 0
+
+    def mock_quotas():
+        return {'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
+
+    def mock_secrets():
+        return {'configured': [], 'missing': [], 'configured_count': 0, 'missing_count': 0}
+
+    def mock_gh():
+        nonlocal call_count
+        call_count += 1
+        return {'available': True, 'remaining': 4999, 'rate_limit': 5000}
+
+    with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
+         patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets), \
+         patch('iabv_v15.services.account_resource_scanner.scan_github_api', mock_gh):
+        oses._account_resource_health_findings()
+        oses._account_resource_health_findings()
+
+    assert call_count == 2, f'scan_github_api called {call_count} times, expected 2 (cache expired)'
+
+
 def test_oses_survives_scanner_failure() -> None:
     """OSES returns empty findings if scanner import fails."""
     root = _workspace('oses_scanner_fail')

@@ -75,6 +75,11 @@ class OperationalSelfExaminationService:
         self.decision_audit_trail: Any | None = None
         self.code_audit_trail: Any | None = None
         self._current_review: SelfExaminationSnapshot | None = None
+        # TTL cache for scan_github_api() — avoids a live HTTP probe on
+        # every build_review().  60 s matches the PortableContext TTL.
+        self._gh_api_cache: dict[str, Any] | None = None
+        self._gh_api_cached_at: float = 0.0
+        self._GH_API_TTL: float = 60.0
 
     def current_review(
         self,
@@ -4653,10 +4658,14 @@ class OperationalSelfExaminationService:
         Complements ``_functional_gap_findings`` (which detects orphan sessions
         and untracked quotas) by looking at ACTIONABLE health problems:
         - Accounts with >= 50% quotas exhausted (HIGH if 100%)
-        - GitHub API rate limit running low (< 50 requests)
+        - GitHub API rate limit running low (< 50 requests) — **cached**, no
+          live probe per rebuild
         - Missing critical secrets (GITHUB_TOKEN_IABV, DEVIN_API_KEY_IABV)
 
-        No new service, no new persistence — reads existing scanner data.
+        ``get_all_quota_status`` and ``scan_configured_secrets`` are cheap
+        (local JSON / env vars).  ``scan_github_api`` is a live HTTP call so
+        we read from a 60 s TTL cache instead; if no cached data exists we
+        skip the finding rather than issuing a network request.
         """
         findings: list[SelfExaminationFinding] = []
 
@@ -4710,30 +4719,36 @@ class OperationalSelfExaminationService:
         except Exception:
             pass
 
-        # Finding 2: API health issues
-        try:
-            gh = scan_github_api()
-            if gh.get('available') and gh.get('remaining', 5000) < 50:
-                findings.append(SelfExaminationFinding(
-                    category='resource_degradation',
-                    title=f'GitHub API: solo {gh["remaining"]} requests restantes',
-                    summary=(
-                        f'GitHub API tiene solo {gh["remaining"]}/{gh.get("rate_limit", "?")} '
-                        f'requests restantes. Se reinicia en {gh.get("reset_at", "?")}. '
-                        f'Operaciones que dependan de GitHub podrian fallar.'
-                    ),
-                    severity=IssueSeverity.MEDIUM,
-                    confidence=0.95,
-                    recommendation='Reducir consultas a GitHub API hasta reinicio de rate limit.',
-                    metadata={
-                        'gap_type': 'api_rate_limit',
-                        'remaining': gh.get('remaining', 0),
-                        'limit': gh.get('rate_limit', 0),
-                        'reset_at': gh.get('reset_at', ''),
-                    },
-                ))
-        except Exception:
-            pass
+        # Finding 2: API health — read from TTL cache, never live probe here
+        now = time.monotonic()
+        gh = self._gh_api_cache
+        if gh is None or (now - self._gh_api_cached_at) > self._GH_API_TTL:
+            try:
+                gh = scan_github_api()
+                self._gh_api_cache = gh
+                self._gh_api_cached_at = now
+            except Exception:
+                gh = None
+
+        if gh is not None and gh.get('available') and gh.get('remaining', 5000) < 50:
+            findings.append(SelfExaminationFinding(
+                category='resource_degradation',
+                title=f'GitHub API: solo {gh["remaining"]} requests restantes',
+                summary=(
+                    f'GitHub API tiene solo {gh["remaining"]}/{gh.get("rate_limit", "?")} '
+                    f'requests restantes. Se reinicia en {gh.get("reset_at", "?")}. '
+                    f'Operaciones que dependan de GitHub podrian fallar.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.95,
+                recommendation='Reducir consultas a GitHub API hasta reinicio de rate limit.',
+                metadata={
+                    'gap_type': 'api_rate_limit',
+                    'remaining': gh.get('remaining', 0),
+                    'limit': gh.get('rate_limit', 0),
+                    'reset_at': gh.get('reset_at', ''),
+                },
+            ))
 
         # Finding 3: Critical secrets missing
         try:
