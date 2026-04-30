@@ -105,7 +105,9 @@ class LocalRoleRouter:
         ]
         if self.optional_provider is not None:
             snapshot.append(self.optional_provider.health_check())
-        snapshot.append(self.embedding_service.health_check())
+        snapshot.append(self.embedding_service.health_check(
+            max_age_seconds=0.0 if refresh else max_age_seconds,
+        ))
         with self._health_snapshot_lock:
             self._health_snapshot_cache = [item.model_copy(deep=True) for item in snapshot]
             self._health_snapshot_checked_at = time.monotonic()

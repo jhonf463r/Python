@@ -275,9 +275,9 @@ def test_local_role_router_caches_health_snapshot_until_forced() -> None:
     embedding_calls = {'count': 0}
     original_embedding_health = router.embedding_service.health_check
 
-    def _embedding_health() -> ProviderHealth:
+    def _embedding_health(**kwargs: object) -> ProviderHealth:
         embedding_calls['count'] += 1
-        return original_embedding_health()
+        return original_embedding_health(**kwargs)
 
     router.embedding_service.health_check = _embedding_health  # type: ignore[method-assign]
 
