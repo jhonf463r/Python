@@ -185,3 +185,87 @@ def test_gate_top_worker_matches_first_ranked() -> None:
     gate = router.worker_health_gate(target_assistant='chatgpt')
     assert gate['top_worker']['email'] == gate['ranked_workers'][0]['email']
     assert gate['top_worker']['score'] == gate['ranked_workers'][0]['score']
+
+
+# ─── Worker identity preservation (browser/profile/block_risk) ───
+
+
+def _pool_with_browser_profile() -> dict[str, Any]:
+    return {
+        'available_count': 3,
+        'exhausted_count': 0,
+        'total_remaining_messages': 70,
+        'workers': [
+            {
+                'email': 'user1@company.com', 'tool': 'chatgpt',
+                'browser': 'Chrome', 'profile': 'Profile 1',
+                'remaining_messages': 40, 'limit': 40, 'exhausted': False,
+            },
+            {
+                'email': 'user2@company.com', 'tool': 'chatgpt',
+                'browser': 'Edge', 'profile': 'Default',
+                'remaining_messages': 20, 'limit': 40, 'exhausted': False,
+            },
+            {
+                'email': 'user3@company.com', 'tool': 'chatgpt',
+                'remaining_messages': 10, 'limit': 40, 'exhausted': False,
+            },
+        ],
+        'exhausted': [],
+        'tools_available': ['chatgpt'],
+    }
+
+
+def test_gate_top_worker_preserves_browser_profile() -> None:
+    """top_worker includes browser and profile when they come from the ranking."""
+    router = _router(_workspace('browser_profile'), account_resource_scanner=_pool_with_browser_profile)
+    gate = router.worker_health_gate(target_assistant='chatgpt')
+    top = gate['top_worker']
+    assert top['tool'] == 'chatgpt'
+    assert top['email'] == 'user1@company.com'
+    assert top['browser'] == 'Chrome'
+    assert top['profile'] == 'Profile 1'
+    assert 'remaining' in top
+    assert 'score' in top
+
+
+def test_gate_ranked_workers_preserve_browser_profile() -> None:
+    """ranked_workers include browser and profile when present."""
+    router = _router(_workspace('ranked_bp'), account_resource_scanner=_pool_with_browser_profile)
+    gate = router.worker_health_gate(target_assistant='chatgpt')
+    ranked = gate['ranked_workers']
+    assert ranked[0]['browser'] == 'Chrome'
+    assert ranked[0]['profile'] == 'Profile 1'
+    assert ranked[1]['browser'] == 'Edge'
+    assert ranked[1]['profile'] == 'Default'
+    # Third worker has no browser/profile — keys should be absent, not empty
+    assert 'browser' not in ranked[2]
+    assert 'profile' not in ranked[2]
+
+
+def test_gate_top_worker_includes_block_risk() -> None:
+    """top_worker includes block_risk field from ranking."""
+    router = _router(_workspace('block_risk_field'), account_resource_scanner=_pool_with_browser_profile)
+    gate = router.worker_health_gate(target_assistant='chatgpt')
+    top = gate['top_worker']
+    assert 'block_risk' in top
+    assert isinstance(top['block_risk'], float)
+
+
+def test_gate_blocked_still_honest() -> None:
+    """Blocked gate still returns top_worker=None, ranked_workers=[]."""
+    router = _router(_workspace('blocked_honest'), account_resource_scanner=_pool_all_exhausted)
+    gate = router.worker_health_gate(target_assistant='chatgpt')
+    assert gate['usable'] is False
+    assert gate['top_worker'] is None
+    assert gate['ranked_workers'] == []
+    assert gate['reason'] != ''
+
+
+def test_gate_no_scanner_still_honest() -> None:
+    """No-scanner gate still returns top_worker=None, ranked_workers=[]."""
+    router = _router(_workspace('no_scanner_honest'))
+    gate = router.worker_health_gate()
+    assert gate['usable'] is False
+    assert gate['top_worker'] is None
+    assert gate['ranked_workers'] == []
