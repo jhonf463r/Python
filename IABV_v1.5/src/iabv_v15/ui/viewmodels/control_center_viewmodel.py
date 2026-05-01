@@ -6572,6 +6572,10 @@ class ControlCenterViewModel(QObject):
                 adaptive_payload=adaptive_payload,
             )
             self._append_message('assistant', 'IABV', user_text, meta_line, evidence_tag=_chat_evidence_tag)
+            if adaptive_payload and isinstance(adaptive_payload, dict):
+                _ap_meta = adaptive_payload.setdefault('metadata', {})
+                if isinstance(_ap_meta, dict):
+                    _ap_meta['chat_evidence_tag'] = _chat_evidence_tag
             self._latest_response_text = user_text
             self._latest_response_meta = meta_line
             self._busy_label = 'Respuesta lista.'

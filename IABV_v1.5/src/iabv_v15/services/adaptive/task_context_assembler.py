@@ -178,6 +178,13 @@ class TaskContextAssembler:
                 'validation_learning_summary': validation_learning_summary,
                 'world_model_summary': self._world_model_summary(world_model),
                 'portable_context_summary': portable_context_summary,
+                'evidence_basis': self._classify_evidence_basis(
+                    has_world_model=not self._world_model_unresolved(world_model),
+                    has_environment=bool(str(environment_self_model.environment_id or '').strip()),
+                    has_persisted_learning=bool(task_context.metadata.get('adaptive_learning_summary') or task_context.metadata.get('learned_patterns')),
+                    has_ia_trace=bool(resolved_ia_trace),
+                    unresolved_fields=unresolved_fields,
+                ),
             },
         )
         return PerceptionSnapshot(
@@ -221,6 +228,13 @@ class TaskContextAssembler:
                 'environment_notifications': list(environment_self_model.notifications or []),
                 'world_model_summary': self._world_model_summary(world_model),
                 'portable_context_summary': portable_context_summary,
+                'evidence_basis': self._classify_evidence_basis(
+                    has_world_model=not self._world_model_unresolved(world_model),
+                    has_environment=bool(str(environment_self_model.environment_id or '').strip()),
+                    has_persisted_learning=bool(task_context.metadata.get('adaptive_learning_summary') or task_context.metadata.get('learned_patterns')),
+                    has_ia_trace=bool(resolved_ia_trace),
+                    unresolved_fields=unresolved_fields,
+                ),
             },
         )
 
@@ -379,6 +393,47 @@ class TaskContextAssembler:
             return model
         except Exception:
             return WorldModelSnapshot(unresolved_fields=['UNRESOLVED:world_model'])
+
+    @staticmethod
+    def _classify_evidence_basis(
+        *,
+        has_world_model: bool = False,
+        has_environment: bool = False,
+        has_persisted_learning: bool = False,
+        has_ia_trace: bool = False,
+        unresolved_fields: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Classify the evidence basis of the current perception snapshot.
+
+        Returns a lightweight dict with:
+        - ``state``: ``'observed'``, ``'inferred'`` or ``'unresolved'``
+        - ``live_sources``: list of confirmed live data sources
+        - ``persisted_sources``: list of persisted evidence sources
+        - ``unresolved``: list of UNRESOLVED fields
+        """
+        live: list[str] = []
+        persisted: list[str] = []
+        if has_world_model:
+            live.append('world_model')
+        if has_environment:
+            live.append('environment_self_model')
+        if has_persisted_learning:
+            persisted.append('adaptive_learning')
+        if has_ia_trace:
+            persisted.append('ia_trace')
+        unresolved = list(unresolved_fields or [])
+        if live:
+            state = 'observed'
+        elif persisted:
+            state = 'inferred'
+        else:
+            state = 'unresolved'
+        return {
+            'state': state,
+            'live_sources': live,
+            'persisted_sources': persisted,
+            'unresolved': unresolved,
+        }
 
     def _world_model_unresolved(self, world_model: WorldModelSnapshot) -> bool:
         if world_model.tool_live_status or world_model.active_windows or world_model.detected_blocks:

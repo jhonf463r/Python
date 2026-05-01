@@ -174,6 +174,11 @@ class TaskOutcomeRecorder:
             'selected_worker': dict(dict(session.metadata.get('worker_gate') or {}).get('top_worker') or {}),
             'ranked_worker_count': int(dict(session.metadata.get('worker_gate') or {}).get('available_count') or 0),
             'blocked_reason': str(dict(session.metadata.get('worker_gate') or {}).get('reason') or ''),
+            'evidence_basis': dict(
+                (dict(session.metadata.get('decision_context') or {}).get('metadata') or {}).get('evidence_basis')
+                or (dict(session.metadata.get('perception_snapshot') or {}).get('metadata') or {}).get('evidence_basis')
+                or {}
+            ),
         }
         learning_records: list[dict[str, Any]] = []
         for subject_key in subject_keys:
