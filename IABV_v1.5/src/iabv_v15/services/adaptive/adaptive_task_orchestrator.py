@@ -1437,6 +1437,12 @@ class AdaptiveTaskOrchestrator:
                 'reason': str(_gate.get('reason') or '') if not _gate.get('usable') else '',
             }
 
+        session.metadata['task_packet'] = self._build_task_packet(
+            session=session,
+            decision_context=decision_context,
+            perception=perception,
+        )
+
         saved_session = self.task_outcome_recorder.record(session)
         route = self._build_route(saved_session, decision_context)
         result = self._build_result(request=request, session=saved_session, pack=pack, route=route)
@@ -3027,6 +3033,49 @@ class AdaptiveTaskOrchestrator:
                 signals[kind] = existing
         return signals
 
+    @staticmethod
+    def _build_task_packet(
+        *,
+        session: AdaptiveSession,
+        decision_context: DecisionContext,
+        perception: PerceptionSnapshot | None,
+    ) -> dict[str, Any]:
+        """Build the canonical task packet from existing session data.
+
+        Normalises ``evidence_basis``, ``worker_gate``, ``selected_worker``,
+        ``governance_flags`` and ``unresolved`` into a single first-level dict
+        so downstream consumers (recorder, learning) do not need to dict-dive.
+        """
+        governance = dict(decision_context.governance or {})
+        dc_meta = dict(decision_context.metadata or {})
+        ps_meta = dict(getattr(perception, 'metadata', None) or {}) if perception is not None else {}
+        evidence_basis = dict(dc_meta.get('evidence_basis') or ps_meta.get('evidence_basis') or {})
+        worker_gate = dict(session.metadata.get('worker_gate') or {})
+        gate_ran = 'worker_gate' in session.metadata
+        top_worker = dict(worker_gate.get('top_worker') or {}) if gate_ran else {}
+        return {
+            'objective': session.user_goal,
+            'intent_key': session.intent.intent_key,
+            'route_summary': {
+                'detected_role': session.intent.detected_role.value,
+                'assistant_kind': str(governance.get('assistant_kind') or ''),
+            },
+            'worker_gate_summary': {
+                'ran': gate_ran,
+                'usable': bool(worker_gate.get('usable', False)),
+                'top_worker': top_worker,
+                'available_count': int(worker_gate.get('available_count', 0)),
+            },
+            'selected_worker': top_worker,
+            'evidence_basis': evidence_basis,
+            'governance_flags': {
+                'approval_required': bool(governance.get('approval_required')),
+                'should_consult': bool(governance.get('should_consult')),
+                'block_risky_action': bool(governance.get('block_risky_action')),
+            },
+            'unresolved': list(getattr(perception, 'unresolved_fields', []) or []) if perception is not None else [],
+        }
+
     @classmethod
     def _corrective_guidance_for_blocks(
         cls, model: WorldModelSnapshot,
@@ -3118,6 +3167,29 @@ class AdaptiveTaskOrchestrator:
         if not blocked and not worker_gate.get('usable', False):
             blocked = True
             reason = str(worker_gate.get('reason') or 'No hay worker usable para esta ruta.')
+        top_worker = dict(worker_gate.get('top_worker') or {}) if worker_gate.get('usable') else {}
+        task_packet = {
+            'objective': user_goal,
+            'intent_key': 'general.assistance',
+            'route_summary': {
+                'detected_role': 'external_consultant',
+                'assistant_kind': normalized_assistant,
+            },
+            'worker_gate_summary': {
+                'ran': True,
+                'usable': bool(worker_gate.get('usable', False)),
+                'top_worker': top_worker,
+                'available_count': int(worker_gate.get('available_count', 0)),
+            },
+            'selected_worker': top_worker,
+            'evidence_basis': {},
+            'governance_flags': {
+                'approval_required': bool(governance.get('approval_required')),
+                'should_consult': True,
+                'block_risky_action': bool(governance.get('block_risky_action')),
+            },
+            'unresolved': [],
+        }
         return {
             'assistant_kind': normalized_assistant,
             'world_model': world_model.model_dump(mode='json'),
@@ -3127,6 +3199,7 @@ class AdaptiveTaskOrchestrator:
             'blocked': blocked,
             'reason': reason,
             'worker_health': worker_gate,
+            'task_packet': task_packet,
         }
 
     def _build_governance(
