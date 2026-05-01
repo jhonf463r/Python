@@ -3,7 +3,8 @@
 Covers:
 - _extract_block_signals_from_world_model: extracts per-tool signals
   from ToolLiveStatus.external_state_flags, detected_blocks, and status
-- _enrich_gate_with_block_signals: re-ranks gate workers when signals present
+- signal union: multiple ToolLiveStatus with same assistant_kind merge
+- worker_health_gate(block_signals=...): reuses cached pool, no extra scan
 - backward compat: empty signals leave gate unchanged
 - flag mapping: canonical flags map to scanner signal names
 - no signals when world_model is None or has no tool_live_status
@@ -388,203 +389,177 @@ def test_extract_signals_combined_flags_blocks_status() -> None:
     assert 'no_disponible' in sigs
 
 
-# ─── _enrich_gate_with_block_signals ─────────────────────────
+# ─── Signal union: multiple ToolLiveStatus with same assistant_kind ───
 
 
-def _usable_gate() -> dict[str, Any]:
-    return {
-        'usable': True,
-        'reason': '',
-        'available_count': 2,
-        'workers': [
-            {'tool': 'chatgpt', 'email': 'a@test.com', 'remaining': 40, 'score': 100.0},
-            {'tool': 'chatgpt', 'email': 'b@test.com', 'remaining': 40, 'score': 100.0},
-        ],
-        'top_worker': {'tool': 'chatgpt', 'email': 'a@test.com', 'remaining': 40, 'score': 100.0},
-        'ranked_workers': [
-            {'tool': 'chatgpt', 'email': 'a@test.com', 'remaining': 40, 'score': 100.0},
-            {'tool': 'chatgpt', 'email': 'b@test.com', 'remaining': 40, 'score': 100.0},
-        ],
-    }
+def test_extract_signals_union_same_kind() -> None:
+    """Multiple ToolLiveStatus for 'chatgpt' should union signals, not overwrite."""
+    wm = WorldModelSnapshot(tool_live_status=[
+        ToolLiveStatus(
+            tool_id='chatgpt-1',
+            assistant_kind='chatgpt',
+            status='activo',
+            external_state_flags=['wrong_thread'],
+        ),
+        ToolLiveStatus(
+            tool_id='chatgpt-2',
+            assistant_kind='chatgpt',
+            status='activo',
+            external_state_flags=['account_limited'],
+        ),
+    ])
+    result = AdaptiveTaskOrchestrator._extract_block_signals_from_world_model(wm)
+    sigs = result['chatgpt']
+    assert 'wrong_thread' in sigs
+    assert 'rate_limited' in sigs
+    assert len(sigs) == 2
 
 
-def _blocked_gate() -> dict[str, Any]:
-    return {
-        'usable': False,
-        'reason': 'No hay workers.',
-        'available_count': 0,
-        'workers': [],
-        'top_worker': None,
-        'ranked_workers': [],
-    }
+def test_extract_signals_union_dedup_across_entries() -> None:
+    """Same signal from two ToolLiveStatus entries should appear only once."""
+    wm = WorldModelSnapshot(tool_live_status=[
+        ToolLiveStatus(
+            tool_id='chatgpt-1',
+            assistant_kind='chatgpt',
+            status='activo',
+            external_state_flags=['wrong_thread'],
+        ),
+        ToolLiveStatus(
+            tool_id='chatgpt-2',
+            assistant_kind='chatgpt',
+            status='activo',
+            detected_blocks=['wrong_thread'],
+        ),
+    ])
+    result = AdaptiveTaskOrchestrator._extract_block_signals_from_world_model(wm)
+    assert result['chatgpt'].count('wrong_thread') == 1
 
 
-def test_enrich_gate_empty_signals_unchanged() -> None:
-    root = _workspace('enrich_empty')
-    orch = _build_orchestrator(root)
-    gate = _usable_gate()
-    original_top = gate['top_worker']
-    result = orch._enrich_gate_with_block_signals(gate, 'chatgpt', {})
-    assert result['top_worker'] == original_top
-    assert 'block_signals_applied' not in result
+def test_extract_signals_union_mixed_sources() -> None:
+    """Union across flags, blocks, and status from multiple entries."""
+    wm = WorldModelSnapshot(tool_live_status=[
+        ToolLiveStatus(
+            tool_id='chatgpt-1',
+            assistant_kind='chatgpt',
+            status='activo',
+            external_state_flags=['wrong_thread'],
+        ),
+        ToolLiveStatus(
+            tool_id='chatgpt-2',
+            assistant_kind='chatgpt',
+            status='no_disponible',
+            detected_blocks=['capture_unverified'],
+        ),
+    ])
+    result = AdaptiveTaskOrchestrator._extract_block_signals_from_world_model(wm)
+    sigs = result['chatgpt']
+    assert 'wrong_thread' in sigs
+    assert 'capture_unverified' in sigs
+    assert 'no_disponible' in sigs
 
 
-def test_enrich_gate_blocked_gate_unchanged() -> None:
-    root = _workspace('enrich_blocked')
-    orch = _build_orchestrator(root)
-    gate = _blocked_gate()
-    result = orch._enrich_gate_with_block_signals(gate, 'chatgpt', {'chatgpt': ['wrong_thread']})
-    assert result['usable'] is False
-    assert 'block_signals_applied' not in result
+# ─── worker_health_gate with block_signals (no extra scan) ───
 
 
-def test_enrich_gate_applies_signals() -> None:
-    """With block_signals, re-ranking should change top_worker and add block_signals_applied."""
-    root = _workspace('enrich_applies')
-    orch = _build_orchestrator(root)
-    gate = _usable_gate()
+def _fake_scanner_module(workers: list[dict[str, Any]]):
+    """Return a scanner callable that tracks call count."""
+    call_count = [0]
 
-    def _fake_pool() -> dict[str, Any]:
+    def _scan() -> dict[str, Any]:
+        call_count[0] += 1
+        available = [w for w in workers if not w.get('exhausted', False)]
         return {
-            'available_count': 2,
-            'workers': [
-                {
-                    'tool': 'chatgpt',
-                    'email': 'a@test.com',
-                    'browser': 'Chrome',
-                    'profile': 'Default',
-                    'remaining_messages': 40,
-                    'limit': 40,
-                    'exhausted': False,
-                },
-                {
-                    'tool': 'chatgpt',
-                    'email': 'b@test.com',
-                    'browser': 'Chrome',
-                    'profile': 'Profile 1',
-                    'remaining_messages': 40,
-                    'limit': 40,
-                    'exhausted': False,
-                },
-            ],
+            'workers': available,
+            'exhausted': [w for w in workers if w.get('exhausted', False)],
+            'available_count': len(available),
+            'exhausted_count': len(workers) - len(available),
+            'by_tool': {},
+            'total_remaining_messages': sum(w.get('remaining_messages', 0) for w in available),
         }
 
-    with patch(
-        'iabv_v15.services.account_resource_scanner.estimate_available_workers',
-        side_effect=_fake_pool,
-    ):
-        result = orch._enrich_gate_with_block_signals(
-            gate, 'chatgpt', {'chatgpt': ['wrong_thread']},
-        )
-
-    assert result.get('block_signals_applied') == {'chatgpt': ['wrong_thread']}
-    assert result['usable'] is True
-    for w in result.get('ranked_workers', []):
-        assert 'block_risk' in w or w.get('tool') != 'chatgpt'
+    return _scan, call_count
 
 
-def test_enrich_gate_all_workers_blocked() -> None:
-    """When all workers are eliminated by signals, gate becomes non-usable."""
-    root = _workspace('enrich_all_blocked')
+def test_gate_with_block_signals_reuses_cache() -> None:
+    """worker_health_gate(block_signals=...) must not trigger extra scan."""
+    from iabv_v15.services.roles.local_role_router import LocalRoleRouter
+
+    root = _workspace('gate_cache')
     orch = _build_orchestrator(root)
-    gate = _usable_gate()
 
-    def _fake_pool_single() -> dict[str, Any]:
-        return {
-            'available_count': 1,
-            'workers': [
-                {
-                    'tool': 'chatgpt',
-                    'email': 'a@test.com',
-                    'browser': 'Chrome',
-                    'profile': 'Default',
-                    'remaining_messages': 0,
-                    'limit': 40,
-                    'exhausted': True,
-                },
-            ],
-        }
+    workers = [
+        {'tool': 'chatgpt', 'email': 'a@test.com', 'browser': 'Chrome',
+         'profile': 'Default', 'remaining_messages': 40, 'limit': 40, 'exhausted': False},
+        {'tool': 'chatgpt', 'email': 'b@test.com', 'browser': 'Chrome',
+         'profile': 'Profile 1', 'remaining_messages': 40, 'limit': 40, 'exhausted': False},
+    ]
+    scanner, call_count = _fake_scanner_module(workers)
+    orch.role_router._account_resource_scanner = scanner
 
-    with patch(
-        'iabv_v15.services.account_resource_scanner.estimate_available_workers',
-        side_effect=_fake_pool_single,
-    ):
-        result = orch._enrich_gate_with_block_signals(
-            gate, 'chatgpt', {'chatgpt': ['auth_expired']},
-        )
+    gate1 = orch.role_router.worker_health_gate(target_assistant='chatgpt')
+    assert gate1['usable'] is True
+    assert call_count[0] == 1
 
-    assert result['usable'] is False
-    assert result['top_worker'] is None
-    assert result['ranked_workers'] == []
+    gate2 = orch.role_router.worker_health_gate(
+        target_assistant='chatgpt',
+        block_signals={'chatgpt': ['wrong_thread']},
+    )
+    assert gate2['usable'] is True
+    assert gate2.get('block_signals_applied') == {'chatgpt': ['wrong_thread']}
+    assert call_count[0] == 1  # no extra scan — pool cache reused
 
 
-def test_enrich_gate_scanner_exception_returns_original() -> None:
-    """If estimate_available_workers raises, original gate returned unchanged."""
-    root = _workspace('enrich_exception')
+def test_gate_without_signals_no_block_signals_key() -> None:
+    """Without block_signals, gate response has no block_signals_applied key."""
+    root = _workspace('gate_no_signals')
     orch = _build_orchestrator(root)
-    gate = _usable_gate()
-    original_top = gate['top_worker']
 
-    with patch(
-        'iabv_v15.services.account_resource_scanner.estimate_available_workers',
-        side_effect=RuntimeError('scanner down'),
-    ):
-        result = orch._enrich_gate_with_block_signals(
-            gate, 'chatgpt', {'chatgpt': ['wrong_thread']},
-        )
+    workers = [
+        {'tool': 'chatgpt', 'email': 'a@test.com', 'browser': 'Chrome',
+         'profile': 'Default', 'remaining_messages': 40, 'limit': 40, 'exhausted': False},
+    ]
+    scanner, _ = _fake_scanner_module(workers)
+    orch.role_router._account_resource_scanner = scanner
 
-    assert result['top_worker'] == original_top
-    assert 'block_signals_applied' not in result
+    gate = orch.role_router.worker_health_gate(target_assistant='chatgpt')
+    assert gate['usable'] is True
+    assert 'block_signals_applied' not in gate
+
+
+def test_gate_with_signals_affects_ranking() -> None:
+    """block_signals passed to gate should affect block_risk in ranked workers."""
+    root = _workspace('gate_ranking')
+    orch = _build_orchestrator(root)
+
+    workers = [
+        {'tool': 'chatgpt', 'email': 'a@test.com', 'browser': 'Chrome',
+         'profile': 'Default', 'remaining_messages': 40, 'limit': 40, 'exhausted': False},
+        {'tool': 'chatgpt', 'email': 'b@test.com', 'browser': 'Chrome',
+         'profile': 'Profile 1', 'remaining_messages': 40, 'limit': 40, 'exhausted': False},
+    ]
+    scanner, _ = _fake_scanner_module(workers)
+    orch.role_router._account_resource_scanner = scanner
+
+    gate_without = orch.role_router.worker_health_gate(target_assistant='chatgpt')
+    gate_with = orch.role_router.worker_health_gate(
+        target_assistant='chatgpt',
+        block_signals={'chatgpt': ['wrong_thread']},
+        refresh=True,
+    )
+    assert gate_with.get('block_signals_applied') == {'chatgpt': ['wrong_thread']}
+    has_block_risk = any(
+        'block_risk' in w for w in gate_with.get('ranked_workers', [])
+    )
+    assert has_block_risk
 
 
 # ─── Integration: preflight wiring ───────────────────────────
 
 
-def _usable_gate_for_router() -> dict[str, Any]:
-    return {
-        'usable': True,
-        'reason': '',
-        'available_count': 2,
-        'workers': [
-            {'tool': 'chatgpt', 'email': 'a@test.com', 'remaining': 40, 'score': 100.0},
-            {'tool': 'chatgpt', 'email': 'b@test.com', 'remaining': 40, 'score': 100.0},
-        ],
-        'top_worker': {'tool': 'chatgpt', 'email': 'a@test.com', 'remaining': 40, 'score': 100.0},
-        'ranked_workers': [
-            {'tool': 'chatgpt', 'email': 'a@test.com', 'remaining': 40, 'score': 100.0},
-            {'tool': 'chatgpt', 'email': 'b@test.com', 'remaining': 40, 'score': 100.0},
-        ],
-    }
-
-
-def _fake_pool_2_workers() -> dict[str, Any]:
-    return {
-        'available_count': 2,
-        'workers': [
-            {
-                'tool': 'chatgpt',
-                'email': 'a@test.com',
-                'browser': 'Chrome',
-                'profile': 'Default',
-                'remaining_messages': 40,
-                'limit': 40,
-                'exhausted': False,
-            },
-            {
-                'tool': 'chatgpt',
-                'email': 'b@test.com',
-                'browser': 'Chrome',
-                'profile': 'Profile 1',
-                'remaining_messages': 40,
-                'limit': 40,
-                'exhausted': False,
-            },
-        ],
-    }
-
-
 def test_preflight_passes_block_signals_to_gate() -> None:
-    """preflight_external_assistant extracts signals and enriches the gate."""
+    """preflight_external_assistant passes extracted signals to worker_health_gate."""
+    from unittest.mock import MagicMock
+
     root = _workspace('preflight_signals')
     orch = _build_orchestrator(root)
 
@@ -597,27 +572,39 @@ def test_preflight_passes_block_signals_to_gate() -> None:
         ),
     ])
 
+    gate_mock = MagicMock(return_value={
+        'usable': True,
+        'reason': '',
+        'available_count': 2,
+        'workers': [
+            {'tool': 'chatgpt', 'email': 'a@test.com', 'remaining': 40, 'score': 100.0},
+        ],
+        'top_worker': {'tool': 'chatgpt', 'email': 'a@test.com', 'remaining': 40, 'score': 100.0},
+        'ranked_workers': [
+            {'tool': 'chatgpt', 'email': 'a@test.com', 'remaining': 40, 'score': 100.0},
+        ],
+        'block_signals_applied': {'chatgpt': ['wrong_thread']},
+    })
+
     with (
         patch.object(orch, '_world_model', return_value=wm),
-        patch.object(
-            orch.role_router, 'worker_health_gate',
-            return_value=_usable_gate_for_router(),
-        ),
-        patch(
-            'iabv_v15.services.account_resource_scanner.estimate_available_workers',
-            side_effect=_fake_pool_2_workers,
-        ),
+        patch.object(orch.role_router, 'worker_health_gate', gate_mock),
     ):
         result = orch.preflight_external_assistant(
             user_goal='test', assistant_kind='chatgpt',
         )
 
+    gate_mock.assert_called_once()
+    call_kwargs = gate_mock.call_args[1]
+    assert call_kwargs.get('block_signals') == {'chatgpt': ['wrong_thread']}
     gate = result.get('worker_health', {})
     assert gate.get('block_signals_applied') == {'chatgpt': ['wrong_thread']}
 
 
-def test_preflight_no_signals_backward_compat() -> None:
-    """Without live signals, preflight returns gate unchanged (no block_signals_applied key)."""
+def test_preflight_no_signals_passes_none() -> None:
+    """Without live signals, preflight passes block_signals=None to gate."""
+    from unittest.mock import MagicMock
+
     root = _workspace('preflight_compat')
     orch = _build_orchestrator(root)
 
@@ -630,10 +617,28 @@ def test_preflight_no_signals_backward_compat() -> None:
         ),
     ])
 
-    with patch.object(orch, '_world_model', return_value=wm):
+    gate_mock = MagicMock(return_value={
+        'usable': True,
+        'reason': '',
+        'available_count': 1,
+        'workers': [
+            {'tool': 'chatgpt', 'email': 'a@test.com', 'remaining': 40, 'score': 100.0},
+        ],
+        'top_worker': {'tool': 'chatgpt', 'email': 'a@test.com', 'remaining': 40, 'score': 100.0},
+        'ranked_workers': [
+            {'tool': 'chatgpt', 'email': 'a@test.com', 'remaining': 40, 'score': 100.0},
+        ],
+    })
+
+    with (
+        patch.object(orch, '_world_model', return_value=wm),
+        patch.object(orch.role_router, 'worker_health_gate', gate_mock),
+    ):
         result = orch.preflight_external_assistant(
             user_goal='test', assistant_kind='chatgpt',
         )
 
+    call_kwargs = gate_mock.call_args[1]
+    assert call_kwargs.get('block_signals') is None
     gate = result.get('worker_health', {})
     assert 'block_signals_applied' not in gate

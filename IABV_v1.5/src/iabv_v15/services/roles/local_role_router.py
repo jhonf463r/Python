@@ -197,6 +197,7 @@ class LocalRoleRouter:
         *,
         target_assistant: str = '',
         refresh: bool = False,
+        block_signals: dict[str, list[str]] | None = None,
     ) -> dict[str, Any]:
         """Check whether at least one external worker is usable.
 
@@ -204,6 +205,11 @@ class LocalRoleRouter:
         'workers': [...]}`` filtering from a cached raw pool.  The raw pool
         is cached with a 30 s TTL; the per-target filter runs on every call
         so different ``target_assistant`` values never cross-contaminate.
+
+        *block_signals*, when provided, is forwarded to
+        ``rank_workers_for_target`` so that live runtime observations
+        (e.g. ``wrong_thread``, ``auth_expired``) penalise individual
+        workers.  The pool cache is reused — no extra scan is triggered.
 
         When no scanner is wired the gate returns ``usable=False`` with an
         UNRESOLVED reason so callers never silently assume cloud availability.
@@ -237,7 +243,7 @@ class LocalRoleRouter:
         available = pool.get('available_count', 0)
         target = str(target_assistant or '').strip().lower()
 
-        ranked = rank_workers_for_target(target, pool=pool)
+        ranked = rank_workers_for_target(target, pool=pool, block_signals=block_signals or {})
 
         if not ranked:
             if available == 0:
@@ -268,7 +274,7 @@ class LocalRoleRouter:
                 d['remaining'] = d.pop('remaining_messages')
             return d
 
-        return {
+        result: dict[str, Any] = {
             'usable': True,
             'reason': '',
             'available_count': len(ranked),
@@ -276,6 +282,9 @@ class LocalRoleRouter:
             'top_worker': _compact(top),
             'ranked_workers': [_compact(w) for w in ranked[:5]],
         }
+        if block_signals:
+            result['block_signals_applied'] = block_signals
+        return result
 
     def infer_task(self, request: InferenceRequest) -> tuple[RoleRoute, InferenceResult]:
         decision_context = self._decision_context_from_request(request)
