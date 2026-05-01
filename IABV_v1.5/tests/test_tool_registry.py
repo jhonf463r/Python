@@ -269,3 +269,169 @@ def test_tool_registry_skips_rechecking_fresh_card() -> None:
         assert adapter.calls == 2
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_windsurf_toolcard_seeded_with_correct_metadata() -> None:
+    """Verifica que el ToolCard de Windsurf se registra con metadata conservadora."""
+    root = _workspace('windsurf_metadata_check')
+    try:
+        db = AppDatabase(str(root / 'app.sqlite'))
+        storage = ArtifactStorage(str(root / 'tool_teaching'))
+        repository = ToolRecordRepository(db, storage)
+        registry = ToolRegistry(repository, {'external_assistant': _AvailableAdapter()})
+
+        card = registry.get_card('windsurf_installed')
+        assert card is not None
+        assert card.tool_id == 'windsurf_installed'
+        assert card.title == 'Windsurf instalado'
+        assert card.adapter_key == 'external_assistant'
+        assert card.available is True
+        assert card.requires_human_approval is True
+        assert 'launch_app' in card.capabilities
+        assert 'code_assistance' in card.capabilities
+
+        # Verificar metadata conservadora
+        assert card.metadata.get('assistant_kind') == 'windsurf'
+        assert card.metadata.get('launch_mode') == 'desktop_app'
+        assert card.metadata.get('command_name') == 'windsurf'
+        assert 'windsurf.exe' in card.metadata.get('command_aliases', [])
+
+        # Verificar rutas oficiales confirmadas por Codex
+        windows_paths = card.metadata.get('windows_default_paths', [])
+        assert any(r'\Windsurf\Windsurf.exe' in p for p in windows_paths)
+
+        # Verificar paths de config oficiales
+        config_paths = card.metadata.get('config_paths', [])
+        assert any(r'\.codeium\windsurf' in p for p in config_paths)
+
+        # Verificar comportamiento real: lanzable con pasteback manual, auto-capture UNRESOLVED
+        assert card.metadata.get('status') == 'AVAILABLE_MANUAL_ASSISTED'
+        assert card.metadata.get('status_reason') == 'auto_capture_unconfirmed'
+        assert card.metadata.get('requires_manual_pasteback') is True
+        # response_capture_mode NO debe estar presente (UNRESOLVED)
+        assert 'response_capture_mode' not in card.metadata or not card.metadata.get('response_capture_mode')
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_windsurf_adapter_detects_by_official_path_programfiles(monkeypatch) -> None:
+    r"""Verifica detección de Windsurf por ruta oficial C:\Program Files\Windsurf."""
+    root = _workspace('windsurf_programfiles_detection')
+    try:
+        windsurf_dir = root / 'Program Files' / 'Windsurf'
+        windsurf_dir.mkdir(parents=True, exist_ok=True)
+        exe = windsurf_dir / 'Windsurf.exe'
+        exe.write_text('stub', encoding='utf-8')
+
+        monkeypatch.setenv('ProgramFiles', str(root / 'Program Files'))
+
+        card = ToolCard(
+            tool_id='windsurf_installed',
+            title='Windsurf instalado',
+            tool_type=ToolType.CODE_EDITOR,
+            adapter_key='external_assistant',
+            metadata={
+                'command_name': 'windsurf',
+                'command_aliases': ['windsurf.exe'],
+                'windows_default_paths': [
+                    r'{programfiles}\Windsurf\Windsurf.exe',
+                    r'{localappdata}\Programs\Windsurf\Windsurf.exe',
+                ],
+            },
+        )
+
+        adapter = ExternalAssistantToolAdapter()
+        assert adapter.is_available(card) is True
+        resolved = adapter._resolve_launch_target(card)
+        assert 'Windsurf' in resolved or 'windsurf' in resolved.lower()
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_windsurf_adapter_detects_by_official_path_localappdata(monkeypatch) -> None:
+    r"""Verifica detección de Windsurf por ruta oficial %LocalAppData%\Programs\Windsurf."""
+    root = _workspace('windsurf_localappdata_detection')
+    try:
+        windsurf_dir = root / 'Programs' / 'Windsurf'
+        windsurf_dir.mkdir(parents=True, exist_ok=True)
+        exe = windsurf_dir / 'Windsurf.exe'
+        exe.write_text('stub', encoding='utf-8')
+
+        monkeypatch.setenv('LOCALAPPDATA', str(root))
+
+        card = ToolCard(
+            tool_id='windsurf_installed',
+            title='Windsurf instalado',
+            tool_type=ToolType.CODE_EDITOR,
+            adapter_key='external_assistant',
+            metadata={
+                'command_name': 'windsurf',
+                'windows_default_paths': [
+                    r'{programfiles}\Windsurf\Windsurf.exe',
+                    r'{localappdata}\Programs\Windsurf\Windsurf.exe',
+                ],
+            },
+        )
+
+        adapter = ExternalAssistantToolAdapter()
+        assert adapter.is_available(card) is True
+        resolved = adapter._resolve_launch_target(card)
+        assert 'Windsurf' in resolved or 'windsurf' in resolved.lower()
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_windsurf_adapter_detects_by_command_name_in_path(monkeypatch) -> None:
+    """Verifica detección de Windsurf por comando 'windsurf' en PATH."""
+    import os
+    root = _workspace('windsurf_path_detection')
+    try:
+        windsurf_dir = root / 'bin'
+        windsurf_dir.mkdir(parents=True, exist_ok=True)
+        exe = windsurf_dir / 'windsurf.exe'
+        exe.write_text('stub', encoding='utf-8')
+
+        # Simular que windsurf está en PATH
+        original_path = os.environ.get('PATH', '')
+        monkeypatch.setenv('PATH', str(windsurf_dir) + ';' + original_path)
+
+        card = ToolCard(
+            tool_id='windsurf_installed',
+            title='Windsurf instalado',
+            tool_type=ToolType.CODE_EDITOR,
+            adapter_key='external_assistant',
+            metadata={
+                'command_name': 'windsurf',
+                'command_aliases': ['windsurf.exe'],
+                'windows_default_paths': [],
+            },
+        )
+
+        adapter = ExternalAssistantToolAdapter()
+        assert adapter.is_available(card) is True
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_windsurf_backward_compatibility_no_break_existing_tools() -> None:
+    """Verifica que agregar Windsurf no rompe el registro de herramientas existentes."""
+    root = _workspace('windsurf_backward_compat')
+    try:
+        db = AppDatabase(str(root / 'app.sqlite'))
+        storage = ArtifactStorage(str(root / 'tool_teaching'))
+        repository = ToolRecordRepository(db, storage)
+        registry = ToolRegistry(repository, {'external_assistant': _UnavailableAdapter()})
+
+        # Verificar que herramientas existentes siguen presentes
+        assert registry.get_card('codex_installed') is not None
+        assert registry.get_card('chatgpt_installed') is not None
+        assert registry.get_card('claude_installed') is not None
+        assert registry.get_card('ollama_llm') is not None
+        assert registry.get_card('shell_command') is not None
+
+        # Verificar que Windsurf está presente
+        windsurf_card = registry.get_card('windsurf_installed')
+        assert windsurf_card is not None
+        assert windsurf_card.metadata.get('assistant_kind') == 'windsurf'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
