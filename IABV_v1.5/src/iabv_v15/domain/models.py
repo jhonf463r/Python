@@ -2090,6 +2090,33 @@ class ToolPerformanceSnapshot(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class ExternalWorkerTelemetry(BaseModel):
+    """Minimal contract for tracking external worker execution.
+
+    Deposited by whoever dispatches work to an external tool/agent
+    (orchestrator, tool adapter, or manual checkpoint) into
+    ``session.metadata['worker_telemetry']``.  From there it flows
+    automatically into ``ExperimentRun.metadata`` via
+    ``TaskOutcomeRecorder``, into ``PortableContext`` summaries, and
+    into OSES pattern detection.
+    """
+
+    worker_kind: str = ""
+    assistant_kind: str = ""
+    worker_id: str = ""
+    task_packet_id: str = ""
+    budget_state: str = "ok"
+    continuation_state: str = "complete"
+    handoff_required: bool = False
+    resume_hint: str = ""
+    human_intervention_required: bool = False
+    result_status: str = "unknown"
+    latency_ms: int = 0
+    correction_rounds: int = 0
+    merge_success: bool | None = None
+    files_touched_scope: list[str] = Field(default_factory=list)
+
+
 class ToolEvolutionProposal(BaseModel):
     proposal_id: str = Field(default_factory=lambda: str(uuid4()))
     proposal_key: str = ""

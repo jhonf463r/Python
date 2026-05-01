@@ -1194,6 +1194,12 @@ class PortableContextService:
         worker_labels: Counter[str] = Counter()
         total = 0
 
+        wt_budget_exhausted = 0
+        wt_handoff_count = 0
+        wt_human_intervention = 0
+        wt_worker_kinds: Counter[str] = Counter()
+        wt_total = 0
+
         for run in runs:
             meta = run.metadata or {}
             eb = meta.get('evidence_basis')
@@ -1226,13 +1232,25 @@ class PortableContextService:
                     if isinstance(field, str) and field.strip():
                         unresolved_all[field.strip()] += 1
 
+            wt = meta.get('worker_telemetry')
+            if isinstance(wt, dict) and wt.get('worker_kind'):
+                wt_total += 1
+                wt_worker_kinds[str(wt['worker_kind'])] += 1
+                bs = str(wt.get('budget_state') or '').lower()
+                if bs in {'exhausted', 'quota_exceeded', 'timeout'}:
+                    wt_budget_exhausted += 1
+                if wt.get('handoff_required'):
+                    wt_handoff_count += 1
+                if wt.get('human_intervention_required'):
+                    wt_human_intervention += 1
+
         if total < self._TASK_PACKET_MIN_RUNS:
             return {'status': 'insufficient_data', 'run_count': total}
 
         top_unresolved = unresolved_all.most_common(5)
         top_workers = worker_labels.most_common(5)
 
-        return {
+        result: dict[str, Any] = {
             'status': 'ok',
             'run_count': total,
             'evidence_state_distribution': dict(evidence_states),
@@ -1248,6 +1266,18 @@ class PortableContextService:
                 for w, c in top_workers
             ],
         }
+        if wt_total > 0:
+            result['worker_telemetry_summary'] = {
+                'runs_with_telemetry': wt_total,
+                'budget_exhausted_count': wt_budget_exhausted,
+                'handoff_required_count': wt_handoff_count,
+                'human_intervention_count': wt_human_intervention,
+                'worker_kind_distribution': [
+                    {'kind': k, 'count': c, 'rate': round(c / wt_total, 3)}
+                    for k, c in wt_worker_kinds.most_common(5)
+                ],
+            }
+        return result
 
     def _task_packet_summary_section(
         self,

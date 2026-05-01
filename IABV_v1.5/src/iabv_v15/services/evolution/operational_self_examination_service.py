@@ -5487,6 +5487,9 @@ class OperationalSelfExaminationService:
         approval_count = 0
         no_worker_count = 0
         gate_unusable_count = 0
+        wt_budget_exhausted = 0
+        wt_handoff_unresolved = 0
+        wt_total = 0
 
         for run in experiment_runs:
             meta = getattr(run, 'metadata', None) or {}
@@ -5515,6 +5518,15 @@ class OperationalSelfExaminationService:
             rwc = meta.get('ranked_worker_count')
             if should_consult and rwc is not None and int(rwc) == 0:
                 gate_unusable_count += 1
+
+            wt = meta.get('worker_telemetry')
+            if isinstance(wt, dict) and wt.get('worker_kind'):
+                wt_total += 1
+                bs = str(wt.get('budget_state') or '').lower()
+                if bs in {'exhausted', 'quota_exceeded', 'timeout'}:
+                    wt_budget_exhausted += 1
+                if wt.get('handoff_required') and wt.get('continuation_state') != 'resumed':
+                    wt_handoff_unresolved += 1
 
         if total < self._TP_MIN_RUNS:
             return []
@@ -5613,6 +5625,57 @@ class OperationalSelfExaminationService:
                     'pattern': 'gate_unusable',
                     'gate_unusable_count': gate_unusable_count,
                     'total': total,
+                },
+            ))
+
+        if wt_total > 0 and wt_budget_exhausted >= 2:
+            ratio = wt_budget_exhausted / wt_total
+            results.append(SelfExaminationFinding(
+                category='task_packet_worker_budget_exhausted',
+                severity=IssueSeverity.MEDIUM,
+                title=f'Workers con presupuesto agotado ({wt_budget_exhausted}/{wt_total})',
+                summary=(
+                    f'{wt_budget_exhausted} de {wt_total} ejecuciones con '
+                    f'telemetria reportan budget exhausted/timeout. '
+                    f'Puede requerir redistribucion de carga entre workers.'
+                ),
+                confidence=min(0.6 + ratio * 0.3, 0.95),
+                recommendation=(
+                    'Verificar cuotas de workers externos (Codex, Devin, '
+                    'Windsurf). Considerar handoff a worker con cuota '
+                    'disponible o reanudar en nueva sesion.'
+                ),
+                source_refs=['ExperimentRun.metadata.worker_telemetry.budget_state'],
+                metadata={
+                    'pattern': 'worker_budget_exhausted',
+                    'budget_exhausted_count': wt_budget_exhausted,
+                    'wt_total': wt_total,
+                    'ratio': round(ratio, 3),
+                },
+            ))
+
+        if wt_total > 0 and wt_handoff_unresolved >= 2:
+            ratio = wt_handoff_unresolved / wt_total
+            results.append(SelfExaminationFinding(
+                category='task_packet_worker_handoff_unresolved',
+                severity=IssueSeverity.MEDIUM,
+                title=f'Handoffs sin resolver ({wt_handoff_unresolved}/{wt_total})',
+                summary=(
+                    f'{wt_handoff_unresolved} de {wt_total} ejecuciones '
+                    f'requieren handoff pero no han sido retomadas.'
+                ),
+                confidence=min(0.6 + ratio * 0.3, 0.95),
+                recommendation=(
+                    'Revisar tareas con handoff_required=true y '
+                    'continuation_state != resumed. Asignar a otro '
+                    'worker o reanudar manualmente.'
+                ),
+                source_refs=['ExperimentRun.metadata.worker_telemetry.handoff_required'],
+                metadata={
+                    'pattern': 'worker_handoff_unresolved',
+                    'handoff_unresolved_count': wt_handoff_unresolved,
+                    'wt_total': wt_total,
+                    'ratio': round(ratio, 3),
                 },
             ))
 

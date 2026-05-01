@@ -191,6 +191,19 @@ class TaskOutcomeRecorder:
             'governance_flags': dict(dict(session.metadata.get('task_packet') or {}).get('governance_flags') or {}),
             'task_unresolved': list(dict(session.metadata.get('task_packet') or {}).get('unresolved') or []),
         }
+        wt_raw = session.metadata.get('worker_telemetry')
+        if isinstance(wt_raw, dict):
+            metadata['worker_telemetry'] = {
+                k: v for k, v in wt_raw.items()
+                if k in {
+                    'worker_kind', 'assistant_kind', 'worker_id',
+                    'task_packet_id', 'budget_state', 'continuation_state',
+                    'handoff_required', 'resume_hint',
+                    'human_intervention_required', 'result_status',
+                    'latency_ms', 'correction_rounds', 'merge_success',
+                    'files_touched_scope',
+                }
+            }
         learning_records: list[dict[str, Any]] = []
         for subject_key in subject_keys:
             previous = self.experiment_lab.repository.latest_recommendation(domain=domain.value, subject_key=subject_key)
