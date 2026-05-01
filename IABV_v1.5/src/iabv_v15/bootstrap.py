@@ -1400,6 +1400,7 @@ class AppBootstrap:
             if not environment_id:
                 return
             self.boot_profile_store = BootProfileStore(data_root=self.config.data_dir)
+            self.portable_context_service.boot_profile_store = self.boot_profile_store
             self._boot_profile_environment_id = environment_id
             self._boot_profile_metadata = {
                 'scan_status': env_model.scan_status if env_model else '',

@@ -63,6 +63,7 @@ class PortableContextService:
         self.adaptive_session_repository = adaptive_session_repository
         self.decision_audit_trail: Any | None = None
         self.code_audit_trail: Any | None = None
+        self.boot_profile_store: Any | None = None
         self._current_package: PortableContextPackage | None = None
         self._account_resource_cache: dict[str, Any] | None = None
         self._account_resource_cached_at: float = 0.0
@@ -116,6 +117,7 @@ class PortableContextService:
         code_audit_status = self._code_audit_snapshot()
         startup_health = self._startup_health_snapshot()
         account_resource = self._account_resource_snapshot()
+        boot_profile = self._boot_profile_snapshot()
         pending_items = self._pending_items()
         backlog_items = self._backlog_items()
         decision_history = self._decision_history(recommendations=recommendations)
@@ -157,6 +159,7 @@ class PortableContextService:
             self._cloud_reasoning_section(status=cloud_reasoning_status, now=now),
             self._startup_health_section(status=startup_health, now=now),
             self._account_resource_section(status=account_resource, now=now),
+            self._boot_profile_section(status=boot_profile, now=now),
             self._recommended_routes_section(recommendations=recommendations, now=now),
             self._operational_blocks_section(world=world, recommendations=recommendations, now=now),
             self._validated_decisions_section(
@@ -200,6 +203,7 @@ class PortableContextService:
                 'cloud_reasoning_status': dict(cloud_reasoning_status),
                 'startup_health': dict(startup_health),
                 'account_resource': dict(account_resource),
+                'boot_profile': dict(boot_profile),
                 'autoexamination_summary': dict(self_examination.get('summary_payload') or {}),
                 'recurring_issues': list(self_examination.get('recurring_issues') or []),
                 'recommended_adjustments': list(self_examination.get('recommended_adjustments') or []),
@@ -864,6 +868,150 @@ class PortableContextService:
                 'tools_available': tools,
                 'secrets_configured': status.get('secrets_configured', 0),
                 'secrets_missing': missing_secrets,
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Boot profile — read-only summary of BootProfileStore telemetry
+    # ------------------------------------------------------------------
+
+    def _boot_profile_snapshot(self) -> dict[str, Any]:
+        """Return an aggregated boot profile for the current environment.
+
+        Delegates to ``BootProfileStore.boot_profile_summary()`` using the
+        ``environment_id`` from ``EnvironmentSelfAwarenessService``.  Pure
+        observability — no decisions, no mutations.
+        """
+        store = self.boot_profile_store
+        if store is None:
+            return {'status': 'no_store'}
+
+        env_svc = self.environment_self_awareness_service
+        environment_id = ''
+        if env_svc is not None and hasattr(env_svc, 'current_model'):
+            try:
+                model = env_svc.current_model()
+                environment_id = getattr(model, 'environment_id', '') or ''
+            except Exception:
+                pass
+        if not environment_id:
+            return {'status': 'no_environment_id'}
+
+        try:
+            summary = store.boot_profile_summary(environment_id)
+        except Exception:
+            return {'status': 'read_error', 'environment_id': environment_id}
+
+        summary.setdefault('status', 'no_data' if summary.get('boot_count', 0) == 0 else 'ok')
+        return summary
+
+    def _boot_profile_section(self, *, status: dict[str, Any], now) -> PortableContextSection:
+        """Export boot profile telemetry as a portable context section.
+
+        Shows environment_id, boot_count, timing stats (avg/median/p95),
+        RSS peak, wiring duration, and slowest phases so that new sessions
+        can see historical boot health without re-reading JSONL files.
+        """
+        st = str(status.get('status') or 'no_store')
+        items: list[dict[str, Any]] = []
+        unresolved: list[str] = []
+
+        if st == 'ok':
+            env_id = status.get('environment_id', '')
+            boot_count = status.get('boot_count', 0)
+            dur = status.get('boot_duration', {})
+            wiring = status.get('wiring_duration', {})
+            rss = status.get('rss_peak', {})
+
+            items.append({
+                'label': 'environment_id',
+                'value': env_id,
+            })
+            items.append({
+                'label': 'boot_count',
+                'value': boot_count,
+            })
+            items.append({
+                'label': 'boot_duration',
+                'avg_ms': dur.get('avg_ms', 0),
+                'median_ms': dur.get('median_ms', 0),
+                'p95_ms': dur.get('p95_ms', 0),
+            })
+            items.append({
+                'label': 'wiring_duration',
+                'avg_ms': wiring.get('avg_ms', 0),
+                'max_ms': wiring.get('max_ms', 0),
+            })
+            items.append({
+                'label': 'rss_peak',
+                'avg_mb': rss.get('avg_mb', 0),
+                'max_mb': rss.get('max_mb', 0),
+            })
+
+            for sp in status.get('slowest_phases', [])[:5]:
+                items.append({
+                    'label': 'slowest_phase',
+                    'phase': sp.get('phase', ''),
+                    'avg_ms': sp.get('avg_ms', 0),
+                })
+
+            first_seen = status.get('first_seen', '')
+            last_seen = status.get('last_seen', '')
+            if first_seen:
+                items.append({'label': 'first_seen', 'value': first_seen})
+            if last_seen:
+                items.append({'label': 'last_seen', 'value': last_seen})
+
+            avg_ms = dur.get('avg_ms', 0)
+            p95_ms = dur.get('p95_ms', 0)
+            wiring_avg = wiring.get('avg_ms', 0)
+            rss_max = rss.get('max_mb', 0)
+            summary = (
+                f'Boot profile ({env_id}): {boot_count} boots, '
+                f'avg {avg_ms:.0f}ms, p95 {p95_ms:.0f}ms, '
+                f'wiring avg {wiring_avg:.0f}ms, '
+                f'RSS pico {rss_max:.0f}MB.'
+            )
+        elif st == 'no_data':
+            env_id = status.get('environment_id', '')
+            summary = f'Boot profile ({env_id}): sin datos de arranque todavia.'
+            unresolved.append('UNRESOLVED:boot_profile_no_data')
+        elif st == 'no_store':
+            summary = 'BootProfileStore no disponible.'
+            unresolved.append('UNRESOLVED:boot_profile_store_missing')
+        elif st == 'no_environment_id':
+            summary = 'environment_id no disponible para consultar boot profile.'
+            unresolved.append('UNRESOLVED:boot_profile_no_environment_id')
+        elif st == 'read_error':
+            summary = 'Error al leer boot profile.'
+            unresolved.append('UNRESOLVED:boot_profile_read_error')
+        else:
+            summary = f'Boot profile status: {st}'
+
+        confidence = 0.85 if st == 'ok' else 0.0
+        return self._section(
+            section_id='boot_profile',
+            title='Perfil de arranque (boot telemetry)',
+            summary=summary,
+            items=items,
+            source_kind='boot_profile_store',
+            source_refs=[
+                'data/evolution/boot_profiles/',
+                'iabv_v15.services.evolution.boot_profile_store',
+            ],
+            confidence=confidence,
+            last_updated=now,
+            unresolved_fields=unresolved,
+            metadata={
+                'status': st,
+                'environment_id': status.get('environment_id', ''),
+                'boot_count': status.get('boot_count', 0),
+                'boot_duration': status.get('boot_duration'),
+                'wiring_duration': status.get('wiring_duration'),
+                'rss_peak': status.get('rss_peak'),
+                'slowest_phases': status.get('slowest_phases', []),
+                'first_seen': status.get('first_seen', ''),
+                'last_seen': status.get('last_seen', ''),
             },
         )
 

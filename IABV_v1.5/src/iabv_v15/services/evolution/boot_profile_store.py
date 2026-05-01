@@ -180,6 +180,7 @@ class BootProfileStore:
             }
 
         durations = [r['boot_duration_ms'] for r in history if 'boot_duration_ms' in r]
+        wiring_durations = [r['wiring_duration_ms'] for r in history if r.get('wiring_duration_ms', 0) > 0]
         rss_peaks = [r['rss_peak_mb'] for r in history if 'rss_peak_mb' in r]
 
         phase_totals: dict[str, list[float]] = {}
@@ -211,6 +212,10 @@ class BootProfileStore:
                 'p95_ms': round(_percentile(durations, 95), 1) if durations else 0,
                 'min_ms': round(min(durations), 1) if durations else 0,
                 'max_ms': round(max(durations), 1) if durations else 0,
+            },
+            'wiring_duration': {
+                'avg_ms': round(statistics.mean(wiring_durations), 1) if wiring_durations else 0,
+                'max_ms': round(max(wiring_durations), 1) if wiring_durations else 0,
             },
             'rss_peak': {
                 'avg_mb': round(statistics.mean(rss_peaks), 1) if rss_peaks else 0,
