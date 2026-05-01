@@ -40,6 +40,7 @@ Item {
     property string recommendationTextValue: controlCenterViewModel ? controlCenterViewModel.recommendationText : ""
     property string strategyTextValue: controlCenterViewModel ? controlCenterViewModel.strategyText : ""
     property string diagnosticTextValue: controlCenterViewModel ? controlCenterViewModel.diagnosticText : "Diagnostico pendiente."
+    property string diagnosticTruthStateValue: controlCenterViewModel ? controlCenterViewModel.diagnosticTruthState : ""
     property string repoBridgeTextValue: controlCenterViewModel ? controlCenterViewModel.repoBridgeText : ""
     property string localStackTextValue: controlCenterViewModel ? controlCenterViewModel.localStackText : ""
     property string developmentPacketValue: controlCenterViewModel ? controlCenterViewModel.developmentPacket : ""
@@ -661,7 +662,11 @@ Item {
                                     AppTextArea { width: parent.width; readOnly: true; text: adaptiveContextTextValue; implicitHeight: 120 }
                                     Label { text: "Recomendacion"; color: textPrimary; font.pixelSize: 16; font.family: "Segoe UI" }
                                     AppTextArea { width: parent.width; readOnly: true; text: recommendationTextValue; implicitHeight: 90 }
-                                    Label { text: "Diagnostico"; color: textPrimary; font.pixelSize: 16; font.family: "Segoe UI" }
+                                    RowLayout {
+                                        spacing: 8
+                                        Label { text: "Diagnostico"; color: textPrimary; font.pixelSize: 16; font.family: "Segoe UI" }
+                                        TruthStateBadge { truthState: diagnosticTruthStateValue }
+                                    }
                                     AppTextArea { width: parent.width; readOnly: true; text: diagnosticTextValue; implicitHeight: 120 }
                                 }
                             }

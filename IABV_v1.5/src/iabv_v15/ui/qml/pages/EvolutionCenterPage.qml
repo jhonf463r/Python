@@ -540,11 +540,15 @@ Item {
                         anchors.margins: 14
                         spacing: 8
 
-                        Label {
-                            text: "World Model Operativo"
-                            color: textPrimary
-                            font.family: titleFontFamily
-                            font.pixelSize: 16
+                        RowLayout {
+                            spacing: 8
+                            Label {
+                                text: "World Model Operativo"
+                                color: textPrimary
+                                font.family: titleFontFamily
+                                font.pixelSize: 16
+                            }
+                            TruthStateBadge { truthState: (worldModel.truthState || "") }
                         }
 
                         Label {
@@ -664,11 +668,15 @@ Item {
                         anchors.margins: 14
                         spacing: 8
 
-                        Label {
-                            text: "Autoconciencia del entorno"
-                            color: textPrimary
-                            font.family: titleFontFamily
-                            font.pixelSize: 16
+                        RowLayout {
+                            spacing: 8
+                            Label {
+                                text: "Autoconciencia del entorno"
+                                color: textPrimary
+                                font.family: titleFontFamily
+                                font.pixelSize: 16
+                            }
+                            TruthStateBadge { truthState: (environmentSelfModel.truthState || "") }
                         }
 
                         Label {
