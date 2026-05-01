@@ -2291,7 +2291,18 @@ class ControlCenterViewModel(QObject):
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._evolution_status_conversation_payload(message=message))
         reply, meta = self._evolution_status_reply(message)
-        self._append_message('assistant', 'IABV', reply, meta, evidence_tag='inferred')
+        validation = self._current_validation_status()
+        discovery = self._current_tool_discovery_status()
+        has_evolution_evidence = bool(
+            validation.get('winning_by_problem')
+            or validation.get('in_validation')
+            or validation.get('recent_decisions')
+            or validation.get('discarded_proposals')
+            or discovery.get('active_signals')
+            or discovery.get('promoted_signals')
+        )
+        tag = self._classify_evidence_tag(has_persisted_evidence=has_evolution_evidence)
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=tag)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2302,7 +2313,17 @@ class ControlCenterViewModel(QObject):
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._learning_conversation_payload(message=message))
         reply, meta = self._learning_reply(message)
-        self._append_message('assistant', 'IABV', reply, meta, evidence_tag='inferred')
+        learning = self._learning_evidence_snapshot()
+        has_learning_evidence = bool(
+            learning.get('experiment_runs')
+            or learning.get('recommendations')
+            or learning.get('latest_recommendation')
+            or learning.get('adaptive_learning')
+            or learning.get('learned_patterns')
+            or (learning.get('validation') or {}).get('current_experiment')
+        )
+        tag = self._classify_evidence_tag(has_persisted_evidence=has_learning_evidence)
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=tag)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
