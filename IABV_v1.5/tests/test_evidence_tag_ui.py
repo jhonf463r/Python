@@ -217,6 +217,7 @@ class _AnswerMethodVM(_MinimalVM):
 
     _classify_evidence_tag = staticmethod(ControlCenterViewModel._classify_evidence_tag)
     _append_message = ControlCenterViewModel._append_message
+    _general_chat_reply = ControlCenterViewModel._general_chat_reply
 
     class dataChanged:  # noqa: N801
         @staticmethod
@@ -409,3 +410,115 @@ class TestSelfExaminationBranchTag:
         vm._self_examination_focus = lambda msg: 'repetition'  # type: ignore[attr-defined]
         reply, meta, tag = ControlCenterViewModel._self_examination_reply(vm, 'que repites?')  # type: ignore[arg-type]
         assert tag == 'inferred'
+
+
+# ─── General chat evidence tag propagation ───────────────────
+
+
+class _GeneralChatVM(_AnswerMethodVM):
+    """Extends _AnswerMethodVM with stubs for _general_chat_reply / _answer_general_chat."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._working: bool = False
+
+    def _normalized_command_text(self, message: str) -> str:
+        return message.strip().lower()
+
+    def _is_self_awareness_question(self, message: str) -> bool:
+        return False
+
+    def _is_world_model_question(self, message: str) -> bool:
+        return False
+
+    def _is_self_examination_question(self, message: str) -> bool:
+        return False
+
+    def _is_learning_question(self, message: str) -> bool:
+        return False
+
+    def _is_general_chat_message(self, message: str) -> bool:
+        return True
+
+    def _seems_task_like_message(self, message: str) -> bool:
+        return False
+
+    def _general_conversation_payload(self, *, message: str) -> dict[str, Any]:
+        return {}
+
+    def _set_live_status(self, status: str) -> None:
+        pass
+
+
+def _build_general_chat_vm() -> _GeneralChatVM:
+    return _GeneralChatVM()
+
+
+class TestGeneralChatEvidenceTag:
+    """Tag propagates correctly when _general_chat_reply delegates to specialized replies."""
+
+    def test_general_delegates_to_self_awareness_is_observed(self) -> None:
+        vm = _build_general_chat_vm()
+        vm._is_self_awareness_question = lambda msg: True  # type: ignore[assignment]
+        vm._self_awareness_reply = lambda msg: ('Veo 5 ventanas abiertas.', 'Estado del entorno.')  # type: ignore[attr-defined]
+        reply, meta, tag = ControlCenterViewModel._general_chat_reply(vm, 'que ventanas ves?')  # type: ignore[arg-type]
+        assert tag == 'observed'
+        assert 'ventanas' in reply.lower()
+
+    def test_general_delegates_to_world_model_is_observed(self) -> None:
+        vm = _build_general_chat_vm()
+        vm._is_world_model_question = lambda msg: True  # type: ignore[assignment]
+        vm._world_model_reply = lambda msg: ('Red estable, CPU al 40%.', 'World model.')  # type: ignore[attr-defined]
+        reply, meta, tag = ControlCenterViewModel._general_chat_reply(vm, 'como esta el sistema?')  # type: ignore[arg-type]
+        assert tag == 'observed'
+
+    def test_general_delegates_to_learning_with_evidence_is_inferred(self) -> None:
+        vm = _build_general_chat_vm()
+        vm._is_learning_question = lambda msg: True  # type: ignore[assignment]
+        vm._learning_reply = lambda msg: ('Ollama rinde mejor que Claude.', 'Aprendizaje.', 'inferred')  # type: ignore[attr-defined]
+        reply, meta, tag = ControlCenterViewModel._general_chat_reply(vm, 'que aprendiste?')  # type: ignore[arg-type]
+        assert tag == 'inferred'
+
+    def test_general_delegates_to_learning_without_evidence_is_unresolved(self) -> None:
+        vm = _build_general_chat_vm()
+        vm._is_learning_question = lambda msg: True  # type: ignore[assignment]
+        vm._learning_reply = lambda msg: ('No tengo evidencia suficiente.', 'Sin evidencia.', 'unresolved')  # type: ignore[attr-defined]
+        reply, meta, tag = ControlCenterViewModel._general_chat_reply(vm, 'que aprendiste?')  # type: ignore[arg-type]
+        assert tag == 'unresolved'
+
+    def test_general_delegates_to_self_examination_with_evidence_is_inferred(self) -> None:
+        vm = _build_general_chat_vm()
+        vm._is_self_examination_question = lambda msg: True  # type: ignore[assignment]
+        vm._self_examination_reply = lambda msg: ('Detecto patron repetido X.', 'Patron detectado.', 'inferred')  # type: ignore[attr-defined]
+        reply, meta, tag = ControlCenterViewModel._general_chat_reply(vm, 'que falla?')  # type: ignore[arg-type]
+        assert tag == 'inferred'
+
+    def test_general_delegates_to_self_examination_without_evidence_is_unresolved(self) -> None:
+        vm = _build_general_chat_vm()
+        vm._is_self_examination_question = lambda msg: True  # type: ignore[assignment]
+        vm._self_examination_reply = lambda msg: ('No tengo evidencia.', 'Sin evidencia.', 'unresolved')  # type: ignore[attr-defined]
+        reply, meta, tag = ControlCenterViewModel._general_chat_reply(vm, 'que falla?')  # type: ignore[arg-type]
+        assert tag == 'unresolved'
+
+    def test_small_talk_greeting_is_unresolved(self) -> None:
+        vm = _build_general_chat_vm()
+        reply, meta, tag = ControlCenterViewModel._general_chat_reply(vm, 'hola')  # type: ignore[arg-type]
+        assert tag == 'unresolved'
+        assert 'ayudarte' in reply.lower()
+
+    def test_generic_message_is_unresolved(self) -> None:
+        vm = _build_general_chat_vm()
+        reply, meta, tag = ControlCenterViewModel._general_chat_reply(vm, 'dimelo todo')  # type: ignore[arg-type]
+        assert tag == 'unresolved'
+
+    def test_answer_general_chat_preserves_tag_from_delegation(self) -> None:
+        vm = _build_general_chat_vm()
+        vm._is_self_awareness_question = lambda msg: True  # type: ignore[assignment]
+        vm._self_awareness_reply = lambda msg: ('Hay 3 procesos activos.', 'Estado vivo.')  # type: ignore[attr-defined]
+        ControlCenterViewModel._answer_general_chat(vm, 'que procesos hay?')  # type: ignore[arg-type]
+        assert vm._chat_messages[-1]['evidenceTag'] == 'observed'
+
+    def test_answer_general_chat_small_talk_no_false_observed(self) -> None:
+        vm = _build_general_chat_vm()
+        ControlCenterViewModel._answer_general_chat(vm, 'hola que tal')  # type: ignore[arg-type]
+        assert vm._chat_messages[-1]['evidenceTag'] == 'unresolved'
