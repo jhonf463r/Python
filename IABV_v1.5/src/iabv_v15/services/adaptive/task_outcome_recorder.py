@@ -172,20 +172,21 @@ class TaskOutcomeRecorder:
             'learning_source': 'adaptive_session_finalize',
             'linked_run_id': run_record.run_id,
             'selected_worker': dict(
-                dict(session.metadata.get('task_packet') or {}).get('selected_worker')
-                or dict(dict(session.metadata.get('worker_gate') or {}).get('top_worker') or {})
+                _tp_sw if (_tp_sw := dict(session.metadata.get('task_packet') or {}).get('selected_worker')) is not None
+                else dict(dict(session.metadata.get('worker_gate') or {}).get('top_worker') or {})
             ),
             'ranked_worker_count': int(
-                dict(session.metadata.get('task_packet') or {}).get('worker_gate_summary', {}).get('available_count')
-                or dict(session.metadata.get('worker_gate') or {}).get('available_count')
-                or 0
+                _tp_ac if (_tp_ac := dict(session.metadata.get('task_packet') or {}).get('worker_gate_summary', {}).get('available_count')) is not None
+                else (dict(session.metadata.get('worker_gate') or {}).get('available_count') or 0)
             ),
             'blocked_reason': str(dict(session.metadata.get('worker_gate') or {}).get('reason') or ''),
             'evidence_basis': dict(
-                dict(session.metadata.get('task_packet') or {}).get('evidence_basis')
-                or (dict(session.metadata.get('decision_context') or {}).get('metadata') or {}).get('evidence_basis')
-                or (dict(session.metadata.get('perception_snapshot') or {}).get('metadata') or {}).get('evidence_basis')
-                or {}
+                _tp_eb if (_tp_eb := dict(session.metadata.get('task_packet') or {}).get('evidence_basis')) is not None
+                else (
+                    (dict(session.metadata.get('decision_context') or {}).get('metadata') or {}).get('evidence_basis')
+                    or (dict(session.metadata.get('perception_snapshot') or {}).get('metadata') or {}).get('evidence_basis')
+                    or {}
+                )
             ),
             'governance_flags': dict(dict(session.metadata.get('task_packet') or {}).get('governance_flags') or {}),
             'task_unresolved': list(dict(session.metadata.get('task_packet') or {}).get('unresolved') or []),

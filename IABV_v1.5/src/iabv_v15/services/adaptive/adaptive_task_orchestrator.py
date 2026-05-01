@@ -3168,6 +3168,21 @@ class AdaptiveTaskOrchestrator:
             blocked = True
             reason = str(worker_gate.get('reason') or 'No hay worker usable para esta ruta.')
         top_worker = dict(worker_gate.get('top_worker') or {}) if worker_gate.get('usable') else {}
+        has_world = bool(
+            world_model.tool_live_status
+            or world_model.active_windows
+            or world_model.detected_blocks
+            or float(world_model.confidence or 0.0) > 0.05
+        )
+        has_env = bool(str(environment_self_model.environment_id or '').strip())
+        live_sources: list[str] = []
+        if has_world:
+            live_sources.append('world_model')
+        if has_env:
+            live_sources.append('environment_self_model')
+        wm_unresolved = list(world_model.unresolved_fields or [])
+        env_unresolved = list(environment_self_model.unresolved_fields or [])
+        all_unresolved = wm_unresolved + env_unresolved
         task_packet = {
             'objective': user_goal,
             'intent_key': 'general.assistance',
@@ -3182,13 +3197,18 @@ class AdaptiveTaskOrchestrator:
                 'available_count': int(worker_gate.get('available_count', 0)),
             },
             'selected_worker': top_worker,
-            'evidence_basis': {},
+            'evidence_basis': {
+                'state': 'observed' if live_sources else 'unresolved',
+                'live_sources': live_sources,
+                'persisted_sources': [],
+                'unresolved': all_unresolved,
+            },
             'governance_flags': {
                 'approval_required': bool(governance.get('approval_required')),
                 'should_consult': True,
                 'block_risky_action': bool(governance.get('block_risky_action')),
             },
-            'unresolved': [],
+            'unresolved': all_unresolved,
         }
         return {
             'assistant_kind': normalized_assistant,

@@ -648,3 +648,53 @@ def test_recorder_prefers_task_packet_over_legacy() -> None:
     )
     saved = recorder.record(session, run_record=run_record)
     assert saved is not None
+
+
+# ─── Preflight evidence_basis and unresolved ─────────────────
+
+
+def test_preflight_evidence_basis_not_empty() -> None:
+    """preflight task_packet must not leave evidence_basis as {}."""
+    root = _workspace('preflight_evidence_not_empty')
+    orch = _build_orchestrator(root)
+    result = orch.preflight_external_assistant(
+        user_goal='Check external',
+        assistant_kind='chatgpt',
+    )
+    packet = result['task_packet']
+    eb = packet['evidence_basis']
+    assert eb != {}, 'evidence_basis must not be empty'
+    assert 'state' in eb
+    assert eb['state'] in ('observed', 'inferred', 'unresolved')
+    assert isinstance(eb.get('live_sources'), list)
+    assert isinstance(eb.get('persisted_sources'), list)
+    assert isinstance(eb.get('unresolved'), list)
+
+
+def test_preflight_unresolved_propagates_world_model() -> None:
+    """preflight task_packet.unresolved includes world_model.unresolved_fields."""
+    root = _workspace('preflight_unresolved')
+    orch = _build_orchestrator(root)
+    result = orch.preflight_external_assistant(
+        user_goal='Check unresolved',
+        assistant_kind='chatgpt',
+    )
+    packet = result['task_packet']
+    assert isinstance(packet['unresolved'], list)
+    eb = packet['evidence_basis']
+    assert isinstance(eb['unresolved'], list)
+
+
+def test_preflight_backward_compat() -> None:
+    """preflight return shape still includes all expected keys."""
+    root = _workspace('preflight_backward_compat')
+    orch = _build_orchestrator(root)
+    result = orch.preflight_external_assistant(
+        user_goal='Backward compat',
+        assistant_kind='chatgpt',
+    )
+    assert 'task_packet' in result
+    assert 'blocked' in result
+    assert 'worker_health' in result
+    packet = result['task_packet']
+    assert set(packet.keys()) == PACKET_KEYS
