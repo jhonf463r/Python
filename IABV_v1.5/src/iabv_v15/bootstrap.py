@@ -1270,7 +1270,6 @@ class AppBootstrap:
         self.operational_self_examination_service.code_audit_trail = self.code_audit_trail
         self.portable_context_service.decision_audit_trail = self.decision_audit_trail
         self.portable_context_service.code_audit_trail = self.code_audit_trail
-        self.portable_context_service.boot_profile_store = getattr(self, 'boot_profile_store', None)
         self.autonomous_validation_cycle.decision_audit_trail = self.decision_audit_trail
         self.autonomous_validation_cycle.api_key_discovery_service = self.api_key_discovery_service
         self.adaptive_model_selector = AdaptiveModelSelector(data_dir=self.config.data_dir)
@@ -1401,6 +1400,7 @@ class AppBootstrap:
             if not environment_id:
                 return
             self.boot_profile_store = BootProfileStore(data_root=self.config.data_dir)
+            self.portable_context_service.boot_profile_store = self.boot_profile_store
             self._boot_profile_environment_id = environment_id
             self._boot_profile_metadata = {
                 'scan_status': env_model.scan_status if env_model else '',
