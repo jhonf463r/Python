@@ -2280,6 +2280,7 @@ class AppBootstrap:
         self.run_history_viewmodel = RunHistoryViewModel(
             self.run_repository,
             self.execution_dossier_repository,
+            session_repository=self.adaptive_session_repository,
             defer_initial_refresh=True,
         )
         self.centro_vivo_viewmodel = CentroVivoViewModel(
