@@ -221,39 +221,95 @@ def _build_answer_vm() -> _AnswerMethodVM:
     return _AnswerMethodVM()
 
 
-class TestEvolutionDynamicTag:
-    def test_evolution_without_evidence_is_unresolved(self) -> None:
+class TestEvolutionBranchTag:
+    """Tag comes from the exact branch that produced the reply, not global snapshot."""
+
+    def test_evolution_reply_unresolved_branch(self) -> None:
         vm = _build_answer_vm()
-        vm._validation_status = {}
-        vm._discovery_status = {}
         vm._evolution_status_reply = lambda msg: (  # type: ignore[attr-defined]
-            'Todavia no tengo evidencia suficiente.', 'Evidencia evolutiva insuficiente.',
+            'Todavia no tengo evidencia suficiente.', 'Evidencia evolutiva insuficiente.', 'unresolved',
         )
         ControlCenterViewModel._answer_evolution_status_question(vm, 'que esta evolucionando?')  # type: ignore[arg-type]
         assert vm._chat_messages[-1]['evidenceTag'] == 'unresolved'
 
-    def test_evolution_with_evidence_is_inferred(self) -> None:
+    def test_evolution_reply_inferred_branch(self) -> None:
         vm = _build_answer_vm()
-        vm._validation_status = {'winning_by_problem': {'scope_a': 'tool_x'}}
-        vm._discovery_status = {}
         vm._evolution_status_reply = lambda msg: (  # type: ignore[attr-defined]
-            'Va ganando tool_x para scope_a.', 'Estado evolutivo real.',
+            'Va ganando tool_x para scope_a.', 'Estado evolutivo real.', 'inferred',
         )
         ControlCenterViewModel._answer_evolution_status_question(vm, 'que esta evolucionando?')  # type: ignore[arg-type]
         assert vm._chat_messages[-1]['evidenceTag'] == 'inferred'
 
-
-class TestLearningDynamicTag:
-    def test_learning_without_evidence_is_unresolved(self) -> None:
+    def test_focus_validation_no_active_despite_old_winners_is_unresolved(self) -> None:
         vm = _build_answer_vm()
-        vm._learning_snapshot = {}
+        vm._validation_status = {'winning_by_problem': {'scope_a': 'tool_x'}}
+        vm._discovery_status = {}
+        vm._evolution_status_focus = lambda msg: 'validation'  # type: ignore[attr-defined]
+        reply, meta, tag = ControlCenterViewModel._evolution_status_reply(vm, 'que estas validando?')  # type: ignore[arg-type]
+        assert tag == 'unresolved'
+
+    def test_focus_winners_with_data_is_inferred(self) -> None:
+        vm = _build_answer_vm()
+        vm._validation_status = {'winning_by_problem': {'scope_a': 'tool_x'}}
+        vm._discovery_status = {}
+        vm._evolution_status_focus = lambda msg: 'winners'  # type: ignore[attr-defined]
+        vm._human_join = lambda items, limit=3: ', '.join(items[:limit])  # type: ignore[attr-defined]
+        reply, meta, tag = ControlCenterViewModel._evolution_status_reply(vm, 'que va ganando?')  # type: ignore[arg-type]
+        assert tag == 'inferred'
+
+    def test_focus_discarded_no_data_is_unresolved(self) -> None:
+        vm = _build_answer_vm()
+        vm._validation_status = {'winning_by_problem': {'scope_a': 'tool_x'}}
+        vm._discovery_status = {}
+        vm._evolution_status_focus = lambda msg: 'discarded'  # type: ignore[attr-defined]
+        reply, meta, tag = ControlCenterViewModel._evolution_status_reply(vm, 'que descartaste?')  # type: ignore[arg-type]
+        assert tag == 'unresolved'
+
+    def test_focus_discovery_no_signals_is_unresolved(self) -> None:
+        vm = _build_answer_vm()
+        vm._validation_status = {'winning_by_problem': {'scope_a': 'tool_x'}}
+        vm._discovery_status = {}
+        vm._evolution_status_focus = lambda msg: 'discovery'  # type: ignore[attr-defined]
+        reply, meta, tag = ControlCenterViewModel._evolution_status_reply(vm, 'que descubriste?')  # type: ignore[arg-type]
+        assert tag == 'unresolved'
+
+
+class TestLearningBranchTag:
+    """Tag comes from the exact branch that produced the reply, not global snapshot."""
+
+    def test_learning_reply_unresolved_branch(self) -> None:
+        vm = _build_answer_vm()
         vm._learning_reply = lambda msg: (  # type: ignore[attr-defined]
-            'Todavia no tengo evidencia suficiente.', 'Evidencia insuficiente.',
+            'Todavia no tengo evidencia suficiente.', 'Evidencia insuficiente.', 'unresolved',
         )
         ControlCenterViewModel._answer_learning_question(vm, 'que aprendiste?')  # type: ignore[arg-type]
         assert vm._chat_messages[-1]['evidenceTag'] == 'unresolved'
 
-    def test_learning_with_evidence_is_inferred(self) -> None:
+    def test_learning_reply_inferred_branch(self) -> None:
+        vm = _build_answer_vm()
+        vm._learning_reply = lambda msg: (  # type: ignore[attr-defined]
+            'La ultima corrida fue test.', 'Historial sin ganador claro.', 'inferred',
+        )
+        ControlCenterViewModel._answer_learning_question(vm, 'que aprendiste?')  # type: ignore[arg-type]
+        assert vm._chat_messages[-1]['evidenceTag'] == 'inferred'
+
+    def test_focus_current_validation_no_experiment_despite_patterns_is_unresolved(self) -> None:
+        vm = _build_answer_vm()
+        vm._learning_snapshot = {
+            'experiment_runs': [{'candidate_label': 'test'}],
+            'recommendations': [],
+            'latest_recommendation': None,
+            'adaptive_learning': {},
+            'learned_patterns': [{'recommended_assistant_kind': 'ollama'}],
+            'validation': {},
+            'validation_summary': '',
+            'current_experiment': {},
+        }
+        vm._learning_focus = lambda msg: 'current_validation'  # type: ignore[attr-defined]
+        reply, meta, tag = ControlCenterViewModel._learning_reply(vm, 'que estas validando?')  # type: ignore[arg-type]
+        assert tag == 'unresolved'
+
+    def test_focus_route_change_no_recommendation_is_unresolved(self) -> None:
         vm = _build_answer_vm()
         vm._learning_snapshot = {
             'experiment_runs': [{'candidate_label': 'test'}],
@@ -262,9 +318,28 @@ class TestLearningDynamicTag:
             'adaptive_learning': {},
             'learned_patterns': [],
             'validation': {},
+            'validation_summary': '',
+            'current_experiment': {},
         }
-        vm._learning_reply = lambda msg: (  # type: ignore[attr-defined]
-            'La ultima corrida fue test.', 'Historial sin ganador claro.',
-        )
-        ControlCenterViewModel._answer_learning_question(vm, 'que aprendiste?')  # type: ignore[arg-type]
-        assert vm._chat_messages[-1]['evidenceTag'] == 'inferred'
+        vm._learning_focus = lambda msg: 'route_change'  # type: ignore[attr-defined]
+        reply, meta, tag = ControlCenterViewModel._learning_reply(vm, 'cambiaste de ruta?')  # type: ignore[arg-type]
+        assert tag == 'unresolved'
+
+    def test_focus_tools_with_recommendations_is_inferred(self) -> None:
+        rec = MagicMock()
+        rec.metadata = {'ranked_configurations': [{'assistant_kind': 'ollama'}, {'assistant_kind': 'codex'}]}
+        vm = _build_answer_vm()
+        vm._learning_snapshot = {
+            'experiment_runs': [],
+            'recommendations': [rec],
+            'latest_recommendation': rec,
+            'adaptive_learning': {},
+            'learned_patterns': [],
+            'validation': {},
+            'validation_summary': '',
+            'current_experiment': {},
+        }
+        vm._learning_focus = lambda msg: 'tools'  # type: ignore[attr-defined]
+        vm._human_join = lambda items, limit=3: ', '.join(items[:limit])  # type: ignore[attr-defined]
+        reply, meta, tag = ControlCenterViewModel._learning_reply(vm, 'que herramienta va mejor?')  # type: ignore[arg-type]
+        assert tag == 'inferred'

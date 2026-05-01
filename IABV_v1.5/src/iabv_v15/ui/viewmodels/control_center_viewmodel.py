@@ -1946,7 +1946,7 @@ class ControlCenterViewModel(QObject):
             response += f' El bloqueo mas visible ahora es {blocks[0].replace("_", " ")}.'
         return response, 'Estado operativo observado.'
 
-    def _learning_reply(self, message: str) -> tuple[str, str]:
+    def _learning_reply(self, message: str) -> tuple[str, str, str]:
         learning = self._learning_evidence_snapshot()
         experiment_runs = list(learning.get('experiment_runs') or [])
         recommendations = list(learning.get('recommendations') or [])
@@ -1966,13 +1966,14 @@ class ControlCenterViewModel(QObject):
                 summary = str(validation.get('summary') or '').strip()
                 if summary:
                     response += f' {summary}'
-                return response, 'Validacion autonoma actual.'
+                return response, 'Validacion autonoma actual.', 'inferred'
             if str(validation.get('status') or '').strip() == 'paused':
                 return (
                     f"La validacion autonoma esta pausada. {str(validation.get('paused_reason') or 'No tengo condiciones seguras para validar ahora.')}",
                     'Validacion autonoma pausada.',
+                    'inferred',
                 )
-            return ('Ahora mismo no tengo una validacion autonoma corriendo con evidencia suficiente.', 'Sin validacion activa.')
+            return ('Ahora mismo no tengo una validacion autonoma corriendo con evidencia suficiente.', 'Sin validacion activa.', 'unresolved')
         if focus == 'route_change':
             if latest_recommendation is not None:
                 summary = dict(getattr(latest_recommendation, 'metadata', {}) or {}).get('adaptive_learning_summary') or {}
@@ -1987,8 +1988,8 @@ class ControlCenterViewModel(QObject):
                     response += f" {str(getattr(latest_recommendation, 'rationale', '') or '').strip()}"
                 if validation_summary:
                     response += f' Validacion reciente: {validation_summary}'
-                return response, 'Cambio de ruta basado en evidencia.'
-            return ('Todavia no tengo evidencia suficiente para justificar un cambio de ruta real.', 'Sin cambio confirmado.')
+                return response, 'Cambio de ruta basado en evidencia.', 'inferred'
+            return ('Todavia no tengo evidencia suficiente para justificar un cambio de ruta real.', 'Sin cambio confirmado.', 'unresolved')
         if focus == 'tools':
             if recommendations:
                 ranked = list(dict(getattr(recommendations[0], 'metadata', {}) or {}).get('ranked_configurations') or [])
@@ -2006,8 +2007,8 @@ class ControlCenterViewModel(QObject):
                         response += f" La senal mas fuerte es {reasons[0]}."
                     if validation_summary and current_experiment:
                         response += f" En paralelo sigo validando: {validation_summary}"
-                    return response, 'Ranking por evidencia reciente.'
-            return ('Todavia no tengo suficiente historial comparable para decir que herramienta va mejor.', 'Historial insuficiente.')
+                    return response, 'Ranking por evidencia reciente.', 'inferred'
+            return ('Todavia no tengo suficiente historial comparable para decir que herramienta va mejor.', 'Historial insuficiente.', 'unresolved')
         if latest_recommendation is not None:
             adaptive = dict(getattr(latest_recommendation, 'metadata', {}) or {}).get('adaptive_learning_summary') or {}
             reasons = [str(item).strip() for item in (adaptive.get('reasons') or []) if str(item).strip()]
@@ -2023,23 +2024,24 @@ class ControlCenterViewModel(QObject):
                 response += f" Tambien veo patrones como {str(learned_patterns[0].get('recommended_assistant_kind') or learned_patterns[0].get('recommended_route') or 'n/d')}."
             if validation_summary and not current_experiment:
                 response += f" La validacion mas reciente dice: {validation_summary}"
-            return response, 'Aprendizaje adaptativo real.'
+            return response, 'Aprendizaje adaptativo real.', 'inferred'
         if adaptive_learning:
             preferred = str(adaptive_learning.get('recommended_assistant_kind') or adaptive_learning.get('recommended_route') or '').strip()
             if preferred:
                 response = f"Por ahora solo puedo afirmar que {preferred} viene saliendo mejor en el historial reciente."
                 if validation_summary:
                     response += f" Validacion reciente: {validation_summary}"
-                return (response, 'Aprendizaje parcial.')
+                return (response, 'Aprendizaje parcial.', 'inferred')
         if experiment_runs:
             last = experiment_runs[0]
             return (
                 f"Tengo historial reciente, pero todavia no una preferencia estable. La ultima corrida comparable fue {str(getattr(last, 'candidate_label', '') or getattr(getattr(last, 'route', None), 'value', 'n/d'))}.",
                 'Historial sin ganador claro.',
+                'inferred',
             )
-        return ('Todavia no tengo evidencia suficiente para resumir un aprendizaje estable sin inventar datos.', 'Evidencia insuficiente.')
+        return ('Todavia no tengo evidencia suficiente para resumir un aprendizaje estable sin inventar datos.', 'Evidencia insuficiente.', 'unresolved')
 
-    def _evolution_status_reply(self, message: str) -> tuple[str, str]:
+    def _evolution_status_reply(self, message: str) -> tuple[str, str, str]:
         validation = self._current_validation_status()
         discovery = self._current_tool_discovery_status()
         focus = self._evolution_status_focus(message)
@@ -2059,8 +2061,8 @@ class ControlCenterViewModel(QObject):
         if focus == 'winners':
             if winning_by_problem:
                 top = [f'{scope}: {winner}' for scope, winner in list(winning_by_problem.items())[:4] if str(winner).strip()]
-                return (f"Ahora mismo van ganando {self._human_join(top, limit=4)}.", 'Estado evolutivo real de herramientas.')
-            return ('Todavia no tengo evidencia suficiente para decir que herramienta va ganando por problema.', 'Evidencia evolutiva insuficiente.')
+                return (f"Ahora mismo van ganando {self._human_join(top, limit=4)}.", 'Estado evolutivo real de herramientas.', 'inferred')
+            return ('Todavia no tengo evidencia suficiente para decir que herramienta va ganando por problema.', 'Evidencia evolutiva insuficiente.', 'unresolved')
         if focus == 'validation':
             validating = [str(item).strip() for item in in_validation[:4] if str(item).strip()]
             validating += [
@@ -2074,8 +2076,8 @@ class ControlCenterViewModel(QObject):
                 last_decision = dict(validation.get('last_decision') or {})
                 if str(last_decision.get('reason') or '').strip():
                     response += f" La ultima decision registrada fue: {str(last_decision.get('reason') or '').strip()}"
-                return response, 'Validacion evolutiva actual.'
-            return ('Ahora mismo no veo una validacion evolutiva activa con evidencia suficiente.', 'Sin validacion evolutiva activa.')
+                return response, 'Validacion evolutiva actual.', 'inferred'
+            return ('Ahora mismo no veo una validacion evolutiva activa con evidencia suficiente.', 'Sin validacion evolutiva activa.', 'unresolved')
         if focus == 'discarded':
             discarded = [
                 str(item.get('proposal_key') or item.get('assistant_kind') or item.get('subject_key') or '').strip()
@@ -2092,8 +2094,9 @@ class ControlCenterViewModel(QObject):
                 return (
                     f"Lo que ya quedo descartado con evidencia reciente es {self._human_join(discarded, limit=4)}.",
                     'Descartes evolutivos reales.',
+                    'inferred',
                 )
-            return ('Todavia no tengo descartes evolutivos confirmados para mostrarte sin inventar datos.', 'Sin descartes confirmados.')
+            return ('Todavia no tengo descartes evolutivos confirmados para mostrarte sin inventar datos.', 'Sin descartes confirmados.', 'unresolved')
         if focus in {'discovery', 'candidate'}:
             candidate_pool = active_signals if active_signals else promoted_signals
             if candidate_pool:
@@ -2104,8 +2107,8 @@ class ControlCenterViewModel(QObject):
                 response = f"Ahora mismo la herramienta nueva que mas vale la pena probar es {tool_title} para {scope}."
                 if summary:
                     response += f' {summary}'
-                return response, 'Discovery real de herramientas.'
-            return ('Todavia no tengo un descubrimiento nuevo suficientemente fuerte para recomendarlo como candidato.', 'Sin discovery fuerte.')
+                return response, 'Discovery real de herramientas.', 'inferred'
+            return ('Todavia no tengo un descubrimiento nuevo suficientemente fuerte para recomendarlo como candidato.', 'Sin discovery fuerte.', 'unresolved')
         if winning_by_problem or recent_decisions or active_signals:
             parts: list[str] = []
             if winning_by_problem:
@@ -2127,8 +2130,8 @@ class ControlCenterViewModel(QObject):
                 response += f" La ultima decision fuerte fue {str(recent_decisions[-1].get('decision') or 'n/d')}."
             if unresolved:
                 response += f" Todavia queda {self._human_join([item.replace('UNRESOLVED:', '') for item in unresolved], limit=3)} sin confirmar."
-            return response, 'Resumen evolutivo real.'
-        return ('Todavia no tengo evidencia suficiente para resumir el estado evolutivo sin suponer cosas.', 'Evidencia evolutiva insuficiente.')
+            return response, 'Resumen evolutivo real.', 'inferred'
+        return ('Todavia no tengo evidencia suficiente para resumir el estado evolutivo sin suponer cosas.', 'Evidencia evolutiva insuficiente.', 'unresolved')
 
     def _learning_evidence_snapshot(self) -> dict[str, Any]:
         site_id = self._current_site_id() or None
@@ -2290,19 +2293,8 @@ class ControlCenterViewModel(QObject):
         self._last_user_goal = message
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._evolution_status_conversation_payload(message=message))
-        reply, meta = self._evolution_status_reply(message)
-        validation = self._current_validation_status()
-        discovery = self._current_tool_discovery_status()
-        has_evolution_evidence = bool(
-            validation.get('winning_by_problem')
-            or validation.get('in_validation')
-            or validation.get('recent_decisions')
-            or validation.get('discarded_proposals')
-            or discovery.get('active_signals')
-            or discovery.get('promoted_signals')
-        )
-        tag = self._classify_evidence_tag(has_persisted_evidence=has_evolution_evidence)
-        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=tag)
+        reply, meta, evidence_tag = self._evolution_status_reply(message)
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2312,18 +2304,8 @@ class ControlCenterViewModel(QObject):
         self._last_user_goal = message
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._learning_conversation_payload(message=message))
-        reply, meta = self._learning_reply(message)
-        learning = self._learning_evidence_snapshot()
-        has_learning_evidence = bool(
-            learning.get('experiment_runs')
-            or learning.get('recommendations')
-            or learning.get('latest_recommendation')
-            or learning.get('adaptive_learning')
-            or learning.get('learned_patterns')
-            or (learning.get('validation') or {}).get('current_experiment')
-        )
-        tag = self._classify_evidence_tag(has_persisted_evidence=has_learning_evidence)
-        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=tag)
+        reply, meta, evidence_tag = self._learning_reply(message)
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2675,7 +2657,7 @@ class ControlCenterViewModel(QObject):
         )
 
     def _apply_human_learning_texts(self, *, message: str) -> None:
-        reply, meta = self._learning_reply(message)
+        reply, meta, _evidence_tag = self._learning_reply(message)
         validation = self._current_validation_snapshot()
         adaptive_learning = dict((((self._last_adaptive_payload.get('metadata') or {}).get('decision_context') or {}).get('metadata') or {}).get('adaptive_learning_summary') or {})
         self._adaptive_status_text = 'Aprendizaje adaptativo resuelto. Respondi desde historial real y validacion controlada.'
@@ -2699,7 +2681,7 @@ class ControlCenterViewModel(QObject):
     def _apply_human_evolution_status_texts(self, *, message: str) -> None:
         validation = self._current_validation_status()
         discovery = self._current_tool_discovery_status()
-        reply, meta = self._evolution_status_reply(message)
+        reply, meta, _evidence_tag = self._evolution_status_reply(message)
         winning_by_problem = dict(validation.get('winning_by_problem') or {})
         in_validation = list(validation.get('in_validation') or [])
         active_signals = list(discovery.get('active_signals') or [])
@@ -2869,7 +2851,7 @@ class ControlCenterViewModel(QObject):
         if self_examination_question:
             return self._self_examination_reply(message)
         if learning_question:
-            return self._learning_reply(message)
+            return self._learning_reply(message)[:2]
         local_chat_llm = dict(payload.get('local_chat_llm') or {})
         llm_answered = bool(local_chat_llm.get('available')) and bool(str(raw_summary or '').strip()) and not local_chat_llm.get('error')
         vm_small_talk = self._is_general_chat_message(message)
