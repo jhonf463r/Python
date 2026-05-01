@@ -6559,7 +6559,7 @@ class ControlCenterViewModel(QObject):
             )
             local_chat_llm = dict(payload.get('local_chat_llm') or {})
             _chat_evidence_tag = self._classify_evidence_tag(
-                has_live_observation=bool(local_chat_llm.get('available')),
+                has_live_observation=bool(local_chat_llm.get('available')) and not local_chat_llm.get('error'),
                 has_persisted_evidence=bool(payload.get('sources')),
             )
             self._append_message('assistant', 'IABV', user_text, meta_line, evidence_tag=_chat_evidence_tag)
