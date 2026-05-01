@@ -3202,9 +3202,18 @@ class AdaptiveTaskOrchestrator:
             'should_consult': True,
             'block_risky_action': bool(governance.get('block_risky_action')),
         }
+        # Derive external_state_flags from world_model tool_live_status
+        # for the target assistant, so preflight detects quota/auth signals.
+        preflight_ext_flags: list[str] = []
+        for tool_status in (world_model.tool_live_status or []):
+            kind = str(tool_status.assistant_kind or '').strip().lower()
+            if kind == normalized_assistant:
+                preflight_ext_flags.extend(tool_status.external_state_flags or [])
+                preflight_ext_flags.extend(tool_status.detected_blocks or [])
+        preflight_ext_flags = canonical_external_state_flags(preflight_ext_flags)
         preflight_continuity = build_worker_continuity(
             session_metadata={'worker_gate': worker_gate},
-            external_state_flags=[],
+            external_state_flags=preflight_ext_flags,
             worker_usable=bool(worker_gate.get('usable', False)),
             session_status='planned',
             governance=preflight_governance,

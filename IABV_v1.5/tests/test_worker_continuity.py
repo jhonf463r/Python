@@ -34,7 +34,9 @@ from iabv_v15.domain.models import (
     TaskContext,
     TaskIntent,
     TaskRole,
+    ToolLiveStatus,
     WorkerContinuityReason,
+    WorldModelSnapshot,
     build_worker_continuity,
     canonical_external_state_flags,
 )
@@ -471,3 +473,136 @@ class TestBackwardCompatibility:
             session_status='completed',
         )
         assert result['handoff_required'] is False
+
+
+# ─── Preflight continuity with real signals ──────────────────
+
+
+class TestPreflightContinuitySignals:
+    """Verify that preflight_external_assistant derives external_state_flags
+    from world_model.tool_live_status instead of hardcoding []."""
+
+    def test_preflight_account_limited_triggers_handoff(self, monkeypatch):
+        from test_task_packet import _build_orchestrator, _workspace
+        root = _workspace('wc_preflight_quota')
+        orch = _build_orchestrator(root)
+        wm = WorldModelSnapshot(
+            tool_live_status=[
+                ToolLiveStatus(
+                    tool_id='chatgpt-1',
+                    assistant_kind='chatgpt',
+                    available=False,
+                    status='no_disponible',
+                    external_state_flags=['account_limited'],
+                ),
+            ],
+        )
+        monkeypatch.setattr(orch, '_world_model', lambda: wm)
+        if hasattr(orch.context_assembler, 'world_model_service'):
+            monkeypatch.setattr(orch.context_assembler, 'world_model_service', None)
+        result = orch.preflight_external_assistant(
+            user_goal='Check quota',
+            assistant_kind='chatgpt',
+        )
+        wc = result['task_packet']['worker_continuity']
+        assert wc['handoff_required'] is True
+        assert wc['continuation_reason'] == 'quota_exhausted'
+
+    def test_preflight_session_expired_triggers_auth_expired(self, monkeypatch):
+        from test_task_packet import _build_orchestrator, _workspace
+        root = _workspace('wc_preflight_auth')
+        orch = _build_orchestrator(root)
+        wm = WorldModelSnapshot(
+            tool_live_status=[
+                ToolLiveStatus(
+                    tool_id='chatgpt-1',
+                    assistant_kind='chatgpt',
+                    available=False,
+                    status='no_disponible',
+                    external_state_flags=['session_expired'],
+                ),
+            ],
+        )
+        monkeypatch.setattr(orch, '_world_model', lambda: wm)
+        if hasattr(orch.context_assembler, 'world_model_service'):
+            monkeypatch.setattr(orch.context_assembler, 'world_model_service', None)
+        result = orch.preflight_external_assistant(
+            user_goal='Check auth',
+            assistant_kind='chatgpt',
+        )
+        wc = result['task_packet']['worker_continuity']
+        assert wc['handoff_required'] is True
+        assert wc['continuation_reason'] == 'auth_expired'
+
+
+# ─── preferred_next_worker uses canonical worker shape ───────
+
+
+class TestPreferredNextWorkerShape:
+    def test_preferred_next_worker_tool_email(self):
+        result = build_worker_continuity(
+            session_metadata={
+                'worker_gate': {
+                    'usable': True,
+                    'top_worker': {'tool': 'chatgpt', 'email': 'user@test.com'},
+                },
+            },
+            external_state_flags=[],
+            worker_usable=True,
+            session_status='completed',
+        )
+        assert result['handoff_required'] is False
+        assert result['preferred_next_worker'] == 'chatgpt:user@test.com'
+
+    def test_preferred_next_worker_tool_only(self):
+        result = build_worker_continuity(
+            session_metadata={
+                'worker_gate': {
+                    'usable': True,
+                    'top_worker': {'tool': 'copilot'},
+                },
+            },
+            external_state_flags=[],
+            worker_usable=True,
+            session_status='completed',
+        )
+        assert result['preferred_next_worker'] == 'copilot'
+
+    def test_preferred_next_worker_browser_profile(self):
+        result = build_worker_continuity(
+            session_metadata={
+                'worker_gate': {
+                    'usable': True,
+                    'top_worker': {'browser': 'chrome', 'profile': 'work'},
+                },
+            },
+            external_state_flags=[],
+            worker_usable=True,
+            session_status='completed',
+        )
+        assert result['preferred_next_worker'] == 'chrome:work'
+
+    def test_preferred_next_worker_assistant_kind_fallback(self):
+        result = build_worker_continuity(
+            session_metadata={
+                'worker_gate': {
+                    'usable': True,
+                    'top_worker': {'assistant_kind': 'codex'},
+                },
+            },
+            external_state_flags=[],
+            worker_usable=True,
+            session_status='completed',
+        )
+        assert result['preferred_next_worker'] == 'codex'
+
+    def test_backward_compat_empty_top_worker(self):
+        result = build_worker_continuity(
+            session_metadata={
+                'worker_gate': {'usable': True, 'top_worker': {}},
+            },
+            external_state_flags=[],
+            worker_usable=True,
+            session_status='completed',
+        )
+        assert result['preferred_next_worker'] == ''

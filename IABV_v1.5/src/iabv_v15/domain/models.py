@@ -220,11 +220,29 @@ def build_worker_continuity(
             'tests_run': list(session_metadata.get('tests_run') or []),
         }
 
+    # Derive preferred_next_worker from canonical worker shape:
+    # priority: tool+email > tool > browser+profile > assistant_kind
+    pnw = ''
+    if top_worker:
+        tool = str(top_worker.get('tool') or '').strip()
+        email = str(top_worker.get('email') or '').strip()
+        browser = str(top_worker.get('browser') or '').strip()
+        profile = str(top_worker.get('profile') or '').strip()
+        a_kind = str(top_worker.get('assistant_kind') or '').strip()
+        if tool and email:
+            pnw = f'{tool}:{email}'
+        elif tool:
+            pnw = tool
+        elif browser and profile:
+            pnw = f'{browser}:{profile}'
+        elif a_kind:
+            pnw = a_kind
+
     return {
         'worker_status': 'blocked' if handoff_required else 'active',
         'handoff_required': handoff_required,
         'continuation_reason': reason,
-        'preferred_next_worker': str(top_worker.get('assistant_kind') or '') if not handoff_required else '',
+        'preferred_next_worker': pnw,
         'continuation_packet': continuation_packet,
     }
 
