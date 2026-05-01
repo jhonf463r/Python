@@ -171,7 +171,7 @@ class TaskOutcomeRecorder:
             'goal_progress_signal': float(session.context.goal_context.progress or 0.0),
             'learning_source': 'adaptive_session_finalize',
             'linked_run_id': run_record.run_id,
-            'selected_worker': (dict(session.metadata.get('worker_gate') or {}).get('top_worker') or {}).get('tool', ''),
+            'selected_worker': dict(dict(session.metadata.get('worker_gate') or {}).get('top_worker') or {}),
             'ranked_worker_count': int(dict(session.metadata.get('worker_gate') or {}).get('available_count') or 0),
             'blocked_reason': str(dict(session.metadata.get('worker_gate') or {}).get('reason') or ''),
         }

@@ -379,33 +379,70 @@ def test_worker_gate_no_scanner_preserves_unresolved() -> None:
 # ─── FASE 2: TaskOutcomeRecorder learning metadata ──────────
 # These tests verify the 3 fields added to _record_learning() metadata
 # are correctly extracted from session.metadata['worker_gate'].
-# We test the extraction logic directly rather than going through full
-# recorder flow, because RunRecord requires heavy model construction
-# that is orthogonal to what we're validating.
+# We test the extraction logic directly (same expression used in
+# task_outcome_recorder.py) rather than going through full recorder
+# flow, because RunRecord requires heavy model construction that is
+# orthogonal to what we're validating.
 
 
-def test_learning_extraction_with_gate() -> None:
-    """The 3 learning fields extract correctly from worker_gate metadata."""
+def test_learning_extraction_preserves_worker_identity() -> None:
+    """selected_worker preserves the full top_worker dict, not just tool."""
     meta: dict[str, Any] = {
         'worker_gate': {
             'usable': True,
-            'top_worker': {'tool': 'chatgpt', 'email': 'a@t.com', 'score': 0.9},
-            'ranked_workers': [{'tool': 'chatgpt', 'score': 0.9}],
+            'top_worker': {
+                'tool': 'chatgpt',
+                'email': 'best@company.com',
+                'remaining': 35,
+                'score': 0.875,
+            },
+            'ranked_workers': [{'tool': 'chatgpt', 'email': 'best@company.com', 'score': 0.875}],
             'available_count': 3,
             'reason': '',
         },
     }
-    selected = (dict(meta.get('worker_gate') or {}).get('top_worker') or {}).get('tool', '')
+    selected = dict(dict(meta.get('worker_gate') or {}).get('top_worker') or {})
     count = int(dict(meta.get('worker_gate') or {}).get('available_count') or 0)
     reason = str(dict(meta.get('worker_gate') or {}).get('reason') or '')
 
-    assert selected == 'chatgpt'
+    assert isinstance(selected, dict)
+    assert selected['tool'] == 'chatgpt'
+    assert selected['email'] == 'best@company.com'
+    assert selected['score'] == 0.875
+    assert selected['remaining'] == 35
     assert count == 3
     assert reason == ''
 
 
-def test_learning_extraction_with_blocked_gate() -> None:
-    """When gate is blocked, selected_worker is empty and reason is preserved."""
+def test_learning_extraction_with_browser_profile() -> None:
+    """When top_worker includes browser/profile, they're preserved in selected_worker."""
+    meta: dict[str, Any] = {
+        'worker_gate': {
+            'usable': True,
+            'top_worker': {
+                'tool': 'chatgpt',
+                'email': 'user@company.com',
+                'browser': 'Chrome',
+                'profile': 'Profile 2',
+                'remaining': 20,
+                'score': 0.5,
+            },
+            'ranked_workers': [],
+            'available_count': 1,
+            'reason': '',
+        },
+    }
+    selected = dict(dict(meta.get('worker_gate') or {}).get('top_worker') or {})
+
+    assert selected['tool'] == 'chatgpt'
+    assert selected['email'] == 'user@company.com'
+    assert selected['browser'] == 'Chrome'
+    assert selected['profile'] == 'Profile 2'
+    assert selected['score'] == 0.5
+
+
+def test_learning_extraction_blocked_gate_empty_worker() -> None:
+    """When gate blocks, selected_worker is empty dict and reason preserved."""
     meta: dict[str, Any] = {
         'worker_gate': {
             'usable': False,
@@ -415,11 +452,11 @@ def test_learning_extraction_with_blocked_gate() -> None:
             'reason': 'No hay workers con sesion activa y cuota disponible.',
         },
     }
-    selected = (dict(meta.get('worker_gate') or {}).get('top_worker') or {}).get('tool', '')
+    selected = dict(dict(meta.get('worker_gate') or {}).get('top_worker') or {})
     count = int(dict(meta.get('worker_gate') or {}).get('available_count') or 0)
     reason = str(dict(meta.get('worker_gate') or {}).get('reason') or '')
 
-    assert selected == ''
+    assert selected == {}
     assert count == 0
     assert reason == 'No hay workers con sesion activa y cuota disponible.'
 
@@ -427,10 +464,10 @@ def test_learning_extraction_with_blocked_gate() -> None:
 def test_learning_extraction_without_gate() -> None:
     """When no worker_gate in metadata, all fields default gracefully."""
     meta: dict[str, Any] = {}
-    selected = (dict(meta.get('worker_gate') or {}).get('top_worker') or {}).get('tool', '')
+    selected = dict(dict(meta.get('worker_gate') or {}).get('top_worker') or {})
     count = int(dict(meta.get('worker_gate') or {}).get('available_count') or 0)
     reason = str(dict(meta.get('worker_gate') or {}).get('reason') or '')
 
-    assert selected == ''
+    assert selected == {}
     assert count == 0
     assert reason == ''
