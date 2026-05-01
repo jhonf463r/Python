@@ -310,12 +310,32 @@ class EvolutionCenterViewModel(QObject):
         self._recent_pending_issues = pending
         self._known_tool_cards = tool_cards
         self._ia_comparisons = ia_comparisons
+        environment_self_model['truthState'] = self._classify_panel_truth(
+            has_live_source=self.environment_self_awareness_service is not None,
+            payload=environment_self_model,
+        )
         self._environment_self_model = environment_self_model
+        world_model['truthState'] = self._classify_panel_truth(
+            has_live_source=self.world_model_service is not None,
+            payload=world_model,
+        )
         self._world_model = world_model
+        autonomous_validation['truthState'] = self._classify_panel_truth(
+            has_live_source=self.autonomous_validation_cycle is not None,
+            payload=autonomous_validation,
+        )
         self._autonomous_validation = autonomous_validation
+        portable_context['truthState'] = self._classify_panel_truth(
+            has_live_source=False,
+            payload=portable_context,
+        )
         self._portable_context = portable_context
         self._portable_context_brief = str(portable_context.get('assistant_brief') or '').strip() or self._portable_context_brief
         self._tool_evolution_panel = self._build_tool_evolution_panel(portable_context=portable_context, autonomous_validation=autonomous_validation)
+        self_examination['truthState'] = self._classify_panel_truth(
+            has_live_source=False,
+            payload=self_examination,
+        )
         self._self_examination = self_examination
         self._self_examination_brief = str(self_examination.get('assistant_brief') or '').strip() or self._self_examination_brief
         proactive_dashboard = self._build_proactive_dashboard()
@@ -324,6 +344,10 @@ class EvolutionCenterViewModel(QObject):
         if dashboard_brief:
             self._proactive_dashboard_brief = dashboard_brief
         self._recent_ui_screenshots = self._build_recent_ui_screenshots()
+        control_master_digest['truthState'] = self._classify_panel_truth(
+            has_live_source=self.control_master_service is not None,
+            payload=control_master_digest,
+        )
         self._control_master_digest = control_master_digest
         control_master_brief = self._format_control_master_brief(control_master_digest)
         if control_master_brief:
@@ -388,6 +412,23 @@ class EvolutionCenterViewModel(QObject):
             'learned_policies_count': int(getattr(snapshot, 'learned_policies_count', 0) or 0),
             'entries': entries,
         }
+
+    @staticmethod
+    def _classify_panel_truth(*, has_live_source: bool, payload: dict[str, Any]) -> str:
+        """Classify a panel's evidence basis.
+
+        - ``observed``: live service produced non-empty data
+        - ``inferred``: no live service, but persisted data exists
+        - ``unresolved``: no data at all (empty payload or service missing)
+        """
+        has_data = bool(payload) and any(
+            v for k, v in payload.items() if k != 'truthState'
+        )
+        if has_live_source and has_data:
+            return 'observed'
+        if has_data:
+            return 'inferred'
+        return 'unresolved'
 
     @staticmethod
     def _format_proactive_dashboard_brief(dashboard: dict[str, Any]) -> str:

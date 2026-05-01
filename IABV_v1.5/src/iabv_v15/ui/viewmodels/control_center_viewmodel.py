@@ -190,6 +190,7 @@ class ControlCenterViewModel(QObject):
         self._pbt_state: dict[str, Any] = {}
         self._pbt_candidates: list[dict[str, Any]] = []
         self._diagnostic_text = 'Diagnostico pendiente. La consola revisa el stack local automaticamente y puedes pedirme ajustes o aprobaciones por chat.'
+        self._diagnostic_truth_state = 'unresolved'
         self._strategy_text = 'La consola adaptativa decide intencion, arma contexto, mide readiness, propone estrategia y deja checkpoints claros antes de ejecutar.'
         self._recommendation_text = 'qwen3:8b queda como motor principal, pero ahora el Centro de Control usa packs por dominio y aprobaciones por fases.'
         self._legacy_summary = 'Se mantiene lo mejor del legado: PBT y snapshots de IABV 1.3, captura persistente de IABV 1.4 y ahora una capa adaptativa auditable por encima.'
@@ -4058,6 +4059,9 @@ class ControlCenterViewModel(QObject):
     def get_diagnostic_text(self) -> str:
         return self._diagnostic_text
 
+    def get_diagnostic_truth_state(self) -> str:
+        return self._diagnostic_truth_state
+
     def get_repo_bridge_text(self) -> str:
         return self._repo_bridge_text
 
@@ -6549,6 +6553,7 @@ class ControlCenterViewModel(QObject):
             if not self._working:
                 self._busy_label = self._startup_readiness_text(validating_local_stack=False)
             self._diagnostic_text = self._build_provider_diagnostic()
+            self._diagnostic_truth_state = 'observed'
         elif task_name == 'chat':
             self._clear_autonomy_activity_override()
             sources = ', '.join(payload.get('sources') or []) or 'sin fuentes explicitas'
@@ -6580,6 +6585,7 @@ class ControlCenterViewModel(QObject):
                 f"Pack: {pack_title}\n"
                 f"Motivo de ruta: {payload.get('route_reason')}"
             )
+            self._diagnostic_truth_state = 'observed'
             self._update_adaptive_state(adaptive_payload)
             if adaptive_payload:
                 self._busy_label = 'Ya tengo una primera respuesta. Estoy viendo si conviene apoyarme en otra herramienta o seguir por aqui.'
@@ -6651,6 +6657,7 @@ class ControlCenterViewModel(QObject):
                 f"Correcciones seguras aplicadas: {int(guided_cycle.get('applied_count') or 0)}",
                 f"Requiere decision humana: {'si' if guided_cycle.get('requires_user_decision') else 'no'}",
             ])
+            self._diagnostic_truth_state = 'observed'
             if adaptive_payload:
                 self._maybe_run_autonomous_evolution(adaptive_payload, source='self_teach')
         elif task_name == 'external_consultation':
@@ -6743,6 +6750,7 @@ class ControlCenterViewModel(QObject):
             f"Sesion adaptativa: {self._adaptive_session_id or 'n/d'}\n"
             f"Detalle: {message}"
         )
+        self._diagnostic_truth_state = 'observed'
         self._refresh_development_packet()
         self._refresh_autonomy_dock()
         self.dataChanged.emit()
@@ -6794,6 +6802,7 @@ class ControlCenterViewModel(QObject):
     recommendationText = Property(str, get_recommendation_text, constant=True)
     legacySummary = Property(str, get_legacy_summary, constant=True)
     diagnosticText = Property(str, get_diagnostic_text, notify=dataChanged)
+    diagnosticTruthState = Property(str, get_diagnostic_truth_state, notify=dataChanged)
     repoBridgeText = Property(str, get_repo_bridge_text, notify=dataChanged)
     localStackText = Property(str, get_local_stack_text, notify=dataChanged)
     developmentPacket = Property(str, get_development_packet, notify=dataChanged)
