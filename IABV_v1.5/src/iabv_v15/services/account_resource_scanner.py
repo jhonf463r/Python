@@ -899,24 +899,61 @@ _DEFAULT_SIGNAL_WEIGHT = 0.30
 _MAX_BLOCK_RISK = 0.95
 
 
+def _resolve_worker_signals(
+    worker: dict[str, Any],
+    block_signals: dict[str, list[str]],
+) -> list[str]:
+    """Find the most specific signal list that matches *worker*.
+
+    Lookup order (most-specific first):
+      1. ``email:tool``   — e.g. ``"user@t.com:chatgpt"``
+      2. ``browser:profile:tool`` — e.g. ``"Chrome:Default:chatgpt"``
+      3. ``tool``          — e.g. ``"chatgpt"``  (backward-compatible)
+
+    The first key that exists in *block_signals* wins; there is no merging
+    across levels.  All keys are compared lower-case.
+    """
+    tool = str(worker.get('tool', '')).strip().lower()
+    email = str(worker.get('email', '')).strip().lower()
+    browser = str(worker.get('browser', '')).strip().lower()
+    profile = str(worker.get('profile', '')).strip().lower()
+
+    # Normalise block_signals keys once
+    norm: dict[str, list[str]] = {k.strip().lower(): v for k, v in block_signals.items()}
+
+    # 1. email:tool
+    if email and tool:
+        key = f"{email}:{tool}"
+        if key in norm:
+            return norm[key]
+
+    # 2. browser:profile:tool
+    if browser and profile and tool:
+        key = f"{browser}:{profile}:{tool}"
+        if key in norm:
+            return norm[key]
+
+    # 3. tool (fallback — original behaviour)
+    return norm.get(tool, [])
+
+
 def _compute_block_risk(
     worker: dict[str, Any],
     block_signals: dict[str, list[str]] | None,
 ) -> float:
     """Return a block-risk penalty in [0.0, ``_MAX_BLOCK_RISK``].
 
-    *block_signals* maps a **tool name** (lower-case) to a list of active
-    signal names for that tool.  If the worker's tool has active signals,
-    the risk is the complementary product of their weights, capped at
-    ``_MAX_BLOCK_RISK``.
+    *block_signals* maps a **key** to a list of active signal names.
+    Keys are resolved with per-worker granularity via
+    :func:`_resolve_worker_signals` (email:tool → browser:profile:tool
+    → tool fallback).
 
     Hook: callers can inject any signal name.  Unknown names receive
     ``_DEFAULT_SIGNAL_WEIGHT`` so new signals degrade gracefully.
     """
     if not block_signals:
         return 0.0
-    tool = str(worker.get('tool', '')).strip().lower()
-    signals = block_signals.get(tool, [])
+    signals = _resolve_worker_signals(worker, block_signals)
     if not signals:
         return 0.0
     # Complementary product: risk = 1 - ∏(1 - weight_i)
