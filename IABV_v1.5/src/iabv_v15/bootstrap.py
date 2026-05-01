@@ -1378,13 +1378,20 @@ class AppBootstrap:
             scans_deferred=_defer_scans,
         )
 
-        self._record_boot_profile()
+        self._prepare_boot_profile_store()
 
-    def _record_boot_profile(self) -> None:
-        """Persist boot telemetry tagged by environment_id.
+    def _prepare_boot_profile_store(self) -> None:
+        """Create the boot profile store and resolve environment_id.
 
-        Called once after ``wire_services_done``.  Crash-safe: any error
-        is swallowed because telemetry must never break boot.
+        The store is created here (after ``wire_services_done``) so that
+        ``environment_id`` is available, but persistence is deferred to
+        ``_persist_boot_profile()`` which is called from
+        ``_handle_page_loader_ready`` — the sovereign definition of
+        "boot visible complete".
+
+        For MCP-only sessions (no UI, no page_loader_ready signal),
+        ``_persist_boot_profile`` is called as a fallback from the MCP
+        server startup path or can be triggered manually.
         """
         try:
             from iabv_v15.services.evolution.boot_profile_store import BootProfileStore
@@ -1392,18 +1399,47 @@ class AppBootstrap:
             environment_id = env_model.environment_id if env_model else ''
             if not environment_id:
                 return
-            store = BootProfileStore(data_root=self.config.data_dir)
-            store.record_boot_session(
-                environment_id=environment_id,
-                timeline_events=self._timeline.events(),
-                metadata={
-                    'scan_status': env_model.scan_status if env_model else '',
-                    'known_environment': env_model.known_environment if env_model else False,
-                },
-            )
-            self.boot_profile_store = store
+            self.boot_profile_store = BootProfileStore(data_root=self.config.data_dir)
+            self._boot_profile_environment_id = environment_id
+            self._boot_profile_metadata = {
+                'scan_status': env_model.scan_status if env_model else '',
+                'known_environment': env_model.known_environment if env_model else False,
+            }
+            self._boot_profile_persisted = False
         except Exception as exc:
-            logger.debug('boot_profile: telemetry recording skipped: %s', exc)
+            logger.debug('boot_profile: store preparation skipped: %s', exc)
+
+    def _persist_boot_profile(self, trigger: str = 'page_loader_ready') -> None:
+        """Persist boot telemetry at the moment the visible boot is complete.
+
+        Called from ``_handle_page_loader_ready`` (preferred) or
+        ``_handle_splash_closing`` (fallback).  Idempotent: a second
+        call is a no-op.  Crash-safe: any error is swallowed.
+
+        The timeline snapshot taken here includes late milestones
+        (``shell_loader_ready``, ``page_loader_ready``,
+        ``splash_window_closing``) so ``boot_duration_ms`` reflects
+        the full visible boot, not just wiring.  ``wiring_duration_ms``
+        is recorded separately as the ``bootstrap_init_start`` →
+        ``wire_services_done`` interval.
+        """
+        if getattr(self, '_boot_profile_persisted', True):
+            return
+        self._boot_profile_persisted = True
+        try:
+            store = getattr(self, 'boot_profile_store', None)
+            env_id = getattr(self, '_boot_profile_environment_id', '')
+            if not store or not env_id:
+                return
+            metadata = getattr(self, '_boot_profile_metadata', {}) or {}
+            metadata['persist_trigger'] = trigger
+            store.record_boot_session(
+                environment_id=env_id,
+                timeline_events=self._timeline.events(),
+                metadata=metadata,
+            )
+        except Exception as exc:
+            logger.debug('boot_profile: persistence skipped: %s', exc)
 
     # ------------------------------------------------------------------
     # Lazy-loaded services — constructed on first access, not at wiring
@@ -1566,6 +1602,7 @@ class AppBootstrap:
             self._timeline.mark('page_loader_ready')
         except Exception:
             pass
+        self._persist_boot_profile('page_loader_ready')
         # Reasegurador: cuando el page loader esta listo el splash YA
         # deberia estar fundiendose, pero forzamos raise/activate del
         # main window por si Windows lo dejo debajo del splash.
@@ -1581,6 +1618,7 @@ class AppBootstrap:
             self._timeline.mark('splash_window_closing')
         except Exception:
             pass
+        self._persist_boot_profile('splash_window_closing')
 
     def _fire_splash_ready_and_raise_main(self, source: str) -> None:
         """Common path: ``splash.set_ready()`` + raise/activate main_win.

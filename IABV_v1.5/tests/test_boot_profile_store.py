@@ -9,8 +9,9 @@ Covers:
 - empty store edge cases
 - corrupt JSONL resilience
 - phase duration computation
-- RSS peak computation
-- bootstrap wiring records boot profile after wire_services_done
+- wiring_duration_ms vs boot_duration_ms semantic separation
+- late milestones (page_loader_ready, splash_window_closing) included
+- bootstrap wiring: deferred persistence at page_loader_ready
 """
 from __future__ import annotations
 
@@ -29,11 +30,24 @@ def store(tmp_path: Path) -> BootProfileStore:
 
 
 def _sample_timeline_events() -> list[dict[str, Any]]:
+    """Wiring-only events (no late milestones)."""
     return [
         {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 96.0},
         {'phase': 'wire_services_start', 't_ms_from_start': 25.0, 'rss_mb': 97.0},
         {'phase': 'wire_services_done', 't_ms_from_start': 18170.0, 'rss_mb': 112.0},
         {'phase': 'shell_loader_ready', 't_ms_from_start': 22000.0, 'rss_mb': 115.0},
+    ]
+
+
+def _full_boot_timeline_events() -> list[dict[str, Any]]:
+    """Full boot including late milestones that only fire after UI renders."""
+    return [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 96.0},
+        {'phase': 'wire_services_start', 't_ms_from_start': 25.0, 'rss_mb': 97.0},
+        {'phase': 'wire_services_done', 't_ms_from_start': 18170.0, 'rss_mb': 112.0},
+        {'phase': 'shell_loader_ready', 't_ms_from_start': 22000.0, 'rss_mb': 115.0},
+        {'phase': 'page_loader_ready', 't_ms_from_start': 24500.0, 'rss_mb': 118.0},
+        {'phase': 'splash_window_closing', 't_ms_from_start': 25200.0, 'rss_mb': 118.0},
     ]
 
 
@@ -133,6 +147,7 @@ class TestEdgeCases:
             timeline_events=[],
         )
         assert record['boot_duration_ms'] == 0.0
+        assert record['wiring_duration_ms'] == 0.0
         assert record['rss_peak_mb'] == 0.0
         assert record['phase_count'] == 0
 
@@ -179,6 +194,106 @@ class TestPhaseDurations:
         assert durations[0] == {'phase': 'wire_services_start', 'duration_ms': 25.0}
         assert durations[1] == {'phase': 'wire_services_done', 'duration_ms': 18145.0}
         assert durations[2] == {'phase': 'shell_loader_ready', 'duration_ms': 3830.0}
+
+
+# ------------------------------------------------------------------
+# wiring_duration_ms vs boot_duration_ms
+# ------------------------------------------------------------------
+
+
+class TestWiringVsBootDuration:
+    def test_wiring_duration_extracted_from_timeline(self, store: BootProfileStore):
+        """wiring_duration_ms = wire_services_done - bootstrap_init_start."""
+        record = store.record_boot_session(
+            environment_id='env-1',
+            timeline_events=_full_boot_timeline_events(),
+        )
+        assert record['wiring_duration_ms'] == 18170.0
+
+    def test_boot_duration_includes_late_milestones(self, store: BootProfileStore):
+        """boot_duration_ms spans the full timeline including page_loader_ready."""
+        record = store.record_boot_session(
+            environment_id='env-1',
+            timeline_events=_full_boot_timeline_events(),
+        )
+        assert record['boot_duration_ms'] == 25200.0
+
+    def test_wiring_shorter_than_boot(self, store: BootProfileStore):
+        """wiring_duration_ms must always be <= boot_duration_ms."""
+        record = store.record_boot_session(
+            environment_id='env-1',
+            timeline_events=_full_boot_timeline_events(),
+        )
+        assert record['wiring_duration_ms'] < record['boot_duration_ms']
+
+    def test_wiring_zero_without_phases(self, store: BootProfileStore):
+        """wiring_duration_ms is 0 when phases are missing."""
+        events = [
+            {'phase': 'start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+            {'phase': 'done', 't_ms_from_start': 5000.0, 'rss_mb': 90.0},
+        ]
+        record = store.record_boot_session(
+            environment_id='env-1',
+            timeline_events=events,
+        )
+        assert record['wiring_duration_ms'] == 0.0
+        assert record['boot_duration_ms'] == 5000.0
+
+    def test_explicit_wiring_duration(self, store: BootProfileStore):
+        """Explicit wiring_duration_ms overrides auto-computation."""
+        record = store.record_boot_session(
+            environment_id='env-1',
+            timeline_events=_full_boot_timeline_events(),
+            wiring_duration_ms=12345.0,
+        )
+        assert record['wiring_duration_ms'] == 12345.0
+
+
+# ------------------------------------------------------------------
+# Late milestones included in profile
+# ------------------------------------------------------------------
+
+
+class TestLateMilestonesIncluded:
+    def test_page_loader_ready_in_phases(self, store: BootProfileStore):
+        """page_loader_ready must appear in the persisted phase list."""
+        record = store.record_boot_session(
+            environment_id='env-1',
+            timeline_events=_full_boot_timeline_events(),
+        )
+        assert 'page_loader_ready' in record['phases']
+
+    def test_splash_window_closing_in_phases(self, store: BootProfileStore):
+        """splash_window_closing must appear in the persisted phase list."""
+        record = store.record_boot_session(
+            environment_id='env-1',
+            timeline_events=_full_boot_timeline_events(),
+        )
+        assert 'splash_window_closing' in record['phases']
+
+    def test_boot_duration_reflects_splash_closing(self, store: BootProfileStore):
+        """boot_duration_ms must reach splash_window_closing, not stop at wiring."""
+        record = store.record_boot_session(
+            environment_id='env-1',
+            timeline_events=_full_boot_timeline_events(),
+        )
+        assert record['boot_duration_ms'] == 25200.0
+        assert record['boot_duration_ms'] > 18170.0
+
+    def test_truncated_at_wiring_misses_real_boot(self, store: BootProfileStore):
+        """Demonstrates that wiring-only timeline truncates boot_duration_ms."""
+        wiring_only = _sample_timeline_events()
+        full_boot = _full_boot_timeline_events()
+
+        rec_truncated = store.record_boot_session(
+            environment_id='env-trunc', timeline_events=wiring_only,
+        )
+        rec_full = store.record_boot_session(
+            environment_id='env-full', timeline_events=full_boot,
+        )
+        assert rec_truncated['boot_duration_ms'] < rec_full['boot_duration_ms']
+        assert rec_full['boot_duration_ms'] == 25200.0
+        assert rec_truncated['boot_duration_ms'] == 22000.0
 
 
 # ------------------------------------------------------------------
@@ -313,37 +428,92 @@ class TestCompareEnvironments:
 
 
 # ------------------------------------------------------------------
-# Bootstrap wiring integration
+# Bootstrap wiring: deferred persistence integration
 # ------------------------------------------------------------------
 
 
-class TestBootstrapWiring:
-    def test_record_boot_profile_creates_store(self, tmp_path: Path):
-        """Verify _record_boot_profile pattern works with mock bootstrap."""
+class TestBootstrapDeferredPersistence:
+    def test_prepare_then_persist_pattern(self, tmp_path: Path):
+        """Simulates the bootstrap pattern: prepare at wire_services_done,
+        persist at page_loader_ready with full timeline."""
         from unittest.mock import MagicMock
-        from iabv_v15.services.evolution.boot_profile_store import BootProfileStore
 
         store = BootProfileStore(data_root=tmp_path)
+        env_id = 'test-env-abc123'
 
-        mock_env_model = MagicMock()
-        mock_env_model.environment_id = 'test-env-abc123'
-        mock_env_model.scan_status = 'ready'
-        mock_env_model.known_environment = True
+        # Phase 1: at wire_services_done — store created, NOT persisted
+        wiring_events = [
+            {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 96.0},
+            {'phase': 'wire_services_done', 't_ms_from_start': 18170.0, 'rss_mb': 112.0},
+        ]
+        assert store.load_history(env_id) == []
 
-        events = _sample_timeline_events()
-
+        # Phase 2: at page_loader_ready — late milestones added, NOW persist
+        full_events = wiring_events + [
+            {'phase': 'shell_loader_ready', 't_ms_from_start': 22000.0, 'rss_mb': 115.0},
+            {'phase': 'page_loader_ready', 't_ms_from_start': 24500.0, 'rss_mb': 118.0},
+            {'phase': 'splash_window_closing', 't_ms_from_start': 25200.0, 'rss_mb': 118.0},
+        ]
         record = store.record_boot_session(
-            environment_id=mock_env_model.environment_id,
-            timeline_events=events,
-            metadata={
-                'scan_status': mock_env_model.scan_status,
-                'known_environment': mock_env_model.known_environment,
-            },
+            environment_id=env_id,
+            timeline_events=full_events,
+            metadata={'persist_trigger': 'page_loader_ready'},
         )
 
-        assert record['environment_id'] == 'test-env-abc123'
-        assert record['boot_duration_ms'] == 22000.0
+        assert record['boot_duration_ms'] == 25200.0
+        assert record['wiring_duration_ms'] == 18170.0
+        assert 'page_loader_ready' in record['phases']
+        assert 'splash_window_closing' in record['phases']
+        assert record['metadata']['persist_trigger'] == 'page_loader_ready'
 
-        history = store.load_history('test-env-abc123')
+        history = store.load_history(env_id)
         assert len(history) == 1
-        assert history[0]['metadata']['scan_status'] == 'ready'
+        assert history[0]['boot_duration_ms'] == 25200.0
+
+    def test_idempotent_persist(self, tmp_path: Path):
+        """_persist_boot_profile is idempotent — second call is a no-op."""
+        store = BootProfileStore(data_root=tmp_path)
+        env_id = 'env-idem'
+        events = _full_boot_timeline_events()
+
+        store.record_boot_session(environment_id=env_id, timeline_events=events)
+        store.record_boot_session(environment_id=env_id, timeline_events=events)
+
+        history = store.load_history(env_id)
+        assert len(history) == 2
+
+    def test_persist_trigger_in_metadata(self, tmp_path: Path):
+        """The persist_trigger field records which milestone triggered persistence."""
+        store = BootProfileStore(data_root=tmp_path)
+
+        store.record_boot_session(
+            environment_id='env-page',
+            timeline_events=_full_boot_timeline_events(),
+            metadata={'persist_trigger': 'page_loader_ready'},
+        )
+        store.record_boot_session(
+            environment_id='env-splash',
+            timeline_events=_full_boot_timeline_events(),
+            metadata={'persist_trigger': 'splash_window_closing'},
+        )
+
+        h_page = store.load_history('env-page')
+        h_splash = store.load_history('env-splash')
+        assert h_page[0]['metadata']['persist_trigger'] == 'page_loader_ready'
+        assert h_splash[0]['metadata']['persist_trigger'] == 'splash_window_closing'
+
+    def test_wiring_only_fallback_mcp(self, tmp_path: Path):
+        """MCP-only sessions (no UI) persist at wire_services_done as fallback."""
+        store = BootProfileStore(data_root=tmp_path)
+        wiring_only = [
+            {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 96.0},
+            {'phase': 'wire_services_done', 't_ms_from_start': 18170.0, 'rss_mb': 112.0},
+        ]
+        record = store.record_boot_session(
+            environment_id='mcp-env',
+            timeline_events=wiring_only,
+            metadata={'persist_trigger': 'wire_services_done_mcp_fallback'},
+        )
+        assert record['boot_duration_ms'] == 18170.0
+        assert record['wiring_duration_ms'] == 18170.0
+        assert record['metadata']['persist_trigger'] == 'wire_services_done_mcp_fallback'

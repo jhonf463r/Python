@@ -45,6 +45,7 @@ class BootProfileStore:
         environment_id: str,
         timeline_events: list[dict[str, Any]],
         boot_duration_ms: float | None = None,
+        wiring_duration_ms: float | None = None,
         rss_peak_mb: float | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
@@ -53,7 +54,12 @@ class BootProfileStore:
         Args:
             environment_id: stable fingerprint from EnvironmentSelfAwarenessService
             timeline_events: list of dicts from StartupTimeline.events()
-            boot_duration_ms: total boot wall-clock (auto-computed if None)
+            boot_duration_ms: full boot wall-clock up to page_loader_ready
+                or splash_window_closing (auto-computed from timeline if None)
+            wiring_duration_ms: time from bootstrap_init_start to
+                wire_services_done — the backend-only portion of boot.
+                Semantically distinct from boot_duration_ms which
+                includes QML rendering and splash dismiss.
             rss_peak_mb: RSS peak during boot (auto-computed if None)
             metadata: extra context (scan_mode, deferred flags, etc.)
 
@@ -64,6 +70,8 @@ class BootProfileStore:
             boot_duration_ms = self._compute_boot_duration(timeline_events)
         if rss_peak_mb is None:
             rss_peak_mb = self._compute_rss_peak(timeline_events)
+        if wiring_duration_ms is None:
+            wiring_duration_ms = self._compute_wiring_duration(timeline_events)
 
         phase_durations = self._compute_phase_durations(timeline_events)
 
@@ -71,6 +79,7 @@ class BootProfileStore:
             'environment_id': environment_id,
             'timestamp_utc': datetime.now(timezone.utc).isoformat(),
             'boot_duration_ms': round(boot_duration_ms, 1),
+            'wiring_duration_ms': round(wiring_duration_ms, 1) if wiring_duration_ms is not None else 0.0,
             'rss_peak_mb': round(rss_peak_mb, 1),
             'phase_count': len(timeline_events),
             'phase_durations': phase_durations,
@@ -257,11 +266,38 @@ class BootProfileStore:
 
     @staticmethod
     def _compute_boot_duration(events: list[dict[str, Any]]) -> float:
-        """Extract total boot duration from timeline events."""
+        """Extract total boot duration from timeline events.
+
+        Uses the last recorded milestone so that when the snapshot is
+        taken at ``page_loader_ready`` or ``splash_window_closing`` the
+        result reflects the full visible boot, not just wiring.
+        """
         if not events:
             return 0.0
         times = [e.get('t_ms_from_start', 0) for e in events]
         return max(times) - min(times) if times else 0.0
+
+    @staticmethod
+    def _compute_wiring_duration(events: list[dict[str, Any]]) -> float:
+        """Extract wiring-only duration (bootstrap_init_start → wire_services_done).
+
+        Semantically distinct from ``boot_duration_ms``: wiring is the
+        backend service construction time, before QML rendering begins.
+        """
+        if not events:
+            return 0.0
+        init_t: float | None = None
+        done_t: float | None = None
+        for e in events:
+            phase = e.get('phase', '')
+            t = e.get('t_ms_from_start', 0)
+            if phase == 'bootstrap_init_start':
+                init_t = t
+            elif phase == 'wire_services_done':
+                done_t = t
+        if init_t is not None and done_t is not None:
+            return done_t - init_t
+        return 0.0
 
     @staticmethod
     def _compute_rss_peak(events: list[dict[str, Any]]) -> float:
