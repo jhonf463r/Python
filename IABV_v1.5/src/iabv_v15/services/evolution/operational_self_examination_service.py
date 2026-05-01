@@ -33,6 +33,15 @@ STARTUP_INIT_MS_DEGRADED = 4000.0
 STARTUP_RUN_TO_WINDOW_MS_DEGRADED = 8000.0
 STARTUP_DEFERRED_MS_DEGRADED = 5000.0
 
+# Boot profile thresholds — aggregated across historical boots.
+# p95 boot duration above this emits a finding.
+BOOT_P95_MS_DEGRADED = 30000.0
+# Average wiring duration above this emits a finding.
+BOOT_WIRING_AVG_MS_DEGRADED = 20000.0
+# Boot regression: if the last boot is >40% slower than the rolling average,
+# emit a regression finding.
+BOOT_REGRESSION_RATIO = 1.4
+
 
 class OperationalSelfExaminationService:
     def __init__(
@@ -74,6 +83,7 @@ class OperationalSelfExaminationService:
         self.embodiment_violation_provider: Any | None = None
         self.decision_audit_trail: Any | None = None
         self.code_audit_trail: Any | None = None
+        self.boot_profile_store: Any | None = None
         self._current_review: SelfExaminationSnapshot | None = None
         # Read-only cache for GitHub API rate-limit data.  Populated
         # externally (e.g. auto-correction scan); _account_resource_health_findings
@@ -665,6 +675,7 @@ class OperationalSelfExaminationService:
         findings.extend(self._token_rotation_findings())
         findings.extend(self._cloud_reasoning_findings())
         findings.extend(self._startup_health_findings())
+        findings.extend(self._boot_profile_findings())
         findings.extend(self._chat_research_backlog_findings())
         # Cognitive meta-patterns: fijación, incubación, atractores, ensambles
         findings.extend(
@@ -1781,6 +1792,159 @@ class OperationalSelfExaminationService:
             ))
 
         return findings
+
+    # ------------------------------------------------------------------
+    # Boot profile findings — read-only analysis of BootProfileStore
+    # ------------------------------------------------------------------
+
+    def _boot_profile_findings(self) -> list[SelfExaminationFinding]:
+        """Read boot profile history and emit degradation / regression findings.
+
+        Reads ``BootProfileStore.boot_profile_summary()`` for the current
+        environment.  Emits findings for:
+        - p95 boot duration above ``BOOT_P95_MS_DEGRADED``
+        - average wiring duration above ``BOOT_WIRING_AVG_MS_DEGRADED``
+        - boot regression: last boot >40% slower than rolling average
+
+        Pure observability — no decisions, no mutations.
+        """
+        store = self.boot_profile_store
+        if store is None:
+            return []
+
+        environment_id = self._boot_profile_environment_id()
+        if not environment_id:
+            return []
+
+        try:
+            summary = store.boot_profile_summary(environment_id)
+        except Exception:
+            return []
+
+        if summary.get('boot_count', 0) < 2:
+            return []
+
+        findings: list[SelfExaminationFinding] = []
+        dur = summary.get('boot_duration', {})
+        wiring = summary.get('wiring_duration', {})
+        boot_count = summary.get('boot_count', 0)
+
+        source_refs = [
+            'data/evolution/boot_profiles/',
+            'iabv_v15.services.evolution.boot_profile_store',
+        ]
+
+        p95_ms = dur.get('p95_ms', 0)
+        if p95_ms > BOOT_P95_MS_DEGRADED:
+            findings.append(SelfExaminationFinding(
+                category='boot_profile_degradation',
+                title=f'Boot p95 alto: {p95_ms:.0f}ms',
+                summary=(
+                    f'El percentil 95 del boot es {p95_ms:.0f}ms '
+                    f'(umbral {BOOT_P95_MS_DEGRADED:.0f}ms) sobre '
+                    f'{boot_count} boots en {environment_id}.'
+                ),
+                severity=IssueSeverity.HIGH if p95_ms > BOOT_P95_MS_DEGRADED * 2 else IssueSeverity.MEDIUM,
+                confidence=0.85,
+                recommendation=(
+                    'Revisar slowest_phases del boot profile para '
+                    'identificar fases que se pueden diferir o paralelizar.'
+                ),
+                source_refs=source_refs,
+                metadata={
+                    'finding_type': 'boot_p95_high',
+                    'environment_id': environment_id,
+                    'p95_ms': p95_ms,
+                    'threshold_ms': BOOT_P95_MS_DEGRADED,
+                    'boot_count': boot_count,
+                    'avg_ms': dur.get('avg_ms', 0),
+                },
+            ))
+
+        wiring_avg = wiring.get('avg_ms', 0)
+        if wiring_avg > BOOT_WIRING_AVG_MS_DEGRADED:
+            findings.append(SelfExaminationFinding(
+                category='boot_profile_degradation',
+                title=f'Wiring duration alto: avg {wiring_avg:.0f}ms',
+                summary=(
+                    f'El wiring promedio es {wiring_avg:.0f}ms '
+                    f'(umbral {BOOT_WIRING_AVG_MS_DEGRADED:.0f}ms) sobre '
+                    f'{boot_count} boots. El backend tarda mucho antes '
+                    f'de que la UI sea visible.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.85,
+                recommendation=(
+                    'Diferir scans de cuentas, probes de proveedores y '
+                    'registro de herramientas a despues de la UI visible.'
+                ),
+                source_refs=source_refs,
+                metadata={
+                    'finding_type': 'wiring_duration_high',
+                    'environment_id': environment_id,
+                    'wiring_avg_ms': wiring_avg,
+                    'wiring_max_ms': wiring.get('max_ms', 0),
+                    'threshold_ms': BOOT_WIRING_AVG_MS_DEGRADED,
+                    'boot_count': boot_count,
+                },
+            ))
+
+        avg_ms = dur.get('avg_ms', 0)
+        if avg_ms > 0:
+            try:
+                history = store.load_history(environment_id, limit=5)
+                if len(history) >= 2:
+                    last_boot_ms = history[-1].get('boot_duration_ms', 0)
+                    if last_boot_ms > 0 and last_boot_ms > avg_ms * BOOT_REGRESSION_RATIO:
+                        ratio = last_boot_ms / avg_ms
+                        findings.append(SelfExaminationFinding(
+                            category='boot_profile_regression',
+                            title=f'Regresion de boot: {last_boot_ms:.0f}ms vs avg {avg_ms:.0f}ms',
+                            summary=(
+                                f'El ultimo boot ({last_boot_ms:.0f}ms) es '
+                                f'{ratio:.1f}x el promedio historico ({avg_ms:.0f}ms). '
+                                f'Posible regresion de rendimiento.'
+                            ),
+                            severity=IssueSeverity.HIGH if ratio > 2.0 else IssueSeverity.MEDIUM,
+                            confidence=0.75,
+                            recommendation=(
+                                'Comparar el ultimo boot con corridas anteriores. '
+                                'Revisar si se agregaron fases nuevas o si alguna '
+                                'fase existente se hizo mas lenta.'
+                            ),
+                            source_refs=source_refs,
+                            metadata={
+                                'finding_type': 'boot_regression',
+                                'environment_id': environment_id,
+                                'last_boot_ms': last_boot_ms,
+                                'avg_ms': avg_ms,
+                                'ratio': round(ratio, 2),
+                                'threshold_ratio': BOOT_REGRESSION_RATIO,
+                                'boot_count': boot_count,
+                            },
+                        ))
+            except Exception:
+                pass
+
+        return findings
+
+    def _boot_profile_environment_id(self) -> str:
+        """Resolve environment_id for boot profile queries.
+
+        Uses world_model_service -> environment_self_awareness_service
+        -> current_model().environment_id, same chain OSES already uses.
+        """
+        wm_service = self.world_model_service
+        if wm_service is None:
+            return ''
+        env_service = getattr(wm_service, 'environment_self_awareness_service', None)
+        if env_service is None or not hasattr(env_service, 'current_model'):
+            return ''
+        try:
+            model = env_service.current_model()
+            return getattr(model, 'environment_id', '') or ''
+        except Exception:
+            return ''
 
     def _cloud_reasoning_findings(self) -> list[SelfExaminationFinding]:
         """Analyze cloud reasoning decision trail for metacognitive findings.
