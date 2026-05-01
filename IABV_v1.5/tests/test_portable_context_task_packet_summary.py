@@ -1,4 +1,4 @@
-"""FASE 1 — Tests for task_packet_summary section in PortableContextService.
+"""Tests for task_packet_summary section in PortableContextService.
 
 Covers:
 - summary with observed predominant evidence
@@ -6,6 +6,9 @@ Covers:
 - summary with recurring approvals
 - metadata/section consistency
 - insufficient data → UNRESOLVED
+- worker_tendencies recognises real worker shape (tool/email)
+- no_worker_count only counts should_consult runs
+- gate_ran_unusable_count only counts should_consult runs
 """
 import shutil
 from pathlib import Path
@@ -53,6 +56,11 @@ def _seed_runs(bootstrap: AppBootstrap, runs_data: list[dict]) -> None:
         )
 
 
+# Real worker shape from #294 (worker_health_gate / _build_task_packet)
+_REAL_WORKER_A = {'tool': 'chatgpt', 'email': 'user@example.com', 'browser': 'chrome', 'profile': 'Profile 1', 'score': 0.92}
+_REAL_WORKER_B = {'tool': 'claude', 'email': 'dev@example.com', 'score': 0.88}
+
+
 def test_task_packet_summary_observed_predominant() -> None:
     """When most runs have evidence_basis.state == 'observed', the summary
     section should reflect observed as predominant."""
@@ -61,11 +69,11 @@ def test_task_packet_summary_observed_predominant() -> None:
         bootstrap = AppBootstrap(str(root))
         runs = [
             {'evidence_basis': {'state': 'observed', 'live_sources': ['world_model']},
-             'selected_worker': {'name': 'ollama'},
-             'governance_flags': {'approval_required': False}},
+             'selected_worker': _REAL_WORKER_A,
+             'governance_flags': {'approval_required': False, 'should_consult': True}},
         ] * 5 + [
             {'evidence_basis': {'state': 'inferred'},
-             'selected_worker': {'name': 'ollama'}},
+             'selected_worker': _REAL_WORKER_B},
         ]
         _seed_runs(bootstrap, runs)
 
@@ -100,10 +108,12 @@ def test_task_packet_summary_high_unresolved() -> None:
         runs = [
             {'evidence_basis': {'state': 'unresolved'},
              'task_unresolved': ['cpu_temperature', 'battery_status'],
-             'selected_worker': {}},
+             'selected_worker': {},
+             'governance_flags': {'should_consult': True}},
         ] * 4 + [
             {'evidence_basis': {'state': 'observed', 'live_sources': ['world_model']},
-             'selected_worker': {'name': 'ollama'}},
+             'selected_worker': _REAL_WORKER_A,
+             'governance_flags': {'should_consult': True}},
         ]
         _seed_runs(bootstrap, runs)
 
@@ -131,12 +141,12 @@ def test_task_packet_summary_recurring_approvals() -> None:
         bootstrap = AppBootstrap(str(root))
         runs = [
             {'evidence_basis': {'state': 'observed', 'live_sources': ['world_model']},
-             'governance_flags': {'approval_required': True},
-             'selected_worker': {'name': 'ollama'}},
+             'governance_flags': {'approval_required': True, 'should_consult': True},
+             'selected_worker': _REAL_WORKER_A},
         ] * 4 + [
             {'evidence_basis': {'state': 'observed', 'live_sources': ['world_model']},
              'governance_flags': {'approval_required': False},
-             'selected_worker': {'name': 'ollama'}},
+             'selected_worker': _REAL_WORKER_B},
         ]
         _seed_runs(bootstrap, runs)
 
@@ -165,17 +175,17 @@ def test_task_packet_summary_metadata_and_section_consistency() -> None:
         bootstrap = AppBootstrap(str(root))
         runs = [
             {'evidence_basis': {'state': 'observed', 'live_sources': ['world_model']},
-             'selected_worker': {'name': 'ollama'},
-             'governance_flags': {'approval_required': False},
+             'selected_worker': _REAL_WORKER_A,
+             'governance_flags': {'approval_required': False, 'should_consult': True},
              'ranked_worker_count': 2,
              'task_unresolved': ['field_a']},
             {'evidence_basis': {'state': 'inferred'},
-             'selected_worker': {'name': 'codex'},
-             'governance_flags': {'approval_required': True},
+             'selected_worker': _REAL_WORKER_B,
+             'governance_flags': {'approval_required': True, 'should_consult': True},
              'ranked_worker_count': 0,
              'task_unresolved': ['field_a', 'field_b']},
             {'evidence_basis': {'state': 'observed', 'live_sources': ['env']},
-             'selected_worker': {'assistant_kind': 'claude'},
+             'selected_worker': {'browser': 'firefox', 'profile': 'default'},
              'governance_flags': {'approval_required': False},
              'ranked_worker_count': 1},
         ]
@@ -200,7 +210,7 @@ def test_task_packet_summary_metadata_and_section_consistency() -> None:
         assert isinstance(meta['unresolved_hotspots'], list)
 
         workers = {w['worker'] for w in meta['worker_tendencies']}
-        assert 'ollama' in workers
+        assert 'chatgpt:user@example.com' in workers
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
@@ -213,7 +223,7 @@ def test_task_packet_summary_insufficient_data_marks_unresolved() -> None:
         bootstrap = AppBootstrap(str(root))
         runs = [
             {'evidence_basis': {'state': 'observed'},
-             'selected_worker': {'name': 'ollama'}},
+             'selected_worker': _REAL_WORKER_A},
         ]
         _seed_runs(bootstrap, runs)
 
@@ -225,5 +235,94 @@ def test_task_packet_summary_insufficient_data_marks_unresolved() -> None:
         assert tp_section.confidence == 0.0
         assert any('UNRESOLVED' in u for u in tp_section.unresolved_fields)
         assert 'insuficiente' in tp_section.summary.lower() or 'insufficient' in tp_section.summary.lower()
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_worker_tendencies_recognises_real_shape() -> None:
+    """worker_tendencies must identify workers by tool+email from the real
+    worker_health_gate shape, not by a 'name' key that doesn't exist."""
+    root = _workspace('tp_summary_real_worker')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        runs = [
+            {'evidence_basis': {'state': 'observed', 'live_sources': ['world_model']},
+             'selected_worker': _REAL_WORKER_A,
+             'governance_flags': {'should_consult': True}},
+        ] * 3 + [
+            {'evidence_basis': {'state': 'observed', 'live_sources': ['world_model']},
+             'selected_worker': _REAL_WORKER_B,
+             'governance_flags': {'should_consult': True}},
+        ] * 2
+        _seed_runs(bootstrap, runs)
+
+        package = bootstrap.portable_context_service.current_package(refresh=True)
+        meta = package.metadata.get('task_packet_summary', {})
+        assert meta['status'] == 'ok'
+
+        workers = {w['worker']: w['count'] for w in meta['worker_tendencies']}
+        assert 'chatgpt:user@example.com' in workers
+        assert workers['chatgpt:user@example.com'] == 3
+        assert 'claude:dev@example.com' in workers
+        assert workers['claude:dev@example.com'] == 2
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_no_worker_count_only_counts_should_consult_runs() -> None:
+    """Local runs (should_consult=False) with empty selected_worker must
+    NOT inflate no_worker_count."""
+    root = _workspace('tp_summary_no_worker_guard')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        runs = [
+            # Local run — no worker expected, should NOT count
+            {'evidence_basis': {'state': 'observed', 'live_sources': ['world_model']},
+             'selected_worker': {},
+             'governance_flags': {'should_consult': False},
+             'ranked_worker_count': 0},
+        ] * 4 + [
+            # Consultable run — worker present
+            {'evidence_basis': {'state': 'observed', 'live_sources': ['world_model']},
+             'selected_worker': _REAL_WORKER_A,
+             'governance_flags': {'should_consult': True}},
+        ]
+        _seed_runs(bootstrap, runs)
+
+        package = bootstrap.portable_context_service.current_package(refresh=True)
+        meta = package.metadata.get('task_packet_summary', {})
+        assert meta['status'] == 'ok'
+        assert meta['no_worker_count'] == 0
+        assert meta['gate_ran_unusable_count'] == 0
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_gate_unusable_only_counts_should_consult_runs() -> None:
+    """gate_ran_unusable_count must only count consultable runs where
+    ranked_worker_count == 0."""
+    root = _workspace('tp_summary_gate_guard')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        runs = [
+            # Consultable + gate unusable → SHOULD count
+            {'evidence_basis': {'state': 'observed', 'live_sources': ['world_model']},
+             'selected_worker': {},
+             'governance_flags': {'should_consult': True},
+             'ranked_worker_count': 0},
+        ] * 2 + [
+            # Local + gate "unusable" → should NOT count
+            {'evidence_basis': {'state': 'observed', 'live_sources': ['world_model']},
+             'selected_worker': {},
+             'governance_flags': {'should_consult': False},
+             'ranked_worker_count': 0},
+        ] * 3
+        _seed_runs(bootstrap, runs)
+
+        package = bootstrap.portable_context_service.current_package(refresh=True)
+        meta = package.metadata.get('task_packet_summary', {})
+        assert meta['status'] == 'ok'
+        assert meta['gate_ran_unusable_count'] == 2
+        assert meta['no_worker_count'] == 2
     finally:
         shutil.rmtree(root, ignore_errors=True)

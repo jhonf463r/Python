@@ -1150,6 +1150,31 @@ class PortableContextService:
 
     _TASK_PACKET_MIN_RUNS = 3
 
+    @staticmethod
+    def _worker_label(sw: Any) -> str:
+        """Extract a human-readable label from a selected_worker dict.
+
+        Recognises the real shape produced by worker_health_gate /
+        _build_task_packet (tool, email, browser, profile) and falls back
+        to assistant_kind / name if present.
+        """
+        if not isinstance(sw, dict) or not sw:
+            return ''
+        tool = str(sw.get('tool') or '').strip()
+        email = str(sw.get('email') or '').strip()
+        if tool and email:
+            return f'{tool}:{email}'
+        if tool:
+            return tool
+        browser = str(sw.get('browser') or '').strip()
+        profile = str(sw.get('profile') or '').strip()
+        if browser and profile:
+            return f'{browser}:{profile}'
+        if browser:
+            return browser
+        name = str(sw.get('name') or sw.get('assistant_kind') or '').strip()
+        return name
+
     def _task_packet_summary_snapshot(self) -> dict[str, Any]:
         repo = self.experiment_lab_repository
         if repo is None or not hasattr(repo, 'list_runs'):
@@ -1178,22 +1203,21 @@ class PortableContextService:
             state = str(eb.get('state') or 'unresolved').lower()
             evidence_states[state] += 1
 
-            gf = meta.get('governance_flags')
+            gf = meta.get('governance_flags') or {}
             if isinstance(gf, dict) and gf.get('approval_required'):
                 approval_count += 1
 
+            should_consult = bool(gf.get('should_consult')) if isinstance(gf, dict) else False
+
             sw = meta.get('selected_worker')
-            if isinstance(sw, dict):
-                wname = str(sw.get('name') or sw.get('assistant_kind') or '').strip()
-                if wname:
-                    worker_labels[wname] += 1
-                else:
-                    no_worker_count += 1
-            else:
+            wlabel = self._worker_label(sw)
+            if wlabel:
+                worker_labels[wlabel] += 1
+            elif should_consult:
                 no_worker_count += 1
 
             rwc = meta.get('ranked_worker_count')
-            if isinstance(rwc, int) and rwc == 0 and meta.get('evidence_basis'):
+            if should_consult and isinstance(rwc, int) and rwc == 0:
                 gate_ran_unusable += 1
 
             tu = meta.get('task_unresolved')
