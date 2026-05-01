@@ -226,20 +226,16 @@ class LocalRoleRouter:
                 'workers': [],
             }
 
+        from iabv_v15.services.account_resource_scanner import (
+            rank_workers_for_target,
+        )
+
         available = pool.get('available_count', 0)
-        workers = pool.get('workers', [])
         target = str(target_assistant or '').strip().lower()
 
-        if target:
-            matching = [
-                w for w in workers
-                if str(w.get('tool', '')).strip().lower() == target
-                and not w.get('exhausted', True)
-            ]
-        else:
-            matching = [w for w in workers if not w.get('exhausted', True)]
+        ranked = rank_workers_for_target(target, pool=pool)
 
-        if not matching:
+        if not ranked:
             if available == 0:
                 reason = 'No hay workers con sesion activa y cuota disponible.'
             elif target:
@@ -251,19 +247,37 @@ class LocalRoleRouter:
                 'reason': reason,
                 'available_count': 0,
                 'workers': [],
+                'top_worker': None,
+                'ranked_workers': [],
             }
 
+        top = ranked[0]
         return {
             'usable': True,
             'reason': '',
-            'available_count': len(matching),
+            'available_count': len(ranked),
             'workers': [
                 {
                     'tool': w.get('tool', ''),
                     'email': w.get('email', ''),
                     'remaining': w.get('remaining_messages', 0),
+                    'score': w.get('score', 0.0),
                 }
-                for w in matching[:10]
+                for w in ranked[:10]
+            ],
+            'top_worker': {
+                'tool': top.get('tool', ''),
+                'email': top.get('email', ''),
+                'remaining': top.get('remaining_messages', 0),
+                'score': top.get('score', 0.0),
+            },
+            'ranked_workers': [
+                {
+                    'tool': w.get('tool', ''),
+                    'email': w.get('email', ''),
+                    'score': w.get('score', 0.0),
+                }
+                for w in ranked[:5]
             ],
         }
 
