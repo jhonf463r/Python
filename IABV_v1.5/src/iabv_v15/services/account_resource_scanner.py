@@ -884,16 +884,64 @@ def format_worker_pool_report() -> str:
 # Worker Ranking — score and sort workers for a target assistant
 # ──────────────────────────────────────────────────────────────
 
-def _score_worker(worker: dict[str, Any]) -> float:
+# Known block-signal weights.  Each signal penalises the worker score.
+# Values closer to 1.0 mean the signal is a harder block.
+# Unknown signals default to ``_DEFAULT_SIGNAL_WEIGHT``.
+_BLOCK_SIGNAL_WEIGHTS: dict[str, float] = {
+    'no_disponible': 0.80,
+    'wrong_thread': 0.40,
+    'awaiting_response': 0.30,
+    'capture_unverified': 0.20,
+    'rate_limited': 0.60,
+    'auth_expired': 0.90,
+}
+_DEFAULT_SIGNAL_WEIGHT = 0.30
+_MAX_BLOCK_RISK = 0.95
+
+
+def _compute_block_risk(
+    worker: dict[str, Any],
+    block_signals: dict[str, list[str]] | None,
+) -> float:
+    """Return a block-risk penalty in [0.0, ``_MAX_BLOCK_RISK``].
+
+    *block_signals* maps a **tool name** (lower-case) to a list of active
+    signal names for that tool.  If the worker's tool has active signals,
+    the risk is the complementary product of their weights, capped at
+    ``_MAX_BLOCK_RISK``.
+
+    Hook: callers can inject any signal name.  Unknown names receive
+    ``_DEFAULT_SIGNAL_WEIGHT`` so new signals degrade gracefully.
+    """
+    if not block_signals:
+        return 0.0
+    tool = str(worker.get('tool', '')).strip().lower()
+    signals = block_signals.get(tool, [])
+    if not signals:
+        return 0.0
+    # Complementary product: risk = 1 - ∏(1 - weight_i)
+    survival = 1.0
+    for sig in signals:
+        weight = _BLOCK_SIGNAL_WEIGHTS.get(sig, _DEFAULT_SIGNAL_WEIGHT)
+        survival *= (1.0 - weight)
+    risk = 1.0 - survival
+    return min(round(risk, 4), _MAX_BLOCK_RISK)
+
+
+def _score_worker(
+    worker: dict[str, Any],
+    *,
+    block_signals: dict[str, list[str]] | None = None,
+) -> float:
     """Compute a composite score for a single worker.
 
-    score = availability × quota_ratio × auth_health
+    score = quota_ratio × (1 - block_risk)
 
-    - availability: 1.0 if not exhausted, 0.0 if exhausted
     - quota_ratio:  remaining_messages / limit  (0.0 .. 1.0)
-    - auth_health:  1.0 (session exists — workers without sessions are
-                    already excluded by ``estimate_available_workers``)
+    - block_risk:   penalty derived from active block signals for
+                    the worker's tool (0.0 .. 0.95)
 
+    Workers with ``exhausted=True`` always score 0.0.
     Returns a float in [0.0, 1.0].  Higher is better.
     """
     if worker.get('exhausted', True):
@@ -901,13 +949,15 @@ def _score_worker(worker: dict[str, Any]) -> float:
     limit = max(worker.get('limit', 1), 1)
     remaining = max(worker.get('remaining_messages', 0), 0)
     quota_ratio = min(remaining / limit, 1.0)
-    return round(quota_ratio, 4)
+    block_risk = _compute_block_risk(worker, block_signals)
+    return round(quota_ratio * (1.0 - block_risk), 4)
 
 
 def rank_workers_for_target(
     target_assistant: str,
     *,
     pool: dict[str, Any] | None = None,
+    block_signals: dict[str, list[str]] | None = None,
 ) -> list[dict[str, Any]]:
     """Rank available workers for *target_assistant* by composite score.
 
@@ -919,11 +969,16 @@ def rank_workers_for_target(
     pool:
         Pre-computed pool from ``estimate_available_workers()``.
         If ``None``, a fresh scan is performed.
+    block_signals:
+        Optional dict mapping tool name (lower-case) to a list of active
+        block signal names.  Signals penalise the composite score so
+        blocked workers rank lower.
 
     Returns
     -------
-    list of dicts, each with the original worker fields plus ``'score'``,
-    sorted descending by score.  Exhausted workers are excluded.
+    list of dicts, each with the original worker fields plus ``'score'``
+    and ``'block_risk'``, sorted descending by score.  Exhausted workers
+    are excluded.
     """
     if pool is None:
         pool = estimate_available_workers()
@@ -943,7 +998,8 @@ def rank_workers_for_target(
     scored: list[dict[str, Any]] = []
     for w in candidates:
         entry = dict(w)
-        entry['score'] = _score_worker(w)
+        entry['block_risk'] = _compute_block_risk(w, block_signals)
+        entry['score'] = _score_worker(w, block_signals=block_signals)
         scored.append(entry)
 
     scored.sort(key=lambda w: w['score'], reverse=True)
@@ -954,12 +1010,15 @@ def top_worker_for_target(
     target_assistant: str,
     *,
     pool: dict[str, Any] | None = None,
+    block_signals: dict[str, list[str]] | None = None,
 ) -> dict[str, Any] | None:
     """Return the single best worker for *target_assistant*, or ``None``.
 
     Convenience wrapper around :func:`rank_workers_for_target`.
     """
-    ranked = rank_workers_for_target(target_assistant, pool=pool)
+    ranked = rank_workers_for_target(
+        target_assistant, pool=pool, block_signals=block_signals,
+    )
     return ranked[0] if ranked else None
 
 
