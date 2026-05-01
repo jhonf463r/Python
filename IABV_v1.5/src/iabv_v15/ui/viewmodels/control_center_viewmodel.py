@@ -2433,7 +2433,7 @@ class ControlCenterViewModel(QObject):
         self._update_adaptive_state(self._self_examination_conversation_payload(message=message))
         reply, meta = self._self_examination_reply(message)
         review = self._current_self_examination_snapshot()
-        has_evidence = bool(review.get('top_findings') or review.get('recurring_issues') or review.get('validated_improvements'))
+        has_evidence = bool(review.get('top_findings') or review.get('recurring_issues') or review.get('validated_improvements') or review.get('recommended_adjustments'))
         tag = self._classify_evidence_tag(has_persisted_evidence=has_evidence)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=tag)
         self._latest_response_text = reply
