@@ -62,6 +62,14 @@ class FindingStatus(str, Enum):
     NEEDS_CROSS_VERIFICATION = 'needs_cross_verification'
 
 
+def _safe_enum(enum_cls: type[Enum], value: str, default: Enum) -> Enum:
+    """Parse a string into an enum member, returning *default* on failure."""
+    try:
+        return enum_cls(value)
+    except (ValueError, KeyError):
+        return default
+
+
 # ---------------------------------------------------------------------------
 # Records
 # ---------------------------------------------------------------------------
@@ -422,8 +430,8 @@ class CodeAuditTrail:
             title=title,
             description=description,
             impact=impact,
-            severity=FindingSeverity(severity) if severity in FindingSeverity.__members__.values() else FindingSeverity.MEDIUM,
-            status=FindingStatus(status) if status in FindingStatus.__members__.values() else FindingStatus.FOUND,
+            severity=_safe_enum(FindingSeverity, severity, FindingSeverity.MEDIUM),
+            status=_safe_enum(FindingStatus, status, FindingStatus.FOUND),
             fix_description=fix_description,
             pr_url=pr_url,
             pattern_tag=pattern_tag,
@@ -435,8 +443,8 @@ class CodeAuditTrail:
             round_id=round_id or finding.finding_id,
             round_number=round_number,
             auditor_name=auditor_name,
-            source=AuditSource(source) if source in AuditSource.__members__.values() else AuditSource.EXTERNAL_AGENT,
-            environment=AuditEnvironment(environment) if environment in AuditEnvironment.__members__.values() else AuditEnvironment.UNKNOWN,
+            source=_safe_enum(AuditSource, source, AuditSource.EXTERNAL_AGENT),
+            environment=_safe_enum(AuditEnvironment, environment, AuditEnvironment.UNKNOWN),
             modules_audited=[module_path] if module_path else [],
             findings=[finding],
         )
