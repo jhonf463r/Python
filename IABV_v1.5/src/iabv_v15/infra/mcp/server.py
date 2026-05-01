@@ -1754,6 +1754,115 @@ class IABVMCPServer:
             )
 
         @mcp.tool()
+        def register_audit_round(
+            auditor_name: str = '',
+            source: str = 'external_agent',
+            environment: str = 'unknown',
+            round_number: int = 0,
+            modules_audited: list[str] | None = None,
+            total_loc_audited: int = 0,
+            pr_url: str = '',
+            ci_status: str = '',
+            unresolved_items: list[str] | None = None,
+            findings: list[dict[str, Any]] | None = None,
+            tests_added: int = 0,
+            tests_passed: int = 0,
+            tests_failed: int = 0,
+            auditor_session_url: str = '',
+        ) -> dict[str, Any]:
+            """Registra una ronda completa de auditoría con N hallazgos en un solo batch.
+
+            A diferencia de register_audit_finding (que crea una mini-ronda
+            por hallazgo), este tool registra UNA ronda coherente con todos
+            los findings de una sesión de auditoría.
+
+            Args:
+                auditor_name: nombre del auditor (ej: devin, codex, human)
+                source: external_agent, self_examination, human
+                environment: linux_vm, windows_native, unknown
+                round_number: número de ronda de auditoría
+                modules_audited: lista de módulos auditados
+                total_loc_audited: líneas de código revisadas
+                pr_url: URL del PR asociado a la ronda
+                ci_status: estado de CI (passed, failed, pending)
+                unresolved_items: lista de items sin resolver
+                findings: lista de dicts, cada uno con campos de AuditFinding
+                    (module_path, title, description, impact, severity,
+                     status, fix_description, pr_url, pattern_tag, category,
+                     bug_id, line_range, needs_windows_verification,
+                     needs_linux_verification, confidence)
+                tests_added: tests nuevos agregados en esta ronda
+                tests_passed: tests que pasaron
+                tests_failed: tests que fallaron
+                auditor_session_url: URL de la sesión del auditor
+            """
+            from iabv_v15.services.evolution.code_audit_trail import (
+                AuditEnvironment,
+                AuditFinding,
+                AuditRound,
+                AuditSource,
+                FindingSeverity,
+                FindingStatus,
+                _safe_enum,
+            )
+
+            parsed_findings: list[AuditFinding] = []
+            for fd in (findings or []):
+                parsed_findings.append(AuditFinding(
+                    round_id='',
+                    bug_id=fd.get('bug_id', ''),
+                    module_path=fd.get('module_path', ''),
+                    line_range=fd.get('line_range', ''),
+                    category=fd.get('category', ''),
+                    title=fd.get('title', ''),
+                    description=fd.get('description', ''),
+                    impact=fd.get('impact', ''),
+                    severity=_safe_enum(FindingSeverity, fd.get('severity', 'medium'), FindingSeverity.MEDIUM),
+                    status=_safe_enum(FindingStatus, fd.get('status', 'found'), FindingStatus.FOUND),
+                    fix_description=fd.get('fix_description', ''),
+                    pr_url=fd.get('pr_url', ''),
+                    pattern_tag=fd.get('pattern_tag', ''),
+                    needs_windows_verification=bool(fd.get('needs_windows_verification', False)),
+                    needs_linux_verification=bool(fd.get('needs_linux_verification', False)),
+                    confidence=float(fd.get('confidence', 0.9)),
+                ))
+
+            audit_round = AuditRound(
+                round_number=round_number,
+                auditor_name=auditor_name,
+                auditor_session_url=auditor_session_url,
+                source=_safe_enum(AuditSource, source, AuditSource.EXTERNAL_AGENT),
+                environment=_safe_enum(AuditEnvironment, environment, AuditEnvironment.UNKNOWN),
+                modules_audited=modules_audited or [],
+                total_loc_audited=total_loc_audited,
+                findings=parsed_findings,
+                tests_added=tests_added,
+                tests_passed=tests_passed,
+                tests_failed=tests_failed,
+                pr_url=pr_url,
+                ci_status=ci_status,
+                unresolved_items=unresolved_items or [],
+            )
+
+            trail = self._code_audit_trail()
+            trail.record_round(audit_round)
+
+            return {
+                'round_id': audit_round.round_id,
+                'round_number': audit_round.round_number,
+                'auditor_name': audit_round.auditor_name,
+                'source': audit_round.source.value,
+                'environment': audit_round.environment.value,
+                'findings_count': len(parsed_findings),
+                'modules_audited': audit_round.modules_audited,
+                'total_loc_audited': audit_round.total_loc_audited,
+                'tests_added': audit_round.tests_added,
+                'unresolved_items': audit_round.unresolved_items,
+                'pr_url': audit_round.pr_url,
+                'timestamp_utc': audit_round.timestamp_utc,
+            }
+
+        @mcp.tool()
         def code_audit_summary() -> dict[str, Any]:
             """Resumen completo de las auditorías de código registradas.
 
