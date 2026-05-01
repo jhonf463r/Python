@@ -228,7 +228,7 @@ class BootProfileStore:
         summaries = []
         for env_id in env_ids:
             summary = self.boot_profile_summary(env_id)
-            if summary.get('boot_count', 0) > 0:
+            if summary.get('boot_count', 0) > 0 and 'boot_duration' in summary:
                 summaries.append(summary)
 
         comparison = sorted(

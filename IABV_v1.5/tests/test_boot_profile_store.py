@@ -283,6 +283,15 @@ class TestCompareEnvironments:
         assert result['environments'] == []
         assert result['comparison'] == []
 
+    def test_compare_skips_all_corrupt_environment(self, store: BootProfileStore):
+        """compare_environments must not KeyError when all JSONL lines are corrupt."""
+        store._profiles_dir.mkdir(parents=True, exist_ok=True)
+        path = store._profile_path('corrupt-env')
+        path.write_text('NOT JSON\nALSO NOT JSON\n', encoding='utf-8')
+
+        result = store.compare_environments()
+        assert result['comparison'] == []
+
     def test_compare_two_environments(self, store: BootProfileStore):
         fast_events = [
             {'phase': 'start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
