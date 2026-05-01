@@ -1419,10 +1419,15 @@ class AdaptiveTaskOrchestrator:
         # WorkerGate metadata: when governance requires external consultation,
         # query the worker health gate and persist the result so downstream
         # learning and traceability see who was selected and why.
+        # Live block_signals from the world model penalise individual workers.
         _governance = dict(decision_context.governance or {})
         if _governance.get('should_consult'):
             _target = str(_governance.get('assistant_kind') or '').strip().lower()
             _gate = self.role_router.worker_health_gate(target_assistant=_target)
+            _wm = getattr(perception, 'world_model', None) if perception is not None else None
+            _block_signals = self._extract_block_signals_from_world_model(_wm)
+            if _block_signals:
+                _gate = self._enrich_gate_with_block_signals(_gate, _target, _block_signals)
             session.metadata['worker_gate'] = {
                 'usable': bool(_gate.get('usable', False)),
                 'top_worker': _gate.get('top_worker') if _gate.get('usable') else None,
@@ -2965,6 +2970,117 @@ class AdaptiveTaskOrchestrator:
         except Exception:
             return {'available_count': 0, 'error': 'scanner_unavailable'}
 
+    # ── live block-signals → worker gate ────────────────────────
+
+    # Mapping from ToolLiveStatus field values / external_state_flags
+    # to the canonical signal names accepted by _BLOCK_SIGNAL_WEIGHTS
+    # in account_resource_scanner.  Only flags with a clear mapping are
+    # included; unknown flags are passed through and receive the scanner's
+    # default weight.
+    _LIVE_FLAG_TO_SIGNAL: dict[str, str] = {
+        'wrong_thread': 'wrong_thread',
+        'awaiting_response': 'awaiting_response',
+        'capture_unverified': 'capture_unverified',
+        'account_limited': 'rate_limited',
+        'session_expired': 'auth_expired',
+        'assistant_login_required': 'auth_expired',
+    }
+
+    @classmethod
+    def _extract_block_signals_from_world_model(
+        cls,
+        world_model: WorldModelSnapshot | None,
+    ) -> dict[str, list[str]]:
+        """Build a ``block_signals`` dict from live tool statuses.
+
+        Reads ``world_model.tool_live_status`` and converts each tool's
+        ``external_state_flags``, ``detected_blocks``, and ``status`` into
+        the ``{tool: [signal, ...]}`` format consumed by
+        ``rank_workers_for_target(block_signals=...)``.
+
+        Returns an empty dict when no actionable signals exist.
+        """
+        if world_model is None:
+            return {}
+        signals: dict[str, list[str]] = {}
+        for tool_status in (world_model.tool_live_status or []):
+            kind = str(tool_status.assistant_kind or '').strip().lower()
+            if not kind:
+                continue
+            tool_signals: list[str] = []
+            # 1. external_state_flags (canonical)
+            for flag in (tool_status.external_state_flags or []):
+                mapped = cls._LIVE_FLAG_TO_SIGNAL.get(str(flag).strip().lower(), str(flag).strip().lower())
+                if mapped and mapped not in tool_signals:
+                    tool_signals.append(mapped)
+            # 2. detected_blocks
+            for block in (tool_status.detected_blocks or []):
+                mapped = cls._LIVE_FLAG_TO_SIGNAL.get(str(block).strip().lower(), str(block).strip().lower())
+                if mapped and mapped not in tool_signals:
+                    tool_signals.append(mapped)
+            # 3. status == 'no_disponible' → inject no_disponible signal
+            status = str(tool_status.status or '').strip().lower()
+            if status == 'no_disponible' and 'no_disponible' not in tool_signals:
+                tool_signals.append('no_disponible')
+            if tool_signals:
+                signals[kind] = tool_signals
+        return signals
+
+    def _enrich_gate_with_block_signals(
+        self,
+        gate: dict[str, Any],
+        target_assistant: str,
+        block_signals: dict[str, list[str]],
+    ) -> dict[str, Any]:
+        """Re-rank gate workers with live block_signals applied.
+
+        If *block_signals* is empty or the gate is not usable, returns *gate*
+        unchanged (backward compatible).  Otherwise fetches the worker pool
+        and calls ``rank_workers_for_target`` with the signals so that
+        blocked workers rank lower and ``top_worker`` / ``ranked_workers``
+        reflect live risk.
+        """
+        if not block_signals or not gate.get('usable'):
+            return gate
+        try:
+            from iabv_v15.services.account_resource_scanner import (
+                estimate_available_workers,
+                rank_workers_for_target,
+            )
+            pool = estimate_available_workers()
+            target = str(target_assistant or '').strip().lower()
+            ranked = rank_workers_for_target(target, pool=pool, block_signals=block_signals)
+        except Exception:
+            return gate
+
+        _WORKER_KEYS = ('tool', 'email', 'browser', 'profile', 'remaining_messages', 'score', 'block_risk')
+
+        def _compact(w: dict[str, Any]) -> dict[str, Any]:
+            d: dict[str, Any] = {}
+            for k in _WORKER_KEYS:
+                v = w.get(k)
+                if v is not None and v != '':
+                    d[k] = v
+            if 'remaining_messages' in d:
+                d['remaining'] = d.pop('remaining_messages')
+            return d
+
+        if not ranked:
+            gate['usable'] = False
+            gate['reason'] = 'Todos los workers bloqueados por señales vivas.'
+            gate['top_worker'] = None
+            gate['ranked_workers'] = []
+            gate['workers'] = []
+            gate['available_count'] = 0
+        else:
+            top = ranked[0]
+            gate['top_worker'] = _compact(top)
+            gate['ranked_workers'] = [_compact(w) for w in ranked[:5]]
+            gate['workers'] = [_compact(w) for w in ranked[:10]]
+            gate['available_count'] = len(ranked)
+        gate['block_signals_applied'] = block_signals
+        return gate
+
     @classmethod
     def _corrective_guidance_for_blocks(
         cls, model: WorldModelSnapshot,
@@ -3049,6 +3165,11 @@ class AdaptiveTaskOrchestrator:
         worker_gate = self.role_router.worker_health_gate(
             target_assistant=normalized_assistant,
         )
+        block_signals = self._extract_block_signals_from_world_model(world_model)
+        if block_signals:
+            worker_gate = self._enrich_gate_with_block_signals(
+                worker_gate, normalized_assistant, block_signals,
+            )
         blocked = bool(governance.get('block_risky_action') or governance.get('approval_required'))
         reason = str(governance.get('reason') or '')
         if not blocked and not worker_gate.get('usable', False):
