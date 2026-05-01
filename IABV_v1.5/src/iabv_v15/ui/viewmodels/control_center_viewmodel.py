@@ -2826,7 +2826,7 @@ class ControlCenterViewModel(QObject):
         raw_summary: str,
         payload: dict[str, Any],
         adaptive_payload: dict[str, Any],
-    ) -> tuple[str, str]:
+    ) -> tuple[str, str, str]:
         intent = dict(adaptive_payload.get('intent') or {})
         context = dict(adaptive_payload.get('context') or {})
         decision_context = dict(((adaptive_payload.get('metadata') or {}).get('decision_context') or adaptive_payload.get('decision_context') or {}))
@@ -2842,24 +2842,28 @@ class ControlCenterViewModel(QObject):
         learning_question = self._is_learning_question(message)
         self_examination_question = self._is_self_examination_question(message)
         if self_awareness:
-            return self._self_awareness_reply(message)
+            return (*self._self_awareness_reply(message), 'observed')
         if world_model_question:
-            return self._world_model_reply(message)
+            return (*self._world_model_reply(message), 'observed')
         if self_examination_question:
-            return self._self_examination_reply(message)[:2]
+            return self._self_examination_reply(message)
         if learning_question:
-            return self._learning_reply(message)[:2]
+            return self._learning_reply(message)
         local_chat_llm = dict(payload.get('local_chat_llm') or {})
         llm_answered = bool(local_chat_llm.get('available')) and bool(str(raw_summary or '').strip()) and not local_chat_llm.get('error')
         vm_small_talk = self._is_general_chat_message(message)
         general_chat = vm_small_talk or str(intent.get('intent_key') or '').strip() == 'general.assistance'
         if vm_small_talk and not self._seems_task_like_message(message):
-            return self._general_chat_reply(message), 'Conversacion general.'
+            return self._general_chat_reply(message), 'Conversacion general.', 'unresolved'
         if general_chat and not self._seems_task_like_message(message) and not llm_answered:
-            return self._general_chat_reply(message), 'Conversacion general.'
+            return self._general_chat_reply(message), 'Conversacion general.', 'unresolved'
         if llm_answered:
             provider_name = str(local_chat_llm.get('provider_name') or 'Ollama')
-            return str(raw_summary).strip(), f'Respuesta local ({provider_name}).'
+            llm_tag = self._classify_evidence_tag(
+                has_live_observation=True,
+                has_persisted_evidence=bool(payload.get('sources')),
+            )
+            return str(raw_summary).strip(), f'Respuesta local ({provider_name}).', llm_tag
         summary = str(raw_summary or '').strip()
         if not summary or self._contains_internal_chat_terms(summary):
             summary = self._fallback_task_reply(
@@ -2877,7 +2881,10 @@ class ControlCenterViewModel(QObject):
             meta = 'Ajuste ligero por carga del equipo.'
         elif str(context.get('site_display_name') or context.get('site_id') or '').strip():
             meta = f"Seguimos con {str(context.get('site_display_name') or context.get('site_id') or '').strip()}."
-        return summary, meta
+        fallback_tag = self._classify_evidence_tag(
+            has_persisted_evidence=bool(payload.get('sources')),
+        )
+        return summary, meta, fallback_tag
 
     def _humanize_task_failure(self, task_name: str, message: str) -> tuple[str, str]:
         detail = str(message or '').strip()
@@ -6551,16 +6558,11 @@ class ControlCenterViewModel(QObject):
             adaptive_payload = dict(payload.get('adaptive_session') or {})
             if payload.get('assistant_guidance') and isinstance(adaptive_payload, dict):
                 adaptive_payload['assistant_guidance'] = payload.get('assistant_guidance')
-            user_text, meta_line = self._user_facing_chat_response(
+            user_text, meta_line, _chat_evidence_tag = self._user_facing_chat_response(
                 message=self._last_user_goal or '',
                 raw_summary=str(payload.get('summary') or 'La IA no devolvio texto util.'),
                 payload=dict(payload or {}),
                 adaptive_payload=adaptive_payload,
-            )
-            local_chat_llm = dict(payload.get('local_chat_llm') or {})
-            _chat_evidence_tag = self._classify_evidence_tag(
-                has_live_observation=bool(local_chat_llm.get('available')) and not local_chat_llm.get('error'),
-                has_persisted_evidence=bool(payload.get('sources')),
             )
             self._append_message('assistant', 'IABV', user_text, meta_line, evidence_tag=_chat_evidence_tag)
             self._latest_response_text = user_text
