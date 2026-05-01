@@ -256,33 +256,25 @@ class LocalRoleRouter:
             }
 
         top = ranked[0]
+        _WORKER_KEYS = ('tool', 'email', 'browser', 'profile', 'remaining_messages', 'score', 'block_risk')
+
+        def _compact(w: dict[str, Any]) -> dict[str, Any]:
+            d: dict[str, Any] = {}
+            for k in _WORKER_KEYS:
+                v = w.get(k)
+                if v is not None and v != '':
+                    d[k] = v
+            if 'remaining_messages' in d:
+                d['remaining'] = d.pop('remaining_messages')
+            return d
+
         return {
             'usable': True,
             'reason': '',
             'available_count': len(ranked),
-            'workers': [
-                {
-                    'tool': w.get('tool', ''),
-                    'email': w.get('email', ''),
-                    'remaining': w.get('remaining_messages', 0),
-                    'score': w.get('score', 0.0),
-                }
-                for w in ranked[:10]
-            ],
-            'top_worker': {
-                'tool': top.get('tool', ''),
-                'email': top.get('email', ''),
-                'remaining': top.get('remaining_messages', 0),
-                'score': top.get('score', 0.0),
-            },
-            'ranked_workers': [
-                {
-                    'tool': w.get('tool', ''),
-                    'email': w.get('email', ''),
-                    'score': w.get('score', 0.0),
-                }
-                for w in ranked[:5]
-            ],
+            'workers': [_compact(w) for w in ranked[:10]],
+            'top_worker': _compact(top),
+            'ranked_workers': [_compact(w) for w in ranked[:5]],
         }
 
     def infer_task(self, request: InferenceRequest) -> tuple[RoleRoute, InferenceResult]:
