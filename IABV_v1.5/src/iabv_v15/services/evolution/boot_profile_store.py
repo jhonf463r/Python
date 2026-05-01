@@ -31,8 +31,8 @@ logger = logging.getLogger(__name__)
 class BootProfileStore:
     """Persist and aggregate boot telemetry per environment_id."""
 
-    def __init__(self, data_root: Path) -> None:
-        self._profiles_dir = data_root / 'evolution' / 'boot_profiles'
+    def __init__(self, data_root: Path | str) -> None:
+        self._profiles_dir = Path(data_root) / 'evolution' / 'boot_profiles'
         self._lock = threading.Lock()
 
     def _profile_path(self, environment_id: str) -> Path:
