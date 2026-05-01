@@ -1416,6 +1416,21 @@ class AdaptiveTaskOrchestrator:
                 meta['temporal_anomaly'] = anomaly
                 session.metadata = meta
 
+        # WorkerGate metadata: when governance requires external consultation,
+        # query the worker health gate and persist the result so downstream
+        # learning and traceability see who was selected and why.
+        _governance = dict(decision_context.governance or {})
+        if _governance.get('should_consult'):
+            _target = str(_governance.get('assistant_kind') or '').strip().lower()
+            _gate = self.role_router.worker_health_gate(target_assistant=_target)
+            session.metadata['worker_gate'] = {
+                'usable': bool(_gate.get('usable', False)),
+                'top_worker': _gate.get('top_worker') if _gate.get('usable') else None,
+                'ranked_workers': list(_gate.get('ranked_workers') or [])[:5],
+                'available_count': int(_gate.get('available_count', 0)),
+                'reason': str(_gate.get('reason') or '') if not _gate.get('usable') else '',
+            }
+
         saved_session = self.task_outcome_recorder.record(session)
         route = self._build_route(saved_session, decision_context)
         result = self._build_result(request=request, session=saved_session, pack=pack, route=route)
