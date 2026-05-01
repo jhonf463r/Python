@@ -118,6 +118,11 @@ class PortableContextService:
         startup_health = self._startup_health_snapshot()
         account_resource = self._account_resource_snapshot()
         boot_profile = self._boot_profile_snapshot()
+        evidence_basis = self._evidence_basis_snapshot(
+            environment=environment,
+            world=world,
+            task_context=task_context,
+        )
         pending_items = self._pending_items()
         backlog_items = self._backlog_items()
         decision_history = self._decision_history(recommendations=recommendations)
@@ -160,6 +165,7 @@ class PortableContextService:
             self._startup_health_section(status=startup_health, now=now),
             self._account_resource_section(status=account_resource, now=now),
             self._boot_profile_section(status=boot_profile, now=now),
+            self._evidence_basis_section(evidence=evidence_basis, now=now),
             self._recommended_routes_section(recommendations=recommendations, now=now),
             self._operational_blocks_section(world=world, recommendations=recommendations, now=now),
             self._validated_decisions_section(
@@ -204,6 +210,7 @@ class PortableContextService:
                 'startup_health': dict(startup_health),
                 'account_resource': dict(account_resource),
                 'boot_profile': dict(boot_profile),
+                'evidence_basis': dict(evidence_basis),
                 'autoexamination_summary': dict(self_examination.get('summary_payload') or {}),
                 'recurring_issues': list(self_examination.get('recurring_issues') or []),
                 'recommended_adjustments': list(self_examination.get('recommended_adjustments') or []),
@@ -1013,6 +1020,123 @@ class PortableContextService:
                 'first_seen': status.get('first_seen', ''),
                 'last_seen': status.get('last_seen', ''),
             },
+        )
+
+    def _evidence_basis_snapshot(
+        self,
+        *,
+        environment: EnvironmentSelfModel,
+        world: WorldModelSnapshot,
+        task_context: TaskContext | None = None,
+    ) -> dict[str, Any]:
+        """Classify the current evidence basis for the portable package.
+
+        Reuses ``TaskContextAssembler._classify_evidence_basis`` when
+        available; otherwise falls back to a local classification using the
+        same criteria (world model resolved, environment has id, persisted
+        learning present).
+        """
+        has_world_model = bool(
+            world.tool_live_status
+            or world.active_windows
+            or world.detected_blocks
+            or float(world.confidence or 0.0) > 0.05
+        )
+        has_environment = bool(str(environment.environment_id or '').strip())
+        has_persisted_learning = bool(
+            task_context is not None
+            and (
+                task_context.metadata.get('adaptive_learning_summary')
+                or task_context.metadata.get('learned_patterns')
+            )
+        )
+        has_ia_trace = bool(
+            task_context is not None
+            and task_context.metadata.get('ia_trace')
+        )
+        unresolved_fields = list(world.unresolved_fields or []) + list(environment.unresolved_fields or [])
+
+        assembler = self.task_context_assembler
+        if assembler is not None and hasattr(assembler, '_classify_evidence_basis'):
+            return assembler._classify_evidence_basis(
+                has_world_model=has_world_model,
+                has_environment=has_environment,
+                has_persisted_learning=has_persisted_learning,
+                has_ia_trace=has_ia_trace,
+                unresolved_fields=unresolved_fields,
+            )
+        live: list[str] = []
+        persisted: list[str] = []
+        if has_world_model:
+            live.append('world_model')
+        if has_environment:
+            live.append('environment_self_model')
+        if has_persisted_learning:
+            persisted.append('adaptive_learning')
+        if has_ia_trace:
+            persisted.append('ia_trace')
+        if live:
+            state = 'observed'
+        elif persisted:
+            state = 'inferred'
+        else:
+            state = 'unresolved'
+        return {
+            'state': state,
+            'live_sources': live,
+            'persisted_sources': persisted,
+            'unresolved': list(unresolved_fields),
+        }
+
+    def _evidence_basis_section(
+        self,
+        *,
+        evidence: dict[str, Any],
+        now,
+    ) -> PortableContextSection:
+        """Export evidence basis classification as a portable context section."""
+        state = str(evidence.get('state') or 'unresolved')
+        live = list(evidence.get('live_sources') or [])
+        persisted = list(evidence.get('persisted_sources') or [])
+        unresolved = list(evidence.get('unresolved') or [])
+
+        items: list[dict[str, Any]] = [
+            {'label': 'state', 'value': state},
+        ]
+        if live:
+            items.append({'label': 'live_sources', 'value': ', '.join(live)})
+        if persisted:
+            items.append({'label': 'persisted_sources', 'value': ', '.join(persisted)})
+        if unresolved:
+            items.append({'label': 'unresolved_fields', 'value': ', '.join(unresolved)})
+
+        if state == 'observed':
+            summary = f'Evidencia observada en vivo ({", ".join(live)}). Fuentes persistidas: {", ".join(persisted) or "ninguna"}.'
+        elif state == 'inferred':
+            summary = f'Evidencia inferida de persistencia ({", ".join(persisted)}). Sin fuentes vivas confirmadas.'
+        else:
+            summary = 'Sin evidencia confirmada. Todas las fuentes están sin resolver.'
+
+        section_unresolved: list[str] = []
+        if state == 'unresolved':
+            section_unresolved.append('UNRESOLVED:evidence_basis_no_sources')
+
+        confidence = 0.9 if state == 'observed' else (0.6 if state == 'inferred' else 0.0)
+        return self._section(
+            section_id='evidence_basis',
+            title='Base evidencial del contexto',
+            summary=summary,
+            items=items,
+            source_kind='task_context_assembler',
+            source_refs=[
+                'iabv_v15.services.adaptive.task_context_assembler',
+                'WorldModelSnapshot',
+                'EnvironmentSelfModel',
+            ],
+            confidence=confidence,
+            last_updated=now,
+            unresolved_fields=section_unresolved,
+            metadata=dict(evidence),
         )
 
     def _cloud_reasoning_snapshot(self) -> dict[str, Any]:
