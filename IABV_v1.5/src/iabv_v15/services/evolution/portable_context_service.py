@@ -920,6 +920,7 @@ class PortableContextService:
             env_id = status.get('environment_id', '')
             boot_count = status.get('boot_count', 0)
             dur = status.get('boot_duration', {})
+            wiring = status.get('wiring_duration', {})
             rss = status.get('rss_peak', {})
 
             items.append({
@@ -935,6 +936,11 @@ class PortableContextService:
                 'avg_ms': dur.get('avg_ms', 0),
                 'median_ms': dur.get('median_ms', 0),
                 'p95_ms': dur.get('p95_ms', 0),
+            })
+            items.append({
+                'label': 'wiring_duration',
+                'avg_ms': wiring.get('avg_ms', 0),
+                'max_ms': wiring.get('max_ms', 0),
             })
             items.append({
                 'label': 'rss_peak',
@@ -958,10 +964,12 @@ class PortableContextService:
 
             avg_ms = dur.get('avg_ms', 0)
             p95_ms = dur.get('p95_ms', 0)
+            wiring_avg = wiring.get('avg_ms', 0)
             rss_max = rss.get('max_mb', 0)
             summary = (
                 f'Boot profile ({env_id}): {boot_count} boots, '
                 f'avg {avg_ms:.0f}ms, p95 {p95_ms:.0f}ms, '
+                f'wiring avg {wiring_avg:.0f}ms, '
                 f'RSS pico {rss_max:.0f}MB.'
             )
         elif st == 'no_data':
@@ -999,6 +1007,7 @@ class PortableContextService:
                 'environment_id': status.get('environment_id', ''),
                 'boot_count': status.get('boot_count', 0),
                 'boot_duration': status.get('boot_duration'),
+                'wiring_duration': status.get('wiring_duration'),
                 'rss_peak': status.get('rss_peak'),
                 'slowest_phases': status.get('slowest_phases', []),
                 'first_seen': status.get('first_seen', ''),

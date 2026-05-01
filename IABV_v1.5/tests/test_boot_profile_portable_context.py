@@ -119,6 +119,9 @@ def test_snapshot_with_data() -> None:
     assert snap['boot_duration']['avg_ms'] > 0
     assert snap['boot_duration']['median_ms'] > 0
     assert snap['boot_duration']['p95_ms'] > 0
+    assert 'wiring_duration' in snap
+    assert snap['wiring_duration']['avg_ms'] > 0
+    assert snap['wiring_duration']['max_ms'] > 0
     assert 'rss_peak' in snap
     assert snap['rss_peak']['max_mb'] > 0
     assert len(snap.get('slowest_phases', [])) > 0
@@ -170,14 +173,21 @@ def test_section_with_data() -> None:
     assert section.confidence == 0.85
     assert env_id in section.summary
     assert '1 boots' in section.summary
-    assert len(section.items) >= 4
+    assert len(section.items) >= 5
     labels = [item.get('label') for item in section.items]
     assert 'environment_id' in labels
     assert 'boot_count' in labels
     assert 'boot_duration' in labels
+    assert 'wiring_duration' in labels
     assert 'rss_peak' in labels
+    wiring_item = next(i for i in section.items if i.get('label') == 'wiring_duration')
+    assert wiring_item['avg_ms'] > 0
+    assert wiring_item['max_ms'] > 0
+    assert 'wiring avg' in section.summary
     assert section.metadata.get('status') == 'ok'
     assert section.metadata.get('boot_count') == 1
+    assert section.metadata.get('wiring_duration') is not None
+    assert section.metadata['wiring_duration']['avg_ms'] > 0
 
 
 # --------------------------------------------------------------------------- #
@@ -199,6 +209,8 @@ def test_metadata_includes_boot_profile() -> None:
     bp = package.metadata['boot_profile']
     assert bp.get('status') == 'ok'
     assert bp.get('boot_count') == 1
+    assert 'wiring_duration' in bp
+    assert bp['wiring_duration']['avg_ms'] > 0
 
     section_ids = [s.section_id for s in package.sections]
     assert 'boot_profile' in section_ids
