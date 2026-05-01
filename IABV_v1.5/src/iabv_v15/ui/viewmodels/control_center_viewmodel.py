@@ -2496,10 +2496,10 @@ class ControlCenterViewModel(QObject):
         self._last_user_goal = message
         self._update_adaptive_state(self._general_conversation_payload(message=message))
         self._clear_autonomy_activity_override()
-        reply = self._general_chat_reply(message)
-        self._append_message('assistant', 'IABV', reply, 'Conversacion general local.')
+        reply, meta, evidence_tag = self._general_chat_reply(message)
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag)
         self._latest_response_text = reply
-        self._latest_response_meta = 'Conversacion general local.'
+        self._latest_response_meta = meta
         self._working = False
         self._set_live_status('idle')
         self._busy_label = 'Respuesta lista.'
@@ -2513,16 +2513,16 @@ class ControlCenterViewModel(QObject):
             return 'Ahora mismo el equipo esta bajo bastante carga, asi que voy a usar una via mas liviana mientras seguimos.'
         return ''
 
-    def _general_chat_reply(self, message: str) -> str:
+    def _general_chat_reply(self, message: str) -> tuple[str, str, str]:
         normalized = self._normalized_command_text(message)
         if self._is_self_awareness_question(normalized):
-            return self._self_awareness_reply(message)[0]
+            return (*self._self_awareness_reply(message), 'observed')
         if self._is_world_model_question(normalized):
-            return self._world_model_reply(message)[0]
+            return (*self._world_model_reply(message), 'observed')
         if self._is_self_examination_question(normalized):
-            return self._self_examination_reply(message)[0]
+            return self._self_examination_reply(message)
         if self._is_learning_question(normalized):
-            return self._learning_reply(message)[0]
+            return self._learning_reply(message)
         asks_about_assistants = (
             any(token in normalized for token in ('codex', 'chatgpt', 'claude', 'ollama', 'ia', 'ias'))
             and any(token in normalized for token in ('puedes', 'puede', 'sabes', 'manejas', 'manejar', 'manej', 'aca adentro', 'automatic'))
@@ -2544,12 +2544,14 @@ class ControlCenterViewModel(QObject):
         ) or asks_about_assistants:
             return (
                 'Puedo ayudarte a revisar flujos del programa, diagnosticar fallos, ordenar tareas tecnicas, '
-                'explicarte lo que esta pasando y, cuando haga falta, apoyarme en Codex, ChatGPT, Claude u Ollama.'
+                'explicarte lo que esta pasando y, cuando haga falta, apoyarme en Codex, ChatGPT, Claude u Ollama.',
+                'Conversacion general local.',
+                'unresolved',
             )
         greeting_prefixes = ('hola', 'buenas', 'buenos dias', 'buenas tardes', 'buenas noches')
         if len(normalized.split()) <= 5 and any(normalized.startswith(prefix) for prefix in greeting_prefixes):
-            return 'Hola. Estoy aqui para ayudarte. Dime que quieres revisar o resolver y lo trabajamos desde aqui.'
-        return 'Te leo. Cuentame que necesitas y te respondo de forma clara, sin cargarte con detalle tecnico interno.'
+            return ('Hola. Estoy aqui para ayudarte. Dime que quieres revisar o resolver y lo trabajamos desde aqui.', 'Conversacion general local.', 'unresolved')
+        return ('Te leo. Cuentame que necesitas y te respondo de forma clara, sin cargarte con detalle tecnico interno.', 'Conversacion general local.', 'unresolved')
 
     def _seems_task_like_message(self, message: str) -> bool:
         normalized = self._normalized_command_text(message)
@@ -2854,9 +2856,9 @@ class ControlCenterViewModel(QObject):
         vm_small_talk = self._is_general_chat_message(message)
         general_chat = vm_small_talk or str(intent.get('intent_key') or '').strip() == 'general.assistance'
         if vm_small_talk and not self._seems_task_like_message(message):
-            return self._general_chat_reply(message), 'Conversacion general.', 'unresolved'
+            return self._general_chat_reply(message)
         if general_chat and not self._seems_task_like_message(message) and not llm_answered:
-            return self._general_chat_reply(message), 'Conversacion general.', 'unresolved'
+            return self._general_chat_reply(message)
         if llm_answered:
             provider_name = str(local_chat_llm.get('provider_name') or 'Ollama')
             llm_tag = self._classify_evidence_tag(
