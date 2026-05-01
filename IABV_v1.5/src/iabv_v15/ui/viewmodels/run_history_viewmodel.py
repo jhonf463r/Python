@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
+from iabv_v15.infra.persistence.adaptive_session_repository import AdaptiveSessionRepository
 from iabv_v15.infra.persistence.execution_dossier_repository import ExecutionDossierRepository
 from iabv_v15.infra.persistence.run_repository import RunRepository
 from iabv_v15.ui.qt import QObject, Property, QTimer, Signal, Slot
@@ -16,12 +18,14 @@ class RunHistoryViewModel(QObject):
         self,
         repository: RunRepository,
         dossier_repository: ExecutionDossierRepository | None = None,
+        session_repository: AdaptiveSessionRepository | None = None,
         *,
         defer_initial_refresh: bool = False,
     ) -> None:
         super().__init__()
         self.repository = repository
         self.dossier_repository = dossier_repository
+        self.session_repository = session_repository
         self._runs: list[dict] = []
         self._selected_run: dict = {}
         self._selected_dossier: dict = {}
@@ -61,6 +65,17 @@ class RunHistoryViewModel(QObject):
             payload['dossier_severity'] = (dossier or {}).get('severity', '')
             payload['dossier_summary'] = (dossier or {}).get('summary', '')
             payload['error_summary'] = payload.get('error_summary') or (payload.get('result') or {}).get('error_summary', '')
+            tp = self._load_task_packet(record.run_id)
+            payload['truth_state'] = tp.get('state', '')
+            payload['selected_worker_label'] = self._worker_label(tp.get('selected_worker'))
+            gate = tp.get('worker_gate_summary', {})
+            payload['gate_ran'] = bool(gate.get('ran', False))
+            payload['gate_usable'] = bool(gate.get('usable', False))
+            payload['gate_available_count'] = int(gate.get('available_count', 0))
+            payload['approval_required'] = bool(tp.get('governance_flags', {}).get('approval_required', False))
+            unresolved = tp.get('unresolved', [])
+            payload['unresolved_count'] = len(unresolved)
+            payload['unresolved_summary'] = ', '.join(unresolved[:3]) if unresolved else ''
             runs.append(payload)
         self._runs = runs
         if self._runs:
@@ -81,6 +96,31 @@ class RunHistoryViewModel(QObject):
         self._selected_run = selected
         self._selected_dossier = self._load_dossier(run_id)
         self.dataChanged.emit()
+
+    def _load_task_packet(self, run_id: str) -> dict[str, Any]:
+        """Extract task_packet from the AdaptiveSession linked to this run."""
+        if not run_id or self.session_repository is None:
+            return {}
+        try:
+            sessions = self.session_repository.find_by_run(run_id)
+            if sessions:
+                tp = dict(sessions[0].metadata.get('task_packet') or {})
+                eb = dict(tp.get('evidence_basis') or {})
+                tp['state'] = str(eb.get('state', ''))
+                return tp
+        except Exception as exc:
+            logger.warning('run_history: session load failed for run %s: %s', run_id, exc)
+        return {}
+
+    @staticmethod
+    def _worker_label(worker: dict | None) -> str:
+        if not worker:
+            return ''
+        email = str(worker.get('email') or '')
+        tool = str(worker.get('tool') or '')
+        if email and tool:
+            return f'{tool} ({email})'
+        return tool or email or ''
 
     def _load_dossier(self, run_id: str) -> dict:
         if not run_id or self.dossier_repository is None:

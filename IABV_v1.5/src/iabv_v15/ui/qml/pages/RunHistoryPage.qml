@@ -106,9 +106,34 @@ Item {
                                 wrapMode: Label.WordWrap
                                 width: parent.width
                             }
+                            RowLayout {
+                                width: parent.width
+                                spacing: 6
+                                Label {
+                                    text: "planner " + modelData.planner_label + " | modo " + modeLabel(modelData.result.reasoning_mode) + " | dossier " + (modelData.incident_available ? "si" : "no")
+                                    color: textSecondary
+                                    font.family: bodyFontFamily
+                                    font.pixelSize: 11
+                                    wrapMode: Label.WordWrap
+                                    Layout.fillWidth: true
+                                }
+                                TruthStateBadge {
+                                    truthState: modelData.truth_state || ""
+                                }
+                            }
                             Label {
-                                text: "planner " + modelData.planner_label + " | modo " + modeLabel(modelData.result.reasoning_mode) + " | dossier " + (modelData.incident_available ? "si" : "no")
+                                visible: !!modelData.selected_worker_label
+                                text: "worker " + modelData.selected_worker_label + " | gate " + (modelData.gate_ran ? (modelData.gate_usable ? "usable (" + modelData.gate_available_count + ")" : "bloqueado") : "no ejecutado") + (modelData.approval_required ? " | aprobacion requerida" : "")
                                 color: textSecondary
+                                font.family: bodyFontFamily
+                                font.pixelSize: 11
+                                wrapMode: Label.WordWrap
+                                width: parent.width
+                            }
+                            Label {
+                                visible: modelData.unresolved_count > 0
+                                text: "unresolved (" + modelData.unresolved_count + "): " + modelData.unresolved_summary
+                                color: "#ffb74d"
                                 font.family: bodyFontFamily
                                 font.pixelSize: 11
                                 wrapMode: Label.WordWrap
