@@ -20,6 +20,7 @@ Item {
     property var iaComparisons: evolutionCenterViewModel ? evolutionCenterViewModel.iaComparisons : []
     property var environmentSelfModel: evolutionCenterViewModel ? evolutionCenterViewModel.environmentSelfModel : ({})
     property var worldModel: evolutionCenterViewModel ? evolutionCenterViewModel.worldModel : ({})
+    property var evidenceBasis: evolutionCenterViewModel ? evolutionCenterViewModel.evidenceBasis : ({})
     property string latestToolStatus: evolutionCenterViewModel ? evolutionCenterViewModel.latestToolStatus : ""
     property string incidentFilter: evolutionCenterViewModel ? evolutionCenterViewModel.incidentFilter : "all"
     property var statusCards: healthSnapshot.status_cards || []
@@ -723,6 +724,61 @@ Item {
                         Label {
                             visible: (environmentSelfModel.unresolved_fields || []).length > 0
                             text: "UNRESOLVED: " + (environmentSelfModel.unresolved_fields || []).join(", ")
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 11
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    radius: 18
+                    color: "#22313a"
+                    border.width: 1
+                    border.color: borderSoft
+                    implicitHeight: evidenceBasisCol.implicitHeight + 24
+
+                    Column {
+                        id: evidenceBasisCol
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 6
+
+                        RowLayout {
+                            spacing: 8
+                            Label {
+                                text: "Base evidencial"
+                                color: textPrimary
+                                font.family: titleFontFamily
+                                font.pixelSize: 16
+                            }
+                            TruthStateBadge { truthState: (evidenceBasis.truthState || "") }
+                        }
+
+                        Label {
+                            text: {
+                                var st = evidenceBasis.state || "unresolved"
+                                if (st === "observed") {
+                                    return "Fuentes vivas: " + ((evidenceBasis.live_sources || []).join(", ") || "ninguna")
+                                           + " | persistidas: " + ((evidenceBasis.persisted_sources || []).join(", ") || "ninguna")
+                                } else if (st === "inferred") {
+                                    return "Sin fuentes vivas | persistidas: " + ((evidenceBasis.persisted_sources || []).join(", ") || "ninguna")
+                                }
+                                return "Sin evidencia confirmada"
+                            }
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 12
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+
+                        Label {
+                            visible: (evidenceBasis.unresolved || []).length > 0
+                            text: "UNRESOLVED: " + (evidenceBasis.unresolved || []).join(", ")
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 11

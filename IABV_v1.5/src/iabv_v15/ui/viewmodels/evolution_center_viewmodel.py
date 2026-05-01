@@ -93,6 +93,7 @@ class EvolutionCenterViewModel(QObject):
         self._autonomous_validation: dict[str, Any] = {}
         self._portable_context: dict[str, Any] = {}
         self._portable_context_brief = 'Todavia no he exportado un contexto portable desde esta vista.'
+        self._evidence_basis: dict[str, Any] = {}
         self._tool_evolution_panel: dict[str, Any] = {}
         self._self_examination: dict[str, Any] = {}
         self._self_examination_brief = 'Todavia no he generado una autoexaminacion operativa desde esta vista.'
@@ -168,6 +169,9 @@ class EvolutionCenterViewModel(QObject):
 
     def get_portable_context_brief(self) -> str:
         return self._portable_context_brief
+
+    def get_evidence_basis(self) -> dict[str, Any]:
+        return self._evidence_basis
 
     def get_control_master_digest(self) -> dict[str, Any]:
         return self._control_master_digest
@@ -331,6 +335,10 @@ class EvolutionCenterViewModel(QObject):
         )
         self._portable_context = portable_context
         self._portable_context_brief = str(portable_context.get('assistant_brief') or '').strip() or self._portable_context_brief
+        eb_raw = dict((portable_context.get('metadata') or {}).get('evidence_basis') or {})
+        eb_state = str(eb_raw.get('state') or 'unresolved')
+        eb_raw['truthState'] = eb_state
+        self._evidence_basis = eb_raw
         self._tool_evolution_panel = self._build_tool_evolution_panel(portable_context=portable_context, autonomous_validation=autonomous_validation)
         self_examination['truthState'] = self._classify_panel_truth(
             has_live_source=False,
@@ -986,6 +994,7 @@ class EvolutionCenterViewModel(QObject):
     autonomousValidation = Property(dict, get_autonomous_validation, notify=dataChanged)
     portableContext = Property(dict, get_portable_context, notify=dataChanged)
     portableContextBrief = Property(str, get_portable_context_brief, notify=dataChanged)
+    evidenceBasis = Property(dict, get_evidence_basis, notify=dataChanged)
     controlMasterDigest = Property(dict, get_control_master_digest, notify=dataChanged)
     controlMasterBrief = Property(str, get_control_master_brief, notify=dataChanged)
     toolEvolutionPanel = Property(dict, get_tool_evolution_panel, notify=dataChanged)
