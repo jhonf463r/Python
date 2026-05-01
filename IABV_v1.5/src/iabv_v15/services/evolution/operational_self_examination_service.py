@@ -5501,12 +5501,19 @@ class OperationalSelfExaminationService:
             if gf.get('approval_required'):
                 approval_count += 1
 
+            should_consult = bool(gf.get('should_consult'))
+
             sw = meta.get('selected_worker') or {}
-            if not sw.get('name'):
+            has_worker = bool(
+                sw.get('tool') or sw.get('email')
+                or sw.get('browser') or sw.get('profile')
+                or sw.get('name') or sw.get('assistant_kind')
+            )
+            if should_consult and not has_worker:
                 no_worker_count += 1
 
             rwc = meta.get('ranked_worker_count')
-            if rwc is not None and int(rwc) == 0:
+            if should_consult and rwc is not None and int(rwc) == 0:
                 gate_unusable_count += 1
 
         if total < self._TP_MIN_RUNS:
