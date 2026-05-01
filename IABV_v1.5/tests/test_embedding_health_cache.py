@@ -251,3 +251,115 @@ def test_health_snapshot_refresh_true_forces_embedding_probe(tmp_path: Path) -> 
         router.health_snapshot(refresh=True, max_age_seconds=0.0)
         router.health_snapshot(refresh=True, max_age_seconds=0.0)
         assert probe.call_count == 2  # each refresh=True forces a probe
+
+
+# ------------------------------------------------------------------
+# Parallel health checks
+# ------------------------------------------------------------------
+
+def test_parallel_health_checks_preserves_order(tmp_path: Path) -> None:
+    """Parallel health checks must return results in deterministic order."""
+    from iabv_v15.services.roles.local_role_router import LocalRoleRouter
+
+    general = MagicMock()
+    general.health_check.return_value = ProviderHealth(
+        provider_name='Ollama', status=ProviderStatus.READY,
+        available=True, detail='general',
+    )
+    visual = MagicMock()
+    visual.health_check.return_value = ProviderHealth(
+        provider_name='Ollama Vision', status=ProviderStatus.READY,
+        available=True, detail='visual',
+    )
+    optional = MagicMock()
+    optional.health_check.return_value = ProviderHealth(
+        provider_name='LM Studio', status=ProviderStatus.READY,
+        available=True, detail='optional',
+    )
+    embedding = EmbeddingIndexService(
+        base_url='http://127.0.0.1:11434/v1',
+        primary_model='qwen3-embedding',
+        lightweight_model='all-minilm',
+        state_path=str(tmp_path / 'state.json'),
+    )
+
+    router = LocalRoleRouter(
+        workspace_root=str(tmp_path),
+        general_provider=general,
+        visual_provider=visual,
+        optional_provider=optional,
+        embedding_service=embedding,
+        sql_service=MagicMock(),
+        analytics_service=MagicMock(),
+        customer_support_service=MagicMock(),
+        engineering_review_service=MagicMock(),
+        teaching_gap_analyzer=MagicMock(),
+        episode_repository=MagicMock(),
+        knowledge_repository=MagicMock(),
+        run_repository=MagicMock(),
+        artifact_repository=MagicMock(),
+        tool_teach_service=MagicMock(),
+        account_resource_scanner=MagicMock(),
+    )
+
+    with patch.object(embedding, '_probe_health', return_value=ProviderHealth(
+        provider_name='Embeddings', status=ProviderStatus.READY,
+        available=True, detail='embedding',
+    )):
+        snap = router.health_snapshot(refresh=True, max_age_seconds=0.0)
+
+    assert len(snap) == 4
+    assert snap[0].provider_name == 'Ollama'
+    assert snap[1].provider_name == 'Ollama Vision'
+    assert snap[2].provider_name == 'LM Studio'
+    assert snap[3].provider_name == 'Embeddings'
+
+
+def test_parallel_health_checks_handles_provider_exception(tmp_path: Path) -> None:
+    """If one provider raises, the snapshot still contains all entries."""
+    from iabv_v15.services.roles.local_role_router import LocalRoleRouter
+
+    general = MagicMock()
+    general.health_check.side_effect = RuntimeError('connection refused')
+    visual = MagicMock()
+    visual.health_check.return_value = ProviderHealth(
+        provider_name='Ollama Vision', status=ProviderStatus.READY,
+        available=True, detail='ok',
+    )
+    embedding = EmbeddingIndexService(
+        base_url='http://127.0.0.1:11434/v1',
+        primary_model='qwen3-embedding',
+        lightweight_model='all-minilm',
+        state_path=str(tmp_path / 'state.json'),
+    )
+
+    router = LocalRoleRouter(
+        workspace_root=str(tmp_path),
+        general_provider=general,
+        visual_provider=visual,
+        optional_provider=None,
+        embedding_service=embedding,
+        sql_service=MagicMock(),
+        analytics_service=MagicMock(),
+        customer_support_service=MagicMock(),
+        engineering_review_service=MagicMock(),
+        teaching_gap_analyzer=MagicMock(),
+        episode_repository=MagicMock(),
+        knowledge_repository=MagicMock(),
+        run_repository=MagicMock(),
+        artifact_repository=MagicMock(),
+        tool_teach_service=MagicMock(),
+        account_resource_scanner=MagicMock(),
+    )
+
+    with patch.object(embedding, '_probe_health', return_value=ProviderHealth(
+        provider_name='Embeddings', status=ProviderStatus.READY,
+        available=True, detail='ok',
+    )):
+        snap = router.health_snapshot(refresh=True, max_age_seconds=0.0)
+
+    assert len(snap) == 3
+    assert snap[0].available is False
+    assert 'connection refused' in snap[0].detail
+    assert snap[1].provider_name == 'Ollama Vision'
+    assert snap[2].provider_name == 'Embeddings'

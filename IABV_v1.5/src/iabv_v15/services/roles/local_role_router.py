@@ -17,6 +17,7 @@ from iabv_v15.domain.models import (
     IntentRouteDecision,
     ModelProfile,
     ProviderHealth,
+    ProviderStatus,
     ReasoningMode,
     ReportKind,
     RoleProfile,
@@ -99,19 +100,63 @@ class LocalRoleRouter:
             with self._health_snapshot_lock:
                 if self._health_snapshot_cache and (time.monotonic() - self._health_snapshot_checked_at) <= ttl:
                     return [item.model_copy(deep=True) for item in self._health_snapshot_cache]
-        snapshot = [
-            self.general_provider.health_check(),
-            self.visual_provider.health_check(),
-        ]
-        if self.optional_provider is not None:
-            snapshot.append(self.optional_provider.health_check())
-        snapshot.append(self.embedding_service.health_check(
-            max_age_seconds=0.0 if refresh else max_age_seconds,
-        ))
+        snapshot = self._parallel_health_checks(
+            refresh=refresh,
+            max_age_seconds=max_age_seconds,
+        )
         with self._health_snapshot_lock:
             self._health_snapshot_cache = [item.model_copy(deep=True) for item in snapshot]
             self._health_snapshot_checked_at = time.monotonic()
         return snapshot
+
+    def _parallel_health_checks(
+        self,
+        *,
+        refresh: bool,
+        max_age_seconds: float,
+    ) -> list[ProviderHealth]:
+        """Run provider health checks in parallel to reduce wall-clock time.
+
+        Each provider pings its HTTP endpoint independently.  Running them
+        concurrently reduces total latency from ``sum(latencies)`` to
+        ``max(latencies)`` — a ~3x improvement with 3-4 providers.
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        checks: list[tuple[int, Callable[[], ProviderHealth]]] = [
+            (0, self.general_provider.health_check),
+            (1, self.visual_provider.health_check),
+        ]
+        idx = 2
+        if self.optional_provider is not None:
+            checks.append((idx, self.optional_provider.health_check))
+            idx += 1
+        embedding_max_age = 0.0 if refresh else max_age_seconds
+        checks.append((idx, lambda: self.embedding_service.health_check(
+            max_age_seconds=embedding_max_age,
+        )))
+
+        results: dict[int, ProviderHealth] = {}
+        max_workers = len(checks)
+        with ThreadPoolExecutor(
+            max_workers=max_workers,
+            thread_name_prefix='iabv-health',
+        ) as pool:
+            futures = {
+                pool.submit(fn): order for order, fn in checks
+            }
+            for future in as_completed(futures):
+                order = futures[future]
+                try:
+                    results[order] = future.result()
+                except Exception as exc:
+                    results[order] = ProviderHealth(
+                        provider_name='Unknown',
+                        status=ProviderStatus.DEGRADED,
+                        available=False,
+                        detail=str(exc),
+                    )
+        return [results[i] for i in sorted(results)]
 
     # ------------------------------------------------------------------
     # Worker / account health gate for external-route viability
