@@ -2333,7 +2333,7 @@ class ControlCenterViewModel(QObject):
         self._busy_label = 'Respuesta lista.'
         self.dataChanged.emit()
 
-    def _self_examination_reply(self, message: str) -> tuple[str, str]:
+    def _self_examination_reply(self, message: str) -> tuple[str, str, str]:
         review = self._current_self_examination_snapshot()
         findings = list(review.get('top_findings') or [])
         recurring_issues = list(review.get('recurring_issues') or [])
@@ -2349,8 +2349,8 @@ class ControlCenterViewModel(QObject):
                     response += f" {str(top.get('summary') or '').strip()}"
                 if recommended_adjustments:
                     response += f" El ajuste mas util ahora es {str(recommended_adjustments[0].get('recommended_change') or '').strip()}."
-                return response, 'Autoexaminacion operativa.'
-            return ('Todavia no tengo suficiente evidencia acumulada para afirmar que es lo que mas esta fallando.', 'Evidencia insuficiente.')
+                return response, 'Autoexaminacion operativa.', 'inferred'
+            return ('Todavia no tengo suficiente evidencia acumulada para afirmar que es lo que mas esta fallando.', 'Evidencia insuficiente.', 'unresolved')
         if focus == 'repetition':
             if findings:
                 top = findings[0]
@@ -2360,16 +2360,16 @@ class ControlCenterViewModel(QObject):
                 recommendation = str(top.get('recommendation') or '').strip()
                 if recommendation:
                     response += f" Por eso recomiendo {recommendation}"
-                return response, 'Patron repetido detectado.'
-            return ('No veo un patron repetido fuerte y confirmado todavia.', 'Sin patron fuerte.')
+                return response, 'Patron repetido detectado.', 'inferred'
+            return ('No veo un patron repetido fuerte y confirmado todavia.', 'Sin patron fuerte.', 'unresolved')
         if focus == 'adjustments':
             if recommended_adjustments:
                 top = recommended_adjustments[0]
                 response = f"El cambio que mas recomiendo ahora es {str(top.get('recommended_change') or '').strip()}."
                 if len(recommended_adjustments) > 1:
                     response += f" Despues vendria {str(recommended_adjustments[1].get('recommended_change') or '').strip()}."
-                return response, 'Ajustes recomendados por evidencia.'
-            return ('Todavia no tengo cambios recomendados con evidencia suficiente para proponerlos en serio.', 'Sin ajuste fuerte.')
+                return response, 'Ajustes recomendados por evidencia.', 'inferred'
+            return ('Todavia no tengo cambios recomendados con evidencia suficiente para proponerlos en serio.', 'Sin ajuste fuerte.', 'unresolved')
         if findings or recommended_adjustments or validated_improvements:
             parts = []
             if findings:
@@ -2380,8 +2380,8 @@ class ControlCenterViewModel(QObject):
                 parts.append(f"Lo que si parece ir bien es {str(validated_improvements[0].get('title') or 'una mejora validada')}.")
             if unresolved_risks:
                 parts.append(f"Todavia dejo como UNRESOLVED {str(unresolved_risks[0]).replace('UNRESOLVED:', '').replace('_', ' ')}.")
-            return (' '.join(part for part in parts if part).strip(), 'Revision operativa con evidencia.')
-        return ('Todavia no tengo evidencia suficiente para revisarme con hallazgos utiles sin inventar datos.', 'Evidencia insuficiente.')
+            return (' '.join(part for part in parts if part).strip(), 'Revision operativa con evidencia.', 'inferred')
+        return ('Todavia no tengo evidencia suficiente para revisarme con hallazgos utiles sin inventar datos.', 'Evidencia insuficiente.', 'unresolved')
 
     def _self_examination_conversation_payload(self, *, message: str) -> dict[str, Any]:
         review = self._current_self_examination_snapshot()
@@ -2434,11 +2434,8 @@ class ControlCenterViewModel(QObject):
         self._last_user_goal = message
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._self_examination_conversation_payload(message=message))
-        reply, meta = self._self_examination_reply(message)
-        review = self._current_self_examination_snapshot()
-        has_evidence = bool(review.get('top_findings') or review.get('recurring_issues') or review.get('validated_improvements') or review.get('recommended_adjustments'))
-        tag = self._classify_evidence_tag(has_persisted_evidence=has_evidence)
-        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=tag)
+        reply, meta, evidence_tag = self._self_examination_reply(message)
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2705,7 +2702,7 @@ class ControlCenterViewModel(QObject):
 
     def _apply_human_self_examination_texts(self, *, message: str) -> None:
         review = self._current_self_examination_snapshot()
-        reply, meta = self._self_examination_reply(message)
+        reply, meta, _evidence_tag = self._self_examination_reply(message)
         recurring_issues = list(review.get('recurring_issues') or [])
         recommended_adjustments = list(review.get('recommended_adjustments') or [])
         validated_improvements = list(review.get('validated_improvements') or [])
@@ -2849,7 +2846,7 @@ class ControlCenterViewModel(QObject):
         if world_model_question:
             return self._world_model_reply(message)
         if self_examination_question:
-            return self._self_examination_reply(message)
+            return self._self_examination_reply(message)[:2]
         if learning_question:
             return self._learning_reply(message)[:2]
         local_chat_llm = dict(payload.get('local_chat_llm') or {})

@@ -173,7 +173,7 @@ class TestEvidenceTagValues:
 
 
 class _AnswerMethodVM(_MinimalVM):
-    """Extends _MinimalVM with stubs required by _answer_evolution/learning."""
+    """Extends _MinimalVM with stubs required by _answer_evolution/learning/self_examination."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -185,6 +185,7 @@ class _AnswerMethodVM(_MinimalVM):
         self._validation_status: dict[str, Any] = {}
         self._discovery_status: dict[str, Any] = {}
         self._learning_snapshot: dict[str, Any] = {}
+        self._examination_snapshot: dict[str, Any] = {}
 
     # stubs called by the answer methods
     def _clear_autonomy_activity_override(self) -> None:
@@ -207,6 +208,12 @@ class _AnswerMethodVM(_MinimalVM):
 
     def _learning_evidence_snapshot(self) -> dict[str, Any]:
         return self._learning_snapshot
+
+    def _current_self_examination_snapshot(self) -> dict[str, Any]:
+        return self._examination_snapshot
+
+    def _self_examination_conversation_payload(self, *, message: str) -> dict[str, Any]:
+        return {}
 
     _classify_evidence_tag = staticmethod(ControlCenterViewModel._classify_evidence_tag)
     _append_message = ControlCenterViewModel._append_message
@@ -342,4 +349,63 @@ class TestLearningBranchTag:
         vm._learning_focus = lambda msg: 'tools'  # type: ignore[attr-defined]
         vm._human_join = lambda items, limit=3: ', '.join(items[:limit])  # type: ignore[attr-defined]
         reply, meta, tag = ControlCenterViewModel._learning_reply(vm, 'que herramienta va mejor?')  # type: ignore[arg-type]
+        assert tag == 'inferred'
+
+
+class TestSelfExaminationBranchTag:
+    """Tag comes from the exact branch that produced the reply, not global snapshot."""
+
+    def test_self_examination_reply_unresolved_branch(self) -> None:
+        vm = _build_answer_vm()
+        vm._self_examination_reply = lambda msg: (  # type: ignore[attr-defined]
+            'Todavia no tengo evidencia suficiente.', 'Evidencia insuficiente.', 'unresolved',
+        )
+        ControlCenterViewModel._answer_self_examination_question(vm, 'que esta fallando?')  # type: ignore[arg-type]
+        assert vm._chat_messages[-1]['evidenceTag'] == 'unresolved'
+
+    def test_self_examination_reply_inferred_branch(self) -> None:
+        vm = _build_answer_vm()
+        vm._self_examination_reply = lambda msg: (  # type: ignore[attr-defined]
+            'Lo mas delicado ahora es X.', 'Revision operativa con evidencia.', 'inferred',
+        )
+        ControlCenterViewModel._answer_self_examination_question(vm, 'que esta fallando?')  # type: ignore[arg-type]
+        assert vm._chat_messages[-1]['evidenceTag'] == 'inferred'
+
+    def test_focus_failures_no_recurring_despite_findings_is_unresolved(self) -> None:
+        vm = _build_answer_vm()
+        vm._examination_snapshot = {
+            'top_findings': [{'title': 'some finding', 'summary': 'detail'}],
+            'recurring_issues': [],
+            'recommended_adjustments': [],
+            'validated_improvements': [],
+            'unresolved_risks': [],
+        }
+        vm._self_examination_focus = lambda msg: 'failures'  # type: ignore[attr-defined]
+        reply, meta, tag = ControlCenterViewModel._self_examination_reply(vm, 'que falla?')  # type: ignore[arg-type]
+        assert tag == 'unresolved'
+
+    def test_focus_adjustments_no_adjustments_despite_findings_is_unresolved(self) -> None:
+        vm = _build_answer_vm()
+        vm._examination_snapshot = {
+            'top_findings': [{'title': 'some finding'}],
+            'recurring_issues': [{'title': 'recurring'}],
+            'recommended_adjustments': [],
+            'validated_improvements': [],
+            'unresolved_risks': [],
+        }
+        vm._self_examination_focus = lambda msg: 'adjustments'  # type: ignore[attr-defined]
+        reply, meta, tag = ControlCenterViewModel._self_examination_reply(vm, 'que ajustes?')  # type: ignore[arg-type]
+        assert tag == 'unresolved'
+
+    def test_focus_repetition_with_findings_is_inferred(self) -> None:
+        vm = _build_answer_vm()
+        vm._examination_snapshot = {
+            'top_findings': [{'title': 'patron repetido', 'summary': 'se repite'}],
+            'recurring_issues': [],
+            'recommended_adjustments': [],
+            'validated_improvements': [],
+            'unresolved_risks': [],
+        }
+        vm._self_examination_focus = lambda msg: 'repetition'  # type: ignore[attr-defined]
+        reply, meta, tag = ControlCenterViewModel._self_examination_reply(vm, 'que repites?')  # type: ignore[arg-type]
         assert tag == 'inferred'
