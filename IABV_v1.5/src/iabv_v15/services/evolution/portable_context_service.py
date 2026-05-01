@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import time
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -123,6 +124,7 @@ class PortableContextService:
             world=world,
             task_context=task_context,
         )
+        task_packet_summary = self._task_packet_summary_snapshot()
         pending_items = self._pending_items()
         backlog_items = self._backlog_items()
         decision_history = self._decision_history(recommendations=recommendations)
@@ -166,6 +168,7 @@ class PortableContextService:
             self._account_resource_section(status=account_resource, now=now),
             self._boot_profile_section(status=boot_profile, now=now),
             self._evidence_basis_section(evidence=evidence_basis, now=now),
+            self._task_packet_summary_section(snapshot=task_packet_summary, now=now),
             self._recommended_routes_section(recommendations=recommendations, now=now),
             self._operational_blocks_section(world=world, recommendations=recommendations, now=now),
             self._validated_decisions_section(
@@ -211,6 +214,7 @@ class PortableContextService:
                 'account_resource': dict(account_resource),
                 'boot_profile': dict(boot_profile),
                 'evidence_basis': dict(evidence_basis),
+                'task_packet_summary': dict(task_packet_summary),
                 'autoexamination_summary': dict(self_examination.get('summary_payload') or {}),
                 'recurring_issues': list(self_examination.get('recurring_issues') or []),
                 'recommended_adjustments': list(self_examination.get('recommended_adjustments') or []),
@@ -1137,6 +1141,195 @@ class PortableContextService:
             last_updated=now,
             unresolved_fields=section_unresolved,
             metadata=dict(evidence),
+        )
+
+    # ------------------------------------------------------------------
+    # Task-packet summary — metacognitive digest of recent task_packet
+    # fields persisted by TaskOutcomeRecorder into ExperimentRun.metadata.
+    # ------------------------------------------------------------------
+
+    _TASK_PACKET_MIN_RUNS = 3
+
+    @staticmethod
+    def _worker_label(sw: Any) -> str:
+        """Extract a human-readable label from a selected_worker dict.
+
+        Recognises the real shape produced by worker_health_gate /
+        _build_task_packet (tool, email, browser, profile) and falls back
+        to assistant_kind / name if present.
+        """
+        if not isinstance(sw, dict) or not sw:
+            return ''
+        tool = str(sw.get('tool') or '').strip()
+        email = str(sw.get('email') or '').strip()
+        if tool and email:
+            return f'{tool}:{email}'
+        if tool:
+            return tool
+        browser = str(sw.get('browser') or '').strip()
+        profile = str(sw.get('profile') or '').strip()
+        if browser and profile:
+            return f'{browser}:{profile}'
+        if browser:
+            return browser
+        name = str(sw.get('name') or sw.get('assistant_kind') or '').strip()
+        return name
+
+    def _task_packet_summary_snapshot(self) -> dict[str, Any]:
+        repo = self.experiment_lab_repository
+        if repo is None or not hasattr(repo, 'list_runs'):
+            return {'status': 'no_repository', 'run_count': 0}
+        try:
+            runs = list(repo.list_runs(limit=60))
+        except Exception:
+            return {'status': 'read_error', 'run_count': 0}
+        if not runs:
+            return {'status': 'no_data', 'run_count': 0}
+
+        evidence_states: Counter[str] = Counter()
+        approval_count = 0
+        gate_ran_unusable = 0
+        no_worker_count = 0
+        unresolved_all: Counter[str] = Counter()
+        worker_labels: Counter[str] = Counter()
+        total = 0
+
+        for run in runs:
+            meta = run.metadata or {}
+            eb = meta.get('evidence_basis')
+            if not isinstance(eb, dict):
+                continue
+            total += 1
+            state = str(eb.get('state') or 'unresolved').lower()
+            evidence_states[state] += 1
+
+            gf = meta.get('governance_flags') or {}
+            if isinstance(gf, dict) and gf.get('approval_required'):
+                approval_count += 1
+
+            should_consult = bool(gf.get('should_consult')) if isinstance(gf, dict) else False
+
+            sw = meta.get('selected_worker')
+            wlabel = self._worker_label(sw)
+            if wlabel:
+                worker_labels[wlabel] += 1
+            elif should_consult:
+                no_worker_count += 1
+
+            rwc = meta.get('ranked_worker_count')
+            if should_consult and isinstance(rwc, int) and rwc == 0:
+                gate_ran_unusable += 1
+
+            tu = meta.get('task_unresolved')
+            if isinstance(tu, list):
+                for field in tu:
+                    if isinstance(field, str) and field.strip():
+                        unresolved_all[field.strip()] += 1
+
+        if total < self._TASK_PACKET_MIN_RUNS:
+            return {'status': 'insufficient_data', 'run_count': total}
+
+        top_unresolved = unresolved_all.most_common(5)
+        top_workers = worker_labels.most_common(5)
+
+        return {
+            'status': 'ok',
+            'run_count': total,
+            'evidence_state_distribution': dict(evidence_states),
+            'approval_required_count': approval_count,
+            'approval_required_rate': round(approval_count / total, 3) if total else 0.0,
+            'gate_ran_unusable_count': gate_ran_unusable,
+            'no_worker_count': no_worker_count,
+            'unresolved_hotspots': [
+                {'field': f, 'count': c} for f, c in top_unresolved
+            ],
+            'worker_tendencies': [
+                {'worker': w, 'count': c, 'rate': round(c / total, 3)}
+                for w, c in top_workers
+            ],
+        }
+
+    def _task_packet_summary_section(
+        self,
+        *,
+        snapshot: dict[str, Any],
+        now: datetime,
+    ) -> PortableContextSection:
+        st = snapshot.get('status', 'no_data')
+        total = snapshot.get('run_count', 0)
+        items: list[dict[str, Any]] = []
+        unresolved: list[str] = []
+
+        if st == 'ok':
+            dist = snapshot.get('evidence_state_distribution', {})
+            items.append({
+                'label': 'evidence_state_distribution',
+                'value': ', '.join(f'{k}: {v}' for k, v in dist.items()),
+            })
+            items.append({
+                'label': 'approval_required',
+                'value': f"{snapshot.get('approval_required_count', 0)}/{total} ({snapshot.get('approval_required_rate', 0):.1%})",
+            })
+            items.append({
+                'label': 'gate_unusable_or_no_worker',
+                'value': f"gate_unusable={snapshot.get('gate_ran_unusable_count', 0)}, no_worker={snapshot.get('no_worker_count', 0)}",
+            })
+            hotspots = snapshot.get('unresolved_hotspots', [])
+            if hotspots:
+                items.append({
+                    'label': 'unresolved_hotspots',
+                    'value': ', '.join(f"{h['field']}({h['count']})" for h in hotspots[:5]),
+                })
+            workers = snapshot.get('worker_tendencies', [])
+            if workers:
+                items.append({
+                    'label': 'worker_tendencies',
+                    'value': ', '.join(
+                        f"{w['worker']}: {w['count']} ({w['rate']:.0%})" for w in workers[:5]
+                    ),
+                })
+
+            obs = dist.get('observed', 0)
+            inf = dist.get('inferred', 0)
+            unres = dist.get('unresolved', 0)
+            if total > 0 and obs >= inf and obs >= unres:
+                summary = f'Task-packet digest de {total} runs: evidencia predominantemente observed ({obs}/{total}).'
+            elif total > 0 and unres > obs:
+                summary = f'Task-packet digest de {total} runs: ratio alto de unresolved ({unres}/{total}).'
+            else:
+                summary = f'Task-packet digest de {total} runs: evidencia mixta (obs={obs}, inf={inf}, unres={unres}).'
+            confidence = 0.85
+        elif st == 'insufficient_data':
+            summary = f'Task-packet: solo {total} runs, insuficiente para resumir patrones.'
+            unresolved.append('UNRESOLVED:task_packet_insufficient_data')
+            confidence = 0.0
+        elif st == 'no_data':
+            summary = 'Task-packet: sin datos de runs recientes.'
+            unresolved.append('UNRESOLVED:task_packet_no_data')
+            confidence = 0.0
+        elif st == 'no_repository':
+            summary = 'Task-packet: repositorio de experimentos no disponible.'
+            unresolved.append('UNRESOLVED:task_packet_no_repository')
+            confidence = 0.0
+        else:
+            summary = f'Task-packet: status {st}.'
+            unresolved.append(f'UNRESOLVED:task_packet_{st}')
+            confidence = 0.0
+
+        return self._section(
+            section_id='task_packet_summary',
+            title='Task-packet pattern summary',
+            summary=summary,
+            items=items,
+            source_kind='experiment_lab_repository',
+            source_refs=[
+                'ExperimentLab',
+                'TaskOutcomeRecorder',
+            ],
+            confidence=confidence,
+            last_updated=now,
+            unresolved_fields=unresolved,
+            metadata=snapshot,
         )
 
     def _cloud_reasoning_snapshot(self) -> dict[str, Any]:
@@ -2294,7 +2487,7 @@ class PortableContextService:
                     lines.append(f"- {str(item.get('component') or 'n/d')}: {str(item.get('status') or 'n/d')} | {str(item.get('detail') or '').strip()}")
                 elif section.section_id == 'implemented_capabilities':
                     lines.append(f"- {str(item.get('capability') or 'n/d')}: {str(item.get('status') or 'n/d')} | {str(item.get('detail') or '').strip()}")
-                elif section.section_id in {'learning', 'tool_discovery', 'tool_evolution', 'tool_evolution_decisions', 'self_examination', 'recommended_routes', 'validated_decisions', 'decision_history', 'user_metacognitive_intent'}:
+                elif section.section_id in {'learning', 'tool_discovery', 'tool_evolution', 'tool_evolution_decisions', 'self_examination', 'recommended_routes', 'validated_decisions', 'decision_history', 'user_metacognitive_intent', 'task_packet_summary'}:
                     label = str(item.get('label') or item.get('decision') or item.get('subject_key') or item.get('assistant_kind') or 'n/d')
                     detail = str(item.get('value') or item.get('route') or item.get('summary') or item.get('recommendation') or item.get('why') or item.get('detail') or '').strip()
                     assistant = str(item.get('assistant_kind') or '').strip()
