@@ -779,6 +779,12 @@ class OperationalSelfExaminationService:
         # across external audits and flag modules needing cross-verification.
         findings.extend(self._code_audit_cross_reference_findings())
 
+        # Task-packet pattern findings: detect recurring governance,
+        # worker-gate and evidence-basis anomalies across recent runs.
+        findings.extend(self._task_packet_pattern_findings(
+            experiment_runs=experiment_runs,
+        ))
+
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -4944,6 +4950,166 @@ class OperationalSelfExaminationService:
                 ))
         except Exception:
             pass
+
+        return findings
+
+    # ------------------------------------------------------------------
+    # Task-packet pattern findings — detect recurring governance,
+    # worker-gate and evidence-basis anomalies from ExperimentRun metadata.
+    # ------------------------------------------------------------------
+
+    _TP_MIN_RUNS = 5
+    _TP_HIGH_UNRESOLVED_RATIO = 0.4
+    _TP_HIGH_APPROVAL_RATIO = 0.5
+    _TP_HIGH_NO_WORKER_RATIO = 0.3
+
+    def _task_packet_pattern_findings(
+        self,
+        *,
+        experiment_runs: list[ExperimentRun],
+    ) -> list[SelfExaminationFinding]:
+        findings: list[SelfExaminationFinding] = []
+        if not experiment_runs:
+            return findings
+
+        evidence_states: Counter[str] = Counter()
+        approval_count = 0
+        no_worker_count = 0
+        gate_unusable_count = 0
+        total = 0
+
+        for run in experiment_runs:
+            meta = run.metadata or {}
+            eb = meta.get('evidence_basis')
+            if not isinstance(eb, dict):
+                continue
+            total += 1
+            state = str(eb.get('state') or 'unresolved').lower()
+            evidence_states[state] += 1
+
+            gf = meta.get('governance_flags')
+            if isinstance(gf, dict) and gf.get('approval_required'):
+                approval_count += 1
+
+            sw = meta.get('selected_worker')
+            if isinstance(sw, dict):
+                wname = str(sw.get('name') or sw.get('assistant_kind') or '').strip()
+                if not wname:
+                    no_worker_count += 1
+            else:
+                no_worker_count += 1
+
+            rwc = meta.get('ranked_worker_count')
+            if isinstance(rwc, int) and rwc == 0:
+                gate_unusable_count += 1
+
+        if total < self._TP_MIN_RUNS:
+            return findings
+
+        unresolved_count = evidence_states.get('unresolved', 0)
+        unresolved_ratio = unresolved_count / total
+
+        if unresolved_ratio >= self._TP_HIGH_UNRESOLVED_RATIO:
+            findings.append(SelfExaminationFinding(
+                category='task_packet_high_unresolved',
+                severity=IssueSeverity.MEDIUM,
+                title=f'Ratio alto de unresolved en task_packet ({unresolved_count}/{total})',
+                summary=(
+                    f'{unresolved_count} de {total} runs recientes tienen '
+                    f'evidence_basis.state == unresolved ({unresolved_ratio:.0%}). '
+                    f'El sistema esta operando frecuentemente sin confirmacion de evidencia.'
+                ),
+                confidence=min(0.9, 0.5 + unresolved_ratio * 0.5),
+                recommendation=(
+                    'Investigar por que no se resuelve la evidencia. '
+                    'Posibles causas: world model desconectado, environment_id faltante, '
+                    'o falta de learning persistido.'
+                ),
+                source_refs=['ExperimentLab', 'TaskOutcomeRecorder'],
+                metadata={
+                    'pattern': 'high_unresolved',
+                    'unresolved_count': unresolved_count,
+                    'total': total,
+                    'ratio': round(unresolved_ratio, 3),
+                },
+            ))
+
+        approval_ratio = approval_count / total
+        if approval_ratio >= self._TP_HIGH_APPROVAL_RATIO:
+            findings.append(SelfExaminationFinding(
+                category='task_packet_recurring_approval',
+                severity=IssueSeverity.MEDIUM,
+                title=f'approval_required repetido en task_packet ({approval_count}/{total})',
+                summary=(
+                    f'{approval_count} de {total} runs recientes requirieron '
+                    f'aprobacion ({approval_ratio:.0%}). Esto puede estar bloqueando '
+                    f'progreso autonomo.'
+                ),
+                confidence=min(0.88, 0.5 + approval_ratio * 0.4),
+                recommendation=(
+                    'Revisar si las governance policies son demasiado restrictivas '
+                    'para tareas de bajo riesgo. Considerar ajustar umbrales de '
+                    'aprobacion para rutas locales ya validadas.'
+                ),
+                source_refs=['ExperimentLab', 'TaskOutcomeRecorder'],
+                metadata={
+                    'pattern': 'recurring_approval',
+                    'approval_count': approval_count,
+                    'total': total,
+                    'ratio': round(approval_ratio, 3),
+                },
+            ))
+
+        no_worker_ratio = no_worker_count / total
+        if no_worker_ratio >= self._TP_HIGH_NO_WORKER_RATIO:
+            findings.append(SelfExaminationFinding(
+                category='task_packet_no_worker',
+                severity=IssueSeverity.MEDIUM,
+                title=f'selected_worker vacio repetido ({no_worker_count}/{total})',
+                summary=(
+                    f'{no_worker_count} de {total} runs recientes no tuvieron '
+                    f'selected_worker ({no_worker_ratio:.0%}). Cuando deberia haber '
+                    f'consulta externa, no se selecciona worker.'
+                ),
+                confidence=min(0.85, 0.45 + no_worker_ratio * 0.5),
+                recommendation=(
+                    'Verificar que worker_health_gate esta funcionando y que '
+                    'hay workers configurados y disponibles. Si todas las rutas '
+                    'son locales, este finding puede ser esperado.'
+                ),
+                source_refs=['ExperimentLab', 'TaskOutcomeRecorder'],
+                metadata={
+                    'pattern': 'no_worker',
+                    'no_worker_count': no_worker_count,
+                    'total': total,
+                    'ratio': round(no_worker_ratio, 3),
+                },
+            ))
+
+        if gate_unusable_count >= 2:
+            gate_ratio = gate_unusable_count / total
+            findings.append(SelfExaminationFinding(
+                category='task_packet_gate_unusable',
+                severity=IssueSeverity.MEDIUM,
+                title=f'worker_gate repetidamente unusable ({gate_unusable_count}/{total})',
+                summary=(
+                    f'{gate_unusable_count} de {total} runs recientes tienen '
+                    f'ranked_worker_count == 0 ({gate_ratio:.0%}). El gate no encuentra '
+                    f'workers usables de forma recurrente.'
+                ),
+                confidence=min(0.85, 0.45 + gate_ratio * 0.5),
+                recommendation=(
+                    'Revisar configuracion de workers, estado de cuentas externas '
+                    'y block_signals del world model.'
+                ),
+                source_refs=['ExperimentLab', 'TaskOutcomeRecorder'],
+                metadata={
+                    'pattern': 'gate_unusable',
+                    'gate_unusable_count': gate_unusable_count,
+                    'total': total,
+                    'ratio': round(gate_ratio, 3),
+                },
+            ))
 
         return findings
 
