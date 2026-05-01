@@ -881,6 +881,89 @@ def format_worker_pool_report() -> str:
 
 
 # ──────────────────────────────────────────────────────────────
+# Worker Ranking — score and sort workers for a target assistant
+# ──────────────────────────────────────────────────────────────
+
+def _score_worker(worker: dict[str, Any]) -> float:
+    """Compute a composite score for a single worker.
+
+    score = availability × quota_ratio × auth_health
+
+    - availability: 1.0 if not exhausted, 0.0 if exhausted
+    - quota_ratio:  remaining_messages / limit  (0.0 .. 1.0)
+    - auth_health:  1.0 (session exists — workers without sessions are
+                    already excluded by ``estimate_available_workers``)
+
+    Returns a float in [0.0, 1.0].  Higher is better.
+    """
+    if worker.get('exhausted', True):
+        return 0.0
+    limit = max(worker.get('limit', 1), 1)
+    remaining = max(worker.get('remaining_messages', 0), 0)
+    quota_ratio = min(remaining / limit, 1.0)
+    return round(quota_ratio, 4)
+
+
+def rank_workers_for_target(
+    target_assistant: str,
+    *,
+    pool: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """Rank available workers for *target_assistant* by composite score.
+
+    Parameters
+    ----------
+    target_assistant:
+        Tool name to filter by (e.g. ``'chatgpt'``, ``'claude'``,
+        ``'codex'``).  Case-insensitive.  Empty string returns all.
+    pool:
+        Pre-computed pool from ``estimate_available_workers()``.
+        If ``None``, a fresh scan is performed.
+
+    Returns
+    -------
+    list of dicts, each with the original worker fields plus ``'score'``,
+    sorted descending by score.  Exhausted workers are excluded.
+    """
+    if pool is None:
+        pool = estimate_available_workers()
+
+    target = target_assistant.strip().lower()
+    workers = pool.get('workers', [])
+
+    if target:
+        candidates = [
+            w for w in workers
+            if str(w.get('tool', '')).strip().lower() == target
+            and not w.get('exhausted', True)
+        ]
+    else:
+        candidates = [w for w in workers if not w.get('exhausted', True)]
+
+    scored: list[dict[str, Any]] = []
+    for w in candidates:
+        entry = dict(w)
+        entry['score'] = _score_worker(w)
+        scored.append(entry)
+
+    scored.sort(key=lambda w: w['score'], reverse=True)
+    return scored
+
+
+def top_worker_for_target(
+    target_assistant: str,
+    *,
+    pool: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    """Return the single best worker for *target_assistant*, or ``None``.
+
+    Convenience wrapper around :func:`rank_workers_for_target`.
+    """
+    ranked = rank_workers_for_target(target_assistant, pool=pool)
+    return ranked[0] if ranked else None
+
+
+# ──────────────────────────────────────────────────────────────
 # Configured Secrets Detection (names only, never values)
 # ──────────────────────────────────────────────────────────────
 
