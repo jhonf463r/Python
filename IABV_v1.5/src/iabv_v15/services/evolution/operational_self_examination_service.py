@@ -779,6 +779,12 @@ class OperationalSelfExaminationService:
         # across external audits and flag modules needing cross-verification.
         findings.extend(self._code_audit_cross_reference_findings())
 
+        # Task-packet pattern findings: detect recurring governance,
+        # worker-gate and evidence-basis anomalies across recent runs.
+        findings.extend(self._task_packet_pattern_findings(
+            experiment_runs=experiment_runs,
+        ))
+
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -847,6 +853,11 @@ class OperationalSelfExaminationService:
         # Self-audit auto-correction loop: feed HIGH-severity findings
         # into the auto-correction engine for safe, automatic fixes.
         self._auto_correct_from_findings(findings)
+
+        # Close the auto-improvement loop: materialize qualifying
+        # task_packet findings as persistent pending issues so the
+        # next evolution review picks them up as actionable backlog.
+        self._materialize_task_packet_issues(findings)
 
         return persisted
 
@@ -5456,6 +5467,181 @@ class OperationalSelfExaminationService:
             'fault_injection': self.simulator_fault_injection(func, fault_scenarios or []),
             'stress_test': self.simulator_stress_test(func, stress_count),
         }
+
+    # ------------------------------------------------------------------
+    # Task-packet pattern findings (detection)
+    # ------------------------------------------------------------------
+
+    _TP_MIN_RUNS = 5
+    _TP_HIGH_UNRESOLVED_RATIO = 0.4
+    _TP_HIGH_APPROVAL_RATIO = 0.5
+    _TP_HIGH_NO_WORKER_RATIO = 0.3
+
+    def _task_packet_pattern_findings(
+        self,
+        *,
+        experiment_runs: list[Any],
+    ) -> list[SelfExaminationFinding]:
+        total = 0
+        evidence_states: Counter[str] = Counter()
+        approval_count = 0
+        no_worker_count = 0
+        gate_unusable_count = 0
+
+        for run in experiment_runs:
+            meta = getattr(run, 'metadata', None) or {}
+            eb = meta.get('evidence_basis')
+            if eb is None:
+                continue
+            total += 1
+            state = eb.get('state', 'unknown') if isinstance(eb, dict) else 'unknown'
+            evidence_states[state] += 1
+
+            gf = meta.get('governance_flags') or {}
+            if gf.get('approval_required'):
+                approval_count += 1
+
+            should_consult = bool(gf.get('should_consult'))
+
+            sw = meta.get('selected_worker') or {}
+            has_worker = bool(
+                sw.get('tool') or sw.get('email')
+                or sw.get('browser') or sw.get('profile')
+                or sw.get('name') or sw.get('assistant_kind')
+            )
+            if should_consult and not has_worker:
+                no_worker_count += 1
+
+            rwc = meta.get('ranked_worker_count')
+            if should_consult and rwc is not None and int(rwc) == 0:
+                gate_unusable_count += 1
+
+        if total < self._TP_MIN_RUNS:
+            return []
+
+        results: list[SelfExaminationFinding] = []
+        unresolved_count = evidence_states.get('unresolved', 0)
+        unresolved_ratio = unresolved_count / total
+
+        if unresolved_ratio >= self._TP_HIGH_UNRESOLVED_RATIO:
+            results.append(SelfExaminationFinding(
+                category='task_packet_high_unresolved',
+                severity=IssueSeverity.MEDIUM,
+                title=f'Alto ratio de evidence unresolved ({unresolved_ratio:.0%})',
+                summary=(
+                    f'{unresolved_count}/{total} runs recientes tienen '
+                    f'evidence_basis.state == unresolved.'
+                ),
+                confidence=min(0.6 + unresolved_ratio * 0.3, 0.95),
+                recommendation=(
+                    'Verificar world model, environment_id y learning '
+                    'persistido para reducir unresolved.'
+                ),
+                source_refs=['ExperimentRun.metadata.evidence_basis'],
+                metadata={
+                    'pattern': 'high_unresolved',
+                    'unresolved_count': unresolved_count,
+                    'total': total,
+                    'ratio': round(unresolved_ratio, 3),
+                },
+            ))
+
+        approval_ratio = approval_count / total
+        if approval_ratio >= self._TP_HIGH_APPROVAL_RATIO:
+            results.append(SelfExaminationFinding(
+                category='task_packet_recurring_approval',
+                severity=IssueSeverity.MEDIUM,
+                title=f'Approval requerido recurrente ({approval_ratio:.0%})',
+                summary=(
+                    f'{approval_count}/{total} runs recientes requieren '
+                    f'aprobacion. Puede bloquear progreso autonomo.'
+                ),
+                confidence=min(0.6 + approval_ratio * 0.3, 0.95),
+                recommendation=(
+                    'Revisar governance policies y considerar ajustar '
+                    'umbrales para rutas locales ya validadas.'
+                ),
+                source_refs=['ExperimentRun.metadata.governance_flags'],
+                metadata={
+                    'pattern': 'recurring_approval',
+                    'approval_count': approval_count,
+                    'total': total,
+                    'ratio': round(approval_ratio, 3),
+                },
+            ))
+
+        no_worker_ratio = no_worker_count / total
+        if no_worker_ratio >= self._TP_HIGH_NO_WORKER_RATIO:
+            results.append(SelfExaminationFinding(
+                category='task_packet_no_worker',
+                severity=IssueSeverity.MEDIUM,
+                title=f'Sin worker seleccionado recurrente ({no_worker_ratio:.0%})',
+                summary=(
+                    f'{no_worker_count}/{total} runs recientes no tienen '
+                    f'selected_worker. Verificar disponibilidad.'
+                ),
+                confidence=min(0.6 + no_worker_ratio * 0.3, 0.95),
+                recommendation=(
+                    'Verificar workers configurados y disponibles. '
+                    'Si todas las rutas son locales, puede ser esperado.'
+                ),
+                source_refs=['ExperimentRun.metadata.selected_worker'],
+                metadata={
+                    'pattern': 'no_worker',
+                    'no_worker_count': no_worker_count,
+                    'total': total,
+                    'ratio': round(no_worker_ratio, 3),
+                },
+            ))
+
+        if gate_unusable_count >= 2:
+            results.append(SelfExaminationFinding(
+                category='task_packet_gate_unusable',
+                severity=IssueSeverity.MEDIUM,
+                title=f'Worker gate sin candidatos ({gate_unusable_count} veces)',
+                summary=(
+                    f'{gate_unusable_count}/{total} runs recientes tienen '
+                    f'ranked_worker_count == 0.'
+                ),
+                confidence=0.7,
+                recommendation=(
+                    'Revisar worker_health_gate y estado de cuentas '
+                    'externas.'
+                ),
+                source_refs=['ExperimentRun.metadata.ranked_worker_count'],
+                metadata={
+                    'pattern': 'gate_unusable',
+                    'gate_unusable_count': gate_unusable_count,
+                    'total': total,
+                },
+            ))
+
+        return results
+
+    # ------------------------------------------------------------------
+    # Task-packet → pending issues (materialization)
+    # ------------------------------------------------------------------
+
+    def _materialize_task_packet_issues(
+        self,
+        findings: list[SelfExaminationFinding],
+    ) -> None:
+        svc = self.evolution_review_service
+        if svc is None:
+            return
+        tp_findings = [
+            f for f in findings
+            if f.category.startswith('task_packet_')
+        ]
+        if not tp_findings:
+            return
+        try:
+            svc.materialize_task_packet_issues(tp_findings)
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).debug(
+                'oses: materialize_task_packet_issues failed: %s', exc,
+            )
 
 
 # ---------------------------------------------------------------------------

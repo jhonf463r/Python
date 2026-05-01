@@ -84,6 +84,23 @@ class PendingIssueRepository:
                 items.append(loaded)
         return items
 
+    def find_by_scenario_id(self, scenario_id: str) -> list[CodexPendingIssue]:
+        rows = self.db.fetchall(
+            """
+            SELECT issue_id, path
+            FROM codex_pending_issues
+            WHERE scenario_id = ?
+            ORDER BY created_at_utc DESC
+            """,
+            (scenario_id,),
+        )
+        items: list[CodexPendingIssue] = []
+        for row in rows:
+            loaded = self._load_optional(row['issue_id'], row['path'])
+            if loaded is not None:
+                items.append(loaded)
+        return items
+
     def find_by_session(self, session_id: str) -> list[CodexPendingIssue]:
         rows = self.db.fetchall(
             """

@@ -4,7 +4,16 @@ from collections import Counter
 import threading
 import time
 
-from iabv_v15.domain.models import ImprovementProposal, RunStatus, EvolutionSnapshot
+import logging
+
+from iabv_v15.domain.models import (
+    CodexPendingIssue,
+    DiagnosticCategory,
+    ImprovementProposal,
+    RunStatus,
+    EvolutionSnapshot,
+    SelfExaminationFinding,
+)
 from iabv_v15.infra.persistence.adaptive_session_repository import AdaptiveSessionRepository
 from iabv_v15.infra.persistence.execution_dossier_repository import ExecutionDossierRepository
 from iabv_v15.infra.persistence.pending_issue_repository import PendingIssueRepository
@@ -230,3 +239,114 @@ class EvolutionReviewService:
             'annotation_conflict': ['Crear anotacion manual sobre un objeto ya detectado', 'Verificar precedencia y coherencia del replay'],
         }
         return mapping.get(incident_kind, ['Validar el caso reproducible'])
+
+    # ------------------------------------------------------------------
+    # Task-packet → pending issues: close the auto-improvement loop.
+    # ------------------------------------------------------------------
+
+    _TASK_PACKET_CATEGORIES: dict[str, str] = {
+        'task_packet_high_unresolved': 'task_packet:high_unresolved',
+        'task_packet_recurring_approval': 'task_packet:recurring_approval',
+        'task_packet_no_worker': 'task_packet:no_worker',
+        'task_packet_gate_unusable': 'task_packet:gate_unusable',
+    }
+
+    _TASK_PACKET_RECOMMENDED: dict[str, str] = {
+        'task_packet:high_unresolved': (
+            'Investigar por que evidence_basis permanece unresolved. '
+            'Verificar world model, environment_id y learning persistido.'
+        ),
+        'task_packet:recurring_approval': (
+            'Revisar governance policies: approval_required se activa con '
+            'demasiada frecuencia. Considerar ajustar umbrales para rutas '
+            'locales ya validadas.'
+        ),
+        'task_packet:no_worker': (
+            'Verificar que hay workers configurados y disponibles. '
+            'Si todas las rutas son locales, este issue puede resolverse '
+            'marcandolo como esperado.'
+        ),
+        'task_packet:gate_unusable': (
+            'Revisar worker_health_gate y estado de cuentas externas. '
+            'ranked_worker_count == 0 de forma recurrente indica que '
+            'ninguna cuenta tiene cuota o esta habilitada.'
+        ),
+    }
+
+    _TASK_PACKET_TESTS: dict[str, list[str]] = {
+        'task_packet:high_unresolved': [
+            'Ejecutar una sesion con world model activo y verificar que evidence_basis cambia a observed',
+            'Revisar Centro Evolutivo',
+        ],
+        'task_packet:recurring_approval': [
+            'Lanzar tarea de bajo riesgo por ruta local y verificar que no pide aprobacion',
+            'Revisar governance thresholds',
+        ],
+        'task_packet:no_worker': [
+            'Verificar que al menos una cuenta externa tiene cuota disponible',
+            'Revisar Centro Evolutivo > Workers',
+        ],
+        'task_packet:gate_unusable': [
+            'Verificar estado de cuentas en account_resource_scanner',
+            'Revisar rotacion de tokens',
+        ],
+    }
+
+    def materialize_task_packet_issues(
+        self,
+        findings: list[SelfExaminationFinding],
+    ) -> list[CodexPendingIssue]:
+        """Convert qualifying task_packet OSES findings into pending issues.
+
+        Uses stable ``scenario_id`` keys per pattern to avoid duplicates.
+        Only creates a new issue if no open issue with the same scenario_id
+        exists.  Returns the list of newly created issues (may be empty).
+        """
+        log = logging.getLogger(__name__)
+        repo = self.pending_issue_repository
+        if repo is None or not hasattr(repo, 'save'):
+            return []
+
+        created: list[CodexPendingIssue] = []
+        for finding in findings:
+            scenario_id = self._TASK_PACKET_CATEGORIES.get(finding.category)
+            if scenario_id is None:
+                continue
+
+            if hasattr(repo, 'find_by_scenario_id'):
+                existing = repo.find_by_scenario_id(scenario_id)
+                if existing:
+                    log.debug(
+                        'task_packet_issue: skip %s — already exists (%s)',
+                        scenario_id, existing[0].issue_id,
+                    )
+                    continue
+
+            issue = CodexPendingIssue(
+                scenario_id=scenario_id,
+                goal=f'Auto-mejora: resolver patron repetido {scenario_id}',
+                category=DiagnosticCategory.NEED_CODEX_FIX,
+                summary=finding.summary,
+                probable_cause=finding.title,
+                recommended_change=self._TASK_PACKET_RECOMMENDED.get(
+                    scenario_id, finding.recommendation or '',
+                ),
+                suggested_tests=self._TASK_PACKET_TESTS.get(
+                    scenario_id, ['Revisar Centro Evolutivo'],
+                ),
+                evidence_refs=list(finding.source_refs or []),
+                metadata={
+                    'source': 'oses_task_packet_pattern',
+                    'finding_category': finding.category,
+                    'pattern_metadata': dict(finding.metadata or {}),
+                    'confidence': finding.confidence,
+                },
+            )
+            saved = repo.save(issue)
+            created.append(saved)
+            log.info(
+                'task_packet_issue: created %s for %s',
+                saved.issue_id, scenario_id,
+            )
+
+        return created
