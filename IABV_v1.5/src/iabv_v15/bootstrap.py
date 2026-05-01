@@ -1378,6 +1378,33 @@ class AppBootstrap:
             scans_deferred=_defer_scans,
         )
 
+        self._record_boot_profile()
+
+    def _record_boot_profile(self) -> None:
+        """Persist boot telemetry tagged by environment_id.
+
+        Called once after ``wire_services_done``.  Crash-safe: any error
+        is swallowed because telemetry must never break boot.
+        """
+        try:
+            from iabv_v15.services.evolution.boot_profile_store import BootProfileStore
+            env_model = self.environment_self_awareness_service.current_model()
+            environment_id = env_model.environment_id if env_model else ''
+            if not environment_id:
+                return
+            store = BootProfileStore(data_root=self.config.data_dir)
+            store.record_boot_session(
+                environment_id=environment_id,
+                timeline_events=self._timeline.events(),
+                metadata={
+                    'scan_status': env_model.scan_status if env_model else '',
+                    'known_environment': env_model.known_environment if env_model else False,
+                },
+            )
+            self.boot_profile_store = store
+        except Exception as exc:
+            logger.debug('boot_profile: telemetry recording skipped: %s', exc)
+
     # ------------------------------------------------------------------
     # Lazy-loaded services — constructed on first access, not at wiring
     # time.  Saves memory when these subsystems are never activated in a
