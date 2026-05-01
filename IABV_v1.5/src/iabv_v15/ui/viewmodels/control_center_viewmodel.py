@@ -304,6 +304,27 @@ class ControlCenterViewModel(QObject):
             }
         ]
 
+    @staticmethod
+    def _classify_evidence_tag(
+        *,
+        has_live_observation: bool = False,
+        has_persisted_evidence: bool = False,
+    ) -> str:
+        """Return ``'observed'``, ``'inferred'`` or ``'unresolved'``.
+
+        - **observed**: the reply is backed by live runtime data (WorldModel,
+          EnvironmentSelfModel, active window scan, real-time tool probe).
+        - **inferred**: the reply is derived from persisted evidence (OSES
+          findings, ExperimentLab history, learning records, portable context).
+        - **unresolved**: neither live observation nor persisted evidence could
+          confirm the claim — the system is honest about the gap.
+        """
+        if has_live_observation:
+            return 'observed'
+        if has_persisted_evidence:
+            return 'inferred'
+        return 'unresolved'
+
     def _translate_status(self, status: str) -> str:
         return {
             'ready': 'listo',
@@ -317,7 +338,8 @@ class ControlCenterViewModel(QObject):
                         *, attachments: list[dict[str, Any]] | None = None,
                         code_blocks: list[dict[str, Any]] | None = None,
                         status: str = 'complete',
-                        reasoning: str = '') -> None:
+                        reasoning: str = '',
+                        evidence_tag: str = '') -> None:
         msg: dict[str, Any] = {'role': role, 'speaker': speaker, 'text': text, 'meta': meta,
                                'status': status, 'timestamp': datetime.now(timezone.utc).strftime('%H:%M')}
         if attachments:
@@ -326,6 +348,8 @@ class ControlCenterViewModel(QObject):
             msg['codeBlocks'] = code_blocks
         if reasoning:
             msg['reasoning'] = reasoning
+        if evidence_tag in ('observed', 'inferred', 'unresolved'):
+            msg['evidenceTag'] = evidence_tag
         with self._ui_state_lock:
             self._chat_messages.append(msg)
             self._chat_messages = self._chat_messages[-30:]
@@ -2267,7 +2291,7 @@ class ControlCenterViewModel(QObject):
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._evolution_status_conversation_payload(message=message))
         reply, meta = self._evolution_status_reply(message)
-        self._append_message('assistant', 'IABV', reply, meta)
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag='inferred')
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2278,7 +2302,7 @@ class ControlCenterViewModel(QObject):
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._learning_conversation_payload(message=message))
         reply, meta = self._learning_reply(message)
-        self._append_message('assistant', 'IABV', reply, meta)
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag='inferred')
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2289,7 +2313,7 @@ class ControlCenterViewModel(QObject):
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._general_conversation_payload(message=message))
         reply, meta = self._self_awareness_reply(message)
-        self._append_message('assistant', 'IABV', reply, meta)
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag='observed')
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2300,7 +2324,7 @@ class ControlCenterViewModel(QObject):
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._general_conversation_payload(message=message))
         reply, meta = self._world_model_reply(message)
-        self._append_message('assistant', 'IABV', reply, meta)
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag='observed')
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2408,7 +2432,10 @@ class ControlCenterViewModel(QObject):
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._self_examination_conversation_payload(message=message))
         reply, meta = self._self_examination_reply(message)
-        self._append_message('assistant', 'IABV', reply, meta)
+        review = self._current_self_examination_snapshot()
+        has_evidence = bool(review.get('top_findings') or review.get('recurring_issues') or review.get('validated_improvements'))
+        tag = self._classify_evidence_tag(has_persisted_evidence=has_evidence)
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=tag)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -6530,7 +6557,12 @@ class ControlCenterViewModel(QObject):
                 payload=dict(payload or {}),
                 adaptive_payload=adaptive_payload,
             )
-            self._append_message('assistant', 'IABV', user_text, meta_line)
+            local_chat_llm = dict(payload.get('local_chat_llm') or {})
+            _chat_evidence_tag = self._classify_evidence_tag(
+                has_live_observation=bool(local_chat_llm.get('available')),
+                has_persisted_evidence=bool(payload.get('sources')),
+            )
+            self._append_message('assistant', 'IABV', user_text, meta_line, evidence_tag=_chat_evidence_tag)
             self._latest_response_text = user_text
             self._latest_response_meta = meta_line
             self._busy_label = 'Respuesta lista.'

@@ -29,6 +29,7 @@ import QtQuick.Layouts 1.15
  *   modelUsed: string (optional)
  *   elapsed: string (optional — ej: "2.3s")
  *   liveStatus: string (optional — "streaming" | "routing" | "queued")
+ *   evidenceTag: string (optional — "observed" | "inferred" | "unresolved")
  */
 Rectangle {
     id: msgDelegate
@@ -483,11 +484,51 @@ Rectangle {
             }
         }
 
-        // === Metadata footer (model, tokens, time) ===
+        // === Metadata footer (model, tokens, time, evidence tag) ===
         RowLayout {
             width: contentCol.width
             spacing: 8
-            visible: (modelData.modelUsed || "") !== "" || (modelData.tokenCount || 0) > 0 || (modelData.meta || "") !== ""
+            visible: (modelData.modelUsed || "") !== "" || (modelData.tokenCount || 0) > 0 || (modelData.meta || "") !== "" || (modelData.evidenceTag || "") !== ""
+
+            // Evidence tag badge (observed / inferred / unresolved)
+            Rectangle {
+                visible: (modelData.evidenceTag || "") !== ""
+                width: evidenceLabel.implicitWidth + 10
+                height: 16
+                radius: 8
+                color: {
+                    if (modelData.evidenceTag === "observed") return "#1b3d2a"
+                    if (modelData.evidenceTag === "inferred") return "#1a2a3a"
+                    if (modelData.evidenceTag === "unresolved") return "#3d3520"
+                    return "transparent"
+                }
+                border.width: 1
+                border.color: {
+                    if (modelData.evidenceTag === "observed") return "#2e6e47"
+                    if (modelData.evidenceTag === "inferred") return "#2e4a6e"
+                    if (modelData.evidenceTag === "unresolved") return "#6e5a2e"
+                    return "transparent"
+                }
+                Label {
+                    id: evidenceLabel
+                    anchors.centerIn: parent
+                    text: {
+                        if (modelData.evidenceTag === "observed") return "observado"
+                        if (modelData.evidenceTag === "inferred") return "inferido"
+                        if (modelData.evidenceTag === "unresolved") return "sin confirmar"
+                        return ""
+                    }
+                    color: {
+                        if (modelData.evidenceTag === "observed") return "#81c784"
+                        if (modelData.evidenceTag === "inferred") return "#4fc3f7"
+                        if (modelData.evidenceTag === "unresolved") return "#ffb74d"
+                        return "#6a7580"
+                    }
+                    font.pixelSize: 9
+                    font.family: "Segoe UI"
+                    font.capitalization: Font.AllUppercase
+                }
+            }
 
             Label {
                 text: modelData.meta || ""
