@@ -116,18 +116,57 @@ class BootProfileStore:
             records = records[-limit:]
         return records
 
+    def _session_metadata(self, environment_id: str) -> tuple[int, str]:
+        """Count total sessions and extract first_seen without full parse.
+
+        Reads the JSONL line-by-line, only parsing the first line to get
+        ``timestamp_utc``.  Returns ``(total_count, first_seen_iso)``.
+        """
+        path = self._profile_path(environment_id)
+        if not path.exists():
+            return 0, ''
+        count = 0
+        first_seen = ''
+        try:
+            with path.open('r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    count += 1
+                    if count == 1:
+                        try:
+                            first_seen = json.loads(line).get('timestamp_utc', '')
+                        except json.JSONDecodeError:
+                            pass
+        except Exception:
+            pass
+        return count, first_seen
+
     def boot_profile_summary(self, environment_id: str) -> dict[str, Any]:
         """Aggregate boot metrics for an environment.
 
         Returns:
             Dict with boot_count, avg/median/p95 boot time, rss stats,
             slowest phases, first/last seen timestamps.
+
+        ``boot_count`` and ``first_seen`` are derived from a full line
+        count of the JSONL file so they stay accurate even when the
+        statistical window (last 50 sessions) is smaller than the total.
         """
+        total_count, first_seen = self._session_metadata(environment_id)
+        if total_count == 0:
+            return {
+                'environment_id': environment_id,
+                'boot_count': 0,
+                'status': 'no_data',
+            }
+
         history = self.load_history(environment_id, limit=50)
         if not history:
             return {
                 'environment_id': environment_id,
-                'boot_count': 0,
+                'boot_count': total_count,
                 'status': 'no_data',
             }
 
@@ -154,8 +193,8 @@ class BootProfileStore:
 
         return {
             'environment_id': environment_id,
-            'boot_count': len(history),
-            'first_seen': history[0].get('timestamp_utc', ''),
+            'boot_count': total_count,
+            'first_seen': first_seen,
             'last_seen': history[-1].get('timestamp_utc', ''),
             'boot_duration': {
                 'avg_ms': round(statistics.mean(durations), 1) if durations else 0,

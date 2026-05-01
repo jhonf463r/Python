@@ -232,6 +232,38 @@ class TestBootProfileSummary:
         assert phases[0]['phase'] == 'wire_services_done'
         assert phases[0]['avg_ms'] == 18145.0
 
+    def test_boot_count_not_capped_by_limit(self, store: BootProfileStore):
+        """boot_count must reflect total sessions, not the windowed limit."""
+        events = [
+            {'phase': 'start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+            {'phase': 'done', 't_ms_from_start': 5000.0, 'rss_mb': 90.0},
+        ]
+        for _ in range(60):
+            store.record_boot_session(environment_id='env-many', timeline_events=events)
+
+        summary = store.boot_profile_summary('env-many')
+        assert summary['boot_count'] == 60
+
+    def test_first_seen_accurate_beyond_limit(self, store: BootProfileStore):
+        """first_seen must be from the very first boot, not the windowed tail."""
+        import json as _json
+
+        events = [
+            {'phase': 'start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+            {'phase': 'done', 't_ms_from_start': 5000.0, 'rss_mb': 90.0},
+        ]
+        store.record_boot_session(environment_id='env-fs', timeline_events=events)
+        path = store._profile_path('env-fs')
+        first_line = path.read_text(encoding='utf-8').strip().split('\n')[0]
+        first_ts = _json.loads(first_line)['timestamp_utc']
+
+        for _ in range(55):
+            store.record_boot_session(environment_id='env-fs', timeline_events=events)
+
+        summary = store.boot_profile_summary('env-fs')
+        assert summary['boot_count'] == 56
+        assert summary['first_seen'] == first_ts
+
 
 # ------------------------------------------------------------------
 # all_known_profiles + compare_environments
