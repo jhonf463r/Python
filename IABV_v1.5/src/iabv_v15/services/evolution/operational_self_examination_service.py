@@ -719,6 +719,10 @@ class OperationalSelfExaminationService:
         # Account/quota/worker health: detect exhausted quotas, API issues,
         # missing critical secrets — feeds cross-session learning.
         findings.extend(self._account_resource_health_findings())
+        # Worker continuity: detect repeated handoff/quota/stall patterns.
+        findings.extend(self._worker_continuity_findings(
+            adaptive_sessions=adaptive_sessions,
+        ))
         # UI self-awareness: detect own window issues (zombie, missing, duplicate)
         findings.extend(self._ui_self_examination_findings(world=world))
 
@@ -5327,6 +5331,81 @@ class OperationalSelfExaminationService:
                 ))
         except Exception:
             pass
+
+        return findings
+
+    def _worker_continuity_findings(
+        self,
+        *,
+        adaptive_sessions: list[Any],
+    ) -> list[SelfExaminationFinding]:
+        """Detect repeated worker continuity patterns across recent sessions.
+
+        Scans ``session.metadata['worker_continuity']`` for recurring
+        ``handoff_required``, ``quota_exhausted``, and ``session_stalled``
+        events. Emits findings when a pattern repeats >= 2 times.
+        """
+        reason_counts: Counter[str] = Counter()
+        handoff_count = 0
+        evidence: dict[str, list[str]] = defaultdict(list)
+        for session in adaptive_sessions:
+            metadata = dict(getattr(session, 'metadata', None) or {})
+            continuity = dict(metadata.get('worker_continuity') or {})
+            if not continuity.get('handoff_required'):
+                continue
+            handoff_count += 1
+            reason = str(continuity.get('continuation_reason') or 'unknown')
+            reason_counts[reason] += 1
+            sid = str(getattr(session, 'session_id', '') or '')
+            if sid:
+                evidence[reason].append(sid)
+
+        findings: list[SelfExaminationFinding] = []
+        if handoff_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='worker_continuity_pattern',
+                title=f'Handoff requerido {handoff_count} veces en sesiones recientes',
+                summary=(
+                    f'{handoff_count} sesiones recientes requirieron handoff de worker. '
+                    f'Razones: {dict(reason_counts)}. '
+                    f'Considerar rotar workers o cambiar a ruta local hasta que se '
+                    f'reestablezca disponibilidad.'
+                ),
+                severity=IssueSeverity.HIGH if handoff_count >= 3 else IssueSeverity.MEDIUM,
+                confidence=min(0.95, 0.5 + handoff_count * 0.1),
+                recommendation=(
+                    'Verificar cuotas de cuentas externas y considerar fallback a '
+                    'Ollama. Si el patron persiste, rotar credenciales o esperar '
+                    'reactivacion de cuotas.'
+                ),
+                evidence_refs=[sid for refs in evidence.values() for sid in refs][:8],
+                source_refs=['AdaptiveSession', 'worker_continuity'],
+                metadata={
+                    'handoff_count': handoff_count,
+                    'reason_breakdown': dict(reason_counts),
+                },
+            ))
+
+        for reason, count in reason_counts.items():
+            if count < 2:
+                continue
+            findings.append(SelfExaminationFinding(
+                category='worker_continuity_reason',
+                title=f'Continuidad bloqueada por {reason} ({count}x)',
+                summary=(
+                    f'La razon "{reason}" aparece {count} veces como causa de '
+                    f'handoff en sesiones recientes.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=min(0.9, 0.45 + count * 0.1),
+                recommendation=f'Revisar condicion operativa de "{reason}" antes de reintentar rutas afectadas.',
+                evidence_refs=evidence.get(reason, [])[:5],
+                source_refs=['AdaptiveSession', 'worker_continuity'],
+                metadata={
+                    'reason': reason,
+                    'count': count,
+                },
+            ))
 
         return findings
 

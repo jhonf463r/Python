@@ -35,6 +35,8 @@ from iabv_v15.domain.models import (
     TaskRole,
     VisualSignalSnapshot,
     WorldModelSnapshot,
+    build_worker_continuity,
+    canonical_external_state_flags,
 )
 from iabv_v15.infra.persistence.adaptive_session_repository import AdaptiveSessionRepository
 from iabv_v15.services.adaptive.adaptive_planner_service import AdaptivePlannerService
@@ -3053,6 +3055,21 @@ class AdaptiveTaskOrchestrator:
         worker_gate = dict(session.metadata.get('worker_gate') or {})
         gate_ran = 'worker_gate' in session.metadata
         top_worker = dict(worker_gate.get('top_worker') or {}) if gate_ran else {}
+        external_flags = canonical_external_state_flags(
+            list(dc_meta.get('external_state_flags') or ps_meta.get('external_state_flags') or [])
+        )
+        governance_flags = {
+            'approval_required': bool(governance.get('approval_required')),
+            'should_consult': bool(governance.get('should_consult')),
+            'block_risky_action': bool(governance.get('block_risky_action')),
+        }
+        worker_continuity = build_worker_continuity(
+            session_metadata=session.metadata,
+            external_state_flags=external_flags,
+            worker_usable=bool(worker_gate.get('usable', True)),
+            session_status=session.status.value if hasattr(session.status, 'value') else str(session.status),
+            governance=governance,
+        )
         return {
             'objective': session.user_goal,
             'intent_key': session.intent.intent_key,
@@ -3068,12 +3085,9 @@ class AdaptiveTaskOrchestrator:
             },
             'selected_worker': top_worker,
             'evidence_basis': evidence_basis,
-            'governance_flags': {
-                'approval_required': bool(governance.get('approval_required')),
-                'should_consult': bool(governance.get('should_consult')),
-                'block_risky_action': bool(governance.get('block_risky_action')),
-            },
+            'governance_flags': governance_flags,
             'unresolved': list(getattr(perception, 'unresolved_fields', []) or []) if perception is not None else [],
+            'worker_continuity': worker_continuity,
         }
 
     @classmethod
@@ -3183,6 +3197,18 @@ class AdaptiveTaskOrchestrator:
         wm_unresolved = list(world_model.unresolved_fields or [])
         env_unresolved = list(environment_self_model.unresolved_fields or [])
         all_unresolved = wm_unresolved + env_unresolved
+        preflight_governance = {
+            'approval_required': bool(governance.get('approval_required')),
+            'should_consult': True,
+            'block_risky_action': bool(governance.get('block_risky_action')),
+        }
+        preflight_continuity = build_worker_continuity(
+            session_metadata={'worker_gate': worker_gate},
+            external_state_flags=[],
+            worker_usable=bool(worker_gate.get('usable', False)),
+            session_status='planned',
+            governance=preflight_governance,
+        )
         task_packet = {
             'objective': user_goal,
             'intent_key': 'general.assistance',
@@ -3203,12 +3229,9 @@ class AdaptiveTaskOrchestrator:
                 'persisted_sources': [],
                 'unresolved': all_unresolved,
             },
-            'governance_flags': {
-                'approval_required': bool(governance.get('approval_required')),
-                'should_consult': True,
-                'block_risky_action': bool(governance.get('block_risky_action')),
-            },
+            'governance_flags': preflight_governance,
             'unresolved': all_unresolved,
+            'worker_continuity': preflight_continuity,
         }
         return {
             'assistant_kind': normalized_assistant,

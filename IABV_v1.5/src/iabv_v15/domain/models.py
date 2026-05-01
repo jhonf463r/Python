@@ -171,6 +171,64 @@ def canonical_external_state_flags(values: list[Any] | tuple[Any, ...] | set[Any
     return flags
 
 
+class WorkerContinuityReason(str, Enum):
+    QUOTA_EXHAUSTED = "quota_exhausted"
+    SESSION_STALLED = "session_stalled"
+    MANUAL_BLOCKED = "manual_blocked"
+    AUTH_EXPIRED = "auth_expired"
+
+
+def build_worker_continuity(
+    *,
+    session_metadata: dict[str, Any],
+    external_state_flags: list[str] | None = None,
+    worker_usable: bool = True,
+    session_status: str = "",
+    governance: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Derive worker continuity state from existing metadata.
+
+    Returns a dict suitable for embedding in ``task_packet['worker_continuity']``.
+    Pure function: reads inputs, never mutates them.
+    """
+    flags = list(external_state_flags or [])
+    gov = dict(governance or {})
+
+    reason = ""
+    if ExternalStateFlag.ACCOUNT_LIMITED.value in flags:
+        reason = WorkerContinuityReason.QUOTA_EXHAUSTED.value
+    elif ExternalStateFlag.SESSION_EXPIRED.value in flags:
+        reason = WorkerContinuityReason.AUTH_EXPIRED.value
+    elif gov.get('block_risky_action') or gov.get('approval_required'):
+        reason = WorkerContinuityReason.MANUAL_BLOCKED.value
+    elif not worker_usable and session_status in ('executing', 'need_info'):
+        reason = WorkerContinuityReason.SESSION_STALLED.value
+
+    handoff_required = bool(reason)
+
+    worker_gate = dict(session_metadata.get('worker_gate') or {})
+    top_worker = dict(worker_gate.get('top_worker') or {})
+    task_packet = dict(session_metadata.get('task_packet') or {})
+
+    continuation_packet: dict[str, Any] = {}
+    if handoff_required:
+        continuation_packet = {
+            'objective': str(task_packet.get('objective') or session_metadata.get('user_goal') or ''),
+            'completed_step_summary': str(session_metadata.get('completed_step_summary') or ''),
+            'unresolved': list(task_packet.get('unresolved') or []),
+            'changed_files': list(session_metadata.get('changed_files') or []),
+            'tests_run': list(session_metadata.get('tests_run') or []),
+        }
+
+    return {
+        'worker_status': 'blocked' if handoff_required else 'active',
+        'handoff_required': handoff_required,
+        'continuation_reason': reason,
+        'preferred_next_worker': str(top_worker.get('assistant_kind') or '') if not handoff_required else '',
+        'continuation_packet': continuation_packet,
+    }
+
+
 class OverlayKind(str, Enum):
     CLICK_POINT = "click_point"
     RECT = "rect"

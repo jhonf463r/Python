@@ -12,6 +12,8 @@ from iabv_v15.domain.models import (
     RunRecord,
     RunStatus,
     TaskRole,
+    build_worker_continuity,
+    canonical_external_state_flags,
 )
 from iabv_v15.infra.persistence.adaptive_session_repository import AdaptiveSessionRepository
 from iabv_v15.infra.persistence.approval_checkpoint_repository import ApprovalCheckpointRepository
@@ -57,6 +59,7 @@ class TaskOutcomeRecorder:
         if run_record is not None and self.experiment_lab is not None:
             session = self._record_learning(session=session, run_record=run_record)
             self._check_intent_correction(session=session, run_record=run_record)
+        session = self._stamp_worker_continuity(session=session, run_record=run_record)
         if session.capability_readiness:
             self.capability_repository.save_many(session.capability_readiness)
         if session.approval_checkpoints:
@@ -64,6 +67,45 @@ class TaskOutcomeRecorder:
         saved = self.adaptive_session_repository.save(session)
         self._propagate_to_control_master(saved)
         return saved
+
+    @staticmethod
+    def _stamp_worker_continuity(
+        *,
+        session: AdaptiveSession,
+        run_record: RunRecord | None,
+    ) -> AdaptiveSession:
+        """Derive and persist worker continuity metadata.
+
+        Reads ``external_state_flags`` from the run record and existing
+        session metadata to determine if a handoff is required.  The
+        continuity dict is deposited under
+        ``session.metadata['worker_continuity']``.
+        """
+        metadata = dict(session.metadata or {})
+        task_packet = dict(metadata.get('task_packet') or {})
+        worker_gate = dict(metadata.get('worker_gate') or {})
+
+        external_flags: list[str] = []
+        if run_record is not None:
+            result_flags = list(run_record.result.health_flags or []) + list(run_record.result.diagnostic_flags or [])
+            external_flags = canonical_external_state_flags(result_flags)
+        if not external_flags:
+            external_flags = canonical_external_state_flags(
+                list(task_packet.get('external_state_flags') or metadata.get('external_state_flags') or [])
+            )
+
+        governance = dict(task_packet.get('governance_flags') or {})
+        session_status = session.status.value if hasattr(session.status, 'value') else str(session.status)
+
+        continuity = build_worker_continuity(
+            session_metadata=metadata,
+            external_state_flags=external_flags,
+            worker_usable=bool(worker_gate.get('usable', True)),
+            session_status=session_status,
+            governance=governance,
+        )
+        session.metadata['worker_continuity'] = continuity
+        return session
 
     def _propagate_to_control_master(self, session: AdaptiveSession) -> None:
         """Close the learning loop: if the session opted in by tagging its

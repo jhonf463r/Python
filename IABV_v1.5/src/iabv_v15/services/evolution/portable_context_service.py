@@ -127,6 +127,7 @@ class PortableContextService:
             task_context=task_context,
         )
         task_packet_summary = self._task_packet_summary_snapshot()
+        worker_continuity = self._worker_continuity_snapshot()
         pending_items = self._pending_items()
         backlog_items = self._backlog_items()
         decision_history = self._decision_history(recommendations=recommendations)
@@ -171,6 +172,7 @@ class PortableContextService:
             self._boot_profile_section(status=boot_profile, now=now),
             self._evidence_basis_section(evidence=evidence_basis, now=now),
             self._task_packet_summary_section(snapshot=task_packet_summary, now=now),
+            self._worker_continuity_section(snapshot=worker_continuity, now=now),
             self._recommended_routes_section(recommendations=recommendations, now=now),
             self._operational_blocks_section(world=world, recommendations=recommendations, now=now),
             self._validated_decisions_section(
@@ -1418,6 +1420,81 @@ class PortableContextService:
                 'ExperimentLab',
                 'TaskOutcomeRecorder',
             ],
+            confidence=confidence,
+            last_updated=now,
+            unresolved_fields=unresolved,
+            metadata=snapshot,
+        )
+
+    def _worker_continuity_snapshot(self) -> dict[str, Any]:
+        """Scan recent adaptive sessions for worker continuity patterns."""
+        repo = self.adaptive_session_repository
+        if repo is None or not hasattr(repo, 'list_recent'):
+            return {'status': 'no_repository', 'handoff_count': 0}
+        try:
+            sessions = list(repo.list_recent(limit=30))
+        except Exception:
+            return {'status': 'read_error', 'handoff_count': 0}
+
+        handoff_count = 0
+        reason_counts: dict[str, int] = {}
+        for session in sessions:
+            metadata = dict(getattr(session, 'metadata', None) or {})
+            continuity = dict(metadata.get('worker_continuity') or {})
+            if continuity.get('handoff_required'):
+                handoff_count += 1
+                reason = str(continuity.get('continuation_reason') or 'unknown')
+                reason_counts[reason] = reason_counts.get(reason, 0) + 1
+
+        return {
+            'status': 'ok' if sessions else 'no_data',
+            'sessions_scanned': len(sessions),
+            'handoff_count': handoff_count,
+            'reason_breakdown': reason_counts,
+        }
+
+    def _worker_continuity_section(
+        self,
+        *,
+        snapshot: dict[str, Any],
+        now: datetime,
+    ) -> PortableContextSection:
+        st = snapshot.get('status', 'no_data')
+        handoff = snapshot.get('handoff_count', 0)
+        items: list[dict[str, Any]] = []
+        unresolved: list[str] = []
+
+        if st == 'ok' and handoff > 0:
+            items.append({
+                'label': 'handoff_count',
+                'value': str(handoff),
+            })
+            reasons = snapshot.get('reason_breakdown', {})
+            if reasons:
+                items.append({
+                    'label': 'reason_breakdown',
+                    'value': ', '.join(f'{k}: {v}' for k, v in reasons.items()),
+                })
+            summary = (
+                f'{handoff} sesiones recientes requirieron handoff de worker. '
+                f'Considerar verificar cuotas y rotar credenciales si persiste.'
+            )
+            confidence = 0.8
+        elif st == 'ok':
+            summary = 'Sin handoffs de worker en sesiones recientes.'
+            confidence = 0.9
+        else:
+            summary = f'Worker continuity: {st}.'
+            unresolved.append(f'UNRESOLVED:worker_continuity_{st}')
+            confidence = 0.0
+
+        return self._section(
+            section_id='worker_continuity',
+            title='Worker continuity patterns',
+            summary=summary,
+            items=items,
+            source_kind='adaptive_session_repository',
+            source_refs=['AdaptiveSession', 'worker_continuity'],
             confidence=confidence,
             last_updated=now,
             unresolved_fields=unresolved,
