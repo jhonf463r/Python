@@ -1270,6 +1270,7 @@ class AppBootstrap:
         self.operational_self_examination_service.code_audit_trail = self.code_audit_trail
         self.portable_context_service.decision_audit_trail = self.decision_audit_trail
         self.portable_context_service.code_audit_trail = self.code_audit_trail
+        self.portable_context_service.boot_profile_store = getattr(self, 'boot_profile_store', None)
         self.autonomous_validation_cycle.decision_audit_trail = self.decision_audit_trail
         self.autonomous_validation_cycle.api_key_discovery_service = self.api_key_discovery_service
         self.adaptive_model_selector = AdaptiveModelSelector(data_dir=self.config.data_dir)
