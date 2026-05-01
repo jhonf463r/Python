@@ -214,6 +214,8 @@ class LocalRoleRouter:
                 'reason': 'UNRESOLVED:account_resource_scanner no disponible — no se puede verificar worker pool.',
                 'available_count': 0,
                 'workers': [],
+                'top_worker': None,
+                'ranked_workers': [],
             }
 
         pool = self._get_worker_pool(refresh=refresh)
@@ -224,6 +226,8 @@ class LocalRoleRouter:
                 'reason': f'Error al escanear workers: {pool["error"]}',
                 'available_count': 0,
                 'workers': [],
+                'top_worker': None,
+                'ranked_workers': [],
             }
 
         from iabv_v15.services.account_resource_scanner import (
