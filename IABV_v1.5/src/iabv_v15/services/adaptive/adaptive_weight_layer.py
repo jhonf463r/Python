@@ -9,6 +9,38 @@ from iabv_v15.domain.models import ExperimentRun
 class AdaptiveWeightLayer:
     """Sugiere preferencias adaptativas a partir de corridas historicas reales."""
 
+    def __init__(self) -> None:
+        self._metacognitive_adjustments: dict[str, dict[str, Any]] = {}
+
+    def apply_metacognitive_adjustment(
+        self,
+        *,
+        route: str,
+        assistant_kind: str,
+        adjustment: float,
+        reason: str,
+    ) -> dict[str, Any]:
+        """Store a weight adjustment derived from metacognitive feedback.
+
+        Called by OSES when it detects overconfidence (negative adjustment)
+        or underconfidence (positive adjustment).  The adjustment is applied
+        in ``_profile()`` to bias future scoring.
+        """
+        key = f"{route}|{assistant_kind}".strip().lower()
+        clamped = max(-0.15, min(0.15, adjustment))
+        self._metacognitive_adjustments[key] = {
+            'adjustment': round(clamped, 4),
+            'reason': reason,
+            'applied_at': datetime.now(timezone.utc).isoformat(),
+        }
+        return self._metacognitive_adjustments[key]
+
+    def get_metacognitive_adjustment(self, route: str, assistant_kind: str) -> float:
+        """Return the current metacognitive weight adjustment for a config."""
+        key = f"{route}|{assistant_kind}".strip().lower()
+        entry = self._metacognitive_adjustments.get(key)
+        return float(entry['adjustment']) if entry else 0.0
+
     def suggest(
         self,
         *,
@@ -82,6 +114,8 @@ class AdaptiveWeightLayer:
             - fallback_rate * 0.08
             - latency_penalty
         )
+        mc_adj = self._metacognitive_adjustment_for_runs(ordered_runs)
+        adaptive_weight += mc_adj
         weighted_score = average_score + adaptive_weight
         reasons: list[str] = []
         if success_rate >= 0.66:
@@ -206,4 +240,16 @@ class AdaptiveWeightLayer:
                 continue
             counts[probe] = counts.get(probe, 0) + 1
         ordered = sorted(counts.items(), key=lambda item: (item[1], item[0]), reverse=True)
+
+    def _metacognitive_adjustment_for_runs(
+        self, runs: list[ExperimentRun],
+    ) -> float:
+        """Look up accumulated metacognitive adjustment for a set of runs."""
+        if not runs or not self._metacognitive_adjustments:
+            return 0.0
+        route_val = getattr(runs[-1].route, 'value', str(runs[-1].route or ''))
+        ak = str(runs[-1].assistant_kind or '').strip().lower()
+        key = f"{route_val}|{ak}".strip().lower()
+        entry = self._metacognitive_adjustments.get(key)
+        return float(entry['adjustment']) if entry else 0.0
         return [value for value, _ in ordered[:3]]

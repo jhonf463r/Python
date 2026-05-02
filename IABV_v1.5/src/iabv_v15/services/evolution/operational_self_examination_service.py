@@ -843,6 +843,23 @@ class OperationalSelfExaminationService:
                 'solution_proposals': solution_proposals[:4],
             },
         )
+        # Metacognitive feedback loop: convert overconfidence/underconfidence
+        # detections into adaptive weight adjustments so future scoring is
+        # biased to self-correct.  Also tracks calibration improvement.
+        mc_feedback = self._apply_metacognitive_feedback(
+            findings, experiment_runs=experiment_runs,
+        )
+        if mc_feedback:
+            review = review.model_copy(update={
+                'findings': [*review.findings, *mc_feedback][:10],
+                'metadata': {
+                    **dict(review.metadata or {}),
+                    'metacognitive_feedback': [
+                        f.model_dump(mode='json') for f in mc_feedback
+                    ],
+                },
+            })
+
         # Persist metacognitive ledger from the FULL findings list (before
         # truncation to 8) so MEDIUM-severity entries are not lost.
         self._persist_metacognitive_ledger_from_findings(
@@ -915,6 +932,159 @@ class OperationalSelfExaminationService:
                 )
             except Exception as exc:
                 logger.debug('oses_auto_correct: failed for %s: %s', finding.category, exc)
+
+    def _apply_metacognitive_feedback(
+        self,
+        findings: list[SelfExaminationFinding],
+        experiment_runs: list[ExperimentRun],
+    ) -> list[SelfExaminationFinding]:
+        """Convert metacognitive detection into adaptive weight adjustments.
+
+        When OSES detects overconfidence, underconfidence, or miscalibration,
+        this method feeds the signal into ``AdaptiveWeightLayer`` so future
+        scoring is biased accordingly.  This converts the system from
+        "detect and report" to "detect and self-correct".
+
+        Also tracks whether calibration is improving across reviews
+        (``loop_closure_improving``).
+        """
+        if self.adaptive_weight_layer is None:
+            return []
+        if not hasattr(self.adaptive_weight_layer, 'apply_metacognitive_adjustment'):
+            return []
+
+        results: list[SelfExaminationFinding] = []
+        mc_categories = {
+            'task_packet_metacognitive_overconfidence',
+            'task_packet_metacognitive_underconfidence',
+            'task_packet_metacognitive_miscalibration',
+        }
+        mc_findings = [f for f in findings if f.category in mc_categories]
+        if not mc_findings:
+            return results
+
+        dominant_route = ''
+        dominant_ak = ''
+        if experiment_runs:
+            from collections import Counter
+            routes = Counter(
+                getattr(r.route, 'value', str(r.route or ''))
+                for r in experiment_runs if r.route
+            )
+            aks = Counter(
+                str(r.assistant_kind or '').strip().lower()
+                for r in experiment_runs if r.assistant_kind
+            )
+            dominant_route = routes.most_common(1)[0][0] if routes else ''
+            dominant_ak = aks.most_common(1)[0][0] if aks else ''
+
+        if not dominant_route:
+            return results
+
+        adjustments_applied: list[dict[str, Any]] = []
+        for finding in mc_findings:
+            if finding.category == 'task_packet_metacognitive_overconfidence':
+                adj = -0.08
+                reason = f'overconfidence detected: {finding.metadata.get("false_positive_count", 0)} false positives'
+            elif finding.category == 'task_packet_metacognitive_underconfidence':
+                adj = 0.06
+                reason = f'underconfidence detected: {finding.metadata.get("false_negative_count", 0)} false negatives'
+            else:
+                avg_ce = finding.metadata.get('avg_calibration_error', 0.5)
+                adj = -0.04 if avg_ce > 0.5 else -0.02
+                reason = f'miscalibration detected: avg_error={avg_ce:.2f}'
+
+            try:
+                applied = self.adaptive_weight_layer.apply_metacognitive_adjustment(
+                    route=dominant_route,
+                    assistant_kind=dominant_ak,
+                    adjustment=adj,
+                    reason=reason,
+                )
+                adjustments_applied.append({
+                    'finding': finding.category,
+                    'route': dominant_route,
+                    'assistant_kind': dominant_ak,
+                    **applied,
+                })
+            except Exception:
+                pass
+
+        if adjustments_applied:
+            results.append(SelfExaminationFinding(
+                category='metacognitive_feedback_applied',
+                severity=IssueSeverity.LOW,
+                title=f'Ajuste adaptativo metacognitivo aplicado ({len(adjustments_applied)} ajustes)',
+                summary=(
+                    f'OSES detecto patrones metacognitivos y ajusto pesos '
+                    f'adaptativos para {dominant_route}/{dominant_ak}. '
+                    f'Ajustes: {", ".join(a["reason"] for a in adjustments_applied)}.'
+                ),
+                confidence=0.7,
+                recommendation=(
+                    'Monitorear si el calibration_error promedio mejora en '
+                    'las proximas ejecuciones. Si no mejora, revisar la '
+                    'formula de confianza en StrategySelector.'
+                ),
+                source_refs=['AdaptiveWeightLayer._metacognitive_adjustments'],
+                metadata={
+                    'pattern': 'metacognitive_feedback_loop',
+                    'adjustments': adjustments_applied,
+                    'dominant_route': dominant_route,
+                    'dominant_assistant_kind': dominant_ak,
+                },
+            ))
+
+        # --- Calibration improvement tracking ---
+        previous_review = self._load_latest_review()
+        if previous_review is not None:
+            prev_meta = dict(previous_review.metadata or {})
+            prev_cal = None
+            for f in (previous_review.findings or []):
+                if f.category == 'task_packet_metacognitive_miscalibration':
+                    prev_cal = (f.metadata or {}).get('avg_calibration_error')
+                    break
+            if prev_cal is None:
+                prev_cal = (prev_meta.get('last_avg_calibration_error'))
+
+            current_cal = None
+            for f in mc_findings:
+                if f.category == 'task_packet_metacognitive_miscalibration':
+                    current_cal = (f.metadata or {}).get('avg_calibration_error')
+                    break
+
+            if (
+                isinstance(prev_cal, (int, float))
+                and isinstance(current_cal, (int, float))
+                and current_cal < prev_cal
+            ):
+                improvement = prev_cal - current_cal
+                results.append(SelfExaminationFinding(
+                    category='metacognitive_loop_closure_improving',
+                    severity=IssueSeverity.LOW,
+                    title=f'Calibracion metacognitiva mejorando ({improvement:.3f} reduccion)',
+                    summary=(
+                        f'El error de calibracion promedio bajo de {prev_cal:.3f} '
+                        f'a {current_cal:.3f} (mejora de {improvement:.3f}). '
+                        f'El feedback loop metacognitivo esta funcionando.'
+                    ),
+                    confidence=min(0.6 + improvement, 0.9),
+                    recommendation=(
+                        'Mantener el feedback loop activo. Si la mejora se '
+                        'estabiliza, considerar reducir la magnitud de los '
+                        'ajustes adaptativos.'
+                    ),
+                    source_refs=['AdaptiveWeightLayer._metacognitive_adjustments'],
+                    metadata={
+                        'pattern': 'loop_closure_improving',
+                        'previous_avg_calibration_error': round(prev_cal, 4),
+                        'current_avg_calibration_error': round(current_cal, 4),
+                        'improvement': round(improvement, 4),
+                        'loop_closure_improving': True,
+                    },
+                ))
+
+        return results
 
     def _persist_review(self, review: SelfExaminationSnapshot) -> SelfExaminationSnapshot:
         embodiment_violations = self._collect_embodiment_violations()
@@ -3230,7 +3400,7 @@ class OperationalSelfExaminationService:
         findings_so_far: list[SelfExaminationFinding],
         experiment_runs: list[ExperimentRun],
     ) -> list[SelfExaminationFinding]:
-        """Introspect whether G1, G2, G3 and cognitive mechanisms are active.
+        """Introspect whether G1, G2, G3, G4 and cognitive mechanisms are active.
 
         This is the system's self-awareness of its own architecture: it
         checks that the introspective loop is actually closed by verifying
@@ -3282,6 +3452,26 @@ class OperationalSelfExaminationService:
             'wired': g3_wired,
             'active': g3_has_suggest,
             'detail': 'suggest() available' if g3_has_suggest else ('layer connected but no suggest()' if g3_wired else 'AdaptiveWeightLayer NOT connected'),
+        })
+
+        # --- G4: Metacognitive feedback loop ---
+        g4_wired = (
+            self.adaptive_weight_layer is not None
+            and hasattr(self.adaptive_weight_layer, 'apply_metacognitive_adjustment')
+        )
+        g4_active = False
+        if g4_wired:
+            adjustments = getattr(self.adaptive_weight_layer, '_metacognitive_adjustments', {})
+            g4_active = len(adjustments) > 0
+        checks.append({
+            'mechanism': 'G4_metacognitive_feedback',
+            'wired': g4_wired,
+            'active': g4_active,
+            'detail': (
+                f'{len(getattr(self.adaptive_weight_layer, "_metacognitive_adjustments", {}))} adjustments active'
+                if g4_active
+                else ('wired but no adjustments yet' if g4_wired else 'metacognitive feedback NOT connected')
+            ),
         })
 
         # --- Cognitive mechanisms: check if findings were generated ---

@@ -785,3 +785,124 @@ def test_portable_context_includes_calibration_summary() -> None:
         assert 0.0 < cal['avg_calibration_error'] < 1.0
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+# ---- Slice 5: Metacognitive Feedback Loop ----
+
+def test_adaptive_weight_layer_metacognitive_adjustment() -> None:
+    """AdaptiveWeightLayer stores and retrieves metacognitive adjustments."""
+    from iabv_v15.services.adaptive.adaptive_weight_layer import AdaptiveWeightLayer
+    layer = AdaptiveWeightLayer()
+
+    assert layer.get_metacognitive_adjustment('local', 'codex') == 0.0
+
+    result = layer.apply_metacognitive_adjustment(
+        route='local', assistant_kind='codex',
+        adjustment=-0.08, reason='overconfidence test',
+    )
+    assert result['adjustment'] == -0.08
+    assert result['reason'] == 'overconfidence test'
+    assert 'applied_at' in result
+
+    assert layer.get_metacognitive_adjustment('local', 'codex') == -0.08
+    assert layer.get_metacognitive_adjustment('cloud', 'devin') == 0.0
+
+    layer.apply_metacognitive_adjustment(
+        route='local', assistant_kind='codex',
+        adjustment=0.06, reason='underconfidence correction',
+    )
+    assert layer.get_metacognitive_adjustment('local', 'codex') == 0.06
+
+    layer.apply_metacognitive_adjustment(
+        route='local', assistant_kind='codex',
+        adjustment=0.99, reason='clamped to max',
+    )
+    assert layer.get_metacognitive_adjustment('local', 'codex') == 0.15
+
+
+def test_oses_applies_metacognitive_feedback_on_overconfidence() -> None:
+    """OSES detects overconfidence and applies negative weight adjustment."""
+    root = _workspace('wt_mc_feedback_overconf')
+    try:
+        from iabv_v15.bootstrap import AppBootstrap
+        bootstrap = AppBootstrap(str(root))
+        runs = [
+            {
+                'evidence_basis': {'state': 'observed'},
+                'worker_telemetry': {'worker_kind': 'codex', 'budget_state': 'ok'},
+                'metacognitive_evaluation': {
+                    'calibration_error': 0.7,
+                    'false_positive': True,
+                    'false_negative': False,
+                },
+            },
+        ] * 6
+        _seed_runs_with_bootstrap(bootstrap, runs)
+
+        review = bootstrap.operational_self_examination_service.current_review(refresh=True)
+        categories = [f.category for f in review.findings]
+        assert 'task_packet_metacognitive_overconfidence' in categories
+
+        mc_feedback = review.metadata.get('metacognitive_feedback', [])
+        feedback_categories = [f['category'] for f in mc_feedback]
+        assert 'metacognitive_feedback_applied' in feedback_categories
+
+        adj = bootstrap.adaptive_weight_layer.get_metacognitive_adjustment('local', 'codex')
+        assert adj < 0, f'Expected negative adjustment for overconfidence, got {adj}'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_oses_applies_metacognitive_feedback_on_underconfidence() -> None:
+    """OSES detects underconfidence and applies positive weight adjustment."""
+    root = _workspace('wt_mc_feedback_underconf')
+    try:
+        from iabv_v15.bootstrap import AppBootstrap
+        bootstrap = AppBootstrap(str(root))
+        runs = [
+            {
+                'evidence_basis': {'state': 'observed'},
+                'worker_telemetry': {'worker_kind': 'codex', 'budget_state': 'ok'},
+                'metacognitive_evaluation': {
+                    'calibration_error': 0.5,
+                    'false_positive': False,
+                    'false_negative': True,
+                },
+            },
+        ] * 6
+        _seed_runs_with_bootstrap(bootstrap, runs)
+
+        review = bootstrap.operational_self_examination_service.current_review(refresh=True)
+        categories = [f.category for f in review.findings]
+        assert 'task_packet_metacognitive_underconfidence' in categories
+
+        mc_feedback = review.metadata.get('metacognitive_feedback', [])
+        feedback_categories = [f['category'] for f in mc_feedback]
+        assert 'metacognitive_feedback_applied' in feedback_categories
+
+        adj = bootstrap.adaptive_weight_layer.get_metacognitive_adjustment('local', 'codex')
+        assert adj > 0, f'Expected positive adjustment for underconfidence, got {adj}'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_loop_closure_includes_g4_metacognitive_feedback() -> None:
+    """Loop-closure introspection reports G4 metacognitive feedback status."""
+    root = _workspace('wt_loop_closure_g4')
+    try:
+        from iabv_v15.bootstrap import AppBootstrap
+        bootstrap = AppBootstrap(str(root))
+        oses = bootstrap.operational_self_examination_service
+        findings = oses._loop_closure_findings(
+            findings_so_far=[],
+            experiment_runs=[],
+        )
+        assert len(findings) >= 1
+        loop_finding = findings[0]
+        checks = loop_finding.metadata.get('checks', [])
+        mechanism_names = [c['mechanism'] for c in checks]
+        assert 'G4_metacognitive_feedback' in mechanism_names
+        g4 = next(c for c in checks if c['mechanism'] == 'G4_metacognitive_feedback')
+        assert g4['wired'] is True
+    finally:
+        shutil.rmtree(root, ignore_errors=True)

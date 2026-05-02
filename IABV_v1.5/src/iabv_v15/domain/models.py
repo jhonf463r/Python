@@ -2116,6 +2116,26 @@ class ExternalWorkerTelemetry(BaseModel):
     merge_success: bool | None = None
     files_touched_scope: list[str] = Field(default_factory=list)
 
+    # Scientific proxy variables (calculated by scientific_proxy_engine)
+    compression_ratio: float | None = None
+    description_length_proxy: int | None = None
+    entropy_proxy: float | None = None
+    inference_depth_proxy: int | None = None
+    step_count_proxy: int | None = None
+    multi_step_success_rate: float | None = None
+    reuse_score: float | None = None
+    stability_score: float | None = None
+
+    # Metacognitive variables (populated by TaskOutcomeRecorder)
+    predicted_outcome: str | None = None
+    actual_outcome: str | None = None
+    confidence: float | None = None
+    calibration_error: float | None = None
+    uncertainty_proxy: float | None = None
+
+    # Decision
+    recommended_action: str | None = None
+
 
 class ToolEvolutionProposal(BaseModel):
     proposal_id: str = Field(default_factory=lambda: str(uuid4()))
