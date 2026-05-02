@@ -75,7 +75,15 @@ class EnvironmentSelfAwarenessService:
         self._last_full_scan_monotonic = 0.0
         self._current_model = self._load_latest_model() or EnvironmentSelfModel(scan_status='bootstrapping')
         if bootstrap_scan:
-            self.scan_now(reason='startup', full=not self._in_test_mode())
+            # Fix 15: always do a *light* scan during bootstrap.  A full scan
+            # calls PowerShell/nvidia-smi/ollama-list/typeperf — each with
+            # subprocess timeouts that add 15-25s on Windows.  The first full
+            # scan will run when the background thread triggers it (after
+            # full_scan_interval_seconds) or on the next manual request_refresh.
+            self.scan_now(reason='startup', full=False)
+            # Schedule the first full scan to run as soon as the background
+            # thread starts, rather than waiting for full_scan_interval_seconds.
+            self._pending_full_refresh = True
         if self._auto_start:
             self.start()
 
