@@ -149,6 +149,52 @@ INFERENCE_RULES: list[dict[str, Any]] = [
         'safe': False,
         'description': 'Arranque lento con muchas verificaciones en serie — paralelizar',
     },
+    # Startup metacognition — detect→deduce→correct for startup events
+    {
+        'id': 'populate_ui_freeze',
+        'premises': ['populate_ui_slow'],
+        'conclusion': 'ui_blocking_startup',
+        'action': 'defer_heavy_viewmodel_init',
+        'severity': 'high',
+        'safe': True,
+        'description': 'populate_ui tarda >5s — diferir inicializacion pesada de ViewModels',
+    },
+    {
+        'id': 'populate_ui_incomplete',
+        'premises': ['populate_ui_started', 'populate_ui_not_done'],
+        'conclusion': 'ui_init_stalled',
+        'action': 'investigate_viewmodel_blocking',
+        'severity': 'high',
+        'safe': True,
+        'description': 'populate_ui inicio pero no termino — investigar bloqueo en ViewModel',
+    },
+    {
+        'id': 'process_not_responding',
+        'premises': ['startup_slow', 'high_ram_usage'],
+        'conclusion': 'main_thread_saturated',
+        'action': 'reduce_background_thread_load',
+        'severity': 'critical',
+        'safe': True,
+        'description': 'Arranque lento + RAM alta — reducir carga de hilos background para liberar GIL',
+    },
+    {
+        'id': 'memory_leak_at_startup',
+        'premises': ['rss_growth_high'],
+        'conclusion': 'memory_growth_abnormal',
+        'action': 'profile_memory_allocations',
+        'severity': 'high',
+        'safe': True,
+        'description': 'RSS crece >150MB durante startup — perfilar allocaciones de memoria',
+    },
+    {
+        'id': 'wire_services_bottleneck',
+        'premises': ['wire_services_slow'],
+        'conclusion': 'service_wiring_slow',
+        'action': 'defer_heavy_service_scans',
+        'severity': 'high',
+        'safe': True,
+        'description': 'wire_services tarda >8s — diferir scans pesados al background',
+    },
     # Multi-monitor
     {
         'id': 'multi_monitor_blind_spot',
@@ -531,6 +577,22 @@ def extract_facts(
     startup_ms = deep.get('startup_ms', 0)
     if startup_ms > 5000:
         facts.add('startup_slow')
+
+    # Startup timeline facts — extracted from deep_env_scan['startup_timeline']
+    timeline = deep.get('startup_timeline', {})
+    wire_ms = timeline.get('wire_services_ms', 0)
+    if wire_ms > 8000:
+        facts.add('wire_services_slow')
+        facts.add('startup_slow')
+    populate_ms = timeline.get('populate_ui_ms', 0)
+    if populate_ms > 5000:
+        facts.add('populate_ui_slow')
+    if timeline.get('populate_ui_started') and not timeline.get('populate_ui_done'):
+        facts.add('populate_ui_started')
+        facts.add('populate_ui_not_done')
+    rss_growth_mb = timeline.get('rss_growth_mb', 0)
+    if rss_growth_mb > 150:
+        facts.add('rss_growth_high')
 
     return facts
 

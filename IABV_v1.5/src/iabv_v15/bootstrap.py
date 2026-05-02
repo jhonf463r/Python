@@ -1891,7 +1891,7 @@ class AppBootstrap:
                 out.append((refreshed.tool_id, refreshed.available, refreshed))
             return out
 
-        max_workers = min(len(adapter_groups), 8) or 1
+        max_workers = min(len(adapter_groups), 4) or 1
         with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix='iabv-tool-probe') as pool:
             futures = {
                 pool.submit(_probe_group, group_cards): adapter_key
@@ -1959,6 +1959,85 @@ class AppBootstrap:
                 logger.debug('auto_install: failed — %s', exc)
 
         self._startup_self_examination()
+        self._run_startup_common_sense()
+
+    def _run_startup_common_sense(self) -> None:
+        """Run common-sense reasoning over startup timeline events.
+
+        Reads the startup timeline to build a ``timeline_data`` dict with
+        wire_services_ms, populate_ui_ms, rss_growth_mb, then passes it
+        through ``run_common_sense_reasoning`` in dry-run mode.  Any rules
+        that fire are logged so the metacognition loop is aware of startup
+        anomalies without executing corrective actions (those are handled
+        by the fixes themselves).
+        """
+        if os.environ.get('IABV_MCP_SUBPROCESS') == '1':
+            return
+        try:
+            from iabv_v15.services.common_sense_engine import (
+                run_common_sense_reasoning,
+            )
+        except ImportError:
+            return
+
+        timeline_events = self._timeline.events()
+        timeline_data: dict[str, Any] = {}
+
+        # Extract wire_services duration
+        wire_start = None
+        wire_end = None
+        populate_start = None
+        populate_end = None
+        for ev in timeline_events:
+            phase = ev.get('phase', '')
+            elapsed = ev.get('elapsed_ms', 0)
+            if phase == 'wire_services_start':
+                wire_start = elapsed
+            elif phase == 'wire_services_done':
+                wire_end = elapsed
+            elif phase == 'populate_ui_start':
+                populate_start = elapsed
+                timeline_data['populate_ui_started'] = True
+            elif phase == 'populate_ui_done':
+                populate_end = elapsed
+                timeline_data['populate_ui_done'] = True
+
+        if wire_start is not None and wire_end is not None:
+            timeline_data['wire_services_ms'] = wire_end - wire_start
+        if populate_start is not None and populate_end is not None:
+            timeline_data['populate_ui_ms'] = populate_end - populate_start
+
+        # RSS growth: check if recorded in timeline extras
+        for ev in timeline_events:
+            rss = ev.get('rss_growth_mb')
+            if rss is not None:
+                timeline_data['rss_growth_mb'] = rss
+
+        if not timeline_data:
+            return
+
+        try:
+            result = run_common_sense_reasoning(
+                deep_env_scan={'startup_timeline': timeline_data},
+                execute=False,
+                dry_run=True,
+            )
+            fired = result.get('fired_rules', [])
+            for rule in fired:
+                rid = rule.get('id', '?')
+                sev = rule.get('severity', 'medium')
+                conclusion = rule.get('conclusion', '')
+                logger.info(
+                    'startup_common_sense [%s]: %s → %s',
+                    sev, rid, conclusion,
+                )
+            if fired:
+                logger.info(
+                    'startup_common_sense: %d rules fired from timeline',
+                    len(fired),
+                )
+        except Exception as exc:
+            logger.debug('startup_common_sense: skipped (%s)', exc)
 
     def _startup_self_examination(self) -> None:
         """Run a lightweight self-examination at startup.
@@ -3150,14 +3229,14 @@ class AppBootstrap:
                 self._timeline.mark('main_window_shown')
                 self._connect_window_lifecycle_signals(main_win)
 
-            QTimer.singleShot(1200, self._schedule_startup_evolution)
+            QTimer.singleShot(15000, self._schedule_startup_evolution)
 
             # Defer the heavy tool-availability probe (HTTP pings + pip
             # install of mcp_client).  The probe now runs in a background
             # thread (never blocks the GUI event loop), but we still
             # delay 2s so the QML shell has time to start incubating.
             if not self._tool_availability_logged:
-                QTimer.singleShot(2000, self._run_deferred_post_window_setup)
+                QTimer.singleShot(3000, self._run_deferred_post_window_setup)
 
             # ``splash.set_ready()`` ya NO se dispara aqui.  Antes era
             # deshonesto: la ventana visible aun era una ``ApplicationWindow``

@@ -319,7 +319,7 @@ for n in model.notifications:
 ```python
 # 6a. Snapshot actual del mundo
 world_service = bootstrap.world_model_service
-snapshot = world_service.current_snapshot()
+snapshot = world_service.current_model()
 
 print("=" * 60)
 print("WORLD MODEL SNAPSHOT")

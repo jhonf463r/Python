@@ -515,6 +515,13 @@ _ACTION_HANDLERS: dict[str, Any] = {
     'rotate_api_key': _noop,  # logged — next call uses new provider
     'cooldown_provider': _noop,  # logged — provider in quota cooldown
     'recommend_local_model': _noop,  # logged — suggest better Ollama model
+    # Startup metacognition auto-corrections
+    'defer_heavy_viewmodel_init': _noop,  # logged — DashboardViewModel defers refresh
+    'investigate_viewmodel_blocking': _noop,  # logged — trigger profiling of VM init
+    'reduce_background_thread_load': _noop,  # logged — stagger GIL-heavy tasks
+    'profile_memory_allocations': _noop,  # logged — trigger RSS profiler
+    'defer_heavy_service_scans': _noop,  # logged — light bootstrap scan
+    'parallelize_startup_checks': _noop,  # logged — restructure serial checks
 }
 
 
