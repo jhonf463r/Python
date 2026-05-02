@@ -66,6 +66,7 @@ def test_run_deferred_post_window_setup_is_idempotent(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv('IABV_DEFER_TOOL_PROBE', raising=False)
+    import threading
     from iabv_v15.bootstrap import AppBootstrap
 
     with patch.object(
@@ -75,6 +76,11 @@ def test_run_deferred_post_window_setup_is_idempotent(
         bootstrap._run_deferred_post_window_setup()
         bootstrap._run_deferred_post_window_setup()
         bootstrap._run_deferred_post_window_setup()
+        # The method runs _log_tool_availability in a background thread;
+        # wait for all daemon threads spawned by the method to finish.
+        for t in threading.enumerate():
+            if t.name == 'iabv-deferred-post-window' and t.is_alive():
+                t.join(timeout=5)
         assert probe.call_count == 1, (
             'Deferred probe must run at most once even if scheduled twice.'
         )

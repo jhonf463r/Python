@@ -199,9 +199,9 @@ def test_oses_startup_health_findings_returns_empty_when_healthy() -> None:
         {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
         {'phase': 'bootstrap_init_done', 't_ms_from_start': 1500.0, 'rss_mb': 110.0},
         {'phase': 'run_start', 't_ms_from_start': 1510.0, 'rss_mb': 110.0},
-        {'phase': 'main_window_shown', 't_ms_from_start': 4500.0, 'rss_mb': 220.0},
-        {'phase': 'deferred_post_window_setup_start', 't_ms_from_start': 4600.0, 'rss_mb': 220.0},
-        {'phase': 'deferred_post_window_setup_done', 't_ms_from_start': 6800.0, 'rss_mb': 240.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 4500.0, 'rss_mb': 170.0},
+        {'phase': 'deferred_post_window_setup_start', 't_ms_from_start': 4600.0, 'rss_mb': 170.0},
+        {'phase': 'deferred_post_window_setup_done', 't_ms_from_start': 6800.0, 'rss_mb': 200.0},
     ]
     _write_timeline(root, events)
     oses = _make_oses(root)
@@ -211,7 +211,8 @@ def test_oses_startup_health_findings_returns_empty_when_healthy() -> None:
 def test_oses_startup_health_findings_emits_per_threshold_crossed() -> None:
     root = _workspace('oses_startup_degraded')
     # init=9000ms (>2x init threshold), run_to_window=13000ms (degraded),
-    # deferred=6400ms (degraded). Three findings expected.
+    # deferred=6400ms (degraded), RSS growth 320MB (>150MB threshold).
+    # Four findings expected: 3 degradation + 1 memory_spike.
     events = [
         {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 90.0},
         {'phase': 'bootstrap_init_done', 't_ms_from_start': 9000.0, 'rss_mb': 200.0},
@@ -222,11 +223,11 @@ def test_oses_startup_health_findings_emits_per_threshold_crossed() -> None:
     _write_timeline(root, events)
     oses = _make_oses(root)
     findings = oses._startup_health_findings()
-    assert len(findings) == 3
+    assert len(findings) == 4
     categories = {f.category for f in findings}
-    assert categories == {'startup_degradation'}
-    phases = {f.metadata['phase'] for f in findings}
-    assert phases == {'bootstrap_init', 'run_to_main_window', 'deferred_post_window'}
+    assert categories == {'startup_degradation', 'startup_memory_spike'}
+    degradation_phases = {f.metadata['phase'] for f in findings if f.category == 'startup_degradation'}
+    assert degradation_phases == {'bootstrap_init', 'run_to_main_window', 'deferred_post_window'}
     init_finding = next(f for f in findings if f.metadata['phase'] == 'bootstrap_init')
     # init_ms 9000 > 2 * threshold (4000), should be HIGH severity.
     assert init_finding.severity.value == 'high'
@@ -236,13 +237,14 @@ def test_oses_startup_health_findings_emits_per_threshold_crossed() -> None:
 def test_oses_startup_health_findings_emits_only_for_crossed_thresholds() -> None:
     root = _workspace('oses_startup_partial_degraded')
     # Only run_to_window crosses; init and deferred are healthy.
+    # RSS growth = 220MB (300-80) > 150MB threshold, so memory_spike also fires.
     events = [
         {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
         {'phase': 'bootstrap_init_done', 't_ms_from_start': 1200.0, 'rss_mb': 110.0},
         {'phase': 'run_start', 't_ms_from_start': 1210.0, 'rss_mb': 110.0},
-        {'phase': 'main_window_shown', 't_ms_from_start': 12000.0, 'rss_mb': 280.0},
-        {'phase': 'deferred_post_window_setup_start', 't_ms_from_start': 12100.0, 'rss_mb': 280.0},
-        {'phase': 'deferred_post_window_setup_done', 't_ms_from_start': 14000.0, 'rss_mb': 300.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 12000.0, 'rss_mb': 200.0},
+        {'phase': 'deferred_post_window_setup_start', 't_ms_from_start': 12100.0, 'rss_mb': 200.0},
+        {'phase': 'deferred_post_window_setup_done', 't_ms_from_start': 14000.0, 'rss_mb': 210.0},
     ]
     _write_timeline(root, events)
     oses = _make_oses(root)

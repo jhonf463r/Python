@@ -1967,42 +1967,74 @@ class AppBootstrap:
         UI anomalies (zombie windows, missing IABV window, duplicates)
         and logs the results. This gives the program self-awareness
         about its own state immediately after boot.
+
+        Also runs ``_startup_health_findings()`` from OSES to detect
+        startup degradation (populate_ui freeze, RSS growth, false ready,
+        shell readiness latency). Without this, those findings only appear
+        when ``build_review()`` is called on-demand, which means the
+        program never auto-detects its own startup freeze.
         """
         if os.environ.get('IABV_MCP_SUBPROCESS') == '1':
             return
         validator = getattr(self, 'perception_cross_validator', None)
-        if validator is None:
-            return
-        try:
-            result = validator.run_cross_validation()
-            n_issues = result.get('total_inconsistencies', 0)
-            checks = result.get('checks_passed', [])
-            ui_issues = [
-                i for i in result.get('inconsistencies', [])
-                if i.get('check') == 'ui_self_awareness'
-            ]
-            if ui_issues:
-                for issue in ui_issues:
-                    logger.warning(
-                        'startup_ui_issue: %s — %s',
-                        issue.get('actual', ''),
-                        issue.get('detail', ''),
+        if validator is not None:
+            try:
+                result = validator.run_cross_validation()
+                n_issues = result.get('total_inconsistencies', 0)
+                checks = result.get('checks_passed', [])
+                ui_issues = [
+                    i for i in result.get('inconsistencies', [])
+                    if i.get('check') == 'ui_self_awareness'
+                ]
+                if ui_issues:
+                    for issue in ui_issues:
+                        logger.warning(
+                            'startup_ui_issue: %s — %s',
+                            issue.get('actual', ''),
+                            issue.get('detail', ''),
+                        )
+                if n_issues == 0:
+                    logger.info(
+                        'startup_self_check: %d/%d checks passed — all consistent',
+                        len(checks),
+                        result.get('total_checks', 0),
                     )
-            if n_issues == 0:
-                logger.info(
-                    'startup_self_check: %d/%d checks passed — all consistent',
-                    len(checks),
-                    result.get('total_checks', 0),
-                )
-            else:
-                logger.warning(
-                    'startup_self_check: %d inconsistencies found (%d/%d passed)',
-                    n_issues,
-                    len(checks),
-                    result.get('total_checks', 0),
-                )
-        except Exception as exc:
-            logger.debug('startup_self_check: skipped (%s)', exc)
+                else:
+                    logger.warning(
+                        'startup_self_check: %d inconsistencies found (%d/%d passed)',
+                        n_issues,
+                        len(checks),
+                        result.get('total_checks', 0),
+                    )
+            except Exception as exc:
+                logger.debug('startup_self_check: skipped (%s)', exc)
+
+        oses = getattr(self, 'operational_self_examination_service', None)
+        if oses is not None and hasattr(oses, '_startup_health_findings'):
+            try:
+                startup_findings = oses._startup_health_findings()
+                for f in startup_findings:
+                    sev = getattr(f, 'severity', None) or 'UNKNOWN'
+                    title = getattr(f, 'title', '') or str(f)
+                    cat = getattr(f, 'category', '') or ''
+                    rec = getattr(f, 'recommendation', '') or ''
+                    if str(sev) in ('CRITICAL', 'HIGH'):
+                        logger.warning(
+                            'startup_health [%s|%s]: %s | fix: %s',
+                            sev, cat, title, rec,
+                        )
+                    else:
+                        logger.info(
+                            'startup_health [%s|%s]: %s',
+                            sev, cat, title,
+                        )
+                if startup_findings:
+                    logger.info(
+                        'startup_health: %d findings detected at boot',
+                        len(startup_findings),
+                    )
+            except Exception as exc:
+                logger.debug('startup_health_findings: skipped (%s)', exc)
 
     def _ensure_directories(self) -> None:
         for path in (
@@ -2076,6 +2108,7 @@ class AppBootstrap:
             self.run_repository,
             self.role_router,
             self.embedding_service,
+            defer_initial_refresh=True,
         )
         # --- MCP bridge (Capa 1): expone el programa a agentes externos
         # (Devin/Claude/Codex) via MCP sobre un tunnel local. El service lee

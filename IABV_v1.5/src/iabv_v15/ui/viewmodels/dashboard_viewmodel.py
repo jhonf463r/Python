@@ -7,7 +7,7 @@ from iabv_v15.infra.persistence.knowledge_repository import KnowledgeRepository
 from iabv_v15.infra.persistence.run_repository import RunRepository
 from iabv_v15.services.roles.embedding_index_service import EmbeddingIndexService
 from iabv_v15.services.roles.local_role_router import LocalRoleRouter
-from iabv_v15.ui.qt import QObject, Property, Signal, Slot
+from iabv_v15.ui.qt import QObject, Property, QTimer, Signal, Slot
 
 
 class DashboardViewModel(QObject):
@@ -22,6 +22,7 @@ class DashboardViewModel(QObject):
         run_repository: RunRepository,
         role_router: LocalRoleRouter,
         embedding_service: EmbeddingIndexService,
+        defer_initial_refresh: bool = False,
     ) -> None:
         super().__init__()
         self.episode_repository = episode_repository
@@ -35,7 +36,10 @@ class DashboardViewModel(QObject):
         self._health_status = 'Chequeo pendiente. Usa el boton para consultar el stack local.'
         self.healthResolved.connect(self._apply_health)
         self.healthFailed.connect(self._apply_health_error)
-        self.refresh()
+        if defer_initial_refresh:
+            QTimer.singleShot(250, self.refresh)
+        else:
+            self.refresh()
 
     def _translate_status(self, status: str) -> str:
         mapping = {'ready': 'listo', 'degraded': 'degradado', 'unavailable': 'no disponible', 'optional_inactive': 'opcional no activo', 'idle': 'inactivo'}
