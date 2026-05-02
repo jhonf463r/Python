@@ -829,6 +829,14 @@ class AppBootstrap:
             app_name=self.config.app_name,
         )
 
+        # Fix 21: Windows toast notification bridge — tries winotify,
+        # falls back to QSystemTrayIcon balloon.
+        from iabv_v15.services.platform.win_toast_bridge import WinToastBridge
+        self.win_toast_bridge = WinToastBridge(
+            app_name=self.config.app_name,
+            systray_bridge=self.win_systray_bridge,
+        )
+
         # PCS v1 — PR E. Detector read-only de violaciones de encarnamiento.
         # handshake_required=False en el manifest → sólo reporta.
         # Lo enchufamos al self_examination como provider para poblar
@@ -2205,6 +2213,21 @@ class AppBootstrap:
         ):
             Path(path).mkdir(parents=True, exist_ok=True)
 
+    @staticmethod
+    def _yield_to_event_loop() -> None:
+        """Pump the Qt event loop once to keep the UI responsive.
+
+        Called between heavy VM constructions in ``_build_ui_objects``
+        so that the splash/window can repaint and Windows doesn't mark
+        the process as Not Responding during startup (Fix 20b).
+        """
+        try:
+            _app = QGuiApplication.instance()
+            if _app is not None:
+                _app.processEvents()
+        except Exception:
+            pass
+
     def _build_ui_objects(self) -> None:
         if self.navigation_controller is not None:
             return
@@ -2251,6 +2274,7 @@ class AppBootstrap:
             )
         except Exception:
             logger.exception('No se pudo conectar splashClosing -> _handle_splash_closing')
+        self._yield_to_event_loop()  # Fix 20b
         self.dashboard_viewmodel = DashboardViewModel(
             self.episode_repository,
             self.knowledge_repository,
@@ -2259,6 +2283,7 @@ class AppBootstrap:
             self.embedding_service,
             defer_initial_refresh=True,
         )
+        self._yield_to_event_loop()  # Fix 20b
         # --- MCP bridge (Capa 1): expone el programa a agentes externos
         # (Devin/Claude/Codex) via MCP sobre un tunnel local. El service lee
         # su preferencia persistida y, si estaba habilitado, se auto-arranca.
@@ -2337,6 +2362,7 @@ class AppBootstrap:
             logger.exception('No se pudo construir ChatCapabilityIngestionService; dejando None')
             self.chat_capability_ingestion_service = None
 
+        self._yield_to_event_loop()  # Fix 20b
         self.control_center_viewmodel = ControlCenterViewModel(
             config=self.config,
             episode_repository=self.episode_repository,
@@ -2372,6 +2398,7 @@ class AppBootstrap:
             chat_capability_ingestion_service=self.chat_capability_ingestion_service,
             defer_initial_refresh=True,
         )
+        self._yield_to_event_loop()  # Fix 20b
         self.capture_studio_viewmodel = CaptureStudioViewModel(
             config=self.config,
             episode_repository=self.episode_repository,
@@ -2416,6 +2443,7 @@ class AppBootstrap:
                 logger.exception('UIBridgeServer failed to start with VM wiring')
                 self.ui_bridge_server = None
 
+        self._yield_to_event_loop()  # Fix 20b
         # Deferred: refreshAutonomyDock runs inside the VM's deferred
         # startup thread to avoid blocking UI creation.
         self.evolution_center_viewmodel = EvolutionCenterViewModel(
@@ -2449,6 +2477,7 @@ class AppBootstrap:
         # persiste a disco y el VM solo lee la foto (AGENTS.md: el VM no
         # decide rutas ni inventa datos).
         self.evolution_center_viewmodel.ui_screenshot_service = self.ui_screenshot_service
+        self._yield_to_event_loop()  # Fix 20b
         self.knowledge_base_viewmodel = KnowledgeBaseViewModel(
             self.knowledge_repository,
             defer_initial_refresh=True,
@@ -2678,6 +2707,29 @@ class AppBootstrap:
                     )
                 except Exception:
                     pass
+                # Fix 20a: Early splash close — don't wait for QML
+                # incubation (can take >100s on Windows). Close splash
+                # 500ms after populate_ui so the user sees the main
+                # window immediately.  If shell_loader_ready already
+                # fired (fast machine), this is a no-op.
+                if splash:
+                    def _early_splash_close() -> None:
+                        if getattr(self, '_shell_loader_ready_handled', False):
+                            return
+                        self._shell_loader_ready_handled = True
+                        logger.info(
+                            'splash_early_close: closing splash after '
+                            'populate_ui (shell_loader_ready not received yet)')
+                        try:
+                            self._timeline.mark(
+                                'splash_early_close',
+                                reason='populate_ui_done_grace_period',
+                            )
+                        except Exception:
+                            pass
+                        self._fire_splash_ready_and_raise_main(
+                            'populate_ui_early_close')
+                    QTimer.singleShot(500, _early_splash_close)
             QTimer.singleShot(0, _populate_ui)
         else:
             # Synchronous path (used by tests that don't call app.exec()).

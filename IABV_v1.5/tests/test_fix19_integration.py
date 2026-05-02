@@ -1,7 +1,7 @@
-"""Integration tests for Fix 19 — systray, clipboard, DPI, pending queue updates.
+"""Integration tests for Fix 19-21 — systray, clipboard, DPI, toast, pending queue updates.
 
-Verifies that Fix 19's changes integrate cleanly:
-- PlatformPendingQueue canonical tasks reflect COMPLETED for the 3 implemented tasks
+Verifies that Fix 19-21's changes integrate cleanly:
+- PlatformPendingQueue canonical tasks reflect COMPLETED for the 4 implemented tasks
 - Bridge modules import cleanly
 - DPI code path is safe on non-Windows
 """
@@ -18,7 +18,7 @@ from iabv_v15.domain.models import PendingTaskStatus
 
 
 class TestPendingQueueFix19Updates:
-    """Verify that the 3 READY_FOR_NEXT_SLICE tasks are now COMPLETED."""
+    """Verify that the 4 implemented tasks are now COMPLETED (3 from Fix 19 + 1 from Fix 21)."""
 
     def test_canonical_tasks_have_three_completed(self):
         from iabv_v15.services.evolution.platform_pending_queue import _WINDOWS_INTEGRATION_TASKS
@@ -30,7 +30,8 @@ class TestPendingQueueFix19Updates:
         assert 'win_systray_icon' in completed_ids
         assert 'win_clipboard_bridge' in completed_ids
         assert 'win_dpi_awareness' in completed_ids
-        assert len(completed_ids) == 3
+        assert 'win_toast_notifications' in completed_ids
+        assert len(completed_ids) == 4
 
     def test_seed_persists_completed_tasks(self):
         from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
@@ -67,7 +68,7 @@ class TestPendingQueueFix19Updates:
             t for t in _WINDOWS_INTEGRATION_TASKS
             if t['status'] in ('PENDING', 'BLOCKED')
         ]
-        assert len(pending) == 6
+        assert len(pending) == 5
 
     def test_queue_summary_after_seed(self):
         from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
@@ -77,7 +78,7 @@ class TestPendingQueueFix19Updates:
             queue.seed_windows_integration_tasks()
             summary = queue.summary()
             assert summary['total'] == 9
-            assert summary['by_status'].get('COMPLETED', 0) == 3
+            assert summary['by_status'].get('COMPLETED', 0) == 4
             assert summary['actionable'] > 0
 
     def test_total_canonical_tasks_is_nine(self):

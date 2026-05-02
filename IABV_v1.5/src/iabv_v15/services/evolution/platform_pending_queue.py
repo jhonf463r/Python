@@ -194,15 +194,16 @@ _WINDOWS_INTEGRATION_TASKS: list[dict[str, Any]] = [
         'id': 'win_toast_notifications',
         'title': 'Notificaciones toast nativas',
         'description': (
-            'Implementar envio de notificaciones toast de Windows 10+ '
-            'para alertas criticas del sistema (starvation, degradacion, '
-            'tareas completadas).'
+            'Bridge de notificaciones con fallback: winotify (Action '
+            'Center) si instalado, QSystemTrayIcon balloon si hay '
+            'systray activo, noop si no hay backend. Implementado '
+            'en Fix 21 via WinToastBridge.'
         ),
-        'reason': 'No hay libreria de toast instalada (winrt/plyer/winotify)',
-        'dependency_missing': 'winotify o plyer (pip install winotify)',
+        'reason': 'Implementado en Fix 21',
+        'dependency_missing': '',
         'priority': 'high',
-        'next_action': 'pip install winotify && implementar NotificationBridge',
-        'status': 'PENDING',
+        'next_action': '',
+        'status': 'COMPLETED',
         'category': 'windows_native',
     },
     {

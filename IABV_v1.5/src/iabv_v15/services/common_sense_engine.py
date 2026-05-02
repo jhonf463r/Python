@@ -214,6 +214,16 @@ INFERENCE_RULES: list[dict[str, Any]] = [
         'safe': True,
         'description': 'QTimer fallback tardo mucho mas de lo esperado — main thread bloqueado por QML',
     },
+    # Fix 20d: splash closed early because QML incubation hadn't finished
+    {
+        'id': 'splash_closed_before_shell_ready',
+        'premises': ['splash_early_close_used'],
+        'conclusion': 'qml_incubation_slow',
+        'action': 'log_incubation_time',
+        'severity': 'medium',
+        'safe': True,
+        'description': 'Splash cerrado antes de shell_loader_ready — la incubacion QML sigue en background',
+    },
     # Multi-monitor
     {
         'id': 'multi_monitor_blind_spot',

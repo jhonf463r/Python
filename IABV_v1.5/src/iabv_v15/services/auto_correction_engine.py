@@ -525,6 +525,7 @@ _ACTION_HANDLERS: dict[str, Any] = {
     # QML layer auto-corrections
     'force_shell_ready_fallback': _noop,  # logged — fallback already fires
     'reduce_qml_incubation_load': _noop,  # logged — requires QML refactor
+    'log_incubation_time': _noop,  # logged — Fix 20d: incubation slow but splash closed early
 }
 
 
