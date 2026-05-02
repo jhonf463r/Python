@@ -804,6 +804,19 @@ class AppBootstrap:
             adaptive_weight_layer=self.adaptive_weight_layer,
             token_rotation_ledger=self.token_rotation_ledger,
         )
+
+        # Fix 18b: Platform pending queue — persistent task queue for
+        # Windows-native integration gaps.  Seeded once with the canonical
+        # set of known gaps; subsequent runs skip COMPLETED items.
+        from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+        self.platform_pending_queue = PlatformPendingQueue(
+            evolution_dir=self.config.evolution_dir,
+        )
+        try:
+            self.platform_pending_queue.seed_windows_integration_tasks()
+        except Exception:
+            pass
+
         # PCS v1 — PR E. Detector read-only de violaciones de encarnamiento.
         # handshake_required=False en el manifest → sólo reporta.
         # Lo enchufamos al self_examination como provider para poblar
@@ -874,6 +887,7 @@ class AppBootstrap:
             tool_discovery_service=self.tool_discovery_service,
             tool_evolution_monitor=self.tool_evolution_monitor,
             adaptive_session_repository=self.adaptive_session_repository,
+            platform_pending_queue=self.platform_pending_queue,
         )
         # --- Security & evolution broker stack (PR #101-#106) ---
         # Wiring minimo de los servicios que cierran el loop "el programa

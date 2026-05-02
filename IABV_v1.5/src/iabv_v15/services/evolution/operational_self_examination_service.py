@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import time
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
@@ -789,6 +790,10 @@ class OperationalSelfExaminationService:
         findings.extend(self._task_packet_pattern_findings(
             experiment_runs=experiment_runs,
         ))
+
+        # Windows platform integration: detect missing native capabilities
+        # and emit structured findings that map to pending tasks.
+        findings.extend(self._windows_integration_findings())
 
         findings = self._dedupe_findings(findings)
 
@@ -6243,6 +6248,111 @@ class OperationalSelfExaminationService:
                     ))
 
         return results
+
+    # ------------------------------------------------------------------
+    # Windows platform integration findings (Fix 18c)
+    # ------------------------------------------------------------------
+
+    def _windows_integration_findings(self) -> list[SelfExaminationFinding]:
+        """Detect missing Windows-native capabilities and emit structured findings.
+
+        Reads the ``platform.*`` entries from the EnvironmentSelfModel
+        capability_graph.  For each capability that is ``missing`` or has
+        ``missing_dependency`` status, emits a finding with structured
+        metadata matching the PlatformPendingTask schema so the pending
+        queue can be seeded from these findings.
+        """
+        findings: list[SelfExaminationFinding] = []
+        if os.name != 'nt':
+            return findings
+
+        env_model = self._environment_model()
+        if env_model is None:
+            return findings
+
+        cap_graph = env_model.capability_graph or []
+        platform_caps = [c for c in cap_graph if c.capability_id.startswith('platform.')]
+
+        missing_caps = [
+            c for c in platform_caps
+            if not c.available and c.status not in ('not_applicable',)
+        ]
+
+        if not missing_caps:
+            return findings
+
+        missing_ids = [c.capability_id for c in missing_caps]
+        missing_titles = [c.title for c in missing_caps]
+
+        findings.append(SelfExaminationFinding(
+            category='windows_integration_gaps',
+            title=f'{len(missing_caps)} capacidades Windows nativas faltantes',
+            summary=(
+                f'El sistema detecta {len(missing_caps)} capacidades de la '
+                f'plataforma Windows que no estan disponibles o tienen '
+                f'dependencias faltantes: {", ".join(missing_titles[:5])}.'
+            ),
+            severity=IssueSeverity.MEDIUM,
+            confidence=0.9,
+            recommendation=(
+                'Revisar la cola de pendientes de plataforma en '
+                'data/evolution/platform_pending/. Cada capacidad '
+                'faltante tiene next_action y dependency_missing '
+                'documentados para continuacion por agente o usuario.'
+            ),
+            source_refs=[
+                'iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities',
+                'data/evolution/platform_pending/',
+            ],
+            metadata={
+                'phase': 'windows_integration',
+                'missing_capability_ids': missing_ids,
+                'missing_count': len(missing_caps),
+                'total_platform_caps': len(platform_caps),
+                'coverage_ratio': round(
+                    (len(platform_caps) - len(missing_caps)) / max(len(platform_caps), 1),
+                    2,
+                ),
+            },
+        ))
+
+        for cap in missing_caps:
+            dep_info = cap.metadata.get('missing', '') if cap.metadata else ''
+            findings.append(SelfExaminationFinding(
+                category='windows_capability_missing',
+                title=f'Falta: {cap.title}',
+                summary=cap.summary or f'{cap.capability_id} no disponible',
+                severity=IssueSeverity.LOW,
+                confidence=0.85,
+                recommendation=f'Dependencia: {dep_info}' if dep_info else 'Verificar disponibilidad en el entorno',
+                source_refs=[cap.capability_id],
+                metadata={
+                    'capability_id': cap.capability_id,
+                    'status': cap.status,
+                    'pending_task_status': 'PENDING',
+                },
+            ))
+
+        return findings
+
+    def _environment_model(self) -> Any | None:
+        """Read EnvironmentSelfModel from world_model_service or direct."""
+        wms = self.world_model_service
+        if wms is not None:
+            try:
+                snap = wms.current_model()
+                env = getattr(snap, 'environment', None)
+                if env is not None:
+                    return env
+            except Exception:
+                pass
+            try:
+                esas = getattr(wms, 'environment_self_awareness_service', None)
+                if esas is not None:
+                    return esas.current_model()
+            except Exception:
+                pass
+        return None
 
     # ------------------------------------------------------------------
     # Task-packet → pending issues (materialization)

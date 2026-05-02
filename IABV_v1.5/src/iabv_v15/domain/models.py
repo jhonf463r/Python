@@ -2889,3 +2889,54 @@ class ConsensusResult(BaseModel):
     considered_trace_ids: list[str] = Field(default_factory=list)
     unresolved_fields: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class PendingTaskStatus(str, Enum):
+    PENDING = "PENDING"
+    BLOCKED = "BLOCKED"
+    UNRESOLVED = "UNRESOLVED"
+    READY_FOR_NEXT_SLICE = "READY_FOR_NEXT_SLICE"
+    COMPLETED = "COMPLETED"
+
+
+class PlatformPendingTask(BaseModel):
+    """Tarea pendiente de integración con la plataforma nativa.
+
+    Registra capacidades faltantes, tareas bloqueadas por limitación del
+    entorno, o dependencias que aún no pueden resolverse.  La cola se
+    persiste en ``data/evolution/platform_pending/`` y es legible por
+    PortableContext, OSES y cualquier agente que retome la sesión.
+    """
+
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    title: str
+    description: str = ""
+    reason: str = ""
+    dependency_missing: str = ""
+    priority: str = "medium"
+    next_action: str = ""
+    status: PendingTaskStatus = PendingTaskStatus.PENDING
+    category: str = ""
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+    resume_hint: str = ""
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class PlatformResumeHint(BaseModel):
+    """Checkpoint para reanudación de tareas incompletas.
+
+    Cuando una tarea se interrumpe (corte, cuota, sesión, falta de
+    permiso), se guarda un checkpoint con el estado útil más reciente.
+    El siguiente agente o sesión puede leer el hint y continuar desde
+    ese punto sin empezar de cero.
+    """
+
+    task_id: str = ""
+    checkpoint_phase: str = ""
+    last_successful_step: str = ""
+    remaining_steps: list[str] = Field(default_factory=list)
+    handoff_required: bool = False
+    context_snapshot: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, Any] = Field(default_factory=dict)
