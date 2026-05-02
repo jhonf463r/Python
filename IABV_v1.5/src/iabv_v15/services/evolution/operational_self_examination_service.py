@@ -1872,20 +1872,19 @@ class OperationalSelfExaminationService:
                 },
             ))
 
-        # ``startup_false_ready`` — el bug raiz que la evidencia live del
-        # 2026-04-28 captura a 80s en Windows pythonw: la UI declara
-        # ``splash_set_ready`` antes de que ``populate_ui_done`` y
-        # ``shell_loader_ready`` hayan llegado.  Esta deteccion no depende
-        # de umbrales de tiempo: depende del ORDEN de los hitos.  Es
-        # cualitativamente distinta de ``startup_degradation`` (que mide
-        # si algo fue lento); aqui medimos si algo mintio.
+        # ``startup_false_ready`` — detect when the splash declared readiness
+        # dishonestly.  With phased construction, ``populate_ui_done``
+        # arrives long after ``splash_set_ready`` (Phase 3 VMs are deferred)
+        # so ``splash < populate_done`` is EXPECTED and NOT a bug.  The real
+        # check is: did the splash close BEFORE ``shell_loader_ready``?  Or
+        # was the fallback used instead of the honest signal?
         splash_ms = phase_to_ms.get('splash_set_ready')
         populate_done_ms = phase_to_ms.get('populate_ui_done')
         shell_ready_ms = phase_to_ms.get('shell_loader_ready')
         shell_ready_fallback_ms = phase_to_ms.get('shell_loader_ready_fallback')
         false_ready_reasons: list[str] = []
-        if splash_ms is not None and populate_done_ms is not None and splash_ms < populate_done_ms:
-            false_ready_reasons.append('splash_set_ready_before_populate_ui_done')
+        if splash_ms is not None and shell_ready_ms is not None and splash_ms < shell_ready_ms:
+            false_ready_reasons.append('splash_set_ready_before_shell_loader_ready')
         if (
             splash_ms is not None
             and shell_ready_ms is None

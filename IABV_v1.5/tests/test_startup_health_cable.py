@@ -264,23 +264,24 @@ def test_oses_startup_health_findings_emits_only_for_crossed_thresholds() -> Non
 # memory.
 
 
-def test_startup_health_snapshot_detects_false_ready_when_splash_before_populate() -> None:
-    """splash_set_ready < populate_ui_done is dishonest; snapshot must flag it."""
+def test_startup_health_snapshot_detects_false_ready_when_splash_before_shell_ready() -> None:
+    """splash_set_ready < shell_loader_ready is dishonest; snapshot must flag it."""
     root = _workspace('startup_false_ready_order')
     events = [
         {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
         {'phase': 'bootstrap_init_done', 't_ms_from_start': 1500.0, 'rss_mb': 100.0},
         {'phase': 'run_start', 't_ms_from_start': 1510.0, 'rss_mb': 100.0},
         {'phase': 'main_window_shown', 't_ms_from_start': 3000.0, 'rss_mb': 150.0},
-        # splash declared ready BEFORE populate_ui_done — exactly the bug
+        # splash declared ready BEFORE shell_loader_ready — dishonest
         {'phase': 'splash_set_ready', 't_ms_from_start': 3010.0, 'rss_mb': 150.0},
+        {'phase': 'shell_loader_ready', 't_ms_from_start': 4200.0, 'rss_mb': 240.0},
         {'phase': 'populate_ui_done', 't_ms_from_start': 41000.0, 'rss_mb': 320.0},
     ]
     _write_timeline(root, events)
     svc = _make_portable_service(root)
     snap = svc._startup_health_snapshot()
     assert snap['false_ready_detected'] is True
-    assert 'splash_set_ready_before_populate_ui_done' in snap['false_ready_reasons']
+    assert 'splash_set_ready_before_shell_loader_ready' in snap['false_ready_reasons']
     blocker_phases = {b.get('phase') for b in snap['recent_blockers']}
     assert 'startup_false_ready' in blocker_phases
 
@@ -324,16 +325,17 @@ def test_startup_health_snapshot_flags_fallback_as_dishonest() -> None:
 
 
 def test_startup_health_snapshot_clean_when_shell_loader_ready_arrived_in_order() -> None:
-    """Honest startup: populate_ui_done -> shell_loader_ready -> splash_set_ready."""
+    """Honest startup: shell_loader_ready -> splash_set_ready (populate_ui_done later)."""
     root = _workspace('startup_honest_ready')
     events = [
         {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
         {'phase': 'bootstrap_init_done', 't_ms_from_start': 1500.0, 'rss_mb': 100.0},
         {'phase': 'run_start', 't_ms_from_start': 1510.0, 'rss_mb': 100.0},
         {'phase': 'main_window_shown', 't_ms_from_start': 3000.0, 'rss_mb': 150.0},
-        {'phase': 'populate_ui_done', 't_ms_from_start': 3500.0, 'rss_mb': 220.0},
+        # Phased construction: shell ready -> splash -> populate_ui_done much later
         {'phase': 'shell_loader_ready', 't_ms_from_start': 4200.0, 'rss_mb': 240.0},
         {'phase': 'splash_set_ready', 't_ms_from_start': 4210.0, 'rss_mb': 240.0},
+        {'phase': 'populate_ui_done', 't_ms_from_start': 120000.0, 'rss_mb': 320.0},
     ]
     _write_timeline(root, events)
     svc = _make_portable_service(root)
@@ -349,7 +351,9 @@ def test_oses_emits_startup_false_ready_finding_when_order_violated() -> None:
         {'phase': 'bootstrap_init_done', 't_ms_from_start': 1500.0, 'rss_mb': 100.0},
         {'phase': 'run_start', 't_ms_from_start': 1510.0, 'rss_mb': 100.0},
         {'phase': 'main_window_shown', 't_ms_from_start': 3000.0, 'rss_mb': 150.0},
+        # splash before shell_loader_ready — dishonest
         {'phase': 'splash_set_ready', 't_ms_from_start': 3010.0, 'rss_mb': 150.0},
+        {'phase': 'shell_loader_ready', 't_ms_from_start': 4200.0, 'rss_mb': 240.0},
         {'phase': 'populate_ui_done', 't_ms_from_start': 41000.0, 'rss_mb': 320.0},
     ]
     _write_timeline(root, events)
@@ -358,7 +362,7 @@ def test_oses_emits_startup_false_ready_finding_when_order_violated() -> None:
     false_ready = [f for f in findings if f.category == 'startup_false_ready']
     assert len(false_ready) == 1
     f = false_ready[0]
-    assert 'splash_set_ready_before_populate_ui_done' in f.metadata['reasons']
+    assert 'splash_set_ready_before_shell_loader_ready' in f.metadata['reasons']
     assert f.severity.name == 'HIGH'
 
 
@@ -369,9 +373,10 @@ def test_oses_does_not_emit_false_ready_when_order_is_honest() -> None:
         {'phase': 'bootstrap_init_done', 't_ms_from_start': 1500.0, 'rss_mb': 100.0},
         {'phase': 'run_start', 't_ms_from_start': 1510.0, 'rss_mb': 100.0},
         {'phase': 'main_window_shown', 't_ms_from_start': 3000.0, 'rss_mb': 150.0},
-        {'phase': 'populate_ui_done', 't_ms_from_start': 3500.0, 'rss_mb': 220.0},
+        # Phased: shell_loader_ready -> splash -> populate_ui_done much later
         {'phase': 'shell_loader_ready', 't_ms_from_start': 4200.0, 'rss_mb': 240.0},
         {'phase': 'splash_set_ready', 't_ms_from_start': 4210.0, 'rss_mb': 240.0},
+        {'phase': 'populate_ui_done', 't_ms_from_start': 120000.0, 'rss_mb': 320.0},
     ]
     _write_timeline(root, events)
     oses = _make_oses(root)

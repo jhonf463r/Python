@@ -2520,13 +2520,62 @@ class AppBootstrap:
                 logger.exception('UIBridgeServer failed to start with VM wiring')
                 self.ui_bridge_server = None
 
-    def _build_deferred_ui_batch_2(self) -> None:
-        """Phase 3: Evolution + remaining VMs + signal wiring."""
-        self._yield_to_event_loop()
+    # ------------------------------------------------------------------
+    # Lazy VM construction — Phase 3 VMs are built on-demand when the
+    # user navigates to their page.  This keeps the main thread
+    # responsive during boot (Responding=True) and avoids the 117s
+    # monolithic block that causes Windows "Not Responding".
+    # ------------------------------------------------------------------
+
+    _ROUTE_TO_VM_ATTR: dict[str, str] = {
+        'evolution': 'evolution_center_viewmodel',
+        'knowledge': 'knowledge_base_viewmodel',
+        'providers': 'provider_settings_viewmodel',
+        'runs': 'run_history_viewmodel',
+        'centro_vivo': 'centro_vivo_viewmodel',
+    }
+
+    def _ensure_vm_for_route(self, route: str) -> None:
+        """Lazily construct the VM for *route* if it hasn't been built yet.
+
+        Called from the ``currentRouteChanged`` listener installed by
+        ``_populate_ui_deferred_2``.  Each VM is built exactly once;
+        subsequent navigations to the same page are no-ops.
+        """
+        attr = self._ROUTE_TO_VM_ATTR.get(route)
+        if attr is None:
+            return  # Phase 1/2 VM — already built
+        if getattr(self, attr, None) is not None:
+            return  # already constructed
+        ctx = getattr(self, '_qml_root_context', None)
+        if ctx is None:
+            return
         try:
-            self._timeline.mark('populate_ui_vm_evolution_center')
+            self._timeline.mark(f'lazy_vm_{route}_start')
         except Exception:
             pass
+        if route == 'evolution':
+            self._build_evolution_center_vm()
+            ctx.setContextProperty('evolutionCenterViewModel', self.evolution_center_viewmodel)
+        elif route == 'knowledge':
+            self._build_knowledge_base_vm()
+            ctx.setContextProperty('knowledgeBaseViewModel', self.knowledge_base_viewmodel)
+        elif route == 'providers':
+            self._build_provider_settings_vm()
+            ctx.setContextProperty('providerSettingsViewModel', self.provider_settings_viewmodel)
+        elif route == 'runs':
+            self._build_run_history_vm()
+            ctx.setContextProperty('runHistoryViewModel', self.run_history_viewmodel)
+        elif route == 'centro_vivo':
+            self._build_centro_vivo_vm()
+            ctx.setContextProperty('centroVivoViewModel', self.centro_vivo_viewmodel)
+        try:
+            self._timeline.mark(f'lazy_vm_{route}_done')
+        except Exception:
+            pass
+        logger.info('lazy_vm_constructed: %s', route)
+
+    def _build_evolution_center_vm(self) -> None:
         self.evolution_center_viewmodel = EvolutionCenterViewModel(
             dossier_repository=self.execution_dossier_repository,
             hidden_incident_repository=self.hidden_incident_repository,
@@ -2552,28 +2601,30 @@ class AppBootstrap:
         self.evolution_center_viewmodel.human_approval_broker = self.human_approval_broker
         self.evolution_center_viewmodel.approval_memory = self.approval_memory
         self.evolution_center_viewmodel.ui_screenshot_service = self.ui_screenshot_service
-        self._yield_to_event_loop()
 
-        try:
-            self._timeline.mark('populate_ui_vm_remaining')
-        except Exception:
-            pass
+    def _build_knowledge_base_vm(self) -> None:
         self.knowledge_base_viewmodel = KnowledgeBaseViewModel(
             self.knowledge_repository,
             defer_initial_refresh=True,
         )
+
+    def _build_provider_settings_vm(self) -> None:
         self.provider_settings_viewmodel = ProviderSettingsViewModel(
             self.provider_configs,
             self.role_router,
             self.embedding_service,
             defer_initial_refresh=True,
         )
+
+    def _build_run_history_vm(self) -> None:
         self.run_history_viewmodel = RunHistoryViewModel(
             self.run_repository,
             self.execution_dossier_repository,
             session_repository=self.adaptive_session_repository,
             defer_initial_refresh=True,
         )
+
+    def _build_centro_vivo_vm(self) -> None:
         self.centro_vivo_viewmodel = CentroVivoViewModel(
             adaptive_session_repository=self.adaptive_session_repository,
             experiment_lab_repository=self.experiment_lab_repository,
@@ -2586,6 +2637,48 @@ class AppBootstrap:
             defer_initial_refresh=True,
         )
 
+    def _build_all_lazy_vms(self) -> None:
+        """Pre-build all lazy VMs during idle time (background timer chain).
+
+        Each VM is constructed in its own QTimer.singleShot(0) slot to
+        yield to the event loop between constructions, keeping the main
+        thread responsive.
+        """
+        routes = list(self._ROUTE_TO_VM_ATTR.keys())
+
+        def _build_next(idx: int = 0) -> None:
+            if idx >= len(routes):
+                try:
+                    self._timeline.mark('lazy_vm_prebuild_done')
+                except Exception:
+                    pass
+                return
+            self._ensure_vm_for_route(routes[idx])
+            QTimer.singleShot(0, lambda: _build_next(idx + 1))
+
+        _build_next()
+
+    def _build_deferred_ui_batch_2(self) -> None:
+        """Phase 3: Evolution + remaining VMs + signal wiring.
+
+        Used by the synchronous test path (``_build_ui_objects``) and
+        as fallback.  The live phased path uses lazy construction.
+        """
+        self._yield_to_event_loop()
+        try:
+            self._timeline.mark('populate_ui_vm_evolution_center')
+        except Exception:
+            pass
+        self._build_evolution_center_vm()
+        self._yield_to_event_loop()
+        try:
+            self._timeline.mark('populate_ui_vm_remaining')
+        except Exception:
+            pass
+        self._build_knowledge_base_vm()
+        self._build_provider_settings_vm()
+        self._build_run_history_vm()
+        self._build_centro_vivo_vm()
         self._wire_task_a_signals()
 
     def _build_ui_objects(self) -> None:
@@ -2600,20 +2693,22 @@ class AppBootstrap:
         Cada handler re-emite el payload como Qt Signal de ControlCenter y
         EvolutionCenter, para que los dialogos/paneles QML de Task B los
         reciban sin acoplar el backend a Qt ni a los ViewModels.
+
+        VMs are read dynamically at emit-time (not captured at connect-time)
+        so that lazily-constructed VMs automatically start receiving signals
+        as soon as they are built.
         """
-        view_models = [vm for vm in (self.control_center_viewmodel, self.evolution_center_viewmodel) if vm is not None]
-        if not view_models:
-            return
 
         def _emit(signal_name: str, payload):
-            for vm in view_models:
+            for vm in (self.control_center_viewmodel, self.evolution_center_viewmodel):
+                if vm is None:
+                    continue
                 signal = getattr(vm, signal_name, None)
                 if signal is None:
                     continue
                 try:
                     signal.emit(payload)
                 except Exception:
-                    # Evitamos que un fallo en un sink UI bloquee el resto.
                     continue
 
         self.credential_broker.register_prompt_handler(
@@ -2821,18 +2916,24 @@ class AppBootstrap:
                     self._timeline.mark('populate_ui_deferred_2_start')
                 except Exception:
                     pass
-                self._build_deferred_ui_batch_2()
-                context.setContextProperty('evolutionCenterViewModel', self.evolution_center_viewmodel)
-                context.setContextProperty('knowledgeBaseViewModel', self.knowledge_base_viewmodel)
-                context.setContextProperty('providerSettingsViewModel', self.provider_settings_viewmodel)
-                context.setContextProperty('runHistoryViewModel', self.run_history_viewmodel)
-                context.setContextProperty('centroVivoViewModel', self.centro_vivo_viewmodel)
-                logger.info('ui_populated: all ViewModels loaded and context properties set')
+                # Wire Task A signals (reads VMs dynamically at emit-time,
+                # so lazily-constructed VMs automatically receive signals).
+                self._wire_task_a_signals()
+                # Connect navigation listener for lazy VM construction.
+                nav = getattr(self, 'navigation_controller', None)
+                if nav is not None:
+                    nav.currentRouteChanged.connect(
+                        lambda: self._ensure_vm_for_route(nav.currentRoute)
+                    )
+                logger.info(
+                    'ui_lazy_construction_ready: Phase 3 VMs will be '
+                    'constructed on-demand when user navigates to their page'
+                )
                 try:
                     self._timeline.mark('populate_ui_done')
                 except Exception:
                     pass
-                # Fix 19a: Show system tray icon after all VMs are built
+                # Fix 19a: Show system tray icon (doesn't depend on VMs)
                 try:
                     self.win_systray_bridge.show(
                         on_show_window=self._raise_main_window,
@@ -2840,27 +2941,10 @@ class AppBootstrap:
                     )
                 except Exception:
                     pass
-                # Fix 20a: Early splash close — safety net if
-                # shell_loader_ready has not fired yet.  With phased
-                # construction this should rarely trigger.
-                if splash:
-                    def _early_splash_close() -> None:
-                        if getattr(self, '_shell_loader_ready_handled', False):
-                            return
-                        self._shell_loader_ready_handled = True
-                        logger.info(
-                            'splash_early_close: closing splash after '
-                            'populate_ui (shell_loader_ready not received yet)')
-                        try:
-                            self._timeline.mark(
-                                'splash_early_close',
-                                reason='populate_ui_done_grace_period',
-                            )
-                        except Exception:
-                            pass
-                        self._fire_splash_ready_and_raise_main(
-                            'populate_ui_early_close')
-                    QTimer.singleShot(500, _early_splash_close)
+                # Start idle pre-build: after 15s, begin constructing
+                # Phase 3 VMs one-by-one with event loop yields so they
+                # are ready before the user navigates there.
+                QTimer.singleShot(15_000, self._build_all_lazy_vms)
 
             QTimer.singleShot(0, _populate_ui_critical)
         else:

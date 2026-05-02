@@ -615,3 +615,57 @@ class TestSynchronousLoaders:
             'pageLoader must be synchronous (asynchronous: false) '
             'to avoid QQmlIncubationController starvation on Windows'
         )
+
+
+# ------------------------------------------------------------------ #
+# 8. Lazy VM construction
+# ------------------------------------------------------------------ #
+
+
+class TestLazyVMConstruction:
+    """Phase 3 VMs must be constructed lazily on navigation, not during boot."""
+
+    def test_ensure_vm_for_route_builds_evolution(self):
+        """_ensure_vm_for_route('evolution') constructs EvolutionCenterVM."""
+        bs = _make_bootstrap()
+        bs._qml_root_context = MagicMock()
+        assert bs.evolution_center_viewmodel is None
+        with patch.object(bs, '_build_evolution_center_vm') as build:
+            bs._ensure_vm_for_route('evolution')
+            build.assert_called_once()
+
+    def test_ensure_vm_for_route_is_idempotent(self):
+        """Subsequent calls for same route are no-ops."""
+        bs = _make_bootstrap()
+        bs._qml_root_context = MagicMock()
+        bs.evolution_center_viewmodel = MagicMock()  # already built
+        with patch.object(bs, '_build_evolution_center_vm') as build:
+            bs._ensure_vm_for_route('evolution')
+            build.assert_not_called()
+
+    def test_ensure_vm_for_route_ignores_phase1_routes(self):
+        """Phase 1/2 routes (dashboard, control, capture) are no-ops."""
+        bs = _make_bootstrap()
+        bs._qml_root_context = MagicMock()
+        for route in ('dashboard', 'control', 'capture'):
+            bs._ensure_vm_for_route(route)
+        # No crash, no VMs built
+
+    def test_ensure_vm_covers_all_phase3_routes(self):
+        """All 5 Phase 3 routes are in _ROUTE_TO_VM_ATTR."""
+        from iabv_v15.bootstrap import AppBootstrap
+        expected = {'evolution', 'knowledge', 'providers', 'runs', 'centro_vivo'}
+        assert set(AppBootstrap._ROUTE_TO_VM_ATTR.keys()) == expected
+
+    def test_wire_task_a_signals_reads_vms_dynamically(self):
+        """_wire_task_a_signals must read VMs at emit time, not connect time."""
+        bs = _make_bootstrap()
+        bs.control_center_viewmodel = MagicMock()
+        bs.evolution_center_viewmodel = None  # not built yet
+        bs._wire_task_a_signals()
+        # Build the VM AFTER wiring
+        mock_vm = MagicMock()
+        bs.evolution_center_viewmodel = mock_vm
+        # Emit a signal — both VMs should receive it
+        bs.credential_broker.register_prompt_handler.call_args[0][0]('test_payload')
+        mock_vm.credentialPromptRequested.emit.assert_called_once_with('test_payload')
