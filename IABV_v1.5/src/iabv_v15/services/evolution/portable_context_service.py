@@ -46,6 +46,7 @@ class PortableContextService:
         task_context_assembler: Any | None = None,
         adaptive_task_orchestrator: Any | None = None,
         adaptive_session_repository: Any | None = None,
+        platform_pending_queue: Any | None = None,
     ) -> None:
         self.workspace_root = workspace_root
         self.storage = storage
@@ -62,6 +63,7 @@ class PortableContextService:
         self.task_context_assembler = task_context_assembler
         self.adaptive_task_orchestrator = adaptive_task_orchestrator
         self.adaptive_session_repository = adaptive_session_repository
+        self.platform_pending_queue = platform_pending_queue
         self.decision_audit_trail: Any | None = None
         self.code_audit_trail: Any | None = None
         self.boot_profile_store: Any | None = None
@@ -2374,8 +2376,12 @@ class PortableContextService:
         )
 
     def _pending_section(self, *, pending_items: list[dict[str, Any]], backlog_items: list[dict[str, Any]], now) -> PortableContextSection:
-        items = pending_items[:4] + backlog_items[:4]
-        summary = f'{len(pending_items)} pending issues y {len(backlog_items)} mejoras priorizadas.'
+        platform_items = self._platform_pending_items()
+        items = pending_items[:4] + backlog_items[:4] + platform_items[:4]
+        platform_summary = ''
+        if platform_items:
+            platform_summary = f' {len(platform_items)} tareas de plataforma pendientes.'
+        summary = f'{len(pending_items)} pending issues y {len(backlog_items)} mejoras priorizadas.{platform_summary}'
         if not items:
             summary = 'No tengo pendientes priorizados confirmados por evidencia persistida.'
         return self._section(
@@ -2384,11 +2390,21 @@ class PortableContextService:
             summary=summary,
             items=items,
             source_kind='persistent_backlog',
-            source_refs=['pending_issue_repository', 'evolution_review_service'],
+            source_refs=['pending_issue_repository', 'evolution_review_service', 'platform_pending_queue'],
             confidence=0.8 if items else 0.0,
             last_updated=now,
             unresolved_fields=[] if items else ['UNRESOLVED:pending_backlog'],
         )
+
+    def _platform_pending_items(self) -> list[dict[str, Any]]:
+        """Read structured pending items from PlatformPendingQueue."""
+        queue = self.platform_pending_queue
+        if queue is None or not hasattr(queue, 'to_portable_items'):
+            return []
+        try:
+            return queue.to_portable_items(limit=6)
+        except Exception:
+            return []
 
     def _unresolved_section(self, *, unresolved: list[str], now) -> PortableContextSection:
         items = [{'field': item} for item in unresolved]

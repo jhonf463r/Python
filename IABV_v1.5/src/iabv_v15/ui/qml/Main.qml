@@ -68,6 +68,30 @@ ApplicationWindow {
         }
     }
 
+    // Fix 20c: Loading indicator — visible while mainShellLoader
+    // is incubating the UI content.  Fades out once the shell is ready.
+    Column {
+        anchors.centerIn: parent
+        spacing: 10
+        visible: mainShellLoader.status !== Loader.Ready
+        opacity: mainShellLoader.status !== Loader.Ready ? 1.0 : 0.0
+        Behavior on opacity { NumberAnimation { duration: 400 } }
+
+        BusyIndicator {
+            anchors.horizontalCenter: parent.horizontalCenter
+            running: mainShellLoader.status !== Loader.Ready
+            palette.dark: accentCyan
+        }
+
+        Label {
+            text: "Cargando IABV..."
+            color: textSecondary
+            font.family: bodyFontFamily
+            font.pixelSize: 16
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
+    }
+
     Timer {
         id: mainShellKickoff
         interval: 25

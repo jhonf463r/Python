@@ -804,6 +804,39 @@ class AppBootstrap:
             adaptive_weight_layer=self.adaptive_weight_layer,
             token_rotation_ledger=self.token_rotation_ledger,
         )
+
+        # Fix 18b: Platform pending queue — persistent task queue for
+        # Windows-native integration gaps.  Seeded once with the canonical
+        # set of known gaps; subsequent runs skip COMPLETED items.
+        from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+        self.platform_pending_queue = PlatformPendingQueue(
+            evolution_dir=self.config.evolution_dir,
+        )
+        try:
+            self.platform_pending_queue.seed_windows_integration_tasks()
+        except Exception:
+            pass
+
+        # Fix 19b: Windows clipboard bridge — low-level ctypes-based
+        # clipboard for background services that don't have QGuiApplication.
+        from iabv_v15.services.platform.win_clipboard_bridge import WinClipboardBridge
+        self.win_clipboard_bridge = WinClipboardBridge()
+
+        # Fix 19a: Windows system tray bridge — created here, shown later
+        # in run() after QGuiApplication is available.
+        from iabv_v15.services.platform.win_systray_bridge import WinSystrayBridge
+        self.win_systray_bridge = WinSystrayBridge(
+            app_name=self.config.app_name,
+        )
+
+        # Fix 21: Windows toast notification bridge — tries winotify,
+        # falls back to QSystemTrayIcon balloon.
+        from iabv_v15.services.platform.win_toast_bridge import WinToastBridge
+        self.win_toast_bridge = WinToastBridge(
+            app_name=self.config.app_name,
+            systray_bridge=self.win_systray_bridge,
+        )
+
         # PCS v1 — PR E. Detector read-only de violaciones de encarnamiento.
         # handshake_required=False en el manifest → sólo reporta.
         # Lo enchufamos al self_examination como provider para poblar
@@ -874,6 +907,7 @@ class AppBootstrap:
             tool_discovery_service=self.tool_discovery_service,
             tool_evolution_monitor=self.tool_evolution_monitor,
             adaptive_session_repository=self.adaptive_session_repository,
+            platform_pending_queue=self.platform_pending_queue,
         )
         # --- Security & evolution broker stack (PR #101-#106) ---
         # Wiring minimo de los servicios que cierran el loop "el programa
@@ -1637,6 +1671,10 @@ class AppBootstrap:
                 logger.exception('splash.set_ready fallo desde %s', source)
         self._raise_main_window_now(source)
 
+    def _raise_main_window(self) -> None:
+        """Public callback for systray 'Show IABV' action."""
+        self._raise_main_window_now('systray_show')
+
     def _raise_main_window_now(self, source: str) -> None:
         """Fuerza Z-order del main window por encima del splash.
 
@@ -1796,22 +1834,54 @@ class AppBootstrap:
     def _force_splash_ready_fallback(self) -> None:
         """Fallback determinista si QML nunca emite ``shellLoaderReady``.
 
-        Llamado via ``QTimer.singleShot`` despues de un timeout largo
+        Llamado via ``QTimer.singleShot`` despues de un timeout
         (configurable via ``IABV_SHELL_READY_FALLBACK_MS``, default
-        15000 ms).  Marca el hito como ``shell_loader_ready_fallback``
+        5000 ms).  Marca el hito como ``shell_loader_ready_fallback``
         para que la auditoria distinga un cierre honesto de uno por
         timeout.  De este modo el splash siempre cierra: nunca se queda
         congelado por una conexion QML que no llego.
+
+        Also records ``_shell_loader_wall_clock_ms`` — the wall-clock
+        elapsed since ``app_exec_about_to_start`` — so OSES can detect
+        event-loop starvation (when ``wall_clock >> timer_ms``, the main
+        thread was blocked by QML incubation and couldn't process the
+        QTimer until it unblocked).
         """
         if getattr(self, '_shell_loader_ready_handled', False):
             return
-        logger.warning(
-            'shell_loader_ready no llego en el timeout esperado; '
-            'forzando cierre del splash via fallback'
-        )
+
+        # Wall-clock measurement: detect event-loop starvation
+        import time as _time
+        wall_ms = 0.0
+        t0 = getattr(self, '_shell_ready_wall_t0', None)
+        if t0 is not None:
+            wall_ms = (_time.perf_counter() - t0) * 1000.0
+
+        expected_ms = getattr(self, '_shell_ready_fallback_ms', 5000)
+        starvation = wall_ms > expected_ms * 2 if wall_ms > 0 else False
+
+        if starvation:
+            logger.warning(
+                'shell_loader_ready fallback: wall_clock=%.0fms vs '
+                'timer=%dms — event loop was starved (QML incubation '
+                'blocked main thread for %.0fs)',
+                wall_ms, expected_ms, (wall_ms - expected_ms) / 1000.0,
+            )
+        else:
+            logger.warning(
+                'shell_loader_ready no llego en el timeout esperado '
+                '(%dms); forzando cierre del splash via fallback',
+                expected_ms,
+            )
+
         self._shell_loader_ready_handled = True
         try:
-            self._timeline.mark('shell_loader_ready_fallback')
+            self._timeline.mark(
+                'shell_loader_ready_fallback',
+                wall_clock_ms=round(wall_ms, 1),
+                expected_ms=expected_ms,
+                event_loop_starved=starvation,
+            )
         except Exception:
             pass
         self._fire_splash_ready_and_raise_main('shell_loader_ready_fallback')
@@ -1891,7 +1961,7 @@ class AppBootstrap:
                 out.append((refreshed.tool_id, refreshed.available, refreshed))
             return out
 
-        max_workers = min(len(adapter_groups), 8) or 1
+        max_workers = min(len(adapter_groups), 4) or 1
         with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix='iabv-tool-probe') as pool:
             futures = {
                 pool.submit(_probe_group, group_cards): adapter_key
@@ -1959,6 +2029,93 @@ class AppBootstrap:
                 logger.debug('auto_install: failed — %s', exc)
 
         self._startup_self_examination()
+        self._run_startup_common_sense()
+
+    def _run_startup_common_sense(self) -> None:
+        """Run common-sense reasoning over startup timeline events.
+
+        Reads the startup timeline to build a ``timeline_data`` dict with
+        wire_services_ms, populate_ui_ms, rss_growth_mb, then passes it
+        through ``run_common_sense_reasoning`` in dry-run mode.  Any rules
+        that fire are logged so the metacognition loop is aware of startup
+        anomalies without executing corrective actions (those are handled
+        by the fixes themselves).
+        """
+        if os.environ.get('IABV_MCP_SUBPROCESS') == '1':
+            return
+        try:
+            from iabv_v15.services.common_sense_engine import (
+                run_common_sense_reasoning,
+            )
+        except ImportError:
+            return
+
+        timeline_events = self._timeline.events()
+        timeline_data: dict[str, Any] = {}
+
+        # Extract wire_services duration
+        wire_start = None
+        wire_end = None
+        populate_start = None
+        populate_end = None
+        for ev in timeline_events:
+            phase = ev.get('phase', '')
+            elapsed = ev.get('elapsed_ms', 0)
+            if phase == 'wire_services_start':
+                wire_start = elapsed
+            elif phase == 'wire_services_done':
+                wire_end = elapsed
+            elif phase == 'populate_ui_start':
+                populate_start = elapsed
+                timeline_data['populate_ui_started'] = True
+            elif phase == 'populate_ui_done':
+                populate_end = elapsed
+                timeline_data['populate_ui_done'] = True
+
+        if wire_start is not None and wire_end is not None:
+            timeline_data['wire_services_ms'] = wire_end - wire_start
+        if populate_start is not None and populate_end is not None:
+            timeline_data['populate_ui_ms'] = populate_end - populate_start
+
+        # RSS growth: check if recorded in timeline extras
+        for ev in timeline_events:
+            rss = ev.get('rss_growth_mb')
+            if rss is not None:
+                timeline_data['rss_growth_mb'] = rss
+
+        # QML layer facts: detect fallback usage and event loop starvation
+        for ev in timeline_events:
+            phase = ev.get('phase', '')
+            if phase == 'shell_loader_ready_fallback':
+                timeline_data['shell_loader_fallback_used'] = True
+                if ev.get('event_loop_starved'):
+                    timeline_data['event_loop_starved'] = True
+
+        if not timeline_data:
+            return
+
+        try:
+            result = run_common_sense_reasoning(
+                deep_env_scan={'startup_timeline': timeline_data},
+                execute=False,
+                dry_run=True,
+            )
+            fired = result.get('fired_rules', [])
+            for rule in fired:
+                rid = rule.get('id', '?')
+                sev = rule.get('severity', 'medium')
+                conclusion = rule.get('conclusion', '')
+                logger.info(
+                    'startup_common_sense [%s]: %s → %s',
+                    sev, rid, conclusion,
+                )
+            if fired:
+                logger.info(
+                    'startup_common_sense: %d rules fired from timeline',
+                    len(fired),
+                )
+        except Exception as exc:
+            logger.debug('startup_common_sense: skipped (%s)', exc)
 
     def _startup_self_examination(self) -> None:
         """Run a lightweight self-examination at startup.
@@ -1967,42 +2124,74 @@ class AppBootstrap:
         UI anomalies (zombie windows, missing IABV window, duplicates)
         and logs the results. This gives the program self-awareness
         about its own state immediately after boot.
+
+        Also runs ``_startup_health_findings()`` from OSES to detect
+        startup degradation (populate_ui freeze, RSS growth, false ready,
+        shell readiness latency). Without this, those findings only appear
+        when ``build_review()`` is called on-demand, which means the
+        program never auto-detects its own startup freeze.
         """
         if os.environ.get('IABV_MCP_SUBPROCESS') == '1':
             return
         validator = getattr(self, 'perception_cross_validator', None)
-        if validator is None:
-            return
-        try:
-            result = validator.run_cross_validation()
-            n_issues = result.get('total_inconsistencies', 0)
-            checks = result.get('checks_passed', [])
-            ui_issues = [
-                i for i in result.get('inconsistencies', [])
-                if i.get('check') == 'ui_self_awareness'
-            ]
-            if ui_issues:
-                for issue in ui_issues:
-                    logger.warning(
-                        'startup_ui_issue: %s — %s',
-                        issue.get('actual', ''),
-                        issue.get('detail', ''),
+        if validator is not None:
+            try:
+                result = validator.run_cross_validation()
+                n_issues = result.get('total_inconsistencies', 0)
+                checks = result.get('checks_passed', [])
+                ui_issues = [
+                    i for i in result.get('inconsistencies', [])
+                    if i.get('check') == 'ui_self_awareness'
+                ]
+                if ui_issues:
+                    for issue in ui_issues:
+                        logger.warning(
+                            'startup_ui_issue: %s — %s',
+                            issue.get('actual', ''),
+                            issue.get('detail', ''),
+                        )
+                if n_issues == 0:
+                    logger.info(
+                        'startup_self_check: %d/%d checks passed — all consistent',
+                        len(checks),
+                        result.get('total_checks', 0),
                     )
-            if n_issues == 0:
-                logger.info(
-                    'startup_self_check: %d/%d checks passed — all consistent',
-                    len(checks),
-                    result.get('total_checks', 0),
-                )
-            else:
-                logger.warning(
-                    'startup_self_check: %d inconsistencies found (%d/%d passed)',
-                    n_issues,
-                    len(checks),
-                    result.get('total_checks', 0),
-                )
-        except Exception as exc:
-            logger.debug('startup_self_check: skipped (%s)', exc)
+                else:
+                    logger.warning(
+                        'startup_self_check: %d inconsistencies found (%d/%d passed)',
+                        n_issues,
+                        len(checks),
+                        result.get('total_checks', 0),
+                    )
+            except Exception as exc:
+                logger.debug('startup_self_check: skipped (%s)', exc)
+
+        oses = getattr(self, 'operational_self_examination_service', None)
+        if oses is not None and hasattr(oses, '_startup_health_findings'):
+            try:
+                startup_findings = oses._startup_health_findings()
+                for f in startup_findings:
+                    sev = getattr(f, 'severity', None) or 'UNKNOWN'
+                    title = getattr(f, 'title', '') or str(f)
+                    cat = getattr(f, 'category', '') or ''
+                    rec = getattr(f, 'recommendation', '') or ''
+                    if str(sev) in ('CRITICAL', 'HIGH'):
+                        logger.warning(
+                            'startup_health [%s|%s]: %s | fix: %s',
+                            sev, cat, title, rec,
+                        )
+                    else:
+                        logger.info(
+                            'startup_health [%s|%s]: %s',
+                            sev, cat, title,
+                        )
+                if startup_findings:
+                    logger.info(
+                        'startup_health: %d findings detected at boot',
+                        len(startup_findings),
+                    )
+            except Exception as exc:
+                logger.debug('startup_health_findings: skipped (%s)', exc)
 
     def _ensure_directories(self) -> None:
         for path in (
@@ -2023,6 +2212,21 @@ class AppBootstrap:
             str(Path(self.config.workspace_root) / 'docs'),
         ):
             Path(path).mkdir(parents=True, exist_ok=True)
+
+    @staticmethod
+    def _yield_to_event_loop() -> None:
+        """Pump the Qt event loop once to keep the UI responsive.
+
+        Called between heavy VM constructions in ``_build_ui_objects``
+        so that the splash/window can repaint and Windows doesn't mark
+        the process as Not Responding during startup (Fix 20b).
+        """
+        try:
+            _app = QGuiApplication.instance()
+            if _app is not None:
+                _app.processEvents()
+        except Exception:
+            pass
 
     def _build_ui_objects(self) -> None:
         if self.navigation_controller is not None:
@@ -2070,13 +2274,16 @@ class AppBootstrap:
             )
         except Exception:
             logger.exception('No se pudo conectar splashClosing -> _handle_splash_closing')
+        self._yield_to_event_loop()  # Fix 20b
         self.dashboard_viewmodel = DashboardViewModel(
             self.episode_repository,
             self.knowledge_repository,
             self.run_repository,
             self.role_router,
             self.embedding_service,
+            defer_initial_refresh=True,
         )
+        self._yield_to_event_loop()  # Fix 20b
         # --- MCP bridge (Capa 1): expone el programa a agentes externos
         # (Devin/Claude/Codex) via MCP sobre un tunnel local. El service lee
         # su preferencia persistida y, si estaba habilitado, se auto-arranca.
@@ -2155,6 +2362,7 @@ class AppBootstrap:
             logger.exception('No se pudo construir ChatCapabilityIngestionService; dejando None')
             self.chat_capability_ingestion_service = None
 
+        self._yield_to_event_loop()  # Fix 20b
         self.control_center_viewmodel = ControlCenterViewModel(
             config=self.config,
             episode_repository=self.episode_repository,
@@ -2190,6 +2398,7 @@ class AppBootstrap:
             chat_capability_ingestion_service=self.chat_capability_ingestion_service,
             defer_initial_refresh=True,
         )
+        self._yield_to_event_loop()  # Fix 20b
         self.capture_studio_viewmodel = CaptureStudioViewModel(
             config=self.config,
             episode_repository=self.episode_repository,
@@ -2234,6 +2443,7 @@ class AppBootstrap:
                 logger.exception('UIBridgeServer failed to start with VM wiring')
                 self.ui_bridge_server = None
 
+        self._yield_to_event_loop()  # Fix 20b
         # Deferred: refreshAutonomyDock runs inside the VM's deferred
         # startup thread to avoid blocking UI creation.
         self.evolution_center_viewmodel = EvolutionCenterViewModel(
@@ -2267,6 +2477,7 @@ class AppBootstrap:
         # persiste a disco y el VM solo lee la foto (AGENTS.md: el VM no
         # decide rutas ni inventa datos).
         self.evolution_center_viewmodel.ui_screenshot_service = self.ui_screenshot_service
+        self._yield_to_event_loop()  # Fix 20b
         self.knowledge_base_viewmodel = KnowledgeBaseViewModel(
             self.knowledge_repository,
             defer_initial_refresh=True,
@@ -2488,6 +2699,37 @@ class AppBootstrap:
                     self._timeline.mark('populate_ui_done')
                 except Exception:
                     pass
+                # Fix 19a: Show system tray icon after UI is built
+                try:
+                    self.win_systray_bridge.show(
+                        on_show_window=self._raise_main_window,
+                        on_quit=app.quit,
+                    )
+                except Exception:
+                    pass
+                # Fix 20a: Early splash close — don't wait for QML
+                # incubation (can take >100s on Windows). Close splash
+                # 500ms after populate_ui so the user sees the main
+                # window immediately.  If shell_loader_ready already
+                # fired (fast machine), this is a no-op.
+                if splash:
+                    def _early_splash_close() -> None:
+                        if getattr(self, '_shell_loader_ready_handled', False):
+                            return
+                        self._shell_loader_ready_handled = True
+                        logger.info(
+                            'splash_early_close: closing splash after '
+                            'populate_ui (shell_loader_ready not received yet)')
+                        try:
+                            self._timeline.mark(
+                                'splash_early_close',
+                                reason='populate_ui_done_grace_period',
+                            )
+                        except Exception:
+                            pass
+                        self._fire_splash_ready_and_raise_main(
+                            'populate_ui_early_close')
+                    QTimer.singleShot(500, _early_splash_close)
             QTimer.singleShot(0, _populate_ui)
         else:
             # Synchronous path (used by tests that don't call app.exec()).
@@ -2999,6 +3241,16 @@ class AppBootstrap:
         try:
             # --- Splash screen: show immediately while services load ---
             if PYSIDE_AVAILABLE:
+                # Fix 19c: DPI awareness — call SetProcessDpiAwareness(2)
+                # (Per-Monitor V2) BEFORE QGuiApplication so Qt inherits
+                # the correct DPI from the start.  Harmless on non-Windows.
+                if os.name == 'nt':
+                    try:
+                        import ctypes
+                        ctypes.windll.shcore.SetProcessDpiAwareness(2)  # type: ignore[attr-defined]
+                    except Exception:
+                        pass
+
                 os.environ.setdefault('QT_QUICK_CONTROLS_STYLE', 'Basic')
                 QQuickStyle.setStyle('Basic')
                 self._timeline.mark('qt_style_set')
@@ -3117,14 +3369,14 @@ class AppBootstrap:
                 self._timeline.mark('main_window_shown')
                 self._connect_window_lifecycle_signals(main_win)
 
-            QTimer.singleShot(1200, self._schedule_startup_evolution)
+            QTimer.singleShot(15000, self._schedule_startup_evolution)
 
             # Defer the heavy tool-availability probe (HTTP pings + pip
             # install of mcp_client).  The probe now runs in a background
             # thread (never blocks the GUI event loop), but we still
-            # delay 2s so the QML shell has time to start incubating.
+            # delay 3s so the QML shell has time to start incubating.
             if not self._tool_availability_logged:
-                QTimer.singleShot(2000, self._run_deferred_post_window_setup)
+                QTimer.singleShot(3000, self._run_deferred_post_window_setup)
 
             # ``splash.set_ready()`` ya NO se dispara aqui.  Antes era
             # deshonesto: la ventana visible aun era una ``ApplicationWindow``
@@ -3134,13 +3386,16 @@ class AppBootstrap:
             # ``_handle_shell_loader_ready``), o por fallback determinista si
             # esa senal nunca llega.
             if self._splash is not None:
-                fallback_ms = 15000
+                import time as _time
+                fallback_ms = 5000
                 try:
                     raw = os.environ.get('IABV_SHELL_READY_FALLBACK_MS')
                     if raw is not None:
                         fallback_ms = max(1000, int(raw))
                 except Exception:
-                    fallback_ms = 15000
+                    fallback_ms = 5000
+                self._shell_ready_fallback_ms = fallback_ms
+                self._shell_ready_wall_t0 = _time.perf_counter()
                 QTimer.singleShot(fallback_ms, self._force_splash_ready_fallback)
 
             self._timeline.mark('app_exec_about_to_start')

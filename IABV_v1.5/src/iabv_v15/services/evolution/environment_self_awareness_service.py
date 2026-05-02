@@ -37,7 +37,7 @@ class EnvironmentSelfAwarenessService:
     _DISK_CRITICAL_BYTES = 10 * 1024**3
     _GPU_TEMP_WARNING_C = 80.0
     _GPU_TEMP_CRITICAL_C = 85.0
-    _DEFAULT_SCAN_INTERVAL = 45.0
+    _DEFAULT_SCAN_INTERVAL = 90.0
     _DEFAULT_FULL_SCAN_INTERVAL = 480.0
     _POWERSHELL_TIMEOUT_SECONDS = 1.0
     _TYPEPERF_TIMEOUT_SECONDS = 1.5
@@ -75,7 +75,15 @@ class EnvironmentSelfAwarenessService:
         self._last_full_scan_monotonic = 0.0
         self._current_model = self._load_latest_model() or EnvironmentSelfModel(scan_status='bootstrapping')
         if bootstrap_scan:
-            self.scan_now(reason='startup', full=not self._in_test_mode())
+            # Fix 15: always do a *light* scan during bootstrap.  A full scan
+            # calls PowerShell/nvidia-smi/ollama-list/typeperf — each with
+            # subprocess timeouts that add 15-25s on Windows.  The first full
+            # scan will run when the background thread triggers it (after
+            # full_scan_interval_seconds) or on the next manual request_refresh.
+            self.scan_now(reason='startup', full=False)
+            # Schedule the first full scan to run as soon as the background
+            # thread starts, rather than waiting for full_scan_interval_seconds.
+            self._pending_full_refresh = True
         if self._auto_start:
             self.start()
 
@@ -351,7 +359,7 @@ class EnvironmentSelfAwarenessService:
         if self.tool_registry is None:
             return available, missing
         try:
-            cards = [self.tool_registry.refresh_card(card) for card in self.tool_registry.list_cards()]
+            cards = [self.tool_registry.refresh_card(card, max_age_seconds=120.0) for card in self.tool_registry.list_cards()]
         except Exception:
             return available, missing
         for card in cards:
@@ -474,7 +482,234 @@ class EnvironmentSelfAwarenessService:
                     evidence_refs=[tool['tool_id']],
                 )
             )
+        capabilities.extend(self._windows_platform_capabilities())
         return capabilities
+
+    # ------------------------------------------------------------------
+    # Windows-native capability discovery (Fix 18a)
+    # ------------------------------------------------------------------
+
+    def _windows_platform_capabilities(self) -> list[EnvironmentCapability]:
+        """Detect Windows-native capabilities and return them as graph entries.
+
+        Runs lightweight probes that do NOT shell out to PowerShell — each
+        check is pure-Python or ctypes-based so it adds < 1ms to the scan.
+        Capabilities that cannot be confirmed are marked ``missing`` so
+        OSES and PortableContext can register them as structured pendientes.
+        """
+        if os.name != 'nt':
+            return [
+                EnvironmentCapability(
+                    capability_id='platform.windows',
+                    title='Windows nativo',
+                    available=False,
+                    status='not_applicable',
+                    summary='El entorno actual no es Windows.',
+                ),
+            ]
+
+        caps: list[EnvironmentCapability] = []
+
+        # 1. OS version + edition
+        win_ver = self._windows_version_detail()
+        caps.append(EnvironmentCapability(
+            capability_id='platform.windows',
+            title='Windows nativo',
+            available=True,
+            status='ready',
+            summary=win_ver.get('edition', platform.platform()),
+            evidence_refs=[win_ver.get('version', '')],
+            metadata=win_ver,
+        ))
+
+        # 2. User paths (AppData, Documents, etc.)
+        user_paths = self._windows_user_paths()
+        caps.append(EnvironmentCapability(
+            capability_id='platform.windows_user_paths',
+            title='Rutas de usuario Windows',
+            available=bool(user_paths.get('appdata_local')),
+            status='ready' if user_paths.get('appdata_local') else 'missing',
+            summary=f"LOCALAPPDATA={user_paths.get('appdata_local', 'N/A')}",
+            metadata=user_paths,
+        ))
+
+        # 3. PowerShell availability
+        ps = shutil.which('powershell') or shutil.which('pwsh')
+        caps.append(EnvironmentCapability(
+            capability_id='platform.windows_shell',
+            title='PowerShell disponible',
+            available=bool(ps),
+            status='ready' if ps else 'missing',
+            summary=str(ps or 'No encontrado'),
+            evidence_refs=[str(ps)] if ps else [],
+        ))
+
+        # 4. Clipboard access
+        clip_ok = self._windows_clipboard_available()
+        caps.append(EnvironmentCapability(
+            capability_id='platform.clipboard',
+            title='Clipboard Win32',
+            available=clip_ok,
+            status='ready' if clip_ok else 'missing',
+            summary='OpenClipboard/CloseClipboard via user32' if clip_ok else 'No se pudo verificar clipboard',
+        ))
+
+        # 5. Window enumeration (user32)
+        user32_ok = self._windows_user32_available()
+        caps.append(EnvironmentCapability(
+            capability_id='platform.window_enumeration',
+            title='Enumeracion de ventanas Win32',
+            available=user32_ok,
+            status='ready' if user32_ok else 'missing',
+            summary='user32.EnumWindows disponible' if user32_ok else 'user32 no cargado',
+        ))
+
+        # 6. Notification support (Windows 10+ toast)
+        notif = self._windows_notification_support()
+        caps.append(EnvironmentCapability(
+            capability_id='platform.notifications',
+            title='Notificaciones Windows',
+            available=notif['available'],
+            status=notif['status'],
+            summary=notif['summary'],
+            metadata=notif.get('metadata', {}),
+        ))
+
+        # 7. Autostart capability (shell:startup folder exists)
+        autostart = self._windows_autostart_capability()
+        caps.append(EnvironmentCapability(
+            capability_id='platform.autostart',
+            title='Autostart al login',
+            available=autostart['available'],
+            status=autostart['status'],
+            summary=autostart['summary'],
+            evidence_refs=autostart.get('evidence_refs', []),
+        ))
+
+        # 8. Process management (CREATE_NO_WINDOW, subprocess)
+        caps.append(EnvironmentCapability(
+            capability_id='platform.process_management',
+            title='Gestion de procesos Win32',
+            available=True,
+            status='ready',
+            summary='subprocess + CREATE_NO_WINDOW disponible',
+        ))
+
+        return caps
+
+    def _windows_version_detail(self) -> dict[str, Any]:
+        """Detect detailed Windows version, build number, and edition."""
+        info: dict[str, Any] = {
+            'version': platform.version(),
+            'release': platform.release(),
+            'machine': platform.machine(),
+        }
+        try:
+            ver = sys.getwindowsversion()  # type: ignore[attr-defined]
+            info['major'] = ver.major
+            info['minor'] = ver.minor
+            info['build'] = ver.build
+            info['service_pack'] = ver.service_pack
+            info['platform_version'] = f'{ver.major}.{ver.minor}.{ver.build}'
+        except Exception:
+            pass
+        try:
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Windows NT\CurrentVersion') as key:
+                edition = winreg.QueryValueEx(key, 'ProductName')[0]
+                info['edition'] = str(edition)
+                try:
+                    display_version = winreg.QueryValueEx(key, 'DisplayVersion')[0]
+                    info['display_version'] = str(display_version)
+                except Exception:
+                    pass
+        except Exception:
+            info['edition'] = platform.platform()
+        return info
+
+    def _windows_user_paths(self) -> dict[str, str]:
+        """Detect standard Windows user paths."""
+        paths: dict[str, str] = {}
+        env_map = {
+            'userprofile': 'USERPROFILE',
+            'appdata_roaming': 'APPDATA',
+            'appdata_local': 'LOCALAPPDATA',
+            'temp': 'TEMP',
+            'home_drive': 'HOMEDRIVE',
+            'home_path': 'HOMEPATH',
+            'program_data': 'ProgramData',
+        }
+        for key, env_var in env_map.items():
+            val = os.environ.get(env_var, '')
+            if val:
+                paths[key] = val
+        documents = Path.home() / 'Documents'
+        if documents.is_dir():
+            paths['documents'] = str(documents)
+        downloads = Path.home() / 'Downloads'
+        if downloads.is_dir():
+            paths['downloads'] = str(downloads)
+        return paths
+
+    def _windows_clipboard_available(self) -> bool:
+        """Check if Win32 clipboard API is accessible."""
+        try:
+            user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+            if user32.OpenClipboard(0):
+                user32.CloseClipboard()
+                return True
+        except Exception:
+            pass
+        return False
+
+    def _windows_user32_available(self) -> bool:
+        """Check if user32 is loadable for window enumeration."""
+        try:
+            u32 = ctypes.windll.user32  # type: ignore[attr-defined]
+            return bool(u32.GetDesktopWindow())
+        except Exception:
+            return False
+
+    def _windows_notification_support(self) -> dict[str, Any]:
+        """Check for Windows 10+ toast notification support."""
+        result: dict[str, Any] = {'available': False, 'status': 'missing', 'summary': '', 'metadata': {}}
+        try:
+            ver = sys.getwindowsversion()  # type: ignore[attr-defined]
+            is_win10_plus = ver.major >= 10
+        except Exception:
+            is_win10_plus = False
+        if not is_win10_plus:
+            result['summary'] = 'Requiere Windows 10+'
+            return result
+        try:
+            from importlib.util import find_spec
+            has_winrt = find_spec('winrt') is not None or find_spec('winsdk') is not None
+            has_plyer = find_spec('plyer') is not None
+            has_winotify = find_spec('winotify') is not None
+        except Exception:
+            has_winrt = has_plyer = has_winotify = False
+        if has_winrt or has_plyer or has_winotify:
+            lib = 'winrt' if has_winrt else ('plyer' if has_plyer else 'winotify')
+            result.update(available=True, status='ready', summary=f'Toast via {lib}')
+            result['metadata'] = {'library': lib, 'winrt': has_winrt, 'plyer': has_plyer, 'winotify': has_winotify}
+        else:
+            result['summary'] = 'Windows 10+ pero sin libreria de toast (winrt/plyer/winotify)'
+            result['status'] = 'missing_dependency'
+            result['metadata'] = {'windows_10_plus': True, 'missing': 'winrt, plyer, o winotify'}
+        return result
+
+    def _windows_autostart_capability(self) -> dict[str, Any]:
+        """Check if the shell:startup folder is accessible."""
+        result: dict[str, Any] = {'available': False, 'status': 'missing', 'summary': '', 'evidence_refs': []}
+        startup_folder = Path(os.environ.get('APPDATA', '')) / 'Microsoft' / 'Windows' / 'Start Menu' / 'Programs' / 'Startup'
+        if startup_folder.is_dir():
+            result['available'] = True
+            result['status'] = 'ready'
+            result['summary'] = f'shell:startup accesible en {startup_folder}'
+            result['evidence_refs'] = [str(startup_folder)]
+        else:
+            result['summary'] = 'shell:startup no encontrado o no accesible'
+        return result
 
     def _build_risk_signals(
         self,

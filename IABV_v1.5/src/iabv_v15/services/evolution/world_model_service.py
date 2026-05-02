@@ -80,7 +80,14 @@ class WorldModelService:
         self._NETWORK_CACHE_TTL = 60.0  # cache result for 60s
         self._user32 = self._load_user32()
         if bootstrap_scan:
-            self.scan_now(reason='startup', full=not self._in_test_mode())
+            # Fix 15: always do a *light* scan during bootstrap.  A full scan
+            # enumerates windows (Win32 API), probes network latency, checks
+            # tool processes — adding 10-20s on Windows.  The first full scan
+            # runs when the background thread triggers it.
+            self.scan_now(reason='startup', full=False)
+            # Schedule the first full scan to run as soon as the background
+            # thread starts, rather than waiting for full_scan_interval_seconds.
+            self._pending_full_refresh = True
         if self._auto_start:
             self.start()
 

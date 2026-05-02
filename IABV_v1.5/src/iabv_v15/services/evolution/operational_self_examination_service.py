@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import time
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
@@ -32,6 +33,11 @@ from iabv_v15.infra.persistence.storage import ArtifactStorage
 STARTUP_INIT_MS_DEGRADED = 4000.0
 STARTUP_RUN_TO_WINDOW_MS_DEGRADED = 8000.0
 STARTUP_DEFERRED_MS_DEGRADED = 5000.0
+# populate_ui: the interval where all ViewModels are constructed on the main
+# thread.  Windsurf live tests show 30s+ blocks here, causing "Not Responding".
+STARTUP_POPULATE_UI_MS_DEGRADED = 5000.0
+# RSS growth during populate_ui (in MB).  273→495 MB observed in live tests.
+STARTUP_RSS_GROWTH_MB_DEGRADED = 150.0
 
 # Boot profile thresholds — aggregated across historical boots.
 # p95 boot duration above this emits a finding.
@@ -784,6 +790,10 @@ class OperationalSelfExaminationService:
         findings.extend(self._task_packet_pattern_findings(
             experiment_runs=experiment_runs,
         ))
+
+        # Windows platform integration: detect missing native capabilities
+        # and emit structured findings that map to pending tasks.
+        findings.extend(self._windows_integration_findings())
 
         findings = self._dedupe_findings(findings)
 
@@ -1900,7 +1910,7 @@ class OperationalSelfExaminationService:
                     'Diferir splash.set_ready() hasta que MainWindowBridge '
                     'reciba shellLoaderReady desde QML (Loader.onStatusChanged '
                     '== Loader.Ready en mainShellLoader). Mantener fallback '
-                    'determinista (IABV_SHELL_READY_FALLBACK_MS, default 15s) '
+                    'determinista (IABV_SHELL_READY_FALLBACK_MS, default 5s) '
                     'para no congelar el splash si la senal QML nunca llega.'
                 ),
                 source_refs=[
@@ -1919,6 +1929,178 @@ class OperationalSelfExaminationService:
                     'phases_seen': list(phase_to_ms.keys()),
                 },
             ))
+
+        # ``qml_event_loop_starvation`` — detect when the fallback timer
+        # took much longer than expected (wall_clock >> timer_ms), indicating
+        # the Qt main thread was blocked by QML incubation and couldn't
+        # process the QTimer until it unblocked.
+        for evt in last_run:
+            if str(evt.get('phase') or '') == 'shell_loader_ready_fallback':
+                wall_clock_ms = evt.get('wall_clock_ms', 0)
+                expected_ms = evt.get('expected_ms', 5000)
+                starved = evt.get('event_loop_starved', False)
+                if starved and wall_clock_ms > 0:
+                    starvation_seconds = (wall_clock_ms - expected_ms) / 1000.0
+                    findings.append(SelfExaminationFinding(
+                        category='qml_event_loop_starvation',
+                        title=(
+                            f'Qt main thread bloqueado {starvation_seconds:.0f}s '
+                            f'por QML incubation'
+                        ),
+                        summary=(
+                            f'El fallback de shell_loader_ready se programo a '
+                            f'{expected_ms}ms pero tardo {wall_clock_ms:.0f}ms '
+                            f'en ejecutarse (wall clock). El Qt main thread '
+                            f'estuvo bloqueado {starvation_seconds:.0f}s por la '
+                            f'incubacion del mainShellLoader QML. Durante ese '
+                            f'tiempo el proceso aparece como Not Responding.'
+                        ),
+                        severity=IssueSeverity.CRITICAL,
+                        confidence=0.95,
+                        recommendation=(
+                            'El freeze no es Python/GIL — es QML incubation '
+                            'bloqueando el Qt event loop. Opciones: (1) reducir '
+                            'el component tree del mainShellLoader, (2) usar '
+                            'QQmlIncubationController para limitar objetos por '
+                            'frame, (3) fragmentar la carga QML en sub-Loaders '
+                            'con asynchronous=true escalonados.'
+                        ),
+                        source_refs=[
+                            'data/logs/startup_timeline.jsonl',
+                            'iabv_v15.bootstrap._force_splash_ready_fallback',
+                            'src/iabv_v15/ui/qml/Main.qml',
+                        ],
+                        metadata={
+                            'phase': 'qml_event_loop_starvation',
+                            'wall_clock_ms': round(wall_clock_ms, 1),
+                            'expected_ms': expected_ms,
+                            'starvation_seconds': round(starvation_seconds, 1),
+                            'phases_seen': list(phase_to_ms.keys()),
+                        },
+                    ))
+                break
+
+        # ``startup_populate_ui_freeze`` — the interval where all ViewModels
+        # are constructed on the main thread.  Windsurf live testing on
+        # 2026-05-01 shows 30s+ blocks here (273MB→495MB RSS), causing
+        # Windows "Not Responding".  OSES previously measured run_start →
+        # main_window_shown (7.7s, under threshold) and missed the real
+        # freeze that happens AFTER the window is already visible.
+        populate_start_ms = phase_to_ms.get('populate_ui_start')
+        populate_done_ms_val = phase_to_ms.get('populate_ui_done')
+        if populate_start_ms is not None and populate_done_ms_val is not None:
+            populate_duration = populate_done_ms_val - populate_start_ms
+            if populate_duration > STARTUP_POPULATE_UI_MS_DEGRADED:
+                findings.append(SelfExaminationFinding(
+                    category='startup_populate_ui_freeze',
+                    title=f'populate_ui bloqueo main thread: {populate_duration:.0f}ms',
+                    summary=(
+                        f'La construccion de ViewModels (populate_ui_start → '
+                        f'populate_ui_done) duro {populate_duration:.0f}ms '
+                        f'(umbral {STARTUP_POPULATE_UI_MS_DEGRADED:.0f}ms). '
+                        f'Durante este intervalo el hilo principal esta bloqueado '
+                        f'y Windows reporta el proceso como "Not Responding".'
+                    ),
+                    severity=IssueSeverity.CRITICAL if populate_duration > 15000 else IssueSeverity.HIGH,
+                    confidence=0.95,
+                    recommendation=(
+                        'Asegurar que todos los ViewModels usen '
+                        'defer_initial_refresh=True para no ejecutar queries '
+                        'de DB ni refreshes pesados en el constructor. '
+                        'DashboardViewModel era el unico sin defer.'
+                    ),
+                    source_refs=[
+                        'data/logs/startup_timeline.jsonl',
+                        'iabv_v15.bootstrap._build_ui_objects',
+                        'iabv_v15.ui.viewmodels.dashboard_viewmodel',
+                    ],
+                    metadata={
+                        'phase': 'populate_ui',
+                        'observed_ms': round(populate_duration, 1),
+                        'threshold_ms': STARTUP_POPULATE_UI_MS_DEGRADED,
+                        'populate_ui_start_ms': round(populate_start_ms, 1),
+                        'populate_ui_done_ms': round(populate_done_ms_val, 1),
+                        'phases_seen': list(phase_to_ms.keys()),
+                    },
+                ))
+        elif populate_start_ms is not None and populate_done_ms_val is None:
+            findings.append(SelfExaminationFinding(
+                category='startup_populate_ui_incomplete',
+                title='populate_ui inicio pero nunca termino',
+                summary=(
+                    f'populate_ui_start llego a {populate_start_ms:.0f}ms pero '
+                    f'populate_ui_done nunca se registro. Esto indica que '
+                    f'_build_ui_objects() se congelo indefinidamente durante '
+                    f'la construccion de ViewModels. El proceso probablemente '
+                    f'quedo en estado "Not Responding" permanente.'
+                ),
+                severity=IssueSeverity.CRITICAL,
+                confidence=0.98,
+                recommendation=(
+                    'Verificar que processEvents() no se llame entre '
+                    'creaciones de ViewModels (causa tormentas de re-rendering '
+                    'QML con context properties parciales). Verificar que '
+                    'ningun constructor de ViewModel haga I/O bloqueante.'
+                ),
+                source_refs=[
+                    'data/logs/startup_timeline.jsonl',
+                    'iabv_v15.bootstrap._build_ui_objects',
+                    'iabv_v15.bootstrap._populate_ui',
+                ],
+                metadata={
+                    'phase': 'populate_ui_incomplete',
+                    'populate_ui_start_ms': round(populate_start_ms, 1),
+                    'phases_seen': list(phase_to_ms.keys()),
+                },
+            ))
+
+        # RSS growth detection during startup.  Extract RSS values from
+        # events that carry them.
+        rss_values: list[tuple[str, float]] = []
+        for evt in last_run:
+            rss_mb = evt.get('rss_mb')
+            phase = str(evt.get('phase') or '')
+            if rss_mb is not None and phase:
+                try:
+                    rss_values.append((phase, float(rss_mb)))
+                except (TypeError, ValueError):
+                    pass
+        if len(rss_values) >= 2:
+            min_rss = min(v for _, v in rss_values)
+            max_rss = max(v for _, v in rss_values)
+            rss_growth = max_rss - min_rss
+            if rss_growth > STARTUP_RSS_GROWTH_MB_DEGRADED:
+                max_phase = next(p for p, v in rss_values if v == max_rss)
+                min_phase = next(p for p, v in rss_values if v == min_rss)
+                findings.append(SelfExaminationFinding(
+                    category='startup_memory_spike',
+                    title=f'RSS crecio {rss_growth:.0f}MB durante startup',
+                    summary=(
+                        f'RSS paso de {min_rss:.0f}MB ({min_phase}) a '
+                        f'{max_rss:.0f}MB ({max_phase}), un crecimiento de '
+                        f'{rss_growth:.0f}MB (umbral {STARTUP_RSS_GROWTH_MB_DEGRADED:.0f}MB). '
+                        f'Esto puede causar presion de memoria y GC stalls.'
+                    ),
+                    severity=IssueSeverity.HIGH if rss_growth > 300 else IssueSeverity.MEDIUM,
+                    confidence=0.9,
+                    recommendation=(
+                        'Revisar que ViewModels con defer_initial_refresh=True '
+                        'no hagan queries pesados en el constructor. Verificar '
+                        'que _log_tool_availability() no cree objetos grandes.'
+                    ),
+                    source_refs=[
+                        'data/logs/startup_timeline.jsonl',
+                    ],
+                    metadata={
+                        'phase': 'startup_rss_growth',
+                        'min_rss_mb': round(min_rss, 1),
+                        'max_rss_mb': round(max_rss, 1),
+                        'growth_mb': round(rss_growth, 1),
+                        'threshold_mb': STARTUP_RSS_GROWTH_MB_DEGRADED,
+                        'min_phase': min_phase,
+                        'max_phase': max_phase,
+                    },
+                ))
 
         # Process-start readiness metrics for metacognitive tracking.
         # Extract t_ms_from_process when available.
@@ -6066,6 +6248,111 @@ class OperationalSelfExaminationService:
                     ))
 
         return results
+
+    # ------------------------------------------------------------------
+    # Windows platform integration findings (Fix 18c)
+    # ------------------------------------------------------------------
+
+    def _windows_integration_findings(self) -> list[SelfExaminationFinding]:
+        """Detect missing Windows-native capabilities and emit structured findings.
+
+        Reads the ``platform.*`` entries from the EnvironmentSelfModel
+        capability_graph.  For each capability that is ``missing`` or has
+        ``missing_dependency`` status, emits a finding with structured
+        metadata matching the PlatformPendingTask schema so the pending
+        queue can be seeded from these findings.
+        """
+        findings: list[SelfExaminationFinding] = []
+        if os.name != 'nt':
+            return findings
+
+        env_model = self._environment_model()
+        if env_model is None:
+            return findings
+
+        cap_graph = env_model.capability_graph or []
+        platform_caps = [c for c in cap_graph if c.capability_id.startswith('platform.')]
+
+        missing_caps = [
+            c for c in platform_caps
+            if not c.available and c.status not in ('not_applicable',)
+        ]
+
+        if not missing_caps:
+            return findings
+
+        missing_ids = [c.capability_id for c in missing_caps]
+        missing_titles = [c.title for c in missing_caps]
+
+        findings.append(SelfExaminationFinding(
+            category='windows_integration_gaps',
+            title=f'{len(missing_caps)} capacidades Windows nativas faltantes',
+            summary=(
+                f'El sistema detecta {len(missing_caps)} capacidades de la '
+                f'plataforma Windows que no estan disponibles o tienen '
+                f'dependencias faltantes: {", ".join(missing_titles[:5])}.'
+            ),
+            severity=IssueSeverity.MEDIUM,
+            confidence=0.9,
+            recommendation=(
+                'Revisar la cola de pendientes de plataforma en '
+                'data/evolution/platform_pending/. Cada capacidad '
+                'faltante tiene next_action y dependency_missing '
+                'documentados para continuacion por agente o usuario.'
+            ),
+            source_refs=[
+                'iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities',
+                'data/evolution/platform_pending/',
+            ],
+            metadata={
+                'phase': 'windows_integration',
+                'missing_capability_ids': missing_ids,
+                'missing_count': len(missing_caps),
+                'total_platform_caps': len(platform_caps),
+                'coverage_ratio': round(
+                    (len(platform_caps) - len(missing_caps)) / max(len(platform_caps), 1),
+                    2,
+                ),
+            },
+        ))
+
+        for cap in missing_caps:
+            dep_info = cap.metadata.get('missing', '') if cap.metadata else ''
+            findings.append(SelfExaminationFinding(
+                category='windows_capability_missing',
+                title=f'Falta: {cap.title}',
+                summary=cap.summary or f'{cap.capability_id} no disponible',
+                severity=IssueSeverity.LOW,
+                confidence=0.85,
+                recommendation=f'Dependencia: {dep_info}' if dep_info else 'Verificar disponibilidad en el entorno',
+                source_refs=[cap.capability_id],
+                metadata={
+                    'capability_id': cap.capability_id,
+                    'status': cap.status,
+                    'pending_task_status': 'PENDING',
+                },
+            ))
+
+        return findings
+
+    def _environment_model(self) -> Any | None:
+        """Read EnvironmentSelfModel from world_model_service or direct."""
+        wms = self.world_model_service
+        if wms is not None:
+            try:
+                snap = wms.current_model()
+                env = getattr(snap, 'environment', None)
+                if env is not None:
+                    return env
+            except Exception:
+                pass
+            try:
+                esas = getattr(wms, 'environment_self_awareness_service', None)
+                if esas is not None:
+                    return esas.current_model()
+            except Exception:
+                pass
+        return None
 
     # ------------------------------------------------------------------
     # Task-packet → pending issues (materialization)
