@@ -206,14 +206,17 @@ except Exception as e:
 
 ```python
 # 4a. Observar hechos del entorno actual
+# NOTA: La función correcta es extract_facts() (no observe_facts).
+# extract_facts() recibe scans opcionales y devuelve un set[str] de hechos.
+# run_common_sense_reasoning() ejecuta el pipeline completo (observe+detect+infer+act).
 from iabv_v15.services.common_sense_engine import (
-    forward_chain, observe_facts, INFERENCE_RULES
+    forward_chain, extract_facts, run_common_sense_reasoning, INFERENCE_RULES
 )
 
 print("=" * 60)
 print("COMMON SENSE ENGINE — HECHOS OBSERVADOS")
 print("=" * 60)
-facts = observe_facts()
+facts = extract_facts()  # sin args = escanea GPU, procesos, etc.
 for fact in sorted(facts):
     print(f"  HECHO: {fact}")
 
@@ -230,6 +233,17 @@ for rule in result['fired_rules']:
     print(f"    Severidad: {rule.get('severity', 'N/A')}")
     print(f"    Acción: {rule.get('action', 'N/A')}")
     print()
+
+# 4b-extra. Pipeline completo v2 (observe → detect anomalies → infer → learn → act)
+print("\n" + "=" * 60)
+print("COMMON SENSE ENGINE — PIPELINE COMPLETO v2")
+print("=" * 60)
+full_result = run_common_sense_reasoning(execute=False, dry_run=True)
+print(f"Anomalías detectadas: {full_result.get('anomaly_count', 0)}")
+for anomaly in full_result.get('anomalies', []):
+    print(f"  ANOMALÍA: {anomaly.get('category', '?')} — {anomaly.get('description', '?')}")
+print(f"History consultations: {full_result.get('history_consultations', 0)}")
+print(f"Algorithm recommendation: {full_result.get('algorithm_recommendation', {})}")
 
 # 4c. Listar TODAS las reglas y verificar cobertura
 print("=" * 60)
