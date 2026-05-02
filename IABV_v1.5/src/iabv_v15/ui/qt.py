@@ -5,9 +5,20 @@ try:  # pragma: no cover - exercised only when PySide6 is available
     from PySide6.QtGui import QGuiApplication
     from PySide6.QtWidgets import QApplication
     from PySide6.QtQml import QQmlApplicationEngine
-    from PySide6.QtQuickControls2 import QQuickStyle
+    from PySide6.QtQuickControls2 import QQuickStyle as _RealQQuickStyle
 
     PYSIDE_AVAILABLE = True
+
+    class QQuickStyle:
+        """Idempotent wrapper: ``setStyle`` only calls the real API once."""
+
+        _applied = False
+
+        @staticmethod
+        def setStyle(style: str) -> None:
+            if not QQuickStyle._applied:
+                _RealQQuickStyle.setStyle(style)
+                QQuickStyle._applied = True
 except ImportError:  # pragma: no cover - fallback for non-UI test environments
     PYSIDE_AVAILABLE = False
 
@@ -108,6 +119,8 @@ except ImportError:  # pragma: no cover - fallback for non-UI test environments
             return self._root_objects
 
     class QQuickStyle:
+        _applied = False
+
         @staticmethod
         def setStyle(_style: str) -> None:
-            return None
+            QQuickStyle._applied = True

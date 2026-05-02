@@ -43,17 +43,33 @@ except ImportError:
     pass
 
 
+def _find_repo_root() -> Path:
+    """Walk up from this file to find the repository root.
+
+    The repo root is identified as the first ancestor that contains an
+    ``assets/`` directory.  Falls back to ``parents[4]`` (the expected
+    depth for ``src/iabv_v15/services/platform/``) if no marker is found.
+    """
+    here = Path(__file__).resolve()
+    for ancestor in here.parents:
+        if (ancestor / 'assets').is_dir():
+            return ancestor
+    return here.parents[4]
+
+
 def _find_app_icon() -> str:
     """Find the best available icon file for the tray."""
+    root = _find_repo_root()
     candidates = [
-        Path(__file__).resolve().parents[3] / 'assets' / 'burve.ico',
-        Path(__file__).resolve().parents[3] / 'scripts' / 'iabv.ico',
-        Path(__file__).resolve().parents[3] / 'assets' / 'burve.png',
-        Path(__file__).resolve().parents[3] / 'scripts' / 'iabv_icon.png',
+        root / 'assets' / 'burve.ico',
+        root / 'scripts' / 'iabv.ico',
+        root / 'assets' / 'burve.png',
+        root / 'scripts' / 'iabv_icon.png',
     ]
     for p in candidates:
         if p.is_file():
             return str(p)
+    logger.warning('systray_bridge: no icon found under %s', root)
     return ''
 
 
