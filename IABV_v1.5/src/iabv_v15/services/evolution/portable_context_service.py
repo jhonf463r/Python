@@ -1267,7 +1267,25 @@ class PortableContextService:
             ],
         }
         if wt_total > 0:
-            result['worker_telemetry_summary'] = {
+            # Collect scientific proxy aggregates
+            cr_vals: list[float] = []
+            ep_vals: list[float] = []
+            idp_vals: list[int] = []
+            scores_for_stability: list[float] = []
+            for run in runs:
+                wt2 = (run.metadata or {}).get('worker_telemetry')
+                if not isinstance(wt2, dict):
+                    continue
+                if isinstance(wt2.get('compression_ratio'), (int, float)):
+                    cr_vals.append(float(wt2['compression_ratio']))
+                if isinstance(wt2.get('entropy_proxy'), (int, float)):
+                    ep_vals.append(float(wt2['entropy_proxy']))
+                if isinstance(wt2.get('inference_depth_proxy'), int):
+                    idp_vals.append(wt2['inference_depth_proxy'])
+                if hasattr(run, 'total_score') and isinstance(run.total_score, (int, float)):
+                    scores_for_stability.append(float(run.total_score))
+
+            wt_summary: dict[str, Any] = {
                 'runs_with_telemetry': wt_total,
                 'budget_exhausted_count': wt_budget_exhausted,
                 'handoff_required_count': wt_handoff_count,
@@ -1277,6 +1295,23 @@ class PortableContextService:
                     for k, c in wt_worker_kinds.most_common(5)
                 ],
             }
+            if cr_vals:
+                wt_summary['avg_compression_ratio'] = round(sum(cr_vals) / len(cr_vals), 4)
+            if ep_vals:
+                wt_summary['avg_entropy_proxy'] = round(sum(ep_vals) / len(ep_vals), 4)
+            if idp_vals:
+                wt_summary['avg_inference_depth'] = round(sum(idp_vals) / len(idp_vals), 2)
+            if len(scores_for_stability) >= 2:
+                try:
+                    from iabv_v15.services.lab.scientific_proxy_engine import (
+                        stability_score_from_runs,
+                        nonlinearity_indicator,
+                    )
+                    wt_summary['stability_score'] = stability_score_from_runs(scores_for_stability)
+                    wt_summary['nonlinearity_indicator'] = nonlinearity_indicator(scores_for_stability)
+                except Exception:
+                    pass
+            result['worker_telemetry_summary'] = wt_summary
         return result
 
     def _task_packet_summary_section(

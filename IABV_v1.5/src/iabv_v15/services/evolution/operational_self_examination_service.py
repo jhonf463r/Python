@@ -5679,6 +5679,109 @@ class OperationalSelfExaminationService:
                 },
             ))
 
+        # --- High correction recurrence ---
+        if wt_total >= 3:
+            correction_vals = [
+                int(wt2.get('correction_rounds') or 0)
+                for run in experiment_runs
+                if isinstance((wt2 := (run.metadata or {}).get('worker_telemetry')), dict)
+            ]
+            if correction_vals:
+                avg_corrections = sum(correction_vals) / len(correction_vals)
+                if avg_corrections >= 2.0:
+                    results.append(SelfExaminationFinding(
+                        category='task_packet_worker_high_corrections',
+                        severity=IssueSeverity.MEDIUM,
+                        title=f'Alta recurrencia de correcciones ({avg_corrections:.1f} avg)',
+                        summary=(
+                            f'Los workers externos requieren un promedio de '
+                            f'{avg_corrections:.1f} rondas de correccion por '
+                            f'ejecucion. Puede indicar prompts poco claros '
+                            f'o workers inadecuados para la tarea.'
+                        ),
+                        confidence=min(0.6 + avg_corrections * 0.1, 0.9),
+                        recommendation=(
+                            'Revisar la calidad de los prompts enviados. '
+                            'Considerar cambiar de worker si el patron persiste.'
+                        ),
+                        source_refs=['ExperimentRun.metadata.worker_telemetry.correction_rounds'],
+                        metadata={
+                            'pattern': 'high_correction_recurrence',
+                            'avg_corrections': round(avg_corrections, 2),
+                            'sample_size': len(correction_vals),
+                        },
+                    ))
+
+        # --- Compression / reuse quality ---
+        if wt_total >= 3:
+            cr_vals = [
+                float(wt3.get('compression_ratio'))
+                for run in experiment_runs
+                if isinstance((wt3 := (run.metadata or {}).get('worker_telemetry')), dict)
+                and isinstance(wt3.get('compression_ratio'), (int, float))
+            ]
+            if len(cr_vals) >= 3:
+                avg_cr = sum(cr_vals) / len(cr_vals)
+                if avg_cr < 0.3:
+                    results.append(SelfExaminationFinding(
+                        category='task_packet_worker_good_compression',
+                        severity=IssueSeverity.LOW,
+                        title=f'Buena compresion de output ({avg_cr:.2f})',
+                        summary=(
+                            f'Las respuestas de workers tienen ratio de compresion '
+                            f'promedio {avg_cr:.2f} (bajo = mas estructurado). '
+                            f'Esto sugiere outputs bien organizados y reutilizables.'
+                        ),
+                        confidence=0.6,
+                        recommendation=(
+                            'Mantener la estrategia actual de prompting. '
+                            'Considerar promover workers con buena compresion.'
+                        ),
+                        source_refs=['ExperimentRun.metadata.worker_telemetry.compression_ratio'],
+                        metadata={
+                            'pattern': 'good_compression',
+                            'avg_compression_ratio': round(avg_cr, 4),
+                            'sample_size': len(cr_vals),
+                        },
+                    ))
+
+        # --- Nonlinearity detection (performance jump) ---
+        recent_scores = [
+            float(run.total_score)
+            for run in experiment_runs
+            if hasattr(run, 'total_score')
+            and isinstance(run.total_score, (int, float))
+        ]
+        if len(recent_scores) >= 10:
+            try:
+                from iabv_v15.services.lab.scientific_proxy_engine import nonlinearity_indicator
+                nli = nonlinearity_indicator(recent_scores, window=5)
+                if nli >= 1.5:
+                    results.append(SelfExaminationFinding(
+                        category='task_packet_performance_jump',
+                        severity=IssueSeverity.LOW,
+                        title=f'Salto no lineal de rendimiento detectado ({nli:.2f}x)',
+                        summary=(
+                            f'El rendimiento promedio de las ultimas 5 ejecuciones '
+                            f'es {nli:.2f}x mayor que las 5 anteriores. '
+                            f'Esto puede indicar una mejora significativa en la '
+                            f'estrategia o configuracion actual.'
+                        ),
+                        confidence=min(0.5 + (nli - 1.0) * 0.2, 0.85),
+                        recommendation=(
+                            'Investigar que cambio produjo la mejora. '
+                            'Si es reproducible, promover la configuracion actual.'
+                        ),
+                        source_refs=['ExperimentRun.total_score'],
+                        metadata={
+                            'pattern': 'nonlinear_performance_jump',
+                            'nonlinearity_indicator': round(nli, 4),
+                            'recent_scores_count': len(recent_scores),
+                        },
+                    ))
+            except Exception:
+                pass
+
         return results
 
     # ------------------------------------------------------------------

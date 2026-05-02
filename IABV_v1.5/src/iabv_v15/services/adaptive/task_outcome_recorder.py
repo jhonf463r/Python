@@ -193,16 +193,27 @@ class TaskOutcomeRecorder:
         }
         wt_raw = session.metadata.get('worker_telemetry')
         if isinstance(wt_raw, dict):
+            _WT_ALLOWLIST = {
+                'worker_kind', 'assistant_kind', 'worker_id',
+                'task_packet_id', 'budget_state', 'continuation_state',
+                'handoff_required', 'resume_hint',
+                'human_intervention_required', 'result_status',
+                'latency_ms', 'correction_rounds', 'merge_success',
+                'files_touched_scope',
+                # Scientific proxy variables
+                'compression_ratio', 'description_length_proxy',
+                'entropy_proxy', 'inference_depth_proxy',
+                'step_count_proxy', 'multi_step_success_rate',
+                'reuse_score', 'stability_score',
+                # Metacognitive variables
+                'predicted_outcome', 'actual_outcome',
+                'confidence', 'calibration_error', 'uncertainty_proxy',
+                # Decision
+                'recommended_action',
+            }
             metadata['worker_telemetry'] = {
                 k: v for k, v in wt_raw.items()
-                if k in {
-                    'worker_kind', 'assistant_kind', 'worker_id',
-                    'task_packet_id', 'budget_state', 'continuation_state',
-                    'handoff_required', 'resume_hint',
-                    'human_intervention_required', 'result_status',
-                    'latency_ms', 'correction_rounds', 'merge_success',
-                    'files_touched_scope',
-                }
+                if k in _WT_ALLOWLIST
             }
         learning_records: list[dict[str, Any]] = []
         for subject_key in subject_keys:

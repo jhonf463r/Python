@@ -131,6 +131,96 @@ class ToolAdapter:
         return any(p in combined for p in ToolAdapter._WRONG_THREAD_PATTERNS)
 
     @staticmethod
+    def _build_worker_telemetry(
+        *,
+        result: dict[str, Any],
+        worker_kind: str,
+        assistant_kind: str,
+        worker_id: str = '',
+        task_packet_id: str = '',
+    ) -> dict[str, Any]:
+        """Build ExternalWorkerTelemetry dict from adapter result.
+
+        Called after adapter execution to stamp telemetry data into
+        ``result['metadata']['worker_telemetry']``.  Computes scientific
+        proxies (compression, entropy, inference depth) from the output
+        text when available.
+        """
+        output_text = str(result.get('output_text') or '')
+        success = bool(result.get('success'))
+        elapsed_ms = int(result.get('execution_ms') or 0)
+        error_msg = str(result.get('error_message') or '').lower()
+        meta = result.get('metadata') or {}
+
+        budget_state = 'ok'
+        if any(w in error_msg for w in ('quota', 'limit', 'exceeded', 'rate_limit')):
+            budget_state = 'quota_exceeded'
+        elif any(w in error_msg for w in ('timeout', 'timed out', 'deadline')):
+            budget_state = 'timeout'
+        elif any(w in error_msg for w in ('budget', 'exhausted', 'credits')):
+            budget_state = 'exhausted'
+
+        handoff_required = budget_state != 'ok' or bool(meta.get('response_capture_pending'))
+        continuation_state = 'truncated' if handoff_required else ('complete' if success else 'failed')
+        result_status = 'success' if success else ('truncated' if handoff_required else 'failed')
+        human_intervention = bool(meta.get('assistant_login_required'))
+
+        # Scientific proxies from output text
+        cr: float | None = None
+        dl: int | None = None
+        ep: float | None = None
+        idp: int | None = None
+        scp: int | None = None
+        if output_text:
+            try:
+                from iabv_v15.services.lab.scientific_proxy_engine import (
+                    compression_ratio,
+                    description_length_proxy,
+                    entropy_proxy,
+                    inference_depth_proxy,
+                    step_count_proxy,
+                )
+                cr = compression_ratio(output_text)
+                dl = description_length_proxy(output_text)
+                ep = entropy_proxy(output_text)
+                idp = inference_depth_proxy(output_text)
+                scp = step_count_proxy(output_text)
+            except Exception:
+                pass
+
+        telemetry: dict[str, Any] = {
+            'worker_kind': worker_kind,
+            'assistant_kind': assistant_kind,
+            'worker_id': worker_id,
+            'task_packet_id': task_packet_id,
+            'budget_state': budget_state,
+            'continuation_state': continuation_state,
+            'handoff_required': handoff_required,
+            'resume_hint': str(meta.get('session_scope') or ''),
+            'human_intervention_required': human_intervention,
+            'result_status': result_status,
+            'latency_ms': elapsed_ms,
+            'correction_rounds': 0,
+            'merge_success': None,
+            'files_touched_scope': [],
+            'compression_ratio': cr,
+            'description_length_proxy': dl,
+            'entropy_proxy': ep,
+            'inference_depth_proxy': idp,
+            'step_count_proxy': scp,
+        }
+        return telemetry
+
+    @staticmethod
+    def _stamp_telemetry(result: dict[str, Any], telemetry: dict[str, Any]) -> dict[str, Any]:
+        """Inject worker_telemetry into result metadata without mutating original."""
+        stamped = dict(result)
+        meta = dict(stamped.get('metadata') or {})
+        meta['worker_telemetry'] = telemetry
+        stamped['metadata'] = meta
+        return stamped
+
+    @staticmethod
     def _annotate_resilience(result: dict[str, Any], *, fault_type: str, recommendation: str) -> dict[str, Any]:
         """Add resilience metadata to a tool result without mutating original."""
         annotated = dict(result)
@@ -1603,6 +1693,21 @@ class DesktopHumanToolAdapter:
 class ExternalAssistantToolAdapter(ToolAdapter):
     tool_type = ToolType.CUSTOM
 
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+        result = super().run(card, task, sandbox=sandbox)
+        if sandbox:
+            return result
+        assistant_kind = str(card.metadata.get('assistant_kind') or card.tool_id)
+        worker_kind = str(card.metadata.get('worker_kind') or assistant_kind).lower()
+        telemetry = ToolAdapter._build_worker_telemetry(
+            result=result,
+            worker_kind=worker_kind,
+            assistant_kind=assistant_kind,
+            worker_id=str((result.get('metadata') or {}).get('session_label') or ''),
+            task_packet_id=str(task.metadata.get('task_packet_id') or '') if task.metadata else '',
+        )
+        return ToolAdapter._stamp_telemetry(result, telemetry)
+
 
 class DevinApiToolAdapter:
     """Adapter REST para Devin (Cognition AI) via API v1.
@@ -1747,7 +1852,7 @@ class DevinApiToolAdapter:
             error_message = f'{type(exc).__name__}: {exc}'
 
         elapsed_ms = int((time.perf_counter() - start) * 1000)
-        return {
+        result = {
             'success': session_status == 'finished',
             'output_text': structured_output or '',
             'extracted_data': {'session_id': session_id, 'session_url': session_url},
@@ -1760,6 +1865,16 @@ class DevinApiToolAdapter:
                 'devin_session_status': session_status,
             },
         }
+        if not sandbox:
+            telemetry = ToolAdapter._build_worker_telemetry(
+                result=result,
+                worker_kind='devin',
+                assistant_kind='devin_api',
+                worker_id=session_id,
+                task_packet_id=str(task.metadata.get('task_packet_id') or '') if task.metadata else '',
+            )
+            result = ToolAdapter._stamp_telemetry(result, telemetry)
+        return result
 
 
 class GitHubApiToolAdapter:
