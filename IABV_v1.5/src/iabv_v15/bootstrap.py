@@ -2261,28 +2261,42 @@ class AppBootstrap:
         except Exception:
             pass
 
-    def _build_ui_objects(self) -> None:
+    # ------------------------------------------------------------------
+    # Phased VM construction
+    # ------------------------------------------------------------------
+    # populate_ui is split into three batches so that QTimer.singleShot(0)
+    # returns control to the Qt event loop between each batch.  This lets
+    # the QML async incubator (mainShellLoader / pageLoader) progress to
+    # Ready and emit the honest shell_loader_ready signal *before* the
+    # fallback timer fires.
+    #
+    # Phase 1 (critical): nav + theme + bridge + dashboard — minimum
+    #   needed for the initial page to render.
+    # Phase 2 (deferred-1): MCP side-effects + ControlCenter + Capture
+    # Phase 3 (deferred-2): Evolution + Knowledge + Provider + RunHistory
+    #   + CentroVivo + signal wiring
+    # ------------------------------------------------------------------
+
+    def _build_critical_ui_objects(self) -> None:
+        """Phase 1: build VMs needed for first paint (Dashboard)."""
         if self.navigation_controller is not None:
             return
         if PYSIDE_AVAILABLE and QGuiApplication.instance() is None:
             self._ui_app = QApplication(sys.argv)
+
+        try:
+            self._timeline.mark('populate_ui_vm_navigation')
+        except Exception:
+            pass
         self.navigation_controller = NavigationController()
         self.theme_controller = ThemeController(self.theme)
         self.main_window_bridge = MainWindowBridge(self.config.app_name, self.config.workspace_root)
-        # El shell QML emite ``shellLoaderReady`` cuando ``mainShellLoader``
-        # (asincrono) instancia el contenido real (no solo la
-        # ``ApplicationWindow`` vacia).  Conectamos aqui, no dentro de
-        # ``run()``, asi la senal llega aunque el bridge ya este vivo
-        # antes de la primera carga del engine.
         try:
             self.main_window_bridge.shellLoaderReady.connect(
                 self._handle_shell_loader_ready
             )
         except Exception:
             logger.exception('No se pudo conectar shellLoaderReady -> _handle_shell_loader_ready')
-        # Hitos granulares para diagnosticar Windows pythonw.exe: cada
-        # transicion de Loader.status/active, Component.onCompleted del
-        # Main.qml, y el page loader interno (mas honesto que el shell).
         try:
             self.main_window_bridge.qmlLoaderEvent.connect(
                 self._handle_qml_loader_event
@@ -2307,7 +2321,12 @@ class AppBootstrap:
             )
         except Exception:
             logger.exception('No se pudo conectar splashClosing -> _handle_splash_closing')
-        self._yield_to_event_loop()  # Fix 20b
+        self._yield_to_event_loop()
+
+        try:
+            self._timeline.mark('populate_ui_vm_dashboard')
+        except Exception:
+            pass
         self.dashboard_viewmodel = DashboardViewModel(
             self.episode_repository,
             self.knowledge_repository,
@@ -2316,11 +2335,15 @@ class AppBootstrap:
             self.embedding_service,
             defer_initial_refresh=True,
         )
-        self._yield_to_event_loop()  # Fix 20b
-        # --- MCP bridge (Capa 1): expone el programa a agentes externos
-        # (Devin/Claude/Codex) via MCP sobre un tunnel local. El service lee
-        # su preferencia persistida y, si estaba habilitado, se auto-arranca.
-        # Si governance lo bloquea, queda en state=failed sin crashear.
+        self._yield_to_event_loop()
+
+    def _build_deferred_ui_batch_1(self) -> None:
+        """Phase 2: MCP side-effects + ControlCenter + CaptureStudio."""
+        try:
+            self._timeline.mark('populate_ui_vm_mcp_side_effects')
+        except Exception:
+            pass
+        # --- MCP bridge ---
         if getattr(self, 'mcp_bridge_service', None) is None:
             try:
                 self.mcp_bridge_service = build_mcp_bridge_service(
@@ -2331,11 +2354,6 @@ class AppBootstrap:
                 logger.exception('No se pudo inicializar MCPBridgeService; bridge desactivado')
                 self.mcp_bridge_service = None
             else:
-                # `ensure_started()` espera hasta DEFAULT_TUNNEL_TIMEOUT_S a que
-                # cloudflared publique la URL. Corriendo en el hilo del arranque
-                # freezearia el splash/UI hasta 30 s. Lo disparamos a un daemon
-                # thread: el service publica transiciones vía listener y el
-                # ViewModel refleja el estado apenas cambie.
                 bridge_ref = self.mcp_bridge_service
 
                 def _autostart_bridge() -> None:
@@ -2349,11 +2367,7 @@ class AppBootstrap:
                     name='mcp-bridge-autostart',
                     daemon=True,
                 ).start()
-
-        # --- UIBridgeService: puente IPC entre MCP server y UI PySide6.
-        # Permite a agentes externos (via MCP) enviar mensajes al chat,
-        # leer respuestas, capturar screenshots y navegar tabs de la UI.
-        # El server TCP arranca en un hilo daemon; si falla, queda None.
+        # --- UIBridgeService ---
         if getattr(self, 'ui_bridge_server', None) is None:
             try:
                 from iabv_v15.services.ui_bridge_service import (
@@ -2363,31 +2377,19 @@ class AppBootstrap:
             except Exception:
                 logger.exception('No se pudo construir UIBridgeServer; bridge UI desactivado')
                 self.ui_bridge_server = None
-
-        # --- UIScreenshotProvider: permite que la tool MCP
-        # `capture_ui_screenshot` devuelva bytes reales cuando la UI está
-        # corriendo en este proceso (Qt) o cuando hay display server activo
-        # (mss). En headless CI / Linux sin display queda `None` y la tool
-        # degrada explícito a `ui_not_running`.
+        # --- UIScreenshotProvider ---
         if getattr(self, 'ui_screenshot_provider', None) is None:
             try:
                 from iabv_v15.infra.ui import build_ui_screenshot_provider
-
                 self.ui_screenshot_provider = build_ui_screenshot_provider()
             except Exception:
                 logger.exception('No se pudo construir ui_screenshot_provider; dejando None')
                 self.ui_screenshot_provider = None
-
-        # ChatCapabilityIngestionService: escucha pasiva del chat. Cuando el
-        # usuario declara una capacidad (tengo GPU, instale qwen3, cuento con
-        # Docker) escribe un entry append-only a
-        # data/chat_research_backlog/<session>.jsonl. No decide rutas; solo
-        # persiste para que OSES / ExperimentLab lo consuman en capas superiores.
+        # --- ChatCapabilityIngestionService ---
         try:
             from iabv_v15.services.chat.capability_ingestion import (
                 ChatCapabilityIngestionService,
             )
-
             self.chat_capability_ingestion_service = ChatCapabilityIngestionService(
                 data_root=self.config.data_dir,
             )
@@ -2395,7 +2397,11 @@ class AppBootstrap:
             logger.exception('No se pudo construir ChatCapabilityIngestionService; dejando None')
             self.chat_capability_ingestion_service = None
 
-        self._yield_to_event_loop()  # Fix 20b
+        self._yield_to_event_loop()
+        try:
+            self._timeline.mark('populate_ui_vm_control_center')
+        except Exception:
+            pass
         self.control_center_viewmodel = ControlCenterViewModel(
             config=self.config,
             episode_repository=self.episode_repository,
@@ -2431,7 +2437,12 @@ class AppBootstrap:
             chat_capability_ingestion_service=self.chat_capability_ingestion_service,
             defer_initial_refresh=True,
         )
-        self._yield_to_event_loop()  # Fix 20b
+        self._yield_to_event_loop()
+
+        try:
+            self._timeline.mark('populate_ui_vm_capture_studio')
+        except Exception:
+            pass
         self.capture_studio_viewmodel = CaptureStudioViewModel(
             config=self.config,
             episode_repository=self.episode_repository,
@@ -2461,9 +2472,7 @@ class AppBootstrap:
         self.control_center_viewmodel.capture_studio_viewmodel = self.capture_studio_viewmodel
         self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
 
-        # Wire UIBridgeServer with the ControlCenterViewModel so that
-        # MCP agents can interact with the UI chat. The server starts
-        # in a daemon thread; if it fails, IABV continues without it.
+        # Wire UIBridgeServer with ControlCenterViewModel
         if getattr(self, 'ui_bridge_server', None) is not None:
             try:
                 from iabv_v15.services.ui_bridge_service import build_ui_bridge_server
@@ -2476,9 +2485,13 @@ class AppBootstrap:
                 logger.exception('UIBridgeServer failed to start with VM wiring')
                 self.ui_bridge_server = None
 
-        self._yield_to_event_loop()  # Fix 20b
-        # Deferred: refreshAutonomyDock runs inside the VM's deferred
-        # startup thread to avoid blocking UI creation.
+    def _build_deferred_ui_batch_2(self) -> None:
+        """Phase 3: Evolution + remaining VMs + signal wiring."""
+        self._yield_to_event_loop()
+        try:
+            self._timeline.mark('populate_ui_vm_evolution_center')
+        except Exception:
+            pass
         self.evolution_center_viewmodel = EvolutionCenterViewModel(
             dossier_repository=self.execution_dossier_repository,
             hidden_incident_repository=self.hidden_incident_repository,
@@ -2500,17 +2513,16 @@ class AppBootstrap:
             github_remote_service=self.github_remote_service,
             defer_initial_refresh=True,
         )
-        # Hook proactivo: el EvolutionCenter puede consultar el dashboard
-        # para mostrar "que necesita del humano" al arrancar, sin romper
-        # el contrato del ViewModel (attribute set, no constructor arg).
         self.evolution_center_viewmodel.proactive_dashboard_service = self.proactive_dashboard_service
         self.evolution_center_viewmodel.human_approval_broker = self.human_approval_broker
         self.evolution_center_viewmodel.approval_memory = self.approval_memory
-        # F1.1: el VM expone snapshots recientes como Property; el servicio
-        # persiste a disco y el VM solo lee la foto (AGENTS.md: el VM no
-        # decide rutas ni inventa datos).
         self.evolution_center_viewmodel.ui_screenshot_service = self.ui_screenshot_service
-        self._yield_to_event_loop()  # Fix 20b
+        self._yield_to_event_loop()
+
+        try:
+            self._timeline.mark('populate_ui_vm_remaining')
+        except Exception:
+            pass
         self.knowledge_base_viewmodel = KnowledgeBaseViewModel(
             self.knowledge_repository,
             defer_initial_refresh=True,
@@ -2539,11 +2551,13 @@ class AppBootstrap:
             defer_initial_refresh=True,
         )
 
-        # --- Task A: conectar handlers de backend a senales de ambos ViewModels ---
-        # Los servicios backend emiten via handler registrado; el handler reemite por
-        # la Qt Signal del ControlCenterViewModel y EvolutionCenterViewModel para que
-        # los dialogos QML (Task B) los reciban.
         self._wire_task_a_signals()
+
+    def _build_ui_objects(self) -> None:
+        """Synchronous path: build all VMs in one call (used by tests)."""
+        self._build_critical_ui_objects()
+        self._build_deferred_ui_batch_1()
+        self._build_deferred_ui_batch_2()
 
     def _wire_task_a_signals(self) -> None:
         """Conecta handlers de los 4 servicios backend (Task A) a ambos ViewModels.
@@ -2715,24 +2729,64 @@ class AppBootstrap:
             if not engine.rootObjects():
                 raise RuntimeError('Failed to load Main.qml.')
 
-            # Defer heavy VM creation to after the event loop starts so the
-            # window appears instantly.  QTimer.singleShot(0, ...) fires on
-            # the very first iteration of app.exec().
-            def _populate_ui() -> None:
+            # --- Phased VM construction ---------------------------------
+            # Build only the critical VMs first (Phase 1), then yield to
+            # the event loop so the QML async incubator can progress.
+            # Deferred VMs are built in subsequent phases via
+            # QTimer.singleShot(0, ...) — each call returns control to
+            # the event loop, letting shell_loader_ready fire honestly.
+            self._qml_root_context = context
+
+            def _populate_ui_critical() -> None:
                 try:
                     self._timeline.mark('populate_ui_start')
                 except Exception:
                     pass
                 if splash:
-                    splash.set_status('Construyendo ViewModels...')
-                self._build_ui_objects()
-                _set_context_properties(context)
+                    splash.set_status('Construyendo ViewModels criticos...')
+                self._build_critical_ui_objects()
+                context.setContextProperty('navigationController', self.navigation_controller)
+                context.setContextProperty('themeController', self.theme_controller)
+                context.setContextProperty('mainWindowBridge', self.main_window_bridge)
+                context.setContextProperty('dashboardViewModel', self.dashboard_viewmodel)
+                try:
+                    self._timeline.mark('populate_ui_critical_done')
+                except Exception:
+                    pass
+                logger.info('populate_ui_critical: nav + theme + bridge + dashboard ready')
+                QTimer.singleShot(0, _populate_ui_deferred_1)
+
+            def _populate_ui_deferred_1() -> None:
+                try:
+                    self._timeline.mark('populate_ui_deferred_1_start')
+                except Exception:
+                    pass
+                self._build_deferred_ui_batch_1()
+                context.setContextProperty('controlCenterViewModel', self.control_center_viewmodel)
+                context.setContextProperty('captureStudioViewModel', self.capture_studio_viewmodel)
+                try:
+                    self._timeline.mark('populate_ui_deferred_1_done')
+                except Exception:
+                    pass
+                QTimer.singleShot(0, _populate_ui_deferred_2)
+
+            def _populate_ui_deferred_2() -> None:
+                try:
+                    self._timeline.mark('populate_ui_deferred_2_start')
+                except Exception:
+                    pass
+                self._build_deferred_ui_batch_2()
+                context.setContextProperty('evolutionCenterViewModel', self.evolution_center_viewmodel)
+                context.setContextProperty('knowledgeBaseViewModel', self.knowledge_base_viewmodel)
+                context.setContextProperty('providerSettingsViewModel', self.provider_settings_viewmodel)
+                context.setContextProperty('runHistoryViewModel', self.run_history_viewmodel)
+                context.setContextProperty('centroVivoViewModel', self.centro_vivo_viewmodel)
                 logger.info('ui_populated: all ViewModels loaded and context properties set')
                 try:
                     self._timeline.mark('populate_ui_done')
                 except Exception:
                     pass
-                # Fix 19a: Show system tray icon after UI is built
+                # Fix 19a: Show system tray icon after all VMs are built
                 try:
                     self.win_systray_bridge.show(
                         on_show_window=self._raise_main_window,
@@ -2740,11 +2794,9 @@ class AppBootstrap:
                     )
                 except Exception:
                     pass
-                # Fix 20a: Early splash close — don't wait for QML
-                # incubation (can take >100s on Windows). Close splash
-                # 500ms after populate_ui so the user sees the main
-                # window immediately.  If shell_loader_ready already
-                # fired (fast machine), this is a no-op.
+                # Fix 20a: Early splash close — safety net if
+                # shell_loader_ready has not fired yet.  With phased
+                # construction this should rarely trigger.
                 if splash:
                     def _early_splash_close() -> None:
                         if getattr(self, '_shell_loader_ready_handled', False):
@@ -2763,7 +2815,8 @@ class AppBootstrap:
                         self._fire_splash_ready_and_raise_main(
                             'populate_ui_early_close')
                     QTimer.singleShot(500, _early_splash_close)
-            QTimer.singleShot(0, _populate_ui)
+
+            QTimer.singleShot(0, _populate_ui_critical)
         else:
             # Synchronous path (used by tests that don't call app.exec()).
             if splash:
