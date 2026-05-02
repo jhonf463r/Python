@@ -2549,18 +2549,32 @@ class AppBootstrap:
         csvm = getattr(self, 'capture_studio_viewmodel', None)
         if csvm is not None:
             self.control_center_viewmodel.capture_studio_viewmodel = csvm
-        # Wire UIBridgeServer now that the VM exists.
+        # Wire UIBridgeServer now that the VM exists — start on a
+        # background thread to avoid blocking the main thread during
+        # lazy VM prebuild.
         if getattr(self, 'ui_bridge_server', None) is not None:
-            try:
-                from iabv_v15.services.ui_bridge_service import build_ui_bridge_server
-                self.ui_bridge_server = build_ui_bridge_server(
-                    control_center_viewmodel=self.control_center_viewmodel,
-                )
-                self.ui_bridge_server.start()
-                logger.info('UIBridgeServer started with ControlCenterViewModel')
-            except Exception:
-                logger.exception('UIBridgeServer failed to start with VM wiring')
-                self.ui_bridge_server = None
+            ccvm_ref = self.control_center_viewmodel
+
+            def _start_bridge() -> None:
+                try:
+                    from iabv_v15.services.ui_bridge_service import (
+                        build_ui_bridge_server,
+                    )
+                    bridge = build_ui_bridge_server(
+                        control_center_viewmodel=ccvm_ref,
+                    )
+                    self.ui_bridge_server = bridge
+                    bridge.start()
+                    logger.info('UIBridgeServer started with ControlCenterViewModel')
+                except Exception:
+                    logger.exception('UIBridgeServer failed to start with VM wiring')
+                    self.ui_bridge_server = None
+
+            threading.Thread(
+                target=_start_bridge,
+                name='ui-bridge-start',
+                daemon=True,
+            ).start()
 
     def _build_capture_studio_vm(self) -> None:
         self.capture_studio_viewmodel = CaptureStudioViewModel(
