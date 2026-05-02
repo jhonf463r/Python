@@ -1633,12 +1633,12 @@ class AppBootstrap:
             pass
 
     def _schedule_pending_deferred_2(self) -> None:
-        """Schedule Phase 3 VM construction if not yet scheduled.
+        """Schedule lazy VM wiring if not yet scheduled.
 
         Called from ``_handle_page_loader_ready`` (preferred) or
-        ``_force_splash_ready_fallback`` (safety net) so that
-        non-critical VMs (EvolutionCenter, KnowledgeBase, ProviderSettings,
-        RunHistory, CentroVivo) never block the pre-ready path.
+        ``_force_splash_ready_fallback`` (safety net).  The actual VM
+        construction happens lazily via ``_ensure_vm_for_route`` (on
+        navigation) or ``_build_all_lazy_vms`` (idle pre-build at 15 s).
         """
         if getattr(self, '_deferred_batch_2_scheduled', False):
             return
@@ -2373,7 +2373,13 @@ class AppBootstrap:
         self._yield_to_event_loop()
 
     def _build_deferred_ui_batch_1(self) -> None:
-        """Phase 2: MCP side-effects + ControlCenter + CaptureStudio."""
+        """Phase 2: MCP side-effects only (lightweight services).
+
+        ControlCenterVM and CaptureStudioVM are now lazy — built
+        on-demand when the user navigates to their page, or pre-built
+        during idle 15 s after boot.  This eliminates the 82 s main
+        thread block observed in the Windsurf v2 audit.
+        """
         try:
             self._timeline.mark('populate_ui_vm_mcp_side_effects')
         except Exception:
@@ -2432,11 +2438,77 @@ class AppBootstrap:
             logger.exception('No se pudo construir ChatCapabilityIngestionService; dejando None')
             self.chat_capability_ingestion_service = None
 
-        self._yield_to_event_loop()
+        # ControlCenterVM and CaptureStudioVM are now lazy (see
+        # _ROUTE_TO_VM_ATTR).  UIBridgeServer wiring happens inside
+        # _build_control_center_vm() when the VM is actually built.
+
+    # ------------------------------------------------------------------
+    # Lazy VM construction — ALL non-critical VMs (ControlCenter,
+    # CaptureStudio, EvolutionCenter, KnowledgeBase, ProviderSettings,
+    # RunHistory, CentroVivo) are built on-demand when the user
+    # navigates to their page, or pre-built during idle 15 s after
+    # boot.  Only Dashboard + Nav + Theme + Bridge are built eagerly.
+    # This keeps the main thread responsive (Responding=True) and
+    # avoids the 82 s block that caused Windows "Not Responding".
+    # ------------------------------------------------------------------
+
+    _ROUTE_TO_VM_ATTR: dict[str, str] = {
+        'control': 'control_center_viewmodel',
+        'capture': 'capture_studio_viewmodel',
+        'evolution': 'evolution_center_viewmodel',
+        'knowledge': 'knowledge_base_viewmodel',
+        'providers': 'provider_settings_viewmodel',
+        'runs': 'run_history_viewmodel',
+        'centro_vivo': 'centro_vivo_viewmodel',
+    }
+
+    def _ensure_vm_for_route(self, route: str) -> None:
+        """Lazily construct the VM for *route* if it hasn't been built yet.
+
+        Called from the ``currentRouteChanged`` listener installed by
+        ``_populate_ui_deferred_2``.  Each VM is built exactly once;
+        subsequent navigations to the same page are no-ops.
+        """
+        attr = self._ROUTE_TO_VM_ATTR.get(route)
+        if attr is None:
+            return  # Phase 1 VM (dashboard) — already built
+        if getattr(self, attr, None) is not None:
+            return  # already constructed
+        ctx = getattr(self, '_qml_root_context', None)
+        if ctx is None:
+            return
         try:
-            self._timeline.mark('populate_ui_vm_control_center')
+            self._timeline.mark(f'lazy_vm_{route}_start')
         except Exception:
             pass
+        if route == 'control':
+            self._build_control_center_vm()
+            ctx.setContextProperty('controlCenterViewModel', self.control_center_viewmodel)
+        elif route == 'capture':
+            self._build_capture_studio_vm()
+            ctx.setContextProperty('captureStudioViewModel', self.capture_studio_viewmodel)
+        elif route == 'evolution':
+            self._build_evolution_center_vm()
+            ctx.setContextProperty('evolutionCenterViewModel', self.evolution_center_viewmodel)
+        elif route == 'knowledge':
+            self._build_knowledge_base_vm()
+            ctx.setContextProperty('knowledgeBaseViewModel', self.knowledge_base_viewmodel)
+        elif route == 'providers':
+            self._build_provider_settings_vm()
+            ctx.setContextProperty('providerSettingsViewModel', self.provider_settings_viewmodel)
+        elif route == 'runs':
+            self._build_run_history_vm()
+            ctx.setContextProperty('runHistoryViewModel', self.run_history_viewmodel)
+        elif route == 'centro_vivo':
+            self._build_centro_vivo_vm()
+            ctx.setContextProperty('centroVivoViewModel', self.centro_vivo_viewmodel)
+        try:
+            self._timeline.mark(f'lazy_vm_{route}_done')
+        except Exception:
+            pass
+        logger.info('lazy_vm_constructed: %s', route)
+
+    def _build_control_center_vm(self) -> None:
         self.control_center_viewmodel = ControlCenterViewModel(
             config=self.config,
             episode_repository=self.episode_repository,
@@ -2472,12 +2544,25 @@ class AppBootstrap:
             chat_capability_ingestion_service=self.chat_capability_ingestion_service,
             defer_initial_refresh=True,
         )
-        self._yield_to_event_loop()
+        self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
+        # Wire CaptureStudioVM reference if already built.
+        csvm = getattr(self, 'capture_studio_viewmodel', None)
+        if csvm is not None:
+            self.control_center_viewmodel.capture_studio_viewmodel = csvm
+        # Wire UIBridgeServer now that the VM exists.
+        if getattr(self, 'ui_bridge_server', None) is not None:
+            try:
+                from iabv_v15.services.ui_bridge_service import build_ui_bridge_server
+                self.ui_bridge_server = build_ui_bridge_server(
+                    control_center_viewmodel=self.control_center_viewmodel,
+                )
+                self.ui_bridge_server.start()
+                logger.info('UIBridgeServer started with ControlCenterViewModel')
+            except Exception:
+                logger.exception('UIBridgeServer failed to start with VM wiring')
+                self.ui_bridge_server = None
 
-        try:
-            self._timeline.mark('populate_ui_vm_capture_studio')
-        except Exception:
-            pass
+    def _build_capture_studio_vm(self) -> None:
         self.capture_studio_viewmodel = CaptureStudioViewModel(
             config=self.config,
             episode_repository=self.episode_repository,
@@ -2504,76 +2589,10 @@ class AppBootstrap:
             universal_perception_service=self.universal_perception_service,
             defer_initial_refresh=True,
         )
-        self.control_center_viewmodel.capture_studio_viewmodel = self.capture_studio_viewmodel
-        self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
-
-        # Wire UIBridgeServer with ControlCenterViewModel
-        if getattr(self, 'ui_bridge_server', None) is not None:
-            try:
-                from iabv_v15.services.ui_bridge_service import build_ui_bridge_server
-                self.ui_bridge_server = build_ui_bridge_server(
-                    control_center_viewmodel=self.control_center_viewmodel,
-                )
-                self.ui_bridge_server.start()
-                logger.info('UIBridgeServer started with ControlCenterViewModel')
-            except Exception:
-                logger.exception('UIBridgeServer failed to start with VM wiring')
-                self.ui_bridge_server = None
-
-    # ------------------------------------------------------------------
-    # Lazy VM construction — Phase 3 VMs are built on-demand when the
-    # user navigates to their page.  This keeps the main thread
-    # responsive during boot (Responding=True) and avoids the 117s
-    # monolithic block that causes Windows "Not Responding".
-    # ------------------------------------------------------------------
-
-    _ROUTE_TO_VM_ATTR: dict[str, str] = {
-        'evolution': 'evolution_center_viewmodel',
-        'knowledge': 'knowledge_base_viewmodel',
-        'providers': 'provider_settings_viewmodel',
-        'runs': 'run_history_viewmodel',
-        'centro_vivo': 'centro_vivo_viewmodel',
-    }
-
-    def _ensure_vm_for_route(self, route: str) -> None:
-        """Lazily construct the VM for *route* if it hasn't been built yet.
-
-        Called from the ``currentRouteChanged`` listener installed by
-        ``_populate_ui_deferred_2``.  Each VM is built exactly once;
-        subsequent navigations to the same page are no-ops.
-        """
-        attr = self._ROUTE_TO_VM_ATTR.get(route)
-        if attr is None:
-            return  # Phase 1/2 VM — already built
-        if getattr(self, attr, None) is not None:
-            return  # already constructed
-        ctx = getattr(self, '_qml_root_context', None)
-        if ctx is None:
-            return
-        try:
-            self._timeline.mark(f'lazy_vm_{route}_start')
-        except Exception:
-            pass
-        if route == 'evolution':
-            self._build_evolution_center_vm()
-            ctx.setContextProperty('evolutionCenterViewModel', self.evolution_center_viewmodel)
-        elif route == 'knowledge':
-            self._build_knowledge_base_vm()
-            ctx.setContextProperty('knowledgeBaseViewModel', self.knowledge_base_viewmodel)
-        elif route == 'providers':
-            self._build_provider_settings_vm()
-            ctx.setContextProperty('providerSettingsViewModel', self.provider_settings_viewmodel)
-        elif route == 'runs':
-            self._build_run_history_vm()
-            ctx.setContextProperty('runHistoryViewModel', self.run_history_viewmodel)
-        elif route == 'centro_vivo':
-            self._build_centro_vivo_vm()
-            ctx.setContextProperty('centroVivoViewModel', self.centro_vivo_viewmodel)
-        try:
-            self._timeline.mark(f'lazy_vm_{route}_done')
-        except Exception:
-            pass
-        logger.info('lazy_vm_constructed: %s', route)
+        # Wire back-reference if ControlCenterVM already built.
+        ccvm = getattr(self, 'control_center_viewmodel', None)
+        if ccvm is not None:
+            ccvm.capture_studio_viewmodel = self.capture_studio_viewmodel
 
     def _build_evolution_center_vm(self) -> None:
         self.evolution_center_viewmodel = EvolutionCenterViewModel(
@@ -2659,11 +2678,24 @@ class AppBootstrap:
         _build_next()
 
     def _build_deferred_ui_batch_2(self) -> None:
-        """Phase 3: Evolution + remaining VMs + signal wiring.
+        """All lazy VMs + signal wiring (synchronous test path).
 
-        Used by the synchronous test path (``_build_ui_objects``) and
-        as fallback.  The live phased path uses lazy construction.
+        Used by the synchronous test path (``_build_ui_objects``).
+        The live phased path uses lazy construction via
+        ``_ensure_vm_for_route`` / ``_build_all_lazy_vms``.
         """
+        self._yield_to_event_loop()
+        try:
+            self._timeline.mark('populate_ui_vm_control_center')
+        except Exception:
+            pass
+        self._build_control_center_vm()
+        self._yield_to_event_loop()
+        try:
+            self._timeline.mark('populate_ui_vm_capture_studio')
+        except Exception:
+            pass
+        self._build_capture_studio_vm()
         self._yield_to_event_loop()
         try:
             self._timeline.mark('populate_ui_vm_evolution_center')
@@ -2894,16 +2926,14 @@ class AppBootstrap:
                 except Exception:
                     pass
                 self._build_deferred_ui_batch_1()
-                context.setContextProperty('controlCenterViewModel', self.control_center_viewmodel)
-                context.setContextProperty('captureStudioViewModel', self.capture_studio_viewmodel)
+                # ControlCenterVM and CaptureStudioVM are now lazy —
+                # built on-demand or during idle pre-build (15 s).
                 try:
                     self._timeline.mark('populate_ui_deferred_1_done')
                 except Exception:
                     pass
-                # Phase 3 deferred: non-critical VMs wait for
-                # page_loader_ready (or fallback) so they never block
-                # the pre-ready path and the QML async incubator can
-                # progress to Ready without event-loop starvation.
+                # All remaining VMs wait for page_loader_ready (or
+                # fallback) so they never block the pre-ready path.
                 self._pending_deferred_2_fn = _populate_ui_deferred_2
                 if getattr(self, '_page_loader_ready_received', False):
                     self._schedule_pending_deferred_2()

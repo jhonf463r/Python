@@ -163,21 +163,26 @@ class TestTimelinePhaseMarks:
     def test_deferred_batch_1_marks(self):
         bs = _make_bootstrap()
         bs.navigation_controller = MagicMock()
-        with patch('iabv_v15.bootstrap.build_mcp_bridge_service', return_value=MagicMock()), \
-             patch('iabv_v15.bootstrap.ControlCenterViewModel', return_value=MagicMock()), \
-             patch('iabv_v15.bootstrap.CaptureStudioViewModel', return_value=MagicMock()):
+        with patch('iabv_v15.bootstrap.build_mcp_bridge_service', return_value=MagicMock()):
             bs._build_deferred_ui_batch_1()
 
         marked = [c.args[0] for c in bs._timeline.mark.call_args_list]
         assert 'populate_ui_vm_mcp_side_effects' in marked
-        assert 'populate_ui_vm_control_center' in marked
-        assert 'populate_ui_vm_capture_studio' in marked
+        # ControlCenterVM and CaptureStudioVM are now lazy — they moved
+        # to _build_deferred_ui_batch_2 (sync test path) or lazy
+        # construction (live path).
+        assert 'populate_ui_vm_control_center' not in marked
+        assert 'populate_ui_vm_capture_studio' not in marked
 
     def test_deferred_batch_2_marks(self):
         bs = _make_bootstrap()
-        bs.control_center_viewmodel = MagicMock()
+        bs.navigation_controller = MagicMock()
+        bs.control_center_viewmodel = None
+        bs.capture_studio_viewmodel = None
         bs.evolution_center_viewmodel = None
-        with patch('iabv_v15.bootstrap.EvolutionCenterViewModel', return_value=MagicMock()), \
+        with patch('iabv_v15.bootstrap.ControlCenterViewModel', return_value=MagicMock()), \
+             patch('iabv_v15.bootstrap.CaptureStudioViewModel', return_value=MagicMock()), \
+             patch('iabv_v15.bootstrap.EvolutionCenterViewModel', return_value=MagicMock()), \
              patch('iabv_v15.bootstrap.KnowledgeBaseViewModel', return_value=MagicMock()), \
              patch('iabv_v15.bootstrap.ProviderSettingsViewModel', return_value=MagicMock()), \
              patch('iabv_v15.bootstrap.RunHistoryViewModel', return_value=MagicMock()), \
@@ -185,6 +190,8 @@ class TestTimelinePhaseMarks:
             bs._build_deferred_ui_batch_2()
 
         marked = [c.args[0] for c in bs._timeline.mark.call_args_list]
+        assert 'populate_ui_vm_control_center' in marked
+        assert 'populate_ui_vm_capture_studio' in marked
         assert 'populate_ui_vm_evolution_center' in marked
         assert 'populate_ui_vm_remaining' in marked
 
@@ -358,27 +365,32 @@ class TestPhasedBuildMethods:
         assert bs.control_center_viewmodel is None
         assert bs.evolution_center_viewmodel is None
 
-    def test_build_deferred_1_creates_control_and_capture(self):
+    def test_build_deferred_1_only_services(self):
+        """Phase 2 now only builds lightweight services, not VMs."""
         bs = _make_bootstrap()
         bs.navigation_controller = MagicMock()
-        with patch('iabv_v15.bootstrap.build_mcp_bridge_service', return_value=MagicMock()), \
-             patch('iabv_v15.bootstrap.ControlCenterViewModel') as ccvm, \
-             patch('iabv_v15.bootstrap.CaptureStudioViewModel') as csvm:
-            ccvm.return_value = MagicMock()
-            csvm.return_value = MagicMock()
+        with patch('iabv_v15.bootstrap.build_mcp_bridge_service', return_value=MagicMock()):
             bs._build_deferred_ui_batch_1()
 
-        assert bs.control_center_viewmodel is not None
-        assert bs.capture_studio_viewmodel is not None
+        # ControlCenter and CaptureStudio are lazy now
+        assert bs.control_center_viewmodel is None
+        assert bs.capture_studio_viewmodel is None
 
-    def test_build_deferred_2_creates_remaining_vms(self):
+    def test_build_deferred_2_creates_all_lazy_vms(self):
+        """Sync path batch_2 builds ALL lazy VMs including control/capture."""
         bs = _make_bootstrap()
-        bs.control_center_viewmodel = MagicMock()
-        with patch('iabv_v15.bootstrap.EvolutionCenterViewModel') as evm, \
+        bs.navigation_controller = MagicMock()
+        bs.control_center_viewmodel = None
+        bs.capture_studio_viewmodel = None
+        with patch('iabv_v15.bootstrap.ControlCenterViewModel') as ccvm, \
+             patch('iabv_v15.bootstrap.CaptureStudioViewModel') as csvm, \
+             patch('iabv_v15.bootstrap.EvolutionCenterViewModel') as evm, \
              patch('iabv_v15.bootstrap.KnowledgeBaseViewModel') as kvm, \
              patch('iabv_v15.bootstrap.ProviderSettingsViewModel') as pvm, \
              patch('iabv_v15.bootstrap.RunHistoryViewModel') as rvm, \
              patch('iabv_v15.bootstrap.CentroVivoViewModel') as cvvm:
+            ccvm.return_value = MagicMock()
+            csvm.return_value = MagicMock()
             evm.return_value = MagicMock()
             kvm.return_value = MagicMock()
             pvm.return_value = MagicMock()
@@ -386,6 +398,8 @@ class TestPhasedBuildMethods:
             cvvm.return_value = MagicMock()
             bs._build_deferred_ui_batch_2()
 
+        assert bs.control_center_viewmodel is not None
+        assert bs.capture_studio_viewmodel is not None
         assert bs.evolution_center_viewmodel is not None
         assert bs.knowledge_base_viewmodel is not None
         assert bs.provider_settings_viewmodel is not None
@@ -467,8 +481,8 @@ class TestBuildUiObjectsSyncRegression:
 class TestDeferredBatch2WaitsForPageLoaderReady:
     """Phase 3 VMs must NOT be built until page_loader_ready fires."""
 
-    def test_phase_3_vms_null_after_phase_1_and_2(self):
-        """After Phase 1 + Phase 2, Phase 3 VMs must still be None."""
+    def test_lazy_vms_null_after_phase_1_and_2(self):
+        """After Phase 1 + Phase 2, ALL lazy VMs must still be None."""
         bs = _make_bootstrap()
         with patch('iabv_v15.bootstrap.NavigationController', return_value=MagicMock()), \
              patch('iabv_v15.bootstrap.ThemeController', return_value=MagicMock()), \
@@ -476,12 +490,12 @@ class TestDeferredBatch2WaitsForPageLoaderReady:
              patch('iabv_v15.bootstrap.DashboardViewModel', return_value=MagicMock()):
             mwb.return_value = MagicMock()
             bs._build_critical_ui_objects()
-        with patch('iabv_v15.bootstrap.build_mcp_bridge_service', return_value=MagicMock()), \
-             patch('iabv_v15.bootstrap.ControlCenterViewModel', return_value=MagicMock()), \
-             patch('iabv_v15.bootstrap.CaptureStudioViewModel', return_value=MagicMock()):
+        with patch('iabv_v15.bootstrap.build_mcp_bridge_service', return_value=MagicMock()):
             bs._build_deferred_ui_batch_1()
 
-        # Phase 1 + 2 done — Phase 3 VMs must still be None
+        # Phase 1 + 2 done — ALL lazy VMs must still be None
+        assert bs.control_center_viewmodel is None
+        assert bs.capture_studio_viewmodel is None
         assert bs.evolution_center_viewmodel is None
         assert bs.knowledge_base_viewmodel is None
         assert bs.provider_settings_viewmodel is None
@@ -544,9 +558,13 @@ class TestDeferredBatch2WaitsForPageLoaderReady:
         """Phase 3 closure guard prevents double VM construction."""
         bs = _make_bootstrap()
         bs._deferred_batch_2_done = True
-        bs.control_center_viewmodel = MagicMock()
+        bs.navigation_controller = MagicMock()
+        bs.control_center_viewmodel = None
+        bs.capture_studio_viewmodel = None
 
-        with patch('iabv_v15.bootstrap.EvolutionCenterViewModel') as evm:
+        with patch('iabv_v15.bootstrap.ControlCenterViewModel', return_value=MagicMock()), \
+             patch('iabv_v15.bootstrap.CaptureStudioViewModel', return_value=MagicMock()), \
+             patch('iabv_v15.bootstrap.EvolutionCenterViewModel') as evm:
             bs._build_deferred_ui_batch_2()
             # _build_deferred_ui_batch_2 itself has no guard — guard is
             # in the closure.  But the method still builds VMs.
@@ -644,17 +662,34 @@ class TestLazyVMConstruction:
             build.assert_not_called()
 
     def test_ensure_vm_for_route_ignores_phase1_routes(self):
-        """Phase 1/2 routes (dashboard, control, capture) are no-ops."""
+        """Phase 1 route (dashboard) is a no-op (not in lazy map)."""
         bs = _make_bootstrap()
         bs._qml_root_context = MagicMock()
-        for route in ('dashboard', 'control', 'capture'):
-            bs._ensure_vm_for_route(route)
+        bs._ensure_vm_for_route('dashboard')
         # No crash, no VMs built
 
-    def test_ensure_vm_covers_all_phase3_routes(self):
-        """All 5 Phase 3 routes are in _ROUTE_TO_VM_ATTR."""
+    def test_ensure_vm_for_route_builds_control(self):
+        """_ensure_vm_for_route('control') constructs ControlCenterVM."""
+        bs = _make_bootstrap()
+        bs._qml_root_context = MagicMock()
+        assert bs.control_center_viewmodel is None
+        with patch.object(bs, '_build_control_center_vm') as build:
+            bs._ensure_vm_for_route('control')
+            build.assert_called_once()
+
+    def test_ensure_vm_for_route_builds_capture(self):
+        """_ensure_vm_for_route('capture') constructs CaptureStudioVM."""
+        bs = _make_bootstrap()
+        bs._qml_root_context = MagicMock()
+        assert bs.capture_studio_viewmodel is None
+        with patch.object(bs, '_build_capture_studio_vm') as build:
+            bs._ensure_vm_for_route('capture')
+            build.assert_called_once()
+
+    def test_ensure_vm_covers_all_lazy_routes(self):
+        """All 7 lazy routes are in _ROUTE_TO_VM_ATTR."""
         from iabv_v15.bootstrap import AppBootstrap
-        expected = {'evolution', 'knowledge', 'providers', 'runs', 'centro_vivo'}
+        expected = {'control', 'capture', 'evolution', 'knowledge', 'providers', 'runs', 'centro_vivo'}
         assert set(AppBootstrap._ROUTE_TO_VM_ATTR.keys()) == expected
 
     def test_wire_task_a_signals_reads_vms_dynamically(self):
