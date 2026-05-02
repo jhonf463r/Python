@@ -105,17 +105,17 @@ ApplicationWindow {
         objectName: "mainShellLoader"
         anchors.fill: parent
         active: false
-        asynchronous: true
+        asynchronous: false
         sourceComponent: mainShellComponent
-        // Hito honesto de readiness: solo cuando el contenido async del
-        // shell termino de instanciarse, le avisamos a Python que el
-        // splash puede empezar a desvanecer.  Antes el splash recibia
-        // `ready` mientras esto seguia compilando en background.
+        // Sync loading: mainShellComponent is tiny (~160 lines: nav panel
+        // + page Loader placeholder).  Loading synchronously takes < 10ms
+        // and eliminates the dependency on the Qt render loop to drive the
+        // QQmlIncubationController.  On Windows with QQmlApplicationEngine,
+        // the render loop stops driving async incubation when the splash
+        // occludes the main window — causing 60s+ starvation.
         //
-        // Ademas reportamos cada transicion (status y active) para que
-        // el JSONL muestre exactamente que pasa con la incubacion del
-        // Loader async en Windows pythonw.exe (donde a veces el
-        // QQmlIncubator parece no llegar a Loader.Ready en >100s).
+        // We still report every transition so the JSONL shows exactly
+        // when shell_loader_ready fires (now honest, not via fallback).
         onStatusChanged: {
             if (mainWindowBridge) {
                 mainWindowBridge.signal_qml_loader_event("mainShellLoader", status, active)
@@ -268,13 +268,14 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     active: false
-                    asynchronous: true
+                    asynchronous: false
                     source: routeSource(activeRoute)
-                    // Cada transicion del page loader interno se reporta
-                    // tambien.  Cuando alcanza Loader.Ready el usuario
-                    // realmente ve la pagina (Dashboard u otra ruta) —
-                    // hito ``page_loader_ready`` mas honesto que el del
-                    // shell exterior.
+                    // Sync loading: DashboardPage.qml is 197 lines / 8KB.
+                    // Synchronous load takes < 10ms.  This avoids the same
+                    // QQmlIncubationController starvation that affects
+                    // mainShellLoader on Windows with QQmlApplicationEngine.
+                    // page_loader_ready fires immediately, allowing Phase 3
+                    // VMs to start building right away.
                     onStatusChanged: {
                         if (mainWindowBridge) {
                             mainWindowBridge.signal_qml_loader_event("pageLoader", status, active)

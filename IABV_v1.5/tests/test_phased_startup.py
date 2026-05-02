@@ -553,3 +553,65 @@ class TestDeferredBatch2WaitsForPageLoaderReady:
             # This test confirms the flag exists and is checked in the
             # _populate_ui_deferred_2 closure (tested via integration).
             evm.assert_called_once()
+
+    def test_shell_loader_ready_schedules_phase3_safety_net(self):
+        """_handle_shell_loader_ready starts a 5s safety net for Phase 3."""
+        bs = _make_bootstrap()
+        bs._shell_loader_ready_handled = False
+        bs._fire_splash_ready_and_raise_main = MagicMock()
+        bs._pending_deferred_2_fn = MagicMock()
+        bs._deferred_batch_2_scheduled = False
+
+        with patch('iabv_v15.bootstrap.QTimer') as qt_mock:
+            bs._handle_shell_loader_ready()
+            # Safety net timer: 5000ms → _schedule_pending_deferred_2
+            qt_mock.singleShot.assert_called_once_with(
+                5000, bs._schedule_pending_deferred_2,
+            )
+
+
+# ------------------------------------------------------------------ #
+# 7. Synchronous Loader expectations
+# ------------------------------------------------------------------ #
+
+
+class TestSynchronousLoaders:
+    """Main.qml Loaders must be synchronous to avoid QQmlIncubationController
+    starvation on Windows with QQmlApplicationEngine."""
+
+    def test_main_shell_loader_is_synchronous(self):
+        """mainShellLoader must have asynchronous: false."""
+        qml_path = Path(__file__).resolve().parent.parent / 'src' / 'iabv_v15' / 'ui' / 'qml' / 'Main.qml'
+        if not qml_path.exists():
+            pytest.skip('Main.qml not found')
+        content = qml_path.read_text(encoding='utf-8')
+        # mainShellLoader section must NOT have asynchronous: true
+        import re
+        shell_loader_match = re.search(
+            r'id:\s*mainShellLoader.*?asynchronous:\s*(true|false)',
+            content,
+            re.DOTALL,
+        )
+        assert shell_loader_match is not None, 'mainShellLoader not found'
+        assert shell_loader_match.group(1) == 'false', (
+            'mainShellLoader must be synchronous (asynchronous: false) '
+            'to avoid QQmlIncubationController starvation on Windows'
+        )
+
+    def test_page_loader_is_synchronous(self):
+        """pageLoader must have asynchronous: false."""
+        qml_path = Path(__file__).resolve().parent.parent / 'src' / 'iabv_v15' / 'ui' / 'qml' / 'Main.qml'
+        if not qml_path.exists():
+            pytest.skip('Main.qml not found')
+        content = qml_path.read_text(encoding='utf-8')
+        import re
+        page_loader_match = re.search(
+            r'id:\s*pageLoader.*?asynchronous:\s*(true|false)',
+            content,
+            re.DOTALL,
+        )
+        assert page_loader_match is not None, 'pageLoader not found'
+        assert page_loader_match.group(1) == 'false', (
+            'pageLoader must be synchronous (asynchronous: false) '
+            'to avoid QQmlIncubationController starvation on Windows'
+        )

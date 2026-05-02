@@ -1558,16 +1558,21 @@ class AppBootstrap:
         """Punto de aterrizaje honesto para el readiness real del shell.
 
         Disparado por ``MainWindowBridge.shellLoaderReady`` cuando QML
-        confirma que ``mainShellLoader`` (asincrono) termino de
-        instanciar el contenido real del shell (no la
-        ``ApplicationWindow`` vacia).  Aqui — y solo aqui — marcamos el
+        confirma que ``mainShellLoader`` termino de instanciar el
+        contenido real del shell.  Aqui — y solo aqui — marcamos el
         hito ``shell_loader_ready`` y disparamos
         ``splashController.set_ready()`` para que el splash empiece a
         desvanecer.
 
-        Idempotente: si la senal QML llega dos veces (por ejemplo
-        cuando el ``sourceComponent`` se re-evalua tras un cambio de
-        contexto), solo el primer disparo cuenta.
+        With synchronous mainShellLoader (``asynchronous: false``), this
+        fires during the first ``processEvents()`` after ``mainShellKickoff``
+        triggers — typically inside Phase 2's ``_yield_to_event_loop()``.
+
+        Also starts a safety-net timer for Phase 3: if ``page_loader_ready``
+        never arrives (pageLoader stuck), Phase 3 VMs still get built
+        after 5 s.  Idempotent via ``_schedule_pending_deferred_2``.
+
+        Idempotente: solo el primer disparo cuenta.
         """
         if getattr(self, '_shell_loader_ready_handled', False):
             return
@@ -1577,6 +1582,9 @@ class AppBootstrap:
         except Exception:
             pass
         self._fire_splash_ready_and_raise_main('shell_loader_ready')
+        # Safety net: if page_loader_ready never fires (e.g. pageLoader
+        # async incubation stuck), ensure Phase 3 VMs still get built.
+        QTimer.singleShot(5000, self._schedule_pending_deferred_2)
 
     def _handle_qml_loader_event(self, loader_name: str, status: int, active_now: bool) -> None:
         """Marca cada transicion granular de un Loader QML al timeline.
@@ -2757,9 +2765,11 @@ class AppBootstrap:
                 raise RuntimeError('Failed to load Main.qml.')
 
             # --- Phased VM construction ---------------------------------
-            # Build only the critical VMs first (Phase 1), then yield to
-            # the event loop so the QML async incubator can progress.
-            # Deferred VMs are built in subsequent phases via
+            # Build critical VMs first (Phase 1), then yield to the event
+            # loop.  Loaders are now synchronous (asynchronous: false in
+            # Main.qml) so shell_loader_ready fires as soon as
+            # mainShellKickoff triggers — no QQmlIncubationController
+            # dependency.  Deferred VMs are built in subsequent phases via
             # QTimer.singleShot(0, ...) — each call returns control to
             # the event loop, letting shell_loader_ready fire honestly.
             self._qml_root_context = context
