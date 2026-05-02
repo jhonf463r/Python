@@ -195,6 +195,25 @@ INFERENCE_RULES: list[dict[str, Any]] = [
         'safe': True,
         'description': 'wire_services tarda >8s — diferir scans pesados al background',
     },
+    # QML layer stall — detect Qt main thread blocked by QML incubation
+    {
+        'id': 'qml_shell_loader_stalled',
+        'premises': ['shell_loader_fallback_used'],
+        'conclusion': 'qml_incubation_blocked',
+        'action': 'force_shell_ready_fallback',
+        'severity': 'high',
+        'safe': True,
+        'description': 'shellLoader QML nunca emitio ready — se uso fallback determinista',
+    },
+    {
+        'id': 'qml_event_loop_starved',
+        'premises': ['shell_loader_fallback_used', 'event_loop_starved'],
+        'conclusion': 'qt_main_thread_blocked',
+        'action': 'reduce_qml_incubation_load',
+        'severity': 'critical',
+        'safe': True,
+        'description': 'QTimer fallback tardo mucho mas de lo esperado — main thread bloqueado por QML',
+    },
     # Multi-monitor
     {
         'id': 'multi_monitor_blind_spot',
@@ -593,6 +612,12 @@ def extract_facts(
     rss_growth_mb = timeline.get('rss_growth_mb', 0)
     if rss_growth_mb > 150:
         facts.add('rss_growth_high')
+
+    # QML layer facts — extracted from deep_env_scan['startup_timeline']
+    if timeline.get('shell_loader_fallback_used'):
+        facts.add('shell_loader_fallback_used')
+    if timeline.get('event_loop_starved'):
+        facts.add('event_loop_starved')
 
     return facts
 

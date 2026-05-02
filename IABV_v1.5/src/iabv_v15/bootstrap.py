@@ -1796,22 +1796,54 @@ class AppBootstrap:
     def _force_splash_ready_fallback(self) -> None:
         """Fallback determinista si QML nunca emite ``shellLoaderReady``.
 
-        Llamado via ``QTimer.singleShot`` despues de un timeout largo
+        Llamado via ``QTimer.singleShot`` despues de un timeout
         (configurable via ``IABV_SHELL_READY_FALLBACK_MS``, default
-        15000 ms).  Marca el hito como ``shell_loader_ready_fallback``
+        5000 ms).  Marca el hito como ``shell_loader_ready_fallback``
         para que la auditoria distinga un cierre honesto de uno por
         timeout.  De este modo el splash siempre cierra: nunca se queda
         congelado por una conexion QML que no llego.
+
+        Also records ``_shell_loader_wall_clock_ms`` — the wall-clock
+        elapsed since ``app_exec_about_to_start`` — so OSES can detect
+        event-loop starvation (when ``wall_clock >> timer_ms``, the main
+        thread was blocked by QML incubation and couldn't process the
+        QTimer until it unblocked).
         """
         if getattr(self, '_shell_loader_ready_handled', False):
             return
-        logger.warning(
-            'shell_loader_ready no llego en el timeout esperado; '
-            'forzando cierre del splash via fallback'
-        )
+
+        # Wall-clock measurement: detect event-loop starvation
+        import time as _time
+        wall_ms = 0.0
+        t0 = getattr(self, '_shell_ready_wall_t0', None)
+        if t0 is not None:
+            wall_ms = (_time.perf_counter() - t0) * 1000.0
+
+        expected_ms = getattr(self, '_shell_ready_fallback_ms', 5000)
+        starvation = wall_ms > expected_ms * 2 if wall_ms > 0 else False
+
+        if starvation:
+            logger.warning(
+                'shell_loader_ready fallback: wall_clock=%.0fms vs '
+                'timer=%dms — event loop was starved (QML incubation '
+                'blocked main thread for %.0fs)',
+                wall_ms, expected_ms, (wall_ms - expected_ms) / 1000.0,
+            )
+        else:
+            logger.warning(
+                'shell_loader_ready no llego en el timeout esperado '
+                '(%dms); forzando cierre del splash via fallback',
+                expected_ms,
+            )
+
         self._shell_loader_ready_handled = True
         try:
-            self._timeline.mark('shell_loader_ready_fallback')
+            self._timeline.mark(
+                'shell_loader_ready_fallback',
+                wall_clock_ms=round(wall_ms, 1),
+                expected_ms=expected_ms,
+                event_loop_starved=starvation,
+            )
         except Exception:
             pass
         self._fire_splash_ready_and_raise_main('shell_loader_ready_fallback')
@@ -2012,6 +2044,14 @@ class AppBootstrap:
             rss = ev.get('rss_growth_mb')
             if rss is not None:
                 timeline_data['rss_growth_mb'] = rss
+
+        # QML layer facts: detect fallback usage and event loop starvation
+        for ev in timeline_events:
+            phase = ev.get('phase', '')
+            if phase == 'shell_loader_ready_fallback':
+                timeline_data['shell_loader_fallback_used'] = True
+                if ev.get('event_loop_starved'):
+                    timeline_data['event_loop_starved'] = True
 
         if not timeline_data:
             return
@@ -3234,7 +3274,7 @@ class AppBootstrap:
             # Defer the heavy tool-availability probe (HTTP pings + pip
             # install of mcp_client).  The probe now runs in a background
             # thread (never blocks the GUI event loop), but we still
-            # delay 2s so the QML shell has time to start incubating.
+            # delay 3s so the QML shell has time to start incubating.
             if not self._tool_availability_logged:
                 QTimer.singleShot(3000, self._run_deferred_post_window_setup)
 
@@ -3246,13 +3286,16 @@ class AppBootstrap:
             # ``_handle_shell_loader_ready``), o por fallback determinista si
             # esa senal nunca llega.
             if self._splash is not None:
-                fallback_ms = 15000
+                import time as _time
+                fallback_ms = 5000
                 try:
                     raw = os.environ.get('IABV_SHELL_READY_FALLBACK_MS')
                     if raw is not None:
                         fallback_ms = max(1000, int(raw))
                 except Exception:
-                    fallback_ms = 15000
+                    fallback_ms = 5000
+                self._shell_ready_fallback_ms = fallback_ms
+                self._shell_ready_wall_t0 = _time.perf_counter()
                 QTimer.singleShot(fallback_ms, self._force_splash_ready_fallback)
 
             self._timeline.mark('app_exec_about_to_start')

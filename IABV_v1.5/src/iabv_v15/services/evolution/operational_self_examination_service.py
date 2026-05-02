@@ -1905,7 +1905,7 @@ class OperationalSelfExaminationService:
                     'Diferir splash.set_ready() hasta que MainWindowBridge '
                     'reciba shellLoaderReady desde QML (Loader.onStatusChanged '
                     '== Loader.Ready en mainShellLoader). Mantener fallback '
-                    'determinista (IABV_SHELL_READY_FALLBACK_MS, default 15s) '
+                    'determinista (IABV_SHELL_READY_FALLBACK_MS, default 5s) '
                     'para no congelar el splash si la senal QML nunca llega.'
                 ),
                 source_refs=[
@@ -1924,6 +1924,56 @@ class OperationalSelfExaminationService:
                     'phases_seen': list(phase_to_ms.keys()),
                 },
             ))
+
+        # ``qml_event_loop_starvation`` — detect when the fallback timer
+        # took much longer than expected (wall_clock >> timer_ms), indicating
+        # the Qt main thread was blocked by QML incubation and couldn't
+        # process the QTimer until it unblocked.
+        for evt in last_run:
+            if str(evt.get('phase') or '') == 'shell_loader_ready_fallback':
+                wall_clock_ms = evt.get('wall_clock_ms', 0)
+                expected_ms = evt.get('expected_ms', 5000)
+                starved = evt.get('event_loop_starved', False)
+                if starved and wall_clock_ms > 0:
+                    starvation_seconds = (wall_clock_ms - expected_ms) / 1000.0
+                    findings.append(SelfExaminationFinding(
+                        category='qml_event_loop_starvation',
+                        title=(
+                            f'Qt main thread bloqueado {starvation_seconds:.0f}s '
+                            f'por QML incubation'
+                        ),
+                        summary=(
+                            f'El fallback de shell_loader_ready se programo a '
+                            f'{expected_ms}ms pero tardo {wall_clock_ms:.0f}ms '
+                            f'en ejecutarse (wall clock). El Qt main thread '
+                            f'estuvo bloqueado {starvation_seconds:.0f}s por la '
+                            f'incubacion del mainShellLoader QML. Durante ese '
+                            f'tiempo el proceso aparece como Not Responding.'
+                        ),
+                        severity=IssueSeverity.CRITICAL,
+                        confidence=0.95,
+                        recommendation=(
+                            'El freeze no es Python/GIL — es QML incubation '
+                            'bloqueando el Qt event loop. Opciones: (1) reducir '
+                            'el component tree del mainShellLoader, (2) usar '
+                            'QQmlIncubationController para limitar objetos por '
+                            'frame, (3) fragmentar la carga QML en sub-Loaders '
+                            'con asynchronous=true escalonados.'
+                        ),
+                        source_refs=[
+                            'data/logs/startup_timeline.jsonl',
+                            'iabv_v15.bootstrap._force_splash_ready_fallback',
+                            'src/iabv_v15/ui/qml/Main.qml',
+                        ],
+                        metadata={
+                            'phase': 'qml_event_loop_starvation',
+                            'wall_clock_ms': round(wall_clock_ms, 1),
+                            'expected_ms': expected_ms,
+                            'starvation_seconds': round(starvation_seconds, 1),
+                            'phases_seen': list(phase_to_ms.keys()),
+                        },
+                    ))
+                break
 
         # ``startup_populate_ui_freeze`` — the interval where all ViewModels
         # are constructed on the main thread.  Windsurf live testing on

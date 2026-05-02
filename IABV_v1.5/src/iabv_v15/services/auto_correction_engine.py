@@ -522,6 +522,9 @@ _ACTION_HANDLERS: dict[str, Any] = {
     'profile_memory_allocations': _noop,  # logged — trigger RSS profiler
     'defer_heavy_service_scans': _noop,  # logged — light bootstrap scan
     'parallelize_startup_checks': _noop,  # logged — restructure serial checks
+    # QML layer auto-corrections
+    'force_shell_ready_fallback': _noop,  # logged — fallback already fires
+    'reduce_qml_incubation_load': _noop,  # logged — requires QML refactor
 }
 
 
