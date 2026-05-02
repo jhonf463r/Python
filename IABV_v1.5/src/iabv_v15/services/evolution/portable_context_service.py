@@ -1311,6 +1311,31 @@ class PortableContextService:
                     wt_summary['nonlinearity_indicator'] = nonlinearity_indicator(scores_for_stability)
                 except Exception:
                     pass
+
+            # Metacognitive calibration summary
+            cal_errors: list[float] = []
+            fp_count = 0
+            fn_count = 0
+            for run in runs:
+                mc = (run.metadata or {}).get('metacognitive_evaluation')
+                if not isinstance(mc, dict):
+                    continue
+                ce = mc.get('calibration_error')
+                if isinstance(ce, (int, float)):
+                    cal_errors.append(float(ce))
+                if mc.get('false_positive'):
+                    fp_count += 1
+                if mc.get('false_negative'):
+                    fn_count += 1
+            if cal_errors:
+                wt_summary['metacognitive_calibration'] = {
+                    'avg_calibration_error': round(sum(cal_errors) / len(cal_errors), 4),
+                    'max_calibration_error': round(max(cal_errors), 4),
+                    'false_positive_count': fp_count,
+                    'false_negative_count': fn_count,
+                    'evaluations_count': len(cal_errors),
+                }
+
             result['worker_telemetry_summary'] = wt_summary
         return result
 

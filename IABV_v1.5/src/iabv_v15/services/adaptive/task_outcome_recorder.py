@@ -218,6 +218,10 @@ class TaskOutcomeRecorder:
         learning_records: list[dict[str, Any]] = []
         for subject_key in subject_keys:
             previous = self.experiment_lab.repository.latest_recommendation(domain=domain.value, subject_key=subject_key)
+
+            # --- Pre-execution prediction (from previous recommendation) ---
+            prediction = self._extract_prediction(previous, route=route, assistant_kind=assistant_kind or '')
+
             run, recommendation = self.experiment_lab.record_outcome(
                 domain=domain,
                 objective=session.user_goal,
@@ -238,6 +242,22 @@ class TaskOutcomeRecorder:
                 metadata={**metadata, 'subject_key': subject_key},
                 suite_name='adaptive_session_finalize',
             )
+
+            # --- Post-execution evaluation: compare prediction vs actual ---
+            actual_success = run_record.status == RunStatus.SUCCESS
+            metacog = self._evaluate_prediction(prediction, actual_success=actual_success)
+            if metacog:
+                wt = run.metadata.get('worker_telemetry')
+                if isinstance(wt, dict):
+                    wt.update(metacog)
+                else:
+                    run.metadata['worker_telemetry'] = {
+                        **(wt if isinstance(wt, dict) else {}),
+                        **metacog,
+                    }
+                run.metadata['metacognitive_evaluation'] = metacog
+                self.experiment_lab.repository.save_run(run)
+
             weight_snapshot = (
                 self.adaptive_weight_layer.update_weights(
                     historical_runs=self.experiment_lab.repository.list_runs(domain=domain.value, subject_key=subject_key, limit=20),
@@ -598,3 +618,104 @@ class TaskOutcomeRecorder:
             )
         except Exception:
             pass
+
+    # ------------------------------------------------------------------
+    # Metacognitive prediction / evaluation helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _extract_prediction(
+        previous_recommendation: Any,
+        *,
+        route: EvaluationRoute,
+        assistant_kind: str,
+    ) -> dict[str, Any]:
+        """Extract prediction from the previous recommendation.
+
+        Returns a dict with ``predicted_outcome``, ``confidence``,
+        ``predicted_route``, ``predicted_assistant_kind``,
+        ``uncertainty_proxy``.  Empty dict if no prior recommendation.
+        """
+        if previous_recommendation is None:
+            return {}
+        conf = float(getattr(previous_recommendation, 'confidence', 0.0) or 0.0)
+        raw_route = getattr(previous_recommendation, 'recommended_route', '') or ''
+        pred_route = raw_route.value if hasattr(raw_route, 'value') else str(raw_route)
+        pred_ak = str(getattr(previous_recommendation, 'recommended_assistant_kind', '') or '')
+        meta = getattr(previous_recommendation, 'metadata', None) or {}
+        ranked = meta.get('ranked_configurations') or []
+
+        # Uncertainty: derived from spread of ranked configuration scores
+        scores = [float(c.get('weighted_score') or c.get('score') or 0.0) for c in ranked if isinstance(c, dict)]
+        uncertainty = 0.0
+        if len(scores) >= 2:
+            try:
+                from iabv_v15.services.lab.scientific_proxy_engine import uncertainty_proxy_from_scores
+                uncertainty = uncertainty_proxy_from_scores(scores)
+            except Exception:
+                pass
+
+        route_matches = (pred_route == route.value) if pred_route else True
+        ak_matches = (pred_ak.lower() == assistant_kind.lower()) if pred_ak and assistant_kind else True
+        predicted_success = route_matches and ak_matches and conf >= 0.5
+
+        return {
+            'predicted_outcome': 'success' if predicted_success else 'failure',
+            'confidence': round(conf, 4),
+            'uncertainty_proxy': round(uncertainty, 4),
+            'predicted_route': pred_route,
+            'predicted_assistant_kind': pred_ak,
+        }
+
+    @staticmethod
+    def _evaluate_prediction(
+        prediction: dict[str, Any],
+        *,
+        actual_success: bool,
+    ) -> dict[str, Any]:
+        """Compare prediction against actual outcome.
+
+        Returns a dict with metacognitive evaluation fields:
+        ``predicted_outcome``, ``actual_outcome``, ``confidence``,
+        ``calibration_error``, ``uncertainty_proxy``,
+        ``false_positive``, ``false_negative``, ``recommended_action``.
+        Empty dict if no prediction available.
+        """
+        if not prediction:
+            return {}
+        predicted_outcome = prediction.get('predicted_outcome', 'unknown')
+        confidence = float(prediction.get('confidence') or 0.0)
+        uncertainty = float(prediction.get('uncertainty_proxy') or 0.0)
+
+        actual_outcome = 'success' if actual_success else 'failure'
+        predicted_success = predicted_outcome == 'success'
+
+        false_positive = predicted_success and not actual_success
+        false_negative = not predicted_success and actual_success
+
+        cal_error = abs(confidence - (1.0 if actual_success else 0.0))
+
+        # Recommendation based on calibration
+        try:
+            from iabv_v15.services.lab.scientific_proxy_engine import worker_recommendation
+            rec = worker_recommendation(
+                success=actual_success,
+                budget_state='ok',
+                handoff_required=False,
+                correction_rounds=0,
+                reuse_score=confidence if actual_success else 0.0,
+                stability_score=1.0 - cal_error,
+            )
+        except Exception:
+            rec = 'continue_with_same_worker' if actual_success else 'reanalyze'
+
+        return {
+            'predicted_outcome': predicted_outcome,
+            'actual_outcome': actual_outcome,
+            'confidence': round(confidence, 4),
+            'calibration_error': round(cal_error, 4),
+            'uncertainty_proxy': round(uncertainty, 4),
+            'false_positive': false_positive,
+            'false_negative': false_negative,
+            'recommended_action': rec,
+        }

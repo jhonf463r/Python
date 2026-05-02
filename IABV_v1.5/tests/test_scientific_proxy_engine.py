@@ -395,6 +395,8 @@ def _seed_runs_with_bootstrap(bootstrap, runs_data: list[dict]) -> None:
         }
         if 'worker_telemetry' in rd:
             meta['worker_telemetry'] = rd['worker_telemetry']
+        if 'metacognitive_evaluation' in rd:
+            meta['metacognitive_evaluation'] = rd['metacognitive_evaluation']
         bootstrap.experiment_lab.record_outcome(
             domain=ExperimentDomain.LANGUAGE,
             objective='test objective',
@@ -553,5 +555,233 @@ def test_portable_context_includes_scientific_proxy_aggregates() -> None:
         assert 'avg_entropy_proxy' in wt_summary
         assert 'avg_inference_depth' in wt_summary
         assert 0.0 < wt_summary['avg_compression_ratio'] < 1.0
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+# ---- Metacognitive prediction / evaluation tests ----
+
+def test_extract_prediction_from_recommendation() -> None:
+    from iabv_v15.services.adaptive.task_outcome_recorder import TaskOutcomeRecorder
+    from iabv_v15.domain.models import ExperimentRecommendation, ExperimentDomain
+
+    rec = ExperimentRecommendation(
+        domain=ExperimentDomain.LANGUAGE,
+        subject_key='general',
+        recommended_route=EvaluationRoute.LOCAL,
+        recommended_assistant_kind='codex',
+        confidence=0.85,
+        metadata={
+            'ranked_configurations': [
+                {'route': 'local', 'assistant_kind': 'codex', 'weighted_score': 0.9},
+                {'route': 'cloud', 'assistant_kind': 'gpt4', 'weighted_score': 0.6},
+            ],
+        },
+    )
+    prediction = TaskOutcomeRecorder._extract_prediction(
+        rec, route=EvaluationRoute.LOCAL, assistant_kind='codex',
+    )
+    assert prediction['predicted_outcome'] == 'success'
+    assert prediction['confidence'] == 0.85
+    assert prediction['uncertainty_proxy'] >= 0.0
+    assert prediction['predicted_route'] == 'local'
+    assert prediction['predicted_assistant_kind'] == 'codex'
+
+
+def test_extract_prediction_no_recommendation() -> None:
+    from iabv_v15.services.adaptive.task_outcome_recorder import TaskOutcomeRecorder
+    prediction = TaskOutcomeRecorder._extract_prediction(
+        None, route=EvaluationRoute.LOCAL, assistant_kind='codex',
+    )
+    assert prediction == {}
+
+
+def test_extract_prediction_low_confidence() -> None:
+    from iabv_v15.services.adaptive.task_outcome_recorder import TaskOutcomeRecorder
+    from iabv_v15.domain.models import ExperimentRecommendation, ExperimentDomain
+
+    rec = ExperimentRecommendation(
+        domain=ExperimentDomain.LANGUAGE,
+        recommended_route=EvaluationRoute.FALLBACK,
+        confidence=0.3,
+    )
+    prediction = TaskOutcomeRecorder._extract_prediction(
+        rec, route=EvaluationRoute.LOCAL, assistant_kind='codex',
+    )
+    assert prediction['predicted_outcome'] == 'failure'
+    assert prediction['confidence'] == 0.3
+
+
+def test_evaluate_prediction_correct_success() -> None:
+    from iabv_v15.services.adaptive.task_outcome_recorder import TaskOutcomeRecorder
+    prediction = {
+        'predicted_outcome': 'success',
+        'confidence': 0.85,
+        'uncertainty_proxy': 0.1,
+    }
+    result = TaskOutcomeRecorder._evaluate_prediction(prediction, actual_success=True)
+    assert result['actual_outcome'] == 'success'
+    assert result['predicted_outcome'] == 'success'
+    assert result['false_positive'] is False
+    assert result['false_negative'] is False
+    assert result['calibration_error'] < 0.2  # |0.85 - 1.0| = 0.15
+    assert result['recommended_action'] is not None
+
+
+def test_evaluate_prediction_false_positive() -> None:
+    from iabv_v15.services.adaptive.task_outcome_recorder import TaskOutcomeRecorder
+    prediction = {
+        'predicted_outcome': 'success',
+        'confidence': 0.9,
+        'uncertainty_proxy': 0.0,
+    }
+    result = TaskOutcomeRecorder._evaluate_prediction(prediction, actual_success=False)
+    assert result['actual_outcome'] == 'failure'
+    assert result['false_positive'] is True
+    assert result['false_negative'] is False
+    assert result['calibration_error'] == 0.9  # |0.9 - 0.0|
+
+
+def test_evaluate_prediction_false_negative() -> None:
+    from iabv_v15.services.adaptive.task_outcome_recorder import TaskOutcomeRecorder
+    prediction = {
+        'predicted_outcome': 'failure',
+        'confidence': 0.2,
+        'uncertainty_proxy': 0.5,
+    }
+    result = TaskOutcomeRecorder._evaluate_prediction(prediction, actual_success=True)
+    assert result['actual_outcome'] == 'success'
+    assert result['false_positive'] is False
+    assert result['false_negative'] is True
+    assert result['calibration_error'] == 0.8  # |0.2 - 1.0|
+
+
+def test_evaluate_prediction_empty() -> None:
+    from iabv_v15.services.adaptive.task_outcome_recorder import TaskOutcomeRecorder
+    result = TaskOutcomeRecorder._evaluate_prediction({}, actual_success=True)
+    assert result == {}
+
+
+# ---- OSES miscalibration findings ----
+
+def test_oses_detects_miscalibration() -> None:
+    root = _workspace('wt_oses_miscalibration')
+    try:
+        from iabv_v15.bootstrap import AppBootstrap
+        bootstrap = AppBootstrap(str(root))
+        runs = [
+            {
+                'evidence_basis': {'state': 'observed'},
+                'worker_telemetry': {'worker_kind': 'codex', 'budget_state': 'ok'},
+                'metacognitive_evaluation': {
+                    'calibration_error': 0.6,
+                    'false_positive': True,
+                    'false_negative': False,
+                },
+            },
+        ] * 6
+        _seed_runs_with_bootstrap(bootstrap, runs)
+
+        review = bootstrap.operational_self_examination_service.current_review(refresh=True)
+        categories = [f.category for f in review.findings]
+        assert 'task_packet_metacognitive_miscalibration' in categories
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_oses_detects_overconfidence() -> None:
+    root = _workspace('wt_oses_overconfidence')
+    try:
+        from iabv_v15.bootstrap import AppBootstrap
+        bootstrap = AppBootstrap(str(root))
+        runs = [
+            {
+                'evidence_basis': {'state': 'observed'},
+                'worker_telemetry': {'worker_kind': 'codex', 'budget_state': 'ok'},
+                'metacognitive_evaluation': {
+                    'calibration_error': 0.7,
+                    'false_positive': True,
+                    'false_negative': False,
+                },
+            },
+        ] * 6
+        _seed_runs_with_bootstrap(bootstrap, runs)
+
+        review = bootstrap.operational_self_examination_service.current_review(refresh=True)
+        categories = [f.category for f in review.findings]
+        assert 'task_packet_metacognitive_overconfidence' in categories
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_oses_detects_underconfidence() -> None:
+    root = _workspace('wt_oses_underconfidence')
+    try:
+        from iabv_v15.bootstrap import AppBootstrap
+        bootstrap = AppBootstrap(str(root))
+        runs = [
+            {
+                'evidence_basis': {'state': 'observed'},
+                'worker_telemetry': {'worker_kind': 'codex', 'budget_state': 'ok'},
+                'metacognitive_evaluation': {
+                    'calibration_error': 0.5,
+                    'false_positive': False,
+                    'false_negative': True,
+                },
+            },
+        ] * 6
+        _seed_runs_with_bootstrap(bootstrap, runs)
+
+        review = bootstrap.operational_self_examination_service.current_review(refresh=True)
+        categories = [f.category for f in review.findings]
+        assert 'task_packet_metacognitive_underconfidence' in categories
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+# ---- PortableContext calibration summary ----
+
+def test_portable_context_includes_calibration_summary() -> None:
+    root = _workspace('wt_portable_calibration')
+    try:
+        from iabv_v15.bootstrap import AppBootstrap
+        bootstrap = AppBootstrap(str(root))
+        runs = [
+            {
+                'evidence_basis': {'state': 'observed'},
+                'worker_telemetry': {'worker_kind': 'codex', 'budget_state': 'ok'},
+                'metacognitive_evaluation': {
+                    'calibration_error': 0.3,
+                    'false_positive': True,
+                    'false_negative': False,
+                },
+            },
+        ] * 4 + [
+            {
+                'evidence_basis': {'state': 'observed'},
+                'worker_telemetry': {'worker_kind': 'devin', 'budget_state': 'ok'},
+                'metacognitive_evaluation': {
+                    'calibration_error': 0.1,
+                    'false_positive': False,
+                    'false_negative': False,
+                },
+            },
+        ] * 2
+        _seed_runs_with_bootstrap(bootstrap, runs)
+
+        package = bootstrap.portable_context_service.current_package(refresh=True)
+        tp_section = next(
+            (s for s in package.sections if s.section_id == 'task_packet_summary'),
+            None,
+        )
+        assert tp_section is not None
+        wt_summary = tp_section.metadata.get('worker_telemetry_summary')
+        assert wt_summary is not None
+        cal = wt_summary.get('metacognitive_calibration')
+        assert cal is not None, 'metacognitive_calibration missing from summary'
+        assert cal['evaluations_count'] == 6
+        assert cal['false_positive_count'] == 4
+        assert cal['false_negative_count'] == 0
+        assert 0.0 < cal['avg_calibration_error'] < 1.0
     finally:
         shutil.rmtree(root, ignore_errors=True)
