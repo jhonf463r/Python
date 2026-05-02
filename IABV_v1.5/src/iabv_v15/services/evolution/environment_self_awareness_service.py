@@ -37,7 +37,7 @@ class EnvironmentSelfAwarenessService:
     _DISK_CRITICAL_BYTES = 10 * 1024**3
     _GPU_TEMP_WARNING_C = 80.0
     _GPU_TEMP_CRITICAL_C = 85.0
-    _DEFAULT_SCAN_INTERVAL = 45.0
+    _DEFAULT_SCAN_INTERVAL = 90.0
     _DEFAULT_FULL_SCAN_INTERVAL = 480.0
     _POWERSHELL_TIMEOUT_SECONDS = 1.0
     _TYPEPERF_TIMEOUT_SECONDS = 1.5
@@ -351,7 +351,7 @@ class EnvironmentSelfAwarenessService:
         if self.tool_registry is None:
             return available, missing
         try:
-            cards = [self.tool_registry.refresh_card(card) for card in self.tool_registry.list_cards()]
+            cards = [self.tool_registry.refresh_card(card, max_age_seconds=120.0) for card in self.tool_registry.list_cards()]
         except Exception:
             return available, missing
         for card in cards:

@@ -21,7 +21,7 @@ class ToolRegistry:
     # availability-relevant metadata hash changes (see
     # `_availability_signature`), so external mutations via the repository
     # are reflected on the next refresh even before the TTL expires.
-    _AVAILABILITY_CACHE_SECONDS = 45.0
+    _AVAILABILITY_CACHE_SECONDS = 120.0
 
     def __init__(self, repository: ToolRecordRepository, adapters: dict[str, ToolAdapter]):
         self.repository = repository

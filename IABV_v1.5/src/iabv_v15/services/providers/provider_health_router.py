@@ -93,7 +93,7 @@ class ProviderHealthRouter:
         with self._lock:
             return list(self._last_snapshot)
 
-    def start_polling(self, interval_s: float = 30.0) -> None:
+    def start_polling(self, interval_s: float = 60.0) -> None:
         if self._thread is not None and self._thread.is_alive():
             return
         self._stop_event.clear()
