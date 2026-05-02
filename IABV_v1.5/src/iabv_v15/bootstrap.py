@@ -1624,6 +1624,22 @@ class AppBootstrap:
         except Exception:
             pass
 
+    def _schedule_pending_deferred_2(self) -> None:
+        """Schedule Phase 3 VM construction if not yet scheduled.
+
+        Called from ``_handle_page_loader_ready`` (preferred) or
+        ``_force_splash_ready_fallback`` (safety net) so that
+        non-critical VMs (EvolutionCenter, KnowledgeBase, ProviderSettings,
+        RunHistory, CentroVivo) never block the pre-ready path.
+        """
+        if getattr(self, '_deferred_batch_2_scheduled', False):
+            return
+        fn = getattr(self, '_pending_deferred_2_fn', None)
+        if fn is None:
+            return
+        self._deferred_batch_2_scheduled = True
+        QTimer.singleShot(0, fn)
+
     def _handle_page_loader_ready(self) -> None:
         """Marca ``page_loader_ready`` (hito mas honesto aun que shell).
 
@@ -1633,7 +1649,12 @@ class AppBootstrap:
         no, la incubacion del page loader es la atascada (no el shell
         exterior).  Tambien dispara raise/activate del main window
         como reasegurador del Z-order.
+
+        Also triggers Phase 3 (deferred batch 2) VM construction so
+        non-critical VMs are built only after the user sees the first
+        paint — never during the pre-ready critical path.
         """
+        self._page_loader_ready_received = True
         try:
             self._timeline.mark('page_loader_ready')
         except Exception:
@@ -1643,6 +1664,9 @@ class AppBootstrap:
         # deberia estar fundiendose, pero forzamos raise/activate del
         # main window por si Windows lo dejo debajo del splash.
         self._raise_main_window_now('page_loader_ready')
+        # Schedule Phase 3: build non-critical VMs now that the user
+        # is seeing the rendered page.
+        self._schedule_pending_deferred_2()
         # Final truth refresh: re-persist PortableContext and OSES now
         # that the timeline contains populate_ui_done + page_loader_ready.
         # Without this, latest.md/latest.json keep the stale early snapshot
@@ -1918,6 +1942,9 @@ class AppBootstrap:
         except Exception:
             pass
         self._fire_splash_ready_and_raise_main('shell_loader_ready_fallback')
+        # Safety net: if page_loader_ready never arrived, ensure Phase 3
+        # VMs still get built eventually (degraded but functional).
+        self._schedule_pending_deferred_2()
 
     _TOOL_INSTALL_GUIDANCE: dict[str, str] = {
         'aider_coder': 'pip install aider-chat (optional, heavy ~200MB; installed in background)',
@@ -2768,9 +2795,18 @@ class AppBootstrap:
                     self._timeline.mark('populate_ui_deferred_1_done')
                 except Exception:
                     pass
-                QTimer.singleShot(0, _populate_ui_deferred_2)
+                # Phase 3 deferred: non-critical VMs wait for
+                # page_loader_ready (or fallback) so they never block
+                # the pre-ready path and the QML async incubator can
+                # progress to Ready without event-loop starvation.
+                self._pending_deferred_2_fn = _populate_ui_deferred_2
+                if getattr(self, '_page_loader_ready_received', False):
+                    self._schedule_pending_deferred_2()
 
             def _populate_ui_deferred_2() -> None:
+                if getattr(self, '_deferred_batch_2_done', False):
+                    return
+                self._deferred_batch_2_done = True
                 try:
                     self._timeline.mark('populate_ui_deferred_2_start')
                 except Exception:
