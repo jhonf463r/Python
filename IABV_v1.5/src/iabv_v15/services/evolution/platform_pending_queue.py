@@ -223,28 +223,30 @@ _WINDOWS_INTEGRATION_TASKS: list[dict[str, Any]] = [
         'id': 'win_systray_icon',
         'title': 'Icono en system tray',
         'description': (
-            'Agregar icono de IABV en el system tray de Windows para '
-            'acceso rapido, estado visual y menu contextual.'
+            'Icono de IABV en el system tray de Windows con menu '
+            'contextual (Mostrar / Salir). Implementado en Fix 19a '
+            'via WinSystrayBridge + QSystemTrayIcon.'
         ),
-        'reason': 'No hay integracion con system tray',
-        'dependency_missing': 'QSystemTrayIcon de PySide6 (ya disponible)',
+        'reason': 'Implementado en Fix 19a',
+        'dependency_missing': '',
         'priority': 'high',
-        'next_action': 'Implementar QSystemTrayIcon con menu contextual basico',
-        'status': 'READY_FOR_NEXT_SLICE',
+        'next_action': '',
+        'status': 'COMPLETED',
         'category': 'windows_native',
     },
     {
         'id': 'win_clipboard_bridge',
         'title': 'Clipboard bridge bidireccional',
         'description': (
-            'Leer y escribir clipboard de Windows desde Python para '
-            'integrar con flujos de captura y teach.'
+            'Bridge nativo de clipboard Win32 via ctypes con '
+            'get_text/set_text/has_text. Implementado en Fix 19b '
+            'via WinClipboardBridge.'
         ),
-        'reason': 'OpenClipboard disponible pero no hay bridge de lectura/escritura',
-        'dependency_missing': 'Ninguna — ctypes user32 ya cargado',
+        'reason': 'Implementado en Fix 19b',
+        'dependency_missing': '',
         'priority': 'medium',
-        'next_action': 'Implementar ClipboardBridge con get_text/set_text via ctypes',
-        'status': 'READY_FOR_NEXT_SLICE',
+        'next_action': '',
+        'status': 'COMPLETED',
         'category': 'windows_native',
     },
     {
@@ -309,14 +311,14 @@ _WINDOWS_INTEGRATION_TASKS: list[dict[str, Any]] = [
         'id': 'win_dpi_awareness',
         'title': 'DPI awareness para pantallas HiDPI',
         'description': (
-            'Configurar SetProcessDpiAwareness para evitar escalado '
-            'borroso en monitores de alta resolucion.'
+            'SetProcessDpiAwareness(2) llamado en bootstrap antes '
+            'de QGuiApplication. Implementado en Fix 19c.'
         ),
-        'reason': 'No hay configuracion de DPI awareness explicita',
-        'dependency_missing': 'Ninguna — shcore via ctypes',
+        'reason': 'Implementado en Fix 19c',
+        'dependency_missing': '',
         'priority': 'medium',
-        'next_action': 'Llamar SetProcessDpiAwareness(2) en bootstrap antes de QApplication',
-        'status': 'READY_FOR_NEXT_SLICE',
+        'next_action': '',
+        'status': 'COMPLETED',
         'category': 'windows_native',
     },
 ]

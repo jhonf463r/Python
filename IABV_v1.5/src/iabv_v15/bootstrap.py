@@ -817,6 +817,18 @@ class AppBootstrap:
         except Exception:
             pass
 
+        # Fix 19b: Windows clipboard bridge — low-level ctypes-based
+        # clipboard for background services that don't have QGuiApplication.
+        from iabv_v15.services.platform.win_clipboard_bridge import WinClipboardBridge
+        self.win_clipboard_bridge = WinClipboardBridge()
+
+        # Fix 19a: Windows system tray bridge — created here, shown later
+        # in run() after QGuiApplication is available.
+        from iabv_v15.services.platform.win_systray_bridge import WinSystrayBridge
+        self.win_systray_bridge = WinSystrayBridge(
+            app_name=self.config.app_name,
+        )
+
         # PCS v1 — PR E. Detector read-only de violaciones de encarnamiento.
         # handshake_required=False en el manifest → sólo reporta.
         # Lo enchufamos al self_examination como provider para poblar
@@ -1650,6 +1662,10 @@ class AppBootstrap:
             except Exception:
                 logger.exception('splash.set_ready fallo desde %s', source)
         self._raise_main_window_now(source)
+
+    def _raise_main_window(self) -> None:
+        """Public callback for systray 'Show IABV' action."""
+        self._raise_main_window_now('systray_show')
 
     def _raise_main_window_now(self, source: str) -> None:
         """Fuerza Z-order del main window por encima del splash.
@@ -2654,6 +2670,14 @@ class AppBootstrap:
                     self._timeline.mark('populate_ui_done')
                 except Exception:
                     pass
+                # Fix 19a: Show system tray icon after UI is built
+                try:
+                    self.win_systray_bridge.show(
+                        on_show_window=self._raise_main_window,
+                        on_quit=app.quit,
+                    )
+                except Exception:
+                    pass
             QTimer.singleShot(0, _populate_ui)
         else:
             # Synchronous path (used by tests that don't call app.exec()).
@@ -3165,6 +3189,16 @@ class AppBootstrap:
         try:
             # --- Splash screen: show immediately while services load ---
             if PYSIDE_AVAILABLE:
+                # Fix 19c: DPI awareness — call SetProcessDpiAwareness(2)
+                # (Per-Monitor V2) BEFORE QGuiApplication so Qt inherits
+                # the correct DPI from the start.  Harmless on non-Windows.
+                if os.name == 'nt':
+                    try:
+                        import ctypes
+                        ctypes.windll.shcore.SetProcessDpiAwareness(2)  # type: ignore[attr-defined]
+                    except Exception:
+                        pass
+
                 os.environ.setdefault('QT_QUICK_CONTROLS_STYLE', 'Basic')
                 QQuickStyle.setStyle('Basic')
                 self._timeline.mark('qt_style_set')
