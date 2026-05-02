@@ -1194,6 +1194,12 @@ class PortableContextService:
         worker_labels: Counter[str] = Counter()
         total = 0
 
+        wt_budget_exhausted = 0
+        wt_handoff_count = 0
+        wt_human_intervention = 0
+        wt_worker_kinds: Counter[str] = Counter()
+        wt_total = 0
+
         for run in runs:
             meta = run.metadata or {}
             eb = meta.get('evidence_basis')
@@ -1226,13 +1232,25 @@ class PortableContextService:
                     if isinstance(field, str) and field.strip():
                         unresolved_all[field.strip()] += 1
 
+            wt = meta.get('worker_telemetry')
+            if isinstance(wt, dict) and wt.get('worker_kind'):
+                wt_total += 1
+                wt_worker_kinds[str(wt['worker_kind'])] += 1
+                bs = str(wt.get('budget_state') or '').lower()
+                if bs in {'exhausted', 'quota_exceeded', 'timeout'}:
+                    wt_budget_exhausted += 1
+                if wt.get('handoff_required'):
+                    wt_handoff_count += 1
+                if wt.get('human_intervention_required'):
+                    wt_human_intervention += 1
+
         if total < self._TASK_PACKET_MIN_RUNS:
             return {'status': 'insufficient_data', 'run_count': total}
 
         top_unresolved = unresolved_all.most_common(5)
         top_workers = worker_labels.most_common(5)
 
-        return {
+        result: dict[str, Any] = {
             'status': 'ok',
             'run_count': total,
             'evidence_state_distribution': dict(evidence_states),
@@ -1248,6 +1266,78 @@ class PortableContextService:
                 for w, c in top_workers
             ],
         }
+        if wt_total > 0:
+            # Collect scientific proxy aggregates
+            cr_vals: list[float] = []
+            ep_vals: list[float] = []
+            idp_vals: list[int] = []
+            scores_for_stability: list[float] = []
+            for run in runs:
+                wt2 = (run.metadata or {}).get('worker_telemetry')
+                if not isinstance(wt2, dict):
+                    continue
+                if isinstance(wt2.get('compression_ratio'), (int, float)):
+                    cr_vals.append(float(wt2['compression_ratio']))
+                if isinstance(wt2.get('entropy_proxy'), (int, float)):
+                    ep_vals.append(float(wt2['entropy_proxy']))
+                if isinstance(wt2.get('inference_depth_proxy'), int):
+                    idp_vals.append(wt2['inference_depth_proxy'])
+                if hasattr(run, 'total_score') and isinstance(run.total_score, (int, float)):
+                    scores_for_stability.append(float(run.total_score))
+
+            wt_summary: dict[str, Any] = {
+                'runs_with_telemetry': wt_total,
+                'budget_exhausted_count': wt_budget_exhausted,
+                'handoff_required_count': wt_handoff_count,
+                'human_intervention_count': wt_human_intervention,
+                'worker_kind_distribution': [
+                    {'kind': k, 'count': c, 'rate': round(c / wt_total, 3)}
+                    for k, c in wt_worker_kinds.most_common(5)
+                ],
+            }
+            if cr_vals:
+                wt_summary['avg_compression_ratio'] = round(sum(cr_vals) / len(cr_vals), 4)
+            if ep_vals:
+                wt_summary['avg_entropy_proxy'] = round(sum(ep_vals) / len(ep_vals), 4)
+            if idp_vals:
+                wt_summary['avg_inference_depth'] = round(sum(idp_vals) / len(idp_vals), 2)
+            if len(scores_for_stability) >= 2:
+                try:
+                    from iabv_v15.services.lab.scientific_proxy_engine import (
+                        stability_score_from_runs,
+                        nonlinearity_indicator,
+                    )
+                    wt_summary['stability_score'] = stability_score_from_runs(scores_for_stability)
+                    wt_summary['nonlinearity_indicator'] = nonlinearity_indicator(scores_for_stability)
+                except Exception:
+                    pass
+
+            # Metacognitive calibration summary
+            cal_errors: list[float] = []
+            fp_count = 0
+            fn_count = 0
+            for run in runs:
+                mc = (run.metadata or {}).get('metacognitive_evaluation')
+                if not isinstance(mc, dict):
+                    continue
+                ce = mc.get('calibration_error')
+                if isinstance(ce, (int, float)):
+                    cal_errors.append(float(ce))
+                if mc.get('false_positive'):
+                    fp_count += 1
+                if mc.get('false_negative'):
+                    fn_count += 1
+            if cal_errors:
+                wt_summary['metacognitive_calibration'] = {
+                    'avg_calibration_error': round(sum(cal_errors) / len(cal_errors), 4),
+                    'max_calibration_error': round(max(cal_errors), 4),
+                    'false_positive_count': fp_count,
+                    'false_negative_count': fn_count,
+                    'evaluations_count': len(cal_errors),
+                }
+
+            result['worker_telemetry_summary'] = wt_summary
+        return result
 
     def _task_packet_summary_section(
         self,

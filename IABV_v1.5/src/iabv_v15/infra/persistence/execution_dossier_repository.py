@@ -141,5 +141,5 @@ class ExecutionDossierRepository:
                 payload = self.storage.load_json(relative)
             return ExecutionDossier.model_validate(payload)
         except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
-            _log.warning("dossier %s: file missing or corrupt — %s", dossier_id, exc)
+            _log.debug("dossier %s: file missing or corrupt — %s", dossier_id, exc)
             return None

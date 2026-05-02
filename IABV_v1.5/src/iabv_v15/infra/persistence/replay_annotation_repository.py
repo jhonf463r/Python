@@ -122,5 +122,5 @@ class ReplayAnnotationRepository:
                 payload = self.storage.load_json(f"annotations/{annotation_id}.json")
             return ReplayAnnotation.model_validate(payload)
         except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
-            _log.warning("annotation %s: file missing or corrupt — %s", annotation_id, exc)
+            _log.debug("annotation %s: file missing or corrupt — %s", annotation_id, exc)
             return None

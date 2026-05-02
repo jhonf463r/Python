@@ -104,5 +104,5 @@ class ApprovalCheckpointRepository:
                 payload = self.storage.load_json(f'approvals/{checkpoint_id}.json')
             return ApprovalCheckpoint.model_validate(payload)
         except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
-            _log.warning("checkpoint %s: file missing or corrupt — %s", checkpoint_id, exc)
+            _log.debug("checkpoint %s: file missing or corrupt — %s", checkpoint_id, exc)
             return None

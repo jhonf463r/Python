@@ -124,5 +124,5 @@ class CapabilityRepository:
                 payload = self.storage.load_json(f'capabilities/{capability_key}.json')
             return CapabilityReadiness.model_validate(payload)
         except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
-            _log.warning("capability %s: file missing or corrupt — %s", capability_key, exc)
+            _log.debug("capability %s: file missing or corrupt — %s", capability_key, exc)
             return None

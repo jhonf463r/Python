@@ -843,6 +843,23 @@ class OperationalSelfExaminationService:
                 'solution_proposals': solution_proposals[:4],
             },
         )
+        # Metacognitive feedback loop: convert overconfidence/underconfidence
+        # detections into adaptive weight adjustments so future scoring is
+        # biased to self-correct.  Also tracks calibration improvement.
+        mc_feedback = self._apply_metacognitive_feedback(
+            findings, experiment_runs=experiment_runs,
+        )
+        if mc_feedback:
+            review = review.model_copy(update={
+                'findings': [*review.findings, *mc_feedback][:10],
+                'metadata': {
+                    **dict(review.metadata or {}),
+                    'metacognitive_feedback': [
+                        f.model_dump(mode='json') for f in mc_feedback
+                    ],
+                },
+            })
+
         # Persist metacognitive ledger from the FULL findings list (before
         # truncation to 8) so MEDIUM-severity entries are not lost.
         self._persist_metacognitive_ledger_from_findings(
@@ -915,6 +932,159 @@ class OperationalSelfExaminationService:
                 )
             except Exception as exc:
                 logger.debug('oses_auto_correct: failed for %s: %s', finding.category, exc)
+
+    def _apply_metacognitive_feedback(
+        self,
+        findings: list[SelfExaminationFinding],
+        experiment_runs: list[ExperimentRun],
+    ) -> list[SelfExaminationFinding]:
+        """Convert metacognitive detection into adaptive weight adjustments.
+
+        When OSES detects overconfidence, underconfidence, or miscalibration,
+        this method feeds the signal into ``AdaptiveWeightLayer`` so future
+        scoring is biased accordingly.  This converts the system from
+        "detect and report" to "detect and self-correct".
+
+        Also tracks whether calibration is improving across reviews
+        (``loop_closure_improving``).
+        """
+        if self.adaptive_weight_layer is None:
+            return []
+        if not hasattr(self.adaptive_weight_layer, 'apply_metacognitive_adjustment'):
+            return []
+
+        results: list[SelfExaminationFinding] = []
+        mc_categories = {
+            'task_packet_metacognitive_overconfidence',
+            'task_packet_metacognitive_underconfidence',
+            'task_packet_metacognitive_miscalibration',
+        }
+        mc_findings = [f for f in findings if f.category in mc_categories]
+        if not mc_findings:
+            return results
+
+        dominant_route = ''
+        dominant_ak = ''
+        if experiment_runs:
+            from collections import Counter
+            routes = Counter(
+                getattr(r.route, 'value', str(r.route or ''))
+                for r in experiment_runs if r.route
+            )
+            aks = Counter(
+                str(r.assistant_kind or '').strip().lower()
+                for r in experiment_runs if r.assistant_kind
+            )
+            dominant_route = routes.most_common(1)[0][0] if routes else ''
+            dominant_ak = aks.most_common(1)[0][0] if aks else ''
+
+        if not dominant_route:
+            return results
+
+        adjustments_applied: list[dict[str, Any]] = []
+        for finding in mc_findings:
+            if finding.category == 'task_packet_metacognitive_overconfidence':
+                adj = -0.08
+                reason = f'overconfidence detected: {finding.metadata.get("false_positive_count", 0)} false positives'
+            elif finding.category == 'task_packet_metacognitive_underconfidence':
+                adj = 0.06
+                reason = f'underconfidence detected: {finding.metadata.get("false_negative_count", 0)} false negatives'
+            else:
+                avg_ce = finding.metadata.get('avg_calibration_error', 0.5)
+                adj = -0.04 if avg_ce > 0.5 else -0.02
+                reason = f'miscalibration detected: avg_error={avg_ce:.2f}'
+
+            try:
+                applied = self.adaptive_weight_layer.apply_metacognitive_adjustment(
+                    route=dominant_route,
+                    assistant_kind=dominant_ak,
+                    adjustment=adj,
+                    reason=reason,
+                )
+                adjustments_applied.append({
+                    'finding': finding.category,
+                    'route': dominant_route,
+                    'assistant_kind': dominant_ak,
+                    **applied,
+                })
+            except Exception:
+                pass
+
+        if adjustments_applied:
+            results.append(SelfExaminationFinding(
+                category='metacognitive_feedback_applied',
+                severity=IssueSeverity.LOW,
+                title=f'Ajuste adaptativo metacognitivo aplicado ({len(adjustments_applied)} ajustes)',
+                summary=(
+                    f'OSES detecto patrones metacognitivos y ajusto pesos '
+                    f'adaptativos para {dominant_route}/{dominant_ak}. '
+                    f'Ajustes: {", ".join(a["reason"] for a in adjustments_applied)}.'
+                ),
+                confidence=0.7,
+                recommendation=(
+                    'Monitorear si el calibration_error promedio mejora en '
+                    'las proximas ejecuciones. Si no mejora, revisar la '
+                    'formula de confianza en StrategySelector.'
+                ),
+                source_refs=['AdaptiveWeightLayer._metacognitive_adjustments'],
+                metadata={
+                    'pattern': 'metacognitive_feedback_loop',
+                    'adjustments': adjustments_applied,
+                    'dominant_route': dominant_route,
+                    'dominant_assistant_kind': dominant_ak,
+                },
+            ))
+
+        # --- Calibration improvement tracking ---
+        previous_review = self._load_latest_review()
+        if previous_review is not None:
+            prev_meta = dict(previous_review.metadata or {})
+            prev_cal = None
+            for f in (previous_review.findings or []):
+                if f.category == 'task_packet_metacognitive_miscalibration':
+                    prev_cal = (f.metadata or {}).get('avg_calibration_error')
+                    break
+            if prev_cal is None:
+                prev_cal = (prev_meta.get('last_avg_calibration_error'))
+
+            current_cal = None
+            for f in mc_findings:
+                if f.category == 'task_packet_metacognitive_miscalibration':
+                    current_cal = (f.metadata or {}).get('avg_calibration_error')
+                    break
+
+            if (
+                isinstance(prev_cal, (int, float))
+                and isinstance(current_cal, (int, float))
+                and current_cal < prev_cal
+            ):
+                improvement = prev_cal - current_cal
+                results.append(SelfExaminationFinding(
+                    category='metacognitive_loop_closure_improving',
+                    severity=IssueSeverity.LOW,
+                    title=f'Calibracion metacognitiva mejorando ({improvement:.3f} reduccion)',
+                    summary=(
+                        f'El error de calibracion promedio bajo de {prev_cal:.3f} '
+                        f'a {current_cal:.3f} (mejora de {improvement:.3f}). '
+                        f'El feedback loop metacognitivo esta funcionando.'
+                    ),
+                    confidence=min(0.6 + improvement, 0.9),
+                    recommendation=(
+                        'Mantener el feedback loop activo. Si la mejora se '
+                        'estabiliza, considerar reducir la magnitud de los '
+                        'ajustes adaptativos.'
+                    ),
+                    source_refs=['AdaptiveWeightLayer._metacognitive_adjustments'],
+                    metadata={
+                        'pattern': 'loop_closure_improving',
+                        'previous_avg_calibration_error': round(prev_cal, 4),
+                        'current_avg_calibration_error': round(current_cal, 4),
+                        'improvement': round(improvement, 4),
+                        'loop_closure_improving': True,
+                    },
+                ))
+
+        return results
 
     def _persist_review(self, review: SelfExaminationSnapshot) -> SelfExaminationSnapshot:
         embodiment_violations = self._collect_embodiment_violations()
@@ -3230,7 +3400,7 @@ class OperationalSelfExaminationService:
         findings_so_far: list[SelfExaminationFinding],
         experiment_runs: list[ExperimentRun],
     ) -> list[SelfExaminationFinding]:
-        """Introspect whether G1, G2, G3 and cognitive mechanisms are active.
+        """Introspect whether G1, G2, G3, G4 and cognitive mechanisms are active.
 
         This is the system's self-awareness of its own architecture: it
         checks that the introspective loop is actually closed by verifying
@@ -3282,6 +3452,26 @@ class OperationalSelfExaminationService:
             'wired': g3_wired,
             'active': g3_has_suggest,
             'detail': 'suggest() available' if g3_has_suggest else ('layer connected but no suggest()' if g3_wired else 'AdaptiveWeightLayer NOT connected'),
+        })
+
+        # --- G4: Metacognitive feedback loop ---
+        g4_wired = (
+            self.adaptive_weight_layer is not None
+            and hasattr(self.adaptive_weight_layer, 'apply_metacognitive_adjustment')
+        )
+        g4_active = False
+        if g4_wired:
+            adjustments = getattr(self.adaptive_weight_layer, '_metacognitive_adjustments', {})
+            g4_active = len(adjustments) > 0
+        checks.append({
+            'mechanism': 'G4_metacognitive_feedback',
+            'wired': g4_wired,
+            'active': g4_active,
+            'detail': (
+                f'{len(getattr(self.adaptive_weight_layer, "_metacognitive_adjustments", {}))} adjustments active'
+                if g4_active
+                else ('wired but no adjustments yet' if g4_wired else 'metacognitive feedback NOT connected')
+            ),
         })
 
         # --- Cognitive mechanisms: check if findings were generated ---
@@ -5487,6 +5677,9 @@ class OperationalSelfExaminationService:
         approval_count = 0
         no_worker_count = 0
         gate_unusable_count = 0
+        wt_budget_exhausted = 0
+        wt_handoff_unresolved = 0
+        wt_total = 0
 
         for run in experiment_runs:
             meta = getattr(run, 'metadata', None) or {}
@@ -5515,6 +5708,15 @@ class OperationalSelfExaminationService:
             rwc = meta.get('ranked_worker_count')
             if should_consult and rwc is not None and int(rwc) == 0:
                 gate_unusable_count += 1
+
+            wt = meta.get('worker_telemetry')
+            if isinstance(wt, dict) and wt.get('worker_kind'):
+                wt_total += 1
+                bs = str(wt.get('budget_state') or '').lower()
+                if bs in {'exhausted', 'quota_exceeded', 'timeout'}:
+                    wt_budget_exhausted += 1
+                if wt.get('handoff_required') and wt.get('continuation_state') != 'resumed':
+                    wt_handoff_unresolved += 1
 
         if total < self._TP_MIN_RUNS:
             return []
@@ -5615,6 +5817,253 @@ class OperationalSelfExaminationService:
                     'total': total,
                 },
             ))
+
+        if wt_total > 0 and wt_budget_exhausted >= 2:
+            ratio = wt_budget_exhausted / wt_total
+            results.append(SelfExaminationFinding(
+                category='task_packet_worker_budget_exhausted',
+                severity=IssueSeverity.MEDIUM,
+                title=f'Workers con presupuesto agotado ({wt_budget_exhausted}/{wt_total})',
+                summary=(
+                    f'{wt_budget_exhausted} de {wt_total} ejecuciones con '
+                    f'telemetria reportan budget exhausted/timeout. '
+                    f'Puede requerir redistribucion de carga entre workers.'
+                ),
+                confidence=min(0.6 + ratio * 0.3, 0.95),
+                recommendation=(
+                    'Verificar cuotas de workers externos (Codex, Devin, '
+                    'Windsurf). Considerar handoff a worker con cuota '
+                    'disponible o reanudar en nueva sesion.'
+                ),
+                source_refs=['ExperimentRun.metadata.worker_telemetry.budget_state'],
+                metadata={
+                    'pattern': 'worker_budget_exhausted',
+                    'budget_exhausted_count': wt_budget_exhausted,
+                    'wt_total': wt_total,
+                    'ratio': round(ratio, 3),
+                },
+            ))
+
+        if wt_total > 0 and wt_handoff_unresolved >= 2:
+            ratio = wt_handoff_unresolved / wt_total
+            results.append(SelfExaminationFinding(
+                category='task_packet_worker_handoff_unresolved',
+                severity=IssueSeverity.MEDIUM,
+                title=f'Handoffs sin resolver ({wt_handoff_unresolved}/{wt_total})',
+                summary=(
+                    f'{wt_handoff_unresolved} de {wt_total} ejecuciones '
+                    f'requieren handoff pero no han sido retomadas.'
+                ),
+                confidence=min(0.6 + ratio * 0.3, 0.95),
+                recommendation=(
+                    'Revisar tareas con handoff_required=true y '
+                    'continuation_state != resumed. Asignar a otro '
+                    'worker o reanudar manualmente.'
+                ),
+                source_refs=['ExperimentRun.metadata.worker_telemetry.handoff_required'],
+                metadata={
+                    'pattern': 'worker_handoff_unresolved',
+                    'handoff_unresolved_count': wt_handoff_unresolved,
+                    'wt_total': wt_total,
+                    'ratio': round(ratio, 3),
+                },
+            ))
+
+        # --- High correction recurrence ---
+        if wt_total >= 3:
+            correction_vals = [
+                int(wt2.get('correction_rounds') or 0)
+                for run in experiment_runs
+                if isinstance((wt2 := (run.metadata or {}).get('worker_telemetry')), dict)
+            ]
+            if correction_vals:
+                avg_corrections = sum(correction_vals) / len(correction_vals)
+                if avg_corrections >= 2.0:
+                    results.append(SelfExaminationFinding(
+                        category='task_packet_worker_high_corrections',
+                        severity=IssueSeverity.MEDIUM,
+                        title=f'Alta recurrencia de correcciones ({avg_corrections:.1f} avg)',
+                        summary=(
+                            f'Los workers externos requieren un promedio de '
+                            f'{avg_corrections:.1f} rondas de correccion por '
+                            f'ejecucion. Puede indicar prompts poco claros '
+                            f'o workers inadecuados para la tarea.'
+                        ),
+                        confidence=min(0.6 + avg_corrections * 0.1, 0.9),
+                        recommendation=(
+                            'Revisar la calidad de los prompts enviados. '
+                            'Considerar cambiar de worker si el patron persiste.'
+                        ),
+                        source_refs=['ExperimentRun.metadata.worker_telemetry.correction_rounds'],
+                        metadata={
+                            'pattern': 'high_correction_recurrence',
+                            'avg_corrections': round(avg_corrections, 2),
+                            'sample_size': len(correction_vals),
+                        },
+                    ))
+
+        # --- Compression / reuse quality ---
+        if wt_total >= 3:
+            cr_vals = [
+                float(wt3.get('compression_ratio'))
+                for run in experiment_runs
+                if isinstance((wt3 := (run.metadata or {}).get('worker_telemetry')), dict)
+                and isinstance(wt3.get('compression_ratio'), (int, float))
+            ]
+            if len(cr_vals) >= 3:
+                avg_cr = sum(cr_vals) / len(cr_vals)
+                if avg_cr < 0.3:
+                    results.append(SelfExaminationFinding(
+                        category='task_packet_worker_good_compression',
+                        severity=IssueSeverity.LOW,
+                        title=f'Buena compresion de output ({avg_cr:.2f})',
+                        summary=(
+                            f'Las respuestas de workers tienen ratio de compresion '
+                            f'promedio {avg_cr:.2f} (bajo = mas estructurado). '
+                            f'Esto sugiere outputs bien organizados y reutilizables.'
+                        ),
+                        confidence=0.6,
+                        recommendation=(
+                            'Mantener la estrategia actual de prompting. '
+                            'Considerar promover workers con buena compresion.'
+                        ),
+                        source_refs=['ExperimentRun.metadata.worker_telemetry.compression_ratio'],
+                        metadata={
+                            'pattern': 'good_compression',
+                            'avg_compression_ratio': round(avg_cr, 4),
+                            'sample_size': len(cr_vals),
+                        },
+                    ))
+
+        # --- Nonlinearity detection (performance jump) ---
+        recent_scores = [
+            float(run.total_score)
+            for run in experiment_runs
+            if hasattr(run, 'total_score')
+            and isinstance(run.total_score, (int, float))
+        ]
+        if len(recent_scores) >= 10:
+            try:
+                from iabv_v15.services.lab.scientific_proxy_engine import nonlinearity_indicator
+                nli = nonlinearity_indicator(recent_scores, window=5)
+                if nli >= 1.5:
+                    results.append(SelfExaminationFinding(
+                        category='task_packet_performance_jump',
+                        severity=IssueSeverity.LOW,
+                        title=f'Salto no lineal de rendimiento detectado ({nli:.2f}x)',
+                        summary=(
+                            f'El rendimiento promedio de las ultimas 5 ejecuciones '
+                            f'es {nli:.2f}x mayor que las 5 anteriores. '
+                            f'Esto puede indicar una mejora significativa en la '
+                            f'estrategia o configuracion actual.'
+                        ),
+                        confidence=min(0.5 + (nli - 1.0) * 0.2, 0.85),
+                        recommendation=(
+                            'Investigar que cambio produjo la mejora. '
+                            'Si es reproducible, promover la configuracion actual.'
+                        ),
+                        source_refs=['ExperimentRun.total_score'],
+                        metadata={
+                            'pattern': 'nonlinear_performance_jump',
+                            'nonlinearity_indicator': round(nli, 4),
+                            'recent_scores_count': len(recent_scores),
+                        },
+                    ))
+            except Exception:
+                pass
+
+        # --- Metacognitive calibration findings ---
+        if wt_total >= 3:
+            mc_cal_errors: list[float] = []
+            mc_fp = 0
+            mc_fn = 0
+            for run in experiment_runs:
+                mc = (run.metadata or {}).get('metacognitive_evaluation')
+                if not isinstance(mc, dict):
+                    continue
+                ce = mc.get('calibration_error')
+                if isinstance(ce, (int, float)):
+                    mc_cal_errors.append(float(ce))
+                if mc.get('false_positive'):
+                    mc_fp += 1
+                if mc.get('false_negative'):
+                    mc_fn += 1
+
+            if len(mc_cal_errors) >= 3:
+                avg_ce = sum(mc_cal_errors) / len(mc_cal_errors)
+                if avg_ce > 0.4:
+                    results.append(SelfExaminationFinding(
+                        category='task_packet_metacognitive_miscalibration',
+                        severity=IssueSeverity.MEDIUM,
+                        title=f'Mala calibracion metacognitiva ({avg_ce:.2f} avg)',
+                        summary=(
+                            f'El error de calibracion promedio es {avg_ce:.2f} '
+                            f'sobre {len(mc_cal_errors)} evaluaciones. '
+                            f'Falsos positivos: {mc_fp}, falsos negativos: {mc_fn}. '
+                            f'El sistema no predice bien sus propios resultados.'
+                        ),
+                        confidence=min(0.6 + avg_ce * 0.3, 0.9),
+                        recommendation=(
+                            'Revisar la calidad de las recomendaciones de '
+                            'StrategySelector. Considerar ajustar pesos '
+                            'adaptativos o agregar mas evidencia antes de '
+                            'recomendar.'
+                        ),
+                        source_refs=['ExperimentRun.metadata.metacognitive_evaluation.calibration_error'],
+                        metadata={
+                            'pattern': 'metacognitive_miscalibration',
+                            'avg_calibration_error': round(avg_ce, 4),
+                            'false_positive_count': mc_fp,
+                            'false_negative_count': mc_fn,
+                            'evaluations_count': len(mc_cal_errors),
+                        },
+                    ))
+
+                if mc_fp >= 2 and mc_fp > mc_fn:
+                    results.append(SelfExaminationFinding(
+                        category='task_packet_metacognitive_overconfidence',
+                        severity=IssueSeverity.MEDIUM,
+                        title=f'Sobreconfianza recurrente ({mc_fp} falsos positivos)',
+                        summary=(
+                            f'El sistema predijo exito {mc_fp} veces cuando realmente '
+                            f'fallo. Esto indica sobreconfianza sistematica en las '
+                            f'recomendaciones de ruta/worker.'
+                        ),
+                        confidence=min(0.6 + mc_fp * 0.1, 0.9),
+                        recommendation=(
+                            'Bajar el umbral de confianza en StrategySelector '
+                            'o requerir mas evidencia antes de predecir exito.'
+                        ),
+                        source_refs=['ExperimentRun.metadata.metacognitive_evaluation.false_positive'],
+                        metadata={
+                            'pattern': 'overconfidence',
+                            'false_positive_count': mc_fp,
+                            'false_negative_count': mc_fn,
+                        },
+                    ))
+
+                if mc_fn >= 2 and mc_fn > mc_fp:
+                    results.append(SelfExaminationFinding(
+                        category='task_packet_metacognitive_underconfidence',
+                        severity=IssueSeverity.LOW,
+                        title=f'Infraconfianza recurrente ({mc_fn} falsos negativos)',
+                        summary=(
+                            f'El sistema predijo fallo {mc_fn} veces cuando realmente '
+                            f'tuvo exito. Esto indica infraconfianza sistematica.'
+                        ),
+                        confidence=min(0.5 + mc_fn * 0.1, 0.85),
+                        recommendation=(
+                            'El sistema subestima sus capacidades. Considerar '
+                            'ajustar pesos adaptativos al alza o expandir '
+                            'la evidencia de rutas exitosas.'
+                        ),
+                        source_refs=['ExperimentRun.metadata.metacognitive_evaluation.false_negative'],
+                        metadata={
+                            'pattern': 'underconfidence',
+                            'false_positive_count': mc_fp,
+                            'false_negative_count': mc_fn,
+                        },
+                    ))
 
         return results
 

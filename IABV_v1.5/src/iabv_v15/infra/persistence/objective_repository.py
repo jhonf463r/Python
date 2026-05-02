@@ -191,5 +191,5 @@ class ObjectiveRepository:
                 payload = self.storage.load_json(f'objectives/{objective_id}.json')
             return ObjectiveNode.model_validate(payload)
         except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
-            _log.warning("objective %s: file missing or corrupt — %s", objective_id, exc)
+            _log.debug("objective %s: file missing or corrupt — %s", objective_id, exc)
             return None

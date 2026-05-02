@@ -103,5 +103,5 @@ class RuntimeTuningRepository:
                 payload = self.storage.load_json(f'runtime_tuning/{scope_key}.json')
             return RuntimeTuningProfile.model_validate(payload)
         except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
-            _log.warning("tuning %s: file missing or corrupt — %s", scope_key, exc)
+            _log.debug("tuning %s: file missing or corrupt — %s", scope_key, exc)
             return None

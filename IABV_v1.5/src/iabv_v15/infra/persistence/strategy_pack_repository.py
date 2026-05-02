@@ -100,5 +100,5 @@ class StrategyPackRepository:
                 payload = self.storage.load_json(f'strategy_packs/{pack_id}.json')
             return StrategyPack.model_validate(payload)
         except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
-            _log.warning("pack %s: file missing or corrupt — %s", pack_id, exc)
+            _log.debug("pack %s: file missing or corrupt — %s", pack_id, exc)
             return None
