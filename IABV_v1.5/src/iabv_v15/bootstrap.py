@@ -1643,6 +1643,39 @@ class AppBootstrap:
         # deberia estar fundiendose, pero forzamos raise/activate del
         # main window por si Windows lo dejo debajo del splash.
         self._raise_main_window_now('page_loader_ready')
+        # Final truth refresh: re-persist PortableContext and OSES now
+        # that the timeline contains populate_ui_done + page_loader_ready.
+        # Without this, latest.md/latest.json keep the stale early snapshot
+        # that says "populate_ui never finished".
+        threading.Thread(
+            target=self._final_startup_truth_refresh,
+            name='iabv-startup-truth-refresh',
+            daemon=True,
+        ).start()
+
+    def _final_startup_truth_refresh(self) -> None:
+        """Re-persist PortableContext and OSES after boot is truly complete.
+
+        The early ``_startup_self_examination()`` runs before
+        ``populate_ui_done`` / ``page_loader_ready`` are recorded, so
+        its snapshots freeze a partial view.  This method re-runs the
+        persistence *after* those milestones exist in the timeline JSONL,
+        producing honest ``latest.md`` / ``latest.json`` files.
+        """
+        try:
+            pcs = getattr(self, 'portable_context_service', None)
+            if pcs is not None:
+                pcs.build_package()
+                logger.info('startup_truth_refresh: PortableContext re-persisted')
+        except Exception as exc:
+            logger.debug('startup_truth_refresh: PortableContext failed: %s', exc)
+        try:
+            oses = getattr(self, 'operational_self_examination_service', None)
+            if oses is not None:
+                oses.build_review()
+                logger.info('startup_truth_refresh: OSES re-persisted')
+        except Exception as exc:
+            logger.debug('startup_truth_refresh: OSES failed: %s', exc)
 
     def _handle_splash_closing(self) -> None:
         """Marca ``splash_window_closing`` cuando QML va a llamar close().

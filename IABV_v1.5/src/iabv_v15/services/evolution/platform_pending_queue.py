@@ -104,9 +104,23 @@ class PlatformPendingQueue:
         }
 
     def to_portable_items(self, *, limit: int = 8) -> list[dict[str, Any]]:
-        """Return a list of dicts suitable for PortableContext pending section."""
+        """Return a list of dicts suitable for PortableContext pending section.
+
+        Only includes tasks with actionable statuses (PENDING,
+        READY_FOR_NEXT_SLICE, BLOCKED).  COMPLETED tasks are excluded
+        because they are not pending work.
+        """
+        actionable_statuses = {
+            PendingTaskStatus.PENDING,
+            PendingTaskStatus.READY_FOR_NEXT_SLICE,
+            PendingTaskStatus.BLOCKED,
+        }
         items: list[dict[str, Any]] = []
-        for t in self.list_all()[:limit]:
+        for t in self.list_all():
+            if t.status not in actionable_statuses:
+                continue
+            if len(items) >= limit:
+                break
             items.append({
                 'id': t.id,
                 'title': t.title,
