@@ -32,6 +32,8 @@ from iabv_v15.infra.persistence.storage import ArtifactStorage
 STARTUP_INIT_MS_DEGRADED = 4000.0
 STARTUP_RUN_TO_WINDOW_MS_DEGRADED = 8000.0
 STARTUP_DEFERRED_MS_DEGRADED = 5000.0
+STARTUP_POPULATE_UI_MS_DEGRADED = 5000.0
+STARTUP_RSS_GROWTH_MB_DEGRADED = 500.0
 
 # Boot profile thresholds — aggregated across historical boots.
 # p95 boot duration above this emits a finding.
@@ -1861,6 +1863,99 @@ class OperationalSelfExaminationService:
                     'phases_seen': list(phase_to_ms.keys()),
                 },
             ))
+
+        # ``populate_ui_freeze`` — detecta cuando _build_ui_objects() bloquea
+        # el hilo principal de Qt por mas de STARTUP_POPULATE_UI_MS_DEGRADED.
+        # Durante ese tiempo el QML incubator no progresa, los QTimers no
+        # disparan y Windows marca la ventana como "Not Responding".
+        populate_ui_ms = _delta('populate_ui_start', 'populate_ui_done')
+        if populate_ui_ms is not None and populate_ui_ms > STARTUP_POPULATE_UI_MS_DEGRADED:
+            findings.append(SelfExaminationFinding(
+                category='startup_degradation',
+                title=f'populate_ui bloqueo el hilo principal {populate_ui_ms:.0f}ms',
+                summary=(
+                    f'_build_ui_objects() tardo {populate_ui_ms:.0f}ms '
+                    f'(umbral {STARTUP_POPULATE_UI_MS_DEGRADED:.0f}ms). '
+                    f'Durante ese tiempo el event loop de Qt no procesa '
+                    f'eventos: QML incubator se detiene, shell_loader_ready '
+                    f'no puede llegar, y la ventana queda "Not Responding". '
+                    f'Esto es la causa raiz del congelamiento de UI.'
+                ),
+                severity=IssueSeverity.CRITICAL,
+                confidence=0.95,
+                recommendation=(
+                    'Insertar app.processEvents() entre cada creacion de '
+                    'ViewModel en _build_ui_objects() para ceder al event loop. '
+                    'Esto permite que el QML incubator progrese, los QTimers '
+                    'disparen y la ventana se repinte entre operaciones.'
+                ),
+                source_refs=[
+                    'data/logs/startup_timeline.jsonl',
+                    'iabv_v15.bootstrap._build_ui_objects',
+                    'iabv_v15.bootstrap._populate_ui',
+                ],
+                metadata={
+                    'phase': 'populate_ui',
+                    'observed_ms': round(populate_ui_ms, 1),
+                    'threshold_ms': STARTUP_POPULATE_UI_MS_DEGRADED,
+                    'phases_seen': list(phase_to_ms.keys()),
+                },
+            ))
+
+        # ``rss_growth_abnormal`` — detecta crecimiento excesivo de memoria
+        # entre hitos de startup leyendo los campos RSS_MB de los eventos.
+        rss_values: list[tuple[str, float]] = []
+        for evt in last_run:
+            phase = str(evt.get('phase') or '')
+            rss_mb = evt.get('rss_mb') or evt.get('RSS_MB')
+            if rss_mb is None:
+                extra = evt.get('extra') or {}
+                if isinstance(extra, dict):
+                    rss_str = extra.get('RSS') or extra.get('rss') or ''
+                    if isinstance(rss_str, str) and rss_str.endswith('MB'):
+                        try:
+                            rss_mb = float(rss_str[:-2])
+                        except (TypeError, ValueError):
+                            pass
+            if phase and rss_mb is not None:
+                try:
+                    rss_values.append((phase, float(rss_mb)))
+                except (TypeError, ValueError):
+                    pass
+        if len(rss_values) >= 2:
+            min_rss = min(v for _, v in rss_values)
+            max_phase, max_rss = max(rss_values, key=lambda x: x[1])
+            growth_mb = max_rss - min_rss
+            if growth_mb > STARTUP_RSS_GROWTH_MB_DEGRADED:
+                findings.append(SelfExaminationFinding(
+                    category='startup_degradation',
+                    title=f'Memoria crece {growth_mb:.0f}MB durante arranque',
+                    summary=(
+                        f'RSS paso de {min_rss:.0f}MB a {max_rss:.0f}MB '
+                        f'(crecimiento {growth_mb:.0f}MB, umbral '
+                        f'{STARTUP_RSS_GROWTH_MB_DEGRADED:.0f}MB). '
+                        f'Pico en fase: {max_phase}. Revisar preload de '
+                        f'modelos Ollama y auto-correccion durante startup.'
+                    ),
+                    severity=IssueSeverity.HIGH if growth_mb > 1000.0 else IssueSeverity.MEDIUM,
+                    confidence=0.85,
+                    recommendation=(
+                        'Diferir precarga de modelos pesados (gemma3:4b, etc.) '
+                        'hasta que la UI este completamente lista. Considerar '
+                        'lazy loading de modelos solo cuando se necesiten.'
+                    ),
+                    source_refs=[
+                        'data/logs/startup_timeline.jsonl',
+                        'iabv_v15.bootstrap._run_deferred_post_window_setup',
+                    ],
+                    metadata={
+                        'min_rss_mb': round(min_rss, 1),
+                        'max_rss_mb': round(max_rss, 1),
+                        'growth_mb': round(growth_mb, 1),
+                        'peak_phase': max_phase,
+                        'threshold_mb': STARTUP_RSS_GROWTH_MB_DEGRADED,
+                    },
+                ))
 
         # ``startup_false_ready`` — el bug raiz que la evidencia live del
         # 2026-04-28 captura a 80s en Windows pythonw: la UI declara

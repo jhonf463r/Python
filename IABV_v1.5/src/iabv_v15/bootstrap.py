@@ -1967,42 +1967,76 @@ class AppBootstrap:
         UI anomalies (zombie windows, missing IABV window, duplicates)
         and logs the results. This gives the program self-awareness
         about its own state immediately after boot.
+
+        Also runs ``_startup_health_findings()`` from OSES to detect
+        startup degradation (populate_ui freeze, RSS growth, false ready,
+        shell readiness latency). Without this, those findings only appear
+        when ``build_review()`` is called on-demand, which means the
+        program never auto-detects its own startup freeze.
         """
         if os.environ.get('IABV_MCP_SUBPROCESS') == '1':
             return
         validator = getattr(self, 'perception_cross_validator', None)
-        if validator is None:
-            return
-        try:
-            result = validator.run_cross_validation()
-            n_issues = result.get('total_inconsistencies', 0)
-            checks = result.get('checks_passed', [])
-            ui_issues = [
-                i for i in result.get('inconsistencies', [])
-                if i.get('check') == 'ui_self_awareness'
-            ]
-            if ui_issues:
-                for issue in ui_issues:
-                    logger.warning(
-                        'startup_ui_issue: %s — %s',
-                        issue.get('actual', ''),
-                        issue.get('detail', ''),
+        if validator is not None:
+            try:
+                result = validator.run_cross_validation()
+                n_issues = result.get('total_inconsistencies', 0)
+                checks = result.get('checks_passed', [])
+                ui_issues = [
+                    i for i in result.get('inconsistencies', [])
+                    if i.get('check') == 'ui_self_awareness'
+                ]
+                if ui_issues:
+                    for issue in ui_issues:
+                        logger.warning(
+                            'startup_ui_issue: %s — %s',
+                            issue.get('actual', ''),
+                            issue.get('detail', ''),
+                        )
+                if n_issues == 0:
+                    logger.info(
+                        'startup_self_check: %d/%d checks passed — all consistent',
+                        len(checks),
+                        result.get('total_checks', 0),
                     )
-            if n_issues == 0:
-                logger.info(
-                    'startup_self_check: %d/%d checks passed — all consistent',
-                    len(checks),
-                    result.get('total_checks', 0),
-                )
-            else:
-                logger.warning(
-                    'startup_self_check: %d inconsistencies found (%d/%d passed)',
-                    n_issues,
-                    len(checks),
-                    result.get('total_checks', 0),
-                )
-        except Exception as exc:
-            logger.debug('startup_self_check: skipped (%s)', exc)
+                else:
+                    logger.warning(
+                        'startup_self_check: %d inconsistencies found (%d/%d passed)',
+                        n_issues,
+                        len(checks),
+                        result.get('total_checks', 0),
+                    )
+            except Exception as exc:
+                logger.debug('startup_self_check: skipped (%s)', exc)
+
+        # Run OSES startup health findings so the program auto-detects its
+        # own startup freeze, memory explosion and false-ready conditions.
+        oses = getattr(self, 'self_examination_service', None)
+        if oses is not None and hasattr(oses, '_startup_health_findings'):
+            try:
+                startup_findings = oses._startup_health_findings()
+                for f in startup_findings:
+                    sev = getattr(f, 'severity', None) or 'UNKNOWN'
+                    title = getattr(f, 'title', '') or str(f)
+                    cat = getattr(f, 'category', '') or ''
+                    rec = getattr(f, 'recommendation', '') or ''
+                    if str(sev) in ('CRITICAL', 'HIGH'):
+                        logger.warning(
+                            'startup_health [%s|%s]: %s | fix: %s',
+                            sev, cat, title, rec,
+                        )
+                    else:
+                        logger.info(
+                            'startup_health [%s|%s]: %s',
+                            sev, cat, title,
+                        )
+                if startup_findings:
+                    logger.info(
+                        'startup_health: %d findings detected at boot',
+                        len(startup_findings),
+                    )
+            except Exception as exc:
+                logger.debug('startup_health_findings: skipped (%s)', exc)
 
     def _ensure_directories(self) -> None:
         for path in (
@@ -2029,6 +2063,25 @@ class AppBootstrap:
             return
         if PYSIDE_AVAILABLE and QGuiApplication.instance() is None:
             self._ui_app = QGuiApplication(sys.argv)
+
+        splash = getattr(self, '_splash', None)
+
+        def _yield_to_event_loop(status: str | None = None) -> None:
+            """Let the Qt event loop process pending events (QML incubator,
+            window repaints, timer callbacks) so the UI stays responsive
+            while we build ViewModels sequentially."""
+            if splash is not None and status:
+                try:
+                    splash.set_status(status)
+                except Exception:
+                    pass
+            try:
+                app = QGuiApplication.instance()
+                if app is not None:
+                    app.processEvents()
+            except Exception:
+                pass
+
         self.navigation_controller = NavigationController()
         self.theme_controller = ThemeController(self.theme)
         self.main_window_bridge = MainWindowBridge(self.config.app_name, self.config.workspace_root)
@@ -2070,6 +2123,7 @@ class AppBootstrap:
             )
         except Exception:
             logger.exception('No se pudo conectar splashClosing -> _handle_splash_closing')
+        _yield_to_event_loop('Preparando dashboard... (72%)')
         self.dashboard_viewmodel = DashboardViewModel(
             self.episode_repository,
             self.knowledge_repository,
@@ -2077,6 +2131,7 @@ class AppBootstrap:
             self.role_router,
             self.embedding_service,
         )
+        _yield_to_event_loop('Conectando bridge MCP... (75%)')
         # --- MCP bridge (Capa 1): expone el programa a agentes externos
         # (Devin/Claude/Codex) via MCP sobre un tunnel local. El service lee
         # su preferencia persistida y, si estaba habilitado, se auto-arranca.
@@ -2110,6 +2165,7 @@ class AppBootstrap:
                     daemon=True,
                 ).start()
 
+        _yield_to_event_loop('Preparando bridge UI... (78%)')
         # --- UIBridgeService: puente IPC entre MCP server y UI PySide6.
         # Permite a agentes externos (via MCP) enviar mensajes al chat,
         # leer respuestas, capturar screenshots y navegar tabs de la UI.
@@ -2155,6 +2211,7 @@ class AppBootstrap:
             logger.exception('No se pudo construir ChatCapabilityIngestionService; dejando None')
             self.chat_capability_ingestion_service = None
 
+        _yield_to_event_loop('Construyendo Centro de Control... (80%)')
         self.control_center_viewmodel = ControlCenterViewModel(
             config=self.config,
             episode_repository=self.episode_repository,
@@ -2190,6 +2247,7 @@ class AppBootstrap:
             chat_capability_ingestion_service=self.chat_capability_ingestion_service,
             defer_initial_refresh=True,
         )
+        _yield_to_event_loop('Construyendo Capture Studio... (84%)')
         self.capture_studio_viewmodel = CaptureStudioViewModel(
             config=self.config,
             episode_repository=self.episode_repository,
@@ -2219,6 +2277,7 @@ class AppBootstrap:
         self.control_center_viewmodel.capture_studio_viewmodel = self.capture_studio_viewmodel
         self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
 
+        _yield_to_event_loop('Conectando UI Bridge... (87%)')
         # Wire UIBridgeServer with the ControlCenterViewModel so that
         # MCP agents can interact with the UI chat. The server starts
         # in a daemon thread; if it fails, IABV continues without it.
@@ -2236,6 +2295,7 @@ class AppBootstrap:
 
         # Deferred: refreshAutonomyDock runs inside the VM's deferred
         # startup thread to avoid blocking UI creation.
+        _yield_to_event_loop('Construyendo Centro Evolutivo... (90%)')
         self.evolution_center_viewmodel = EvolutionCenterViewModel(
             dossier_repository=self.execution_dossier_repository,
             hidden_incident_repository=self.hidden_incident_repository,
@@ -2267,22 +2327,26 @@ class AppBootstrap:
         # persiste a disco y el VM solo lee la foto (AGENTS.md: el VM no
         # decide rutas ni inventa datos).
         self.evolution_center_viewmodel.ui_screenshot_service = self.ui_screenshot_service
+        _yield_to_event_loop('Base de conocimiento... (93%)')
         self.knowledge_base_viewmodel = KnowledgeBaseViewModel(
             self.knowledge_repository,
             defer_initial_refresh=True,
         )
+        _yield_to_event_loop('Configuracion de proveedores... (95%)')
         self.provider_settings_viewmodel = ProviderSettingsViewModel(
             self.provider_configs,
             self.role_router,
             self.embedding_service,
             defer_initial_refresh=True,
         )
+        _yield_to_event_loop('Historial de ejecuciones... (97%)')
         self.run_history_viewmodel = RunHistoryViewModel(
             self.run_repository,
             self.execution_dossier_repository,
             session_repository=self.adaptive_session_repository,
             defer_initial_refresh=True,
         )
+        _yield_to_event_loop('Centro vivo... (99%)')
         self.centro_vivo_viewmodel = CentroVivoViewModel(
             adaptive_session_repository=self.adaptive_session_repository,
             experiment_lab_repository=self.experiment_lab_repository,
