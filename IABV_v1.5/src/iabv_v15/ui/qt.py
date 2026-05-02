@@ -3,6 +3,7 @@ from __future__ import annotations
 try:  # pragma: no cover - exercised only when PySide6 is available
     from PySide6.QtCore import QObject, Property, Signal, Slot, QUrl, QTimer
     from PySide6.QtGui import QGuiApplication
+    from PySide6.QtWidgets import QApplication
     from PySide6.QtQml import QQmlApplicationEngine
     from PySide6.QtQuickControls2 import QQuickStyle
 
@@ -84,6 +85,8 @@ except ImportError:  # pragma: no cover - fallback for non-UI test environments
 
         def quit(self) -> None:
             return None
+
+    QApplication = QGuiApplication  # stub alias for non-UI environments
 
     class QQmlApplicationEngine:
         def __init__(self):

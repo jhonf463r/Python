@@ -329,7 +329,7 @@ from iabv_v15.services.training.training_orchestrator import TrainingOrchestrato
 from iabv_v15.ui.controllers.main_window_bridge import MainWindowBridge
 from iabv_v15.ui.controllers.navigation_controller import NavigationController
 from iabv_v15.ui.controllers.theme_controller import ThemeController
-from iabv_v15.ui.qt import PYSIDE_AVAILABLE, QGuiApplication, QQmlApplicationEngine, QQuickStyle, QTimer, QUrl
+from iabv_v15.ui.qt import PYSIDE_AVAILABLE, QApplication, QGuiApplication, QQmlApplicationEngine, QQuickStyle, QTimer, QUrl
 from iabv_v15.ui.splash_controller import SplashController
 from iabv_v15.infra.startup_timeline import (
     configure_global_timeline,
@@ -2232,7 +2232,7 @@ class AppBootstrap:
         if self.navigation_controller is not None:
             return
         if PYSIDE_AVAILABLE and QGuiApplication.instance() is None:
-            self._ui_app = QGuiApplication(sys.argv)
+            self._ui_app = QApplication(sys.argv)
         self.navigation_controller = NavigationController()
         self.theme_controller = ThemeController(self.theme)
         self.main_window_bridge = MainWindowBridge(self.config.app_name, self.config.workspace_root)
@@ -2626,7 +2626,7 @@ class AppBootstrap:
 
         os.environ['QT_QUICK_CONTROLS_STYLE'] = 'Basic'
         QQuickStyle.setStyle('Basic')
-        app = QGuiApplication.instance() or QGuiApplication(sys.argv)
+        app = QGuiApplication.instance() or QApplication(sys.argv)
 
         splash = getattr(self, '_splash', None)
 
@@ -3254,7 +3254,7 @@ class AppBootstrap:
                 os.environ.setdefault('QT_QUICK_CONTROLS_STYLE', 'Basic')
                 QQuickStyle.setStyle('Basic')
                 self._timeline.mark('qt_style_set')
-                splash_app = QGuiApplication.instance() or QGuiApplication(sys.argv)
+                splash_app = QGuiApplication.instance() or QApplication(sys.argv)
                 self._timeline.mark('qt_app_created')
                 self._splash = SplashController(
                     workspace_dir=self.config.workspace_root,
