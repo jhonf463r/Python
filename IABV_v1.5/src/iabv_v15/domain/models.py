@@ -2659,6 +2659,7 @@ class ControlMasterDigest(BaseModel):
     recent_decisions_brief: list[str] = Field(default_factory=list)
     unresolved: list[str] = Field(default_factory=list)
     tests_state_brief: str = ""
+    autonomy_metrics_brief: str = ""
     generated_at_utc: datetime = Field(default_factory=utc_now)
     source_state_id: str = ""
 

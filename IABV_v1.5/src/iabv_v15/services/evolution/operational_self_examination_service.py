@@ -795,6 +795,18 @@ class OperationalSelfExaminationService:
         # and emit structured findings that map to pending tasks.
         findings.extend(self._windows_integration_findings())
 
+        # UniversalAutonomyIndex: calculate composite autonomy metrics from
+        # data already accumulated in ExperimentLab, TaskOutcomeRecorder,
+        # DecisionAuditTrail and WorldModel.  Produces a single finding
+        # with AutonomyScore, ResilienceScore, CalibrationError, BlindSpotRatio.
+        findings.extend(self._universal_autonomy_index_findings(
+            recent_runs=recent_runs,
+            adaptive_sessions=adaptive_sessions,
+            experiment_runs=experiment_runs,
+            world=world,
+            findings_so_far=findings,
+        ))
+
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -6392,6 +6404,329 @@ class OperationalSelfExaminationService:
                     'capability_id': cap.capability_id,
                     'status': cap.status,
                     'pending_task_status': 'PENDING',
+                },
+            ))
+
+        return findings
+
+    # ------------------------------------------------------------------
+    # UniversalAutonomyIndex (Fase 7)
+    # ------------------------------------------------------------------
+
+    def _universal_autonomy_index_findings(
+        self,
+        *,
+        recent_runs: list[RunRecord],
+        adaptive_sessions: list[Any],
+        experiment_runs: list[ExperimentRun],
+        world: WorldModelSnapshot,
+        findings_so_far: list[SelfExaminationFinding],
+    ) -> list[SelfExaminationFinding]:
+        """Calculate composite autonomy metrics and emit a summary finding.
+
+        Computes four scores from data already present in ExperimentLab,
+        TaskOutcomeRecorder, DecisionAuditTrail and WorldModel:
+
+        * **AutonomyScore** — weighted blend of capability coverage, handoff
+          rate, unresolved ratio, permission request rate, resume success rate.
+        * **ResilienceScore** — fallback chain coverage, worker diversity,
+          checkpoint coverage.
+        * **CalibrationError** — mean |estimated_confidence − actual_success|.
+        * **BlindSpotRatio** — unverified findings / total findings.
+
+        If there is insufficient data (< 3 runs) the method returns an
+        UNRESOLVED finding instead of guessing.
+        """
+        findings: list[SelfExaminationFinding] = []
+
+        total_runs = len(recent_runs)
+        total_experiments = len(experiment_runs)
+        total_sessions = len(adaptive_sessions)
+
+        if total_runs < 3 and total_experiments < 3 and total_sessions < 3:
+            findings.append(SelfExaminationFinding(
+                category='autonomy_index_insufficient_data',
+                title='UniversalAutonomyIndex: datos insuficientes',
+                summary=(
+                    f'Solo hay {total_runs} runs, {total_experiments} experimentos '
+                    f'y {total_sessions} sesiones adaptivas. Se necesitan al menos '
+                    f'3 en algun eje para calcular metricas confiables.'
+                ),
+                severity=IssueSeverity.LOW,
+                confidence=0.95,
+                recommendation=(
+                    'Ejecutar mas tareas para acumular datos de rendimiento. '
+                    'Las metricas se calcularan automaticamente cuando haya '
+                    'suficiente evidencia.'
+                ),
+                source_refs=['OperationalSelfExaminationService._universal_autonomy_index_findings'],
+                status='unresolved',
+                unresolved_fields=['autonomy_score', 'resilience_score',
+                                   'calibration_error', 'blind_spot_ratio'],
+                metadata={'total_runs': total_runs,
+                          'total_experiments': total_experiments,
+                          'total_sessions': total_sessions},
+            ))
+            return findings
+
+        # -- AutonomyScore components --
+
+        # 1. capability_coverage: successful runs / total runs
+        successful_runs = sum(
+            1 for r in recent_runs if r.status == RunStatus.SUCCESS
+        )
+        capability_coverage = (
+            successful_runs / total_runs if total_runs > 0 else 0.0
+        )
+
+        # 2. handoff_required_rate: sessions that needed human intervention
+        handoff_count = 0
+        for sess in adaptive_sessions:
+            status = getattr(sess, 'status', None)
+            if status is None and isinstance(sess, dict):
+                status = sess.get('status', '')
+            status_str = str(status.value if hasattr(status, 'value') else status)
+            if status_str in ('waiting_approval', 'need_info', 'aborted'):
+                handoff_count += 1
+        handoff_required_rate = (
+            handoff_count / total_sessions if total_sessions > 0 else 0.0
+        )
+
+        # 3. unresolved_ratio: from WorldModel + current findings
+        total_fields = max(len(world.tool_live_status) + len(world.permission_gates), 1)
+        unresolved_count = len(world.unresolved_fields)
+        unresolved_ratio = unresolved_count / total_fields
+
+        # 4. permission_request_rate: permission gates as fraction of actions
+        total_gates = len(world.permission_gates)
+        total_actions = max(total_runs + total_sessions, 1)
+        permission_request_rate = min(total_gates / total_actions, 1.0)
+
+        # 5. resume_success_rate: sessions resumed vs interrupted
+        interrupted_count = 0
+        resumed_count = 0
+        for sess in adaptive_sessions:
+            md = getattr(sess, 'metadata', {})
+            if isinstance(sess, dict):
+                md = sess.get('metadata', {})
+            if md.get('resumed_from') or md.get('resume_hint_id'):
+                resumed_count += 1
+            status = getattr(sess, 'status', None)
+            if status is None and isinstance(sess, dict):
+                status = sess.get('status', '')
+            status_str = str(status.value if hasattr(status, 'value') else status)
+            if status_str in ('aborted', 'failed'):
+                interrupted_count += 1
+        resume_success_rate = (
+            resumed_count / max(interrupted_count, 1)
+            if interrupted_count > 0 else 1.0
+        )
+        resume_success_rate = min(resume_success_rate, 1.0)
+
+        autonomy_score = (
+            0.30 * capability_coverage
+            + 0.25 * (1 - handoff_required_rate)
+            + 0.20 * (1 - unresolved_ratio)
+            + 0.15 * (1 - permission_request_rate)
+            + 0.10 * resume_success_rate
+        )
+
+        # -- ResilienceScore components --
+
+        # fallback_chain_coverage: providers with fallbacks
+        fallback_count = 0
+        tool_count = max(len(world.tool_live_status), 1)
+        for tool in world.tool_live_status:
+            if getattr(tool, 'metadata', None):
+                meta = tool.metadata if isinstance(tool.metadata, dict) else {}
+                if meta.get('fallback_available') or meta.get('fallback_provider'):
+                    fallback_count += 1
+        fallback_chain_coverage = fallback_count / tool_count
+
+        # worker_diversity: unique assistant_kind values used in experiments
+        unique_assistants: set[str] = set()
+        for exp in experiment_runs:
+            if exp.assistant_kind:
+                unique_assistants.add(exp.assistant_kind)
+        worker_diversity = min(len(unique_assistants) / max(tool_count, 3), 1.0)
+
+        # checkpoint_coverage: sessions with resume hints / total sessions
+        sessions_with_checkpoint = 0
+        for sess in adaptive_sessions:
+            md = getattr(sess, 'metadata', {})
+            if isinstance(sess, dict):
+                md = sess.get('metadata', {})
+            if md.get('resume_hint_id') or md.get('checkpoint_saved'):
+                sessions_with_checkpoint += 1
+        checkpoint_coverage = (
+            sessions_with_checkpoint / total_sessions
+            if total_sessions > 0 else 0.0
+        )
+
+        resilience_score = (
+            0.35 * fallback_chain_coverage
+            + 0.35 * worker_diversity
+            + 0.30 * checkpoint_coverage
+        )
+
+        # -- CalibrationError --
+        # mean |estimated_confidence - actual_success| per experiment
+        calibration_diffs: list[float] = []
+        for exp in experiment_runs:
+            # ExperimentMetric uses ``precision`` as the estimated score;
+            # metadata may carry an explicit ``confidence`` override.
+            confidence = 0.0
+            if exp.metadata:
+                confidence = float(exp.metadata.get('confidence', 0.0))
+            if confidence <= 0 and exp.metrics:
+                confidence = exp.metrics.precision
+            actual = 1.0 if exp.success else 0.0
+            if confidence > 0:
+                calibration_diffs.append(abs(confidence - actual))
+        calibration_error = (
+            sum(calibration_diffs) / len(calibration_diffs)
+            if calibration_diffs else 0.0
+        )
+
+        # -- BlindSpotRatio --
+        total_findings = max(len(findings_so_far), 1)
+        unverified_findings = sum(
+            1 for f in findings_so_far
+            if f.status in ('observed', 'unresolved')
+               and f.confidence < 0.7
+        )
+        blind_spot_ratio = unverified_findings / total_findings
+
+        # -- Determine overall severity --
+        if autonomy_score >= 0.80 and resilience_score >= 0.75:
+            severity = IssueSeverity.LOW
+            verdict = 'SALUDABLE'
+        elif autonomy_score >= 0.60:
+            severity = IssueSeverity.MEDIUM
+            verdict = 'PARCIAL'
+        else:
+            severity = IssueSeverity.HIGH
+            verdict = 'INSUFICIENTE'
+
+        metrics = {
+            'autonomy_score': round(autonomy_score, 3),
+            'resilience_score': round(resilience_score, 3),
+            'calibration_error': round(calibration_error, 3),
+            'blind_spot_ratio': round(blind_spot_ratio, 3),
+            'verdict': verdict,
+            'components': {
+                'capability_coverage': round(capability_coverage, 3),
+                'handoff_required_rate': round(handoff_required_rate, 3),
+                'unresolved_ratio': round(unresolved_ratio, 3),
+                'permission_request_rate': round(permission_request_rate, 3),
+                'resume_success_rate': round(resume_success_rate, 3),
+                'fallback_chain_coverage': round(fallback_chain_coverage, 3),
+                'worker_diversity': round(worker_diversity, 3),
+                'checkpoint_coverage': round(checkpoint_coverage, 3),
+            },
+            'sample_sizes': {
+                'runs': total_runs,
+                'experiments': total_experiments,
+                'sessions': total_sessions,
+                'calibration_samples': len(calibration_diffs),
+            },
+        }
+
+        # Build recommendation based on weakest component
+        weakest_component = ''
+        weakest_value = 1.0
+        for comp_name, comp_val in metrics['components'].items():
+            effective = comp_val
+            if comp_name in ('handoff_required_rate', 'unresolved_ratio',
+                             'permission_request_rate'):
+                effective = 1 - comp_val
+            if effective < weakest_value:
+                weakest_value = effective
+                weakest_component = comp_name
+
+        recommendation_map = {
+            'capability_coverage': (
+                'Mejorar tasa de exito de tareas. Revisar rutas que fallan '
+                'frecuentemente en ExperimentLab y rotar a proveedores mas confiables.'
+            ),
+            'handoff_required_rate': (
+                'Reducir intervenciones humanas. Verificar que AutonomyGovernancePolicy '
+                'no bloquee rutas innecesariamente y que los permisos esten configurados.'
+            ),
+            'unresolved_ratio': (
+                'Resolver campos UNRESOLVED en WorldModel. Ejecutar escaneo de '
+                'cuentas y verificar estado de herramientas externas.'
+            ),
+            'permission_request_rate': (
+                'Reducir permisos pendientes. Configurar permission_gates para '
+                'herramientas de uso frecuente.'
+            ),
+            'resume_success_rate': (
+                'Mejorar reanudacion de tareas interrumpidas. Verificar que '
+                'AutonomyCycleService.save_resume_hint() se llame correctamente.'
+            ),
+            'fallback_chain_coverage': (
+                'Agregar proveedores de respaldo. Configurar fallback_provider '
+                'para herramientas criticas en el WorldModel.'
+            ),
+            'worker_diversity': (
+                'Diversificar asistentes utilizados. Probar rutas alternativas '
+                'en ExperimentLab para reducir dependencia de un solo proveedor.'
+            ),
+            'checkpoint_coverage': (
+                'Mejorar checkpointing de sesiones. Verificar que las tareas '
+                'largas guarden resume hints antes de completar.'
+            ),
+        }
+
+        recommendation = recommendation_map.get(weakest_component, (
+            'Revisar todas las metricas del indice de autonomia para '
+            'identificar areas de mejora prioritarias.'
+        ))
+
+        findings.append(SelfExaminationFinding(
+            category='universal_autonomy_index',
+            title=f'UniversalAutonomyIndex: {verdict} (autonomia={autonomy_score:.0%})',
+            summary=(
+                f'AutonomyScore={autonomy_score:.0%} (objetivo >80%), '
+                f'ResilienceScore={resilience_score:.0%} (objetivo >75%), '
+                f'CalibrationError={calibration_error:.2f} (objetivo <0.10), '
+                f'BlindSpotRatio={blind_spot_ratio:.0%} (objetivo <30%). '
+                f'Componente mas debil: {weakest_component} ({weakest_value:.0%}).'
+            ),
+            severity=severity,
+            confidence=0.88,
+            recommendation=recommendation,
+            source_refs=[
+                'ExperimentLab', 'TaskOutcomeRecorder',
+                'DecisionAuditTrail', 'WorldModelSnapshot',
+                'PlatformPendingQueue',
+            ],
+            metadata=metrics,
+        ))
+
+        # Additional finding if calibration error is too high
+        if calibration_error > 0.10 and len(calibration_diffs) >= 5:
+            findings.append(SelfExaminationFinding(
+                category='autonomy_calibration_drift',
+                title=f'Calibracion desviada: error={calibration_error:.2f}',
+                summary=(
+                    f'La confianza estimada difiere del resultado real por '
+                    f'{calibration_error:.2f} en promedio sobre '
+                    f'{len(calibration_diffs)} experimentos. El sistema '
+                    f'sobreestima o subestima sus capacidades.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.82,
+                recommendation=(
+                    'Revisar el AdaptiveWeightLayer para ajustar los pesos '
+                    'de confianza. Los experimentos recientes muestran que '
+                    'las predicciones no coinciden con los resultados reales.'
+                ),
+                source_refs=['ExperimentLab', 'AdaptiveWeightLayer'],
+                metadata={
+                    'calibration_error': round(calibration_error, 3),
+                    'sample_count': len(calibration_diffs),
                 },
             ))
 
