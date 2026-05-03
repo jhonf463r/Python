@@ -306,6 +306,124 @@ def test_centro_vivo_bootstrap_wires_viewmodel():
         shutil.rmtree(workspace, ignore_errors=True)
 
 
+# ------------------------------------------------------------------
+# Fallback feedback tests
+# ------------------------------------------------------------------
+
+def test_fallback_used_flag_surfaces_in_queue():
+    """When session.metadata.worker_gate has fallback_used=True, queue item
+    exposes it so the QML badge can render."""
+    sessions = [
+        AdaptiveSession(
+            session_id='fb1',
+            user_goal='Send query to ChatGPT',
+            intent=TaskIntent(intent_key='consult_external'),
+            status=AdaptiveSessionStatus.COMPLETED,
+            metadata={
+                'worker_gate': {
+                    'usable': True,
+                    'fallback_used': True,
+                    'account_selection_source': 'user_approved_fallback',
+                    'top_worker': {'tool': 'chatgpt', 'email': 'b@t.com'},
+                    'recommended_account': {'tool': 'chatgpt', 'email': 'a@t.com'},
+                    'approved_account': {'tool': 'chatgpt', 'email': 'a@t.com'},
+                    'available_count': 2,
+                },
+            },
+        ),
+    ]
+    repo = FakeAdaptiveSessionRepository(sessions)
+    vm = CentroVivoViewModel(adaptive_session_repository=repo)
+
+    queue = vm.get_orchestrator_queue()
+    assert len(queue) == 1
+    item = queue[0]
+    assert item['fallback_used'] is True
+    assert item['account_selection_source'] == 'user_approved_fallback'
+
+
+def test_no_fallback_when_gate_normal():
+    """When worker_gate has fallback_used=False, flag is False in queue item."""
+    sessions = [
+        AdaptiveSession(
+            session_id='nf1',
+            user_goal='Local analysis',
+            intent=TaskIntent(intent_key='research.local'),
+            status=AdaptiveSessionStatus.COMPLETED,
+            metadata={
+                'worker_gate': {
+                    'usable': True,
+                    'fallback_used': False,
+                    'account_selection_source': 'auto_ranked',
+                    'top_worker': {'tool': 'chatgpt', 'email': 'a@t.com'},
+                    'available_count': 1,
+                },
+            },
+        ),
+    ]
+    repo = FakeAdaptiveSessionRepository(sessions)
+    vm = CentroVivoViewModel(adaptive_session_repository=repo)
+
+    item = vm.get_orchestrator_queue()[0]
+    assert item['fallback_used'] is False
+    assert item['account_selection_source'] == 'auto_ranked'
+
+
+def test_fallback_flag_absent_when_no_gate():
+    """Sessions without worker_gate metadata default to fallback_used=False."""
+    sessions = [
+        AdaptiveSession(
+            session_id='ng1',
+            user_goal='Simple task',
+            intent=TaskIntent(intent_key='project.evolution'),
+            status=AdaptiveSessionStatus.PLANNED,
+        ),
+    ]
+    repo = FakeAdaptiveSessionRepository(sessions)
+    vm = CentroVivoViewModel(adaptive_session_repository=repo)
+
+    item = vm.get_orchestrator_queue()[0]
+    assert item['fallback_used'] is False
+    assert item['account_selection_source'] == ''
+
+
+def test_fallback_flag_does_not_alter_ato_decision():
+    """The ViewModel only READS worker_gate — it must never modify it.
+
+    Verifying that exposing fallback_used to the UI is purely observational:
+    the session object itself is unchanged after ViewModel processes it.
+    """
+    original_metadata = {
+        'worker_gate': {
+            'usable': True,
+            'fallback_used': True,
+            'account_selection_source': 'user_approved_fallback',
+            'top_worker': {'tool': 'chatgpt', 'email': 'b@t.com'},
+            'available_count': 2,
+        },
+    }
+    sessions = [
+        AdaptiveSession(
+            session_id='ato1',
+            user_goal='External query',
+            intent=TaskIntent(intent_key='consult_external'),
+            status=AdaptiveSessionStatus.COMPLETED,
+            metadata=dict(original_metadata),
+        ),
+    ]
+    repo = FakeAdaptiveSessionRepository(sessions)
+    vm = CentroVivoViewModel(adaptive_session_repository=repo)
+
+    # Verify view data is correct
+    item = vm.get_orchestrator_queue()[0]
+    assert item['fallback_used'] is True
+
+    # Verify session object was NOT mutated by ViewModel
+    assert sessions[0].metadata == original_metadata
+    assert sessions[0].metadata['worker_gate']['fallback_used'] is True
+    assert sessions[0].metadata['worker_gate']['account_selection_source'] == 'user_approved_fallback'
+
+
 def test_centro_vivo_navigation_route_exists():
     """NavigationController includes centro_vivo route."""
     from iabv_v15.ui.controllers.navigation_controller import NavigationController

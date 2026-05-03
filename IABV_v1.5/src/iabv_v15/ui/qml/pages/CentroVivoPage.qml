@@ -204,6 +204,28 @@ Item {
                                         font.family: bodyFontFamily
                                         font.pixelSize: 11
                                     }
+                                    RowLayout {
+                                        visible: modelData.fallback_used === true
+                                        spacing: 6
+                                        Rectangle {
+                                            width: 8; height: 8; radius: 4
+                                            color: accentAmber
+                                        }
+                                        Label {
+                                            text: {
+                                                var src = modelData.account_selection_source || ""
+                                                if (src === "user_approved_fallback")
+                                                    return "Fallback: cuenta aprobada no disponible, se uso ranking automatico"
+                                                return "Fallback: cuenta aprobada no disponible"
+                                            }
+                                            color: accentAmber
+                                            font.family: bodyFontFamily
+                                            font.pixelSize: 11
+                                            font.italic: true
+                                            wrapMode: Label.WordWrap
+                                            Layout.fillWidth: true
+                                        }
+                                    }
                                 }
                             }
                         }

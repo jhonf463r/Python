@@ -154,6 +154,10 @@ class CentroVivoViewModel(QObject):
         items: list[dict[str, Any]] = []
         for session in sessions:
             dumped = session.model_dump(mode='json') if hasattr(session, 'model_dump') else {}
+            metadata = dumped.get('metadata') or {}
+            worker_gate = metadata.get('worker_gate') or {}
+            fallback_used = bool(worker_gate.get('fallback_used', False))
+            selection_source = str(worker_gate.get('account_selection_source') or '')
             items.append({
                 'session_id': dumped.get('session_id', ''),
                 'user_goal': dumped.get('user_goal', ''),
@@ -161,6 +165,8 @@ class CentroVivoViewModel(QObject):
                 'chosen_pack': dumped.get('chosen_pack_title', '') or dumped.get('chosen_pack_id', ''),
                 'created_at': dumped.get('created_at_utc', ''),
                 'updated_at': dumped.get('updated_at_utc', ''),
+                'fallback_used': fallback_used,
+                'account_selection_source': selection_source,
             })
         return items
 
