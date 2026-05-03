@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
@@ -67,6 +68,7 @@ class PortableContextService:
         self.decision_audit_trail: Any | None = None
         self.code_audit_trail: Any | None = None
         self.boot_profile_store: Any | None = None
+        self.experiment_lab: Any | None = None
         self._current_package: PortableContextPackage | None = None
         self._account_resource_cache: dict[str, Any] | None = None
         self._account_resource_cached_at: float = 0.0
@@ -112,6 +114,12 @@ class PortableContextService:
         recommendations = self._recommendation_items(task_context=task_context)
         adaptive_learning = self._adaptive_learning_summary(task_context=task_context, recommendations=recommendations)
         learned_patterns = self._learned_patterns(task_context=task_context, recommendations=recommendations)
+        try:
+            auto_patterns = self.derive_learned_patterns()
+            if auto_patterns:
+                learned_patterns = list(learned_patterns) + auto_patterns
+        except Exception:
+            logging.getLogger(__name__).warning('Could not derive auto learned patterns', exc_info=True)
         tool_discovery = self._tool_discovery_snapshot()
         tool_evolution = self._tool_evolution_snapshot()
         tool_evolution_decisions = self._tool_evolution_decision_snapshot()
@@ -1709,6 +1717,34 @@ class PortableContextService:
                 }
             )
         return items
+
+    # ------------------------------------------------------------------
+    # Auto-derived learned patterns from ExperimentLab (Brecha 3.1)
+    # ------------------------------------------------------------------
+
+    def derive_learned_patterns(self) -> list[dict[str, Any]]:
+        """Convert training corpus into learned_patterns for portable context.
+
+        Calls ``ExperimentLab.generate_training_corpus()`` and formats each
+        example as a learned_pattern compatible with ``StrategySelector``.
+        """
+        lab = self.experiment_lab
+        if lab is None or not hasattr(lab, 'generate_training_corpus'):
+            return []
+        corpus = lab.generate_training_corpus()
+        patterns: list[dict[str, Any]] = []
+        for example in corpus:
+            patterns.append({
+                'pattern_id': f"auto_{example['task_type']}_{example['recommended_assistant']}",
+                'task_type': example['task_type'],
+                'recommended_route': example['recommended_route'],
+                'recommended_assistant_kind': example['recommended_assistant'],
+                'confidence': example['confidence'],
+                'success_count': example['sample_size'],
+                'source': 'experiment_lab_corpus',
+                'derived_at_utc': utc_now().isoformat(),
+            })
+        return patterns
 
     def _pending_items(self) -> list[dict[str, Any]]:
         repository = self.pending_issue_repository
