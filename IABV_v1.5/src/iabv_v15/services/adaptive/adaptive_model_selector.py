@@ -106,6 +106,7 @@ class AdaptiveModelSelector:
         *,
         task_type: str = 'general',
         exclude: list[str] | None = None,
+        world_model: Any | None = None,
     ) -> dict[str, Any]:
         """Select the best available provider for the given task type.
 
@@ -116,7 +117,7 @@ class AdaptiveModelSelector:
         - fallback_chain: ordered list of providers to try
         """
         exclude_set = set(exclude or [])
-        scores = self._score_all_providers(task_type, exclude_set)
+        scores = self._score_all_providers(task_type, exclude_set, world_model=world_model)
 
         # Sort by total_score descending
         ranked = sorted(scores, key=lambda s: s.total_score, reverse=True)
@@ -309,10 +310,88 @@ class AdaptiveModelSelector:
     # Internal: scoring logic
     # ------------------------------------------------------------------
 
+    # ------------------------------------------------------------------
+    # WorldModel-aware checks for web and quota
+    # ------------------------------------------------------------------
+
+    def _is_web_provider_allowed(
+        self,
+        provider_id: str,
+        world_model: Any | None,
+    ) -> tuple[bool, str]:
+        """Check if a web provider can be used based on WorldModel gates.
+
+        Returns (allowed, reason).
+        """
+        if world_model is None:
+            return False, 'no_world_model'
+
+        gates = getattr(world_model, 'permission_gates', []) or []
+        kind_map = {
+            'chatgpt_web': 'chatgpt',
+            'claude_web': 'claude',
+            'gemini_web': 'gemini',
+        }
+        assistant_kind = kind_map.get(provider_id, provider_id.replace('_web', ''))
+
+        matching_gate = None
+        for gate in gates:
+            if getattr(gate, 'assistant_kind', '') == assistant_kind:
+                matching_gate = gate
+                break
+
+        if matching_gate is None:
+            return False, 'no_permission_gate'
+        if not getattr(matching_gate, 'granted', False):
+            return False, 'permission_not_granted'
+
+        return True, 'permitted'
+
+    def _is_quota_available(
+        self,
+        provider_id: str,
+        world_model: Any | None,
+    ) -> tuple[bool, str]:
+        """Check if quota is available for this provider via worker_pool_snapshot.
+
+        Returns (available, reason).
+        """
+        if world_model is None:
+            return True, 'no_world_model_assume_available'
+
+        pool = getattr(world_model, 'worker_pool_snapshot', {}) or {}
+        tools = pool.get('tools', {})
+
+        tool_map = {
+            'gemini': 'gemini',
+            'groq': 'groq',
+            'chatgpt_web': 'chatgpt',
+            'claude_web': 'claude',
+            'gemini_web': 'gemini',
+            'openrouter': 'openrouter',
+            'together': 'together',
+        }
+        tool_name = tool_map.get(provider_id, provider_id)
+        tool_info = tools.get(tool_name, {})
+
+        if not tool_info:
+            return True, 'no_quota_data_assume_available'
+
+        usable = tool_info.get('usable', True)
+        if not usable:
+            return False, 'quota_exhausted'
+        return True, 'quota_available'
+
+    # ------------------------------------------------------------------
+    # Internal: scoring logic
+    # ------------------------------------------------------------------
+
     def _score_all_providers(
         self,
         task_type: str,
         exclude: set[str],
+        *,
+        world_model: Any | None = None,
     ) -> list[ProviderScore]:
         """Score all known providers based on recent performance."""
         recent = self._read_recent_performance()
@@ -324,16 +403,30 @@ class AdaptiveModelSelector:
             pid = entry.get('provider_id', '')
             by_provider.setdefault(pid, []).append(entry)
 
-        # All known providers (cloud + local)
-        all_providers = ['gemini', 'groq', 'openrouter', 'together', 'ollama_local']
+        # All known providers (API cloud + web + local)
+        all_providers = [
+            'gemini', 'groq', 'openrouter', 'together',     # API cloud
+            'chatgpt_web', 'claude_web', 'gemini_web',       # Web (browser)
+            'ollama_local',                                    # Local
+        ]
         scores: list[ProviderScore] = []
 
         for pid in all_providers:
             ps = ProviderScore(pid)
             entries = by_provider.get(pid, [])
 
-            # Check if key is configured (for cloud providers)
-            if pid != 'ollama_local':
+            # --- Web providers: check permission gate first ---
+            if pid.endswith('_web'):
+                allowed, reason = self._is_web_provider_allowed(pid, world_model)
+                if not allowed:
+                    ps.available = False
+                    ps.reason = reason
+                    ps.total_score = 0.0
+                    scores.append(ps)
+                    continue
+
+            # --- API cloud providers: check API key ---
+            elif pid != 'ollama_local':
                 env_map = {
                     'gemini': 'GEMINI_API_KEY',
                     'groq': 'GROQ_API_KEY',
@@ -348,7 +441,17 @@ class AdaptiveModelSelector:
                     scores.append(ps)
                     continue
 
-            # Check quota cooldown
+            # --- Quota check (all cloud/web, not local) ---
+            if pid != 'ollama_local':
+                quota_ok, quota_reason = self._is_quota_available(pid, world_model)
+                if not quota_ok:
+                    ps.available = False
+                    ps.reason = quota_reason
+                    ps.total_score = 0.0
+                    scores.append(ps)
+                    continue
+
+            # Check quota cooldown (in-memory, from record_result)
             cooldown_ts = self._quota_cooldowns.get(pid, 0.0)
             if cooldown_ts > 0 and (now_mono - cooldown_ts) < _QUOTA_COOLDOWN_SECONDS:
                 ps.quota_exhausted = True
@@ -373,10 +476,15 @@ class AdaptiveModelSelector:
             # Score components
             latency_score = max(0, 1.0 - (ps.avg_latency_ms / 20000.0))
             success_score = ps.success_rate
-            freshness_bonus = 0.1 if not entries else 0.0  # bonus for untried providers
+            freshness_bonus = 0.1 if not entries else 0.0
 
-            # Cloud providers get a base bonus (generally better quality)
-            cloud_bonus = 0.15 if pid != 'ollama_local' else 0.0
+            # Tiered cloud bonus: API > web > local
+            if pid.endswith('_web'):
+                cloud_bonus = 0.05
+            elif pid != 'ollama_local':
+                cloud_bonus = 0.15
+            else:
+                cloud_bonus = 0.0
 
             ps.total_score = round(
                 latency_score * 0.3
