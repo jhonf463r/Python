@@ -633,6 +633,7 @@ class WorldModelSnapshot(BaseModel):
     last_updated: datetime = Field(default_factory=utc_now)
     unresolved_fields: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    worker_pool_snapshot: dict[str, Any] = Field(default_factory=dict)
 
 
 class RouteDecision(BaseModel):
