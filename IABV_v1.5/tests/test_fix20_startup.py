@@ -110,12 +110,12 @@ class TestFix20Integration:
         assert WinClipboardBridge is not None
         assert WinToastBridge is not None
 
-    def test_bootstrap_has_early_splash_close_code(self):
-        """Verify bootstrap.py contains the early splash close logic."""
+    def test_bootstrap_has_lazy_vm_construction(self):
+        """Verify bootstrap.py contains lazy VM construction logic."""
         bootstrap_path = Path(__file__).resolve().parent.parent / 'src' / 'iabv_v15' / 'bootstrap.py'
         content = bootstrap_path.read_text(encoding='utf-8')
-        assert 'splash_early_close' in content
-        assert 'populate_ui_early_close' in content
+        assert '_ensure_vm_for_route' in content
+        assert '_build_all_lazy_vms' in content
 
     def test_bootstrap_has_yield_calls(self):
         """Verify bootstrap.py contains processEvents yield calls."""

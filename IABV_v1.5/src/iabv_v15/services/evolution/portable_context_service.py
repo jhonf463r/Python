@@ -622,22 +622,21 @@ class PortableContextService:
             recent_blockers.append({'phase': 'deferred_post_window', 'ms': deferred_ms})
 
         # False-ready detection: ``splash_set_ready`` honesto debe llegar
-        # *despues* de ``populate_ui_done`` y de ``shell_loader_ready``.
-        # Si el splash declaro ready antes que esos hitos (o sin que
-        # llegue ``shell_loader_ready`` antes del fallback), el arranque
-        # es deshonesto: la UI declara readiness sin que el shell real
-        # este disponible — exactamente el bug que la evidencia live
-        # del 2026-04-28 captura a 80s en Windows pythonw.
+        # *despues* de ``shell_loader_ready``.  With phased construction,
+        # ``populate_ui_done`` arrives much later (Phase 3 VMs are deferred)
+        # so splash closing before populate_ui_done is EXPECTED — not a bug.
+        # The check is: did the splash close before the shell was actually
+        # ready?  Or did the fallback fire instead of the honest signal?
         false_ready = False
         false_ready_reason: list[str] = []
         splash_ms = phase_to_ms.get('splash_set_ready')
         populate_done_ms = phase_to_ms.get('populate_ui_done')
         shell_ready_ms = phase_to_ms.get('shell_loader_ready')
         shell_ready_fallback_ms = phase_to_ms.get('shell_loader_ready_fallback')
-        if splash_ms is not None and populate_done_ms is not None:
-            if splash_ms < populate_done_ms:
+        if splash_ms is not None and shell_ready_ms is not None:
+            if splash_ms < shell_ready_ms:
                 false_ready = True
-                false_ready_reason.append('splash_set_ready_before_populate_ui_done')
+                false_ready_reason.append('splash_set_ready_before_shell_loader_ready')
         if splash_ms is not None and shell_ready_ms is None and shell_ready_fallback_ms is None:
             false_ready = True
             false_ready_reason.append('splash_set_ready_without_shell_loader_ready')

@@ -3,11 +3,14 @@
 import atexit
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+import logging
 from pathlib import Path
 import re
 import threading
 import uuid
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 def _generate_chat_session_id() -> str:
@@ -253,29 +256,51 @@ class ControlCenterViewModel(QObject):
             'governance_blocked': False,
             'governance_reason': None,
         }
+        self.taskResolved.connect(self._apply_task_result)
+        self.taskFailed.connect(self._apply_task_failure)
+        self.bridgeChatRequested.connect(self._dispatch_bridge_chat)
+        self._seed_messages()
+        # Defer heavy work to keep constructor fast during lazy
+        # prebuild.  All data loading runs on _bg_pool via
+        # _deferred_initial_refresh.  Only lightweight signal
+        # connections happen on main thread via _deferred_heavy_init.
+        if defer_initial_refresh:
+            if not self._working and not self._adaptive_session_id:
+                self._busy_label = self._startup_readiness_text(validating_local_stack=True)
+            QTimer.singleShot(0, self._deferred_heavy_init)
+            QTimer.singleShot(250, self._deferred_initial_refresh)
+            QTimer.singleShot(900, lambda: self._refresh_provider_health(announce=False))
+        else:
+            self._deferred_heavy_init()
+            self._refresh_all_data()
+            self._refresh_provider_health(announce=False)
+
+    def _deferred_heavy_init(self) -> None:
+        """Attach lightweight listeners that need main-thread affinity.
+
+        Called via QTimer.singleShot(0) when defer_initial_refresh=True.
+        Heavy work (_seed_development_packet, DB queries, evolution
+        snapshots) runs on _bg_pool in _deferred_initial_refresh —
+        NOT here — so the event loop stays free for lazy VM prebuild.
+        """
         if self.mcp_bridge_service is not None:
             try:
                 self.mcp_bridge_service.attach_listener(self._on_mcp_bridge_status)
             except Exception:
                 pass
 
-        self.taskResolved.connect(self._apply_task_result)
-        self.taskFailed.connect(self._apply_task_failure)
-        self.bridgeChatRequested.connect(self._dispatch_bridge_chat)
-        self._seed_messages()
-        self._seed_development_packet()
-        if defer_initial_refresh:
-            if not self._working and not self._adaptive_session_id:
-                self._busy_label = self._startup_readiness_text(validating_local_stack=True)
-            QTimer.singleShot(250, self.refresh)
-            QTimer.singleShot(900, lambda: self._refresh_provider_health(announce=False))
-        else:
-            self.refresh()
-            self._refresh_provider_health(announce=False)
-
     def _shutdown_bg_pool(self) -> None:
         """Gracefully shutdown the background thread pool on process exit."""
         self._bg_pool.shutdown(wait=False)
+
+    def _deferred_initial_refresh(self) -> None:
+        """Run initial data load on background thread to keep main thread free.
+
+        Delegates to ``_refresh_all_data`` on ``_bg_pool`` so the event
+        loop stays free for lazy VM prebuild.  This eliminates the code
+        duplication that existed between refresh() and this method.
+        """
+        self._bg_pool.submit(self._refresh_all_data)
 
     def _placeholder_provider_cards(self) -> list[dict[str, Any]]:
         return [
@@ -4146,8 +4171,8 @@ class ControlCenterViewModel(QObject):
     def get_can_abort(self) -> bool:
         return self._adaptive_action_buttons['abort'] and not self._working
 
-    @Slot()
-    def refresh(self) -> None:
+    def _refresh_all_data(self) -> None:
+        """Core refresh logic.  Can run on any thread."""
         self._pbt_state = self.pbt_service.load_state()
         self._pbt_candidates = self._pbt_state.get('candidates', [])[:4]
         self._last_goal_context = self._goal_context_from_repository(self._current_site_id() or None)
@@ -4162,6 +4187,26 @@ class ControlCenterViewModel(QObject):
         self._refresh_autonomy_dock()
         self._refresh_control_master()
         self.dataChanged.emit()
+
+    @Slot()
+    def refresh(self) -> None:
+        """Synchronous refresh (used by tests and programmatic callers).
+
+        For the startup path, ``_deferred_initial_refresh`` already runs
+        equivalent work on ``_bg_pool``.  This method stays synchronous
+        for backward compatibility with the test suite.
+        """
+        self._refresh_all_data()
+
+    @Slot()
+    def refreshAsync(self) -> None:
+        """Non-blocking refresh — runs heavy work on ``_bg_pool``.
+
+        Exposed as a QML Slot so the UI button doesn't freeze the event
+        loop.  The synchronous ``refresh()`` is still available for
+        programmatic callers that need immediate results.
+        """
+        self._bg_pool.submit(self._refresh_all_data)
 
     def _refresh_autonomy_dock(self) -> None:
         projector = self.autonomy_activity_projector
