@@ -141,6 +141,7 @@ class AdaptiveTaskOrchestrator:
         autonomy_governance_policy: AutonomyGovernancePolicy | None = None,
         synaptic_router: Any | None = None,
         experiment_lab: Any | None = None,
+        autonomy_cycle_service: Any | None = None,
     ) -> None:
         self.role_router = role_router
         self.adaptive_session_repository = adaptive_session_repository
@@ -165,6 +166,7 @@ class AdaptiveTaskOrchestrator:
         # ``ExperimentRun`` persistidos en su repositorio. Es puramente
         # descriptivo; nunca decide ruta operativa.
         self.experiment_lab = experiment_lab
+        self.autonomy_cycle_service = autonomy_cycle_service
         self.cloud_reasoning_planner: CloudReasoningPlannerService | None = None
         self.api_key_discovery_service: Any | None = None
         self.decision_audit_trail: Any | None = None
@@ -180,6 +182,19 @@ class AdaptiveTaskOrchestrator:
         self._pending_queue: list[dict[str, Any]] = []
         self._COGNITIVE_LOAD_THRESHOLD = 5
         self._processing_count: int = 0
+
+    def _load_resume_context(self) -> dict[str, Any]:
+        """Read startup_summary from AutonomyCycleService.
+
+        Returns actionable resume hints + pending tasks, or empty dict
+        if the service is not wired.
+        """
+        if self.autonomy_cycle_service is None:
+            return {}
+        try:
+            return self.autonomy_cycle_service.startup_summary()
+        except Exception:
+            return {}
 
     def _maybe_synaptic_decision(self, intent: TaskIntent | None) -> SynapticRoutingDecision | None:
         """Consulta ``SynapticRouter.decide`` si el intent es external-worthy.
@@ -1540,6 +1555,14 @@ class AdaptiveTaskOrchestrator:
                 gate=_gate,
                 user_goal=request.user_goal,
             )
+
+        if not session.metadata.get('_resume_loaded'):
+            _resume = self._load_resume_context()
+            if _resume.get('resume_hints'):
+                session.metadata['resume_context'] = _resume
+                session.metadata['has_resume_hints'] = True
+                session.metadata['resume_hint_count'] = len(_resume['resume_hints'])
+            session.metadata['_resume_loaded'] = True
 
         session.metadata['task_packet'] = self._build_task_packet(
             session=session,
@@ -3283,6 +3306,8 @@ class AdaptiveTaskOrchestrator:
                 'block_risky_action': bool(governance.get('block_risky_action')),
             },
             'unresolved': list(getattr(perception, 'unresolved_fields', []) or []) if perception is not None else [],
+            'resume_context': dict(session.metadata.get('resume_context') or {}),
+            'has_resume_hints': bool(session.metadata.get('has_resume_hints', False)),
         }
 
     @classmethod
