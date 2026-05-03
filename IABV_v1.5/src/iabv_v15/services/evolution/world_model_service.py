@@ -277,6 +277,7 @@ class WorldModelService:
                 focused=focused,
             ),
         }
+        worker_pool_snapshot = self._worker_pool_snapshot()
         return WorldModelSnapshot(
             active_windows=active_windows,
             focused_window=focused,
@@ -293,7 +294,64 @@ class WorldModelService:
             last_updated=utc_now(),
             unresolved_fields=unresolved_fields,
             metadata=metadata,
+            worker_pool_snapshot=worker_pool_snapshot,
         )
+
+    def _worker_pool_snapshot(self) -> dict[str, Any]:
+        """Build a summary of worker availability per tool for governance.
+
+        Uses ``estimate_available_workers`` from account_resource_scanner.
+        Returns ``{}`` on any failure — the world model must never break
+        because of a quota tracker error.
+        """
+        try:
+            from iabv_v15.services.account_resource_scanner import (
+                _FREE_TIER_LIMITS,
+                estimate_available_workers,
+            )
+            pool = estimate_available_workers()
+        except Exception:
+            return {}
+
+        tools_summary: dict[str, dict[str, Any]] = {}
+        known_tools = set(_FREE_TIER_LIMITS.keys())
+
+        by_tool = pool.get('by_tool', {})
+        exhausted_list = pool.get('exhausted', [])
+
+        exhausted_by_tool: dict[str, list[dict[str, Any]]] = {}
+        for w in exhausted_list:
+            exhausted_by_tool.setdefault(w['tool'], []).append(w)
+
+        for tool in known_tools:
+            available = by_tool.get(tool, [])
+            exhausted = exhausted_by_tool.get(tool, [])
+            total = len(available) + len(exhausted)
+            top_worker = None
+            if available:
+                best = available[0]
+                top_worker = {
+                    'email': best.get('email', ''),
+                    'score': best.get('remaining_messages', 0),
+                }
+            tools_summary[tool] = {
+                'available_accounts': len(available),
+                'exhausted_accounts': len(exhausted),
+                'total_accounts': total,
+                'usable': len(available) > 0,
+                'top_worker': top_worker,
+            }
+
+        usable_count = sum(1 for t in tools_summary.values() if t['usable'])
+        exhausted_count = sum(1 for t in tools_summary.values() if not t['usable'] and t['total_accounts'] > 0)
+        total_tools = len(tools_summary)
+
+        return {
+            'tools': tools_summary,
+            'total_usable_tools': usable_count,
+            'total_exhausted_tools': exhausted_count,
+            'summary': f'{usable_count}/{total_tools} tools usable',
+        }
 
     def _tool_live_status(
         self,
