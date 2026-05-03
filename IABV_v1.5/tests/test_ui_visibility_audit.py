@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import tempfile
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -347,3 +348,101 @@ class TestToastAuditAdapter:
         bridge = MagicMock(spec=[])  # no methods
         adapter = ToastAuditAdapter(audit_log, bridge)
         adapter.install()  # should not raise
+
+
+# ---------------------------------------------------------------------------
+# GAP C — WorldModelService._ui_audit_blocks tests
+# ---------------------------------------------------------------------------
+
+class TestWorldModelAuditBlocks:
+    """Tests that WorldModelService._ui_audit_blocks reads audit summary."""
+
+    def _make_service(self, audit_log: VisibilityAuditLog | None = None) -> Any:
+        from iabv_v15.services.evolution.world_model_service import WorldModelService
+        return WorldModelService(
+            workspace_root='/tmp/test-ws',
+            evolution_dir='/tmp/test-evo',
+            auto_start=False,
+            bootstrap_scan=False,
+            ui_visibility_audit_log=audit_log,
+        )
+
+    def test_no_audit_returns_empty(self) -> None:
+        svc = self._make_service(audit_log=None)
+        assert svc._ui_audit_blocks() == []
+
+    def test_unresolved_events_become_blocks(self, audit_log: VisibilityAuditLog) -> None:
+        audit_log.record('win32_popup_detected', source='watcher',
+                         title='Error - File not found',
+                         event_category=CAT_UNEXPECTED, unresolved=True)
+        svc = self._make_service(audit_log=audit_log)
+        blocks = svc._ui_audit_blocks()
+        assert any('ui_audit_unresolved' in b for b in blocks)
+
+    def test_file_not_found_becomes_block(self, audit_log: VisibilityAuditLog) -> None:
+        try:
+            raise FileNotFoundError(2, 'No such file', 'missing.exe')
+        except FileNotFoundError as e:
+            audit_log.record_file_not_found(e, source='test')
+        svc = self._make_service(audit_log=audit_log)
+        blocks = svc._ui_audit_blocks()
+        assert any('ui_audit_file_not_found' in b for b in blocks)
+
+    def test_unexpected_popups_become_block(self, audit_log: VisibilityAuditLog) -> None:
+        audit_log.record('win32_popup_detected', source='watcher',
+                         event_category=CAT_UNEXPECTED)
+        svc = self._make_service(audit_log=audit_log)
+        blocks = svc._ui_audit_blocks()
+        assert any('ui_audit_unexpected_popups' in b for b in blocks)
+
+    def test_clean_audit_no_blocks(self, audit_log: VisibilityAuditLog) -> None:
+        svc = self._make_service(audit_log=audit_log)
+        blocks = svc._ui_audit_blocks()
+        assert not any(b.startswith('ui_audit_') for b in blocks)
+
+
+# ---------------------------------------------------------------------------
+# GAP D — TaskContextAssembler._ui_visibility_snapshot tests
+# ---------------------------------------------------------------------------
+
+class TestTaskContextAssemblerVisibility:
+    """Tests that TaskContextAssembler._ui_visibility_snapshot reads audit."""
+
+    def _make_assembler(self, audit_log: VisibilityAuditLog | None = None) -> Any:
+        from iabv_v15.services.adaptive.task_context_assembler import TaskContextAssembler
+        return TaskContextAssembler(
+            episode_repository=MagicMock(),
+            knowledge_repository=MagicMock(),
+            run_repository=MagicMock(),
+            dossier_repository=MagicMock(),
+            hidden_incident_repository=MagicMock(),
+            site_policy_registry=MagicMock(),
+            capability_repository=MagicMock(),
+            adaptive_session_repository=MagicMock(),
+            ui_visibility_audit_log=audit_log,
+        )
+
+    def test_no_audit_returns_empty(self) -> None:
+        assembler = self._make_assembler(audit_log=None)
+        snapshot = assembler._ui_visibility_snapshot()
+        assert snapshot == {}
+
+    def test_returns_summary_fields(self, audit_log: VisibilityAuditLog) -> None:
+        audit_log.record(KIND_DIALOG_SHOWN, source='qml',
+                         event_category=CAT_INTENTIONAL)
+        audit_log.record('win32_popup', source='watcher',
+                         event_category=CAT_UNEXPECTED, unresolved=True)
+        assembler = self._make_assembler(audit_log=audit_log)
+        snapshot = assembler._ui_visibility_snapshot()
+        assert snapshot['total_events'] == 3  # init + dialog + popup
+        assert CAT_INTENTIONAL in snapshot['by_category']
+        assert CAT_UNEXPECTED in snapshot['by_category']
+        assert snapshot['unresolved_count'] >= 1
+        assert snapshot['has_unexpected'] is True
+
+    def test_clean_audit_no_unexpected(self, audit_log: VisibilityAuditLog) -> None:
+        assembler = self._make_assembler(audit_log=audit_log)
+        snapshot = assembler._ui_visibility_snapshot()
+        assert snapshot['has_unexpected'] is False
+        assert snapshot['unresolved_count'] == 0
+        assert snapshot['file_not_found_count'] == 0

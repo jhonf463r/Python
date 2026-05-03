@@ -52,25 +52,44 @@
 - **Tests:** 26 focalizados (19 previos + 7 nuevos), todos PASS
 - **Regresion completa:** 2506 passed / 24 failed / 23 skipped — **0 regresiones nuevas**
 
+### Fase E — GAP C + GAP D: loop UI → audit → decision (2026-04-23)
+- **GAP C: ui_visibility_audit → WorldModel.detected_blocks**
+  - `WorldModelService.__init__()` acepta `ui_visibility_audit_log` (opcional)
+  - `_ui_audit_blocks()` extrae de `audit.summary()`:
+    - `unresolved` → `ui_audit_unresolved:{kind}:{title}`
+    - `file_not_found` → `ui_audit_file_not_found:{count}`
+    - `unexpected` → `ui_audit_unexpected_popups:{count}`
+  - Se insertan antes del corte de 18 items en `_detected_blocks()`
+- **GAP D: audit snapshot → ATO perception context**
+  - `TaskContextAssembler.__init__()` acepta `ui_visibility_audit_log` (opcional)
+  - `_ui_visibility_snapshot()` genera resumen compacto para `live_audit['ui_visibility']`
+  - Campos: total_events, by_category, file_not_found_count, unresolved_count, unresolved_kinds, has_unexpected
+- **Tests:** 8 nuevos (5 GAP C + 3 GAP D), todos PASS
+- **Regresion completa:** 2514 passed / 24 failed / 23 skipped — **0 regresiones nuevas**
+
 ### Documentos nuevos o actualizados
+- `src/iabv_v15/services/evolution/world_model_service.py` — GAP C wiring
+- `src/iabv_v15/services/adaptive/task_context_assembler.py` — GAP D wiring
 - `src/iabv_v15/infra/ui_visibility_audit.py` — QmlDialogAuditBridge, ToastAuditAdapter, Win32 fix
-- `tests/test_ui_visibility_audit.py` — 7 tests nuevos (dialog bridge + toast + safe_serialize)
+- `tests/test_ui_visibility_audit.py` — 8 tests nuevos (GAP C + GAP D)
 - `docs/governance/SESSION_HANDOFF.md` — este archivo
-- `docs/governance/DECISION_LOG.md` — actualizado con D-014 a D-016
+- `docs/governance/DECISION_LOG.md` — actualizado con D-017 y D-018
 
 ---
 
 ## Que quedo pendiente
 
-1. **Wiring en bootstrap** — instalar `QmlDialogAuditBridge` y `ToastAuditAdapter` en bootstrap.py
+1. **Wiring en bootstrap** — pasar `VisibilityAuditLog` a `WorldModelService` y `TaskContextAssembler`
+   en bootstrap.py para cerrar el loop en runtime real
+2. **Wiring en bootstrap** — instalar `QmlDialogAuditBridge` y `ToastAuditAdapter` en bootstrap.py
    despues de crear VMs y WinToastBridge (requiere validacion Windows)
-2. **Validacion Windows live** de bridges QML + toast (Codex/Windsurf)
-3. **Dialog close tracking** — agregar llamadas a `record_dialog_closed()` en los
+3. **Validacion Windows live** de bridges QML + toast + GAP C/D (Codex/Windsurf)
+4. **Dialog close tracking** — agregar llamadas a `record_dialog_closed()` en los
    VM response handlers (onCredentialProvided, onClarificationResponse, etc.)
-4. **AutonomyCycleService** — UNRESOLVED (U1), funcionalidad dispersa en OSES/TOR
-5. **Resume-aware orchestration** — leer startup_summary() al arrancar
-6. **Selector unificado** — agregar rutas web como candidatos formales
-7. **UniversalAutonomyIndex en OSES** — calculo de metricas de autonomia
+5. **AutonomyCycleService** — UNRESOLVED (U1), funcionalidad dispersa en OSES/TOR
+6. **Resume-aware orchestration** — leer startup_summary() al arrancar
+7. **Selector unificado** — agregar rutas web como candidatos formales
+8. **UniversalAutonomyIndex en OSES** — calculo de metricas de autonomia
 
 ---
 

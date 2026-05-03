@@ -48,6 +48,7 @@ class WorldModelService:
         environment_self_awareness_service: Any | None = None,
         universal_perception_service: Any | None = None,
         role_router: Any | None = None,
+        ui_visibility_audit_log: Any | None = None,
         auto_start: bool | None = None,
         bootstrap_scan: bool = True,
         scan_interval_seconds: float = _DEFAULT_SCAN_INTERVAL,
@@ -61,6 +62,7 @@ class WorldModelService:
         self.environment_self_awareness_service = environment_self_awareness_service
         self.universal_perception_service = universal_perception_service
         self.role_router = role_router
+        self._ui_visibility_audit_log = ui_visibility_audit_log
         self.scan_interval_seconds = max(float(scan_interval_seconds), 8.0)
         self.full_scan_interval_seconds = max(float(full_scan_interval_seconds), self.scan_interval_seconds)
         self._auto_start = (not self._in_test_mode()) if auto_start is None else bool(auto_start)
@@ -1022,7 +1024,35 @@ class WorldModelService:
         for gate in permission_gates:
             if gate.status == 'requerido':
                 blocks.append(f'permission_required:{gate.scope}')
+        blocks.extend(self._ui_audit_blocks())
         return blocks[:18]
+
+    def _ui_audit_blocks(self) -> list[str]:
+        """Extract blocks from ui_visibility_audit if available."""
+        audit = self._ui_visibility_audit_log
+        if audit is None:
+            return []
+        try:
+            summary = audit.summary()
+        except Exception:
+            return []
+        blocks: list[str] = []
+        for ev in summary.get('unresolved', []):
+            kind = str(ev.get('kind', ''))
+            title = str(ev.get('title', ''))
+            tag = f'ui_audit_unresolved:{kind}'
+            if title:
+                tag += f':{title[:40]}'
+            if tag not in blocks:
+                blocks.append(tag)
+        if summary.get('file_not_found_count', 0) > 0:
+            fnf_tag = f"ui_audit_file_not_found:{summary['file_not_found_count']}"
+            if fnf_tag not in blocks:
+                blocks.append(fnf_tag)
+        unexpected = summary.get('by_category', {}).get('unexpected', 0)
+        if unexpected > 0:
+            blocks.append(f'ui_audit_unexpected_popups:{unexpected}')
+        return blocks
 
     def _permission_gates(self, *, tool_live_status: list[ToolLiveStatus]) -> list[ObservationPermissionGate]:
         gates: list[ObservationPermissionGate] = []

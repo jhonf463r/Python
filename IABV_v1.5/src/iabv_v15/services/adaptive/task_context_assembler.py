@@ -63,6 +63,7 @@ class TaskContextAssembler:
         world_model_service: Any | None = None,
         autonomous_validation_cycle: Any | None = None,
         portable_context_service: Any | None = None,
+        ui_visibility_audit_log: Any | None = None,
     ) -> None:
         self.episode_repository = episode_repository
         self.knowledge_repository = knowledge_repository
@@ -82,6 +83,7 @@ class TaskContextAssembler:
         self.world_model_service = world_model_service
         self.autonomous_validation_cycle = autonomous_validation_cycle
         self.portable_context_service = portable_context_service
+        self._ui_visibility_audit_log = ui_visibility_audit_log
         self._teaching_visual_summary_builder = BrowserLearningAssembler()
 
     def build(self, request: InferenceRequest, intent: TaskIntent) -> TaskContext:
@@ -131,6 +133,7 @@ class TaskContextAssembler:
         if self._world_model_unresolved(world_model):
             unresolved_fields.append('UNRESOLVED:world_model')
         live_audit = dict(task_context.live_audit or {})
+        live_audit['ui_visibility'] = self._ui_visibility_snapshot()
         ia_trace_summary = self._build_ia_trace_summary(
             task_context=task_context,
             goal_context=goal_context,
@@ -478,6 +481,26 @@ class TaskContextAssembler:
             'claude_status': self._tool_world_summary(by_assistant.get('claude')),
             'ollama_status': self._tool_world_summary(by_assistant.get('ollama')),
             'last_updated': world_model.last_updated.isoformat() if world_model.last_updated is not None else '',
+        }
+
+    def _ui_visibility_snapshot(self) -> dict[str, Any]:
+        """Build a compact summary from ui_visibility_audit for live_audit."""
+        audit = self._ui_visibility_audit_log
+        if audit is None:
+            return {}
+        try:
+            summary = audit.summary()
+        except Exception:
+            return {'status': 'error'}
+        return {
+            'total_events': summary.get('total_events', 0),
+            'by_category': dict(summary.get('by_category', {})),
+            'file_not_found_count': summary.get('file_not_found_count', 0),
+            'unresolved_count': summary.get('unresolved_count', 0),
+            'unresolved_kinds': [
+                str(ev.get('kind', '')) for ev in summary.get('unresolved', [])
+            ][:10],
+            'has_unexpected': summary.get('by_category', {}).get('unexpected', 0) > 0,
         }
 
     def _portable_context_summary(

@@ -113,6 +113,20 @@
 - **Estado:** Implementado, 5 tests nuevos. Wiring en bootstrap pendiente.
 - **Riesgo:** Bajo — monkey-patch preserva original en closure
 
+### D-2026-04-23-017: GAP C — ui_visibility_audit → WorldModel.detected_blocks
+- **Razon:** Los eventos de auditoria visible (popups inesperados, FileNotFoundError, dialogs sin resolver) no influian en la lista canonica de bloqueos operativos del WorldModel. El orquestador tomaba decisiones sin saber que habia un popup bloqueante o un archivo faltante.
+- **Cambio:** Nuevo parametro `ui_visibility_audit_log` en `WorldModelService.__init__()`. Nuevo metodo `_ui_audit_blocks()` que extrae bloques de `audit.summary()['unresolved']`, `['file_not_found']` y popups unexpected. Se insertan antes del corte de 18 items en `_detected_blocks()`.
+- **Modulos afectados:** `services/evolution/world_model_service.py`, `tests/test_ui_visibility_audit.py`
+- **Estado:** Implementado, 5 tests nuevos
+- **Riesgo:** Bajo — inyeccion aditiva, no modifica bloques existentes
+
+### D-2026-04-23-018: GAP D — audit snapshot → ATO perception context
+- **Razon:** El contexto de percepcion del ATO (PerceptionSnapshot.live_audit) no incluia la auditoria visible. El orquestador no sabia que el usuario estaba viendo un popup, un toast o un error de archivo.
+- **Cambio:** Nuevo parametro `ui_visibility_audit_log` en `TaskContextAssembler.__init__()`. Nuevo metodo `_ui_visibility_snapshot()` que genera resumen compacto (total_events, by_category, unresolved_count, has_unexpected). Se inyecta en `live_audit['ui_visibility']` dentro de `build_perception_snapshot()`.
+- **Modulos afectados:** `services/adaptive/task_context_assembler.py`, `tests/test_ui_visibility_audit.py`
+- **Estado:** Implementado, 3 tests nuevos
+- **Riesgo:** Bajo — enriquece live_audit sin modificar campos existentes
+
 ---
 
 ## Decisiones historicas relevantes
