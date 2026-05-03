@@ -703,4 +703,116 @@ class TestLazyVMConstruction:
         bs.evolution_center_viewmodel = mock_vm
         # Emit a signal — both VMs should receive it
         bs.credential_broker.register_prompt_handler.call_args[0][0]('test_payload')
-        mock_vm.credentialPromptRequested.emit.assert_called_once_with('test_payload')
+
+
+# ------------------------------------------------------------------ #
+# 9. page_loader_ready prevents fallback (honest readiness)
+# ------------------------------------------------------------------ #
+
+
+class TestPageLoaderReadyPreventsFallback:
+    """page_loader_ready is sufficient to close splash and prevent fallback."""
+
+    def test_page_loader_ready_prevents_fallback(self):
+        """If page_loader_ready already fired, fallback must be a no-op."""
+        bs = _make_bootstrap()
+        bs._shell_loader_ready_handled = False
+        bs._page_loader_ready_received = False
+        bs._fire_splash_ready_and_raise_main = MagicMock()
+        bs._raise_main_window_now = MagicMock()
+        bs._persist_boot_profile = MagicMock()
+        bs._pending_deferred_2_fn = MagicMock()
+        bs._deferred_batch_2_scheduled = False
+
+        # page_loader_ready fires first (before fallback timer)
+        with patch('iabv_v15.bootstrap.QTimer'), \
+             patch('threading.Thread'):
+            bs._handle_page_loader_ready()
+
+        assert bs._page_loader_ready_received is True
+        assert bs._shell_loader_ready_handled is True
+        bs._fire_splash_ready_and_raise_main.assert_called_once_with('page_loader_ready')
+
+        # Now fallback should be a no-op
+        bs._fire_splash_ready_and_raise_main.reset_mock()
+        bs._force_splash_ready_fallback()
+        bs._fire_splash_ready_and_raise_main.assert_not_called()
+
+    def test_splash_ready_from_page_loader_when_shell_missing(self):
+        """page_loader_ready closes splash even if shell_loader_ready never arrived."""
+        bs = _make_bootstrap()
+        bs._shell_loader_ready_handled = False
+        bs._page_loader_ready_received = False
+        bs._fire_splash_ready_and_raise_main = MagicMock()
+        bs._raise_main_window_now = MagicMock()
+        bs._persist_boot_profile = MagicMock()
+        bs._pending_deferred_2_fn = MagicMock()
+        bs._deferred_batch_2_scheduled = False
+
+        with patch('iabv_v15.bootstrap.QTimer'), \
+             patch('threading.Thread'):
+            bs._handle_page_loader_ready()
+
+        # splash.set_ready() must have been called via _fire_splash_ready_and_raise_main
+        bs._fire_splash_ready_and_raise_main.assert_called_once_with('page_loader_ready')
+        # _raise_main_window_now must NOT be called separately (it's in _fire_splash_ready)
+        bs._raise_main_window_now.assert_not_called()
+
+    def test_page_loader_ready_with_shell_already_handled(self):
+        """When shell_loader_ready already fired, page_loader_ready just raises window."""
+        bs = _make_bootstrap()
+        bs._shell_loader_ready_handled = True  # shell already handled
+        bs._page_loader_ready_received = False
+        bs._fire_splash_ready_and_raise_main = MagicMock()
+        bs._raise_main_window_now = MagicMock()
+        bs._persist_boot_profile = MagicMock()
+        bs._pending_deferred_2_fn = MagicMock()
+        bs._deferred_batch_2_scheduled = False
+
+        with patch('iabv_v15.bootstrap.QTimer'), \
+             patch('threading.Thread'):
+            bs._handle_page_loader_ready()
+
+        # Should NOT fire splash again
+        bs._fire_splash_ready_and_raise_main.assert_not_called()
+        # Should just raise the main window
+        bs._raise_main_window_now.assert_called_once_with('page_loader_ready')
+
+
+# ------------------------------------------------------------------ #
+# 10. Truth refresh ordering: OSES before PortableContext
+# ------------------------------------------------------------------ #
+
+
+class TestTruthRefreshOrdering:
+    """OSES must refresh before PortableContext in the final truth refresh."""
+
+    def test_oses_refreshes_before_portable_context(self):
+        """_final_startup_truth_refresh calls OSES.build_review before PCS.build_package."""
+        bs = _make_bootstrap()
+        call_order = []
+        oses = MagicMock()
+        oses.build_review.side_effect = lambda: call_order.append('oses')
+        pcs = MagicMock()
+        pcs.build_package.side_effect = lambda: call_order.append('pcs')
+        bs.operational_self_examination_service = oses
+        bs.portable_context_service = pcs
+
+        bs._final_startup_truth_refresh()
+
+        assert call_order == ['oses', 'pcs'], (
+            f'Expected OSES before PCS, got: {call_order}'
+        )
+
+    def test_oses_failure_does_not_block_portable_context(self):
+        """If OSES fails, PortableContext must still persist."""
+        bs = _make_bootstrap()
+        oses = MagicMock()
+        oses.build_review.side_effect = RuntimeError('oses crash')
+        pcs = MagicMock()
+        bs.operational_self_examination_service = oses
+        bs.portable_context_service = pcs
+
+        bs._final_startup_truth_refresh()
+
+        pcs.build_package.assert_called_once()

@@ -1687,6 +1687,11 @@ class AppBootstrap:
         Also triggers Phase 3 (deferred batch 2) VM construction so
         non-critical VMs are built only after the user sees the first
         paint — never during the pre-ready critical path.
+
+        If ``shell_loader_ready`` never arrived, this signal is
+        sufficient to close the splash and mark readiness — it is
+        the MORE honest hito because the user already sees rendered
+        content.
         """
         self._page_loader_ready_received = True
         try:
@@ -1694,10 +1699,15 @@ class AppBootstrap:
         except Exception:
             pass
         self._persist_boot_profile('page_loader_ready')
-        # Reasegurador: cuando el page loader esta listo el splash YA
-        # deberia estar fundiendose, pero forzamos raise/activate del
-        # main window por si Windows lo dejo debajo del splash.
-        self._raise_main_window_now('page_loader_ready')
+        # If shell_loader_ready never fired, page_loader_ready is
+        # sufficient to close the splash — the user is already seeing
+        # rendered content.  This prevents the fallback from firing
+        # after the page is already visible.
+        if not getattr(self, '_shell_loader_ready_handled', False):
+            self._shell_loader_ready_handled = True
+            self._fire_splash_ready_and_raise_main('page_loader_ready')
+        else:
+            self._raise_main_window_now('page_loader_ready')
         # Schedule Phase 3: build non-critical VMs now that the user
         # is seeing the rendered page.
         self._schedule_pending_deferred_2()
@@ -1712,21 +1722,18 @@ class AppBootstrap:
         ).start()
 
     def _final_startup_truth_refresh(self) -> None:
-        """Re-persist PortableContext and OSES after boot is truly complete.
+        """Re-persist OSES and PortableContext after boot is truly complete.
 
         The early ``_startup_self_examination()`` runs before
         ``populate_ui_done`` / ``page_loader_ready`` are recorded, so
         its snapshots freeze a partial view.  This method re-runs the
         persistence *after* those milestones exist in the timeline JSONL,
         producing honest ``latest.md`` / ``latest.json`` files.
+
+        Order matters: OSES must refresh FIRST so its review reflects
+        the final boot state.  Then PortableContext persists with the
+        up-to-date OSES summary — not a stale one.
         """
-        try:
-            pcs = getattr(self, 'portable_context_service', None)
-            if pcs is not None:
-                pcs.build_package()
-                logger.info('startup_truth_refresh: PortableContext re-persisted')
-        except Exception as exc:
-            logger.debug('startup_truth_refresh: PortableContext failed: %s', exc)
         try:
             oses = getattr(self, 'operational_self_examination_service', None)
             if oses is not None:
@@ -1734,6 +1741,13 @@ class AppBootstrap:
                 logger.info('startup_truth_refresh: OSES re-persisted')
         except Exception as exc:
             logger.debug('startup_truth_refresh: OSES failed: %s', exc)
+        try:
+            pcs = getattr(self, 'portable_context_service', None)
+            if pcs is not None:
+                pcs.build_package()
+                logger.info('startup_truth_refresh: PortableContext re-persisted')
+        except Exception as exc:
+            logger.debug('startup_truth_refresh: PortableContext failed: %s', exc)
 
     def _handle_splash_closing(self) -> None:
         """Marca ``splash_window_closing`` cuando QML va a llamar close().
@@ -1937,6 +1951,11 @@ class AppBootstrap:
         event-loop starvation (when ``wall_clock >> timer_ms``, the main
         thread was blocked by QML incubation and couldn't process the
         QTimer until it unblocked).
+
+        Skipped if ``_shell_loader_ready_handled`` is already True
+        (honest shell signal or page_loader_ready already closed the
+        splash).  ``page_loader_ready`` sets this flag because it is
+        the MORE honest readiness hito — the user already sees content.
         """
         if getattr(self, '_shell_loader_ready_handled', False):
             return
