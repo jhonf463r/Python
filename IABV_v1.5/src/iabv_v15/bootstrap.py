@@ -805,29 +805,37 @@ class AppBootstrap:
             token_rotation_ledger=self.token_rotation_ledger,
         )
 
-        # Fix 18b: Platform pending queue — persistent task queue for
-        # Windows-native integration gaps.  Seeded once with the canonical
-        # set of known gaps; subsequent runs skip COMPLETED items.
+        # Autonomy cycle: central service for pending queue, resume hints,
+        # capability discovery, and OSES→queue bridge.  Replaces the
+        # scattered Fix 18b/18d/18e patches with one coherent module.
         from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+        from iabv_v15.services.evolution.autonomy_cycle_service import AutonomyCycleService
         self.platform_pending_queue = PlatformPendingQueue(
             evolution_dir=self.config.evolution_dir,
+        )
+        self.autonomy_cycle_service = AutonomyCycleService(
+            queue=self.platform_pending_queue,
         )
         try:
             self.platform_pending_queue.seed_windows_integration_tasks()
         except Exception:
             pass
-        # Seed pending tasks from environment capability graph (missing
-        # capabilities become BLOCKED or PENDING items automatically).
         try:
             env = getattr(self, 'environment_self_awareness_service', None)
             if env is not None and hasattr(env, 'current_model'):
                 model = env.current_model()
                 if model is not None and model.capability_graph:
-                    self.platform_pending_queue.seed_from_capability_graph(
+                    self.autonomy_cycle_service.seed_capabilities(
                         model.capability_graph,
                     )
         except Exception:
             pass
+        # Wire AutonomyCycleService into OSES (available now).
+        # TaskOutcomeRecorder wiring deferred to _wire_autonomy_cycle()
+        # because task_outcome_recorder is created later in the bootstrap.
+        self.operational_self_examination_service._autonomy_cycle_service = (
+            self.autonomy_cycle_service
+        )
 
         # Fix 19b: Windows clipboard bridge — low-level ctypes-based
         # clipboard for background services that don't have QGuiApplication.
@@ -1216,6 +1224,12 @@ class AppBootstrap:
             control_master_service=self.control_master_service,
             intent_understanding_service=self.intent_understanding_service,
         )
+        # Deferred wiring: AutonomyCycleService into TaskOutcomeRecorder
+        # (the queue/OSES wiring happened earlier during queue construction).
+        if hasattr(self, 'autonomy_cycle_service'):
+            self.task_outcome_recorder.autonomy_cycle_service = (
+                self.autonomy_cycle_service
+            )
         self.scenario_registry = ScenarioRegistry()
         self.execution_probe_service = ExecutionProbeService(
             matcher=ExpectationMatcher(),

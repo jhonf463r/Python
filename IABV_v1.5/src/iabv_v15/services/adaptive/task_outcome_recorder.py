@@ -63,7 +63,16 @@ class TaskOutcomeRecorder:
             self.approval_checkpoint_repository.save_many(session.approval_checkpoints)
         saved = self.adaptive_session_repository.save(session)
         self._propagate_to_control_master(saved)
-        self._save_resume_hint_if_interrupted(saved, run_record=run_record)
+        # Autonomy cycle: delegate to AutonomyCycleService if wired.
+        # Falls back to inline implementation for backward compatibility.
+        acs = getattr(self, 'autonomy_cycle_service', None)
+        if acs is not None:
+            try:
+                acs.save_resume_hint(saved, run_record=run_record)
+            except Exception:
+                self._save_resume_hint_if_interrupted(saved, run_record=run_record)
+        else:
+            self._save_resume_hint_if_interrupted(saved, run_record=run_record)
         return saved
 
     def _propagate_to_control_master(self, session: AdaptiveSession) -> None:

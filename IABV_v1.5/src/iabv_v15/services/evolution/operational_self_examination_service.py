@@ -886,10 +886,17 @@ class OperationalSelfExaminationService:
         # next evolution review picks them up as actionable backlog.
         self._materialize_task_packet_issues(findings)
 
-        # Autonomy bridge: convert actionable findings into
-        # PlatformPendingQueue tasks so the next session or agent can
-        # pick them up as structured pending work.
-        self._bridge_findings_to_pending_queue(findings)
+        # Autonomy bridge: delegate to AutonomyCycleService if wired.
+        # Falls back to inline bridge for backward compatibility.
+        acs = getattr(self, '_autonomy_cycle_service', None)
+        if acs is not None:
+            try:
+                acs.bridge_findings(findings)
+            except Exception:
+                logger.debug('oses: autonomy_cycle bridge failed, falling back')
+                self._bridge_findings_to_pending_queue(findings)
+        else:
+            self._bridge_findings_to_pending_queue(findings)
 
         return persisted
 
