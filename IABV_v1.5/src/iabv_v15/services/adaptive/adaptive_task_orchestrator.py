@@ -1572,6 +1572,38 @@ class AdaptiveTaskOrchestrator:
 
         saved_session = self.task_outcome_recorder.record(session)
         route = self._build_route(saved_session, decision_context)
+
+        # Pre-dispatch evidence guard (Brecha 2.4): check WorldModel
+        # evidence BEFORE dispatching.  If the primary provider is
+        # blocked, try the fallback; if both are blocked, record the
+        # block and let the caller see it in route metadata.
+        _wm_guard = getattr(perception, 'world_model', None) if perception is not None else None
+        _can_dispatch, _block_reason = self._pre_dispatch_evidence_guard(route, _wm_guard)
+        if not _can_dispatch:
+            logger.warning('Pre-dispatch guard blocked route %s: %s', route.provider_name, _block_reason)
+            meta = dict(saved_session.metadata or {})
+            meta['pre_dispatch_blocked'] = {
+                'provider': route.provider_name,
+                'reason': _block_reason,
+                'fallback_attempted': False,
+            }
+            if route.fallback_provider_name:
+                fallback_route = route.model_copy(update={
+                    'provider_name': route.fallback_provider_name,
+                    'used_fallback': True,
+                    'reason': f'{route.reason} [primary blocked: {_block_reason}]',
+                })
+                _fb_ok, _fb_reason = self._pre_dispatch_evidence_guard(fallback_route, _wm_guard)
+                meta['pre_dispatch_blocked']['fallback_attempted'] = True
+                if _fb_ok:
+                    route = fallback_route
+                    meta['pre_dispatch_blocked']['fallback_used'] = True
+                    logger.info('Pre-dispatch guard: fallback to %s', route.provider_name)
+                else:
+                    meta['pre_dispatch_blocked']['fallback_blocked'] = _fb_reason
+                    logger.warning('Pre-dispatch guard: fallback %s also blocked: %s', route.fallback_provider_name, _fb_reason)
+            saved_session.metadata = meta
+
         result = self._build_result(request=request, session=saved_session, pack=pack, route=route)
 
         return route, result, saved_session
@@ -3201,6 +3233,44 @@ class AdaptiveTaskOrchestrator:
             return {}
 
     # ── live block-signals → worker gate ────────────────────────
+
+    # ------------------------------------------------------------------
+    # Pre-dispatch evidence guard (Brecha 2.4)
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _pre_dispatch_evidence_guard(
+        route: RoleRoute,
+        world: WorldModelSnapshot | None,
+    ) -> tuple[bool, str]:
+        """Check WorldModel evidence BEFORE dispatching to an external route.
+
+        Returns ``(can_dispatch, reason)``.  When *world* is ``None`` the
+        guard is permissive (backward compatible).
+        """
+        if world is None:
+            return True, ''
+
+        provider = route.provider_name.lower()
+
+        # 1. detected_blocks — free-text strings that mention the provider
+        for block in (world.detected_blocks or []):
+            if provider in str(block).lower():
+                return False, f'detected_block:{block}'
+
+        # 2. tool_live_status — structured liveness probe
+        for tool_status in (world.tool_live_status or []):
+            kind = (tool_status.assistant_kind or '').lower()
+            if kind and kind in provider:
+                if not tool_status.available:
+                    return False, f'tool_not_available:{kind}:{tool_status.status}'
+
+        # 3. permission_gates — observation permission not granted
+        for gate in (world.permission_gates or []):
+            kind = (gate.assistant_kind or '').lower()
+            if kind and kind in provider and not gate.granted:
+                return False, f'permission_not_granted:{kind}'
+
+        return True, ''
 
     # Mapping from ToolLiveStatus field values / external_state_flags
     # to the canonical signal names accepted by _BLOCK_SIGNAL_WEIGHTS
