@@ -1,5 +1,8 @@
 ﻿from __future__ import annotations
 
+import logging
+from collections import defaultdict
+from datetime import timedelta
 from typing import Any
 
 from iabv_v15.domain.models import (
@@ -354,5 +357,86 @@ class ExperimentLab:
         if not comparison_pool:
             return False
         return score > max(item.metrics.total_score for item in comparison_pool)
+
+    # ------------------------------------------------------------------
+    # Training corpus generation (Brecha 3.1)
+    # ------------------------------------------------------------------
+
+    def generate_training_corpus(
+        self,
+        *,
+        min_runs: int = 10,
+        max_age_days: int = 30,
+    ) -> list[dict[str, Any]]:
+        """Generate training examples from accumulated experiment runs.
+
+        Groups runs by ``domain + suite_name`` and extracts patterns:
+        which assistant_kind wins for which type of task, which route is
+        faster/more reliable, and confidence calibration.
+
+        Returns a list of training examples.
+        """
+        from iabv_v15.domain.models import utc_now
+
+        cutoff = utc_now() - timedelta(days=max_age_days)
+        all_runs = self.repository.list_runs(limit=500)
+        recent = [r for r in all_runs if r.created_at_utc >= cutoff]
+
+        groups: dict[str, list[ExperimentRun]] = defaultdict(list)
+        for run in recent:
+            key = f'{run.domain.value}:{run.suite_name}'
+            groups[key].append(run)
+
+        examples: list[dict[str, Any]] = []
+        for task_type, runs in groups.items():
+            if len(runs) < min_runs:
+                continue
+            stats: dict[str, dict[str, Any]] = defaultdict(
+                lambda: {'success': 0, 'total': 0, 'latency_sum': 0}
+            )
+            for run in runs:
+                kind = run.assistant_kind or 'unknown'
+                stats[kind]['success'] += int(run.success)
+                stats[kind]['total'] += 1
+                stats[kind]['latency_sum'] += run.metrics.execution_ms
+                stats[kind]['route'] = run.route.value
+
+            best_kind = ''
+            best_rate = -1.0
+            best_latency = float('inf')
+            alternatives: list[dict[str, Any]] = []
+
+            for kind, s in stats.items():
+                rate = s['success'] / max(s['total'], 1)
+                avg_lat = s['latency_sum'] / max(s['total'], 1)
+                if rate > best_rate or (rate == best_rate and avg_lat < best_latency):
+                    if best_kind:
+                        alternatives.append({
+                            'assistant': best_kind,
+                            'success_rate': round(best_rate, 3),
+                            'avg_latency_ms': round(best_latency, 1),
+                        })
+                    best_kind = kind
+                    best_rate = rate
+                    best_latency = avg_lat
+                else:
+                    alternatives.append({
+                        'assistant': kind,
+                        'success_rate': round(rate, 3),
+                        'avg_latency_ms': round(avg_lat, 1),
+                    })
+
+            examples.append({
+                'task_type': task_type,
+                'recommended_route': stats[best_kind].get('route', 'unknown'),
+                'recommended_assistant': best_kind,
+                'confidence': round(min(best_rate, 1.0), 3),
+                'sample_size': stats[best_kind]['total'],
+                'avg_latency_ms': round(best_latency, 1),
+                'success_rate': round(best_rate, 3),
+                'alternatives': alternatives,
+            })
+
+        return examples
 
 
