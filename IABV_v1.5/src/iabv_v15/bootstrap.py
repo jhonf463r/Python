@@ -1323,6 +1323,7 @@ class AppBootstrap:
             goal_engine=self.goal_engine,
             autonomy_governance_policy=self.autonomy_governance_policy,
             synaptic_router=self.synaptic_router,
+            autonomy_cycle_service=getattr(self, 'autonomy_cycle_service', None),
         )
         self.portable_context_service.task_context_assembler = self.task_context_assembler
         self.portable_context_service.adaptive_task_orchestrator = self.adaptive_task_orchestrator
