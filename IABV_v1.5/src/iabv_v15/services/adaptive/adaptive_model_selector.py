@@ -356,6 +356,29 @@ class AdaptiveModelSelector:
 
         return True, 'permitted'
 
+    def _is_web_session_active(
+        self,
+        provider_id: str,
+    ) -> tuple[bool, str]:
+        """Check if the web provider has an active browser session.
+
+        Returns (active, reason).  When the health check is unavailable
+        (import error, scanner crash) the provider is allowed through
+        (fail-open) so existing behaviour is preserved.
+        """
+        try:
+            from iabv_v15.services.auto_correction_engine import (
+                check_web_session_health,
+            )
+            health = check_web_session_health(provider_id)
+        except Exception:
+            return True, 'session_check_unavailable'
+
+        status = health.get('status', 'unknown')
+        if status == 'expired':
+            return False, 'web_session_expired'
+        return True, f'web_session_{status}'
+
     _TOOL_MAP: dict[str, str] = {
         'gemini': 'gemini',
         'groq': 'groq',
@@ -507,12 +530,20 @@ class AdaptiveModelSelector:
             ps = ProviderScore(pid)
             entries = by_provider.get(pid, [])
 
-            # --- Web providers: check permission gate first ---
+            # --- Web providers: check permission gate + session health ---
             if pid.endswith('_web'):
                 allowed, reason = self._is_web_provider_allowed(pid, world_model)
                 if not allowed:
                     ps.available = False
                     ps.reason = reason
+                    ps.total_score = 0.0
+                    scores.append(ps)
+                    continue
+                # Brecha 2.3: penalize expired web sessions
+                session_ok, session_reason = self._is_web_session_active(pid)
+                if not session_ok:
+                    ps.available = False
+                    ps.reason = session_reason
                     ps.total_score = 0.0
                     scores.append(ps)
                     continue
