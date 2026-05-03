@@ -23,6 +23,7 @@ class StrategySelector:
         subject_key: str,
         candidate_runs: list[ExperimentRun],
         historical_runs: list[ExperimentRun] | None = None,
+        coordination_patterns: list[dict[str, Any]] | None = None,
     ) -> ExperimentRecommendation:
         route_scores: dict[EvaluationRoute, list[float]] = defaultdict(list)
         grouped_scores: dict[tuple[EvaluationRoute, str, str], list[float]] = defaultdict(list)
@@ -153,6 +154,14 @@ class StrategySelector:
             adaptive_profiles=adaptive_profiles,
             grouped_runs=grouped_runs,
         )
+        coordination_boost = self._apply_coordination_boost(
+            best_assistant_kind=best_assistant_kind,
+            domain=domain,
+            coordination_patterns=coordination_patterns,
+        )
+        if coordination_boost:
+            confidence = min(1.0, confidence + coordination_boost['confidence_delta'])
+            rationale += f" {coordination_boost['rationale_suffix']}"
         return ExperimentRecommendation(
             domain=domain,
             subject_key=subject_key,
@@ -326,3 +335,41 @@ class StrategySelector:
             'overlapping_aspects': sorted(overlapping_aspects),
             'viable_ia_count': len(viable),
         }
+
+    # ------------------------------------------------------------------
+    # Coordination pattern boost (Brecha 3.2)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _apply_coordination_boost(
+        *,
+        best_assistant_kind: str,
+        domain: ExperimentDomain,
+        coordination_patterns: list[dict[str, Any]] | None,
+    ) -> dict[str, Any] | None:
+        """Apply confidence boost if coordination patterns support the recommendation.
+
+        Returns a dict with ``confidence_delta`` and ``rationale_suffix`` if a
+        SPECIALIZATION pattern matches the recommended assistant+domain, or
+        ``None`` if no applicable pattern exists.
+        """
+        if not coordination_patterns:
+            return None
+        best_kind = (best_assistant_kind or '').strip().lower()
+        domain_val = domain.value if hasattr(domain, 'value') else str(domain)
+        for pattern in coordination_patterns:
+            if str(pattern.get('pattern_type') or '') != 'SPECIALIZATION':
+                continue
+            if str(pattern.get('primary_ia') or '').strip().lower() != best_kind:
+                continue
+            if str(pattern.get('domain') or '').strip().lower() != domain_val.strip().lower():
+                continue
+            return {
+                'confidence_delta': round(min(0.15, float(pattern.get('confidence') or 0.0) * 0.2), 4),
+                'rationale_suffix': (
+                    f'Coordination pattern SPECIALIZATION confirms '
+                    f'{best_kind} as specialist for {domain_val} '
+                    f'(sample_size={pattern.get("sample_size", 0)}).'
+                ),
+            }
+        return None
