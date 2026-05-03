@@ -64,32 +64,47 @@
   - `TaskContextAssembler.__init__()` acepta `ui_visibility_audit_log` (opcional)
   - `_ui_visibility_snapshot()` genera resumen compacto para `live_audit['ui_visibility']`
   - Campos: total_events, by_category, file_not_found_count, unresolved_count, unresolved_kinds, has_unexpected
-- **Tests:** 8 nuevos (5 GAP C + 3 GAP D), todos PASS
-- **Regresion completa:** 2514 passed / 24 failed / 23 skipped — **0 regresiones nuevas**
+
+### Fase F — Runtime wiring completo (2026-04-23)
+- **SLICE 1: bootstrap → servicios**
+  - `bootstrap.py` importa `get_audit_log()` y pasa el singleton a:
+    - `WorldModelService(ui_visibility_audit_log=get_audit_log())`
+    - `TaskContextAssembler(ui_visibility_audit_log=get_audit_log())`
+  - Mismo singleton compartido → no hay lectura paralela accidental
+- **SLICE 2: bootstrap → bridges UI**
+  - `_wire_ui_audit_bridges()` instala:
+    - `QmlDialogAuditBridge` en ControlCenterVM y EvolutionCenterVM
+    - `ToastAuditAdapter` en WinToastBridge
+  - Fallback seguro: si falla, log + continua sin romper bootstrap
+- **SLICE 3: verificacion de loop cerrado**
+  - Cadena confirmada: UI event → audit.summary() → WM.detected_blocks → AutonomyGovernancePolicy + ATO._build_block_signals()
+  - Cadena confirmada: audit.summary() → live_audit['ui_visibility'] → PerceptionSnapshot → DecisionContext → ATO governance
+  - El sistema ya NO es solo observador pasivo — las observaciones UI alimentan decisiones reales
+- **Tests:** 13 nuevos (5 GAP C + 3 GAP D + 5 runtime wiring), todos PASS
+- **Regresion completa:** 2519 passed / 24 failed / 23 skipped — **0 regresiones nuevas**
 
 ### Documentos nuevos o actualizados
+- `src/iabv_v15/bootstrap.py` — import get_audit_log, wiring a WMS/TCA, _wire_ui_audit_bridges()
 - `src/iabv_v15/services/evolution/world_model_service.py` — GAP C wiring
 - `src/iabv_v15/services/adaptive/task_context_assembler.py` — GAP D wiring
 - `src/iabv_v15/infra/ui_visibility_audit.py` — QmlDialogAuditBridge, ToastAuditAdapter, Win32 fix
-- `tests/test_ui_visibility_audit.py` — 8 tests nuevos (GAP C + GAP D)
+- `tests/test_ui_visibility_audit.py` — 13 tests nuevos (GAP C + D + runtime wiring)
 - `docs/governance/SESSION_HANDOFF.md` — este archivo
-- `docs/governance/DECISION_LOG.md` — actualizado con D-017 y D-018
+- `docs/governance/DECISION_LOG.md` — actualizado con D-017 a D-020
 
 ---
 
 ## Que quedo pendiente
 
-1. **Wiring en bootstrap** — pasar `VisibilityAuditLog` a `WorldModelService` y `TaskContextAssembler`
-   en bootstrap.py para cerrar el loop en runtime real
-2. **Wiring en bootstrap** — instalar `QmlDialogAuditBridge` y `ToastAuditAdapter` en bootstrap.py
-   despues de crear VMs y WinToastBridge (requiere validacion Windows)
-3. **Validacion Windows live** de bridges QML + toast + GAP C/D (Codex/Windsurf)
-4. **Dialog close tracking** — agregar llamadas a `record_dialog_closed()` en los
-   VM response handlers (onCredentialProvided, onClarificationResponse, etc.)
-5. **AutonomyCycleService** — UNRESOLVED (U1), funcionalidad dispersa en OSES/TOR
-6. **Resume-aware orchestration** — leer startup_summary() al arrancar
-7. **Selector unificado** — agregar rutas web como candidatos formales
-8. **UniversalAutonomyIndex en OSES** — calculo de metricas de autonomia
+1. **Validacion Windows live** de todo el stack audit (bridges QML + toast + GAP C/D + bootstrap wiring) con Codex/Windsurf
+2. **Dialog close tracking** — no hay Python-side @Slot para respuesta de dialogs QML.
+   Los dialogs se abren via Python signal pero se cierran en QML sin callback Python.
+   Requiere agregar un @Slot en ControlCenterVM (ej: `submitCredentialResponse(str, str, bool)`).
+   UNRESOLVED: U2
+3. **AutonomyCycleService** — UNRESOLVED (U1), funcionalidad dispersa en OSES/TOR
+4. **Resume-aware orchestration** — leer startup_summary() al arrancar
+5. **Selector unificado** — agregar rutas web como candidatos formales
+6. **UniversalAutonomyIndex en OSES** — calculo de metricas de autonomia
 
 ---
 
@@ -100,7 +115,7 @@
 - **WorldModelService core**: funciona correctamente
 - **Auditoria y replay**: funcionales
 - **MCP server y tools**: operativos
-- **Bootstrap**: no se modifico (integracion de ui_visibility_audit pendiente para Windows)
+- **Bootstrap**: modificado solo para wiring de audit bridges (no se toco el flujo de arranque)
 - **PR #276**: no se toco (paralelizacion de health checks, pendiente validacion Codex)
 
 ---
@@ -109,14 +124,15 @@
 
 | Area | Estado |
 |---|---|
-| Tests (Linux) | 2506 passed / 24 failed / 23 skipped |
+| Tests (Linux) | 2519 passed / 24 failed / 23 skipped |
 | Control Master | Actualizado esta sesion |
-| Bootstrap | Funcional (3472 lineas, no modificado) |
-| Orquestador (ATO) | Funcional, quota wiring conectado |
-| WorldModel | Funcional, worker_pool_snapshot agregado |
+| Bootstrap | Funcional, audit bridges wired |
+| Orquestador (ATO) | Funcional, quota wiring + audit perception |
+| WorldModel | Funcional, worker_pool_snapshot + ui_audit_blocks |
+| TaskContextAssembler | Funcional, ui_visibility en live_audit |
 | ControlCenterVM | Funcional con lazy init |
-| DashboardVM | Funcional con lazy init (NUEVO) |
-| ui_visibility_audit | Creado + QML bridge + toast adapter, 26 tests |
+| DashboardVM | Funcional con lazy init |
+| ui_visibility_audit | Completo: bridges + toast + WM + ATO, 39 tests |
 | MCP | Operativo |
 
 ---
@@ -133,8 +149,8 @@ PYTHONPATH=src python -m pytest tests/ -q
 # 3. Ejecutar auditoria en Windows con prompts segmentados
 cat docs/governance/AUDIT_PROMPT_LAPTOP.md
 
-# 4. Siguiente prioridad: integrar ui_visibility_audit en bootstrap
-# (solo en Windows para validar Win32PopupWatcher)
+# 4. Siguiente prioridad: validar stack completo en Windows
+# (bridges, toast, WM audit blocks, ATO perception en live)
 ```
 
 ---
@@ -144,5 +160,6 @@ cat docs/governance/AUDIT_PROMPT_LAPTOP.md
 Los conteos de tests difieren entre sesiones porque origin/main avanzo:
 - Baseline original (sesion 1): 2391 passed / 29 failed / 25 skipped
 - Baseline sesion 2: 2489 passed / 24 failed / 23 skipped
-- Baseline sesion 3 (actual): 2506 passed / 24 failed / 23 skipped (+17 tests nuevos)
+- Baseline sesion 3: 2506 passed / 24 failed / 23 skipped (+17 tests nuevos)
+- Baseline sesion 4 (actual): 2519 passed / 24 failed / 23 skipped (+13 tests nuevos: GAP C/D + runtime wiring)
 - Todos los 24 fallos son pre-existentes en origin/main (verificado)

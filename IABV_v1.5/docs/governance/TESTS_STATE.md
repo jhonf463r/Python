@@ -9,17 +9,18 @@
 
 | Metrica | Valor |
 |---|---|
-| Total ejecutados | 2536 |
-| Passed | 2489 |
+| Total ejecutados | 2566 |
+| Passed | 2519 |
 | Failed | 24 |
 | Skipped | 23 |
 | Warnings | 102 |
-| Duracion | 278.39s (4:38) |
+| Duracion | 273.14s (4:33) |
 | Regresiones nuevas | 0 |
 
-**Nota:** El aumento de tests (2416 -> 2536) y la reduccion de fallos (29 -> 24)
-se debe a PRs mergeados en main entre sesiones (#300, #302, #304, #305, #306) +
-17 tests nuevos de esta sesion (8 DashboardVM + 9 ui_visibility_audit).
+**Nota:** El aumento de tests (2536 -> 2566) se debe a 30 tests nuevos acumulados:
+- 8 DashboardVM lazy init
+- 9 ui_visibility_audit base
+- 13 GAP C/D + runtime wiring (sesion actual)
 
 ---
 
@@ -28,7 +29,7 @@ se debe a PRs mergeados en main entre sesiones (#300, #302, #304, #305, #306) +
 | Archivo | Tests | Estado |
 |---|---|---|
 | `test_dashboard_lazy_init.py` | 8 | PASS |
-| `test_ui_visibility_audit.py` | 9 | PASS |
+| `test_ui_visibility_audit.py` | 39 | PASS (9 base + 7 QML/toast + 5 GAP C + 3 GAP D + 5 runtime wiring + 2 Win32 + 8 previos) |
 
 ---
 

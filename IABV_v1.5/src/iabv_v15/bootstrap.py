@@ -235,6 +235,7 @@ from iabv_v15.services.development.development_assist_service import Development
 from iabv_v15.services.evolution.autonomy_activity_projector import AutonomyActivityProjector
 from iabv_v15.services.evolution.environment_self_awareness_service import EnvironmentSelfAwarenessService
 from iabv_v15.services.evolution.world_model_service import WorldModelService
+from iabv_v15.infra.ui_visibility_audit import get_audit_log
 from iabv_v15.services.evolution.execution_dossier_service import ExecutionDossierService
 from iabv_v15.services.audit.audit_teach_verification_service import AuditTeachVerificationService
 from iabv_v15.services.evolution.evolution_review_service import EvolutionReviewService
@@ -607,6 +608,7 @@ class AppBootstrap:
             environment_self_awareness_service=self.environment_self_awareness_service,
             universal_perception_service=self.universal_perception_service,
             role_router=None,
+            ui_visibility_audit_log=get_audit_log(),
             bootstrap_scan=not _is_mcp_sub and not _defer_scans,
             scan_interval_seconds=300.0 if _is_mcp_sub else WorldModelService._DEFAULT_SCAN_INTERVAL,
             full_scan_interval_seconds=600.0 if _is_mcp_sub else WorldModelService._DEFAULT_FULL_SCAN_INTERVAL,
@@ -1188,6 +1190,7 @@ class AppBootstrap:
             world_model_service=self.world_model_service,
             autonomous_validation_cycle=self.autonomous_validation_cycle,
             portable_context_service=self.portable_context_service,
+            ui_visibility_audit_log=get_audit_log(),
         )
         self.capability_readiness_service = CapabilityReadinessService(self.capability_repository, self.tool_record_repository)
         self.strategy_pack_registry = StrategyPackRegistry(self.strategy_pack_repository)
@@ -2545,6 +2548,9 @@ class AppBootstrap:
         # los dialogos QML (Task B) los reciban.
         self._wire_task_a_signals()
 
+        # --- Audit bridges: captura de dialogs QML y toasts en ui_visibility_audit ---
+        self._wire_ui_audit_bridges()
+
     def _wire_task_a_signals(self) -> None:
         """Conecta handlers de los 4 servicios backend (Task A) a ambos ViewModels.
 
@@ -2582,6 +2588,27 @@ class AppBootstrap:
         self.provider_health_router.register_health_listener(
             lambda payload: _emit('providerHealthChanged', payload)
         )
+
+    def _wire_ui_audit_bridges(self) -> None:
+        """Install QmlDialogAuditBridge on VMs and ToastAuditAdapter on WinToastBridge."""
+        from iabv_v15.infra.ui_visibility_audit import QmlDialogAuditBridge, ToastAuditAdapter
+        audit_log = get_audit_log()
+        try:
+            dialog_bridge = QmlDialogAuditBridge(audit_log)
+            for vm in (self.control_center_viewmodel, self.evolution_center_viewmodel):
+                if vm is not None:
+                    dialog_bridge.install(vm)
+            self._qml_dialog_audit_bridge = dialog_bridge
+        except Exception:
+            logger.exception('QmlDialogAuditBridge wiring failed')
+        toast_bridge = getattr(self, 'win_toast_bridge', None)
+        if toast_bridge is not None:
+            try:
+                toast_adapter = ToastAuditAdapter(audit_log, toast_bridge)
+                toast_adapter.install()
+                self._toast_audit_adapter = toast_adapter
+            except Exception:
+                logger.exception('ToastAuditAdapter wiring failed')
 
     def shutdown(self) -> None:
         router = getattr(self, 'provider_health_router', None)

@@ -127,6 +127,20 @@
 - **Estado:** Implementado, 3 tests nuevos
 - **Riesgo:** Bajo — enriquece live_audit sin modificar campos existentes
 
+### D-2026-04-23-019: SLICE 1+2 — Runtime wiring en bootstrap.py
+- **Razon:** GAP C y GAP D estaban implementados como logica pero sin wiring real. `WorldModelService` y `TaskContextAssembler` no recibian la instancia de `VisibilityAuditLog`, y los bridges QML/toast no estaban instalados en runtime.
+- **Cambio:** (1) `bootstrap.py` importa `get_audit_log()` y pasa el singleton a ambos servicios. (2) Nuevo metodo `_wire_ui_audit_bridges()` instala `QmlDialogAuditBridge` en ambos VMs y `ToastAuditAdapter` en WinToastBridge, con fallback seguro (try/except + logger). El singleton es el mismo en todos los consumers.
+- **Modulos afectados:** `bootstrap.py`, `tests/test_ui_visibility_audit.py`
+- **Estado:** Implementado, 5 tests nuevos de runtime wiring
+- **Riesgo:** Bajo — fallback seguro, no rompe bootstrap si audit no disponible
+
+### D-2026-04-23-020: Dialog close tracking — UNRESOLVED U2
+- **Razon:** `record_dialog_closed()` existe en `QmlDialogAuditBridge` pero no hay Python-side @Slot que QML pueda llamar al cerrar un dialog. Los dialogs se abren via Python signal (credentialPromptRequested, etc.) pero se cierran en QML (InlineCredentialPrompt.qml credentialSubmitted signal) sin callback Python.
+- **Cambio:** Ninguno — marcado como UNRESOLVED U2. Requiere agregar @Slot en ControlCenterVM.
+- **Modulos afectados:** Ninguno (decision de no-cambio)
+- **Estado:** UNRESOLVED U2
+- **Riesgo:** Bajo — los dialog open events SI se capturan; solo falta el close event
+
 ---
 
 ## Decisiones historicas relevantes

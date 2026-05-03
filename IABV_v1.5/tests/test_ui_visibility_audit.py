@@ -446,3 +446,86 @@ class TestTaskContextAssemblerVisibility:
         assert snapshot['has_unexpected'] is False
         assert snapshot['unresolved_count'] == 0
         assert snapshot['file_not_found_count'] == 0
+
+
+# ---------------------------------------------------------------------------
+# SLICE 1+2 — Runtime wiring verification tests
+# ---------------------------------------------------------------------------
+
+class TestRuntimeWiringIntegration:
+    """Verify that get_audit_log() singleton is the same instance everywhere."""
+
+    def test_get_audit_log_returns_singleton(self) -> None:
+        from iabv_v15.infra.ui_visibility_audit import get_audit_log
+        log1 = get_audit_log()
+        log2 = get_audit_log()
+        assert log1 is log2
+
+    def test_world_model_service_accepts_audit_log(self) -> None:
+        from iabv_v15.infra.ui_visibility_audit import get_audit_log
+        from iabv_v15.services.evolution.world_model_service import WorldModelService
+        audit = get_audit_log()
+        svc = WorldModelService(
+            workspace_root='/tmp/test-ws',
+            evolution_dir='/tmp/test-evo',
+            auto_start=False,
+            bootstrap_scan=False,
+            ui_visibility_audit_log=audit,
+        )
+        assert svc._ui_visibility_audit_log is audit
+
+    def test_task_context_assembler_accepts_audit_log(self) -> None:
+        from iabv_v15.infra.ui_visibility_audit import get_audit_log
+        from iabv_v15.services.adaptive.task_context_assembler import TaskContextAssembler
+        audit = get_audit_log()
+        assembler = TaskContextAssembler(
+            episode_repository=MagicMock(),
+            knowledge_repository=MagicMock(),
+            run_repository=MagicMock(),
+            dossier_repository=MagicMock(),
+            hidden_incident_repository=MagicMock(),
+            site_policy_registry=MagicMock(),
+            capability_repository=MagicMock(),
+            adaptive_session_repository=MagicMock(),
+            ui_visibility_audit_log=audit,
+        )
+        assert assembler._ui_visibility_audit_log is audit
+
+    def test_end_to_end_audit_flows_to_world_model_blocks(self) -> None:
+        """Events recorded in audit log appear in WorldModel detected_blocks."""
+        from iabv_v15.services.evolution.world_model_service import WorldModelService
+        audit = VisibilityAuditLog()
+        audit.record('win32_popup_detected', source='test',
+                     title='Error critical', event_category=CAT_UNEXPECTED,
+                     unresolved=True)
+        svc = WorldModelService(
+            workspace_root='/tmp/test-ws',
+            evolution_dir='/tmp/test-evo',
+            auto_start=False,
+            bootstrap_scan=False,
+            ui_visibility_audit_log=audit,
+        )
+        blocks = svc._ui_audit_blocks()
+        assert any('ui_audit_unresolved' in b for b in blocks)
+        assert any('ui_audit_unexpected' in b for b in blocks)
+
+    def test_end_to_end_audit_flows_to_perception(self) -> None:
+        """Events recorded in audit log appear in TaskContextAssembler._ui_visibility_snapshot."""
+        from iabv_v15.services.adaptive.task_context_assembler import TaskContextAssembler
+        audit = VisibilityAuditLog()
+        audit.record('win32_popup_detected', source='test',
+                     event_category=CAT_UNEXPECTED)
+        assembler = TaskContextAssembler(
+            episode_repository=MagicMock(),
+            knowledge_repository=MagicMock(),
+            run_repository=MagicMock(),
+            dossier_repository=MagicMock(),
+            hidden_incident_repository=MagicMock(),
+            site_policy_registry=MagicMock(),
+            capability_repository=MagicMock(),
+            adaptive_session_repository=MagicMock(),
+            ui_visibility_audit_log=audit,
+        )
+        snapshot = assembler._ui_visibility_snapshot()
+        assert snapshot['has_unexpected'] is True
+        assert snapshot['total_events'] >= 1  # at least the popup
