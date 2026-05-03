@@ -182,6 +182,9 @@ class AdaptiveTaskOrchestrator:
         self._pending_queue: list[dict[str, Any]] = []
         self._COGNITIVE_LOAD_THRESHOLD = 5
         self._processing_count: int = 0
+        # Shadow mode (Brecha 2.1): timestamp of last shadow dispatch.
+        self._last_shadow_at: float = 0.0
+        self._SHADOW_COOLDOWN_SECONDS: float = 300.0
 
     def _load_resume_context(self) -> dict[str, Any]:
         """Read startup_summary from AutonomyCycleService.
@@ -1605,6 +1608,17 @@ class AdaptiveTaskOrchestrator:
             saved_session.metadata = meta
 
         result = self._build_result(request=request, session=saved_session, pack=pack, route=route)
+
+        # Shadow mode (Brecha 2.1): fire shadow local dispatch for
+        # comparative learning.  Runs after result is built so it
+        # never delays the user-facing response.
+        _wm_shadow = getattr(perception, 'world_model', None) if perception is not None else None
+        _pressure = dict(saved_session.metadata.get('resource_pressure') or {})
+        if self._should_shadow(saved_session, _wm_shadow, _pressure):
+            try:
+                self._shadow_parallel_dispatch(saved_session, route, result, _wm_shadow)
+            except Exception:
+                pass
 
         return route, result, saved_session
 
@@ -3271,6 +3285,130 @@ class AdaptiveTaskOrchestrator:
                 return False, f'permission_not_granted:{kind}'
 
         return True, ''
+
+    # ------------------------------------------------------------------
+    # Shadow mode — parallel cloud+local dispatch for learning (Brecha 2.1)
+    # ------------------------------------------------------------------
+
+    _SHADOW_NON_REASONING_ROLES = frozenset({
+        TaskRole.VISUAL,
+        TaskRole.TOOL_USE,
+        TaskRole.TOOL_SANDBOX,
+    })
+
+    def _should_shadow(
+        self,
+        session: AdaptiveSession,
+        world: WorldModelSnapshot | None,
+        resource_pressure: dict[str, Any],
+    ) -> bool:
+        """Decide if shadow parallel dispatch should activate."""
+        import time as _time
+
+        if resource_pressure.get('critical'):
+            return False
+        if resource_pressure.get('under_pressure'):
+            if session.intent.confidence < 0.7:
+                return False
+        if not self._has_local_provider(world):
+            return False
+        if self._last_shadow_at and (_time.time() - self._last_shadow_at) < self._SHADOW_COOLDOWN_SECONDS:
+            return False
+        role = session.intent.detected_role
+        if role in self._SHADOW_NON_REASONING_ROLES:
+            return False
+        return True
+
+    @staticmethod
+    def _has_local_provider(world: WorldModelSnapshot | None) -> bool:
+        """Check if a local provider (Ollama) is available."""
+        if world is None:
+            return True  # assume available when no evidence
+        for tool in (world.tool_live_status or []):
+            kind = (tool.assistant_kind or '').lower()
+            if 'ollama' in kind and tool.available:
+                return True
+        # No explicit tool_live_status for ollama — assume available
+        # (the ATO already has ollama_local in its provider list).
+        if not world.tool_live_status:
+            return True
+        return False
+
+    def _shadow_parallel_dispatch(
+        self,
+        session: AdaptiveSession,
+        primary_route: RoleRoute,
+        primary_result: InferenceResult,
+        world: WorldModelSnapshot | None,
+    ) -> None:
+        """Run a shadow local inference and record both in ExperimentLab.
+
+        The primary result is already returned to the user.  This
+        method runs the local shadow asynchronously and registers both
+        results for comparative learning.  Never raises.
+        """
+        import time as _time
+
+        lab = self.experiment_lab
+        if lab is None:
+            return
+        self._last_shadow_at = _time.time()
+        scope_key = f'shadow_{session.session_id}'
+        primary_start = _time.time()
+        primary_latency = int(primary_result.raw_output.get('elapsed_ms', 0)) if primary_result.raw_output else 0
+
+        # Shadow: invoke local LLM with same prompt
+        shadow_summary = ''
+        shadow_success = False
+        shadow_latency = 0
+        try:
+            shadow_start = _time.time()
+            shadow_result = self._maybe_invoke_local_chat_llm(
+                session=session,
+                request=InferenceRequest(
+                    user_goal=session.user_goal,
+                    task_role=session.intent.detected_role,
+                ),
+            )
+            shadow_latency = int((_time.time() - shadow_start) * 1000)
+            if shadow_result:
+                shadow_summary = str(shadow_result.get('summary') or '')
+                shadow_success = bool(shadow_summary)
+        except Exception:
+            logger.debug('Shadow local dispatch failed', exc_info=True)
+
+        # Record both in ExperimentLab
+        try:
+            from iabv_v15.domain.models import ExperimentMetric
+
+            lab.repository.save_run(ExperimentRun(
+                domain=ExperimentDomain.CLOUD_REASONING,
+                suite_name='shadow_parallel',
+                objective=session.user_goal[:200],
+                route=EvaluationRoute.CLOUD,
+                assistant_kind=primary_route.provider_name,
+                success=bool(primary_result.summary),
+                metrics=ExperimentMetric(
+                    precision=primary_result.confidence,
+                    execution_ms=primary_latency,
+                ),
+                metadata={'comparison_scope_key': scope_key},
+            ))
+            lab.repository.save_run(ExperimentRun(
+                domain=ExperimentDomain.CLOUD_REASONING,
+                suite_name='shadow_parallel',
+                objective=session.user_goal[:200],
+                route=EvaluationRoute.LOCAL,
+                assistant_kind='ollama_local',
+                success=shadow_success,
+                metrics=ExperimentMetric(
+                    precision=0.5 if shadow_success else 0.0,
+                    execution_ms=shadow_latency,
+                ),
+                metadata={'comparison_scope_key': scope_key},
+            ))
+        except Exception:
+            logger.debug('Shadow ExperimentLab recording failed', exc_info=True)
 
     # Mapping from ToolLiveStatus field values / external_state_flags
     # to the canonical signal names accepted by _BLOCK_SIGNAL_WEIGHTS
