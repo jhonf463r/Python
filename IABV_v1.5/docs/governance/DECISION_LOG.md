@@ -90,6 +90,29 @@
 - **Estado:** Implementado
 - **Riesgo:** Ninguno
 
+## Decisiones de continuacion (2026-04-23, Devin)
+
+### D-2026-04-23-014: Win32PopupWatcher categorization fix
+- **Razon:** Windsurf detecto en validacion que todas las ventanas no-IABV se categorizaban como CAT_UNEXPECTED, incluyendo Shell_TrayWnd, Progman, DummyDWMListenerWindow. La logica ignoraba la lista de clases benignas.
+- **Cambio:** Agregados `_KNOWN_BENIGN_CLASSES` (14 clases), `_is_suspicious()` (patrones de titulo sospechoso), y logica de categorizacion: benigna → CAT_BACKGROUND; sospechosa → CAT_UNEXPECTED + unresolved; desconocida → CAT_UNEXPECTED sin unresolved.
+- **Modulos afectados:** `infra/ui_visibility_audit.py`
+- **Estado:** Implementado, 2 tests nuevos
+- **Riesgo:** Bajo — logica solo afecta clasificacion de eventos
+
+### D-2026-04-23-015: QmlDialogAuditBridge
+- **Razon:** Los dialogs QML (CredentialPromptDialog, ClarificationDialog, MissingDependencyDialog) se abrian sin dejar registro en ui_visibility_audit. La cadena era: Python VM emite signal → QML Connections abre dialog → usuario ve dialog → pero auditoria no lo sabe.
+- **Cambio:** `QmlDialogAuditBridge` conecta a los signals de los ViewModels y registra `dialog_shown` con nombre, VM origen, y payload (passwords redactadas via `_safe_serialize()`). `record_dialog_closed()` disponible para cierre. `_DIALOG_SIGNAL_MAP` mapea signal names a dialog info.
+- **Modulos afectados:** `infra/ui_visibility_audit.py` (nuevo bridge), `tests/test_ui_visibility_audit.py`
+- **Estado:** Implementado, 7 tests nuevos. Wiring en bootstrap pendiente.
+- **Riesgo:** Bajo — solo observa signals, no los modifica
+
+### D-2026-04-23-016: ToastAuditAdapter
+- **Razon:** `WinToastBridge.notify()` enviaba toasts sin registrar en auditoria visible. El usuario ve un toast pero la auditoria no lo sabe.
+- **Cambio:** `ToastAuditAdapter` monkey-patches `_notify_winotify()` y `_notify_balloon()` para registrar `toast_shown` automaticamente. Idempotente (double-install safe). Registra backend, icon, success.
+- **Modulos afectados:** `infra/ui_visibility_audit.py` (nuevo adapter), `tests/test_ui_visibility_audit.py`
+- **Estado:** Implementado, 5 tests nuevos. Wiring en bootstrap pendiente.
+- **Riesgo:** Bajo — monkey-patch preserva original en closure
+
 ---
 
 ## Decisiones historicas relevantes

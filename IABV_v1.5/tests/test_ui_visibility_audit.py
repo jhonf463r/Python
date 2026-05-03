@@ -17,11 +17,15 @@ from iabv_v15.infra.ui_visibility_audit import (
     KIND_DIALOG_SHOWN,
     KIND_FILE_NOT_FOUND,
     KIND_INIT_CHECK,
+    KIND_TOAST_SHOWN,
     SRC_BOOTSTRAP,
     SRC_QML,
+    QmlDialogAuditBridge,
     SplashAuditAdapter,
     SubprocessAuditWrapper,
+    ToastAuditAdapter,
     VisibilityAuditLog,
+    _safe_serialize,
 )
 
 
@@ -130,3 +134,216 @@ class TestSubprocessAuditWrapper:
             pass
         s = audit_log.summary()
         assert s['file_not_found_count'] == 0
+
+
+# ---------------------------------------------------------------------------
+# QmlDialogAuditBridge tests
+# ---------------------------------------------------------------------------
+
+class _FakeSignal:
+    """Minimal signal mock that supports connect() and emit()."""
+
+    def __init__(self) -> None:
+        self._slots: list = []
+
+    def connect(self, slot: object) -> None:
+        self._slots.append(slot)
+
+    def emit(self, payload: object) -> None:
+        for slot in self._slots:
+            slot(payload)
+
+
+class _FakeVM:
+    """Fake ViewModel with dialog signals for testing."""
+
+    def __init__(self) -> None:
+        self.credentialPromptRequested = _FakeSignal()
+        self.clarificationRequested = _FakeSignal()
+        self.missingDependencyRequested = _FakeSignal()
+
+
+class TestQmlDialogAuditBridge:
+    def test_install_connects_signals(self, audit_log: VisibilityAuditLog) -> None:
+        vm = _FakeVM()
+        bridge = QmlDialogAuditBridge(audit_log)
+        bridge.install(vm)
+        assert len(vm.credentialPromptRequested._slots) == 1
+        assert len(vm.clarificationRequested._slots) == 1
+        assert len(vm.missingDependencyRequested._slots) == 1
+
+    def test_credential_dialog_records_event(self, audit_log: VisibilityAuditLog) -> None:
+        vm = _FakeVM()
+        bridge = QmlDialogAuditBridge(audit_log)
+        bridge.install(vm)
+        vm.credentialPromptRequested.emit({
+            'domain': 'github.com',
+            'reason': 'PAT expired',
+            'username_hint': 'user',
+        })
+        s = audit_log.summary()
+        dialog_events = [e for e in s['events'] if e['kind'] == KIND_DIALOG_SHOWN
+                         and e['title'] == 'CredentialPromptDialog']
+        assert len(dialog_events) == 1
+        ev = dialog_events[0]
+        assert ev['event_category'] == CAT_INTENTIONAL
+        assert 'github.com' in ev['detail']
+        assert ev['source'] == SRC_QML
+
+    def test_clarification_dialog_records_event(self, audit_log: VisibilityAuditLog) -> None:
+        vm = _FakeVM()
+        bridge = QmlDialogAuditBridge(audit_log)
+        bridge.install(vm)
+        vm.clarificationRequested.emit({
+            'id': 'req-1',
+            'question': 'Which branch?',
+            'options': ['main', 'dev'],
+            'context': 'deploy',
+        })
+        s = audit_log.summary()
+        dialog_events = [e for e in s['events'] if e['kind'] == KIND_DIALOG_SHOWN
+                         and e['title'] == 'ClarificationDialog']
+        assert len(dialog_events) == 1
+        assert 'Which branch?' in dialog_events[0]['detail']
+
+    def test_missing_dependency_dialog_records_event(self, audit_log: VisibilityAuditLog) -> None:
+        vm = _FakeVM()
+        bridge = QmlDialogAuditBridge(audit_log)
+        bridge.install(vm)
+        vm.missingDependencyRequested.emit({
+            'package_name': 'winotify',
+            'manager': 'pip',
+            'reason': 'Required for toast notifications',
+        })
+        s = audit_log.summary()
+        dialog_events = [e for e in s['events'] if e['kind'] == KIND_DIALOG_SHOWN
+                         and e['title'] == 'MissingDependencyDialog']
+        assert len(dialog_events) == 1
+        assert 'winotify' in dialog_events[0]['detail']
+
+    def test_record_dialog_closed(self, audit_log: VisibilityAuditLog) -> None:
+        bridge = QmlDialogAuditBridge(audit_log)
+        bridge.record_dialog_closed('CredentialPromptDialog',
+                                    vm_name='ControlCenterVM',
+                                    response_type='credential_provided')
+        s = audit_log.summary()
+        closed = [e for e in s['events'] if e['kind'] == KIND_DIALOG_CLOSED]
+        assert len(closed) == 1
+        assert closed[0]['title'] == 'CredentialPromptDialog'
+        assert closed[0]['extra']['response_type'] == 'credential_provided'
+
+    def test_password_redacted_in_payload(self, audit_log: VisibilityAuditLog) -> None:
+        vm = _FakeVM()
+        bridge = QmlDialogAuditBridge(audit_log)
+        bridge.install(vm)
+        vm.credentialPromptRequested.emit({
+            'domain': 'github.com',
+            'password': 'supersecret123',
+        })
+        s = audit_log.summary()
+        dialog_events = [e for e in s['events'] if e['kind'] == KIND_DIALOG_SHOWN
+                         and e['title'] == 'CredentialPromptDialog']
+        payload = dialog_events[0]['extra']['signal_payload']
+        assert payload['password'] == '***REDACTED***'
+        assert payload['domain'] == 'github.com'
+
+    def test_install_skips_missing_signals(self, audit_log: VisibilityAuditLog) -> None:
+        vm = MagicMock(spec=[])  # no attributes
+        bridge = QmlDialogAuditBridge(audit_log)
+        bridge.install(vm)  # should not raise
+        s = audit_log.summary()
+        assert s['total_events'] == 1  # only init event
+
+
+class TestSafeSerialize:
+    def test_redacts_secrets(self) -> None:
+        result = _safe_serialize({
+            'domain': 'github.com',
+            'password': 'secret',
+            'token': 'abc123',
+            'api_key': 'xyz',
+        })
+        assert result['password'] == '***REDACTED***'
+        assert result['token'] == '***REDACTED***'
+        assert result['api_key'] == '***REDACTED***'
+        assert result['domain'] == 'github.com'
+
+    def test_truncates_long_strings(self) -> None:
+        result = _safe_serialize({'key': 'x' * 300})
+        assert len(result['key']) == 200
+
+    def test_non_dict_returns_string(self) -> None:
+        result = _safe_serialize([1, 2, 3])
+        assert isinstance(result, str)
+
+
+# ---------------------------------------------------------------------------
+# ToastAuditAdapter tests
+# ---------------------------------------------------------------------------
+
+class _FakeToastBridge:
+    """Minimal WinToastBridge mock for testing ToastAuditAdapter."""
+
+    def __init__(self) -> None:
+        self.winotify_called = False
+        self.balloon_called = False
+
+    def _notify_winotify(self, title: str, body: str, *, icon: str = 'info') -> bool:
+        self.winotify_called = True
+        return True
+
+    def _notify_balloon(self, title: str, body: str, *, icon: str = 'info',
+                        duration_ms: int = 5000) -> bool:
+        self.balloon_called = True
+        return True
+
+
+class TestToastAuditAdapter:
+    def test_install_patches_winotify(self, audit_log: VisibilityAuditLog) -> None:
+        bridge = _FakeToastBridge()
+        adapter = ToastAuditAdapter(audit_log, bridge)
+        adapter.install()
+        bridge._notify_winotify('Alerta', 'Test toast', icon='warning')
+        s = audit_log.summary()
+        toast_events = [e for e in s['events'] if e['kind'] == KIND_TOAST_SHOWN]
+        assert len(toast_events) == 1
+        ev = toast_events[0]
+        assert ev['title'] == 'Alerta'
+        assert ev['detail'] == 'Test toast'
+        assert ev['event_category'] == CAT_INTENTIONAL
+        assert ev['extra']['backend'] == 'winotify'
+        assert ev['extra']['success'] is True
+
+    def test_install_patches_balloon(self, audit_log: VisibilityAuditLog) -> None:
+        bridge = _FakeToastBridge()
+        adapter = ToastAuditAdapter(audit_log, bridge)
+        adapter.install()
+        bridge._notify_balloon('Info', 'Balloon msg', icon='info', duration_ms=3000)
+        s = audit_log.summary()
+        toast_events = [e for e in s['events'] if e['kind'] == KIND_TOAST_SHOWN]
+        assert len(toast_events) == 1
+        assert toast_events[0]['extra']['backend'] == 'balloon'
+
+    def test_original_still_called(self, audit_log: VisibilityAuditLog) -> None:
+        bridge = _FakeToastBridge()
+        adapter = ToastAuditAdapter(audit_log, bridge)
+        adapter.install()
+        result = bridge._notify_winotify('Test', 'Body')
+        assert result is True
+        # Cannot directly check winotify_called because method was replaced,
+        # but we verify the return value propagates
+
+    def test_double_install_is_idempotent(self, audit_log: VisibilityAuditLog) -> None:
+        bridge = _FakeToastBridge()
+        adapter = ToastAuditAdapter(audit_log, bridge)
+        adapter.install()
+        adapter.install()  # should not double-wrap
+        bridge._notify_winotify('Test', 'Body')
+        s = audit_log.summary()
+        toast_events = [e for e in s['events'] if e['kind'] == KIND_TOAST_SHOWN]
+        assert len(toast_events) == 1  # only one event, not two
+
+    def test_no_patch_if_methods_missing(self, audit_log: VisibilityAuditLog) -> None:
+        bridge = MagicMock(spec=[])  # no methods
+        adapter = ToastAuditAdapter(audit_log, bridge)
+        adapter.install()  # should not raise

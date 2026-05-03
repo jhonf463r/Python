@@ -237,6 +237,197 @@ class SplashAuditAdapter:
 
 
 # ---------------------------------------------------------------------------
+# QML dialog audit bridge — records dialog open/close from Python VM signals
+# ---------------------------------------------------------------------------
+
+# Map VM signal names to human-readable dialog info
+_DIALOG_SIGNAL_MAP: dict[str, dict[str, str]] = {
+    'credentialPromptRequested': {
+        'dialog': 'CredentialPromptDialog',
+        'detail_key': 'domain',
+        'category': CAT_INTENTIONAL,
+    },
+    'clarificationRequested': {
+        'dialog': 'ClarificationDialog',
+        'detail_key': 'question',
+        'category': CAT_INTENTIONAL,
+    },
+    'missingDependencyRequested': {
+        'dialog': 'MissingDependencyDialog',
+        'detail_key': 'package_name',
+        'category': CAT_INTENTIONAL,
+    },
+}
+
+
+class QmlDialogAuditBridge:
+    """Records audit events when QML dialogs are opened via ViewModel signals.
+
+    Usage in bootstrap::
+
+        bridge = QmlDialogAuditBridge(get_audit_log())
+        bridge.install(control_center_vm)
+        bridge.install(evolution_center_vm)
+
+    Each dialog open emits a ``dialog_shown`` event with the dialog name,
+    source ViewModel, and relevant payload detail (domain, question, etc.).
+    """
+
+    def __init__(self, audit: VisibilityAuditLog) -> None:
+        self._audit = audit
+
+    def install(self, viewmodel: Any) -> None:
+        """Connect to dialog signals on a ViewModel (non-destructive)."""
+        vm_name = type(viewmodel).__name__
+        for signal_name, info in _DIALOG_SIGNAL_MAP.items():
+            signal = getattr(viewmodel, signal_name, None)
+            if signal is None:
+                continue
+            dialog = info['dialog']
+            detail_key = info['detail_key']
+            category = info['category']
+            try:
+                signal.connect(
+                    lambda payload, _d=dialog, _k=detail_key, _c=category,
+                    _vm=vm_name: self._on_dialog_requested(
+                        payload, dialog=_d, detail_key=_k,
+                        category=_c, vm_name=_vm,
+                    )
+                )
+            except Exception:
+                logger.debug('QmlDialogAuditBridge: cannot connect %s.%s',
+                             vm_name, signal_name)
+
+    def _on_dialog_requested(
+        self,
+        payload: dict[str, Any],
+        *,
+        dialog: str,
+        detail_key: str,
+        category: str,
+        vm_name: str,
+    ) -> None:
+        detail_value = payload.get(detail_key, '') if isinstance(payload, dict) else ''
+        self._audit.record(
+            KIND_DIALOG_SHOWN,
+            source=SRC_QML,
+            title=dialog,
+            detail=f'{dialog} opened: {detail_key}={detail_value}',
+            event_category=category,
+            extra={
+                'viewmodel': vm_name,
+                'signal_payload': _safe_serialize(payload),
+            },
+        )
+
+    def record_dialog_closed(
+        self,
+        dialog: str,
+        *,
+        vm_name: str = '',
+        response_type: str = '',
+    ) -> None:
+        """Manually record a dialog close (called from VM response slots)."""
+        self._audit.record(
+            KIND_DIALOG_CLOSED,
+            source=SRC_QML,
+            title=dialog,
+            detail=f'{dialog} closed: response={response_type}',
+            event_category=CAT_INTENTIONAL,
+            extra={'viewmodel': vm_name, 'response_type': response_type},
+        )
+
+
+def _safe_serialize(obj: Any) -> dict[str, Any] | str:
+    """Produce a JSON-safe representation of a payload dict."""
+    if isinstance(obj, dict):
+        result: dict[str, Any] = {}
+        for k, v in obj.items():
+            if k in ('password', 'secret', 'token', 'api_key'):
+                result[k] = '***REDACTED***'
+            elif isinstance(v, str):
+                result[k] = v[:200]
+            else:
+                result[k] = str(v)[:200]
+        return result
+    return str(obj)[:500]
+
+
+# ---------------------------------------------------------------------------
+# Toast audit adapter — auto-registers toast notifications
+# ---------------------------------------------------------------------------
+
+class ToastAuditAdapter:
+    """Wraps ``WinToastBridge`` so every notification is automatically audited.
+
+    Usage::
+
+        adapter = ToastAuditAdapter(get_audit_log(), win_toast_bridge)
+        adapter.install()  # monkey-patches the bridge methods
+
+    After ``install()``, every call to ``notify()`` on the bridge will
+    automatically record a ``toast_shown`` event in the audit log.
+    """
+
+    def __init__(self, audit: VisibilityAuditLog, bridge: Any) -> None:
+        self._audit = audit
+        self._bridge = bridge
+        self._installed = False
+
+    def install(self) -> None:
+        """Monkey-patch the bridge's internal methods to record events."""
+        if self._installed:
+            return
+        bridge = self._bridge
+
+        original_winotify = getattr(bridge, '_notify_winotify', None)
+        original_balloon = getattr(bridge, '_notify_balloon', None)
+
+        if original_winotify is not None:
+            def _audited_winotify(title: str, body: str, *, icon: str = 'info',
+                                  _orig: Any = original_winotify) -> bool:
+                result = _orig(title, body, icon=icon)
+                self._record_toast(title, body, backend='winotify',
+                                   icon=icon, success=result)
+                return result
+            bridge._notify_winotify = _audited_winotify  # noqa: SLF001
+
+        if original_balloon is not None:
+            def _audited_balloon(title: str, body: str, *, icon: str = 'info',
+                                 duration_ms: int = 5000,
+                                 _orig: Any = original_balloon) -> bool:
+                result = _orig(title, body, icon=icon, duration_ms=duration_ms)
+                self._record_toast(title, body, backend='balloon',
+                                   icon=icon, success=result)
+                return result
+            bridge._notify_balloon = _audited_balloon  # noqa: SLF001
+
+        self._installed = True
+
+    def _record_toast(
+        self,
+        title: str,
+        body: str,
+        *,
+        backend: str,
+        icon: str,
+        success: bool,
+    ) -> None:
+        self._audit.record(
+            KIND_TOAST_SHOWN,
+            source=f'WinToastBridge.{backend}',
+            title=title,
+            detail=body[:500],
+            event_category=CAT_INTENTIONAL,
+            extra={
+                'backend': backend,
+                'icon': icon,
+                'success': success,
+            },
+        )
+
+
+# ---------------------------------------------------------------------------
 # Win32 popup watcher — daemon thread that polls for unexpected message boxes
 # ---------------------------------------------------------------------------
 

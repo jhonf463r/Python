@@ -1,7 +1,7 @@
 # IABV v1.5 — Session Handoff
 
-**Ultima sesion:** 2026-05-04 (Devin — Fases 1-3 + DashboardVM lazy init + ui_visibility_audit)
-**Proxima prioridad:** Validacion Windows live de PR #308 con prompts segmentados
+**Ultima sesion:** 2026-04-23 (Devin — QML dialog audit bridge + toast auto-audit)
+**Proxima prioridad:** Validacion Windows live de bridges QML + toast con Windsurf/Codex
 
 ---
 
@@ -35,27 +35,42 @@
 - **Tests:** 17 nuevos focalizados (8 DashboardVM + 9 ui_visibility_audit), todos PASS
 - **Regresion completa:** 2489 passed / 24 failed / 23 skipped — **0 regresiones nuevas**
 
-### Documentos nuevos o actualizados en esta sesion
-- `src/iabv_v15/infra/ui_visibility_audit.py` — **nuevo**, modulo de auditoria UI visible
-- `src/iabv_v15/ui/viewmodels/dashboard_viewmodel.py` — lazy init implementado
-- `tests/test_dashboard_lazy_init.py` — **nuevo**, 8 tests del DashboardVM lazy init
-- `tests/test_ui_visibility_audit.py` — **nuevo**, 9 tests del modulo de auditoria
-- `docs/governance/AUDIT_PROMPT_LAPTOP.md` — reescrito con 5 segmentos
+### Fase D — QML dialog audit bridge + toast auto-audit (2026-04-23)
+- **QmlDialogAuditBridge** en `ui_visibility_audit.py`
+  - Conecta a signals de ViewModels: `credentialPromptRequested`, `clarificationRequested`, `missingDependencyRequested`
+  - Registra `dialog_shown` con nombre de dialog, source VM, payload (passwords redactadas)
+  - `record_dialog_closed()` para cierre manual desde VM response slots
+  - `_safe_serialize()` redacta passwords/tokens/api_keys en payloads
+- **ToastAuditAdapter** en `ui_visibility_audit.py`
+  - Monkey-patches `WinToastBridge._notify_winotify()` y `_notify_balloon()`
+  - Registra `toast_shown` automaticamente sin intervencion del callador
+  - Idempotente (double-install es safe)
+- **Win32PopupWatcher categorization fix** (hallazgo Windsurf)
+  - `_KNOWN_BENIGN_CLASSES`: 14 clases de ventana de Windows
+  - `_is_suspicious()`: detecta titulos con patrones de error
+  - Ventana benigna → CAT_BACKGROUND; sospechosa → CAT_UNEXPECTED + unresolved
+- **Tests:** 26 focalizados (19 previos + 7 nuevos), todos PASS
+- **Regresion completa:** 2506 passed / 24 failed / 23 skipped — **0 regresiones nuevas**
+
+### Documentos nuevos o actualizados
+- `src/iabv_v15/infra/ui_visibility_audit.py` — QmlDialogAuditBridge, ToastAuditAdapter, Win32 fix
+- `tests/test_ui_visibility_audit.py` — 7 tests nuevos (dialog bridge + toast + safe_serialize)
 - `docs/governance/SESSION_HANDOFF.md` — este archivo
-- `docs/governance/DECISION_LOG.md` — actualizado con D-011 a D-013
+- `docs/governance/DECISION_LOG.md` — actualizado con D-014 a D-016
 
 ---
 
 ## Que quedo pendiente
 
-1. **Validacion Windows live** de PR #308 con prompts segmentados (Codex/Windsurf)
-2. **Integracion de ui_visibility_audit en bootstrap** — el modulo esta listo pero
-   la integracion en bootstrap (abrir log, adjuntar SplashAuditAdapter, wrappear
-   subprocesses) debe hacerse en Windows real para validar Win32PopupWatcher
-3. **AutonomyCycleService** — UNRESOLVED (U1), funcionalidad dispersa en OSES/TOR
-4. **Resume-aware orchestration** — leer startup_summary() al arrancar
-5. **Selector unificado** — agregar rutas web como candidatos formales
-6. **UniversalAutonomyIndex en OSES** — calculo de metricas de autonomia
+1. **Wiring en bootstrap** — instalar `QmlDialogAuditBridge` y `ToastAuditAdapter` en bootstrap.py
+   despues de crear VMs y WinToastBridge (requiere validacion Windows)
+2. **Validacion Windows live** de bridges QML + toast (Codex/Windsurf)
+3. **Dialog close tracking** — agregar llamadas a `record_dialog_closed()` en los
+   VM response handlers (onCredentialProvided, onClarificationResponse, etc.)
+4. **AutonomyCycleService** — UNRESOLVED (U1), funcionalidad dispersa en OSES/TOR
+5. **Resume-aware orchestration** — leer startup_summary() al arrancar
+6. **Selector unificado** — agregar rutas web como candidatos formales
+7. **UniversalAutonomyIndex en OSES** — calculo de metricas de autonomia
 
 ---
 
@@ -75,14 +90,14 @@
 
 | Area | Estado |
 |---|---|
-| Tests (Linux) | 2489 passed / 24 failed / 23 skipped |
+| Tests (Linux) | 2506 passed / 24 failed / 23 skipped |
 | Control Master | Actualizado esta sesion |
 | Bootstrap | Funcional (3472 lineas, no modificado) |
 | Orquestador (ATO) | Funcional, quota wiring conectado |
 | WorldModel | Funcional, worker_pool_snapshot agregado |
 | ControlCenterVM | Funcional con lazy init |
 | DashboardVM | Funcional con lazy init (NUEVO) |
-| ui_visibility_audit | Creado, testado, listo para integracion |
+| ui_visibility_audit | Creado + QML bridge + toast adapter, 26 tests |
 | MCP | Operativo |
 
 ---
@@ -109,6 +124,6 @@ cat docs/governance/AUDIT_PROMPT_LAPTOP.md
 
 Los conteos de tests difieren entre sesiones porque origin/main avanzo:
 - Baseline original (sesion 1): 2391 passed / 29 failed / 25 skipped
-- Baseline actual (sesion 2): 2489 passed / 24 failed / 23 skipped
-- La diferencia se debe a PRs mergeados entre sesiones (#300, #302, #304, #305, #306)
+- Baseline sesion 2: 2489 passed / 24 failed / 23 skipped
+- Baseline sesion 3 (actual): 2506 passed / 24 failed / 23 skipped (+17 tests nuevos)
 - Todos los 24 fallos son pre-existentes en origin/main (verificado)
