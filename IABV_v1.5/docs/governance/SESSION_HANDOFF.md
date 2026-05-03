@@ -1,112 +1,114 @@
 # IABV v1.5 — Session Handoff
 
-**Última sesión:** 2026-05-03 (Devin — Fase 1 implementada + gobernanza + trazabilidad)
-**Próxima prioridad:** Fase 2 — quota tracker wiring (`record_message_sent()` en ATO)
+**Ultima sesion:** 2026-05-04 (Devin — Fases 1-3 + DashboardVM lazy init + ui_visibility_audit)
+**Proxima prioridad:** Validacion Windows live de PR #308 con prompts segmentados
 
 ---
 
-## Qué se hizo en esta sesión (2 fases de trabajo)
+## Que se hizo en esta sesion (3 fases de trabajo + continuacion)
 
-### Fase A — Diagnóstico + Gobernanza (primera mitad)
+### Fase A — Diagnostico + Gobernanza (sesion anterior)
 - Mapeado del repositorio: 240 archivos Python fuente, 193 archivos de test
-- Ejecutados 2445 tests: **2391 passed, 29 failed, 25 skipped** (baseline pre-existente)
+- Ejecutados 2445 tests: **2391 passed, 29 failed, 25 skipped** (baseline original)
 - Verificado estado del Control Master: desactualizado desde 2026-04-19
 - Confirmado que AutonomyCycleService no existe en source tree (UNRESOLVED U1)
-- Creada capa de gobernanza viva en `docs/governance/` (10 documentos)
-- Informe diagnóstico completo de 16 secciones en `DIAGNOSTIC_REPORT.md`
-- Master Doc integrado como `docs/IABV_MASTER_DOC_v1.md`
+- Creada capa de gobernanza viva en `docs/governance/` (12 documentos)
+- Informe diagnostico completo de 16 secciones en `DIAGNOSTIC_REPORT.md`
 
-### Fase B — Implementación Fase 1 (segunda mitad)
-- **ControlCenterVM lazy init implementado:** `_initialize_heavy()` + `_bg_initial_refresh()`
-  - I/O pesado (PBT load, goal context, repo bridge, local stack) movido a `_bg_pool`
-  - Resultado aplicado en main thread via `taskResolved` signal (`_initial_refresh`)
-  - `QTimer.singleShot(250)` → `QTimer.singleShot(0)` — deferred al próximo tick del event loop
-  - Refresh de UI (progress cards, evolution snapshot, agent cards) ejecutado en main thread post-signal
-  - Provider health refresh encadenado después del initial refresh
-- **Tests post-fix:** 2391 passed / 29 failed / 25 skipped — **0 regresiones nuevas**
-- **U1 documentado** con evidencia exhaustiva de búsqueda (grep, find, bootstrap, git history)
-- **Nota de reconciliación de inventario** creada (`INVENTORY_RECONCILIATION.md`)
+### Fase B — Implementacion Fases 1-3 (sesion anterior)
+- **ControlCenterVM lazy init:** `_initialize_heavy()` + `_bg_initial_refresh()`
+- **Quota tracker wiring:** `_record_quota_usage()` en ATO
+- **worker_pool_snapshot:** Campo en WorldModelSnapshot + `_estimate_worker_pool()`
 
-### Fase C — Implementación Fases 2+3 (tercera parte)
-- **Fase 2 — Quota tracker wiring:**
-  - `_record_quota_usage()` + `_record_quota_usage_for_candidate()` en ATO
-  - Llaman `record_message_sent(tool, email)` antes de cada `plan_or_execute()`
-  - Tool extraído de `governance.assistant_kind`, email del `worker_gate.top_worker`
-  - Envuelto en try/except — fallo de I/O no rompe la sesión
-- **Fase 3 — worker_pool en WorldModelSnapshot:**
-  - Campo `worker_pool_snapshot: dict = {}` en `WorldModelSnapshot` (domain/models.py)
-  - `_estimate_worker_pool(timeout_s=2.0)` en `world_model_service.py`
-  - Usa ThreadPoolExecutor con timeout de 2s para no bloquear ciclo de monitoreo
-  - Solo en scans `full` (no en `light`)
-- **Prompt de auditoría real** creado (`AUDIT_PROMPT_LAPTOP.md`) para Windsurf/Codex
-- **Tests post-Fases 2+3:** 2391 passed / 29 failed / 25 skipped — **0 regresiones**
+### Fase C — Continuacion (esta sesion, 2026-05-04)
+- **DashboardVM lazy init:** `_bg_refresh()` + `refreshResolved` signal + `_apply_refresh()`
+  - `refresh()` ahora es non-blocking: submit a `_bg_pool` (ThreadPoolExecutor)
+  - `list_recent()` y `describe_index()` corren en background thread
+  - Main thread ya no se bloquea ~51s al refrescar el Dashboard
+  - Patron identico al ControlCenterVM (Fase 1)
+- **ui_visibility_audit.py creado** en `src/iabv_v15/infra/`
+  - Captura popups, dialogs, toasts, FileNotFoundError, eventos background
+  - Distingue CAT_INTENTIONAL / CAT_UNEXPECTED / CAT_BACKGROUND
+  - JSONL append-only en `data/logs/visible_events.jsonl`
+  - Incluye Win32PopupWatcher (daemon thread), SplashAuditAdapter, SubprocessAuditWrapper
+- **AUDIT_PROMPT_LAPTOP.md reescrito** con 5 prompts segmentados para re-auditoria
+- **Tests:** 17 nuevos focalizados (8 DashboardVM + 9 ui_visibility_audit), todos PASS
+- **Regresion completa:** 2489 passed / 24 failed / 23 skipped — **0 regresiones nuevas**
 
-### Documentos nuevos o actualizados en esta sesión
-- `docs/governance/INVENTORY_RECONCILIATION.md` — **nuevo**, reconcilia conteos entre reportes
-- `docs/governance/AUDIT_PROMPT_LAPTOP.md` — **nuevo**, prompt de auditoría para laptop
-- `docs/governance/UNRESOLVED_REGISTRY.md` — actualizado con evidencia detallada para U1
-- `docs/governance/SESSION_HANDOFF.md` — este archivo, actualizado
-- `docs/governance/NEXT_STEPS.md` — actualizado con Fases 1-3 completadas
-- `docs/governance/DECISION_LOG.md` — actualizado con decisiones D-003 a D-010
-- `src/iabv_v15/ui/viewmodels/control_center_viewmodel.py` — lazy init implementado
-- `src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py` — quota wiring
-- `src/iabv_v15/domain/models.py` — worker_pool_snapshot field
-- `src/iabv_v15/services/evolution/world_model_service.py` — _estimate_worker_pool()
+### Documentos nuevos o actualizados en esta sesion
+- `src/iabv_v15/infra/ui_visibility_audit.py` — **nuevo**, modulo de auditoria UI visible
+- `src/iabv_v15/ui/viewmodels/dashboard_viewmodel.py` — lazy init implementado
+- `tests/test_dashboard_lazy_init.py` — **nuevo**, 8 tests del DashboardVM lazy init
+- `tests/test_ui_visibility_audit.py` — **nuevo**, 9 tests del modulo de auditoria
+- `docs/governance/AUDIT_PROMPT_LAPTOP.md` — reescrito con 5 segmentos
+- `docs/governance/SESSION_HANDOFF.md` — este archivo
+- `docs/governance/DECISION_LOG.md` — actualizado con D-011 a D-013
 
 ---
 
-## Qué quedó pendiente
+## Que quedo pendiente
 
-1. ~~**ControlCenterVM lazy init**~~ — Implementado (Fase 1)
-2. ~~**Quota tracker wiring**~~ — Implementado (Fase 2)
-3. ~~**worker_pool en WorldModelSnapshot**~~ — Implementado (Fase 3)
-4. **AutonomyCycleService** — UNRESOLVED (U1), funcionalidad dispersa en OSES/TOR con fallbacks
-5. **Resume-aware orchestration** — leer startup_summary() al arrancar
-6. **Selector unificado** — agregar rutas web como candidatos formales
-7. **UniversalAutonomyIndex en OSES** — cálculo de métricas de autonomía
+1. **Validacion Windows live** de PR #308 con prompts segmentados (Codex/Windsurf)
+2. **Integracion de ui_visibility_audit en bootstrap** — el modulo esta listo pero
+   la integracion en bootstrap (abrir log, adjuntar SplashAuditAdapter, wrappear
+   subprocesses) debe hacerse en Windows real para validar Win32PopupWatcher
+3. **AutonomyCycleService** — UNRESOLVED (U1), funcionalidad dispersa en OSES/TOR
+4. **Resume-aware orchestration** — leer startup_summary() al arrancar
+5. **Selector unificado** — agregar rutas web como candidatos formales
+6. **UniversalAutonomyIndex en OSES** — calculo de metricas de autonomia
 
 ---
 
-## Qué no se tocó (y por qué)
+## Que no se toco (y por que)
 
-- **Capas cerradas P1-P4**: están sanas, no requieren cambios
-- **ExperimentLab / StrategySelector / AdaptiveWeightLayer**: pipeline de aprendizaje funcional, no modificar
-- **WorldModelService core**: funciona correctamente en Windows, solo falta worker_pool_snapshot
-- **Auditoría y replay**: funcionales, solo falta UniversalAutonomyIndex
-- **MCP server y tools**: operativos, no se tocaron
+- **Capas cerradas P1-P4**: estan sanas, no requieren cambios
+- **ExperimentLab / StrategySelector / AdaptiveWeightLayer**: pipeline funcional
+- **WorldModelService core**: funciona correctamente
+- **Auditoria y replay**: funcionales
+- **MCP server y tools**: operativos
+- **Bootstrap**: no se modifico (integracion de ui_visibility_audit pendiente para Windows)
+- **PR #276**: no se toco (paralelizacion de health checks, pendiente validacion Codex)
 
 ---
 
 ## Estado confirmado del sistema
 
-| Área | Estado |
+| Area | Estado |
 |---|---|
-| Tests | 2391 passed / 29 failed / 25 skipped |
-| Control Master | Actualizado esta sesión |
-| Bootstrap | Funcional (3472 líneas) |
-| Orquestador (ATO) | Funcional (3557 líneas), falta quota wiring |
-| WorldModel | Funcional, falta worker_pool_snapshot |
-| OSES | Funcional (6485 líneas), falta AutonomyIndex |
-| ControlCenterVM | Funcional con lazy init (7101 líneas, init deferred a bg pool) |
-| MCP | Operativo (3139 líneas server) |
+| Tests (Linux) | 2489 passed / 24 failed / 23 skipped |
+| Control Master | Actualizado esta sesion |
+| Bootstrap | Funcional (3472 lineas, no modificado) |
+| Orquestador (ATO) | Funcional, quota wiring conectado |
+| WorldModel | Funcional, worker_pool_snapshot agregado |
+| ControlCenterVM | Funcional con lazy init |
+| DashboardVM | Funcional con lazy init (NUEVO) |
+| ui_visibility_audit | Creado, testado, listo para integracion |
+| MCP | Operativo |
 
 ---
 
-## Cómo continuar
+## Como continuar
 
 ```bash
-# 1. Leer el estado actual del Control Master
-PYTHONPATH=src python -m iabv_v15 cm export-digest --format markdown
-
-# 2. Leer este handoff
+# 1. Leer el estado actual
 cat docs/governance/SESSION_HANDOFF.md
 
-# 3. Revisar UNRESOLVED activos
-cat docs/governance/UNRESOLVED_REGISTRY.md
+# 2. Verificar tests
+PYTHONPATH=src python -m pytest tests/ -q
 
-# 4. Revisar siguiente paso recomendado
-cat docs/governance/NEXT_STEPS.md
+# 3. Ejecutar auditoria en Windows con prompts segmentados
+cat docs/governance/AUDIT_PROMPT_LAPTOP.md
 
-# 5. Correr tests como baseline
-PYTHONPATH=src python -m pytest tests/ -q --tb=no
+# 4. Siguiente prioridad: integrar ui_visibility_audit en bootstrap
+# (solo en Windows para validar Win32PopupWatcher)
 ```
+
+---
+
+## Nota de reconciliacion de inventario
+
+Los conteos de tests difieren entre sesiones porque origin/main avanzo:
+- Baseline original (sesion 1): 2391 passed / 29 failed / 25 skipped
+- Baseline actual (sesion 2): 2489 passed / 24 failed / 23 skipped
+- La diferencia se debe a PRs mergeados entre sesiones (#300, #302, #304, #305, #306)
+- Todos los 24 fallos son pre-existentes en origin/main (verificado)

@@ -68,9 +68,31 @@
 - **Estado:** Implementado
 - **Riesgo:** Ninguno
 
+## Decisiones de continuacion (2026-05-04, Devin)
+
+### D-2026-05-04-011: DashboardVM lazy init
+- **Razon:** Windsurf audit (PR #307) identifico que `DashboardViewModel.refresh()` bloqueaba el main thread ~51s post-arranque. El patron es identico al ya corregido en ControlCenterVM (Fase 1).
+- **Cambio:** `refresh()` ahora submit a `_bg_pool` (ThreadPoolExecutor). I/O (`list_recent()`, `describe_index()`) corre en background. Resultado aplicado via `refreshResolved` signal + `_apply_refresh()` en main thread. Signal `refreshResolved = Signal(object)` agregado.
+- **Modulos afectados:** `dashboard_viewmodel.py`
+- **Estado:** Implementado y verificado (2489 passed / 24 failed / 23 skipped — 0 regresiones)
+- **Riesgo:** Bajo — cambio local al VM
+
+### D-2026-05-04-012: Crear ui_visibility_audit.py
+- **Razon:** Usuario pidio modulo de auditoria de experiencia visible: captura de popups, dialogs, errores FileNotFound, notificaciones y eventos inesperados de Windows. Windsurf lo creo localmente pero no lo versionno.
+- **Cambio:** Modulo nuevo en `src/iabv_v15/infra/ui_visibility_audit.py`. Incluye VisibilityAuditLog (singleton, JSONL append-only), Win32PopupWatcher (daemon thread), SplashAuditAdapter, SubprocessAuditWrapper. Distingue CAT_INTENTIONAL / CAT_UNEXPECTED / CAT_BACKGROUND.
+- **Modulos afectados:** `infra/ui_visibility_audit.py` (nuevo), `tests/test_ui_visibility_audit.py` (nuevo)
+- **Estado:** Implementado, 9 tests pasan. Integracion en bootstrap pendiente para Windows.
+- **Riesgo:** Bajo — es modulo pasivo, no interfiere con runtime
+
+### D-2026-05-04-013: Reescribir AUDIT_PROMPT_LAPTOP.md con prompts segmentados
+- **Razon:** Auditoria anterior de Windsurf se hizo con un solo prompt largo. Segmentar en 5 prompts independientes (arranque, quota, world model, ui audit, tests) permite re-auditar piezas individuales sin repetir todo.
+- **Modulos afectados:** `docs/governance/AUDIT_PROMPT_LAPTOP.md`
+- **Estado:** Implementado
+- **Riesgo:** Ninguno
+
 ---
 
-## Decisiones históricas relevantes
+## Decisiones historicas relevantes
 
 | Fecha | Decisión | Agente |
 |---|---|---|

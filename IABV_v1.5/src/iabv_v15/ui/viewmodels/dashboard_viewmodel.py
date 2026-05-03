@@ -1,5 +1,8 @@
 ﻿from __future__ import annotations
 
+import atexit
+from concurrent.futures import ThreadPoolExecutor
+import logging
 import threading
 
 from iabv_v15.infra.persistence.episode_repository import EpisodeRepository
@@ -9,9 +12,12 @@ from iabv_v15.services.roles.embedding_index_service import EmbeddingIndexServic
 from iabv_v15.services.roles.local_role_router import LocalRoleRouter
 from iabv_v15.ui.qt import QObject, Property, QTimer, Signal, Slot
 
+logger = logging.getLogger(__name__)
+
 
 class DashboardViewModel(QObject):
     dataChanged = Signal()
+    refreshResolved = Signal(object)
     healthResolved = Signal(object, str)
     healthFailed = Signal(str)
 
@@ -34,12 +40,15 @@ class DashboardViewModel(QObject):
         self._provider_cards: list[dict] = self._placeholder_health_cards()
         self._health_busy = False
         self._health_status = 'Chequeo pendiente. Usa el boton para consultar el stack local.'
+        self._bg_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix='dash-bg')
+        atexit.register(self._shutdown_bg_pool)
+        self.refreshResolved.connect(self._apply_refresh)
         self.healthResolved.connect(self._apply_health)
         self.healthFailed.connect(self._apply_health_error)
         if defer_initial_refresh:
-            QTimer.singleShot(250, self.refresh)
+            QTimer.singleShot(0, self._deferred_refresh)
         else:
-            self.refresh()
+            self._deferred_refresh()
 
     def _translate_status(self, status: str) -> str:
         mapping = {'ready': 'listo', 'degraded': 'degradado', 'unavailable': 'no disponible', 'optional_inactive': 'opcional no activo', 'idle': 'inactivo'}
@@ -67,19 +76,37 @@ class DashboardViewModel(QObject):
     def get_health_status(self) -> str:
         return self._health_status
 
+    def _shutdown_bg_pool(self) -> None:
+        self._bg_pool.shutdown(wait=False)
+
+    def _deferred_refresh(self) -> None:
+        self._bg_pool.submit(self._bg_refresh)
+
+    def _bg_refresh(self) -> None:
+        try:
+            episodes = self.episode_repository.list_recent(limit=100)
+            knowledge = self.knowledge_repository.list_recent(limit=100)
+            runs = self.run_repository.list_recent(limit=100)
+            index_state = self.embedding_service.describe_index()
+            cards = [
+                {'title': 'Episodios', 'value': str(len(episodes)), 'hint': 'Sesiones capturadas y listas para revisar'},
+                {'title': 'Conocimiento', 'value': str(len(knowledge)), 'hint': 'Memoria confirmada para reutilizacion'},
+                {'title': 'Ejecuciones', 'value': str(len(runs)), 'hint': 'Respuestas por rol ya registradas'},
+                {'title': 'Indexado', 'value': str(index_state.get('knowledge_count', 0)), 'hint': 'Elementos de conocimiento reflejados por el indice local'},
+            ]
+            self.refreshResolved.emit(cards)
+        except Exception:
+            logger.debug('DashboardVM bg refresh failed', exc_info=True)
+            self.refreshResolved.emit([])
+
+    @Slot(object)
+    def _apply_refresh(self, cards: list[dict]) -> None:
+        self._summary_cards = cards
+        self.dataChanged.emit()
+
     @Slot()
     def refresh(self) -> None:
-        episodes = self.episode_repository.list_recent(limit=100)
-        knowledge = self.knowledge_repository.list_recent(limit=100)
-        runs = self.run_repository.list_recent(limit=100)
-        index_state = self.embedding_service.describe_index()
-        self._summary_cards = [
-            {'title': 'Episodios', 'value': str(len(episodes)), 'hint': 'Sesiones capturadas y listas para revisar'},
-            {'title': 'Conocimiento', 'value': str(len(knowledge)), 'hint': 'Memoria confirmada para reutilizacion'},
-            {'title': 'Ejecuciones', 'value': str(len(runs)), 'hint': 'Respuestas por rol ya registradas'},
-            {'title': 'Indexado', 'value': str(index_state.get('knowledge_count', 0)), 'hint': 'Elementos de conocimiento reflejados por el indice local'},
-        ]
-        self.dataChanged.emit()
+        self._deferred_refresh()
 
     @Slot()
     def refreshHealth(self) -> None:
