@@ -332,6 +332,12 @@ class AdaptiveTaskOrchestrator:
         payload = self._build_parallel_comparison_payload(
             request=request, candidate=candidate, synaptic_decision=synaptic_decision
         )
+        _candidate_kind = str(candidate.get('assistant_kind') or '').strip().lower()
+        _gate = self.role_router.worker_health_gate(
+            target_assistant=_candidate_kind,
+        ) if _candidate_kind else {}
+        _email = str((_gate.get('top_worker') or {}).get('email') or '')
+
         result = service.plan_or_execute(
             adaptive_payload=payload,
             user_goal=request.user_goal,
@@ -339,8 +345,20 @@ class AdaptiveTaskOrchestrator:
             decision_context=decision_context,
         )
         result_dict = dict(result or {})
-        result_dict.setdefault('assistant_kind', str(candidate.get('assistant_kind') or ''))
+        result_dict.setdefault('assistant_kind', _candidate_kind)
         result_dict['candidate_score'] = float(candidate.get('score') or 0.0)
+
+        # Fase 2: record quota for parallel comparison dispatches too.
+        _status = str(result_dict.get('status') or '')
+        if _status not in ('noop', 'failed', 'blocked_external', 'unavailable', ''):
+            quota = self._record_quota_usage(
+                str(result_dict.get('actual_assistant_kind') or _candidate_kind),
+                _email,
+                source='parallel_ia_comparison',
+            )
+            if quota is not None:
+                result_dict['quota_status'] = quota
+
         return result_dict
 
     @staticmethod
@@ -518,6 +536,40 @@ class AdaptiveTaskOrchestrator:
         except Exception:
             pass
         return result
+
+    # ------------------------------------------------------------------
+    # Fase 2: Quota tracker — record usage against free-tier limits
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _record_quota_usage(
+        assistant_kind: str,
+        account_email: str,
+        *,
+        source: str = '',
+    ) -> dict[str, Any] | None:
+        """Call ``record_message_sent`` to count usage against free-tier limits.
+
+        Returns the quota status dict on success, ``None`` on failure or
+        missing data.  Never raises — quota tracking must not break the
+        dispatch flow.
+        """
+        tool = (assistant_kind or '').strip().lower()
+        email = (account_email or '').strip()
+        if not tool or not email:
+            return None
+        try:
+            from iabv_v15.services.account_resource_scanner import (
+                record_message_sent,
+            )
+            return record_message_sent(tool=tool, email=email)
+        except Exception:
+            import logging
+            logging.getLogger('iabv_v15.orchestrator').debug(
+                'quota_tracker: failed to record usage for %s/%s', tool, email,
+                exc_info=True,
+            )
+            return None
 
     # ------------------------------------------------------------------
     # TemporalAwareness: track and detect task timing anomalies
@@ -787,6 +839,10 @@ class AdaptiveTaskOrchestrator:
                 'site_hint': request.site_hint or '',
             },
         }
+        _gate = self.role_router.worker_health_gate(
+            target_assistant=secondary_kind,
+        ) if secondary_kind else {}
+        _email = str((_gate.get('top_worker') or {}).get('email') or '')
         try:
             result = self.autonomous_evolution_service.plan_or_execute(
                 adaptive_payload=payload,
@@ -798,6 +854,15 @@ class AdaptiveTaskOrchestrator:
             result_dict.setdefault('assistant_kind', secondary_kind)
             result_dict['chained_from'] = primary_kind
             result_dict['chain_type'] = 'iterative_reasoning'
+            _status = str(result_dict.get('status') or '')
+            if _status not in ('noop', 'failed', 'blocked_external', ''):
+                quota = self._record_quota_usage(
+                    str(result_dict.get('actual_assistant_kind') or secondary_kind),
+                    _email,
+                    source='chained_ia_consultation',
+                )
+                if quota is not None:
+                    result_dict['quota_status'] = quota
             return result_dict
         except Exception:
             return None
@@ -874,6 +939,10 @@ class AdaptiveTaskOrchestrator:
                 'plan_type': str(best_proposal.get('type') or ''),
             },
         }
+        _gate_p = self.role_router.worker_health_gate(
+            target_assistant=primary_ia,
+        ) if primary_ia else {}
+        _email_p = str((_gate_p.get('top_worker') or {}).get('email') or '')
         try:
             primary_result = self.autonomous_evolution_service.plan_or_execute(
                 adaptive_payload=primary_payload,
@@ -885,6 +954,15 @@ class AdaptiveTaskOrchestrator:
             return None
         primary_dict = dict(primary_result or {})
         primary_dict.setdefault('assistant_kind', primary_ia)
+        _ps = str(primary_dict.get('status') or '')
+        if _ps not in ('noop', 'failed', 'blocked_external', ''):
+            _q = self._record_quota_usage(
+                str(primary_dict.get('actual_assistant_kind') or primary_ia),
+                _email_p,
+                source='coordinated_plan_primary',
+            )
+            if _q is not None:
+                primary_dict['quota_status'] = _q
         chained_result = None
         if secondary_ia and self._has_external_response(primary_dict):
             request = InferenceRequest(
@@ -957,6 +1035,10 @@ class AdaptiveTaskOrchestrator:
                 'proposal_title': str(best.get('title') or ''),
             },
         }
+        _gate_ap = self.role_router.worker_health_gate(
+            target_assistant=primary_ia,
+        ) if primary_ia else {}
+        _email_ap = str((_gate_ap.get('top_worker') or {}).get('email') or '')
         try:
             primary_result = self.autonomous_evolution_service.plan_or_execute(
                 adaptive_payload=primary_payload,
@@ -968,6 +1050,15 @@ class AdaptiveTaskOrchestrator:
             return None
         primary_dict = dict(primary_result or {})
         primary_dict.setdefault('assistant_kind', primary_ia)
+        _aps = str(primary_dict.get('status') or '')
+        if _aps not in ('noop', 'failed', 'blocked_external', ''):
+            _aq = self._record_quota_usage(
+                str(primary_dict.get('actual_assistant_kind') or primary_ia),
+                _email_ap,
+                source='auto_execute_from_sync_pulse',
+            )
+            if _aq is not None:
+                primary_dict['quota_status'] = _aq
         secondary_ia = str(best.get('secondary_ia') or '')
         chained_result = None
         if secondary_ia and self._has_external_response(primary_dict):
@@ -1530,12 +1621,38 @@ class AdaptiveTaskOrchestrator:
             )
             if coordinated_payload is not None:
                 return coordinated_payload
+        # Resolve worker gate for quota tracking before dispatch.
+        _dispatch_tool = str(
+            (decision_context.governance or {}).get('assistant_kind') or ''
+        ).strip().lower()
+        _gate_for_quota = self.role_router.worker_health_gate(
+            target_assistant=_dispatch_tool,
+        ) if _dispatch_tool else {}
+        _dispatch_email = str(
+            (_gate_for_quota.get('top_worker') or {}).get('email') or ''
+        )
+
         result = self.autonomous_evolution_service.plan_or_execute(
             adaptive_payload=payload,
             user_goal=user_goal,
             source=source,
             decision_context=decision_context,
         )
+
+        # Fase 2: record quota usage after successful external dispatch.
+        _result_status = str(result.get('status') or '')
+        if _result_status not in ('noop', 'failed', 'blocked_external', ''):
+            _actual_kind = str(
+                result.get('actual_assistant_kind')
+                or result.get('assistant_kind')
+                or _dispatch_tool
+            )
+            quota_status = self._record_quota_usage(
+                _actual_kind, _dispatch_email, source=source,
+            )
+            if quota_status is not None:
+                result['quota_status'] = quota_status
+
         # Incrementar contador de reintentos si es un reintento
         if needs_retry:
             result['retry_count'] = retry_count + 1
