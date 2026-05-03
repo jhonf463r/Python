@@ -191,6 +191,58 @@ class PlatformPendingQueue:
         return seeded
 
     # ------------------------------------------------------------------
+    # Capability discovery → queue (Fix 18e)
+    # ------------------------------------------------------------------
+
+    def seed_from_capability_graph(
+        self,
+        capabilities: list[Any],
+    ) -> list[PlatformPendingTask]:
+        """Create pending tasks for missing environment capabilities.
+
+        Accepts a list of ``EnvironmentCapability`` objects (or dicts with
+        compatible fields).  Already-completed tasks are not overwritten.
+        """
+        seeded: list[PlatformPendingTask] = []
+        for cap in capabilities:
+            cap_id = getattr(cap, 'capability_id', '') or (cap.get('capability_id', '') if isinstance(cap, dict) else '')
+            available = getattr(cap, 'available', True) if not isinstance(cap, dict) else cap.get('available', True)
+            if not cap_id or available:
+                continue
+            task_id = f'cap_{cap_id}'
+            existing = self.get(task_id)
+            if existing is not None and existing.status == PendingTaskStatus.COMPLETED:
+                continue
+            title = getattr(cap, 'title', cap_id) if not isinstance(cap, dict) else cap.get('title', cap_id)
+            summary = getattr(cap, 'summary', '') if not isinstance(cap, dict) else cap.get('summary', '')
+            status_str = getattr(cap, 'status', 'missing') if not isinstance(cap, dict) else cap.get('status', 'missing')
+            dep = ''
+            meta = getattr(cap, 'metadata', {}) if not isinstance(cap, dict) else cap.get('metadata', {})
+            if isinstance(meta, dict):
+                dep = meta.get('missing', '') or meta.get('dependency', '')
+            task = PlatformPendingTask(
+                id=task_id,
+                title=f'Capacidad faltante: {title}',
+                description=summary or f'{cap_id} no disponible en el entorno',
+                reason=f'capability status: {status_str}',
+                dependency_missing=str(dep),
+                priority='medium',
+                next_action=f'Verificar e instalar dependencia para {cap_id}',
+                status=(
+                    PendingTaskStatus.BLOCKED if dep
+                    else PendingTaskStatus.PENDING
+                ),
+                category='capability_discovery',
+            )
+            if existing is not None:
+                task = task.model_copy(update={
+                    'status': existing.status,
+                    'updated_at': utc_now(),
+                })
+            seeded.append(self.upsert(task))
+        return seeded
+
+    # ------------------------------------------------------------------
     # Internal
     # ------------------------------------------------------------------
 

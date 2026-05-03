@@ -886,6 +886,11 @@ class OperationalSelfExaminationService:
         # next evolution review picks them up as actionable backlog.
         self._materialize_task_packet_issues(findings)
 
+        # Autonomy bridge: convert actionable findings into
+        # PlatformPendingQueue tasks so the next session or agent can
+        # pick them up as structured pending work.
+        self._bridge_findings_to_pending_queue(findings)
+
         return persisted
 
     def _auto_correct_from_findings(
@@ -1985,43 +1990,94 @@ class OperationalSelfExaminationService:
         # Windows "Not Responding".  OSES previously measured run_start →
         # main_window_shown (7.7s, under threshold) and missed the real
         # freeze that happens AFTER the window is already visible.
+        #
+        # Phased architecture awareness (PR #307+): when
+        # ``populate_ui_critical_done`` exists the boot uses a phased
+        # pipeline where populate_ui_done fires AFTER an async
+        # page_loader_ready wait — the total span is NOT main-thread
+        # blocking time.  Measure synchronous phases individually.
         populate_start_ms = phase_to_ms.get('populate_ui_start')
         populate_done_ms_val = phase_to_ms.get('populate_ui_done')
+        critical_done_ms = phase_to_ms.get('populate_ui_critical_done')
+        deferred_1_start_ms = phase_to_ms.get('populate_ui_deferred_1_start')
+        deferred_1_done_ms = phase_to_ms.get('populate_ui_deferred_1_done')
+
         if populate_start_ms is not None and populate_done_ms_val is not None:
-            populate_duration = populate_done_ms_val - populate_start_ms
-            if populate_duration > STARTUP_POPULATE_UI_MS_DEGRADED:
-                findings.append(SelfExaminationFinding(
-                    category='startup_populate_ui_freeze',
-                    title=f'populate_ui bloqueo main thread: {populate_duration:.0f}ms',
-                    summary=(
-                        f'La construccion de ViewModels (populate_ui_start → '
-                        f'populate_ui_done) duro {populate_duration:.0f}ms '
-                        f'(umbral {STARTUP_POPULATE_UI_MS_DEGRADED:.0f}ms). '
-                        f'Durante este intervalo el hilo principal esta bloqueado '
-                        f'y Windows reporta el proceso como "Not Responding".'
-                    ),
-                    severity=IssueSeverity.CRITICAL if populate_duration > 15000 else IssueSeverity.HIGH,
-                    confidence=0.95,
-                    recommendation=(
-                        'Asegurar que todos los ViewModels usen '
-                        'defer_initial_refresh=True para no ejecutar queries '
-                        'de DB ni refreshes pesados en el constructor. '
-                        'DashboardViewModel era el unico sin defer.'
-                    ),
-                    source_refs=[
-                        'data/logs/startup_timeline.jsonl',
-                        'iabv_v15.bootstrap._build_ui_objects',
-                        'iabv_v15.ui.viewmodels.dashboard_viewmodel',
-                    ],
-                    metadata={
-                        'phase': 'populate_ui',
-                        'observed_ms': round(populate_duration, 1),
-                        'threshold_ms': STARTUP_POPULATE_UI_MS_DEGRADED,
-                        'populate_ui_start_ms': round(populate_start_ms, 1),
-                        'populate_ui_done_ms': round(populate_done_ms_val, 1),
-                        'phases_seen': list(phase_to_ms.keys()),
-                    },
-                ))
+            is_phased = critical_done_ms is not None
+            if is_phased:
+                # Phased boot: measure only the synchronous phases.
+                phase_1_ms = (critical_done_ms - populate_start_ms) if critical_done_ms is not None else 0.0
+                phase_d1_ms = (
+                    (deferred_1_done_ms - deferred_1_start_ms)
+                    if deferred_1_start_ms is not None and deferred_1_done_ms is not None
+                    else 0.0
+                )
+                sync_blocking_ms = phase_1_ms + phase_d1_ms
+                total_span_ms = populate_done_ms_val - populate_start_ms
+                if sync_blocking_ms > STARTUP_POPULATE_UI_MS_DEGRADED:
+                    findings.append(SelfExaminationFinding(
+                        category='startup_populate_ui_freeze',
+                        title=f'populate_ui fases sincronas bloquean: {sync_blocking_ms:.0f}ms',
+                        summary=(
+                            f'Las fases sincronas de populate_ui suman '
+                            f'{sync_blocking_ms:.0f}ms (phase1={phase_1_ms:.0f}ms, '
+                            f'deferred1={phase_d1_ms:.0f}ms). Umbral: '
+                            f'{STARTUP_POPULATE_UI_MS_DEGRADED:.0f}ms.'
+                        ),
+                        severity=IssueSeverity.CRITICAL if sync_blocking_ms > 15000 else IssueSeverity.HIGH,
+                        confidence=0.95,
+                        recommendation=(
+                            'Reducir la duracion de las fases sincronas '
+                            'moviendo trabajo pesado a deferred init o '
+                            'background threads.'
+                        ),
+                        source_refs=[
+                            'data/logs/startup_timeline.jsonl',
+                            'iabv_v15.bootstrap._build_ui_objects',
+                        ],
+                        metadata={
+                            'phase': 'populate_ui_phased',
+                            'sync_blocking_ms': round(sync_blocking_ms, 1),
+                            'phase_1_ms': round(phase_1_ms, 1),
+                            'deferred_1_ms': round(phase_d1_ms, 1),
+                            'total_span_ms': round(total_span_ms, 1),
+                            'threshold_ms': STARTUP_POPULATE_UI_MS_DEGRADED,
+                            'phases_seen': list(phase_to_ms.keys()),
+                        },
+                    ))
+            else:
+                # Legacy synchronous boot: measure the full span.
+                populate_duration = populate_done_ms_val - populate_start_ms
+                if populate_duration > STARTUP_POPULATE_UI_MS_DEGRADED:
+                    findings.append(SelfExaminationFinding(
+                        category='startup_populate_ui_freeze',
+                        title=f'populate_ui bloqueo main thread: {populate_duration:.0f}ms',
+                        summary=(
+                            f'La construccion de ViewModels (populate_ui_start → '
+                            f'populate_ui_done) duro {populate_duration:.0f}ms '
+                            f'(umbral {STARTUP_POPULATE_UI_MS_DEGRADED:.0f}ms). '
+                            f'Durante este intervalo el hilo principal esta bloqueado '
+                            f'y Windows reporta el proceso como "Not Responding".'
+                        ),
+                        severity=IssueSeverity.CRITICAL if populate_duration > 15000 else IssueSeverity.HIGH,
+                        confidence=0.95,
+                        recommendation=(
+                            'Migrar a phased populate_ui para construir VMs '
+                            'en fases con event loop yields entre cada una.'
+                        ),
+                        source_refs=[
+                            'data/logs/startup_timeline.jsonl',
+                            'iabv_v15.bootstrap._build_ui_objects',
+                        ],
+                        metadata={
+                            'phase': 'populate_ui',
+                            'observed_ms': round(populate_duration, 1),
+                            'threshold_ms': STARTUP_POPULATE_UI_MS_DEGRADED,
+                            'populate_ui_start_ms': round(populate_start_ms, 1),
+                            'populate_ui_done_ms': round(populate_done_ms_val, 1),
+                            'phases_seen': list(phase_to_ms.keys()),
+                        },
+                    ))
         elif populate_start_ms is not None and populate_done_ms_val is None:
             findings.append(SelfExaminationFinding(
                 category='startup_populate_ui_incomplete',
@@ -6333,6 +6389,105 @@ class OperationalSelfExaminationService:
             ))
 
         return findings
+
+    # ------------------------------------------------------------------
+    # Autonomy bridge: OSES findings → PlatformPendingQueue
+    # ------------------------------------------------------------------
+
+    # Categories that should generate structured pending tasks when they
+    # appear as HIGH or CRITICAL findings.  Each maps to a human-readable
+    # action template.
+    _FINDING_TO_PENDING_CATEGORIES: dict[str, str] = {
+        'startup_populate_ui_freeze': (
+            'Optimizar fases de populate_ui para reducir bloqueo del main thread.'
+        ),
+        'startup_degradation': (
+            'Investigar regresion de startup y aplicar fix.'
+        ),
+        'startup_memory_spike': (
+            'Reducir consumo de memoria durante el arranque.'
+        ),
+        'recurring_failure': (
+            'Analizar patron de fallos recurrentes y aplicar correccion.'
+        ),
+        'cloud_reasoning_degradation': (
+            'Evaluar health de proveedores cloud y ajustar fallback.'
+        ),
+        'windows_integration_gaps': (
+            'Implementar capacidades Windows faltantes de la cola de pendientes.'
+        ),
+        'temporal_regression': (
+            'Investigar regresion de latencia detectada por anomalia temporal.'
+        ),
+    }
+
+    def _bridge_findings_to_pending_queue(
+        self,
+        findings: list[SelfExaminationFinding],
+    ) -> None:
+        """Convert HIGH/CRITICAL findings into PlatformPendingTask entries.
+
+        Only creates tasks for categories listed in
+        ``_FINDING_TO_PENDING_CATEGORIES``.  Idempotent: existing tasks
+        with the same id are updated, not duplicated.
+        """
+        try:
+            from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+            from iabv_v15.domain.models import PlatformPendingTask, PendingTaskStatus
+        except Exception:
+            return
+
+        queue = self._get_pending_queue()
+        if queue is None:
+            return
+
+        for finding in findings:
+            if finding.category not in self._FINDING_TO_PENDING_CATEGORIES:
+                continue
+            if finding.severity not in (IssueSeverity.HIGH, IssueSeverity.CRITICAL):
+                continue
+            task_id = f'oses_{finding.category}'
+            next_action = self._FINDING_TO_PENDING_CATEGORIES[finding.category]
+            try:
+                existing = queue.get(task_id)
+                if existing is not None and existing.status == PendingTaskStatus.COMPLETED:
+                    continue
+                priority = 'critical' if finding.severity == IssueSeverity.CRITICAL else 'high'
+                task = PlatformPendingTask(
+                    id=task_id,
+                    title=finding.title,
+                    description=finding.summary or '',
+                    reason=f'OSES finding: {finding.category}',
+                    priority=priority,
+                    next_action=next_action,
+                    status=PendingTaskStatus.PENDING,
+                    category='oses_finding',
+                    resume_hint=finding.recommendation or '',
+                    metadata={
+                        'source': 'oses_bridge',
+                        'severity': finding.severity.value,
+                        'confidence': finding.confidence,
+                    },
+                )
+                queue.upsert(task)
+            except Exception:
+                logger.debug('oses: failed to bridge finding %s to queue', finding.category)
+
+    def _get_pending_queue(self) -> Any | None:
+        """Resolve PlatformPendingQueue from data dir (lazy, cached)."""
+        cached = getattr(self, '_pending_queue_cache', None)
+        if cached is not None:
+            return cached
+        try:
+            from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+            data_dir = Path(self.workspace_root) / 'data' / 'evolution'
+            if not data_dir.exists():
+                return None
+            queue = PlatformPendingQueue(evolution_dir=str(data_dir))
+            self._pending_queue_cache = queue
+            return queue
+        except Exception:
+            return None
 
     def _environment_model(self) -> Any | None:
         """Read EnvironmentSelfModel from world_model_service or direct."""

@@ -816,6 +816,18 @@ class AppBootstrap:
             self.platform_pending_queue.seed_windows_integration_tasks()
         except Exception:
             pass
+        # Seed pending tasks from environment capability graph (missing
+        # capabilities become BLOCKED or PENDING items automatically).
+        try:
+            env = getattr(self, 'environment_self_awareness_service', None)
+            if env is not None and hasattr(env, 'current_model'):
+                model = env.current_model()
+                if model is not None and model.capability_graph:
+                    self.platform_pending_queue.seed_from_capability_graph(
+                        model.capability_graph,
+                    )
+        except Exception:
+            pass
 
         # Fix 19b: Windows clipboard bridge — low-level ctypes-based
         # clipboard for background services that don't have QGuiApplication.
@@ -2675,7 +2687,8 @@ class AppBootstrap:
 
         Each VM is constructed in its own QTimer.singleShot(0) slot to
         yield to the event loop between constructions, keeping the main
-        thread responsive.
+        thread responsive.  Errors in individual VMs are logged but do
+        NOT break the chain — the next VM is always scheduled.
         """
         routes = list(self._ROUTE_TO_VM_ATTR.keys())
 
@@ -2685,8 +2698,12 @@ class AppBootstrap:
                     self._timeline.mark('lazy_vm_prebuild_done')
                 except Exception:
                     pass
+                logger.info('lazy_vm_prebuild_done: all %d routes processed', len(routes))
                 return
-            self._ensure_vm_for_route(routes[idx])
+            try:
+                self._ensure_vm_for_route(routes[idx])
+            except Exception:
+                logger.exception('lazy_vm_prebuild failed for route: %s', routes[idx])
             QTimer.singleShot(0, lambda: _build_next(idx + 1))
 
         _build_next()

@@ -256,25 +256,41 @@ class ControlCenterViewModel(QObject):
             'governance_blocked': False,
             'governance_reason': None,
         }
+        self.taskResolved.connect(self._apply_task_result)
+        self.taskFailed.connect(self._apply_task_failure)
+        self.bridgeChatRequested.connect(self._dispatch_bridge_chat)
+        self._seed_messages()
+        # Defer heavy work to keep constructor fast during lazy
+        # prebuild.  _seed_development_packet calls
+        # development_assist_service.build_codex_packet() which can
+        # block the main thread; MCP bridge listener attachment may
+        # also trigger synchronous I/O.
+        if defer_initial_refresh:
+            if not self._working and not self._adaptive_session_id:
+                self._busy_label = self._startup_readiness_text(validating_local_stack=True)
+            QTimer.singleShot(0, self._deferred_heavy_init)
+            QTimer.singleShot(250, self._deferred_initial_refresh)
+            QTimer.singleShot(900, lambda: self._refresh_provider_health(announce=False))
+        else:
+            self._deferred_heavy_init()
+            self.refresh()
+            self._refresh_provider_health(announce=False)
+
+    def _deferred_heavy_init(self) -> None:
+        """Run constructor work that can be deferred.
+
+        Called via QTimer.singleShot(0) when defer_initial_refresh=True
+        so the event loop can process events between lazy VM constructions.
+        """
+        try:
+            self._seed_development_packet()
+        except Exception:
+            logger.exception('_seed_development_packet failed')
         if self.mcp_bridge_service is not None:
             try:
                 self.mcp_bridge_service.attach_listener(self._on_mcp_bridge_status)
             except Exception:
                 pass
-
-        self.taskResolved.connect(self._apply_task_result)
-        self.taskFailed.connect(self._apply_task_failure)
-        self.bridgeChatRequested.connect(self._dispatch_bridge_chat)
-        self._seed_messages()
-        self._seed_development_packet()
-        if defer_initial_refresh:
-            if not self._working and not self._adaptive_session_id:
-                self._busy_label = self._startup_readiness_text(validating_local_stack=True)
-            QTimer.singleShot(250, self._deferred_initial_refresh)
-            QTimer.singleShot(900, lambda: self._refresh_provider_health(announce=False))
-        else:
-            self.refresh()
-            self._refresh_provider_health(announce=False)
 
     def _shutdown_bg_pool(self) -> None:
         """Gracefully shutdown the background thread pool on process exit."""

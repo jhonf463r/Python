@@ -384,6 +384,136 @@ def test_oses_does_not_emit_false_ready_when_order_is_honest() -> None:
     assert [f for f in findings if f.category == 'startup_false_ready'] == []
 
 
+# --------------------------------------------------------------------------- #
+# Phased architecture awareness (PR #307+)
+# --------------------------------------------------------------------------- #
+
+def test_oses_phased_populate_ui_no_false_positive() -> None:
+    """When phased milestones exist, total span should NOT trigger a finding
+    if synchronous phases are fast (even if total span > threshold)."""
+    root = _workspace('oses_phased_no_false_positive')
+    events = [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+        {'phase': 'bootstrap_init_done', 't_ms_from_start': 2200.0, 'rss_mb': 130.0},
+        {'phase': 'run_start', 't_ms_from_start': 2210.0, 'rss_mb': 130.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 5500.0, 'rss_mb': 220.0},
+        # Phased populate_ui: sync phases are fast
+        {'phase': 'populate_ui_start', 't_ms_from_start': 6184.0, 'rss_mb': 250.0},
+        {'phase': 'populate_ui_critical_done', 't_ms_from_start': 6270.0, 'rss_mb': 255.0},
+        {'phase': 'populate_ui_deferred_1_start', 't_ms_from_start': 6272.0, 'rss_mb': 255.0},
+        {'phase': 'populate_ui_deferred_1_done', 't_ms_from_start': 6337.0, 'rss_mb': 260.0},
+        # Async gap (pageLoader incubation) — NOT main-thread blocking
+        {'phase': 'populate_ui_done', 't_ms_from_start': 34900.0, 'rss_mb': 310.0},
+    ]
+    _write_timeline(root, events)
+    oses = _make_oses(root)
+    findings = oses._startup_health_findings()
+    freeze_findings = [f for f in findings if f.category == 'startup_populate_ui_freeze']
+    # Total span is 28716ms but sync phases are only ~153ms — no finding
+    assert freeze_findings == []
+
+
+def test_oses_phased_populate_ui_detects_slow_sync_phases() -> None:
+    """When phased milestones exist but sync phases are slow, emit finding."""
+    root = _workspace('oses_phased_slow_sync')
+    events = [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+        {'phase': 'bootstrap_init_done', 't_ms_from_start': 2200.0, 'rss_mb': 130.0},
+        {'phase': 'run_start', 't_ms_from_start': 2210.0, 'rss_mb': 130.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 5500.0, 'rss_mb': 220.0},
+        # Phased populate_ui: phase 1 is slow!
+        {'phase': 'populate_ui_start', 't_ms_from_start': 6000.0, 'rss_mb': 250.0},
+        {'phase': 'populate_ui_critical_done', 't_ms_from_start': 9000.0, 'rss_mb': 280.0},
+        {'phase': 'populate_ui_deferred_1_start', 't_ms_from_start': 9002.0, 'rss_mb': 280.0},
+        {'phase': 'populate_ui_deferred_1_done', 't_ms_from_start': 12000.0, 'rss_mb': 320.0},
+        {'phase': 'populate_ui_done', 't_ms_from_start': 40000.0, 'rss_mb': 350.0},
+    ]
+    _write_timeline(root, events)
+    oses = _make_oses(root)
+    findings = oses._startup_health_findings()
+    freeze_findings = [f for f in findings if f.category == 'startup_populate_ui_freeze']
+    assert len(freeze_findings) == 1
+    f = freeze_findings[0]
+    assert f.metadata['phase'] == 'populate_ui_phased'
+    assert f.metadata['sync_blocking_ms'] == 5998.0  # (9000-6000) + (12000-9002)
+    assert f.metadata['phase_1_ms'] == 3000.0
+    assert f.metadata['deferred_1_ms'] == 2998.0
+
+
+def test_oses_legacy_populate_ui_still_works() -> None:
+    """Without phased milestones, legacy total-span detection still works."""
+    root = _workspace('oses_legacy_populate')
+    events = [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+        {'phase': 'bootstrap_init_done', 't_ms_from_start': 2200.0, 'rss_mb': 130.0},
+        {'phase': 'run_start', 't_ms_from_start': 2210.0, 'rss_mb': 130.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 5500.0, 'rss_mb': 220.0},
+        # Legacy: no phased milestones
+        {'phase': 'populate_ui_start', 't_ms_from_start': 6000.0, 'rss_mb': 250.0},
+        {'phase': 'populate_ui_done', 't_ms_from_start': 36000.0, 'rss_mb': 450.0},
+    ]
+    _write_timeline(root, events)
+    oses = _make_oses(root)
+    findings = oses._startup_health_findings()
+    freeze_findings = [f for f in findings if f.category == 'startup_populate_ui_freeze']
+    assert len(freeze_findings) == 1
+    f = freeze_findings[0]
+    assert f.metadata['phase'] == 'populate_ui'
+    assert f.metadata['observed_ms'] == 30000.0
+
+
+# --------------------------------------------------------------------------- #
+# OSES → PlatformPendingQueue bridge
+# --------------------------------------------------------------------------- #
+
+def test_oses_bridge_creates_pending_task_from_critical_finding() -> None:
+    """HIGH/CRITICAL findings in bridgeable categories create queue tasks."""
+    root = _workspace('oses_bridge_critical')
+    events = [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+        {'phase': 'bootstrap_init_done', 't_ms_from_start': 2200.0, 'rss_mb': 130.0},
+        {'phase': 'run_start', 't_ms_from_start': 2210.0, 'rss_mb': 130.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 5500.0, 'rss_mb': 220.0},
+        # Legacy populate_ui: slow (will trigger CRITICAL finding)
+        {'phase': 'populate_ui_start', 't_ms_from_start': 6000.0, 'rss_mb': 250.0},
+        {'phase': 'populate_ui_done', 't_ms_from_start': 36000.0, 'rss_mb': 450.0},
+    ]
+    _write_timeline(root, events)
+    oses = _make_oses(root)
+    # Build review triggers the bridge
+    oses.build_review()
+
+    from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+    queue = PlatformPendingQueue(evolution_dir=str(root / 'data' / 'evolution'))
+    task = queue.get('oses_startup_populate_ui_freeze')
+    assert task is not None
+    assert task.priority == 'critical'
+    assert task.category == 'oses_finding'
+    assert task.status.value == 'PENDING'
+
+
+def test_oses_bridge_skips_low_severity_findings() -> None:
+    """MEDIUM/LOW findings should NOT create queue tasks."""
+    root = _workspace('oses_bridge_low')
+    events = [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+        {'phase': 'bootstrap_init_done', 't_ms_from_start': 1500.0, 'rss_mb': 110.0},
+        {'phase': 'run_start', 't_ms_from_start': 1510.0, 'rss_mb': 110.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 4800.0, 'rss_mb': 200.0},
+        # Healthy populate_ui — no finding
+        {'phase': 'populate_ui_start', 't_ms_from_start': 4810.0, 'rss_mb': 200.0},
+        {'phase': 'populate_ui_done', 't_ms_from_start': 5000.0, 'rss_mb': 210.0},
+    ]
+    _write_timeline(root, events)
+    oses = _make_oses(root)
+    oses.build_review()
+
+    from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+    queue = PlatformPendingQueue(evolution_dir=str(root / 'data' / 'evolution'))
+    task = queue.get('oses_startup_populate_ui_freeze')
+    assert task is None
+
+
 def test_oses_emits_false_ready_with_high_severity_for_fallback_path() -> None:
     root = _workspace('oses_fallback_path')
     events = [
