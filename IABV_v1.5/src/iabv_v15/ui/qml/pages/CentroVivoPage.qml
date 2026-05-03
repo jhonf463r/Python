@@ -22,6 +22,8 @@ Item {
     property var learningGaps: centroVivoViewModel ? centroVivoViewModel.learningGaps : []
     property var selfExaminationFindings: centroVivoViewModel ? centroVivoViewModel.selfExaminationFindings : []
     property var worldModelSummary: centroVivoViewModel ? centroVivoViewModel.worldModelSummary : ({})
+    property var accountInventory: centroVivoViewModel ? centroVivoViewModel.accountInventory : []
+    property var accountInventorySummary: centroVivoViewModel ? centroVivoViewModel.accountInventorySummary : ({})
 
     GlassPanel {
         anchors.fill: parent
@@ -587,6 +589,190 @@ Item {
                                         color: textSecondary
                                         font.family: bodyFontFamily
                                         font.pixelSize: 10
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // --- Account Inventory & Continuity ---
+                Rectangle {
+                    width: parent.width
+                    radius: 14
+                    color: "#22313a"
+                    border.width: 1
+                    border.color: borderSoft
+                    implicitHeight: accountInvCol.implicitHeight + 28
+
+                    Column {
+                        id: accountInvCol
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 8
+
+                        RowLayout {
+                            width: parent.width
+                            spacing: 8
+                            Label {
+                                text: "Inventario de Cuentas"
+                                color: textPrimary
+                                font.family: titleFontFamily
+                                font.pixelSize: 16
+                                font.bold: true
+                                Layout.fillWidth: true
+                            }
+                            StatusPill {
+                                label: "Requiere aprobacion"
+                                pillColor: accentAmber
+                            }
+                        }
+
+                        // Summary strip
+                        RowLayout {
+                            width: parent.width
+                            spacing: 18
+                            Column {
+                                spacing: 2
+                                Label { text: "Activas"; color: textSecondary; font.pixelSize: 11; font.family: bodyFontFamily }
+                                Label { text: String(accountInventorySummary.active_count || 0); color: accentGreen; font.pixelSize: 18; font.bold: true; font.family: titleFontFamily }
+                            }
+                            Column {
+                                spacing: 2
+                                Label { text: "Agotadas"; color: textSecondary; font.pixelSize: 11; font.family: bodyFontFamily }
+                                Label { text: String(accountInventorySummary.exhausted_count || 0); color: accentRed; font.pixelSize: 18; font.bold: true; font.family: titleFontFamily }
+                            }
+                            Column {
+                                spacing: 2
+                                Label { text: "Mensajes restantes"; color: textSecondary; font.pixelSize: 11; font.family: bodyFontFamily }
+                                Label { text: String(accountInventorySummary.total_remaining_messages || 0); color: accentCyan; font.pixelSize: 18; font.bold: true; font.family: titleFontFamily }
+                            }
+                        }
+
+                        // Next recommended account
+                        Rectangle {
+                            visible: accountInventorySummary.next_recommended !== undefined && accountInventorySummary.next_recommended !== null
+                            width: parent.width
+                            radius: 10
+                            color: "#2a3640"
+                            border.width: 1
+                            border.color: accentAmber
+                            implicitHeight: nextRecCol.implicitHeight + 16
+
+                            Column {
+                                id: nextRecCol
+                                anchors.fill: parent
+                                anchors.margins: 8
+                                spacing: 4
+
+                                Label {
+                                    text: "Siguiente cuenta recomendada"
+                                    color: accentAmber
+                                    font.family: bodyFontFamily
+                                    font.pixelSize: 12
+                                    font.bold: true
+                                }
+                                Label {
+                                    text: {
+                                        var nr = accountInventorySummary.next_recommended
+                                        if (!nr) return ""
+                                        return (nr.tool || "") + ": " + (nr.email || "") + " — score: " + (nr.score || 0).toFixed(2) + " — " + (nr.quota_remaining || 0) + " msgs"
+                                    }
+                                    color: textPrimary
+                                    font.family: bodyFontFamily
+                                    font.pixelSize: 13
+                                    wrapMode: Label.WordWrap
+                                    width: parent.width
+                                }
+                                AppButton {
+                                    text: "Aprobar cambio de cuenta"
+                                    accent: true
+                                    onClicked: {
+                                        var nr = accountInventorySummary.next_recommended
+                                        if (nr && centroVivoViewModel) {
+                                            centroVivoViewModel.approveAccountSwitch(nr.tool || "", nr.email || "")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Account list
+                        Label {
+                            visible: accountInventory.length === 0
+                            text: "Sin cuentas detectadas. Inicie sesion en un navegador para que el scanner detecte cuentas."
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 12
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+
+                        Repeater {
+                            model: accountInventory
+                            delegate: Rectangle {
+                                width: accountInvCol.width
+                                radius: 10
+                                color: "#2a3640"
+                                border.width: 1
+                                border.color: borderSoft
+                                implicitHeight: accItemCol.implicitHeight + 16
+
+                                Column {
+                                    id: accItemCol
+                                    anchors.fill: parent
+                                    anchors.margins: 8
+                                    spacing: 4
+
+                                    RowLayout {
+                                        width: parent.width
+                                        spacing: 6
+                                        Label {
+                                            text: (modelData.tool || "?").toUpperCase()
+                                            color: accentCyan
+                                            font.family: bodyFontFamily
+                                            font.pixelSize: 12
+                                            font.bold: true
+                                        }
+                                        Label {
+                                            text: modelData.email || ""
+                                            color: textPrimary
+                                            font.family: bodyFontFamily
+                                            font.pixelSize: 13
+                                            Layout.fillWidth: true
+                                        }
+                                        StatusPill {
+                                            label: modelData.status || "?"
+                                            pillColor: {
+                                                var s = modelData.status || ""
+                                                if (s === "active") return accentGreen
+                                                if (s === "exhausted") return accentRed
+                                                if (s === "expired") return accentAmber
+                                                return textSecondary
+                                            }
+                                        }
+                                    }
+                                    RowLayout {
+                                        spacing: 12
+                                        Label {
+                                            text: (modelData.quota_remaining || 0) + "/" + (modelData.quota_limit || 0) + " msgs"
+                                            color: textSecondary
+                                            font.family: bodyFontFamily
+                                            font.pixelSize: 11
+                                        }
+                                        Label {
+                                            text: "Navegador: " + (modelData.browser || "?")
+                                            color: textSecondary
+                                            font.family: bodyFontFamily
+                                            font.pixelSize: 11
+                                        }
+                                        Label {
+                                            visible: (modelData.quota_resets_at || "") !== ""
+                                            text: "Reset: " + (modelData.quota_resets_at || "")
+                                            color: textSecondary
+                                            font.family: bodyFontFamily
+                                            font.pixelSize: 10
+                                        }
                                     }
                                 }
                             }

@@ -168,6 +168,7 @@ class PortableContextService:
             self._cloud_reasoning_section(status=cloud_reasoning_status, now=now),
             self._startup_health_section(status=startup_health, now=now),
             self._account_resource_section(status=account_resource, now=now),
+            self._account_inventory_continuity_section(now=now),
             self._boot_profile_section(status=boot_profile, now=now),
             self._evidence_basis_section(evidence=evidence_basis, now=now),
             self._task_packet_summary_section(snapshot=task_packet_summary, now=now),
@@ -881,6 +882,93 @@ class PortableContextService:
                 'tools_available': tools,
                 'secrets_configured': status.get('secrets_configured', 0),
                 'secrets_missing': missing_secrets,
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Account inventory continuity — formal snapshot for next session
+    # ------------------------------------------------------------------
+
+    def _account_inventory_continuity_section(self, *, now) -> PortableContextSection:
+        """Export formal account inventory for session continuity.
+
+        Ensures the next session inherits: which accounts exist, their
+        quota status, the continuity queue (ranked next-best accounts),
+        and any UNRESOLVED items.  This section complements the lighter
+        ``account_resource_health`` section with the full typed snapshot.
+        """
+        items: list[dict[str, Any]] = []
+        unresolved_fields: list[str] = []
+
+        try:
+            from iabv_v15.services.account_resource_scanner import (
+                build_inventory_snapshot,
+            )
+            snapshot = build_inventory_snapshot()
+
+            # Active accounts
+            for entry in snapshot.continuity_queue[:6]:
+                items.append({
+                    'label': f"{entry.tool}: {entry.email}",
+                    'score': entry.score,
+                    'quota_remaining': entry.quota_remaining,
+                    'quota_limit': entry.quota_limit,
+                    'status': entry.status.value,
+                    'browser': entry.browser,
+                })
+
+            # Exhausted accounts
+            for entry in snapshot.entries:
+                if entry.exhausted and len(items) < 10:
+                    resets = ''
+                    if entry.quota_resets_at:
+                        resets = entry.quota_resets_at.isoformat()
+                    items.append({
+                        'label': f"{entry.tool}: {entry.email}",
+                        'status': 'exhausted',
+                        'resets_at': resets,
+                    })
+
+            unresolved_fields = list(snapshot.unresolved_items)
+
+            # Summary
+            parts: list[str] = []
+            if snapshot.active_count:
+                parts.append(f'{snapshot.active_count} cuentas activas')
+            if snapshot.exhausted_count:
+                parts.append(f'{snapshot.exhausted_count} agotadas')
+            parts.append(f'{snapshot.total_remaining_messages} mensajes disponibles')
+            if snapshot.continuity_queue:
+                top = snapshot.continuity_queue[0]
+                parts.append(
+                    f'siguiente recomendada: {top.email} ({top.tool}, '
+                    f'score={top.score:.2f})'
+                )
+            if snapshot.unresolved_count:
+                parts.append(f'{snapshot.unresolved_count} UNRESOLVED')
+            summary = ' | '.join(parts)
+            confidence = 0.85
+
+        except Exception:
+            summary = 'AccountInventorySnapshot no disponible. Continuidad de cuentas desconocida.'
+            confidence = 0.0
+            unresolved_fields = [
+                'UNRESOLVED:account_inventory_snapshot_unavailable',
+            ]
+
+        return self._section(
+            section_id='account_inventory_continuity',
+            title='Inventario de cuentas y cola de continuidad',
+            summary=summary,
+            items=items,
+            source_kind='account_resource_scanner',
+            source_refs=['account_resource_scanner', 'build_inventory_snapshot'],
+            confidence=confidence,
+            last_updated=now,
+            unresolved_fields=unresolved_fields,
+            metadata={
+                'section_purpose': 'continuity_for_next_session',
+                'requires_human_approval': True,
             },
         )
 

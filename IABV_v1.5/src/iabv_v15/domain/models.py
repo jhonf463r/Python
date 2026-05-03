@@ -2940,3 +2940,73 @@ class PlatformResumeHint(BaseModel):
     context_snapshot: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=utc_now)
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# ──────────────────────────────────────────────────────────────
+# Account Inventory & Continuity Layer
+# ──────────────────────────────────────────────────────────────
+
+
+class AccountStatus(str, Enum):
+    ACTIVE = "active"
+    EXHAUSTED = "exhausted"
+    EXPIRED = "expired"
+    UNRESOLVED = "unresolved"
+
+
+class AccountType(str, Enum):
+    OWNER = "owner"
+    TRIAL = "trial"
+    UNKNOWN = "unknown"
+
+
+class AccountInventoryEntry(BaseModel):
+    """Single account+tool pair with session, quota and continuity data.
+
+    This is the formal contract that replaces loose dicts produced by
+    ``account_resource_scanner``.  Every field is explicit so that
+    Control Master, PortableContext and the UI can consume it without
+    guessing dict keys.
+    """
+
+    email: str
+    browser: str = ""
+    profile: str = ""
+    tool: str = ""
+    has_session: bool = False
+    session_verified_at: datetime | None = None
+    quota_remaining: int = 0
+    quota_limit: int = 0
+    quota_resets_at: datetime | None = None
+    exhausted: bool = False
+    account_type: AccountType = AccountType.UNKNOWN
+    block_signals: list[str] = Field(default_factory=list)
+    score: float = 0.0
+    status: AccountStatus = AccountStatus.UNRESOLVED
+    unresolved: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AccountInventorySnapshot(BaseModel):
+    """Point-in-time snapshot of every known account across all browsers.
+
+    Built by ``build_inventory_snapshot()`` in ``account_resource_scanner``.
+    Consumed by Control Master (governance), PortableContext (continuity)
+    and CentroVivo (UI).
+
+    ``continuity_queue`` is the ranked list of non-exhausted entries
+    sorted by score descending — the first entry is the recommended
+    next account.  The user must approve before any account is used.
+    """
+
+    entries: list[AccountInventoryEntry] = Field(default_factory=list)
+    continuity_queue: list[AccountInventoryEntry] = Field(default_factory=list)
+    scanned_at: datetime = Field(default_factory=utc_now)
+    active_count: int = 0
+    exhausted_count: int = 0
+    expired_count: int = 0
+    unresolved_count: int = 0
+    total_remaining_messages: int = 0
+    tools_available: list[str] = Field(default_factory=list)
+    unresolved_items: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)

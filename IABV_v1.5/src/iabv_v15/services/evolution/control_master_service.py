@@ -50,6 +50,7 @@ class ControlMasterService:
         pending_issue_repository: Any | None = None,
         self_examination_service: Any | None = None,
         experiment_lab_repository: Any | None = None,
+        account_resource_scanner: Any | None = None,
         recent_decisions_limit: int = 10,
     ) -> None:
         self.repository = repository
@@ -57,6 +58,7 @@ class ControlMasterService:
         self.pending_issue_repository = pending_issue_repository
         self.self_examination_service = self_examination_service
         self.experiment_lab_repository = experiment_lab_repository
+        self.account_resource_scanner = account_resource_scanner
         self.recent_decisions_limit = recent_decisions_limit
 
     # ------------------------------------------------------------------
@@ -76,7 +78,14 @@ class ControlMasterService:
         objective_buckets = self._project_objective_buckets()
         backlog = self._project_backlog()
         risks = self._project_risks()
-        unresolved = list(dict.fromkeys([*base.unresolved_items, *self._project_unresolved()]))
+        account_inventory = self._project_account_inventory()
+        unresolved = list(dict.fromkeys([
+            *base.unresolved_items,
+            *self._project_unresolved(),
+            *account_inventory.get('unresolved_items', []),
+        ]))
+        metadata = dict(base.metadata)
+        metadata['account_inventory'] = account_inventory
         state = base.model_copy(
             update={
                 "global_rules": rules,
@@ -88,6 +97,7 @@ class ControlMasterService:
                 "technical_backlog": backlog,
                 "current_risks": risks,
                 "unresolved_items": unresolved,
+                "metadata": metadata,
                 "last_updated": utc_now(),
             }
         )
@@ -377,6 +387,70 @@ class ControlMasterService:
             if hasattr(finding, "model_dump"):
                 risks.append(finding.model_dump(mode="json"))
         return risks
+
+    def _project_account_inventory(self) -> dict[str, Any]:
+        """Project account inventory into governance metadata.
+
+        Returns a compact summary dict so that Control Master knows:
+        how many accounts are active, exhausted, at risk, and which
+        account is the recommended next one.  Failures are swallowed —
+        governance never crashes because the scanner is unavailable.
+        """
+        scanner = self.account_resource_scanner
+        if scanner is None:
+            return {
+                'status': 'scanner_not_connected',
+                'unresolved_items': [
+                    'UNRESOLVED:account_inventory_scanner_not_connected',
+                ],
+            }
+        try:
+            if callable(scanner):
+                snapshot = scanner()
+            else:
+                snapshot = scanner
+        except Exception:
+            return {
+                'status': 'scanner_error',
+                'unresolved_items': [
+                    'UNRESOLVED:account_inventory_scanner_error',
+                ],
+            }
+
+        if hasattr(snapshot, 'model_dump'):
+            data = snapshot.model_dump(mode='json')
+        elif isinstance(snapshot, dict):
+            data = snapshot
+        else:
+            return {
+                'status': 'scanner_unknown_format',
+                'unresolved_items': [
+                    'UNRESOLVED:account_inventory_unknown_format',
+                ],
+            }
+
+        # Build compact summary for governance
+        queue = data.get('continuity_queue', [])
+        next_recommended = queue[0] if queue else None
+
+        return {
+            'status': 'ok',
+            'active_count': data.get('active_count', 0),
+            'exhausted_count': data.get('exhausted_count', 0),
+            'expired_count': data.get('expired_count', 0),
+            'unresolved_count': data.get('unresolved_count', 0),
+            'total_remaining_messages': data.get('total_remaining_messages', 0),
+            'tools_available': data.get('tools_available', []),
+            'continuity_queue_size': len(queue),
+            'next_recommended': {
+                'email': next_recommended.get('email', ''),
+                'tool': next_recommended.get('tool', ''),
+                'score': next_recommended.get('score', 0.0),
+                'quota_remaining': next_recommended.get('quota_remaining', 0),
+            } if next_recommended else None,
+            'scanned_at': data.get('scanned_at', ''),
+            'unresolved_items': data.get('unresolved_items', []),
+        }
 
     def _project_unresolved(self) -> list[str]:
         if self.self_examination_service is None:

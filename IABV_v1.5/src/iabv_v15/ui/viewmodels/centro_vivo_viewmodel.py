@@ -56,6 +56,8 @@ class CentroVivoViewModel(QObject):
         self._learning_gaps: list[dict[str, Any]] = []
         self._self_examination_findings: list[dict[str, Any]] = []
         self._world_model_summary: dict[str, Any] = {}
+        self._account_inventory: list[dict[str, Any]] = []
+        self._account_inventory_summary: dict[str, Any] = {}
         self._status_text = 'Centro Vivo listo. Pulsa Actualizar para cargar el estado operativo.'
         self._working = False
         self._last_refresh_utc = ''
@@ -88,6 +90,12 @@ class CentroVivoViewModel(QObject):
     def get_world_model_summary(self) -> dict[str, Any]:
         return self._world_model_summary
 
+    def get_account_inventory(self) -> list[dict[str, Any]]:
+        return self._account_inventory
+
+    def get_account_inventory_summary(self) -> dict[str, Any]:
+        return self._account_inventory_summary
+
     def get_status_text(self) -> str:
         return self._status_text
 
@@ -107,6 +115,8 @@ class CentroVivoViewModel(QObject):
     learningGaps = Property(list, get_learning_gaps, notify=dataChanged)
     selfExaminationFindings = Property(list, get_self_examination_findings, notify=dataChanged)
     worldModelSummary = Property(dict, get_world_model_summary, notify=dataChanged)
+    accountInventory = Property(list, get_account_inventory, notify=dataChanged)
+    accountInventorySummary = Property(dict, get_account_inventory_summary, notify=dataChanged)
     statusText = Property(str, get_status_text, notify=dataChanged)
     working = Property(bool, get_working, notify=dataChanged)
     lastRefreshUtc = Property(str, get_last_refresh_utc, notify=dataChanged)
@@ -123,6 +133,9 @@ class CentroVivoViewModel(QObject):
         self._learning_gaps = self._build_learning_gaps()
         self._self_examination_findings = self._build_self_examination_findings()
         self._world_model_summary = self._build_world_model_summary()
+        inv = self._build_account_inventory()
+        self._account_inventory = inv.get('entries', [])
+        self._account_inventory_summary = inv.get('summary', {})
         self._last_refresh_utc = datetime.now(timezone.utc).isoformat(timespec='seconds')
         self._status_text = self._build_status_text()
         self.dataChanged.emit()
@@ -296,6 +309,97 @@ class CentroVivoViewModel(QObject):
             'active_blockages': dumped.get('active_blockages', []),
         }
 
+    def _build_account_inventory(self) -> dict[str, Any]:
+        """Build account inventory from the formal snapshot.
+
+        Swallows failures gracefully — the UI never crashes because the
+        scanner is unavailable.
+        """
+        try:
+            from iabv_v15.services.account_resource_scanner import (
+                build_inventory_snapshot,
+            )
+            snapshot = build_inventory_snapshot()
+        except Exception:
+            return {'entries': [], 'summary': {}}
+
+        entries: list[dict[str, Any]] = []
+        for entry in snapshot.entries:
+            resets_at = ''
+            if entry.quota_resets_at:
+                resets_at = entry.quota_resets_at.isoformat()
+            entries.append({
+                'email': entry.email,
+                'browser': entry.browser,
+                'profile': entry.profile,
+                'tool': entry.tool,
+                'has_session': entry.has_session,
+                'quota_remaining': entry.quota_remaining,
+                'quota_limit': entry.quota_limit,
+                'quota_resets_at': resets_at,
+                'exhausted': entry.exhausted,
+                'score': round(entry.score, 4),
+                'status': entry.status.value,
+                'block_signals': entry.block_signals,
+            })
+
+        # Build continuity queue (top entries)
+        queue: list[dict[str, Any]] = []
+        for entry in snapshot.continuity_queue[:5]:
+            queue.append({
+                'email': entry.email,
+                'tool': entry.tool,
+                'score': round(entry.score, 4),
+                'quota_remaining': entry.quota_remaining,
+            })
+
+        summary = {
+            'active_count': snapshot.active_count,
+            'exhausted_count': snapshot.exhausted_count,
+            'unresolved_count': snapshot.unresolved_count,
+            'total_remaining_messages': snapshot.total_remaining_messages,
+            'tools_available': snapshot.tools_available,
+            'continuity_queue': queue,
+            'next_recommended': queue[0] if queue else None,
+            'unresolved_items': snapshot.unresolved_items,
+            'requires_human_approval': True,
+        }
+
+        return {'entries': entries, 'summary': summary}
+
+    @Slot(str, str)
+    def approveAccountSwitch(self, tool: str, email: str) -> None:
+        """Slot called from QML when user approves switching to a specific account.
+
+        This is the human-in-the-loop approval point.  The actual account
+        switch logic is intentionally minimal here — it only logs the
+        approval.  The orchestrator reads this signal to know which
+        account the user has sanctioned for the next consultation.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(
+            'account_switch_approved: tool=%s email=%s (user decision)',
+            tool, email,
+        )
+        # Persist the approval so the orchestrator can read it
+        approval = {
+            'tool': tool,
+            'email': email,
+            'approved_at': datetime.now(timezone.utc).isoformat(),
+            'source': 'centro_vivo_ui',
+        }
+        approval_path = self._data_root / 'evolution' / 'account_switch_approval.json'
+        try:
+            approval_path.parent.mkdir(parents=True, exist_ok=True)
+            approval_path.write_text(
+                json.dumps(approval, indent=2, ensure_ascii=False),
+                encoding='utf-8',
+            )
+        except Exception:
+            pass
+        self.refresh()
+
     def _build_status_text(self) -> str:
         queue_count = len(self._orchestrator_queue)
         active = sum(1 for s in self._orchestrator_queue if s.get('status') in ('executing', 'ready_to_execute'))
@@ -303,9 +407,13 @@ class CentroVivoViewModel(QObject):
         tool_count = self._world_model_summary.get('tool_count', 0)
         findings_count = len(self._self_examination_findings)
         gaps_count = len(self._learning_gaps)
+        inv_active = self._account_inventory_summary.get('active_count', 0)
+        inv_exhausted = self._account_inventory_summary.get('exhausted_count', 0)
         parts: list[str] = []
         parts.append(f'{queue_count} sesiones en cola ({active} activas)')
         parts.append(f'{tools_ready}/{tool_count} herramientas listas')
+        if inv_active or inv_exhausted:
+            parts.append(f'{inv_active} cuentas activas, {inv_exhausted} agotadas')
         if findings_count:
             parts.append(f'{findings_count} hallazgos de autoexaminacion')
         if gaps_count:

@@ -881,6 +881,159 @@ def format_worker_pool_report() -> str:
 
 
 # ──────────────────────────────────────────────────────────────
+# Account Inventory Snapshot — formal typed snapshot
+# ──────────────────────────────────────────────────────────────
+
+def build_inventory_snapshot(
+    *,
+    block_signals: dict[str, list[str]] | None = None,
+) -> 'AccountInventorySnapshot':
+    """Build a formal ``AccountInventorySnapshot`` from live scanner data.
+
+    Composes ``verify_account_sessions``, ``get_all_quota_status``, and
+    ``rank_workers_for_target`` into a single typed contract that Control
+    Master, PortableContext and the UI can consume directly.
+
+    The ``continuity_queue`` is the ranked subset of non-exhausted entries
+    sorted by composite score (quota × block risk).  The first entry is
+    the recommended next account.  **No account is used without explicit
+    user approval.**
+    """
+    from iabv_v15.domain.models import (
+        AccountInventoryEntry,
+        AccountInventorySnapshot,
+        AccountStatus,
+        AccountType,
+        utc_now,
+    )
+
+    pool = estimate_available_workers()
+    all_quota = get_all_quota_status()
+
+    # Build quota lookup
+    quota_lookup: dict[str, dict[str, Any]] = {}
+    for s in all_quota.get('statuses', []):
+        quota_lookup[f"{s['tool']}:{s['email']}"] = s
+
+    entries: list[AccountInventoryEntry] = []
+    now = utc_now()
+
+    # Process all workers (available + exhausted)
+    all_workers = [*pool.get('workers', []), *pool.get('exhausted', [])]
+    for w in all_workers:
+        email = w.get('email', '')
+        tool = w.get('tool', '')
+        exhausted = w.get('exhausted', False)
+        remaining = w.get('remaining_messages', 0)
+        limit = w.get('limit', 0)
+
+        resets_at = None
+        if w.get('resets_at'):
+            try:
+                resets_at = datetime.fromisoformat(str(w['resets_at']))
+            except (ValueError, TypeError):
+                pass
+
+        # Determine status
+        if exhausted:
+            status = AccountStatus.EXHAUSTED
+        elif remaining > 0:
+            status = AccountStatus.ACTIVE
+        else:
+            status = AccountStatus.UNRESOLVED
+
+        unresolved: list[str] = []
+        quota_key = f"{tool}:{email}"
+        if quota_key not in quota_lookup:
+            unresolved.append(
+                'UNRESOLVED:quota_never_tracked — cuota real desconocida'
+            )
+
+        entry = AccountInventoryEntry(
+            email=email,
+            browser=w.get('browser', ''),
+            profile=w.get('profile', ''),
+            tool=tool,
+            has_session=True,
+            session_verified_at=now,
+            quota_remaining=remaining,
+            quota_limit=limit,
+            quota_resets_at=resets_at,
+            exhausted=exhausted,
+            account_type=AccountType.UNKNOWN,
+            block_signals=[],
+            score=0.0,
+            status=status,
+            unresolved=unresolved,
+            metadata={
+                'full_name': w.get('full_name', ''),
+                'window_hours': w.get('window_hours', 0),
+                'label': w.get('label', ''),
+                'used_in_window': w.get('used_in_window', 0),
+            },
+        )
+        entries.append(entry)
+
+    # Compute scores via ranking engine (reuses existing block signal logic)
+    scored_workers = rank_workers_for_target(
+        '', pool=pool, block_signals=block_signals,
+    )
+    score_lookup: dict[str, float] = {}
+    risk_lookup: dict[str, list[str]] = {}
+    for sw in scored_workers:
+        key = f"{sw['tool']}:{sw['email']}:{sw.get('browser', '')}:{sw.get('profile', '')}"
+        score_lookup[key] = sw.get('score', 0.0)
+        # Gather active block signals for this worker
+        if block_signals:
+            resolved = _resolve_worker_signals(sw, block_signals)
+            if resolved:
+                risk_lookup[key] = resolved
+
+    # Apply scores and block signals to entries
+    for entry in entries:
+        key = f"{entry.tool}:{entry.email}:{entry.browser}:{entry.profile}"
+        entry.score = score_lookup.get(key, 0.0)
+        if key in risk_lookup:
+            entry.block_signals = risk_lookup[key]
+
+    # Build continuity queue: non-exhausted, sorted by score desc
+    continuity_queue = sorted(
+        [e for e in entries if e.status == AccountStatus.ACTIVE],
+        key=lambda e: e.score,
+        reverse=True,
+    )
+
+    # Aggregate counts
+    active_count = sum(1 for e in entries if e.status == AccountStatus.ACTIVE)
+    exhausted_count = sum(1 for e in entries if e.status == AccountStatus.EXHAUSTED)
+    expired_count = sum(1 for e in entries if e.status == AccountStatus.EXPIRED)
+    unresolved_count = sum(1 for e in entries if e.status == AccountStatus.UNRESOLVED)
+    total_remaining = sum(e.quota_remaining for e in entries if not e.exhausted)
+    tools_available = sorted(set(e.tool for e in entries if e.status == AccountStatus.ACTIVE))
+
+    # Collect all unresolved items
+    all_unresolved: list[str] = []
+    for e in entries:
+        all_unresolved.extend(e.unresolved)
+    all_unresolved.append(
+        'UNRESOLVED:visible_account_state_requires_user_permission'
+    )
+
+    return AccountInventorySnapshot(
+        entries=entries,
+        continuity_queue=continuity_queue,
+        scanned_at=now,
+        active_count=active_count,
+        exhausted_count=exhausted_count,
+        expired_count=expired_count,
+        unresolved_count=unresolved_count,
+        total_remaining_messages=total_remaining,
+        tools_available=tools_available,
+        unresolved_items=list(dict.fromkeys(all_unresolved)),
+    )
+
+
+# ──────────────────────────────────────────────────────────────
 # Worker Ranking — score and sort workers for a target assistant
 # ──────────────────────────────────────────────────────────────
 

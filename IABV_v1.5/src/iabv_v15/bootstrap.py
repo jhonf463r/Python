@@ -319,7 +319,7 @@ from iabv_v15.services.roles.analytics_strategy_service import AnalyticsStrategy
 from iabv_v15.services.roles.customer_support_service import CustomerSupportService
 from iabv_v15.services.roles.embedding_index_service import EmbeddingIndexService
 from iabv_v15.services.roles.engineering_review_service import EngineeringReviewService
-from iabv_v15.services.account_resource_scanner import estimate_available_workers
+from iabv_v15.services.account_resource_scanner import estimate_available_workers, build_inventory_snapshot
 from iabv_v15.services.roles.local_role_router import LocalRoleRouter
 from iabv_v15.services.roles.sql_query_advisor_service import SqlQueryAdvisorService
 from iabv_v15.services.roles.teaching_gap_analyzer import TeachingGapAnalyzer
@@ -1162,6 +1162,7 @@ class AppBootstrap:
             pending_issue_repository=self.pending_issue_repository,
             self_examination_service=self.operational_self_examination_service,
             experiment_lab_repository=self.experiment_lab_repository,
+            account_resource_scanner=build_inventory_snapshot,
         )
         self.control_master_digest_builder = ControlMasterDigestBuilder()
         self.git_sync_service = GitSyncService(
