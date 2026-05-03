@@ -1434,6 +1434,7 @@ class AdaptiveTaskOrchestrator:
             session.metadata['worker_gate'] = {
                 'usable': bool(_gate.get('usable', False)),
                 'top_worker': _gate.get('top_worker') if _gate.get('usable') else None,
+                'recommended_account': _gate.get('recommended_account'),
                 'ranked_workers': list(_gate.get('ranked_workers') or [])[:5],
                 'available_count': int(_gate.get('available_count', 0)),
                 'reason': str(_gate.get('reason') or '') if not _gate.get('usable') else '',
@@ -3015,6 +3016,7 @@ class AdaptiveTaskOrchestrator:
             source = str(gate.get('account_selection_source') or 'auto_ranked')
             fallback = bool(gate.get('fallback_used', False))
             top = gate.get('top_worker') or {}
+            recommended = gate.get('recommended_account') or top
             approved = gate.get('approved_account') or {}
             outcome = DecisionOutcome.FALLBACK_USED if fallback else DecisionOutcome.SUCCESS
             self.decision_audit_trail.record(DecisionRecord(
@@ -3029,7 +3031,7 @@ class AdaptiveTaskOrchestrator:
                         'tool': tool,
                         'source': source,
                         'selected_email': top.get('email', ''),
-                        'recommended_email': top.get('email', '') if source == 'auto_ranked' else '',
+                        'recommended_email': recommended.get('email', ''),
                         'approved_email': approved.get('email', ''),
                         'fallback_used': fallback,
                         'available_count': int(gate.get('available_count', 0)),
@@ -3153,6 +3155,7 @@ class AdaptiveTaskOrchestrator:
             'account_selection': {
                 'source': str(worker_gate.get('account_selection_source') or 'auto_ranked'),
                 'fallback_used': bool(worker_gate.get('fallback_used', False)),
+                'recommended_account': dict(worker_gate.get('recommended_account') or {}),
                 'approved_account': dict(worker_gate.get('approved_account') or {}),
                 'is_human_approved': str(worker_gate.get('account_selection_source') or '') in ('user_approved', 'user_approved_fallback'),
             },

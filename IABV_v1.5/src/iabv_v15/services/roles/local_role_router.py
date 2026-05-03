@@ -304,6 +304,7 @@ class LocalRoleRouter:
             'available_count': len(ranked),
             'workers': [_compact(w) for w in ranked[:10]],
             'top_worker': _compact(effective_top),
+            'recommended_account': _compact(top),
             'ranked_workers': [_compact(w) for w in ranked[:5]],
             'account_selection_source': account_selection_source,
             'fallback_used': fallback_used,
