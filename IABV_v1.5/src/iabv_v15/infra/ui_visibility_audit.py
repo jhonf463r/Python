@@ -247,6 +247,21 @@ class Win32PopupWatcher:
     detect MessageBox-class windows that were not initiated by IABV.
     """
 
+    _KNOWN_BENIGN_CLASSES: frozenset[str] = frozenset({
+        'Shell_TrayWnd', 'Progman', 'WorkerW',
+        'DummyDWMListenerWindow', 'ForegroundStaging',
+        'Windows.UI.Core.CoreWindow', 'ApplicationFrameWindow',
+        'Shell_SecondaryTrayWnd', 'NotifyIconOverflowWindow',
+        'tooltips_class32', 'TaskListThumbnailWnd',
+        'MSTaskSwWClass', 'TrayNotifyWnd',
+    })
+
+    _SUSPICIOUS_TITLE_PATTERNS: tuple[str, ...] = (
+        'error', 'no se puede', 'cannot find', 'not found',
+        'archivo', 'file', 'acceso denegado', 'access denied',
+        'falta', 'missing', 'falló', 'failed',
+    )
+
     def __init__(self, audit: VisibilityAuditLog,
                  poll_interval: float = 2.0) -> None:
         self._audit = audit
@@ -272,6 +287,11 @@ class Win32PopupWatcher:
             with contextlib.suppress(Exception):
                 self._process_snapshot()
 
+    @staticmethod
+    def _is_suspicious(title: str) -> bool:
+        lower = title.lower()
+        return any(p in lower for p in Win32PopupWatcher._SUSPICIOUS_TITLE_PATTERNS)
+
     def _process_snapshot(self) -> None:
         try:
             import ctypes
@@ -292,8 +312,8 @@ class Win32PopupWatcher:
             user32.GetClassNameW(hwnd, cls_buf, 256)
             title = buf.value
             cls_name = cls_buf.value
-            if cls_name == '#32770' and user32.IsWindowVisible(hwnd):
-                if hwnd not in self._known_hwnds:
+            if user32.IsWindowVisible(hwnd) and hwnd not in self._known_hwnds:
+                if cls_name == '#32770' or cls_name not in self._KNOWN_BENIGN_CLASSES:
                     found.append((hwnd, title, cls_name))
                     self._known_hwnds.add(hwnd)
             return True
@@ -304,13 +324,23 @@ class Win32PopupWatcher:
             return
 
         for hwnd, title, cls_name in found:
+            if cls_name in self._KNOWN_BENIGN_CLASSES:
+                category = CAT_BACKGROUND
+                unresolved = False
+            elif self._is_suspicious(title):
+                category = CAT_UNEXPECTED
+                unresolved = True
+            else:
+                category = CAT_UNEXPECTED
+                unresolved = False
+
             self._audit.record(
                 KIND_WIN32_POPUP,
                 source=SRC_WIN32,
                 title=title,
                 detail=f'Win32 dialog class={cls_name} hwnd={hwnd}',
-                event_category=CAT_UNEXPECTED,
-                unresolved=True,
+                event_category=category,
+                unresolved=unresolved,
                 extra={'hwnd': hwnd, 'class_name': cls_name},
             )
 

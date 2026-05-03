@@ -97,6 +97,24 @@ class TestSplashAuditAdapter:
         assert KIND_DIALOG_CLOSED in kinds
 
 
+class TestWin32PopupWatcherCategorization:
+    def test_known_benign_classes(self) -> None:
+        from iabv_v15.infra.ui_visibility_audit import Win32PopupWatcher
+        benign = Win32PopupWatcher._KNOWN_BENIGN_CLASSES
+        assert 'Shell_TrayWnd' in benign
+        assert 'Progman' in benign
+        assert 'DummyDWMListenerWindow' in benign
+        assert 'Windows.UI.Core.CoreWindow' in benign
+
+    def test_is_suspicious_detects_error_titles(self) -> None:
+        from iabv_v15.infra.ui_visibility_audit import Win32PopupWatcher
+        assert Win32PopupWatcher._is_suspicious('Error - File not found')
+        assert Win32PopupWatcher._is_suspicious('No se puede encontrar el archivo')
+        assert Win32PopupWatcher._is_suspicious('Acceso denegado')
+        assert not Win32PopupWatcher._is_suspicious('IABV v1.5 - Control Center')
+        assert not Win32PopupWatcher._is_suspicious('')
+
+
 class TestSubprocessAuditWrapper:
     def test_captures_file_not_found(self, audit_log: VisibilityAuditLog) -> None:
         with pytest.raises(FileNotFoundError):
