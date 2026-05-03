@@ -197,8 +197,8 @@ class ControlCenterViewModel(QObject):
         self._strategy_text = 'La consola adaptativa decide intencion, arma contexto, mide readiness, propone estrategia y deja checkpoints claros antes de ejecutar.'
         self._recommendation_text = 'qwen3:8b queda como motor principal, pero ahora el Centro de Control usa packs por dominio y aprobaciones por fases.'
         self._legacy_summary = 'Se mantiene lo mejor del legado: PBT y snapshots de IABV 1.3, captura persistente de IABV 1.4 y ahora una capa adaptativa auditable por encima.'
-        self._repo_bridge_text = self.development_assist_service.build_repo_bridge_summary()
-        self._local_stack_text = self.development_assist_service.build_local_stack_summary()
+        self._repo_bridge_text = ''
+        self._local_stack_text = ''
         self._last_user_goal = ''
         self._last_goal_context: dict[str, Any] = {}
         self._clipboard_notice = 'Todavia no se ha copiado nada al portapapeles.'
@@ -260,28 +260,24 @@ class ControlCenterViewModel(QObject):
         self.taskFailed.connect(self._apply_task_failure)
         self.bridgeChatRequested.connect(self._dispatch_bridge_chat)
         self._seed_messages()
-        # Defer heavy work to keep constructor fast during lazy
-        # prebuild.  All data loading runs on _bg_pool via
-        # _deferred_initial_refresh.  Only lightweight signal
-        # connections happen on main thread via _deferred_heavy_init.
-        if defer_initial_refresh:
-            if not self._working and not self._adaptive_session_id:
-                self._busy_label = self._startup_readiness_text(validating_local_stack=True)
-            QTimer.singleShot(0, self._deferred_heavy_init)
-            QTimer.singleShot(250, self._deferred_initial_refresh)
-            QTimer.singleShot(900, lambda: self._refresh_provider_health(announce=False))
-        else:
-            self._deferred_heavy_init()
-            self._refresh_all_data()
-            self._refresh_provider_health(announce=False)
+        # Always defer heavy work to keep constructor fast and avoid
+        # blocking the main thread (~3733ms measured).  Data loading
+        # runs on _bg_pool via _deferred_initial_refresh.  Only
+        # lightweight signal connections happen on main thread via
+        # _deferred_heavy_init.
+        if not self._working and not self._adaptive_session_id:
+            self._busy_label = self._startup_readiness_text(validating_local_stack=True)
+        QTimer.singleShot(0, self._deferred_heavy_init)
+        QTimer.singleShot(250, self._deferred_initial_refresh)
+        QTimer.singleShot(900, lambda: self._refresh_provider_health(announce=False))
 
     def _deferred_heavy_init(self) -> None:
         """Attach lightweight listeners that need main-thread affinity.
 
-        Called via QTimer.singleShot(0) when defer_initial_refresh=True.
-        Heavy work (_seed_development_packet, DB queries, evolution
-        snapshots) runs on _bg_pool in _deferred_initial_refresh —
-        NOT here — so the event loop stays free for lazy VM prebuild.
+        Called via QTimer.singleShot(0) from __init__.  Heavy work
+        (_seed_development_packet, DB queries, evolution snapshots)
+        runs on _bg_pool in _deferred_initial_refresh — NOT here —
+        so the event loop stays free for lazy VM prebuild.
         """
         if self.mcp_bridge_service is not None:
             try:
