@@ -36,6 +36,7 @@ _VERY_SLOW_LATENCY_MS = 15000.0  # > 15s triggers auto-switch
 _MIN_SUCCESS_RATE = 0.5  # below 50% success = degraded
 _QUOTA_COOLDOWN_SECONDS = 3600  # 1h cooldown after quota exhaustion
 _HISTORY_WINDOW = 20  # last N decisions to consider
+_LOW_QUOTA_THRESHOLD = 5  # warn when remaining messages < this
 
 
 class ProviderScore:
@@ -119,6 +120,9 @@ class AdaptiveModelSelector:
         exclude_set = set(exclude or [])
         scores = self._score_all_providers(task_type, exclude_set, world_model=world_model)
 
+        # Emit low-quota warnings before ranking
+        self._check_low_quota_warnings(scores, world_model)
+
         # Sort by total_score descending
         ranked = sorted(scores, key=lambda s: s.total_score, reverse=True)
         available = [s for s in ranked if s.available and s.provider_id not in exclude_set]
@@ -129,16 +133,21 @@ class AdaptiveModelSelector:
                 'reason': 'all_cloud_providers_unavailable_or_excluded',
                 'scores': [s.to_dict() for s in ranked],
                 'fallback_chain': ['ollama_local'],
+                'best_account': None,
+                'quota_rotation_applied': False,
             }
 
         selected = available[0]
         fallback_chain = [s.provider_id for s in available]
+        best_account = self._best_account_for_tool(selected.provider_id, world_model)
 
         return {
             'provider_id': selected.provider_id,
             'reason': selected.reason,
             'scores': [s.to_dict() for s in ranked],
             'fallback_chain': fallback_chain,
+            'best_account': best_account,
+            'quota_rotation_applied': best_account is not None,
         }
 
     # ------------------------------------------------------------------
@@ -347,6 +356,16 @@ class AdaptiveModelSelector:
 
         return True, 'permitted'
 
+    _TOOL_MAP: dict[str, str] = {
+        'gemini': 'gemini',
+        'groq': 'groq',
+        'chatgpt_web': 'chatgpt',
+        'claude_web': 'claude',
+        'gemini_web': 'gemini',
+        'openrouter': 'openrouter',
+        'together': 'together',
+    }
+
     def _is_quota_available(
         self,
         provider_id: str,
@@ -362,16 +381,7 @@ class AdaptiveModelSelector:
         pool = getattr(world_model, 'worker_pool_snapshot', {}) or {}
         tools = pool.get('tools', {})
 
-        tool_map = {
-            'gemini': 'gemini',
-            'groq': 'groq',
-            'chatgpt_web': 'chatgpt',
-            'claude_web': 'claude',
-            'gemini_web': 'gemini',
-            'openrouter': 'openrouter',
-            'together': 'together',
-        }
-        tool_name = tool_map.get(provider_id, provider_id)
+        tool_name = self._TOOL_MAP.get(provider_id, provider_id)
         tool_info = tools.get(tool_name, {})
 
         if not tool_info:
@@ -381,6 +391,88 @@ class AdaptiveModelSelector:
         if not usable:
             return False, 'quota_exhausted'
         return True, 'quota_available'
+
+    def _quota_remaining_for_provider(
+        self,
+        provider_id: str,
+        world_model: Any | None,
+    ) -> int | None:
+        """Return remaining messages for the top worker of this provider.
+
+        Returns ``None`` when quota data is unavailable (backward compat).
+        """
+        if world_model is None:
+            return None
+        pool = getattr(world_model, 'worker_pool_snapshot', {}) or {}
+        tools = pool.get('tools', {})
+        tool_name = self._TOOL_MAP.get(provider_id, provider_id)
+        tool_info = tools.get(tool_name, {})
+        if not tool_info:
+            return None
+        top = tool_info.get('top_worker')
+        if top and isinstance(top, dict):
+            score = top.get('score')
+            if isinstance(score, (int, float)):
+                return int(score)
+        available = tool_info.get('available_accounts', 0)
+        if available > 0:
+            return None  # have accounts but no detailed score
+        return 0
+
+    def _best_account_for_tool(
+        self,
+        provider_id: str,
+        world_model: Any | None,
+    ) -> dict[str, Any] | None:
+        """Return the best account for this provider from worker_pool_snapshot.
+
+        If the primary account is exhausted but another exists, returns
+        the alternative account info.  Returns ``None`` when no account
+        data is available.
+        """
+        if world_model is None:
+            return None
+        pool = getattr(world_model, 'worker_pool_snapshot', {}) or {}
+        tools = pool.get('tools', {})
+        tool_name = self._TOOL_MAP.get(provider_id, provider_id)
+        tool_info = tools.get(tool_name, {})
+        if not tool_info:
+            return None
+        top = tool_info.get('top_worker')
+        if top and isinstance(top, dict) and tool_info.get('usable'):
+            return {
+                'email': top.get('email', ''),
+                'remaining': top.get('score', 0),
+                'tool': tool_name,
+            }
+        return None
+
+    def _check_low_quota_warnings(
+        self,
+        scores: list[ProviderScore],
+        world_model: Any | None,
+    ) -> None:
+        """Emit WARNING logs for providers with quota below threshold."""
+        if world_model is None:
+            return
+        pool = getattr(world_model, 'worker_pool_snapshot', {}) or {}
+        tools = pool.get('tools', {})
+        for ps in scores:
+            if not ps.available or ps.provider_id == 'ollama_local':
+                continue
+            tool_name = self._TOOL_MAP.get(ps.provider_id, ps.provider_id)
+            tool_info = tools.get(tool_name, {})
+            if not tool_info:
+                continue
+            top = tool_info.get('top_worker')
+            if top and isinstance(top, dict):
+                remaining = top.get('score', 999)
+                if isinstance(remaining, (int, float)) and remaining < _LOW_QUOTA_THRESHOLD:
+                    logger.warning(
+                        'adaptive_model_selector: %s has only %d messages remaining '
+                        '(threshold=%d) — consider rotating account',
+                        ps.provider_id, int(remaining), _LOW_QUOTA_THRESHOLD,
+                    )
 
     # ------------------------------------------------------------------
     # Internal: scoring logic
@@ -486,15 +578,29 @@ class AdaptiveModelSelector:
             else:
                 cloud_bonus = 0.0
 
-            ps.total_score = round(
+            # Quota-based penalization: low remaining → lower score
+            quota_penalty = 0.0
+            remaining = self._quota_remaining_for_provider(pid, world_model)
+            if remaining is not None and pid != 'ollama_local':
+                if remaining <= 0:
+                    quota_penalty = 1.0  # fully penalize
+                elif remaining < _LOW_QUOTA_THRESHOLD:
+                    quota_penalty = 1.0 - (remaining / _LOW_QUOTA_THRESHOLD)
+
+            raw_score = (
                 latency_score * 0.3
                 + success_score * 0.4
                 + cloud_bonus
-                + freshness_bonus,
+                + freshness_bonus
+            )
+            ps.total_score = round(
+                raw_score * (1.0 - quota_penalty * 0.5),
                 4,
             )
             ps.reason = f'latency={ps.avg_latency_ms:.0f}ms success={ps.success_rate:.0%}'
 
+            if remaining is not None and remaining < _LOW_QUOTA_THRESHOLD:
+                ps.reason += f' LOW_QUOTA({remaining})'
             if ps.success_rate < _MIN_SUCCESS_RATE:
                 ps.reason += ' DEGRADED'
             if ps.avg_latency_ms > _SLOW_LATENCY_MS:
