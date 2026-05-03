@@ -59,6 +59,7 @@ class LocalRoleRouter:
         artifact_repository: SessionArtifactRepository,
         tool_teach_service: Any | None = None,
         account_resource_scanner: Callable[[], dict[str, Any]] | None = None,
+        account_approval_ledger: Any | None = None,
     ) -> None:
         self.workspace_root = Path(workspace_root)
         self.general_provider = general_provider
@@ -76,6 +77,7 @@ class LocalRoleRouter:
         self.artifact_repository = artifact_repository
         self.tool_teach_service = tool_teach_service
         self._account_resource_scanner = account_resource_scanner
+        self._account_approval_ledger = account_approval_ledger
         self._health_snapshot_lock = threading.RLock()
         self._health_snapshot_cache: list[ProviderHealth] = []
         self._health_snapshot_checked_at = 0.0
@@ -274,16 +276,93 @@ class LocalRoleRouter:
                 d['remaining'] = d.pop('remaining_messages')
             return d
 
+        # Check for user-approved account override for this tool
+        effective_top = top
+        account_selection_source = 'auto_ranked'
+        fallback_used = False
+        approved_ref: dict[str, Any] | None = None
+
+        if self._account_approval_ledger is not None:
+            _approval = self._resolve_approved_account(
+                target_assistant=target, ranked=ranked,
+            )
+            if _approval is not None:
+                approved_ref = {
+                    'email': _approval.get('email', ''),
+                    'tool': _approval.get('tool', ''),
+                }
+                if _approval.get('_matched_worker'):
+                    effective_top = _approval['_matched_worker']
+                    account_selection_source = 'user_approved'
+                else:
+                    fallback_used = True
+                    account_selection_source = 'user_approved_fallback'
+
         result: dict[str, Any] = {
             'usable': True,
             'reason': '',
             'available_count': len(ranked),
             'workers': [_compact(w) for w in ranked[:10]],
-            'top_worker': _compact(top),
+            'top_worker': _compact(effective_top),
             'ranked_workers': [_compact(w) for w in ranked[:5]],
+            'account_selection_source': account_selection_source,
+            'fallback_used': fallback_used,
         }
+        if approved_ref:
+            result['approved_account'] = approved_ref
         if block_signals:
             result['block_signals_applied'] = block_signals
+        return result
+
+    def _resolve_approved_account(
+        self,
+        *,
+        target_assistant: str,
+        ranked: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
+        """Look up user-approved account for *target_assistant*.
+
+        Returns a dict with the approval data and ``_matched_worker``
+        set to the matching ranked worker if the approved account is
+        still usable.  Returns None if no approval exists.
+        """
+        if self._account_approval_ledger is None:
+            return None
+
+        target = target_assistant.strip().lower()
+        try:
+            approval = self._account_approval_ledger.get_approved(target)
+        except Exception:
+            return None
+
+        if approval is None:
+            return None
+
+        result: dict[str, Any] = {
+            'email': approval.email,
+            'tool': approval.tool,
+            'approved_at': approval.approved_at.isoformat() if approval.approved_at else '',
+            'origin': approval.origin,
+            '_matched_worker': None,
+        }
+
+        # Find matching worker in ranked list
+        for w in ranked:
+            if (
+                w.get('email', '').lower() == approval.email.lower()
+                and not w.get('exhausted', False)
+                and w.get('remaining_messages', 0) > 0
+            ):
+                result['_matched_worker'] = w
+                break
+
+        if result['_matched_worker'] is None:
+            logger.info(
+                'worker_health_gate: approved account %s/%s not usable '
+                '(exhausted/missing) — falling back to auto-ranked',
+                target, approval.email,
+            )
+
         return result
 
     def infer_task(self, request: InferenceRequest) -> tuple[RoleRoute, InferenceResult]:

@@ -320,6 +320,7 @@ from iabv_v15.services.roles.customer_support_service import CustomerSupportServ
 from iabv_v15.services.roles.embedding_index_service import EmbeddingIndexService
 from iabv_v15.services.roles.engineering_review_service import EngineeringReviewService
 from iabv_v15.services.account_resource_scanner import estimate_available_workers, build_inventory_snapshot
+from iabv_v15.services.account_approval_ledger import AccountApprovalLedger
 from iabv_v15.services.roles.local_role_router import LocalRoleRouter
 from iabv_v15.services.roles.sql_query_advisor_service import SqlQueryAdvisorService
 from iabv_v15.services.roles.teaching_gap_analyzer import TeachingGapAnalyzer
@@ -741,6 +742,7 @@ class AppBootstrap:
         self.engineering_review_service: EngineeringReviewService | None = None
         self.role_router: LocalRoleRouter | None = None
 
+        self.account_approval_ledger = AccountApprovalLedger()
         self.role_router = LocalRoleRouter(
             workspace_root=self.config.workspace_root,
             general_provider=self.general_provider,
@@ -758,6 +760,7 @@ class AppBootstrap:
             artifact_repository=self.session_artifact_repository,
             tool_teach_service=self.tool_teach_service,
             account_resource_scanner=estimate_available_workers,
+            account_approval_ledger=self.account_approval_ledger,
         )
         self.environment_self_awareness_service.role_router = self.role_router
         self.environment_self_awareness_service.request_refresh(reason='role_router_ready', full=False)

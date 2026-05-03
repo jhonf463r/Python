@@ -371,33 +371,34 @@ class CentroVivoViewModel(QObject):
     def approveAccountSwitch(self, tool: str, email: str) -> None:
         """Slot called from QML when user approves switching to a specific account.
 
-        This is the human-in-the-loop approval point.  The actual account
-        switch logic is intentionally minimal here — it only logs the
-        approval.  The orchestrator reads this signal to know which
-        account the user has sanctioned for the next consultation.
+        This is the human-in-the-loop approval point.  Writes to the
+        ``AccountApprovalLedger`` so the worker health gate uses this
+        account as priority override for *tool* on the next dispatch.
+        Other tools are NOT affected.
         """
+        from iabv_v15.domain.models import AccountApproval
+        from iabv_v15.services.account_approval_ledger import AccountApprovalLedger
+
         import logging
         logger = logging.getLogger(__name__)
+
+        approval = AccountApproval(
+            tool=tool,
+            email=email,
+            origin='centro_vivo_ui',
+            reason='user_manual_approval',
+        )
+
+        try:
+            ledger = AccountApprovalLedger(data_root=str(self._data_root))
+            ledger.approve(approval)
+        except Exception:
+            logger.warning('approveAccountSwitch: ledger write failed for %s/%s', tool, email)
+
         logger.info(
-            'account_switch_approved: tool=%s email=%s (user decision)',
+            'account_switch_approved: tool=%s email=%s (user decision via ledger)',
             tool, email,
         )
-        # Persist the approval so the orchestrator can read it
-        approval = {
-            'tool': tool,
-            'email': email,
-            'approved_at': datetime.now(timezone.utc).isoformat(),
-            'source': 'centro_vivo_ui',
-        }
-        approval_path = self._data_root / 'evolution' / 'account_switch_approval.json'
-        try:
-            approval_path.parent.mkdir(parents=True, exist_ok=True)
-            approval_path.write_text(
-                json.dumps(approval, indent=2, ensure_ascii=False),
-                encoding='utf-8',
-            )
-        except Exception:
-            pass
         self.refresh()
 
     def _build_status_text(self) -> str:

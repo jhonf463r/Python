@@ -1429,13 +1429,25 @@ class AdaptiveTaskOrchestrator:
                 target_assistant=_target,
                 block_signals=_block_signals or None,
             )
+            _selection_source = str(_gate.get('account_selection_source') or 'auto_ranked')
+            _fallback_used = bool(_gate.get('fallback_used', False))
             session.metadata['worker_gate'] = {
                 'usable': bool(_gate.get('usable', False)),
                 'top_worker': _gate.get('top_worker') if _gate.get('usable') else None,
                 'ranked_workers': list(_gate.get('ranked_workers') or [])[:5],
                 'available_count': int(_gate.get('available_count', 0)),
                 'reason': str(_gate.get('reason') or '') if not _gate.get('usable') else '',
+                'account_selection_source': _selection_source,
+                'fallback_used': _fallback_used,
             }
+            if _gate.get('approved_account'):
+                session.metadata['worker_gate']['approved_account'] = _gate['approved_account']
+
+            self._audit_account_selection(
+                tool=_target,
+                gate=_gate,
+                user_goal=request.user_goal,
+            )
 
         session.metadata['task_packet'] = self._build_task_packet(
             session=session,
@@ -2954,11 +2966,14 @@ class AdaptiveTaskOrchestrator:
         autonomous evolution service can see which accounts have active
         sessions and remaining free-tier messages.  Failures are silently
         swallowed to avoid disrupting the decision pipeline.
+
+        Includes ``selected_accounts`` from the ``AccountApprovalLedger``
+        so downstream consumers see which tools have user-approved overrides.
         """
         try:
             from iabv_v15.services.account_resource_scanner import estimate_available_workers
             pool = estimate_available_workers()
-            return {
+            result: dict[str, Any] = {
                 'available_count': pool.get('available_count', 0),
                 'exhausted_count': pool.get('exhausted_count', 0),
                 'total_remaining_messages': pool.get('total_remaining_messages', 0),
@@ -2974,8 +2989,74 @@ class AdaptiveTaskOrchestrator:
                     for w in pool.get('workers', [])[:20]
                 ],
             }
+            selected = self._selected_accounts_snapshot()
+            if selected:
+                result['selected_accounts'] = selected
+            return result
         except Exception:
             return {'available_count': 0, 'error': 'scanner_unavailable'}
+
+    def _audit_account_selection(
+        self,
+        *,
+        tool: str,
+        gate: dict[str, Any],
+        user_goal: str,
+    ) -> None:
+        """Record account selection in the decision audit trail."""
+        if self.decision_audit_trail is None:
+            return
+        try:
+            from iabv_v15.services.evolution.decision_audit_trail import (
+                DecisionOutcome,
+                DecisionPhase,
+                DecisionRecord,
+            )
+            source = str(gate.get('account_selection_source') or 'auto_ranked')
+            fallback = bool(gate.get('fallback_used', False))
+            top = gate.get('top_worker') or {}
+            approved = gate.get('approved_account') or {}
+            outcome = DecisionOutcome.FALLBACK_USED if fallback else DecisionOutcome.SUCCESS
+            self.decision_audit_trail.record(DecisionRecord(
+                phase=DecisionPhase.PROVIDER_SELECTION,
+                provider_id=top.get('tool', tool) or tool,
+                model_used=top.get('email', ''),
+                user_goal=user_goal,
+                outcome=outcome,
+                confidence=float(top.get('score', 0.0)),
+                metadata={
+                    'account_selection': {
+                        'tool': tool,
+                        'source': source,
+                        'selected_email': top.get('email', ''),
+                        'recommended_email': top.get('email', '') if source == 'auto_ranked' else '',
+                        'approved_email': approved.get('email', ''),
+                        'fallback_used': fallback,
+                        'available_count': int(gate.get('available_count', 0)),
+                        'is_human_approved': source in ('user_approved', 'user_approved_fallback'),
+                    },
+                },
+            ))
+        except Exception:
+            pass
+
+    def _selected_accounts_snapshot(self) -> dict[str, dict[str, str]]:
+        """Read per-tool user-approved accounts from the ledger."""
+        ledger = getattr(self.role_router, '_account_approval_ledger', None)
+        if ledger is None:
+            return {}
+        try:
+            approvals = ledger.get_all()
+            return {
+                tool: {
+                    'email': a.email,
+                    'approved_at': a.approved_at.isoformat() if a.approved_at else '',
+                    'origin': a.origin,
+                }
+                for tool, a in approvals.items()
+            }
+        except Exception:
+            return {}
 
     # ── live block-signals → worker gate ────────────────────────
 
@@ -3065,8 +3146,16 @@ class AdaptiveTaskOrchestrator:
                 'usable': bool(worker_gate.get('usable', False)),
                 'top_worker': top_worker,
                 'available_count': int(worker_gate.get('available_count', 0)),
+                'account_selection_source': str(worker_gate.get('account_selection_source') or 'auto_ranked'),
+                'fallback_used': bool(worker_gate.get('fallback_used', False)),
             },
             'selected_worker': top_worker,
+            'account_selection': {
+                'source': str(worker_gate.get('account_selection_source') or 'auto_ranked'),
+                'fallback_used': bool(worker_gate.get('fallback_used', False)),
+                'approved_account': dict(worker_gate.get('approved_account') or {}),
+                'is_human_approved': str(worker_gate.get('account_selection_source') or '') in ('user_approved', 'user_approved_fallback'),
+            },
             'evidence_basis': evidence_basis,
             'governance_flags': {
                 'approval_required': bool(governance.get('approval_required')),

@@ -466,7 +466,7 @@ class TestViewModelAccountInventory:
     @patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', side_effect=_mock_quota)
     @patch('iabv_v15.services.account_resource_scanner.estimate_available_workers', side_effect=_mock_pool)
     def test_approve_account_switch(self, mock_pool, mock_quota, mock_ranked):
-        """Test approveAccountSwitch persists approval file."""
+        """Test approveAccountSwitch persists via ledger."""
         tmp = Path('/tmp/test_vm_approval')
         if tmp.exists():
             shutil.rmtree(tmp)
@@ -475,12 +475,291 @@ class TestViewModelAccountInventory:
         vm = CentroVivoViewModel(defer_initial_refresh=False, data_root=str(tmp))
         vm.approveAccountSwitch("chatgpt", "user1@test.com")
 
-        approval_file = tmp / 'evolution' / 'account_switch_approval.json'
-        assert approval_file.exists()
-        data = json.loads(approval_file.read_text())
-        assert data['tool'] == 'chatgpt'
-        assert data['email'] == 'user1@test.com'
-        assert data['source'] == 'centro_vivo_ui'
-        assert 'approved_at' in data
+        ledger_file = tmp / 'evolution' / 'selected_account_by_tool.json'
+        assert ledger_file.exists()
+        data = json.loads(ledger_file.read_text())
+        assert 'chatgpt' in data
+        assert data['chatgpt']['email'] == 'user1@test.com'
+        assert data['chatgpt']['origin'] == 'centro_vivo_ui'
+        assert 'approved_at' in data['chatgpt']
 
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ──────────────────────────────────────────────────────────────
+# 6. AccountApprovalLedger
+# ──────────────────────────────────────────────────────────────
+
+class TestAccountApprovalLedger:
+    def _make_ledger(self, tmp: Path):
+        from iabv_v15.services.account_approval_ledger import AccountApprovalLedger
+        return AccountApprovalLedger(data_root=str(tmp))
+
+    def test_approve_and_read(self):
+        from iabv_v15.domain.models import AccountApproval
+        from iabv_v15.services.account_approval_ledger import AccountApprovalLedger
+        tmp = Path('/tmp/test_ledger_basic')
+        if tmp.exists():
+            shutil.rmtree(tmp)
+        tmp.mkdir(parents=True)
+        ledger = AccountApprovalLedger(data_root=str(tmp))
+
+        approval = AccountApproval(tool='chatgpt', email='a@b.com', origin='ui')
+        ledger.approve(approval)
+
+        result = ledger.get_approved('chatgpt')
+        assert result is not None
+        assert result.email == 'a@b.com'
+        assert result.tool == 'chatgpt'
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_per_tool_isolation(self):
+        from iabv_v15.domain.models import AccountApproval
+        from iabv_v15.services.account_approval_ledger import AccountApprovalLedger
+        tmp = Path('/tmp/test_ledger_isolation')
+        if tmp.exists():
+            shutil.rmtree(tmp)
+        tmp.mkdir(parents=True)
+        ledger = AccountApprovalLedger(data_root=str(tmp))
+
+        ledger.approve(AccountApproval(tool='chatgpt', email='a@b.com'))
+        ledger.approve(AccountApproval(tool='claude', email='c@d.com'))
+
+        chatgpt = ledger.get_approved('chatgpt')
+        claude = ledger.get_approved('claude')
+        assert chatgpt is not None and chatgpt.email == 'a@b.com'
+        assert claude is not None and claude.email == 'c@d.com'
+
+        # Approving chatgpt does NOT change claude
+        ledger.approve(AccountApproval(tool='chatgpt', email='x@y.com'))
+        assert ledger.get_approved('chatgpt').email == 'x@y.com'
+        assert ledger.get_approved('claude').email == 'c@d.com'
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_revoke(self):
+        from iabv_v15.domain.models import AccountApproval
+        from iabv_v15.services.account_approval_ledger import AccountApprovalLedger
+        tmp = Path('/tmp/test_ledger_revoke')
+        if tmp.exists():
+            shutil.rmtree(tmp)
+        tmp.mkdir(parents=True)
+        ledger = AccountApprovalLedger(data_root=str(tmp))
+
+        ledger.approve(AccountApproval(tool='chatgpt', email='a@b.com'))
+        assert ledger.revoke('chatgpt') is True
+        assert ledger.get_approved('chatgpt') is None
+        assert ledger.revoke('chatgpt') is False
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_get_all(self):
+        from iabv_v15.domain.models import AccountApproval
+        from iabv_v15.services.account_approval_ledger import AccountApprovalLedger
+        tmp = Path('/tmp/test_ledger_all')
+        if tmp.exists():
+            shutil.rmtree(tmp)
+        tmp.mkdir(parents=True)
+        ledger = AccountApprovalLedger(data_root=str(tmp))
+
+        ledger.approve(AccountApproval(tool='chatgpt', email='a@b.com'))
+        ledger.approve(AccountApproval(tool='claude', email='c@d.com'))
+        all_approvals = ledger.get_all()
+        assert len(all_approvals) == 2
+        assert 'chatgpt' in all_approvals
+        assert 'claude' in all_approvals
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_persistence_survives_reload(self):
+        from iabv_v15.domain.models import AccountApproval
+        from iabv_v15.services.account_approval_ledger import AccountApprovalLedger
+        tmp = Path('/tmp/test_ledger_persist')
+        if tmp.exists():
+            shutil.rmtree(tmp)
+        tmp.mkdir(parents=True)
+
+        ledger1 = AccountApprovalLedger(data_root=str(tmp))
+        ledger1.approve(AccountApproval(tool='chatgpt', email='a@b.com'))
+
+        # New instance reads from disk
+        ledger2 = AccountApprovalLedger(data_root=str(tmp))
+        result = ledger2.get_approved('chatgpt')
+        assert result is not None
+        assert result.email == 'a@b.com'
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ──────────────────────────────────────────────────────────────
+# 7. Worker health gate with account approval
+# ──────────────────────────────────────────────────────────────
+
+class _FakeLedger:
+    """Minimal ledger stub for worker_health_gate tests."""
+    def __init__(self):
+        self._state: dict[str, Any] = {}
+
+    def approve(self, tool: str, email: str):
+        from iabv_v15.domain.models import AccountApproval
+        a = AccountApproval(tool=tool, email=email, origin='test')
+        self._state[tool] = a
+
+    def get_approved(self, tool: str):
+        return self._state.get(tool)
+
+    def get_all(self):
+        return dict(self._state)
+
+
+class TestWorkerHealthGateApproval:
+    def _make_router(self, scanner_pool, ledger=None):
+        """Create a LocalRoleRouter with minimal fakes for worker gate tests."""
+        from iabv_v15.services.roles.local_role_router import LocalRoleRouter
+        from unittest.mock import MagicMock
+
+        mock_provider = MagicMock()
+        mock_provider.health_check.return_value = MagicMock(status='available')
+        mock_embedding = MagicMock()
+        mock_embedding.health_check.return_value = MagicMock(status='available')
+
+        router = LocalRoleRouter(
+            workspace_root='/tmp/test_router',
+            general_provider=mock_provider,
+            visual_provider=mock_provider,
+            optional_provider=None,
+            embedding_service=mock_embedding,
+            sql_service=MagicMock(),
+            analytics_service=MagicMock(),
+            customer_support_service=MagicMock(),
+            engineering_review_service=MagicMock(),
+            teaching_gap_analyzer=MagicMock(),
+            episode_repository=MagicMock(),
+            knowledge_repository=MagicMock(),
+            run_repository=MagicMock(),
+            artifact_repository=MagicMock(),
+            account_resource_scanner=lambda: scanner_pool,
+            account_approval_ledger=ledger,
+        )
+        return router
+
+    def _pool_with_workers(self):
+        return {
+            'workers': [
+                {'email': 'a@test.com', 'tool': 'chatgpt', 'browser': 'chrome',
+                 'profile': 'Default', 'remaining_messages': 10, 'used_in_window': 5,
+                 'limit': 15, 'exhausted': False, 'label': 'ChatGPT Free'},
+                {'email': 'b@test.com', 'tool': 'chatgpt', 'browser': 'edge',
+                 'profile': 'Profile 1', 'remaining_messages': 5, 'used_in_window': 10,
+                 'limit': 15, 'exhausted': False, 'label': 'ChatGPT Free'},
+            ],
+            'exhausted': [],
+            'available_count': 2,
+            'exhausted_count': 0,
+            'by_tool': {'chatgpt': [{'email': 'a@test.com'}, {'email': 'b@test.com'}]},
+            'total_remaining_messages': 15,
+            'tools_available': ['chatgpt'],
+        }
+
+    def test_no_approval_uses_auto_ranked(self):
+        """Without ledger approval, top_worker is from ranking."""
+        pool = self._pool_with_workers()
+        router = self._make_router(pool, ledger=None)
+        gate = router.worker_health_gate(target_assistant='chatgpt')
+        assert gate['usable'] is True
+        assert gate.get('account_selection_source', 'auto_ranked') == 'auto_ranked'
+        assert gate.get('fallback_used', False) is False
+
+    def test_approval_overrides_top_worker(self):
+        """User-approved account becomes top_worker."""
+        pool = self._pool_with_workers()
+        ledger = _FakeLedger()
+        ledger.approve('chatgpt', 'b@test.com')  # b has lower ranking
+        router = self._make_router(pool, ledger=ledger)
+        gate = router.worker_health_gate(target_assistant='chatgpt')
+
+        assert gate['usable'] is True
+        assert gate['top_worker']['email'] == 'b@test.com'
+        assert gate['account_selection_source'] == 'user_approved'
+        assert gate['fallback_used'] is False
+        assert gate['approved_account']['email'] == 'b@test.com'
+
+    def test_approval_fallback_when_exhausted(self):
+        """If approved account is exhausted, fallback to auto-ranked."""
+        pool = self._pool_with_workers()
+        # Make b exhausted
+        pool['workers'][1]['exhausted'] = True
+        pool['workers'][1]['remaining_messages'] = 0
+        ledger = _FakeLedger()
+        ledger.approve('chatgpt', 'b@test.com')
+        router = self._make_router(pool, ledger=ledger)
+        gate = router.worker_health_gate(target_assistant='chatgpt')
+
+        assert gate['usable'] is True
+        # Falls back to top-ranked (a@test.com)
+        assert gate['top_worker']['email'] == 'a@test.com'
+        assert gate['account_selection_source'] == 'user_approved_fallback'
+        assert gate['fallback_used'] is True
+
+    def test_approval_tool_a_does_not_affect_tool_b(self):
+        """Approving chatgpt doesn't change claude results."""
+        pool = self._pool_with_workers()
+        # Add a claude worker
+        pool['workers'].append({
+            'email': 'c@test.com', 'tool': 'claude', 'browser': 'chrome',
+            'profile': 'Default', 'remaining_messages': 20, 'used_in_window': 0,
+            'limit': 20, 'exhausted': False, 'label': 'Claude Free',
+        })
+        pool['available_count'] = 3
+        pool['by_tool']['claude'] = [{'email': 'c@test.com'}]
+        pool['tools_available'].append('claude')
+
+        ledger = _FakeLedger()
+        ledger.approve('chatgpt', 'b@test.com')
+        router = self._make_router(pool, ledger=ledger)
+
+        # chatgpt uses approved
+        gate_chatgpt = router.worker_health_gate(target_assistant='chatgpt')
+        assert gate_chatgpt['top_worker']['email'] == 'b@test.com'
+        assert gate_chatgpt['account_selection_source'] == 'user_approved'
+
+        # claude is unaffected (no approval for claude)
+        gate_claude = router.worker_health_gate(target_assistant='claude')
+        assert gate_claude['top_worker']['email'] == 'c@test.com'
+        assert gate_claude.get('account_selection_source', 'auto_ranked') == 'auto_ranked'
+
+    def test_approval_for_missing_account_falls_back(self):
+        """Approved account not in pool → fallback."""
+        pool = self._pool_with_workers()
+        ledger = _FakeLedger()
+        ledger.approve('chatgpt', 'nonexistent@test.com')
+        router = self._make_router(pool, ledger=ledger)
+        gate = router.worker_health_gate(target_assistant='chatgpt')
+
+        assert gate['usable'] is True
+        assert gate['top_worker']['email'] == 'a@test.com'
+        assert gate['fallback_used'] is True
+
+
+# ──────────────────────────────────────────────────────────────
+# 8. AccountApproval domain model
+# ──────────────────────────────────────────────────────────────
+
+class TestAccountApproval:
+    def test_defaults(self):
+        from iabv_v15.domain.models import AccountApproval
+        a = AccountApproval(tool='chatgpt', email='test@test.com')
+        assert a.tool == 'chatgpt'
+        assert a.email == 'test@test.com'
+        assert a.origin == 'ui'
+        assert a.valid is True
+        assert a.reason == ''
+        assert a.browser == ''
+
+    def test_roundtrip(self):
+        from iabv_v15.domain.models import AccountApproval
+        a = AccountApproval(
+            tool='claude', email='x@y.com',
+            origin='centro_vivo_ui', reason='manual_switch',
+        )
+        data = a.model_dump(mode='json')
+        restored = AccountApproval.model_validate(data)
+        assert restored.tool == 'claude'
+        assert restored.email == 'x@y.com'
+        assert restored.origin == 'centro_vivo_ui'

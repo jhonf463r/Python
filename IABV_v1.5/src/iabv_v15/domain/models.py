@@ -3010,3 +3010,24 @@ class AccountInventorySnapshot(BaseModel):
     tools_available: list[str] = Field(default_factory=list)
     unresolved_items: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AccountApproval(BaseModel):
+    """User-approved account selection for a specific tool.
+
+    Created when the user clicks "Aprobar cambio de cuenta" in the UI.
+    Consumed by the worker health gate in ``LocalRoleRouter`` to
+    override the automatic ranking for the specified tool.  Other tools
+    are NOT affected — the selection is strictly per-tool.
+    """
+
+    tool: str
+    email: str
+    browser: str = ""
+    profile: str = ""
+    approved_at: datetime = Field(default_factory=utc_now)
+    origin: str = "ui"
+    reason: str = ""
+    snapshot_id: str = ""
+    valid: bool = True
+    metadata: dict[str, Any] = Field(default_factory=dict)
