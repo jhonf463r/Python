@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 import logging
+import math
 from collections import defaultdict
 from datetime import timedelta
 from typing import Any
@@ -33,6 +34,8 @@ class ExperimentLab:
         self.registry = registry
         self.scoring_engine = scoring_engine
         self.strategy_selector = strategy_selector
+        if strategy_selector is not None:
+            strategy_selector._experiment_lab = self
 
     def run_experiment(
         self,
@@ -359,13 +362,72 @@ class ExperimentLab:
         return score > max(item.metrics.total_score for item in comparison_pool)
 
     # ------------------------------------------------------------------
+    # Adaptive threshold N_c (Brecha 3.3)
+    # ------------------------------------------------------------------
+
+    _Z_SCORES: dict[float, float] = {
+        0.90: 1.645,
+        0.95: 1.960,
+        0.99: 2.576,
+    }
+
+    def calculate_adaptive_threshold(
+        self,
+        domain: str | None = None,
+        *,
+        confidence_level: float = 0.95,
+        margin_of_error: float = 0.10,
+    ) -> int:
+        """Calculate the minimum number of runs needed for statistical confidence.
+
+        Uses the sample size formula for proportion estimation:
+        ``n = (Z^2 * p * (1-p)) / E^2``
+
+        Falls back to sensible defaults:
+        - If < 10 total runs exist: return 3 (bootstrap mode)
+        - If 10-50 runs: return calculated N_c (typically 5-15)
+        - If > 50 runs: return calculated N_c (typically 10-30)
+        """
+        all_runs = self.repository.list_runs(domain=domain, limit=500)
+        total = len(all_runs)
+
+        if total < 10:
+            return 3
+
+        successful = sum(1 for r in all_runs if r.success)
+        p = successful / max(total, 1)
+        if p in (0.0, 1.0):
+            p = 0.5
+
+        z = self._Z_SCORES.get(confidence_level)
+        if z is None:
+            z = self._Z_SCORES[min(self._Z_SCORES, key=lambda k: abs(k - confidence_level))]
+
+        n = math.ceil((z ** 2 * p * (1 - p)) / (margin_of_error ** 2))
+        ceiling = total // 3
+        return max(3, min(n, ceiling))
+
+    def get_current_thresholds(self) -> dict[str, int]:
+        """Return current adaptive thresholds per domain.
+
+        Returns a dict mapping ``'global'`` and each ``ExperimentDomain``
+        value to its calculated N_c.
+        """
+        from iabv_v15.domain.models import ExperimentDomain
+
+        result: dict[str, int] = {'global': self.calculate_adaptive_threshold()}
+        for dom in ExperimentDomain:
+            result[dom.value] = self.calculate_adaptive_threshold(domain=dom.value)
+        return result
+
+    # ------------------------------------------------------------------
     # Training corpus generation (Brecha 3.1)
     # ------------------------------------------------------------------
 
     def generate_training_corpus(
         self,
         *,
-        min_runs: int = 10,
+        min_runs: int | None = None,
         max_age_days: int = 30,
     ) -> list[dict[str, Any]]:
         """Generate training examples from accumulated experiment runs.
@@ -377,6 +439,9 @@ class ExperimentLab:
         Returns a list of training examples.
         """
         from iabv_v15.domain.models import utc_now
+
+        if min_runs is None:
+            min_runs = self.calculate_adaptive_threshold()
 
         cutoff = utc_now() - timedelta(days=max_age_days)
         all_runs = self.repository.list_runs(limit=500)
