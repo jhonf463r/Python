@@ -634,3 +634,232 @@ class TestNoRegression:
 
         result = ledger.get_approved('chatgpt')
         assert result.email == 'second@test.com'
+
+
+# ──────────────────────────────────────────────────────────────
+# 6. HARDENING: last_validated, mark_validated, consistency
+# ──────────────────────────────────────────────────────────────
+
+class TestLastValidated:
+    """Verify last_validated is set by worker_health_gate."""
+
+    def setup_method(self):
+        _clean_tmp()
+
+    def teardown_method(self):
+        shutil.rmtree(TMP_ROOT, ignore_errors=True)
+
+    def test_last_validated_defaults_none(self):
+        """AccountApproval.last_validated is None by default."""
+        a = AccountApproval(tool='chatgpt', email='a@b.com')
+        assert a.last_validated is None
+
+    def test_mark_validated_sets_timestamp(self):
+        """Ledger.mark_validated writes last_validated to disk."""
+        ledger = _make_ledger()
+        ledger.approve(AccountApproval(tool='chatgpt', email='a@b.com'))
+
+        assert ledger.mark_validated('chatgpt', valid=True) is True
+
+        # Verify on disk
+        fp = TMP_ROOT / 'evolution' / 'selected_account_by_tool.json'
+        data = json.loads(fp.read_text())
+        assert data['chatgpt']['last_validated'] is not None
+        assert data['chatgpt']['valid'] is True
+
+    def test_mark_validated_sets_invalid(self):
+        """mark_validated(valid=False) marks the approval invalid."""
+        ledger = _make_ledger()
+        ledger.approve(AccountApproval(tool='chatgpt', email='a@b.com'))
+
+        ledger.mark_validated('chatgpt', valid=False)
+
+        result = ledger.get_approved('chatgpt')
+        assert result is not None
+        assert result.valid is False
+        assert result.last_validated is not None
+
+    def test_mark_validated_with_snapshot_id(self):
+        """mark_validated can set snapshot_id."""
+        ledger = _make_ledger()
+        ledger.approve(AccountApproval(tool='chatgpt', email='a@b.com'))
+
+        ledger.mark_validated('chatgpt', valid=True, snapshot_id='snap-20260503')
+
+        result = ledger.get_approved('chatgpt')
+        assert result.snapshot_id == 'snap-20260503'
+
+    def test_mark_validated_nonexistent_tool(self):
+        """mark_validated returns False for unknown tool."""
+        ledger = _make_ledger()
+        assert ledger.mark_validated('nonexistent', valid=True) is False
+
+    def test_worker_gate_updates_last_validated(self):
+        """worker_health_gate calls mark_validated on the ledger."""
+        ledger = _make_ledger()
+        ledger.approve(AccountApproval(
+            tool='chatgpt', email='alice@test.com', origin='ui',
+        ))
+
+        pool = _multi_tool_pool()
+        router = _make_router(pool, ledger=ledger)
+        gate = router.worker_health_gate(target_assistant='chatgpt')
+
+        # Gate should have used alice (auto-ranked top = approved)
+        assert gate['usable'] is True
+
+        # Ledger should now have last_validated set
+        result = ledger.get_approved('chatgpt')
+        assert result is not None
+        assert result.last_validated is not None
+        assert result.valid is True
+
+    def test_worker_gate_marks_invalid_on_exhausted(self):
+        """worker_health_gate marks valid=False when approved is exhausted."""
+        ledger = _make_ledger()
+        ledger.approve(AccountApproval(
+            tool='chatgpt', email='bob@test.com', origin='ui',
+        ))
+
+        pool = _multi_tool_pool()
+        pool['workers'][1]['exhausted'] = True
+        pool['workers'][1]['remaining_messages'] = 0
+
+        router = _make_router(pool, ledger=ledger)
+        gate = router.worker_health_gate(target_assistant='chatgpt')
+
+        assert gate['fallback_used'] is True
+
+        # Ledger should now show valid=False
+        result = ledger.get_approved('chatgpt')
+        assert result is not None
+        assert result.valid is False
+        assert result.last_validated is not None
+
+    def test_mark_validated_does_not_affect_other_tools(self):
+        """mark_validated for one tool leaves others unchanged."""
+        ledger = _make_ledger()
+        ledger.approve(AccountApproval(tool='chatgpt', email='a@b.com'))
+        ledger.approve(AccountApproval(tool='claude', email='c@d.com'))
+
+        ledger.mark_validated('chatgpt', valid=True)
+
+        claude = ledger.get_approved('claude')
+        assert claude is not None
+        assert claude.last_validated is None  # untouched
+
+    def test_last_validated_persists_across_restart(self):
+        """last_validated survives ledger restart."""
+        ledger1 = _make_ledger()
+        ledger1.approve(AccountApproval(tool='chatgpt', email='a@b.com'))
+        ledger1.mark_validated('chatgpt', valid=True)
+
+        ledger2 = _make_ledger()
+        result = ledger2.get_approved('chatgpt')
+        assert result is not None
+        assert result.last_validated is not None
+        assert result.valid is True
+
+
+class TestConsistencyAuditGatePacket:
+    """Verify consistency between gate result, task_packet, and audit trail."""
+
+    def setup_method(self):
+        _clean_tmp()
+
+    def teardown_method(self):
+        shutil.rmtree(TMP_ROOT, ignore_errors=True)
+
+    def test_gate_and_packet_source_match(self):
+        """account_selection_source in gate == source in task_packet."""
+        from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+
+        for source_val in ('auto_ranked', 'user_approved', 'user_approved_fallback'):
+            session = MagicMock()
+            session.metadata = {
+                'worker_gate': {
+                    'usable': True,
+                    'top_worker': {'email': 'a@b.com'},
+                    'recommended_account': {'email': 'a@b.com'},
+                    'ranked_workers': [],
+                    'available_count': 1,
+                    'account_selection_source': source_val,
+                    'fallback_used': source_val == 'user_approved_fallback',
+                },
+            }
+            session.intent = MagicMock()
+            session.intent.intent_key = 'test'
+            session.intent.detected_role = MagicMock()
+            session.intent.detected_role.value = 'general'
+
+            dc = MagicMock()
+            dc.governance = {}
+            dc.metadata = {}
+
+            packet = AdaptiveTaskOrchestrator._build_task_packet(
+                session=session, decision_context=dc, perception=None,
+            )
+
+            assert packet['account_selection']['source'] == source_val
+            assert packet['worker_gate_summary']['account_selection_source'] == source_val
+
+    def test_gate_and_audit_trail_consistency(self):
+        """Audit trail records match gate result fields."""
+        from iabv_v15.services.evolution.decision_audit_trail import DecisionAuditTrail
+        from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+
+        tmp_audit = TMP_ROOT / 'consistency_audit'
+        tmp_audit.mkdir(parents=True)
+        trail = DecisionAuditTrail(data_root=str(tmp_audit))
+
+        ato = MagicMock(spec=AdaptiveTaskOrchestrator)
+        ato.decision_audit_trail = trail
+        ato._audit_account_selection = AdaptiveTaskOrchestrator._audit_account_selection.__get__(ato)
+
+        gate = {
+            'account_selection_source': 'user_approved',
+            'fallback_used': False,
+            'top_worker': {'email': 'bob@test.com', 'tool': 'chatgpt', 'score': 0.8},
+            'recommended_account': {'email': 'alice@test.com', 'tool': 'chatgpt'},
+            'approved_account': {'email': 'bob@test.com', 'tool': 'chatgpt'},
+            'available_count': 2,
+        }
+
+        ato._audit_account_selection(tool='chatgpt', gate=gate, user_goal='test')
+
+        records = trail.load_recent(10)
+        assert len(records) == 1
+        acct = records[0]['metadata']['account_selection']
+
+        # Consistency checks
+        assert acct['tool'] == 'chatgpt'
+        assert acct['source'] == gate['account_selection_source']
+        assert acct['fallback_used'] == gate['fallback_used']
+        assert acct['selected_email'] == gate['top_worker']['email']
+        assert acct['recommended_email'] == gate['recommended_account']['email']
+        assert acct['approved_email'] == gate['approved_account']['email']
+
+    def test_full_chain_consistency(self):
+        """End-to-end: ledger → gate → fields are all consistent."""
+        ledger = _make_ledger()
+        ledger.approve(AccountApproval(
+            tool='chatgpt', email='bob@test.com', origin='centro_vivo_ui',
+        ))
+
+        pool = _multi_tool_pool()
+        router = _make_router(pool, ledger=ledger)
+        gate = router.worker_health_gate(target_assistant='chatgpt')
+
+        # Gate consistency
+        assert gate['top_worker']['email'] == 'bob@test.com'
+        assert gate['recommended_account']['email'] == 'alice@test.com'
+        assert gate['approved_account']['email'] == 'bob@test.com'
+        assert gate['account_selection_source'] == 'user_approved'
+        assert gate['fallback_used'] is False
+
+        # Ledger consistency after gate
+        approval = ledger.get_approved('chatgpt')
+        assert approval.last_validated is not None
+        assert approval.valid is True
+        assert approval.email == 'bob@test.com'
+        assert approval.origin == 'centro_vivo_ui'

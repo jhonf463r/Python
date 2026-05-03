@@ -68,6 +68,32 @@ class AccountApprovalLedger:
         )
         return approval
 
+    def mark_validated(
+        self,
+        tool: str,
+        *,
+        valid: bool = True,
+        snapshot_id: str = '',
+    ) -> bool:
+        """Update last_validated timestamp for a tool's approval.
+
+        Called by ``worker_health_gate`` after checking the approved
+        account against the live ranked worker list.  Returns False if
+        no approval exists for *tool*.
+        """
+        with self._lock:
+            state = self._load()
+            entry = state.get(tool)
+            if entry is None:
+                return False
+            entry['last_validated'] = datetime.now(timezone.utc).isoformat()
+            entry['valid'] = valid
+            if snapshot_id:
+                entry['snapshot_id'] = snapshot_id
+            state[tool] = entry
+            self._save(state)
+        return True
+
     def revoke(self, tool: str) -> bool:
         """Remove the approved account for a tool. Returns True if found."""
         with self._lock:

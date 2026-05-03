@@ -357,12 +357,21 @@ class LocalRoleRouter:
                 result['_matched_worker'] = w
                 break
 
-        if result['_matched_worker'] is None:
+        matched = result['_matched_worker'] is not None
+        if not matched:
             logger.info(
                 'worker_health_gate: approved account %s/%s not usable '
                 '(exhausted/missing) — falling back to auto-ranked',
                 target, approval.email,
             )
+
+        # Update last_validated + valid in ledger (fire-and-forget)
+        try:
+            self._account_approval_ledger.mark_validated(
+                target, valid=matched,
+            )
+        except Exception:
+            pass
 
         return result
 

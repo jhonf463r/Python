@@ -3026,6 +3026,7 @@ class AccountApproval(BaseModel):
     browser: str = ""
     profile: str = ""
     approved_at: datetime = Field(default_factory=utc_now)
+    last_validated: datetime | None = None
     origin: str = "ui"
     reason: str = ""
     snapshot_id: str = ""
