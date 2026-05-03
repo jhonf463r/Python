@@ -924,6 +924,12 @@ Item {
         onDelegateToUser: function(payload) {
             if (controlCenterViewModel) controlCenterViewModel.onCredentialDelegated(payload)
         }
+        onVisibleChanged: {
+            if (controlCenterViewModel) {
+                if (visible) controlCenterViewModel.dialogOpened("credential_prompt", "")
+                else controlCenterViewModel.dialogClosed("credential_prompt", "")
+            }
+        }
     }
 
     ClarificationDialog {
@@ -931,6 +937,12 @@ Item {
         visible: false
         onClarificationResponse: function(payload) {
             if (controlCenterViewModel) controlCenterViewModel.onClarificationResponse(payload)
+        }
+        onVisibleChanged: {
+            if (controlCenterViewModel) {
+                if (visible) controlCenterViewModel.dialogOpened("clarification", "")
+                else controlCenterViewModel.dialogClosed("clarification", "")
+            }
         }
     }
 
@@ -942,6 +954,12 @@ Item {
         }
         onDependencyRejected: function(payload) {
             if (controlCenterViewModel) controlCenterViewModel.onDependencyRejected(payload)
+        }
+        onVisibleChanged: {
+            if (controlCenterViewModel) {
+                if (visible) controlCenterViewModel.dialogOpened("missing_dependency", "")
+                else controlCenterViewModel.dialogClosed("missing_dependency", "")
+            }
         }
     }
 

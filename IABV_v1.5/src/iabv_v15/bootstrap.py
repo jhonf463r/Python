@@ -837,6 +837,26 @@ class AppBootstrap:
             systray_bridge=self.win_systray_bridge,
         )
 
+        # UI Visibility Audit — central registry + adapters/watchers.
+        # Records user-visible events (dialogs, toasts, splash, subprocess,
+        # Win32 popups) for consumption by ControlMaster and OSES.
+        from iabv_v15.services.audit.ui_visibility_audit_service import UIVisibilityAuditService
+        self.ui_visibility_audit = UIVisibilityAuditService()
+
+        from iabv_v15.services.audit.subprocess_audit_wrapper import SubprocessAuditWrapper
+        self.subprocess_audit_wrapper = SubprocessAuditWrapper(
+            visibility_audit=self.ui_visibility_audit,
+        )
+
+        from iabv_v15.services.audit.win32_popup_watcher import Win32PopupWatcher
+        self.win32_popup_watcher = Win32PopupWatcher(
+            visibility_audit=self.ui_visibility_audit,
+        )
+
+        # SplashAuditAdapter is wired later in run() when the splash
+        # controller is available.  See ``_wire_splash_audit_adapter()``.
+        self.splash_audit_adapter = None
+
         # PCS v1 — PR E. Detector read-only de violaciones de encarnamiento.
         # handshake_required=False en el manifest → sólo reporta.
         # Lo enchufamos al self_examination como provider para poblar
@@ -1162,6 +1182,7 @@ class AppBootstrap:
             pending_issue_repository=self.pending_issue_repository,
             self_examination_service=self.operational_self_examination_service,
             experiment_lab_repository=self.experiment_lab_repository,
+            ui_visibility_audit=getattr(self, 'ui_visibility_audit', None),
         )
         self.control_master_digest_builder = ControlMasterDigestBuilder()
         self.git_sync_service = GitSyncService(
@@ -2429,6 +2450,7 @@ class AppBootstrap:
             control_master_digest_builder=self.control_master_digest_builder,
             self_audit_service=self.self_audit_service,
             chat_capability_ingestion_service=self.chat_capability_ingestion_service,
+            ui_visibility_audit=getattr(self, 'ui_visibility_audit', None),
             defer_initial_refresh=True,
         )
         self._yield_to_event_loop()  # Fix 20b
@@ -3300,6 +3322,15 @@ class AppBootstrap:
                     self._splash.closingNow.connect(self._handle_splash_closing)
                 except Exception:
                     logger.exception('No se pudo conectar splash.closingNow -> _handle_splash_closing')
+                # Wire SplashAuditAdapter now that splash controller exists
+                try:
+                    from iabv_v15.services.audit.splash_audit_adapter import SplashAuditAdapter
+                    self.splash_audit_adapter = SplashAuditAdapter(
+                        splash_controller=self._splash,
+                        visibility_audit=self.ui_visibility_audit,
+                    )
+                except Exception:
+                    logger.debug('splash_audit_adapter: wiring skipped')
                 splash_engine = QQmlApplicationEngine()
                 self._timeline.mark('splash_qml_engine_created')
                 splash_engine.rootContext().setContextProperty('splashController', self._splash)

@@ -1256,6 +1256,12 @@ Item {
         onDelegateToUser: function(payload) {
             if (evolutionCenterViewModel) evolutionCenterViewModel.onCredentialDelegated(payload)
         }
+        onVisibleChanged: {
+            if (evolutionCenterViewModel && typeof evolutionCenterViewModel.dialogOpened === "function") {
+                if (visible) evolutionCenterViewModel.dialogOpened("credential_prompt", "")
+                else evolutionCenterViewModel.dialogClosed("credential_prompt", "")
+            }
+        }
     }
 
     ClarificationDialog {
@@ -1263,6 +1269,12 @@ Item {
         visible: false
         onClarificationResponse: function(payload) {
             if (evolutionCenterViewModel) evolutionCenterViewModel.onClarificationResponse(payload)
+        }
+        onVisibleChanged: {
+            if (evolutionCenterViewModel && typeof evolutionCenterViewModel.dialogOpened === "function") {
+                if (visible) evolutionCenterViewModel.dialogOpened("clarification", "")
+                else evolutionCenterViewModel.dialogClosed("clarification", "")
+            }
         }
     }
 
@@ -1366,6 +1378,12 @@ Item {
         }
         onDependencyRejected: function(payload) {
             if (evolutionCenterViewModel) evolutionCenterViewModel.onDependencyRejected(payload)
+        }
+        onVisibleChanged: {
+            if (evolutionCenterViewModel && typeof evolutionCenterViewModel.dialogOpened === "function") {
+                if (visible) evolutionCenterViewModel.dialogOpened("missing_dependency", "")
+                else evolutionCenterViewModel.dialogClosed("missing_dependency", "")
+            }
         }
     }
 

@@ -116,6 +116,7 @@ class ControlCenterViewModel(QObject):
         control_master_digest_builder: Any | None = None,
         self_audit_service: Any | None = None,
         chat_capability_ingestion_service: Any | None = None,
+        ui_visibility_audit: Any | None = None,
         defer_initial_refresh: bool = False,
     ) -> None:
         super().__init__()
@@ -162,6 +163,7 @@ class ControlCenterViewModel(QObject):
         # para que OSES y ExperimentLab lo consuman despues. Es OPCIONAL: si no
         # esta inyectado, sendChat funciona igual (comportamiento legacy).
         self.chat_capability_ingestion_service = chat_capability_ingestion_service
+        self.ui_visibility_audit = ui_visibility_audit
         self._chat_session_id = _generate_chat_session_id()
         self._pending_capability_notice: list[str] = []
 
@@ -7042,9 +7044,34 @@ class ControlCenterViewModel(QObject):
         notify=dataChanged,
     )
 
+    # --- Dialog closed tracking (ui_visibility_audit) ---
 
+    @Slot(str, str)
+    def dialogClosed(self, dialog_type: str, detail: str = '') -> None:
+        """Record a dialog close event via UIVisibilityAuditService.
 
+        Called from QML when CredentialPromptDialog, ClarificationDialog
+        or MissingDependencyDialog closes.  Automatically traces the
+        closure without manual intervention.
+        """
+        audit = self.ui_visibility_audit
+        if audit is None:
+            return
+        audit.record_dialog_closed(
+            dialog_type=dialog_type,
+            detail=detail,
+        )
 
+    @Slot(str, str)
+    def dialogOpened(self, dialog_type: str, detail: str = '') -> None:
+        """Record a dialog open event via UIVisibilityAuditService."""
+        audit = self.ui_visibility_audit
+        if audit is None:
+            return
+        audit.record_dialog_opened(
+            dialog_type=dialog_type,
+            detail=detail,
+        )
 
 
 

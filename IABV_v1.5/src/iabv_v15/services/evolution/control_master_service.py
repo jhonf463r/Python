@@ -50,6 +50,7 @@ class ControlMasterService:
         pending_issue_repository: Any | None = None,
         self_examination_service: Any | None = None,
         experiment_lab_repository: Any | None = None,
+        ui_visibility_audit: Any | None = None,
         recent_decisions_limit: int = 10,
     ) -> None:
         self.repository = repository
@@ -57,6 +58,7 @@ class ControlMasterService:
         self.pending_issue_repository = pending_issue_repository
         self.self_examination_service = self_examination_service
         self.experiment_lab_repository = experiment_lab_repository
+        self.ui_visibility_audit = ui_visibility_audit
         self.recent_decisions_limit = recent_decisions_limit
 
     # ------------------------------------------------------------------
@@ -77,6 +79,10 @@ class ControlMasterService:
         backlog = self._project_backlog()
         risks = self._project_risks()
         unresolved = list(dict.fromkeys([*base.unresolved_items, *self._project_unresolved()]))
+        visibility = self._project_visibility_audit()
+        metadata = dict(base.metadata)
+        if visibility:
+            metadata["ui_visibility_audit"] = visibility
         state = base.model_copy(
             update={
                 "global_rules": rules,
@@ -88,6 +94,7 @@ class ControlMasterService:
                 "technical_backlog": backlog,
                 "current_risks": risks,
                 "unresolved_items": unresolved,
+                "metadata": metadata,
                 "last_updated": utc_now(),
             }
         )
@@ -392,6 +399,24 @@ class ControlMasterService:
             unresolved = getattr(snapshot, "unresolved_risks", None) or []
             return [str(item) for item in unresolved]
         return []
+
+    def _project_visibility_audit(self) -> dict[str, Any]:
+        """Read compact visibility snapshot from UIVisibilityAuditService.
+
+        Returns dict with keys: unresolved, file_not_found, unexpected,
+        total_events, by_category.  Empty dict if audit unavailable.
+        """
+        audit = self.ui_visibility_audit
+        if audit is None:
+            return {}
+        try:
+            return audit.snapshot()
+        except Exception:
+            return {}
+
+    def visibility_audit_snapshot(self) -> dict[str, Any]:
+        """Public accessor for external consumers (e.g. OSES, digest)."""
+        return self._project_visibility_audit()
 
 
 # ----------------------------------------------------------------------
