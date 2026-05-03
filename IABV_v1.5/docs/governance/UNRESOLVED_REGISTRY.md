@@ -8,7 +8,7 @@ Todo lo que no puede confirmarse con evidencia del código fuente actual.
 
 | ID | Descripción | Origen | Impacto |
 |---|---|---|---|
-| U1 | **AutonomyCycleService no existe en el source tree.** Fue diseñado en Architecture Report V5 (PR #307, branch devin/1777750256) pero no hay archivo en src/. ¿Fue mergeado y luego eliminado, o nunca se materializó? | Master Doc | Alto — código disperso en OSES y TOR que debería centralizarse |
+| U1 | **AutonomyCycleService no existe en el source tree.** Evidencia de búsqueda exhaustiva abajo. | Master Doc | Alto — código disperso en OSES y TOR que debería centralizarse |
 | U2 | **CPU frequency UNRESOLVED en EnvironmentSelfModel.** `UNRESOLVED:cpu_frequency` persiste (última lectura: 2026-05-02). | EnvironmentSelfModel | Bajo — no afecta decisiones de ruta |
 | U3 | **Control Master desactualizado desde 2026-04-19.** Los 4 objetivos activos y el estado de tests no reflejaban el trabajo reciente de Windsurf/Codex hasta esta sesión. | Control Master | Medio — actualizado parcialmente en esta sesión |
 | U4 | **lazy_vm_prebuild_done nunca disparó en 120s.** QTimer de 15s para pre-construir ViewModels en background no disparó. ¿Event loop bloqueado por tool probing y MCP startup al segundo 15? | OSES findings | Medio — VMs se construyen on-demand pero sin prebuild |
@@ -31,3 +31,41 @@ Si algo no puede confirmarse en el código:
    PYTHONPATH=src python -m iabv_v15 cm mark-unresolved "texto del unresolved"
    ```
 4. No inventar disponibilidad, no fingir confirmación
+
+---
+
+## U1 — Evidencia detallada de búsqueda (AutonomyCycleService)
+
+**Fecha:** 2026-05-03  
+**Sesión:** Devin session `2b36b4fec0f84edb872a43580eb90f4f`
+
+### Qué se buscó
+- Nombre exacto: `AutonomyCycleService`
+- Variantes: `autonomy_cycle`, `AutonomyCycle`, `autonomy_cycle_service`
+
+### Dónde se buscó
+1. **Árbol fuente completo:**
+   ```
+   grep -r "AutonomyCycleService" src/iabv_v15/  →  0 resultados
+   grep -r "autonomy_cycle_service" src/iabv_v15/  →  0 resultados
+   find src/iabv_v15/ -name "*autonomy_cycle*"  →  0 archivos
+   ```
+2. **Tests:**
+   ```
+   grep -r "AutonomyCycleService" tests/  →  0 resultados
+   ```
+3. **Bootstrap (wiring):**
+   ```
+   grep "AutonomyCycleService\|autonomy_cycle" src/iabv_v15/bootstrap.py  →  0 resultados
+   ```
+4. **domain/models.py:** sin referencia.
+5. **Git history:** El servicio aparece diseñado en PR #307 (Architecture Report V5, branch `devin/1777750256`) como propuesta de la Fase 4 del plan de evolución. No hay evidencia de que se haya implementado o mergeado y luego eliminado.
+
+### Qué se encontró en su lugar
+- `OperationalSelfExaminationService` contiene `bridge_findings()` y lógica de startup summary.
+- `TrainingOrchestrator` contiene `seed_capabilities()` y resume hints parciales.
+- Ambos incluyen fallbacks inline que hacen lo que el servicio centralizado haría.
+- El Master Doc (Fase 4) lo marca como "si no fue mergeado" — implica que era opcional.
+
+### Conclusión
+AutonomyCycleService **nunca fue implementado**. Su funcionalidad está dispersa en OSES y TOR con fallbacks. No es un bloqueante para las fases 1-3. Se deja UNRESOLVED para decisión futura del responsable del proyecto.

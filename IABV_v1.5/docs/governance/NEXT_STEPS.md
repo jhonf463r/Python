@@ -4,13 +4,22 @@
 
 ---
 
-## Paso Inmediato Recomendado: Fase 1 — Estabilidad del Arranque
+## ~~Fase 1 — Estabilidad del Arranque~~ COMPLETADA
 
-### ControlCenterVM lazy init
+### ControlCenterVM lazy init — IMPLEMENTADO
 **Archivo:** `src/iabv_v15/ui/viewmodels/control_center_viewmodel.py`  
-**Cambio:** Mover la inicialización pesada de `__init__` a `_initialize_heavy()`, llamarlo con `QTimer.singleShot(0)` post `setContextProperty`.  
-**Por qué primero:** Es el único bloqueante confirmado del main thread. Sin esto, la UI no responde y el resto de los avances son invisibles al usuario.  
-**Riesgo:** Bajo. El cambio es local al VM y no afecta servicios.  
+**Cambio realizado:** Heavy I/O movido a `_bg_initial_refresh()` via `_bg_pool.submit()`. Resultado aplicado en main thread via `taskResolved` signal. `QTimer.singleShot(0, self._initialize_heavy)` reemplaza `QTimer.singleShot(250, self.refresh)`.  
+**Tests post-fix:** 2391 passed / 29 failed / 25 skipped — 0 regresiones nuevas.
+
+---
+
+## Paso Inmediato Recomendado: Fase 2 — Cerrar el Loop de Cuota
+
+### Quota tracker wiring
+**Archivo:** `src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py`  
+**Cambio:** Llamar `record_message_sent(packet.assistant_kind, packet.account_email)` inmediatamente antes del despacho a ruta externa. Solo si `budget_tier == 'free_authenticated'` y el packet tiene `account_email`.  
+**Por qué ahora:** Sin esto, el quota tracker existe pero no aprende. El selector seguirá usando workers ya agotados.  
+**Riesgo:** Bajo. Envuelto en try/except.  
 **Estimación:** 1 sesión de agente.
 
 ---
@@ -19,7 +28,7 @@
 
 | Fase | Qué hacer | Dependencia | Riesgo |
 |---|---|---|---|
-| 1 | ControlCenterVM lazy init | Ninguna | Bajo |
+| ~~1~~ | ~~ControlCenterVM lazy init~~ | ~~Ninguna~~ | ~~Completado~~ |
 | 2 | Quota tracker wiring en ATO | Ninguna | Bajo |
 | 3 | worker_pool_snapshot en WorldModel | Ninguna | Medio |
 | 4 | AutonomyCycleService (si se confirma U1) | Confirmar U1 | Bajo-Medio |

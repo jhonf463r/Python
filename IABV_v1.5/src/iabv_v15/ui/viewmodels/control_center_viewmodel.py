@@ -267,8 +267,7 @@ class ControlCenterViewModel(QObject):
         if defer_initial_refresh:
             if not self._working and not self._adaptive_session_id:
                 self._busy_label = self._startup_readiness_text(validating_local_stack=True)
-            QTimer.singleShot(250, self.refresh)
-            QTimer.singleShot(900, lambda: self._refresh_provider_health(announce=False))
+            QTimer.singleShot(0, self._initialize_heavy)
         else:
             self.refresh()
             self._refresh_provider_health(announce=False)
@@ -276,6 +275,34 @@ class ControlCenterViewModel(QObject):
     def _shutdown_bg_pool(self) -> None:
         """Gracefully shutdown the background thread pool on process exit."""
         self._bg_pool.shutdown(wait=False)
+
+    # --- Lazy init (fix: desbloquea Responding=True@60s) ---
+    # Mueve la carga pesada del arranque al pool de background para no
+    # bloquear el main thread de Qt. El resultado se aplica via signal.
+
+    def _initialize_heavy(self) -> None:
+        """Deferred heavy init — moves I/O-bound refresh to bg pool."""
+        self._bg_pool.submit(self._bg_initial_refresh)
+
+    def _bg_initial_refresh(self) -> None:
+        """Background: compute heavy data, then emit signal for main thread."""
+        try:
+            pbt_state = self.pbt_service.load_state()
+            pbt_candidates = list(pbt_state.get('candidates', []))[:4]
+            goal_context = self._goal_context_from_repository(
+                self._current_site_id() or None,
+            )
+            repo_bridge = self.development_assist_service.build_repo_bridge_summary()
+            local_stack = self.development_assist_service.build_local_stack_summary()
+            self.taskResolved.emit('_initial_refresh', {
+                'pbt_state': pbt_state,
+                'pbt_candidates': pbt_candidates,
+                'goal_context': goal_context,
+                'repo_bridge': repo_bridge,
+                'local_stack': local_stack,
+            })
+        except Exception:
+            self.taskResolved.emit('_initial_refresh', {})
 
     def _placeholder_provider_cards(self) -> list[dict[str, Any]]:
         return [
@@ -6719,6 +6746,24 @@ class ControlCenterViewModel(QObject):
             self._pbt_candidates = list(payload.get('candidates', []))[:4]
             self._append_message('assistant', 'PBT', str(payload.get('summary', 'Ciclo PBT completado.')), f"Generacion {payload.get('generation', 0)}")
             self._busy_label = f"PBT actualizado en generacion {payload.get('generation', 0)}."
+        elif task_name == '_initial_refresh':
+            if payload:
+                self._pbt_state = payload.get('pbt_state') or self._pbt_state
+                self._pbt_candidates = payload.get('pbt_candidates') or self._pbt_candidates
+                self._last_goal_context = payload.get('goal_context') or self._last_goal_context
+                self._repo_bridge_text = payload.get('repo_bridge') or self._repo_bridge_text
+                self._local_stack_text = payload.get('local_stack') or self._local_stack_text
+            self._update_progress_cards()
+            self._update_evolution_snapshot()
+            self._agent_cards = self._build_agent_cards()
+            if not self._working and not self._adaptive_session_id:
+                self._busy_label = self._startup_readiness_text(validating_local_stack=True)
+            self._seed_development_packet()
+            self._refresh_autonomy_dock()
+            self._refresh_control_master()
+            self._refresh_provider_health(announce=False)
+            self.dataChanged.emit()
+            return
         if task_name != 'provider_health':
             self._working = False
         self._update_progress_cards()

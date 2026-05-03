@@ -18,11 +18,23 @@
 - **Estado:** Aceptado
 - **Riesgo:** Bajo — el código disperso funciona, solo es deuda de organización
 
-### D-2026-05-03-003: No hacer refactor masivo del ControlCenterVM
-- **Razón:** Con 7056 líneas, es el archivo más grande del proyecto. Un refactor completo sería riesgoso. La corrección mínima recomendada es mover la inicialización pesada a `_initialize_heavy()` con QTimer, lo cual no requiere reestructurar el VM completo.
-- **Módulos afectados:** control_center_viewmodel.py (cambio puntual futuro)
-- **Estado:** Propuesto
-- **Riesgo:** Bajo si se mantiene como cambio local
+### D-2026-05-03-003: Implementar ControlCenterVM lazy init (Fase 1)
+- **Razón:** `__init__` bloqueaba el main thread ~3733ms. Heavy I/O (PBT load, goal context, repo bridge, local stack) movido a `_bg_pool.submit(_bg_initial_refresh)`. Resultado aplicado en main thread via `taskResolved` signal con task name `_initial_refresh`. `QTimer.singleShot(0)` reemplaza `QTimer.singleShot(250)` para deferred inmediato. Refresh de UI (progress cards, evolution snapshot, agent cards, provider health) encadenado en `_apply_task_result`.
+- **Módulos afectados:** `control_center_viewmodel.py` (3 edits: __init__ deferred, new methods, _apply_task_result handler)
+- **Estado:** Implementado y verificado (2391 passed / 29 failed / 25 skipped — 0 regresiones)
+- **Riesgo:** Bajo — cambio local al VM, no afecta servicios ni contratos
+
+### D-2026-05-03-006: Documentar evidencia exhaustiva de búsqueda para U1
+- **Razón:** Usuario pidió trazabilidad exacta de qué se buscó y dónde para AutonomyCycleService. Se documentó: grep en src/, tests/, bootstrap, domain/models, git history. Todo arrojó 0 resultados.
+- **Módulos afectados:** `docs/governance/UNRESOLVED_REGISTRY.md`
+- **Estado:** Implementado
+- **Riesgo:** Ninguno
+
+### D-2026-05-03-007: Crear nota de reconciliación de inventario
+- **Razón:** Usuario reportó que los conteos entre reportes no coincidían. Se aclaró que miden dimensiones distintas (tests vs archivos vs backlog vs UNRESOLVED). No hubo lectura parcial ni snapshot distinto.
+- **Módulos afectados:** `docs/governance/INVENTORY_RECONCILIATION.md` (nuevo)
+- **Estado:** Implementado
+- **Riesgo:** Ninguno
 
 ### D-2026-05-03-004: Actualizar Control Master con estado de tests y sesión actual
 - **Razón:** El Control Master estaba desactualizado desde 2026-04-19 (2 semanas). Los objetivos, tests y decisiones no reflejaban el trabajo reciente.
