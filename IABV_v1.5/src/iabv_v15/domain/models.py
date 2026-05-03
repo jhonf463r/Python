@@ -631,6 +631,7 @@ class WorldModelSnapshot(BaseModel):
     confidence: float = 0.0
     freshness_ms: int = 0
     last_updated: datetime = Field(default_factory=utc_now)
+    worker_pool_snapshot: dict[str, Any] = Field(default_factory=dict)
     unresolved_fields: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
 

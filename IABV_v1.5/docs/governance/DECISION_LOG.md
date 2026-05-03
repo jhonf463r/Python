@@ -36,6 +36,26 @@
 - **Estado:** Implementado
 - **Riesgo:** Ninguno
 
+### D-2026-05-03-008: Fase 2 — Quota tracker wiring en ATO
+- **Razón:** `record_message_sent(tool, email)` existía en `account_resource_scanner.py` pero nunca era invocado. Sin esto, el quota tracker no aprende y el selector sigue usando workers agotados.
+- **Cambio:** Agregados `_record_quota_usage()` y `_record_quota_usage_for_candidate()` en `AdaptiveTaskOrchestrator`. Se llaman antes de cada `plan_or_execute()` (govern_adaptive_payload y parallel comparison). Extraen `tool` de `governance.assistant_kind` y `email` de `worker_gate.top_worker`. Envueltos en try/except.
+- **Módulos afectados:** `adaptive_task_orchestrator.py`
+- **Estado:** Implementado y verificado (0 regresiones)
+- **Riesgo:** Bajo — try/except impide que fallo de I/O rompa la sesión
+
+### D-2026-05-03-009: Fase 3 — worker_pool_snapshot en WorldModelSnapshot
+- **Razón:** Sin el pool de workers en el snapshot, `AutonomyGovernancePolicy` no puede tomar decisiones de ruta basadas en cuota disponible sin consultar el scanner ad-hoc desde el Orchestrator.
+- **Cambio:** Campo `worker_pool_snapshot: dict = {}` agregado a `WorldModelSnapshot` en `domain/models.py`. Método `_estimate_worker_pool(timeout_s=2.0)` en `world_model_service.py` usa `ThreadPoolExecutor` con timeout para no bloquear el ciclo de monitoreo. Solo se ejecuta en scans `full`.
+- **Módulos afectados:** `domain/models.py`, `world_model_service.py`
+- **Estado:** Implementado y verificado (0 regresiones)
+- **Riesgo:** Medio — agrega I/O al ciclo full, pero con timeout de 2s
+
+### D-2026-05-03-010: Prompt de auditoría real para laptop
+- **Razón:** El usuario necesita un prompt listo para que Windsurf/Codex audite los cambios en el entorno Windows real donde corre el programa.
+- **Módulos afectados:** `docs/governance/AUDIT_PROMPT_LAPTOP.md` (nuevo)
+- **Estado:** Implementado
+- **Riesgo:** Ninguno
+
 ### D-2026-05-03-004: Actualizar Control Master con estado de tests y sesión actual
 - **Razón:** El Control Master estaba desactualizado desde 2026-04-19 (2 semanas). Los objetivos, tests y decisiones no reflejaban el trabajo reciente.
 - **Módulos afectados:** data/evolution/control_master/

@@ -264,6 +264,7 @@ class WorldModelService:
             network_status=network_status,
             unresolved_fields=unresolved_fields,
         )
+        worker_pool_snapshot = self._estimate_worker_pool(timeout_s=2.0) if full else {}
         metadata = {
             'scan_reason': str(reason or 'manual'),
             'scan_mode': 'full' if full else 'light',
@@ -291,9 +292,30 @@ class WorldModelService:
             confidence=confidence,
             freshness_ms=max(0, int((time.perf_counter() - started) * 1000.0)),
             last_updated=utc_now(),
+            worker_pool_snapshot=worker_pool_snapshot,
             unresolved_fields=unresolved_fields,
             metadata=metadata,
         )
+
+    @staticmethod
+    def _estimate_worker_pool(timeout_s: float = 2.0) -> dict[str, Any]:
+        """Query account_resource_scanner for the current worker pool.
+
+        Runs in a background thread with a hard timeout so a slow scan
+        never blocks the snapshot cycle.
+        """
+        import concurrent.futures
+
+        def _scan() -> dict[str, Any]:
+            from iabv_v15.services.account_resource_scanner import estimate_available_workers
+            return estimate_available_workers()
+
+        try:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(_scan)
+                return future.result(timeout=timeout_s)
+        except Exception:
+            return {}
 
     def _tool_live_status(
         self,

@@ -181,6 +181,38 @@ class AdaptiveTaskOrchestrator:
         self._COGNITIVE_LOAD_THRESHOLD = 5
         self._processing_count: int = 0
 
+    # --- Fase 2: Quota tracking wiring ----------------------------------
+    # Registra cada despacho externo en el quota tracker para que el
+    # selector sepa qué workers ya consumieron mensajes.
+
+    def _record_quota_usage(self, payload: dict[str, Any], decision_context: DecisionContext) -> None:
+        try:
+            governance = dict(decision_context.governance or {})
+            tool = str(governance.get('assistant_kind') or '').strip().lower()
+            if not tool:
+                return
+            metadata = dict(payload.get('metadata') or {})
+            worker_gate = dict(metadata.get('worker_gate') or {})
+            top_worker = dict(worker_gate.get('top_worker') or {})
+            email = str(top_worker.get('email') or '').strip()
+            if not email:
+                return
+            from iabv_v15.services.account_resource_scanner import record_message_sent
+            record_message_sent(tool, email)
+        except Exception:
+            pass
+
+    def _record_quota_usage_for_candidate(self, candidate: dict[str, Any]) -> None:
+        try:
+            tool = str(candidate.get('assistant_kind') or '').strip().lower()
+            email = str(candidate.get('email') or '').strip()
+            if not tool or not email:
+                return
+            from iabv_v15.services.account_resource_scanner import record_message_sent
+            record_message_sent(tool, email)
+        except Exception:
+            pass
+
     def _maybe_synaptic_decision(self, intent: TaskIntent | None) -> SynapticRoutingDecision | None:
         """Consulta ``SynapticRouter.decide`` si el intent es external-worthy.
 
@@ -332,6 +364,8 @@ class AdaptiveTaskOrchestrator:
         payload = self._build_parallel_comparison_payload(
             request=request, candidate=candidate, synaptic_decision=synaptic_decision
         )
+        # Fase 2: registrar uso de cuota para comparación paralela.
+        self._record_quota_usage_for_candidate(candidate)
         result = service.plan_or_execute(
             adaptive_payload=payload,
             user_goal=request.user_goal,
@@ -1517,6 +1551,8 @@ class AdaptiveTaskOrchestrator:
             )
             if coordinated_payload is not None:
                 return coordinated_payload
+        # Fase 2: registrar uso de cuota antes del despacho externo.
+        self._record_quota_usage(payload, decision_context)
         result = self.autonomous_evolution_service.plan_or_execute(
             adaptive_payload=payload,
             user_goal=user_goal,

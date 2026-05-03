@@ -27,19 +27,39 @@
 - **U1 documentado** con evidencia exhaustiva de búsqueda (grep, find, bootstrap, git history)
 - **Nota de reconciliación de inventario** creada (`INVENTORY_RECONCILIATION.md`)
 
+### Fase C — Implementación Fases 2+3 (tercera parte)
+- **Fase 2 — Quota tracker wiring:**
+  - `_record_quota_usage()` + `_record_quota_usage_for_candidate()` en ATO
+  - Llaman `record_message_sent(tool, email)` antes de cada `plan_or_execute()`
+  - Tool extraído de `governance.assistant_kind`, email del `worker_gate.top_worker`
+  - Envuelto en try/except — fallo de I/O no rompe la sesión
+- **Fase 3 — worker_pool en WorldModelSnapshot:**
+  - Campo `worker_pool_snapshot: dict = {}` en `WorldModelSnapshot` (domain/models.py)
+  - `_estimate_worker_pool(timeout_s=2.0)` en `world_model_service.py`
+  - Usa ThreadPoolExecutor con timeout de 2s para no bloquear ciclo de monitoreo
+  - Solo en scans `full` (no en `light`)
+- **Prompt de auditoría real** creado (`AUDIT_PROMPT_LAPTOP.md`) para Windsurf/Codex
+- **Tests post-Fases 2+3:** 2391 passed / 29 failed / 25 skipped — **0 regresiones**
+
 ### Documentos nuevos o actualizados en esta sesión
 - `docs/governance/INVENTORY_RECONCILIATION.md` — **nuevo**, reconcilia conteos entre reportes
+- `docs/governance/AUDIT_PROMPT_LAPTOP.md` — **nuevo**, prompt de auditoría para laptop
 - `docs/governance/UNRESOLVED_REGISTRY.md` — actualizado con evidencia detallada para U1
 - `docs/governance/SESSION_HANDOFF.md` — este archivo, actualizado
+- `docs/governance/NEXT_STEPS.md` — actualizado con Fases 1-3 completadas
+- `docs/governance/DECISION_LOG.md` — actualizado con decisiones D-003 a D-010
 - `src/iabv_v15/ui/viewmodels/control_center_viewmodel.py` — lazy init implementado
+- `src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py` — quota wiring
+- `src/iabv_v15/domain/models.py` — worker_pool_snapshot field
+- `src/iabv_v15/services/evolution/world_model_service.py` — _estimate_worker_pool()
 
 ---
 
 ## Qué quedó pendiente
 
-1. ~~**ControlCenterVM lazy init**~~ — ✔ Implementado en esta sesión
-2. **Quota tracker wiring** — llamar `record_message_sent()` en ATO antes del despacho
-3. **worker_pool en WorldModelSnapshot** — agregar campo + poblar en _build_snapshot()
+1. ~~**ControlCenterVM lazy init**~~ — Implementado (Fase 1)
+2. ~~**Quota tracker wiring**~~ — Implementado (Fase 2)
+3. ~~**worker_pool en WorldModelSnapshot**~~ — Implementado (Fase 3)
 4. **AutonomyCycleService** — UNRESOLVED (U1), funcionalidad dispersa en OSES/TOR con fallbacks
 5. **Resume-aware orchestration** — leer startup_summary() al arrancar
 6. **Selector unificado** — agregar rutas web como candidatos formales

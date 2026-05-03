@@ -13,14 +13,32 @@
 
 ---
 
-## Paso Inmediato Recomendado: Fase 2 — Cerrar el Loop de Cuota
+## ~~Fase 2 — Cerrar el Loop de Cuota~~ COMPLETADA
 
-### Quota tracker wiring
+### Quota tracker wiring — IMPLEMENTADO
 **Archivo:** `src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py`  
-**Cambio:** Llamar `record_message_sent(packet.assistant_kind, packet.account_email)` inmediatamente antes del despacho a ruta externa. Solo si `budget_tier == 'free_authenticated'` y el packet tiene `account_email`.  
-**Por qué ahora:** Sin esto, el quota tracker existe pero no aprende. El selector seguirá usando workers ya agotados.  
-**Riesgo:** Bajo. Envuelto en try/except.  
-**Estimación:** 1 sesión de agente.
+**Cambio realizado:** `_record_quota_usage()` y `_record_quota_usage_for_candidate()` llaman `record_message_sent(tool, email)` antes de cada `plan_or_execute()`. Extraen tool de governance y email del worker_gate.  
+**Tests:** 2391 passed / 29 failed / 25 skipped — 0 regresiones.
+
+---
+
+## ~~Fase 3 — worker_pool en WorldModelSnapshot~~ COMPLETADA
+
+### worker_pool_snapshot — IMPLEMENTADO
+**Archivos:** `domain/models.py`, `world_model_service.py`  
+**Cambio realizado:** Campo `worker_pool_snapshot: dict = {}` en `WorldModelSnapshot`. `_estimate_worker_pool(timeout_s=2.0)` usa ThreadPoolExecutor. Solo en scans `full`.  
+**Tests:** 2391 passed / 29 failed / 25 skipped — 0 regresiones.
+
+---
+
+## Paso Inmediato Recomendado: Fase 4 — AutonomyCycleService
+
+### Centralizar bridge_findings, resume hints, seed capabilities
+**Archivo:** `src/iabv_v15/services/evolution/autonomy_cycle_service.py` (nuevo)  
+**Cambio:** Centralizar funcionalidad dispersa en OSES y TOR. OSES y TOR delegan con fallback inline.  
+**NOTA:** UNRESOLVED (U1). Requiere confirmación del responsable del proyecto antes de implementar.  
+**Riesgo:** Bajo-Medio. Requiere definir interfaz y migrar gradualmente.  
+**Estimación:** 1-2 sesiones de agente.
 
 ---
 
@@ -29,8 +47,8 @@
 | Fase | Qué hacer | Dependencia | Riesgo |
 |---|---|---|---|
 | ~~1~~ | ~~ControlCenterVM lazy init~~ | ~~Ninguna~~ | ~~Completado~~ |
-| 2 | Quota tracker wiring en ATO | Ninguna | Bajo |
-| 3 | worker_pool_snapshot en WorldModel | Ninguna | Medio |
+| ~~2~~ | ~~Quota tracker wiring en ATO~~ | ~~Ninguna~~ | ~~Completado~~ |
+| ~~3~~ | ~~worker_pool_snapshot en WorldModel~~ | ~~Ninguna~~ | ~~Completado~~ |
 | 4 | AutonomyCycleService (si se confirma U1) | Confirmar U1 | Bajo-Medio |
 | 5 | Resume-aware orchestration | Fase 4 | Bajo |
 | 6 | Selector unificado (backlog 8db889f0) | Fase 3 | Medio |
