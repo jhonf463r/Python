@@ -38,6 +38,7 @@ class DashboardViewModel(QObject):
         self.role_router = role_router
         self.embedding_service = embedding_service
         self._summary_cards: list[dict] = []
+        self._last_refresh_counts: dict[str, int] = {}
         self._provider_cards: list[dict] = self._placeholder_health_cards()
         self._health_busy = False
         self._health_status = 'Chequeo pendiente. Usa el boton para consultar el stack local.'
@@ -66,24 +67,43 @@ class DashboardViewModel(QObject):
             pass
 
     def _refresh_data_bg(self) -> None:
+        import time as _time
+        t0 = _time.monotonic()
         self._mark_timeline('dashboard_vm_refresh_start')
         try:
             cards = self._collect_summary_cards()
-            self._mark_timeline('dashboard_vm_refresh_done')
+            duration_ms = (_time.monotonic() - t0) * 1000.0
+            self._mark_timeline(
+                'dashboard_vm_refresh_done',
+                duration_ms=round(duration_ms, 1),
+                episodes_count=self._last_refresh_counts.get('episodes', 0),
+                knowledge_count=self._last_refresh_counts.get('knowledge', 0),
+                runs_count=self._last_refresh_counts.get('runs', 0),
+            )
             self.refreshResolved.emit(cards)
         except Exception as exc:
-            self._mark_timeline('dashboard_vm_refresh_failed', error=str(exc))
+            duration_ms = (_time.monotonic() - t0) * 1000.0
+            self._mark_timeline(
+                'dashboard_vm_refresh_failed',
+                error=str(exc),
+                duration_ms=round(duration_ms, 1),
+            )
             self.refreshFailed.emit(str(exc))
 
     def _collect_summary_cards(self) -> list[dict]:
-        episodes = self.episode_repository.list_recent(limit=100)
-        knowledge = self.knowledge_repository.list_recent(limit=100)
-        runs = self.run_repository.list_recent(limit=100)
+        episodes_count = self.episode_repository.count()
+        knowledge_count = self.knowledge_repository.count()
+        runs_count = self.run_repository.count()
         index_state = self.embedding_service.describe_index()
+        self._last_refresh_counts = {
+            'episodes': episodes_count,
+            'knowledge': knowledge_count,
+            'runs': runs_count,
+        }
         return [
-            {'title': 'Episodios', 'value': str(len(episodes)), 'hint': 'Sesiones capturadas y listas para revisar'},
-            {'title': 'Conocimiento', 'value': str(len(knowledge)), 'hint': 'Memoria confirmada para reutilizacion'},
-            {'title': 'Ejecuciones', 'value': str(len(runs)), 'hint': 'Respuestas por rol ya registradas'},
+            {'title': 'Episodios', 'value': str(episodes_count), 'hint': 'Sesiones capturadas y listas para revisar'},
+            {'title': 'Conocimiento', 'value': str(knowledge_count), 'hint': 'Memoria confirmada para reutilizacion'},
+            {'title': 'Ejecuciones', 'value': str(runs_count), 'hint': 'Respuestas por rol ya registradas'},
             {'title': 'Indexado', 'value': str(index_state.get('knowledge_count', 0)), 'hint': 'Elementos de conocimiento reflejados por el indice local'},
         ]
 
