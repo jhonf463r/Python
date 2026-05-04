@@ -2355,6 +2355,27 @@ class ControlCenterViewModel(QObject):
         self._busy_label = 'Respuesta lista.'
         self.dataChanged.emit()
 
+    @staticmethod
+    def _finding_metrics_suffix(finding: dict) -> str:
+        """Extract concrete metrics from a finding's metadata for grounded responses."""
+        meta = dict(finding.get('metadata') or {})
+        parts: list[str] = []
+        observed_ms = meta.get('observed_ms')
+        if observed_ms is not None:
+            parts.append(f'{observed_ms}ms')
+        threshold_ms = meta.get('threshold_ms')
+        if threshold_ms is not None:
+            parts.append(f'umbral {threshold_ms}ms')
+        starvation_s = meta.get('starvation_seconds')
+        if starvation_s is not None:
+            parts.append(f'bloqueo {starvation_s}s')
+        wall_clock_ms = meta.get('wall_clock_ms')
+        if wall_clock_ms is not None and observed_ms is None:
+            parts.append(f'wall_clock {wall_clock_ms}ms')
+        if not parts:
+            return ''
+        return f' ({", ".join(parts)})'
+
     def _self_examination_reply(self, message: str) -> tuple[str, str, str]:
         review = self._current_self_examination_snapshot()
         findings = list(review.get('top_findings') or [])
@@ -2366,7 +2387,8 @@ class ControlCenterViewModel(QObject):
         if focus == 'failures':
             if recurring_issues:
                 top = recurring_issues[0]
-                response = f"Lo que mas se esta repitiendo mal ahora es {str(top.get('title') or 'un patron sin nombre')}."
+                metrics = self._finding_metrics_suffix(top)
+                response = f"Lo que mas se esta repitiendo mal ahora es {str(top.get('title') or 'un patron sin nombre')}{metrics}."
                 if str(top.get('summary') or '').strip():
                     response += f" {str(top.get('summary') or '').strip()}"
                 if recommended_adjustments:
@@ -2376,7 +2398,8 @@ class ControlCenterViewModel(QObject):
         if focus == 'repetition':
             if findings:
                 top = findings[0]
-                response = f"Lo que estoy repitiendo peor es {str(top.get('title') or 'un patron sin nombre')}."
+                metrics = self._finding_metrics_suffix(top)
+                response = f"Lo que estoy repitiendo peor es {str(top.get('title') or 'un patron sin nombre')}{metrics}."
                 if str(top.get('summary') or '').strip():
                     response += f" {str(top.get('summary') or '').strip()}"
                 recommendation = str(top.get('recommendation') or '').strip()
@@ -2395,7 +2418,9 @@ class ControlCenterViewModel(QObject):
         if findings or recommended_adjustments or validated_improvements:
             parts = []
             if findings:
-                parts.append(f"Lo mas delicado ahora es {str(findings[0].get('title') or 'un hallazgo sin nombre')}.")
+                top = findings[0]
+                metrics = self._finding_metrics_suffix(top)
+                parts.append(f"Lo mas delicado ahora es {str(top.get('title') or 'un hallazgo sin nombre')}{metrics}.")
             if recommended_adjustments:
                 parts.append(f"El ajuste mas util es {str(recommended_adjustments[0].get('recommended_change') or '').strip()}.")
             if validated_improvements:
