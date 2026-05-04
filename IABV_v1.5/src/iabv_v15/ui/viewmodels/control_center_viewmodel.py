@@ -1689,13 +1689,40 @@ class ControlCenterViewModel(QObject):
             'qué recomiendas cambiar',
             'que deberias corregir',
             'qué deberías corregir',
+            'como fue mi startup',
+            'cómo fue mi startup',
+            'como fue mi arranque',
+            'cómo fue mi arranque',
+            'como fue mi inicio',
+            'cómo fue mi inicio',
+            'como arranco',
+            'cómo arrancó',
+            'como inicio',
+            'cómo inició',
+            'startup timeline',
+            'como estuvo el arranque',
+            'cómo estuvo el arranque',
+            'que paso en el startup',
+            'qué pasó en el startup',
+            'que paso en el arranque',
+            'qué pasó en el arranque',
+            'tiempos de arranque',
+            'tiempos de inicio',
+            'metricas de startup',
+            'métricas de startup',
+            'auditar autonomia',
+            'auditar autonomía',
         )
         if any(phrase in normalized for phrase in direct_phrases):
             return True
         word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
         asks_review = any(token in word_tokens for token in ('fallando', 'falla', 'repitiendo', 'mejorar', 'cambios', 'cambiar', 'corregir', 'revisarte', 'autoexaminacion'))
         asks_meta = any(token in word_tokens for token in ('recomiendas', 'recomendar', 'aprendiste', 'aprendido', 'deberias', 'debería', 'deberias'))
-        return asks_review and asks_meta
+        if asks_review and asks_meta:
+            return True
+        asks_startup = any(token in word_tokens for token in ('startup', 'arranque', 'inicio', 'arranco', 'arrancó'))
+        asks_how = any(token in word_tokens for token in ('como', 'cómo', 'que', 'qué', 'cuanto', 'cuánto', 'tiempos', 'metricas', 'métricas'))
+        return asks_startup and asks_how
 
     def _human_join(self, items: list[str], *, limit: int = 4) -> str:
         cleaned = [str(item).strip() for item in items if str(item).strip()]
@@ -1747,6 +1774,9 @@ class ControlCenterViewModel(QObject):
             return 'repetition'
         if any(token in normalized for token in ('cambios recomiendas', 'recomiendas cambiar', 'deberias mejorar', 'deberías mejorar', 'deberias corregir', 'deberías corregir')):
             return 'adjustments'
+        word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
+        if any(token in word_tokens for token in ('startup', 'arranque', 'inicio', 'arranco', 'arrancó', 'timeline', 'auditar')):
+            return 'startup'
         return 'general'
 
     def _format_percent(self, value: Any) -> str:
@@ -2356,6 +2386,62 @@ class ControlCenterViewModel(QObject):
         self.dataChanged.emit()
 
     @staticmethod
+    def _startup_timeline_summary() -> str:
+        """Read the startup timeline and build a grounded summary with real data."""
+        try:
+            from iabv_v15.infra.startup_timeline import get_global_timeline
+            events = get_global_timeline().events()
+        except Exception:
+            events = []
+        if not events:
+            return ''
+        diagnostic_phases = (
+            'bootstrap_init_start', 'bootstrap_init_done',
+            'app_object_created', 'engine_created',
+            'main_window_shown', 'main_window_raised_after_ready',
+            'page_loader_ready', 'shell_loader_ready',
+            'populate_ui_vm_dashboard',
+            'dashboard_vm_refresh_start', 'dashboard_vm_refresh_done',
+            'dashboard_vm_refresh_failed',
+            'deferred_post_window_setup_start', 'deferred_post_window_setup_done',
+        )
+        parts: list[str] = []
+        key_events: dict[str, dict] = {}
+        for ev in events:
+            phase = ev.get('phase', '')
+            if phase in diagnostic_phases:
+                key_events[phase] = ev
+        if not key_events:
+            return ''
+        parts.append('Timeline de arranque (datos reales):')
+        for phase in diagnostic_phases:
+            ev = key_events.get(phase)
+            if ev is not None:
+                t_ms = ev.get('t_ms_from_start', 0)
+                rss = ev.get('rss_mb', 0)
+                parts.append(f'  {phase}: {t_ms:.0f}ms (RSS {rss:.0f}MB)')
+        refresh_start = key_events.get('dashboard_vm_refresh_start')
+        refresh_done = key_events.get('dashboard_vm_refresh_done')
+        if refresh_start and refresh_done:
+            duration = refresh_done['t_ms_from_start'] - refresh_start['t_ms_from_start']
+            parts.append(f'  Dashboard refresh duration: {duration:.0f}ms (background thread)')
+        refresh_failed = key_events.get('dashboard_vm_refresh_failed')
+        if refresh_failed:
+            parts.append(f'  Dashboard refresh FAILED @ {refresh_failed["t_ms_from_start"]:.0f}ms')
+        page_ready = key_events.get('page_loader_ready')
+        if page_ready:
+            parts.append(f'  Ventana lista para interaccion: {page_ready["t_ms_from_start"]:.0f}ms')
+        first_ev = events[0] if events else None
+        last_ev = events[-1] if events else None
+        if first_ev and last_ev:
+            total = last_ev.get('t_ms_from_start', 0) - first_ev.get('t_ms_from_start', 0)
+            parts.append(f'  Tiempo total de startup: {total:.0f}ms')
+            rss_start = first_ev.get('rss_mb', 0)
+            rss_end = last_ev.get('rss_mb', 0)
+            parts.append(f'  RSS: {rss_start:.0f}MB -> {rss_end:.0f}MB')
+        return '\n'.join(parts)
+
+    @staticmethod
     def _finding_metrics_suffix(finding: dict) -> str:
         """Extract concrete metrics from a finding's metadata for grounded responses."""
         meta = dict(finding.get('metadata') or {})
@@ -2415,6 +2501,34 @@ class ControlCenterViewModel(QObject):
                     response += f" Despues vendria {str(recommended_adjustments[1].get('recommended_change') or '').strip()}."
                 return response, 'Ajustes recomendados por evidencia.', 'inferred'
             return ('Todavia no tengo cambios recomendados con evidencia suficiente para proponerlos en serio.', 'Sin ajuste fuerte.', 'unresolved')
+        if focus == 'startup':
+            timeline_summary = self._startup_timeline_summary()
+            parts: list[str] = []
+            if timeline_summary:
+                parts.append(timeline_summary)
+            startup_findings = [
+                f for f in findings
+                if any(
+                    kw in str(f.get('title') or '').lower()
+                    for kw in ('startup', 'arranque', 'bootstrap', 'dashboard', 'refresh', 'loader', 'splash')
+                )
+            ]
+            if startup_findings:
+                parts.append('Hallazgos de OSES relevantes:')
+                for sf in startup_findings[:4]:
+                    metrics = self._finding_metrics_suffix(sf)
+                    parts.append(f'  - {sf.get("title", "?")}{metrics}: {str(sf.get("summary") or "").strip()[:200]}')
+            if not startup_findings and findings:
+                parts.append('Hallazgos activos de OSES:')
+                for sf in findings[:3]:
+                    metrics = self._finding_metrics_suffix(sf)
+                    parts.append(f'  - {sf.get("title", "?")}{metrics}')
+            if recommended_adjustments:
+                top_adj = recommended_adjustments[0]
+                parts.append(f'Ajuste recomendado: {str(top_adj.get("recommended_change") or "").strip()[:200]}')
+            if parts:
+                return '\n'.join(parts), 'Reporte de startup con datos reales del timeline.', 'observed'
+            return ('No tengo datos de startup en el timeline para este arranque.', 'Sin datos de timeline.', 'unresolved')
         if findings or recommended_adjustments or validated_improvements:
             parts = []
             if findings:
@@ -2432,6 +2546,7 @@ class ControlCenterViewModel(QObject):
 
     def _self_examination_conversation_payload(self, *, message: str) -> dict[str, Any]:
         review = self._current_self_examination_snapshot()
+        timeline_summary = self._startup_timeline_summary()
         return {
             'session_id': '',
             'user_goal': message,
@@ -2469,6 +2584,8 @@ class ControlCenterViewModel(QObject):
                     'metadata': {
                         'conversational_prompt': True,
                         'self_examination_summary': dict(review),
+                        'startup_timeline_summary': timeline_summary,
+                        'assistant_brief': str(review.get('assistant_brief') or ''),
                     },
                 }
             },

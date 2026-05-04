@@ -217,6 +217,7 @@ class _AnswerMethodVM(_MinimalVM):
 
     _classify_evidence_tag = staticmethod(ControlCenterViewModel._classify_evidence_tag)
     _finding_metrics_suffix = staticmethod(ControlCenterViewModel._finding_metrics_suffix)
+    _startup_timeline_summary = staticmethod(ControlCenterViewModel._startup_timeline_summary)
     _append_message = ControlCenterViewModel._append_message
     _general_chat_reply = ControlCenterViewModel._general_chat_reply
 

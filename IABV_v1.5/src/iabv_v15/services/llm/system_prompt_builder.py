@@ -276,6 +276,33 @@ class SystemPromptBuilder:
         return f' [{", ".join(parts)}]'
 
     @staticmethod
+    def _startup_timeline_section() -> str:
+        """Build a compact timeline section for the LLM system prompt."""
+        try:
+            from iabv_v15.infra.startup_timeline import get_global_timeline
+            events = get_global_timeline().events()
+        except Exception:
+            return ''
+        if not events:
+            return ''
+        diagnostic = (
+            'bootstrap_init_start', 'bootstrap_init_done',
+            'app_object_created', 'engine_created',
+            'main_window_shown', 'page_loader_ready', 'shell_loader_ready',
+            'populate_ui_vm_dashboard',
+            'dashboard_vm_refresh_start', 'dashboard_vm_refresh_done',
+            'dashboard_vm_refresh_failed',
+        )
+        lines: list[str] = ['Datos reales del timeline de arranque:']
+        for ev in events:
+            phase = ev.get('phase', '')
+            if phase in diagnostic:
+                lines.append(f'  {phase}: {ev.get("t_ms_from_start", 0):.0f}ms (RSS {ev.get("rss_mb", 0):.0f}MB)')
+        if len(lines) <= 1:
+            return ''
+        return '\n'.join(lines)
+
+    @staticmethod
     def _section_self_examination(
         snapshot: SelfExaminationSnapshot | None,
     ) -> str:
@@ -285,17 +312,30 @@ class SystemPromptBuilder:
         if snapshot.summary:
             parts.append(snapshot.summary[:400])
 
+        timeline_section = SystemPromptBuilder._startup_timeline_section()
+        if timeline_section:
+            parts.append(timeline_section)
+
         findings = snapshot.findings or []
         if findings:
             parts.append(f'Hallazgos ({len(findings)}):')
             for f in findings[:5]:
                 sev = getattr(f.severity, 'value', str(f.severity))
                 metrics_tag = SystemPromptBuilder._metrics_tag(f)
+                summary_limit = min(300, len(f.summary))
                 parts.append(
-                    f'- [{sev}] {f.title}: {f.summary[:120]}{metrics_tag}'
+                    f'- [{sev}] {f.title}: {f.summary[:summary_limit]}{metrics_tag}'
                 )
                 if f.recommendation:
-                    parts.append(f'  Recomendacion: {f.recommendation[:100]}')
+                    parts.append(f'  Recomendacion: {f.recommendation[:200]}')
+                meta = dict(f.metadata or {})
+                meta_details: list[str] = []
+                for mk in ('observed_ms', 'threshold_ms', 'starvation_seconds', 'wall_clock_ms', 'phases_seen', 'rss_delta_mb'):
+                    mv = meta.get(mk)
+                    if mv is not None:
+                        meta_details.append(f'{mk}={mv}')
+                if meta_details:
+                    parts.append(f'  Metadata: {", ".join(meta_details)}')
 
         recurring = snapshot.recurring_issues or []
         if recurring:
