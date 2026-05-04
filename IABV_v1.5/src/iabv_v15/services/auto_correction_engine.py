@@ -237,6 +237,19 @@ _SECRET_PROVIDERS: dict[str, tuple[str, str, bool]] = {
         'https://dash.cloudflare.com/',
         'Cloudflare Zero Trust > Tunnels', True,
     ),
+    # Web accounts (login manual → cookie) — Brecha 2.3
+    'CHATGPT_WEB': (
+        'https://chat.openai.com/auth/login',
+        'ChatGPT Web Session (login manual → cookie)', True,
+    ),
+    'CLAUDE_WEB': (
+        'https://claude.ai/login',
+        'Claude Web Session (login manual → cookie)', True,
+    ),
+    'GEMINI_WEB': (
+        'https://gemini.google.com/',
+        'Gemini Web Session (login Google → cookie)', True,
+    ),
 }
 
 
@@ -431,6 +444,194 @@ def save_secret_to_profile(name: str, value: str) -> dict[str, Any]:
             'name': name,
             'detail': str(exc),
         }
+
+
+# ──────────────────────────────────────────────────────────────
+# Brecha 2.3 — Web session health check
+# ──────────────────────────────────────────────────────────────
+
+# Cookie domain patterns used to verify web session liveness.
+_WEB_SESSION_COOKIE_DOMAINS: dict[str, list[str]] = {
+    'chatgpt_web': ['chat.openai.com', '.openai.com'],
+    'claude_web': ['claude.ai', '.claude.ai'],
+    'gemini_web': ['gemini.google.com', '.google.com'],
+}
+
+# Default session TTL (seconds) when expiry cannot be read from cookie.
+_DEFAULT_SESSION_TTL_SECONDS: int = 24 * 3600  # 24 h
+
+
+def check_web_session_health(
+    provider: str,
+    cookie_path: str | None = None,
+) -> dict[str, Any]:
+    """Check if a web provider session is still active.
+
+    Returns dict with keys:
+      provider, status, expires_hint, needs_human, reason
+    """
+    provider_lower = provider.lower().replace('-', '_')
+    domains = _WEB_SESSION_COOKIE_DOMAINS.get(provider_lower, [])
+    if not domains:
+        return {
+            'provider': provider_lower,
+            'status': 'unknown',
+            'expires_hint': None,
+            'needs_human': False,
+            'reason': f'Unknown web provider: {provider}',
+        }
+
+    # Try reading from a cookie file on disk (JSON array format).
+    if cookie_path:
+        return _check_cookie_file(provider_lower, cookie_path, domains)
+
+    # Fallback: scan browser cookie databases (Chrome/Edge).
+    return _check_browser_cookies(provider_lower, domains)
+
+
+def _check_cookie_file(
+    provider: str,
+    cookie_path: str,
+    domains: list[str],
+) -> dict[str, Any]:
+    """Verify session from a JSON cookie file."""
+    import datetime as _dt
+
+    path = Path(cookie_path)
+    if not path.exists():
+        return {
+            'provider': provider,
+            'status': 'expired',
+            'expires_hint': None,
+            'needs_human': True,
+            'reason': 'Cookie file not found',
+        }
+
+    try:
+        data = json.loads(path.read_text(encoding='utf-8'))
+    except Exception as exc:
+        return {
+            'provider': provider,
+            'status': 'expired',
+            'expires_hint': None,
+            'needs_human': True,
+            'reason': f'Cookie file unreadable: {exc}',
+        }
+
+    if not isinstance(data, list):
+        data = [data]
+
+    now_ts = time.time()
+    matching: list[dict[str, Any]] = []
+    for cookie in data:
+        if not isinstance(cookie, dict):
+            continue
+        domain = cookie.get('domain', '')
+        if any(d in domain for d in domains):
+            matching.append(cookie)
+
+    if not matching:
+        return {
+            'provider': provider,
+            'status': 'expired',
+            'expires_hint': None,
+            'needs_human': True,
+            'reason': 'No matching cookies for provider domains',
+        }
+
+    # Check expiry: if any session cookie is expired, consider session dead.
+    latest_expiry: float | None = None
+    for cookie in matching:
+        exp = cookie.get('expirationDate') or cookie.get('expires') or 0
+        try:
+            exp_val = float(exp)
+        except (TypeError, ValueError):
+            continue
+        if exp_val > 0:
+            if latest_expiry is None or exp_val > latest_expiry:
+                latest_expiry = exp_val
+
+    if latest_expiry is not None and latest_expiry < now_ts:
+        return {
+            'provider': provider,
+            'status': 'expired',
+            'expires_hint': _dt.datetime.fromtimestamp(
+                latest_expiry, tz=_dt.timezone.utc,
+            ).isoformat(),
+            'needs_human': True,
+            'reason': 'Cookie expired',
+        }
+
+    expires_hint: str | None = None
+    if latest_expiry and latest_expiry > 0:
+        expires_hint = _dt.datetime.fromtimestamp(
+            latest_expiry, tz=_dt.timezone.utc,
+        ).isoformat()
+
+    return {
+        'provider': provider,
+        'status': 'active',
+        'expires_hint': expires_hint,
+        'needs_human': False,
+        'reason': 'Session valid',
+    }
+
+
+def _check_browser_cookies(
+    provider: str,
+    domains: list[str],
+) -> dict[str, Any]:
+    """Check browser cookie DBs for active session cookies."""
+    try:
+        from iabv_v15.services.account_resource_scanner import (
+            scan_browser_sessions,
+        )
+        sessions = scan_browser_sessions()
+    except Exception:
+        return {
+            'provider': provider,
+            'status': 'unknown',
+            'expires_hint': None,
+            'needs_human': False,
+            'reason': 'Cannot scan browser sessions',
+        }
+
+    # Map provider to tool name used in scan_browser_sessions
+    tool_map = {
+        'chatgpt_web': 'chatgpt',
+        'claude_web': 'claude',
+        'gemini_web': 'gemini',
+    }
+    tool_name = tool_map.get(provider, provider.replace('_web', ''))
+    tools_with_sessions = sessions.get('tools_with_sessions', [])
+
+    if tool_name in tools_with_sessions:
+        return {
+            'provider': provider,
+            'status': 'active',
+            'expires_hint': None,
+            'needs_human': False,
+            'reason': 'Active browser session detected',
+        }
+
+    # Distinguish "no sessions at all" (scanner found nothing/no browser)
+    # from "browser found but this tool has no session".
+    if sessions.get('session_count', 0) == 0:
+        return {
+            'provider': provider,
+            'status': 'unknown',
+            'expires_hint': None,
+            'needs_human': False,
+            'reason': 'No browser sessions detected (scanner may not have access)',
+        }
+
+    return {
+        'provider': provider,
+        'status': 'expired',
+        'expires_hint': None,
+        'needs_human': True,
+        'reason': 'No active browser session found for this provider',
+    }
 
 
 def _generate_secret_request(deduction: dict[str, str],

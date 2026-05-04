@@ -719,6 +719,8 @@ class OperationalSelfExaminationService:
         # Account/quota/worker health: detect exhausted quotas, API issues,
         # missing critical secrets — feeds cross-session learning.
         findings.extend(self._account_resource_health_findings())
+        # Brecha 2.3: web session health — detect expired/missing browser sessions
+        findings.extend(self._web_session_findings())
         # UI self-awareness: detect own window issues (zombie, missing, duplicate)
         findings.extend(self._ui_self_examination_findings(world=world))
 
@@ -5416,6 +5418,73 @@ class OperationalSelfExaminationService:
                 ))
         except Exception:
             pass
+
+        return findings
+
+    # ------------------------------------------------------------------
+    # Brecha 2.3 — Web session health findings
+    # ------------------------------------------------------------------
+
+    def _web_session_findings(self) -> list[SelfExaminationFinding]:
+        """Detect expired or missing web sessions for governed re-auth.
+
+        Checks each known web provider (ChatGPT, Claude, Gemini) and emits
+        a finding when the session is expired and needs human re-login.
+        """
+        findings: list[SelfExaminationFinding] = []
+
+        try:
+            from iabv_v15.services.auto_correction_engine import (
+                check_web_session_health,
+                _WEB_SESSION_COOKIE_DOMAINS,
+            )
+        except Exception:
+            return findings
+
+        for provider in _WEB_SESSION_COOKIE_DOMAINS:
+            try:
+                health = check_web_session_health(provider)
+            except Exception:
+                continue
+
+            status = health.get('status', 'unknown')
+            if status == 'expired':
+                label_map = {
+                    'chatgpt_web': 'ChatGPT Web',
+                    'claude_web': 'Claude Web',
+                    'gemini_web': 'Gemini Web',
+                }
+                label = label_map.get(provider, provider)
+                url_map = {
+                    'chatgpt_web': 'https://chat.openai.com/auth/login',
+                    'claude_web': 'https://claude.ai/login',
+                    'gemini_web': 'https://gemini.google.com/',
+                }
+                findings.append(SelfExaminationFinding(
+                    category='web_session_expired',
+                    title=f'{label} necesita re-login',
+                    summary=(
+                        f'La sesion web de {label} esta expirada o no existe. '
+                        f'Razon: {health.get("reason", "desconocida")}. '
+                        f'El proveedor web no sera seleccionado hasta que el '
+                        f'usuario re-autentique manualmente.'
+                    ),
+                    severity=IssueSeverity.MEDIUM,
+                    confidence=0.85,
+                    recommendation=(
+                        f'Abrir {url_map.get(provider, "")} en el navegador, '
+                        f'hacer login manualmente (captcha/2FA si aplica), '
+                        f'y IABV detectara la nueva sesion automaticamente.'
+                    ),
+                    source_refs=['check_web_session_health', 'AccountResourceScanner'],
+                    metadata={
+                        'provider': provider,
+                        'session_status': status,
+                        'needs_human': health.get('needs_human', True),
+                        'expires_hint': health.get('expires_hint'),
+                        'reason': health.get('reason', ''),
+                    },
+                ))
 
         return findings
 

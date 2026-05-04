@@ -658,6 +658,92 @@ def format_quota_report() -> str:
 
 
 # ──────────────────────────────────────────────────────────────
+# Brecha 2.3 — Web session status & refresh tracking
+# ──────────────────────────────────────────────────────────────
+
+def _web_session_state_path() -> Path:
+    """Path to the web session state JSON file."""
+    env_dir = os.environ.get('IABV_DATA_DIR', '').strip()
+    base = Path(env_dir) if env_dir else Path.home() / 'IABV_v1.5' / 'data'
+    return base / 'evolution' / 'web_sessions' / 'session_state.json'
+
+
+def _load_web_session_state() -> dict[str, Any]:
+    path = _web_session_state_path()
+    if path.exists():
+        try:
+            return json.loads(path.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+    return {'sessions': {}}
+
+
+def _save_web_session_state(state: dict[str, Any]) -> None:
+    path = _web_session_state_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding='utf-8')
+
+
+def get_web_session_status(tool: str) -> dict[str, Any]:
+    """Get the current web session status for a tool.
+
+    Checks cookie validity, session age, and whether re-auth is needed.
+    Combines persisted state (from record_web_session_refresh) with live
+    browser cookie scanning.
+    """
+    tool_lower = tool.lower().replace('-', '_')
+    state = _load_web_session_state()
+    entry = state.get('sessions', {}).get(tool_lower, {})
+
+    # Live cookie check via auto_correction_engine
+    try:
+        from iabv_v15.services.auto_correction_engine import (
+            check_web_session_health,
+        )
+        health = check_web_session_health(tool_lower)
+    except Exception:
+        health = {
+            'provider': tool_lower,
+            'status': 'unknown',
+            'expires_hint': None,
+            'needs_human': False,
+            'reason': 'Health check unavailable',
+        }
+
+    last_refresh = entry.get('last_refresh_utc')
+    last_email = entry.get('account_email', '')
+    refresh_count = entry.get('refresh_count', 0)
+
+    return {
+        'tool': tool_lower,
+        'session_status': health.get('status', 'unknown'),
+        'needs_human': health.get('needs_human', False),
+        'expires_hint': health.get('expires_hint'),
+        'reason': health.get('reason', ''),
+        'last_refresh_utc': last_refresh,
+        'account_email': last_email,
+        'refresh_count': refresh_count,
+    }
+
+
+def record_web_session_refresh(tool: str, account_email: str) -> None:
+    """Record that a web session was refreshed (user re-logged in)."""
+    tool_lower = tool.lower().replace('-', '_')
+    state = _load_web_session_state()
+    sessions = state.setdefault('sessions', {})
+    entry = sessions.get(tool_lower, {})
+    entry['last_refresh_utc'] = datetime.now(timezone.utc).isoformat()
+    entry['account_email'] = account_email
+    entry['refresh_count'] = entry.get('refresh_count', 0) + 1
+    sessions[tool_lower] = entry
+    _save_web_session_state(state)
+    logger.info(
+        'web_session_refresh: %s refreshed for %s (count=%d)',
+        tool_lower, account_email, entry['refresh_count'],
+    )
+
+
+# ──────────────────────────────────────────────────────────────
 # Fix 32: Account↔Session Cross-Reference
 # ──────────────────────────────────────────────────────────────
 
