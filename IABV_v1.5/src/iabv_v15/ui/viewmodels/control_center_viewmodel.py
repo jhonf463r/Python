@@ -1689,13 +1689,40 @@ class ControlCenterViewModel(QObject):
             'qué recomiendas cambiar',
             'que deberias corregir',
             'qué deberías corregir',
+            'como fue mi startup',
+            'cómo fue mi startup',
+            'como fue mi arranque',
+            'cómo fue mi arranque',
+            'como fue mi inicio',
+            'cómo fue mi inicio',
+            'como arranco',
+            'cómo arrancó',
+            'como inicio',
+            'cómo inició',
+            'startup timeline',
+            'como estuvo el arranque',
+            'cómo estuvo el arranque',
+            'que paso en el startup',
+            'qué pasó en el startup',
+            'que paso en el arranque',
+            'qué pasó en el arranque',
+            'tiempos de arranque',
+            'tiempos de inicio',
+            'metricas de startup',
+            'métricas de startup',
+            'auditar autonomia',
+            'auditar autonomía',
         )
         if any(phrase in normalized for phrase in direct_phrases):
             return True
         word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
         asks_review = any(token in word_tokens for token in ('fallando', 'falla', 'repitiendo', 'mejorar', 'cambios', 'cambiar', 'corregir', 'revisarte', 'autoexaminacion'))
         asks_meta = any(token in word_tokens for token in ('recomiendas', 'recomendar', 'aprendiste', 'aprendido', 'deberias', 'debería', 'deberias'))
-        return asks_review and asks_meta
+        if asks_review and asks_meta:
+            return True
+        asks_startup = any(token in word_tokens for token in ('startup', 'arranque', 'inicio', 'arranco', 'arrancó'))
+        asks_how = any(token in word_tokens for token in ('como', 'cómo', 'que', 'qué', 'cuanto', 'cuánto', 'tiempos', 'metricas', 'métricas'))
+        return asks_startup and asks_how
 
     def _human_join(self, items: list[str], *, limit: int = 4) -> str:
         cleaned = [str(item).strip() for item in items if str(item).strip()]
@@ -1747,6 +1774,9 @@ class ControlCenterViewModel(QObject):
             return 'repetition'
         if any(token in normalized for token in ('cambios recomiendas', 'recomiendas cambiar', 'deberias mejorar', 'deberías mejorar', 'deberias corregir', 'deberías corregir')):
             return 'adjustments'
+        word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
+        if any(token in word_tokens for token in ('startup', 'arranque', 'inicio', 'arranco', 'arrancó', 'timeline', 'auditar')):
+            return 'startup'
         return 'general'
 
     def _format_percent(self, value: Any) -> str:
@@ -2356,6 +2386,62 @@ class ControlCenterViewModel(QObject):
         self.dataChanged.emit()
 
     @staticmethod
+    def _startup_timeline_summary() -> str:
+        """Read the startup timeline and build a grounded summary with real data."""
+        try:
+            from iabv_v15.infra.startup_timeline import get_global_timeline
+            events = get_global_timeline().events()
+        except Exception:
+            events = []
+        if not events:
+            return ''
+        diagnostic_phases = (
+            'bootstrap_init_start', 'bootstrap_init_done',
+            'app_object_created', 'engine_created',
+            'main_window_shown', 'main_window_raised_after_ready',
+            'page_loader_ready', 'shell_loader_ready',
+            'populate_ui_vm_dashboard',
+            'dashboard_vm_refresh_start', 'dashboard_vm_refresh_done',
+            'dashboard_vm_refresh_failed',
+            'deferred_post_window_setup_start', 'deferred_post_window_setup_done',
+        )
+        parts: list[str] = []
+        key_events: dict[str, dict] = {}
+        for ev in events:
+            phase = ev.get('phase', '')
+            if phase in diagnostic_phases:
+                key_events[phase] = ev
+        if not key_events:
+            return ''
+        parts.append('Timeline de arranque (datos reales):')
+        for phase in diagnostic_phases:
+            ev = key_events.get(phase)
+            if ev is not None:
+                t_ms = ev.get('t_ms_from_start', 0)
+                rss = ev.get('rss_mb', 0)
+                parts.append(f'  {phase}: {t_ms:.0f}ms (RSS {rss:.0f}MB)')
+        refresh_start = key_events.get('dashboard_vm_refresh_start')
+        refresh_done = key_events.get('dashboard_vm_refresh_done')
+        if refresh_start and refresh_done:
+            duration = refresh_done['t_ms_from_start'] - refresh_start['t_ms_from_start']
+            parts.append(f'  Dashboard refresh duration: {duration:.0f}ms (background thread)')
+        refresh_failed = key_events.get('dashboard_vm_refresh_failed')
+        if refresh_failed:
+            parts.append(f'  Dashboard refresh FAILED @ {refresh_failed["t_ms_from_start"]:.0f}ms')
+        page_ready = key_events.get('page_loader_ready')
+        if page_ready:
+            parts.append(f'  Ventana lista para interaccion: {page_ready["t_ms_from_start"]:.0f}ms')
+        first_ev = events[0] if events else None
+        last_ev = events[-1] if events else None
+        if first_ev and last_ev:
+            total = last_ev.get('t_ms_from_start', 0) - first_ev.get('t_ms_from_start', 0)
+            parts.append(f'  Tiempo total de startup: {total:.0f}ms')
+            rss_start = first_ev.get('rss_mb', 0)
+            rss_end = last_ev.get('rss_mb', 0)
+            parts.append(f'  RSS: {rss_start:.0f}MB -> {rss_end:.0f}MB')
+        return '\n'.join(parts)
+
+    @staticmethod
     def _finding_metrics_suffix(finding: dict) -> str:
         """Extract concrete metrics from a finding's metadata for grounded responses."""
         meta = dict(finding.get('metadata') or {})
@@ -2375,6 +2461,248 @@ class ControlCenterViewModel(QObject):
         if not parts:
             return ''
         return f' ({", ".join(parts)})'
+
+    def _build_metacognition_context(self, message: str, focus: str) -> str:
+        """Assemble ALL metacognition data sources into a compact context for the LLM.
+
+        This is the 'full panorama' — everything the system knows about itself
+        so the LLM can reason with real data, not generics.
+        """
+        sections: list[str] = []
+
+        # 1. Timeline data (highest priority for startup questions)
+        timeline = self._startup_timeline_summary()
+        if timeline:
+            sections.append(timeline)
+
+        # 2. OSES findings with FULL metadata
+        review = self._current_self_examination_snapshot()
+        findings = list(review.get('top_findings') or [])
+        if findings:
+            parts = ['Hallazgos de autoexaminacion (OSES):']
+            for f in findings[:6]:
+                title = str(f.get('title') or '')
+                summary = str(f.get('summary') or '').strip()
+                metrics = self._finding_metrics_suffix(f)
+                recommendation = str(f.get('recommendation') or '').strip()
+                parts.append(f'  - {title}{metrics}')
+                if summary:
+                    parts.append(f'    {summary[:300]}')
+                if recommendation:
+                    parts.append(f'    Recomendacion: {recommendation[:200]}')
+                meta = dict(f.get('metadata') or {})
+                meta_items = []
+                for mk in ('observed_ms', 'threshold_ms', 'starvation_seconds',
+                            'wall_clock_ms', 'phases_seen', 'rss_delta_mb',
+                            'count', 'provider', 'latency_ms'):
+                    mv = meta.get(mk)
+                    if mv is not None:
+                        meta_items.append(f'{mk}={mv}')
+                if meta_items:
+                    parts.append(f'    Metadata: {", ".join(meta_items)}')
+            sections.append('\n'.join(parts))
+
+        # 3. Recurring issues
+        recurring = list(review.get('recurring_issues') or [])
+        if recurring:
+            parts = ['Patrones recurrentes detectados:']
+            for issue in recurring[:4]:
+                label = issue.get('title') or issue.get('pattern', '')
+                count = issue.get('count', issue.get('occurrences', '?'))
+                parts.append(f'  - {label} (x{count})')
+            sections.append('\n'.join(parts))
+
+        # 4. Recommended adjustments
+        adjustments = list(review.get('recommended_adjustments') or [])
+        if adjustments:
+            parts = ['Ajustes recomendados por evidencia:']
+            for adj in adjustments[:3]:
+                parts.append(f'  - {str(adj.get("recommended_change") or adj.get("title") or "").strip()[:200]}')
+            sections.append('\n'.join(parts))
+
+        # 5. Environment & hardware state
+        try:
+            env = self._current_environment_self_model()
+            hw = env.hardware_profile or {}
+            rt = env.runtime_profile or {}
+            env_parts = ['Estado del entorno:']
+            if hw:
+                cpu = hw.get('cpu', '')
+                ram = hw.get('ram_total_gb', '')
+                gpu = hw.get('gpu', '')
+                if cpu:
+                    env_parts.append(f'  CPU: {cpu}')
+                if ram:
+                    env_parts.append(f'  RAM total: {ram} GB')
+                if gpu:
+                    env_parts.append(f'  GPU: {gpu}')
+            if rt:
+                py = rt.get('python_version', '')
+                os_name = rt.get('os', '')
+                if py:
+                    env_parts.append(f'  Python: {py}')
+                if os_name:
+                    env_parts.append(f'  OS: {os_name}')
+            risks = env.risk_signals or []
+            if risks:
+                for r in risks[:3]:
+                    env_parts.append(f'  Riesgo: {r.summary}')
+            if len(env_parts) > 1:
+                sections.append('\n'.join(env_parts))
+        except Exception:
+            pass
+
+        # 6. World model state
+        try:
+            wm = self._current_world_model()
+            wm_parts = ['Estado vivo del sistema (WorldModel):']
+            windows = wm.active_windows or []
+            if windows:
+                wm_parts.append(f'  Ventanas abiertas: {len(windows)}')
+                for w in windows[:4]:
+                    wm_parts.append(f'    - {w.title or w.app_name or "(sin titulo)"}')
+            net = wm.network_status
+            wm_parts.append(f'  Red: {net.status} ({"conectado" if net.connected else "sin conexion"})')
+            if wm.detected_blocks:
+                wm_parts.append(f'  Bloqueos: {", ".join(wm.detected_blocks[:4])}')
+            if len(wm_parts) > 1:
+                sections.append('\n'.join(wm_parts))
+        except Exception:
+            pass
+
+        # 7. Experiment lab recent results
+        if self.experiment_lab_repository is not None:
+            try:
+                runs = self.experiment_lab_repository.list_runs(limit=6)
+                if runs:
+                    lab_parts = ['Resultados recientes de ExperimentLab:']
+                    for run in runs[:4]:
+                        run_dict = run if isinstance(run, dict) else (run.model_dump(mode='json') if hasattr(run, 'model_dump') else {})
+                        subject = str(run_dict.get('subject_key') or run_dict.get('experiment_id') or '?')
+                        winner = str(run_dict.get('winner') or run_dict.get('result') or '?')
+                        lab_parts.append(f'  - {subject}: ganador={winner}')
+                    sections.append('\n'.join(lab_parts))
+            except Exception:
+                pass
+
+        # 8. Conversation flow (what the user asked and what was answered)
+        chat = self._chat_messages[-8:] if self._chat_messages else []
+        if chat:
+            chat_parts = ['Flujo de la conversacion reciente:']
+            for msg in chat:
+                role = msg.get('role', '?')
+                text = str(msg.get('text') or '')[:150]
+                tag = msg.get('evidence_tag', '')
+                tag_suffix = f' [{tag}]' if tag else ''
+                chat_parts.append(f'  [{role}]{tag_suffix}: {text}')
+            sections.append('\n'.join(chat_parts))
+
+        return '\n\n'.join(sections) if sections else ''
+
+    def _invoke_llm_for_self_examination(self, message: str, metacognition_context: str, focus: str) -> str | None:
+        """Invoke the local LLM (Ollama) with full metacognition context.
+
+        Returns the LLM response text, or None if unavailable.
+        Does NOT create a new brain — delegates reasoning to the existing provider.
+        """
+        provider = getattr(self.role_router, 'general_provider', None)
+        if provider is None:
+            return None
+        try:
+            health = provider.health_check()
+            if not bool(getattr(health, 'available', False)):
+                return None
+        except Exception:
+            return None
+
+        focus_instruction = {
+            'startup': (
+                'El usuario pregunta sobre el arranque/startup del sistema. '
+                'Tu respuesta DEBE citar los tiempos exactos del timeline (en ms) '
+                'y las metricas de RSS (en MB). Ejemplo: "page_loader_ready @ 7768ms, '
+                'dashboard refresh tardo 274ms". NO generalices cuando tienes datos concretos.'
+            ),
+            'failures': (
+                'El usuario pregunta sobre fallos y problemas. '
+                'Cita los hallazgos de OSES con sus metricas concretas. '
+                'NO inventes datos — usa solo lo que aparece en el contexto.'
+            ),
+            'repetition': (
+                'El usuario pregunta sobre patrones repetidos. '
+                'Cita los patrones recurrentes con su conteo exacto.'
+            ),
+            'adjustments': (
+                'El usuario pregunta sobre ajustes recomendados. '
+                'Cita las recomendaciones con la evidencia que las respalda.'
+            ),
+        }.get(focus, (
+            'Responde con datos concretos del contexto proporcionado. '
+            'NO generalices cuando tienes metricas especificas.'
+        ))
+
+        system_prompt = (
+            '## Quien eres\n'
+            'Eres el cerebro local de IABV v1.5. Respondes en espanol claro.\n\n'
+            '## Instruccion especifica\n'
+            f'{focus_instruction}\n\n'
+            '## DATOS REALES DISPONIBLES (usa estos numeros en tu respuesta)\n'
+            f'{metacognition_context}\n\n'
+            '## Reglas de respuesta\n'
+            '1. SIEMPRE cita numeros concretos del contexto (ms, MB, conteos, umbrales)\n'
+            '2. Si un dato existe en el contexto, DEBES mencionarlo — no lo omitas\n'
+            '3. Estructura tu respuesta: primero los datos clave, luego tu analisis\n'
+            '4. NO inventes datos que no esten en el contexto proporcionado\n'
+            '5. Si algo no tiene datos, di "sin metricas disponibles"\n'
+            '6. Responde en maximo 4 parrafos concisos'
+        )
+
+        request = InferenceRequest(
+            user_goal=message,
+            prompt=message,
+            conversation_context=self._conversation_context(),
+            metadata={'system_prompt_override': system_prompt},
+        )
+        try:
+            result = provider.answer_user(request)
+            text = str(getattr(result, 'summary', '') or '').strip()
+            return text if text else None
+        except Exception:
+            return None
+
+    @staticmethod
+    def _extract_grounding_anchors(metacognition_context: str) -> list[str]:
+        """Extract concrete numeric values from context that should appear in a grounded response."""
+        import re as _re
+        anchors: list[str] = []
+        for match in _re.finditer(r'(\d+(?:\.\d+)?)\s*ms\b', metacognition_context):
+            val = match.group(1)
+            if float(val) > 100:
+                anchors.append(f'{val}ms')
+        for match in _re.finditer(r'(\d+(?:\.\d+)?)\s*MB\b', metacognition_context):
+            anchors.append(f'{match.group(1)}MB')
+        for match in _re.finditer(r'x(\d+)\)', metacognition_context):
+            anchors.append(f'x{match.group(1)}')
+        return anchors[:20]
+
+    @staticmethod
+    def _validate_response_grounding(response: str, anchors: list[str]) -> tuple[bool, list[str]]:
+        """Check whether the LLM response cites concrete data points from available sources.
+
+        Returns (is_grounded, missing_anchors).  A response is grounded when
+        it mentions at least 40% of the available numeric anchors.
+        """
+        if not anchors:
+            return True, []
+        missing: list[str] = []
+        found = 0
+        for anchor in anchors:
+            numeric_part = anchor.rstrip('msMB').rstrip('x')
+            if numeric_part in response:
+                found += 1
+            else:
+                missing.append(anchor)
+        ratio = found / len(anchors) if anchors else 1.0
+        return ratio >= 0.4, missing
 
     def _self_examination_reply(self, message: str) -> tuple[str, str, str]:
         review = self._current_self_examination_snapshot()
@@ -2415,6 +2743,34 @@ class ControlCenterViewModel(QObject):
                     response += f" Despues vendria {str(recommended_adjustments[1].get('recommended_change') or '').strip()}."
                 return response, 'Ajustes recomendados por evidencia.', 'inferred'
             return ('Todavia no tengo cambios recomendados con evidencia suficiente para proponerlos en serio.', 'Sin ajuste fuerte.', 'unresolved')
+        if focus == 'startup':
+            timeline_summary = self._startup_timeline_summary()
+            parts: list[str] = []
+            if timeline_summary:
+                parts.append(timeline_summary)
+            startup_findings = [
+                f for f in findings
+                if any(
+                    kw in str(f.get('title') or '').lower()
+                    for kw in ('startup', 'arranque', 'bootstrap', 'dashboard', 'refresh', 'loader', 'splash')
+                )
+            ]
+            if startup_findings:
+                parts.append('Hallazgos de OSES relevantes:')
+                for sf in startup_findings[:4]:
+                    metrics = self._finding_metrics_suffix(sf)
+                    parts.append(f'  - {sf.get("title", "?")}{metrics}: {str(sf.get("summary") or "").strip()[:200]}')
+            if not startup_findings and findings:
+                parts.append('Hallazgos activos de OSES:')
+                for sf in findings[:3]:
+                    metrics = self._finding_metrics_suffix(sf)
+                    parts.append(f'  - {sf.get("title", "?")}{metrics}')
+            if recommended_adjustments:
+                top_adj = recommended_adjustments[0]
+                parts.append(f'Ajuste recomendado: {str(top_adj.get("recommended_change") or "").strip()[:200]}')
+            if parts:
+                return '\n'.join(parts), 'Reporte de startup con datos reales del timeline.', 'observed'
+            return ('No tengo datos de startup en el timeline para este arranque.', 'Sin datos de timeline.', 'unresolved')
         if findings or recommended_adjustments or validated_improvements:
             parts = []
             if findings:
@@ -2432,6 +2788,7 @@ class ControlCenterViewModel(QObject):
 
     def _self_examination_conversation_payload(self, *, message: str) -> dict[str, Any]:
         review = self._current_self_examination_snapshot()
+        timeline_summary = self._startup_timeline_summary()
         return {
             'session_id': '',
             'user_goal': message,
@@ -2469,6 +2826,10 @@ class ControlCenterViewModel(QObject):
                     'metadata': {
                         'conversational_prompt': True,
                         'self_examination_summary': dict(review),
+                        'startup_timeline_summary': timeline_summary,
+                        'assistant_brief': str(review.get('assistant_brief') or ''),
+                        'llm_grounded_reasoning': True,
+                        'conversation_flow_turns': len(self._chat_messages),
                     },
                 }
             },
@@ -2481,7 +2842,37 @@ class ControlCenterViewModel(QObject):
         self._last_user_goal = message
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._self_examination_conversation_payload(message=message))
-        reply, meta, evidence_tag = self._self_examination_reply(message)
+
+        # Build full panorama context for LLM reasoning
+        focus = self._self_examination_focus(message)
+        metacognition_context = self._build_metacognition_context(message, focus)
+
+        # Try LLM-grounded reasoning first
+        llm_reply = self._invoke_llm_for_self_examination(message, metacognition_context, focus)
+
+        if llm_reply:
+            # Validate that the LLM actually used the real data
+            anchors = self._extract_grounding_anchors(metacognition_context)
+            is_grounded, missing = self._validate_response_grounding(llm_reply, anchors)
+
+            if is_grounded:
+                reply = llm_reply
+                meta = 'Razonamiento con metacognicion completa (LLM + datos reales).'
+                evidence_tag = 'observed'
+            else:
+                # LLM responded but didn't ground in data — supplement with template
+                template_reply, template_meta, template_tag = self._self_examination_reply(message)
+                reply = (
+                    f'{llm_reply}\n\n'
+                    f'--- Datos concretos del sistema ---\n'
+                    f'{template_reply}'
+                )
+                meta = 'Razonamiento LLM + suplemento con datos reales (grounding parcial).'
+                evidence_tag = 'inferred'
+        else:
+            # LLM unavailable — fall back to template (still has real data)
+            reply, meta, evidence_tag = self._self_examination_reply(message)
+
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag)
         self._latest_response_text = reply
         self._latest_response_meta = meta
@@ -3371,7 +3762,18 @@ class ControlCenterViewModel(QObject):
         return AmbiguityLevel.LOW
 
     def _conversation_context(self) -> list[dict[str, Any]]:
-        return [{'role': item.get('role', ''), 'text': item.get('text', ''), 'meta': item.get('meta', '')} for item in self._chat_messages[-8:]]
+        entries: list[dict[str, Any]] = []
+        for item in self._chat_messages[-8:]:
+            entry: dict[str, Any] = {
+                'role': item.get('role', ''),
+                'text': item.get('text', ''),
+                'meta': item.get('meta', ''),
+            }
+            evidence_tag = item.get('evidenceTag', item.get('evidence_tag', ''))
+            if evidence_tag:
+                entry['evidence_tag'] = evidence_tag
+            entries.append(entry)
+        return entries
 
     def _chat_shortcut_analysis(self, message: str) -> dict[str, Any]:
         intent_service = getattr(self.adaptive_orchestrator, 'intent_service', None)

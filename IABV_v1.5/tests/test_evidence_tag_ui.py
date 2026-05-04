@@ -215,8 +215,20 @@ class _AnswerMethodVM(_MinimalVM):
     def _self_examination_conversation_payload(self, *, message: str) -> dict[str, Any]:
         return {}
 
+    def _self_examination_focus(self, message: str) -> str:
+        return 'general'
+
+    def _build_metacognition_context(self, message: str, focus: str) -> str:
+        return ''
+
+    def _invoke_llm_for_self_examination(self, message: str, metacognition_context: str, focus: str) -> str | None:
+        return None
+
     _classify_evidence_tag = staticmethod(ControlCenterViewModel._classify_evidence_tag)
     _finding_metrics_suffix = staticmethod(ControlCenterViewModel._finding_metrics_suffix)
+    _startup_timeline_summary = staticmethod(ControlCenterViewModel._startup_timeline_summary)
+    _extract_grounding_anchors = staticmethod(ControlCenterViewModel._extract_grounding_anchors)
+    _validate_response_grounding = staticmethod(ControlCenterViewModel._validate_response_grounding)
     _append_message = ControlCenterViewModel._append_message
     _general_chat_reply = ControlCenterViewModel._general_chat_reply
 
