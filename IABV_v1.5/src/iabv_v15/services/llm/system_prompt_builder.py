@@ -254,7 +254,17 @@ class SystemPromptBuilder:
             'del hallazgo — di "Bootstrap init lento: 4500ms (umbral 3000ms)" '
             'en vez de "hay un hallazgo de startup lento". Si no tienes '
             'datos concretos, di explicitamente "sin metricas disponibles". '
-            'Nunca generalices cuando tienes datos especificos.'
+            'Nunca generalices cuando tienes datos especificos.\n'
+            '10. **Conciencia del flujo conversacional**: analiza lo que el '
+            'usuario ha preguntado en turnos anteriores y lo que ya respondiste. '
+            'No repitas informacion que ya diste. Si el usuario insiste en un '
+            'tema, profundiza con datos nuevos — no recicles la misma respuesta. '
+            'Detecta si tu respuesta anterior fue generica y corrigela con datos '
+            'concretos esta vez.\n'
+            '11. **Auto-validacion**: antes de entregar tu respuesta, verifica '
+            'mentalmente: "¿cite al menos un dato numerico concreto del contexto '
+            'proporcionado?" Si la respuesta es no, revisa el contexto de nuevo '
+            'y extrae los datos que aplican.'
         )
 
     @staticmethod
