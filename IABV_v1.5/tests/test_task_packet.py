@@ -233,6 +233,7 @@ def _build_orchestrator(root: Path) -> AdaptiveTaskOrchestrator:
 PACKET_KEYS = {
     'objective', 'intent_key', 'route_summary', 'worker_gate_summary',
     'selected_worker', 'evidence_basis', 'governance_flags', 'unresolved',
+    'resume_context', 'has_resume_hints', 'account_selection',
 }
 
 

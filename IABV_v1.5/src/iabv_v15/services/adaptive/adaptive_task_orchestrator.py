@@ -3651,6 +3651,9 @@ class AdaptiveTaskOrchestrator:
                 'block_risky_action': bool(governance.get('block_risky_action')),
             },
             'unresolved': all_unresolved,
+            'resume_context': {},
+            'has_resume_hints': False,
+            'account_selection': {},
         }
         return {
             'assistant_kind': normalized_assistant,

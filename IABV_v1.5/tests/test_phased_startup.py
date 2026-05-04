@@ -617,21 +617,28 @@ class TestSynchronousLoaders:
         )
 
     def test_page_loader_is_synchronous(self):
-        """pageLoader must have asynchronous: false."""
+        """pageLoader uses conditional async: sync for first page, async after.
+
+        PR #322 changed the architecture: the first page (Dashboard) loads
+        synchronously for fast page_loader_ready, then subsequent pages
+        load asynchronously via background preloaders. The asynchronous
+        property is now bound to ``parent.initialPageLoaded``.
+        """
         qml_path = Path(__file__).resolve().parent.parent / 'src' / 'iabv_v15' / 'ui' / 'qml' / 'Main.qml'
         if not qml_path.exists():
             pytest.skip('Main.qml not found')
         content = qml_path.read_text(encoding='utf-8')
         import re
         page_loader_match = re.search(
-            r'id:\s*pageLoader.*?asynchronous:\s*(true|false)',
+            r'id:\s*pageLoader.*?asynchronous:\s*(.+)',
             content,
             re.DOTALL,
         )
         assert page_loader_match is not None, 'pageLoader not found'
-        assert page_loader_match.group(1) == 'false', (
-            'pageLoader must be synchronous (asynchronous: false) '
-            'to avoid QQmlIncubationController starvation on Windows'
+        async_value = page_loader_match.group(1).strip()
+        assert async_value != 'true', (
+            'pageLoader must NOT be unconditionally async — first page '
+            'must load synchronously for fast page_loader_ready'
         )
 
 
