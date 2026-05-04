@@ -254,6 +254,12 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 spacing: 14
 
+                // Brecha 1.2: Track whether the initial (Dashboard) page has
+                // loaded.  The first page is loaded synchronously for speed
+                // (<10ms); subsequent page navigations use asynchronous
+                // loading so they never freeze the UI thread.
+                property bool initialPageLoaded: false
+
                 Timer {
                     id: initialPageKickoff
                     interval: 50
@@ -262,26 +268,45 @@ ApplicationWindow {
                     onTriggered: pageLoader.active = true
                 }
 
+                // Brecha 1.2: Deferred preload of heavy secondary pages.
+                // After the initial page_loader_ready, we start preloading
+                // the next heaviest pages in background so navigating to
+                // them later is instant.  Each uses asynchronous: true and
+                // only activates after a staggered delay.
+                Timer {
+                    id: secondaryPreloadKickoff
+                    interval: 2000  // 2s after initial page ready
+                    repeat: false
+                    running: false
+                    onTriggered: {
+                        controlPreloader.active = true
+                        evolutionPreloader.active = true
+                        capturePreloader.active = true
+                    }
+                }
+
                 Loader {
                     id: pageLoader
                     objectName: "pageLoader"
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     active: false
-                    asynchronous: false
+                    // Brecha 1.2: First page (Dashboard, 197 lines) loads
+                    // synchronously for instant readiness.  After that,
+                    // switch to async so heavy pages (EvolutionCenter 1395
+                    // lines, CaptureStudio 2115 lines) don't freeze the UI.
+                    asynchronous: parent.initialPageLoaded
                     source: routeSource(activeRoute)
-                    // Sync loading: DashboardPage.qml is 197 lines / 8KB.
-                    // Synchronous load takes < 10ms.  This avoids the same
-                    // QQmlIncubationController starvation that affects
-                    // mainShellLoader on Windows with QQmlApplicationEngine.
-                    // page_loader_ready fires immediately, allowing Phase 3
-                    // VMs to start building right away.
                     onStatusChanged: {
                         if (mainWindowBridge) {
                             mainWindowBridge.signal_qml_loader_event("pageLoader", status, active)
                         }
                         if (status === Loader.Ready && mainWindowBridge) {
                             mainWindowBridge.signal_page_loader_ready()
+                            if (!parent.initialPageLoaded) {
+                                parent.initialPageLoaded = true
+                                secondaryPreloadKickoff.start()
+                            }
                         }
                     }
                     onActiveChanged: {
@@ -289,6 +314,37 @@ ApplicationWindow {
                             mainWindowBridge.signal_qml_loader_event("pageLoader", status, active)
                         }
                     }
+                }
+
+                // Brecha 1.2: Background preloaders for heavy secondary
+                // pages.  These are invisible, zero-size Loaders that
+                // compile the QML in background threads.  The compiled
+                // component is cached by the QML engine, so when the user
+                // navigates to one of these pages, pageLoader re-uses the
+                // cached compilation and loads almost instantly.
+                Loader {
+                    id: controlPreloader
+                    active: false
+                    asynchronous: true
+                    source: Qt.resolvedUrl("pages/ControlCenterPage.qml")
+                    visible: false
+                    width: 0; height: 0
+                }
+                Loader {
+                    id: evolutionPreloader
+                    active: false
+                    asynchronous: true
+                    source: Qt.resolvedUrl("pages/EvolutionCenterPage.qml")
+                    visible: false
+                    width: 0; height: 0
+                }
+                Loader {
+                    id: capturePreloader
+                    active: false
+                    asynchronous: true
+                    source: Qt.resolvedUrl("pages/CaptureStudioPage.qml")
+                    visible: false
+                    width: 0; height: 0
                 }
 
                 Component.onCompleted: initialPageKickoff.start()
