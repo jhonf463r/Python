@@ -712,6 +712,13 @@ class OperationalSelfExaminationService:
             previous_review=previous_review,
             experiment_runs=experiment_runs,
         ))
+        # Grounding gap: detect when OSES has concrete data but its brief
+        # doesn't include the actual numbers — the system is being generic
+        # when it should be specific.
+        findings.extend(self._response_grounding_gap_findings(
+            previous_review=previous_review,
+            current_findings=findings,
+        ))
         # Runtime log self-inspection: read own log tail and detect anomalies
         findings.extend(self._runtime_log_findings())
         # Fix 42-43: Functional gap analysis and underutilized resource detection
@@ -4201,6 +4208,138 @@ class OperationalSelfExaminationService:
 
         return results[:2]
 
+    def _response_grounding_gap_findings(
+        self,
+        *,
+        previous_review: SelfExaminationSnapshot | None,
+        current_findings: list[SelfExaminationFinding],
+    ) -> list[SelfExaminationFinding]:
+        """Detect when OSES has concrete data but its output doesn't use it.
+
+        This is meta-metacognition: the system checks whether its OWN
+        analysis is grounded in the data it actually has.  If concrete
+        metrics (observed_ms, threshold_ms, phases_seen, etc.) exist in
+        finding metadata but the assistant_brief from the previous review
+        doesn't reference them, the system is being generic when it should
+        be specific.
+
+        Also checks if the startup timeline has observable phases that
+        no finding references at all — data exists but OSES itself
+        didn't analyze it.
+        """
+        results: list[SelfExaminationFinding] = []
+
+        # --- Check 1: concrete metrics exist in findings but brief is vague ---
+        if previous_review is not None and previous_review.assistant_brief:
+            brief = previous_review.assistant_brief.lower()
+            concrete_findings = []
+            ungrounded_findings = []
+            for finding in (previous_review.findings or []):
+                meta = dict(finding.metadata or {})
+                observed_ms = meta.get('observed_ms')
+                threshold_ms = meta.get('threshold_ms')
+                if observed_ms is not None:
+                    concrete_findings.append(finding)
+                    ms_str = str(int(observed_ms))
+                    if ms_str not in brief:
+                        ungrounded_findings.append(
+                            f'{finding.category}: {finding.title} '
+                            f'(observed_ms={observed_ms} no aparece en brief)'
+                        )
+
+            if ungrounded_findings and len(concrete_findings) >= 1:
+                results.append(SelfExaminationFinding(
+                    title=f'Gap de grounding: {len(ungrounded_findings)} hallazgo(s) con datos concretos no citados',
+                    summary=(
+                        f'OSES tiene {len(concrete_findings)} hallazgo(s) con metricas '
+                        f'concretas (observed_ms, threshold_ms) pero el assistant_brief '
+                        f'no incluye esos numeros. El sistema tiene datos especificos '
+                        f'pero los omite en su output, causando respuestas genericas.'
+                    ),
+                    severity=IssueSeverity.MEDIUM,
+                    category='metacognition_grounding_gap',
+                    confidence=min(0.90, 0.55 + len(ungrounded_findings) * 0.1),
+                    recommendation=(
+                        'Incluir metricas observadas (ms, %, conteos) en el '
+                        'assistant_brief y en las respuestas de autoexaminacion. '
+                        'Cuando un finding tiene metadata.observed_ms, citarlo '
+                        'explicitamente en vez de solo mencionar el titulo.'
+                    ),
+                    metadata={
+                        'ungrounded_findings': ungrounded_findings[:6],
+                        'total_concrete_findings': len(concrete_findings),
+                        'brief_length': len(brief),
+                    },
+                ))
+
+        # --- Check 2: timeline phases exist but no finding references them ---
+        log_path = Path(self.workspace_root) / 'data' / 'logs' / 'startup_timeline.jsonl'
+        if log_path.exists():
+            try:
+                timeline_phases: set[str] = set()
+                with log_path.open('r', encoding='utf-8') as fh:
+                    for line in fh:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            evt = json.loads(line)
+                            phase = str(evt.get('phase') or '')
+                            if phase:
+                                timeline_phases.add(phase)
+                        except json.JSONDecodeError:
+                            continue
+
+                finding_phases: set[str] = set()
+                for finding in current_findings:
+                    meta = dict(finding.metadata or {})
+                    phases = meta.get('phases_seen')
+                    if isinstance(phases, list):
+                        finding_phases.update(str(p) for p in phases)
+                    phase_val = str(meta.get('phase') or '')
+                    if phase_val:
+                        finding_phases.add(phase_val)
+
+                unanalyzed = timeline_phases - finding_phases
+                # Filter to phases that likely carry diagnostic value
+                diagnostic_prefixes = (
+                    'dashboard_vm_', 'bootstrap_', 'populate_ui_',
+                    'shell_loader_', 'page_loader_', 'deferred_',
+                    'main_window_', 'splash_', 'run_start',
+                )
+                meaningful_unanalyzed = [
+                    p for p in sorted(unanalyzed)
+                    if any(p.startswith(prefix) for prefix in diagnostic_prefixes)
+                ]
+
+                if len(meaningful_unanalyzed) >= 3:
+                    results.append(SelfExaminationFinding(
+                        title=f'Fases del timeline sin analizar: {len(meaningful_unanalyzed)}',
+                        summary=(
+                            f'El startup timeline tiene {len(timeline_phases)} fases '
+                            f'observadas pero {len(meaningful_unanalyzed)} fases '
+                            f'diagnosticas no son referenciadas por ningun finding: '
+                            f'{", ".join(meaningful_unanalyzed[:5])}. '
+                            f'OSES no esta aprovechando toda la informacion disponible.'
+                        ),
+                        severity=IssueSeverity.LOW,
+                        category='metacognition_grounding_gap',
+                        confidence=0.70,
+                        recommendation=(
+                            'Ampliar _startup_health_findings() para analizar '
+                            'las fases diagnosticas faltantes del timeline.'
+                        ),
+                        metadata={
+                            'total_timeline_phases': len(timeline_phases),
+                            'analyzed_phases': len(finding_phases),
+                            'meaningful_unanalyzed': meaningful_unanalyzed[:10],
+                        },
+                    ))
+            except OSError:
+                pass
+
+        return results[:2]
+
     def _persist_metacognitive_ledger_from_findings(
         self,
         findings: list[SelfExaminationFinding],
@@ -4569,6 +4708,37 @@ class OperationalSelfExaminationService:
             )
         return 'Autoexaminacion partial: todavia no tengo suficiente evidencia acumulada para emitir una revision fuerte.'
 
+    @staticmethod
+    def _extract_metrics_tag(finding: SelfExaminationFinding) -> str:
+        """Build a compact metrics suffix from finding metadata.
+
+        When a finding has concrete numeric data (observed_ms, threshold_ms,
+        observed_count, etc.) this returns a tag like
+        ``  [observed: 274ms, umbral: 5000ms]`` so the assistant_brief and
+        UI responses include the actual numbers instead of just the title.
+        """
+        meta = dict(finding.metadata or {})
+        parts: list[str] = []
+        observed_ms = meta.get('observed_ms')
+        if observed_ms is not None:
+            parts.append(f'observado: {observed_ms}ms')
+        threshold_ms = meta.get('threshold_ms')
+        if threshold_ms is not None:
+            parts.append(f'umbral: {threshold_ms}ms')
+        starvation_s = meta.get('starvation_seconds')
+        if starvation_s is not None:
+            parts.append(f'bloqueo: {starvation_s}s')
+        wall_clock_ms = meta.get('wall_clock_ms')
+        if wall_clock_ms is not None and observed_ms is None:
+            parts.append(f'wall_clock: {wall_clock_ms}ms')
+        total_fp = meta.get('total_false_positives')
+        total_fn = meta.get('total_false_negatives')
+        if total_fp is not None and total_fn is not None:
+            parts.append(f'FP: {total_fp}, FN: {total_fn}')
+        if not parts:
+            return ''
+        return f'  [{", ".join(parts)}]'
+
     def _render_assistant_brief(self, review: SelfExaminationSnapshot) -> str:
         lines = [
             '# IABV v1.5 - Operational Self Examination',
@@ -4582,8 +4752,9 @@ class OperationalSelfExaminationService:
         ]
         if review.findings:
             for finding in review.findings[:6]:
+                metrics_tag = self._extract_metrics_tag(finding)
                 lines.append(
-                    f"- {finding.title}: {finding.summary} | recomendacion: {finding.recommendation or 'sin ajuste concreto'} | confianza {finding.confidence:.2f}"
+                    f"- {finding.title}: {finding.summary}{metrics_tag} | recomendacion: {finding.recommendation or 'sin ajuste concreto'} | confianza {finding.confidence:.2f}"
                 )
         else:
             lines.append('- Sin hallazgos fuertes confirmados.')

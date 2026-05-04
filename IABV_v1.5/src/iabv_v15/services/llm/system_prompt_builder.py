@@ -17,6 +17,7 @@ from iabv_v15.domain.models import (
     EnvironmentSelfModel,
     PerceptionSnapshot,
     PortableContextPackage,
+    SelfExaminationFinding,
     SelfExaminationSnapshot,
     ToolCard,
     WorldModelSnapshot,
@@ -246,8 +247,33 @@ class SystemPromptBuilder:
             'Si la evidencia muestra que una ruta falla consistentemente, '
             'recomienda el cambio.\n'
             '8. **Persistencia**: no abandones un problema sin evidencia de '
-            'que se resolvio. Si un desajuste persiste, escalalo con datos.'
+            'que se resolvio. Si un desajuste persiste, escalalo con datos.\n'
+            '9. **Grounding obligatorio**: cuando cites hallazgos de '
+            'autoexaminacion, SIEMPRE incluye los numeros concretos de '
+            'metadata (ms, %, conteos, umbrales). No digas solo el titulo '
+            'del hallazgo — di "Bootstrap init lento: 4500ms (umbral 3000ms)" '
+            'en vez de "hay un hallazgo de startup lento". Si no tienes '
+            'datos concretos, di explicitamente "sin metricas disponibles". '
+            'Nunca generalices cuando tienes datos especificos.'
         )
+
+    @staticmethod
+    def _metrics_tag(finding: SelfExaminationFinding) -> str:
+        """Compact metrics suffix so the LLM sees concrete numbers."""
+        meta = dict(finding.metadata or {})
+        parts: list[str] = []
+        observed_ms = meta.get('observed_ms')
+        if observed_ms is not None:
+            parts.append(f'{observed_ms}ms')
+        threshold_ms = meta.get('threshold_ms')
+        if threshold_ms is not None:
+            parts.append(f'umbral {threshold_ms}ms')
+        starvation_s = meta.get('starvation_seconds')
+        if starvation_s is not None:
+            parts.append(f'bloqueo {starvation_s}s')
+        if not parts:
+            return ''
+        return f' [{", ".join(parts)}]'
 
     @staticmethod
     def _section_self_examination(
@@ -264,8 +290,9 @@ class SystemPromptBuilder:
             parts.append(f'Hallazgos ({len(findings)}):')
             for f in findings[:5]:
                 sev = getattr(f.severity, 'value', str(f.severity))
+                metrics_tag = SystemPromptBuilder._metrics_tag(f)
                 parts.append(
-                    f'- [{sev}] {f.title}: {f.summary[:120]}'
+                    f'- [{sev}] {f.title}: {f.summary[:120]}{metrics_tag}'
                 )
                 if f.recommendation:
                     parts.append(f'  Recomendacion: {f.recommendation[:100]}')
