@@ -384,16 +384,21 @@ def test_windsurf_adapter_detects_by_official_path_localappdata(monkeypatch) -> 
 def test_windsurf_adapter_detects_by_command_name_in_path(monkeypatch) -> None:
     """Verifica detección de Windsurf por comando 'windsurf' en PATH."""
     import os
+    import stat
     root = _workspace('windsurf_path_detection')
     try:
         windsurf_dir = root / 'bin'
         windsurf_dir.mkdir(parents=True, exist_ok=True)
-        exe = windsurf_dir / 'windsurf.exe'
+        # Use platform-appropriate binary name and PATH separator.
+        exe_name = 'windsurf.exe' if os.name == 'nt' else 'windsurf'
+        exe = windsurf_dir / exe_name
         exe.write_text('stub', encoding='utf-8')
+        if os.name != 'nt':
+            exe.chmod(exe.stat().st_mode | stat.S_IEXEC)
 
-        # Simular que windsurf está en PATH
         original_path = os.environ.get('PATH', '')
-        monkeypatch.setenv('PATH', str(windsurf_dir) + ';' + original_path)
+        sep = ';' if os.name == 'nt' else ':'
+        monkeypatch.setenv('PATH', str(windsurf_dir) + sep + original_path)
 
         card = ToolCard(
             tool_id='windsurf_installed',
@@ -402,7 +407,7 @@ def test_windsurf_adapter_detects_by_command_name_in_path(monkeypatch) -> None:
             adapter_key='external_assistant',
             metadata={
                 'command_name': 'windsurf',
-                'command_aliases': ['windsurf.exe'],
+                'command_aliases': ['windsurf.exe'] if os.name == 'nt' else [],
                 'windows_default_paths': [],
             },
         )

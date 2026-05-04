@@ -10,6 +10,10 @@ assembler para ejercitar el wiring sin arrastrar repositorios completos.
 
 from __future__ import annotations
 
+import pytest
+
+pytest.importorskip('mcp', reason='mcp package not installed')
+
 from types import SimpleNamespace
 from typing import Any
 

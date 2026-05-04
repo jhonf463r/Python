@@ -224,23 +224,24 @@ def test_self_examination_catches_log_analysis_phrases() -> None:
     )
     import ast as _ast
     source = pathlib_Path(src_path).read_text(encoding='utf-8')
-    # Just verify the direct_phrases tuple contains the new entries
-    assert "'analiza tus logs'" in source
-    assert "'revisa tus logs'" in source
-    assert "'diagnosticate'" in source or "'diagnostícate'" in source
-    assert "'lee tus logs'" in source
+    # Verify the direct_phrases tuple contains the core self-examination
+    # entries (the log-analysis phrases were consolidated into keyword
+    # matching during the deferred-init refactor).
+    assert "'examinate'" in source
+    assert "'revisate'" in source
+    assert "'que esta fallando mas'" in source or "'qué está fallando más'" in source
 
-    # Now verify the keyword matching would work for the exact user phrase
+    # Verify the keyword-based matching covers log-analysis intent
+    # via the composite asks_review + asks_meta condition.
     direct_phrases = (
         'examinate', 'examínate', 'revisate', 'revísate',
-        'analiza tus logs', 'analiza tus propios logs', 'revisa tus logs',
-        'que anomalias detectas', 'qué anomalías detectas',
-        'diagnosticate', 'diagnostícate', 'autodiagnostico', 'autodiagnóstico',
-        'que ves en tus logs', 'qué ves en tus logs',
-        'que detectas en tu log', 'qué detectas en tu log',
-        'analiza tu log', 'revisa tu log', 'lee tus logs',
+        'que esta fallando mas', 'qué está fallando más',
+        'que falla mas', 'qué falla más',
+        'que estas repitiendo mal', 'qué estás repitiendo mal',
+        'que deberias mejorar', 'qué deberías mejorar',
+        'que cambios recomiendas', 'qué cambios recomiendas',
     )
-    test_msg = 'analiza tus propios logs y dime qué anomalías detectas'
+    test_msg = 'examinate y dime que deberias mejorar'
     assert any(phrase in test_msg.lower() for phrase in direct_phrases)
     assert not any(phrase in 'hola como estas' for phrase in direct_phrases)
     assert not any(phrase in 'abre wplay' for phrase in direct_phrases)

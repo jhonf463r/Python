@@ -1,6 +1,7 @@
 """Test startup evolution cycle and brain optimization."""
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 from unittest.mock import patch, MagicMock, PropertyMock
@@ -131,6 +132,7 @@ class TestAutoOptimizeBrain:
 
 class TestBackgroundSubprocessLaunch:
 
+    @pytest.mark.skipif(os.name != 'nt', reason='Windows-only: WindowsPath cannot be instantiated on Linux')
     def test_start_mcp_subprocess_uses_python_exe_and_hidden_runtime_log(self) -> None:
         bootstrap, workspace = _make_bootstrap()
         try:
@@ -138,7 +140,9 @@ class TestBackgroundSubprocessLaunch:
             fake_proc.pid = 4242
             with patch('subprocess.Popen', return_value=fake_proc) as popen_mock:
                 with patch('iabv_v15.bootstrap.sys.executable', 'C:\\Users\\faber\\miniconda3\\pythonw.exe'):
-                    proc = bootstrap._start_mcp_subprocess()
+                    with patch('iabv_v15.bootstrap.os.name', 'nt'):
+                        with patch('pathlib.Path.is_file', return_value=True):
+                            proc = bootstrap._start_mcp_subprocess()
 
             assert proc is fake_proc
             args, kwargs = popen_mock.call_args
