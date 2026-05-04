@@ -90,6 +90,7 @@ class OperationalSelfExaminationService:
         self.decision_audit_trail: Any | None = None
         self.code_audit_trail: Any | None = None
         self.boot_profile_store: Any | None = None
+        self.chat_message_repository: Any | None = None
         self._current_review: SelfExaminationSnapshot | None = None
         # Read-only cache for GitHub API rate-limit data.  Populated
         # externally (e.g. auto-correction scan); _account_resource_health_findings
@@ -730,6 +731,9 @@ class OperationalSelfExaminationService:
         findings.extend(self._web_session_findings())
         # UI self-awareness: detect own window issues (zombie, missing, duplicate)
         findings.extend(self._ui_self_examination_findings(world=world))
+        # Chat observability: detect chat persistence anomalies, reasoning
+        # path imbalance and evidence tag gaps from ChatMessageRepository.
+        findings.extend(self._chat_observability_findings())
 
         # RuntimePerformance: always runs — detects memory pressure, excessive
         # threads, slow network probes and other bottlenecks that cause the UI
@@ -4948,6 +4952,95 @@ class OperationalSelfExaminationService:
         return order.get(value, 0)
 
     # ──────────────────────────────────────────────────────────
+    # Chat Observability: detect anomalies in persisted chat messages
+    # ──────────────────────────────────────────────────────────
+
+    def _chat_observability_findings(self) -> list[SelfExaminationFinding]:
+        """Detect chat persistence anomalies from ChatMessageRepository.
+
+        Produces findings when:
+        - No messages have been persisted (persistence may be disconnected)
+        - A reasoning_path dominates >80% of messages (possible route fixation)
+        - Too many messages lack evidence_tag (evidence gap)
+        - Retention policy has not been applied recently for large histories
+        """
+        from iabv_v15.domain.models import SelfExaminationFinding, IssueSeverity
+        repo = self.chat_message_repository
+        if repo is None:
+            return []
+        try:
+            total = repo.count()
+        except Exception:
+            return []
+        if total == 0:
+            return []
+        findings: list[SelfExaminationFinding] = []
+        try:
+            recent = repo.list_recent(limit=200)
+        except Exception:
+            return []
+        if not recent:
+            return findings
+        path_counts: dict[str, int] = {}
+        no_evidence = 0
+        for msg in recent:
+            path = msg.get('reasoning_path', '') or ''
+            if path:
+                path_counts[path] = path_counts.get(path, 0) + 1
+            tag = msg.get('evidence_tag', '') or ''
+            if not tag:
+                no_evidence += 1
+        sample_size = len(recent)
+        for path, count in path_counts.items():
+            ratio = count / sample_size
+            if ratio > 0.80 and sample_size >= 10:
+                findings.append(SelfExaminationFinding(
+                    category='chat_observability',
+                    title=f'Fijacion de ruta chat: {path} ({ratio:.0%})',
+                    summary=(
+                        f'La ruta "{path}" domina {count}/{sample_size} mensajes recientes. '
+                        f'Puede indicar que el sistema no explora otras rutas.'
+                    ),
+                    severity=IssueSeverity.MEDIUM,
+                    confidence=0.7,
+                    recommendation=(
+                        'Revisar si el usuario solo hace un tipo de pregunta o si el '
+                        'routing esta sesgado hacia esta ruta.'
+                    ),
+                    metadata={'path': path, 'ratio': ratio, 'count': count},
+                ))
+        evidence_gap_ratio = no_evidence / sample_size if sample_size else 0.0
+        if evidence_gap_ratio > 0.5 and sample_size >= 10:
+            findings.append(SelfExaminationFinding(
+                category='chat_observability',
+                title=f'Brecha de evidencia en chat: {no_evidence}/{sample_size} sin tag',
+                summary=(
+                    f'{no_evidence} de {sample_size} mensajes recientes no tienen evidence_tag. '
+                    f'Esto dificulta distinguir respuestas observadas de inferidas.'
+                ),
+                severity=IssueSeverity.LOW,
+                confidence=0.6,
+                recommendation='Verificar que _append_message pasa evidence_tag en todas las rutas.',
+                metadata={'no_evidence': no_evidence, 'ratio': evidence_gap_ratio},
+            ))
+        if total > 1200:
+            sessions = repo.list_sessions()
+            old_sessions = [s for s in sessions if s.get('count', 0) > 0]
+            if len(old_sessions) > 20:
+                findings.append(SelfExaminationFinding(
+                    category='chat_observability',
+                    title=f'Historial de chat grande: {total} mensajes en {len(old_sessions)} sesiones',
+                    summary=(
+                        f'El historial de chat tiene {total} mensajes. '
+                        f'Considerar aplicar retention policy para compactar sesiones antiguas.'
+                    ),
+                    severity=IssueSeverity.LOW,
+                    confidence=0.8,
+                    recommendation='Ejecutar ChatMessageRepository.apply_retention() periodicamente.',
+                    metadata={'total': total, 'sessions': len(old_sessions)},
+                ))
+        return findings
+
     # UI Self-Awareness: detect own window anomalies
     # ──────────────────────────────────────────────────────────
 

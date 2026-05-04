@@ -452,6 +452,40 @@ class ControlCenterViewModel(QObject):
         except Exception:
             pass
 
+    def _record_chat_audit(
+        self,
+        *,
+        reasoning_path: str,
+        provider_id: str = 'local',
+        model_used: str = '',
+        latency_ms: float = 0.0,
+        outcome: Any = None,
+        user_goal: str = '',
+        confidence: float = 0.0,
+        error_detail: str = '',
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        trail = getattr(self, 'decision_audit_trail', None)
+        if trail is None:
+            return
+        try:
+            from iabv_v15.services.evolution.decision_audit_trail import DecisionOutcome
+            if outcome is None:
+                outcome = DecisionOutcome.SUCCESS
+            trail.record_chat_routing(
+                reasoning_path=reasoning_path,
+                provider_id=provider_id,
+                model_used=model_used,
+                latency_ms=latency_ms,
+                outcome=outcome,
+                user_goal=user_goal,
+                confidence=confidence,
+                error_detail=error_detail,
+                metadata=metadata,
+            )
+        except Exception:
+            pass
+
     def _count_payloads(self) -> int:
         payload_dir = Path(self.config.payloads_dir)
         return len(list(payload_dir.glob('*.json'))) if payload_dir.exists() else 0
@@ -2422,6 +2456,7 @@ class ControlCenterViewModel(QObject):
         reply, meta, evidence_tag = self._evolution_status_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path='evolution_status')
+        self._record_chat_audit(reasoning_path='evolution_status', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2434,6 +2469,7 @@ class ControlCenterViewModel(QObject):
         reply, meta, evidence_tag = self._learning_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path='learning')
+        self._record_chat_audit(reasoning_path='learning', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2446,6 +2482,7 @@ class ControlCenterViewModel(QObject):
         reply, meta = self._self_awareness_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag='observed',
                              reasoning_path='self_awareness')
+        self._record_chat_audit(reasoning_path='self_awareness', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2458,6 +2495,7 @@ class ControlCenterViewModel(QObject):
         reply, meta = self._world_model_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag='observed',
                              reasoning_path='world_model')
+        self._record_chat_audit(reasoning_path='world_model', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2960,6 +2998,7 @@ class ControlCenterViewModel(QObject):
 
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path=reasoning_path, trace_metadata=trace)
+        self._record_chat_audit(reasoning_path=reasoning_path, user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -3023,6 +3062,7 @@ class ControlCenterViewModel(QObject):
         reply, meta, evidence_tag = self._general_chat_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path='general_chat')
+        self._record_chat_audit(reasoning_path='general_chat', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._working = False
@@ -7126,7 +7166,24 @@ class ControlCenterViewModel(QObject):
                 payload=dict(payload or {}),
                 adaptive_payload=adaptive_payload,
             )
-            self._append_message('assistant', 'IABV', user_text, meta_line, evidence_tag=_chat_evidence_tag)
+            _inference_path = 'orchestrator_inference'
+            self._append_message('assistant', 'IABV', user_text, meta_line, evidence_tag=_chat_evidence_tag,
+                                 reasoning_path=_inference_path,
+                                 trace_metadata={
+                                     'provider': payload.get('provider_name', ''),
+                                     'model': payload.get('executor_model', ''),
+                                     'confidence': payload.get('confidence', ''),
+                                     'route_reason': payload.get('route_reason', ''),
+                                     'pack': pack_title,
+                                     'planner_used': payload.get('planner_used', False),
+                                 })
+            self._record_chat_audit(
+                reasoning_path=_inference_path,
+                provider_id=payload.get('provider_name', 'local'),
+                model_used=payload.get('executor_model', ''),
+                user_goal=self._last_user_goal or '',
+                confidence=float(payload.get('confidence') or 0),
+            )
             if adaptive_payload and isinstance(adaptive_payload, dict):
                 _ap_meta = adaptive_payload.setdefault('metadata', {})
                 if isinstance(_ap_meta, dict):
@@ -7288,7 +7345,17 @@ class ControlCenterViewModel(QObject):
         title = 'IABV' if task_name == 'chat' else task_name.upper()
         visible_message, visible_meta = self._humanize_task_failure(task_name, message)
         self._clear_autonomy_activity_override()
-        self._append_message('assistant', title, visible_message, visible_meta)
+        _failure_path = f'{task_name}_failure'
+        self._append_message('assistant', title, visible_message, visible_meta,
+                             reasoning_path=_failure_path)
+        if task_name == 'chat':
+            from iabv_v15.services.evolution.decision_audit_trail import DecisionOutcome
+            self._record_chat_audit(
+                reasoning_path=_failure_path,
+                outcome=DecisionOutcome.FAILED,
+                user_goal=self._last_user_goal or '',
+                error_detail=message[:200],
+            )
         if task_name in {'chat', 'adaptive_action', 'external_consultation'}:
             self._latest_response_text = visible_message
             self._latest_response_meta = visible_meta

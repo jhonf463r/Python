@@ -1334,8 +1334,10 @@ class AppBootstrap:
         self.code_audit_trail.experiment_lab = self.experiment_lab
         self.decision_audit_trail = DecisionAuditTrail(data_root=self.config.data_dir)
         self.operational_self_examination_service.decision_audit_trail = self.decision_audit_trail
+        self.operational_self_examination_service.chat_message_repository = self.chat_message_repository
         self.operational_self_examination_service.code_audit_trail = self.code_audit_trail
         self.portable_context_service.decision_audit_trail = self.decision_audit_trail
+        self.portable_context_service.chat_message_repository = self.chat_message_repository
         self.portable_context_service.code_audit_trail = self.code_audit_trail
         self.autonomous_validation_cycle.decision_audit_trail = self.decision_audit_trail
         self.autonomous_validation_cycle.api_key_discovery_service = self.api_key_discovery_service
@@ -2598,6 +2600,7 @@ class AppBootstrap:
             defer_initial_refresh=True,
         )
         self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
+        self.control_center_viewmodel.decision_audit_trail = self.decision_audit_trail
         # Wire CaptureStudioVM reference if already built.
         csvm = getattr(self, 'capture_studio_viewmodel', None)
         if csvm is not None:
