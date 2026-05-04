@@ -192,6 +192,7 @@ from iabv_v15.infra.persistence.runtime_tuning_repository import RuntimeTuningRe
 from iabv_v15.infra.persistence.scenario_run_repository import ScenarioRunRepository
 from iabv_v15.infra.persistence.replay_annotation_repository import ReplayAnnotationRepository
 from iabv_v15.infra.persistence.screenshot_store import ScreenshotStore
+from iabv_v15.infra.persistence.chat_message_repository import ChatMessageRepository
 from iabv_v15.infra.persistence.session_artifact_repository import SessionArtifactRepository
 from iabv_v15.infra.persistence.session_state_store import SessionStateStore
 from iabv_v15.infra.persistence.snapshot_version_manager import SnapshotVersionManager
@@ -463,6 +464,7 @@ class AppBootstrap:
         self.replay_annotation_repository = ReplayAnnotationRepository(self.db, self.replay_annotation_storage)
         self.tool_record_repository = ToolRecordRepository(self.db, self.tool_teaching_storage)
         self.experiment_lab_repository = ExperimentLabRepository(self.db, self.evolution_storage)
+        self.chat_message_repository = ChatMessageRepository(self.db)
         self.adaptive_session_repository = AdaptiveSessionRepository(self.db, self.evolution_storage)
         self.scenario_run_repository = ScenarioRunRepository(self.db, self.evolution_storage)
         self.runtime_tuning_repository = RuntimeTuningRepository(self.db, self.evolution_storage)
@@ -2592,6 +2594,7 @@ class AppBootstrap:
             control_master_digest_builder=self.control_master_digest_builder,
             self_audit_service=self.self_audit_service,
             chat_capability_ingestion_service=self.chat_capability_ingestion_service,
+            chat_message_repository=self.chat_message_repository,
             defer_initial_refresh=True,
         )
         self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
