@@ -486,6 +486,13 @@ class ControlCenterViewModel(QObject):
         except Exception:
             pass
 
+    def _chat_elapsed_ms(self) -> float:
+        import time as _time
+        start = getattr(self, '_chat_request_start', 0.0)
+        if not start:
+            return 0.0
+        return (_time.monotonic() - start) * 1000.0
+
     def _count_payloads(self) -> int:
         payload_dir = Path(self.config.payloads_dir)
         return len(list(payload_dir.glob('*.json'))) if payload_dir.exists() else 0
@@ -902,7 +909,18 @@ class ControlCenterViewModel(QObject):
         if any(phrase in command for phrase in ('que sabes hacer', 'qu? sabes hacer', 'que puedes hacer', 'qu? puedes hacer', 'en que puedes ayudar', 'en qu? puedes ayudar', 'quien eres', 'qui?n eres', 'como funcionas', 'c?mo funcionas')):
             return True
         greeting_prefixes = ('hola', 'buenas', 'buenos dias', 'buenas tardes', 'buenas noches')
-        return len(command.split()) <= 4 and any(command.startswith(prefix) for prefix in greeting_prefixes)
+        if len(command.split()) <= 4 and any(command.startswith(prefix) for prefix in greeting_prefixes):
+            return True
+        informal_phrases = (
+            'como estas', 'cómo estás', 'como andas', 'cómo andas',
+            'como te va', 'cómo te va', 'como vas', 'cómo vas',
+            'que tal', 'qué tal', 'que hay', 'qué hay',
+            'que onda', 'qué onda', 'que haces', 'qué haces',
+            'todo bien', 'hey', 'oye', 'ey',
+        )
+        if any(command == phrase or command.startswith(phrase + ' ') for phrase in informal_phrases):
+            return True
+        return False
 
     def _goal_parameters_for_request(self, message: str, site_hint: str | None) -> dict[str, Any]:
         parameters = {
@@ -2456,7 +2474,8 @@ class ControlCenterViewModel(QObject):
         reply, meta, evidence_tag = self._evolution_status_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path='evolution_status')
-        self._record_chat_audit(reasoning_path='evolution_status', user_goal=message)
+        self._record_chat_audit(reasoning_path='evolution_status', user_goal=message,
+                                latency_ms=self._chat_elapsed_ms())
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2469,7 +2488,8 @@ class ControlCenterViewModel(QObject):
         reply, meta, evidence_tag = self._learning_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path='learning')
-        self._record_chat_audit(reasoning_path='learning', user_goal=message)
+        self._record_chat_audit(reasoning_path='learning', user_goal=message,
+                                latency_ms=self._chat_elapsed_ms())
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2482,7 +2502,8 @@ class ControlCenterViewModel(QObject):
         reply, meta = self._self_awareness_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag='observed',
                              reasoning_path='self_awareness')
-        self._record_chat_audit(reasoning_path='self_awareness', user_goal=message)
+        self._record_chat_audit(reasoning_path='self_awareness', user_goal=message,
+                                latency_ms=self._chat_elapsed_ms())
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2495,7 +2516,8 @@ class ControlCenterViewModel(QObject):
         reply, meta = self._world_model_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag='observed',
                              reasoning_path='world_model')
-        self._record_chat_audit(reasoning_path='world_model', user_goal=message)
+        self._record_chat_audit(reasoning_path='world_model', user_goal=message,
+                                latency_ms=self._chat_elapsed_ms())
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2998,7 +3020,8 @@ class ControlCenterViewModel(QObject):
 
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path=reasoning_path, trace_metadata=trace)
-        self._record_chat_audit(reasoning_path=reasoning_path, user_goal=message)
+        self._record_chat_audit(reasoning_path=reasoning_path, user_goal=message,
+                                latency_ms=self._chat_elapsed_ms())
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -3062,7 +3085,8 @@ class ControlCenterViewModel(QObject):
         reply, meta, evidence_tag = self._general_chat_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path='general_chat')
-        self._record_chat_audit(reasoning_path='general_chat', user_goal=message)
+        self._record_chat_audit(reasoning_path='general_chat', user_goal=message,
+                                latency_ms=self._chat_elapsed_ms())
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._working = False
@@ -3116,6 +3140,15 @@ class ControlCenterViewModel(QObject):
         greeting_prefixes = ('hola', 'buenas', 'buenos dias', 'buenas tardes', 'buenas noches')
         if len(normalized.split()) <= 5 and any(normalized.startswith(prefix) for prefix in greeting_prefixes):
             return ('Hola. Estoy aqui para ayudarte. Dime que quieres revisar o resolver y lo trabajamos desde aqui.', 'Conversacion general local.', 'unresolved')
+        informal_phrases = (
+            'como estas', 'cómo estás', 'como andas', 'cómo andas',
+            'como te va', 'cómo te va', 'como vas', 'cómo vas',
+            'que tal', 'qué tal', 'que hay', 'qué hay',
+            'que onda', 'qué onda', 'que haces', 'qué haces',
+            'todo bien', 'hey', 'oye', 'ey',
+        )
+        if any(normalized == phrase or normalized.startswith(phrase + ' ') for phrase in informal_phrases):
+            return ('Estoy aqui y funcionando correctamente, gracias por preguntar. Dime en que te ayudo.', 'Conversacion general local.', 'unresolved')
         return ('Te leo. Cuentame que necesitas y te respondo de forma clara, sin cargarte con detalle tecnico interno.', 'Conversacion general local.', 'unresolved')
 
     def _seems_task_like_message(self, message: str) -> bool:
@@ -5795,6 +5828,8 @@ class ControlCenterViewModel(QObject):
         self.dataChanged.emit()
 
         def _worker() -> None:
+            import time as _wt
+            _worker_start = _wt.monotonic()
             try:
                 ws = str(getattr(self.config, 'workspace_root', ''))
                 if not ws:
@@ -6414,8 +6449,10 @@ class ControlCenterViewModel(QObject):
                     'Metacognicion: auto-analisis + auto-correccion completo.',
                     reasoning_path='self_code_analysis', evidence_tag='observed',
                 )
+                _worker_latency = (_wt.monotonic() - _worker_start) * 1000.0
                 self._record_chat_audit(
                     reasoning_path='self_code_analysis',
+                    latency_ms=_worker_latency,
                     user_goal=self._last_user_goal or 'auto-analisis',
                 )
 
@@ -6426,8 +6463,10 @@ class ControlCenterViewModel(QObject):
                     'Metacognicion: error en auto-analisis.',
                     reasoning_path='self_code_analysis_failure',
                 )
+                _worker_latency = (_wt.monotonic() - _worker_start) * 1000.0
                 self._record_chat_audit(
                     reasoning_path='self_code_analysis_failure',
+                    latency_ms=_worker_latency,
                     user_goal=self._last_user_goal or 'auto-analisis',
                     error_detail=str(exc)[:200],
                 )
@@ -6804,6 +6843,8 @@ class ControlCenterViewModel(QObject):
             self._working = False
             self._set_live_status('idle')
             self._clear_autonomy_activity_override()
+        import time as _time
+        self._chat_request_start = _time.monotonic()
         user_attachments = list(self._attached_files) if self._attached_files else None
         self._append_message('user', 'Tu', message, self._routing_mode_label(),
                             attachments=user_attachments)
@@ -7193,6 +7234,7 @@ class ControlCenterViewModel(QObject):
                 reasoning_path=_inference_path,
                 provider_id=payload.get('provider_name', 'local'),
                 model_used=payload.get('executor_model', ''),
+                latency_ms=self._chat_elapsed_ms(),
                 user_goal=self._last_user_goal or '',
                 confidence=float(payload.get('confidence') or 0),
             )
@@ -7305,6 +7347,7 @@ class ControlCenterViewModel(QObject):
                                  trace_metadata={'assistant': _ext_assistant, 'blocked': not _ext_success})
             self._record_chat_audit(
                 reasoning_path=_ext_path,
+                latency_ms=self._chat_elapsed_ms(),
                 user_goal=self._last_user_goal or '',
                 metadata={'assistant': _ext_assistant, 'blocked': not _ext_success},
             )
@@ -7375,6 +7418,7 @@ class ControlCenterViewModel(QObject):
             from iabv_v15.services.evolution.decision_audit_trail import DecisionOutcome
             self._record_chat_audit(
                 reasoning_path=_failure_path,
+                latency_ms=self._chat_elapsed_ms(),
                 outcome=DecisionOutcome.FAILED,
                 user_goal=self._last_user_goal or '',
                 error_detail=message[:200],
