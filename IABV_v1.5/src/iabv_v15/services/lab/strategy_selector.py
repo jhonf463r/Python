@@ -15,6 +15,19 @@ from iabv_v15.domain.models import (
 class StrategySelector:
     def __init__(self, adaptive_weight_layer: Any | None = None) -> None:
         self.adaptive_weight_layer = adaptive_weight_layer
+        self._experiment_lab: Any | None = None
+
+    @property
+    def _min_runs_for_composite(self) -> int:
+        if self._experiment_lab is not None:
+            try:
+                return self._experiment_lab.calculate_adaptive_threshold(
+                    confidence_level=0.90,
+                    margin_of_error=0.15,
+                )
+            except Exception:
+                pass
+        return 3
 
     def recommend(
         self,
@@ -152,6 +165,7 @@ class StrategySelector:
             ranked_configurations=ranked_configurations,
             adaptive_profiles=adaptive_profiles,
             grouped_runs=grouped_runs,
+            min_runs_for_composite=self._min_runs_for_composite,
         )
         return ExperimentRecommendation(
             domain=domain,
@@ -226,12 +240,13 @@ class StrategySelector:
     # P5: Recomendaciones compuestas multi-IA
     # ------------------------------------------------------------------
 
-    @staticmethod
     def _build_composite_recommendation(
+        self,
         *,
         ranked_configurations: list[tuple[Any, ...]],
         adaptive_profiles: dict[tuple[Any, str, str], dict[str, Any]],
         grouped_runs: dict[tuple[Any, str, str], list[ExperimentRun]],
+        min_runs_for_composite: int | None = None,
     ) -> dict[str, Any] | None:
         """Build a composite recommendation when 2+ IAs are complementary.
 
@@ -247,7 +262,7 @@ class StrategySelector:
         if len(ranked_configurations) < 2:
             return None
 
-        _MIN_RUNS_FOR_COMPOSITE = 3
+        _min_runs_for_composite = min_runs_for_composite if min_runs_for_composite is not None else 3
         kind_stats: dict[str, dict[str, Any]] = {}
         for route, assistant_kind, config_sig, score, count, reuse, adaptive, weighted in ranked_configurations:
             kind = str(assistant_kind or '').strip().lower()
@@ -283,7 +298,7 @@ class StrategySelector:
 
         viable = {
             k: v for k, v in kind_stats.items()
-            if v['successful_runs'] >= _MIN_RUNS_FOR_COMPOSITE
+            if v['successful_runs'] >= _min_runs_for_composite
         }
         if len(viable) < 2:
             return None

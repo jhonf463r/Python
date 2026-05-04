@@ -791,6 +791,11 @@ class OperationalSelfExaminationService:
             experiment_runs=experiment_runs,
         ))
 
+        # Adaptive threshold N_c shift detection (Brecha 3.3)
+        findings.extend(self._adaptive_threshold_shift_findings(
+            previous_review=previous_review,
+        ))
+
         # Windows platform integration: detect missing native capabilities
         # and emit structured findings that map to pending tasks.
         findings.extend(self._windows_integration_findings())
@@ -881,6 +886,16 @@ class OperationalSelfExaminationService:
                     ],
                 },
             })
+
+        # Store current adaptive threshold N_c for next-review shift detection.
+        try:
+            nc_val = self._compute_current_adaptive_nc()
+            if nc_val is not None:
+                review = review.model_copy(update={
+                    'metadata': {**dict(review.metadata or {}), 'adaptive_threshold_nc': nc_val},
+                })
+        except Exception:
+            pass
 
         # Persist metacognitive ledger from the FULL findings list (before
         # truncation to 8) so MEDIUM-severity entries are not lost.
@@ -6321,6 +6336,85 @@ class OperationalSelfExaminationService:
                         },
                     ))
 
+        return results
+
+    def _compute_current_adaptive_nc(self) -> int | None:
+        repo = self.experiment_lab_repository
+        if repo is None:
+            return None
+        try:
+            from iabv_v15.services.lab.experiment_lab import ExperimentLab
+            from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
+            from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
+            from iabv_v15.services.lab.strategy_selector import StrategySelector
+            lab = ExperimentLab(
+                repository=repo,
+                registry=AlgorithmBenchmarkRegistry(),
+                scoring_engine=DecisionScoringEngine(),
+                strategy_selector=StrategySelector(),
+            )
+            return lab.calculate_adaptive_threshold()
+        except Exception:
+            return None
+
+    # ------------------------------------------------------------------
+    # Adaptive threshold N_c shift detection (Brecha 3.3)
+    # ------------------------------------------------------------------
+
+    def _adaptive_threshold_shift_findings(
+        self,
+        *,
+        previous_review: Any | None = None,
+    ) -> list[SelfExaminationFinding]:
+        """Detect significant shifts in the adaptive N_c threshold."""
+        repo = self.experiment_lab_repository
+        if repo is None:
+            return []
+        try:
+            from iabv_v15.services.lab.experiment_lab import ExperimentLab
+            from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
+            from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
+            from iabv_v15.services.lab.strategy_selector import StrategySelector
+            lab = ExperimentLab(
+                repository=repo,
+                registry=AlgorithmBenchmarkRegistry(),
+                scoring_engine=DecisionScoringEngine(),
+                strategy_selector=StrategySelector(),
+            )
+            current_nc = lab.calculate_adaptive_threshold()
+        except Exception:
+            return []
+
+        previous_nc = 3
+        if previous_review is not None:
+            meta = getattr(previous_review, 'metadata', None) or {}
+            previous_nc = int(meta.get('adaptive_threshold_nc', 3))
+
+        results: list[SelfExaminationFinding] = []
+        if previous_nc > 0 and abs(current_nc - previous_nc) / max(previous_nc, 1) > 0.20:
+            results.append(SelfExaminationFinding(
+                category='adaptive_threshold_shift',
+                severity=IssueSeverity.LOW,
+                title=f'N_c shifted from {previous_nc} to {current_nc}',
+                summary=(
+                    f'The adaptive statistical threshold changed from '
+                    f'{previous_nc} to {current_nc} based on accumulated '
+                    f'evidence volume.'
+                ),
+                confidence=0.85,
+                recommendation=(
+                    'Review domain-specific thresholds via '
+                    'ExperimentLab.get_current_thresholds() to ensure '
+                    'each domain has appropriate sensitivity.'
+                ),
+                metadata={
+                    'previous_nc': previous_nc,
+                    'current_nc': current_nc,
+                    'shift_ratio': round(
+                        abs(current_nc - previous_nc) / max(previous_nc, 1), 3,
+                    ),
+                },
+            ))
         return results
 
     # ------------------------------------------------------------------
