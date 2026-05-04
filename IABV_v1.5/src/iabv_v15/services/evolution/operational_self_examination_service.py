@@ -2245,6 +2245,66 @@ class OperationalSelfExaminationService:
                 metadata=readiness_metadata,
             ))
 
+        # ``dashboard_vm_refresh_slow`` — detect when the initial dashboard
+        # data load took too long.  Since PR fix-dashboard-refresh-freeze
+        # this runs on a background thread and does NOT block the GUI, but
+        # a slow refresh still means the user sees empty summary cards for
+        # a long time.
+        dash_refresh_ms = _delta('dashboard_vm_refresh_start', 'dashboard_vm_refresh_done')
+        if dash_refresh_ms is not None and dash_refresh_ms > 5000.0:
+            findings.append(SelfExaminationFinding(
+                category='startup_degradation',
+                title=f'Dashboard refresh lento: {dash_refresh_ms:.0f}ms',
+                summary=(
+                    f'dashboard_vm_refresh tardo {dash_refresh_ms:.0f}ms '
+                    f'(umbral 5000ms). Aunque corre en background thread '
+                    f'y no bloquea la UI, el usuario ve tarjetas vacias '
+                    f'durante ese tiempo.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.85,
+                recommendation=(
+                    'Optimizar queries lentas en KnowledgeRepository y '
+                    'RunRepository (medidos en >17s cada uno). Considerar '
+                    'caching o queries con LIMIT reducido.'
+                ),
+                source_refs=[
+                    'data/logs/startup_timeline.jsonl',
+                    'iabv_v15.ui.viewmodels.dashboard_viewmodel',
+                ],
+                metadata={
+                    'phase': 'dashboard_vm_refresh',
+                    'observed_ms': round(dash_refresh_ms, 1),
+                    'threshold_ms': 5000.0,
+                    'phases_seen': list(phase_to_ms.keys()),
+                },
+            ))
+        dash_failed = 'dashboard_vm_refresh_failed' in phase_to_ms
+        if dash_failed:
+            findings.append(SelfExaminationFinding(
+                category='startup_degradation',
+                title='Dashboard refresh fallo durante startup',
+                summary=(
+                    'dashboard_vm_refresh_failed se registro en el timeline. '
+                    'Las tarjetas de resumen quedaron vacias.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.95,
+                recommendation=(
+                    'Revisar logs de DashboardViewModel para el error '
+                    'especifico. Verificar que la DB SQLite no este '
+                    'corrompida o bloqueada.'
+                ),
+                source_refs=[
+                    'data/logs/startup_timeline.jsonl',
+                    'iabv_v15.ui.viewmodels.dashboard_viewmodel',
+                ],
+                metadata={
+                    'phase': 'dashboard_vm_refresh_failed',
+                    'phases_seen': list(phase_to_ms.keys()),
+                },
+            ))
+
         return findings
 
     # ------------------------------------------------------------------
