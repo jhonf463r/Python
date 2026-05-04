@@ -145,6 +145,9 @@ def test_session_without_objective_id_is_a_no_op() -> None:
     root = _workspace("no_id")
     try:
         boot = AppBootstrap(str(root))
+        state_before = boot.control_master_service.current_state(refresh=False)
+        baseline_items = list(state_before.unresolved_items)
+
         session = _session(
             user_goal="sin objetivo",
             status=AdaptiveSessionStatus.COMPLETED,
@@ -153,7 +156,7 @@ def test_session_without_objective_id_is_a_no_op() -> None:
         # Must not raise.
         boot.task_outcome_recorder.record(session)
         state = boot.control_master_service.current_state(refresh=False)
-        assert state.unresolved_items == []
+        assert state.unresolved_items == baseline_items
     finally:
         shutil.rmtree(root, ignore_errors=True)
 

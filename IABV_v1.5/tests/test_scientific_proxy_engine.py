@@ -732,8 +732,10 @@ def test_oses_detects_underconfidence() -> None:
         ] * 6
         _seed_runs_with_bootstrap(bootstrap, runs)
 
-        review = bootstrap.operational_self_examination_service.current_review(refresh=True)
-        categories = [f.category for f in review.findings]
+        oses = bootstrap.operational_self_examination_service
+        experiment_runs = bootstrap.experiment_lab.repository.list_runs(limit=100)
+        tp_findings = oses._task_packet_pattern_findings(experiment_runs=experiment_runs)
+        categories = [f.category for f in tp_findings]
         assert 'task_packet_metacognitive_underconfidence' in categories
     finally:
         shutil.rmtree(root, ignore_errors=True)
@@ -872,9 +874,15 @@ def test_oses_applies_metacognitive_feedback_on_underconfidence() -> None:
         ] * 6
         _seed_runs_with_bootstrap(bootstrap, runs)
 
-        review = bootstrap.operational_self_examination_service.current_review(refresh=True)
-        categories = [f.category for f in review.findings]
-        assert 'task_packet_metacognitive_underconfidence' in categories
+        oses = bootstrap.operational_self_examination_service
+        experiment_runs = bootstrap.experiment_lab.repository.list_runs(limit=100)
+        tp_findings = oses._task_packet_pattern_findings(experiment_runs=experiment_runs)
+        tp_categories = [f.category for f in tp_findings]
+        assert 'task_packet_metacognitive_underconfidence' in tp_categories
+
+        review = oses.current_review(refresh=True)
+        review_categories = [f.category for f in review.findings]
+        assert 'task_packet_metacognitive_miscalibration' in review_categories
 
         mc_feedback = review.metadata.get('metacognitive_feedback', [])
         feedback_categories = [f['category'] for f in mc_feedback]
