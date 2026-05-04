@@ -55,6 +55,7 @@ class ControlMasterDigestBuilder:
         self,
         state: ControlMasterState,
         autonomy_metrics: dict[str, Any] | None = None,
+        coordination_patterns: list[dict[str, Any]] | None = None,
     ) -> ControlMasterDigest:
         rules = [
             rule
@@ -98,6 +99,7 @@ class ControlMasterDigestBuilder:
 
         tests_state_brief = _render_tests_brief(state.current_tests_state)
         autonomy_brief = _render_autonomy_metrics(autonomy_metrics)
+        coordination_brief = _render_coordination_patterns(coordination_patterns)
 
         digest = ControlMasterDigest(
             current_vision=(state.current_vision or "").strip(),
@@ -109,6 +111,7 @@ class ControlMasterDigestBuilder:
             unresolved=list(state.unresolved_items)[: self.max_unresolved],
             tests_state_brief=tests_state_brief,
             autonomy_metrics_brief=autonomy_brief,
+            coordination_patterns_brief=coordination_brief,
             source_state_id=state.state_id,
         )
         return _truncate(digest, self.max_chars)
@@ -137,6 +140,28 @@ def _render_autonomy_metrics(metrics: dict[str, Any] | None) -> str:
         parts.append(f"blind_spots={blind_spot:.0%}")
     if verdict:
         parts.append(f"verdict={verdict}")
+    return " | ".join(parts)
+
+
+def _render_coordination_patterns(patterns: list[dict[str, Any]] | None) -> str:
+    if not patterns:
+        return ""
+    parts: list[str] = []
+    for p in patterns[:4]:
+        ptype = str(p.get('pattern_type') or '')
+        primary = str(p.get('primary_ia') or '')
+        secondary = str(p.get('secondary_ia') or '')
+        domain = str(p.get('domain') or '')
+        if ptype == 'SPECIALIZATION':
+            parts.append(f"{primary}→specialist({domain})")
+        elif ptype == 'FALLBACK':
+            parts.append(f"{primary}→fallback→{secondary}")
+        elif ptype == 'COMPLEMENTARY':
+            parts.append(f"{primary}+{secondary}=complementary")
+        elif ptype == 'SEQUENCE':
+            parts.append(f"{primary}-first→{secondary}-validate")
+        else:
+            parts.append(f"{ptype}:{primary}")
     return " | ".join(parts)
 
 
@@ -185,6 +210,8 @@ def render_digest_markdown(digest: ControlMasterDigest) -> str:
         lines.append(f"Tests: {digest.tests_state_brief}")
     if digest.autonomy_metrics_brief:
         lines.append(f"Autonomia: {digest.autonomy_metrics_brief}")
+    if digest.coordination_patterns_brief:
+        lines.append(f"Coordinacion IA-IA: {digest.coordination_patterns_brief}")
     return "\n".join(lines)
 
 
@@ -193,6 +220,7 @@ def _truncate(digest: ControlMasterDigest, max_chars: int) -> ControlMasterDiges
         return digest
     # Drop lowest-priority sections first.
     for attr in (
+        "coordination_patterns_brief",
         "autonomy_metrics_brief",
         "tests_state_brief",
         "recent_decisions_brief",

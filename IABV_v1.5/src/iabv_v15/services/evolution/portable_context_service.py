@@ -120,6 +120,7 @@ class PortableContextService:
                 learned_patterns = list(learned_patterns) + auto_patterns
         except Exception:
             logging.getLogger(__name__).warning('Could not derive auto learned patterns', exc_info=True)
+        coordination_patterns = self._build_coordination_patterns()
         tool_discovery = self._tool_discovery_snapshot()
         tool_evolution = self._tool_evolution_snapshot()
         tool_evolution_decisions = self._tool_evolution_decision_snapshot()
@@ -166,6 +167,10 @@ class PortableContextService:
                 adaptive_learning=adaptive_learning,
                 learned_patterns=learned_patterns,
                 recommendations=recommendations,
+                now=now,
+            ),
+            self._coordination_patterns_section(
+                coordination_patterns=coordination_patterns,
                 now=now,
             ),
             self._tool_discovery_section(status=tool_discovery, now=now),
@@ -226,6 +231,7 @@ class PortableContextService:
                 'boot_profile': dict(boot_profile),
                 'evidence_basis': dict(evidence_basis),
                 'task_packet_summary': dict(task_packet_summary),
+                'coordination_patterns': coordination_patterns,
                 'autoexamination_summary': dict(self_examination.get('summary_payload') or {}),
                 'recurring_issues': list(self_examination.get('recurring_issues') or []),
                 'recommended_adjustments': list(self_examination.get('recommended_adjustments') or []),
@@ -1743,6 +1749,291 @@ class PortableContextService:
                 'success_count': example['sample_size'],
                 'source': 'experiment_lab_corpus',
                 'derived_at_utc': utc_now().isoformat(),
+            })
+        return patterns
+
+    def _build_coordination_patterns(self) -> list[dict[str, Any]]:
+        """Fetch experiment runs and detect coordination patterns."""
+        repo = self.experiment_lab_repository
+        if repo is None or not hasattr(repo, 'list_runs'):
+            return []
+        try:
+            runs = list(repo.list_runs(limit=60))
+        except Exception:
+            return []
+        return self._detect_coordination_patterns(runs)
+
+    def _coordination_patterns_section(
+        self,
+        *,
+        coordination_patterns: list[dict[str, Any]],
+        now: Any,
+    ) -> PortableContextSection:
+        items = [dict(p) for p in coordination_patterns[:8]]
+        if items:
+            summary = f'{len(items)} coordination pattern(s) detected across IAs.'
+        else:
+            summary = 'No IA-IA coordination patterns detected yet.'
+        return self._section(
+            section_id='coordination_patterns',
+            title='Patrones de coordinacion IA-IA',
+            summary=summary,
+            items=items,
+            source_kind='persistent_learning',
+            source_refs=['ExperimentLab', 'ia_trace_summary'],
+            confidence=0.75 if items else 0.0,
+            last_updated=now,
+            unresolved_fields=[] if items else ['UNRESOLVED:coordination_patterns'],
+        )
+
+    # ------------------------------------------------------------------
+    # IA-IA coordination pattern detection (Brecha 3.2)
+    # ------------------------------------------------------------------
+
+    def _detect_coordination_patterns(
+        self,
+        experiment_runs: list[Any],
+        task_outcomes: list[dict[str, Any]] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Detect recurring coordination patterns between IAs.
+
+        Patterns detected:
+        1. SPECIALIZATION: IA X consistently better for domain Y
+        2. COMPLEMENTARY: IA X good at generation, IA Y good at validation
+        3. SEQUENCE: Pattern "local-first then cloud-validate" works better
+        4. FALLBACK: IA X fails -> IA Y succeeds (reliable fallback chain)
+
+        Returns list of patterns, each:
+        {
+            'pattern_type': 'SPECIALIZATION' | 'COMPLEMENTARY' | 'SEQUENCE' | 'FALLBACK',
+            'primary_ia': str,
+            'secondary_ia': str | None,
+            'domain': str,
+            'confidence': float,
+            'sample_size': int,
+            'description': str,
+        }
+        """
+        if not experiment_runs:
+            return []
+        patterns: list[dict[str, Any]] = []
+        patterns.extend(self._detect_specialization_patterns(experiment_runs))
+        patterns.extend(self._detect_fallback_patterns(experiment_runs))
+        patterns.extend(self._detect_complementary_patterns(experiment_runs))
+        patterns.extend(self._detect_sequence_patterns(experiment_runs))
+        return patterns
+
+    def _detect_specialization_patterns(
+        self,
+        runs: list[Any],
+    ) -> list[dict[str, Any]]:
+        """SPECIALIZATION: IA with >70% success in a domain AND >20% above average."""
+        from collections import defaultdict
+
+        domain_assistant_runs: dict[str, dict[str, list[bool]]] = defaultdict(lambda: defaultdict(list))
+        for run in runs:
+            domain = str(run.domain.value if hasattr(run.domain, 'value') else run.domain or '').strip()
+            assistant = str(run.assistant_kind or '').strip().lower()
+            if not domain or not assistant:
+                continue
+            domain_assistant_runs[domain][assistant].append(bool(run.success))
+
+        patterns: list[dict[str, Any]] = []
+        for domain, assistants in domain_assistant_runs.items():
+            all_results = [s for results in assistants.values() for s in results]
+            if not all_results:
+                continue
+            avg_success = sum(all_results) / len(all_results)
+            for assistant, results in assistants.items():
+                if len(results) < 5:
+                    continue
+                success_rate = sum(results) / len(results)
+                if success_rate > 0.7 and success_rate > avg_success + 0.2:
+                    patterns.append({
+                        'pattern_type': 'SPECIALIZATION',
+                        'primary_ia': assistant,
+                        'secondary_ia': None,
+                        'domain': domain,
+                        'confidence': round(min(1.0, 0.5 + len(results) * 0.05), 4),
+                        'sample_size': len(results),
+                        'description': (
+                            f'{assistant} specializes in {domain}: '
+                            f'{success_rate:.0%} success ({len(results)} runs) '
+                            f'vs {avg_success:.0%} average.'
+                        ),
+                    })
+        return patterns
+
+    def _detect_fallback_patterns(
+        self,
+        runs: list[Any],
+    ) -> list[dict[str, Any]]:
+        """FALLBACK: IA-A fails + IA-B succeeds on same comparison_scope_key >= 3 times."""
+        from collections import defaultdict
+
+        scope_runs: dict[str, list[Any]] = defaultdict(list)
+        for run in runs:
+            scope_key = str((run.metadata or {}).get('comparison_scope_key') or '').strip()
+            if not scope_key:
+                scope_key = str(run.comparison_scope_key if hasattr(run, 'comparison_scope_key') else '').strip()
+            if scope_key:
+                scope_runs[scope_key].append(run)
+
+        fallback_counter: dict[tuple[str, str], int] = defaultdict(int)
+        for scope_key, scope_group in scope_runs.items():
+            failed = [r for r in scope_group if not r.success]
+            succeeded = [r for r in scope_group if r.success]
+            for f in failed:
+                f_kind = str(f.assistant_kind or '').strip().lower()
+                if not f_kind:
+                    continue
+                for s in succeeded:
+                    s_kind = str(s.assistant_kind or '').strip().lower()
+                    if not s_kind or s_kind == f_kind:
+                        continue
+                    fallback_counter[(f_kind, s_kind)] += 1
+
+        patterns: list[dict[str, Any]] = []
+        for (failed_ia, success_ia), count in fallback_counter.items():
+            if count >= 3:
+                patterns.append({
+                    'pattern_type': 'FALLBACK',
+                    'primary_ia': failed_ia,
+                    'secondary_ia': success_ia,
+                    'domain': 'cross-domain',
+                    'confidence': round(min(1.0, 0.4 + count * 0.1), 4),
+                    'sample_size': count,
+                    'description': (
+                        f'When {failed_ia} fails, {success_ia} succeeds '
+                        f'({count} occurrences). Reliable fallback chain.'
+                    ),
+                })
+        return patterns
+
+    def _detect_complementary_patterns(
+        self,
+        runs: list[Any],
+    ) -> list[dict[str, Any]]:
+        """COMPLEMENTARY: Different IAs win in different domains."""
+        from collections import defaultdict
+
+        domain_winners: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        for run in runs:
+            if not run.success:
+                continue
+            domain = str(run.domain.value if hasattr(run.domain, 'value') else run.domain or '').strip()
+            assistant = str(run.assistant_kind or '').strip().lower()
+            if not domain or not assistant:
+                continue
+            domain_winners[domain][assistant] += 1
+
+        best_per_domain: dict[str, tuple[str, int]] = {}
+        for domain, assistants in domain_winners.items():
+            if not assistants:
+                continue
+            best = max(assistants.items(), key=lambda item: item[1])
+            if best[1] >= 3:
+                best_per_domain[domain] = best
+
+        unique_winners = {ia for ia, _ in best_per_domain.values()}
+        if len(unique_winners) < 2:
+            return []
+
+        patterns: list[dict[str, Any]] = []
+        winner_list = sorted(unique_winners)
+        for i, ia_a in enumerate(winner_list):
+            for ia_b in winner_list[i + 1:]:
+                domains_a = [d for d, (w, _) in best_per_domain.items() if w == ia_a]
+                domains_b = [d for d, (w, _) in best_per_domain.items() if w == ia_b]
+                if not domains_a or not domains_b:
+                    continue
+                total_samples = sum(
+                    c for d, (w, c) in best_per_domain.items()
+                    if w in (ia_a, ia_b)
+                )
+                patterns.append({
+                    'pattern_type': 'COMPLEMENTARY',
+                    'primary_ia': ia_a,
+                    'secondary_ia': ia_b,
+                    'domain': f'{",".join(sorted(domains_a))} vs {",".join(sorted(domains_b))}',
+                    'confidence': round(min(1.0, 0.5 + total_samples * 0.02), 4),
+                    'sample_size': total_samples,
+                    'description': (
+                        f'{ia_a} excels at {",".join(sorted(domains_a))}; '
+                        f'{ia_b} excels at {",".join(sorted(domains_b))}. '
+                        f'Complementary strengths.'
+                    ),
+                })
+        return patterns
+
+    def _detect_sequence_patterns(
+        self,
+        runs: list[Any],
+    ) -> list[dict[str, Any]]:
+        """SEQUENCE: 'local-first then cloud-validate' vs 'cloud direct'."""
+        from collections import defaultdict
+
+        scope_runs: dict[str, list[Any]] = defaultdict(list)
+        for run in runs:
+            scope_key = str((run.metadata or {}).get('comparison_scope_key') or '').strip()
+            if not scope_key:
+                scope_key = str(run.comparison_scope_key if hasattr(run, 'comparison_scope_key') else '').strip()
+            if scope_key:
+                scope_runs[scope_key].append(run)
+
+        local_first_wins = 0
+        cloud_direct_wins = 0
+        total_sequences = 0
+        for scope_key, scope_group in scope_runs.items():
+            if len(scope_group) < 2:
+                continue
+            sorted_runs = sorted(scope_group, key=lambda r: r.created_at_utc)
+            first_route = str(sorted_runs[0].route.value if hasattr(sorted_runs[0].route, 'value') else sorted_runs[0].route or '').lower()
+            has_local_first = first_route in ('local', 'background', 'ui')
+            has_cloud_validation = any(
+                str(r.route.value if hasattr(r.route, 'value') else r.route or '').lower() in ('cloud', 'api')
+                for r in sorted_runs[1:]
+            )
+            if has_local_first and has_cloud_validation:
+                total_sequences += 1
+                if any(r.success for r in sorted_runs):
+                    local_first_wins += 1
+            elif first_route in ('cloud', 'api') and len(scope_group) == 1:
+                total_sequences += 1
+                if sorted_runs[0].success:
+                    cloud_direct_wins += 1
+
+        if total_sequences < 5:
+            return []
+
+        patterns: list[dict[str, Any]] = []
+        if local_first_wins > cloud_direct_wins and local_first_wins >= 3:
+            patterns.append({
+                'pattern_type': 'SEQUENCE',
+                'primary_ia': 'local',
+                'secondary_ia': 'cloud',
+                'domain': 'cross-domain',
+                'confidence': round(min(1.0, 0.4 + local_first_wins * 0.08), 4),
+                'sample_size': total_sequences,
+                'description': (
+                    f'"local-first then cloud-validate" wins '
+                    f'{local_first_wins}/{total_sequences} sequences '
+                    f'vs cloud-direct {cloud_direct_wins}/{total_sequences}.'
+                ),
+            })
+        elif cloud_direct_wins > local_first_wins and cloud_direct_wins >= 3:
+            patterns.append({
+                'pattern_type': 'SEQUENCE',
+                'primary_ia': 'cloud',
+                'secondary_ia': 'local',
+                'domain': 'cross-domain',
+                'confidence': round(min(1.0, 0.4 + cloud_direct_wins * 0.08), 4),
+                'sample_size': total_sequences,
+                'description': (
+                    f'"cloud-direct" wins '
+                    f'{cloud_direct_wins}/{total_sequences} sequences '
+                    f'vs local-first {local_first_wins}/{total_sequences}.'
+                ),
             })
         return patterns
 
