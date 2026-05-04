@@ -926,6 +926,11 @@ class OperationalSelfExaminationService:
         # next evolution review picks them up as actionable backlog.
         self._materialize_task_packet_issues(findings)
 
+        # Runtime incident persistence: register high-signal runtime
+        # findings to CodeAuditTrail so PortableContext reflects them
+        # in future sessions (instead of "Sin auditorias registradas").
+        self._persist_runtime_findings_to_audit_trail(findings)
+
         # Autonomy bridge: delegate to AutonomyCycleService if wired.
         # Falls back to inline bridge for backward compatibility.
         acs = getattr(self, '_autonomy_cycle_service', None)
@@ -5221,6 +5226,129 @@ class OperationalSelfExaminationService:
             import logging as _logging
             _logging.getLogger(__name__).warning('oses: code_audit_cross_reference error: %s', exc)
         return findings
+
+    # ──────────────────────────────────────────────────────────
+    # Runtime incident persistence to CodeAuditTrail
+    # ──────────────────────────────────────────────────────────
+
+    _RUNTIME_AUDIT_CATEGORIES: frozenset[str] = frozenset({
+        'runtime_performance',     # high_memory_usage
+        'startup_memory_spike',    # severe RSS growth at boot
+        'startup_degradation',     # dashboard refresh slow / phases slow
+    })
+
+    _RUNTIME_AUDIT_BACKOFF_SECONDS: float = 600.0
+
+    def _persist_runtime_findings_to_audit_trail(
+        self,
+        findings: list[SelfExaminationFinding],
+    ) -> None:
+        """Persist high-signal runtime findings to CodeAuditTrail.
+
+        Only registers findings whose category matches a curated set
+        (dashboard refresh slow, startup memory spike, high_memory_usage)
+        and whose severity is HIGH or CRITICAL. Uses dedupe/backoff to
+        avoid spamming the trail: at most one round per category per
+        ``_RUNTIME_AUDIT_BACKOFF_SECONDS``.
+        """
+        trail = getattr(self, 'code_audit_trail', None)
+        if trail is None:
+            return
+
+        def _sev_name(f: SelfExaminationFinding) -> str:
+            sev = getattr(f, 'severity', None)
+            if sev is None:
+                return ''
+            if hasattr(sev, 'name'):
+                return sev.name.upper()
+            return str(sev).upper()
+
+        qualifying = [
+            f for f in findings
+            if f.category in self._RUNTIME_AUDIT_CATEGORIES
+            and _sev_name(f) in {'HIGH', 'CRITICAL'}
+        ]
+        if not qualifying:
+            return
+
+        try:
+            from iabv_v15.services.evolution.code_audit_trail import (
+                AuditEnvironment,
+                AuditFinding,
+                AuditRound,
+                AuditSource,
+                FindingSeverity,
+                FindingStatus,
+            )
+
+            recent_rounds = trail.load_rounds(limit=20)
+            now_ts = time.time()
+            already_logged: set[str] = set()
+            for r in recent_rounds:
+                ts_str = r.get('timestamp_utc', '')
+                if not ts_str:
+                    continue
+                try:
+                    from datetime import datetime as _dt, timezone as _tz
+                    round_ts = _dt.fromisoformat(ts_str).timestamp()
+                except Exception:
+                    continue
+                if now_ts - round_ts < self._RUNTIME_AUDIT_BACKOFF_SECONDS:
+                    for rf in r.get('findings', []):
+                        tag = rf.get('pattern_tag', '')
+                        if tag:
+                            already_logged.add(tag)
+
+            audit_findings: list[AuditFinding] = []
+            for f in qualifying:
+                tag = f'runtime_{f.category}_{f.title}'
+                if tag in already_logged:
+                    continue
+                already_logged.add(tag)
+                sev_map = {
+                    'HIGH': FindingSeverity.HIGH,
+                    'CRITICAL': FindingSeverity.CRITICAL,
+                }
+                sev = sev_map.get(_sev_name(f), FindingSeverity.HIGH)
+                audit_findings.append(AuditFinding(
+                    category='runtime_incident',
+                    title=f.title,
+                    description=f.summary,
+                    impact=f.recommendation or '',
+                    severity=sev,
+                    status=FindingStatus.FOUND,
+                    pattern_tag=tag,
+                    confidence=f.confidence,
+                    metadata={
+                        'source_category': f.category,
+                        'evidence_refs': list(f.evidence_refs or []),
+                    },
+                ))
+
+            if not audit_findings:
+                return
+
+            import os as _os
+            env = (
+                AuditEnvironment.WINDOWS_NATIVE
+                if _os.name == 'nt'
+                else AuditEnvironment.LINUX_VM
+            )
+            audit_round = AuditRound(
+                auditor_name='oses_runtime',
+                source=AuditSource.SELF_EXAMINATION,
+                environment=env,
+                modules_audited=['runtime_monitor'],
+                total_loc_audited=0,
+                findings=audit_findings,
+                metadata={'trigger': 'build_review_runtime_persistence'},
+            )
+            trail.record_round(audit_round)
+        except Exception as exc:
+            import logging as _logging
+            _logging.getLogger(__name__).warning(
+                'oses: runtime audit trail persistence error: %s', exc,
+            )
 
     # ──────────────────────────────────────────────────────────
     # RuntimePerformance: memory, threads, bottleneck detection

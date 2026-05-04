@@ -131,6 +131,67 @@ ApplicationWindow {
         }
     }
 
+    // --- Global human-help dialogs ---
+    // Hosted at ApplicationWindow root so they are visible regardless of
+    // which page (Dashboard, Control, Evolution, …) is currently active.
+    // The emission still comes from the VMs via _wire_task_a_signals();
+    // we listen on controlCenterViewModel only because bootstrap._emit()
+    // fires the same payload to both VMs simultaneously — connecting to
+    // both would open the dialog twice.
+
+    CredentialPromptDialog {
+        id: globalCredentialDialog
+        visible: false
+        onCredentialProvided: function(payload) {
+            if (controlCenterViewModel) controlCenterViewModel.onCredentialProvided(payload)
+        }
+        onDelegateToUser: function(payload) {
+            if (controlCenterViewModel) controlCenterViewModel.onCredentialDelegated(payload)
+        }
+    }
+
+    ClarificationDialog {
+        id: globalClarificationDialog
+        visible: false
+        onClarificationResponse: function(payload) {
+            if (controlCenterViewModel) controlCenterViewModel.onClarificationResponse(payload)
+        }
+    }
+
+    MissingDependencyDialog {
+        id: globalDependencyDialog
+        visible: false
+        onDependencyApproved: function(payload) {
+            if (controlCenterViewModel) controlCenterViewModel.onDependencyApproved(payload)
+        }
+        onDependencyRejected: function(payload) {
+            if (controlCenterViewModel) controlCenterViewModel.onDependencyRejected(payload)
+        }
+    }
+
+    Connections {
+        target: controlCenterViewModel
+        function onCredentialPromptRequested(payload) {
+            globalCredentialDialog.domain = payload.domain || ""
+            globalCredentialDialog.reason = payload.reason || ""
+            globalCredentialDialog.usernameHint = payload.username_hint || ""
+            globalCredentialDialog.open()
+        }
+        function onClarificationRequested(payload) {
+            globalClarificationDialog.requestId = payload.id || ""
+            globalClarificationDialog.question = payload.question || ""
+            globalClarificationDialog.options = payload.options || []
+            globalClarificationDialog.context = payload.context || ""
+            globalClarificationDialog.open()
+        }
+        function onMissingDependencyRequested(payload) {
+            globalDependencyDialog.packageName = payload.package_name || ""
+            globalDependencyDialog.manager = payload.manager || ""
+            globalDependencyDialog.reason = payload.reason || ""
+            globalDependencyDialog.open()
+        }
+    }
+
     Component {
         id: mainShellComponent
 

@@ -914,58 +914,7 @@ Item {
         }
     }
 
-    // Dialogos evolutivos (Task B)
-    CredentialPromptDialog {
-        id: credentialDialog
-        visible: false
-        onCredentialProvided: function(payload) {
-            if (controlCenterViewModel) controlCenterViewModel.onCredentialProvided(payload)
-        }
-        onDelegateToUser: function(payload) {
-            if (controlCenterViewModel) controlCenterViewModel.onCredentialDelegated(payload)
-        }
-    }
-
-    ClarificationDialog {
-        id: clarificationDialog
-        visible: false
-        onClarificationResponse: function(payload) {
-            if (controlCenterViewModel) controlCenterViewModel.onClarificationResponse(payload)
-        }
-    }
-
-    MissingDependencyDialog {
-        id: dependencyDialog
-        visible: false
-        onDependencyApproved: function(payload) {
-            if (controlCenterViewModel) controlCenterViewModel.onDependencyApproved(payload)
-        }
-        onDependencyRejected: function(payload) {
-            if (controlCenterViewModel) controlCenterViewModel.onDependencyRejected(payload)
-        }
-    }
-
-    // Conexiones de señales del ViewModel (Task B)
-    Connections {
-        target: controlCenterViewModel
-        function onCredentialPromptRequested(payload) {
-            credentialDialog.domain = payload.domain || ""
-            credentialDialog.reason = payload.reason || ""
-            credentialDialog.usernameHint = payload.username_hint || ""
-            credentialDialog.open()
-        }
-        function onClarificationRequested(payload) {
-            clarificationDialog.requestId = payload.id || ""
-            clarificationDialog.question = payload.question || ""
-            clarificationDialog.options = payload.options || []
-            clarificationDialog.context = payload.context || ""
-            clarificationDialog.open()
-        }
-        function onMissingDependencyRequested(payload) {
-            dependencyDialog.packageName = payload.package_name || ""
-            dependencyDialog.manager = payload.manager || ""
-            dependencyDialog.reason = payload.reason || ""
-            dependencyDialog.open()
-        }
-    }
+    // Dialogos evolutivos (Task B) — moved to Main.qml as global host.
+    // The signals still fire from controlCenterViewModel / evolutionCenterViewModel;
+    // Main.qml listens and opens the dialog regardless of active page.
 }
