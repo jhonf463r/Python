@@ -5789,6 +5789,7 @@ class ControlCenterViewModel(QObject):
             'assistant', 'IABV',
             'Entendido. Primero me actualizo (git pull), luego analizo mi codigo, GPU, y busco mejoras pendientes...',
             'Metacognicion: auto-update + auto-analisis iniciado.',
+            reasoning_path='self_code_analysis', evidence_tag='observed',
         )
         self._set_live_status('processing')
         self.dataChanged.emit()
@@ -6411,6 +6412,11 @@ class ControlCenterViewModel(QObject):
                 self._append_message(
                     'assistant', 'IABV', reply,
                     'Metacognicion: auto-analisis + auto-correccion completo.',
+                    reasoning_path='self_code_analysis', evidence_tag='observed',
+                )
+                self._record_chat_audit(
+                    reasoning_path='self_code_analysis',
+                    user_goal=self._last_user_goal or 'auto-analisis',
                 )
 
             except Exception as exc:
@@ -6418,6 +6424,12 @@ class ControlCenterViewModel(QObject):
                     'assistant', 'IABV',
                     f'Error durante el auto-analisis: {exc}',
                     'Metacognicion: error en auto-analisis.',
+                    reasoning_path='self_code_analysis_failure',
+                )
+                self._record_chat_audit(
+                    reasoning_path='self_code_analysis_failure',
+                    user_goal=self._last_user_goal or 'auto-analisis',
+                    error_detail=str(exc)[:200],
                 )
             finally:
                 self._set_live_status('idle')
@@ -7284,7 +7296,18 @@ class ControlCenterViewModel(QObject):
                 self._update_adaptive_state(adaptive_payload)
             message = str(external_payload.get('message') or 'No pude completar la consulta externa guiada.')
             meta = str(external_payload.get('meta') or 'Consulta externa sin detalle.')
-            self._append_message('assistant', 'IABV', message, meta)
+            _ext_success = bool(external_payload.get('success'))
+            _ext_path = 'external_consultation' if _ext_success else 'external_blocked'
+            _ext_evidence = 'observed' if _ext_success else 'inferred'
+            _ext_assistant = str(external_payload.get('assistant_title') or 'external')
+            self._append_message('assistant', 'IABV', message, meta,
+                                 reasoning_path=_ext_path, evidence_tag=_ext_evidence,
+                                 trace_metadata={'assistant': _ext_assistant, 'blocked': not _ext_success})
+            self._record_chat_audit(
+                reasoning_path=_ext_path,
+                user_goal=self._last_user_goal or '',
+                metadata={'assistant': _ext_assistant, 'blocked': not _ext_success},
+            )
             self._latest_response_text = message
             self._latest_response_meta = meta
             assistant_title = str(external_payload.get('assistant_title') or 'Asistente externo')
@@ -7348,7 +7371,7 @@ class ControlCenterViewModel(QObject):
         _failure_path = f'{task_name}_failure'
         self._append_message('assistant', title, visible_message, visible_meta,
                              reasoning_path=_failure_path)
-        if task_name == 'chat':
+        if task_name in ('chat', 'external_consultation'):
             from iabv_v15.services.evolution.decision_audit_trail import DecisionOutcome
             self._record_chat_audit(
                 reasoning_path=_failure_path,
