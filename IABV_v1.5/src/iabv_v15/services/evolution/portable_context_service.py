@@ -69,6 +69,7 @@ class PortableContextService:
         self.code_audit_trail: Any | None = None
         self.boot_profile_store: Any | None = None
         self.experiment_lab: Any | None = None
+        self.chat_message_repository: Any | None = None
         self._current_package: PortableContextPackage | None = None
         self._account_resource_cache: dict[str, Any] | None = None
         self._account_resource_cached_at: float = 0.0
@@ -232,6 +233,7 @@ class PortableContextService:
                 'evidence_basis': dict(evidence_basis),
                 'task_packet_summary': dict(task_packet_summary),
                 'coordination_patterns': coordination_patterns,
+                'chat_stats': self._chat_stats_snapshot(),
                 'autoexamination_summary': dict(self_examination.get('summary_payload') or {}),
                 'recurring_issues': list(self_examination.get('recurring_issues') or []),
                 'recommended_adjustments': list(self_examination.get('recommended_adjustments') or []),
@@ -1547,6 +1549,43 @@ class PortableContextService:
                 'trends': [],
                 'recommendations': [],
             }
+
+    def _chat_stats_snapshot(self) -> dict[str, Any]:
+        """Snapshot of chat persistence stats for the portable context."""
+        repo = self.chat_message_repository
+        if repo is None:
+            return {'status': 'not_configured', 'total': 0}
+        try:
+            total = repo.count()
+            if total == 0:
+                return {'status': 'empty', 'total': 0}
+            recent = repo.list_recent(limit=100)
+            sessions = repo.list_sessions()
+            path_counts: dict[str, int] = {}
+            evidence_counts: dict[str, int] = {}
+            for msg in recent:
+                p = msg.get('reasoning_path', '') or 'untagged'
+                path_counts[p] = path_counts.get(p, 0) + 1
+                e = msg.get('evidence_tag', '') or 'untagged'
+                evidence_counts[e] = evidence_counts.get(e, 0) + 1
+            audit = getattr(self, 'decision_audit_trail', None)
+            routing_summary = {}
+            if audit is not None and hasattr(audit, 'chat_routing_summary'):
+                try:
+                    routing_summary = audit.chat_routing_summary()
+                except Exception:
+                    pass
+            return {
+                'status': 'active',
+                'total': total,
+                'sessions': len(sessions),
+                'recent_sample': len(recent),
+                'by_reasoning_path': path_counts,
+                'by_evidence_tag': evidence_counts,
+                'routing_decisions': routing_summary,
+            }
+        except Exception:
+            return {'status': 'error', 'total': 0}
 
     def _tool_discovery_snapshot(self) -> dict[str, Any]:
         service = self.tool_discovery_service

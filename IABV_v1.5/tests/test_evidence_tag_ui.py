@@ -60,12 +60,18 @@ class _MinimalVM:
         self._live_status = 'idle'
         self._working = False
         self._attached_files: list[dict[str, Any]] = []
+        self._last_reasoning_path: str = ''
+        self.chat_message_repository = None
+        self._chat_session_id = 'test-session'
 
     def _refresh_contextual_suggestions(self) -> None:
         pass
 
     def _validate_ui_reflects_reality(self) -> dict[str, Any]:
         return {'valid': True, 'findings': []}
+
+    def _persist_chat_message(self, **kwargs: Any) -> None:
+        pass
 
 
 def _build_minimal_vm() -> _MinimalVM:

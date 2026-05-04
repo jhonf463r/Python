@@ -325,6 +325,19 @@ class AppDatabase:
                     created_at_utc TEXT NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS chat_messages (
+                    message_id TEXT PRIMARY KEY,
+                    chat_session_id TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    speaker TEXT NOT NULL,
+                    text TEXT NOT NULL,
+                    meta TEXT NOT NULL DEFAULT '',
+                    evidence_tag TEXT NOT NULL DEFAULT '',
+                    reasoning_path TEXT NOT NULL DEFAULT '',
+                    metadata_json TEXT NOT NULL DEFAULT '{}',
+                    created_at_utc TEXT NOT NULL
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_session_artifacts_episode
                 ON session_artifacts (episode_id, created_at_utc DESC);
 
@@ -489,6 +502,12 @@ class AppDatabase:
 
                 CREATE INDEX IF NOT EXISTS idx_experiment_recommendations_subject
                 ON experiment_recommendations (subject_key, created_at_utc DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_chat_messages_session
+                ON chat_messages (chat_session_id, created_at_utc DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_chat_messages_created
+                ON chat_messages (created_at_utc DESC);
                 """
             )
             self._ensure_column(conn, 'run_records', 'duration_ms', 'INTEGER')

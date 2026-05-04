@@ -119,6 +119,7 @@ class ControlCenterViewModel(QObject):
         control_master_digest_builder: Any | None = None,
         self_audit_service: Any | None = None,
         chat_capability_ingestion_service: Any | None = None,
+        chat_message_repository: Any | None = None,
         defer_initial_refresh: bool = False,
     ) -> None:
         super().__init__()
@@ -165,8 +166,10 @@ class ControlCenterViewModel(QObject):
         # para que OSES y ExperimentLab lo consuman despues. Es OPCIONAL: si no
         # esta inyectado, sendChat funciona igual (comportamiento legacy).
         self.chat_capability_ingestion_service = chat_capability_ingestion_service
+        self.chat_message_repository = chat_message_repository
         self._chat_session_id = _generate_chat_session_id()
         self._pending_capability_notice: list[str] = []
+        self._last_reasoning_path: str = ''
 
         self._selected_role = config.default_task_role.value
         self._auto_route_enabled = True
@@ -317,6 +320,10 @@ class ControlCenterViewModel(QObject):
     def _seed_messages(self) -> None:
         if self._chat_messages:
             return
+        loaded = self._load_previous_chat_history()
+        if loaded:
+            self._chat_messages = loaded
+            return
         self._chat_messages = [
             {
                 'role': 'assistant',
@@ -325,6 +332,33 @@ class ControlCenterViewModel(QObject):
                 'meta': self._routing_mode_label(),
             }
         ]
+
+    def _load_previous_chat_history(self) -> list[dict[str, Any]]:
+        repo = self.chat_message_repository
+        if repo is None:
+            return []
+        try:
+            rows = repo.list_recent(limit=30)
+            if not rows:
+                return []
+            messages: list[dict[str, Any]] = []
+            for row in rows:
+                msg: dict[str, Any] = {
+                    'role': row['role'],
+                    'speaker': row['speaker'],
+                    'text': row['text'],
+                    'meta': row.get('meta', ''),
+                    'timestamp': row.get('created_at_utc', '')[:5],
+                }
+                if row.get('evidence_tag'):
+                    msg['evidenceTag'] = row['evidence_tag']
+                if row.get('reasoning_path'):
+                    msg['reasoningPath'] = row['reasoning_path']
+                messages.append(msg)
+            repo.apply_retention()
+            return messages
+        except Exception:
+            return []
 
     @staticmethod
     def _classify_evidence_tag(
@@ -361,7 +395,9 @@ class ControlCenterViewModel(QObject):
                         code_blocks: list[dict[str, Any]] | None = None,
                         status: str = 'complete',
                         reasoning: str = '',
-                        evidence_tag: str = '') -> None:
+                        evidence_tag: str = '',
+                        reasoning_path: str = '',
+                        trace_metadata: dict[str, Any] | None = None) -> None:
         msg: dict[str, Any] = {'role': role, 'speaker': speaker, 'text': text, 'meta': meta,
                                'status': status, 'timestamp': datetime.now(timezone.utc).strftime('%H:%M')}
         if attachments:
@@ -372,11 +408,83 @@ class ControlCenterViewModel(QObject):
             msg['reasoning'] = reasoning
         if evidence_tag in ('observed', 'inferred', 'unresolved'):
             msg['evidenceTag'] = evidence_tag
+        effective_reasoning_path = reasoning_path or self._last_reasoning_path
+        if effective_reasoning_path:
+            msg['reasoningPath'] = effective_reasoning_path
         with self._ui_state_lock:
             self._chat_messages.append(msg)
             self._chat_messages = self._chat_messages[-30:]
+        self._persist_chat_message(
+            role=role, speaker=speaker, text=text, meta=meta,
+            evidence_tag=evidence_tag,
+            reasoning_path=effective_reasoning_path,
+            trace_metadata=trace_metadata,
+        )
+        self._last_reasoning_path = ''
         self._refresh_contextual_suggestions()
         self._validate_ui_reflects_reality()
+
+    def _persist_chat_message(
+        self,
+        *,
+        role: str,
+        speaker: str,
+        text: str,
+        meta: str,
+        evidence_tag: str,
+        reasoning_path: str,
+        trace_metadata: dict[str, Any] | None,
+    ) -> None:
+        repo = self.chat_message_repository
+        if repo is None:
+            return
+        try:
+            repo.save(
+                chat_session_id=self._chat_session_id,
+                role=role,
+                speaker=speaker,
+                text=text,
+                meta=meta,
+                evidence_tag=evidence_tag,
+                reasoning_path=reasoning_path,
+                metadata=trace_metadata,
+            )
+        except Exception:
+            pass
+
+    def _record_chat_audit(
+        self,
+        *,
+        reasoning_path: str,
+        provider_id: str = 'local',
+        model_used: str = '',
+        latency_ms: float = 0.0,
+        outcome: Any = None,
+        user_goal: str = '',
+        confidence: float = 0.0,
+        error_detail: str = '',
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        trail = getattr(self, 'decision_audit_trail', None)
+        if trail is None:
+            return
+        try:
+            from iabv_v15.services.evolution.decision_audit_trail import DecisionOutcome
+            if outcome is None:
+                outcome = DecisionOutcome.SUCCESS
+            trail.record_chat_routing(
+                reasoning_path=reasoning_path,
+                provider_id=provider_id,
+                model_used=model_used,
+                latency_ms=latency_ms,
+                outcome=outcome,
+                user_goal=user_goal,
+                confidence=confidence,
+                error_detail=error_detail,
+                metadata=metadata,
+            )
+        except Exception:
+            pass
 
     def _count_payloads(self) -> int:
         payload_dir = Path(self.config.payloads_dir)
@@ -2346,7 +2454,9 @@ class ControlCenterViewModel(QObject):
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._evolution_status_conversation_payload(message=message))
         reply, meta, evidence_tag = self._evolution_status_reply(message)
-        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag)
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
+                             reasoning_path='evolution_status')
+        self._record_chat_audit(reasoning_path='evolution_status', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2357,7 +2467,9 @@ class ControlCenterViewModel(QObject):
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._learning_conversation_payload(message=message))
         reply, meta, evidence_tag = self._learning_reply(message)
-        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag)
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
+                             reasoning_path='learning')
+        self._record_chat_audit(reasoning_path='learning', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2368,7 +2480,9 @@ class ControlCenterViewModel(QObject):
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._general_conversation_payload(message=message))
         reply, meta = self._self_awareness_reply(message)
-        self._append_message('assistant', 'IABV', reply, meta, evidence_tag='observed')
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag='observed',
+                             reasoning_path='self_awareness')
+        self._record_chat_audit(reasoning_path='self_awareness', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2379,7 +2493,9 @@ class ControlCenterViewModel(QObject):
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._general_conversation_payload(message=message))
         reply, meta = self._world_model_reply(message)
-        self._append_message('assistant', 'IABV', reply, meta, evidence_tag='observed')
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag='observed',
+                             reasoning_path='world_model')
+        self._record_chat_audit(reasoning_path='world_model', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2850,15 +2966,19 @@ class ControlCenterViewModel(QObject):
         # Try LLM-grounded reasoning first
         llm_reply = self._invoke_llm_for_self_examination(message, metacognition_context, focus)
 
+        trace: dict[str, Any] = {'focus': focus, 'anchors_total': 0, 'anchors_cited': 0}
         if llm_reply:
             # Validate that the LLM actually used the real data
             anchors = self._extract_grounding_anchors(metacognition_context)
             is_grounded, missing = self._validate_response_grounding(llm_reply, anchors)
+            trace['anchors_total'] = len(anchors)
+            trace['anchors_cited'] = len(anchors) - len(missing)
 
             if is_grounded:
                 reply = llm_reply
                 meta = 'Razonamiento con metacognicion completa (LLM + datos reales).'
                 evidence_tag = 'observed'
+                reasoning_path = 'llm_grounded'
             else:
                 # LLM responded but didn't ground in data — supplement with template
                 template_reply, template_meta, template_tag = self._self_examination_reply(message)
@@ -2869,11 +2989,16 @@ class ControlCenterViewModel(QObject):
                 )
                 meta = 'Razonamiento LLM + suplemento con datos reales (grounding parcial).'
                 evidence_tag = 'inferred'
+                reasoning_path = 'llm_supplemented'
+                trace['missing_anchors'] = missing[:10]
         else:
             # LLM unavailable — fall back to template (still has real data)
             reply, meta, evidence_tag = self._self_examination_reply(message)
+            reasoning_path = 'template_fallback'
 
-        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag)
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
+                             reasoning_path=reasoning_path, trace_metadata=trace)
+        self._record_chat_audit(reasoning_path=reasoning_path, user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2935,7 +3060,9 @@ class ControlCenterViewModel(QObject):
         self._update_adaptive_state(self._general_conversation_payload(message=message))
         self._clear_autonomy_activity_override()
         reply, meta, evidence_tag = self._general_chat_reply(message)
-        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag)
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
+                             reasoning_path='general_chat')
+        self._record_chat_audit(reasoning_path='general_chat', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._working = False
@@ -7039,7 +7166,24 @@ class ControlCenterViewModel(QObject):
                 payload=dict(payload or {}),
                 adaptive_payload=adaptive_payload,
             )
-            self._append_message('assistant', 'IABV', user_text, meta_line, evidence_tag=_chat_evidence_tag)
+            _inference_path = 'orchestrator_inference'
+            self._append_message('assistant', 'IABV', user_text, meta_line, evidence_tag=_chat_evidence_tag,
+                                 reasoning_path=_inference_path,
+                                 trace_metadata={
+                                     'provider': payload.get('provider_name', ''),
+                                     'model': payload.get('executor_model', ''),
+                                     'confidence': payload.get('confidence', ''),
+                                     'route_reason': payload.get('route_reason', ''),
+                                     'pack': pack_title,
+                                     'planner_used': payload.get('planner_used', False),
+                                 })
+            self._record_chat_audit(
+                reasoning_path=_inference_path,
+                provider_id=payload.get('provider_name', 'local'),
+                model_used=payload.get('executor_model', ''),
+                user_goal=self._last_user_goal or '',
+                confidence=float(payload.get('confidence') or 0),
+            )
             if adaptive_payload and isinstance(adaptive_payload, dict):
                 _ap_meta = adaptive_payload.setdefault('metadata', {})
                 if isinstance(_ap_meta, dict):
@@ -7201,7 +7345,17 @@ class ControlCenterViewModel(QObject):
         title = 'IABV' if task_name == 'chat' else task_name.upper()
         visible_message, visible_meta = self._humanize_task_failure(task_name, message)
         self._clear_autonomy_activity_override()
-        self._append_message('assistant', title, visible_message, visible_meta)
+        _failure_path = f'{task_name}_failure'
+        self._append_message('assistant', title, visible_message, visible_meta,
+                             reasoning_path=_failure_path)
+        if task_name == 'chat':
+            from iabv_v15.services.evolution.decision_audit_trail import DecisionOutcome
+            self._record_chat_audit(
+                reasoning_path=_failure_path,
+                outcome=DecisionOutcome.FAILED,
+                user_goal=self._last_user_goal or '',
+                error_detail=message[:200],
+            )
         if task_name in {'chat', 'adaptive_action', 'external_consultation'}:
             self._latest_response_text = visible_message
             self._latest_response_meta = visible_meta

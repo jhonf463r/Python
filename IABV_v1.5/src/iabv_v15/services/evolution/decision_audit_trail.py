@@ -46,6 +46,7 @@ class DecisionPhase(str, Enum):
     PLAN_EXECUTION = 'plan_execution'
     KEY_VALIDATION = 'key_validation'
     KEY_RENEWAL = 'key_renewal'
+    CHAT_ROUTING = 'chat_routing'
 
 
 # ---------------------------------------------------------------------------
@@ -439,3 +440,75 @@ class DecisionAuditTrail:
             lines.append(f'\n_Ultima decision: {last.get("timestamp_utc", "?")} — {last.get("provider_id", "?")} — {last.get("outcome", "?")}_')
 
         return '\n'.join(lines)
+
+    # ------------------------------------------------------------------
+    # Chat routing convenience method
+    # ------------------------------------------------------------------
+
+    def record_chat_routing(
+        self,
+        *,
+        reasoning_path: str,
+        provider_id: str = 'local',
+        model_used: str = '',
+        latency_ms: float = 0.0,
+        outcome: DecisionOutcome = DecisionOutcome.SUCCESS,
+        user_goal: str = '',
+        confidence: float = 0.0,
+        error_detail: str = '',
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        """Record a chat routing decision (which path sendChat chose).
+
+        Called from CCVM when a message is routed to any handler
+        (self_awareness, world_model, general_chat, inference, etc.).
+        """
+        meta = dict(metadata or {})
+        meta['reasoning_path'] = reasoning_path
+        self.record(DecisionRecord(
+            phase=DecisionPhase.CHAT_ROUTING,
+            provider_id=provider_id,
+            model_used=model_used,
+            user_goal=user_goal[:200],
+            outcome=outcome,
+            latency_ms=latency_ms,
+            confidence=confidence,
+            error_detail=error_detail,
+            metadata=meta,
+        ))
+
+    def chat_routing_summary(self) -> dict[str, Any]:
+        """Summarize chat routing decisions for observability."""
+        entries = self.load_recent(500)
+        chat_entries = [e for e in entries if e.get('phase') == 'chat_routing']
+        if not chat_entries:
+            return {
+                'status': 'no_data',
+                'total_chat_decisions': 0,
+                'by_path': {},
+                'by_provider': {},
+            }
+        by_path: dict[str, int] = {}
+        by_provider: dict[str, int] = {}
+        success_count = 0
+        total_latency = 0.0
+        latency_count = 0
+        for e in chat_entries:
+            path = (e.get('metadata') or {}).get('reasoning_path', 'unknown')
+            by_path[path] = by_path.get(path, 0) + 1
+            pid = e.get('provider_id', 'unknown')
+            by_provider[pid] = by_provider.get(pid, 0) + 1
+            if e.get('outcome') == 'success':
+                success_count += 1
+            lat = e.get('latency_ms', 0)
+            if lat > 0:
+                total_latency += lat
+                latency_count += 1
+        return {
+            'status': 'analyzed',
+            'total_chat_decisions': len(chat_entries),
+            'success_rate': success_count / len(chat_entries) if chat_entries else 0.0,
+            'avg_latency_ms': total_latency / latency_count if latency_count else 0.0,
+            'by_path': by_path,
+            'by_provider': by_provider,
+        }
