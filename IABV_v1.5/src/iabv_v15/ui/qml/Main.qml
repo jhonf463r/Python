@@ -351,5 +351,75 @@ ApplicationWindow {
             }
         }
     }
+
+    // --- Global human-help dialogs (hosted at root so they work from any page) ---
+    CredentialPromptDialog {
+        id: globalCredentialDialog
+        visible: false
+        property var _sourceVm: null
+        onCredentialProvided: function(payload) {
+            if (_sourceVm) _sourceVm.onCredentialProvided(payload)
+        }
+        onDelegateToUser: function(payload) {
+            if (_sourceVm) _sourceVm.onCredentialDelegated(payload)
+        }
+    }
+
+    ClarificationDialog {
+        id: globalClarificationDialog
+        visible: false
+        property var _sourceVm: null
+        onClarificationResponse: function(payload) {
+            if (_sourceVm) _sourceVm.onClarificationResponse(payload)
+        }
+    }
+
+    MissingDependencyDialog {
+        id: globalDependencyDialog
+        visible: false
+        property var _sourceVm: null
+        onDependencyApproved: function(payload) {
+            if (_sourceVm) _sourceVm.onDependencyApproved(payload)
+        }
+        onDependencyRejected: function(payload) {
+            if (_sourceVm) _sourceVm.onDependencyRejected(payload)
+        }
+    }
+
+    function _openCredentialDialog(vm, payload) {
+        globalCredentialDialog._sourceVm = vm
+        globalCredentialDialog.domain = payload.domain || ""
+        globalCredentialDialog.reason = payload.reason || ""
+        globalCredentialDialog.usernameHint = payload.username_hint || ""
+        globalCredentialDialog.open()
+    }
+    function _openClarificationDialog(vm, payload) {
+        globalClarificationDialog._sourceVm = vm
+        globalClarificationDialog.requestId = payload.id || ""
+        globalClarificationDialog.question = payload.question || ""
+        globalClarificationDialog.options = payload.options || []
+        globalClarificationDialog.context = payload.context || ""
+        globalClarificationDialog.open()
+    }
+    function _openDependencyDialog(vm, payload) {
+        globalDependencyDialog._sourceVm = vm
+        globalDependencyDialog.packageName = payload.package_name || ""
+        globalDependencyDialog.manager = payload.manager || ""
+        globalDependencyDialog.reason = payload.reason || ""
+        globalDependencyDialog.open()
+    }
+
+    Connections {
+        target: controlCenterViewModel
+        function onCredentialPromptRequested(payload) { _openCredentialDialog(controlCenterViewModel, payload) }
+        function onClarificationRequested(payload) { _openClarificationDialog(controlCenterViewModel, payload) }
+        function onMissingDependencyRequested(payload) { _openDependencyDialog(controlCenterViewModel, payload) }
+    }
+    Connections {
+        target: evolutionCenterViewModel
+        function onCredentialPromptRequested(payload) { _openCredentialDialog(evolutionCenterViewModel, payload) }
+        function onClarificationRequested(payload) { _openClarificationDialog(evolutionCenterViewModel, payload) }
+        function onMissingDependencyRequested(payload) { _openDependencyDialog(evolutionCenterViewModel, payload) }
+    }
 }
 

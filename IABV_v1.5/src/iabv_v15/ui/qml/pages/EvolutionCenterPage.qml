@@ -1246,25 +1246,7 @@ Item {
         }
     }
 
-    // Dialogos evolutivos (Task B)
-    CredentialPromptDialog {
-        id: credentialDialog
-        visible: false
-        onCredentialProvided: function(payload) {
-            if (evolutionCenterViewModel) evolutionCenterViewModel.onCredentialProvided(payload)
-        }
-        onDelegateToUser: function(payload) {
-            if (evolutionCenterViewModel) evolutionCenterViewModel.onCredentialDelegated(payload)
-        }
-    }
-
-    ClarificationDialog {
-        id: clarificationDialog
-        visible: false
-        onClarificationResponse: function(payload) {
-            if (evolutionCenterViewModel) evolutionCenterViewModel.onClarificationResponse(payload)
-        }
-    }
+    // Dialogos evolutivos (Task B) — ahora hosteados globalmente en Main.qml
 
     // F2.2: dialogo modal para publicar una rama como PR via GitHubRemoteService.
     // No hace validacion de policy ni decide rutas: solo recoge los campos y
@@ -1358,38 +1340,5 @@ Item {
         }
     }
 
-    MissingDependencyDialog {
-        id: dependencyDialog
-        visible: false
-        onDependencyApproved: function(payload) {
-            if (evolutionCenterViewModel) evolutionCenterViewModel.onDependencyApproved(payload)
-        }
-        onDependencyRejected: function(payload) {
-            if (evolutionCenterViewModel) evolutionCenterViewModel.onDependencyRejected(payload)
-        }
-    }
-
-    // Conexiones de señales del ViewModel (Task B)
-    Connections {
-        target: evolutionCenterViewModel
-        function onCredentialPromptRequested(payload) {
-            credentialDialog.domain = payload.domain || ""
-            credentialDialog.reason = payload.reason || ""
-            credentialDialog.usernameHint = payload.username_hint || ""
-            credentialDialog.open()
-        }
-        function onClarificationRequested(payload) {
-            clarificationDialog.requestId = payload.id || ""
-            clarificationDialog.question = payload.question || ""
-            clarificationDialog.options = payload.options || []
-            clarificationDialog.context = payload.context || ""
-            clarificationDialog.open()
-        }
-        function onMissingDependencyRequested(payload) {
-            dependencyDialog.packageName = payload.package_name || ""
-            dependencyDialog.manager = payload.manager || ""
-            dependencyDialog.reason = payload.reason || ""
-            dependencyDialog.open()
-        }
-    }
+    // MissingDependencyDialog — ahora hosteado globalmente en Main.qml
 }
