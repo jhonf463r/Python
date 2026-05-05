@@ -1010,11 +1010,14 @@ class PortableContextService:
                 meta = dict(session.metadata or {})
                 tp = meta.get('task_packet') or {}
                 tss = tp.get('tool_selection_summary') or {}
-                if not tss.get('selected_tool'):
+                selected = tss.get('selected_tool', '')
+                reason = str(tss.get('reason') or '')
+                if not selected and not reason:
                     continue
+                label = f"seleccion:{selected}" if selected else f"decision:{reason}"
                 items.append({
-                    'label': f"seleccion:{tss.get('selected_tool', '')}",
-                    'value': f"razon={tss.get('reason', '')} fallback={tss.get('fallback_used', False)} quota_confirmed={tss.get('quota_confirmed', False)}",
+                    'label': label,
+                    'value': f"razon={reason} fallback={tss.get('fallback_used', False)} quota_confirmed={tss.get('quota_confirmed', False)}",
                     'detail': f"alternativas_descartadas={len(tss.get('alternatives_discarded', []))}",
                 })
             if items:
