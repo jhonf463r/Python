@@ -76,10 +76,15 @@ class DashboardViewModel(QObject):
             self.refreshFailed.emit(str(exc))
 
     def _collect_summary_cards(self) -> list[dict]:
+        self._mark_timeline('dashboard_vm_refresh_query_episodes_start')
         episodes = self.episode_repository.list_recent(limit=100)
+        self._mark_timeline('dashboard_vm_refresh_query_episodes_done')
         knowledge = self.knowledge_repository.list_recent(limit=100)
+        self._mark_timeline('dashboard_vm_refresh_query_knowledge_done')
         runs = self.run_repository.list_recent(limit=100)
+        self._mark_timeline('dashboard_vm_refresh_query_runs_done')
         index_state = self.embedding_service.describe_index()
+        self._mark_timeline('dashboard_vm_refresh_query_index_done')
         return [
             {'title': 'Episodios', 'value': str(len(episodes)), 'hint': 'Sesiones capturadas y listas para revisar'},
             {'title': 'Conocimiento', 'value': str(len(knowledge)), 'hint': 'Memoria confirmada para reutilizacion'},

@@ -1578,6 +1578,7 @@ class AppBootstrap:
                 self._log_tool_availability()
             except Exception as exc:
                 logger.warning('deferred_tool_availability_probe failed: %s', exc)
+                self._record_startup_sqlite_incident(exc)
             try:
                 self._timeline.mark('deferred_post_window_setup_done')
             except Exception:
@@ -2152,6 +2153,53 @@ class AppBootstrap:
 
         self._startup_self_examination()
         self._run_startup_common_sense()
+
+    def _record_startup_sqlite_incident(self, exc: Exception) -> None:
+        """Promote a ``database is locked`` error to an OSES finding.
+
+        Called from ``_bg_post_window_setup`` when
+        ``_log_tool_availability`` fails with a SQLite contention error.
+        The finding is persisted as a JSON file under
+        ``data/evolution/self_examination/`` so that the next
+        ``build_review()`` picks it up via ``_runtime_log_findings`` or
+        the startup health pipeline.
+        """
+        if 'database is locked' not in str(exc):
+            return
+        try:
+            incident_dir = Path(self.config.evolution_dir) / 'self_examination'
+            incident_dir.mkdir(parents=True, exist_ok=True)
+            incident_path = incident_dir / 'startup_sqlite_incident.json'
+            import json
+            from datetime import datetime, timezone
+            incident = {
+                'category': 'sqlite_lock_contention',
+                'title': 'database is locked durante startup',
+                'summary': (
+                    f'deferred_tool_availability_probe fallo con: {exc}. '
+                    'La contención ocurre porque UI y MCP intentan escribir '
+                    'en app.sqlite simultáneamente durante arranque.'
+                ),
+                'severity': 'HIGH',
+                'confidence': 0.95,
+                'recommendation': (
+                    'Verificar que WAL mode y busy_timeout estén activos. '
+                    'Separar writes de _seed_defaults del arranque MCP.'
+                ),
+                'source_refs': [
+                    'iabv_v15.infra.persistence.database',
+                    'iabv_v15.services.tools.tool_registry._seed_defaults',
+                ],
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'error': str(exc),
+            }
+            incident_path.write_text(
+                json.dumps(incident, indent=2, ensure_ascii=False),
+                encoding='utf-8',
+            )
+            logger.info('startup_sqlite_incident: persisted to %s', incident_path)
+        except Exception as persist_exc:
+            logger.warning('startup_sqlite_incident: failed to persist: %s', persist_exc)
 
     def _run_startup_common_sense(self) -> None:
         """Run common-sense reasoning over startup timeline events.
@@ -2744,10 +2792,19 @@ class AppBootstrap:
                     pass
                 logger.info('lazy_vm_prebuild_done: all %d routes processed', len(routes))
                 return
+            route = routes[idx]
             try:
-                self._ensure_vm_for_route(routes[idx])
+                self._timeline.mark(f'lazy_vm_prebuild_{route}_start')
             except Exception:
-                logger.exception('lazy_vm_prebuild failed for route: %s', routes[idx])
+                pass
+            try:
+                self._ensure_vm_for_route(route)
+            except Exception:
+                logger.exception('lazy_vm_prebuild failed for route: %s', route)
+            try:
+                self._timeline.mark(f'lazy_vm_prebuild_{route}_done')
+            except Exception:
+                pass
             QTimer.singleShot(0, lambda: _build_next(idx + 1))
 
         _build_next()

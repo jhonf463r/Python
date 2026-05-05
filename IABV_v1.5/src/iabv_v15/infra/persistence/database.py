@@ -1,8 +1,18 @@
 from __future__ import annotations
 
+import logging
+import os
 from pathlib import Path
 import sqlite3
+import time
 from typing import Iterable
+
+logger = logging.getLogger(__name__)
+
+# Default busy timeout in milliseconds.  Gives concurrent processes
+# (UI + MCP) time to release the write lock instead of failing
+# immediately with ``database is locked``.
+_BUSY_TIMEOUT_MS = int(os.environ.get('IABV_SQLITE_BUSY_TIMEOUT_MS', '5000'))
 
 
 class AppDatabase:
@@ -12,12 +22,21 @@ class AppDatabase:
         self._initialize()
 
     def connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self.sqlite_path)
+        connection = sqlite3.connect(str(self.sqlite_path))
         connection.row_factory = sqlite3.Row
+        connection.execute(f'PRAGMA busy_timeout={_BUSY_TIMEOUT_MS}')
         return connection
 
     def _initialize(self) -> None:
         with self.connect() as conn:
+            # WAL mode allows concurrent readers+writer, essential for
+            # UI + MCP coexistence.  Disabled in tests via env var to
+            # avoid WAL/SHM file cleanup races with shutil.rmtree.
+            if os.environ.get('IABV_SQLITE_WAL', '1') == '1':
+                try:
+                    conn.execute('PRAGMA journal_mode=WAL')
+                except Exception:
+                    pass
             conn.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS episodes (
@@ -521,8 +540,7 @@ class AppDatabase:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
     def execute(self, sql: str, parameters: Iterable[object] = ()) -> None:
-        with self.connect() as conn:
-            conn.execute(sql, tuple(parameters))
+        self._exec_with_retry(lambda conn: conn.execute(sql, tuple(parameters)))
 
     def fetchall(self, sql: str, parameters: Iterable[object] = ()) -> list[sqlite3.Row]:
         with self.connect() as conn:
@@ -531,3 +549,32 @@ class AppDatabase:
     def fetchone(self, sql: str, parameters: Iterable[object] = ()) -> sqlite3.Row | None:
         with self.connect() as conn:
             return conn.execute(sql, tuple(parameters)).fetchone()
+
+    def _exec_with_retry(
+        self,
+        fn,
+        *,
+        max_retries: int = 3,
+        backoff_base: float = 0.25,
+    ) -> None:
+        """Execute *fn(conn)* with retry on ``database is locked``.
+
+        The busy_timeout already handles most contention, but under
+        heavy startup load (UI + MCP + seed_defaults) we may still
+        exceed the timeout.  This retries up to *max_retries* times
+        with exponential backoff before re-raising.
+        """
+        for attempt in range(max_retries + 1):
+            try:
+                with self.connect() as conn:
+                    fn(conn)
+                return
+            except sqlite3.OperationalError as exc:
+                if 'database is locked' not in str(exc) or attempt >= max_retries:
+                    raise
+                wait = backoff_base * (2 ** attempt)
+                logger.warning(
+                    'database_locked_retry: attempt=%d/%d wait=%.2fs sql_preview=%s',
+                    attempt + 1, max_retries, wait, str(fn)[:80],
+                )
+                time.sleep(wait)
