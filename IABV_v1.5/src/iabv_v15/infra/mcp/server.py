@@ -197,6 +197,12 @@ class IABVMCPServer:
             raise RuntimeError("adaptive_task_orchestrator no está disponible en el container")
         return svc
 
+    def _autonomy_cycle_service(self) -> Any:
+        svc = getattr(self.container, "autonomy_cycle_service", None)
+        if svc is None:
+            raise RuntimeError("autonomy_cycle_service no está disponible en el container")
+        return svc
+
     def _ui_execution_runner(self) -> Any:
         svc = getattr(self.container, "ui_execution_runner", None)
         if svc is None:
@@ -468,6 +474,59 @@ class IABVMCPServer:
             result = _to_jsonable(snapshot) or {}
             result['scan_stats'] = svc.scan_stats
             return result
+
+        @mcp.tool()
+        def autonomy_status() -> dict[str, Any]:
+            """Estado de autonomía: tareas pendientes, checkpoints de reanudación y capacidades.
+
+            Expone lo que el programa sabe que puede hacer, lo que no puede,
+            y lo que quedó interrumpido.  Útil para que el siguiente agente
+            o sesión sepa exactamente dónde retomar.
+            """
+            acs = self._autonomy_cycle_service()
+            summary = acs.startup_summary()
+            queue = acs.queue
+            summary['queue_summary'] = queue.summary()
+            summary['all_tasks'] = [
+                _to_jsonable(t) for t in queue.list_all()
+            ]
+            return summary
+
+        @mcp.tool()
+        def autonomy_update_task(
+            task_id: str,
+            status: str = "",
+            next_action: str = "",
+            resume_hint: str = "",
+        ) -> dict[str, Any]:
+            """Actualiza una tarea pendiente en la cola de autonomía.
+
+            Args:
+                task_id: ID de la tarea a actualizar.
+                status: nuevo estado (PENDING, BLOCKED, COMPLETED, UNRESOLVED, READY_FOR_NEXT_SLICE).
+                next_action: próxima acción sugerida.
+                resume_hint: hint para reanudación.
+            """
+            from iabv_v15.domain.models import PendingTaskStatus
+            acs = self._autonomy_cycle_service()
+            queue = acs.queue
+            task = queue.get(task_id)
+            if task is None:
+                return {'error': f'task {task_id} not found'}
+            updates: dict[str, Any] = {}
+            if status:
+                try:
+                    updates['status'] = PendingTaskStatus(status)
+                except ValueError:
+                    return {'error': f'invalid status: {status}'}
+            if next_action:
+                updates['next_action'] = next_action
+            if resume_hint:
+                updates['resume_hint'] = resume_hint
+            if updates:
+                task = task.model_copy(update=updates)
+                queue.upsert(task)
+            return _to_jsonable(task) or {}
 
         @mcp.tool()
         def orchestrator_preview(
