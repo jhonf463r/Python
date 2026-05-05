@@ -236,3 +236,62 @@ def test_weight_snapshot_generated() -> None:
         assert 'weight_snapshot' in records[0]
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+# ---- 9. CSK promoted to first-class field on ExperimentRun ----
+
+def test_record_outcome_writes_csk_to_field() -> None:
+    """comparison_scope_key should be written as a first-class field on ExperimentRun."""
+    root = _workspace('csk_field')
+    try:
+        boot = AppBootstrap(str(root))
+        session = _session(user_goal='Analizar patron de error')
+        run_record = _run_record()
+        result = boot.task_outcome_recorder.record(session, run_record=run_record)
+        adaptive = result.metadata.get('adaptive_learning', {})
+        records = adaptive.get('records', [])
+        assert len(records) >= 1
+        lab_run_id = records[0].get('lab_run_id', '')
+        assert lab_run_id
+        subject_keys = adaptive.get('subject_keys', ['general'])
+        matched = None
+        for sk in subject_keys:
+            all_runs = boot.experiment_lab.repository.list_runs(
+                domain=adaptive.get('domain', 'language'), subject_key=sk, limit=50,
+            )
+            for r in all_runs:
+                if r.run_id == lab_run_id:
+                    matched = r
+                    break
+            if matched:
+                break
+        assert matched is not None, f'run {lab_run_id} not found in any subject_key'
+        assert matched.comparison_scope_key, 'comparison_scope_key field should not be empty'
+        assert matched.comparison_scope_key == matched.metadata.get('comparison_scope_key', '')
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+# ---- 10. ExperimentRun model has comparison_scope_key field ----
+
+def test_experiment_run_has_comparison_scope_key_field() -> None:
+    """ExperimentRun must have comparison_scope_key as a model field."""
+    from iabv_v15.domain.models import ExperimentRun
+    run = ExperimentRun(
+        domain=ExperimentDomain.LANGUAGE,
+        suite_name='test',
+        objective='test',
+        route=EvaluationRoute.LOCAL,
+    )
+    assert hasattr(run, 'comparison_scope_key')
+    assert run.comparison_scope_key == ''
+
+
+# ---- 11. SelfExaminationFinding has linked_run_ids field ----
+
+def test_self_examination_finding_has_linked_run_ids_field() -> None:
+    """SelfExaminationFinding must have linked_run_ids as a model field."""
+    from iabv_v15.domain.models import SelfExaminationFinding
+    finding = SelfExaminationFinding()
+    assert hasattr(finding, 'linked_run_ids')
+    assert finding.linked_run_ids == []

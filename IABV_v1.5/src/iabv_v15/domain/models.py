@@ -1948,6 +1948,7 @@ class SelfExaminationFinding(BaseModel):
     recommendation: str = ""
     evidence_refs: list[str] = Field(default_factory=list)
     source_refs: list[str] = Field(default_factory=list)
+    linked_run_ids: list[str] = Field(default_factory=list)
     status: str = "observed"
     unresolved_fields: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -2030,6 +2031,7 @@ class ExperimentRun(BaseModel):
     suite_name: str
     objective: str
     subject_key: str = "general"
+    comparison_scope_key: str = ""
     route: EvaluationRoute
     assistant_kind: str = ""
     assistant_configuration: AssistantConfigurationSnapshot = Field(default_factory=AssistantConfigurationSnapshot)
