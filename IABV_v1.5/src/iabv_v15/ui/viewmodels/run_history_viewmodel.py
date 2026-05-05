@@ -81,6 +81,10 @@ class RunHistoryViewModel(QObject):
             payload['tool_selection_reason'] = str(tss.get('reason', ''))
             payload['tool_fallback_used'] = bool(tss.get('fallback_used', False))
             payload['tool_quota_confirmed'] = bool(tss.get('quota_confirmed', False))
+            payload['route_reason'] = str(tp.get('route_reason', ''))
+            payload['chosen_pack_id'] = str(tp.get('chosen_pack_id', ''))
+            payload['requested_external'] = bool(tss.get('requested_external_consultation', False))
+            payload['routed_locally'] = bool(tss.get('routed_locally', True))
             runs.append(payload)
         self._runs = runs
         if self._runs:

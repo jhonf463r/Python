@@ -90,16 +90,42 @@ class ExecutionDossierService:
             incident_summary=self._incident_summary(hidden_incidents, user_clues),
             next_action=proposals[0].recommended_change if proposals else 'Revisar el dossier y confirmar si hace falta una prueba reproducible.',
             codex_brief=self._build_codex_brief(summary, issue_candidates, proposals, hidden_incidents, user_clues),
-            metadata={
-                'report_kind': run_record.result.report_kind.value,
-                'route_reason': getattr(run_record.route, 'reason', ''),
-                'reasoning_mode': run_record.result.reasoning_mode.value,
-                'adaptive_session': adaptive_payload or {},
-                'intent_key': (run_record.result.intent or {}).get('intent_key', '') if isinstance(run_record.result.intent, dict) else '',
-                'chosen_pack_id': (run_record.result.chosen_pack or {}).get('pack_id', '') if isinstance(run_record.result.chosen_pack, dict) else '',
-            },
+            metadata=self._dossier_metadata_from_run(run_record, adaptive_payload),
         )
         return self.repository.save(dossier)
+
+    @staticmethod
+    def _dossier_metadata_from_run(
+        run_record: RunRecord,
+        adaptive_payload: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        """Build enriched metadata for the execution dossier.
+
+        Beyond the original fields, this now includes:
+        - session_id correlation from adaptive_session payload
+        - task_packet fields for trace correlation
+        - startup_timeline refs if available in the session
+        """
+        ap = adaptive_payload or {}
+        session_meta = ap.get('metadata') or {} if isinstance(ap, dict) else {}
+        tp = session_meta.get('task_packet') or {} if isinstance(session_meta, dict) else {}
+        tss = tp.get('tool_selection_summary') or {}
+        meta: dict[str, Any] = {
+            'report_kind': run_record.result.report_kind.value,
+            'route_reason': tp.get('route_reason') or str(getattr(run_record.route, 'reason', '')),
+            'reasoning_mode': run_record.result.reasoning_mode.value,
+            'adaptive_session': ap,
+            'intent_key': tp.get('intent_key') or ((run_record.result.intent or {}).get('intent_key', '') if isinstance(run_record.result.intent, dict) else ''),
+            'chosen_pack_id': tp.get('chosen_pack_id') or ((run_record.result.chosen_pack or {}).get('pack_id', '') if isinstance(run_record.result.chosen_pack, dict) else ''),
+        }
+        session_id = str(ap.get('session_id', ''))
+        if session_id:
+            meta['correlated_session_id'] = session_id
+        if tss:
+            meta['gate_ran'] = bool(tss.get('gate_ran', False))
+            meta['tool_selection_reason'] = str(tss.get('reason', ''))
+            meta['selected_tool'] = str(tss.get('selected_tool', ''))
+        return meta
 
     def build_for_teaching_session(
         self,

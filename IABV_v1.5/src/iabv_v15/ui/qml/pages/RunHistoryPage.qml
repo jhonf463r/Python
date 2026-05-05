@@ -122,13 +122,24 @@ Item {
                                 }
                             }
                             Label {
-                                visible: !!modelData.selected_worker_label
-                                text: "worker " + modelData.selected_worker_label + " | gate " + (modelData.gate_ran ? (modelData.gate_usable ? "usable (" + modelData.gate_available_count + ")" : "bloqueado") : "no ejecutado") + (modelData.approval_required ? " | aprobacion requerida" : "")
+                                visible: !!modelData.selected_worker_label || !!modelData.tool_selection_reason
+                                text: (modelData.selected_worker_label ? "worker " + modelData.selected_worker_label + " | " : "") + "gate " + (modelData.gate_ran ? (modelData.gate_usable ? "usable (" + modelData.gate_available_count + ")" : "bloqueado") : "no ejecutado (" + (modelData.tool_selection_reason || "gate_not_ran") + ")") + (modelData.approval_required ? " | aprobacion requerida" : "")
                                 color: textSecondary
                                 font.family: bodyFontFamily
                                 font.pixelSize: 11
                                 wrapMode: Label.WordWrap
                                 width: parent.width
+                            }
+                            Label {
+                                visible: !!modelData.route_reason
+                                text: "ruta: " + (modelData.route_reason || "")
+                                color: "#b0bec5"
+                                font.family: bodyFontFamily
+                                font.pixelSize: 10
+                                wrapMode: Label.WordWrap
+                                width: parent.width
+                                elide: Text.ElideRight
+                                maximumLineCount: 2
                             }
                             Label {
                                 visible: modelData.unresolved_count > 0

@@ -121,6 +121,30 @@ def _is_local_chat_flow(session: AdaptiveSession) -> bool:
     return False
 
 
+def _canonical_gate_reason(
+    *,
+    gate_ran: bool,
+    governance: dict[str, Any],
+    worker_gate: dict[str, Any],
+    session_metadata: dict[str, Any],
+) -> str:
+    """Derive a canonical reason string for tool selection outcome."""
+    if not gate_ran:
+        should_consult = bool(governance.get('should_consult'))
+        if not should_consult:
+            return 'external_route_not_requested'
+        if bool(governance.get('block_risky_action')):
+            return 'blocked_by_world_model'
+        if bool(governance.get('approval_required')):
+            return 'approval_required_not_granted'
+        return 'gate_not_ran'
+    if not worker_gate.get('usable', False):
+        if int(worker_gate.get('available_count', 0)) == 0:
+            return 'no_worker'
+        return 'gate_unusable'
+    return f"source={worker_gate.get('account_selection_source') or 'auto_ranked'}"
+
+
 def _build_tool_selection_summary(
     *,
     worker_gate: dict[str, Any],
@@ -137,13 +161,35 @@ def _build_tool_selection_summary(
     - fallback_origin: original tool if fallback
     - quota_confirmed: whether the quota was actually observed
     - alternatives_discarded: brief list
+    - gate_ran: whether the worker gate was consulted
+    - route_reason: human-readable route explanation
+    - requested_external_consultation: whether governance wanted external
+    - routed_locally: whether the result stayed local
     """
+    reason = _canonical_gate_reason(
+        gate_ran=gate_ran,
+        governance=governance,
+        worker_gate=worker_gate,
+        session_metadata=session_metadata,
+    )
+    requested_external = bool(governance.get('should_consult'))
+
     if not gate_ran:
-        return {'selected_tool': '', 'reason': 'gate_not_ran', 'fallback_used': False, 'quota_confirmed': False}
+        return {
+            'selected_tool': '',
+            'reason': reason,
+            'fallback_used': False,
+            'quota_confirmed': False,
+            'gate_ran': False,
+            'requested_external_consultation': requested_external,
+            'routed_locally': not requested_external or reason in (
+                'blocked_by_world_model', 'approval_required_not_granted',
+                'external_route_not_requested',
+            ),
+        }
 
     top = dict(worker_gate.get('top_worker') or {})
     recommended = dict(worker_gate.get('recommended_account') or {})
-    source = str(worker_gate.get('account_selection_source') or 'auto_ranked')
     fallback = bool(worker_gate.get('fallback_used', False))
     assistant_kind = str(governance.get('assistant_kind') or top.get('tool') or '')
 
@@ -160,11 +206,14 @@ def _build_tool_selection_summary(
     return {
         'selected_tool': assistant_kind,
         'selected_email': str(top.get('email', '')),
-        'reason': f'source={source}',
+        'reason': reason,
         'fallback_used': fallback,
         'fallback_origin': str(recommended.get('tool', '')) if fallback else '',
         'quota_confirmed': bool(top.get('remaining') is not None and top.get('remaining', 0) >= 0),
         'alternatives_discarded': discarded,
+        'gate_ran': True,
+        'requested_external_consultation': requested_external,
+        'routed_locally': not bool(assistant_kind),
     }
 
 
@@ -3531,9 +3580,18 @@ class AdaptiveTaskOrchestrator:
         worker_gate = dict(session.metadata.get('worker_gate') or {})
         gate_ran = 'worker_gate' in session.metadata
         top_worker = dict(worker_gate.get('top_worker') or {}) if gate_ran else {}
+        disposition = session.intent.disposition.value if session.intent.disposition else ''
+        route_reason = (
+            f"Rol resuelto desde intent {session.intent.intent_key}: "
+            f"{session.intent.title}. Pack: {session.chosen_pack_title or session.chosen_pack_id} "
+            f"({disposition})."
+        ).strip()
         return {
             'objective': session.user_goal,
             'intent_key': session.intent.intent_key,
+            'chosen_pack_id': session.chosen_pack_id or '',
+            'disposition': disposition,
+            'route_reason': route_reason,
             'route_summary': {
                 'detected_role': session.intent.detected_role.value,
                 'assistant_kind': str(governance.get('assistant_kind') or ''),

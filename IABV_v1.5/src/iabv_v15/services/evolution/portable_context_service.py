@@ -997,7 +997,8 @@ class PortableContextService:
 
         Surfaces: which tool was selected, why, fallback history,
         quota states, and task affinities so the next session inherits
-        the coordination context.
+        the coordination context.  Also includes local-only flows
+        (gate_not_ran, continue_local) so the picture is complete.
         """
         items: list[dict[str, Any]] = []
         summary = 'Sin datos de coordinacion de herramientas.'
@@ -1010,15 +1011,25 @@ class PortableContextService:
                 meta = dict(session.metadata or {})
                 tp = meta.get('task_packet') or {}
                 tss = tp.get('tool_selection_summary') or {}
-                if not tss.get('selected_tool'):
-                    continue
-                items.append({
-                    'label': f"seleccion:{tss.get('selected_tool', '')}",
-                    'value': f"razon={tss.get('reason', '')} fallback={tss.get('fallback_used', False)} quota_confirmed={tss.get('quota_confirmed', False)}",
-                    'detail': f"alternativas_descartadas={len(tss.get('alternatives_discarded', []))}",
-                })
+                reason = str(tss.get('reason', ''))
+                selected = str(tss.get('selected_tool', ''))
+                route_reason = str(tp.get('route_reason', ''))
+                chosen_pack = str(tp.get('chosen_pack_id', ''))
+                gate_ran = bool(tss.get('gate_ran', False))
+                if selected:
+                    items.append({
+                        'label': f"seleccion:{selected}",
+                        'value': f"razon={reason} fallback={tss.get('fallback_used', False)} quota_confirmed={tss.get('quota_confirmed', False)}",
+                        'detail': f"alternativas_descartadas={len(tss.get('alternatives_discarded', []))} route={route_reason[:80]}",
+                    })
+                elif reason or route_reason:
+                    items.append({
+                        'label': f"local:{chosen_pack or session.intent.intent_key}",
+                        'value': f"razon={reason} gate_ran={gate_ran}",
+                        'detail': route_reason[:120] if route_reason else 'ruta local sin herramienta externa',
+                    })
             if items:
-                summary = f'{len(items)} selecciones recientes de herramienta registradas con trazabilidad.'
+                summary = f'{len(items)} interacciones recientes con trazabilidad de ruta.'
                 confidence = 0.7
             else:
                 unresolved_fields.append('UNRESOLVED:no_recent_tool_selections')

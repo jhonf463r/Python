@@ -2316,7 +2316,61 @@ class OperationalSelfExaminationService:
                 },
             ))
 
+        # Enrich all startup/runtime findings with trace references so
+        # another IA can locate the related dossier/session/snapshot.
+        trace_refs = self._build_startup_trace_refs(last_run, phase_to_ms)
+        for finding in findings:
+            meta = dict(finding.metadata or {})
+            meta['trace_refs'] = trace_refs
+            finding.metadata = meta
+
         return findings
+
+    def _build_startup_trace_refs(
+        self,
+        last_run: list[dict[str, Any]],
+        phase_to_ms: dict[str, float],
+    ) -> dict[str, Any]:
+        """Build references to related trace artifacts for startup findings."""
+        refs: dict[str, Any] = {
+            'startup_timeline_path': 'data/logs/startup_timeline.jsonl',
+            'phases_count': len(phase_to_ms),
+        }
+        rss_values = []
+        slowest_phase = ''
+        slowest_ms = 0.0
+        for evt in last_run:
+            rss = evt.get('rss_mb')
+            if rss is not None:
+                try:
+                    rss_values.append(float(rss))
+                except (TypeError, ValueError):
+                    pass
+            t = 0.0
+            try:
+                t = float(evt.get('t_ms_from_start') or 0.0)
+            except (TypeError, ValueError):
+                pass
+            phase = str(evt.get('phase') or '')
+            if phase and t > slowest_ms:
+                slowest_ms = t
+                slowest_phase = phase
+        if rss_values:
+            refs['rss_peak_mb'] = round(max(rss_values), 1)
+        if slowest_phase:
+            refs['slowest_phase'] = slowest_phase
+            refs['slowest_phase_ms'] = round(slowest_ms, 1)
+        # Link to most recent adaptive session if available.
+        repo = self.adaptive_session_repository
+        if repo is not None:
+            try:
+                recent = repo.list_recent(limit=1)
+                if recent:
+                    refs['latest_session_id'] = recent[0].session_id
+                    refs['latest_session_intent'] = recent[0].intent.intent_key
+            except Exception:
+                pass
+        return refs
 
     # ------------------------------------------------------------------
     # Boot profile findings — read-only analysis of BootProfileStore
