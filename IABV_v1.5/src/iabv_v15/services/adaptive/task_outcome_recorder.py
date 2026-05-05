@@ -262,6 +262,8 @@ class TaskOutcomeRecorder:
             ),
             'governance_flags': dict(dict(session.metadata.get('task_packet') or {}).get('governance_flags') or {}),
             'task_unresolved': list(dict(session.metadata.get('task_packet') or {}).get('unresolved') or []),
+            'trace_id': session.session_id[:8],
+            'session_id': session.session_id,
         }
         wt_raw = session.metadata.get('worker_telemetry')
         if isinstance(wt_raw, dict):
