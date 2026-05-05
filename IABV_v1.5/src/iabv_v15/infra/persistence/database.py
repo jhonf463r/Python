@@ -357,6 +357,15 @@ class AppDatabase:
                     created_at_utc TEXT NOT NULL
                 );
 
+                CREATE INDEX IF NOT EXISTS idx_episodes_updated
+                ON episodes (updated_at_utc DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_knowledge_items_updated
+                ON knowledge_items (updated_at_utc DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_run_records_created
+                ON run_records (created_at_utc DESC);
+
                 CREATE INDEX IF NOT EXISTS idx_session_artifacts_episode
                 ON session_artifacts (episode_id, created_at_utc DESC);
 
@@ -543,12 +552,14 @@ class AppDatabase:
         self._exec_with_retry(lambda conn: conn.execute(sql, tuple(parameters)))
 
     def fetchall(self, sql: str, parameters: Iterable[object] = ()) -> list[sqlite3.Row]:
-        with self.connect() as conn:
-            return list(conn.execute(sql, tuple(parameters)).fetchall())
+        return self._query_with_retry(
+            lambda conn: list(conn.execute(sql, tuple(parameters)).fetchall()),
+        )
 
     def fetchone(self, sql: str, parameters: Iterable[object] = ()) -> sqlite3.Row | None:
-        with self.connect() as conn:
-            return conn.execute(sql, tuple(parameters)).fetchone()
+        return self._query_with_retry(
+            lambda conn: conn.execute(sql, tuple(parameters)).fetchone(),
+        )
 
     def _exec_with_retry(
         self,
@@ -557,18 +568,26 @@ class AppDatabase:
         max_retries: int = 3,
         backoff_base: float = 0.25,
     ) -> None:
+        """Execute *fn(conn)* with retry on ``database is locked``."""
+        self._query_with_retry(fn, max_retries=max_retries, backoff_base=backoff_base)
+
+    def _query_with_retry(
+        self,
+        fn,
+        *,
+        max_retries: int = 3,
+        backoff_base: float = 0.25,
+    ):
         """Execute *fn(conn)* with retry on ``database is locked``.
 
-        The busy_timeout already handles most contention, but under
-        heavy startup load (UI + MCP + seed_defaults) we may still
-        exceed the timeout.  This retries up to *max_retries* times
-        with exponential backoff before re-raising.
+        Returns whatever *fn* returns.  Used by both write (execute) and
+        read (fetchall/fetchone) paths so that concurrent UI + MCP
+        startup doesn't fail reads either.
         """
         for attempt in range(max_retries + 1):
             try:
                 with self.connect() as conn:
-                    fn(conn)
-                return
+                    return fn(conn)
             except sqlite3.OperationalError as exc:
                 if 'database is locked' not in str(exc) or attempt >= max_retries:
                     raise

@@ -447,6 +447,75 @@ class TestCpuFrequencyRegression:
 # ------------------------------------------------------------------
 
 
+class TestDatabaseIndexes:
+    """Verify core tables have indexes for ORDER BY queries."""
+
+    def test_episodes_updated_index_exists(self, tmp_path: Path) -> None:
+        db = AppDatabase(str(tmp_path / 'idx.sqlite'))
+        rows = db.fetchall(
+            "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_episodes_updated'"
+        )
+        assert len(rows) == 1
+
+    def test_knowledge_items_updated_index_exists(self, tmp_path: Path) -> None:
+        db = AppDatabase(str(tmp_path / 'idx2.sqlite'))
+        rows = db.fetchall(
+            "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_knowledge_items_updated'"
+        )
+        assert len(rows) == 1
+
+    def test_run_records_created_index_exists(self, tmp_path: Path) -> None:
+        db = AppDatabase(str(tmp_path / 'idx3.sqlite'))
+        rows = db.fetchall(
+            "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_run_records_created'"
+        )
+        assert len(rows) == 1
+
+
+class TestFetchRetryOnLock:
+    """Verify fetchall/fetchone retry on 'database is locked'."""
+
+    def test_fetchall_retries_on_transient_lock(self, tmp_path: Path) -> None:
+        db = AppDatabase(str(tmp_path / 'read_retry.sqlite'))
+        db.execute("CREATE TABLE IF NOT EXISTS t (id INTEGER PRIMARY KEY)")
+        db.execute("INSERT INTO t VALUES (1)")
+
+        call_count = 0
+        original_connect = db.connect
+
+        def flaky_connect():
+            nonlocal call_count
+            call_count += 1
+            if call_count <= 2:
+                raise sqlite3.OperationalError('database is locked')
+            return original_connect()
+
+        with patch.object(db, 'connect', side_effect=flaky_connect):
+            rows = db.fetchall("SELECT id FROM t")
+        assert len(rows) == 1
+        assert rows[0][0] == 1
+
+    def test_fetchone_retries_on_transient_lock(self, tmp_path: Path) -> None:
+        db = AppDatabase(str(tmp_path / 'read_retry2.sqlite'))
+        db.execute("CREATE TABLE IF NOT EXISTS t (id INTEGER PRIMARY KEY)")
+        db.execute("INSERT INTO t VALUES (42)")
+
+        call_count = 0
+        original_connect = db.connect
+
+        def flaky_connect():
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise sqlite3.OperationalError('database is locked')
+            return original_connect()
+
+        with patch.object(db, 'connect', side_effect=flaky_connect):
+            row = db.fetchone("SELECT id FROM t")
+        assert row is not None
+        assert row[0] == 42
+
+
 class TestToolRegistryConcurrentAccess:
     """Simulate UI + MCP concurrent DB access with WAL."""
 
