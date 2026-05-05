@@ -1586,7 +1586,7 @@ class AppBootstrap:
             except Exception:
                 pass
             try:
-                self._log_tool_availability()
+                self._read_with_retry(self._log_tool_availability)
             except Exception as exc:
                 logger.warning('deferred_tool_availability_probe failed: %s', exc)
                 self._record_startup_sqlite_incident(exc)
@@ -2182,6 +2182,39 @@ class AppBootstrap:
         self._startup_self_examination()
         self._run_startup_common_sense()
 
+    @staticmethod
+    def _read_with_retry(
+        fn: 'Callable[[], _T]',
+        *,
+        max_retries: int = 3,
+        base_delay: float = 0.25,
+    ) -> '_T':
+        """Execute *fn* with exponential-backoff retry on SQLite lock errors.
+
+        Intended for read-only helpers called during bootstrap
+        (``_log_tool_availability``, ``_startup_self_examination``, etc.)
+        where a transient ``database is locked`` should not crash the
+        entire startup sequence.
+
+        Raises the last exception if all retries are exhausted.
+        Non-lock errors are raised immediately without retry.
+        """
+        import sqlite3
+        import time as _time
+
+        last_exc: Exception | None = None
+        for attempt in range(max_retries + 1):
+            try:
+                return fn()
+            except (sqlite3.OperationalError, OSError) as exc:
+                if 'database is locked' not in str(exc):
+                    raise
+                last_exc = exc
+                if attempt < max_retries:
+                    delay = base_delay * (2 ** attempt)
+                    _time.sleep(delay)
+        raise last_exc  # type: ignore[misc]
+
     def _record_startup_sqlite_incident(self, exc: Exception) -> None:
         """Promote a ``database is locked`` error to an OSES finding.
 
@@ -2245,6 +2278,7 @@ class AppBootstrap:
             if queue is None:
                 return
             from iabv_v15.domain.models import PendingTaskStatus, PlatformPendingTask
+            from iabv_v15.services.evolution.platform_pending_queue import CATEGORY_MISSING_TOOL
             for tool_id in missing:
                 task_id = f'tool_{tool_id}'
                 existing = queue.get(task_id)
@@ -2260,7 +2294,7 @@ class AppBootstrap:
                     priority='medium',
                     next_action=guidance or f'Instalar o configurar {tool_id}',
                     status=PendingTaskStatus.PENDING,
-                    category='missing_tool',
+                    category=CATEGORY_MISSING_TOOL,
                 ))
             for tool_id in ready:
                 task_id = f'tool_{tool_id}'

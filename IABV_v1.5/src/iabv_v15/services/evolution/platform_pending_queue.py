@@ -26,6 +26,17 @@ from iabv_v15.domain.models import (
 )
 
 
+# ------------------------------------------------------------------
+# Canonical category constants used across bootstrap.py,
+# autonomy_cycle_service.py, and the queue itself.
+# ------------------------------------------------------------------
+CATEGORY_MISSING_TOOL = 'missing_tool'
+CATEGORY_PERMISSION_REQUIRED = 'permission_required'
+CATEGORY_OSES_FINDING = 'oses_finding'
+CATEGORY_CAPABILITY_DISCOVERY = 'capability_discovery'
+CATEGORY_WINDOWS_NATIVE = 'windows_native'
+
+
 class PlatformPendingQueue:
     """Persistent FIFO queue for platform-level pending tasks."""
 
@@ -69,6 +80,10 @@ class PlatformPendingQueue:
         priority_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
         tasks.sort(key=lambda t: priority_order.get(t.priority, 99))
         return tasks
+
+    # Alias for consistent external naming (the prompt and MCP tools
+    # refer to ``list_tasks``).
+    list_tasks = list_all
 
     def list_actionable(self) -> list[PlatformPendingTask]:
         """Return tasks that are PENDING or READY_FOR_NEXT_SLICE."""
@@ -232,7 +247,7 @@ class PlatformPendingQueue:
                     PendingTaskStatus.BLOCKED if dep
                     else PendingTaskStatus.PENDING
                 ),
-                category='capability_discovery',
+                category=CATEGORY_CAPABILITY_DISCOVERY,
             )
             if existing is not None:
                 task = task.model_copy(update={
