@@ -2,11 +2,15 @@
 
 import hashlib
 import json
+import logging
+import os
 from datetime import datetime, timezone
 
 from iabv_v15.domain.models import ToolCard, ToolTask, ToolType
 from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
 from iabv_v15.services.tools.tool_adapters import ToolAdapter
+
+logger = logging.getLogger(__name__)
 
 
 class ToolRegistry:
@@ -708,8 +712,16 @@ class ToolRegistry:
                     }
                 )
                 if current.model_dump(mode='json', exclude={'available'}) != merged.model_dump(mode='json', exclude={'available'}):
-                    self.repository.save_card(merged)
-                self.refresh_card(merged)
+                    try:
+                        self.repository.save_card(merged)
+                    except Exception as exc:
+                        logger.warning('seed_defaults: save_card failed for %s: %s', merged.tool_id, exc)
+                # Skip refresh_card during seed — availability probes
+                # run later in _log_tool_availability() to avoid
+                # SQLite write contention at startup.
             else:
-                self.refresh_card(card)
+                try:
+                    self.repository.save_card(card)
+                except Exception as exc:
+                    logger.warning('seed_defaults: save_card failed for %s: %s', card.tool_id, exc)
 
