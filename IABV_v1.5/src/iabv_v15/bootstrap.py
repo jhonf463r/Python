@@ -835,6 +835,17 @@ class AppBootstrap:
                     )
         except Exception:
             pass
+        # Seed permission gates from WorldModel (if any are ungranted).
+        try:
+            wms = getattr(self, 'world_model_service', None)
+            if wms is not None:
+                snapshot = wms.current_model()
+                if snapshot is not None and snapshot.permission_gates:
+                    self.autonomy_cycle_service.seed_permission_gaps(
+                        snapshot.permission_gates,
+                    )
+        except Exception:
+            pass
         # Wire AutonomyCycleService into OSES (available now).
         # TaskOutcomeRecorder wiring deferred to _wire_autonomy_cycle()
         # because task_outcome_recorder is created later in the bootstrap.
@@ -2164,6 +2175,10 @@ class AppBootstrap:
                 Exception(f'database is locked ({len(_lock_errors)} occurrence(s) during tool probes)')
             )
 
+        # Bridge missing tools → pending queue so the program knows
+        # what it cannot do and surfaces it as actionable work.
+        self._seed_missing_tools_as_pending(missing, ready)
+
         self._startup_self_examination()
         self._run_startup_common_sense()
 
@@ -2213,6 +2228,47 @@ class AppBootstrap:
             logger.info('startup_sqlite_incident: persisted to %s', incident_path)
         except Exception as persist_exc:
             logger.warning('startup_sqlite_incident: failed to persist: %s', persist_exc)
+
+    def _seed_missing_tools_as_pending(
+        self,
+        missing: list[str],
+        ready: list[str],
+    ) -> None:
+        """Create PENDING tasks for tools that probes found unavailable.
+
+        Ready tools are marked COMPLETED so the queue reflects the true
+        state of the environment.  This bridges ToolRegistry probes with
+        the autonomy pending queue.
+        """
+        try:
+            queue = getattr(self, 'platform_pending_queue', None)
+            if queue is None:
+                return
+            from iabv_v15.domain.models import PendingTaskStatus, PlatformPendingTask
+            for tool_id in missing:
+                task_id = f'tool_{tool_id}'
+                existing = queue.get(task_id)
+                if existing is not None and existing.status == PendingTaskStatus.COMPLETED:
+                    continue
+                guidance = self._TOOL_INSTALL_GUIDANCE.get(tool_id, '')
+                queue.upsert(PlatformPendingTask(
+                    id=task_id,
+                    title=f'Herramienta no disponible: {tool_id}',
+                    description=f'{tool_id} no fue detectada en el entorno.',
+                    reason='tool_probe returned unavailable',
+                    dependency_missing=guidance or tool_id,
+                    priority='medium',
+                    next_action=guidance or f'Instalar o configurar {tool_id}',
+                    status=PendingTaskStatus.PENDING,
+                    category='missing_tool',
+                ))
+            for tool_id in ready:
+                task_id = f'tool_{tool_id}'
+                existing = queue.get(task_id)
+                if existing is not None and existing.status != PendingTaskStatus.COMPLETED:
+                    queue.mark_status(task_id, PendingTaskStatus.COMPLETED)
+        except Exception:
+            logger.debug('seed_missing_tools: failed', exc_info=True)
 
     def _run_startup_common_sense(self) -> None:
         """Run common-sense reasoning over startup timeline events.
@@ -2375,6 +2431,37 @@ class AppBootstrap:
                     )
             except Exception as exc:
                 logger.debug('startup_health_findings: skipped (%s)', exc)
+
+        # Log actionable resume hints and pending tasks so the next
+        # session (or agent) knows exactly what was left incomplete.
+        acs = getattr(self, 'autonomy_cycle_service', None)
+        if acs is not None:
+            try:
+                summary = acs.startup_summary()
+                hints = summary.get('resume_hints', [])
+                actionable = summary.get('actionable_tasks', [])
+                blocked = summary.get('blocked_tasks', [])
+                if hints:
+                    for h in hints[:5]:
+                        logger.info(
+                            'resume_hint: task=%s phase=%s last_step=%s handoff=%s',
+                            h.get('task_id', ''), h.get('checkpoint_phase', ''),
+                            h.get('last_step', '')[:80], h.get('handoff_required', False),
+                        )
+                if actionable:
+                    logger.info(
+                        'autonomy_pending: %d actionable tasks (top: %s)',
+                        len(actionable),
+                        ', '.join(t.get('title', '')[:40] for t in actionable[:3]),
+                    )
+                if blocked:
+                    logger.info(
+                        'autonomy_blocked: %d blocked tasks (top: %s)',
+                        len(blocked),
+                        ', '.join(t.get('title', '')[:40] for t in blocked[:3]),
+                    )
+            except Exception as exc:
+                logger.debug('autonomy_startup_summary: skipped (%s)', exc)
 
     def _ensure_directories(self) -> None:
         for path in (

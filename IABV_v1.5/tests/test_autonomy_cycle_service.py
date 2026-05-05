@@ -300,3 +300,130 @@ class TestEndToEndCycle:
         assert len(summary['resume_hints']) == 1
         assert summary['resume_hints'][0]['task_id'] == 'sess-fix-boot'
         assert summary['resume_hints'][0]['last_step'] == 'Moved phase 2 to lazy'
+
+
+# ------------------------------------------------------------------
+# 6. Permission gates → BLOCKED tasks
+# ------------------------------------------------------------------
+
+
+class _FakePermissionGate:
+    def __init__(self, scope: str, granted: bool, title: str = '',
+                 detail: str = '', required_for: list[str] | None = None):
+        self.scope = scope
+        self.granted = granted
+        self.title = title or scope
+        self.detail = detail
+        self.required_for = required_for or []
+
+
+class TestPermissionGaps:
+    def test_ungranted_permission_creates_blocked_task(self, service: AutonomyCycleService, queue: PlatformPendingQueue):
+        gates = [_FakePermissionGate('screen_capture', granted=False, title='Captura de pantalla')]
+        count = service.seed_permission_gaps(gates)
+        assert count == 1
+        task = queue.get('perm_screen_capture')
+        assert task is not None
+        assert task.status == PendingTaskStatus.BLOCKED
+        assert 'pantalla' in task.title.lower() or 'screen' in task.title.lower()
+
+    def test_granted_permission_skipped(self, service: AutonomyCycleService, queue: PlatformPendingQueue):
+        gates = [_FakePermissionGate('clipboard', granted=True)]
+        count = service.seed_permission_gaps(gates)
+        assert count == 0
+        assert queue.get('perm_clipboard') is None
+
+    def test_granted_marks_existing_blocked_as_completed(self, service: AutonomyCycleService, queue: PlatformPendingQueue):
+        gates_blocked = [_FakePermissionGate('network_sniff', granted=False)]
+        service.seed_permission_gaps(gates_blocked)
+        assert queue.get('perm_network_sniff').status == PendingTaskStatus.BLOCKED
+
+        gates_granted = [_FakePermissionGate('network_sniff', granted=True)]
+        count = service.seed_permission_gaps(gates_granted)
+        assert count == 1
+        assert queue.get('perm_network_sniff').status == PendingTaskStatus.COMPLETED
+
+    def test_empty_scope_skipped(self, service: AutonomyCycleService, queue: PlatformPendingQueue):
+        gates = [_FakePermissionGate('', granted=False)]
+        count = service.seed_permission_gaps(gates)
+        assert count == 0
+
+    def test_already_completed_permission_not_recreated(self, service: AutonomyCycleService, queue: PlatformPendingQueue):
+        gates_blocked = [_FakePermissionGate('obs_window', granted=False)]
+        service.seed_permission_gaps(gates_blocked)
+        queue.mark_status('perm_obs_window', PendingTaskStatus.COMPLETED)
+
+        count = service.seed_permission_gaps(gates_blocked)
+        assert count == 0
+        assert queue.get('perm_obs_window').status == PendingTaskStatus.COMPLETED
+
+
+# ------------------------------------------------------------------
+# 7. MCP exposure: autonomy_status tool
+# ------------------------------------------------------------------
+
+
+class TestMCPAutonomyAccessor:
+    """Verify that the MCP server accessor is wirable."""
+
+    def test_autonomy_cycle_service_accessor_pattern(self, service: AutonomyCycleService):
+        class _FakeContainer:
+            autonomy_cycle_service = service
+
+        container = _FakeContainer()
+        svc = getattr(container, 'autonomy_cycle_service', None)
+        assert svc is not None
+        summary = svc.startup_summary()
+        assert 'actionable_tasks' in summary
+        assert 'blocked_tasks' in summary
+        assert 'resume_hints' in summary
+        assert 'queue_summary' in summary
+
+
+# ------------------------------------------------------------------
+# 8. Missing tools → pending tasks (bootstrap bridge)
+# ------------------------------------------------------------------
+
+
+class TestMissingToolsBridge:
+    """Test the pattern used by _seed_missing_tools_as_pending."""
+
+    def test_missing_tool_creates_pending_task(self, queue: PlatformPendingQueue):
+        task = PlatformPendingTask(
+            id='tool_windsurf',
+            title='Herramienta no disponible: windsurf',
+            description='windsurf no fue detectada en el entorno.',
+            reason='tool_probe returned unavailable',
+            dependency_missing='Instalar Windsurf desde windsurf.com',
+            priority='medium',
+            next_action='Instalar Windsurf desde windsurf.com',
+            status=PendingTaskStatus.PENDING,
+            category='missing_tool',
+        )
+        queue.upsert(task)
+        retrieved = queue.get('tool_windsurf')
+        assert retrieved is not None
+        assert retrieved.status == PendingTaskStatus.PENDING
+        assert retrieved.category == 'missing_tool'
+
+    def test_ready_tool_marks_completed(self, queue: PlatformPendingQueue):
+        task = PlatformPendingTask(
+            id='tool_cursor',
+            title='Herramienta no disponible: cursor',
+            status=PendingTaskStatus.PENDING,
+            category='missing_tool',
+        )
+        queue.upsert(task)
+        queue.mark_status('tool_cursor', PendingTaskStatus.COMPLETED)
+        assert queue.get('tool_cursor').status == PendingTaskStatus.COMPLETED
+
+    def test_completed_tool_not_recreated(self, queue: PlatformPendingQueue):
+        task = PlatformPendingTask(
+            id='tool_claude',
+            title='Herramienta no disponible: claude',
+            status=PendingTaskStatus.COMPLETED,
+            category='missing_tool',
+        )
+        queue.upsert(task)
+        existing = queue.get('tool_claude')
+        assert existing.status == PendingTaskStatus.COMPLETED

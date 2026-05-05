@@ -213,6 +213,55 @@ class AutonomyCycleService:
         return self._queue.seed_from_capability_graph(capabilities)
 
     # ------------------------------------------------------------------
+    # 3b. Permission gates → BLOCKED tasks
+    # ------------------------------------------------------------------
+
+    def seed_permission_gaps(
+        self,
+        permission_gates: list[Any],
+    ) -> int:
+        """Convert ungranted permission gates into BLOCKED pending tasks.
+
+        Reads ``ObservationPermissionGate`` objects from the WorldModel
+        and creates a BLOCKED task for each permission that hasn't been
+        granted yet.  Granted permissions mark the corresponding task
+        as COMPLETED.  Returns the number of tasks created or updated.
+        """
+        count = 0
+        for gate in permission_gates:
+            scope = getattr(gate, 'scope', '') or ''
+            granted = getattr(gate, 'granted', False)
+            if not scope:
+                continue
+            task_id = f'perm_{scope}'
+            existing = self._queue.get(task_id)
+            if granted:
+                if existing is not None and existing.status != PendingTaskStatus.COMPLETED:
+                    self._queue.mark_status(task_id, PendingTaskStatus.COMPLETED)
+                    count += 1
+                continue
+            if existing is not None and existing.status == PendingTaskStatus.COMPLETED:
+                continue
+            title = getattr(gate, 'title', scope) or scope
+            detail = getattr(gate, 'detail', '') or ''
+            required_for = getattr(gate, 'required_for', []) or []
+            task = PlatformPendingTask(
+                id=task_id,
+                title=f'Permiso faltante: {title}',
+                description=detail or f'Permiso {scope} no concedido.',
+                reason='permission_gate not granted',
+                dependency_missing=f'user approval for {scope}',
+                priority='high' if required_for else 'medium',
+                next_action=f'Solicitar permiso de {scope} al usuario',
+                status=PendingTaskStatus.BLOCKED,
+                category='permission_required',
+                metadata={'required_for': required_for},
+            )
+            self._queue.upsert(task)
+            count += 1
+        return count
+
+    # ------------------------------------------------------------------
     # 4. Startup summary: actionable context for the next session
     # ------------------------------------------------------------------
 
