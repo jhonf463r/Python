@@ -304,6 +304,118 @@ class TestToolRegistrySeedDefaultsGraceful:
 
 
 # ------------------------------------------------------------------
+# Dashboard query limit reduction
+# ------------------------------------------------------------------
+
+
+class TestDashboardQueryLimit:
+    """Verify dashboard queries use reduced limit."""
+
+    def test_summary_query_limit_is_low(self) -> None:
+        from iabv_v15.ui.viewmodels.dashboard_viewmodel import DashboardViewModel
+        assert DashboardViewModel._SUMMARY_QUERY_LIMIT <= 20
+
+    def test_collect_summary_cards_passes_limit(self) -> None:
+        from iabv_v15.ui.viewmodels.dashboard_viewmodel import DashboardViewModel
+
+        episode_repo = MagicMock()
+        episode_repo.list_recent.return_value = []
+        knowledge_repo = MagicMock()
+        knowledge_repo.list_recent.return_value = []
+        run_repo = MagicMock()
+        run_repo.list_recent.return_value = []
+        embedding_svc = MagicMock()
+        embedding_svc.describe_index.return_value = {'knowledge_count': 0}
+
+        with patch(
+            'iabv_v15.ui.viewmodels.dashboard_viewmodel.DashboardViewModel._mark_timeline',
+        ):
+            vm = DashboardViewModel.__new__(DashboardViewModel)
+            vm.episode_repository = episode_repo
+            vm.knowledge_repository = knowledge_repo
+            vm.run_repository = run_repo
+            vm.embedding_service = embedding_svc
+            vm._collect_summary_cards()
+
+        limit = DashboardViewModel._SUMMARY_QUERY_LIMIT
+        episode_repo.list_recent.assert_called_once_with(limit=limit)
+        knowledge_repo.list_recent.assert_called_once_with(limit=limit)
+        run_repo.list_recent.assert_called_once_with(limit=limit)
+
+
+# ------------------------------------------------------------------
+# Incident generation from tool probes (not just fatal errors)
+# ------------------------------------------------------------------
+
+
+class TestIncidentFromToolProbes:
+    """Verify _log_tool_availability records incident on probe lock errors."""
+
+    def test_lock_errors_during_probes_generate_incident(self, tmp_path: Path) -> None:
+        from types import SimpleNamespace
+
+        from iabv_v15.bootstrap import AppBootstrap
+
+        boot = AppBootstrap.__new__(AppBootstrap)
+        boot.config = SimpleNamespace(evolution_dir=str(tmp_path / 'evolution'))
+        boot._tool_availability_logged = False
+        boot._timeline = MagicMock()
+
+        # Simulate tool_registry that raises lock error during refresh
+        tool_card = MagicMock()
+        tool_card.tool_id = 'test_tool'
+        tool_card.adapter_key = 'test_adapter'
+        tool_card.available = False
+        tool_card.last_validated_at_utc = None
+
+        registry = MagicMock()
+        registry.list_cards.return_value = [tool_card]
+        registry.refresh_card.side_effect = sqlite3.OperationalError('database is locked')
+        boot.tool_registry = registry
+
+        # Run _log_tool_availability — should NOT raise, but should
+        # record incident file
+        with patch.dict('os.environ', {'IABV_MCP_SUBPROCESS': '0'}):
+            try:
+                boot._log_tool_availability()
+            except Exception:
+                pass
+
+        incident_path = tmp_path / 'evolution' / 'self_examination' / 'startup_sqlite_incident.json'
+        assert incident_path.exists(), 'Incident file should be created on probe lock errors'
+        data = json.loads(incident_path.read_text(encoding='utf-8'))
+        assert data['category'] == 'sqlite_lock_contention'
+
+
+# ------------------------------------------------------------------
+# ToolRegistry: seed_defaults skips refresh_card
+# ------------------------------------------------------------------
+
+
+class TestSeedDefaultsSkipsRefresh:
+    """Verify _seed_defaults no longer calls refresh_card for existing cards."""
+
+    def test_seed_defaults_does_not_refresh_existing_unchanged(self, tmp_path: Path) -> None:
+        from iabv_v15.infra.persistence.storage import ArtifactStorage
+        from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
+        from iabv_v15.services.tools.tool_registry import ToolRegistry
+
+        db = AppDatabase(str(tmp_path / 'tools2.sqlite'))
+        repo = ToolRecordRepository(db, ArtifactStorage(str(tmp_path / 'storage2')))
+
+        # First init seeds defaults
+        registry1 = ToolRegistry(repo, {})
+        cards_after_first = repo.list_cards()
+        assert len(cards_after_first) > 0
+
+        # Second init should NOT call refresh_card for existing unchanged cards
+        with patch.object(ToolRegistry, 'refresh_card', wraps=lambda self, c, **kw: c) as mock_refresh:
+            registry2 = ToolRegistry(repo, {})
+            # refresh_card should NOT be called during seed_defaults
+            assert mock_refresh.call_count == 0
+
+
+# ------------------------------------------------------------------
 # cpu_frequency regression (PR #342)
 # ------------------------------------------------------------------
 

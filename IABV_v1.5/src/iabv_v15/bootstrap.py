@@ -2074,6 +2074,7 @@ class AppBootstrap:
 
         results: dict[str, bool] = {}
         refreshed_cards: dict[str, Any] = {}
+        _lock_errors: list[str] = []
 
         def _probe_group(group_cards: list) -> list[tuple[str, bool, Any]]:
             out: list[tuple[str, bool, Any]] = []
@@ -2098,6 +2099,8 @@ class AppBootstrap:
                 except Exception as exc:
                     adapter_key = futures[future]
                     logger.warning('tool_probe failed for adapter %s: %s', adapter_key, exc)
+                    if 'database is locked' in str(exc):
+                        _lock_errors.append(str(exc))
 
         ready = []
         missing = []
@@ -2111,7 +2114,12 @@ class AppBootstrap:
                     stamped = refreshed.model_copy(
                         update={'last_validated_at_utc': now},
                     )
-                    self.tool_registry.repository.save_card(stamped)
+                    try:
+                        self.tool_registry.repository.save_card(stamped)
+                    except Exception as save_exc:
+                        logger.warning('tool_probe save_card failed: %s', save_exc)
+                        if 'database is locked' in str(save_exc):
+                            _lock_errors.append(str(save_exc))
             else:
                 missing.append(card.tool_id)
                 guidance = self._TOOL_INSTALL_GUIDANCE.get(card.tool_id, '')
@@ -2150,6 +2158,11 @@ class AppBootstrap:
                                 ready.append(tid)
             except Exception as exc:
                 logger.debug('auto_install: failed — %s', exc)
+
+        if _lock_errors:
+            self._record_startup_sqlite_incident(
+                Exception(f'database is locked ({len(_lock_errors)} occurrence(s) during tool probes)')
+            )
 
         self._startup_self_examination()
         self._run_startup_common_sense()

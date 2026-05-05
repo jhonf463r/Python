@@ -716,10 +716,12 @@ class ToolRegistry:
                         self.repository.save_card(merged)
                     except Exception as exc:
                         logger.warning('seed_defaults: save_card failed for %s: %s', merged.tool_id, exc)
-                self.refresh_card(merged)
+                # Skip refresh_card during seed — availability probes
+                # run later in _log_tool_availability() to avoid
+                # SQLite write contention at startup.
             else:
                 try:
-                    self.refresh_card(card)
+                    self.repository.save_card(card)
                 except Exception as exc:
-                    logger.warning('seed_defaults: refresh_card failed for %s: %s', card.tool_id, exc)
+                    logger.warning('seed_defaults: save_card failed for %s: %s', card.tool_id, exc)
 

@@ -75,13 +75,18 @@ class DashboardViewModel(QObject):
             self._mark_timeline('dashboard_vm_refresh_failed', error=str(exc))
             self.refreshFailed.emit(str(exc))
 
+    # Dashboard summary only displays counts; keep limits low to
+    # avoid blocking the background thread under SQLite contention.
+    _SUMMARY_QUERY_LIMIT = 10
+
     def _collect_summary_cards(self) -> list[dict]:
+        limit = self._SUMMARY_QUERY_LIMIT
         self._mark_timeline('dashboard_vm_refresh_query_episodes_start')
-        episodes = self.episode_repository.list_recent(limit=100)
+        episodes = self.episode_repository.list_recent(limit=limit)
         self._mark_timeline('dashboard_vm_refresh_query_episodes_done')
-        knowledge = self.knowledge_repository.list_recent(limit=100)
+        knowledge = self.knowledge_repository.list_recent(limit=limit)
         self._mark_timeline('dashboard_vm_refresh_query_knowledge_done')
-        runs = self.run_repository.list_recent(limit=100)
+        runs = self.run_repository.list_recent(limit=limit)
         self._mark_timeline('dashboard_vm_refresh_query_runs_done')
         index_state = self.embedding_service.describe_index()
         self._mark_timeline('dashboard_vm_refresh_query_index_done')

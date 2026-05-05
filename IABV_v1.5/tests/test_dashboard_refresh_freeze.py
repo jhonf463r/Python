@@ -126,9 +126,11 @@ class TestBackgroundThread:
         """_collect_summary_cards calls all four repository methods."""
         vm, repos = _make_vm_no_timer()
         ep_repo, kn_repo, run_repo, _, emb_service = repos
-        ep_repo.list_recent.assert_called_with(limit=100)
-        kn_repo.list_recent.assert_called_with(limit=100)
-        run_repo.list_recent.assert_called_with(limit=100)
+        from iabv_v15.ui.viewmodels.dashboard_viewmodel import DashboardViewModel
+        lim = DashboardViewModel._SUMMARY_QUERY_LIMIT
+        ep_repo.list_recent.assert_called_with(limit=lim)
+        kn_repo.list_recent.assert_called_with(limit=lim)
+        run_repo.list_recent.assert_called_with(limit=lim)
         emb_service.describe_index.assert_called_once()
 
 
