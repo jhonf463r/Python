@@ -130,6 +130,7 @@ class ExecutionDossierService:
             scope=DossierScope.TEACHING,
             title=title,
             summary=summary_text,
+            run_id=episode_id,
             episode_id=episode_id,
             status=status,
             severity=self._severity_from_status(status, 0.75, bool(issue_candidates)),
