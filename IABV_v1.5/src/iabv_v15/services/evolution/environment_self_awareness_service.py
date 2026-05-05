@@ -300,16 +300,14 @@ class EnvironmentSelfAwarenessService:
             sensors_not_available.append(
                 {'sensor': 'battery_status', 'reason': 'sensor_not_exposed_on_this_host'}
             )
-        # cpu_frequency: Win32_Processor expone CurrentClockSpeed/MaxClockSpeed
-        # en Windows. Si estamos en Windows y no llego dato, si cuenta como
-        # UNRESOLVED real. Si no es Windows, es "no expuesto".
+        # cpu_frequency: Win32_Processor puede exponer CurrentClockSpeed/
+        # MaxClockSpeed en Windows, pero no siempre lo hace (depende del
+        # driver y la configuración del host).  Tratamos la ausencia como
+        # sensor no expuesto en cualquier plataforma.
         if hardware.get('current_clock_mhz') is None or hardware.get('max_clock_mhz') is None:
-            if is_windows:
-                unresolved.append('UNRESOLVED:cpu_frequency')
-            else:
-                sensors_not_available.append(
-                    {'sensor': 'cpu_frequency', 'reason': 'sensor_not_exposed_on_this_host'}
-                )
+            sensors_not_available.append(
+                {'sensor': 'cpu_frequency', 'reason': 'sensor_not_exposed_on_this_host'}
+            )
         if sensors_not_available:
             hardware['sensors_not_available'] = sensors_not_available
         return hardware, unresolved

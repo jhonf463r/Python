@@ -1479,6 +1479,7 @@ class OperationalSelfExaminationService:
                     recommendation=f'Revisar la ruta, el pack y la evidencia previa antes de repetir {scope}.',
                     evidence_refs=[run.run_id for run in runs[:4]],
                     source_refs=['RunRepository'],
+                    linked_run_ids=[run.run_id for run in runs[:10]],
                     metadata={
                         'scope': scope,
                         'failed_count': len(runs),
@@ -1588,6 +1589,7 @@ class OperationalSelfExaminationService:
                     recommendation=recommendation,
                     evidence_refs=[run.run_id for run in grouped_runs[key][:4]],
                     source_refs=['ExperimentLab', 'AdaptiveWeightLayer'],
+                    linked_run_ids=[run.run_id for run in grouped_runs[key][:10]],
                     metadata={
                         'route': route_value,
                         'assistant_kind': assistant_kind,
@@ -1632,6 +1634,7 @@ class OperationalSelfExaminationService:
                     recommendation=recommendation,
                     evidence_refs=evidence[flag][:5],
                     source_refs=['ExperimentLab', 'WorldModelSnapshot'],
+                    linked_run_ids=evidence[flag][:10],
                     metadata={
                         'block': flag,
                         'count': count,

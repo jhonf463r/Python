@@ -345,6 +345,48 @@ def test_recurring_failure_flags_two_distinct_failed_runs_in_window() -> None:
     assert finding.metadata['window_hours'] == 48
 
 
+def test_recurring_failure_finding_has_linked_run_ids() -> None:
+    service = OperationalSelfExaminationService.__new__(OperationalSelfExaminationService)
+    now = datetime.now(timezone.utc)
+    runs = [
+        _build_run(
+            task_role=TaskRole.TRAINING,
+            status=RunStatus.FAILED,
+            created_at=now,
+            run_id='run-linked-1',
+        ),
+        _build_run(
+            task_role=TaskRole.TRAINING,
+            status=RunStatus.FAILED,
+            created_at=now,
+            run_id='run-linked-2',
+        ),
+        _build_run(
+            task_role=TaskRole.TRAINING,
+            status=RunStatus.FAILED,
+            created_at=now,
+            run_id='run-linked-3',
+        ),
+    ]
+
+    findings = OperationalSelfExaminationService._recurring_failure_findings(
+        service, recent_runs=runs
+    )
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.linked_run_ids == ['run-linked-1', 'run-linked-2', 'run-linked-3']
+
+
+def test_linked_run_ids_empty_when_no_runs() -> None:
+    finding = SelfExaminationFinding(
+        category='test',
+        title='test finding',
+        summary='no runs',
+    )
+    assert finding.linked_run_ids == []
+
+
 def test_recurring_failure_ignores_stale_runs_outside_window() -> None:
     service = OperationalSelfExaminationService.__new__(OperationalSelfExaminationService)
     now = datetime.now(timezone.utc)
