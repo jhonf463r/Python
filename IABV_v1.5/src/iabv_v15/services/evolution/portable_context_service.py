@@ -183,6 +183,7 @@ class PortableContextService:
             self._startup_health_section(status=startup_health, now=now),
             self._account_resource_section(status=account_resource, now=now),
             self._account_inventory_continuity_section(now=now),
+            self._tool_coordination_section(now=now),
             self._boot_profile_section(status=boot_profile, now=now),
             self._evidence_basis_section(evidence=evidence_basis, now=now),
             self._task_packet_summary_section(snapshot=task_packet_summary, now=now),
@@ -985,6 +986,58 @@ class PortableContextService:
                 'section_purpose': 'continuity_for_next_session',
                 'requires_human_approval': True,
             },
+        )
+
+    # ------------------------------------------------------------------
+    # Tool coordination — limit-aware selection summary
+    # ------------------------------------------------------------------
+
+    def _tool_coordination_section(self, *, now) -> PortableContextSection:
+        """Export tool coordination summary for session continuity.
+
+        Surfaces: which tool was selected, why, fallback history,
+        quota states, and task affinities so the next session inherits
+        the coordination context.
+        """
+        items: list[dict[str, Any]] = []
+        summary = 'Sin datos de coordinacion de herramientas.'
+        confidence = 0.3
+        unresolved_fields: list[str] = []
+
+        try:
+            sessions = list((self.adaptive_session_repository.list_recent(limit=5) if self.adaptive_session_repository else []) or [])
+            for session in sessions[:3]:
+                meta = dict(session.metadata or {})
+                tp = meta.get('task_packet') or {}
+                tss = tp.get('tool_selection_summary') or {}
+                selected = tss.get('selected_tool', '')
+                reason = str(tss.get('reason') or '')
+                if not selected and not reason:
+                    continue
+                label = f"seleccion:{selected}" if selected else f"decision:{reason}"
+                items.append({
+                    'label': label,
+                    'value': f"razon={reason} fallback={tss.get('fallback_used', False)} quota_confirmed={tss.get('quota_confirmed', False)}",
+                    'detail': f"alternativas_descartadas={len(tss.get('alternatives_discarded', []))}",
+                })
+            if items:
+                summary = f'{len(items)} selecciones recientes de herramienta registradas con trazabilidad.'
+                confidence = 0.7
+            else:
+                unresolved_fields.append('UNRESOLVED:no_recent_tool_selections')
+        except Exception:
+            unresolved_fields.append('UNRESOLVED:tool_coordination_read_error')
+
+        return self._section(
+            section_id='tool_coordination',
+            title='Coordinacion limit-aware de herramientas',
+            summary=summary,
+            items=items,
+            source_kind='adaptive_task_orchestrator',
+            source_refs=['tool_selection_summary', 'worker_gate'],
+            confidence=confidence,
+            last_updated=now,
+            unresolved_fields=unresolved_fields,
         )
 
     # ------------------------------------------------------------------

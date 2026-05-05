@@ -107,8 +107,11 @@ def test_tool_registry_refreshes_default_metadata_but_preserves_manual_executabl
         assert 'command_aliases' in card.metadata
 
         registry = ToolRegistry(repository, {'external_assistant': _AvailableAdapter()})
-        refreshed = repository.get_card('chatgpt_installed')
-        assert refreshed is not None
+        # seed_defaults no longer probes availability (deferred to
+        # _log_tool_availability); verify via explicit refresh.
+        card_pre = repository.get_card('chatgpt_installed')
+        assert card_pre is not None
+        refreshed = registry.refresh_card(card_pre)
         assert refreshed.available is True
     finally:
         shutil.rmtree(root, ignore_errors=True)

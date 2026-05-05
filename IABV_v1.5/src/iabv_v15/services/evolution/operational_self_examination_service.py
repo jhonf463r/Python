@@ -825,6 +825,9 @@ class OperationalSelfExaminationService:
             findings_so_far=findings,
         ))
 
+        # SQLite lock contention: read persisted incident from bootstrap
+        findings.extend(self._sqlite_lock_contention_findings())
+
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -1479,6 +1482,7 @@ class OperationalSelfExaminationService:
                     recommendation=f'Revisar la ruta, el pack y la evidencia previa antes de repetir {scope}.',
                     evidence_refs=[run.run_id for run in runs[:4]],
                     source_refs=['RunRepository'],
+                    linked_run_ids=[run.run_id for run in runs[:10]],
                     metadata={
                         'scope': scope,
                         'failed_count': len(runs),
@@ -1588,6 +1592,7 @@ class OperationalSelfExaminationService:
                     recommendation=recommendation,
                     evidence_refs=[run.run_id for run in grouped_runs[key][:4]],
                     source_refs=['ExperimentLab', 'AdaptiveWeightLayer'],
+                    linked_run_ids=[run.run_id for run in grouped_runs[key][:10]],
                     metadata={
                         'route': route_value,
                         'assistant_kind': assistant_kind,
@@ -1632,6 +1637,7 @@ class OperationalSelfExaminationService:
                     recommendation=recommendation,
                     evidence_refs=evidence[flag][:5],
                     source_refs=['ExperimentLab', 'WorldModelSnapshot'],
+                    linked_run_ids=evidence[flag][:10],
                     metadata={
                         'block': flag,
                         'count': count,
@@ -2316,6 +2322,43 @@ class OperationalSelfExaminationService:
                 },
             ))
 
+        return findings
+
+    # ------------------------------------------------------------------
+    # SQLite lock contention findings — persisted by bootstrap
+    # ------------------------------------------------------------------
+
+    def _sqlite_lock_contention_findings(self) -> list[SelfExaminationFinding]:
+        """Read ``startup_sqlite_incident.json`` if persisted by bootstrap.
+
+        When ``_record_startup_sqlite_incident`` fires during startup,
+        it writes a structured incident file.  This method reads it and
+        promotes it to a proper OSES finding so it appears in the review
+        and in PortableContext.
+        """
+        findings: list[SelfExaminationFinding] = []
+        try:
+            incident_path = Path(self.evolution_dir) / 'self_examination' / 'startup_sqlite_incident.json'
+            if not incident_path.exists():
+                return findings
+            import json
+            incident = json.loads(incident_path.read_text(encoding='utf-8'))
+            findings.append(SelfExaminationFinding(
+                category=incident.get('category', 'sqlite_lock_contention'),
+                title=incident.get('title', 'database is locked durante startup'),
+                summary=incident.get('summary', ''),
+                severity=IssueSeverity.HIGH,
+                confidence=incident.get('confidence', 0.95),
+                recommendation=incident.get('recommendation', ''),
+                source_refs=incident.get('source_refs', []),
+                metadata={
+                    'incident_timestamp': incident.get('timestamp', ''),
+                    'error': incident.get('error', ''),
+                    'source': 'startup_sqlite_incident.json',
+                },
+            ))
+        except Exception:
+            pass
         return findings
 
     # ------------------------------------------------------------------

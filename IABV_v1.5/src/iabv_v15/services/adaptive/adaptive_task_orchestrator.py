@@ -121,6 +121,53 @@ def _is_local_chat_flow(session: AdaptiveSession) -> bool:
     return False
 
 
+def _build_tool_selection_summary(
+    *,
+    worker_gate: dict[str, Any],
+    gate_ran: bool,
+    governance: dict[str, Any],
+    session_metadata: dict[str, Any],
+) -> dict[str, Any]:
+    """Build a short, traceable summary of tool/account selection.
+
+    Fields:
+    - selected_tool: assistant_kind chosen
+    - reason: canonical reason string
+    - fallback_used: whether a fallback occurred
+    - fallback_origin: original tool if fallback
+    - quota_confirmed: whether the quota was actually observed
+    - alternatives_discarded: brief list
+    """
+    if not gate_ran:
+        return {'selected_tool': '', 'reason': 'gate_not_ran', 'fallback_used': False, 'quota_confirmed': False}
+
+    top = dict(worker_gate.get('top_worker') or {})
+    recommended = dict(worker_gate.get('recommended_account') or {})
+    source = str(worker_gate.get('account_selection_source') or 'auto_ranked')
+    fallback = bool(worker_gate.get('fallback_used', False))
+    assistant_kind = str(governance.get('assistant_kind') or top.get('tool') or '')
+
+    ranked = list(worker_gate.get('ranked_workers') or [])
+    discarded = [
+        {'tool': str(w.get('tool', '')), 'email': str(w.get('email', '')), 'reason': 'lower_score'}
+        for w in ranked[1:3]
+    ]
+
+    pre_dispatch = dict(session_metadata.get('pre_dispatch_blocked') or {})
+    if pre_dispatch:
+        fallback = fallback or pre_dispatch.get('fallback_attempted', False)
+
+    return {
+        'selected_tool': assistant_kind,
+        'selected_email': str(top.get('email', '')),
+        'reason': f'source={source}',
+        'fallback_used': fallback,
+        'fallback_origin': str(recommended.get('tool', '')) if fallback else '',
+        'quota_confirmed': bool(top.get('remaining') is not None and top.get('remaining', 0) >= 0),
+        'alternatives_discarded': discarded,
+    }
+
+
 class AdaptiveTaskOrchestrator:
     def __init__(
         self,
@@ -3516,6 +3563,12 @@ class AdaptiveTaskOrchestrator:
             'unresolved': list(getattr(perception, 'unresolved_fields', []) or []) if perception is not None else [],
             'resume_context': dict(session.metadata.get('resume_context') or {}),
             'has_resume_hints': bool(session.metadata.get('has_resume_hints', False)),
+            'tool_selection_summary': _build_tool_selection_summary(
+                worker_gate=worker_gate,
+                gate_ran=gate_ran,
+                governance=governance,
+                session_metadata=dict(session.metadata or {}),
+            ),
         }
 
     @classmethod

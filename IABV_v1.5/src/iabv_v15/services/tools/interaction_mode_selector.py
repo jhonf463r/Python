@@ -1,11 +1,21 @@
 from __future__ import annotations
 
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 from iabv_v15.domain.models import InferenceRequest, InteractionMode, ModeSelectionDecision, ToolCard, ToolTask, ToolType
 from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
 from iabv_v15.services.tools.tool_registry import ToolRegistry
+
+
+# Task-kind tokens detected from user goal text.
+_TASK_KIND_TOKENS: dict[str, list[str]] = {
+    'live_audit': ['auditor live', 'auditoria live', 'verificar en windows', 'verificacion live', 'desktop validation'],
+    'long_implementation': ['implementa', 'refactoriza', 'crea pr', 'abre pr', 'escribe tests', 'agrega', 'fix completo'],
+    'code_review': ['revisa el codigo', 'code review', 'diagnostico fino', 'analiza codigo', 'arquitectura'],
+    'reasoning_synthesis': ['razona', 'sintetiza', 'contrasta', 'explica', 'brainstorm', 'compara opiniones'],
+}
 
 
 @dataclass(slots=True)
@@ -20,6 +30,7 @@ class _CandidateAssessment:
     equivalent_pattern_exists: bool = False
     already_resolved: bool = False
     improvement_already_implemented: bool = False
+    quota_status: str = 'unknown'
 
 
 class InteractionModeSelector:
@@ -34,6 +45,7 @@ class InteractionModeSelector:
         draft_task: ToolTask | None = None,
         suggested_tool_id: str | None = None,
         allowed_tool_ids: list[str] | None = None,
+        worker_pool: dict[str, Any] | None = None,
     ) -> ModeSelectionDecision:
         desired_modes = self._desired_modes(request)
         cards = [self.registry.refresh_card(item) for item in self.registry.list_cards()]
@@ -50,8 +62,9 @@ class InteractionModeSelector:
         )
         if preferred_external is not None:
             return preferred_external
+        task_kind = self._detect_task_kind(request)
         assessments = [
-            self._assess_candidate(card=item, request=request, draft_task=draft_task, suggested_tool_id=suggested_tool_id, desired_modes=desired_modes)
+            self._assess_candidate(card=item, request=request, draft_task=draft_task, suggested_tool_id=suggested_tool_id, desired_modes=desired_modes, task_kind=task_kind, worker_pool=worker_pool)
             for item in cards
         ]
         assessments.sort(key=lambda item: item.total_score, reverse=True)
@@ -67,7 +80,7 @@ class InteractionModeSelector:
             or not best.card.available
             or (bool(allowed_tool_ids) and bool(suggested_tool_id) and best.card.tool_id != suggested_tool_id)
         )
-        metadata = {
+        metadata: dict[str, Any] = {
             'desired_modes': [item.value for item in desired_modes],
             'candidate_ranking': [
                 {
@@ -78,6 +91,12 @@ class InteractionModeSelector:
                 for item in assessments[:5]
             ],
         }
+        if task_kind:
+            metadata['detected_task_kind'] = task_kind
+        if best and len(assessments) > 1:
+            metadata['selection_summary'] = self._selection_summary(
+                best, assessments, task_kind=task_kind,
+            )
         if best.reusable_pattern_id:
             metadata['reusable_pattern_id'] = best.reusable_pattern_id
         if best.reusable_episode_id:
@@ -185,6 +204,8 @@ class InteractionModeSelector:
         draft_task: ToolTask | None,
         suggested_tool_id: str | None,
         desired_modes: list[InteractionMode],
+        task_kind: str = '',
+        worker_pool: dict[str, Any] | None = None,
     ) -> _CandidateAssessment:
         mode = self._mode_for_tool(card.tool_type)
         goal = request.user_goal.lower()
@@ -210,6 +231,8 @@ class InteractionModeSelector:
         equivalent_pattern_exists = pattern is not None
         improvement_already_implemented = self._improvement_already_implemented(goal, equivalent_pattern_exists, already_resolved)
         resolution_bonus = 1.0 if already_resolved else 0.0
+        affinity = self._affinity_score(card, task_kind)
+        quota = self._quota_score(card, worker_pool)
         total_score = (
             availability * 2.2
             + adapter_exists * 0.8
@@ -222,7 +245,10 @@ class InteractionModeSelector:
             + desired_match * 1.4
             + suggested_match * 0.5
             + resolution_bonus * 0.8
+            + affinity * 1.6
+            + quota * 1.4
         )
+        quota_status = self._quota_status_label(card, worker_pool)
         reason_bits = [
             f'modo={mode.value}',
             f'disponibilidad={availability:.2f}',
@@ -232,7 +258,13 @@ class InteractionModeSelector:
             f'latencia={latency:.2f}',
             f'uso={frequency:.2f}',
             f'patron={learned_pattern:.2f}',
+            f'afinidad={affinity:.2f}',
+            f'cuota={quota:.2f}',
         ]
+        if task_kind:
+            reason_bits.append(f'task_kind={task_kind}')
+        if quota_status != 'unknown':
+            reason_bits.append(f'quota_status={quota_status}')
         if pattern is not None:
             reason_bits.append(f'patron_equivalente={pattern.pattern_id}')
         if episode is not None:
@@ -254,9 +286,12 @@ class InteractionModeSelector:
                 'desired_match': desired_match,
                 'suggested_match': suggested_match,
                 'resolved_bonus': resolution_bonus,
+                'affinity': affinity,
+                'quota': quota,
             },
             total_score=total_score,
             reason=' | '.join(reason_bits),
+            quota_status=quota_status,
             reusable_pattern_id=pattern.pattern_id if pattern is not None else None,
             reusable_episode_id=episode.interaction_episode_id if episode is not None else None,
             equivalent_pattern_exists=equivalent_pattern_exists,
@@ -409,3 +444,105 @@ class InteractionModeSelector:
 
     def _tokens(self, text: str) -> set[str]:
         return {token for token in text.lower().replace('/', ' ').replace(':', ' ').split() if len(token) >= 3}
+
+    # ------------------------------------------------------------------
+    # Limit-aware selection helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _detect_task_kind(request: InferenceRequest) -> str:
+        goal = request.user_goal.lower()
+        best_kind = ''
+        best_hits = 0
+        for kind, tokens in _TASK_KIND_TOKENS.items():
+            hits = sum(1 for t in tokens if t in goal)
+            if hits > best_hits:
+                best_hits = hits
+                best_kind = kind
+        return best_kind
+
+    @staticmethod
+    def _affinity_score(card: ToolCard, task_kind: str) -> float:
+        if not task_kind:
+            return 0.5
+        affinities = list(card.metadata.get('task_affinities') or [])
+        if not affinities:
+            return 0.5
+        if task_kind in affinities:
+            return 1.0
+        capability_map = {
+            'live_audit': 'live_desktop_validation_capable',
+            'long_implementation': 'long_running_capable',
+            'code_review': 'repo_patch_capable',
+            'reasoning_synthesis': 'reasoning_synthesis_capable',
+        }
+        cap_key = capability_map.get(task_kind, '')
+        if cap_key and card.metadata.get(cap_key):
+            return 0.85
+        return 0.2
+
+    @staticmethod
+    def _quota_score(card: ToolCard, worker_pool: dict[str, Any] | None) -> float:
+        if worker_pool is None:
+            return 0.5
+        assistant_kind = str(card.metadata.get('assistant_kind') or '').strip().lower()
+        if not assistant_kind:
+            return 0.5
+        workers = list(worker_pool.get('workers') or [])
+        exhausted = list(worker_pool.get('exhausted') or [])
+        active = [w for w in workers if str(w.get('tool', '')).lower() == assistant_kind and not w.get('exhausted')]
+        dead = [w for w in exhausted if str(w.get('tool', '')).lower() == assistant_kind]
+        if not active and not dead:
+            return 0.5
+        if not active and dead:
+            return 0.0
+        best_remaining = max((w.get('remaining_messages', 0) for w in active), default=0)
+        best_limit = max((w.get('limit', 1) for w in active), default=1)
+        return min(1.0, best_remaining / max(best_limit, 1))
+
+    @staticmethod
+    def _quota_status_label(card: ToolCard, worker_pool: dict[str, Any] | None) -> str:
+        if worker_pool is None:
+            return 'unknown'
+        assistant_kind = str(card.metadata.get('assistant_kind') or '').strip().lower()
+        if not assistant_kind:
+            return 'not_applicable'
+        workers = list(worker_pool.get('workers') or [])
+        exhausted = list(worker_pool.get('exhausted') or [])
+        active = [w for w in workers if str(w.get('tool', '')).lower() == assistant_kind and not w.get('exhausted')]
+        dead = [w for w in exhausted if str(w.get('tool', '')).lower() == assistant_kind]
+        if not active and not dead:
+            return 'unknown'
+        if not active and dead:
+            return 'exhausted'
+        return 'available'
+
+    @staticmethod
+    def _selection_summary(
+        best: _CandidateAssessment,
+        assessments: list[_CandidateAssessment],
+        *,
+        task_kind: str = '',
+    ) -> dict[str, Any]:
+        runner_up = assessments[1] if len(assessments) > 1 else None
+        discarded = [
+            {
+                'tool_id': a.card.tool_id,
+                'reason': 'exhausted' if a.quota_status == 'exhausted' else ('low_affinity' if a.scores.get('affinity', 0.5) < 0.3 else 'lower_score'),
+                'score': round(a.total_score, 4),
+            }
+            for a in assessments[1:4]
+        ]
+        summary: dict[str, Any] = {
+            'selected_tool': best.card.tool_id,
+            'selected_reason': best.reason,
+            'quota_status': best.quota_status,
+        }
+        if task_kind:
+            summary['task_kind'] = task_kind
+        if best.quota_status == 'exhausted' and runner_up:
+            summary['fallback_origin'] = best.card.tool_id
+            summary['fallback_used'] = True
+        if discarded:
+            summary['alternatives_discarded'] = discarded
+        return summary

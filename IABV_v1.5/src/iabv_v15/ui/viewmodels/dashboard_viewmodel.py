@@ -90,6 +90,10 @@ class DashboardViewModel(QObject):
             )
             self.refreshFailed.emit(str(exc))
 
+    # Dashboard summary only displays counts; keep limits low to
+    # avoid blocking the background thread under SQLite contention.
+    _SUMMARY_QUERY_LIMIT = 10
+
     def _collect_summary_cards(self) -> list[dict]:
         episodes_count = self.episode_repository.count()
         knowledge_count = self.knowledge_repository.count()

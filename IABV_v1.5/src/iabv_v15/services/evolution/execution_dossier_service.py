@@ -55,6 +55,12 @@ class ExecutionDossierService:
         scope = self._scope_from_run(run_record)
         summary = run_record.result.summary.strip() or run_record.error_summary or 'La corrida termino sin resumen visible.'
         adaptive_payload = run_record.result.raw_output.get('adaptive_session') if isinstance(run_record.result.raw_output, dict) else None
+        _ap = dict(adaptive_payload or {})
+        _ap_meta = dict(_ap.get('metadata') or {})
+        _tss = dict(_ap_meta.get('tool_selection_summary') or _ap_meta.get('task_packet', {}).get('tool_selection_summary') or {})
+        correlated_session_id = str(_ap.get('session_id') or _ap_meta.get('session_id') or '')
+        tool_selection_reason = str(_tss.get('reason') or '')
+        gate_ran = bool(_tss.get('selected_tool')) or tool_selection_reason != 'gate_not_ran'
         dossier = ExecutionDossier(
             scope=scope,
             title=run_record.request.user_goal.strip() or run_record.result.inferred_task or 'Ejecucion local',
@@ -97,6 +103,9 @@ class ExecutionDossierService:
                 'adaptive_session': adaptive_payload or {},
                 'intent_key': (run_record.result.intent or {}).get('intent_key', '') if isinstance(run_record.result.intent, dict) else '',
                 'chosen_pack_id': (run_record.result.chosen_pack or {}).get('pack_id', '') if isinstance(run_record.result.chosen_pack, dict) else '',
+                'correlated_session_id': correlated_session_id,
+                'tool_selection_reason': tool_selection_reason,
+                'gate_ran': gate_ran,
             },
         )
         return self.repository.save(dossier)
@@ -130,6 +139,7 @@ class ExecutionDossierService:
             scope=DossierScope.TEACHING,
             title=title,
             summary=summary_text,
+            run_id=episode_id,
             episode_id=episode_id,
             status=status,
             severity=self._severity_from_status(status, 0.75, bool(issue_candidates)),
