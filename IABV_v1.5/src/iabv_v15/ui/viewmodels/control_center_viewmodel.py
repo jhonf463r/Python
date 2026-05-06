@@ -237,6 +237,7 @@ class ControlCenterViewModel(QObject):
         self._adaptive_action_buttons = {
             'approve_strategy': False,
             'approve_next': False,
+            'approve_observation': False,
             'simulate': False,
             'execute': False,
             'abort': False,
@@ -4474,13 +4475,21 @@ class ControlCenterViewModel(QObject):
             self._adaptive_approval_cards = self._build_approval_cards(approvals)
             self._adaptive_playbook_steps = self._build_playbook_steps(playbook)
             pending_approvals = [item for item in approvals if item.get('decision') == 'pending']
+            observation_approvals = [
+                item for item in pending_approvals
+                if str(item.get('phase_key') or '').strip().lower() == 'observation_permission'
+            ]
             self._adaptive_action_buttons = {
                 'approve_strategy': bool(pending_approvals),
                 'approve_next': bool(status == 'waiting_approval' and pending_approvals),
+                'approve_observation': bool(observation_approvals),
                 'simulate': bool(self._adaptive_playbook_steps),
                 'execute': bool(status in {'ready_to_execute', 'waiting_approval'}),
                 'abort': bool(self._adaptive_session_id),
             }
+            guidance = payload.get('assistant_guidance')
+            if guidance:
+                self._apply_assistant_guidance(guidance)
             return
         autonomous_lines = []
         if autonomous:
@@ -4549,9 +4558,14 @@ class ControlCenterViewModel(QObject):
         pending_approvals = [item for item in approvals if item.get('decision') == 'pending']
         guidance = payload.get('assistant_guidance') or self._derive_assistant_guidance(payload)
         self._apply_assistant_guidance(guidance)
+        observation_approvals = [
+            item for item in pending_approvals
+            if str(item.get('phase_key') or '').strip().lower() == 'observation_permission'
+        ]
         self._adaptive_action_buttons = {
             'approve_strategy': any(item.get('phase_key') == 'strategy' and item.get('decision') == 'pending' for item in approvals),
             'approve_next': bool(pending_approvals),
+            'approve_observation': bool(observation_approvals),
             'simulate': bool(self._adaptive_session_id),
             'execute': bool(self._adaptive_session_id and execution_state.get('executor_available') and not execution_state.get('simulation_only')),
             'abort': bool(self._adaptive_session_id and status not in {'aborted', 'completed'}),
@@ -4711,6 +4725,9 @@ class ControlCenterViewModel(QObject):
 
     def get_can_approve_next_phase(self) -> bool:
         return self._adaptive_action_buttons['approve_next'] and not self._working
+
+    def get_can_approve_observation(self) -> bool:
+        return self._adaptive_action_buttons.get('approve_observation', False) and not self._working
 
     def get_can_simulate(self) -> bool:
         return self._adaptive_action_buttons['simulate'] and not self._working
@@ -5181,6 +5198,17 @@ class ControlCenterViewModel(QObject):
             assistant_kind=requested_assistant_kind,
         )
         if bool(preflight.get('blocked')):
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace_permission(
+                    permission_id=f'external_consultation:{requested_assistant_kind}',
+                    action='blocked',
+                    granted=False,
+                    reason=str(preflight.get('reason') or 'ruta bloqueada por gobernanza'),
+                    dialog_shown=True,
+                )
+            except Exception:
+                pass
             return self._blocked_external_consultation_result(
                 assistant_kind=requested_assistant_kind,
                 assistant_title=assistant_title,
@@ -5500,6 +5528,17 @@ class ControlCenterViewModel(QObject):
             detail=f'Permiso concedido por el usuario para verificar {assistant_title} antes de usarlo.',
             granted_by='control_center',
         )
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace_permission(
+                permission_id=f'observe_window_content:{assistant_kind}',
+                action='granted',
+                granted=True,
+                reason=f'Usuario concedio permiso para observar {assistant_title}',
+                dialog_shown=True,
+            )
+        except Exception:
+            pass
         self._clear_observation_permission_artifacts()
         if announce:
             self._append_message(
@@ -5630,6 +5669,35 @@ class ControlCenterViewModel(QObject):
             self.abortAdaptive()
             return True
         return False
+
+    def _try_resolve_pending_observation_permission(self, message: str) -> bool:
+        """Auto-grant observation permission when the user sends a helpful message.
+
+        When IABV blocks an external route (e.g. ChatGPT) because it needs
+        observation permission, and the user writes something in the chat
+        indicating willingness to help (e.g. "si", "dale", "ayudame",
+        "interactua conmigo", "permite", "ok"), auto-trigger the approval
+        flow instead of ignoring the user's intent.
+        """
+        assistant_kind = self._pending_observation_permission_assistant()
+        if not assistant_kind:
+            return False
+        lower = message.lower().strip()
+        affirmative_keywords = {
+            'si', 'sí', 'ok', 'dale', 'permite', 'permiso', 'aprueba',
+            'aprobar', 'adelante', 'hazlo', 'ayuda', 'ayudame', 'ayúdame',
+            'interactua', 'interactúa', 'verificar', 'verificacion',
+            'verificación', 'seguridad', 'login', 'sesion', 'sesión',
+            'credencial', 'credenciales', 'acceso', 'acepto', 'aceptar',
+            'grant', 'approve', 'yes', 'go', 'proceed',
+        }
+        tokens = set(lower.replace(',', ' ').replace('.', ' ').split())
+        if not tokens.intersection(affirmative_keywords):
+            return False
+        self._grant_pending_observation_permission(announce=True)
+        self._set_live_status('idle')
+        self.dataChanged.emit()
+        return True
 
     def _normalized_command_text(self, message: str) -> str:
         return ' '.join(message.lower().strip().split())
@@ -6812,6 +6880,8 @@ class ControlCenterViewModel(QObject):
         self._set_live_status('processing')
         if self._try_handle_chat_command(message):
             return
+        if self._try_resolve_pending_observation_permission(message):
+            return
         if self._try_handle_lightweight_chat(message):
             return
         # Escucha pasiva de capacidades declaradas (GPU, modelos, cuentas, runtimes).
@@ -7477,6 +7547,7 @@ class ControlCenterViewModel(QObject):
     adaptivePlaybookSteps = Property(list, get_adaptive_playbook_steps, notify=dataChanged)
     canApproveStrategy = Property(bool, get_can_approve_strategy, notify=dataChanged)
     canApproveNextPhase = Property(bool, get_can_approve_next_phase, notify=dataChanged)
+    canApproveObservation = Property(bool, get_can_approve_observation, notify=dataChanged)
     canSimulate = Property(bool, get_can_simulate, notify=dataChanged)
     canExecute = Property(bool, get_can_execute, notify=dataChanged)
     canAbort = Property(bool, get_can_abort, notify=dataChanged)
