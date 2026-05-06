@@ -7409,7 +7409,13 @@ class ControlCenterViewModel(QObject):
                     mode='external',
                 )
             else:
-                self._reset_assistant_guidance()
+                _has_actionable_guidance = (
+                    self._assistant_guidance_mode == 'need_approval'
+                    or bool(self._assistant_action_buttons)
+                    or bool(adaptive_payload.get('approval_checkpoints'))
+                )
+                if not _has_actionable_guidance:
+                    self._reset_assistant_guidance()
                 self._set_autonomy_activity_override(
                     visible=True,
                     title='Consulta externa bloqueada',
