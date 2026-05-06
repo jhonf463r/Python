@@ -453,6 +453,7 @@ class TestViewModelQueryStallE2E:
         stub._freeze_incident_reporter = None
         stub._QUERY_STALL_THRESHOLD_MS = ControlCenterViewModel._QUERY_STALL_THRESHOLD_MS
         stub._finalize_query_stall = ControlCenterViewModel._finalize_query_stall.__get__(stub)
+        stub._is_useful_response = ControlCenterViewModel._is_useful_response
         stub._query_start_pc = 0.0
         stub._query_start_message = ''
         return stub
@@ -471,6 +472,7 @@ class TestViewModelQueryStallE2E:
                 provider='ollama',
                 route_reason='local',
                 success=True,
+                response_text='Respuesta rapida util.',
             )
         freeze_events = tracer.events(kind='freeze_incident')
         assert len(freeze_events) == 0
@@ -489,6 +491,7 @@ class TestViewModelQueryStallE2E:
                 provider='ollama',
                 route_reason='local_routing',
                 success=True,
+                response_text='Aqui tienes la respuesta util.',
             )
         freeze_events = tracer.events(kind='freeze_incident')
         assert len(freeze_events) == 1
@@ -512,6 +515,7 @@ class TestViewModelQueryStallE2E:
                 provider='chatgpt',
                 route_reason='external_consultation',
                 success=True,
+                response_text='ChatGPT respondio con codigo funcional.',
             )
         freeze_events = tracer.events(kind='freeze_incident')
         assert len(freeze_events) == 1
@@ -532,6 +536,7 @@ class TestViewModelQueryStallE2E:
                 provider='',
                 route_reason='No pude completar',
                 success=False,
+                response_text='No pude completar la consulta local: timeout.',
             )
         freeze_events = tracer.events(kind='freeze_incident')
         assert len(freeze_events) == 1
@@ -553,6 +558,7 @@ class TestViewModelQueryStallE2E:
                 provider='ollama',
                 route_reason='local',
                 success=True,
+                response_text='Respuesta completa del modelo.',
             )
         reports = reporter.list_reports()
         assert len(reports) == 1
@@ -572,8 +578,123 @@ class TestViewModelQueryStallE2E:
                 provider='',
                 route_reason='local',
                 success=True,
+                response_text='Resultado util y final.',
             )
         assert vm._query_start_pc == 0.0
+
+    def test_empty_response_does_not_consume_timer(self) -> None:
+        """First emission with empty/whitespace content must NOT reset timer."""
+        vm = self._make_vm_stub()
+        start_pc = time.perf_counter() - 8.0
+        vm._query_start_pc = start_pc
+        vm._query_start_message = 'test'
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            # First call with empty/whitespace — should NOT finalize
+            vm._finalize_query_stall(
+                resolved_path='orchestrator_inference',
+                provider='ollama',
+                route_reason='local',
+                success=True,
+                response_text='  ',
+            )
+        # Timer still running
+        assert vm._query_start_pc == start_pc
+        freeze_events = tracer.events(kind='freeze_incident')
+        assert len(freeze_events) == 0
+
+    def test_two_phase_captures_stall_on_useful_response(self) -> None:
+        """Empty first emission + useful second emission = stall captured."""
+        vm = self._make_vm_stub()
+        vm._query_start_pc = time.perf_counter() - 10.0
+        vm._query_start_message = 'consulta compleja'
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            # Phase 1: empty emission — timer NOT consumed
+            vm._finalize_query_stall(
+                resolved_path='orchestrator_inference',
+                provider='ollama',
+                route_reason='local',
+                success=True,
+                response_text='  ',
+            )
+            assert vm._query_start_pc != 0.0  # still running
+            # Phase 2: useful response — timer consumed, stall captured
+            vm._finalize_query_stall(
+                resolved_path='orchestrator_inference',
+                provider='ollama',
+                route_reason='local',
+                success=True,
+                response_text='Aqui tienes la respuesta util final.',
+            )
+        assert vm._query_start_pc == 0.0
+        freeze_events = tracer.events(kind='freeze_incident')
+        assert len(freeze_events) == 1
+        assert freeze_events[0]['data']['duration_ms'] > 9000
+
+    def test_external_blocked_empty_then_useful(self) -> None:
+        """External consultation: empty first + blocked message later = captured."""
+        vm = self._make_vm_stub()
+        vm._query_start_pc = time.perf_counter() - 720.0  # 12 minutes
+        vm._query_start_message = 'ayuda'
+        reporter = FreezeIncidentReporter(evolution_dir='/tmp/test_ext_' + str(int(time.time())))
+        vm._freeze_incident_reporter = reporter
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            # Phase 1: empty/placeholder emission
+            vm._finalize_query_stall(
+                resolved_path='external_blocked',
+                provider='chatgpt',
+                route_reason='external_consultation',
+                success=False,
+                response_text='',
+            )
+            assert vm._query_start_pc != 0.0  # not consumed
+            # Phase 2: real blocked message
+            vm._finalize_query_stall(
+                resolved_path='external_blocked',
+                provider='chatgpt',
+                route_reason='external_consultation',
+                success=False,
+                response_text='No pude completar la consulta externa: acceso denegado por gobernanza.',
+            )
+        assert vm._query_start_pc == 0.0
+        freeze_events = tracer.events(kind='freeze_incident')
+        assert len(freeze_events) == 1
+        assert freeze_events[0]['data']['severity'] == 'high'  # >15s
+        reports = reporter.list_reports()
+        assert len(reports) == 1
+
+    def test_trivial_placeholder_does_not_consume(self) -> None:
+        """Trivial placeholders like '...' or 'loading' don't consume timer."""
+        vm = self._make_vm_stub()
+        start_pc = time.perf_counter() - 6.0
+        vm._query_start_pc = start_pc
+        vm._query_start_message = 'test'
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            for placeholder in ['...', '\u2026', '---', 'loading', 'Cargando', '  ']:
+                vm._finalize_query_stall(
+                    resolved_path='orchestrator_inference',
+                    provider='',
+                    route_reason='local',
+                    success=True,
+                    response_text=placeholder,
+                )
+        assert vm._query_start_pc == start_pc  # none consumed the timer
+        assert len(tracer.events(kind='freeze_incident')) == 0
 
 
 # ======================================================================

@@ -3966,6 +3966,28 @@ class ControlCenterViewModel(QObject):
         except Exception:
             pass
 
+    @staticmethod
+    def _is_useful_response(text: str) -> bool:
+        """Return True if text is a useful visible response for the user.
+
+        Returns False for empty strings, whitespace-only, or trivial
+        placeholders that don't count as a real resolution.
+        """
+        if not text:
+            return False
+        stripped = text.strip()
+        if not stripped:
+            return False
+        if len(stripped) < 3:
+            return False
+        _trivial = {
+            '...', '…', '---', '—', 'loading', 'cargando',
+            'procesando', 'processing',
+        }
+        if stripped.lower() in _trivial:
+            return False
+        return True
+
     def _finalize_query_stall(
         self,
         *,
@@ -3973,15 +3995,21 @@ class ControlCenterViewModel(QObject):
         provider: str,
         route_reason: str,
         success: bool,
+        response_text: str = '',
     ) -> None:
         """Measure end-to-end query latency from sendChat start to resolution.
 
         Fires if the wall-clock duration exceeds _QUERY_STALL_THRESHOLD_MS.
         Traces via RuntimeAuditTracer and captures via FreezeIncidentReporter.
+
+        If ``response_text`` is not a useful visible response, the timer is
+        NOT consumed — it keeps running until a truly useful response arrives.
         """
         import time as _t
         start = getattr(self, '_query_start_pc', 0.0)
         if not start:
+            return
+        if not self._is_useful_response(response_text):
             return
         elapsed_ms = (_t.perf_counter() - start) * 1000.0
         self._query_start_pc = 0.0
@@ -7385,6 +7413,7 @@ class ControlCenterViewModel(QObject):
                 provider=payload.get('provider_name', ''),
                 route_reason=payload.get('route_reason', ''),
                 success=True,
+                response_text=user_text,
             )
             self._record_chat_audit(
                 reasoning_path=_inference_path,
@@ -7505,6 +7534,7 @@ class ControlCenterViewModel(QObject):
                 provider=_ext_assistant,
                 route_reason='external_consultation',
                 success=_ext_success,
+                response_text=message,
             )
             self._record_chat_audit(
                 reasoning_path=_ext_path,
@@ -7586,6 +7616,7 @@ class ControlCenterViewModel(QObject):
                 provider='',
                 route_reason=message[:80],
                 success=False,
+                response_text=visible_message,
             )
             from iabv_v15.services.evolution.decision_audit_trail import DecisionOutcome
             self._record_chat_audit(
