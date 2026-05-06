@@ -496,3 +496,323 @@ class FreezeIncidentReporter:
         except Exception:
             pass
         return []
+
+
+# ======================================================================
+# UIHeartbeatWatchdog — lightweight main-thread heartbeat detector
+# ======================================================================
+
+class UIHeartbeatWatchdog:
+    """Lightweight heartbeat monitor for the Qt/UI main thread.
+
+    NOT a new service: it lives inside the freeze_incident_reporter module
+    and is wired from bootstrap into the existing QTimer mechanism.
+
+    How it works:
+    - ``tick()`` is called periodically from a QTimer on the main thread
+      (e.g. every 500 ms).
+    - A background thread checks if ticks are arriving on time.
+    - When the gap between ticks exceeds ``stall_threshold_ms``, a
+      ``ui_event_loop_stall`` event is emitted via RuntimeAuditTracer
+      and optionally captured via FreezeIncidentReporter.
+
+    Context captured per stall:
+    - startup_active: whether the app is still booting
+    - query_pending: whether a chat query is being processed
+    - window_visible: whether the main window is active/visible
+    - duration_ms: how long the stall lasted
+    - dominant_phase: best guess at what was blocking
+    """
+
+    DEFAULT_TICK_INTERVAL_MS = 500
+    DEFAULT_STALL_THRESHOLD_MS = 2000
+
+    def __init__(
+        self,
+        *,
+        stall_threshold_ms: float = DEFAULT_STALL_THRESHOLD_MS,
+        freeze_reporter: FreezeIncidentReporter | None = None,
+    ) -> None:
+        self._stall_threshold_ms = stall_threshold_ms
+        self._freeze_reporter = freeze_reporter
+        self._lock = threading.Lock()
+        self._last_tick: float = time.perf_counter()
+        self._tick_count: int = 0
+        self._stall_count: int = 0
+        self._stalls: list[dict[str, Any]] = []
+        self._max_stalls = 50
+        # Context flags — set externally by bootstrap / viewmodel
+        self._startup_active: bool = True
+        self._query_pending: bool = False
+        self._window_visible: bool = True
+        self._dominant_phase: str = ''
+        self._active_interaction_id: str | None = None
+
+    def tick(self) -> None:
+        """Called from the main thread (QTimer). Records heartbeat."""
+        now = time.perf_counter()
+        with self._lock:
+            gap_ms = (now - self._last_tick) * 1000.0
+            self._last_tick = now
+            self._tick_count += 1
+
+        if gap_ms > self._stall_threshold_ms:
+            self._record_stall(gap_ms)
+
+    def _record_stall(self, duration_ms: float) -> None:
+        stall_record: dict[str, Any] = {
+            'timestamp': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
+            'duration_ms': round(duration_ms, 1),
+            'startup_active': self._startup_active,
+            'query_pending': self._query_pending,
+            'window_visible': self._window_visible,
+            'dominant_phase': self._dominant_phase,
+            'interaction_id': self._active_interaction_id,
+        }
+        with self._lock:
+            self._stall_count += 1
+            self._stalls.append(stall_record)
+            if len(self._stalls) > self._max_stalls:
+                self._stalls = self._stalls[-self._max_stalls:]
+
+        # Emit to RuntimeAuditTracer
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import (
+                get_runtime_tracer,
+            )
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'ui_event_loop_stall',
+                duration_ms=round(duration_ms, 1),
+                startup_active=self._startup_active,
+                query_pending=self._query_pending,
+                window_visible=self._window_visible,
+                dominant_phase=self._dominant_phase,
+                interaction_id=self._active_interaction_id,
+            )
+        except Exception:
+            pass
+
+        # Promote to FreezeIncidentReporter for severe stalls (>5s)
+        if duration_ms > 5000 and self._freeze_reporter is not None:
+            try:
+                self._freeze_reporter.capture_incident(
+                    trigger='auto_ui_heartbeat_stall',
+                    user_description=(
+                        f'UI event loop stall: {duration_ms:.0f}ms '
+                        f'(phase={self._dominant_phase})'
+                    ),
+                    extra_context={
+                        'incident_type': 'ui_event_loop_stall',
+                        'severity': 'critical' if duration_ms > 10000 else 'high',
+                        **stall_record,
+                    },
+                )
+            except Exception:
+                pass
+
+        logger.warning(
+            'ui_heartbeat_stall: %.0fms (startup=%s query=%s phase=%s)',
+            duration_ms, self._startup_active, self._query_pending,
+            self._dominant_phase,
+        )
+
+    # --- Context setters (called by bootstrap / viewmodel) ---
+
+    def set_startup_active(self, active: bool) -> None:
+        self._startup_active = active
+
+    def set_query_pending(self, pending: bool) -> None:
+        self._query_pending = pending
+
+    def set_window_visible(self, visible: bool) -> None:
+        self._window_visible = visible
+
+    def set_dominant_phase(self, phase: str) -> None:
+        self._dominant_phase = phase
+
+    def set_active_interaction(self, interaction_id: str | None) -> None:
+        self._active_interaction_id = interaction_id
+
+    # --- Query / export ---
+
+    def summary(self) -> dict[str, Any]:
+        with self._lock:
+            return {
+                'tick_count': self._tick_count,
+                'stall_count': self._stall_count,
+                'stall_threshold_ms': self._stall_threshold_ms,
+                'recent_stalls': list(self._stalls[-5:]),
+            }
+
+    def recent_stalls(self, *, limit: int = 10) -> list[dict[str, Any]]:
+        with self._lock:
+            return list(self._stalls[-limit:])
+
+
+# ======================================================================
+# ChatInteractionLifecycle — canonical interaction episode tracker
+# ======================================================================
+
+class ChatInteractionLifecycle:
+    """Tracks the full lifecycle of a user chat interaction.
+
+    NOT a new service: it lives in the same module and is used by
+    ControlCenterViewModel to open/close interaction episodes.
+
+    Each ``sendChat`` opens an episode with a unique interaction_id.
+    The lifecycle correlates:
+    - start (user sends message)
+    - first_technical_response (system begins processing)
+    - first_useful_response (system shows meaningful content)
+    - dispatch_pending (external consultation started)
+    - external_followup_pending (waiting for external result)
+    - final_resolution (task resolved or failed)
+    - window_inactive/active intervals
+    - UI heartbeat stalls during the interaction
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._interactions: dict[str, dict[str, Any]] = {}
+        self._completed: list[dict[str, Any]] = []
+        self._max_completed = 30
+
+    def open_interaction(self, message_preview: str = '') -> str:
+        """Open a new interaction episode. Returns the interaction_id."""
+        from uuid import uuid4
+        interaction_id = f'chat-{uuid4().hex[:12]}'
+        now = time.perf_counter()
+        now_utc = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+        record: dict[str, Any] = {
+            'interaction_id': interaction_id,
+            'started_at_utc': now_utc,
+            'message_preview': message_preview[:120],
+            '_t0': now,
+            'phases': {
+                'start': now_utc,
+            },
+            'stalls_during': [],
+            'window_inactive_intervals': [],
+            'resolved': False,
+        }
+        with self._lock:
+            self._interactions[interaction_id] = record
+        # Trace
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import (
+                get_runtime_tracer,
+            )
+            get_runtime_tracer().trace(
+                'interaction_open',
+                interaction_id=interaction_id,
+                message_preview=message_preview[:120],
+            )
+        except Exception:
+            pass
+        return interaction_id
+
+    def mark_phase(self, interaction_id: str, phase: str) -> None:
+        """Mark a lifecycle phase for the given interaction."""
+        now_utc = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+        with self._lock:
+            record = self._interactions.get(interaction_id)
+            if record is None:
+                return
+            record['phases'][phase] = now_utc
+
+    def record_stall(self, interaction_id: str, stall: dict[str, Any]) -> None:
+        """Attach a UI heartbeat stall to the active interaction."""
+        with self._lock:
+            record = self._interactions.get(interaction_id)
+            if record is None:
+                return
+            record['stalls_during'].append({
+                'timestamp': stall.get('timestamp', ''),
+                'duration_ms': stall.get('duration_ms', 0),
+            })
+
+    def record_window_inactive(self, interaction_id: str) -> None:
+        now_utc = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+        with self._lock:
+            record = self._interactions.get(interaction_id)
+            if record is None:
+                return
+            record['window_inactive_intervals'].append({
+                'inactive_at': now_utc,
+            })
+
+    def record_window_active(self, interaction_id: str) -> None:
+        now_utc = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+        with self._lock:
+            record = self._interactions.get(interaction_id)
+            if record is None:
+                return
+            intervals = record['window_inactive_intervals']
+            if intervals and 'active_at' not in intervals[-1]:
+                intervals[-1]['active_at'] = now_utc
+
+    def resolve_interaction(
+        self,
+        interaction_id: str,
+        *,
+        outcome: str = 'resolved',
+        provider: str = '',
+    ) -> dict[str, Any] | None:
+        """Close an interaction episode and move it to completed list."""
+        now = time.perf_counter()
+        now_utc = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+        with self._lock:
+            record = self._interactions.pop(interaction_id, None)
+            if record is None:
+                return None
+            record['phases']['final_resolution'] = now_utc
+            record['resolved'] = True
+            record['outcome'] = outcome
+            record['provider'] = provider
+            record['total_duration_ms'] = round(
+                (now - record.pop('_t0', now)) * 1000.0, 1,
+            )
+            self._completed.append(record)
+            if len(self._completed) > self._max_completed:
+                self._completed = self._completed[-self._max_completed:]
+        # Trace
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import (
+                get_runtime_tracer,
+            )
+            get_runtime_tracer().trace(
+                'interaction_resolved',
+                interaction_id=interaction_id,
+                outcome=outcome,
+                provider=provider,
+                total_duration_ms=record.get('total_duration_ms', 0),
+                stall_count=len(record.get('stalls_during', [])),
+            )
+        except Exception:
+            pass
+        return record
+
+    # --- Query ---
+
+    def active_interaction(self) -> dict[str, Any] | None:
+        with self._lock:
+            if not self._interactions:
+                return None
+            # Return the most recent
+            return dict(list(self._interactions.values())[-1])
+
+    def recent_completed(self, *, limit: int = 10) -> list[dict[str, Any]]:
+        with self._lock:
+            return list(self._completed[-limit:])
+
+    def summary(self) -> dict[str, Any]:
+        with self._lock:
+            active_count = len(self._interactions)
+            completed_count = len(self._completed)
+            active_ids = list(self._interactions.keys())
+        return {
+            'active_count': active_count,
+            'completed_count': completed_count,
+            'active_ids': active_ids,
+        }

@@ -2692,6 +2692,29 @@ class PortableContextService:
         except Exception:
             return []
 
+    def _ui_heartbeat_summary(self) -> dict[str, Any]:
+        """Return UI heartbeat watchdog summary for PortableContext."""
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        if watchdog is None or not hasattr(watchdog, 'summary'):
+            return {}
+        try:
+            return watchdog.summary()
+        except Exception:
+            return {}
+
+    def _interaction_lifecycle_summary(self) -> dict[str, Any]:
+        """Return chat interaction lifecycle summary for PortableContext."""
+        lifecycle = getattr(self, 'chat_interaction_lifecycle', None)
+        if lifecycle is None or not hasattr(lifecycle, 'summary'):
+            return {}
+        try:
+            summary = lifecycle.summary()
+            recent = lifecycle.recent_completed(limit=3)
+            summary['recent_completed'] = recent
+            return summary
+        except Exception:
+            return {}
+
     def _startup_health_section(self, *, status: dict[str, Any], now) -> PortableContextSection:
         """Export the latest startup timeline summary as a portable section.
 
@@ -2780,6 +2803,8 @@ class PortableContextService:
                 'phases_seen': list(status.get('phases_seen') or []),
                 'recent_blockers': list(status.get('recent_blockers') or []),
                 'freeze_incidents': freeze_incidents,
+                'ui_heartbeat': self._ui_heartbeat_summary(),
+                'interaction_lifecycle': self._interaction_lifecycle_summary(),
             },
         )
 

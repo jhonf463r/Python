@@ -878,11 +878,21 @@ class AppBootstrap:
         except Exception:
             pass
         # Freeze incident reporter — structured auto-audit for UI freezes.
-        from iabv_v15.services.evolution.freeze_incident_reporter import FreezeIncidentReporter
+        from iabv_v15.services.evolution.freeze_incident_reporter import (
+            FreezeIncidentReporter,
+            UIHeartbeatWatchdog,
+            ChatInteractionLifecycle,
+        )
         self.freeze_incident_reporter = FreezeIncidentReporter(
             evolution_dir=self.config.evolution_dir,
             db_path=self.config.sqlite_path,
         )
+        # UI heartbeat watchdog — lightweight main-thread stall detector.
+        self.ui_heartbeat_watchdog = UIHeartbeatWatchdog(
+            freeze_reporter=self.freeze_incident_reporter,
+        )
+        # Canonical interaction lifecycle tracker.
+        self.chat_interaction_lifecycle = ChatInteractionLifecycle()
 
         # Seed metacognition investigation roadmap (Phases A/B/C).
         try:
@@ -901,6 +911,10 @@ class AppBootstrap:
         # deferred until after PortableContextService is created (~line 985).
         self.operational_self_examination_service._freeze_incident_reporter = (
             self.freeze_incident_reporter
+        )
+        # Wire UIHeartbeatWatchdog into OSES for stall findings.
+        self.operational_self_examination_service._ui_heartbeat_watchdog = (
+            self.ui_heartbeat_watchdog
         )
 
         # Fix 19b: Windows clipboard bridge — low-level ctypes-based
@@ -998,6 +1012,14 @@ class AppBootstrap:
         # Wire FreezeIncidentReporter into PortableContext for promotion.
         self.portable_context_service.freeze_incident_reporter = (
             self.freeze_incident_reporter
+        )
+        # Wire UIHeartbeatWatchdog and ChatInteractionLifecycle into
+        # PortableContext for promotion to the portable package.
+        self.portable_context_service.ui_heartbeat_watchdog = (
+            self.ui_heartbeat_watchdog
+        )
+        self.portable_context_service.chat_interaction_lifecycle = (
+            self.chat_interaction_lifecycle
         )
         # --- Security & evolution broker stack (PR #101-#106) ---
         # Wiring minimo de los servicios que cierran el loop "el programa
@@ -1888,6 +1910,10 @@ class AppBootstrap:
                 self._timeline.mark('splash_set_ready', source=source)
             except Exception:
                 logger.exception('splash.set_ready fallo desde %s', source)
+        # Mark startup complete for the heartbeat watchdog.
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        if watchdog is not None:
+            watchdog.set_startup_active(False)
         self._raise_main_window_now(source)
 
     def _raise_main_window(self) -> None:
@@ -2883,6 +2909,8 @@ class AppBootstrap:
         self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
         self.control_center_viewmodel.decision_audit_trail = self.decision_audit_trail
         self.control_center_viewmodel._freeze_incident_reporter = self.freeze_incident_reporter
+        self.control_center_viewmodel._ui_heartbeat_watchdog = self.ui_heartbeat_watchdog
+        self.control_center_viewmodel._chat_interaction_lifecycle = self.chat_interaction_lifecycle
         # Wire CaptureStudioVM reference if already built.
         csvm = getattr(self, 'capture_studio_viewmodel', None)
         if csvm is not None:
@@ -4009,6 +4037,20 @@ class AppBootstrap:
                 self._shell_ready_fallback_ms = fallback_ms
                 self._shell_ready_wall_t0 = _time.perf_counter()
                 QTimer.singleShot(fallback_ms, self._force_splash_ready_fallback)
+
+            # Start UI heartbeat watchdog — QTimer fires on main thread.
+            try:
+                self._heartbeat_timer = QTimer()
+                self._heartbeat_timer.setInterval(
+                    self.ui_heartbeat_watchdog.DEFAULT_TICK_INTERVAL_MS,
+                )
+                self._heartbeat_timer.timeout.connect(
+                    self.ui_heartbeat_watchdog.tick,
+                )
+                self._heartbeat_timer.start()
+                self._timeline.mark('ui_heartbeat_watchdog_started')
+            except Exception:
+                logger.debug('ui_heartbeat_watchdog: failed to start', exc_info=True)
 
             self._timeline.mark('app_exec_about_to_start')
             return app.exec()

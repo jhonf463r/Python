@@ -3945,14 +3945,28 @@ class ControlCenterViewModel(QObject):
                 get_runtime_tracer,
             )
             tracer = get_runtime_tracer()
+            iid = getattr(self, '_active_interaction_id', None)
             tracer.trace_freeze_incident(
                 'chat_stall',
                 severity='high' if timed_out else 'medium',
                 duration_ms=elapsed_ms,
                 dominant_phase='_chat_shortcut_analysis',
+                interaction_id=iid or '',
             )
         except Exception:
             pass
+        # Record stall in the active interaction lifecycle
+        iid = getattr(self, '_active_interaction_id', None)
+        if iid:
+            lifecycle = getattr(self, '_chat_interaction_lifecycle', None)
+            if lifecycle is not None:
+                try:
+                    lifecycle.record_stall(iid, {
+                        'duration_ms': elapsed_ms,
+                        'timestamp': '',
+                    })
+                except Exception:
+                    pass
         reporter = getattr(self, '_freeze_incident_reporter', None)
         if reporter is None:
             return
@@ -3964,6 +3978,32 @@ class ControlCenterViewModel(QObject):
             )
         except Exception:
             pass
+
+    def _resolve_active_interaction(
+        self,
+        *,
+        outcome: str = 'resolved',
+        provider: str = '',
+    ) -> None:
+        """Close the active interaction episode and reset watchdog state."""
+        interaction_id = getattr(self, '_active_interaction_id', None)
+        if not interaction_id:
+            return
+        lifecycle = getattr(self, '_chat_interaction_lifecycle', None)
+        if lifecycle is not None:
+            try:
+                lifecycle.resolve_interaction(
+                    interaction_id,
+                    outcome=outcome,
+                    provider=provider,
+                )
+            except Exception:
+                pass
+        self._active_interaction_id = None
+        watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
+        if watchdog is not None:
+            watchdog.set_query_pending(False)
+            watchdog.set_active_interaction(None)
 
     def _explicit_site_hint_from_message(self, message: str) -> str | None:
         text = self._normalized_command_text(message)
@@ -6913,6 +6953,19 @@ class ControlCenterViewModel(QObject):
         message = text.strip()
         if not message:
             return
+        # --- Open canonical interaction episode ---
+        lifecycle = getattr(self, '_chat_interaction_lifecycle', None)
+        interaction_id: str | None = None
+        if lifecycle is not None:
+            try:
+                interaction_id = lifecycle.open_interaction(message)
+                self._active_interaction_id = interaction_id
+                watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
+                if watchdog is not None:
+                    watchdog.set_query_pending(True)
+                    watchdog.set_active_interaction(interaction_id)
+            except Exception:
+                pass
         # Safety: si _working quedo stuck de una llamada anterior (>60s),
         # resetearlo para no bloquear al usuario permanentemente.
         # APRENDIDO: _working puede quedar en True si worker() lanza excepcion
@@ -7018,6 +7071,12 @@ class ControlCenterViewModel(QObject):
 
         def worker() -> None:
             try:
+                # Mark lifecycle phase: first_technical_response
+                if interaction_id and lifecycle is not None:
+                    try:
+                        lifecycle.mark_phase(interaction_id, 'first_technical_response')
+                    except Exception:
+                        pass
                 request = self._build_request(message)
                 record = self.inference_service.infer_task(request)
                 adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
@@ -7296,6 +7355,14 @@ class ControlCenterViewModel(QObject):
             self._diagnostic_truth_state = 'observed'
         elif task_name == 'chat':
             self._clear_autonomy_activity_override()
+            # Mark lifecycle phase: first_useful_response
+            _iid = getattr(self, '_active_interaction_id', None)
+            _lc = getattr(self, '_chat_interaction_lifecycle', None)
+            if _iid and _lc is not None:
+                try:
+                    _lc.mark_phase(_iid, 'first_useful_response')
+                except Exception:
+                    pass
             sources = ', '.join(payload.get('sources') or []) or 'sin fuentes explicitas'
             tools = ', '.join(payload.get('used_tools') or []) or 'sin herramientas'
             follow_up = payload.get('follow_up_teachings') or []
@@ -7495,6 +7562,11 @@ class ControlCenterViewModel(QObject):
             self._busy_label = f"PBT actualizado en generacion {payload.get('generation', 0)}."
         if task_name != 'provider_health':
             self._working = False
+        # --- Close canonical interaction episode on resolution ---
+        self._resolve_active_interaction(
+            outcome='resolved',
+            provider=str(payload.get('provider_name', '')) if isinstance(payload, dict) else '',
+        )
         self._update_progress_cards()
         self._update_evolution_snapshot()
         self._agent_cards = self._build_agent_cards()
@@ -7525,6 +7597,8 @@ class ControlCenterViewModel(QObject):
             self._provider_refreshing = False
         else:
             self._working = False
+        # --- Close canonical interaction episode on failure ---
+        self._resolve_active_interaction(outcome='failed')
         self._busy_label = visible_message
         self._update_evolution_snapshot()
         self._diagnostic_text = (

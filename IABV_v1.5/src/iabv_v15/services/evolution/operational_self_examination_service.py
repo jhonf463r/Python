@@ -685,6 +685,7 @@ class OperationalSelfExaminationService:
         startup_findings = self._startup_health_findings()
         findings.extend(startup_findings)
         self._auto_capture_startup_freeze(startup_findings)
+        findings.extend(self._ui_heartbeat_stall_findings())
         findings.extend(self._boot_profile_findings())
         findings.extend(self._chat_research_backlog_findings())
         # Cognitive meta-patterns: fijación, incubación, atractores, ensambles
@@ -1849,6 +1850,50 @@ class OperationalSelfExaminationService:
                 )
         except Exception:
             logger.debug('_auto_capture_startup_freeze failed', exc_info=True)
+
+    def _ui_heartbeat_stall_findings(self) -> list[SelfExaminationFinding]:
+        """Emit findings from UIHeartbeatWatchdog stall history."""
+        watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
+        if watchdog is None:
+            return []
+        try:
+            summary = watchdog.summary()
+        except Exception:
+            return []
+        stall_count = summary.get('stall_count', 0)
+        if stall_count == 0:
+            return []
+        recent = summary.get('recent_stalls', [])
+        worst_ms = max(
+            (s.get('duration_ms', 0) for s in recent), default=0,
+        )
+        severity = IssueSeverity.HIGH if worst_ms > 5000 else IssueSeverity.MEDIUM
+        phases = [s.get('dominant_phase', '') for s in recent if s.get('dominant_phase')]
+        dominant = phases[0] if phases else 'unknown'
+        return [
+            SelfExaminationFinding(
+                title=f'UI event loop stalls: {stall_count} detected (worst {worst_ms:.0f}ms)',
+                summary=(
+                    f'{stall_count} heartbeat stalls detected. '
+                    f'Worst: {worst_ms:.0f}ms. Dominant phase: {dominant}.'
+                ),
+                severity=severity,
+                category='ui_heartbeat_stall',
+                confidence=0.95,
+                recommendation=(
+                    f'Investigate blocking on main thread during phase "{dominant}". '
+                    'Consider moving heavy work to background threads or adding '
+                    'yield-to-event-loop calls.'
+                ),
+                metadata={
+                    'stall_count': stall_count,
+                    'worst_ms': worst_ms,
+                    'dominant_phase': dominant,
+                    'recent_stalls': recent[-3:],
+                    'tick_count': summary.get('tick_count', 0),
+                },
+            )
+        ]
 
     def _startup_health_findings(self) -> list[SelfExaminationFinding]:
         """Read ``data/logs/startup_timeline.jsonl`` and emit degradation findings.
