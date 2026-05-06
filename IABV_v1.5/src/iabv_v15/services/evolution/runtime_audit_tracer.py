@@ -222,6 +222,29 @@ class RuntimeAuditTracer:
             **extra,
         )
 
+    def trace_freeze_incident(
+        self,
+        incident_type: str,
+        *,
+        severity: str = 'high',
+        duration_ms: float = 0.0,
+        dominant_phase: str = '',
+        rss_mb: float = 0.0,
+        report_path: str = '',
+        **extra: Any,
+    ) -> dict[str, Any]:
+        """Record a freeze/stall incident detected by auto-capture."""
+        return self.trace(
+            'freeze_incident',
+            incident_type=incident_type,
+            severity=severity,
+            duration_ms=round(duration_ms, 1),
+            dominant_phase=dominant_phase,
+            rss_mb=round(rss_mb, 1),
+            report_path=report_path,
+            **extra,
+        )
+
     # ------------------------------------------------------------------
     # Query / export
     # ------------------------------------------------------------------

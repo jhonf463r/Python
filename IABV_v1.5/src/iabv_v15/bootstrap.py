@@ -896,6 +896,12 @@ class AppBootstrap:
         self.operational_self_examination_service._autonomy_cycle_service = (
             self.autonomy_cycle_service
         )
+        # Wire FreezeIncidentReporter into OSES so auto-capture of startup
+        # freezes can fire structured incidents.  PortableContext wiring
+        # deferred until after PortableContextService is created (~line 985).
+        self.operational_self_examination_service._freeze_incident_reporter = (
+            self.freeze_incident_reporter
+        )
 
         # Fix 19b: Windows clipboard bridge — low-level ctypes-based
         # clipboard for background services that don't have QGuiApplication.
@@ -988,6 +994,10 @@ class AppBootstrap:
             tool_evolution_monitor=self.tool_evolution_monitor,
             adaptive_session_repository=self.adaptive_session_repository,
             platform_pending_queue=self.platform_pending_queue,
+        )
+        # Wire FreezeIncidentReporter into PortableContext for promotion.
+        self.portable_context_service.freeze_incident_reporter = (
+            self.freeze_incident_reporter
         )
         # --- Security & evolution broker stack (PR #101-#106) ---
         # Wiring minimo de los servicios que cierran el loop "el programa
@@ -2872,6 +2882,7 @@ class AppBootstrap:
         )
         self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
         self.control_center_viewmodel.decision_audit_trail = self.decision_audit_trail
+        self.control_center_viewmodel._freeze_incident_reporter = self.freeze_incident_reporter
         # Wire CaptureStudioVM reference if already built.
         csvm = getattr(self, 'capture_studio_viewmodel', None)
         if csvm is not None:

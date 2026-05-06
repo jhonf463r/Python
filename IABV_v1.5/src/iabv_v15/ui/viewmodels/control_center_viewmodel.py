@@ -3923,6 +3923,48 @@ class ControlCenterViewModel(QObject):
         analysis = intent.metadata.get('conversation_analysis') if isinstance(intent.metadata, dict) else {}
         return dict(analysis) if isinstance(analysis, dict) else {}
 
+    _CHAT_STALL_THRESHOLD_MS = 1500.0  # perceptible stall threshold
+
+    def _trace_chat_stall(
+        self,
+        *,
+        elapsed_ms: float,
+        timed_out: bool,
+        message_summary: str,
+    ) -> None:
+        """Trace a chat stall / query freeze via RuntimeAuditTracer.
+
+        If the shortcut analysis wait exceeded the perceptible threshold
+        or timed out, also fire FreezeIncidentReporter for structured
+        incident capture.
+        """
+        if elapsed_ms < self._CHAT_STALL_THRESHOLD_MS and not timed_out:
+            return
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import (
+                get_runtime_tracer,
+            )
+            tracer = get_runtime_tracer()
+            tracer.trace_freeze_incident(
+                'chat_stall',
+                severity='high' if timed_out else 'medium',
+                duration_ms=elapsed_ms,
+                dominant_phase='_chat_shortcut_analysis',
+            )
+        except Exception:
+            pass
+        reporter = getattr(self, '_freeze_incident_reporter', None)
+        if reporter is None:
+            return
+        try:
+            reporter.capture_chat_stall(
+                duration_ms=elapsed_ms,
+                timed_out=timed_out,
+                message_summary=message_summary,
+            )
+        except Exception:
+            pass
+
     def _explicit_site_hint_from_message(self, message: str) -> str | None:
         text = self._normalized_command_text(message)
         if 'wplay' in text:
@@ -6909,6 +6951,7 @@ class ControlCenterViewModel(QObject):
         # APRENDIDO: NO usar 'with ThreadPoolExecutor' en hilo de UI porque
         # pool.shutdown(wait=True) bloquea al salir del with aunque el timeout
         # se haya cumplido. Usar Thread + Event en su lugar.
+        import time as _time_mod
         shortcut_analysis = {}
         _sa_result: dict[str, Any] = {}
         _sa_done = threading.Event()
@@ -6921,8 +6964,16 @@ class ControlCenterViewModel(QObject):
                 _sa_done.set()
         _sa_thread = threading.Thread(target=_sa_worker, daemon=True)
         _sa_thread.start()
-        if _sa_done.wait(timeout=3):
+        _sa_t0 = _time_mod.perf_counter()
+        _sa_completed = _sa_done.wait(timeout=3)
+        _sa_elapsed_ms = (_time_mod.perf_counter() - _sa_t0) * 1000.0
+        if _sa_completed:
             shortcut_analysis = _sa_result
+        self._trace_chat_stall(
+            elapsed_ms=_sa_elapsed_ms,
+            timed_out=not _sa_completed,
+            message_summary=message[:120],
+        )
         allow_chat_shortcuts = not bool(shortcut_analysis.get('mixed_actionable')) and not bool(shortcut_analysis.get('requires_clarification'))
         if allow_chat_shortcuts and self._is_world_model_question(message):
             self._answer_world_model_question(message)

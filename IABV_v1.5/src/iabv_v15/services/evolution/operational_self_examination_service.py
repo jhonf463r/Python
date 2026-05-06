@@ -98,6 +98,7 @@ class OperationalSelfExaminationService:
         self._gh_api_cache: dict[str, Any] | None = None
         self._gh_api_cached_at: float = 0.0
         self._GH_API_TTL: float = 60.0
+        self._freeze_incident_reporter: Any | None = None
 
     def current_review(
         self,
@@ -681,7 +682,9 @@ class OperationalSelfExaminationService:
         findings.extend(self._weak_correction_findings(scenario_runs=scenario_runs))
         findings.extend(self._token_rotation_findings())
         findings.extend(self._cloud_reasoning_findings())
-        findings.extend(self._startup_health_findings())
+        startup_findings = self._startup_health_findings()
+        findings.extend(startup_findings)
+        self._auto_capture_startup_freeze(startup_findings)
         findings.extend(self._boot_profile_findings())
         findings.extend(self._chat_research_backlog_findings())
         # Cognitive meta-patterns: fijación, incubación, atractores, ensambles
@@ -1789,6 +1792,63 @@ class OperationalSelfExaminationService:
                 )
             )
         return findings
+
+    def _auto_capture_startup_freeze(
+        self,
+        startup_findings: list[SelfExaminationFinding],
+    ) -> None:
+        """Fire FreezeIncidentReporter when startup findings are HIGH+.
+
+        Called from ``build_review()`` after ``_startup_health_findings()``
+        returns.  Only fires if ``_freeze_incident_reporter`` has been
+        wired from bootstrap and at least one finding has severity >= HIGH.
+        Dedup is handled by FreezeIncidentReporter._should_auto_capture().
+        """
+        reporter = self._freeze_incident_reporter
+        if reporter is None:
+            return
+        high_findings = [
+            f for f in startup_findings
+            if getattr(f, 'severity', None) in (
+                IssueSeverity.HIGH, IssueSeverity.CRITICAL,
+            )
+        ]
+        if not high_findings:
+            return
+        try:
+            findings_meta = [
+                {
+                    'category': f.category,
+                    'title': f.title,
+                    'severity': str(f.severity),
+                    'metadata': dict(f.metadata or {}),
+                }
+                for f in high_findings
+            ]
+            path = reporter.capture_startup_freeze(
+                findings_metadata=findings_meta,
+            )
+            if path is not None:
+                from iabv_v15.services.evolution.runtime_audit_tracer import (
+                    get_runtime_tracer,
+                )
+                tracer = get_runtime_tracer()
+                dominant = high_findings[0]
+                meta = dict(dominant.metadata or {})
+                tracer.trace_freeze_incident(
+                    'startup_freeze',
+                    severity=str(dominant.severity),
+                    duration_ms=float(
+                        meta.get('observed_ms')
+                        or meta.get('sync_blocking_ms')
+                        or 0,
+                    ),
+                    dominant_phase=str(meta.get('phase', '')),
+                    rss_mb=0.0,
+                    report_path=str(path),
+                )
+        except Exception:
+            logger.debug('_auto_capture_startup_freeze failed', exc_info=True)
 
     def _startup_health_findings(self) -> list[SelfExaminationFinding]:
         """Read ``data/logs/startup_timeline.jsonl`` and emit degradation findings.
