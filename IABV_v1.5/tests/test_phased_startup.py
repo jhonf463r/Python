@@ -131,6 +131,8 @@ def _make_bootstrap():
         bs.clarification_request_service = _m()
         bs.environment_bootstrap_service = _m()
         bs.provider_health_router = _m()
+        bs.chat_message_repository = _m()
+        bs.decision_audit_trail = _m()
         return bs
 
 

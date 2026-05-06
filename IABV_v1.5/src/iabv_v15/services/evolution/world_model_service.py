@@ -266,7 +266,7 @@ class WorldModelService:
             network_status=network_status,
             unresolved_fields=unresolved_fields,
         )
-        worker_pool_snapshot = self._estimate_worker_pool(timeout_s=2.0) if full else {}
+        worker_pool_snapshot = self._worker_pool_snapshot() if full else {}
         metadata = {
             'scan_reason': str(reason or 'manual'),
             'scan_mode': 'full' if full else 'light',

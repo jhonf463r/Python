@@ -1630,6 +1630,11 @@ class AppBootstrap:
 
         def _bg_post_window_setup() -> None:
             try:
+                if self.main_window_bridge is not None:
+                    self.main_window_bridge.set_deferred_setup_active(True)
+            except Exception:
+                pass
+            try:
                 self._timeline.mark('deferred_post_window_setup_start')
             except Exception:
                 pass
@@ -1640,6 +1645,11 @@ class AppBootstrap:
                 self._record_startup_sqlite_incident(exc)
             try:
                 self._timeline.mark('deferred_post_window_setup_done')
+            except Exception:
+                pass
+            try:
+                if self.main_window_bridge is not None:
+                    self.main_window_bridge.set_deferred_setup_active(False)
             except Exception:
                 pass
 

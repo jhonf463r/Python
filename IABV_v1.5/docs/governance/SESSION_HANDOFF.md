@@ -1,7 +1,7 @@
 # IABV v1.5 — Session Handoff
 
-**Ultima sesion:** 2026-04-23 (Devin — QML dialog audit bridge + toast auto-audit)
-**Proxima prioridad:** Validacion Windows live de bridges QML + toast con Windsurf/Codex
+**Ultima sesion:** 2026-05-05 (Devin — cierre de gaps operativos + merge con main PRs 346-348)
+**Proxima prioridad:** Validacion Windows live del stack completo con Windsurf/Codex
 
 ---
 
@@ -83,28 +83,44 @@
 - **Tests:** 13 nuevos (5 GAP C + 3 GAP D + 5 runtime wiring), todos PASS
 - **Regresion completa:** 2519 passed / 24 failed / 23 skipped — **0 regresiones nuevas**
 
+### Fase G — Cierre de gaps operativos + merge PRs 346-348 (2026-05-05)
+- **Merge con main:** PRs 346 (FreezeIncidentReporter + RuntimeAuditTracer), 347 (Windsurf live prompt), 348 (dialogs de permisos + tracing) integrados a la rama
+- **SplashAuditAdapter wired en bootstrap:** `on_shown()` al hacerse visible, `closingNow` conectado a `on_closed()`
+- **SubprocessAuditWrapper wired:** FileNotFoundError de `_start_mcp_subprocess()` y `_start_tunnel_subprocess()` se registran automaticamente en audit
+- **Win32PopupWatcher wired en bootstrap:** instanciado en `_wire_ui_audit_bridges()`, daemon thread, auto-stop en `shutdown()`
+- **Dialog close @Slot:** `recordDialogClosed(dialog, response_type)` en ControlCenterVM y EvolutionCenterVM — QML puede llamar al cerrar un dialog para registrar el cierre
+- **ControlMasterService consume audit:** `_ui_visibility_compact()` inyecta resumen compacto en `metadata['ui_visibility']` con total_events, by_category, unresolved_count, file_not_found_count, has_unexpected
+- **Tests:** 7 nuevos (TestOperationalWiring), 46 totales en test_ui_visibility_audit, todos PASS
+- **DashboardVM:** main's version con timeline marks, query limit=10, proper error signals adoptada
+
+### Fase H — Fixes de diagnostico Windsurf (2026-05-05)
+- **Fix #1 — permission_gate para ChatGPT:** Cuando `worker_health_gate` reporta `assistant_unavailable`, se crea un `ApprovalCheckpoint` automatico en `preflight_external_assistant()` → activa dialogo "Permitir observacion" en vez de redirigir silenciosamente a local
+- **Fix #3 — Indicador post-splash:** Nuevo signal `deferredSetupActive` en `MainWindowBridge`, wired en bootstrap. QML muestra "Finalizando inicializacion de herramientas..." con BusyIndicator mientras `deferred_post_window_setup` corre (~14s)
+- **Fix #2 — timeout en _chat_shortcut_analysis:** Ya implementado en sesion anterior (Thread+Event timeout=3s, linea 6907-6924 de CCVM) — no requirio cambio
+- **Fix _estimate_worker_pool:** Referencia vieja corregida a `_worker_pool_snapshot()` en WMS linea 269
+- **Fix test_phased_startup:** Atributos `chat_message_repository` y `decision_audit_trail` faltantes en helper `_make_bootstrap()` del test
+- **Fix #4 — RAM 8,863MB:** Investigado. Los `list_recent()` tienen limites razonables (10-50). El pico de RAM viene de la carga de VMs lazy (PySide6 + QML engine + modelos ML) y posible swap del OS. Requiere profiling en Windows real con memory_profiler — no reproducible en Linux
+
 ### Documentos nuevos o actualizados
-- `src/iabv_v15/bootstrap.py` — import get_audit_log, wiring a WMS/TCA, _wire_ui_audit_bridges()
-- `src/iabv_v15/services/evolution/world_model_service.py` — GAP C wiring
-- `src/iabv_v15/services/adaptive/task_context_assembler.py` — GAP D wiring
-- `src/iabv_v15/infra/ui_visibility_audit.py` — QmlDialogAuditBridge, ToastAuditAdapter, Win32 fix
-- `tests/test_ui_visibility_audit.py` — 13 tests nuevos (GAP C + D + runtime wiring)
-- `docs/governance/SESSION_HANDOFF.md` — este archivo
-- `docs/governance/DECISION_LOG.md` — actualizado con D-017 a D-020
+- `src/iabv_v15/bootstrap.py` — deferred setup signal, audit wiring
+- `src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py` — approval checkpoint auto para assistant_unavailable
+- `src/iabv_v15/services/evolution/world_model_service.py` — _worker_pool_snapshot fix
+- `src/iabv_v15/ui/controllers/main_window_bridge.py` — deferredSetupActive signal/property
+- `src/iabv_v15/ui/qml/pages/ControlCenterPage.qml` — BusyIndicator post-splash
+- `tests/test_phased_startup.py` — chat_message_repository + decision_audit_trail en helper
+- `docs/governance/` — DECISION_LOG (D-021 a D-023), TESTS_STATE, SESSION_HANDOFF
 
 ---
 
 ## Que quedo pendiente
 
-1. **Validacion Windows live** de todo el stack audit (bridges QML + toast + GAP C/D + bootstrap wiring) con Codex/Windsurf
-2. **Dialog close tracking** — no hay Python-side @Slot para respuesta de dialogs QML.
-   Los dialogs se abren via Python signal pero se cierran en QML sin callback Python.
-   Requiere agregar un @Slot en ControlCenterVM (ej: `submitCredentialResponse(str, str, bool)`).
-   UNRESOLVED: U2
-3. **AutonomyCycleService** — UNRESOLVED (U1), funcionalidad dispersa en OSES/TOR
-4. **Resume-aware orchestration** — leer startup_summary() al arrancar
-5. **Selector unificado** — agregar rutas web como candidatos formales
-6. **UniversalAutonomyIndex en OSES** — calculo de metricas de autonomia
+1. **Validacion Windows live** — arrancar IABV con cambios actuales para verificar: runtime_audit.jsonl se genera, OSES se actualiza, BusyIndicator post-splash aparece, dialogo "Permitir observacion" aparece al pedir ChatGPT
+2. **QML native Popup/Dialog sin bridge Python** — UNRESOLVED U3: dialogs QML que se abren/cierran sin Python signal no se capturan
+3. **AutonomyCycleService** — UNRESOLVED U1, funcionalidad dispersa en OSES/TOR
+4. **RAM 8,863MB** — requiere profiling en Windows con memory_profiler para identificar que VM dispara el pico
+5. **Resume-aware orchestration** — leer startup_summary() al arrancar
+6. **Selector unificado** — agregar rutas web como candidatos formales
+7. **UniversalAutonomyIndex en OSES** — calculo de metricas de autonomia
 
 ---
 
@@ -124,7 +140,7 @@
 
 | Area | Estado |
 |---|---|
-| Tests (Linux) | 2519 passed / 24 failed / 23 skipped |
+| Tests (Linux) | 3070 passed / 21 failed / 36 skipped |
 | Control Master | Actualizado esta sesion |
 | Bootstrap | Funcional, audit bridges wired |
 | Orquestador (ATO) | Funcional, quota wiring + audit perception |
@@ -132,7 +148,9 @@
 | TaskContextAssembler | Funcional, ui_visibility en live_audit |
 | ControlCenterVM | Funcional con lazy init |
 | DashboardVM | Funcional con lazy init |
-| ui_visibility_audit | Completo: bridges + toast + WM + ATO, 39 tests |
+| ui_visibility_audit | Completo: bridges + toast + WM + ATO + ControlMaster, 46 tests |
+| MainWindowBridge | deferredSetupActive signal para indicador post-splash |
+| ATO preflight | approval_checkpoint auto cuando assistant_unavailable |
 | MCP | Operativo |
 
 ---
@@ -161,5 +179,6 @@ Los conteos de tests difieren entre sesiones porque origin/main avanzo:
 - Baseline original (sesion 1): 2391 passed / 29 failed / 25 skipped
 - Baseline sesion 2: 2489 passed / 24 failed / 23 skipped
 - Baseline sesion 3: 2506 passed / 24 failed / 23 skipped (+17 tests nuevos)
-- Baseline sesion 4 (actual): 2519 passed / 24 failed / 23 skipped (+13 tests nuevos: GAP C/D + runtime wiring)
-- Todos los 24 fallos son pre-existentes en origin/main (verificado)
+- Baseline sesion 4: 2519 passed / 24 failed / 23 skipped (+13 tests nuevos: GAP C/D + runtime wiring)
+- Baseline sesion 5 (actual): 3070 passed / 21 failed / 36 skipped (main avanzo +554 tests, 3 fallos menos)
+- Todos los 21 fallos son pre-existentes en origin/main (verificado contra checkout de main)

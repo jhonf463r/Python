@@ -213,6 +213,13 @@ Item {
                     Label { text: "Chat operativo"; color: textPrimary; font.pixelSize: 22; font.family: "Segoe UI" }
                     RowLayout {
                         width: chatCol.width
+                        spacing: 6
+                        visible: mainWindowBridge ? mainWindowBridge.deferredSetupActive : false
+                        BusyIndicator { running: parent.visible; implicitWidth: 16; implicitHeight: 16 }
+                        Label { text: "Finalizando inicializacion de herramientas..."; color: "#8899aa"; font.pixelSize: 11; font.family: "Segoe UI" }
+                    }
+                    RowLayout {
+                        width: chatCol.width
                         spacing: 10
                         Label {
                             Layout.fillWidth: true

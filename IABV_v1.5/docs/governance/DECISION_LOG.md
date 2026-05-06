@@ -141,6 +141,27 @@
 - **Estado:** UNRESOLVED U2
 - **Riesgo:** Bajo — los dialog open events SI se capturan; solo falta el close event
 
+### D-2026-05-05-021: Dialog close @Slot en ViewModels
+- **Razon:** UNRESOLVED U2 requeria un @Slot que QML pudiera llamar al cerrar un dialog. Sin esto, `dialog_closed` nunca se registraba en audit.
+- **Cambio:** Nuevo `@Slot(str, str) recordDialogClosed(dialog, response_type)` en `ControlCenterViewModel` y `EvolutionCenterViewModel`. Conecta con `QmlDialogAuditBridge.record_dialog_closed()` via atributo `_qml_dialog_audit_bridge`.
+- **Modulos afectados:** `control_center_viewmodel.py`, `evolution_center_viewmodel.py`
+- **Estado:** Implementado. UNRESOLVED U2 → resuelto parcial (QML debe llamar al slot; sin wiring QML-side automático pasa a U3)
+- **Riesgo:** Bajo — @Slot aditivo, no modifica logica existente
+
+### D-2026-05-05-022: ControlMasterService consume audit visible
+- **Razon:** Control Master operaba sin conocimiento de lo que el usuario ve en pantalla. Los eventos de audit (popups inesperados, FileNotFoundError, toasts) no influian en la gobernanza de continuidad.
+- **Cambio:** Nuevo parametro `ui_visibility_audit_log` en `ControlMasterService.__init__()`. Nuevo metodo `_ui_visibility_compact()` que genera resumen para `metadata['ui_visibility']` con total_events, by_category, unresolved_count, file_not_found_count, has_unexpected.
+- **Modulos afectados:** `control_master_service.py`, `bootstrap.py`
+- **Estado:** Implementado, 2 tests nuevos (with/without audit log)
+- **Riesgo:** Bajo — lectura compacta en metadata, no modifica ciclo de decisiones del Control Master
+
+### D-2026-05-05-023: Splash/Subprocess/Win32 wiring en bootstrap
+- **Razon:** Clases SplashAuditAdapter, SubprocessAuditWrapper, Win32PopupWatcher existian pero no estaban instanciadas en bootstrap. Eran codigo muerto.
+- **Cambio:** (1) SplashAuditAdapter instanciado junto al splash, `on_shown()` + `closingNow.connect(on_closed)`. (2) FileNotFoundError de MCP y tunnel subprocess registrado via `get_audit_log().record_file_not_found()`. (3) Win32PopupWatcher instanciado en `_wire_ui_audit_bridges()`, `stop()` en `shutdown()`.
+- **Modulos afectados:** `bootstrap.py`
+- **Estado:** Implementado, 4 tests nuevos
+- **Riesgo:** Bajo — try/except en todos los wiring points, fallback seguro
+
 ---
 
 ## Decisiones historicas relevantes

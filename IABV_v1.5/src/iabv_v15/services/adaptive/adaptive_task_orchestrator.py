@@ -3696,6 +3696,24 @@ class AdaptiveTaskOrchestrator:
         if not blocked and not worker_gate.get('usable', False):
             blocked = True
             reason = str(worker_gate.get('reason') or 'No hay worker usable para esta ruta.')
+            if not approval_checkpoints:
+                approval_checkpoints.append(
+                    ApprovalCheckpoint(
+                        title=f'Permitir apertura de {normalized_assistant or "asistente externo"}',
+                        detail=(
+                            f'{normalized_assistant or "El asistente externo"} no esta disponible ahora mismo. '
+                            'Puedes autorizar que IABV intente abrirlo o verificar su estado.'
+                        ),
+                        phase_key='observation_permission',
+                        reason=reason,
+                        risk_level=IssueSeverity.LOW,
+                        metadata={
+                            'assistant_kind': normalized_assistant,
+                            'worker_gate_reason': reason,
+                            'auto_generated': True,
+                        },
+                    )
+                )
         top_worker = dict(worker_gate.get('top_worker') or {}) if worker_gate.get('usable') else {}
         has_world = bool(
             world_model.tool_live_status

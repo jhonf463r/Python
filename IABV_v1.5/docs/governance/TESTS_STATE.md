@@ -1,6 +1,6 @@
 # IABV v1.5 — Estado de Tests
 
-**Actualizado:** 2026-05-04
+**Actualizado:** 2026-05-05
 **Entorno:** Ubuntu Linux (Devin VM), Python 3.12.8, pytest 9.0.3
 
 ---
@@ -9,18 +9,22 @@
 
 | Metrica | Valor |
 |---|---|
-| Total ejecutados | 2566 |
-| Passed | 2519 |
-| Failed | 24 |
-| Skipped | 23 |
-| Warnings | 102 |
-| Duracion | 273.14s (4:33) |
+| Total ejecutados | 3127 |
+| Passed | 3070 |
+| Failed | 21 |
+| Skipped | 36 |
+| Warnings | 25 |
+| Duracion | 251.71s (4:11) |
 | Regresiones nuevas | 0 |
 
-**Nota:** El aumento de tests (2536 -> 2566) se debe a 30 tests nuevos acumulados:
+**Nota:** El aumento de tests (2566 -> 3127) incluye tests de main (PRs 346-349) mas:
 - 8 DashboardVM lazy init
 - 9 ui_visibility_audit base
-- 13 GAP C/D + runtime wiring (sesion actual)
+- 13 GAP C/D + runtime wiring
+- 7 operational wiring (splash, subprocess, Win32, dialog close, Control Master)
+- Tests de main: evidence tags, capabilities, chat presentation, signals, task packet
+
+**Reduccion de fallos:** 24 -> 21 (todos pre-existentes en origin/main, 0 nuevos)
 
 ---
 
@@ -29,7 +33,7 @@
 | Archivo | Tests | Estado |
 |---|---|---|
 | `test_dashboard_lazy_init.py` | 8 | PASS |
-| `test_ui_visibility_audit.py` | 39 | PASS (9 base + 7 QML/toast + 5 GAP C + 3 GAP D + 5 runtime wiring + 2 Win32 + 8 previos) |
+| `test_ui_visibility_audit.py` | 46 | PASS (9 base + 7 QML/toast + 5 GAP C + 3 GAP D + 5 runtime wiring + 2 Win32 + 8 previos + 7 operational wiring) |
 
 ---
 
