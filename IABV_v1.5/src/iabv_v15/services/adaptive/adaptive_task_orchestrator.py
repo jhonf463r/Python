@@ -121,6 +121,53 @@ def _is_local_chat_flow(session: AdaptiveSession) -> bool:
     return False
 
 
+def _build_tool_selection_summary(
+    *,
+    worker_gate: dict[str, Any],
+    gate_ran: bool,
+    governance: dict[str, Any],
+    session_metadata: dict[str, Any],
+) -> dict[str, Any]:
+    """Build a short, traceable summary of tool/account selection.
+
+    Fields:
+    - selected_tool: assistant_kind chosen
+    - reason: canonical reason string
+    - fallback_used: whether a fallback occurred
+    - fallback_origin: original tool if fallback
+    - quota_confirmed: whether the quota was actually observed
+    - alternatives_discarded: brief list
+    """
+    if not gate_ran:
+        return {'selected_tool': '', 'reason': 'gate_not_ran', 'fallback_used': False, 'quota_confirmed': False}
+
+    top = dict(worker_gate.get('top_worker') or {})
+    recommended = dict(worker_gate.get('recommended_account') or {})
+    source = str(worker_gate.get('account_selection_source') or 'auto_ranked')
+    fallback = bool(worker_gate.get('fallback_used', False))
+    assistant_kind = str(governance.get('assistant_kind') or top.get('tool') or '')
+
+    ranked = list(worker_gate.get('ranked_workers') or [])
+    discarded = [
+        {'tool': str(w.get('tool', '')), 'email': str(w.get('email', '')), 'reason': 'lower_score'}
+        for w in ranked[1:3]
+    ]
+
+    pre_dispatch = dict(session_metadata.get('pre_dispatch_blocked') or {})
+    if pre_dispatch:
+        fallback = fallback or pre_dispatch.get('fallback_attempted', False)
+
+    return {
+        'selected_tool': assistant_kind,
+        'selected_email': str(top.get('email', '')),
+        'reason': f'source={source}',
+        'fallback_used': fallback,
+        'fallback_origin': str(recommended.get('tool', '')) if fallback else '',
+        'quota_confirmed': bool(top.get('remaining') is not None and top.get('remaining', 0) >= 0),
+        'alternatives_discarded': discarded,
+    }
+
+
 class AdaptiveTaskOrchestrator:
     def __init__(
         self,
@@ -141,6 +188,7 @@ class AdaptiveTaskOrchestrator:
         autonomy_governance_policy: AutonomyGovernancePolicy | None = None,
         synaptic_router: Any | None = None,
         experiment_lab: Any | None = None,
+        autonomy_cycle_service: Any | None = None,
     ) -> None:
         self.role_router = role_router
         self.adaptive_session_repository = adaptive_session_repository
@@ -165,6 +213,7 @@ class AdaptiveTaskOrchestrator:
         # ``ExperimentRun`` persistidos en su repositorio. Es puramente
         # descriptivo; nunca decide ruta operativa.
         self.experiment_lab = experiment_lab
+        self.autonomy_cycle_service = autonomy_cycle_service
         self.cloud_reasoning_planner: CloudReasoningPlannerService | None = None
         self.api_key_discovery_service: Any | None = None
         self.decision_audit_trail: Any | None = None
@@ -180,6 +229,22 @@ class AdaptiveTaskOrchestrator:
         self._pending_queue: list[dict[str, Any]] = []
         self._COGNITIVE_LOAD_THRESHOLD = 5
         self._processing_count: int = 0
+        # Shadow mode (Brecha 2.1): timestamp of last shadow dispatch.
+        self._last_shadow_at: float = 0.0
+        self._SHADOW_COOLDOWN_SECONDS: float = 300.0
+
+    def _load_resume_context(self) -> dict[str, Any]:
+        """Read startup_summary from AutonomyCycleService.
+
+        Returns actionable resume hints + pending tasks, or empty dict
+        if the service is not wired.
+        """
+        if self.autonomy_cycle_service is None:
+            return {}
+        try:
+            return self.autonomy_cycle_service.startup_summary()
+        except Exception:
+            return {}
 
     # --- Fase 2: Quota tracking wiring ----------------------------------
     # Registra cada despacho externo en el quota tracker para que el
@@ -366,6 +431,12 @@ class AdaptiveTaskOrchestrator:
         )
         # Fase 2: registrar uso de cuota para comparación paralela.
         self._record_quota_usage_for_candidate(candidate)
+        _candidate_kind = str(candidate.get('assistant_kind') or '').strip().lower()
+        _gate = self.role_router.worker_health_gate(
+            target_assistant=_candidate_kind,
+        ) if _candidate_kind else {}
+        _email = str((_gate.get('top_worker') or {}).get('email') or '')
+
         result = service.plan_or_execute(
             adaptive_payload=payload,
             user_goal=request.user_goal,
@@ -373,8 +444,20 @@ class AdaptiveTaskOrchestrator:
             decision_context=decision_context,
         )
         result_dict = dict(result or {})
-        result_dict.setdefault('assistant_kind', str(candidate.get('assistant_kind') or ''))
+        result_dict.setdefault('assistant_kind', _candidate_kind)
         result_dict['candidate_score'] = float(candidate.get('score') or 0.0)
+
+        # Fase 2: record quota for parallel comparison dispatches too.
+        _status = str(result_dict.get('status') or '')
+        if _status not in ('noop', 'failed', 'blocked_external', 'unavailable', ''):
+            quota = self._record_quota_usage(
+                str(result_dict.get('actual_assistant_kind') or _candidate_kind),
+                _email,
+                source='parallel_ia_comparison',
+            )
+            if quota is not None:
+                result_dict['quota_status'] = quota
+
         return result_dict
 
     @staticmethod
@@ -552,6 +635,40 @@ class AdaptiveTaskOrchestrator:
         except Exception:
             pass
         return result
+
+    # ------------------------------------------------------------------
+    # Fase 2: Quota tracker — record usage against free-tier limits
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _record_quota_usage(
+        assistant_kind: str,
+        account_email: str,
+        *,
+        source: str = '',
+    ) -> dict[str, Any] | None:
+        """Call ``record_message_sent`` to count usage against free-tier limits.
+
+        Returns the quota status dict on success, ``None`` on failure or
+        missing data.  Never raises — quota tracking must not break the
+        dispatch flow.
+        """
+        tool = (assistant_kind or '').strip().lower()
+        email = (account_email or '').strip()
+        if not tool or not email:
+            return None
+        try:
+            from iabv_v15.services.account_resource_scanner import (
+                record_message_sent,
+            )
+            return record_message_sent(tool=tool, email=email)
+        except Exception:
+            import logging
+            logging.getLogger('iabv_v15.orchestrator').debug(
+                'quota_tracker: failed to record usage for %s/%s', tool, email,
+                exc_info=True,
+            )
+            return None
 
     # ------------------------------------------------------------------
     # TemporalAwareness: track and detect task timing anomalies
@@ -821,6 +938,10 @@ class AdaptiveTaskOrchestrator:
                 'site_hint': request.site_hint or '',
             },
         }
+        _gate = self.role_router.worker_health_gate(
+            target_assistant=secondary_kind,
+        ) if secondary_kind else {}
+        _email = str((_gate.get('top_worker') or {}).get('email') or '')
         try:
             result = self.autonomous_evolution_service.plan_or_execute(
                 adaptive_payload=payload,
@@ -832,6 +953,15 @@ class AdaptiveTaskOrchestrator:
             result_dict.setdefault('assistant_kind', secondary_kind)
             result_dict['chained_from'] = primary_kind
             result_dict['chain_type'] = 'iterative_reasoning'
+            _status = str(result_dict.get('status') or '')
+            if _status not in ('noop', 'failed', 'blocked_external', ''):
+                quota = self._record_quota_usage(
+                    str(result_dict.get('actual_assistant_kind') or secondary_kind),
+                    _email,
+                    source='chained_ia_consultation',
+                )
+                if quota is not None:
+                    result_dict['quota_status'] = quota
             return result_dict
         except Exception:
             return None
@@ -908,6 +1038,10 @@ class AdaptiveTaskOrchestrator:
                 'plan_type': str(best_proposal.get('type') or ''),
             },
         }
+        _gate_p = self.role_router.worker_health_gate(
+            target_assistant=primary_ia,
+        ) if primary_ia else {}
+        _email_p = str((_gate_p.get('top_worker') or {}).get('email') or '')
         try:
             primary_result = self.autonomous_evolution_service.plan_or_execute(
                 adaptive_payload=primary_payload,
@@ -919,6 +1053,15 @@ class AdaptiveTaskOrchestrator:
             return None
         primary_dict = dict(primary_result or {})
         primary_dict.setdefault('assistant_kind', primary_ia)
+        _ps = str(primary_dict.get('status') or '')
+        if _ps not in ('noop', 'failed', 'blocked_external', ''):
+            _q = self._record_quota_usage(
+                str(primary_dict.get('actual_assistant_kind') or primary_ia),
+                _email_p,
+                source='coordinated_plan_primary',
+            )
+            if _q is not None:
+                primary_dict['quota_status'] = _q
         chained_result = None
         if secondary_ia and self._has_external_response(primary_dict):
             request = InferenceRequest(
@@ -991,6 +1134,10 @@ class AdaptiveTaskOrchestrator:
                 'proposal_title': str(best.get('title') or ''),
             },
         }
+        _gate_ap = self.role_router.worker_health_gate(
+            target_assistant=primary_ia,
+        ) if primary_ia else {}
+        _email_ap = str((_gate_ap.get('top_worker') or {}).get('email') or '')
         try:
             primary_result = self.autonomous_evolution_service.plan_or_execute(
                 adaptive_payload=primary_payload,
@@ -1002,6 +1149,15 @@ class AdaptiveTaskOrchestrator:
             return None
         primary_dict = dict(primary_result or {})
         primary_dict.setdefault('assistant_kind', primary_ia)
+        _aps = str(primary_dict.get('status') or '')
+        if _aps not in ('noop', 'failed', 'blocked_external', ''):
+            _aq = self._record_quota_usage(
+                str(primary_dict.get('actual_assistant_kind') or primary_ia),
+                _email_ap,
+                source='auto_execute_from_sync_pulse',
+            )
+            if _aq is not None:
+                primary_dict['quota_status'] = _aq
         secondary_ia = str(best.get('secondary_ia') or '')
         chained_result = None
         if secondary_ia and self._has_external_response(primary_dict):
@@ -1463,13 +1619,34 @@ class AdaptiveTaskOrchestrator:
                 target_assistant=_target,
                 block_signals=_block_signals or None,
             )
+            _selection_source = str(_gate.get('account_selection_source') or 'auto_ranked')
+            _fallback_used = bool(_gate.get('fallback_used', False))
             session.metadata['worker_gate'] = {
                 'usable': bool(_gate.get('usable', False)),
                 'top_worker': _gate.get('top_worker') if _gate.get('usable') else None,
+                'recommended_account': _gate.get('recommended_account'),
                 'ranked_workers': list(_gate.get('ranked_workers') or [])[:5],
                 'available_count': int(_gate.get('available_count', 0)),
                 'reason': str(_gate.get('reason') or '') if not _gate.get('usable') else '',
+                'account_selection_source': _selection_source,
+                'fallback_used': _fallback_used,
             }
+            if _gate.get('approved_account'):
+                session.metadata['worker_gate']['approved_account'] = _gate['approved_account']
+
+            self._audit_account_selection(
+                tool=_target,
+                gate=_gate,
+                user_goal=request.user_goal,
+            )
+
+        if not session.metadata.get('_resume_loaded'):
+            _resume = self._load_resume_context()
+            if _resume.get('resume_hints'):
+                session.metadata['resume_context'] = _resume
+                session.metadata['has_resume_hints'] = True
+                session.metadata['resume_hint_count'] = len(_resume['resume_hints'])
+            session.metadata['_resume_loaded'] = True
 
         session.metadata['task_packet'] = self._build_task_packet(
             session=session,
@@ -1479,7 +1656,50 @@ class AdaptiveTaskOrchestrator:
 
         saved_session = self.task_outcome_recorder.record(session)
         route = self._build_route(saved_session, decision_context)
+
+        # Pre-dispatch evidence guard (Brecha 2.4): check WorldModel
+        # evidence BEFORE dispatching.  If the primary provider is
+        # blocked, try the fallback; if both are blocked, record the
+        # block and let the caller see it in route metadata.
+        _wm_guard = getattr(perception, 'world_model', None) if perception is not None else None
+        _can_dispatch, _block_reason = self._pre_dispatch_evidence_guard(route, _wm_guard)
+        if not _can_dispatch:
+            logger.warning('Pre-dispatch guard blocked route %s: %s', route.provider_name, _block_reason)
+            meta = dict(saved_session.metadata or {})
+            meta['pre_dispatch_blocked'] = {
+                'provider': route.provider_name,
+                'reason': _block_reason,
+                'fallback_attempted': False,
+            }
+            if route.fallback_provider_name:
+                fallback_route = route.model_copy(update={
+                    'provider_name': route.fallback_provider_name,
+                    'used_fallback': True,
+                    'reason': f'{route.reason} [primary blocked: {_block_reason}]',
+                })
+                _fb_ok, _fb_reason = self._pre_dispatch_evidence_guard(fallback_route, _wm_guard)
+                meta['pre_dispatch_blocked']['fallback_attempted'] = True
+                if _fb_ok:
+                    route = fallback_route
+                    meta['pre_dispatch_blocked']['fallback_used'] = True
+                    logger.info('Pre-dispatch guard: fallback to %s', route.provider_name)
+                else:
+                    meta['pre_dispatch_blocked']['fallback_blocked'] = _fb_reason
+                    logger.warning('Pre-dispatch guard: fallback %s also blocked: %s', route.fallback_provider_name, _fb_reason)
+            saved_session.metadata = meta
+
         result = self._build_result(request=request, session=saved_session, pack=pack, route=route)
+
+        # Shadow mode (Brecha 2.1): fire shadow local dispatch for
+        # comparative learning.  Runs after result is built so it
+        # never delays the user-facing response.
+        _wm_shadow = getattr(perception, 'world_model', None) if perception is not None else None
+        _pressure = dict(saved_session.metadata.get('resource_pressure') or {})
+        if self._should_shadow(saved_session, _wm_shadow, _pressure):
+            try:
+                self._shadow_parallel_dispatch(saved_session, route, result, _wm_shadow)
+            except Exception:
+                pass
 
         return route, result, saved_session
 
@@ -1551,14 +1771,38 @@ class AdaptiveTaskOrchestrator:
             )
             if coordinated_payload is not None:
                 return coordinated_payload
-        # Fase 2: registrar uso de cuota antes del despacho externo.
-        self._record_quota_usage(payload, decision_context)
+        # Resolve worker gate for quota tracking before dispatch.
+        _dispatch_tool = str(
+            (decision_context.governance or {}).get('assistant_kind') or ''
+        ).strip().lower()
+        _gate_for_quota = self.role_router.worker_health_gate(
+            target_assistant=_dispatch_tool,
+        ) if _dispatch_tool else {}
+        _dispatch_email = str(
+            (_gate_for_quota.get('top_worker') or {}).get('email') or ''
+        )
+
         result = self.autonomous_evolution_service.plan_or_execute(
             adaptive_payload=payload,
             user_goal=user_goal,
             source=source,
             decision_context=decision_context,
         )
+
+        # Fase 2: record quota usage after successful external dispatch.
+        _result_status = str(result.get('status') or '')
+        if _result_status not in ('noop', 'failed', 'blocked_external', ''):
+            _actual_kind = str(
+                result.get('actual_assistant_kind')
+                or result.get('assistant_kind')
+                or _dispatch_tool
+            )
+            quota_status = self._record_quota_usage(
+                _actual_kind, _dispatch_email, source=source,
+            )
+            if quota_status is not None:
+                result['quota_status'] = quota_status
+
         # Incrementar contador de reintentos si es un reintento
         if needs_retry:
             result['retry_count'] = retry_count + 1
@@ -2990,11 +3234,14 @@ class AdaptiveTaskOrchestrator:
         autonomous evolution service can see which accounts have active
         sessions and remaining free-tier messages.  Failures are silently
         swallowed to avoid disrupting the decision pipeline.
+
+        Includes ``selected_accounts`` from the ``AccountApprovalLedger``
+        so downstream consumers see which tools have user-approved overrides.
         """
         try:
             from iabv_v15.services.account_resource_scanner import estimate_available_workers
             pool = estimate_available_workers()
-            return {
+            result: dict[str, Any] = {
                 'available_count': pool.get('available_count', 0),
                 'exhausted_count': pool.get('exhausted_count', 0),
                 'total_remaining_messages': pool.get('total_remaining_messages', 0),
@@ -3010,10 +3257,239 @@ class AdaptiveTaskOrchestrator:
                     for w in pool.get('workers', [])[:20]
                 ],
             }
+            selected = self._selected_accounts_snapshot()
+            if selected:
+                result['selected_accounts'] = selected
+            return result
         except Exception:
             return {'available_count': 0, 'error': 'scanner_unavailable'}
 
+    def _audit_account_selection(
+        self,
+        *,
+        tool: str,
+        gate: dict[str, Any],
+        user_goal: str,
+    ) -> None:
+        """Record account selection in the decision audit trail."""
+        if self.decision_audit_trail is None:
+            return
+        try:
+            from iabv_v15.services.evolution.decision_audit_trail import (
+                DecisionOutcome,
+                DecisionPhase,
+                DecisionRecord,
+            )
+            source = str(gate.get('account_selection_source') or 'auto_ranked')
+            fallback = bool(gate.get('fallback_used', False))
+            top = gate.get('top_worker') or {}
+            recommended = gate.get('recommended_account') or top
+            approved = gate.get('approved_account') or {}
+            outcome = DecisionOutcome.FALLBACK_USED if fallback else DecisionOutcome.SUCCESS
+            self.decision_audit_trail.record(DecisionRecord(
+                phase=DecisionPhase.PROVIDER_SELECTION,
+                provider_id=top.get('tool', tool) or tool,
+                model_used=top.get('email', ''),
+                user_goal=user_goal,
+                outcome=outcome,
+                confidence=float(top.get('score', 0.0)),
+                metadata={
+                    'account_selection': {
+                        'tool': tool,
+                        'source': source,
+                        'selected_email': top.get('email', ''),
+                        'recommended_email': recommended.get('email', ''),
+                        'approved_email': approved.get('email', ''),
+                        'fallback_used': fallback,
+                        'available_count': int(gate.get('available_count', 0)),
+                        'is_human_approved': source in ('user_approved', 'user_approved_fallback'),
+                    },
+                },
+            ))
+        except Exception:
+            pass
+
+    def _selected_accounts_snapshot(self) -> dict[str, dict[str, str]]:
+        """Read per-tool user-approved accounts from the ledger."""
+        ledger = getattr(self.role_router, '_account_approval_ledger', None)
+        if ledger is None:
+            return {}
+        try:
+            approvals = ledger.get_all()
+            return {
+                tool: {
+                    'email': a.email,
+                    'approved_at': a.approved_at.isoformat() if a.approved_at else '',
+                    'origin': a.origin,
+                }
+                for tool, a in approvals.items()
+            }
+        except Exception:
+            return {}
+
     # ── live block-signals → worker gate ────────────────────────
+
+    # ------------------------------------------------------------------
+    # Pre-dispatch evidence guard (Brecha 2.4)
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _pre_dispatch_evidence_guard(
+        route: RoleRoute,
+        world: WorldModelSnapshot | None,
+    ) -> tuple[bool, str]:
+        """Check WorldModel evidence BEFORE dispatching to an external route.
+
+        Returns ``(can_dispatch, reason)``.  When *world* is ``None`` the
+        guard is permissive (backward compatible).
+        """
+        if world is None:
+            return True, ''
+
+        provider = route.provider_name.lower()
+
+        # 1. detected_blocks — free-text strings that mention the provider
+        for block in (world.detected_blocks or []):
+            if provider in str(block).lower():
+                return False, f'detected_block:{block}'
+
+        # 2. tool_live_status — structured liveness probe
+        for tool_status in (world.tool_live_status or []):
+            kind = (tool_status.assistant_kind or '').lower()
+            if kind and kind in provider:
+                if not tool_status.available:
+                    return False, f'tool_not_available:{kind}:{tool_status.status}'
+
+        # 3. permission_gates — observation permission not granted
+        for gate in (world.permission_gates or []):
+            kind = (gate.assistant_kind or '').lower()
+            if kind and kind in provider and not gate.granted:
+                return False, f'permission_not_granted:{kind}'
+
+        return True, ''
+
+    # ------------------------------------------------------------------
+    # Shadow mode — parallel cloud+local dispatch for learning (Brecha 2.1)
+    # ------------------------------------------------------------------
+
+    _SHADOW_NON_REASONING_ROLES = frozenset({
+        TaskRole.VISUAL,
+        TaskRole.TOOL_USE,
+        TaskRole.TOOL_SANDBOX,
+    })
+
+    def _should_shadow(
+        self,
+        session: AdaptiveSession,
+        world: WorldModelSnapshot | None,
+        resource_pressure: dict[str, Any],
+    ) -> bool:
+        """Decide if shadow parallel dispatch should activate."""
+        import time as _time
+
+        if resource_pressure.get('critical'):
+            return False
+        if resource_pressure.get('under_pressure'):
+            if session.intent.confidence < 0.7:
+                return False
+        if not self._has_local_provider(world):
+            return False
+        if self._last_shadow_at and (_time.time() - self._last_shadow_at) < self._SHADOW_COOLDOWN_SECONDS:
+            return False
+        role = session.intent.detected_role
+        if role in self._SHADOW_NON_REASONING_ROLES:
+            return False
+        return True
+
+    @staticmethod
+    def _has_local_provider(world: WorldModelSnapshot | None) -> bool:
+        """Check if a local provider (Ollama) is available."""
+        if world is None:
+            return True  # assume available when no evidence
+        for tool in (world.tool_live_status or []):
+            kind = (tool.assistant_kind or '').lower()
+            if 'ollama' in kind and tool.available:
+                return True
+        # No explicit tool_live_status for ollama — assume available
+        # (the ATO already has ollama_local in its provider list).
+        if not world.tool_live_status:
+            return True
+        return False
+
+    def _shadow_parallel_dispatch(
+        self,
+        session: AdaptiveSession,
+        primary_route: RoleRoute,
+        primary_result: InferenceResult,
+        world: WorldModelSnapshot | None,
+    ) -> None:
+        """Run a shadow local inference and record both in ExperimentLab.
+
+        The primary result is already returned to the user.  This
+        method runs the local shadow asynchronously and registers both
+        results for comparative learning.  Never raises.
+        """
+        import time as _time
+
+        lab = self.experiment_lab
+        if lab is None:
+            return
+        self._last_shadow_at = _time.time()
+        scope_key = f'shadow_{session.session_id}'
+        primary_start = _time.time()
+        primary_latency = int(primary_result.raw_output.get('elapsed_ms', 0)) if primary_result.raw_output else 0
+
+        # Shadow: invoke local LLM with same prompt
+        shadow_summary = ''
+        shadow_success = False
+        shadow_latency = 0
+        try:
+            shadow_start = _time.time()
+            shadow_result = self._maybe_invoke_local_chat_llm(
+                session=session,
+                request=InferenceRequest(
+                    user_goal=session.user_goal,
+                    task_role=session.intent.detected_role,
+                ),
+            )
+            shadow_latency = int((_time.time() - shadow_start) * 1000)
+            if shadow_result:
+                shadow_summary = str(shadow_result.get('summary') or '')
+                shadow_success = bool(shadow_summary)
+        except Exception:
+            logger.debug('Shadow local dispatch failed', exc_info=True)
+
+        # Record both in ExperimentLab
+        try:
+            from iabv_v15.domain.models import ExperimentMetric
+
+            lab.repository.save_run(ExperimentRun(
+                domain=ExperimentDomain.CLOUD_REASONING,
+                suite_name='shadow_parallel',
+                objective=session.user_goal[:200],
+                route=EvaluationRoute.CLOUD,
+                assistant_kind=primary_route.provider_name,
+                success=bool(primary_result.summary),
+                metrics=ExperimentMetric(
+                    precision=primary_result.confidence,
+                    execution_ms=primary_latency,
+                ),
+                metadata={'comparison_scope_key': scope_key},
+            ))
+            lab.repository.save_run(ExperimentRun(
+                domain=ExperimentDomain.CLOUD_REASONING,
+                suite_name='shadow_parallel',
+                objective=session.user_goal[:200],
+                route=EvaluationRoute.LOCAL,
+                assistant_kind='ollama_local',
+                success=shadow_success,
+                metrics=ExperimentMetric(
+                    precision=0.5 if shadow_success else 0.0,
+                    execution_ms=shadow_latency,
+                ),
+                metadata={'comparison_scope_key': scope_key},
+            ))
+        except Exception:
+            logger.debug('Shadow ExperimentLab recording failed', exc_info=True)
 
     # Mapping from ToolLiveStatus field values / external_state_flags
     # to the canonical signal names accepted by _BLOCK_SIGNAL_WEIGHTS
@@ -3101,8 +3577,17 @@ class AdaptiveTaskOrchestrator:
                 'usable': bool(worker_gate.get('usable', False)),
                 'top_worker': top_worker,
                 'available_count': int(worker_gate.get('available_count', 0)),
+                'account_selection_source': str(worker_gate.get('account_selection_source') or 'auto_ranked'),
+                'fallback_used': bool(worker_gate.get('fallback_used', False)),
             },
             'selected_worker': top_worker,
+            'account_selection': {
+                'source': str(worker_gate.get('account_selection_source') or 'auto_ranked'),
+                'fallback_used': bool(worker_gate.get('fallback_used', False)),
+                'recommended_account': dict(worker_gate.get('recommended_account') or {}),
+                'approved_account': dict(worker_gate.get('approved_account') or {}),
+                'is_human_approved': str(worker_gate.get('account_selection_source') or '') in ('user_approved', 'user_approved_fallback'),
+            },
             'evidence_basis': evidence_basis,
             'governance_flags': {
                 'approval_required': bool(governance.get('approval_required')),
@@ -3110,6 +3595,14 @@ class AdaptiveTaskOrchestrator:
                 'block_risky_action': bool(governance.get('block_risky_action')),
             },
             'unresolved': list(getattr(perception, 'unresolved_fields', []) or []) if perception is not None else [],
+            'resume_context': dict(session.metadata.get('resume_context') or {}),
+            'has_resume_hints': bool(session.metadata.get('has_resume_hints', False)),
+            'tool_selection_summary': _build_tool_selection_summary(
+                worker_gate=worker_gate,
+                gate_ran=gate_ran,
+                governance=governance,
+                session_metadata=dict(session.metadata or {}),
+            ),
         }
 
     @classmethod
@@ -3245,6 +3738,9 @@ class AdaptiveTaskOrchestrator:
                 'block_risky_action': bool(governance.get('block_risky_action')),
             },
             'unresolved': all_unresolved,
+            'resume_context': {},
+            'has_resume_hints': False,
+            'account_selection': {},
         }
         return {
             'assistant_kind': normalized_assistant,

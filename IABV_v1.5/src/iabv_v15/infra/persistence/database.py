@@ -1,8 +1,18 @@
 from __future__ import annotations
 
+import logging
+import os
 from pathlib import Path
 import sqlite3
+import time
 from typing import Iterable
+
+logger = logging.getLogger(__name__)
+
+# Default busy timeout in milliseconds.  Gives concurrent processes
+# (UI + MCP) time to release the write lock instead of failing
+# immediately with ``database is locked``.
+_BUSY_TIMEOUT_MS = int(os.environ.get('IABV_SQLITE_BUSY_TIMEOUT_MS', '5000'))
 
 
 class AppDatabase:
@@ -12,12 +22,21 @@ class AppDatabase:
         self._initialize()
 
     def connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self.sqlite_path)
+        connection = sqlite3.connect(str(self.sqlite_path))
         connection.row_factory = sqlite3.Row
+        connection.execute(f'PRAGMA busy_timeout={_BUSY_TIMEOUT_MS}')
         return connection
 
     def _initialize(self) -> None:
         with self.connect() as conn:
+            # WAL mode allows concurrent readers+writer, essential for
+            # UI + MCP coexistence.  Disabled in tests via env var to
+            # avoid WAL/SHM file cleanup races with shutil.rmtree.
+            if os.environ.get('IABV_SQLITE_WAL', '1') == '1':
+                try:
+                    conn.execute('PRAGMA journal_mode=WAL')
+                except Exception:
+                    pass
             conn.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS episodes (
@@ -325,6 +344,28 @@ class AppDatabase:
                     created_at_utc TEXT NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS chat_messages (
+                    message_id TEXT PRIMARY KEY,
+                    chat_session_id TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    speaker TEXT NOT NULL,
+                    text TEXT NOT NULL,
+                    meta TEXT NOT NULL DEFAULT '',
+                    evidence_tag TEXT NOT NULL DEFAULT '',
+                    reasoning_path TEXT NOT NULL DEFAULT '',
+                    metadata_json TEXT NOT NULL DEFAULT '{}',
+                    created_at_utc TEXT NOT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_episodes_updated
+                ON episodes (updated_at_utc DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_knowledge_items_updated
+                ON knowledge_items (updated_at_utc DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_run_records_created
+                ON run_records (created_at_utc DESC);
+
                 CREATE INDEX IF NOT EXISTS idx_session_artifacts_episode
                 ON session_artifacts (episode_id, created_at_utc DESC);
 
@@ -489,6 +530,12 @@ class AppDatabase:
 
                 CREATE INDEX IF NOT EXISTS idx_experiment_recommendations_subject
                 ON experiment_recommendations (subject_key, created_at_utc DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_chat_messages_session
+                ON chat_messages (chat_session_id, created_at_utc DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_chat_messages_created
+                ON chat_messages (created_at_utc DESC);
                 """
             )
             self._ensure_column(conn, 'run_records', 'duration_ms', 'INTEGER')
@@ -502,13 +549,51 @@ class AppDatabase:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
     def execute(self, sql: str, parameters: Iterable[object] = ()) -> None:
-        with self.connect() as conn:
-            conn.execute(sql, tuple(parameters))
+        self._exec_with_retry(lambda conn: conn.execute(sql, tuple(parameters)))
 
     def fetchall(self, sql: str, parameters: Iterable[object] = ()) -> list[sqlite3.Row]:
-        with self.connect() as conn:
-            return list(conn.execute(sql, tuple(parameters)).fetchall())
+        return self._query_with_retry(
+            lambda conn: list(conn.execute(sql, tuple(parameters)).fetchall()),
+        )
 
     def fetchone(self, sql: str, parameters: Iterable[object] = ()) -> sqlite3.Row | None:
-        with self.connect() as conn:
-            return conn.execute(sql, tuple(parameters)).fetchone()
+        return self._query_with_retry(
+            lambda conn: conn.execute(sql, tuple(parameters)).fetchone(),
+        )
+
+    def _exec_with_retry(
+        self,
+        fn,
+        *,
+        max_retries: int = 3,
+        backoff_base: float = 0.25,
+    ) -> None:
+        """Execute *fn(conn)* with retry on ``database is locked``."""
+        self._query_with_retry(fn, max_retries=max_retries, backoff_base=backoff_base)
+
+    def _query_with_retry(
+        self,
+        fn,
+        *,
+        max_retries: int = 3,
+        backoff_base: float = 0.25,
+    ):
+        """Execute *fn(conn)* with retry on ``database is locked``.
+
+        Returns whatever *fn* returns.  Used by both write (execute) and
+        read (fetchall/fetchone) paths so that concurrent UI + MCP
+        startup doesn't fail reads either.
+        """
+        for attempt in range(max_retries + 1):
+            try:
+                with self.connect() as conn:
+                    return fn(conn)
+            except sqlite3.OperationalError as exc:
+                if 'database is locked' not in str(exc) or attempt >= max_retries:
+                    raise
+                wait = backoff_base * (2 ** attempt)
+                logger.warning(
+                    'database_locked_retry: attempt=%d/%d wait=%.2fs sql_preview=%s',
+                    attempt + 1, max_retries, wait, str(fn)[:80],
+                )
+                time.sleep(wait)

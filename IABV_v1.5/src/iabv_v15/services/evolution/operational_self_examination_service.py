@@ -90,6 +90,7 @@ class OperationalSelfExaminationService:
         self.decision_audit_trail: Any | None = None
         self.code_audit_trail: Any | None = None
         self.boot_profile_store: Any | None = None
+        self.chat_message_repository: Any | None = None
         self._current_review: SelfExaminationSnapshot | None = None
         # Read-only cache for GitHub API rate-limit data.  Populated
         # externally (e.g. auto-correction scan); _account_resource_health_findings
@@ -712,6 +713,13 @@ class OperationalSelfExaminationService:
             previous_review=previous_review,
             experiment_runs=experiment_runs,
         ))
+        # Grounding gap: detect when OSES has concrete data but its brief
+        # doesn't include the actual numbers — the system is being generic
+        # when it should be specific.
+        findings.extend(self._response_grounding_gap_findings(
+            previous_review=previous_review,
+            current_findings=findings,
+        ))
         # Runtime log self-inspection: read own log tail and detect anomalies
         findings.extend(self._runtime_log_findings())
         # Fix 42-43: Functional gap analysis and underutilized resource detection
@@ -719,8 +727,13 @@ class OperationalSelfExaminationService:
         # Account/quota/worker health: detect exhausted quotas, API issues,
         # missing critical secrets — feeds cross-session learning.
         findings.extend(self._account_resource_health_findings())
+        # Brecha 2.3: web session health — detect expired/missing browser sessions
+        findings.extend(self._web_session_findings())
         # UI self-awareness: detect own window issues (zombie, missing, duplicate)
         findings.extend(self._ui_self_examination_findings(world=world))
+        # Chat observability: detect chat persistence anomalies, reasoning
+        # path imbalance and evidence tag gaps from ChatMessageRepository.
+        findings.extend(self._chat_observability_findings())
 
         # RuntimePerformance: always runs — detects memory pressure, excessive
         # threads, slow network probes and other bottlenecks that cause the UI
@@ -791,9 +804,29 @@ class OperationalSelfExaminationService:
             experiment_runs=experiment_runs,
         ))
 
+        # Adaptive threshold N_c shift detection (Brecha 3.3)
+        findings.extend(self._adaptive_threshold_shift_findings(
+            previous_review=previous_review,
+        ))
+
         # Windows platform integration: detect missing native capabilities
         # and emit structured findings that map to pending tasks.
         findings.extend(self._windows_integration_findings())
+
+        # UniversalAutonomyIndex: calculate composite autonomy metrics from
+        # data already accumulated in ExperimentLab, TaskOutcomeRecorder,
+        # DecisionAuditTrail and WorldModel.  Produces a single finding
+        # with AutonomyScore, ResilienceScore, CalibrationError, BlindSpotRatio.
+        findings.extend(self._universal_autonomy_index_findings(
+            recent_runs=recent_runs,
+            adaptive_sessions=adaptive_sessions,
+            experiment_runs=experiment_runs,
+            world=world,
+            findings_so_far=findings,
+        ))
+
+        # SQLite lock contention: read persisted incident from bootstrap
+        findings.extend(self._sqlite_lock_contention_findings())
 
         findings = self._dedupe_findings(findings)
 
@@ -870,6 +903,16 @@ class OperationalSelfExaminationService:
                 },
             })
 
+        # Store current adaptive threshold N_c for next-review shift detection.
+        try:
+            nc_val = self._compute_current_adaptive_nc()
+            if nc_val is not None:
+                review = review.model_copy(update={
+                    'metadata': {**dict(review.metadata or {}), 'adaptive_threshold_nc': nc_val},
+                })
+        except Exception:
+            pass
+
         # Persist metacognitive ledger from the FULL findings list (before
         # truncation to 8) so MEDIUM-severity entries are not lost.
         self._persist_metacognitive_ledger_from_findings(
@@ -885,6 +928,18 @@ class OperationalSelfExaminationService:
         # task_packet findings as persistent pending issues so the
         # next evolution review picks them up as actionable backlog.
         self._materialize_task_packet_issues(findings)
+
+        # Autonomy bridge: delegate to AutonomyCycleService if wired.
+        # Falls back to inline bridge for backward compatibility.
+        acs = getattr(self, '_autonomy_cycle_service', None)
+        if acs is not None:
+            try:
+                acs.bridge_findings(findings)
+            except Exception:
+                logger.debug('oses: autonomy_cycle bridge failed, falling back')
+                self._bridge_findings_to_pending_queue(findings)
+        else:
+            self._bridge_findings_to_pending_queue(findings)
 
         return persisted
 
@@ -1427,6 +1482,7 @@ class OperationalSelfExaminationService:
                     recommendation=f'Revisar la ruta, el pack y la evidencia previa antes de repetir {scope}.',
                     evidence_refs=[run.run_id for run in runs[:4]],
                     source_refs=['RunRepository'],
+                    linked_run_ids=[run.run_id for run in runs[:10]],
                     metadata={
                         'scope': scope,
                         'failed_count': len(runs),
@@ -1536,6 +1592,7 @@ class OperationalSelfExaminationService:
                     recommendation=recommendation,
                     evidence_refs=[run.run_id for run in grouped_runs[key][:4]],
                     source_refs=['ExperimentLab', 'AdaptiveWeightLayer'],
+                    linked_run_ids=[run.run_id for run in grouped_runs[key][:10]],
                     metadata={
                         'route': route_value,
                         'assistant_kind': assistant_kind,
@@ -1580,6 +1637,7 @@ class OperationalSelfExaminationService:
                     recommendation=recommendation,
                     evidence_refs=evidence[flag][:5],
                     source_refs=['ExperimentLab', 'WorldModelSnapshot'],
+                    linked_run_ids=evidence[flag][:10],
                     metadata={
                         'block': flag,
                         'count': count,
@@ -1872,20 +1930,19 @@ class OperationalSelfExaminationService:
                 },
             ))
 
-        # ``startup_false_ready`` — el bug raiz que la evidencia live del
-        # 2026-04-28 captura a 80s en Windows pythonw: la UI declara
-        # ``splash_set_ready`` antes de que ``populate_ui_done`` y
-        # ``shell_loader_ready`` hayan llegado.  Esta deteccion no depende
-        # de umbrales de tiempo: depende del ORDEN de los hitos.  Es
-        # cualitativamente distinta de ``startup_degradation`` (que mide
-        # si algo fue lento); aqui medimos si algo mintio.
+        # ``startup_false_ready`` — detect when the splash declared readiness
+        # dishonestly.  With phased construction, ``populate_ui_done``
+        # arrives long after ``splash_set_ready`` (Phase 3 VMs are deferred)
+        # so ``splash < populate_done`` is EXPECTED and NOT a bug.  The real
+        # check is: did the splash close BEFORE ``shell_loader_ready``?  Or
+        # was the fallback used instead of the honest signal?
         splash_ms = phase_to_ms.get('splash_set_ready')
         populate_done_ms = phase_to_ms.get('populate_ui_done')
         shell_ready_ms = phase_to_ms.get('shell_loader_ready')
         shell_ready_fallback_ms = phase_to_ms.get('shell_loader_ready_fallback')
         false_ready_reasons: list[str] = []
-        if splash_ms is not None and populate_done_ms is not None and splash_ms < populate_done_ms:
-            false_ready_reasons.append('splash_set_ready_before_populate_ui_done')
+        if splash_ms is not None and shell_ready_ms is not None and splash_ms < shell_ready_ms:
+            false_ready_reasons.append('splash_set_ready_before_shell_loader_ready')
         if (
             splash_ms is not None
             and shell_ready_ms is None
@@ -1986,43 +2043,94 @@ class OperationalSelfExaminationService:
         # Windows "Not Responding".  OSES previously measured run_start →
         # main_window_shown (7.7s, under threshold) and missed the real
         # freeze that happens AFTER the window is already visible.
+        #
+        # Phased architecture awareness (PR #307+): when
+        # ``populate_ui_critical_done`` exists the boot uses a phased
+        # pipeline where populate_ui_done fires AFTER an async
+        # page_loader_ready wait — the total span is NOT main-thread
+        # blocking time.  Measure synchronous phases individually.
         populate_start_ms = phase_to_ms.get('populate_ui_start')
         populate_done_ms_val = phase_to_ms.get('populate_ui_done')
+        critical_done_ms = phase_to_ms.get('populate_ui_critical_done')
+        deferred_1_start_ms = phase_to_ms.get('populate_ui_deferred_1_start')
+        deferred_1_done_ms = phase_to_ms.get('populate_ui_deferred_1_done')
+
         if populate_start_ms is not None and populate_done_ms_val is not None:
-            populate_duration = populate_done_ms_val - populate_start_ms
-            if populate_duration > STARTUP_POPULATE_UI_MS_DEGRADED:
-                findings.append(SelfExaminationFinding(
-                    category='startup_populate_ui_freeze',
-                    title=f'populate_ui bloqueo main thread: {populate_duration:.0f}ms',
-                    summary=(
-                        f'La construccion de ViewModels (populate_ui_start → '
-                        f'populate_ui_done) duro {populate_duration:.0f}ms '
-                        f'(umbral {STARTUP_POPULATE_UI_MS_DEGRADED:.0f}ms). '
-                        f'Durante este intervalo el hilo principal esta bloqueado '
-                        f'y Windows reporta el proceso como "Not Responding".'
-                    ),
-                    severity=IssueSeverity.CRITICAL if populate_duration > 15000 else IssueSeverity.HIGH,
-                    confidence=0.95,
-                    recommendation=(
-                        'Asegurar que todos los ViewModels usen '
-                        'defer_initial_refresh=True para no ejecutar queries '
-                        'de DB ni refreshes pesados en el constructor. '
-                        'DashboardViewModel era el unico sin defer.'
-                    ),
-                    source_refs=[
-                        'data/logs/startup_timeline.jsonl',
-                        'iabv_v15.bootstrap._build_ui_objects',
-                        'iabv_v15.ui.viewmodels.dashboard_viewmodel',
-                    ],
-                    metadata={
-                        'phase': 'populate_ui',
-                        'observed_ms': round(populate_duration, 1),
-                        'threshold_ms': STARTUP_POPULATE_UI_MS_DEGRADED,
-                        'populate_ui_start_ms': round(populate_start_ms, 1),
-                        'populate_ui_done_ms': round(populate_done_ms_val, 1),
-                        'phases_seen': list(phase_to_ms.keys()),
-                    },
-                ))
+            is_phased = critical_done_ms is not None
+            if is_phased:
+                # Phased boot: measure only the synchronous phases.
+                phase_1_ms = (critical_done_ms - populate_start_ms) if critical_done_ms is not None else 0.0
+                phase_d1_ms = (
+                    (deferred_1_done_ms - deferred_1_start_ms)
+                    if deferred_1_start_ms is not None and deferred_1_done_ms is not None
+                    else 0.0
+                )
+                sync_blocking_ms = phase_1_ms + phase_d1_ms
+                total_span_ms = populate_done_ms_val - populate_start_ms
+                if sync_blocking_ms > STARTUP_POPULATE_UI_MS_DEGRADED:
+                    findings.append(SelfExaminationFinding(
+                        category='startup_populate_ui_freeze',
+                        title=f'populate_ui fases sincronas bloquean: {sync_blocking_ms:.0f}ms',
+                        summary=(
+                            f'Las fases sincronas de populate_ui suman '
+                            f'{sync_blocking_ms:.0f}ms (phase1={phase_1_ms:.0f}ms, '
+                            f'deferred1={phase_d1_ms:.0f}ms). Umbral: '
+                            f'{STARTUP_POPULATE_UI_MS_DEGRADED:.0f}ms.'
+                        ),
+                        severity=IssueSeverity.CRITICAL if sync_blocking_ms > 15000 else IssueSeverity.HIGH,
+                        confidence=0.95,
+                        recommendation=(
+                            'Reducir la duracion de las fases sincronas '
+                            'moviendo trabajo pesado a deferred init o '
+                            'background threads.'
+                        ),
+                        source_refs=[
+                            'data/logs/startup_timeline.jsonl',
+                            'iabv_v15.bootstrap._build_ui_objects',
+                        ],
+                        metadata={
+                            'phase': 'populate_ui_phased',
+                            'sync_blocking_ms': round(sync_blocking_ms, 1),
+                            'phase_1_ms': round(phase_1_ms, 1),
+                            'deferred_1_ms': round(phase_d1_ms, 1),
+                            'total_span_ms': round(total_span_ms, 1),
+                            'threshold_ms': STARTUP_POPULATE_UI_MS_DEGRADED,
+                            'phases_seen': list(phase_to_ms.keys()),
+                        },
+                    ))
+            else:
+                # Legacy synchronous boot: measure the full span.
+                populate_duration = populate_done_ms_val - populate_start_ms
+                if populate_duration > STARTUP_POPULATE_UI_MS_DEGRADED:
+                    findings.append(SelfExaminationFinding(
+                        category='startup_populate_ui_freeze',
+                        title=f'populate_ui bloqueo main thread: {populate_duration:.0f}ms',
+                        summary=(
+                            f'La construccion de ViewModels (populate_ui_start → '
+                            f'populate_ui_done) duro {populate_duration:.0f}ms '
+                            f'(umbral {STARTUP_POPULATE_UI_MS_DEGRADED:.0f}ms). '
+                            f'Durante este intervalo el hilo principal esta bloqueado '
+                            f'y Windows reporta el proceso como "Not Responding".'
+                        ),
+                        severity=IssueSeverity.CRITICAL if populate_duration > 15000 else IssueSeverity.HIGH,
+                        confidence=0.95,
+                        recommendation=(
+                            'Migrar a phased populate_ui para construir VMs '
+                            'en fases con event loop yields entre cada una.'
+                        ),
+                        source_refs=[
+                            'data/logs/startup_timeline.jsonl',
+                            'iabv_v15.bootstrap._build_ui_objects',
+                        ],
+                        metadata={
+                            'phase': 'populate_ui',
+                            'observed_ms': round(populate_duration, 1),
+                            'threshold_ms': STARTUP_POPULATE_UI_MS_DEGRADED,
+                            'populate_ui_start_ms': round(populate_start_ms, 1),
+                            'populate_ui_done_ms': round(populate_done_ms_val, 1),
+                            'phases_seen': list(phase_to_ms.keys()),
+                        },
+                    ))
         elif populate_start_ms is not None and populate_done_ms_val is None:
             findings.append(SelfExaminationFinding(
                 category='startup_populate_ui_incomplete',
@@ -2154,6 +2262,103 @@ class OperationalSelfExaminationService:
                 metadata=readiness_metadata,
             ))
 
+        # ``dashboard_vm_refresh_slow`` — detect when the initial dashboard
+        # data load took too long.  Since PR fix-dashboard-refresh-freeze
+        # this runs on a background thread and does NOT block the GUI, but
+        # a slow refresh still means the user sees empty summary cards for
+        # a long time.
+        dash_refresh_ms = _delta('dashboard_vm_refresh_start', 'dashboard_vm_refresh_done')
+        if dash_refresh_ms is not None and dash_refresh_ms > 5000.0:
+            findings.append(SelfExaminationFinding(
+                category='startup_degradation',
+                title=f'Dashboard refresh lento: {dash_refresh_ms:.0f}ms',
+                summary=(
+                    f'dashboard_vm_refresh tardo {dash_refresh_ms:.0f}ms '
+                    f'(umbral 5000ms). Aunque corre en background thread '
+                    f'y no bloquea la UI, el usuario ve tarjetas vacias '
+                    f'durante ese tiempo.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.85,
+                recommendation=(
+                    'Optimizar queries lentas en KnowledgeRepository y '
+                    'RunRepository (medidos en >17s cada uno). Considerar '
+                    'caching o queries con LIMIT reducido.'
+                ),
+                source_refs=[
+                    'data/logs/startup_timeline.jsonl',
+                    'iabv_v15.ui.viewmodels.dashboard_viewmodel',
+                ],
+                metadata={
+                    'phase': 'dashboard_vm_refresh',
+                    'observed_ms': round(dash_refresh_ms, 1),
+                    'threshold_ms': 5000.0,
+                    'phases_seen': list(phase_to_ms.keys()),
+                },
+            ))
+        dash_failed = 'dashboard_vm_refresh_failed' in phase_to_ms
+        if dash_failed:
+            findings.append(SelfExaminationFinding(
+                category='startup_degradation',
+                title='Dashboard refresh fallo durante startup',
+                summary=(
+                    'dashboard_vm_refresh_failed se registro en el timeline. '
+                    'Las tarjetas de resumen quedaron vacias.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.95,
+                recommendation=(
+                    'Revisar logs de DashboardViewModel para el error '
+                    'especifico. Verificar que la DB SQLite no este '
+                    'corrompida o bloqueada.'
+                ),
+                source_refs=[
+                    'data/logs/startup_timeline.jsonl',
+                    'iabv_v15.ui.viewmodels.dashboard_viewmodel',
+                ],
+                metadata={
+                    'phase': 'dashboard_vm_refresh_failed',
+                    'phases_seen': list(phase_to_ms.keys()),
+                },
+            ))
+
+        return findings
+
+    # ------------------------------------------------------------------
+    # SQLite lock contention findings — persisted by bootstrap
+    # ------------------------------------------------------------------
+
+    def _sqlite_lock_contention_findings(self) -> list[SelfExaminationFinding]:
+        """Read ``startup_sqlite_incident.json`` if persisted by bootstrap.
+
+        When ``_record_startup_sqlite_incident`` fires during startup,
+        it writes a structured incident file.  This method reads it and
+        promotes it to a proper OSES finding so it appears in the review
+        and in PortableContext.
+        """
+        findings: list[SelfExaminationFinding] = []
+        try:
+            incident_path = Path(self.evolution_dir) / 'self_examination' / 'startup_sqlite_incident.json'
+            if not incident_path.exists():
+                return findings
+            import json
+            incident = json.loads(incident_path.read_text(encoding='utf-8'))
+            findings.append(SelfExaminationFinding(
+                category=incident.get('category', 'sqlite_lock_contention'),
+                title=incident.get('title', 'database is locked durante startup'),
+                summary=incident.get('summary', ''),
+                severity=IssueSeverity.HIGH,
+                confidence=incident.get('confidence', 0.95),
+                recommendation=incident.get('recommendation', ''),
+                source_refs=incident.get('source_refs', []),
+                metadata={
+                    'incident_timestamp': incident.get('timestamp', ''),
+                    'error': incident.get('error', ''),
+                    'source': 'startup_sqlite_incident.json',
+                },
+            ))
+        except Exception:
+            pass
         return findings
 
     # ------------------------------------------------------------------
@@ -4050,6 +4255,138 @@ class OperationalSelfExaminationService:
 
         return results[:2]
 
+    def _response_grounding_gap_findings(
+        self,
+        *,
+        previous_review: SelfExaminationSnapshot | None,
+        current_findings: list[SelfExaminationFinding],
+    ) -> list[SelfExaminationFinding]:
+        """Detect when OSES has concrete data but its output doesn't use it.
+
+        This is meta-metacognition: the system checks whether its OWN
+        analysis is grounded in the data it actually has.  If concrete
+        metrics (observed_ms, threshold_ms, phases_seen, etc.) exist in
+        finding metadata but the assistant_brief from the previous review
+        doesn't reference them, the system is being generic when it should
+        be specific.
+
+        Also checks if the startup timeline has observable phases that
+        no finding references at all — data exists but OSES itself
+        didn't analyze it.
+        """
+        results: list[SelfExaminationFinding] = []
+
+        # --- Check 1: concrete metrics exist in findings but brief is vague ---
+        if previous_review is not None and previous_review.assistant_brief:
+            brief = previous_review.assistant_brief.lower()
+            concrete_findings = []
+            ungrounded_findings = []
+            for finding in (previous_review.findings or []):
+                meta = dict(finding.metadata or {})
+                observed_ms = meta.get('observed_ms')
+                threshold_ms = meta.get('threshold_ms')
+                if observed_ms is not None:
+                    concrete_findings.append(finding)
+                    ms_str = str(int(observed_ms))
+                    if ms_str not in brief:
+                        ungrounded_findings.append(
+                            f'{finding.category}: {finding.title} '
+                            f'(observed_ms={observed_ms} no aparece en brief)'
+                        )
+
+            if ungrounded_findings and len(concrete_findings) >= 1:
+                results.append(SelfExaminationFinding(
+                    title=f'Gap de grounding: {len(ungrounded_findings)} hallazgo(s) con datos concretos no citados',
+                    summary=(
+                        f'OSES tiene {len(concrete_findings)} hallazgo(s) con metricas '
+                        f'concretas (observed_ms, threshold_ms) pero el assistant_brief '
+                        f'no incluye esos numeros. El sistema tiene datos especificos '
+                        f'pero los omite en su output, causando respuestas genericas.'
+                    ),
+                    severity=IssueSeverity.MEDIUM,
+                    category='metacognition_grounding_gap',
+                    confidence=min(0.90, 0.55 + len(ungrounded_findings) * 0.1),
+                    recommendation=(
+                        'Incluir metricas observadas (ms, %, conteos) en el '
+                        'assistant_brief y en las respuestas de autoexaminacion. '
+                        'Cuando un finding tiene metadata.observed_ms, citarlo '
+                        'explicitamente en vez de solo mencionar el titulo.'
+                    ),
+                    metadata={
+                        'ungrounded_findings': ungrounded_findings[:6],
+                        'total_concrete_findings': len(concrete_findings),
+                        'brief_length': len(brief),
+                    },
+                ))
+
+        # --- Check 2: timeline phases exist but no finding references them ---
+        log_path = Path(self.workspace_root) / 'data' / 'logs' / 'startup_timeline.jsonl'
+        if log_path.exists():
+            try:
+                timeline_phases: set[str] = set()
+                with log_path.open('r', encoding='utf-8') as fh:
+                    for line in fh:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            evt = json.loads(line)
+                            phase = str(evt.get('phase') or '')
+                            if phase:
+                                timeline_phases.add(phase)
+                        except json.JSONDecodeError:
+                            continue
+
+                finding_phases: set[str] = set()
+                for finding in current_findings:
+                    meta = dict(finding.metadata or {})
+                    phases = meta.get('phases_seen')
+                    if isinstance(phases, list):
+                        finding_phases.update(str(p) for p in phases)
+                    phase_val = str(meta.get('phase') or '')
+                    if phase_val:
+                        finding_phases.add(phase_val)
+
+                unanalyzed = timeline_phases - finding_phases
+                # Filter to phases that likely carry diagnostic value
+                diagnostic_prefixes = (
+                    'dashboard_vm_', 'bootstrap_', 'populate_ui_',
+                    'shell_loader_', 'page_loader_', 'deferred_',
+                    'main_window_', 'splash_', 'run_start',
+                )
+                meaningful_unanalyzed = [
+                    p for p in sorted(unanalyzed)
+                    if any(p.startswith(prefix) for prefix in diagnostic_prefixes)
+                ]
+
+                if len(meaningful_unanalyzed) >= 3:
+                    results.append(SelfExaminationFinding(
+                        title=f'Fases del timeline sin analizar: {len(meaningful_unanalyzed)}',
+                        summary=(
+                            f'El startup timeline tiene {len(timeline_phases)} fases '
+                            f'observadas pero {len(meaningful_unanalyzed)} fases '
+                            f'diagnosticas no son referenciadas por ningun finding: '
+                            f'{", ".join(meaningful_unanalyzed[:5])}. '
+                            f'OSES no esta aprovechando toda la informacion disponible.'
+                        ),
+                        severity=IssueSeverity.LOW,
+                        category='metacognition_grounding_gap',
+                        confidence=0.70,
+                        recommendation=(
+                            'Ampliar _startup_health_findings() para analizar '
+                            'las fases diagnosticas faltantes del timeline.'
+                        ),
+                        metadata={
+                            'total_timeline_phases': len(timeline_phases),
+                            'analyzed_phases': len(finding_phases),
+                            'meaningful_unanalyzed': meaningful_unanalyzed[:10],
+                        },
+                    ))
+            except OSError:
+                pass
+
+        return results[:2]
+
     def _persist_metacognitive_ledger_from_findings(
         self,
         findings: list[SelfExaminationFinding],
@@ -4418,6 +4755,37 @@ class OperationalSelfExaminationService:
             )
         return 'Autoexaminacion partial: todavia no tengo suficiente evidencia acumulada para emitir una revision fuerte.'
 
+    @staticmethod
+    def _extract_metrics_tag(finding: SelfExaminationFinding) -> str:
+        """Build a compact metrics suffix from finding metadata.
+
+        When a finding has concrete numeric data (observed_ms, threshold_ms,
+        observed_count, etc.) this returns a tag like
+        ``  [observed: 274ms, umbral: 5000ms]`` so the assistant_brief and
+        UI responses include the actual numbers instead of just the title.
+        """
+        meta = dict(finding.metadata or {})
+        parts: list[str] = []
+        observed_ms = meta.get('observed_ms')
+        if observed_ms is not None:
+            parts.append(f'observado: {observed_ms}ms')
+        threshold_ms = meta.get('threshold_ms')
+        if threshold_ms is not None:
+            parts.append(f'umbral: {threshold_ms}ms')
+        starvation_s = meta.get('starvation_seconds')
+        if starvation_s is not None:
+            parts.append(f'bloqueo: {starvation_s}s')
+        wall_clock_ms = meta.get('wall_clock_ms')
+        if wall_clock_ms is not None and observed_ms is None:
+            parts.append(f'wall_clock: {wall_clock_ms}ms')
+        total_fp = meta.get('total_false_positives')
+        total_fn = meta.get('total_false_negatives')
+        if total_fp is not None and total_fn is not None:
+            parts.append(f'FP: {total_fp}, FN: {total_fn}')
+        if not parts:
+            return ''
+        return f'  [{", ".join(parts)}]'
+
     def _render_assistant_brief(self, review: SelfExaminationSnapshot) -> str:
         lines = [
             '# IABV v1.5 - Operational Self Examination',
@@ -4431,8 +4799,9 @@ class OperationalSelfExaminationService:
         ]
         if review.findings:
             for finding in review.findings[:6]:
+                metrics_tag = self._extract_metrics_tag(finding)
                 lines.append(
-                    f"- {finding.title}: {finding.summary} | recomendacion: {finding.recommendation or 'sin ajuste concreto'} | confianza {finding.confidence:.2f}"
+                    f"- {finding.title}: {finding.summary}{metrics_tag} | recomendacion: {finding.recommendation or 'sin ajuste concreto'} | confianza {finding.confidence:.2f}"
                 )
         else:
             lines.append('- Sin hallazgos fuertes confirmados.')
@@ -4626,6 +4995,95 @@ class OperationalSelfExaminationService:
         return order.get(value, 0)
 
     # ──────────────────────────────────────────────────────────
+    # Chat Observability: detect anomalies in persisted chat messages
+    # ──────────────────────────────────────────────────────────
+
+    def _chat_observability_findings(self) -> list[SelfExaminationFinding]:
+        """Detect chat persistence anomalies from ChatMessageRepository.
+
+        Produces findings when:
+        - No messages have been persisted (persistence may be disconnected)
+        - A reasoning_path dominates >80% of messages (possible route fixation)
+        - Too many messages lack evidence_tag (evidence gap)
+        - Retention policy has not been applied recently for large histories
+        """
+        from iabv_v15.domain.models import SelfExaminationFinding, IssueSeverity
+        repo = self.chat_message_repository
+        if repo is None:
+            return []
+        try:
+            total = repo.count()
+        except Exception:
+            return []
+        if total == 0:
+            return []
+        findings: list[SelfExaminationFinding] = []
+        try:
+            recent = repo.list_recent(limit=200)
+        except Exception:
+            return []
+        if not recent:
+            return findings
+        path_counts: dict[str, int] = {}
+        no_evidence = 0
+        for msg in recent:
+            path = msg.get('reasoning_path', '') or ''
+            if path:
+                path_counts[path] = path_counts.get(path, 0) + 1
+            tag = msg.get('evidence_tag', '') or ''
+            if not tag:
+                no_evidence += 1
+        sample_size = len(recent)
+        for path, count in path_counts.items():
+            ratio = count / sample_size
+            if ratio > 0.80 and sample_size >= 10:
+                findings.append(SelfExaminationFinding(
+                    category='chat_observability',
+                    title=f'Fijacion de ruta chat: {path} ({ratio:.0%})',
+                    summary=(
+                        f'La ruta "{path}" domina {count}/{sample_size} mensajes recientes. '
+                        f'Puede indicar que el sistema no explora otras rutas.'
+                    ),
+                    severity=IssueSeverity.MEDIUM,
+                    confidence=0.7,
+                    recommendation=(
+                        'Revisar si el usuario solo hace un tipo de pregunta o si el '
+                        'routing esta sesgado hacia esta ruta.'
+                    ),
+                    metadata={'path': path, 'ratio': ratio, 'count': count},
+                ))
+        evidence_gap_ratio = no_evidence / sample_size if sample_size else 0.0
+        if evidence_gap_ratio > 0.5 and sample_size >= 10:
+            findings.append(SelfExaminationFinding(
+                category='chat_observability',
+                title=f'Brecha de evidencia en chat: {no_evidence}/{sample_size} sin tag',
+                summary=(
+                    f'{no_evidence} de {sample_size} mensajes recientes no tienen evidence_tag. '
+                    f'Esto dificulta distinguir respuestas observadas de inferidas.'
+                ),
+                severity=IssueSeverity.LOW,
+                confidence=0.6,
+                recommendation='Verificar que _append_message pasa evidence_tag en todas las rutas.',
+                metadata={'no_evidence': no_evidence, 'ratio': evidence_gap_ratio},
+            ))
+        if total > 1200:
+            sessions = repo.list_sessions()
+            old_sessions = [s for s in sessions if s.get('count', 0) > 0]
+            if len(old_sessions) > 20:
+                findings.append(SelfExaminationFinding(
+                    category='chat_observability',
+                    title=f'Historial de chat grande: {total} mensajes en {len(old_sessions)} sesiones',
+                    summary=(
+                        f'El historial de chat tiene {total} mensajes. '
+                        f'Considerar aplicar retention policy para compactar sesiones antiguas.'
+                    ),
+                    severity=IssueSeverity.LOW,
+                    confidence=0.8,
+                    recommendation='Ejecutar ChatMessageRepository.apply_retention() periodicamente.',
+                    metadata={'total': total, 'sessions': len(old_sessions)},
+                ))
+        return findings
+
     # UI Self-Awareness: detect own window anomalies
     # ──────────────────────────────────────────────────────────
 
@@ -5327,6 +5785,73 @@ class OperationalSelfExaminationService:
                 ))
         except Exception:
             pass
+
+        return findings
+
+    # ------------------------------------------------------------------
+    # Brecha 2.3 — Web session health findings
+    # ------------------------------------------------------------------
+
+    def _web_session_findings(self) -> list[SelfExaminationFinding]:
+        """Detect expired or missing web sessions for governed re-auth.
+
+        Checks each known web provider (ChatGPT, Claude, Gemini) and emits
+        a finding when the session is expired and needs human re-login.
+        """
+        findings: list[SelfExaminationFinding] = []
+
+        try:
+            from iabv_v15.services.auto_correction_engine import (
+                check_web_session_health,
+                _WEB_SESSION_COOKIE_DOMAINS,
+            )
+        except Exception:
+            return findings
+
+        for provider in _WEB_SESSION_COOKIE_DOMAINS:
+            try:
+                health = check_web_session_health(provider)
+            except Exception:
+                continue
+
+            status = health.get('status', 'unknown')
+            if status == 'expired':
+                label_map = {
+                    'chatgpt_web': 'ChatGPT Web',
+                    'claude_web': 'Claude Web',
+                    'gemini_web': 'Gemini Web',
+                }
+                label = label_map.get(provider, provider)
+                url_map = {
+                    'chatgpt_web': 'https://chat.openai.com/auth/login',
+                    'claude_web': 'https://claude.ai/login',
+                    'gemini_web': 'https://gemini.google.com/',
+                }
+                findings.append(SelfExaminationFinding(
+                    category='web_session_expired',
+                    title=f'{label} necesita re-login',
+                    summary=(
+                        f'La sesion web de {label} esta expirada o no existe. '
+                        f'Razon: {health.get("reason", "desconocida")}. '
+                        f'El proveedor web no sera seleccionado hasta que el '
+                        f'usuario re-autentique manualmente.'
+                    ),
+                    severity=IssueSeverity.MEDIUM,
+                    confidence=0.85,
+                    recommendation=(
+                        f'Abrir {url_map.get(provider, "")} en el navegador, '
+                        f'hacer login manualmente (captcha/2FA si aplica), '
+                        f'y IABV detectara la nueva sesion automaticamente.'
+                    ),
+                    source_refs=['check_web_session_health', 'AccountResourceScanner'],
+                    metadata={
+                        'provider': provider,
+                        'session_status': status,
+                        'needs_human': health.get('needs_human', True),
+                        'expires_hint': health.get('expires_hint'),
+                        'reason': health.get('reason', ''),
+                    },
+                ))
 
         return findings
 
@@ -6249,6 +6774,85 @@ class OperationalSelfExaminationService:
 
         return results
 
+    def _compute_current_adaptive_nc(self) -> int | None:
+        repo = self.experiment_lab_repository
+        if repo is None:
+            return None
+        try:
+            from iabv_v15.services.lab.experiment_lab import ExperimentLab
+            from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
+            from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
+            from iabv_v15.services.lab.strategy_selector import StrategySelector
+            lab = ExperimentLab(
+                repository=repo,
+                registry=AlgorithmBenchmarkRegistry(),
+                scoring_engine=DecisionScoringEngine(),
+                strategy_selector=StrategySelector(),
+            )
+            return lab.calculate_adaptive_threshold()
+        except Exception:
+            return None
+
+    # ------------------------------------------------------------------
+    # Adaptive threshold N_c shift detection (Brecha 3.3)
+    # ------------------------------------------------------------------
+
+    def _adaptive_threshold_shift_findings(
+        self,
+        *,
+        previous_review: Any | None = None,
+    ) -> list[SelfExaminationFinding]:
+        """Detect significant shifts in the adaptive N_c threshold."""
+        repo = self.experiment_lab_repository
+        if repo is None:
+            return []
+        try:
+            from iabv_v15.services.lab.experiment_lab import ExperimentLab
+            from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
+            from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
+            from iabv_v15.services.lab.strategy_selector import StrategySelector
+            lab = ExperimentLab(
+                repository=repo,
+                registry=AlgorithmBenchmarkRegistry(),
+                scoring_engine=DecisionScoringEngine(),
+                strategy_selector=StrategySelector(),
+            )
+            current_nc = lab.calculate_adaptive_threshold()
+        except Exception:
+            return []
+
+        previous_nc = 3
+        if previous_review is not None:
+            meta = getattr(previous_review, 'metadata', None) or {}
+            previous_nc = int(meta.get('adaptive_threshold_nc', 3))
+
+        results: list[SelfExaminationFinding] = []
+        if previous_nc > 0 and abs(current_nc - previous_nc) / max(previous_nc, 1) > 0.20:
+            results.append(SelfExaminationFinding(
+                category='adaptive_threshold_shift',
+                severity=IssueSeverity.LOW,
+                title=f'N_c shifted from {previous_nc} to {current_nc}',
+                summary=(
+                    f'The adaptive statistical threshold changed from '
+                    f'{previous_nc} to {current_nc} based on accumulated '
+                    f'evidence volume.'
+                ),
+                confidence=0.85,
+                recommendation=(
+                    'Review domain-specific thresholds via '
+                    'ExperimentLab.get_current_thresholds() to ensure '
+                    'each domain has appropriate sensitivity.'
+                ),
+                metadata={
+                    'previous_nc': previous_nc,
+                    'current_nc': current_nc,
+                    'shift_ratio': round(
+                        abs(current_nc - previous_nc) / max(previous_nc, 1), 3,
+                    ),
+                },
+            ))
+        return results
+
     # ------------------------------------------------------------------
     # Windows platform integration findings (Fix 18c)
     # ------------------------------------------------------------------
@@ -6334,6 +6938,428 @@ class OperationalSelfExaminationService:
             ))
 
         return findings
+
+    # ------------------------------------------------------------------
+    # UniversalAutonomyIndex (Fase 7)
+    # ------------------------------------------------------------------
+
+    def _universal_autonomy_index_findings(
+        self,
+        *,
+        recent_runs: list[RunRecord],
+        adaptive_sessions: list[Any],
+        experiment_runs: list[ExperimentRun],
+        world: WorldModelSnapshot,
+        findings_so_far: list[SelfExaminationFinding],
+    ) -> list[SelfExaminationFinding]:
+        """Calculate composite autonomy metrics and emit a summary finding.
+
+        Computes four scores from data already present in ExperimentLab,
+        TaskOutcomeRecorder, DecisionAuditTrail and WorldModel:
+
+        * **AutonomyScore** — weighted blend of capability coverage, handoff
+          rate, unresolved ratio, permission request rate, resume success rate.
+        * **ResilienceScore** — fallback chain coverage, worker diversity,
+          checkpoint coverage.
+        * **CalibrationError** — mean |estimated_confidence − actual_success|.
+        * **BlindSpotRatio** — unverified findings / total findings.
+
+        If there is insufficient data (< 3 runs) the method returns an
+        UNRESOLVED finding instead of guessing.
+        """
+        findings: list[SelfExaminationFinding] = []
+
+        total_runs = len(recent_runs)
+        total_experiments = len(experiment_runs)
+        total_sessions = len(adaptive_sessions)
+
+        if total_runs < 3 and total_experiments < 3 and total_sessions < 3:
+            findings.append(SelfExaminationFinding(
+                category='autonomy_index_insufficient_data',
+                title='UniversalAutonomyIndex: datos insuficientes',
+                summary=(
+                    f'Solo hay {total_runs} runs, {total_experiments} experimentos '
+                    f'y {total_sessions} sesiones adaptivas. Se necesitan al menos '
+                    f'3 en algun eje para calcular metricas confiables.'
+                ),
+                severity=IssueSeverity.LOW,
+                confidence=0.95,
+                recommendation=(
+                    'Ejecutar mas tareas para acumular datos de rendimiento. '
+                    'Las metricas se calcularan automaticamente cuando haya '
+                    'suficiente evidencia.'
+                ),
+                source_refs=['OperationalSelfExaminationService._universal_autonomy_index_findings'],
+                status='unresolved',
+                unresolved_fields=['autonomy_score', 'resilience_score',
+                                   'calibration_error', 'blind_spot_ratio'],
+                metadata={'total_runs': total_runs,
+                          'total_experiments': total_experiments,
+                          'total_sessions': total_sessions},
+            ))
+            return findings
+
+        # -- AutonomyScore components --
+
+        # 1. capability_coverage: successful runs / total runs
+        successful_runs = sum(
+            1 for r in recent_runs if r.status == RunStatus.SUCCESS
+        )
+        capability_coverage = (
+            successful_runs / total_runs if total_runs > 0 else 0.0
+        )
+
+        # 2. handoff_required_rate: sessions that needed human intervention
+        handoff_count = 0
+        for sess in adaptive_sessions:
+            status = getattr(sess, 'status', None)
+            if status is None and isinstance(sess, dict):
+                status = sess.get('status', '')
+            status_str = str(status.value if hasattr(status, 'value') else status)
+            if status_str in ('waiting_approval', 'need_info', 'aborted'):
+                handoff_count += 1
+        handoff_required_rate = (
+            handoff_count / total_sessions if total_sessions > 0 else 0.0
+        )
+
+        # 3. unresolved_ratio: from WorldModel + current findings
+        total_fields = max(len(world.tool_live_status) + len(world.permission_gates), 1)
+        unresolved_count = len(world.unresolved_fields)
+        unresolved_ratio = unresolved_count / total_fields
+
+        # 4. permission_request_rate: permission gates as fraction of actions
+        total_gates = len(world.permission_gates)
+        total_actions = max(total_runs + total_sessions, 1)
+        permission_request_rate = min(total_gates / total_actions, 1.0)
+
+        # 5. resume_success_rate: sessions resumed vs interrupted
+        interrupted_count = 0
+        resumed_count = 0
+        for sess in adaptive_sessions:
+            md = getattr(sess, 'metadata', {})
+            if isinstance(sess, dict):
+                md = sess.get('metadata', {})
+            if md.get('resumed_from') or md.get('resume_hint_id'):
+                resumed_count += 1
+            status = getattr(sess, 'status', None)
+            if status is None and isinstance(sess, dict):
+                status = sess.get('status', '')
+            status_str = str(status.value if hasattr(status, 'value') else status)
+            if status_str in ('aborted', 'failed'):
+                interrupted_count += 1
+        resume_success_rate = (
+            resumed_count / max(interrupted_count, 1)
+            if interrupted_count > 0 else 1.0
+        )
+        resume_success_rate = min(resume_success_rate, 1.0)
+
+        autonomy_score = (
+            0.30 * capability_coverage
+            + 0.25 * (1 - handoff_required_rate)
+            + 0.20 * (1 - unresolved_ratio)
+            + 0.15 * (1 - permission_request_rate)
+            + 0.10 * resume_success_rate
+        )
+
+        # -- ResilienceScore components --
+
+        # fallback_chain_coverage: providers with fallbacks
+        fallback_count = 0
+        tool_count = max(len(world.tool_live_status), 1)
+        for tool in world.tool_live_status:
+            if getattr(tool, 'metadata', None):
+                meta = tool.metadata if isinstance(tool.metadata, dict) else {}
+                if meta.get('fallback_available') or meta.get('fallback_provider'):
+                    fallback_count += 1
+        fallback_chain_coverage = fallback_count / tool_count
+
+        # worker_diversity: unique assistant_kind values used in experiments
+        unique_assistants: set[str] = set()
+        for exp in experiment_runs:
+            if exp.assistant_kind:
+                unique_assistants.add(exp.assistant_kind)
+        worker_diversity = min(len(unique_assistants) / max(tool_count, 3), 1.0)
+
+        # checkpoint_coverage: sessions with resume hints / total sessions
+        sessions_with_checkpoint = 0
+        for sess in adaptive_sessions:
+            md = getattr(sess, 'metadata', {})
+            if isinstance(sess, dict):
+                md = sess.get('metadata', {})
+            if md.get('resume_hint_id') or md.get('checkpoint_saved'):
+                sessions_with_checkpoint += 1
+        checkpoint_coverage = (
+            sessions_with_checkpoint / total_sessions
+            if total_sessions > 0 else 0.0
+        )
+
+        resilience_score = (
+            0.35 * fallback_chain_coverage
+            + 0.35 * worker_diversity
+            + 0.30 * checkpoint_coverage
+        )
+
+        # -- CalibrationError --
+        # mean |estimated_confidence - actual_success| per experiment
+        calibration_diffs: list[float] = []
+        for exp in experiment_runs:
+            # ExperimentMetric uses ``precision`` as the estimated score;
+            # metadata may carry an explicit ``confidence`` override.
+            confidence = 0.0
+            if exp.metadata:
+                confidence = float(exp.metadata.get('confidence', 0.0))
+            if confidence <= 0 and exp.metrics:
+                confidence = exp.metrics.precision
+            actual = 1.0 if exp.success else 0.0
+            if confidence > 0:
+                calibration_diffs.append(abs(confidence - actual))
+        calibration_error = (
+            sum(calibration_diffs) / len(calibration_diffs)
+            if calibration_diffs else 0.0
+        )
+
+        # -- BlindSpotRatio --
+        total_findings = max(len(findings_so_far), 1)
+        unverified_findings = sum(
+            1 for f in findings_so_far
+            if f.status in ('observed', 'unresolved')
+               and f.confidence < 0.7
+        )
+        blind_spot_ratio = unverified_findings / total_findings
+
+        # -- Determine overall severity --
+        if autonomy_score >= 0.80 and resilience_score >= 0.75:
+            severity = IssueSeverity.LOW
+            verdict = 'SALUDABLE'
+        elif autonomy_score >= 0.60:
+            severity = IssueSeverity.MEDIUM
+            verdict = 'PARCIAL'
+        else:
+            severity = IssueSeverity.HIGH
+            verdict = 'INSUFICIENTE'
+
+        metrics = {
+            'autonomy_score': round(autonomy_score, 3),
+            'resilience_score': round(resilience_score, 3),
+            'calibration_error': round(calibration_error, 3),
+            'blind_spot_ratio': round(blind_spot_ratio, 3),
+            'verdict': verdict,
+            'components': {
+                'capability_coverage': round(capability_coverage, 3),
+                'handoff_required_rate': round(handoff_required_rate, 3),
+                'unresolved_ratio': round(unresolved_ratio, 3),
+                'permission_request_rate': round(permission_request_rate, 3),
+                'resume_success_rate': round(resume_success_rate, 3),
+                'fallback_chain_coverage': round(fallback_chain_coverage, 3),
+                'worker_diversity': round(worker_diversity, 3),
+                'checkpoint_coverage': round(checkpoint_coverage, 3),
+            },
+            'sample_sizes': {
+                'runs': total_runs,
+                'experiments': total_experiments,
+                'sessions': total_sessions,
+                'calibration_samples': len(calibration_diffs),
+            },
+        }
+
+        # Build recommendation based on weakest component
+        weakest_component = ''
+        weakest_value = 1.0
+        for comp_name, comp_val in metrics['components'].items():
+            effective = comp_val
+            if comp_name in ('handoff_required_rate', 'unresolved_ratio',
+                             'permission_request_rate'):
+                effective = 1 - comp_val
+            if effective < weakest_value:
+                weakest_value = effective
+                weakest_component = comp_name
+
+        recommendation_map = {
+            'capability_coverage': (
+                'Mejorar tasa de exito de tareas. Revisar rutas que fallan '
+                'frecuentemente en ExperimentLab y rotar a proveedores mas confiables.'
+            ),
+            'handoff_required_rate': (
+                'Reducir intervenciones humanas. Verificar que AutonomyGovernancePolicy '
+                'no bloquee rutas innecesariamente y que los permisos esten configurados.'
+            ),
+            'unresolved_ratio': (
+                'Resolver campos UNRESOLVED en WorldModel. Ejecutar escaneo de '
+                'cuentas y verificar estado de herramientas externas.'
+            ),
+            'permission_request_rate': (
+                'Reducir permisos pendientes. Configurar permission_gates para '
+                'herramientas de uso frecuente.'
+            ),
+            'resume_success_rate': (
+                'Mejorar reanudacion de tareas interrumpidas. Verificar que '
+                'AutonomyCycleService.save_resume_hint() se llame correctamente.'
+            ),
+            'fallback_chain_coverage': (
+                'Agregar proveedores de respaldo. Configurar fallback_provider '
+                'para herramientas criticas en el WorldModel.'
+            ),
+            'worker_diversity': (
+                'Diversificar asistentes utilizados. Probar rutas alternativas '
+                'en ExperimentLab para reducir dependencia de un solo proveedor.'
+            ),
+            'checkpoint_coverage': (
+                'Mejorar checkpointing de sesiones. Verificar que las tareas '
+                'largas guarden resume hints antes de completar.'
+            ),
+        }
+
+        recommendation = recommendation_map.get(weakest_component, (
+            'Revisar todas las metricas del indice de autonomia para '
+            'identificar areas de mejora prioritarias.'
+        ))
+
+        findings.append(SelfExaminationFinding(
+            category='universal_autonomy_index',
+            title=f'UniversalAutonomyIndex: {verdict} (autonomia={autonomy_score:.0%})',
+            summary=(
+                f'AutonomyScore={autonomy_score:.0%} (objetivo >80%), '
+                f'ResilienceScore={resilience_score:.0%} (objetivo >75%), '
+                f'CalibrationError={calibration_error:.2f} (objetivo <0.10), '
+                f'BlindSpotRatio={blind_spot_ratio:.0%} (objetivo <30%). '
+                f'Componente mas debil: {weakest_component} ({weakest_value:.0%}).'
+            ),
+            severity=severity,
+            confidence=0.88,
+            recommendation=recommendation,
+            source_refs=[
+                'ExperimentLab', 'TaskOutcomeRecorder',
+                'DecisionAuditTrail', 'WorldModelSnapshot',
+                'PlatformPendingQueue',
+            ],
+            metadata=metrics,
+        ))
+
+        # Additional finding if calibration error is too high
+        if calibration_error > 0.10 and len(calibration_diffs) >= 5:
+            findings.append(SelfExaminationFinding(
+                category='autonomy_calibration_drift',
+                title=f'Calibracion desviada: error={calibration_error:.2f}',
+                summary=(
+                    f'La confianza estimada difiere del resultado real por '
+                    f'{calibration_error:.2f} en promedio sobre '
+                    f'{len(calibration_diffs)} experimentos. El sistema '
+                    f'sobreestima o subestima sus capacidades.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.82,
+                recommendation=(
+                    'Revisar el AdaptiveWeightLayer para ajustar los pesos '
+                    'de confianza. Los experimentos recientes muestran que '
+                    'las predicciones no coinciden con los resultados reales.'
+                ),
+                source_refs=['ExperimentLab', 'AdaptiveWeightLayer'],
+                metadata={
+                    'calibration_error': round(calibration_error, 3),
+                    'sample_count': len(calibration_diffs),
+                },
+            ))
+
+        return findings
+
+    # ------------------------------------------------------------------
+    # Autonomy bridge: OSES findings → PlatformPendingQueue
+    # ------------------------------------------------------------------
+
+    # Categories that should generate structured pending tasks when they
+    # appear as HIGH or CRITICAL findings.  Each maps to a human-readable
+    # action template.
+    _FINDING_TO_PENDING_CATEGORIES: dict[str, str] = {
+        'startup_populate_ui_freeze': (
+            'Optimizar fases de populate_ui para reducir bloqueo del main thread.'
+        ),
+        'startup_degradation': (
+            'Investigar regresion de startup y aplicar fix.'
+        ),
+        'startup_memory_spike': (
+            'Reducir consumo de memoria durante el arranque.'
+        ),
+        'recurring_failure': (
+            'Analizar patron de fallos recurrentes y aplicar correccion.'
+        ),
+        'cloud_reasoning_degradation': (
+            'Evaluar health de proveedores cloud y ajustar fallback.'
+        ),
+        'windows_integration_gaps': (
+            'Implementar capacidades Windows faltantes de la cola de pendientes.'
+        ),
+        'temporal_regression': (
+            'Investigar regresion de latencia detectada por anomalia temporal.'
+        ),
+    }
+
+    def _bridge_findings_to_pending_queue(
+        self,
+        findings: list[SelfExaminationFinding],
+    ) -> None:
+        """Convert HIGH/CRITICAL findings into PlatformPendingTask entries.
+
+        Only creates tasks for categories listed in
+        ``_FINDING_TO_PENDING_CATEGORIES``.  Idempotent: existing tasks
+        with the same id are updated, not duplicated.
+        """
+        try:
+            from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+            from iabv_v15.domain.models import PlatformPendingTask, PendingTaskStatus
+        except Exception:
+            return
+
+        queue = self._get_pending_queue()
+        if queue is None:
+            return
+
+        for finding in findings:
+            if finding.category not in self._FINDING_TO_PENDING_CATEGORIES:
+                continue
+            if finding.severity not in (IssueSeverity.HIGH, IssueSeverity.CRITICAL):
+                continue
+            task_id = f'oses_{finding.category}'
+            next_action = self._FINDING_TO_PENDING_CATEGORIES[finding.category]
+            try:
+                existing = queue.get(task_id)
+                if existing is not None and existing.status == PendingTaskStatus.COMPLETED:
+                    continue
+                priority = 'critical' if finding.severity == IssueSeverity.CRITICAL else 'high'
+                task = PlatformPendingTask(
+                    id=task_id,
+                    title=finding.title,
+                    description=finding.summary or '',
+                    reason=f'OSES finding: {finding.category}',
+                    priority=priority,
+                    next_action=next_action,
+                    status=PendingTaskStatus.PENDING,
+                    category='oses_finding',
+                    resume_hint=finding.recommendation or '',
+                    metadata={
+                        'source': 'oses_bridge',
+                        'severity': finding.severity.value,
+                        'confidence': finding.confidence,
+                    },
+                )
+                queue.upsert(task)
+            except Exception:
+                logger.debug('oses: failed to bridge finding %s to queue', finding.category)
+
+    def _get_pending_queue(self) -> Any | None:
+        """Resolve PlatformPendingQueue from data dir (lazy, cached)."""
+        cached = getattr(self, '_pending_queue_cache', None)
+        if cached is not None:
+            return cached
+        try:
+            from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+            data_dir = Path(self.workspace_root) / 'data' / 'evolution'
+            if not data_dir.exists():
+                return None
+            queue = PlatformPendingQueue(evolution_dir=str(data_dir))
+            self._pending_queue_cache = queue
+            return queue
+        except Exception:
+            return None
 
     def _environment_model(self) -> Any | None:
         """Read EnvironmentSelfModel from world_model_service or direct."""

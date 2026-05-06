@@ -28,6 +28,7 @@ Item {
     property bool canSimulateValue: controlCenterViewModel ? controlCenterViewModel.canSimulate : false
     property bool canExecuteValue: controlCenterViewModel ? controlCenterViewModel.canExecute : false
     property bool canAbortValue: controlCenterViewModel ? controlCenterViewModel.canAbort : false
+    property bool canApproveObservationValue: controlCenterViewModel ? controlCenterViewModel.canApproveObservation : false
     property bool approvalDialogVisibleValue: controlCenterViewModel ? controlCenterViewModel.approvalDialogVisible : false
     property bool liveDockExpanded: true
     property string routingModeLabelValue: controlCenterViewModel ? controlCenterViewModel.routingModeLabel : "Modo automatico"
@@ -136,6 +137,7 @@ Item {
             Flow {
                 width: parent.width
                 spacing: 10
+                AppButton { visible: canApproveObservationValue; text: "Permitir observacion"; enabled: canApproveObservationValue; accent: true; onClicked: { if (controlCenterViewModel) controlCenterViewModel.applySuggestedAction("approve_observation_permission"); approvalPopup.close(); } }
                 AppButton { visible: canApproveStrategyValue; text: "Aprobar estrategia"; enabled: canApproveStrategyValue; accent: true; onClicked: { if (controlCenterViewModel) controlCenterViewModel.approveStrategy(); approvalPopup.close(); } }
                 AppButton { visible: canApproveNextPhaseValue; text: "Aprobar fase siguiente"; enabled: canApproveNextPhaseValue; accent: true; onClicked: { if (controlCenterViewModel) controlCenterViewModel.approveNextPhase(); approvalPopup.close(); } }
                 AppButton { visible: canSimulateValue; text: "Simular"; enabled: canSimulateValue; onClicked: { if (controlCenterViewModel) controlCenterViewModel.simulateAdaptive(); approvalPopup.close(); } }
@@ -914,58 +916,5 @@ Item {
         }
     }
 
-    // Dialogos evolutivos (Task B)
-    CredentialPromptDialog {
-        id: credentialDialog
-        visible: false
-        onCredentialProvided: function(payload) {
-            if (controlCenterViewModel) controlCenterViewModel.onCredentialProvided(payload)
-        }
-        onDelegateToUser: function(payload) {
-            if (controlCenterViewModel) controlCenterViewModel.onCredentialDelegated(payload)
-        }
-    }
-
-    ClarificationDialog {
-        id: clarificationDialog
-        visible: false
-        onClarificationResponse: function(payload) {
-            if (controlCenterViewModel) controlCenterViewModel.onClarificationResponse(payload)
-        }
-    }
-
-    MissingDependencyDialog {
-        id: dependencyDialog
-        visible: false
-        onDependencyApproved: function(payload) {
-            if (controlCenterViewModel) controlCenterViewModel.onDependencyApproved(payload)
-        }
-        onDependencyRejected: function(payload) {
-            if (controlCenterViewModel) controlCenterViewModel.onDependencyRejected(payload)
-        }
-    }
-
-    // Conexiones de señales del ViewModel (Task B)
-    Connections {
-        target: controlCenterViewModel
-        function onCredentialPromptRequested(payload) {
-            credentialDialog.domain = payload.domain || ""
-            credentialDialog.reason = payload.reason || ""
-            credentialDialog.usernameHint = payload.username_hint || ""
-            credentialDialog.open()
-        }
-        function onClarificationRequested(payload) {
-            clarificationDialog.requestId = payload.id || ""
-            clarificationDialog.question = payload.question || ""
-            clarificationDialog.options = payload.options || []
-            clarificationDialog.context = payload.context || ""
-            clarificationDialog.open()
-        }
-        function onMissingDependencyRequested(payload) {
-            dependencyDialog.packageName = payload.package_name || ""
-            dependencyDialog.manager = payload.manager || ""
-            dependencyDialog.reason = payload.reason || ""
-            dependencyDialog.open()
-        }
-    }
+    // Dialogos evolutivos (Task B) — ahora hosteados globalmente en Main.qml
 }

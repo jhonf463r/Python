@@ -211,3 +211,91 @@ class TestResumeHints:
         queue.save_resume_hint(PlatformResumeHint(task_id='b'))
         hints = queue.list_resume_hints()
         assert len(hints) == 2
+
+
+class TestCapabilityDiscoveryBridge:
+    """Tests for seed_from_capability_graph (Fix 18e)."""
+
+    def test_missing_capability_creates_pending_task(self, queue: PlatformPendingQueue):
+        from iabv_v15.domain.models import EnvironmentCapability
+        caps = [
+            EnvironmentCapability(
+                capability_id='platform.toast',
+                title='Toast notifications',
+                available=False,
+                status='missing',
+                summary='No toast backend',
+                metadata={'missing': 'winotify'},
+            ),
+        ]
+        seeded = queue.seed_from_capability_graph(caps)
+        assert len(seeded) == 1
+        task = seeded[0]
+        assert task.id == 'cap_platform.toast'
+        assert task.status == PendingTaskStatus.BLOCKED  # has dependency
+        assert task.category == 'capability_discovery'
+        assert 'winotify' in task.dependency_missing
+
+    def test_available_capability_skipped(self, queue: PlatformPendingQueue):
+        from iabv_v15.domain.models import EnvironmentCapability
+        caps = [
+            EnvironmentCapability(
+                capability_id='platform.clipboard',
+                title='Clipboard',
+                available=True,
+                status='confirmed',
+            ),
+        ]
+        seeded = queue.seed_from_capability_graph(caps)
+        assert seeded == []
+
+    def test_completed_task_not_overwritten(self, queue: PlatformPendingQueue):
+        from iabv_v15.domain.models import EnvironmentCapability
+        queue.upsert(PlatformPendingTask(
+            id='cap_platform.x',
+            title='X',
+            status=PendingTaskStatus.COMPLETED,
+        ))
+        caps = [
+            EnvironmentCapability(
+                capability_id='platform.x',
+                title='X',
+                available=False,
+                status='missing',
+            ),
+        ]
+        seeded = queue.seed_from_capability_graph(caps)
+        assert seeded == []
+        task = queue.get('cap_platform.x')
+        assert task is not None
+        assert task.status == PendingTaskStatus.COMPLETED
+
+    def test_idempotent_seed(self, queue: PlatformPendingQueue):
+        from iabv_v15.domain.models import EnvironmentCapability
+        caps = [
+            EnvironmentCapability(
+                capability_id='platform.y',
+                title='Y',
+                available=False,
+                status='missing',
+            ),
+        ]
+        queue.seed_from_capability_graph(caps)
+        queue.seed_from_capability_graph(caps)
+        all_tasks = [t for t in queue.list_all() if t.id == 'cap_platform.y']
+        assert len(all_tasks) == 1
+
+    def test_no_dependency_means_pending_not_blocked(self, queue: PlatformPendingQueue):
+        from iabv_v15.domain.models import EnvironmentCapability
+        caps = [
+            EnvironmentCapability(
+                capability_id='platform.z',
+                title='Z',
+                available=False,
+                status='missing',
+                metadata={},
+            ),
+        ]
+        seeded = queue.seed_from_capability_graph(caps)
+        assert len(seeded) == 1
+        assert seeded[0].status == PendingTaskStatus.PENDING

@@ -63,6 +63,16 @@ class TaskOutcomeRecorder:
             self.approval_checkpoint_repository.save_many(session.approval_checkpoints)
         saved = self.adaptive_session_repository.save(session)
         self._propagate_to_control_master(saved)
+        # Autonomy cycle: delegate to AutonomyCycleService if wired.
+        # Falls back to inline implementation for backward compatibility.
+        acs = getattr(self, 'autonomy_cycle_service', None)
+        if acs is not None:
+            try:
+                acs.save_resume_hint(saved, run_record=run_record)
+            except Exception:
+                self._save_resume_hint_if_interrupted(saved, run_record=run_record)
+        else:
+            self._save_resume_hint_if_interrupted(saved, run_record=run_record)
         return saved
 
     def _propagate_to_control_master(self, session: AdaptiveSession) -> None:
@@ -109,6 +119,68 @@ class TaskOutcomeRecorder:
                     service.mark_unresolved(stripped, evidence=list(evidence))
                 except Exception:  # noqa: BLE001
                     pass
+
+    def _save_resume_hint_if_interrupted(
+        self,
+        session: AdaptiveSession,
+        *,
+        run_record: RunRecord | None = None,
+    ) -> None:
+        """Save a PlatformResumeHint when a session ends interrupted.
+
+        Triggered for ABORTED or FAILED terminal statuses.  The hint
+        captures enough context for the next agent or session to resume
+        without starting from zero.  Silent no-op on any error.
+        """
+        if session.status not in (AdaptiveSessionStatus.ABORTED, AdaptiveSessionStatus.FAILED):
+            return
+        try:
+            from iabv_v15.domain.models import PlatformResumeHint
+            from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+            import os
+            from pathlib import Path
+
+            workspace = os.environ.get('IABV_WORKSPACE', '')
+            if not workspace:
+                return
+            evolution_dir = str(Path(workspace) / 'data' / 'evolution')
+            queue = PlatformPendingQueue(evolution_dir=evolution_dir)
+
+            metadata = dict(session.metadata or {})
+            last_step = ''
+            remaining: list[str] = []
+            if run_record is not None:
+                last_step = (
+                    run_record.result.summary
+                    or run_record.error_summary
+                    or 'unknown'
+                )[:200]
+            playbook_goal = ''
+            if session.playbook is not None:
+                playbook_goal = str(session.playbook.goal or '')[:200]
+
+            context_snapshot: dict[str, Any] = {
+                'user_goal': (session.user_goal or '')[:300],
+                'playbook_goal': playbook_goal,
+                'status': session.status.value,
+                'intent_key': metadata.get('intent_key', ''),
+            }
+            # Extract remaining steps from playbook if available.
+            if session.playbook is not None and hasattr(session.playbook, 'steps'):
+                steps = session.playbook.steps or []
+                remaining = [str(s) for s in steps if isinstance(s, str)][:8]
+
+            hint = PlatformResumeHint(
+                task_id=session.session_id,
+                checkpoint_phase=session.status.value,
+                last_successful_step=last_step,
+                remaining_steps=remaining,
+                handoff_required=session.status == AdaptiveSessionStatus.FAILED,
+                context_snapshot=context_snapshot,
+            )
+            queue.save_resume_hint(hint)
+        except Exception:
+            pass
 
     def _record_learning(self, *, session: AdaptiveSession, run_record: RunRecord) -> AdaptiveSession:
         if self.experiment_lab is None:
@@ -190,6 +262,8 @@ class TaskOutcomeRecorder:
             ),
             'governance_flags': dict(dict(session.metadata.get('task_packet') or {}).get('governance_flags') or {}),
             'task_unresolved': list(dict(session.metadata.get('task_packet') or {}).get('unresolved') or []),
+            'trace_id': session.session_id[:8],
+            'session_id': session.session_id,
         }
         wt_raw = session.metadata.get('worker_telemetry')
         if isinstance(wt_raw, dict):

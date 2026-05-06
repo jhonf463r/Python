@@ -15,6 +15,19 @@ from iabv_v15.domain.models import (
 class StrategySelector:
     def __init__(self, adaptive_weight_layer: Any | None = None) -> None:
         self.adaptive_weight_layer = adaptive_weight_layer
+        self._experiment_lab: Any | None = None
+
+    @property
+    def _min_runs_for_composite(self) -> int:
+        if self._experiment_lab is not None:
+            try:
+                return self._experiment_lab.calculate_adaptive_threshold(
+                    confidence_level=0.90,
+                    margin_of_error=0.15,
+                )
+            except Exception:
+                pass
+        return 3
 
     def recommend(
         self,
@@ -23,6 +36,7 @@ class StrategySelector:
         subject_key: str,
         candidate_runs: list[ExperimentRun],
         historical_runs: list[ExperimentRun] | None = None,
+        coordination_patterns: list[dict[str, Any]] | None = None,
     ) -> ExperimentRecommendation:
         route_scores: dict[EvaluationRoute, list[float]] = defaultdict(list)
         grouped_scores: dict[tuple[EvaluationRoute, str, str], list[float]] = defaultdict(list)
@@ -152,7 +166,16 @@ class StrategySelector:
             ranked_configurations=ranked_configurations,
             adaptive_profiles=adaptive_profiles,
             grouped_runs=grouped_runs,
+            min_runs_for_composite=self._min_runs_for_composite,
         )
+        coordination_boost = self._apply_coordination_boost(
+            best_assistant_kind=best_assistant_kind,
+            domain=domain,
+            coordination_patterns=coordination_patterns,
+        )
+        if coordination_boost:
+            confidence = min(1.0, confidence + coordination_boost['confidence_delta'])
+            rationale += f" {coordination_boost['rationale_suffix']}"
         return ExperimentRecommendation(
             domain=domain,
             subject_key=subject_key,
@@ -226,12 +249,13 @@ class StrategySelector:
     # P5: Recomendaciones compuestas multi-IA
     # ------------------------------------------------------------------
 
-    @staticmethod
     def _build_composite_recommendation(
+        self,
         *,
         ranked_configurations: list[tuple[Any, ...]],
         adaptive_profiles: dict[tuple[Any, str, str], dict[str, Any]],
         grouped_runs: dict[tuple[Any, str, str], list[ExperimentRun]],
+        min_runs_for_composite: int | None = None,
     ) -> dict[str, Any] | None:
         """Build a composite recommendation when 2+ IAs are complementary.
 
@@ -247,7 +271,7 @@ class StrategySelector:
         if len(ranked_configurations) < 2:
             return None
 
-        _MIN_RUNS_FOR_COMPOSITE = 3
+        _min_runs_for_composite = min_runs_for_composite if min_runs_for_composite is not None else 3
         kind_stats: dict[str, dict[str, Any]] = {}
         for route, assistant_kind, config_sig, score, count, reuse, adaptive, weighted in ranked_configurations:
             kind = str(assistant_kind or '').strip().lower()
@@ -283,7 +307,7 @@ class StrategySelector:
 
         viable = {
             k: v for k, v in kind_stats.items()
-            if v['successful_runs'] >= _MIN_RUNS_FOR_COMPOSITE
+            if v['successful_runs'] >= _min_runs_for_composite
         }
         if len(viable) < 2:
             return None
@@ -326,3 +350,41 @@ class StrategySelector:
             'overlapping_aspects': sorted(overlapping_aspects),
             'viable_ia_count': len(viable),
         }
+
+    # ------------------------------------------------------------------
+    # Coordination pattern boost (Brecha 3.2)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _apply_coordination_boost(
+        *,
+        best_assistant_kind: str,
+        domain: ExperimentDomain,
+        coordination_patterns: list[dict[str, Any]] | None,
+    ) -> dict[str, Any] | None:
+        """Apply confidence boost if coordination patterns support the recommendation.
+
+        Returns a dict with ``confidence_delta`` and ``rationale_suffix`` if a
+        SPECIALIZATION pattern matches the recommended assistant+domain, or
+        ``None`` if no applicable pattern exists.
+        """
+        if not coordination_patterns:
+            return None
+        best_kind = (best_assistant_kind or '').strip().lower()
+        domain_val = domain.value if hasattr(domain, 'value') else str(domain)
+        for pattern in coordination_patterns:
+            if str(pattern.get('pattern_type') or '') != 'SPECIALIZATION':
+                continue
+            if str(pattern.get('primary_ia') or '').strip().lower() != best_kind:
+                continue
+            if str(pattern.get('domain') or '').strip().lower() != domain_val.strip().lower():
+                continue
+            return {
+                'confidence_delta': round(min(0.15, float(pattern.get('confidence') or 0.0) * 0.2), 4),
+                'rationale_suffix': (
+                    f'Coordination pattern SPECIALIZATION confirms '
+                    f'{best_kind} as specialist for {domain_val} '
+                    f'(sample_size={pattern.get("sample_size", 0)}).'
+                ),
+            }
+        return None

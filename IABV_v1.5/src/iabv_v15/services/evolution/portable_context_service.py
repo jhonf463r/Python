@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
@@ -67,6 +68,8 @@ class PortableContextService:
         self.decision_audit_trail: Any | None = None
         self.code_audit_trail: Any | None = None
         self.boot_profile_store: Any | None = None
+        self.experiment_lab: Any | None = None
+        self.chat_message_repository: Any | None = None
         self._current_package: PortableContextPackage | None = None
         self._account_resource_cache: dict[str, Any] | None = None
         self._account_resource_cached_at: float = 0.0
@@ -112,6 +115,13 @@ class PortableContextService:
         recommendations = self._recommendation_items(task_context=task_context)
         adaptive_learning = self._adaptive_learning_summary(task_context=task_context, recommendations=recommendations)
         learned_patterns = self._learned_patterns(task_context=task_context, recommendations=recommendations)
+        try:
+            auto_patterns = self.derive_learned_patterns()
+            if auto_patterns:
+                learned_patterns = list(learned_patterns) + auto_patterns
+        except Exception:
+            logging.getLogger(__name__).warning('Could not derive auto learned patterns', exc_info=True)
+        coordination_patterns = self._build_coordination_patterns()
         tool_discovery = self._tool_discovery_snapshot()
         tool_evolution = self._tool_evolution_snapshot()
         tool_evolution_decisions = self._tool_evolution_decision_snapshot()
@@ -160,6 +170,10 @@ class PortableContextService:
                 recommendations=recommendations,
                 now=now,
             ),
+            self._coordination_patterns_section(
+                coordination_patterns=coordination_patterns,
+                now=now,
+            ),
             self._tool_discovery_section(status=tool_discovery, now=now),
             self._tool_evolution_section(status=tool_evolution, now=now),
             self._tool_evolution_decisions_section(snapshot=tool_evolution_decisions, now=now),
@@ -168,6 +182,8 @@ class PortableContextService:
             self._cloud_reasoning_section(status=cloud_reasoning_status, now=now),
             self._startup_health_section(status=startup_health, now=now),
             self._account_resource_section(status=account_resource, now=now),
+            self._account_inventory_continuity_section(now=now),
+            self._tool_coordination_section(now=now),
             self._boot_profile_section(status=boot_profile, now=now),
             self._evidence_basis_section(evidence=evidence_basis, now=now),
             self._task_packet_summary_section(snapshot=task_packet_summary, now=now),
@@ -217,6 +233,8 @@ class PortableContextService:
                 'boot_profile': dict(boot_profile),
                 'evidence_basis': dict(evidence_basis),
                 'task_packet_summary': dict(task_packet_summary),
+                'coordination_patterns': coordination_patterns,
+                'chat_stats': self._chat_stats_snapshot(),
                 'autoexamination_summary': dict(self_examination.get('summary_payload') or {}),
                 'recurring_issues': list(self_examination.get('recurring_issues') or []),
                 'recommended_adjustments': list(self_examination.get('recommended_adjustments') or []),
@@ -622,22 +640,21 @@ class PortableContextService:
             recent_blockers.append({'phase': 'deferred_post_window', 'ms': deferred_ms})
 
         # False-ready detection: ``splash_set_ready`` honesto debe llegar
-        # *despues* de ``populate_ui_done`` y de ``shell_loader_ready``.
-        # Si el splash declaro ready antes que esos hitos (o sin que
-        # llegue ``shell_loader_ready`` antes del fallback), el arranque
-        # es deshonesto: la UI declara readiness sin que el shell real
-        # este disponible — exactamente el bug que la evidencia live
-        # del 2026-04-28 captura a 80s en Windows pythonw.
+        # *despues* de ``shell_loader_ready``.  With phased construction,
+        # ``populate_ui_done`` arrives much later (Phase 3 VMs are deferred)
+        # so splash closing before populate_ui_done is EXPECTED — not a bug.
+        # The check is: did the splash close before the shell was actually
+        # ready?  Or did the fallback fire instead of the honest signal?
         false_ready = False
         false_ready_reason: list[str] = []
         splash_ms = phase_to_ms.get('splash_set_ready')
         populate_done_ms = phase_to_ms.get('populate_ui_done')
         shell_ready_ms = phase_to_ms.get('shell_loader_ready')
         shell_ready_fallback_ms = phase_to_ms.get('shell_loader_ready_fallback')
-        if splash_ms is not None and populate_done_ms is not None:
-            if splash_ms < populate_done_ms:
+        if splash_ms is not None and shell_ready_ms is not None:
+            if splash_ms < shell_ready_ms:
                 false_ready = True
-                false_ready_reason.append('splash_set_ready_before_populate_ui_done')
+                false_ready_reason.append('splash_set_ready_before_shell_loader_ready')
         if splash_ms is not None and shell_ready_ms is None and shell_ready_fallback_ms is None:
             false_ready = True
             false_ready_reason.append('splash_set_ready_without_shell_loader_ready')
@@ -882,6 +899,145 @@ class PortableContextService:
                 'secrets_configured': status.get('secrets_configured', 0),
                 'secrets_missing': missing_secrets,
             },
+        )
+
+    # ------------------------------------------------------------------
+    # Account inventory continuity — formal snapshot for next session
+    # ------------------------------------------------------------------
+
+    def _account_inventory_continuity_section(self, *, now) -> PortableContextSection:
+        """Export formal account inventory for session continuity.
+
+        Ensures the next session inherits: which accounts exist, their
+        quota status, the continuity queue (ranked next-best accounts),
+        and any UNRESOLVED items.  This section complements the lighter
+        ``account_resource_health`` section with the full typed snapshot.
+        """
+        items: list[dict[str, Any]] = []
+        unresolved_fields: list[str] = []
+
+        try:
+            from iabv_v15.services.account_resource_scanner import (
+                build_inventory_snapshot,
+            )
+            snapshot = build_inventory_snapshot()
+
+            # Active accounts
+            for entry in snapshot.continuity_queue[:6]:
+                items.append({
+                    'label': f"{entry.tool}: {entry.email}",
+                    'score': entry.score,
+                    'quota_remaining': entry.quota_remaining,
+                    'quota_limit': entry.quota_limit,
+                    'status': entry.status.value,
+                    'browser': entry.browser,
+                })
+
+            # Exhausted accounts
+            for entry in snapshot.entries:
+                if entry.exhausted and len(items) < 10:
+                    resets = ''
+                    if entry.quota_resets_at:
+                        resets = entry.quota_resets_at.isoformat()
+                    items.append({
+                        'label': f"{entry.tool}: {entry.email}",
+                        'status': 'exhausted',
+                        'resets_at': resets,
+                    })
+
+            unresolved_fields = list(snapshot.unresolved_items)
+
+            # Summary
+            parts: list[str] = []
+            if snapshot.active_count:
+                parts.append(f'{snapshot.active_count} cuentas activas')
+            if snapshot.exhausted_count:
+                parts.append(f'{snapshot.exhausted_count} agotadas')
+            parts.append(f'{snapshot.total_remaining_messages} mensajes disponibles')
+            if snapshot.continuity_queue:
+                top = snapshot.continuity_queue[0]
+                parts.append(
+                    f'siguiente recomendada: {top.email} ({top.tool}, '
+                    f'score={top.score:.2f})'
+                )
+            if snapshot.unresolved_count:
+                parts.append(f'{snapshot.unresolved_count} UNRESOLVED')
+            summary = ' | '.join(parts)
+            confidence = 0.85
+
+        except Exception:
+            summary = 'AccountInventorySnapshot no disponible. Continuidad de cuentas desconocida.'
+            confidence = 0.0
+            unresolved_fields = [
+                'UNRESOLVED:account_inventory_snapshot_unavailable',
+            ]
+
+        return self._section(
+            section_id='account_inventory_continuity',
+            title='Inventario de cuentas y cola de continuidad',
+            summary=summary,
+            items=items,
+            source_kind='account_resource_scanner',
+            source_refs=['account_resource_scanner', 'build_inventory_snapshot'],
+            confidence=confidence,
+            last_updated=now,
+            unresolved_fields=unresolved_fields,
+            metadata={
+                'section_purpose': 'continuity_for_next_session',
+                'requires_human_approval': True,
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Tool coordination — limit-aware selection summary
+    # ------------------------------------------------------------------
+
+    def _tool_coordination_section(self, *, now) -> PortableContextSection:
+        """Export tool coordination summary for session continuity.
+
+        Surfaces: which tool was selected, why, fallback history,
+        quota states, and task affinities so the next session inherits
+        the coordination context.
+        """
+        items: list[dict[str, Any]] = []
+        summary = 'Sin datos de coordinacion de herramientas.'
+        confidence = 0.3
+        unresolved_fields: list[str] = []
+
+        try:
+            sessions = list((self.adaptive_session_repository.list_recent(limit=5) if self.adaptive_session_repository else []) or [])
+            for session in sessions[:3]:
+                meta = dict(session.metadata or {})
+                tp = meta.get('task_packet') or {}
+                tss = tp.get('tool_selection_summary') or {}
+                selected = tss.get('selected_tool', '')
+                reason = str(tss.get('reason') or '')
+                if not selected and not reason:
+                    continue
+                label = f"seleccion:{selected}" if selected else f"decision:{reason}"
+                items.append({
+                    'label': label,
+                    'value': f"razon={reason} fallback={tss.get('fallback_used', False)} quota_confirmed={tss.get('quota_confirmed', False)}",
+                    'detail': f"alternativas_descartadas={len(tss.get('alternatives_discarded', []))}",
+                })
+            if items:
+                summary = f'{len(items)} selecciones recientes de herramienta registradas con trazabilidad.'
+                confidence = 0.7
+            else:
+                unresolved_fields.append('UNRESOLVED:no_recent_tool_selections')
+        except Exception:
+            unresolved_fields.append('UNRESOLVED:tool_coordination_read_error')
+
+        return self._section(
+            section_id='tool_coordination',
+            title='Coordinacion limit-aware de herramientas',
+            summary=summary,
+            items=items,
+            source_kind='adaptive_task_orchestrator',
+            source_refs=['tool_selection_summary', 'worker_gate'],
+            confidence=confidence,
+            last_updated=now,
+            unresolved_fields=unresolved_fields,
         )
 
     # ------------------------------------------------------------------
@@ -1447,6 +1603,43 @@ class PortableContextService:
                 'recommendations': [],
             }
 
+    def _chat_stats_snapshot(self) -> dict[str, Any]:
+        """Snapshot of chat persistence stats for the portable context."""
+        repo = self.chat_message_repository
+        if repo is None:
+            return {'status': 'not_configured', 'total': 0}
+        try:
+            total = repo.count()
+            if total == 0:
+                return {'status': 'empty', 'total': 0}
+            recent = repo.list_recent(limit=100)
+            sessions = repo.list_sessions()
+            path_counts: dict[str, int] = {}
+            evidence_counts: dict[str, int] = {}
+            for msg in recent:
+                p = msg.get('reasoning_path', '') or 'untagged'
+                path_counts[p] = path_counts.get(p, 0) + 1
+                e = msg.get('evidence_tag', '') or 'untagged'
+                evidence_counts[e] = evidence_counts.get(e, 0) + 1
+            audit = getattr(self, 'decision_audit_trail', None)
+            routing_summary = {}
+            if audit is not None and hasattr(audit, 'chat_routing_summary'):
+                try:
+                    routing_summary = audit.chat_routing_summary()
+                except Exception:
+                    pass
+            return {
+                'status': 'active',
+                'total': total,
+                'sessions': len(sessions),
+                'recent_sample': len(recent),
+                'by_reasoning_path': path_counts,
+                'by_evidence_tag': evidence_counts,
+                'routing_decisions': routing_summary,
+            }
+        except Exception:
+            return {'status': 'error', 'total': 0}
+
     def _tool_discovery_snapshot(self) -> dict[str, Any]:
         service = self.tool_discovery_service
         if service is None or not hasattr(service, 'current_status'):
@@ -1622,6 +1815,319 @@ class PortableContextService:
                 }
             )
         return items
+
+    # ------------------------------------------------------------------
+    # Auto-derived learned patterns from ExperimentLab (Brecha 3.1)
+    # ------------------------------------------------------------------
+
+    def derive_learned_patterns(self) -> list[dict[str, Any]]:
+        """Convert training corpus into learned_patterns for portable context.
+
+        Calls ``ExperimentLab.generate_training_corpus()`` and formats each
+        example as a learned_pattern compatible with ``StrategySelector``.
+        """
+        lab = self.experiment_lab
+        if lab is None or not hasattr(lab, 'generate_training_corpus'):
+            return []
+        corpus = lab.generate_training_corpus()
+        patterns: list[dict[str, Any]] = []
+        for example in corpus:
+            patterns.append({
+                'pattern_id': f"auto_{example['task_type']}_{example['recommended_assistant']}",
+                'task_type': example['task_type'],
+                'recommended_route': example['recommended_route'],
+                'recommended_assistant_kind': example['recommended_assistant'],
+                'confidence': example['confidence'],
+                'success_count': example['sample_size'],
+                'source': 'experiment_lab_corpus',
+                'derived_at_utc': utc_now().isoformat(),
+            })
+        return patterns
+
+    def _build_coordination_patterns(self) -> list[dict[str, Any]]:
+        """Fetch experiment runs and detect coordination patterns."""
+        repo = self.experiment_lab_repository
+        if repo is None or not hasattr(repo, 'list_runs'):
+            return []
+        try:
+            runs = list(repo.list_runs(limit=60))
+        except Exception:
+            return []
+        return self._detect_coordination_patterns(runs)
+
+    def _coordination_patterns_section(
+        self,
+        *,
+        coordination_patterns: list[dict[str, Any]],
+        now: Any,
+    ) -> PortableContextSection:
+        items = [dict(p) for p in coordination_patterns[:8]]
+        if items:
+            summary = f'{len(items)} coordination pattern(s) detected across IAs.'
+        else:
+            summary = 'No IA-IA coordination patterns detected yet.'
+        return self._section(
+            section_id='coordination_patterns',
+            title='Patrones de coordinacion IA-IA',
+            summary=summary,
+            items=items,
+            source_kind='persistent_learning',
+            source_refs=['ExperimentLab', 'ia_trace_summary'],
+            confidence=0.75 if items else 0.0,
+            last_updated=now,
+            unresolved_fields=[] if items else ['UNRESOLVED:coordination_patterns'],
+        )
+
+    # ------------------------------------------------------------------
+    # IA-IA coordination pattern detection (Brecha 3.2)
+    # ------------------------------------------------------------------
+
+    def _detect_coordination_patterns(
+        self,
+        experiment_runs: list[Any],
+        task_outcomes: list[dict[str, Any]] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Detect recurring coordination patterns between IAs.
+
+        Patterns detected:
+        1. SPECIALIZATION: IA X consistently better for domain Y
+        2. COMPLEMENTARY: IA X good at generation, IA Y good at validation
+        3. SEQUENCE: Pattern "local-first then cloud-validate" works better
+        4. FALLBACK: IA X fails -> IA Y succeeds (reliable fallback chain)
+
+        Returns list of patterns, each:
+        {
+            'pattern_type': 'SPECIALIZATION' | 'COMPLEMENTARY' | 'SEQUENCE' | 'FALLBACK',
+            'primary_ia': str,
+            'secondary_ia': str | None,
+            'domain': str,
+            'confidence': float,
+            'sample_size': int,
+            'description': str,
+        }
+        """
+        if not experiment_runs:
+            return []
+        patterns: list[dict[str, Any]] = []
+        patterns.extend(self._detect_specialization_patterns(experiment_runs))
+        patterns.extend(self._detect_fallback_patterns(experiment_runs))
+        patterns.extend(self._detect_complementary_patterns(experiment_runs))
+        patterns.extend(self._detect_sequence_patterns(experiment_runs))
+        return patterns
+
+    def _detect_specialization_patterns(
+        self,
+        runs: list[Any],
+    ) -> list[dict[str, Any]]:
+        """SPECIALIZATION: IA with >70% success in a domain AND >20% above average."""
+        from collections import defaultdict
+
+        domain_assistant_runs: dict[str, dict[str, list[bool]]] = defaultdict(lambda: defaultdict(list))
+        for run in runs:
+            domain = str(run.domain.value if hasattr(run.domain, 'value') else run.domain or '').strip()
+            assistant = str(run.assistant_kind or '').strip().lower()
+            if not domain or not assistant:
+                continue
+            domain_assistant_runs[domain][assistant].append(bool(run.success))
+
+        patterns: list[dict[str, Any]] = []
+        for domain, assistants in domain_assistant_runs.items():
+            all_results = [s for results in assistants.values() for s in results]
+            if not all_results:
+                continue
+            avg_success = sum(all_results) / len(all_results)
+            for assistant, results in assistants.items():
+                if len(results) < 5:
+                    continue
+                success_rate = sum(results) / len(results)
+                if success_rate > 0.7 and success_rate > avg_success + 0.2:
+                    patterns.append({
+                        'pattern_type': 'SPECIALIZATION',
+                        'primary_ia': assistant,
+                        'secondary_ia': None,
+                        'domain': domain,
+                        'confidence': round(min(1.0, 0.5 + len(results) * 0.05), 4),
+                        'sample_size': len(results),
+                        'description': (
+                            f'{assistant} specializes in {domain}: '
+                            f'{success_rate:.0%} success ({len(results)} runs) '
+                            f'vs {avg_success:.0%} average.'
+                        ),
+                    })
+        return patterns
+
+    def _detect_fallback_patterns(
+        self,
+        runs: list[Any],
+    ) -> list[dict[str, Any]]:
+        """FALLBACK: IA-A fails + IA-B succeeds on same comparison_scope_key >= 3 times."""
+        from collections import defaultdict
+
+        scope_runs: dict[str, list[Any]] = defaultdict(list)
+        for run in runs:
+            scope_key = str((run.metadata or {}).get('comparison_scope_key') or '').strip()
+            if not scope_key:
+                scope_key = str(run.comparison_scope_key if hasattr(run, 'comparison_scope_key') else '').strip()
+            if scope_key:
+                scope_runs[scope_key].append(run)
+
+        fallback_counter: dict[tuple[str, str], int] = defaultdict(int)
+        for scope_key, scope_group in scope_runs.items():
+            failed = [r for r in scope_group if not r.success]
+            succeeded = [r for r in scope_group if r.success]
+            for f in failed:
+                f_kind = str(f.assistant_kind or '').strip().lower()
+                if not f_kind:
+                    continue
+                for s in succeeded:
+                    s_kind = str(s.assistant_kind or '').strip().lower()
+                    if not s_kind or s_kind == f_kind:
+                        continue
+                    fallback_counter[(f_kind, s_kind)] += 1
+
+        patterns: list[dict[str, Any]] = []
+        for (failed_ia, success_ia), count in fallback_counter.items():
+            if count >= 3:
+                patterns.append({
+                    'pattern_type': 'FALLBACK',
+                    'primary_ia': failed_ia,
+                    'secondary_ia': success_ia,
+                    'domain': 'cross-domain',
+                    'confidence': round(min(1.0, 0.4 + count * 0.1), 4),
+                    'sample_size': count,
+                    'description': (
+                        f'When {failed_ia} fails, {success_ia} succeeds '
+                        f'({count} occurrences). Reliable fallback chain.'
+                    ),
+                })
+        return patterns
+
+    def _detect_complementary_patterns(
+        self,
+        runs: list[Any],
+    ) -> list[dict[str, Any]]:
+        """COMPLEMENTARY: Different IAs win in different domains."""
+        from collections import defaultdict
+
+        domain_winners: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        for run in runs:
+            if not run.success:
+                continue
+            domain = str(run.domain.value if hasattr(run.domain, 'value') else run.domain or '').strip()
+            assistant = str(run.assistant_kind or '').strip().lower()
+            if not domain or not assistant:
+                continue
+            domain_winners[domain][assistant] += 1
+
+        best_per_domain: dict[str, tuple[str, int]] = {}
+        for domain, assistants in domain_winners.items():
+            if not assistants:
+                continue
+            best = max(assistants.items(), key=lambda item: item[1])
+            if best[1] >= 3:
+                best_per_domain[domain] = best
+
+        unique_winners = {ia for ia, _ in best_per_domain.values()}
+        if len(unique_winners) < 2:
+            return []
+
+        patterns: list[dict[str, Any]] = []
+        winner_list = sorted(unique_winners)
+        for i, ia_a in enumerate(winner_list):
+            for ia_b in winner_list[i + 1:]:
+                domains_a = [d for d, (w, _) in best_per_domain.items() if w == ia_a]
+                domains_b = [d for d, (w, _) in best_per_domain.items() if w == ia_b]
+                if not domains_a or not domains_b:
+                    continue
+                total_samples = sum(
+                    c for d, (w, c) in best_per_domain.items()
+                    if w in (ia_a, ia_b)
+                )
+                patterns.append({
+                    'pattern_type': 'COMPLEMENTARY',
+                    'primary_ia': ia_a,
+                    'secondary_ia': ia_b,
+                    'domain': f'{",".join(sorted(domains_a))} vs {",".join(sorted(domains_b))}',
+                    'confidence': round(min(1.0, 0.5 + total_samples * 0.02), 4),
+                    'sample_size': total_samples,
+                    'description': (
+                        f'{ia_a} excels at {",".join(sorted(domains_a))}; '
+                        f'{ia_b} excels at {",".join(sorted(domains_b))}. '
+                        f'Complementary strengths.'
+                    ),
+                })
+        return patterns
+
+    def _detect_sequence_patterns(
+        self,
+        runs: list[Any],
+    ) -> list[dict[str, Any]]:
+        """SEQUENCE: 'local-first then cloud-validate' vs 'cloud direct'."""
+        from collections import defaultdict
+
+        scope_runs: dict[str, list[Any]] = defaultdict(list)
+        for run in runs:
+            scope_key = str((run.metadata or {}).get('comparison_scope_key') or '').strip()
+            if not scope_key:
+                scope_key = str(run.comparison_scope_key if hasattr(run, 'comparison_scope_key') else '').strip()
+            if scope_key:
+                scope_runs[scope_key].append(run)
+
+        local_first_wins = 0
+        cloud_direct_wins = 0
+        total_sequences = 0
+        for scope_key, scope_group in scope_runs.items():
+            if len(scope_group) < 2:
+                continue
+            sorted_runs = sorted(scope_group, key=lambda r: r.created_at_utc)
+            first_route = str(sorted_runs[0].route.value if hasattr(sorted_runs[0].route, 'value') else sorted_runs[0].route or '').lower()
+            has_local_first = first_route in ('local', 'background', 'ui')
+            has_cloud_validation = any(
+                str(r.route.value if hasattr(r.route, 'value') else r.route or '').lower() in ('cloud', 'api')
+                for r in sorted_runs[1:]
+            )
+            if has_local_first and has_cloud_validation:
+                total_sequences += 1
+                if any(r.success for r in sorted_runs):
+                    local_first_wins += 1
+            elif first_route in ('cloud', 'api') and len(scope_group) == 1:
+                total_sequences += 1
+                if sorted_runs[0].success:
+                    cloud_direct_wins += 1
+
+        if total_sequences < 5:
+            return []
+
+        patterns: list[dict[str, Any]] = []
+        if local_first_wins > cloud_direct_wins and local_first_wins >= 3:
+            patterns.append({
+                'pattern_type': 'SEQUENCE',
+                'primary_ia': 'local',
+                'secondary_ia': 'cloud',
+                'domain': 'cross-domain',
+                'confidence': round(min(1.0, 0.4 + local_first_wins * 0.08), 4),
+                'sample_size': total_sequences,
+                'description': (
+                    f'"local-first then cloud-validate" wins '
+                    f'{local_first_wins}/{total_sequences} sequences '
+                    f'vs cloud-direct {cloud_direct_wins}/{total_sequences}.'
+                ),
+            })
+        elif cloud_direct_wins > local_first_wins and cloud_direct_wins >= 3:
+            patterns.append({
+                'pattern_type': 'SEQUENCE',
+                'primary_ia': 'cloud',
+                'secondary_ia': 'local',
+                'domain': 'cross-domain',
+                'confidence': round(min(1.0, 0.4 + cloud_direct_wins * 0.08), 4),
+                'sample_size': total_sequences,
+                'description': (
+                    f'"cloud-direct" wins '
+                    f'{cloud_direct_wins}/{total_sequences} sequences '
+                    f'vs local-first {local_first_wins}/{total_sequences}.'
+                ),
+            })
+        return patterns
 
     def _pending_items(self) -> list[dict[str, Any]]:
         repository = self.pending_issue_repository

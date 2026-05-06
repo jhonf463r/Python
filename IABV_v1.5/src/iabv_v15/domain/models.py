@@ -634,6 +634,7 @@ class WorldModelSnapshot(BaseModel):
     worker_pool_snapshot: dict[str, Any] = Field(default_factory=dict)
     unresolved_fields: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    worker_pool_snapshot: dict[str, Any] = Field(default_factory=dict)
 
 
 class RouteDecision(BaseModel):
@@ -1948,6 +1949,7 @@ class SelfExaminationFinding(BaseModel):
     recommendation: str = ""
     evidence_refs: list[str] = Field(default_factory=list)
     source_refs: list[str] = Field(default_factory=list)
+    linked_run_ids: list[str] = Field(default_factory=list)
     status: str = "observed"
     unresolved_fields: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -2030,6 +2032,7 @@ class ExperimentRun(BaseModel):
     suite_name: str
     objective: str
     subject_key: str = "general"
+    comparison_scope_key: str = ""
     route: EvaluationRoute
     assistant_kind: str = ""
     assistant_configuration: AssistantConfigurationSnapshot = Field(default_factory=AssistantConfigurationSnapshot)
@@ -2659,6 +2662,8 @@ class ControlMasterDigest(BaseModel):
     recent_decisions_brief: list[str] = Field(default_factory=list)
     unresolved: list[str] = Field(default_factory=list)
     tests_state_brief: str = ""
+    autonomy_metrics_brief: str = ""
+    coordination_patterns_brief: str = ""
     generated_at_utc: datetime = Field(default_factory=utc_now)
     source_state_id: str = ""
 
@@ -2940,4 +2945,96 @@ class PlatformResumeHint(BaseModel):
     handoff_required: bool = False
     context_snapshot: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# ──────────────────────────────────────────────────────────────
+# Account Inventory & Continuity Layer
+# ──────────────────────────────────────────────────────────────
+
+
+class AccountStatus(str, Enum):
+    ACTIVE = "active"
+    EXHAUSTED = "exhausted"
+    EXPIRED = "expired"
+    UNRESOLVED = "unresolved"
+
+
+class AccountType(str, Enum):
+    OWNER = "owner"
+    TRIAL = "trial"
+    UNKNOWN = "unknown"
+
+
+class AccountInventoryEntry(BaseModel):
+    """Single account+tool pair with session, quota and continuity data.
+
+    This is the formal contract that replaces loose dicts produced by
+    ``account_resource_scanner``.  Every field is explicit so that
+    Control Master, PortableContext and the UI can consume it without
+    guessing dict keys.
+    """
+
+    email: str
+    browser: str = ""
+    profile: str = ""
+    tool: str = ""
+    has_session: bool = False
+    session_verified_at: datetime | None = None
+    quota_remaining: int = 0
+    quota_limit: int = 0
+    quota_resets_at: datetime | None = None
+    exhausted: bool = False
+    account_type: AccountType = AccountType.UNKNOWN
+    block_signals: list[str] = Field(default_factory=list)
+    score: float = 0.0
+    status: AccountStatus = AccountStatus.UNRESOLVED
+    unresolved: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AccountInventorySnapshot(BaseModel):
+    """Point-in-time snapshot of every known account across all browsers.
+
+    Built by ``build_inventory_snapshot()`` in ``account_resource_scanner``.
+    Consumed by Control Master (governance), PortableContext (continuity)
+    and CentroVivo (UI).
+
+    ``continuity_queue`` is the ranked list of non-exhausted entries
+    sorted by score descending — the first entry is the recommended
+    next account.  The user must approve before any account is used.
+    """
+
+    entries: list[AccountInventoryEntry] = Field(default_factory=list)
+    continuity_queue: list[AccountInventoryEntry] = Field(default_factory=list)
+    scanned_at: datetime = Field(default_factory=utc_now)
+    active_count: int = 0
+    exhausted_count: int = 0
+    expired_count: int = 0
+    unresolved_count: int = 0
+    total_remaining_messages: int = 0
+    tools_available: list[str] = Field(default_factory=list)
+    unresolved_items: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AccountApproval(BaseModel):
+    """User-approved account selection for a specific tool.
+
+    Created when the user clicks "Aprobar cambio de cuenta" in the UI.
+    Consumed by the worker health gate in ``LocalRoleRouter`` to
+    override the automatic ranking for the specified tool.  Other tools
+    are NOT affected — the selection is strictly per-tool.
+    """
+
+    tool: str
+    email: str
+    browser: str = ""
+    profile: str = ""
+    approved_at: datetime = Field(default_factory=utc_now)
+    last_validated: datetime | None = None
+    origin: str = "ui"
+    reason: str = ""
+    snapshot_id: str = ""
+    valid: bool = True
     metadata: dict[str, Any] = Field(default_factory=dict)

@@ -74,7 +74,7 @@ class TestAutoOptimizeBrain:
             mock_client.__exit__ = MagicMock(return_value=False)
             mock_client.post.return_value = mock_response
 
-            with patch.dict('os.environ', {'GROQ_API_KEY': 'test-key'}):
+            with patch.dict('os.environ', {'GROQ_API_KEY': 'test-key', 'GEMINI_API_KEY': '', 'OPENROUTER_API_KEY': ''}):
                 with patch('httpx.Client', return_value=mock_client):
                     bootstrap._auto_optimize_brain()
 
@@ -131,13 +131,18 @@ class TestAutoOptimizeBrain:
 
 class TestBackgroundSubprocessLaunch:
 
+    @pytest.mark.skipif(
+        __import__('os').name != 'nt',
+        reason='pythonw.exe→python.exe substitution only applies on Windows',
+    )
     def test_start_mcp_subprocess_uses_python_exe_and_hidden_runtime_log(self) -> None:
         bootstrap, workspace = _make_bootstrap()
         try:
             fake_proc = MagicMock()
             fake_proc.pid = 4242
-            with patch('subprocess.Popen', return_value=fake_proc) as popen_mock:
-                with patch('iabv_v15.bootstrap.sys.executable', 'C:\\Users\\faber\\miniconda3\\pythonw.exe'):
+            with patch('subprocess.Popen', return_value=fake_proc) as popen_mock, \
+                 patch('iabv_v15.bootstrap.sys.executable', 'C:\\Users\\faber\\miniconda3\\pythonw.exe'), \
+                 patch.object(Path, 'is_file', return_value=True):
                     proc = bootstrap._start_mcp_subprocess()
 
             assert proc is fake_proc

@@ -26,6 +26,18 @@ from iabv_v15.domain.models import (
 )
 
 
+# ------------------------------------------------------------------
+# Canonical category constants used across bootstrap.py,
+# autonomy_cycle_service.py, and the queue itself.
+# ------------------------------------------------------------------
+CATEGORY_MISSING_TOOL = 'missing_tool'
+CATEGORY_PERMISSION_REQUIRED = 'permission_required'
+CATEGORY_OSES_FINDING = 'oses_finding'
+CATEGORY_CAPABILITY_DISCOVERY = 'capability_discovery'
+CATEGORY_WINDOWS_NATIVE = 'windows_native'
+CATEGORY_INVESTIGATION = 'investigation'
+
+
 class PlatformPendingQueue:
     """Persistent FIFO queue for platform-level pending tasks."""
 
@@ -69,6 +81,10 @@ class PlatformPendingQueue:
         priority_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
         tasks.sort(key=lambda t: priority_order.get(t.priority, 99))
         return tasks
+
+    # Alias for consistent external naming (the prompt and MCP tools
+    # refer to ``list_tasks``).
+    list_tasks = list_all
 
     def list_actionable(self) -> list[PlatformPendingTask]:
         """Return tasks that are PENDING or READY_FOR_NEXT_SLICE."""
@@ -177,6 +193,143 @@ class PlatformPendingQueue:
         tasks = _WINDOWS_INTEGRATION_TASKS
         seeded: list[PlatformPendingTask] = []
         for task_dict in tasks:
+            task_id = task_dict['id']
+            existing = self.get(task_id)
+            if existing is not None and existing.status == PendingTaskStatus.COMPLETED:
+                continue
+            task = PlatformPendingTask(**task_dict)
+            if existing is not None:
+                task = task.model_copy(update={
+                    'status': existing.status,
+                    'updated_at': utc_now(),
+                })
+            seeded.append(self.upsert(task))
+        return seeded
+
+    # ------------------------------------------------------------------
+    # Capability discovery → queue (Fix 18e)
+    # ------------------------------------------------------------------
+
+    def seed_from_capability_graph(
+        self,
+        capabilities: list[Any],
+    ) -> list[PlatformPendingTask]:
+        """Create pending tasks for missing environment capabilities.
+
+        Accepts a list of ``EnvironmentCapability`` objects (or dicts with
+        compatible fields).  Already-completed tasks are not overwritten.
+        """
+        seeded: list[PlatformPendingTask] = []
+        for cap in capabilities:
+            cap_id = getattr(cap, 'capability_id', '') or (cap.get('capability_id', '') if isinstance(cap, dict) else '')
+            available = getattr(cap, 'available', True) if not isinstance(cap, dict) else cap.get('available', True)
+            if not cap_id or available:
+                continue
+            task_id = f'cap_{cap_id}'
+            existing = self.get(task_id)
+            if existing is not None and existing.status == PendingTaskStatus.COMPLETED:
+                continue
+            title = getattr(cap, 'title', cap_id) if not isinstance(cap, dict) else cap.get('title', cap_id)
+            summary = getattr(cap, 'summary', '') if not isinstance(cap, dict) else cap.get('summary', '')
+            status_str = getattr(cap, 'status', 'missing') if not isinstance(cap, dict) else cap.get('status', 'missing')
+            dep = ''
+            meta = getattr(cap, 'metadata', {}) if not isinstance(cap, dict) else cap.get('metadata', {})
+            if isinstance(meta, dict):
+                dep = meta.get('missing', '') or meta.get('dependency', '')
+            task = PlatformPendingTask(
+                id=task_id,
+                title=f'Capacidad faltante: {title}',
+                description=summary or f'{cap_id} no disponible en el entorno',
+                reason=f'capability status: {status_str}',
+                dependency_missing=str(dep),
+                priority='medium',
+                next_action=f'Verificar e instalar dependencia para {cap_id}',
+                status=(
+                    PendingTaskStatus.BLOCKED if dep
+                    else PendingTaskStatus.PENDING
+                ),
+                category=CATEGORY_CAPABILITY_DISCOVERY,
+            )
+            if existing is not None:
+                task = task.model_copy(update={
+                    'status': existing.status,
+                    'updated_at': utc_now(),
+                })
+            seeded.append(self.upsert(task))
+        return seeded
+
+    # ------------------------------------------------------------------
+    # Metacognition roadmap — investigation phases
+    # ------------------------------------------------------------------
+
+    _METACOGNITION_PHASES: list[dict[str, Any]] = [
+        {
+            'id': 'inv_phase_a_antifreeze',
+            'title': 'Fase A: Regulación inteligente anti-freeze',
+            'description': (
+                'El programa monitorea su propio consumo (CPU, RAM, hilos, '
+                'SQLite locks) y se auto-regula — si detecta que va a '
+                'saturarse, pausa o reduce procesos antes de congelarse. '
+                'Extiende _assess_resource_pressure y BackgroundResourceMonitor.'
+            ),
+            'reason': 'El usuario reporta congelamientos; el programa debe prevenirlos proactivamente.',
+            'dependency_missing': '',
+            'priority': 'high',
+            'next_action': (
+                'Integrar AdaptiveResourceOrchestrator en bootstrap, '
+                'conectar BackgroundResourceMonitor con auto-throttle de '
+                'tareas cuando presion >= HIGH.'
+            ),
+            'status': 'PENDING',
+            'category': CATEGORY_INVESTIGATION,
+        },
+        {
+            'id': 'inv_phase_b_visual_metacognition',
+            'title': 'Fase B: Percepción visual del UI propio (metacognición visual)',
+            'description': (
+                'El programa "ve" su propia interfaz — sabe qué widgets '
+                'están visibles, su estado, y mapea cada componente visual '
+                'a su código fuente. Autoconciencia visual integrada, no '
+                'grabación externa.'
+            ),
+            'reason': 'Necesario para auditoría automática y replay guiado.',
+            'dependency_missing': 'inv_phase_a_antifreeze',
+            'priority': 'medium',
+            'next_action': (
+                'Diseñar QML introspection layer que exponga el árbol '
+                'de widgets activo a WorldModelSnapshot.'
+            ),
+            'status': 'PENDING',
+            'category': CATEGORY_INVESTIGATION,
+        },
+        {
+            'id': 'inv_phase_c_guided_replay',
+            'title': 'Fase C: Replay guiado con UI Highlighting (tutorial interactivo)',
+            'description': (
+                'Cuando IABV necesita enseñar al usuario una tarea que no '
+                'puede hacer solo, muestra un replay guiado con highlighting '
+                'visual — resalta botones, campos, pasos a seguir, como un '
+                'tutorial interactivo dentro de la misma ventana.'
+            ),
+            'reason': 'Mejorar comunicación máquina-humano mediante guía visual.',
+            'dependency_missing': 'inv_phase_b_visual_metacognition',
+            'priority': 'low',
+            'next_action': (
+                'Diseñar overlay QML que reciba secuencia de pasos y '
+                'resalte widgets con animación y texto explicativo.'
+            ),
+            'status': 'PENDING',
+            'category': CATEGORY_INVESTIGATION,
+        },
+    ]
+
+    def seed_metacognition_investigation_phases(self) -> list[PlatformPendingTask]:
+        """Register the metacognition roadmap phases as pending tasks.
+
+        Idempotent: completed tasks are not overwritten.
+        """
+        seeded: list[PlatformPendingTask] = []
+        for task_dict in self._METACOGNITION_PHASES:
             task_id = task_dict['id']
             existing = self.get(task_id)
             if existing is not None and existing.status == PendingTaskStatus.COMPLETED:

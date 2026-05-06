@@ -192,6 +192,7 @@ from iabv_v15.infra.persistence.runtime_tuning_repository import RuntimeTuningRe
 from iabv_v15.infra.persistence.scenario_run_repository import ScenarioRunRepository
 from iabv_v15.infra.persistence.replay_annotation_repository import ReplayAnnotationRepository
 from iabv_v15.infra.persistence.screenshot_store import ScreenshotStore
+from iabv_v15.infra.persistence.chat_message_repository import ChatMessageRepository
 from iabv_v15.infra.persistence.session_artifact_repository import SessionArtifactRepository
 from iabv_v15.infra.persistence.session_state_store import SessionStateStore
 from iabv_v15.infra.persistence.snapshot_version_manager import SnapshotVersionManager
@@ -320,7 +321,8 @@ from iabv_v15.services.roles.analytics_strategy_service import AnalyticsStrategy
 from iabv_v15.services.roles.customer_support_service import CustomerSupportService
 from iabv_v15.services.roles.embedding_index_service import EmbeddingIndexService
 from iabv_v15.services.roles.engineering_review_service import EngineeringReviewService
-from iabv_v15.services.account_resource_scanner import estimate_available_workers
+from iabv_v15.services.account_resource_scanner import estimate_available_workers, build_inventory_snapshot
+from iabv_v15.services.account_approval_ledger import AccountApprovalLedger
 from iabv_v15.services.roles.local_role_router import LocalRoleRouter
 from iabv_v15.services.roles.sql_query_advisor_service import SqlQueryAdvisorService
 from iabv_v15.services.roles.teaching_gap_analyzer import TeachingGapAnalyzer
@@ -394,6 +396,13 @@ class AppBootstrap:
         self._timeline = get_global_timeline()
         self._timeline.mark('bootstrap_init_start')
 
+        # Runtime audit tracer: continuous self-audit from boot to shutdown.
+        from iabv_v15.services.evolution.runtime_audit_tracer import (
+            get_runtime_tracer,
+            configure_runtime_tracer,
+        )
+        self._tracer = get_runtime_tracer()
+
         # Auto-cargar secretos ANTES de leer config (que consulta os.environ).
         _auto_load_secrets()
 
@@ -404,6 +413,9 @@ class AppBootstrap:
         # Now that logs_dir exists, attach JSONL sink so every future
         # mark() call also persists to data/logs/startup_timeline.jsonl.
         configure_global_timeline(Path(self.config.logs_dir))
+        # Configure runtime tracer with the same logs dir.
+        configure_runtime_tracer(Path(self.config.logs_dir))
+        self._tracer.trace('boot_start', workspace=workspace_root or '')
 
         self._services_wired = False
         self._defer_services = _defer_services
@@ -440,11 +452,28 @@ class AppBootstrap:
     # is already visible.  Tests call ``AppBootstrap(tmp_path)`` without
     # the flag and get the old behaviour (everything wired in __init__).
     # ------------------------------------------------------------------
+    def _trace_init(self, name: str, fn: 'Callable[[], _T]') -> '_T':
+        """Execute *fn* while tracing its duration for the runtime audit."""
+        import time as _time
+        t0 = _time.perf_counter()
+        try:
+            result = fn()
+            elapsed = (_time.perf_counter() - t0) * 1000.0
+            self._tracer.trace_service_init(name, elapsed, status='ok')
+            return result
+        except Exception as exc:
+            elapsed = (_time.perf_counter() - t0) * 1000.0
+            self._tracer.trace_service_init(
+                name, elapsed, status='error', error=str(exc),
+            )
+            raise
+
     def _wire_services(self) -> None:
         if self._services_wired:
             return
         self._services_wired = True
         self._timeline.mark('wire_services_start')
+        self._tracer.trace('wire_services_start')
 
         _defer_scans = self._defer_services
 
@@ -463,6 +492,7 @@ class AppBootstrap:
         self.replay_annotation_repository = ReplayAnnotationRepository(self.db, self.replay_annotation_storage)
         self.tool_record_repository = ToolRecordRepository(self.db, self.tool_teaching_storage)
         self.experiment_lab_repository = ExperimentLabRepository(self.db, self.evolution_storage)
+        self.chat_message_repository = ChatMessageRepository(self.db)
         self.adaptive_session_repository = AdaptiveSessionRepository(self.db, self.evolution_storage)
         self.scenario_run_repository = ScenarioRunRepository(self.db, self.evolution_storage)
         self.runtime_tuning_repository = RuntimeTuningRepository(self.db, self.evolution_storage)
@@ -568,6 +598,7 @@ class AppBootstrap:
         ToolAdapter.set_disagreement_marker_dir(
             Path(self.config.data_dir) / 'logs',
         )
+        self._tracer.trace('phase_tools_adapters_done')
         self.tool_validator = ToolValidator()
         self.tool_sandbox = ToolSandbox(self.tool_validator)
         self.tool_registry = ToolRegistry(self.tool_record_repository, self.tool_adapters)
@@ -585,6 +616,7 @@ class AppBootstrap:
         if os.environ.get('IABV_DEFER_TOOL_PROBE', '1') == '0':
             self._log_tool_availability()
             self._tool_availability_logged = True
+        self._tracer.trace('phase_tool_registry_done')
         self.universal_perception_service = UniversalPerceptionService(tool_registry=self.tool_registry)
         self.environment_self_awareness_service = EnvironmentSelfAwarenessService(
             workspace_root=self.config.workspace_root,
@@ -613,6 +645,7 @@ class AppBootstrap:
             scan_interval_seconds=300.0 if _is_mcp_sub else WorldModelService._DEFAULT_SCAN_INTERVAL,
             full_scan_interval_seconds=600.0 if _is_mcp_sub else WorldModelService._DEFAULT_FULL_SCAN_INTERVAL,
         )
+        self._tracer.trace('phase_world_model_done')
         self.interaction_learning_service = InteractionLearningService(self.tool_record_repository)
         self.interaction_mode_selector = InteractionModeSelector(self.tool_registry, self.tool_record_repository)
         self.tool_memory = ToolMemory(self.tool_record_repository, self.interaction_learning_service)
@@ -743,6 +776,7 @@ class AppBootstrap:
         self.engineering_review_service: EngineeringReviewService | None = None
         self.role_router: LocalRoleRouter | None = None
 
+        self.account_approval_ledger = AccountApprovalLedger()
         self.role_router = LocalRoleRouter(
             workspace_root=self.config.workspace_root,
             general_provider=self.general_provider,
@@ -760,6 +794,7 @@ class AppBootstrap:
             artifact_repository=self.session_artifact_repository,
             tool_teach_service=self.tool_teach_service,
             account_resource_scanner=estimate_available_workers,
+            account_approval_ledger=self.account_approval_ledger,
         )
         self.environment_self_awareness_service.role_router = self.role_router
         self.environment_self_awareness_service.request_refresh(reason='role_router_ready', full=False)
@@ -807,17 +842,62 @@ class AppBootstrap:
             token_rotation_ledger=self.token_rotation_ledger,
         )
 
-        # Fix 18b: Platform pending queue — persistent task queue for
-        # Windows-native integration gaps.  Seeded once with the canonical
-        # set of known gaps; subsequent runs skip COMPLETED items.
+        self._tracer.trace('phase_oses_done')
+        # Autonomy cycle: central service for pending queue, resume hints,
+        # capability discovery, and OSES→queue bridge.  Replaces the
+        # scattered Fix 18b/18d/18e patches with one coherent module.
         from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+        from iabv_v15.services.evolution.autonomy_cycle_service import AutonomyCycleService
         self.platform_pending_queue = PlatformPendingQueue(
             evolution_dir=self.config.evolution_dir,
+        )
+        self.autonomy_cycle_service = AutonomyCycleService(
+            queue=self.platform_pending_queue,
         )
         try:
             self.platform_pending_queue.seed_windows_integration_tasks()
         except Exception:
             pass
+        try:
+            env = getattr(self, 'environment_self_awareness_service', None)
+            if env is not None and hasattr(env, 'current_model'):
+                model = env.current_model()
+                if model is not None and model.capability_graph:
+                    self.autonomy_cycle_service.seed_capabilities(
+                        model.capability_graph,
+                    )
+        except Exception:
+            pass
+        # Seed permission gates from WorldModel (if any are ungranted).
+        try:
+            wms = getattr(self, 'world_model_service', None)
+            if wms is not None:
+                snapshot = wms.current_model()
+                if snapshot is not None and snapshot.permission_gates:
+                    self.autonomy_cycle_service.seed_permission_gaps(
+                        snapshot.permission_gates,
+                    )
+        except Exception:
+            pass
+        # Freeze incident reporter — structured auto-audit for UI freezes.
+        from iabv_v15.services.evolution.freeze_incident_reporter import FreezeIncidentReporter
+        self.freeze_incident_reporter = FreezeIncidentReporter(
+            evolution_dir=self.config.evolution_dir,
+            db_path=self.config.sqlite_path,
+        )
+
+        # Seed metacognition investigation roadmap (Phases A/B/C).
+        try:
+            self.platform_pending_queue.seed_metacognition_investigation_phases()
+        except Exception:
+            pass
+
+        # Wire AutonomyCycleService into OSES (available now).
+        # TaskOutcomeRecorder wiring deferred to _wire_autonomy_cycle()
+        # because task_outcome_recorder is created later in the bootstrap.
+        self.operational_self_examination_service._autonomy_cycle_service = (
+            self.autonomy_cycle_service
+        )
 
         # Fix 19b: Windows clipboard bridge — low-level ctypes-based
         # clipboard for background services that don't have QGuiApplication.
@@ -1164,6 +1244,7 @@ class AppBootstrap:
             pending_issue_repository=self.pending_issue_repository,
             self_examination_service=self.operational_self_examination_service,
             experiment_lab_repository=self.experiment_lab_repository,
+            account_resource_scanner=build_inventory_snapshot,
         )
         self.control_master_digest_builder = ControlMasterDigestBuilder()
         self.git_sync_service = GitSyncService(
@@ -1207,6 +1288,12 @@ class AppBootstrap:
             control_master_service=self.control_master_service,
             intent_understanding_service=self.intent_understanding_service,
         )
+        # Deferred wiring: AutonomyCycleService into TaskOutcomeRecorder
+        # (the queue/OSES wiring happened earlier during queue construction).
+        if hasattr(self, 'autonomy_cycle_service'):
+            self.task_outcome_recorder.autonomy_cycle_service = (
+                self.autonomy_cycle_service
+            )
         self.scenario_registry = ScenarioRegistry()
         self.execution_probe_service = ExecutionProbeService(
             matcher=ExpectationMatcher(),
@@ -1296,6 +1383,7 @@ class AppBootstrap:
             goal_engine=self.goal_engine,
             autonomy_governance_policy=self.autonomy_governance_policy,
             synaptic_router=self.synaptic_router,
+            autonomy_cycle_service=getattr(self, 'autonomy_cycle_service', None),
         )
         self.portable_context_service.task_context_assembler = self.task_context_assembler
         self.portable_context_service.adaptive_task_orchestrator = self.adaptive_task_orchestrator
@@ -1304,8 +1392,10 @@ class AppBootstrap:
         self.code_audit_trail.experiment_lab = self.experiment_lab
         self.decision_audit_trail = DecisionAuditTrail(data_root=self.config.data_dir)
         self.operational_self_examination_service.decision_audit_trail = self.decision_audit_trail
+        self.operational_self_examination_service.chat_message_repository = self.chat_message_repository
         self.operational_self_examination_service.code_audit_trail = self.code_audit_trail
         self.portable_context_service.decision_audit_trail = self.decision_audit_trail
+        self.portable_context_service.chat_message_repository = self.chat_message_repository
         self.portable_context_service.code_audit_trail = self.code_audit_trail
         self.autonomous_validation_cycle.decision_audit_trail = self.decision_audit_trail
         self.autonomous_validation_cycle.api_key_discovery_service = self.api_key_discovery_service
@@ -1543,9 +1633,10 @@ class AppBootstrap:
             except Exception:
                 pass
             try:
-                self._log_tool_availability()
+                self._read_with_retry(self._log_tool_availability)
             except Exception as exc:
                 logger.warning('deferred_tool_availability_probe failed: %s', exc)
+                self._record_startup_sqlite_incident(exc)
             try:
                 self._timeline.mark('deferred_post_window_setup_done')
             except Exception:
@@ -1561,16 +1652,21 @@ class AppBootstrap:
         """Punto de aterrizaje honesto para el readiness real del shell.
 
         Disparado por ``MainWindowBridge.shellLoaderReady`` cuando QML
-        confirma que ``mainShellLoader`` (asincrono) termino de
-        instanciar el contenido real del shell (no la
-        ``ApplicationWindow`` vacia).  Aqui — y solo aqui — marcamos el
+        confirma que ``mainShellLoader`` termino de instanciar el
+        contenido real del shell.  Aqui — y solo aqui — marcamos el
         hito ``shell_loader_ready`` y disparamos
         ``splashController.set_ready()`` para que el splash empiece a
         desvanecer.
 
-        Idempotente: si la senal QML llega dos veces (por ejemplo
-        cuando el ``sourceComponent`` se re-evalua tras un cambio de
-        contexto), solo el primer disparo cuenta.
+        With synchronous mainShellLoader (``asynchronous: false``), this
+        fires during the first ``processEvents()`` after ``mainShellKickoff``
+        triggers — typically inside Phase 2's ``_yield_to_event_loop()``.
+
+        Also starts a safety-net timer for Phase 3: if ``page_loader_ready``
+        never arrives (pageLoader stuck), Phase 3 VMs still get built
+        after 5 s.  Idempotent via ``_schedule_pending_deferred_2``.
+
+        Idempotente: solo el primer disparo cuenta.
         """
         if getattr(self, '_shell_loader_ready_handled', False):
             return
@@ -1580,6 +1676,9 @@ class AppBootstrap:
         except Exception:
             pass
         self._fire_splash_ready_and_raise_main('shell_loader_ready')
+        # Safety net: if page_loader_ready never fires (e.g. pageLoader
+        # async incubation stuck), ensure Phase 3 VMs still get built.
+        QTimer.singleShot(5000, self._schedule_pending_deferred_2)
 
     def _handle_qml_loader_event(self, loader_name: str, status: int, active_now: bool) -> None:
         """Marca cada transicion granular de un Loader QML al timeline.
@@ -1627,6 +1726,22 @@ class AppBootstrap:
         except Exception:
             pass
 
+    def _schedule_pending_deferred_2(self) -> None:
+        """Schedule lazy VM wiring if not yet scheduled.
+
+        Called from ``_handle_page_loader_ready`` (preferred) or
+        ``_force_splash_ready_fallback`` (safety net).  The actual VM
+        construction happens lazily via ``_ensure_vm_for_route`` (on
+        navigation) or ``_build_all_lazy_vms`` (idle pre-build at 15 s).
+        """
+        if getattr(self, '_deferred_batch_2_scheduled', False):
+            return
+        fn = getattr(self, '_pending_deferred_2_fn', None)
+        if fn is None:
+            return
+        self._deferred_batch_2_scheduled = True
+        QTimer.singleShot(0, fn)
+
     def _handle_page_loader_ready(self) -> None:
         """Marca ``page_loader_ready`` (hito mas honesto aun que shell).
 
@@ -1636,16 +1751,34 @@ class AppBootstrap:
         no, la incubacion del page loader es la atascada (no el shell
         exterior).  Tambien dispara raise/activate del main window
         como reasegurador del Z-order.
+
+        Also triggers Phase 3 (deferred batch 2) VM construction so
+        non-critical VMs are built only after the user sees the first
+        paint — never during the pre-ready critical path.
+
+        If ``shell_loader_ready`` never arrived, this signal is
+        sufficient to close the splash and mark readiness — it is
+        the MORE honest hito because the user already sees rendered
+        content.
         """
+        self._page_loader_ready_received = True
         try:
             self._timeline.mark('page_loader_ready')
         except Exception:
             pass
         self._persist_boot_profile('page_loader_ready')
-        # Reasegurador: cuando el page loader esta listo el splash YA
-        # deberia estar fundiendose, pero forzamos raise/activate del
-        # main window por si Windows lo dejo debajo del splash.
-        self._raise_main_window_now('page_loader_ready')
+        # If shell_loader_ready never fired, page_loader_ready is
+        # sufficient to close the splash — the user is already seeing
+        # rendered content.  This prevents the fallback from firing
+        # after the page is already visible.
+        if not getattr(self, '_shell_loader_ready_handled', False):
+            self._shell_loader_ready_handled = True
+            self._fire_splash_ready_and_raise_main('page_loader_ready')
+        else:
+            self._raise_main_window_now('page_loader_ready')
+        # Schedule Phase 3: build non-critical VMs now that the user
+        # is seeing the rendered page.
+        self._schedule_pending_deferred_2()
         # Final truth refresh: re-persist PortableContext and OSES now
         # that the timeline contains populate_ui_done + page_loader_ready.
         # Without this, latest.md/latest.json keep the stale early snapshot
@@ -1657,21 +1790,25 @@ class AppBootstrap:
         ).start()
 
     def _final_startup_truth_refresh(self) -> None:
-        """Re-persist PortableContext and OSES after boot is truly complete.
+        """Re-persist OSES and PortableContext after boot is truly complete.
 
         The early ``_startup_self_examination()`` runs before
         ``populate_ui_done`` / ``page_loader_ready`` are recorded, so
         its snapshots freeze a partial view.  This method re-runs the
         persistence *after* those milestones exist in the timeline JSONL,
         producing honest ``latest.md`` / ``latest.json`` files.
+
+        Additionally checks if the latest artifacts are stale (>24h) and
+        forces regeneration — this prevents sessions that run for weeks
+        from accumulating 17-day-old metacognition data.
+
+        Order matters: OSES must refresh FIRST so its review reflects
+        the final boot state.  Then PortableContext persists with the
+        up-to-date OSES summary — not a stale one.
         """
-        try:
-            pcs = getattr(self, 'portable_context_service', None)
-            if pcs is not None:
-                pcs.build_package()
-                logger.info('startup_truth_refresh: PortableContext re-persisted')
-        except Exception as exc:
-            logger.debug('startup_truth_refresh: PortableContext failed: %s', exc)
+        force_refresh = self._metacognition_data_is_stale()
+        if force_refresh:
+            logger.info('startup_truth_refresh: metacognition data stale (>24h), forcing full regeneration')
         try:
             oses = getattr(self, 'operational_self_examination_service', None)
             if oses is not None:
@@ -1679,6 +1816,39 @@ class AppBootstrap:
                 logger.info('startup_truth_refresh: OSES re-persisted')
         except Exception as exc:
             logger.debug('startup_truth_refresh: OSES failed: %s', exc)
+        try:
+            pcs = getattr(self, 'portable_context_service', None)
+            if pcs is not None:
+                pcs.build_package()
+                logger.info('startup_truth_refresh: PortableContext re-persisted')
+        except Exception as exc:
+            logger.debug('startup_truth_refresh: PortableContext failed: %s', exc)
+        if force_refresh:
+            self._tracer.trace('metacognition_refresh', reason='stale_data_>24h')
+
+    def _metacognition_data_is_stale(self, max_age_hours: float = 24.0) -> bool:
+        """Check if OSES / PortableContext latest.json are older than *max_age_hours*."""
+        import time as _time
+        data_dir = getattr(self.config, 'data_dir', None)
+        if data_dir is None:
+            return False
+        base = Path(data_dir) / 'evolution'
+        candidates = [
+            base / 'self_examination' / 'latest.json',
+            base / 'portable_context' / 'latest.json',
+        ]
+        now = _time.time()
+        max_age_s = max_age_hours * 3600
+        for path in candidates:
+            try:
+                if path.exists():
+                    age = now - path.stat().st_mtime
+                    if age > max_age_s:
+                        logger.info('stale metacognition: %s is %.1fh old', path.name, age / 3600)
+                        return True
+            except Exception:
+                pass
+        return False
 
     def _handle_splash_closing(self) -> None:
         """Marca ``splash_window_closing`` cuando QML va a llamar close().
@@ -1882,6 +2052,11 @@ class AppBootstrap:
         event-loop starvation (when ``wall_clock >> timer_ms``, the main
         thread was blocked by QML incubation and couldn't process the
         QTimer until it unblocked).
+
+        Skipped if ``_shell_loader_ready_handled`` is already True
+        (honest shell signal or page_loader_ready already closed the
+        splash).  ``page_loader_ready`` sets this flag because it is
+        the MORE honest readiness hito — the user already sees content.
         """
         if getattr(self, '_shell_loader_ready_handled', False):
             return
@@ -1921,6 +2096,9 @@ class AppBootstrap:
         except Exception:
             pass
         self._fire_splash_ready_and_raise_main('shell_loader_ready_fallback')
+        # Safety net: if page_loader_ready never arrived, ensure Phase 3
+        # VMs still get built eventually (degraded but functional).
+        self._schedule_pending_deferred_2()
 
     _TOOL_INSTALL_GUIDANCE: dict[str, str] = {
         'aider_coder': 'pip install aider-chat (optional, heavy ~200MB; installed in background)',
@@ -1987,6 +2165,7 @@ class AppBootstrap:
 
         results: dict[str, bool] = {}
         refreshed_cards: dict[str, Any] = {}
+        _lock_errors: list[str] = []
 
         def _probe_group(group_cards: list) -> list[tuple[str, bool, Any]]:
             out: list[tuple[str, bool, Any]] = []
@@ -2011,6 +2190,8 @@ class AppBootstrap:
                 except Exception as exc:
                     adapter_key = futures[future]
                     logger.warning('tool_probe failed for adapter %s: %s', adapter_key, exc)
+                    if 'database is locked' in str(exc):
+                        _lock_errors.append(str(exc))
 
         ready = []
         missing = []
@@ -2024,7 +2205,12 @@ class AppBootstrap:
                     stamped = refreshed.model_copy(
                         update={'last_validated_at_utc': now},
                     )
-                    self.tool_registry.repository.save_card(stamped)
+                    try:
+                        self.tool_registry.repository.save_card(stamped)
+                    except Exception as save_exc:
+                        logger.warning('tool_probe save_card failed: %s', save_exc)
+                        if 'database is locked' in str(save_exc):
+                            _lock_errors.append(str(save_exc))
             else:
                 missing.append(card.tool_id)
                 guidance = self._TOOL_INSTALL_GUIDANCE.get(card.tool_id, '')
@@ -2040,6 +2226,12 @@ class AppBootstrap:
             len(cards),
             ', '.join(sorted(ready)),
             f' | missing=[{", ".join(sorted(missing))}]' if missing else '',
+        )
+        self._tracer.trace(
+            'tool_availability',
+            ready=sorted(ready),
+            missing=sorted(missing),
+            total=len(cards),
         )
 
         # Auto-install missing pip-installable tools (AGENTS.md: user
@@ -2064,8 +2256,139 @@ class AppBootstrap:
             except Exception as exc:
                 logger.debug('auto_install: failed — %s', exc)
 
+        if _lock_errors:
+            self._record_startup_sqlite_incident(
+                Exception(f'database is locked ({len(_lock_errors)} occurrence(s) during tool probes)')
+            )
+
+        # Bridge missing tools → pending queue so the program knows
+        # what it cannot do and surfaces it as actionable work.
+        self._seed_missing_tools_as_pending(missing, ready)
+
         self._startup_self_examination()
         self._run_startup_common_sense()
+
+    @staticmethod
+    def _read_with_retry(
+        fn: 'Callable[[], _T]',
+        *,
+        max_retries: int = 3,
+        base_delay: float = 0.25,
+    ) -> '_T':
+        """Execute *fn* with exponential-backoff retry on SQLite lock errors.
+
+        Intended for read-only helpers called during bootstrap
+        (``_log_tool_availability``, ``_startup_self_examination``, etc.)
+        where a transient ``database is locked`` should not crash the
+        entire startup sequence.
+
+        Raises the last exception if all retries are exhausted.
+        Non-lock errors are raised immediately without retry.
+        """
+        import sqlite3
+        import time as _time
+
+        last_exc: Exception | None = None
+        for attempt in range(max_retries + 1):
+            try:
+                return fn()
+            except (sqlite3.OperationalError, OSError) as exc:
+                if 'database is locked' not in str(exc):
+                    raise
+                last_exc = exc
+                if attempt < max_retries:
+                    delay = base_delay * (2 ** attempt)
+                    _time.sleep(delay)
+        raise last_exc  # type: ignore[misc]
+
+    def _record_startup_sqlite_incident(self, exc: Exception) -> None:
+        """Promote a ``database is locked`` error to an OSES finding.
+
+        Called from ``_bg_post_window_setup`` when
+        ``_log_tool_availability`` fails with a SQLite contention error.
+        The finding is persisted as a JSON file under
+        ``data/evolution/self_examination/`` so that the next
+        ``build_review()`` picks it up via ``_runtime_log_findings`` or
+        the startup health pipeline.
+        """
+        if 'database is locked' not in str(exc):
+            return
+        try:
+            incident_dir = Path(self.config.evolution_dir) / 'self_examination'
+            incident_dir.mkdir(parents=True, exist_ok=True)
+            incident_path = incident_dir / 'startup_sqlite_incident.json'
+            import json
+            from datetime import datetime, timezone
+            incident = {
+                'category': 'sqlite_lock_contention',
+                'title': 'database is locked durante startup',
+                'summary': (
+                    f'deferred_tool_availability_probe fallo con: {exc}. '
+                    'La contención ocurre porque UI y MCP intentan escribir '
+                    'en app.sqlite simultáneamente durante arranque.'
+                ),
+                'severity': 'HIGH',
+                'confidence': 0.95,
+                'recommendation': (
+                    'Verificar que WAL mode y busy_timeout estén activos. '
+                    'Separar writes de _seed_defaults del arranque MCP.'
+                ),
+                'source_refs': [
+                    'iabv_v15.infra.persistence.database',
+                    'iabv_v15.services.tools.tool_registry._seed_defaults',
+                ],
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'error': str(exc),
+            }
+            incident_path.write_text(
+                json.dumps(incident, indent=2, ensure_ascii=False),
+                encoding='utf-8',
+            )
+            logger.info('startup_sqlite_incident: persisted to %s', incident_path)
+        except Exception as persist_exc:
+            logger.warning('startup_sqlite_incident: failed to persist: %s', persist_exc)
+
+    def _seed_missing_tools_as_pending(
+        self,
+        missing: list[str],
+        ready: list[str],
+    ) -> None:
+        """Create PENDING tasks for tools that probes found unavailable.
+
+        Ready tools are marked COMPLETED so the queue reflects the true
+        state of the environment.  This bridges ToolRegistry probes with
+        the autonomy pending queue.
+        """
+        try:
+            queue = getattr(self, 'platform_pending_queue', None)
+            if queue is None:
+                return
+            from iabv_v15.domain.models import PendingTaskStatus, PlatformPendingTask
+            from iabv_v15.services.evolution.platform_pending_queue import CATEGORY_MISSING_TOOL
+            for tool_id in missing:
+                task_id = f'tool_{tool_id}'
+                existing = queue.get(task_id)
+                if existing is not None and existing.status == PendingTaskStatus.COMPLETED:
+                    continue
+                guidance = self._TOOL_INSTALL_GUIDANCE.get(tool_id, '')
+                queue.upsert(PlatformPendingTask(
+                    id=task_id,
+                    title=f'Herramienta no disponible: {tool_id}',
+                    description=f'{tool_id} no fue detectada en el entorno.',
+                    reason='tool_probe returned unavailable',
+                    dependency_missing=guidance or tool_id,
+                    priority='medium',
+                    next_action=guidance or f'Instalar o configurar {tool_id}',
+                    status=PendingTaskStatus.PENDING,
+                    category=CATEGORY_MISSING_TOOL,
+                ))
+            for tool_id in ready:
+                task_id = f'tool_{tool_id}'
+                existing = queue.get(task_id)
+                if existing is not None and existing.status != PendingTaskStatus.COMPLETED:
+                    queue.mark_status(task_id, PendingTaskStatus.COMPLETED)
+        except Exception:
+            logger.debug('seed_missing_tools: failed', exc_info=True)
 
     def _run_startup_common_sense(self) -> None:
         """Run common-sense reasoning over startup timeline events.
@@ -2229,6 +2552,37 @@ class AppBootstrap:
             except Exception as exc:
                 logger.debug('startup_health_findings: skipped (%s)', exc)
 
+        # Log actionable resume hints and pending tasks so the next
+        # session (or agent) knows exactly what was left incomplete.
+        acs = getattr(self, 'autonomy_cycle_service', None)
+        if acs is not None:
+            try:
+                summary = acs.startup_summary()
+                hints = summary.get('resume_hints', [])
+                actionable = summary.get('actionable_tasks', [])
+                blocked = summary.get('blocked_tasks', [])
+                if hints:
+                    for h in hints[:5]:
+                        logger.info(
+                            'resume_hint: task=%s phase=%s last_step=%s handoff=%s',
+                            h.get('task_id', ''), h.get('checkpoint_phase', ''),
+                            h.get('last_step', '')[:80], h.get('handoff_required', False),
+                        )
+                if actionable:
+                    logger.info(
+                        'autonomy_pending: %d actionable tasks (top: %s)',
+                        len(actionable),
+                        ', '.join(t.get('title', '')[:40] for t in actionable[:3]),
+                    )
+                if blocked:
+                    logger.info(
+                        'autonomy_blocked: %d blocked tasks (top: %s)',
+                        len(blocked),
+                        ', '.join(t.get('title', '')[:40] for t in blocked[:3]),
+                    )
+            except Exception as exc:
+                logger.debug('autonomy_startup_summary: skipped (%s)', exc)
+
     def _ensure_directories(self) -> None:
         for path in (
             self.config.data_dir,
@@ -2264,28 +2618,42 @@ class AppBootstrap:
         except Exception:
             pass
 
-    def _build_ui_objects(self) -> None:
+    # ------------------------------------------------------------------
+    # Phased VM construction
+    # ------------------------------------------------------------------
+    # populate_ui is split into three batches so that QTimer.singleShot(0)
+    # returns control to the Qt event loop between each batch.  This lets
+    # the QML async incubator (mainShellLoader / pageLoader) progress to
+    # Ready and emit the honest shell_loader_ready signal *before* the
+    # fallback timer fires.
+    #
+    # Phase 1 (critical): nav + theme + bridge + dashboard — minimum
+    #   needed for the initial page to render.
+    # Phase 2 (deferred-1): MCP side-effects + ControlCenter + Capture
+    # Phase 3 (deferred-2): Evolution + Knowledge + Provider + RunHistory
+    #   + CentroVivo + signal wiring
+    # ------------------------------------------------------------------
+
+    def _build_critical_ui_objects(self) -> None:
+        """Phase 1: build VMs needed for first paint (Dashboard)."""
         if self.navigation_controller is not None:
             return
         if PYSIDE_AVAILABLE and QGuiApplication.instance() is None:
             self._ui_app = QApplication(sys.argv)
+
+        try:
+            self._timeline.mark('populate_ui_vm_navigation')
+        except Exception:
+            pass
         self.navigation_controller = NavigationController()
         self.theme_controller = ThemeController(self.theme)
         self.main_window_bridge = MainWindowBridge(self.config.app_name, self.config.workspace_root)
-        # El shell QML emite ``shellLoaderReady`` cuando ``mainShellLoader``
-        # (asincrono) instancia el contenido real (no solo la
-        # ``ApplicationWindow`` vacia).  Conectamos aqui, no dentro de
-        # ``run()``, asi la senal llega aunque el bridge ya este vivo
-        # antes de la primera carga del engine.
         try:
             self.main_window_bridge.shellLoaderReady.connect(
                 self._handle_shell_loader_ready
             )
         except Exception:
             logger.exception('No se pudo conectar shellLoaderReady -> _handle_shell_loader_ready')
-        # Hitos granulares para diagnosticar Windows pythonw.exe: cada
-        # transicion de Loader.status/active, Component.onCompleted del
-        # Main.qml, y el page loader interno (mas honesto que el shell).
         try:
             self.main_window_bridge.qmlLoaderEvent.connect(
                 self._handle_qml_loader_event
@@ -2310,7 +2678,12 @@ class AppBootstrap:
             )
         except Exception:
             logger.exception('No se pudo conectar splashClosing -> _handle_splash_closing')
-        self._yield_to_event_loop()  # Fix 20b
+        self._yield_to_event_loop()
+
+        try:
+            self._timeline.mark('populate_ui_vm_dashboard')
+        except Exception:
+            pass
         self.dashboard_viewmodel = DashboardViewModel(
             self.episode_repository,
             self.knowledge_repository,
@@ -2319,11 +2692,21 @@ class AppBootstrap:
             self.embedding_service,
             defer_initial_refresh=True,
         )
-        self._yield_to_event_loop()  # Fix 20b
-        # --- MCP bridge (Capa 1): expone el programa a agentes externos
-        # (Devin/Claude/Codex) via MCP sobre un tunnel local. El service lee
-        # su preferencia persistida y, si estaba habilitado, se auto-arranca.
-        # Si governance lo bloquea, queda en state=failed sin crashear.
+        self._yield_to_event_loop()
+
+    def _build_deferred_ui_batch_1(self) -> None:
+        """Phase 2: MCP side-effects only (lightweight services).
+
+        ControlCenterVM and CaptureStudioVM are now lazy — built
+        on-demand when the user navigates to their page, or pre-built
+        during idle 15 s after boot.  This eliminates the 82 s main
+        thread block observed in the Windsurf v2 audit.
+        """
+        try:
+            self._timeline.mark('populate_ui_vm_mcp_side_effects')
+        except Exception:
+            pass
+        # --- MCP bridge ---
         if getattr(self, 'mcp_bridge_service', None) is None:
             try:
                 self.mcp_bridge_service = build_mcp_bridge_service(
@@ -2334,11 +2717,6 @@ class AppBootstrap:
                 logger.exception('No se pudo inicializar MCPBridgeService; bridge desactivado')
                 self.mcp_bridge_service = None
             else:
-                # `ensure_started()` espera hasta DEFAULT_TUNNEL_TIMEOUT_S a que
-                # cloudflared publique la URL. Corriendo en el hilo del arranque
-                # freezearia el splash/UI hasta 30 s. Lo disparamos a un daemon
-                # thread: el service publica transiciones vía listener y el
-                # ViewModel refleja el estado apenas cambie.
                 bridge_ref = self.mcp_bridge_service
 
                 def _autostart_bridge() -> None:
@@ -2352,11 +2730,7 @@ class AppBootstrap:
                     name='mcp-bridge-autostart',
                     daemon=True,
                 ).start()
-
-        # --- UIBridgeService: puente IPC entre MCP server y UI PySide6.
-        # Permite a agentes externos (via MCP) enviar mensajes al chat,
-        # leer respuestas, capturar screenshots y navegar tabs de la UI.
-        # El server TCP arranca en un hilo daemon; si falla, queda None.
+        # --- UIBridgeService ---
         if getattr(self, 'ui_bridge_server', None) is None:
             try:
                 from iabv_v15.services.ui_bridge_service import (
@@ -2366,31 +2740,19 @@ class AppBootstrap:
             except Exception:
                 logger.exception('No se pudo construir UIBridgeServer; bridge UI desactivado')
                 self.ui_bridge_server = None
-
-        # --- UIScreenshotProvider: permite que la tool MCP
-        # `capture_ui_screenshot` devuelva bytes reales cuando la UI está
-        # corriendo en este proceso (Qt) o cuando hay display server activo
-        # (mss). En headless CI / Linux sin display queda `None` y la tool
-        # degrada explícito a `ui_not_running`.
+        # --- UIScreenshotProvider ---
         if getattr(self, 'ui_screenshot_provider', None) is None:
             try:
                 from iabv_v15.infra.ui import build_ui_screenshot_provider
-
                 self.ui_screenshot_provider = build_ui_screenshot_provider()
             except Exception:
                 logger.exception('No se pudo construir ui_screenshot_provider; dejando None')
                 self.ui_screenshot_provider = None
-
-        # ChatCapabilityIngestionService: escucha pasiva del chat. Cuando el
-        # usuario declara una capacidad (tengo GPU, instale qwen3, cuento con
-        # Docker) escribe un entry append-only a
-        # data/chat_research_backlog/<session>.jsonl. No decide rutas; solo
-        # persiste para que OSES / ExperimentLab lo consuman en capas superiores.
+        # --- ChatCapabilityIngestionService ---
         try:
             from iabv_v15.services.chat.capability_ingestion import (
                 ChatCapabilityIngestionService,
             )
-
             self.chat_capability_ingestion_service = ChatCapabilityIngestionService(
                 data_root=self.config.data_dir,
             )
@@ -2398,7 +2760,77 @@ class AppBootstrap:
             logger.exception('No se pudo construir ChatCapabilityIngestionService; dejando None')
             self.chat_capability_ingestion_service = None
 
-        self._yield_to_event_loop()  # Fix 20b
+        # ControlCenterVM and CaptureStudioVM are now lazy (see
+        # _ROUTE_TO_VM_ATTR).  UIBridgeServer wiring happens inside
+        # _build_control_center_vm() when the VM is actually built.
+
+    # ------------------------------------------------------------------
+    # Lazy VM construction — ALL non-critical VMs (ControlCenter,
+    # CaptureStudio, EvolutionCenter, KnowledgeBase, ProviderSettings,
+    # RunHistory, CentroVivo) are built on-demand when the user
+    # navigates to their page, or pre-built during idle 15 s after
+    # boot.  Only Dashboard + Nav + Theme + Bridge are built eagerly.
+    # This keeps the main thread responsive (Responding=True) and
+    # avoids the 82 s block that caused Windows "Not Responding".
+    # ------------------------------------------------------------------
+
+    _ROUTE_TO_VM_ATTR: dict[str, str] = {
+        'control': 'control_center_viewmodel',
+        'capture': 'capture_studio_viewmodel',
+        'evolution': 'evolution_center_viewmodel',
+        'knowledge': 'knowledge_base_viewmodel',
+        'providers': 'provider_settings_viewmodel',
+        'runs': 'run_history_viewmodel',
+        'centro_vivo': 'centro_vivo_viewmodel',
+    }
+
+    def _ensure_vm_for_route(self, route: str) -> None:
+        """Lazily construct the VM for *route* if it hasn't been built yet.
+
+        Called from the ``currentRouteChanged`` listener installed by
+        ``_populate_ui_deferred_2``.  Each VM is built exactly once;
+        subsequent navigations to the same page are no-ops.
+        """
+        attr = self._ROUTE_TO_VM_ATTR.get(route)
+        if attr is None:
+            return  # Phase 1 VM (dashboard) — already built
+        if getattr(self, attr, None) is not None:
+            return  # already constructed
+        ctx = getattr(self, '_qml_root_context', None)
+        if ctx is None:
+            return
+        try:
+            self._timeline.mark(f'lazy_vm_{route}_start')
+        except Exception:
+            pass
+        if route == 'control':
+            self._build_control_center_vm()
+            ctx.setContextProperty('controlCenterViewModel', self.control_center_viewmodel)
+        elif route == 'capture':
+            self._build_capture_studio_vm()
+            ctx.setContextProperty('captureStudioViewModel', self.capture_studio_viewmodel)
+        elif route == 'evolution':
+            self._build_evolution_center_vm()
+            ctx.setContextProperty('evolutionCenterViewModel', self.evolution_center_viewmodel)
+        elif route == 'knowledge':
+            self._build_knowledge_base_vm()
+            ctx.setContextProperty('knowledgeBaseViewModel', self.knowledge_base_viewmodel)
+        elif route == 'providers':
+            self._build_provider_settings_vm()
+            ctx.setContextProperty('providerSettingsViewModel', self.provider_settings_viewmodel)
+        elif route == 'runs':
+            self._build_run_history_vm()
+            ctx.setContextProperty('runHistoryViewModel', self.run_history_viewmodel)
+        elif route == 'centro_vivo':
+            self._build_centro_vivo_vm()
+            ctx.setContextProperty('centroVivoViewModel', self.centro_vivo_viewmodel)
+        try:
+            self._timeline.mark(f'lazy_vm_{route}_done')
+        except Exception:
+            pass
+        logger.info('lazy_vm_constructed: %s', route)
+
+    def _build_control_center_vm(self) -> None:
         self.control_center_viewmodel = ControlCenterViewModel(
             config=self.config,
             episode_repository=self.episode_repository,
@@ -2432,9 +2864,43 @@ class AppBootstrap:
             control_master_digest_builder=self.control_master_digest_builder,
             self_audit_service=self.self_audit_service,
             chat_capability_ingestion_service=self.chat_capability_ingestion_service,
+            chat_message_repository=self.chat_message_repository,
             defer_initial_refresh=True,
         )
-        self._yield_to_event_loop()  # Fix 20b
+        self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
+        self.control_center_viewmodel.decision_audit_trail = self.decision_audit_trail
+        # Wire CaptureStudioVM reference if already built.
+        csvm = getattr(self, 'capture_studio_viewmodel', None)
+        if csvm is not None:
+            self.control_center_viewmodel.capture_studio_viewmodel = csvm
+        # Wire UIBridgeServer now that the VM exists — start on a
+        # background thread to avoid blocking the main thread during
+        # lazy VM prebuild.
+        if getattr(self, 'ui_bridge_server', None) is not None:
+            ccvm_ref = self.control_center_viewmodel
+
+            def _start_bridge() -> None:
+                try:
+                    from iabv_v15.services.ui_bridge_service import (
+                        build_ui_bridge_server,
+                    )
+                    bridge = build_ui_bridge_server(
+                        control_center_viewmodel=ccvm_ref,
+                    )
+                    self.ui_bridge_server = bridge
+                    bridge.start()
+                    logger.info('UIBridgeServer started with ControlCenterViewModel')
+                except Exception:
+                    logger.exception('UIBridgeServer failed to start with VM wiring')
+                    self.ui_bridge_server = None
+
+            threading.Thread(
+                target=_start_bridge,
+                name='ui-bridge-start',
+                daemon=True,
+            ).start()
+
+    def _build_capture_studio_vm(self) -> None:
         self.capture_studio_viewmodel = CaptureStudioViewModel(
             config=self.config,
             episode_repository=self.episode_repository,
@@ -2461,27 +2927,12 @@ class AppBootstrap:
             universal_perception_service=self.universal_perception_service,
             defer_initial_refresh=True,
         )
-        self.control_center_viewmodel.capture_studio_viewmodel = self.capture_studio_viewmodel
-        self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
+        # Wire back-reference if ControlCenterVM already built.
+        ccvm = getattr(self, 'control_center_viewmodel', None)
+        if ccvm is not None:
+            ccvm.capture_studio_viewmodel = self.capture_studio_viewmodel
 
-        # Wire UIBridgeServer with the ControlCenterViewModel so that
-        # MCP agents can interact with the UI chat. The server starts
-        # in a daemon thread; if it fails, IABV continues without it.
-        if getattr(self, 'ui_bridge_server', None) is not None:
-            try:
-                from iabv_v15.services.ui_bridge_service import build_ui_bridge_server
-                self.ui_bridge_server = build_ui_bridge_server(
-                    control_center_viewmodel=self.control_center_viewmodel,
-                )
-                self.ui_bridge_server.start()
-                logger.info('UIBridgeServer started with ControlCenterViewModel')
-            except Exception:
-                logger.exception('UIBridgeServer failed to start with VM wiring')
-                self.ui_bridge_server = None
-
-        self._yield_to_event_loop()  # Fix 20b
-        # Deferred: refreshAutonomyDock runs inside the VM's deferred
-        # startup thread to avoid blocking UI creation.
+    def _build_evolution_center_vm(self) -> None:
         self.evolution_center_viewmodel = EvolutionCenterViewModel(
             dossier_repository=self.execution_dossier_repository,
             hidden_incident_repository=self.hidden_incident_repository,
@@ -2503,33 +2954,34 @@ class AppBootstrap:
             github_remote_service=self.github_remote_service,
             defer_initial_refresh=True,
         )
-        # Hook proactivo: el EvolutionCenter puede consultar el dashboard
-        # para mostrar "que necesita del humano" al arrancar, sin romper
-        # el contrato del ViewModel (attribute set, no constructor arg).
         self.evolution_center_viewmodel.proactive_dashboard_service = self.proactive_dashboard_service
         self.evolution_center_viewmodel.human_approval_broker = self.human_approval_broker
         self.evolution_center_viewmodel.approval_memory = self.approval_memory
-        # F1.1: el VM expone snapshots recientes como Property; el servicio
-        # persiste a disco y el VM solo lee la foto (AGENTS.md: el VM no
-        # decide rutas ni inventa datos).
         self.evolution_center_viewmodel.ui_screenshot_service = self.ui_screenshot_service
-        self._yield_to_event_loop()  # Fix 20b
+
+    def _build_knowledge_base_vm(self) -> None:
         self.knowledge_base_viewmodel = KnowledgeBaseViewModel(
             self.knowledge_repository,
             defer_initial_refresh=True,
         )
+
+    def _build_provider_settings_vm(self) -> None:
         self.provider_settings_viewmodel = ProviderSettingsViewModel(
             self.provider_configs,
             self.role_router,
             self.embedding_service,
             defer_initial_refresh=True,
         )
+
+    def _build_run_history_vm(self) -> None:
         self.run_history_viewmodel = RunHistoryViewModel(
             self.run_repository,
             self.execution_dossier_repository,
             session_repository=self.adaptive_session_repository,
             defer_initial_refresh=True,
         )
+
+    def _build_centro_vivo_vm(self) -> None:
         self.centro_vivo_viewmodel = CentroVivoViewModel(
             adaptive_session_repository=self.adaptive_session_repository,
             experiment_lab_repository=self.experiment_lab_repository,
@@ -2542,14 +2994,85 @@ class AppBootstrap:
             defer_initial_refresh=True,
         )
 
-        # --- Task A: conectar handlers de backend a senales de ambos ViewModels ---
-        # Los servicios backend emiten via handler registrado; el handler reemite por
-        # la Qt Signal del ControlCenterViewModel y EvolutionCenterViewModel para que
-        # los dialogos QML (Task B) los reciban.
+    def _build_all_lazy_vms(self) -> None:
+        """Pre-build all lazy VMs during idle time (background timer chain).
+
+        Each VM is constructed in its own QTimer.singleShot(0) slot to
+        yield to the event loop between constructions, keeping the main
+        thread responsive.  Errors in individual VMs are logged but do
+        NOT break the chain — the next VM is always scheduled.
+        """
+        routes = list(self._ROUTE_TO_VM_ATTR.keys())
+
+        def _build_next(idx: int = 0) -> None:
+            if idx >= len(routes):
+                try:
+                    self._timeline.mark('lazy_vm_prebuild_done')
+                except Exception:
+                    pass
+                logger.info('lazy_vm_prebuild_done: all %d routes processed', len(routes))
+                return
+            route = routes[idx]
+            try:
+                self._timeline.mark(f'lazy_vm_prebuild_{route}_start')
+            except Exception:
+                pass
+            try:
+                self._ensure_vm_for_route(route)
+            except Exception:
+                logger.exception('lazy_vm_prebuild failed for route: %s', route)
+            try:
+                self._timeline.mark(f'lazy_vm_prebuild_{route}_done')
+            except Exception:
+                pass
+            QTimer.singleShot(0, lambda: _build_next(idx + 1))
+
+        _build_next()
+
+    def _build_deferred_ui_batch_2(self) -> None:
+        """All lazy VMs + signal wiring (synchronous test path).
+
+        Used by the synchronous test path (``_build_ui_objects``).
+        The live phased path uses lazy construction via
+        ``_ensure_vm_for_route`` / ``_build_all_lazy_vms``.
+        """
+        self._yield_to_event_loop()
+        try:
+            self._timeline.mark('populate_ui_vm_control_center')
+        except Exception:
+            pass
+        self._build_control_center_vm()
+        self._yield_to_event_loop()
+        try:
+            self._timeline.mark('populate_ui_vm_capture_studio')
+        except Exception:
+            pass
+        self._build_capture_studio_vm()
+        self._yield_to_event_loop()
+        try:
+            self._timeline.mark('populate_ui_vm_evolution_center')
+        except Exception:
+            pass
+        self._build_evolution_center_vm()
+        self._yield_to_event_loop()
+        try:
+            self._timeline.mark('populate_ui_vm_remaining')
+        except Exception:
+            pass
+        self._build_knowledge_base_vm()
+        self._build_provider_settings_vm()
+        self._build_run_history_vm()
+        self._build_centro_vivo_vm()
         self._wire_task_a_signals()
 
         # --- Audit bridges: captura de dialogs QML y toasts en ui_visibility_audit ---
         self._wire_ui_audit_bridges()
+
+    def _build_ui_objects(self) -> None:
+        """Synchronous path: build all VMs in one call (used by tests)."""
+        self._build_critical_ui_objects()
+        self._build_deferred_ui_batch_1()
+        self._build_deferred_ui_batch_2()
 
     def _wire_task_a_signals(self) -> None:
         """Conecta handlers de los 4 servicios backend (Task A) a ambos ViewModels.
@@ -2557,20 +3080,22 @@ class AppBootstrap:
         Cada handler re-emite el payload como Qt Signal de ControlCenter y
         EvolutionCenter, para que los dialogos/paneles QML de Task B los
         reciban sin acoplar el backend a Qt ni a los ViewModels.
+
+        VMs are read dynamically at emit-time (not captured at connect-time)
+        so that lazily-constructed VMs automatically start receiving signals
+        as soon as they are built.
         """
-        view_models = [vm for vm in (self.control_center_viewmodel, self.evolution_center_viewmodel) if vm is not None]
-        if not view_models:
-            return
 
         def _emit(signal_name: str, payload):
-            for vm in view_models:
+            for vm in (self.control_center_viewmodel, self.evolution_center_viewmodel):
+                if vm is None:
+                    continue
                 signal = getattr(vm, signal_name, None)
                 if signal is None:
                     continue
                 try:
                     signal.emit(payload)
                 except Exception:
-                    # Evitamos que un fallo en un sink UI bloquee el resto.
                     continue
 
         self.credential_broker.register_prompt_handler(
@@ -2742,24 +3267,79 @@ class AppBootstrap:
             if not engine.rootObjects():
                 raise RuntimeError('Failed to load Main.qml.')
 
-            # Defer heavy VM creation to after the event loop starts so the
-            # window appears instantly.  QTimer.singleShot(0, ...) fires on
-            # the very first iteration of app.exec().
-            def _populate_ui() -> None:
+            # --- Phased VM construction ---------------------------------
+            # Build critical VMs first (Phase 1), then yield to the event
+            # loop.  Loaders are now synchronous (asynchronous: false in
+            # Main.qml) so shell_loader_ready fires as soon as
+            # mainShellKickoff triggers — no QQmlIncubationController
+            # dependency.  Deferred VMs are built in subsequent phases via
+            # QTimer.singleShot(0, ...) — each call returns control to
+            # the event loop, letting shell_loader_ready fire honestly.
+            self._qml_root_context = context
+
+            def _populate_ui_critical() -> None:
                 try:
                     self._timeline.mark('populate_ui_start')
                 except Exception:
                     pass
                 if splash:
-                    splash.set_status('Construyendo ViewModels...')
-                self._build_ui_objects()
-                _set_context_properties(context)
-                logger.info('ui_populated: all ViewModels loaded and context properties set')
+                    splash.set_status('Construyendo ViewModels criticos...')
+                self._build_critical_ui_objects()
+                context.setContextProperty('navigationController', self.navigation_controller)
+                context.setContextProperty('themeController', self.theme_controller)
+                context.setContextProperty('mainWindowBridge', self.main_window_bridge)
+                context.setContextProperty('dashboardViewModel', self.dashboard_viewmodel)
+                try:
+                    self._timeline.mark('populate_ui_critical_done')
+                except Exception:
+                    pass
+                logger.info('populate_ui_critical: nav + theme + bridge + dashboard ready')
+                QTimer.singleShot(0, _populate_ui_deferred_1)
+
+            def _populate_ui_deferred_1() -> None:
+                try:
+                    self._timeline.mark('populate_ui_deferred_1_start')
+                except Exception:
+                    pass
+                self._build_deferred_ui_batch_1()
+                # ControlCenterVM and CaptureStudioVM are now lazy —
+                # built on-demand or during idle pre-build (15 s).
+                try:
+                    self._timeline.mark('populate_ui_deferred_1_done')
+                except Exception:
+                    pass
+                # All remaining VMs wait for page_loader_ready (or
+                # fallback) so they never block the pre-ready path.
+                self._pending_deferred_2_fn = _populate_ui_deferred_2
+                if getattr(self, '_page_loader_ready_received', False):
+                    self._schedule_pending_deferred_2()
+
+            def _populate_ui_deferred_2() -> None:
+                if getattr(self, '_deferred_batch_2_done', False):
+                    return
+                self._deferred_batch_2_done = True
+                try:
+                    self._timeline.mark('populate_ui_deferred_2_start')
+                except Exception:
+                    pass
+                # Wire Task A signals (reads VMs dynamically at emit-time,
+                # so lazily-constructed VMs automatically receive signals).
+                self._wire_task_a_signals()
+                # Connect navigation listener for lazy VM construction.
+                nav = getattr(self, 'navigation_controller', None)
+                if nav is not None:
+                    nav.currentRouteChanged.connect(
+                        lambda: self._ensure_vm_for_route(nav.currentRoute)
+                    )
+                logger.info(
+                    'ui_lazy_construction_ready: Phase 3 VMs will be '
+                    'constructed on-demand when user navigates to their page'
+                )
                 try:
                     self._timeline.mark('populate_ui_done')
                 except Exception:
                     pass
-                # Fix 19a: Show system tray icon after UI is built
+                # Fix 19a: Show system tray icon (doesn't depend on VMs)
                 try:
                     self.win_systray_bridge.show(
                         on_show_window=self._raise_main_window,
@@ -2767,30 +3347,12 @@ class AppBootstrap:
                     )
                 except Exception:
                     pass
-                # Fix 20a: Early splash close — don't wait for QML
-                # incubation (can take >100s on Windows). Close splash
-                # 500ms after populate_ui so the user sees the main
-                # window immediately.  If shell_loader_ready already
-                # fired (fast machine), this is a no-op.
-                if splash:
-                    def _early_splash_close() -> None:
-                        if getattr(self, '_shell_loader_ready_handled', False):
-                            return
-                        self._shell_loader_ready_handled = True
-                        logger.info(
-                            'splash_early_close: closing splash after '
-                            'populate_ui (shell_loader_ready not received yet)')
-                        try:
-                            self._timeline.mark(
-                                'splash_early_close',
-                                reason='populate_ui_done_grace_period',
-                            )
-                        except Exception:
-                            pass
-                        self._fire_splash_ready_and_raise_main(
-                            'populate_ui_early_close')
-                    QTimer.singleShot(500, _early_splash_close)
-            QTimer.singleShot(0, _populate_ui)
+                # Start idle pre-build: after 15s, begin constructing
+                # Phase 3 VMs one-by-one with event loop yields so they
+                # are ready before the user navigates there.
+                QTimer.singleShot(15_000, self._build_all_lazy_vms)
+
+            QTimer.singleShot(0, _populate_ui_critical)
         else:
             # Synchronous path (used by tests that don't call app.exec()).
             if splash:

@@ -13,6 +13,8 @@ so it can be composed into `SystemPromptBuilder` via the existing
 
 from __future__ import annotations
 
+from typing import Any
+
 from iabv_v15.domain.models import (
     ControlMasterDigest,
     ControlMasterState,
@@ -49,7 +51,12 @@ class ControlMasterDigestBuilder:
         self.max_unresolved = max_unresolved
         self.max_chars = max_chars
 
-    def build(self, state: ControlMasterState) -> ControlMasterDigest:
+    def build(
+        self,
+        state: ControlMasterState,
+        autonomy_metrics: dict[str, Any] | None = None,
+        coordination_patterns: list[dict[str, Any]] | None = None,
+    ) -> ControlMasterDigest:
         rules = [
             rule
             for rule in state.global_rules
@@ -91,6 +98,8 @@ class ControlMasterDigestBuilder:
         ]
 
         tests_state_brief = _render_tests_brief(state.current_tests_state)
+        autonomy_brief = _render_autonomy_metrics(autonomy_metrics)
+        coordination_brief = _render_coordination_patterns(coordination_patterns)
 
         digest = ControlMasterDigest(
             current_vision=(state.current_vision or "").strip(),
@@ -101,6 +110,8 @@ class ControlMasterDigestBuilder:
             recent_decisions_brief=decisions_brief,
             unresolved=list(state.unresolved_items)[: self.max_unresolved],
             tests_state_brief=tests_state_brief,
+            autonomy_metrics_brief=autonomy_brief,
+            coordination_patterns_brief=coordination_brief,
             source_state_id=state.state_id,
         )
         return _truncate(digest, self.max_chars)
@@ -108,6 +119,50 @@ class ControlMasterDigestBuilder:
     def build_markdown(self, state: ControlMasterState) -> str:
         """Convenience: renders the digest as markdown (for injection)."""
         return render_digest_markdown(self.build(state))
+
+
+def _render_autonomy_metrics(metrics: dict[str, Any] | None) -> str:
+    if not metrics:
+        return ""
+    parts: list[str] = []
+    autonomy = metrics.get('autonomy_score')
+    resilience = metrics.get('resilience_score')
+    calibration = metrics.get('calibration_error')
+    blind_spot = metrics.get('blind_spot_ratio')
+    verdict = metrics.get('verdict', '')
+    if autonomy is not None:
+        parts.append(f"autonomy={autonomy:.0%}")
+    if resilience is not None:
+        parts.append(f"resilience={resilience:.0%}")
+    if calibration is not None:
+        parts.append(f"calibration_err={calibration:.2f}")
+    if blind_spot is not None:
+        parts.append(f"blind_spots={blind_spot:.0%}")
+    if verdict:
+        parts.append(f"verdict={verdict}")
+    return " | ".join(parts)
+
+
+def _render_coordination_patterns(patterns: list[dict[str, Any]] | None) -> str:
+    if not patterns:
+        return ""
+    parts: list[str] = []
+    for p in patterns[:4]:
+        ptype = str(p.get('pattern_type') or '')
+        primary = str(p.get('primary_ia') or '')
+        secondary = str(p.get('secondary_ia') or '')
+        domain = str(p.get('domain') or '')
+        if ptype == 'SPECIALIZATION':
+            parts.append(f"{primary}→specialist({domain})")
+        elif ptype == 'FALLBACK':
+            parts.append(f"{primary}→fallback→{secondary}")
+        elif ptype == 'COMPLEMENTARY':
+            parts.append(f"{primary}+{secondary}=complementary")
+        elif ptype == 'SEQUENCE':
+            parts.append(f"{primary}-first→{secondary}-validate")
+        else:
+            parts.append(f"{ptype}:{primary}")
+    return " | ".join(parts)
 
 
 def _render_tests_brief(tests_state: dict) -> str:
@@ -153,6 +208,10 @@ def render_digest_markdown(digest: ControlMasterDigest) -> str:
             lines.append(f"- {item}")
     if digest.tests_state_brief:
         lines.append(f"Tests: {digest.tests_state_brief}")
+    if digest.autonomy_metrics_brief:
+        lines.append(f"Autonomia: {digest.autonomy_metrics_brief}")
+    if digest.coordination_patterns_brief:
+        lines.append(f"Coordinacion IA-IA: {digest.coordination_patterns_brief}")
     return "\n".join(lines)
 
 
@@ -161,6 +220,8 @@ def _truncate(digest: ControlMasterDigest, max_chars: int) -> ControlMasterDiges
         return digest
     # Drop lowest-priority sections first.
     for attr in (
+        "coordination_patterns_brief",
+        "autonomy_metrics_brief",
         "tests_state_brief",
         "recent_decisions_brief",
         "top_backlog",

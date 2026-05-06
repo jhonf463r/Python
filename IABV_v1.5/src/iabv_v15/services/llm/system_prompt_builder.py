@@ -17,6 +17,7 @@ from iabv_v15.domain.models import (
     EnvironmentSelfModel,
     PerceptionSnapshot,
     PortableContextPackage,
+    SelfExaminationFinding,
     SelfExaminationSnapshot,
     ToolCard,
     WorldModelSnapshot,
@@ -246,8 +247,70 @@ class SystemPromptBuilder:
             'Si la evidencia muestra que una ruta falla consistentemente, '
             'recomienda el cambio.\n'
             '8. **Persistencia**: no abandones un problema sin evidencia de '
-            'que se resolvio. Si un desajuste persiste, escalalo con datos.'
+            'que se resolvio. Si un desajuste persiste, escalalo con datos.\n'
+            '9. **Grounding obligatorio**: cuando cites hallazgos de '
+            'autoexaminacion, SIEMPRE incluye los numeros concretos de '
+            'metadata (ms, %, conteos, umbrales). No digas solo el titulo '
+            'del hallazgo — di "Bootstrap init lento: 4500ms (umbral 3000ms)" '
+            'en vez de "hay un hallazgo de startup lento". Si no tienes '
+            'datos concretos, di explicitamente "sin metricas disponibles". '
+            'Nunca generalices cuando tienes datos especificos.\n'
+            '10. **Conciencia del flujo conversacional**: analiza lo que el '
+            'usuario ha preguntado en turnos anteriores y lo que ya respondiste. '
+            'No repitas informacion que ya diste. Si el usuario insiste en un '
+            'tema, profundiza con datos nuevos — no recicles la misma respuesta. '
+            'Detecta si tu respuesta anterior fue generica y corrigela con datos '
+            'concretos esta vez.\n'
+            '11. **Auto-validacion**: antes de entregar tu respuesta, verifica '
+            'mentalmente: "¿cite al menos un dato numerico concreto del contexto '
+            'proporcionado?" Si la respuesta es no, revisa el contexto de nuevo '
+            'y extrae los datos que aplican.'
         )
+
+    @staticmethod
+    def _metrics_tag(finding: SelfExaminationFinding) -> str:
+        """Compact metrics suffix so the LLM sees concrete numbers."""
+        meta = dict(finding.metadata or {})
+        parts: list[str] = []
+        observed_ms = meta.get('observed_ms')
+        if observed_ms is not None:
+            parts.append(f'{observed_ms}ms')
+        threshold_ms = meta.get('threshold_ms')
+        if threshold_ms is not None:
+            parts.append(f'umbral {threshold_ms}ms')
+        starvation_s = meta.get('starvation_seconds')
+        if starvation_s is not None:
+            parts.append(f'bloqueo {starvation_s}s')
+        if not parts:
+            return ''
+        return f' [{", ".join(parts)}]'
+
+    @staticmethod
+    def _startup_timeline_section() -> str:
+        """Build a compact timeline section for the LLM system prompt."""
+        try:
+            from iabv_v15.infra.startup_timeline import get_global_timeline
+            events = get_global_timeline().events()
+        except Exception:
+            return ''
+        if not events:
+            return ''
+        diagnostic = (
+            'bootstrap_init_start', 'bootstrap_init_done',
+            'app_object_created', 'engine_created',
+            'main_window_shown', 'page_loader_ready', 'shell_loader_ready',
+            'populate_ui_vm_dashboard',
+            'dashboard_vm_refresh_start', 'dashboard_vm_refresh_done',
+            'dashboard_vm_refresh_failed',
+        )
+        lines: list[str] = ['Datos reales del timeline de arranque:']
+        for ev in events:
+            phase = ev.get('phase', '')
+            if phase in diagnostic:
+                lines.append(f'  {phase}: {ev.get("t_ms_from_start", 0):.0f}ms (RSS {ev.get("rss_mb", 0):.0f}MB)')
+        if len(lines) <= 1:
+            return ''
+        return '\n'.join(lines)
 
     @staticmethod
     def _section_self_examination(
@@ -259,16 +322,30 @@ class SystemPromptBuilder:
         if snapshot.summary:
             parts.append(snapshot.summary[:400])
 
+        timeline_section = SystemPromptBuilder._startup_timeline_section()
+        if timeline_section:
+            parts.append(timeline_section)
+
         findings = snapshot.findings or []
         if findings:
             parts.append(f'Hallazgos ({len(findings)}):')
             for f in findings[:5]:
                 sev = getattr(f.severity, 'value', str(f.severity))
+                metrics_tag = SystemPromptBuilder._metrics_tag(f)
+                summary_limit = min(300, len(f.summary))
                 parts.append(
-                    f'- [{sev}] {f.title}: {f.summary[:120]}'
+                    f'- [{sev}] {f.title}: {f.summary[:summary_limit]}{metrics_tag}'
                 )
                 if f.recommendation:
-                    parts.append(f'  Recomendacion: {f.recommendation[:100]}')
+                    parts.append(f'  Recomendacion: {f.recommendation[:200]}')
+                meta = dict(f.metadata or {})
+                meta_details: list[str] = []
+                for mk in ('observed_ms', 'threshold_ms', 'starvation_seconds', 'wall_clock_ms', 'phases_seen', 'rss_delta_mb'):
+                    mv = meta.get(mk)
+                    if mv is not None:
+                        meta_details.append(f'{mk}={mv}')
+                if meta_details:
+                    parts.append(f'  Metadata: {", ".join(meta_details)}')
 
         recurring = snapshot.recurring_issues or []
         if recurring:

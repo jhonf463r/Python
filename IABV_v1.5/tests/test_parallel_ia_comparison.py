@@ -34,6 +34,13 @@ from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovern
 # --------------------------------------------------------------------------- #
 
 
+class _StubRoleRouter:
+    """Minimal role_router stub providing worker_health_gate."""
+
+    def worker_health_gate(self, *, target_assistant: str = '', **kwargs: Any) -> dict[str, Any]:
+        return {}
+
+
 def _make_orchestrator(
     *,
     autonomous_evolution_service: Any,
@@ -48,7 +55,7 @@ def _make_orchestrator(
     no se tocan en estos tests.
     """
     orchestrator = AdaptiveTaskOrchestrator.__new__(AdaptiveTaskOrchestrator)
-    orchestrator.role_router = None
+    orchestrator.role_router = _StubRoleRouter()
     orchestrator.adaptive_session_repository = None
     orchestrator.intent_service = None
     orchestrator.context_assembler = None

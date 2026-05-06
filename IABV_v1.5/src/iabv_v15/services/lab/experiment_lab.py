@@ -1,5 +1,9 @@
 ﻿from __future__ import annotations
 
+import logging
+import math
+from collections import defaultdict
+from datetime import timedelta
 from typing import Any
 
 from iabv_v15.domain.models import (
@@ -30,6 +34,8 @@ class ExperimentLab:
         self.registry = registry
         self.scoring_engine = scoring_engine
         self.strategy_selector = strategy_selector
+        if strategy_selector is not None:
+            strategy_selector._experiment_lab = self
 
     def run_experiment(
         self,
@@ -88,6 +94,7 @@ class ExperimentLab:
                 suite_name=str(evaluation.get('suite_name') or 'generic_suite'),
                 objective=objective,
                 subject_key=subject_key,
+                comparison_scope_key=str(candidate.metadata.get('comparison_scope_key') or (metadata or {}).get('comparison_scope_key') or ''),
                 route=candidate.route,
                 assistant_kind=assistant_kind,
                 assistant_configuration=assistant_configuration,
@@ -108,6 +115,7 @@ class ExperimentLab:
                     'assistant_kind': assistant_kind,
                     'config_signature': config_signature,
                     'trace_id': str(candidate.metadata.get('trace_id') or ''),
+                    'session_id': str(candidate.metadata.get('session_id') or (metadata or {}).get('session_id') or ''),
                     'comparison_scope_key': str(candidate.metadata.get('comparison_scope_key') or ''),
                     'source_trace_ids': list(candidate.metadata.get('source_trace_ids') or []),
                     'proposal_summary': str(candidate.metadata.get('proposal_summary') or '')[:240],
@@ -204,6 +212,7 @@ class ExperimentLab:
             suite_name=suite_name,
             objective=objective,
             subject_key=subject_key,
+            comparison_scope_key=str(payload_metadata.get('comparison_scope_key') or ''),
             route=route,
             assistant_kind=assistant_kind,
             assistant_configuration=assistant_configuration,
@@ -225,6 +234,7 @@ class ExperimentLab:
                 'assistant_kind': assistant_kind,
                 'config_signature': config_signature,
                 'trace_id': str(payload_metadata.get('trace_id') or ''),
+                'session_id': str(payload_metadata.get('session_id') or ''),
                 'comparison_scope_key': str(payload_metadata.get('comparison_scope_key') or ''),
                 'source_trace_ids': list(payload_metadata.get('source_trace_ids') or []),
                 'proposal_summary': str(payload_metadata.get('proposal_summary') or '')[:240],
@@ -354,5 +364,148 @@ class ExperimentLab:
         if not comparison_pool:
             return False
         return score > max(item.metrics.total_score for item in comparison_pool)
+
+    # ------------------------------------------------------------------
+    # Adaptive threshold N_c (Brecha 3.3)
+    # ------------------------------------------------------------------
+
+    _Z_SCORES: dict[float, float] = {
+        0.90: 1.645,
+        0.95: 1.960,
+        0.99: 2.576,
+    }
+
+    def calculate_adaptive_threshold(
+        self,
+        domain: str | None = None,
+        *,
+        confidence_level: float = 0.95,
+        margin_of_error: float = 0.10,
+    ) -> int:
+        """Calculate the minimum number of runs needed for statistical confidence.
+
+        Uses the sample size formula for proportion estimation:
+        ``n = (Z^2 * p * (1-p)) / E^2``
+
+        Falls back to sensible defaults:
+        - If < 10 total runs exist: return 3 (bootstrap mode)
+        - If 10-50 runs: return calculated N_c (typically 5-15)
+        - If > 50 runs: return calculated N_c (typically 10-30)
+        """
+        all_runs = self.repository.list_runs(domain=domain, limit=500)
+        total = len(all_runs)
+
+        if total < 10:
+            return 3
+
+        successful = sum(1 for r in all_runs if r.success)
+        p = successful / max(total, 1)
+        if p in (0.0, 1.0):
+            p = 0.5
+
+        z = self._Z_SCORES.get(confidence_level)
+        if z is None:
+            z = self._Z_SCORES[min(self._Z_SCORES, key=lambda k: abs(k - confidence_level))]
+
+        n = math.ceil((z ** 2 * p * (1 - p)) / (margin_of_error ** 2))
+        ceiling = total // 3
+        return max(3, min(n, ceiling))
+
+    def get_current_thresholds(self) -> dict[str, int]:
+        """Return current adaptive thresholds per domain.
+
+        Returns a dict mapping ``'global'`` and each ``ExperimentDomain``
+        value to its calculated N_c.
+        """
+        from iabv_v15.domain.models import ExperimentDomain
+
+        result: dict[str, int] = {'global': self.calculate_adaptive_threshold()}
+        for dom in ExperimentDomain:
+            result[dom.value] = self.calculate_adaptive_threshold(domain=dom.value)
+        return result
+
+    # ------------------------------------------------------------------
+    # Training corpus generation (Brecha 3.1)
+    # ------------------------------------------------------------------
+
+    def generate_training_corpus(
+        self,
+        *,
+        min_runs: int | None = None,
+        max_age_days: int = 30,
+    ) -> list[dict[str, Any]]:
+        """Generate training examples from accumulated experiment runs.
+
+        Groups runs by ``domain + suite_name`` and extracts patterns:
+        which assistant_kind wins for which type of task, which route is
+        faster/more reliable, and confidence calibration.
+
+        Returns a list of training examples.
+        """
+        from iabv_v15.domain.models import utc_now
+
+        if min_runs is None:
+            min_runs = self.calculate_adaptive_threshold()
+
+        cutoff = utc_now() - timedelta(days=max_age_days)
+        all_runs = self.repository.list_runs(limit=500)
+        recent = [r for r in all_runs if r.created_at_utc >= cutoff]
+
+        groups: dict[str, list[ExperimentRun]] = defaultdict(list)
+        for run in recent:
+            key = f'{run.domain.value}:{run.suite_name}'
+            groups[key].append(run)
+
+        examples: list[dict[str, Any]] = []
+        for task_type, runs in groups.items():
+            if len(runs) < min_runs:
+                continue
+            stats: dict[str, dict[str, Any]] = defaultdict(
+                lambda: {'success': 0, 'total': 0, 'latency_sum': 0}
+            )
+            for run in runs:
+                kind = run.assistant_kind or 'unknown'
+                stats[kind]['success'] += int(run.success)
+                stats[kind]['total'] += 1
+                stats[kind]['latency_sum'] += run.metrics.execution_ms
+                stats[kind]['route'] = run.route.value
+
+            best_kind = ''
+            best_rate = -1.0
+            best_latency = float('inf')
+            alternatives: list[dict[str, Any]] = []
+
+            for kind, s in stats.items():
+                rate = s['success'] / max(s['total'], 1)
+                avg_lat = s['latency_sum'] / max(s['total'], 1)
+                if rate > best_rate or (rate == best_rate and avg_lat < best_latency):
+                    if best_kind:
+                        alternatives.append({
+                            'assistant': best_kind,
+                            'success_rate': round(best_rate, 3),
+                            'avg_latency_ms': round(best_latency, 1),
+                        })
+                    best_kind = kind
+                    best_rate = rate
+                    best_latency = avg_lat
+                else:
+                    alternatives.append({
+                        'assistant': kind,
+                        'success_rate': round(rate, 3),
+                        'avg_latency_ms': round(avg_lat, 1),
+                    })
+
+            examples.append({
+                'task_type': task_type,
+                'recommended_route': stats[best_kind].get('route', 'unknown'),
+                'recommended_assistant': best_kind,
+                'confidence': round(min(best_rate, 1.0), 3),
+                'sample_size': stats[best_kind]['total'],
+                'avg_latency_ms': round(best_latency, 1),
+                'success_rate': round(best_rate, 3),
+                'alternatives': alternatives,
+            })
+
+        return examples
 
 

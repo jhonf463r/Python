@@ -76,6 +76,11 @@ class RunHistoryViewModel(QObject):
             unresolved = tp.get('unresolved', [])
             payload['unresolved_count'] = len(unresolved)
             payload['unresolved_summary'] = ', '.join(unresolved[:3]) if unresolved else ''
+            tss = tp.get('tool_selection_summary') or {}
+            payload['tool_selected'] = str(tss.get('selected_tool', ''))
+            payload['tool_selection_reason'] = str(tss.get('reason', ''))
+            payload['tool_fallback_used'] = bool(tss.get('fallback_used', False))
+            payload['tool_quota_confirmed'] = bool(tss.get('quota_confirmed', False))
             runs.append(payload)
         self._runs = runs
         if self._runs:

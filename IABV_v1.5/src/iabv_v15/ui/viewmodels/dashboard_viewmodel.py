@@ -1,9 +1,9 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import atexit
-from concurrent.futures import ThreadPoolExecutor
 import logging
 import threading
+from concurrent.futures import ThreadPoolExecutor
 
 from iabv_v15.infra.persistence.episode_repository import EpisodeRepository
 from iabv_v15.infra.persistence.knowledge_repository import KnowledgeRepository
@@ -17,9 +17,10 @@ logger = logging.getLogger(__name__)
 
 class DashboardViewModel(QObject):
     dataChanged = Signal()
-    refreshResolved = Signal(object)
     healthResolved = Signal(object, str)
     healthFailed = Signal(str)
+    refreshResolved = Signal(object)
+    refreshFailed = Signal(str)
 
     def __init__(
         self,
@@ -40,15 +41,74 @@ class DashboardViewModel(QObject):
         self._provider_cards: list[dict] = self._placeholder_health_cards()
         self._health_busy = False
         self._health_status = 'Chequeo pendiente. Usa el boton para consultar el stack local.'
-        self._bg_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix='dash-bg')
+        self._bg_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='dvm-bg')
         atexit.register(self._shutdown_bg_pool)
-        self.refreshResolved.connect(self._apply_refresh)
         self.healthResolved.connect(self._apply_health)
         self.healthFailed.connect(self._apply_health_error)
+        self.refreshResolved.connect(self._apply_refresh)
+        self.refreshFailed.connect(self._apply_refresh_error)
         if defer_initial_refresh:
-            QTimer.singleShot(0, self._deferred_refresh)
+            QTimer.singleShot(250, self._deferred_initial_refresh)
         else:
-            self._deferred_refresh()
+            self._refresh_data_sync()
+
+    def _shutdown_bg_pool(self) -> None:
+        self._bg_pool.shutdown(wait=False)
+
+    def _deferred_initial_refresh(self) -> None:
+        self._bg_pool.submit(self._refresh_data_bg)
+
+    def _mark_timeline(self, phase: str, **extra) -> None:
+        try:
+            from iabv_v15.infra.startup_timeline import get_global_timeline
+            get_global_timeline().mark(phase, **extra)
+        except Exception:
+            pass
+
+    def _refresh_data_bg(self) -> None:
+        self._mark_timeline('dashboard_vm_refresh_start')
+        try:
+            cards = self._collect_summary_cards()
+            self._mark_timeline('dashboard_vm_refresh_done')
+            self.refreshResolved.emit(cards)
+        except Exception as exc:
+            self._mark_timeline('dashboard_vm_refresh_failed', error=str(exc))
+            self.refreshFailed.emit(str(exc))
+
+    # Dashboard summary only displays counts; keep limits low to
+    # avoid blocking the background thread under SQLite contention.
+    _SUMMARY_QUERY_LIMIT = 10
+
+    def _collect_summary_cards(self) -> list[dict]:
+        limit = self._SUMMARY_QUERY_LIMIT
+        self._mark_timeline('dashboard_vm_refresh_query_episodes_start')
+        episodes = self.episode_repository.list_recent(limit=limit)
+        self._mark_timeline('dashboard_vm_refresh_query_episodes_done')
+        knowledge = self.knowledge_repository.list_recent(limit=limit)
+        self._mark_timeline('dashboard_vm_refresh_query_knowledge_done')
+        runs = self.run_repository.list_recent(limit=limit)
+        self._mark_timeline('dashboard_vm_refresh_query_runs_done')
+        index_state = self.embedding_service.describe_index()
+        self._mark_timeline('dashboard_vm_refresh_query_index_done')
+        return [
+            {'title': 'Episodios', 'value': str(len(episodes)), 'hint': 'Sesiones capturadas y listas para revisar'},
+            {'title': 'Conocimiento', 'value': str(len(knowledge)), 'hint': 'Memoria confirmada para reutilizacion'},
+            {'title': 'Ejecuciones', 'value': str(len(runs)), 'hint': 'Respuestas por rol ya registradas'},
+            {'title': 'Indexado', 'value': str(index_state.get('knowledge_count', 0)), 'hint': 'Elementos de conocimiento reflejados por el indice local'},
+        ]
+
+    def _refresh_data_sync(self) -> None:
+        self._summary_cards = self._collect_summary_cards()
+        self.dataChanged.emit()
+
+    @Slot(object)
+    def _apply_refresh(self, cards: list[dict]) -> None:
+        self._summary_cards = cards
+        self.dataChanged.emit()
+
+    @Slot(str)
+    def _apply_refresh_error(self, message: str) -> None:
+        logger.warning('DashboardViewModel refresh failed: %s', message)
 
     def _translate_status(self, status: str) -> str:
         mapping = {'ready': 'listo', 'degraded': 'degradado', 'unavailable': 'no disponible', 'optional_inactive': 'opcional no activo', 'idle': 'inactivo'}
@@ -76,37 +136,9 @@ class DashboardViewModel(QObject):
     def get_health_status(self) -> str:
         return self._health_status
 
-    def _shutdown_bg_pool(self) -> None:
-        self._bg_pool.shutdown(wait=False)
-
-    def _deferred_refresh(self) -> None:
-        self._bg_pool.submit(self._bg_refresh)
-
-    def _bg_refresh(self) -> None:
-        try:
-            episodes = self.episode_repository.list_recent(limit=100)
-            knowledge = self.knowledge_repository.list_recent(limit=100)
-            runs = self.run_repository.list_recent(limit=100)
-            index_state = self.embedding_service.describe_index()
-            cards = [
-                {'title': 'Episodios', 'value': str(len(episodes)), 'hint': 'Sesiones capturadas y listas para revisar'},
-                {'title': 'Conocimiento', 'value': str(len(knowledge)), 'hint': 'Memoria confirmada para reutilizacion'},
-                {'title': 'Ejecuciones', 'value': str(len(runs)), 'hint': 'Respuestas por rol ya registradas'},
-                {'title': 'Indexado', 'value': str(index_state.get('knowledge_count', 0)), 'hint': 'Elementos de conocimiento reflejados por el indice local'},
-            ]
-            self.refreshResolved.emit(cards)
-        except Exception:
-            logger.debug('DashboardVM bg refresh failed', exc_info=True)
-            self.refreshResolved.emit([])
-
-    @Slot(object)
-    def _apply_refresh(self, cards: list[dict]) -> None:
-        self._summary_cards = cards
-        self.dataChanged.emit()
-
     @Slot()
     def refresh(self) -> None:
-        self._deferred_refresh()
+        self._bg_pool.submit(self._refresh_data_bg)
 
     @Slot()
     def refreshHealth(self) -> None:
@@ -148,5 +180,3 @@ class DashboardViewModel(QObject):
     routePolicy = Property(str, get_route_policy, constant=True)
     healthBusy = Property(bool, get_health_busy, notify=dataChanged)
     healthStatus = Property(str, get_health_status, notify=dataChanged)
-
-

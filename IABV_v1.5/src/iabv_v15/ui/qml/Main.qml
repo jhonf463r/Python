@@ -105,17 +105,17 @@ ApplicationWindow {
         objectName: "mainShellLoader"
         anchors.fill: parent
         active: false
-        asynchronous: true
+        asynchronous: false
         sourceComponent: mainShellComponent
-        // Hito honesto de readiness: solo cuando el contenido async del
-        // shell termino de instanciarse, le avisamos a Python que el
-        // splash puede empezar a desvanecer.  Antes el splash recibia
-        // `ready` mientras esto seguia compilando en background.
+        // Sync loading: mainShellComponent is tiny (~160 lines: nav panel
+        // + page Loader placeholder).  Loading synchronously takes < 10ms
+        // and eliminates the dependency on the Qt render loop to drive the
+        // QQmlIncubationController.  On Windows with QQmlApplicationEngine,
+        // the render loop stops driving async incubation when the splash
+        // occludes the main window — causing 60s+ starvation.
         //
-        // Ademas reportamos cada transicion (status y active) para que
-        // el JSONL muestre exactamente que pasa con la incubacion del
-        // Loader async en Windows pythonw.exe (donde a veces el
-        // QQmlIncubator parece no llegar a Loader.Ready en >100s).
+        // We still report every transition so the JSONL shows exactly
+        // when shell_loader_ready fires (now honest, not via fallback).
         onStatusChanged: {
             if (mainWindowBridge) {
                 mainWindowBridge.signal_qml_loader_event("mainShellLoader", status, active)
@@ -254,6 +254,12 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 spacing: 14
 
+                // Brecha 1.2: Track whether the initial (Dashboard) page has
+                // loaded.  The first page is loaded synchronously for speed
+                // (<10ms); subsequent page navigations use asynchronous
+                // loading so they never freeze the UI thread.
+                property bool initialPageLoaded: false
+
                 Timer {
                     id: initialPageKickoff
                     interval: 50
@@ -262,25 +268,45 @@ ApplicationWindow {
                     onTriggered: pageLoader.active = true
                 }
 
+                // Brecha 1.2: Deferred preload of heavy secondary pages.
+                // After the initial page_loader_ready, we start preloading
+                // the next heaviest pages in background so navigating to
+                // them later is instant.  Each uses asynchronous: true and
+                // only activates after a staggered delay.
+                Timer {
+                    id: secondaryPreloadKickoff
+                    interval: 2000  // 2s after initial page ready
+                    repeat: false
+                    running: false
+                    onTriggered: {
+                        controlPreloader.active = true
+                        evolutionPreloader.active = true
+                        capturePreloader.active = true
+                    }
+                }
+
                 Loader {
                     id: pageLoader
                     objectName: "pageLoader"
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     active: false
-                    asynchronous: true
+                    // Brecha 1.2: First page (Dashboard, 197 lines) loads
+                    // synchronously for instant readiness.  After that,
+                    // switch to async so heavy pages (EvolutionCenter 1395
+                    // lines, CaptureStudio 2115 lines) don't freeze the UI.
+                    asynchronous: parent.initialPageLoaded
                     source: routeSource(activeRoute)
-                    // Cada transicion del page loader interno se reporta
-                    // tambien.  Cuando alcanza Loader.Ready el usuario
-                    // realmente ve la pagina (Dashboard u otra ruta) —
-                    // hito ``page_loader_ready`` mas honesto que el del
-                    // shell exterior.
                     onStatusChanged: {
                         if (mainWindowBridge) {
                             mainWindowBridge.signal_qml_loader_event("pageLoader", status, active)
                         }
                         if (status === Loader.Ready && mainWindowBridge) {
                             mainWindowBridge.signal_page_loader_ready()
+                            if (!parent.initialPageLoaded) {
+                                parent.initialPageLoaded = true
+                                secondaryPreloadKickoff.start()
+                            }
                         }
                     }
                     onActiveChanged: {
@@ -290,9 +316,110 @@ ApplicationWindow {
                     }
                 }
 
+                // Brecha 1.2: Background preloaders for heavy secondary
+                // pages.  These are invisible, zero-size Loaders that
+                // compile the QML in background threads.  The compiled
+                // component is cached by the QML engine, so when the user
+                // navigates to one of these pages, pageLoader re-uses the
+                // cached compilation and loads almost instantly.
+                Loader {
+                    id: controlPreloader
+                    active: false
+                    asynchronous: true
+                    source: Qt.resolvedUrl("pages/ControlCenterPage.qml")
+                    visible: false
+                    width: 0; height: 0
+                }
+                Loader {
+                    id: evolutionPreloader
+                    active: false
+                    asynchronous: true
+                    source: Qt.resolvedUrl("pages/EvolutionCenterPage.qml")
+                    visible: false
+                    width: 0; height: 0
+                }
+                Loader {
+                    id: capturePreloader
+                    active: false
+                    asynchronous: true
+                    source: Qt.resolvedUrl("pages/CaptureStudioPage.qml")
+                    visible: false
+                    width: 0; height: 0
+                }
+
                 Component.onCompleted: initialPageKickoff.start()
             }
         }
+    }
+
+    // --- Global human-help dialogs (hosted at root so they work from any page) ---
+    CredentialPromptDialog {
+        id: globalCredentialDialog
+        visible: false
+        property var _sourceVm: null
+        onCredentialProvided: function(payload) {
+            if (_sourceVm) _sourceVm.onCredentialProvided(payload)
+        }
+        onDelegateToUser: function(payload) {
+            if (_sourceVm) _sourceVm.onCredentialDelegated(payload)
+        }
+    }
+
+    ClarificationDialog {
+        id: globalClarificationDialog
+        visible: false
+        property var _sourceVm: null
+        onClarificationResponse: function(payload) {
+            if (_sourceVm) _sourceVm.onClarificationResponse(payload)
+        }
+    }
+
+    MissingDependencyDialog {
+        id: globalDependencyDialog
+        visible: false
+        property var _sourceVm: null
+        onDependencyApproved: function(payload) {
+            if (_sourceVm) _sourceVm.onDependencyApproved(payload)
+        }
+        onDependencyRejected: function(payload) {
+            if (_sourceVm) _sourceVm.onDependencyRejected(payload)
+        }
+    }
+
+    function _openCredentialDialog(vm, payload) {
+        globalCredentialDialog._sourceVm = vm
+        globalCredentialDialog.domain = payload.domain || ""
+        globalCredentialDialog.reason = payload.reason || ""
+        globalCredentialDialog.usernameHint = payload.username_hint || ""
+        globalCredentialDialog.open()
+    }
+    function _openClarificationDialog(vm, payload) {
+        globalClarificationDialog._sourceVm = vm
+        globalClarificationDialog.requestId = payload.id || ""
+        globalClarificationDialog.question = payload.question || ""
+        globalClarificationDialog.options = payload.options || []
+        globalClarificationDialog.context = payload.context || ""
+        globalClarificationDialog.open()
+    }
+    function _openDependencyDialog(vm, payload) {
+        globalDependencyDialog._sourceVm = vm
+        globalDependencyDialog.packageName = payload.package_name || ""
+        globalDependencyDialog.manager = payload.manager || ""
+        globalDependencyDialog.reason = payload.reason || ""
+        globalDependencyDialog.open()
+    }
+
+    Connections {
+        target: controlCenterViewModel
+        function onCredentialPromptRequested(payload) { _openCredentialDialog(controlCenterViewModel, payload) }
+        function onClarificationRequested(payload) { _openClarificationDialog(controlCenterViewModel, payload) }
+        function onMissingDependencyRequested(payload) { _openDependencyDialog(controlCenterViewModel, payload) }
+    }
+    Connections {
+        target: evolutionCenterViewModel
+        function onCredentialPromptRequested(payload) { _openCredentialDialog(evolutionCenterViewModel, payload) }
+        function onClarificationRequested(payload) { _openClarificationDialog(evolutionCenterViewModel, payload) }
+        function onMissingDependencyRequested(payload) { _openDependencyDialog(evolutionCenterViewModel, payload) }
     }
 }
 
