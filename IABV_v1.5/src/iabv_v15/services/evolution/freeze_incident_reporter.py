@@ -99,6 +99,8 @@ class FreezeIncidentReporter:
     needs to diagnose what happened and why.
     """
 
+    _DEDUP_WINDOW_SECONDS = 300  # min seconds between auto-captures of same type
+
     def __init__(
         self,
         evolution_dir: str | Path,
@@ -108,6 +110,7 @@ class FreezeIncidentReporter:
         self._report_dir = Path(evolution_dir).resolve() / 'incident_reports'
         self._report_dir.mkdir(parents=True, exist_ok=True)
         self._db_path = db_path
+        self._last_auto_capture: dict[str, float] = {}
 
     def capture_incident(
         self,
@@ -254,6 +257,114 @@ class FreezeIncidentReporter:
             return json.loads(path.read_text(encoding='utf-8'))
         except Exception:
             return None
+
+    # ------------------------------------------------------------------
+    # Auto-capture convenience methods
+    # ------------------------------------------------------------------
+
+    def _should_auto_capture(self, incident_type: str) -> bool:
+        """Dedup guard: skip if same type was captured within the window."""
+        now = time.time()
+        last = self._last_auto_capture.get(incident_type, 0.0)
+        if now - last < self._DEDUP_WINDOW_SECONDS:
+            return False
+        self._last_auto_capture[incident_type] = now
+        return True
+
+    def capture_startup_freeze(
+        self,
+        *,
+        findings_metadata: list[dict[str, Any]],
+        startup_timeline: Any | None = None,
+        resource_orchestrator: Any | None = None,
+        oses: Any | None = None,
+    ) -> Path | None:
+        """Auto-capture a startup/post-startup freeze from OSES findings.
+
+        Called by OSES when ``_startup_health_findings()`` yields HIGH+
+        severity findings.  Generates a structured incident referencing
+        the dominant phase, RSS, and timeline context.
+        """
+        if not self._should_auto_capture('startup_freeze'):
+            return None
+        dominant = findings_metadata[0] if findings_metadata else {}
+        extra: dict[str, Any] = {
+            'incident_type': 'startup_freeze',
+            'severity': str(dominant.get('severity', 'high')),
+            'dominant_phase': str(dominant.get('metadata', {}).get('phase', '')),
+            'dominant_phase_ms': dominant.get('metadata', {}).get('observed_ms')
+                or dominant.get('metadata', {}).get('sync_blocking_ms', 0),
+            'threshold_ms': dominant.get('metadata', {}).get('threshold_ms', 0),
+            'findings_count': len(findings_metadata),
+            'finding_titles': [f.get('title', '') for f in findings_metadata[:4]],
+            'finding_categories': [f.get('category', '') for f in findings_metadata[:4]],
+        }
+        return self.capture_incident(
+            trigger='auto_startup_freeze',
+            user_description=(
+                f'Auto-detected startup freeze: {dominant.get("title", "unknown")}'
+            ),
+            startup_timeline=startup_timeline,
+            resource_orchestrator=resource_orchestrator,
+            oses=oses,
+            extra_context=extra,
+        )
+
+    def capture_chat_stall(
+        self,
+        *,
+        duration_ms: float,
+        timed_out: bool,
+        message_summary: str = '',
+        extra_context: dict[str, Any] | None = None,
+    ) -> Path | None:
+        """Auto-capture a chat/query stall from sendChat UI thread block.
+
+        Called by ControlCenterViewModel when ``_sa_done.wait(timeout=3)``
+        takes perceptibly long or times out.
+        """
+        if not self._should_auto_capture('chat_stall'):
+            return None
+        extra: dict[str, Any] = {
+            'incident_type': 'chat_stall',
+            'severity': 'high' if timed_out else 'medium',
+            'duration_ms': round(duration_ms, 1),
+            'timed_out': timed_out,
+            'message_summary': message_summary[:200],
+            **(extra_context or {}),
+        }
+        return self.capture_incident(
+            trigger='auto_chat_stall',
+            user_description=(
+                f'Chat UI stall: {"timed out" if timed_out else "slow"} '
+                f'({duration_ms:.0f}ms) during shortcut analysis'
+            ),
+            extra_context=extra,
+        )
+
+    def recent_incidents(self, *, limit: int = 5) -> list[dict[str, Any]]:
+        """Return recent incident summaries for PortableContext inclusion."""
+        reports = self.list_reports(limit=limit)
+        result: list[dict[str, Any]] = []
+        for meta in reports:
+            if meta.get('error'):
+                continue
+            full = self.get_report(meta.get('file', ''))
+            if full is None:
+                continue
+            extra = full.get('extra', {})
+            result.append({
+                'file': meta.get('file', ''),
+                'timestamp': full.get('timestamp', ''),
+                'trigger': full.get('trigger', ''),
+                'incident_type': extra.get('incident_type', full.get('trigger', '')),
+                'severity': extra.get('severity', ''),
+                'dominant_phase': extra.get('dominant_phase', ''),
+                'duration_ms': extra.get('duration_ms') or extra.get('dominant_phase_ms', 0),
+                'timed_out': extra.get('timed_out'),
+                'finding_titles': extra.get('finding_titles', []),
+            })
+        return result
 
     # ------------------------------------------------------------------
     # Private capture helpers

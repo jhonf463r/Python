@@ -68,6 +68,7 @@ class PortableContextService:
         self.decision_audit_trail: Any | None = None
         self.code_audit_trail: Any | None = None
         self.boot_profile_store: Any | None = None
+        self.freeze_incident_reporter: Any | None = None
         self.experiment_lab: Any | None = None
         self.chat_message_repository: Any | None = None
         self._current_package: PortableContextPackage | None = None
@@ -2681,6 +2682,16 @@ class PortableContextService:
             },
         )
 
+    def _recent_freeze_incidents(self) -> list[dict[str, Any]]:
+        """Return recent freeze incidents for inclusion in startup_health."""
+        reporter = self.freeze_incident_reporter
+        if reporter is None or not hasattr(reporter, 'recent_incidents'):
+            return []
+        try:
+            return reporter.recent_incidents(limit=3)
+        except Exception:
+            return []
+
     def _startup_health_section(self, *, status: dict[str, Any], now) -> PortableContextSection:
         """Export the latest startup timeline summary as a portable section.
 
@@ -2716,6 +2727,18 @@ class PortableContextService:
                     'phase': blk.get('phase'),
                     'ms': blk.get('ms'),
                 })
+        freeze_incidents = self._recent_freeze_incidents()
+        for fi in freeze_incidents:
+            items.append({
+                'label': 'freeze_incident',
+                'incident_type': fi.get('incident_type', ''),
+                'trigger': fi.get('trigger', ''),
+                'severity': fi.get('severity', ''),
+                'dominant_phase': fi.get('dominant_phase', ''),
+                'duration_ms': fi.get('duration_ms', 0),
+                'timestamp': fi.get('timestamp', ''),
+                'file': fi.get('file', ''),
+            })
         if st == 'analyzed':
             init = status.get('init_ms')
             window = status.get('run_to_window_ms')
@@ -2723,9 +2746,10 @@ class PortableContextService:
             init_str = f'{init:.0f}ms' if isinstance(init, (int, float)) else 'n/d'
             window_str = f'{window:.0f}ms' if isinstance(window, (int, float)) else 'n/d'
             rss_str = f', RSS pico {rss:.0f}MB' if isinstance(rss, (int, float)) and rss > 0 else ''
+            incidents_str = f' Freeze incidents recientes: {len(freeze_incidents)}.' if freeze_incidents else ''
             summary = (
                 f'Startup ultimo: init {init_str}, run->window {window_str}{rss_str}. '
-                f'Eventos {status.get("event_count", 0)}.'
+                f'Eventos {status.get("event_count", 0)}.{incidents_str}'
             )
         elif st == 'no_log':
             summary = 'Sin data/logs/startup_timeline.jsonl. Lanzar la UI con IABV_STARTUP_TIMELINE=1 para registrar arranque.'
@@ -2755,6 +2779,7 @@ class PortableContextService:
                 'last_started_at_utc': status.get('last_started_at_utc', ''),
                 'phases_seen': list(status.get('phases_seen') or []),
                 'recent_blockers': list(status.get('recent_blockers') or []),
+                'freeze_incidents': freeze_incidents,
             },
         )
 
