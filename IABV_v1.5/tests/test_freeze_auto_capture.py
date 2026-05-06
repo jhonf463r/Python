@@ -716,7 +716,9 @@ class TestViewModelQueryVisibleGap:
         stub._reset_visible_gap_state = ControlCenterViewModel._reset_visible_gap_state.__get__(stub)
         stub.notify_window_active_changed = ControlCenterViewModel.notify_window_active_changed.__get__(stub)
         stub._query_start_pc = 0.0
+        stub._visible_gap_start_pc = 0.0
         stub._query_start_message = ''
+        stub._query_dispatch_pending = False
         stub._window_went_inactive = False
         stub._window_inactive_at = 0.0
         stub._window_inactive_total_ms = 0.0
@@ -726,7 +728,7 @@ class TestViewModelQueryVisibleGap:
     def test_below_threshold_does_nothing(self) -> None:
         """Gap below 30s threshold does not fire."""
         vm = self._make_vm_stub()
-        vm._query_start_pc = time.perf_counter() - 10.0  # 10s < 30s
+        vm._visible_gap_start_pc = time.perf_counter() - 10.0  # 10s < 30s
         vm._query_start_message = 'test'
         tracer = RuntimeAuditTracer()
         with patch(
@@ -744,7 +746,7 @@ class TestViewModelQueryVisibleGap:
     def test_above_threshold_fires_gap_incident(self) -> None:
         """Gap above 30s traces a query_visible_gap incident."""
         vm = self._make_vm_stub()
-        vm._query_start_pc = time.perf_counter() - 45.0  # 45s
+        vm._visible_gap_start_pc = time.perf_counter() - 45.0  # 45s
         vm._query_start_message = 'haz una consulta a chatgpt'
         tracer = RuntimeAuditTracer()
         with patch(
@@ -768,7 +770,8 @@ class TestViewModelQueryVisibleGap:
     def test_window_inactive_correlation(self) -> None:
         """Window going inactive during query is recorded in the gap incident."""
         vm = self._make_vm_stub()
-        vm._query_start_pc = time.perf_counter() - 1800.0  # 30 minutes
+        _start = time.perf_counter() - 1800.0  # 30 minutes
+        vm._visible_gap_start_pc = _start
         vm._query_start_message = 'consulta larga'
         # Simulate window going inactive
         vm.notify_window_active_changed(False)
@@ -801,7 +804,7 @@ class TestViewModelQueryVisibleGap:
         vm = self._make_vm_stub()
         reporter = FreezeIncidentReporter(evolution_dir=str(tmp_path))
         vm._freeze_incident_reporter = reporter
-        vm._query_start_pc = time.perf_counter() - 60.0  # 1 min
+        vm._visible_gap_start_pc = time.perf_counter() - 60.0  # 1 min
         vm._query_start_message = 'test gap reporter'
         vm._window_went_inactive = True
         vm._window_inactive_total_ms = 55000.0
@@ -824,7 +827,7 @@ class TestViewModelQueryVisibleGap:
     def test_critical_severity_for_very_long_gap(self) -> None:
         """Gap >5 min gets critical severity."""
         vm = self._make_vm_stub()
-        vm._query_start_pc = time.perf_counter() - 400.0  # ~6.6 min
+        vm._visible_gap_start_pc = time.perf_counter() - 400.0  # ~6.6 min
         vm._query_start_message = 'test'
         tracer = RuntimeAuditTracer()
         with patch(
@@ -844,17 +847,21 @@ class TestViewModelQueryVisibleGap:
     def test_notify_window_noop_without_pending_query(self) -> None:
         """notify_window_active_changed does nothing when no query pending."""
         vm = self._make_vm_stub()
-        vm._query_start_pc = 0.0
+        vm._visible_gap_start_pc = 0.0
         vm.notify_window_active_changed(False)
         assert vm._window_went_inactive is False
 
     def test_reset_visible_gap_state(self) -> None:
         """_reset_visible_gap_state clears all tracking attributes."""
         vm = self._make_vm_stub()
+        vm._visible_gap_start_pc = 123.0
+        vm._query_dispatch_pending = True
         vm._window_went_inactive = True
         vm._window_inactive_at = 123.0
         vm._window_inactive_total_ms = 50000.0
         vm._reset_visible_gap_state()
+        assert vm._visible_gap_start_pc == 0.0
+        assert vm._query_dispatch_pending is False
         assert vm._window_went_inactive is False
         assert vm._window_inactive_at == 0.0
         assert vm._window_inactive_total_ms == 0.0
@@ -862,7 +869,7 @@ class TestViewModelQueryVisibleGap:
     def test_had_early_technical_response_flag(self) -> None:
         """had_early_technical_response is recorded in the incident."""
         vm = self._make_vm_stub()
-        vm._query_start_pc = time.perf_counter() - 60.0
+        vm._visible_gap_start_pc = time.perf_counter() - 60.0
         vm._query_start_message = 'test'
         tracer = RuntimeAuditTracer()
         with patch(
@@ -878,6 +885,142 @@ class TestViewModelQueryVisibleGap:
             )
         events = tracer.events(kind='freeze_incident')
         assert events[0]['data']['had_early_technical_response'] is True
+
+    def test_dispatch_does_not_close_visible_gap(self) -> None:
+        """Dispatch response does NOT close the visible gap timer.
+
+        When ``_query_dispatch_pending`` is True, the timer stays alive
+        so the final resolution can still detect the full gap.
+        """
+        vm = self._make_vm_stub()
+        start_pc = time.perf_counter() - 5.0  # 5s (< 30s threshold)
+        vm._visible_gap_start_pc = start_pc
+        vm._query_dispatch_pending = True
+        vm._query_start_message = 'haz una consulta a chatgpt'
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            # Simulate chat resolution with dispatch pending — should NOT fire
+            vm._finalize_query_visible_gap(
+                resolved_path='orchestrator_inference',
+                provider='ollama',
+                route_reason='local',
+                success=True,
+            )
+        # Below threshold AND dispatch pending — timer should survive
+        assert len(tracer.events(kind='freeze_incident')) == 0
+        # Timer NOT consumed — visible_gap_start_pc still alive
+        assert vm._visible_gap_start_pc == start_pc
+
+    def test_dispatch_then_late_final_fires_gap(self) -> None:
+        """Dispatch early → final resolution much later → gap incident fires.
+
+        Simulates: user sends query → dispatch "consulta aceptada" → 10 min
+        of external consultation → final resolution → query_visible_gap fires.
+        """
+        vm = self._make_vm_stub()
+        vm._visible_gap_start_pc = time.perf_counter() - 600.0  # 10 min
+        vm._query_dispatch_pending = True
+        vm._query_had_early_technical = True
+        vm._query_start_message = 'haz una consulta a chatgpt'
+        vm._window_went_inactive = True
+        vm._window_inactive_total_ms = 540000.0  # 9 min inactive
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            # Final resolution arrives (external_consultation resolved)
+            vm._finalize_query_visible_gap(
+                resolved_path='external_consultation',
+                provider='chatgpt',
+                route_reason='external_consultation',
+                success=True,
+                had_early_technical_response=True,
+            )
+        events = tracer.events(kind='freeze_incident')
+        assert len(events) == 1
+        data = events[0]['data']
+        assert data['incident_type'] == 'query_visible_gap'
+        assert data['duration_ms'] > 590000
+        assert data['had_early_technical_response'] is True
+        assert data['window_went_inactive'] is True
+        assert data['cause'] == 'UNRESOLVED'
+        assert data['severity'] == 'critical'  # > 5 min
+
+    def test_fast_final_no_dispatch_no_incident(self) -> None:
+        """Fast query without dispatch → no incident, timer consumed."""
+        vm = self._make_vm_stub()
+        vm._visible_gap_start_pc = time.perf_counter() - 2.0  # 2s
+        vm._query_dispatch_pending = False
+        vm._query_start_message = 'hola'
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            vm._finalize_query_visible_gap(
+                resolved_path='orchestrator_inference',
+                provider='ollama',
+                route_reason='local',
+                success=True,
+            )
+        assert len(tracer.events(kind='freeze_incident')) == 0
+
+    def test_dispatch_external_failure_fires_gap(self, tmp_path: Path) -> None:
+        """Dispatch → external consultation fails → gap fires with reporter."""
+        vm = self._make_vm_stub()
+        reporter = FreezeIncidentReporter(evolution_dir=str(tmp_path))
+        vm._freeze_incident_reporter = reporter
+        vm._visible_gap_start_pc = time.perf_counter() - 120.0  # 2 min
+        vm._query_dispatch_pending = True
+        vm._query_had_early_technical = True
+        vm._query_start_message = 'consulta a chatgpt'
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            vm._finalize_query_visible_gap(
+                resolved_path='external_blocked',
+                provider='chatgpt',
+                route_reason='external_consultation',
+                success=False,
+                had_early_technical_response=True,
+            )
+        # Tracer fired
+        events = tracer.events(kind='freeze_incident')
+        assert len(events) == 1
+        assert events[0]['data']['severity'] == 'high'
+        # Reporter captured
+        reports = reporter.list_reports()
+        assert len(reports) == 1
+        assert reports[0]['trigger'] == 'auto_query_visible_gap'
+
+    def test_dispatch_pending_set_by_run_external(self) -> None:
+        """_run_external_consultation sets _query_dispatch_pending."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import (
+            ControlCenterViewModel,
+        )
+        vm = MagicMock(spec=[])
+        vm._working = False
+        vm._query_dispatch_pending = False
+        vm._latest_response_text = ''
+        vm._latest_response_meta = ''
+        vm._attached_files = None
+        vm._set_autonomy_activity_override = MagicMock()
+        vm._append_message = MagicMock()
+        vm._assistant_display_name = MagicMock(return_value='ChatGPT')
+        vm._execute_external_consultation_sync = MagicMock(return_value={})
+        vm.dataChanged = MagicMock()
+        vm.dataChanged.emit = MagicMock()
+        vm.taskResolved = MagicMock()
+        vm.taskResolved.emit = MagicMock()
+        # Call the method directly
+        ControlCenterViewModel._run_external_consultation(vm, 'chatgpt', announce=False)
+        assert vm._query_dispatch_pending is True
 
 
 # ======================================================================

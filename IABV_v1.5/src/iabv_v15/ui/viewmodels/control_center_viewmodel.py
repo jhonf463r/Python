@@ -4063,7 +4063,7 @@ class ControlCenterViewModel(QObject):
         """
         import time as _t
         now = _t.perf_counter()
-        pending = getattr(self, '_query_start_pc', 0.0)
+        pending = getattr(self, '_visible_gap_start_pc', 0.0)
         if not pending:
             return
         if not active:
@@ -4101,7 +4101,7 @@ class ControlCenterViewModel(QObject):
         worker stall vs background suspend vs foreground loss.
         """
         import time as _t
-        start = getattr(self, '_query_start_pc', 0.0)
+        start = getattr(self, '_visible_gap_start_pc', 0.0)
         if not start:
             return
         elapsed_ms = (_t.perf_counter() - start) * 1000.0
@@ -4151,6 +4151,8 @@ class ControlCenterViewModel(QObject):
 
     def _reset_visible_gap_state(self) -> None:
         """Clear visible gap tracking state after query resolves."""
+        self._visible_gap_start_pc = 0.0
+        self._query_dispatch_pending = False
         self._window_went_inactive = False
         self._window_inactive_at = 0.0
         self._window_inactive_total_ms = 0.0
@@ -5339,6 +5341,8 @@ class ControlCenterViewModel(QObject):
         assistant_title = self._assistant_display_name(str(result.get('assistant_kind') or ''))
         external_state_flags = canonical_external_state_flags(list(result.get('external_state_flags') or []))
         status = str(result.get('status') or '').strip().lower()
+        if status in ('prepared', 'awaiting_response'):
+            self._query_dispatch_pending = True
         external_notice = self._external_state_notice(external_state_flags)
         if status == 'awaiting_response':
             detail = f'Voy a apoyarme en {assistant_title}. Ya deje la consulta encaminada y te aviso cuando tenga una respuesta util.'
@@ -5820,6 +5824,7 @@ class ControlCenterViewModel(QObject):
         )
         if announce:
             self._append_message('assistant', 'IABV', self._latest_response_text, self._latest_response_meta)
+        self._query_dispatch_pending = True
         self.dataChanged.emit()
 
         def worker() -> None:
@@ -7118,8 +7123,10 @@ class ControlCenterViewModel(QObject):
             self._clear_autonomy_activity_override()
         import time as _time_mod
         self._query_start_pc = _time_mod.perf_counter()
+        self._visible_gap_start_pc: float = self._query_start_pc
         self._query_start_message = message[:120]
         self._query_resolved_path: str = ''
+        self._query_dispatch_pending: bool = False
         self._window_went_inactive: bool = False
         self._window_inactive_at: float = 0.0
         self._window_inactive_total_ms: float = 0.0
@@ -7519,13 +7526,6 @@ class ControlCenterViewModel(QObject):
                                      'pack': pack_title,
                                      'planner_used': payload.get('planner_used', False),
                                  })
-            self._finalize_query_visible_gap(
-                resolved_path=_inference_path,
-                provider=payload.get('provider_name', ''),
-                route_reason=payload.get('route_reason', ''),
-                success=True,
-                had_early_technical_response=getattr(self, '_query_had_early_technical', False),
-            )
             self._finalize_query_stall(
                 resolved_path=_inference_path,
                 provider=payload.get('provider_name', ''),
@@ -7533,7 +7533,6 @@ class ControlCenterViewModel(QObject):
                 success=True,
                 response_text=user_text,
             )
-            self._reset_visible_gap_state()
             self._record_chat_audit(
                 reasoning_path=_inference_path,
                 provider_id=payload.get('provider_name', 'local'),
@@ -7580,6 +7579,17 @@ class ControlCenterViewModel(QObject):
                 if autonomy_result is None:
                     self._busy_label = 'Respuesta lista.'
                 self._clear_autonomy_activity_override()
+            if not getattr(self, '_query_dispatch_pending', False):
+                self._finalize_query_visible_gap(
+                    resolved_path=_inference_path,
+                    provider=payload.get('provider_name', ''),
+                    route_reason=payload.get('route_reason', ''),
+                    success=True,
+                    had_early_technical_response=getattr(self, '_query_had_early_technical', False),
+                )
+                self._reset_visible_gap_state()
+            else:
+                self._query_had_early_technical = True
         elif task_name == 'adaptive_action':
             self._clear_autonomy_activity_override()
             session_payload = dict(payload)
