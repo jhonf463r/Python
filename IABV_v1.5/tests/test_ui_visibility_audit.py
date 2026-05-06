@@ -529,3 +529,99 @@ class TestRuntimeWiringIntegration:
         snapshot = assembler._ui_visibility_snapshot()
         assert snapshot['has_unexpected'] is True
         assert snapshot['total_events'] >= 1  # at least the popup
+
+
+# ---------------------------------------------------------------------------
+# Operational wiring tests — Tasks 1-3 residual gap closure
+# ---------------------------------------------------------------------------
+
+class TestOperationalWiring:
+    """Verify that SplashAuditAdapter, SubprocessAuditWrapper, Win32PopupWatcher,
+    dialog close tracking, and ControlMasterService audit consumption all work."""
+
+    def test_splash_audit_adapter_records_shown_and_closed(self) -> None:
+        audit = VisibilityAuditLog()
+        adapter = SplashAuditAdapter(audit)
+        adapter.on_shown()
+        adapter.on_closed()
+        s = audit.summary()
+        kinds = [e['kind'] for e in s['events']]
+        assert KIND_DIALOG_SHOWN in kinds
+        assert KIND_DIALOG_CLOSED in kinds
+        assert s['total_events'] == 2
+
+    def test_subprocess_audit_wrapper_captures_fnf(self) -> None:
+        audit = VisibilityAuditLog()
+        wrapper = SubprocessAuditWrapper(audit, cmd=['nonexistent-binary'])
+        try:
+            with wrapper:
+                raise FileNotFoundError(2, 'No such file', 'nonexistent-binary')
+        except FileNotFoundError:
+            pass
+        s = audit.summary()
+        assert s['file_not_found_count'] == 1
+        assert s['file_not_found'][0]['kind'] == KIND_FILE_NOT_FOUND
+
+    def test_subprocess_audit_wrapper_no_event_on_success(self) -> None:
+        audit = VisibilityAuditLog()
+        wrapper = SubprocessAuditWrapper(audit, cmd=['echo', 'ok'])
+        with wrapper:
+            pass
+        assert audit.summary()['total_events'] == 0
+
+    def test_win32_popup_watcher_starts_noop_on_linux(self) -> None:
+        from iabv_v15.infra.ui_visibility_audit import Win32PopupWatcher
+        audit = VisibilityAuditLog()
+        watcher = Win32PopupWatcher(audit)
+        watcher.start()  # no-op on non-Windows
+        assert watcher._thread is None  # thread not created on Linux
+        watcher.stop()
+
+    def test_dialog_close_records_via_bridge(self) -> None:
+        audit = VisibilityAuditLog()
+        bridge = QmlDialogAuditBridge(audit)
+        bridge.record_dialog_closed(
+            'CredentialPromptDialog',
+            vm_name='ControlCenterViewModel',
+            response_type='submitted',
+        )
+        s = audit.summary()
+        assert s['total_events'] == 1
+        assert s['events'][0]['kind'] == KIND_DIALOG_CLOSED
+        assert s['events'][0]['title'] == 'CredentialPromptDialog'
+
+    def test_control_master_reads_audit_visibility(self) -> None:
+        from iabv_v15.services.evolution.control_master_service import ControlMasterService
+        from iabv_v15.infra.persistence.control_master_repository import ControlMasterRepository
+        audit = VisibilityAuditLog()
+        audit.record('win32_popup_detected', source='test',
+                     event_category=CAT_UNEXPECTED, unresolved=True)
+        audit.record(KIND_FILE_NOT_FOUND, source='test',
+                     event_category=CAT_UNEXPECTED,
+                     extra={'filename': 'x.exe'})
+        repo = MagicMock(spec=ControlMasterRepository)
+        repo.load_latest_state.return_value = None
+        repo.list_rules.return_value = []
+        repo.list_decisions.return_value = []
+        svc = ControlMasterService(
+            repository=repo,
+            ui_visibility_audit_log=audit,
+        )
+        state = svc.current_state()
+        vis = state.metadata.get('ui_visibility', {})
+        assert vis['total_events'] == 2
+        assert vis['unresolved_count'] == 1
+        assert vis['file_not_found_count'] == 1
+        assert vis['has_unexpected'] is True
+
+    def test_control_master_empty_without_audit(self) -> None:
+        from iabv_v15.services.evolution.control_master_service import ControlMasterService
+        from iabv_v15.infra.persistence.control_master_repository import ControlMasterRepository
+        repo = MagicMock(spec=ControlMasterRepository)
+        repo.load_latest_state.return_value = None
+        repo.list_rules.return_value = []
+        repo.list_decisions.return_value = []
+        svc = ControlMasterService(repository=repo)
+        state = svc.current_state()
+        vis = state.metadata.get('ui_visibility', {})
+        assert vis == {}

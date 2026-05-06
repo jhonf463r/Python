@@ -51,6 +51,7 @@ class ControlMasterService:
         self_examination_service: Any | None = None,
         experiment_lab_repository: Any | None = None,
         account_resource_scanner: Any | None = None,
+        ui_visibility_audit_log: Any | None = None,
         recent_decisions_limit: int = 10,
     ) -> None:
         self.repository = repository
@@ -59,6 +60,7 @@ class ControlMasterService:
         self.self_examination_service = self_examination_service
         self.experiment_lab_repository = experiment_lab_repository
         self.account_resource_scanner = account_resource_scanner
+        self._ui_visibility_audit_log = ui_visibility_audit_log
         self.recent_decisions_limit = recent_decisions_limit
 
     # ------------------------------------------------------------------
@@ -86,6 +88,7 @@ class ControlMasterService:
         ]))
         metadata = dict(base.metadata)
         metadata['account_inventory'] = account_inventory
+        metadata['ui_visibility'] = self._ui_visibility_compact()
         state = base.model_copy(
             update={
                 "global_rules": rules,
@@ -466,6 +469,23 @@ class ControlMasterService:
             unresolved = getattr(snapshot, "unresolved_risks", None) or []
             return [str(item) for item in unresolved]
         return []
+
+    def _ui_visibility_compact(self) -> dict[str, Any]:
+        """Compact summary from VisibilityAuditLog for governance metadata."""
+        audit = self._ui_visibility_audit_log
+        if audit is None:
+            return {}
+        try:
+            s = audit.summary()
+        except Exception:
+            return {}
+        return {
+            'total_events': s.get('total_events', 0),
+            'by_category': s.get('by_category', {}),
+            'unresolved_count': s.get('unresolved_count', 0),
+            'file_not_found_count': s.get('file_not_found_count', 0),
+            'has_unexpected': s.get('by_category', {}).get('unexpected', 0) > 0,
+        }
 
 
 # ----------------------------------------------------------------------

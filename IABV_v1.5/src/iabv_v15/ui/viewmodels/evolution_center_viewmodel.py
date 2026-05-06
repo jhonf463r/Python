@@ -620,6 +620,16 @@ class EvolutionCenterViewModel(QObject):
         self._latest_packet = packet
         self._copy_text(packet, 'Paquete del ultimo fallo copiado al portapapeles.')
 
+    @Slot(str, str)
+    def recordDialogClosed(self, dialog: str, response_type: str) -> None:
+        """Called from QML when a dialog is closed/responded to."""
+        bridge = getattr(self, '_qml_dialog_audit_bridge', None)
+        if bridge is not None:
+            bridge.record_dialog_closed(
+                dialog, vm_name='EvolutionCenterViewModel',
+                response_type=response_type,
+            )
+
     @Slot(str)
     def sandboxToolCard(self, tool_id: str) -> None:
         if self.tool_record_repository is None or self.tool_teach_service is None:

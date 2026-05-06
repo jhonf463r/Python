@@ -4866,6 +4866,16 @@ class ControlCenterViewModel(QObject):
         self._approval_dialog_visible = False
         self.dataChanged.emit()
 
+    @Slot(str, str)
+    def recordDialogClosed(self, dialog: str, response_type: str) -> None:
+        """Called from QML when a dialog is closed/responded to."""
+        bridge = getattr(self, '_qml_dialog_audit_bridge', None)
+        if bridge is not None:
+            bridge.record_dialog_closed(
+                dialog, vm_name='ControlCenterViewModel',
+                response_type=response_type,
+            )
+
     def _navigate_to(self, route_key: str) -> None:
         if self.navigation_controller is not None and hasattr(self.navigation_controller, 'navigate'):
             self.navigation_controller.navigate(route_key)

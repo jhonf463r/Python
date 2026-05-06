@@ -1245,6 +1245,7 @@ class AppBootstrap:
             self_examination_service=self.operational_self_examination_service,
             experiment_lab_repository=self.experiment_lab_repository,
             account_resource_scanner=build_inventory_snapshot,
+            ui_visibility_audit_log=get_audit_log(),
         )
         self.control_master_digest_builder = ControlMasterDigestBuilder()
         self.git_sync_service = GitSyncService(
@@ -3115,14 +3116,17 @@ class AppBootstrap:
         )
 
     def _wire_ui_audit_bridges(self) -> None:
-        """Install QmlDialogAuditBridge on VMs and ToastAuditAdapter on WinToastBridge."""
-        from iabv_v15.infra.ui_visibility_audit import QmlDialogAuditBridge, ToastAuditAdapter
+        """Install QmlDialogAuditBridge, ToastAuditAdapter, Win32PopupWatcher."""
+        from iabv_v15.infra.ui_visibility_audit import (
+            QmlDialogAuditBridge, ToastAuditAdapter, Win32PopupWatcher,
+        )
         audit_log = get_audit_log()
         try:
             dialog_bridge = QmlDialogAuditBridge(audit_log)
             for vm in (self.control_center_viewmodel, self.evolution_center_viewmodel):
                 if vm is not None:
                     dialog_bridge.install(vm)
+                    vm._qml_dialog_audit_bridge = dialog_bridge
             self._qml_dialog_audit_bridge = dialog_bridge
         except Exception:
             logger.exception('QmlDialogAuditBridge wiring failed')
@@ -3134,8 +3138,21 @@ class AppBootstrap:
                 self._toast_audit_adapter = toast_adapter
             except Exception:
                 logger.exception('ToastAuditAdapter wiring failed')
+        # Win32PopupWatcher — daemon thread, only active on Windows
+        try:
+            watcher = Win32PopupWatcher(audit_log)
+            watcher.start()  # no-op on non-Windows
+            self._win32_popup_watcher = watcher
+        except Exception:
+            logger.debug('Win32PopupWatcher wiring skipped')
 
     def shutdown(self) -> None:
+        watcher = getattr(self, '_win32_popup_watcher', None)
+        if watcher is not None:
+            try:
+                watcher.stop()
+            except Exception:
+                pass
         router = getattr(self, 'provider_health_router', None)
         if router is not None:
             try:
@@ -3463,6 +3480,11 @@ class AppBootstrap:
             logger.info('mcp_autostart: MCP server launched (PID %d)', proc.pid)
             return proc
         except Exception as exc:
+            if isinstance(exc, FileNotFoundError):
+                get_audit_log().record_file_not_found(
+                    exc, source='bootstrap._start_mcp_subprocess',
+                    cmd=[python_exe, '-m', 'iabv_v15.infra.mcp.server'],
+                )
             if log_handle is not None:
                 try:
                     log_handle.close()
@@ -3533,6 +3555,11 @@ class AppBootstrap:
             logger.info('mcp_autostart: Cloudflare tunnel launched (PID %d)', proc.pid)
             return proc
         except Exception as exc:
+            if isinstance(exc, FileNotFoundError):
+                get_audit_log().record_file_not_found(
+                    exc, source='bootstrap._start_tunnel_subprocess',
+                    cmd=[cloudflared, 'tunnel'],
+                )
             if log_handle is not None:
                 try:
                     log_handle.close()
@@ -3905,6 +3932,14 @@ class AppBootstrap:
                 # Process events so the splash actually renders
                 splash_app.processEvents()
                 self._timeline.mark('splash_visible')
+                # --- Audit: record splash shown + connect close ---
+                try:
+                    from iabv_v15.infra.ui_visibility_audit import SplashAuditAdapter
+                    self._splash_audit = SplashAuditAdapter(get_audit_log())
+                    self._splash_audit.on_shown()
+                    self._splash.closingNow.connect(self._splash_audit.on_closed)
+                except Exception:
+                    logger.debug('SplashAuditAdapter wiring skipped')
             else:
                 self._splash = None
 
