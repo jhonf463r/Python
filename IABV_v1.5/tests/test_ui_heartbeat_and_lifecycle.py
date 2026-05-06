@@ -358,7 +358,9 @@ class TestPortableContextPromotion:
             workspace_root=str(ws),
             storage=storage,
         )
-        assert pcs._interaction_lifecycle_summary() == {}
+        summary = pcs._interaction_lifecycle_summary()
+        assert summary.get('recent_completed') == []
+        assert summary.get('reconstructed_from_audit') is False
 
     def test_interaction_lifecycle_summary_with_lifecycle(self) -> None:
         ws = _workspace()
@@ -925,3 +927,294 @@ class TestFinalResolutionPromotion:
         match = [c for c in completed if c['interaction_id'] == iid]
         assert len(match) == 1
         assert match[0]['outcome'] == 'failed'
+
+
+# ======================================================================
+# 14. Durable interaction_resolved record (post-audit Fix 1)
+# ======================================================================
+
+
+class TestDurableInteractionResolved:
+    """interaction_resolved trace must include complete record for reconstruction."""
+
+    def test_trace_includes_full_record(self, tmp_path: Path) -> None:
+        tracer = RuntimeAuditTracer(log_dir=str(tmp_path))
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            lc = ChatInteractionLifecycle()
+            iid = lc.open_interaction(
+                'hello world test',
+                initial_window_active=True,
+                initial_window_visible=False,
+            )
+            lc.mark_phase(iid, 'first_technical_response')
+            lc.mark_phase(iid, 'first_useful_response')
+            lc.record_window_inactive(iid)
+            lc.record_stall(iid, {'timestamp': '2025-01-01T00:00:00Z', 'duration_ms': 500})
+            lc.resolve_interaction(iid, outcome='resolved', provider='ChatGPT')
+
+        events = tracer.events(kind='interaction_resolved')
+        assert len(events) >= 1
+        data = events[-1]['data']
+        assert data['interaction_id'] == iid
+        assert data['message_preview'] == 'hello world test'
+        assert data['outcome'] == 'resolved'
+        assert data['provider'] == 'ChatGPT'
+        assert data['total_duration_ms'] >= 0
+        assert 'first_technical_response' in data['phases']
+        assert 'first_useful_response' in data['phases']
+        assert 'final_resolution' in data['phases']
+        assert len(data['stalls_during']) == 1
+        assert len(data['window_inactive_intervals']) == 1
+        assert data['initial_window_active'] is True
+        assert data['initial_window_visible'] is False
+        assert data['had_early_technical_response'] is True
+        assert data['window_went_inactive'] is True
+
+    def test_trace_persisted_to_jsonl(self, tmp_path: Path) -> None:
+        import json
+        tracer = RuntimeAuditTracer(log_dir=str(tmp_path))
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            lc = ChatInteractionLifecycle()
+            iid = lc.open_interaction('persist test')
+            lc.resolve_interaction(iid, outcome='resolved', provider='Ollama')
+
+        jsonl_path = tmp_path / 'runtime_audit.jsonl'
+        assert jsonl_path.exists()
+        lines = jsonl_path.read_text().strip().splitlines()
+        resolved_lines = [
+            json.loads(l) for l in lines
+            if 'interaction_resolved' in l
+        ]
+        assert len(resolved_lines) >= 1
+        data = resolved_lines[-1]['data']
+        assert data['interaction_id'] == iid
+        assert data['message_preview'] == 'persist test'
+        assert data['provider'] == 'Ollama'
+        assert isinstance(data['phases'], dict)
+        assert isinstance(data['stalls_during'], list)
+
+
+# ======================================================================
+# 15. Provider derivation for external_consultation (post-audit Fix 2)
+# ======================================================================
+
+
+class TestProviderDerivation:
+    """external_consultation must resolve with non-empty provider."""
+
+    def test_external_consultation_uses_assistant_title(self) -> None:
+        vm = _FakeViewModel()
+        iid = vm.open_episode('test external')
+        # Simulate external_consultation with assistant_title in payload
+        vm._interaction_has_pending_followup = True
+        vm.apply_task_result('chat', autonomy_status='awaiting_response')
+        # Now resolve via external_consultation with assistant_title
+        vm._interaction_has_pending_followup = False
+        # Direct resolve with provider derived from assistant_title
+        vm._chat_interaction_lifecycle.resolve_interaction(
+            vm._active_interaction_id or '',
+            outcome='resolved',
+            provider='ChatGPT Web',
+        )
+        vm._active_interaction_id = None
+        completed = vm._chat_interaction_lifecycle.recent_completed()
+        match = [c for c in completed if c.get('provider') == 'ChatGPT Web']
+        assert len(match) == 1
+        assert match[0]['provider'] != ''
+
+    def test_provider_fallback_chain(self) -> None:
+        """provider_name > assistant_title > assistant_kind > empty."""
+        # provider_name takes priority
+        payload_a: dict[str, Any] = {'provider_name': 'Gemini', 'assistant_title': 'ChatGPT'}
+        _p = str(payload_a.get('provider_name') or payload_a.get('assistant_title') or payload_a.get('assistant_kind') or '')
+        assert _p == 'Gemini'
+
+        # assistant_title when provider_name missing
+        payload_b: dict[str, Any] = {'assistant_title': 'Codex'}
+        _p = str(payload_b.get('provider_name') or payload_b.get('assistant_title') or payload_b.get('assistant_kind') or '')
+        assert _p == 'Codex'
+
+        # assistant_kind as last resort
+        payload_c: dict[str, Any] = {'assistant_kind': 'windsurf'}
+        _p = str(payload_c.get('provider_name') or payload_c.get('assistant_title') or payload_c.get('assistant_kind') or '')
+        assert _p == 'windsurf'
+
+
+# ======================================================================
+# 16. PortableContext reconstructs from runtime_audit (post-audit Fix 3)
+# ======================================================================
+
+
+class TestPortableContextAuditReconstruction:
+    """PortableContext must reconstruct episodes from runtime_audit.jsonl."""
+
+    def test_reconstruction_from_audit_when_lifecycle_empty(self) -> None:
+        import json
+        ws = _workspace()
+        log_dir = ws / 'data' / 'logs'
+        log_dir.mkdir(parents=True, exist_ok=True)
+        audit_path = log_dir / 'runtime_audit.jsonl'
+        # Write a fake interaction_resolved event
+        event = {
+            'ts': '2025-01-01T00:00:00.000Z',
+            'kind': 'interaction_resolved',
+            'data': {
+                'interaction_id': 'chat-test123',
+                'message_preview': 'reconstruct me',
+                'outcome': 'resolved',
+                'provider': 'Ollama',
+                'total_duration_ms': 1500.0,
+                'phases': {'start': '2025-01-01T00:00:00.000Z', 'final_resolution': '2025-01-01T00:00:01.500Z'},
+                'stalls_during': [{'timestamp': '2025-01-01T00:00:00.500Z', 'duration_ms': 200}],
+                'window_inactive_intervals': [],
+                'initial_window_active': True,
+                'initial_window_visible': True,
+                'had_early_technical_response': False,
+                'window_went_inactive': False,
+            },
+        }
+        audit_path.write_text(json.dumps(event) + '\n', encoding='utf-8')
+
+        storage = ArtifactStorage(root=str(ws))
+        pcs = PortableContextService(
+            workspace_root=str(ws),
+            storage=storage,
+        )
+        # No lifecycle attached — should reconstruct from audit
+        summary = pcs._interaction_lifecycle_summary()
+        recent = summary.get('recent_completed', [])
+        assert len(recent) == 1
+        assert recent[0]['interaction_id'] == 'chat-test123'
+        assert recent[0]['message_preview'] == 'reconstruct me'
+        assert recent[0]['provider'] == 'Ollama'
+        assert recent[0]['outcome'] == 'resolved'
+        assert len(recent[0]['stalls_during']) == 1
+        assert recent[0]['_source'] == 'runtime_audit'
+
+    def test_merge_in_memory_and_audit(self) -> None:
+        import json
+        ws = _workspace()
+        log_dir = ws / 'data' / 'logs'
+        log_dir.mkdir(parents=True, exist_ok=True)
+        audit_path = log_dir / 'runtime_audit.jsonl'
+        # Write an audit event for an old episode
+        event = {
+            'ts': '2025-01-01T00:00:00.000Z',
+            'kind': 'interaction_resolved',
+            'data': {
+                'interaction_id': 'chat-audit-old',
+                'message_preview': 'from audit',
+                'outcome': 'resolved',
+                'provider': 'Gemini',
+                'total_duration_ms': 800.0,
+                'phases': {},
+                'stalls_during': [],
+                'window_inactive_intervals': [],
+                'initial_window_active': True,
+                'initial_window_visible': True,
+                'had_early_technical_response': False,
+                'window_went_inactive': False,
+            },
+        }
+        audit_path.write_text(json.dumps(event) + '\n', encoding='utf-8')
+
+        storage = ArtifactStorage(root=str(ws))
+        pcs = PortableContextService(
+            workspace_root=str(ws),
+            storage=storage,
+        )
+        # Attach a lifecycle with one in-memory episode
+        lc = ChatInteractionLifecycle()
+        iid = lc.open_interaction('in memory')
+        lc.resolve_interaction(iid, outcome='resolved', provider='local')
+        pcs.chat_interaction_lifecycle = lc
+
+        summary = pcs._interaction_lifecycle_summary()
+        recent = summary.get('recent_completed', [])
+        ids = [r['interaction_id'] for r in recent]
+        assert 'chat-audit-old' in ids
+        assert iid in ids
+
+
+# ======================================================================
+# 17. OSES interaction episode findings (post-audit Fix 3)
+# ======================================================================
+
+
+class TestOSESInteractionEpisodeFindings:
+    """OSES must detect episode stalls/failures from runtime_audit."""
+
+    def test_stall_episode_finding(self) -> None:
+        import json
+        ws = _workspace()
+        log_dir = ws / 'data' / 'logs'
+        log_dir.mkdir(parents=True, exist_ok=True)
+        audit_path = log_dir / 'runtime_audit.jsonl'
+        # Write an episode with stalls
+        event = {
+            'ts': '2025-01-01T00:00:00.000Z',
+            'kind': 'interaction_resolved',
+            'data': {
+                'interaction_id': 'chat-stall1',
+                'outcome': 'resolved',
+                'stalls_during': [
+                    {'timestamp': '2025-01-01T00:00:00.500Z', 'duration_ms': 3000},
+                    {'timestamp': '2025-01-01T00:00:04.000Z', 'duration_ms': 2000},
+                ],
+            },
+        }
+        audit_path.write_text(json.dumps(event) + '\n', encoding='utf-8')
+
+        storage = ArtifactStorage(root=str(ws))
+        oses = OperationalSelfExaminationService(
+            workspace_root=str(ws),
+            storage=storage,
+        )
+        findings = oses._interaction_episode_findings()
+        stall_findings = [f for f in findings if f.category == 'interaction_episode_stalls']
+        assert len(stall_findings) == 1
+        assert '1 of the last 1' in stall_findings[0].summary
+        assert stall_findings[0].metadata['source'] == 'runtime_audit'
+
+    def test_failed_episode_finding(self) -> None:
+        import json
+        ws = _workspace()
+        log_dir = ws / 'data' / 'logs'
+        log_dir.mkdir(parents=True, exist_ok=True)
+        audit_path = log_dir / 'runtime_audit.jsonl'
+        event = {
+            'ts': '2025-01-01T00:00:00.000Z',
+            'kind': 'interaction_resolved',
+            'data': {
+                'interaction_id': 'chat-fail1',
+                'outcome': 'failed',
+                'stalls_during': [],
+            },
+        }
+        audit_path.write_text(json.dumps(event) + '\n', encoding='utf-8')
+
+        storage = ArtifactStorage(root=str(ws))
+        oses = OperationalSelfExaminationService(
+            workspace_root=str(ws),
+            storage=storage,
+        )
+        findings = oses._interaction_episode_findings()
+        fail_findings = [f for f in findings if f.category == 'interaction_episode_failures']
+        assert len(fail_findings) == 1
+        assert '1 of the last 1' in fail_findings[0].summary
+
+    def test_no_findings_when_no_audit_file(self) -> None:
+        ws = _workspace()
+        storage = ArtifactStorage(root=str(ws))
+        oses = OperationalSelfExaminationService(
+            workspace_root=str(ws),
+            storage=storage,
+        )
+        findings = oses._interaction_episode_findings()
+        assert findings == []

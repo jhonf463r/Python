@@ -686,6 +686,7 @@ class OperationalSelfExaminationService:
         findings.extend(startup_findings)
         self._auto_capture_startup_freeze(startup_findings)
         findings.extend(self._ui_heartbeat_stall_findings())
+        findings.extend(self._interaction_episode_findings())
         findings.extend(self._boot_profile_findings())
         findings.extend(self._chat_research_backlog_findings())
         # Cognitive meta-patterns: fijación, incubación, atractores, ensambles
@@ -1894,6 +1895,85 @@ class OperationalSelfExaminationService:
                 },
             )
         ]
+
+    def _interaction_episode_findings(self) -> list[SelfExaminationFinding]:
+        """Emit findings for recent interaction episodes from runtime_audit.jsonl.
+
+        Reads the durable audit trail so that episodes are visible even if
+        the in-memory ``ChatInteractionLifecycle`` object was lost (process
+        death, OOM, etc.).
+        """
+        import json as _json
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        audit_path = Path(str(workspace)) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+        episodes: list[dict[str, Any]] = []
+        try:
+            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
+            for line in reversed(lines):
+                if not line.strip():
+                    continue
+                try:
+                    event = _json.loads(line)
+                except Exception:
+                    continue
+                if event.get('kind') != 'interaction_resolved':
+                    continue
+                episodes.append(dict(event.get('data') or {}))
+                if len(episodes) >= 5:
+                    break
+        except Exception:
+            return []
+        if not episodes:
+            return []
+        episodes.reverse()
+        findings: list[SelfExaminationFinding] = []
+        stall_episodes = [
+            e for e in episodes if len(e.get('stalls_during') or []) > 0
+        ]
+        failed_episodes = [
+            e for e in episodes if e.get('outcome') == 'failed'
+        ]
+        if stall_episodes:
+            worst = max(stall_episodes, key=lambda e: len(e.get('stalls_during', [])))
+            findings.append(SelfExaminationFinding(
+                title=f'Interaction episodes with UI stalls: {len(stall_episodes)} of {len(episodes)} recent',
+                summary=(
+                    f'{len(stall_episodes)} of the last {len(episodes)} interaction episodes '
+                    f'had UI stalls. Worst had {len(worst.get("stalls_during", []))} stalls.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                category='interaction_episode_stalls',
+                confidence=0.9,
+                recommendation='Investigate UI thread blocking during chat interactions.',
+                metadata={
+                    'stall_episode_count': len(stall_episodes),
+                    'total_episodes': len(episodes),
+                    'worst_stall_count': len(worst.get('stalls_during', [])),
+                    'source': 'runtime_audit',
+                },
+            ))
+        if failed_episodes:
+            findings.append(SelfExaminationFinding(
+                title=f'Failed interaction episodes: {len(failed_episodes)} of {len(episodes)} recent',
+                summary=(
+                    f'{len(failed_episodes)} of the last {len(episodes)} interaction episodes '
+                    f'ended with outcome=failed.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                category='interaction_episode_failures',
+                confidence=0.9,
+                recommendation='Review failed interactions for patterns.',
+                metadata={
+                    'failed_count': len(failed_episodes),
+                    'total_episodes': len(episodes),
+                    'source': 'runtime_audit',
+                },
+            ))
+        return findings
 
     def _startup_health_findings(self) -> list[SelfExaminationFinding]:
         """Read ``data/logs/startup_timeline.jsonl`` and emit degradation findings.

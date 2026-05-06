@@ -2703,17 +2703,84 @@ class PortableContextService:
             return {}
 
     def _interaction_lifecycle_summary(self) -> dict[str, Any]:
-        """Return chat interaction lifecycle summary for PortableContext."""
+        """Return chat interaction lifecycle summary for PortableContext.
+
+        Merges in-memory lifecycle data with durable records from
+        ``runtime_audit.jsonl`` so that episodes survive process death.
+        """
         lifecycle = getattr(self, 'chat_interaction_lifecycle', None)
-        if lifecycle is None or not hasattr(lifecycle, 'summary'):
-            return {}
+        in_memory_recent: list[dict[str, Any]] = []
+        summary: dict[str, Any] = {}
+        if lifecycle is not None and hasattr(lifecycle, 'summary'):
+            try:
+                summary = lifecycle.summary()
+                in_memory_recent = lifecycle.recent_completed(limit=3)
+            except Exception:
+                pass
+
+        # Reconstruct from runtime_audit.jsonl if in-memory is empty/missing
+        audit_recent = self._interaction_episodes_from_audit(limit=3)
+        # Merge: prefer in-memory for IDs we already have, append audit-only
+        seen_ids = {r.get('interaction_id') for r in in_memory_recent}
+        for ar in audit_recent:
+            if ar.get('interaction_id') not in seen_ids:
+                in_memory_recent.append(ar)
+                seen_ids.add(ar.get('interaction_id'))
+        # Keep only most recent 3
+        in_memory_recent = in_memory_recent[-3:]
+        summary['recent_completed'] = in_memory_recent
+        summary['reconstructed_from_audit'] = bool(
+            audit_recent and not (lifecycle is not None and hasattr(lifecycle, 'summary')),
+        )
+        return summary
+
+    def _interaction_episodes_from_audit(
+        self, *, limit: int = 3,
+    ) -> list[dict[str, Any]]:
+        """Read recent ``interaction_resolved`` events from runtime_audit.jsonl."""
+        import json as _json
+        audit_path = Path(self.workspace_root) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+        episodes: list[dict[str, Any]] = []
         try:
-            summary = lifecycle.summary()
-            recent = lifecycle.recent_completed(limit=3)
-            summary['recent_completed'] = recent
-            return summary
+            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
+            for line in reversed(lines):
+                if not line.strip():
+                    continue
+                try:
+                    event = _json.loads(line)
+                except Exception:
+                    continue
+                if event.get('kind') != 'interaction_resolved':
+                    continue
+                data = dict(event.get('data') or {})
+                episodes.append({
+                    'interaction_id': data.get('interaction_id', ''),
+                    'message_preview': data.get('message_preview', ''),
+                    'outcome': data.get('outcome', ''),
+                    'provider': data.get('provider', ''),
+                    'total_duration_ms': data.get('total_duration_ms', 0),
+                    'phases': dict(data.get('phases') or {}),
+                    'stalls_during': list(data.get('stalls_during') or []),
+                    'window_inactive_intervals': list(
+                        data.get('window_inactive_intervals') or [],
+                    ),
+                    'initial_window_active': data.get('initial_window_active', True),
+                    'initial_window_visible': data.get('initial_window_visible', True),
+                    'had_early_technical_response': data.get(
+                        'had_early_technical_response', False,
+                    ),
+                    'window_went_inactive': data.get('window_went_inactive', False),
+                    'resolved': True,
+                    '_source': 'runtime_audit',
+                })
+                if len(episodes) >= limit:
+                    break
         except Exception:
-            return {}
+            pass
+        episodes.reverse()
+        return episodes
 
     def _startup_health_section(self, *, status: dict[str, Any], now) -> PortableContextSection:
         """Export the latest startup timeline summary as a portable section.

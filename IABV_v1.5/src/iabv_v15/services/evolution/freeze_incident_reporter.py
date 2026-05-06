@@ -830,7 +830,9 @@ class ChatInteractionLifecycle:
             self._completed.append(record)
             if len(self._completed) > self._max_completed:
                 self._completed = self._completed[-self._max_completed:]
-        # Trace
+        # Trace — persist the COMPLETE record for durable reconstruction.
+        # If the process dies before OSES/PortableContext refresh, the next
+        # session can read runtime_audit.jsonl and reconstruct the episode.
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import (
                 get_runtime_tracer,
@@ -838,10 +840,24 @@ class ChatInteractionLifecycle:
             get_runtime_tracer().trace(
                 'interaction_resolved',
                 interaction_id=interaction_id,
+                message_preview=record.get('message_preview', ''),
                 outcome=outcome,
                 provider=provider,
                 total_duration_ms=record.get('total_duration_ms', 0),
+                phases=dict(record.get('phases') or {}),
+                stalls_during=list(record.get('stalls_during') or []),
                 stall_count=len(record.get('stalls_during', [])),
+                window_inactive_intervals=list(
+                    record.get('window_inactive_intervals') or [],
+                ),
+                initial_window_active=record.get('initial_window_active', True),
+                initial_window_visible=record.get('initial_window_visible', True),
+                had_early_technical_response='first_technical_response' in (
+                    record.get('phases') or {}
+                ),
+                window_went_inactive=bool(
+                    record.get('window_inactive_intervals'),
+                ),
             )
         except Exception:
             pass

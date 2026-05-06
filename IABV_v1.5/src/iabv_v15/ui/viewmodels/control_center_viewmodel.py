@@ -7629,9 +7629,20 @@ class ControlCenterViewModel(QObject):
                 except Exception:
                     pass
         else:
+            # Derive provider: external_consultation uses assistant_title,
+            # other tasks use provider_name.
+            if isinstance(payload, dict):
+                _provider = str(
+                    payload.get('provider_name')
+                    or payload.get('assistant_title')
+                    or payload.get('assistant_kind')
+                    or '',
+                )
+            else:
+                _provider = ''
             self._resolve_active_interaction(
                 outcome='resolved',
-                provider=str(payload.get('provider_name', '')) if isinstance(payload, dict) else '',
+                provider=_provider,
             )
         self._update_progress_cards()
         self._update_evolution_snapshot()
