@@ -545,6 +545,7 @@ class UIHeartbeatWatchdog:
         self._startup_active: bool = True
         self._query_pending: bool = False
         self._window_visible: bool = True
+        self._window_active: bool = True
         self._dominant_phase: str = ''
         self._active_interaction_id: str | None = None
 
@@ -566,9 +567,19 @@ class UIHeartbeatWatchdog:
             'startup_active': self._startup_active,
             'query_pending': self._query_pending,
             'window_visible': self._window_visible,
+            'window_active': self._window_active,
             'dominant_phase': self._dominant_phase,
             'interaction_id': self._active_interaction_id,
         }
+        # Derive semantic cause from context
+        cause = 'ui_event_loop_stall'
+        if self._startup_active:
+            cause = 'startup_freeze'
+        elif self._query_pending and (not self._window_active or not self._window_visible):
+            cause = 'query_visible_gap'
+        stall_record['cause'] = cause
+        # Enrich from active interaction lifecycle if available
+        stall_record.update(self._lifecycle_context_for_stall())
         with self._lock:
             self._stall_count += 1
             self._stalls.append(stall_record)
@@ -587,9 +598,21 @@ class UIHeartbeatWatchdog:
                 startup_active=self._startup_active,
                 query_pending=self._query_pending,
                 window_visible=self._window_visible,
+                window_active=self._window_active,
                 dominant_phase=self._dominant_phase,
                 interaction_id=self._active_interaction_id,
+                cause=cause,
             )
+            # Emit separate query_visible_gap event when applicable
+            if cause == 'query_visible_gap':
+                tracer.trace(
+                    'query_visible_gap',
+                    duration_ms=round(duration_ms, 1),
+                    interaction_id=self._active_interaction_id,
+                    window_visible=self._window_visible,
+                    window_active=self._window_active,
+                    query_pending=self._query_pending,
+                )
         except Exception:
             pass
 
@@ -628,6 +651,9 @@ class UIHeartbeatWatchdog:
     def set_window_visible(self, visible: bool) -> None:
         self._window_visible = visible
 
+    def set_window_active(self, active: bool) -> None:
+        self._window_active = active
+
     def set_dominant_phase(self, phase: str) -> None:
         self._dominant_phase = phase
 
@@ -648,6 +674,26 @@ class UIHeartbeatWatchdog:
     def recent_stalls(self, *, limit: int = 10) -> list[dict[str, Any]]:
         with self._lock:
             return list(self._stalls[-limit:])
+
+    def _lifecycle_context_for_stall(self) -> dict[str, Any]:
+        """Pull enrichment fields from the active interaction lifecycle."""
+        extra: dict[str, Any] = {}
+        lc = getattr(self, '_lifecycle', None)
+        if lc is None or self._active_interaction_id is None:
+            return extra
+        try:
+            info = lc.interaction_info(self._active_interaction_id)
+            if info is None:
+                return extra
+            extra['had_early_technical_response'] = 'first_technical_response' in (info.get('phases') or {})
+            extra['window_went_inactive'] = len(info.get('window_inactive_intervals') or []) > 0
+        except Exception:
+            pass
+        return extra
+
+    def set_lifecycle(self, lifecycle: 'ChatInteractionLifecycle | None') -> None:
+        """Wire the lifecycle reference for stall enrichment."""
+        self._lifecycle = lifecycle
 
 
 # ======================================================================
@@ -678,7 +724,13 @@ class ChatInteractionLifecycle:
         self._completed: list[dict[str, Any]] = []
         self._max_completed = 30
 
-    def open_interaction(self, message_preview: str = '') -> str:
+    def open_interaction(
+        self,
+        message_preview: str = '',
+        *,
+        initial_window_active: bool = True,
+        initial_window_visible: bool = True,
+    ) -> str:
         """Open a new interaction episode. Returns the interaction_id."""
         from uuid import uuid4
         interaction_id = f'chat-{uuid4().hex[:12]}'
@@ -694,6 +746,8 @@ class ChatInteractionLifecycle:
             },
             'stalls_during': [],
             'window_inactive_intervals': [],
+            'initial_window_active': initial_window_active,
+            'initial_window_visible': initial_window_visible,
             'resolved': False,
         }
         with self._lock:
@@ -794,6 +848,17 @@ class ChatInteractionLifecycle:
         return record
 
     # --- Query ---
+
+    def interaction_info(self, interaction_id: str) -> dict[str, Any] | None:
+        """Return a snapshot of an interaction (active or completed)."""
+        with self._lock:
+            record = self._interactions.get(interaction_id)
+            if record is not None:
+                return dict(record)
+            for c in reversed(self._completed):
+                if c.get('interaction_id') == interaction_id:
+                    return dict(c)
+        return None
 
     def active_interaction(self) -> dict[str, Any] | None:
         with self._lock:

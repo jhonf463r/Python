@@ -893,6 +893,8 @@ class AppBootstrap:
         )
         # Canonical interaction lifecycle tracker.
         self.chat_interaction_lifecycle = ChatInteractionLifecycle()
+        # Wire lifecycle reference into watchdog for stall enrichment.
+        self.ui_heartbeat_watchdog.set_lifecycle(self.chat_interaction_lifecycle)
 
         # Seed metacognition investigation roadmap (Phases A/B/C).
         try:
@@ -2075,23 +2077,30 @@ class AppBootstrap:
             self._timeline.mark(f'window_{event_name}', **extra)
         except Exception:
             pass
-        # Propagate real window visibility to UIHeartbeatWatchdog + lifecycle.
-        if event_name in ('visibleChanged', 'activeChanged'):
-            is_visible = bool(kwargs.get('visible', kwargs.get('active', True)))
-            watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        # Propagate window visibility and activity as SEPARATE states.
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        vm = getattr(self, 'control_center_viewmodel', None)
+        if event_name == 'visibleChanged':
+            is_visible = bool(kwargs.get('visible', True))
             if watchdog is not None:
                 try:
                     watchdog.set_window_visible(is_visible)
                 except Exception:
                     pass
-            # Record window inactive/active in the active interaction.
-            vm = getattr(self, 'control_center_viewmodel', None)
+        elif event_name == 'activeChanged':
+            is_active = bool(kwargs.get('active', True))
+            if watchdog is not None:
+                try:
+                    watchdog.set_window_active(is_active)
+                except Exception:
+                    pass
+            # Record window inactive/active intervals in the interaction.
             if vm is not None:
                 iid = getattr(vm, '_active_interaction_id', None)
                 lc = getattr(vm, '_chat_interaction_lifecycle', None)
                 if iid and lc is not None:
                     try:
-                        if is_visible:
+                        if is_active:
                             lc.record_window_active(iid)
                         else:
                             lc.record_window_inactive(iid)
@@ -2933,6 +2942,8 @@ class AppBootstrap:
         self.control_center_viewmodel._freeze_incident_reporter = self.freeze_incident_reporter
         self.control_center_viewmodel._ui_heartbeat_watchdog = self.ui_heartbeat_watchdog
         self.control_center_viewmodel._chat_interaction_lifecycle = self.chat_interaction_lifecycle
+        self.control_center_viewmodel._oses_ref = self.operational_self_examination_service
+        self.control_center_viewmodel._portable_context_ref = self.portable_context_service
         # Wire CaptureStudioVM reference if already built.
         csvm = getattr(self, 'capture_studio_viewmodel', None)
         if csvm is not None:

@@ -4004,6 +4004,28 @@ class ControlCenterViewModel(QObject):
         if watchdog is not None:
             watchdog.set_query_pending(False)
             watchdog.set_active_interaction(None)
+        # Promote OSES/PortableContext on final resolution so the next
+        # session inherits the state of this resolved interaction.
+        if outcome in ('resolved', 'failed'):
+            self._promote_metacognition_after_resolution()
+
+    def _promote_metacognition_after_resolution(self) -> None:
+        """Refresh OSES and PortableContext after a resolved interaction."""
+        import threading as _thr
+        def _refresh() -> None:
+            try:
+                oses = getattr(self, '_oses_ref', None)
+                if oses is not None:
+                    oses.build_review()
+            except Exception:
+                pass
+            try:
+                pcs = getattr(self, '_portable_context_ref', None)
+                if pcs is not None:
+                    pcs.build_package()
+            except Exception:
+                pass
+        _thr.Thread(target=_refresh, name='iabv-resolve-promote', daemon=True).start()
 
     def _explicit_site_hint_from_message(self, message: str) -> str | None:
         text = self._normalized_command_text(message)
@@ -6959,9 +6981,19 @@ class ControlCenterViewModel(QObject):
         interaction_id: str | None = None
         if lifecycle is not None:
             try:
-                interaction_id = lifecycle.open_interaction(message)
-                self._active_interaction_id = interaction_id
                 watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
+                # Capture current window state at episode start
+                initial_window_active = True
+                initial_window_visible = True
+                if watchdog is not None:
+                    initial_window_active = getattr(watchdog, '_window_active', True)
+                    initial_window_visible = getattr(watchdog, '_window_visible', True)
+                interaction_id = lifecycle.open_interaction(
+                    message,
+                    initial_window_active=initial_window_active,
+                    initial_window_visible=initial_window_visible,
+                )
+                self._active_interaction_id = interaction_id
                 if watchdog is not None:
                     watchdog.set_query_pending(True)
                     watchdog.set_active_interaction(interaction_id)
@@ -6975,6 +7007,7 @@ class ControlCenterViewModel(QObject):
             import time
             elapsed = time.time() - getattr(self, '_working_since', 0)
             if elapsed < 60:
+                self._resolve_active_interaction(outcome='abandoned')
                 return
             # Reset forzado: _working stuck por mas de 60 segundos
             self._working = False
@@ -6987,10 +7020,13 @@ class ControlCenterViewModel(QObject):
             self._attached_files.clear()
         self._set_live_status('processing')
         if self._try_handle_chat_command(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if self._try_resolve_pending_observation_permission(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if self._try_handle_lightweight_chat(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         # Escucha pasiva de capacidades declaradas (GPU, modelos, cuentas, runtimes).
         # Persiste detecciones a data/chat_research_backlog/*.jsonl para que OSES
@@ -7031,25 +7067,32 @@ class ControlCenterViewModel(QObject):
         allow_chat_shortcuts = not bool(shortcut_analysis.get('mixed_actionable')) and not bool(shortcut_analysis.get('requires_clarification'))
         if allow_chat_shortcuts and self._is_world_model_question(message):
             self._answer_world_model_question(message)
+            self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if allow_chat_shortcuts and self._is_self_awareness_question(message):
             self._answer_self_awareness_question(message)
+            self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if allow_chat_shortcuts and self._is_evolution_status_question(message):
             self._answer_evolution_status_question(message)
+            self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if allow_chat_shortcuts and self._is_self_examination_question(message):
             self._answer_self_examination_question(message)
+            self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if allow_chat_shortcuts and self._is_learning_question(message):
             self._answer_learning_question(message)
+            self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if allow_chat_shortcuts and self._is_general_chat_message(message) and not self._seems_task_like_message(message):
             self._answer_general_chat(message)
+            self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         explicit_assistant = self._explicit_assistant_preference(message)
         if explicit_assistant:
             self._last_user_goal = message
+            self._interaction_has_pending_followup = True
             self._run_external_consultation(explicit_assistant, announce=True)
             return
         import time as _time

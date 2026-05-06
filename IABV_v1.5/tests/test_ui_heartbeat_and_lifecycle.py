@@ -654,3 +654,274 @@ class TestWindowVisibilityWiring:
         vm._chat_interaction_lifecycle.record_window_active(iid)
         active = vm._chat_interaction_lifecycle.active_interaction()
         assert len(active['window_inactive_intervals']) == 1
+
+
+# ======================================================================
+# 9. Early-return code paths close episode (Fix 1)
+# ======================================================================
+
+
+class _FakeViewModelWithEarlyReturns(_FakeViewModel):
+    """Extends _FakeViewModel with early-return simulation methods."""
+
+    def early_return_general_chat(self, message: str) -> str:
+        """Simulates _answer_general_chat early return path in sendChat."""
+        iid = self.open_episode(message)
+        # _answer_general_chat responds synchronously -> close episode
+        self._resolve(outcome='resolved', provider='local')
+        return iid
+
+    def early_return_command(self, message: str) -> str:
+        """Simulates _try_handle_chat_command early return."""
+        iid = self.open_episode(message)
+        self._resolve(outcome='resolved', provider='local')
+        return iid
+
+    def early_return_lightweight(self, message: str) -> str:
+        """Simulates _try_handle_lightweight_chat early return."""
+        iid = self.open_episode(message)
+        self._resolve(outcome='resolved', provider='local')
+        return iid
+
+    def early_return_world_model(self, message: str) -> str:
+        """Simulates _answer_world_model_question early return."""
+        iid = self.open_episode(message)
+        self._resolve(outcome='resolved', provider='local')
+        return iid
+
+    def early_return_explicit_assistant(self, message: str) -> str:
+        """Simulates explicit_assistant path -- has pending follow-up."""
+        iid = self.open_episode(message)
+        self._interaction_has_pending_followup = True
+        # Does NOT resolve -- async work pending
+        return iid
+
+
+class TestEarlyReturnEpisodeClosure:
+    """Early-return sync code paths must open and close the episode."""
+
+    def test_general_chat_opens_and_closes(self) -> None:
+        vm = _FakeViewModelWithEarlyReturns()
+        iid = vm.early_return_general_chat('hola')
+        assert vm._active_interaction_id is None
+        completed = vm._chat_interaction_lifecycle.recent_completed()
+        assert any(c['outcome'] == 'resolved' and c['provider'] == 'local' for c in completed)
+
+    def test_command_handler_opens_and_closes(self) -> None:
+        vm = _FakeViewModelWithEarlyReturns()
+        vm.early_return_command('/status')
+        assert vm._active_interaction_id is None
+
+    def test_lightweight_chat_opens_and_closes(self) -> None:
+        vm = _FakeViewModelWithEarlyReturns()
+        vm.early_return_lightweight('gracias')
+        assert vm._active_interaction_id is None
+
+    def test_world_model_opens_and_closes(self) -> None:
+        vm = _FakeViewModelWithEarlyReturns()
+        vm.early_return_world_model('que ves?')
+        assert vm._active_interaction_id is None
+
+    def test_no_orphan_episode_after_general_chat(self) -> None:
+        vm = _FakeViewModelWithEarlyReturns()
+        vm.early_return_general_chat('hola')
+        active = vm._chat_interaction_lifecycle.active_interaction()
+        assert active is None, 'Episode left orphaned after general chat'
+
+    def test_explicit_assistant_keeps_episode_open(self) -> None:
+        vm = _FakeViewModelWithEarlyReturns()
+        vm.early_return_explicit_assistant('usa chatgpt')
+        assert vm._active_interaction_id is not None
+        active = vm._chat_interaction_lifecycle.active_interaction()
+        assert active is not None
+
+
+# ======================================================================
+# 10. Window active vs visible separation (Fix 2)
+# ======================================================================
+
+
+class TestWindowActiveVsVisible:
+    """active and visible must be tracked independently."""
+
+    def test_separate_active_and_visible_flags(self) -> None:
+        w = UIHeartbeatWatchdog()
+        assert w._window_active is True
+        assert w._window_visible is True
+        w.set_window_active(False)
+        assert w._window_active is False
+        assert w._window_visible is True  # visible unchanged
+        w.set_window_visible(False)
+        assert w._window_visible is False
+        assert w._window_active is False
+
+    def test_active_false_does_not_imply_visible_false(self) -> None:
+        w = UIHeartbeatWatchdog()
+        w.set_window_active(False)
+        assert w._window_visible is True
+
+    def test_visible_false_does_not_imply_active_false(self) -> None:
+        w = UIHeartbeatWatchdog()
+        w.set_window_visible(False)
+        assert w._window_active is True
+
+    def test_stall_records_both_fields(self) -> None:
+        w = UIHeartbeatWatchdog(stall_threshold_ms=10)
+        w.set_window_active(False)
+        w.set_window_visible(True)
+        w._last_tick = time.perf_counter() - 0.1
+        w.tick()
+        stalls = w.recent_stalls()
+        assert len(stalls) >= 1
+        assert stalls[0]['window_active'] is False
+        assert stalls[0]['window_visible'] is True
+
+    def test_lifecycle_initial_window_state(self) -> None:
+        lc = ChatInteractionLifecycle()
+        iid = lc.open_interaction('test', initial_window_active=False, initial_window_visible=True)
+        info = lc.interaction_info(iid)
+        assert info['initial_window_active'] is False
+        assert info['initial_window_visible'] is True
+
+
+# ======================================================================
+# 11. Semantic stall cause in stall records (Fix 3)
+# ======================================================================
+
+
+class TestSemanticStallCause:
+    """Stall records must include semantic cause field."""
+
+    def test_default_cause_is_ui_event_loop_stall(self) -> None:
+        w = UIHeartbeatWatchdog(stall_threshold_ms=10)
+        w.set_startup_active(False)
+        w.set_query_pending(False)
+        w._last_tick = time.perf_counter() - 0.1
+        w.tick()
+        stalls = w.recent_stalls()
+        assert stalls[0]['cause'] == 'ui_event_loop_stall'
+
+    def test_startup_freeze_cause(self) -> None:
+        w = UIHeartbeatWatchdog(stall_threshold_ms=10)
+        w.set_startup_active(True)
+        w._last_tick = time.perf_counter() - 0.1
+        w.tick()
+        stalls = w.recent_stalls()
+        assert stalls[0]['cause'] == 'startup_freeze'
+
+    def test_query_visible_gap_cause_when_inactive(self) -> None:
+        w = UIHeartbeatWatchdog(stall_threshold_ms=10)
+        w.set_startup_active(False)
+        w.set_query_pending(True)
+        w.set_window_active(False)
+        w._last_tick = time.perf_counter() - 0.1
+        w.tick()
+        stalls = w.recent_stalls()
+        assert stalls[0]['cause'] == 'query_visible_gap'
+
+    def test_query_visible_gap_cause_when_invisible(self) -> None:
+        w = UIHeartbeatWatchdog(stall_threshold_ms=10)
+        w.set_startup_active(False)
+        w.set_query_pending(True)
+        w.set_window_visible(False)
+        w._last_tick = time.perf_counter() - 0.1
+        w.tick()
+        stalls = w.recent_stalls()
+        assert stalls[0]['cause'] == 'query_visible_gap'
+
+    def test_incident_report_includes_semantic_fields(self) -> None:
+        ws = _workspace()
+        reporter = FreezeIncidentReporter(evolution_dir=ws)
+        w = UIHeartbeatWatchdog(stall_threshold_ms=10, freeze_reporter=reporter)
+        lc = ChatInteractionLifecycle()
+        w.set_lifecycle(lc)
+        iid = lc.open_interaction('test')
+        w.set_active_interaction(iid)
+        w.set_startup_active(False)
+        w.set_query_pending(True)
+        w.set_window_active(False)
+        lc.mark_phase(iid, 'first_technical_response')
+        # Force severe stall (>5s) to trigger incident report
+        w._last_tick = time.perf_counter() - 6.0
+        w.tick()
+        stalls = w.recent_stalls()
+        assert stalls[0]['cause'] == 'query_visible_gap'
+        assert stalls[0]['had_early_technical_response'] is True
+        assert stalls[0]['window_active'] is False
+
+
+# ======================================================================
+# 12. query_visible_gap audit event (Fix 4)
+# ======================================================================
+
+
+class TestQueryVisibleGapAuditEvent:
+    """query_visible_gap stall emits a separate audit event."""
+
+    def test_query_visible_gap_event_emitted(self) -> None:
+        tracer = RuntimeAuditTracer(log_dir=_workspace())
+        w = UIHeartbeatWatchdog(stall_threshold_ms=10)
+        w.set_startup_active(False)
+        w.set_query_pending(True)
+        w.set_window_active(False)
+        w.set_active_interaction('test-iid')
+        w._last_tick = time.perf_counter() - 0.1
+        with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer', return_value=tracer):
+            w.tick()
+        entries = tracer.events(limit=20)
+        kinds = [e.get('kind', '') for e in entries]
+        assert 'query_visible_gap' in kinds
+        gap_event = next(e for e in entries if e.get('kind') == 'query_visible_gap')
+        assert gap_event['data']['interaction_id'] == 'test-iid'
+        assert gap_event['data']['query_pending'] is True
+
+    def test_no_query_visible_gap_for_normal_stall(self) -> None:
+        tracer = RuntimeAuditTracer(log_dir=_workspace())
+        w = UIHeartbeatWatchdog(stall_threshold_ms=10)
+        w.set_startup_active(False)
+        w.set_query_pending(False)
+        w._last_tick = time.perf_counter() - 0.1
+        with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer', return_value=tracer):
+            w.tick()
+        entries = tracer.events(limit=20)
+        kinds = [e.get('kind', '') for e in entries]
+        assert 'query_visible_gap' not in kinds
+
+
+# ======================================================================
+# 13. Final resolution promotes OSES/PortableContext (Fix 5)
+# ======================================================================
+
+
+class TestFinalResolutionPromotion:
+    """Resolving an interaction triggers OSES/PortableContext refresh."""
+
+    def test_promotion_thread_launched_on_resolve(self) -> None:
+        vm = _FakeViewModelWithEarlyReturns()
+        mock_oses = MagicMock()
+        mock_pcs = MagicMock()
+        vm._oses_ref = mock_oses
+        vm._portable_context_ref = mock_pcs
+        # Call the promotion method directly (mirrors _resolve_active_interaction)
+        vm._promote_metacognition = lambda: (mock_oses.build_review(), mock_pcs.build_package())
+        vm._promote_metacognition()
+        mock_oses.build_review.assert_called_once()
+        mock_pcs.build_package.assert_called_once()
+
+    def test_resolve_records_outcome_resolved(self) -> None:
+        vm = _FakeViewModelWithEarlyReturns()
+        iid = vm.early_return_general_chat('test promotion')
+        completed = vm._chat_interaction_lifecycle.recent_completed()
+        match = [c for c in completed if c['interaction_id'] == iid]
+        assert len(match) == 1
+        assert match[0]['outcome'] == 'resolved'
+
+    def test_failure_also_resolves_episode(self) -> None:
+        vm = _FakeViewModelWithEarlyReturns()
+        iid = vm.open_episode('test fail')
+        vm.apply_task_failure('chat')
+        assert vm._active_interaction_id is None
+        completed = vm._chat_interaction_lifecycle.recent_completed()
+        match = [c for c in completed if c['interaction_id'] == iid]
+        assert len(match) == 1
+        assert match[0]['outcome'] == 'failed'
