@@ -360,6 +360,8 @@ class TestIncidentFromToolProbes:
         boot.config = SimpleNamespace(evolution_dir=str(tmp_path / 'evolution'))
         boot._tool_availability_logged = False
         boot._timeline = MagicMock()
+        from iabv_v15.services.evolution.runtime_audit_tracer import RuntimeAuditTracer
+        boot._tracer = RuntimeAuditTracer()
 
         # Simulate tool_registry that raises lock error during refresh
         tool_card = MagicMock()

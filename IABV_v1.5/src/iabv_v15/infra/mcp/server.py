@@ -602,6 +602,46 @@ class IABVMCPServer:
             return reporter.list_reports(limit=limit)
 
         @mcp.tool()
+        def runtime_trace_summary() -> dict[str, Any]:
+            """Resumen del trace de auditoría continua desde el arranque.
+
+            Devuelve: total de eventos, desglose por tipo, errores,
+            uptime, y si el tracing está habilitado.
+            """
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            return get_runtime_tracer().summary()
+
+        @mcp.tool()
+        def runtime_trace_events(
+            kind: str = "",
+            limit: int = 50,
+        ) -> list[dict[str, Any]]:
+            """Lee eventos recientes del trace de auditoría continua.
+
+            Cada evento tiene: ts, elapsed_ms, kind, data.
+            Kinds comunes: service_init, decision, external_query,
+            permission, error, ui_event, resource_snapshot.
+
+            Args:
+                kind: filtrar por tipo (vacío = todos).
+                limit: máximo de eventos a devolver (default 50).
+            """
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            return get_runtime_tracer().events(kind=kind or None, limit=limit)
+
+        @mcp.tool()
+        def runtime_boot_report() -> dict[str, Any]:
+            """Reporte estructurado del arranque para diagnóstico por IA.
+
+            Incluye: servicios inicializados, servicios fallidos,
+            servicios lentos, queries externas, permisos denegados,
+            errores durante boot. Diseñado para que cualquier IA
+            pueda leer y diagnosticar problemas de arranque.
+            """
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            return get_runtime_tracer().export_boot_report()
+
+        @mcp.tool()
         def orchestrator_preview(
             user_goal: str,
             goal_parameters: dict[str, Any] | None = None,
