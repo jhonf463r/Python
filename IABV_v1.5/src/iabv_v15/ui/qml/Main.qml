@@ -92,6 +92,34 @@ ApplicationWindow {
         }
     }
 
+    // Deferred setup indicator — visible while bootstrap runs
+    // post-window background probes (tool pings, pip installs, etc.)
+    Row {
+        id: deferredSetupRow
+        anchors.bottom: parent.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottomMargin: 8
+        z: 10
+        spacing: 6
+        visible: mainWindowBridge ? mainWindowBridge.deferredSetupActive : false
+        opacity: visible ? 1.0 : 0.0
+        Behavior on opacity { NumberAnimation { duration: 300 } }
+
+        BusyIndicator {
+            implicitWidth: 16
+            implicitHeight: 16
+            running: deferredSetupRow.visible
+            palette.dark: accentAmber
+        }
+        Label {
+            text: "Finalizando inicializacion..."
+            color: textSecondary
+            font.family: bodyFontFamily
+            font.pixelSize: 12
+            anchors.verticalCenter: parent.verticalCenter
+        }
+    }
+
     Timer {
         id: mainShellKickoff
         interval: 25

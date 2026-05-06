@@ -5464,6 +5464,18 @@ class ControlCenterViewModel(QObject):
                     self._assistant_action('audit_autonomy', 'Auditar autonomia', 'Revisar por que la ruta externa quedo bloqueada.'),
                 ],
             }
+        diag = str(governance.get('diagnostic_category') or '').strip().lower()
+        if diag == 'assistant_unavailable':
+            return {
+                'mode': 'need_approval',
+                'title': f'{assistant_title} no disponible',
+                'prompt': prompt,
+                'actions': [
+                    self._assistant_action(f'consult_{assistant_kind}', f'Reintentar {assistant_title}', 'Volver a verificar disponibilidad y reintentar.'),
+                    self._assistant_action('review_stack', 'Abrir / verificar herramienta', 'Revisar si la herramienta esta abierta y disponible.'),
+                    self._assistant_action('audit_autonomy', 'Auditar autonomia', 'Ver detalle del bloqueo operativo.'),
+                ],
+            }
         return {
             'mode': 'need_evolution_review',
             'title': f'Ruta bloqueada para {assistant_title}',

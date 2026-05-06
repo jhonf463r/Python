@@ -22,6 +22,7 @@ class MainWindowBridge(QObject):
     """
 
     statusChanged = Signal()
+    deferredSetupActiveChanged = Signal()
     # Hito honesto: ``mainShellLoader`` (Loader async) termino de cargar.
     shellLoaderReady = Signal()
     # Hito mas honesto aun: ``pageLoader`` (la pagina interna del shell)
@@ -41,12 +42,21 @@ class MainWindowBridge(QObject):
         self._status_message = 'Stack local por roles activo.'
         self._shell_loader_ready_signaled = False
         self._page_loader_ready_signaled = False
+        self._deferred_setup_active = False
 
     def get_app_title(self) -> str:
         return self._app_title
 
     def get_workspace_root(self) -> str:
         return self._workspace_root
+
+    def get_deferred_setup_active(self) -> bool:
+        return self._deferred_setup_active
+
+    def set_deferred_setup_active(self, active: bool) -> None:
+        if self._deferred_setup_active != active:
+            self._deferred_setup_active = active
+            self.deferredSetupActiveChanged.emit()
 
     def get_status_message(self) -> str:
         return self._status_message
@@ -117,3 +127,4 @@ class MainWindowBridge(QObject):
     appTitle = Property(str, get_app_title, constant=True)
     workspaceRoot = Property(str, get_workspace_root, constant=True)
     statusMessage = Property(str, get_status_message, notify=statusChanged)
+    deferredSetupActive = Property(bool, get_deferred_setup_active, notify=deferredSetupActiveChanged)
