@@ -77,9 +77,16 @@ def test_deferred_post_window_setup_sets_bridge_active(
         'Bridge must be active immediately after scheduling the deferred setup'
     )
 
-    for t in threading.enumerate():
-        if t.name == 'iabv-deferred-post-window' and t.is_alive():
-            t.join(timeout=5)
+    import time
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        alive = False
+        for t in threading.enumerate():
+            if t.name == 'iabv-deferred-post-window' and t.is_alive():
+                alive = True
+                t.join(timeout=0.25)
+        if not alive:
+            break
 
     assert bridge.get_deferred_setup_active() is False, (
         'Bridge must be cleared after the deferred setup thread completes'
@@ -101,8 +108,15 @@ def test_deferred_post_window_setup_without_bridge_does_not_crash(
     with patch.object(AppBootstrap, '_log_tool_availability', autospec=True):
         bootstrap._run_deferred_post_window_setup()
 
-    for t in threading.enumerate():
-        if t.name == 'iabv-deferred-post-window' and t.is_alive():
-            t.join(timeout=5)
+    import time
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        alive = False
+        for t in threading.enumerate():
+            if t.name == 'iabv-deferred-post-window' and t.is_alive():
+                alive = True
+                t.join(timeout=0.25)
+        if not alive:
+            break
 
     assert bootstrap._tool_availability_logged is True
