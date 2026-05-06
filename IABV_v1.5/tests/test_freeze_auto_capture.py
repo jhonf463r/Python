@@ -187,6 +187,72 @@ class TestChatStallAutoCapture:
         assert path2 is None
 
 
+class TestQueryStallAutoCapture:
+    """capture_query_stall convenience method — end-to-end query latency."""
+
+    @pytest.fixture()
+    def reporter(self, tmp_path: Path) -> FreezeIncidentReporter:
+        return FreezeIncidentReporter(evolution_dir=str(tmp_path))
+
+    def test_capture_orchestrator_path(self, reporter: FreezeIncidentReporter) -> None:
+        path = reporter.capture_query_stall(
+            duration_ms=8000.0,
+            resolved_path='orchestrator_inference',
+            provider='ollama',
+            route_reason='local_routing',
+            success=True,
+            message_summary='hola mundo',
+        )
+        assert path is not None
+        data = json.loads(path.read_text(encoding='utf-8'))
+        assert data['trigger'] == 'auto_query_stall'
+        assert data['extra']['incident_type'] == 'query_stall'
+        assert data['extra']['duration_ms'] == 8000.0
+        assert data['extra']['resolved_path'] == 'orchestrator_inference'
+        assert data['extra']['provider'] == 'ollama'
+        assert data['extra']['success'] is True
+        assert data['extra']['severity'] == 'medium'
+
+    def test_capture_external_path(self, reporter: FreezeIncidentReporter) -> None:
+        path = reporter.capture_query_stall(
+            duration_ms=20000.0,
+            resolved_path='external_consultation',
+            provider='chatgpt',
+            route_reason='external_consultation',
+            success=True,
+            message_summary='help me with code',
+        )
+        assert path is not None
+        data = json.loads(path.read_text(encoding='utf-8'))
+        assert data['extra']['severity'] == 'high'  # >15s
+        assert data['extra']['resolved_path'] == 'external_consultation'
+        assert data['extra']['provider'] == 'chatgpt'
+
+    def test_capture_failure_path(self, reporter: FreezeIncidentReporter) -> None:
+        path = reporter.capture_query_stall(
+            duration_ms=6000.0,
+            resolved_path='chat_failure',
+            provider='',
+            route_reason='No pude completar',
+            success=False,
+            message_summary='test',
+        )
+        assert path is not None
+        data = json.loads(path.read_text(encoding='utf-8'))
+        assert data['extra']['success'] is False
+        assert '(failed)' in data['user_description']
+
+    def test_dedup_blocks_second(self, reporter: FreezeIncidentReporter) -> None:
+        path1 = reporter.capture_query_stall(
+            duration_ms=8000.0, resolved_path='orchestrator_inference',
+        )
+        path2 = reporter.capture_query_stall(
+            duration_ms=8000.0, resolved_path='orchestrator_inference',
+        )
+        assert path1 is not None
+        assert path2 is None
+
+
 class TestRecentIncidents:
     """recent_incidents summarizer for PortableContext."""
 
@@ -371,6 +437,225 @@ class TestViewModelChatStallTrace:
 
 
 # ======================================================================
+# 4b. End-to-end query stall tracing in ControlCenterViewModel
+# ======================================================================
+
+
+class TestViewModelQueryStallE2E:
+    """_finalize_query_stall fires on end-to-end query latency."""
+
+    def _make_vm_stub(self) -> Any:
+        """Minimal mock with _finalize_query_stall bound."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import (
+            ControlCenterViewModel,
+        )
+        stub = MagicMock(spec=[])
+        stub._freeze_incident_reporter = None
+        stub._QUERY_STALL_THRESHOLD_MS = ControlCenterViewModel._QUERY_STALL_THRESHOLD_MS
+        stub._finalize_query_stall = ControlCenterViewModel._finalize_query_stall.__get__(stub)
+        stub._query_start_pc = 0.0
+        stub._query_start_message = ''
+        return stub
+
+    def test_below_threshold_does_nothing(self) -> None:
+        vm = self._make_vm_stub()
+        vm._query_start_pc = time.perf_counter() - 1.0  # 1s ago = below 5s
+        vm._query_start_message = 'test'
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            vm._finalize_query_stall(
+                resolved_path='orchestrator_inference',
+                provider='ollama',
+                route_reason='local',
+                success=True,
+            )
+        freeze_events = tracer.events(kind='freeze_incident')
+        assert len(freeze_events) == 0
+
+    def test_above_threshold_traces_event(self) -> None:
+        vm = self._make_vm_stub()
+        vm._query_start_pc = time.perf_counter() - 8.0  # 8s ago
+        vm._query_start_message = 'hola'
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            vm._finalize_query_stall(
+                resolved_path='orchestrator_inference',
+                provider='ollama',
+                route_reason='local_routing',
+                success=True,
+            )
+        freeze_events = tracer.events(kind='freeze_incident')
+        assert len(freeze_events) == 1
+        data = freeze_events[0]['data']
+        assert data['incident_type'] == 'query_stall'
+        assert data['dominant_phase'] == 'orchestrator_inference'
+        assert data['provider'] == 'ollama'
+        assert data['success'] is True
+
+    def test_external_consultation_path(self) -> None:
+        vm = self._make_vm_stub()
+        vm._query_start_pc = time.perf_counter() - 12.0
+        vm._query_start_message = 'ayuda con codigo'
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            vm._finalize_query_stall(
+                resolved_path='external_consultation',
+                provider='chatgpt',
+                route_reason='external_consultation',
+                success=True,
+            )
+        freeze_events = tracer.events(kind='freeze_incident')
+        assert len(freeze_events) == 1
+        assert freeze_events[0]['data']['dominant_phase'] == 'external_consultation'
+        assert freeze_events[0]['data']['provider'] == 'chatgpt'
+
+    def test_failure_path_traces(self) -> None:
+        vm = self._make_vm_stub()
+        vm._query_start_pc = time.perf_counter() - 6.0
+        vm._query_start_message = 'test'
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            vm._finalize_query_stall(
+                resolved_path='chat_failure',
+                provider='',
+                route_reason='No pude completar',
+                success=False,
+            )
+        freeze_events = tracer.events(kind='freeze_incident')
+        assert len(freeze_events) == 1
+        assert freeze_events[0]['data']['success'] is False
+
+    def test_fires_reporter_when_wired(self, tmp_path: Path) -> None:
+        vm = self._make_vm_stub()
+        reporter = FreezeIncidentReporter(evolution_dir=str(tmp_path))
+        vm._freeze_incident_reporter = reporter
+        vm._query_start_pc = time.perf_counter() - 10.0
+        vm._query_start_message = 'freeze test msg'
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            vm._finalize_query_stall(
+                resolved_path='orchestrator_inference',
+                provider='ollama',
+                route_reason='local',
+                success=True,
+            )
+        reports = reporter.list_reports()
+        assert len(reports) == 1
+        assert reports[0]['trigger'] == 'auto_query_stall'
+
+    def test_resets_start_pc_after_finalize(self) -> None:
+        vm = self._make_vm_stub()
+        vm._query_start_pc = time.perf_counter() - 10.0
+        vm._query_start_message = 'test'
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            vm._finalize_query_stall(
+                resolved_path='orchestrator_inference',
+                provider='',
+                route_reason='local',
+                success=True,
+            )
+        assert vm._query_start_pc == 0.0
+
+
+# ======================================================================
+# 4c. OSES _query_stall_findings
+# ======================================================================
+
+
+class TestOsesQueryStallFindings:
+    """_query_stall_findings reads recent incidents and promotes to findings."""
+
+    def _make_oses(self, root: Path) -> OperationalSelfExaminationService:
+        storage = ArtifactStorage(str(root / 'data' / 'evolution'))
+        return OperationalSelfExaminationService(
+            workspace_root=str(root),
+            storage=storage,
+        )
+
+    def test_promotes_query_stall_incident(self) -> None:
+        root = _workspace()
+        oses = self._make_oses(root)
+        reporter = FreezeIncidentReporter(evolution_dir=str(root))
+        oses._freeze_incident_reporter = reporter
+
+        reporter.capture_query_stall(
+            duration_ms=9000.0,
+            resolved_path='orchestrator_inference',
+            provider='ollama',
+            route_reason='local_routing',
+            success=True,
+            message_summary='hola test',
+        )
+
+        findings = oses._query_stall_findings()
+        assert len(findings) == 1
+        f = findings[0]
+        assert f.category == 'query_stall'
+        assert f.severity == IssueSeverity.MEDIUM
+        assert f.metadata['duration_ms'] == 9000.0
+        assert f.metadata['resolved_path'] == 'orchestrator_inference'
+
+    def test_high_severity_for_long_stall(self) -> None:
+        root = _workspace()
+        oses = self._make_oses(root)
+        reporter = FreezeIncidentReporter(evolution_dir=str(root))
+        oses._freeze_incident_reporter = reporter
+
+        reporter.capture_query_stall(
+            duration_ms=20000.0,
+            resolved_path='external_consultation',
+            provider='chatgpt',
+            success=True,
+        )
+
+        findings = oses._query_stall_findings()
+        assert len(findings) == 1
+        assert findings[0].severity == IssueSeverity.HIGH
+
+    def test_empty_without_reporter(self) -> None:
+        root = _workspace()
+        oses = self._make_oses(root)
+        assert oses._query_stall_findings() == []
+
+    def test_ignores_non_query_stall_incidents(self) -> None:
+        root = _workspace()
+        oses = self._make_oses(root)
+        reporter = FreezeIncidentReporter(evolution_dir=str(root))
+        reporter._DEDUP_WINDOW_SECONDS = 0
+        oses._freeze_incident_reporter = reporter
+
+        reporter.capture_startup_freeze(
+            findings_metadata=[{
+                'category': 'startup_degradation',
+                'title': 'init lento',
+                'severity': 'high',
+                'metadata': {'phase': 'bootstrap_init', 'observed_ms': 15000},
+            }],
+        )
+        findings = oses._query_stall_findings()
+        assert len(findings) == 0
+
+
+# ======================================================================
 # 5. PortableContext promotion
 # ======================================================================
 
@@ -430,4 +715,33 @@ class TestPortableContextFreezePromotion:
         ]
         assert len(freeze_items) == 1
         assert freeze_items[0]['incident_type'] == 'chat_stall'
+        assert section.metadata.get('freeze_incidents')
+
+    def test_startup_health_section_includes_query_stall(self) -> None:
+        root = _workspace()
+        pcs = self._make_pcs(root)
+        reporter = FreezeIncidentReporter(evolution_dir=str(root))
+        reporter._DEDUP_WINDOW_SECONDS = 0
+        pcs.freeze_incident_reporter = reporter
+
+        reporter.capture_query_stall(
+            duration_ms=9000.0,
+            resolved_path='orchestrator_inference',
+            provider='ollama',
+            route_reason='local_routing',
+            success=True,
+            message_summary='hola',
+        )
+
+        now = datetime.now(timezone.utc)
+        section = pcs._startup_health_section(
+            status={'status': 'no_log', 'unresolved_fields': []},
+            now=now,
+        )
+        freeze_items = [
+            i for i in section.items if i.get('label') == 'freeze_incident'
+        ]
+        assert len(freeze_items) == 1
+        assert freeze_items[0]['incident_type'] == 'query_stall'
+        assert freeze_items[0].get('resolved_path') == 'orchestrator_inference'
         assert section.metadata.get('freeze_incidents')

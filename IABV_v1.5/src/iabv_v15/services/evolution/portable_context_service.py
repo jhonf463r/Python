@@ -2729,7 +2729,7 @@ class PortableContextService:
                 })
         freeze_incidents = self._recent_freeze_incidents()
         for fi in freeze_incidents:
-            items.append({
+            fi_item: dict[str, Any] = {
                 'label': 'freeze_incident',
                 'incident_type': fi.get('incident_type', ''),
                 'trigger': fi.get('trigger', ''),
@@ -2738,7 +2738,14 @@ class PortableContextService:
                 'duration_ms': fi.get('duration_ms', 0),
                 'timestamp': fi.get('timestamp', ''),
                 'file': fi.get('file', ''),
-            })
+            }
+            if fi.get('resolved_path'):
+                fi_item['resolved_path'] = fi['resolved_path']
+            if fi.get('provider'):
+                fi_item['provider'] = fi['provider']
+            if fi.get('success') is not None:
+                fi_item['success'] = fi['success']
+            items.append(fi_item)
         if st == 'analyzed':
             init = status.get('init_ms')
             window = status.get('run_to_window_ms')

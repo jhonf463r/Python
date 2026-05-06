@@ -342,6 +342,47 @@ class FreezeIncidentReporter:
             extra_context=extra,
         )
 
+    def capture_query_stall(
+        self,
+        *,
+        duration_ms: float,
+        resolved_path: str = '',
+        provider: str = '',
+        route_reason: str = '',
+        success: bool = True,
+        message_summary: str = '',
+        extra_context: dict[str, Any] | None = None,
+    ) -> Path | None:
+        """Auto-capture an end-to-end query stall (sendChat start → resolution).
+
+        Fires when the wall-clock time from ``sendChat`` entry to the first
+        visible assistant response (taskResolved / taskFailed / shortcut)
+        exceeds the perceptible threshold.  Covers all execution paths:
+        orchestrator_inference, external_consultation, chat_routing, fallback.
+        """
+        if not self._should_auto_capture('query_stall'):
+            return None
+        severity = 'high' if duration_ms > 15000 else 'medium'
+        extra: dict[str, Any] = {
+            'incident_type': 'query_stall',
+            'severity': severity,
+            'duration_ms': round(duration_ms, 1),
+            'resolved_path': resolved_path,
+            'provider': provider,
+            'route_reason': route_reason,
+            'success': success,
+            'message_summary': message_summary[:200],
+            **(extra_context or {}),
+        }
+        return self.capture_incident(
+            trigger='auto_query_stall',
+            user_description=(
+                f'Query stall: {duration_ms:.0f}ms via {resolved_path}'
+                f'{" (failed)" if not success else ""}'
+            ),
+            extra_context=extra,
+        )
+
     def recent_incidents(self, *, limit: int = 5) -> list[dict[str, Any]]:
         """Return recent incident summaries for PortableContext inclusion."""
         reports = self.list_reports(limit=limit)
@@ -359,10 +400,14 @@ class FreezeIncidentReporter:
                 'trigger': full.get('trigger', ''),
                 'incident_type': extra.get('incident_type', full.get('trigger', '')),
                 'severity': extra.get('severity', ''),
-                'dominant_phase': extra.get('dominant_phase', ''),
+                'dominant_phase': extra.get('dominant_phase') or extra.get('resolved_path', ''),
                 'duration_ms': extra.get('duration_ms') or extra.get('dominant_phase_ms', 0),
                 'timed_out': extra.get('timed_out'),
                 'finding_titles': extra.get('finding_titles', []),
+                'resolved_path': extra.get('resolved_path', ''),
+                'provider': extra.get('provider', ''),
+                'success': extra.get('success'),
+                'extra': dict(extra),
             })
         return result
 

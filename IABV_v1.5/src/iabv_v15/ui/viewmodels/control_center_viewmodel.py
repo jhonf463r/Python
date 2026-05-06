@@ -3923,7 +3923,8 @@ class ControlCenterViewModel(QObject):
         analysis = intent.metadata.get('conversation_analysis') if isinstance(intent.metadata, dict) else {}
         return dict(analysis) if isinstance(analysis, dict) else {}
 
-    _CHAT_STALL_THRESHOLD_MS = 1500.0  # perceptible stall threshold
+    _CHAT_STALL_THRESHOLD_MS = 1500.0  # perceptible stall threshold (shortcut analysis)
+    _QUERY_STALL_THRESHOLD_MS = 5000.0  # end-to-end query stall threshold
 
     def _trace_chat_stall(
         self,
@@ -3961,6 +3962,60 @@ class ControlCenterViewModel(QObject):
                 duration_ms=elapsed_ms,
                 timed_out=timed_out,
                 message_summary=message_summary,
+            )
+        except Exception:
+            pass
+
+    def _finalize_query_stall(
+        self,
+        *,
+        resolved_path: str,
+        provider: str,
+        route_reason: str,
+        success: bool,
+    ) -> None:
+        """Measure end-to-end query latency from sendChat start to resolution.
+
+        Fires if the wall-clock duration exceeds _QUERY_STALL_THRESHOLD_MS.
+        Traces via RuntimeAuditTracer and captures via FreezeIncidentReporter.
+        """
+        import time as _t
+        start = getattr(self, '_query_start_pc', 0.0)
+        if not start:
+            return
+        elapsed_ms = (_t.perf_counter() - start) * 1000.0
+        self._query_start_pc = 0.0
+        if elapsed_ms < self._QUERY_STALL_THRESHOLD_MS:
+            return
+        severity = 'high' if elapsed_ms > 15000 else 'medium'
+        msg_summary = getattr(self, '_query_start_message', '')
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import (
+                get_runtime_tracer,
+            )
+            get_runtime_tracer().trace_freeze_incident(
+                'query_stall',
+                severity=severity,
+                duration_ms=elapsed_ms,
+                dominant_phase=resolved_path,
+                provider=provider,
+                route_reason=route_reason,
+                success=success,
+                message_summary=msg_summary,
+            )
+        except Exception:
+            pass
+        reporter = getattr(self, '_freeze_incident_reporter', None)
+        if reporter is None:
+            return
+        try:
+            reporter.capture_query_stall(
+                duration_ms=elapsed_ms,
+                resolved_path=resolved_path,
+                provider=provider,
+                route_reason=route_reason,
+                success=success,
+                message_summary=msg_summary,
             )
         except Exception:
             pass
@@ -6926,6 +6981,10 @@ class ControlCenterViewModel(QObject):
             self._working = False
             self._set_live_status('idle')
             self._clear_autonomy_activity_override()
+        import time as _time_mod
+        self._query_start_pc = _time_mod.perf_counter()
+        self._query_start_message = message[:120]
+        self._query_resolved_path: str = ''
         user_attachments = list(self._attached_files) if self._attached_files else None
         self._append_message('user', 'Tu', message, self._routing_mode_label(),
                             attachments=user_attachments)
@@ -6951,7 +7010,6 @@ class ControlCenterViewModel(QObject):
         # APRENDIDO: NO usar 'with ThreadPoolExecutor' en hilo de UI porque
         # pool.shutdown(wait=True) bloquea al salir del with aunque el timeout
         # se haya cumplido. Usar Thread + Event en su lugar.
-        import time as _time_mod
         shortcut_analysis = {}
         _sa_result: dict[str, Any] = {}
         _sa_done = threading.Event()
@@ -7322,6 +7380,12 @@ class ControlCenterViewModel(QObject):
                                      'pack': pack_title,
                                      'planner_used': payload.get('planner_used', False),
                                  })
+            self._finalize_query_stall(
+                resolved_path=_inference_path,
+                provider=payload.get('provider_name', ''),
+                route_reason=payload.get('route_reason', ''),
+                success=True,
+            )
             self._record_chat_audit(
                 reasoning_path=_inference_path,
                 provider_id=payload.get('provider_name', 'local'),
@@ -7436,6 +7500,12 @@ class ControlCenterViewModel(QObject):
             self._append_message('assistant', 'IABV', message, meta,
                                  reasoning_path=_ext_path, evidence_tag=_ext_evidence,
                                  trace_metadata={'assistant': _ext_assistant, 'blocked': not _ext_success})
+            self._finalize_query_stall(
+                resolved_path=_ext_path,
+                provider=_ext_assistant,
+                route_reason='external_consultation',
+                success=_ext_success,
+            )
             self._record_chat_audit(
                 reasoning_path=_ext_path,
                 user_goal=self._last_user_goal or '',
@@ -7511,6 +7581,12 @@ class ControlCenterViewModel(QObject):
         self._append_message('assistant', title, visible_message, visible_meta,
                              reasoning_path=_failure_path)
         if task_name in ('chat', 'external_consultation'):
+            self._finalize_query_stall(
+                resolved_path=_failure_path,
+                provider='',
+                route_reason=message[:80],
+                success=False,
+            )
             from iabv_v15.services.evolution.decision_audit_trail import DecisionOutcome
             self._record_chat_audit(
                 reasoning_path=_failure_path,
