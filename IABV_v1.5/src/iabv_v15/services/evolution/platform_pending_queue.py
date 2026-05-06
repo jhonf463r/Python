@@ -35,6 +35,7 @@ CATEGORY_PERMISSION_REQUIRED = 'permission_required'
 CATEGORY_OSES_FINDING = 'oses_finding'
 CATEGORY_CAPABILITY_DISCOVERY = 'capability_discovery'
 CATEGORY_WINDOWS_NATIVE = 'windows_native'
+CATEGORY_INVESTIGATION = 'investigation'
 
 
 class PlatformPendingQueue:
@@ -249,6 +250,91 @@ class PlatformPendingQueue:
                 ),
                 category=CATEGORY_CAPABILITY_DISCOVERY,
             )
+            if existing is not None:
+                task = task.model_copy(update={
+                    'status': existing.status,
+                    'updated_at': utc_now(),
+                })
+            seeded.append(self.upsert(task))
+        return seeded
+
+    # ------------------------------------------------------------------
+    # Metacognition roadmap — investigation phases
+    # ------------------------------------------------------------------
+
+    _METACOGNITION_PHASES: list[dict[str, Any]] = [
+        {
+            'id': 'inv_phase_a_antifreeze',
+            'title': 'Fase A: Regulación inteligente anti-freeze',
+            'description': (
+                'El programa monitorea su propio consumo (CPU, RAM, hilos, '
+                'SQLite locks) y se auto-regula — si detecta que va a '
+                'saturarse, pausa o reduce procesos antes de congelarse. '
+                'Extiende _assess_resource_pressure y BackgroundResourceMonitor.'
+            ),
+            'reason': 'El usuario reporta congelamientos; el programa debe prevenirlos proactivamente.',
+            'dependency_missing': '',
+            'priority': 'high',
+            'next_action': (
+                'Integrar AdaptiveResourceOrchestrator en bootstrap, '
+                'conectar BackgroundResourceMonitor con auto-throttle de '
+                'tareas cuando presion >= HIGH.'
+            ),
+            'status': 'PENDING',
+            'category': CATEGORY_INVESTIGATION,
+        },
+        {
+            'id': 'inv_phase_b_visual_metacognition',
+            'title': 'Fase B: Percepción visual del UI propio (metacognición visual)',
+            'description': (
+                'El programa "ve" su propia interfaz — sabe qué widgets '
+                'están visibles, su estado, y mapea cada componente visual '
+                'a su código fuente. Autoconciencia visual integrada, no '
+                'grabación externa.'
+            ),
+            'reason': 'Necesario para auditoría automática y replay guiado.',
+            'dependency_missing': 'inv_phase_a_antifreeze',
+            'priority': 'medium',
+            'next_action': (
+                'Diseñar QML introspection layer que exponga el árbol '
+                'de widgets activo a WorldModelSnapshot.'
+            ),
+            'status': 'PENDING',
+            'category': CATEGORY_INVESTIGATION,
+        },
+        {
+            'id': 'inv_phase_c_guided_replay',
+            'title': 'Fase C: Replay guiado con UI Highlighting (tutorial interactivo)',
+            'description': (
+                'Cuando IABV necesita enseñar al usuario una tarea que no '
+                'puede hacer solo, muestra un replay guiado con highlighting '
+                'visual — resalta botones, campos, pasos a seguir, como un '
+                'tutorial interactivo dentro de la misma ventana.'
+            ),
+            'reason': 'Mejorar comunicación máquina-humano mediante guía visual.',
+            'dependency_missing': 'inv_phase_b_visual_metacognition',
+            'priority': 'low',
+            'next_action': (
+                'Diseñar overlay QML que reciba secuencia de pasos y '
+                'resalte widgets con animación y texto explicativo.'
+            ),
+            'status': 'PENDING',
+            'category': CATEGORY_INVESTIGATION,
+        },
+    ]
+
+    def seed_metacognition_investigation_phases(self) -> list[PlatformPendingTask]:
+        """Register the metacognition roadmap phases as pending tasks.
+
+        Idempotent: completed tasks are not overwritten.
+        """
+        seeded: list[PlatformPendingTask] = []
+        for task_dict in self._METACOGNITION_PHASES:
+            task_id = task_dict['id']
+            existing = self.get(task_id)
+            if existing is not None and existing.status == PendingTaskStatus.COMPLETED:
+                continue
+            task = PlatformPendingTask(**task_dict)
             if existing is not None:
                 task = task.model_copy(update={
                     'status': existing.status,

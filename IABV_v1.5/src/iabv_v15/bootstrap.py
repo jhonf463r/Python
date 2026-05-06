@@ -846,6 +846,19 @@ class AppBootstrap:
                     )
         except Exception:
             pass
+        # Freeze incident reporter — structured auto-audit for UI freezes.
+        from iabv_v15.services.evolution.freeze_incident_reporter import FreezeIncidentReporter
+        self.freeze_incident_reporter = FreezeIncidentReporter(
+            evolution_dir=self.config.evolution_dir,
+            db_path=self.config.sqlite_path,
+        )
+
+        # Seed metacognition investigation roadmap (Phases A/B/C).
+        try:
+            self.platform_pending_queue.seed_metacognition_investigation_phases()
+        except Exception:
+            pass
+
         # Wire AutonomyCycleService into OSES (available now).
         # TaskOutcomeRecorder wiring deferred to _wire_autonomy_cycle()
         # because task_outcome_recorder is created later in the bootstrap.
