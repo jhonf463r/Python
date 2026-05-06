@@ -203,6 +203,37 @@ class IABVMCPServer:
             raise RuntimeError("autonomy_cycle_service no está disponible en el container")
         return svc
 
+    def _freeze_incident_reporter(self) -> Any:
+        svc = getattr(self.container, "freeze_incident_reporter", None)
+        if svc is None:
+            raise RuntimeError("freeze_incident_reporter no está disponible en el container")
+        return svc
+
+    def _resource_orchestrator(self) -> Any:
+        return getattr(self.container, "adaptive_resource_orchestrator", None)
+
+    def _startup_timeline(self) -> Any:
+        try:
+            from iabv_v15.infra.startup_timeline import get_global_timeline
+            return get_global_timeline()
+        except Exception:
+            return None
+
+    def _environment_self_model(self) -> Any:
+        svc = getattr(self.container, "environment_self_awareness_service", None)
+        if svc is None:
+            return None
+        try:
+            return svc.current_model()
+        except Exception:
+            return None
+
+    def _pending_queue(self) -> Any:
+        return getattr(self.container, "platform_pending_queue", None)
+
+    def _oses(self) -> Any:
+        return getattr(self.container, "operational_self_examination_service", None)
+
     def _ui_execution_runner(self) -> Any:
         svc = getattr(self.container, "ui_execution_runner", None)
         if svc is None:
@@ -527,6 +558,88 @@ class IABVMCPServer:
                 task = task.model_copy(update=updates)
                 queue.upsert(task)
             return _to_jsonable(task) or {}
+
+        @mcp.tool()
+        def report_freeze(
+            description: str = "",
+            trigger: str = "user",
+        ) -> dict[str, Any]:
+            """Captura un reporte completo de incidente/congelamiento.
+
+            Genera un JSON estructurado con recursos, hilos, SQLite,
+            timeline, hallazgos OSES y estado de la cola — todo lo que
+            una IA necesita para diagnosticar qué pasó.
+
+            Args:
+                description: descripción del usuario (ej: "se congeló al abrir evolución").
+                trigger: quién disparó el reporte: 'user', 'auto', 'startup'.
+            """
+            reporter = self._freeze_incident_reporter()
+            path = reporter.capture_incident(
+                trigger=trigger,
+                user_description=description,
+                resource_orchestrator=self._resource_orchestrator(),
+                startup_timeline=self._startup_timeline(),
+                environment_self_model=self._environment_self_model(),
+                pending_queue=self._pending_queue(),
+                oses=self._oses(),
+            )
+            report = reporter.get_report(path.name)
+            return {
+                'status': 'ok',
+                'report_file': str(path),
+                'report': report,
+            }
+
+        @mcp.tool()
+        def list_freeze_reports(limit: int = 10) -> list[dict[str, Any]]:
+            """Lista los reportes de incidentes/congelamientos recientes.
+
+            Args:
+                limit: máximo de reportes a devolver (default 10).
+            """
+            reporter = self._freeze_incident_reporter()
+            return reporter.list_reports(limit=limit)
+
+        @mcp.tool()
+        def runtime_trace_summary() -> dict[str, Any]:
+            """Resumen del trace de auditoría continua desde el arranque.
+
+            Devuelve: total de eventos, desglose por tipo, errores,
+            uptime, y si el tracing está habilitado.
+            """
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            return get_runtime_tracer().summary()
+
+        @mcp.tool()
+        def runtime_trace_events(
+            kind: str = "",
+            limit: int = 50,
+        ) -> list[dict[str, Any]]:
+            """Lee eventos recientes del trace de auditoría continua.
+
+            Cada evento tiene: ts, elapsed_ms, kind, data.
+            Kinds comunes: service_init, decision, external_query,
+            permission, error, ui_event, resource_snapshot.
+
+            Args:
+                kind: filtrar por tipo (vacío = todos).
+                limit: máximo de eventos a devolver (default 50).
+            """
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            return get_runtime_tracer().events(kind=kind or None, limit=limit)
+
+        @mcp.tool()
+        def runtime_boot_report() -> dict[str, Any]:
+            """Reporte estructurado del arranque para diagnóstico por IA.
+
+            Incluye: servicios inicializados, servicios fallidos,
+            servicios lentos, queries externas, permisos denegados,
+            errores durante boot. Diseñado para que cualquier IA
+            pueda leer y diagnosticar problemas de arranque.
+            """
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            return get_runtime_tracer().export_boot_report()
 
         @mcp.tool()
         def orchestrator_preview(

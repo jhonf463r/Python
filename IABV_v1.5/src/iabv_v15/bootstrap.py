@@ -395,6 +395,13 @@ class AppBootstrap:
         self._timeline = get_global_timeline()
         self._timeline.mark('bootstrap_init_start')
 
+        # Runtime audit tracer: continuous self-audit from boot to shutdown.
+        from iabv_v15.services.evolution.runtime_audit_tracer import (
+            get_runtime_tracer,
+            configure_runtime_tracer,
+        )
+        self._tracer = get_runtime_tracer()
+
         # Auto-cargar secretos ANTES de leer config (que consulta os.environ).
         _auto_load_secrets()
 
@@ -405,6 +412,9 @@ class AppBootstrap:
         # Now that logs_dir exists, attach JSONL sink so every future
         # mark() call also persists to data/logs/startup_timeline.jsonl.
         configure_global_timeline(Path(self.config.logs_dir))
+        # Configure runtime tracer with the same logs dir.
+        configure_runtime_tracer(Path(self.config.logs_dir))
+        self._tracer.trace('boot_start', workspace=workspace_root or '')
 
         self._services_wired = False
         self._defer_services = _defer_services
@@ -441,11 +451,28 @@ class AppBootstrap:
     # is already visible.  Tests call ``AppBootstrap(tmp_path)`` without
     # the flag and get the old behaviour (everything wired in __init__).
     # ------------------------------------------------------------------
+    def _trace_init(self, name: str, fn: 'Callable[[], _T]') -> '_T':
+        """Execute *fn* while tracing its duration for the runtime audit."""
+        import time as _time
+        t0 = _time.perf_counter()
+        try:
+            result = fn()
+            elapsed = (_time.perf_counter() - t0) * 1000.0
+            self._tracer.trace_service_init(name, elapsed, status='ok')
+            return result
+        except Exception as exc:
+            elapsed = (_time.perf_counter() - t0) * 1000.0
+            self._tracer.trace_service_init(
+                name, elapsed, status='error', error=str(exc),
+            )
+            raise
+
     def _wire_services(self) -> None:
         if self._services_wired:
             return
         self._services_wired = True
         self._timeline.mark('wire_services_start')
+        self._tracer.trace('wire_services_start')
 
         _defer_scans = self._defer_services
 
@@ -570,6 +597,7 @@ class AppBootstrap:
         ToolAdapter.set_disagreement_marker_dir(
             Path(self.config.data_dir) / 'logs',
         )
+        self._tracer.trace('phase_tools_adapters_done')
         self.tool_validator = ToolValidator()
         self.tool_sandbox = ToolSandbox(self.tool_validator)
         self.tool_registry = ToolRegistry(self.tool_record_repository, self.tool_adapters)
@@ -587,6 +615,7 @@ class AppBootstrap:
         if os.environ.get('IABV_DEFER_TOOL_PROBE', '1') == '0':
             self._log_tool_availability()
             self._tool_availability_logged = True
+        self._tracer.trace('phase_tool_registry_done')
         self.universal_perception_service = UniversalPerceptionService(tool_registry=self.tool_registry)
         self.environment_self_awareness_service = EnvironmentSelfAwarenessService(
             workspace_root=self.config.workspace_root,
@@ -614,6 +643,7 @@ class AppBootstrap:
             scan_interval_seconds=300.0 if _is_mcp_sub else WorldModelService._DEFAULT_SCAN_INTERVAL,
             full_scan_interval_seconds=600.0 if _is_mcp_sub else WorldModelService._DEFAULT_FULL_SCAN_INTERVAL,
         )
+        self._tracer.trace('phase_world_model_done')
         self.interaction_learning_service = InteractionLearningService(self.tool_record_repository)
         self.interaction_mode_selector = InteractionModeSelector(self.tool_registry, self.tool_record_repository)
         self.tool_memory = ToolMemory(self.tool_record_repository, self.interaction_learning_service)
@@ -810,6 +840,7 @@ class AppBootstrap:
             token_rotation_ledger=self.token_rotation_ledger,
         )
 
+        self._tracer.trace('phase_oses_done')
         # Autonomy cycle: central service for pending queue, resume hints,
         # capability discovery, and OSES→queue bridge.  Replaces the
         # scattered Fix 18b/18d/18e patches with one coherent module.
@@ -846,6 +877,19 @@ class AppBootstrap:
                     )
         except Exception:
             pass
+        # Freeze incident reporter — structured auto-audit for UI freezes.
+        from iabv_v15.services.evolution.freeze_incident_reporter import FreezeIncidentReporter
+        self.freeze_incident_reporter = FreezeIncidentReporter(
+            evolution_dir=self.config.evolution_dir,
+            db_path=self.config.sqlite_path,
+        )
+
+        # Seed metacognition investigation roadmap (Phases A/B/C).
+        try:
+            self.platform_pending_queue.seed_metacognition_investigation_phases()
+        except Exception:
+            pass
+
         # Wire AutonomyCycleService into OSES (available now).
         # TaskOutcomeRecorder wiring deferred to _wire_autonomy_cycle()
         # because task_outcome_recorder is created later in the bootstrap.
@@ -1586,7 +1630,7 @@ class AppBootstrap:
             except Exception:
                 pass
             try:
-                self._log_tool_availability()
+                self._read_with_retry(self._log_tool_availability)
             except Exception as exc:
                 logger.warning('deferred_tool_availability_probe failed: %s', exc)
                 self._record_startup_sqlite_incident(exc)
@@ -2147,6 +2191,12 @@ class AppBootstrap:
             ', '.join(sorted(ready)),
             f' | missing=[{", ".join(sorted(missing))}]' if missing else '',
         )
+        self._tracer.trace(
+            'tool_availability',
+            ready=sorted(ready),
+            missing=sorted(missing),
+            total=len(cards),
+        )
 
         # Auto-install missing pip-installable tools (AGENTS.md: user
         # should never install tools manually).
@@ -2181,6 +2231,39 @@ class AppBootstrap:
 
         self._startup_self_examination()
         self._run_startup_common_sense()
+
+    @staticmethod
+    def _read_with_retry(
+        fn: 'Callable[[], _T]',
+        *,
+        max_retries: int = 3,
+        base_delay: float = 0.25,
+    ) -> '_T':
+        """Execute *fn* with exponential-backoff retry on SQLite lock errors.
+
+        Intended for read-only helpers called during bootstrap
+        (``_log_tool_availability``, ``_startup_self_examination``, etc.)
+        where a transient ``database is locked`` should not crash the
+        entire startup sequence.
+
+        Raises the last exception if all retries are exhausted.
+        Non-lock errors are raised immediately without retry.
+        """
+        import sqlite3
+        import time as _time
+
+        last_exc: Exception | None = None
+        for attempt in range(max_retries + 1):
+            try:
+                return fn()
+            except (sqlite3.OperationalError, OSError) as exc:
+                if 'database is locked' not in str(exc):
+                    raise
+                last_exc = exc
+                if attempt < max_retries:
+                    delay = base_delay * (2 ** attempt)
+                    _time.sleep(delay)
+        raise last_exc  # type: ignore[misc]
 
     def _record_startup_sqlite_incident(self, exc: Exception) -> None:
         """Promote a ``database is locked`` error to an OSES finding.
@@ -2245,6 +2328,7 @@ class AppBootstrap:
             if queue is None:
                 return
             from iabv_v15.domain.models import PendingTaskStatus, PlatformPendingTask
+            from iabv_v15.services.evolution.platform_pending_queue import CATEGORY_MISSING_TOOL
             for tool_id in missing:
                 task_id = f'tool_{tool_id}'
                 existing = queue.get(task_id)
@@ -2260,7 +2344,7 @@ class AppBootstrap:
                     priority='medium',
                     next_action=guidance or f'Instalar o configurar {tool_id}',
                     status=PendingTaskStatus.PENDING,
-                    category='missing_tool',
+                    category=CATEGORY_MISSING_TOOL,
                 ))
             for tool_id in ready:
                 task_id = f'tool_{tool_id}'

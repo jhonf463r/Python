@@ -38,7 +38,11 @@ from iabv_v15.domain.models import (
     RunRecord,
     utc_now,
 )
-from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+from iabv_v15.services.evolution.platform_pending_queue import (
+    CATEGORY_OSES_FINDING,
+    CATEGORY_PERMISSION_REQUIRED,
+    PlatformPendingQueue,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +130,7 @@ class AutonomyCycleService:
                     priority=priority,
                     next_action=next_action,
                     status=PendingTaskStatus.PENDING,
-                    category='oses_finding',
+                    category=CATEGORY_OSES_FINDING,
                     resume_hint=getattr(finding, 'recommendation', '') or '',
                     metadata={
                         'source': 'autonomy_cycle',
@@ -254,7 +258,7 @@ class AutonomyCycleService:
                 priority='high' if required_for else 'medium',
                 next_action=f'Solicitar permiso de {scope} al usuario',
                 status=PendingTaskStatus.BLOCKED,
-                category='permission_required',
+                category=CATEGORY_PERMISSION_REQUIRED,
                 metadata={'required_for': required_for},
             )
             self._queue.upsert(task)
