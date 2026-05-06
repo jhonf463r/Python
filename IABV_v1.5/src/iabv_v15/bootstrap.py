@@ -2049,6 +2049,13 @@ class AppBootstrap:
             self._timeline.mark(f'window_{event_name}', **extra)
         except Exception:
             pass
+        if event_name == 'activeChanged':
+            try:
+                ccvm = getattr(self, 'control_center_viewmodel', None)
+                if ccvm is not None and hasattr(ccvm, 'notify_window_active_changed'):
+                    ccvm.notify_window_active_changed(bool(kwargs.get('active')))
+            except Exception:
+                pass
 
     def _force_splash_ready_fallback(self) -> None:
         """Fallback determinista si QML nunca emite ``shellLoaderReady``.

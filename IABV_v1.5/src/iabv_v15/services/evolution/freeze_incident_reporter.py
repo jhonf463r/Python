@@ -383,6 +383,59 @@ class FreezeIncidentReporter:
             extra_context=extra,
         )
 
+    def capture_query_visible_gap(
+        self,
+        *,
+        duration_ms: float,
+        resolved_path: str = '',
+        provider: str = '',
+        route_reason: str = '',
+        success: bool = True,
+        window_went_inactive: bool = False,
+        window_inactive_total_ms: float = 0.0,
+        had_early_technical_response: bool = False,
+        message_summary: str = '',
+        extra_context: dict[str, Any] | None = None,
+    ) -> Path | None:
+        """Auto-capture a prolonged user-visible response gap.
+
+        Fires when the total wall-clock time from ``sendChat`` to visible
+        resolution exceeds the visible-gap threshold.  Correlates with
+        window inactive/active transitions to distinguish foreground loss
+        from worker stall.  The root cause is recorded as UNRESOLVED when
+        the distinction cannot be made with certainty.
+        """
+        if not self._should_auto_capture('query_visible_gap'):
+            return None
+        severity = (
+            'critical' if duration_ms > 300000
+            else ('high' if duration_ms > 60000 else 'medium')
+        )
+        extra: dict[str, Any] = {
+            'incident_type': 'query_visible_gap',
+            'severity': severity,
+            'duration_ms': round(duration_ms, 1),
+            'resolved_path': resolved_path,
+            'provider': provider,
+            'route_reason': route_reason,
+            'success': success,
+            'window_went_inactive': window_went_inactive,
+            'window_inactive_total_ms': round(window_inactive_total_ms, 1),
+            'had_early_technical_response': had_early_technical_response,
+            'message_summary': message_summary[:200],
+            'cause': 'UNRESOLVED',
+            **(extra_context or {}),
+        }
+        return self.capture_incident(
+            trigger='auto_query_visible_gap',
+            user_description=(
+                f'Query visible gap: {duration_ms:.0f}ms via {resolved_path}'
+                f'{" (window inactive)" if window_went_inactive else ""}'
+                f'{" (had early technical)" if had_early_technical_response else ""}'
+            ),
+            extra_context=extra,
+        )
+
     def recent_incidents(self, *, limit: int = 5) -> list[dict[str, Any]]:
         """Return recent incident summaries for PortableContext inclusion."""
         reports = self.list_reports(limit=limit)

@@ -698,7 +698,321 @@ class TestViewModelQueryStallE2E:
 
 
 # ======================================================================
-# 4c. OSES _query_stall_findings
+# 4c. Query visible gap — user-perceived response gap
+# ======================================================================
+
+
+class TestViewModelQueryVisibleGap:
+    """_finalize_query_visible_gap fires on prolonged user-visible gap."""
+
+    def _make_vm_stub(self) -> Any:
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import (
+            ControlCenterViewModel,
+        )
+        stub = MagicMock(spec=[])
+        stub._freeze_incident_reporter = None
+        stub._VISIBLE_GAP_THRESHOLD_MS = ControlCenterViewModel._VISIBLE_GAP_THRESHOLD_MS
+        stub._finalize_query_visible_gap = ControlCenterViewModel._finalize_query_visible_gap.__get__(stub)
+        stub._reset_visible_gap_state = ControlCenterViewModel._reset_visible_gap_state.__get__(stub)
+        stub.notify_window_active_changed = ControlCenterViewModel.notify_window_active_changed.__get__(stub)
+        stub._query_start_pc = 0.0
+        stub._query_start_message = ''
+        stub._window_went_inactive = False
+        stub._window_inactive_at = 0.0
+        stub._window_inactive_total_ms = 0.0
+        stub._query_had_early_technical = False
+        return stub
+
+    def test_below_threshold_does_nothing(self) -> None:
+        """Gap below 30s threshold does not fire."""
+        vm = self._make_vm_stub()
+        vm._query_start_pc = time.perf_counter() - 10.0  # 10s < 30s
+        vm._query_start_message = 'test'
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            vm._finalize_query_visible_gap(
+                resolved_path='orchestrator_inference',
+                provider='ollama',
+                route_reason='local',
+                success=True,
+            )
+        assert len(tracer.events(kind='freeze_incident')) == 0
+
+    def test_above_threshold_fires_gap_incident(self) -> None:
+        """Gap above 30s traces a query_visible_gap incident."""
+        vm = self._make_vm_stub()
+        vm._query_start_pc = time.perf_counter() - 45.0  # 45s
+        vm._query_start_message = 'haz una consulta a chatgpt'
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            vm._finalize_query_visible_gap(
+                resolved_path='external_consultation',
+                provider='chatgpt',
+                route_reason='external_consultation',
+                success=True,
+            )
+        events = tracer.events(kind='freeze_incident')
+        assert len(events) == 1
+        data = events[0]['data']
+        assert data['incident_type'] == 'query_visible_gap'
+        assert data['duration_ms'] > 44000
+        assert data['cause'] == 'UNRESOLVED'
+        assert data['dominant_phase'] == 'external_consultation'
+
+    def test_window_inactive_correlation(self) -> None:
+        """Window going inactive during query is recorded in the gap incident."""
+        vm = self._make_vm_stub()
+        vm._query_start_pc = time.perf_counter() - 1800.0  # 30 minutes
+        vm._query_start_message = 'consulta larga'
+        # Simulate window going inactive
+        vm.notify_window_active_changed(False)
+        assert vm._window_went_inactive is True
+        assert vm._window_inactive_at > 0
+        # Simulate window coming back active after 20 min
+        time.sleep(0.01)  # tiny sleep for perf_counter delta
+        vm.notify_window_active_changed(True)
+        assert vm._window_inactive_at == 0.0
+        assert vm._window_inactive_total_ms > 0
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            vm._finalize_query_visible_gap(
+                resolved_path='external_blocked',
+                provider='chatgpt',
+                route_reason='external_consultation',
+                success=False,
+            )
+        events = tracer.events(kind='freeze_incident')
+        assert len(events) == 1
+        data = events[0]['data']
+        assert data['window_went_inactive'] is True
+        assert data['window_inactive_total_ms'] > 0
+
+    def test_fires_reporter_when_wired(self, tmp_path: Path) -> None:
+        """When FreezeIncidentReporter is wired, capture_query_visible_gap fires."""
+        vm = self._make_vm_stub()
+        reporter = FreezeIncidentReporter(evolution_dir=str(tmp_path))
+        vm._freeze_incident_reporter = reporter
+        vm._query_start_pc = time.perf_counter() - 60.0  # 1 min
+        vm._query_start_message = 'test gap reporter'
+        vm._window_went_inactive = True
+        vm._window_inactive_total_ms = 55000.0
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            vm._finalize_query_visible_gap(
+                resolved_path='external_blocked',
+                provider='chatgpt',
+                route_reason='external_consultation',
+                success=False,
+                had_early_technical_response=True,
+            )
+        reports = reporter.list_reports()
+        assert len(reports) == 1
+        assert reports[0]['trigger'] == 'auto_query_visible_gap'
+
+    def test_critical_severity_for_very_long_gap(self) -> None:
+        """Gap >5 min gets critical severity."""
+        vm = self._make_vm_stub()
+        vm._query_start_pc = time.perf_counter() - 400.0  # ~6.6 min
+        vm._query_start_message = 'test'
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            vm._finalize_query_visible_gap(
+                resolved_path='orchestrator_inference',
+                provider='ollama',
+                route_reason='local',
+                success=True,
+            )
+        events = tracer.events(kind='freeze_incident')
+        assert len(events) == 1
+        assert events[0]['data']['severity'] == 'critical'
+
+    def test_notify_window_noop_without_pending_query(self) -> None:
+        """notify_window_active_changed does nothing when no query pending."""
+        vm = self._make_vm_stub()
+        vm._query_start_pc = 0.0
+        vm.notify_window_active_changed(False)
+        assert vm._window_went_inactive is False
+
+    def test_reset_visible_gap_state(self) -> None:
+        """_reset_visible_gap_state clears all tracking attributes."""
+        vm = self._make_vm_stub()
+        vm._window_went_inactive = True
+        vm._window_inactive_at = 123.0
+        vm._window_inactive_total_ms = 50000.0
+        vm._reset_visible_gap_state()
+        assert vm._window_went_inactive is False
+        assert vm._window_inactive_at == 0.0
+        assert vm._window_inactive_total_ms == 0.0
+
+    def test_had_early_technical_response_flag(self) -> None:
+        """had_early_technical_response is recorded in the incident."""
+        vm = self._make_vm_stub()
+        vm._query_start_pc = time.perf_counter() - 60.0
+        vm._query_start_message = 'test'
+        tracer = RuntimeAuditTracer()
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            vm._finalize_query_visible_gap(
+                resolved_path='orchestrator_inference',
+                provider='ollama',
+                route_reason='local',
+                success=True,
+                had_early_technical_response=True,
+            )
+        events = tracer.events(kind='freeze_incident')
+        assert events[0]['data']['had_early_technical_response'] is True
+
+
+# ======================================================================
+# 4d. OSES _query_visible_gap_findings
+# ======================================================================
+
+
+class TestOsesQueryVisibleGapFindings:
+    """_query_visible_gap_findings promotes visible gap incidents to OSES."""
+
+    def _make_oses(self, root: Path) -> OperationalSelfExaminationService:
+        storage = ArtifactStorage(str(root / 'data' / 'evolution'))
+        return OperationalSelfExaminationService(
+            workspace_root=str(root),
+            storage=storage,
+        )
+
+    def test_promotes_visible_gap_incident(self) -> None:
+        root = _workspace()
+        oses = self._make_oses(root)
+        reporter = FreezeIncidentReporter(evolution_dir=str(root))
+        oses._freeze_incident_reporter = reporter
+
+        reporter.capture_query_visible_gap(
+            duration_ms=120000.0,
+            resolved_path='external_blocked',
+            provider='chatgpt',
+            route_reason='external_consultation',
+            success=False,
+            window_went_inactive=True,
+            window_inactive_total_ms=110000.0,
+            message_summary='haz una consulta a chatgpt',
+        )
+
+        findings = oses._query_visible_gap_findings()
+        assert len(findings) == 1
+        f = findings[0]
+        assert f.category == 'query_visible_gap'
+        assert f.severity == IssueSeverity.HIGH
+        assert f.metadata['duration_ms'] == 120000.0
+        assert f.metadata['window_went_inactive'] is True
+        assert f.metadata['cause'] == 'UNRESOLVED'
+
+    def test_critical_for_very_long_gap(self) -> None:
+        root = _workspace()
+        oses = self._make_oses(root)
+        reporter = FreezeIncidentReporter(evolution_dir=str(root))
+        oses._freeze_incident_reporter = reporter
+
+        reporter.capture_query_visible_gap(
+            duration_ms=600000.0,  # 10 min
+            resolved_path='external_blocked',
+            provider='chatgpt',
+            success=False,
+        )
+
+        findings = oses._query_visible_gap_findings()
+        assert len(findings) == 1
+        assert findings[0].severity == IssueSeverity.CRITICAL
+
+    def test_empty_without_reporter(self) -> None:
+        root = _workspace()
+        oses = self._make_oses(root)
+        assert oses._query_visible_gap_findings() == []
+
+    def test_ignores_non_gap_incidents(self) -> None:
+        root = _workspace()
+        oses = self._make_oses(root)
+        reporter = FreezeIncidentReporter(evolution_dir=str(root))
+        reporter._DEDUP_WINDOW_SECONDS = 0
+        oses._freeze_incident_reporter = reporter
+
+        reporter.capture_query_stall(
+            duration_ms=9000.0,
+            resolved_path='orchestrator_inference',
+            provider='ollama',
+            success=True,
+        )
+        findings = oses._query_visible_gap_findings()
+        assert len(findings) == 0
+
+
+# ======================================================================
+# 4e. PortableContext includes query_visible_gap
+# ======================================================================
+
+
+class TestPortableContextVisibleGap:
+    """PortableContext startup_health_section includes visible gap incidents."""
+
+    def _make_pcs(self, root: Path) -> PortableContextService:
+        storage = ArtifactStorage(str(root / 'data' / 'evolution'))
+        return PortableContextService(
+            workspace_root=str(root),
+            storage=storage,
+        )
+
+    def test_startup_health_section_includes_visible_gap(self) -> None:
+        root = _workspace()
+        pcs = self._make_pcs(root)
+        reporter = FreezeIncidentReporter(evolution_dir=str(root))
+        reporter._DEDUP_WINDOW_SECONDS = 0
+        pcs.freeze_incident_reporter = reporter
+
+        reporter.capture_query_visible_gap(
+            duration_ms=120000.0,
+            resolved_path='external_blocked',
+            provider='chatgpt',
+            success=False,
+            window_went_inactive=True,
+            window_inactive_total_ms=100000.0,
+            had_early_technical_response=True,
+            message_summary='haz una consulta',
+        )
+
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        section = pcs._startup_health_section(
+            status={'status': 'no_log', 'unresolved_fields': []},
+            now=now,
+        )
+        freeze_items = [
+            i for i in section.items if i.get('label') == 'freeze_incident'
+        ]
+        assert len(freeze_items) == 1
+        item = freeze_items[0]
+        assert item['incident_type'] == 'query_visible_gap'
+        assert item.get('window_went_inactive') is True
+        assert item.get('cause') == 'UNRESOLVED'
+        assert item.get('had_early_technical_response') is True
+        assert section.metadata.get('freeze_incidents')
+
+
+# ======================================================================
+# 4f. OSES _query_stall_findings (existing)
 # ======================================================================
 
 

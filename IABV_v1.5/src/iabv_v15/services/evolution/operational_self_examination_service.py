@@ -686,6 +686,7 @@ class OperationalSelfExaminationService:
         findings.extend(startup_findings)
         self._auto_capture_startup_freeze(startup_findings)
         findings.extend(self._query_stall_findings())
+        findings.extend(self._query_visible_gap_findings())
         findings.extend(self._boot_profile_findings())
         findings.extend(self._chat_research_backlog_findings())
         # Cognitive meta-patterns: fijación, incubación, atractores, ensambles
@@ -1892,6 +1893,67 @@ class OperationalSelfExaminationService:
                 ))
         except Exception:
             logger.debug('_query_stall_findings failed', exc_info=True)
+        return results
+
+    def _query_visible_gap_findings(self) -> list[SelfExaminationFinding]:
+        """Promote recent query_visible_gap incidents to OSES findings.
+
+        Reads FreezeIncidentReporter.recent_incidents() and emits a
+        SelfExaminationFinding for each query_visible_gap incident so that
+        another AI can reconstruct the user-visible response gap.
+        """
+        reporter = self._freeze_incident_reporter
+        if reporter is None or not hasattr(reporter, 'recent_incidents'):
+            return []
+        results: list[SelfExaminationFinding] = []
+        try:
+            for inc in reporter.recent_incidents(limit=5):
+                extra = inc.get('extra', {})
+                if extra.get('incident_type') != 'query_visible_gap':
+                    continue
+                dur = extra.get('duration_ms', 0)
+                path = extra.get('resolved_path', 'unknown')
+                provider = extra.get('provider', '')
+                went_inactive = extra.get('window_went_inactive', False)
+                inactive_ms = extra.get('window_inactive_total_ms', 0)
+                cause = extra.get('cause', 'UNRESOLVED')
+                if dur > 300000:
+                    sev = IssueSeverity.CRITICAL
+                elif dur > 60000:
+                    sev = IssueSeverity.HIGH
+                else:
+                    sev = IssueSeverity.MEDIUM
+                inactive_note = (
+                    f', window inactive {inactive_ms:.0f}ms'
+                    if went_inactive else ''
+                )
+                results.append(SelfExaminationFinding(
+                    category='query_visible_gap',
+                    title=f'Visible response gap: {dur:.0f}ms via {path}',
+                    description=(
+                        f'User-visible query gap of {dur:.0f}ms '
+                        f'(path={path}, provider={provider or "local"}, '
+                        f'success={extra.get("success", True)}'
+                        f'{inactive_note}). '
+                        f'Cause: {cause}. '
+                        f'Message: {extra.get("message_summary", "")[:80]}'
+                    ),
+                    severity=sev,
+                    metadata={
+                        'duration_ms': dur,
+                        'resolved_path': path,
+                        'provider': provider,
+                        'route_reason': extra.get('route_reason', ''),
+                        'success': extra.get('success', True),
+                        'window_went_inactive': went_inactive,
+                        'window_inactive_total_ms': inactive_ms,
+                        'had_early_technical_response': extra.get('had_early_technical_response', False),
+                        'cause': cause,
+                        'incident_file': inc.get('file', ''),
+                    },
+                ))
+        except Exception:
+            logger.debug('_query_visible_gap_findings failed', exc_info=True)
         return results
 
     def _startup_health_findings(self) -> list[SelfExaminationFinding]:

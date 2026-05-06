@@ -3925,6 +3925,7 @@ class ControlCenterViewModel(QObject):
 
     _CHAT_STALL_THRESHOLD_MS = 1500.0  # perceptible stall threshold (shortcut analysis)
     _QUERY_STALL_THRESHOLD_MS = 5000.0  # end-to-end query stall threshold
+    _VISIBLE_GAP_THRESHOLD_MS = 30000.0  # user-visible response gap threshold
 
     def _trace_chat_stall(
         self,
@@ -4010,6 +4011,7 @@ class ControlCenterViewModel(QObject):
         if not start:
             return
         if not self._is_useful_response(response_text):
+            self._query_had_early_technical = True
             return
         elapsed_ms = (_t.perf_counter() - start) * 1000.0
         self._query_start_pc = 0.0
@@ -4047,6 +4049,111 @@ class ControlCenterViewModel(QObject):
             )
         except Exception:
             pass
+
+    # ------------------------------------------------------------------
+    # Query visible gap — user-perceived response gap
+    # ------------------------------------------------------------------
+
+    def notify_window_active_changed(self, active: bool) -> None:
+        """Called by bootstrap when the main window gains/loses focus.
+
+        Tracks inactive/active transitions while a query is pending so
+        that ``_finalize_query_visible_gap`` can correlate the user-visible
+        gap with foreground loss.
+        """
+        import time as _t
+        now = _t.perf_counter()
+        pending = getattr(self, '_query_start_pc', 0.0)
+        if not pending:
+            return
+        if not active:
+            self._window_inactive_at: float = now
+            self._window_went_inactive: bool = True
+        else:
+            inactive_at = getattr(self, '_window_inactive_at', 0.0)
+            if inactive_at:
+                gap = (now - inactive_at) * 1000.0
+                prev = getattr(self, '_window_inactive_total_ms', 0.0)
+                self._window_inactive_total_ms: float = prev + gap
+            self._window_inactive_at = 0.0
+
+    def _finalize_query_visible_gap(
+        self,
+        *,
+        resolved_path: str,
+        provider: str,
+        route_reason: str,
+        success: bool,
+        had_early_technical_response: bool = False,
+    ) -> None:
+        """Detect prolonged user-visible response gap.
+
+        Fires when the wall-clock time from ``sendChat`` to final visible
+        resolution exceeds ``_VISIBLE_GAP_THRESHOLD_MS``.  Unlike
+        ``_finalize_query_stall`` (which measures to first useful response),
+        this captures scenarios where:
+
+        - The window went to background during a pending query
+        - The process stayed alive without useful progress
+        - The user returned much later to find the response
+
+        The cause is recorded as UNRESOLVED when we cannot differentiate
+        worker stall vs background suspend vs foreground loss.
+        """
+        import time as _t
+        start = getattr(self, '_query_start_pc', 0.0)
+        if not start:
+            return
+        elapsed_ms = (_t.perf_counter() - start) * 1000.0
+        if elapsed_ms < self._VISIBLE_GAP_THRESHOLD_MS:
+            return
+        went_inactive = getattr(self, '_window_went_inactive', False)
+        inactive_total_ms = getattr(self, '_window_inactive_total_ms', 0.0)
+        severity = 'critical' if elapsed_ms > 300000 else ('high' if elapsed_ms > 60000 else 'medium')
+        msg_summary = getattr(self, '_query_start_message', '')
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import (
+                get_runtime_tracer,
+            )
+            get_runtime_tracer().trace_freeze_incident(
+                'query_visible_gap',
+                severity=severity,
+                duration_ms=elapsed_ms,
+                dominant_phase=resolved_path,
+                provider=provider,
+                route_reason=route_reason,
+                success=success,
+                window_went_inactive=went_inactive,
+                window_inactive_total_ms=round(inactive_total_ms, 1),
+                had_early_technical_response=had_early_technical_response,
+                message_summary=msg_summary,
+                cause='UNRESOLVED',
+            )
+        except Exception:
+            pass
+        reporter = getattr(self, '_freeze_incident_reporter', None)
+        if reporter is None:
+            return
+        try:
+            reporter.capture_query_visible_gap(
+                duration_ms=elapsed_ms,
+                resolved_path=resolved_path,
+                provider=provider,
+                route_reason=route_reason,
+                success=success,
+                window_went_inactive=went_inactive,
+                window_inactive_total_ms=inactive_total_ms,
+                had_early_technical_response=had_early_technical_response,
+                message_summary=msg_summary,
+            )
+        except Exception:
+            pass
+
+    def _reset_visible_gap_state(self) -> None:
+        """Clear visible gap tracking state after query resolves."""
+        self._window_went_inactive = False
+        self._window_inactive_at = 0.0
+        self._window_inactive_total_ms = 0.0
 
     def _explicit_site_hint_from_message(self, message: str) -> str | None:
         text = self._normalized_command_text(message)
@@ -7013,6 +7120,10 @@ class ControlCenterViewModel(QObject):
         self._query_start_pc = _time_mod.perf_counter()
         self._query_start_message = message[:120]
         self._query_resolved_path: str = ''
+        self._window_went_inactive: bool = False
+        self._window_inactive_at: float = 0.0
+        self._window_inactive_total_ms: float = 0.0
+        self._query_had_early_technical: bool = False
         user_attachments = list(self._attached_files) if self._attached_files else None
         self._append_message('user', 'Tu', message, self._routing_mode_label(),
                             attachments=user_attachments)
@@ -7408,6 +7519,13 @@ class ControlCenterViewModel(QObject):
                                      'pack': pack_title,
                                      'planner_used': payload.get('planner_used', False),
                                  })
+            self._finalize_query_visible_gap(
+                resolved_path=_inference_path,
+                provider=payload.get('provider_name', ''),
+                route_reason=payload.get('route_reason', ''),
+                success=True,
+                had_early_technical_response=getattr(self, '_query_had_early_technical', False),
+            )
             self._finalize_query_stall(
                 resolved_path=_inference_path,
                 provider=payload.get('provider_name', ''),
@@ -7415,6 +7533,7 @@ class ControlCenterViewModel(QObject):
                 success=True,
                 response_text=user_text,
             )
+            self._reset_visible_gap_state()
             self._record_chat_audit(
                 reasoning_path=_inference_path,
                 provider_id=payload.get('provider_name', 'local'),
@@ -7529,6 +7648,13 @@ class ControlCenterViewModel(QObject):
             self._append_message('assistant', 'IABV', message, meta,
                                  reasoning_path=_ext_path, evidence_tag=_ext_evidence,
                                  trace_metadata={'assistant': _ext_assistant, 'blocked': not _ext_success})
+            self._finalize_query_visible_gap(
+                resolved_path=_ext_path,
+                provider=_ext_assistant,
+                route_reason='external_consultation',
+                success=_ext_success,
+                had_early_technical_response=getattr(self, '_query_had_early_technical', False),
+            )
             self._finalize_query_stall(
                 resolved_path=_ext_path,
                 provider=_ext_assistant,
@@ -7536,6 +7662,7 @@ class ControlCenterViewModel(QObject):
                 success=_ext_success,
                 response_text=message,
             )
+            self._reset_visible_gap_state()
             self._record_chat_audit(
                 reasoning_path=_ext_path,
                 user_goal=self._last_user_goal or '',
@@ -7611,6 +7738,13 @@ class ControlCenterViewModel(QObject):
         self._append_message('assistant', title, visible_message, visible_meta,
                              reasoning_path=_failure_path)
         if task_name in ('chat', 'external_consultation'):
+            self._finalize_query_visible_gap(
+                resolved_path=_failure_path,
+                provider='',
+                route_reason=message[:80],
+                success=False,
+                had_early_technical_response=getattr(self, '_query_had_early_technical', False),
+            )
             self._finalize_query_stall(
                 resolved_path=_failure_path,
                 provider='',
@@ -7618,6 +7752,7 @@ class ControlCenterViewModel(QObject):
                 success=False,
                 response_text=visible_message,
             )
+            self._reset_visible_gap_state()
             from iabv_v15.services.evolution.decision_audit_trail import DecisionOutcome
             self._record_chat_audit(
                 reasoning_path=_failure_path,

@@ -2745,6 +2745,14 @@ class PortableContextService:
                 fi_item['provider'] = fi['provider']
             if fi.get('success') is not None:
                 fi_item['success'] = fi['success']
+            fi_extra = fi.get('extra', {})
+            if fi_extra.get('window_went_inactive'):
+                fi_item['window_went_inactive'] = True
+                fi_item['window_inactive_total_ms'] = fi_extra.get('window_inactive_total_ms', 0)
+            if fi_extra.get('cause'):
+                fi_item['cause'] = fi_extra['cause']
+            if fi_extra.get('had_early_technical_response'):
+                fi_item['had_early_technical_response'] = True
             items.append(fi_item)
         if st == 'analyzed':
             init = status.get('init_ms')
