@@ -2751,7 +2751,9 @@ def test_control_center_send_chat_external_access_denied_is_humanized_and_stops_
         assert 'winerror' not in latest_text
         assert 'acceso denegado' not in latest_text
         assert 'chatgpt' in latest_text
-        assert viewmodel.get_assistant_guidance_mode() == 'idle'
+        # When the external consultation is blocked with actionable guidance
+        # (buttons/actions), the guidance must be preserved, not reset to idle.
+        assert viewmodel.get_assistant_guidance_mode() != 'idle'
     finally:
         _cleanup_bootstrap(bootstrap)
 
@@ -3979,5 +3981,181 @@ def test_self_awareness_reply_assistants_focus_mentions_devin_when_ready() -> No
         # No debe aparecer "claude no esta disponible" porque Claude web esta ready
         assert 'no esta disponible' not in lowered or 'claude no esta disponible' not in lowered
         assert 'Conexiones reales' in meta or 'conexiones' in meta.lower()
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_external_blocked_result_preserves_assistant_guidance_popup() -> None:
+    """When taskResolved fires for external_consultation with success=False and
+    the adaptive_payload already carries actionable assistant_guidance (e.g.
+    mode='need_approval' with action buttons), the guidance popup must NOT be
+    wiped by _reset_assistant_guidance."""
+    bootstrap = _make_bootstrap('test_external_blocked_preserves_guidance_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+
+        adaptive_payload = {
+            'session_id': 'adaptive-blocked-guidance',
+            'status': 'waiting_approval',
+            'intent': {'title': 'Consultar Codex', 'intent_key': 'codex.consult', 'disposition': 'plan_then_execute', 'confidence': 0.80},
+            'context': {'site_id': 'general', 'site_display_name': 'General'},
+            'chosen_pack': {'title': 'Codex consult', 'domain_kind': 'external'},
+            'playbook': {'status': 'waiting_approval', 'next_phase': 'strategy', 'summary': 'Esperando permiso', 'steps': []},
+            'approval_checkpoints': [
+                {
+                    'title': 'Permitir observacion de codex',
+                    'decision': 'pending',
+                    'risk_level': 'medium',
+                    'detail': 'Para verificar si Codex tiene mensajes disponibles necesito observar esa ventana.',
+                    'phase_key': 'observation_permission',
+                }
+            ],
+            'capability_readiness': [],
+            'strategy_candidates': [],
+            'outcome': {},
+            'assistant_guidance': {
+                'mode': 'need_approval',
+                'title': 'Permiso para observar Codex',
+                'prompt': 'Necesito observar la ventana de Codex.',
+                'actions': [
+                    {'action': 'approve_observation_permission', 'title': 'Permitir observacion', 'detail': 'Conceder permiso.'},
+                    {'action': 'consult_codex', 'title': 'Reintentar Codex', 'detail': 'Volver a correr el preflight.'},
+                ],
+            },
+        }
+
+        external_payload = {
+            'success': False,
+            'message': 'No voy a lanzar Codex todavia. Primero necesito tu permiso.',
+            'meta': 'Permiso requerido para Codex.',
+            'payload': adaptive_payload,
+            'assistant_title': 'Codex',
+            'external_state_flags': [],
+        }
+
+        viewmodel._apply_task_result('external_consultation', external_payload)
+
+        assert viewmodel.get_assistant_guidance_mode() == 'need_approval', (
+            'El guidance mode debe preservarse como need_approval despues de taskResolved con success=False'
+        )
+        assert len(viewmodel.get_assistant_action_buttons()) >= 1, (
+            'Los action buttons del guidance deben preservarse'
+        )
+        assert any(item['action'] == 'approve_observation_permission' for item in viewmodel.get_assistant_action_buttons()), (
+            'El boton approve_observation_permission debe seguir presente'
+        )
+        assert viewmodel.get_approval_dialog_visible() is True, (
+            'El dialogo de aprobacion debe seguir visible cuando mode=need_approval'
+        )
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_external_blocked_result_preserves_approval_dialog_for_assistant_unavailable() -> None:
+    """When the governance diagnostic_category is 'assistant_unavailable' and the
+    guidance has mode='need_approval' with action buttons, the approval dialog
+    must remain visible after taskResolved with success=False."""
+    bootstrap = _make_bootstrap('test_external_blocked_assistant_unavailable_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+
+        adaptive_payload = {
+            'session_id': 'adaptive-unavailable',
+            'status': 'waiting_approval',
+            'intent': {'title': 'Consultar ChatGPT', 'intent_key': 'chatgpt.consult', 'disposition': 'plan_then_execute', 'confidence': 0.75},
+            'context': {'site_id': 'general', 'site_display_name': 'General'},
+            'chosen_pack': {'title': 'ChatGPT consult', 'domain_kind': 'external'},
+            'playbook': {'status': 'waiting_approval', 'next_phase': 'strategy', 'summary': 'Esperando permiso', 'steps': []},
+            'approval_checkpoints': [],
+            'capability_readiness': [],
+            'strategy_candidates': [],
+            'outcome': {},
+            'assistant_guidance': {
+                'mode': 'need_approval',
+                'title': 'ChatGPT no disponible',
+                'prompt': 'ChatGPT no esta disponible en este momento.',
+                'actions': [
+                    {'action': 'consult_chatgpt', 'title': 'Reintentar ChatGPT', 'detail': 'Volver a verificar disponibilidad.'},
+                    {'action': 'review_stack', 'title': 'Abrir / verificar herramienta', 'detail': 'Revisar si la herramienta esta abierta.'},
+                ],
+            },
+            'metadata': {
+                'decision_context': {
+                    'governance': {
+                        'diagnostic_category': 'assistant_unavailable',
+                    },
+                },
+            },
+        }
+
+        external_payload = {
+            'success': False,
+            'message': 'ChatGPT no esta disponible.',
+            'meta': 'Ruta bloqueada para ChatGPT.',
+            'payload': adaptive_payload,
+            'assistant_title': 'ChatGPT',
+            'external_state_flags': [],
+        }
+
+        viewmodel._apply_task_result('external_consultation', external_payload)
+
+        assert viewmodel.get_assistant_guidance_mode() == 'need_approval', (
+            'El guidance mode debe preservarse como need_approval para assistant_unavailable'
+        )
+        assert viewmodel.get_approval_dialog_visible() is True, (
+            'El dialogo de aprobacion debe seguir visible para assistant_unavailable'
+        )
+        assert len(viewmodel.get_assistant_action_buttons()) >= 1, (
+            'Los botones de accion deben preservarse para assistant_unavailable'
+        )
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_external_blocked_result_resets_guidance_when_no_actionable_payload() -> None:
+    """Regression: when external_consultation fails with success=False but the
+    adaptive_payload does NOT carry actionable guidance (no approval buttons,
+    no need_approval mode), _reset_assistant_guidance must still run to clean
+    up stale state."""
+    bootstrap = _make_bootstrap('test_external_blocked_resets_when_no_guidance_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+
+        adaptive_payload = {
+            'session_id': 'adaptive-no-guidance',
+            'status': 'ready_to_execute',
+            'intent': {'title': 'Consulta general', 'intent_key': 'general.assistance', 'disposition': 'plan_then_execute', 'confidence': 0.60},
+            'context': {'site_id': 'general', 'site_display_name': 'General'},
+            'chosen_pack': {'title': 'General', 'domain_kind': 'local'},
+            'playbook': {'status': 'ready_to_execute', 'next_phase': 'execute', 'summary': 'Listo.', 'steps': []},
+            'approval_checkpoints': [],
+            'capability_readiness': [],
+            'strategy_candidates': [],
+            'outcome': {},
+        }
+
+        external_payload = {
+            'success': False,
+            'message': 'Ollama no respondio a tiempo.',
+            'meta': 'Timeout en consulta.',
+            'payload': adaptive_payload,
+            'assistant_title': 'Ollama',
+            'external_state_flags': [],
+        }
+
+        viewmodel._apply_task_result('external_consultation', external_payload)
+
+        assert viewmodel.get_assistant_guidance_mode() == 'idle', (
+            'Sin guidance accionable, el mode debe resetearse a idle'
+        )
+        assert viewmodel.get_assistant_action_buttons() == [], (
+            'Sin guidance accionable, los action buttons deben limpiarse'
+        )
+        assert viewmodel.get_approval_dialog_visible() is False, (
+            'Sin guidance accionable, el dialogo de aprobacion debe estar oculto'
+        )
     finally:
         _cleanup_bootstrap(bootstrap)

@@ -5464,6 +5464,18 @@ class ControlCenterViewModel(QObject):
                     self._assistant_action('audit_autonomy', 'Auditar autonomia', 'Revisar por que la ruta externa quedo bloqueada.'),
                 ],
             }
+        diag = str(governance.get('diagnostic_category') or '').strip().lower()
+        if diag == 'assistant_unavailable':
+            return {
+                'mode': 'need_approval',
+                'title': f'{assistant_title} no disponible',
+                'prompt': prompt,
+                'actions': [
+                    self._assistant_action(f'consult_{assistant_kind}', f'Reintentar {assistant_title}', 'Volver a verificar disponibilidad y reintentar.'),
+                    self._assistant_action('review_stack', 'Abrir / verificar herramienta', 'Revisar si la herramienta esta abierta y disponible.'),
+                    self._assistant_action('audit_autonomy', 'Auditar autonomia', 'Ver detalle del bloqueo operativo.'),
+                ],
+            }
         return {
             'mode': 'need_evolution_review',
             'title': f'Ruta bloqueada para {assistant_title}',
@@ -7397,7 +7409,13 @@ class ControlCenterViewModel(QObject):
                     mode='external',
                 )
             else:
-                self._reset_assistant_guidance()
+                _has_actionable_guidance = (
+                    self._assistant_guidance_mode == 'need_approval'
+                    or bool(self._assistant_action_buttons)
+                    or bool(adaptive_payload.get('approval_checkpoints'))
+                )
+                if not _has_actionable_guidance:
+                    self._reset_assistant_guidance()
                 self._set_autonomy_activity_override(
                     visible=True,
                     title='Consulta externa bloqueada',

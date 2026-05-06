@@ -1624,6 +1624,10 @@ class AppBootstrap:
             return
         self._tool_availability_logged = True
 
+        bridge = self.main_window_bridge
+        if bridge is not None:
+            bridge.set_deferred_setup_active(True)
+
         def _bg_post_window_setup() -> None:
             try:
                 self._timeline.mark('deferred_post_window_setup_start')
@@ -1638,6 +1642,8 @@ class AppBootstrap:
                 self._timeline.mark('deferred_post_window_setup_done')
             except Exception:
                 pass
+            if bridge is not None:
+                bridge.set_deferred_setup_active(False)
 
         threading.Thread(
             target=_bg_post_window_setup,
