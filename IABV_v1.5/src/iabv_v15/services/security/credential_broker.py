@@ -10,12 +10,15 @@ No crea otro cerebro ni toma decisiones de ruta; solo mediaciona credenciales.
 """
 from __future__ import annotations
 
+import logging
 import threading
 from dataclasses import dataclass
 from typing import Callable, Optional
 
 from iabv_v15.domain.models import SecretReference
 from iabv_v15.services.capture.secret_vault import SecretVault
+
+logger = logging.getLogger(__name__)
 
 
 PromptHandler = Callable[[dict], None]
@@ -84,12 +87,16 @@ class CredentialBroker:
         with self._lock:
             handler = self._handler
         if handler is None:
+            logger.warning('credential_broker.request(%s): no handler registered — dialog will not appear', domain)
+            self._trace_credential_event('request_dropped', domain, reason='no_handler')
             return
         payload = {
             "domain": domain,
             "reason": reason,
             "username_hint": username_hint or "",
         }
+        logger.info('credential_broker.request(%s): emitting prompt to UI', domain)
+        self._trace_credential_event('request_emitted', domain, reason=reason)
         handler(payload)
 
     def accept(self, domain: str, username: str, secret: str) -> None:
@@ -112,3 +119,14 @@ class CredentialBroker:
         with self._lock:
             self._domain_accounts.pop(domain, None)
             self._fallback_cache.pop(domain, None)
+
+    def _trace_credential_event(self, action: str, domain: str, **extra: str) -> None:
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace_permission(
+                permission_id=f'credential:{domain}',
+                action=action,
+                reason=extra.get('reason', ''),
+            )
+        except Exception:
+            pass

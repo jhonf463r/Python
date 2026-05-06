@@ -1795,10 +1795,17 @@ class AppBootstrap:
         persistence *after* those milestones exist in the timeline JSONL,
         producing honest ``latest.md`` / ``latest.json`` files.
 
+        Additionally checks if the latest artifacts are stale (>24h) and
+        forces regeneration — this prevents sessions that run for weeks
+        from accumulating 17-day-old metacognition data.
+
         Order matters: OSES must refresh FIRST so its review reflects
         the final boot state.  Then PortableContext persists with the
         up-to-date OSES summary — not a stale one.
         """
+        force_refresh = self._metacognition_data_is_stale()
+        if force_refresh:
+            logger.info('startup_truth_refresh: metacognition data stale (>24h), forcing full regeneration')
         try:
             oses = getattr(self, 'operational_self_examination_service', None)
             if oses is not None:
@@ -1813,6 +1820,32 @@ class AppBootstrap:
                 logger.info('startup_truth_refresh: PortableContext re-persisted')
         except Exception as exc:
             logger.debug('startup_truth_refresh: PortableContext failed: %s', exc)
+        if force_refresh:
+            self._tracer.trace('metacognition_refresh', reason='stale_data_>24h')
+
+    def _metacognition_data_is_stale(self, max_age_hours: float = 24.0) -> bool:
+        """Check if OSES / PortableContext latest.json are older than *max_age_hours*."""
+        import time as _time
+        data_dir = getattr(self.config, 'data_dir', None)
+        if data_dir is None:
+            return False
+        base = Path(data_dir) / 'evolution'
+        candidates = [
+            base / 'self_examination' / 'latest.json',
+            base / 'portable_context' / 'latest.json',
+        ]
+        now = _time.time()
+        max_age_s = max_age_hours * 3600
+        for path in candidates:
+            try:
+                if path.exists():
+                    age = now - path.stat().st_mtime
+                    if age > max_age_s:
+                        logger.info('stale metacognition: %s is %.1fh old', path.name, age / 3600)
+                        return True
+            except Exception:
+                pass
+        return False
 
     def _handle_splash_closing(self) -> None:
         """Marca ``splash_window_closing`` cuando QML va a llamar close().

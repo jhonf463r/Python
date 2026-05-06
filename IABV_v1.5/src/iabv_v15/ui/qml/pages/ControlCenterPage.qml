@@ -28,6 +28,7 @@ Item {
     property bool canSimulateValue: controlCenterViewModel ? controlCenterViewModel.canSimulate : false
     property bool canExecuteValue: controlCenterViewModel ? controlCenterViewModel.canExecute : false
     property bool canAbortValue: controlCenterViewModel ? controlCenterViewModel.canAbort : false
+    property bool canApproveObservationValue: controlCenterViewModel ? controlCenterViewModel.canApproveObservation : false
     property bool approvalDialogVisibleValue: controlCenterViewModel ? controlCenterViewModel.approvalDialogVisible : false
     property bool liveDockExpanded: true
     property string routingModeLabelValue: controlCenterViewModel ? controlCenterViewModel.routingModeLabel : "Modo automatico"
@@ -136,6 +137,7 @@ Item {
             Flow {
                 width: parent.width
                 spacing: 10
+                AppButton { visible: canApproveObservationValue; text: "Permitir observacion"; enabled: canApproveObservationValue; accent: true; onClicked: { if (controlCenterViewModel) controlCenterViewModel.applySuggestedAction("approve_observation_permission"); approvalPopup.close(); } }
                 AppButton { visible: canApproveStrategyValue; text: "Aprobar estrategia"; enabled: canApproveStrategyValue; accent: true; onClicked: { if (controlCenterViewModel) controlCenterViewModel.approveStrategy(); approvalPopup.close(); } }
                 AppButton { visible: canApproveNextPhaseValue; text: "Aprobar fase siguiente"; enabled: canApproveNextPhaseValue; accent: true; onClicked: { if (controlCenterViewModel) controlCenterViewModel.approveNextPhase(); approvalPopup.close(); } }
                 AppButton { visible: canSimulateValue; text: "Simular"; enabled: canSimulateValue; onClicked: { if (controlCenterViewModel) controlCenterViewModel.simulateAdaptive(); approvalPopup.close(); } }

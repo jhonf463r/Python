@@ -320,8 +320,8 @@ class RuntimeAuditTracer:
             target = self._log_dir / 'runtime_audit.jsonl'
             with target.open('a', encoding='utf-8') as fh:
                 fh.write(json.dumps(event, ensure_ascii=False, default=str) + '\n')
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning('RuntimeAuditTracer._append failed (log_dir=%s): %s', self._log_dir, exc)
 
 
 # ======================================================================
