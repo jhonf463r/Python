@@ -6,6 +6,9 @@ Covers:
 3. Promotion to OSES (ui_heartbeat_stall_findings)
 4. Promotion to PortableContext (ui_heartbeat + interaction_lifecycle summaries)
 5. Regression: existing FreezeIncidentReporter / RuntimeAuditTracer still work
+6. Deferred closure: episode stays open during follow-up (awaiting_response/prepared)
+7. query_pending coherence during deferred closure
+8. Window visibility wiring
 """
 
 from __future__ import annotations
@@ -424,3 +427,230 @@ class TestExistingSlicesRegression:
         # Should return empty list (no timeline file)
         findings = oses._startup_health_findings()
         assert isinstance(findings, list)
+
+
+# ======================================================================
+# 6. Deferred closure — episode stays open during follow-up
+# ======================================================================
+
+
+class _FakeViewModel:
+    """Minimal stand-in simulating ControlCenterViewModel lifecycle logic.
+
+    Reproduces the exact closure semantics from _apply_task_result / _apply_task_failure
+    so we can test the deferred-closure fix without the full Qt stack.
+    """
+
+    def __init__(self) -> None:
+        self._chat_interaction_lifecycle = ChatInteractionLifecycle()
+        self._ui_heartbeat_watchdog = UIHeartbeatWatchdog()
+        self._active_interaction_id: str | None = None
+        self._interaction_has_pending_followup = False
+
+    # -- mirrors sendChat --
+    def open_episode(self, message: str) -> str:
+        self._interaction_has_pending_followup = False
+        iid = self._chat_interaction_lifecycle.open_interaction(message)
+        self._active_interaction_id = iid
+        self._ui_heartbeat_watchdog.set_query_pending(True)
+        self._ui_heartbeat_watchdog.set_active_interaction(iid)
+        return iid
+
+    # -- mirrors _resolve_active_interaction --
+    def _resolve(self, *, outcome: str = 'resolved', provider: str = '') -> None:
+        iid = self._active_interaction_id
+        if not iid:
+            return
+        self._chat_interaction_lifecycle.resolve_interaction(iid, outcome=outcome, provider=provider)
+        self._active_interaction_id = None
+        self._ui_heartbeat_watchdog.set_query_pending(False)
+        self._ui_heartbeat_watchdog.set_active_interaction(None)
+
+    # -- mirrors bottom of _apply_task_result --
+    def apply_task_result(self, task_name: str, *, autonomy_status: str = '') -> None:
+        if task_name == 'chat':
+            self._chat_interaction_lifecycle.mark_phase(
+                self._active_interaction_id or '', 'first_useful_response',
+            )
+            if autonomy_status in {'awaiting_response', 'prepared'}:
+                self._interaction_has_pending_followup = True
+
+        _has_pending = self._interaction_has_pending_followup
+        if task_name in {'external_consultation', 'adaptive_action'}:
+            self._interaction_has_pending_followup = False
+            _has_pending = False
+
+        if _has_pending:
+            lc = self._chat_interaction_lifecycle
+            iid = self._active_interaction_id
+            if iid:
+                lc.mark_phase(iid, 'dispatch_pending')
+        else:
+            self._resolve(outcome='resolved')
+
+    # -- mirrors _apply_task_failure --
+    def apply_task_failure(self, task_name: str) -> None:
+        self._interaction_has_pending_followup = False
+        self._resolve(outcome='failed')
+
+
+class TestDeferredClosure:
+    """Episode must stay open when follow-up is pending."""
+
+    def test_chat_without_followup_closes_immediately(self) -> None:
+        vm = _FakeViewModel()
+        iid = vm.open_episode('hola')
+        vm.apply_task_result('chat', autonomy_status='noop')
+        assert vm._active_interaction_id is None
+        completed = vm._chat_interaction_lifecycle.recent_completed()
+        assert len(completed) == 1
+        assert completed[0]['interaction_id'] == iid
+        assert completed[0]['outcome'] == 'resolved'
+
+    def test_chat_with_awaiting_response_stays_open(self) -> None:
+        vm = _FakeViewModel()
+        iid = vm.open_episode('pregunta compleja')
+        vm.apply_task_result('chat', autonomy_status='awaiting_response')
+        # Episode must still be open
+        assert vm._active_interaction_id == iid
+        active = vm._chat_interaction_lifecycle.active_interaction()
+        assert active is not None
+        assert active['interaction_id'] == iid
+        assert 'dispatch_pending' in active['phases']
+        assert active['resolved'] is False
+
+    def test_chat_with_prepared_stays_open(self) -> None:
+        vm = _FakeViewModel()
+        iid = vm.open_episode('otra pregunta')
+        vm.apply_task_result('chat', autonomy_status='prepared')
+        assert vm._active_interaction_id == iid
+        assert vm._chat_interaction_lifecycle.active_interaction() is not None
+
+    def test_external_consultation_closes_deferred_episode(self) -> None:
+        """Full flow: chat opens → awaiting_response → external_consultation resolves."""
+        vm = _FakeViewModel()
+        iid = vm.open_episode('explicame algo')
+        # Chat resolves locally but dispatches external follow-up
+        vm.apply_task_result('chat', autonomy_status='awaiting_response')
+        assert vm._active_interaction_id == iid  # still open
+
+        # External consultation completes → episode closes
+        vm.apply_task_result('external_consultation')
+        assert vm._active_interaction_id is None
+        completed = vm._chat_interaction_lifecycle.recent_completed()
+        assert len(completed) == 1
+        assert completed[0]['interaction_id'] == iid
+        assert completed[0]['outcome'] == 'resolved'
+
+    def test_external_consultation_failure_closes_deferred_episode(self) -> None:
+        vm = _FakeViewModel()
+        iid = vm.open_episode('pregunta que falla')
+        vm.apply_task_result('chat', autonomy_status='awaiting_response')
+        assert vm._active_interaction_id == iid
+
+        # External consultation fails → episode closes with failed outcome
+        vm.apply_task_failure('external_consultation')
+        assert vm._active_interaction_id is None
+        completed = vm._chat_interaction_lifecycle.recent_completed()
+        assert len(completed) == 1
+        assert completed[0]['outcome'] == 'failed'
+
+    def test_new_sendchat_resets_pending_flag(self) -> None:
+        vm = _FakeViewModel()
+        vm.open_episode('msg1')
+        vm.apply_task_result('chat', autonomy_status='awaiting_response')
+        assert vm._interaction_has_pending_followup is True
+        # New sendChat should reset the flag
+        vm.open_episode('msg2')
+        assert vm._interaction_has_pending_followup is False
+
+
+# ======================================================================
+# 7. query_pending coherence during deferred closure
+# ======================================================================
+
+
+class TestQueryPendingCoherence:
+    """Watchdog query_pending must stay True while episode is open."""
+
+    def test_query_pending_true_during_followup(self) -> None:
+        vm = _FakeViewModel()
+        vm.open_episode('test')
+        assert vm._ui_heartbeat_watchdog._query_pending is True
+
+        # Chat resolves with follow-up pending
+        vm.apply_task_result('chat', autonomy_status='awaiting_response')
+        # query_pending must still be True — the interaction is still alive
+        assert vm._ui_heartbeat_watchdog._query_pending is True
+        assert vm._ui_heartbeat_watchdog._active_interaction_id is not None
+
+    def test_query_pending_false_after_final_resolution(self) -> None:
+        vm = _FakeViewModel()
+        vm.open_episode('test')
+        vm.apply_task_result('chat', autonomy_status='awaiting_response')
+        assert vm._ui_heartbeat_watchdog._query_pending is True
+
+        # External consultation completes → query_pending cleared
+        vm.apply_task_result('external_consultation')
+        assert vm._ui_heartbeat_watchdog._query_pending is False
+        assert vm._ui_heartbeat_watchdog._active_interaction_id is None
+
+    def test_query_pending_false_on_direct_resolution(self) -> None:
+        vm = _FakeViewModel()
+        vm.open_episode('test')
+        vm.apply_task_result('chat', autonomy_status='noop')
+        assert vm._ui_heartbeat_watchdog._query_pending is False
+
+    def test_query_pending_false_on_failure(self) -> None:
+        vm = _FakeViewModel()
+        vm.open_episode('test')
+        vm.apply_task_failure('chat')
+        assert vm._ui_heartbeat_watchdog._query_pending is False
+
+
+# ======================================================================
+# 8. Window visibility wiring
+# ======================================================================
+
+
+class TestWindowVisibilityWiring:
+    """Window visibility propagates to watchdog and lifecycle."""
+
+    def test_watchdog_receives_window_visible_false(self) -> None:
+        w = UIHeartbeatWatchdog()
+        assert w._window_visible is True
+        w.set_window_visible(False)
+        assert w._window_visible is False
+        w.set_window_visible(True)
+        assert w._window_visible is True
+
+    def test_stall_during_invisible_window_records_context(self) -> None:
+        w = UIHeartbeatWatchdog(stall_threshold_ms=10)
+        w.set_window_visible(False)
+        w._last_tick = time.perf_counter() - 0.1
+        w.tick()
+        stalls = w.recent_stalls()
+        assert len(stalls) >= 1
+        assert stalls[0]['window_visible'] is False
+
+    def test_lifecycle_records_window_inactive_active(self) -> None:
+        lc = ChatInteractionLifecycle()
+        iid = lc.open_interaction('test')
+        lc.record_window_inactive(iid)
+        active = lc.active_interaction()
+        assert len(active['window_inactive_intervals']) == 1
+        assert 'inactive_at' in active['window_inactive_intervals'][0]
+        lc.record_window_active(iid)
+        active = lc.active_interaction()
+        assert 'active_at' in active['window_inactive_intervals'][0]
+
+    def test_window_visibility_during_deferred_closure(self) -> None:
+        """Window inactive/active events during follow-up are captured."""
+        vm = _FakeViewModel()
+        iid = vm.open_episode('test')
+        vm.apply_task_result('chat', autonomy_status='awaiting_response')
+        # Episode is still open — window events should attach
+        vm._chat_interaction_lifecycle.record_window_inactive(iid)
+        vm._chat_interaction_lifecycle.record_window_active(iid)
+        active = vm._chat_interaction_lifecycle.active_interaction()
+        assert len(active['window_inactive_intervals']) == 1

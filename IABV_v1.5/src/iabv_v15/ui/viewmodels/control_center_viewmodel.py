@@ -6954,6 +6954,7 @@ class ControlCenterViewModel(QObject):
         if not message:
             return
         # --- Open canonical interaction episode ---
+        self._interaction_has_pending_followup = False
         lifecycle = getattr(self, '_chat_interaction_lifecycle', None)
         interaction_id: str | None = None
         if lifecycle is not None:
@@ -7434,6 +7435,10 @@ class ControlCenterViewModel(QObject):
                 autonomy_result = self._maybe_run_autonomous_evolution(adaptive_payload, source='chat')
                 if autonomy_result is None:
                     self._busy_label = 'Respuesta lista.'
+                # Track if follow-up work is pending for lifecycle closure.
+                _autonomy_status = str((autonomy_result or {}).get('status') or '')
+                if _autonomy_status in {'awaiting_response', 'prepared'}:
+                    self._interaction_has_pending_followup = True
                 self._clear_autonomy_activity_override()
         elif task_name == 'adaptive_action':
             self._clear_autonomy_activity_override()
@@ -7563,10 +7568,28 @@ class ControlCenterViewModel(QObject):
         if task_name != 'provider_health':
             self._working = False
         # --- Close canonical interaction episode on resolution ---
-        self._resolve_active_interaction(
-            outcome='resolved',
-            provider=str(payload.get('provider_name', '')) if isinstance(payload, dict) else '',
-        )
+        # Do NOT close the interaction if follow-up work is still pending
+        # (external consultation dispatched, autonomy awaiting_response, etc.).
+        # The episode must stay open until the *real* final resolution.
+        _has_pending_followup = getattr(self, '_interaction_has_pending_followup', False)
+        if task_name in {'external_consultation', 'adaptive_action'}:
+            # These task types ARE the follow-up — they complete the episode.
+            self._interaction_has_pending_followup = False
+            _has_pending_followup = False
+        if _has_pending_followup:
+            # Mark lifecycle phase but keep episode open
+            _lc = getattr(self, '_chat_interaction_lifecycle', None)
+            _iid = getattr(self, '_active_interaction_id', None)
+            if _iid and _lc is not None:
+                try:
+                    _lc.mark_phase(_iid, 'dispatch_pending')
+                except Exception:
+                    pass
+        else:
+            self._resolve_active_interaction(
+                outcome='resolved',
+                provider=str(payload.get('provider_name', '')) if isinstance(payload, dict) else '',
+            )
         self._update_progress_cards()
         self._update_evolution_snapshot()
         self._agent_cards = self._build_agent_cards()
@@ -7598,6 +7621,7 @@ class ControlCenterViewModel(QObject):
         else:
             self._working = False
         # --- Close canonical interaction episode on failure ---
+        self._interaction_has_pending_followup = False
         self._resolve_active_interaction(outcome='failed')
         self._busy_label = visible_message
         self._update_evolution_snapshot()

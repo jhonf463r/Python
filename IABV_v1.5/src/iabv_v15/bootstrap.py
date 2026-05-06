@@ -2075,6 +2075,28 @@ class AppBootstrap:
             self._timeline.mark(f'window_{event_name}', **extra)
         except Exception:
             pass
+        # Propagate real window visibility to UIHeartbeatWatchdog + lifecycle.
+        if event_name in ('visibleChanged', 'activeChanged'):
+            is_visible = bool(kwargs.get('visible', kwargs.get('active', True)))
+            watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+            if watchdog is not None:
+                try:
+                    watchdog.set_window_visible(is_visible)
+                except Exception:
+                    pass
+            # Record window inactive/active in the active interaction.
+            vm = getattr(self, 'control_center_viewmodel', None)
+            if vm is not None:
+                iid = getattr(vm, '_active_interaction_id', None)
+                lc = getattr(vm, '_chat_interaction_lifecycle', None)
+                if iid and lc is not None:
+                    try:
+                        if is_visible:
+                            lc.record_window_active(iid)
+                        else:
+                            lc.record_window_inactive(iid)
+                    except Exception:
+                        pass
 
     def _force_splash_ready_fallback(self) -> None:
         """Fallback determinista si QML nunca emite ``shellLoaderReady``.
