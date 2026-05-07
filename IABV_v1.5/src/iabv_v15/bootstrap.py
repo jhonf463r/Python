@@ -336,6 +336,7 @@ from iabv_v15.ui.splash_controller import SplashController
 from iabv_v15.infra.startup_timeline import (
     configure_global_timeline,
     get_global_timeline,
+    _get_rss_mb,
 )
 from iabv_v15.ui.viewmodels.capture_studio_viewmodel import CaptureStudioViewModel
 from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
@@ -2900,6 +2901,105 @@ class AppBootstrap:
             pass
         logger.info('lazy_vm_constructed: %s', route)
 
+    def _lazy_vm_prebuild_memory_state(self) -> dict[str, float | None]:
+        """Current memory snapshot for optional lazy-VM prebuild gating."""
+        rss_mb = _get_rss_mb()
+        available_mb: float | None = None
+        memory_percent: float | None = None
+        try:
+            import psutil  # type: ignore[import-not-found]
+
+            memory = psutil.virtual_memory()
+            available_mb = float(memory.available) / (1024.0 * 1024.0)
+            memory_percent = float(memory.percent)
+        except Exception:
+            pass
+        return {
+            'rss_mb': round(rss_mb, 1) if rss_mb >= 0 else None,
+            'available_mb': round(available_mb, 1) if available_mb is not None else None,
+            'memory_percent': round(memory_percent, 1) if memory_percent is not None else None,
+        }
+
+    @staticmethod
+    def _lazy_vm_prebuild_env_float(name: str, default: float) -> float:
+        raw = os.environ.get(name)
+        if raw is None or not raw.strip():
+            return default
+        try:
+            value = float(raw)
+        except ValueError:
+            return default
+        return value if value > 0 else default
+
+    def _lazy_vm_prebuild_pause_reason(self, route: str) -> tuple[str | None, dict[str, float | None]]:
+        """Return a pause reason when optional VM prebuild would amplify pressure."""
+        state = self._lazy_vm_prebuild_memory_state()
+        if os.environ.get('IABV_LAZY_VM_PREBUILD_PRESSURE_GATE', '1') == '0':
+            return None, state
+
+        max_rss_mb = self._lazy_vm_prebuild_env_float(
+            'IABV_LAZY_VM_PREBUILD_MAX_RSS_MB',
+            1800.0,
+        )
+        min_available_mb = self._lazy_vm_prebuild_env_float(
+            'IABV_LAZY_VM_PREBUILD_MIN_AVAILABLE_MB',
+            1024.0,
+        )
+        max_memory_percent = self._lazy_vm_prebuild_env_float(
+            'IABV_LAZY_VM_PREBUILD_MAX_MEMORY_PERCENT',
+            92.0,
+        )
+        state.update(
+            {
+                'max_rss_mb': max_rss_mb,
+                'min_available_mb': min_available_mb,
+                'max_memory_percent': max_memory_percent,
+            }
+        )
+
+        rss_mb = state.get('rss_mb')
+        available_mb = state.get('available_mb')
+        memory_percent = state.get('memory_percent')
+        if rss_mb is not None and rss_mb >= max_rss_mb:
+            return 'rss_above_lazy_vm_prebuild_limit', state
+        if available_mb is not None and available_mb <= min_available_mb:
+            return 'available_memory_below_lazy_vm_prebuild_limit', state
+        if memory_percent is not None and memory_percent >= max_memory_percent:
+            return 'system_memory_percent_above_lazy_vm_prebuild_limit', state
+        return None, state
+
+    def _mark_lazy_vm_prebuild_paused(
+        self,
+        *,
+        route: str,
+        remaining_routes: list[str],
+        processed_count: int,
+        reason: str,
+        state: dict[str, float | None],
+    ) -> None:
+        details = {
+            'route': route,
+            'remaining_routes': remaining_routes,
+            'processed_count': processed_count,
+            'skipped_count': len(remaining_routes),
+            'reason': reason,
+            **state,
+        }
+        try:
+            self._timeline.mark(f'lazy_vm_prebuild_{route}_skipped', **details)
+            self._timeline.mark('lazy_vm_prebuild_paused', **details)
+            self._timeline.mark('lazy_vm_prebuild_done', status='paused', **details)
+        except Exception:
+            pass
+        logger.warning(
+            'lazy_vm_prebuild_paused route=%s reason=%s rss=%sMB available=%sMB memory=%s%%',
+            route,
+            reason,
+            state.get('rss_mb'),
+            state.get('available_mb'),
+            state.get('memory_percent'),
+        )
+
     def _build_control_center_vm(self) -> None:
         self.control_center_viewmodel = ControlCenterViewModel(
             config=self.config,
@@ -3078,6 +3178,8 @@ class AppBootstrap:
         NOT break the chain — the next VM is always scheduled.
         """
         routes = list(self._ROUTE_TO_VM_ATTR.keys())
+        # Optional prebuild is opportunistic: user navigation still builds
+        # any skipped VM on demand via _ensure_vm_for_route().
 
         def _build_next(idx: int = 0) -> None:
             if idx >= len(routes):
@@ -3088,6 +3190,22 @@ class AppBootstrap:
                 logger.info('lazy_vm_prebuild_done: all %d routes processed', len(routes))
                 return
             route = routes[idx]
+            attr = self._ROUTE_TO_VM_ATTR.get(route)
+            if attr and getattr(self, attr, None) is None:
+                try:
+                    reason, state = self._lazy_vm_prebuild_pause_reason(route)
+                except Exception:
+                    logger.exception('lazy_vm_prebuild memory gate failed for route: %s', route)
+                    reason, state = None, {}
+                if reason:
+                    self._mark_lazy_vm_prebuild_paused(
+                        route=route,
+                        remaining_routes=routes[idx:],
+                        processed_count=idx,
+                        reason=reason,
+                        state=state,
+                    )
+                    return
             try:
                 self._timeline.mark(f'lazy_vm_prebuild_{route}_start')
             except Exception:

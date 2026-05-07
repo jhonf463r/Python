@@ -469,7 +469,13 @@ class _FakeViewModel:
         self._ui_heartbeat_watchdog.set_active_interaction(None)
 
     # -- mirrors bottom of _apply_task_result --
-    def apply_task_result(self, task_name: str, *, autonomy_status: str = '') -> None:
+    def apply_task_result(
+        self,
+        task_name: str,
+        *,
+        autonomy_status: str = '',
+        payload: dict[str, Any] | None = None,
+    ) -> None:
         if task_name == 'chat':
             self._chat_interaction_lifecycle.mark_phase(
                 self._active_interaction_id or '', 'first_useful_response',
@@ -488,7 +494,18 @@ class _FakeViewModel:
             if iid:
                 lc.mark_phase(iid, 'dispatch_pending')
         else:
-            self._resolve(outcome='resolved')
+            outcome = 'resolved'
+            provider = ''
+            if isinstance(payload, dict):
+                provider = str(
+                    payload.get('provider_name')
+                    or payload.get('assistant_title')
+                    or payload.get('assistant_kind')
+                    or '',
+                )
+                if task_name == 'external_consultation' and payload.get('success') is False:
+                    outcome = 'blocked'
+            self._resolve(outcome=outcome, provider=provider)
 
     # -- mirrors _apply_task_failure --
     def apply_task_failure(self, task_name: str) -> None:
@@ -1445,21 +1462,36 @@ class TestExternalConsultationProviderDerivation:
         payload: dict[str, Any] = {
             'assistant_title': 'ChatGPT Web',
             'summary': 'External response',
+            'success': True,
         }
-        vm._interaction_has_pending_followup = False
-        # Derive provider exactly as real code does
-        _provider = str(
-            payload.get('provider_name')
-            or payload.get('assistant_title')
-            or payload.get('assistant_kind')
-            or '',
-        )
-        vm._resolve(outcome='resolved', provider=_provider)
+        vm.apply_task_result('external_consultation', payload=payload)
 
         completed = vm._chat_interaction_lifecycle.recent_completed()
         match = [c for c in completed if c.get('interaction_id') == iid]
         assert len(match) == 1
+        assert match[0]['outcome'] == 'resolved'
         assert match[0]['provider'] == 'ChatGPT Web'
+
+    def test_blocked_external_consultation_records_blocked_outcome(self) -> None:
+        vm = _FakeViewModel()
+        iid = vm.open_episode('consulta a chatgpt')
+        vm.apply_task_result('chat', autonomy_status='awaiting_response')
+        assert vm._active_interaction_id == iid
+
+        vm.apply_task_result(
+            'external_consultation',
+            payload={
+                'assistant_title': 'ChatGPT web asistido',
+                'success': False,
+                'message': 'Bloqueado por verificacion de seguridad.',
+            },
+        )
+
+        completed = vm._chat_interaction_lifecycle.recent_completed()
+        match = [c for c in completed if c.get('interaction_id') == iid]
+        assert len(match) == 1
+        assert match[0]['outcome'] == 'blocked'
+        assert match[0]['provider'] == 'ChatGPT web asistido'
 
     def test_external_consultation_fallback_to_assistant_kind(self) -> None:
         payload: dict[str, Any] = {

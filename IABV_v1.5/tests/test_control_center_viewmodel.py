@@ -118,23 +118,50 @@ def _disable_external_assistant_apps(bootstrap: AppBootstrap, *, disable_web: bo
     for tool_id in ('codex_installed', 'chatgpt_installed'):
         card = bootstrap.tool_record_repository.get_card(tool_id)
         assert card is not None
-        bootstrap.tool_record_repository.save_card(
-            card.model_copy(
+        updated = card.model_copy(
+            update={
+                'title': f'Missing {tool_id}',
+                'metadata': {
+                    **card.metadata,
+                    'assistant_kind': f'missing_{tool_id}',
+                    'executable_path': '',
+                    'command_name': 'definitely_missing_external_app',
+                    'command_aliases': [],
+                    'windows_default_paths': [],
+                }
+            }
+        )
+        bootstrap.tool_record_repository.save_card(updated)
+        bootstrap.tool_registry.refresh_card(updated)
+    if disable_web:
+        for tool_id in ('chatgpt_web_assisted', 'claude_web_assisted'):
+            web_card = bootstrap.tool_record_repository.get_card(tool_id)
+            assert web_card is not None
+            updated = web_card.model_copy(
                 update={
+                    'title': f'Missing {tool_id}',
                     'metadata': {
-                        **card.metadata,
-                        'executable_path': '',
-                        'command_name': 'definitely_missing_external_app',
-                        'command_aliases': [],
-                        'windows_default_paths': [],
+                        **web_card.metadata,
+                        'assistant_kind': f'missing_{tool_id}',
+                        'web_url': '',
+                        'response_capture_mode': '',
                     }
                 }
             )
-        )
-    if disable_web:
-        web_card = bootstrap.tool_record_repository.get_card('chatgpt_web_assisted')
-        assert web_card is not None
-        bootstrap.tool_record_repository.save_card(web_card.model_copy(update={'metadata': {**web_card.metadata, 'web_url': ''}}))
+            bootstrap.tool_record_repository.save_card(updated)
+            bootstrap.tool_registry.refresh_card(updated)
+    snapshot = getattr(bootstrap.world_model_service, '_current_snapshot', None)
+    if snapshot is not None:
+        disabled_ids = {'codex_installed', 'chatgpt_installed'}
+        if disable_web:
+            disabled_ids.update({'chatgpt_web_assisted', 'claude_web_assisted'})
+        tool_live_status = []
+        for item in snapshot.tool_live_status or []:
+            if getattr(item, 'tool_id', '') in disabled_ids:
+                tool_live_status.append(item.model_copy(update={'available': False, 'status': 'no disponible', 'confidence': 0.0}))
+            else:
+                tool_live_status.append(item)
+        bootstrap.world_model_service._current_snapshot = snapshot.model_copy(update={'tool_live_status': tool_live_status})
 
 
 def _set_permissive_world_model(bootstrap: AppBootstrap, *, codex_ready: bool = True) -> None:
@@ -2741,6 +2768,23 @@ def test_control_center_send_chat_external_access_denied_is_humanized_and_stops_
     try:
         viewmodel = bootstrap.control_center_viewmodel
         assert viewmodel is not None
+        bootstrap.adaptive_task_orchestrator.preflight_external_assistant = (  # type: ignore[method-assign]
+            lambda **kwargs: {
+                'assistant_kind': 'chatgpt',
+                'world_model': {},
+                'world_model_summary': {},
+                'governance': {
+                    'approval_required': False,
+                    'block_risky_action': True,
+                    'diagnostic_category': 'assistant_unavailable',
+                    'reason': 'ChatGPT no esta disponible para observacion segura en esta corrida.',
+                    'external_state_flags': ['assistant_unavailable'],
+                },
+                'approval_checkpoints': [],
+                'blocked': True,
+                'reason': 'ChatGPT no esta disponible para observacion segura en esta corrida.',
+            }
+        )
 
         viewmodel.sendChat('Necesito una consulta externa con ChatGPT para revisar por que Playwright no logra abrir bien desde el programa')
         _drain_ui(viewmodel)

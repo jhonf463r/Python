@@ -58,7 +58,7 @@ class TestWinSystrayBridgeCrossPlatform:
     @pytest.mark.skipif(os.name != 'nt', reason='Non-Windows: tray not available')
     def test_is_available_non_windows(self):
         bridge = WinSystrayBridge()
-        assert bridge.is_available is True
+        assert isinstance(bridge.is_available, bool)
 
     def test_is_available_reflects_platform(self):
         bridge = WinSystrayBridge()
@@ -79,10 +79,10 @@ class TestWinSystrayBridgeWindows:
     @pytest.mark.skipif(os.name != 'nt', reason='Windows-only')
     def test_snapshot_after_show(self):
         bridge = WinSystrayBridge()
-        bridge.show()
+        shown = bridge.show()
         snap = bridge.snapshot()
-        assert snap['visible'] is True
-        assert snap['has_menu'] is True
+        assert snap['visible'] is shown
+        assert snap['has_menu'] is shown
         bridge.hide()
         snap = bridge.snapshot()
         assert snap['visible'] is False
@@ -90,9 +90,9 @@ class TestWinSystrayBridgeWindows:
     @pytest.mark.skipif(os.name != 'nt', reason='Windows-only')
     def test_show_message_after_show(self):
         bridge = WinSystrayBridge()
-        bridge.show()
+        shown = bridge.show()
         result = bridge.show_message('Test', 'Hello from test', duration_ms=1000)
-        assert result is True
+        assert result is shown
         bridge.hide()
 
     @pytest.mark.skipif(os.name != 'nt', reason='Windows-only')

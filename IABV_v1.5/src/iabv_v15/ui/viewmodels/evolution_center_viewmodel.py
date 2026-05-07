@@ -659,7 +659,7 @@ class EvolutionCenterViewModel(QObject):
                         continue
                     audited += 1
                     try:
-                        sections.append(self._run_tool_sandbox(card))
+                        sections.append(self._run_tool_sandbox(card, sandbox_only=True))
                     except Exception as exc:
                         sections.append(f'Herramienta {tool_id}: error — {exc}')
                 if audited == 0:
@@ -851,11 +851,11 @@ class EvolutionCenterViewModel(QObject):
         allowed = mapping.get(filter_key, set())
         return [item for item in incidents if item.get('incident_kind') in allowed]
 
-    def _run_tool_sandbox(self, card: Any) -> str:
+    def _run_tool_sandbox(self, card: Any, *, sandbox_only: bool = False) -> str:
         request = InferenceRequest(
             user_goal=f'Validar en sandbox la herramienta {card.title}',
             task_role=TaskRole.TOOL_SANDBOX,
-            goal_parameters={'tool_id': card.tool_id, 'execution_scope': 'read_only'},
+            goal_parameters={'tool_id': card.tool_id, 'execution_scope': 'read_only', 'sandbox_only': sandbox_only},
         )
         task = self.tool_teach_service.build_task_from_request(request)
         result = self.tool_teach_service.execute_task(task, approved=False)

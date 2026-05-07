@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -39,6 +40,19 @@ def _workspace(name: str) -> Path:
     root = base / f'{name}_{uuid4().hex}'
     root.mkdir(parents=True, exist_ok=True)
     return root
+
+
+def _drain_evolution_vm(predicate, *, timeout_seconds: float = 30.0) -> None:
+    app = evolution_center_vm.QGuiApplication.instance()
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        if app is not None:
+            app.processEvents()
+        if predicate():
+            return
+        time.sleep(0.05)
+    if app is not None:
+        app.processEvents()
 
 
 def _dossier(dossier_id: str, *, minutes: int, episode_id: str) -> ExecutionDossier:
@@ -218,6 +232,12 @@ def test_evolution_center_base_tool_audit_collects_multiple_statuses() -> None:
         assert vm is not None
 
         vm.auditBaseTools()
+        _drain_evolution_vm(
+            lambda: (
+                'Auditoria base completada.' in vm.get_latest_tool_status()
+                or 'Error en auditoria' in vm.get_latest_tool_status()
+            )
+        )
         status = vm.get_latest_tool_status()
 
         assert 'Auditoria base completada.' in status

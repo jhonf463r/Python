@@ -435,8 +435,10 @@ def test_tool_teach_service_external_consultation_falls_back_to_web_when_desktop
             repository.save_card(
                 card.model_copy(
                     update={
+                        'title': f'Missing {tool_id}',
                         'metadata': {
                             **card.metadata,
+                            'assistant_kind': f'definitely_missing_{tool_id}',
                             'executable_path': '',
                             'command_name': 'definitely_missing_external_app',
                             'command_aliases': [],
@@ -586,8 +588,10 @@ def test_tool_teach_service_external_consultation_can_fall_back_to_local_ollama_
             repository.save_card(
                 card.model_copy(
                     update={
+                        'title': f'Missing {tool_id}',
                         'metadata': {
                             **card.metadata,
+                            'assistant_kind': f'definitely_missing_{tool_id}',
                             'executable_path': '',
                             'command_name': 'definitely_missing_external_app',
                             'command_aliases': [],

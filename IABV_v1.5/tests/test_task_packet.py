@@ -234,6 +234,7 @@ PACKET_KEYS = {
     'objective', 'intent_key', 'route_summary', 'worker_gate_summary',
     'selected_worker', 'evidence_basis', 'governance_flags', 'unresolved',
     'resume_context', 'has_resume_hints', 'account_selection',
+    'tool_selection_summary',
 }
 
 

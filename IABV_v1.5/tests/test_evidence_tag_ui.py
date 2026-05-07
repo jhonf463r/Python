@@ -200,6 +200,9 @@ class _AnswerMethodVM(_MinimalVM):
     def _update_adaptive_state(self, payload: Any) -> None:
         pass
 
+    def _record_chat_audit(self, **_kwargs: Any) -> None:
+        pass
+
     def _evolution_status_conversation_payload(self, *, message: str) -> dict[str, Any]:
         return {}
 

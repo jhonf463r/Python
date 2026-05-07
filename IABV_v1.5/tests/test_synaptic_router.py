@@ -93,6 +93,7 @@ def test_feature_flag_off_preserves_previous_behaviour(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv(_FEATURE_FLAG_ENV, raising=False)
+    monkeypatch.delenv(_FEATURE_FLAG_ENV_ALIAS, raising=False)
     router = _router_with()
     decision = router.decide(task_kind="code_generation")
 
@@ -255,9 +256,11 @@ def test_flag_variants_are_case_insensitive(
 ) -> None:
     router = _router_with()
     for raw in ("True", "TRUE", "true"):
+        monkeypatch.delenv(_FEATURE_FLAG_ENV_ALIAS, raising=False)
         monkeypatch.setenv(_FEATURE_FLAG_ENV, raw)
         assert router.decide(task_kind="code_generation").routing_enabled is True
     for raw in ("false", "0", "off", ""):
+        monkeypatch.delenv(_FEATURE_FLAG_ENV_ALIAS, raising=False)
         monkeypatch.setenv(_FEATURE_FLAG_ENV, raw)
         assert router.decide(task_kind="code_generation").routing_enabled is False
 

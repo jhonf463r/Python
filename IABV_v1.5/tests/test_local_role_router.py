@@ -519,9 +519,15 @@ def test_bootstrap_wiring_route_with_real_scanner_no_workers() -> None:
     route_from_decision with requires_external must fallback to local."""
     from iabv_v15.services.account_resource_scanner import estimate_available_workers
 
+    pool = estimate_available_workers()
+    has_codex_worker = any(
+        str(worker.get('tool') or '').strip().lower() == 'codex'
+        and not bool(worker.get('exhausted'))
+        for worker in pool.get('workers', [])
+    )
     router = _router(
         _workspace('whg_bootstrap_route'),
-        account_resource_scanner=estimate_available_workers,
+        account_resource_scanner=lambda: pool,
     )
     decision = IntentRouteDecision(
         detected_role=TaskRole.PROJECT_EVOLUTION,
@@ -535,6 +541,11 @@ def test_bootstrap_wiring_route_with_real_scanner_no_workers() -> None:
         requires_external=True,
         target_assistant='codex',
     )
-    # On Linux CI: no browser sessions → 0 workers → fallback local
-    assert 'Fallback local' in route.reason
-    assert route.provider_name == 'Ollama'
+    # On Linux CI: no browser sessions -> 0 workers -> fallback local.
+    # On a live Windows workstation, an approved Codex worker may exist.
+    if has_codex_worker:
+        assert route.used_fallback is False
+        assert 'Fallback local' not in route.reason
+    else:
+        assert 'Fallback local' in route.reason
+        assert route.provider_name == 'Ollama'

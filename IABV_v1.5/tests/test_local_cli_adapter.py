@@ -145,8 +145,12 @@ def test_run_executes_whitelisted_verb_and_captures_stdout(tmp_path: Path) -> No
 
 def test_run_defaults_to_version_command_when_task_has_no_args(tmp_path: Path) -> None:
     stub = tmp_path / 'probe_cli'
-    stub.write_text('#!/bin/sh\necho default-version\n', encoding='utf-8')
-    stub.chmod(stub.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+    if sys.platform == 'win32':
+        stub = tmp_path / 'probe_cli.bat'
+        stub.write_text('@echo default-version\r\n', encoding='utf-8')
+    else:
+        stub.write_text('#!/bin/sh\necho default-version\n', encoding='utf-8')
+        stub.chmod(stub.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
     card = _card(metadata={
         'command_name': 'probe_cli',
         'executable_path': str(stub),
@@ -193,11 +197,22 @@ def test_run_preserves_quoted_arguments_via_shlex(tmp_path: Path) -> None:
     # parte en dos. Es la regresion que motivo el fix de shlex.split.
     capture = tmp_path / 'argv.txt'
     stub = tmp_path / 'probe_cli'
-    stub.write_text(
-        '#!/bin/sh\nprintf "%s\\n" "$@" > "' + str(capture) + '"\n',
-        encoding='utf-8',
-    )
-    stub.chmod(stub.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+    if sys.platform == 'win32':
+        stub = tmp_path / 'probe_cli.bat'
+        stub.write_text(
+            '@echo off\r\n'
+            f'> "{capture}" (\r\n'
+            'echo %~1\r\n'
+            'echo %~2\r\n'
+            ')\r\n',
+            encoding='utf-8',
+        )
+    else:
+        stub.write_text(
+            '#!/bin/sh\nprintf "%s\\n" "$@" > "' + str(capture) + '"\n',
+            encoding='utf-8',
+        )
+        stub.chmod(stub.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
     card = _card(metadata={
         'command_name': 'probe_cli',
         'executable_path': str(stub),

@@ -70,6 +70,37 @@ def take_resource_snapshot() -> ResourceSnapshot:
     snap.cpu_count = os.cpu_count() or 1
 
     try:
+        import psutil  # type: ignore[import-not-found]
+
+        mem = psutil.virtual_memory()
+        snap.ram_total_mb = int(mem.total // (1024 * 1024))
+        snap.ram_available_mb = int(mem.available // (1024 * 1024))
+        snap.ram_used_pct = round(float(mem.percent), 1)
+        snap.cpu_load_1m = float(psutil.cpu_percent(interval=0.0)) / 100 * snap.cpu_count
+
+        processes: list[tuple[int, dict[str, Any]]] = []
+        for proc in psutil.process_iter(['pid', 'name', 'memory_info', 'cpu_percent']):
+            try:
+                info = proc.info
+                rss = int((info.get('memory_info').rss if info.get('memory_info') else 0) or 0)
+                processes.append((
+                    rss,
+                    {
+                        'pid': str(info.get('pid', '')),
+                        'cpu_pct': float(info.get('cpu_percent') or 0.0),
+                        'rss_mb': rss // (1024 * 1024),
+                        'command': str(info.get('name') or '')[:60],
+                    },
+                ))
+            except Exception:
+                continue
+        for _, item in sorted(processes, key=lambda x: x[0], reverse=True)[:5]:
+            snap.heavy_processes.append(item)
+        return snap
+    except Exception as exc:
+        logger.debug('psutil resource snapshot unavailable: %s', exc)
+
+    try:
         meminfo = Path('/proc/meminfo')
         if meminfo.exists():
             text = meminfo.read_text()
@@ -87,10 +118,10 @@ def take_resource_snapshot() -> ResourceSnapshot:
             _ram_ok = False
             try:
                 r = subprocess.run(
-                    ['powershell', '-Command',
+                    ['powershell', '-NoProfile', '-NonInteractive', '-Command',
                      '[math]::Round((Get-CimInstance Win32_OperatingSystem).TotalVisibleMemorySize/1024),'
                      '[math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory/1024)'],
-                    capture_output=True, text=True, timeout=10,
+                    capture_output=True, text=True, timeout=3,
                 )
                 if r.returncode == 0:
                     nums = [x.strip() for x in r.stdout.strip().splitlines() if x.strip().isdigit()]
@@ -108,7 +139,7 @@ def take_resource_snapshot() -> ResourceSnapshot:
                     ['wmic', 'OS', 'get',
                      'FreePhysicalMemory,TotalVisibleMemorySize',
                      '/format:csv'],
-                    capture_output=True, text=True, timeout=10,
+                    capture_output=True, text=True, timeout=3,
                 )
                 if r.returncode == 0:
                     for line in r.stdout.strip().splitlines():
@@ -136,9 +167,9 @@ def take_resource_snapshot() -> ResourceSnapshot:
             _cpu_ok = False
             try:
                 r = subprocess.run(
-                    ['powershell', '-Command',
+                    ['powershell', '-NoProfile', '-NonInteractive', '-Command',
                      '(Get-CimInstance Win32_Processor).LoadPercentage'],
-                    capture_output=True, text=True, timeout=10,
+                    capture_output=True, text=True, timeout=3,
                 )
                 if r.returncode == 0:
                     val = r.stdout.strip()
@@ -150,7 +181,7 @@ def take_resource_snapshot() -> ResourceSnapshot:
             if not _cpu_ok:
                 r = subprocess.run(
                     ['wmic', 'cpu', 'get', 'LoadPercentage', '/format:csv'],
-                    capture_output=True, text=True, timeout=10,
+                    capture_output=True, text=True, timeout=3,
                 )
                 if r.returncode == 0:
                     for line in r.stdout.strip().splitlines():
@@ -182,12 +213,12 @@ def take_resource_snapshot() -> ResourceSnapshot:
                         })
         else:
             r = subprocess.run(
-                ['powershell', '-Command',
+                ['powershell', '-NoProfile', '-NonInteractive', '-Command',
                  'Get-Process | Sort-Object -Property WorkingSet -Descending '
                  '| Select-Object -First 5 -Property Name,Id,CPU,'
                  '@{N="MemMB";E={[math]::Round($_.WorkingSet/1MB)}} '
                  '| ConvertTo-Json'],
-                capture_output=True, text=True, timeout=15,
+                capture_output=True, text=True, timeout=3,
             )
             if r.returncode == 0 and r.stdout.strip():
                 procs = json.loads(r.stdout)
