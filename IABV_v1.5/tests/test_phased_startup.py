@@ -67,6 +67,7 @@ def _make_bootstrap():
         # Service dependencies (mocked — only need to exist as attributes)
         _m = MagicMock
         bs.episode_repository = _m()
+        bs.chat_message_repository = _m()
         bs.knowledge_repository = _m()
         bs.run_repository = _m()
         bs.role_router = _m()
@@ -113,6 +114,10 @@ def _make_bootstrap():
         bs.live_audit_supervisor = _m()
         bs.audit_teach_verification_service = _m()
         bs.resource_metacognition_service = _m()
+        bs.decision_audit_trail = _m()
+        bs.freeze_incident_reporter = _m()
+        bs.ui_heartbeat_watchdog = _m()
+        bs.chat_interaction_lifecycle = _m()
         bs.execution_dossier_repository = _m()
         bs.incident_packet_service = _m()
         bs.self_check_orchestrator = _m()
@@ -698,6 +703,59 @@ class TestLazyVMConstruction:
         from iabv_v15.bootstrap import AppBootstrap
         expected = {'control', 'capture', 'evolution', 'knowledge', 'providers', 'runs', 'centro_vivo'}
         assert set(AppBootstrap._ROUTE_TO_VM_ATTR.keys()) == expected
+
+    def test_lazy_vm_prebuild_pauses_under_memory_pressure(self):
+        """Idle prebuild stops before optional VMs amplify high RSS."""
+        bs = _make_bootstrap()
+        with (
+            patch.dict(os.environ, {'IABV_LAZY_VM_PREBUILD_MAX_RSS_MB': '1000'}, clear=False),
+            patch.object(
+                bs,
+                '_lazy_vm_prebuild_memory_state',
+                return_value={'rss_mb': 1250.0, 'available_mb': 4096.0, 'memory_percent': 50.0},
+            ),
+            patch.object(bs, '_ensure_vm_for_route') as ensure,
+        ):
+            bs._build_all_lazy_vms()
+
+        ensure.assert_not_called()
+        phases = [call.args[0] for call in bs._timeline.mark.call_args_list]
+        assert 'lazy_vm_prebuild_control_skipped' in phases
+        assert 'lazy_vm_prebuild_paused' in phases
+        assert 'lazy_vm_prebuild_done' in phases
+        done_call = next(call for call in bs._timeline.mark.call_args_list if call.args[0] == 'lazy_vm_prebuild_done')
+        assert done_call.kwargs['status'] == 'paused'
+        assert done_call.kwargs['reason'] == 'rss_above_lazy_vm_prebuild_limit'
+        assert done_call.kwargs['remaining_routes'] == list(bs._ROUTE_TO_VM_ATTR.keys())
+
+    def test_lazy_vm_prebuild_runs_all_when_memory_is_safe(self):
+        """Idle prebuild keeps the existing chain when memory is below limits."""
+        bs = _make_bootstrap()
+        built_routes: list[str] = []
+        with (
+            patch.dict(
+                os.environ,
+                {
+                    'IABV_LAZY_VM_PREBUILD_MAX_RSS_MB': '9999',
+                    'IABV_LAZY_VM_PREBUILD_MIN_AVAILABLE_MB': '1',
+                    'IABV_LAZY_VM_PREBUILD_MAX_MEMORY_PERCENT': '99',
+                },
+                clear=False,
+            ),
+            patch.object(
+                bs,
+                '_lazy_vm_prebuild_memory_state',
+                return_value={'rss_mb': 600.0, 'available_mb': 4096.0, 'memory_percent': 40.0},
+            ),
+            patch.object(bs, '_ensure_vm_for_route', side_effect=built_routes.append),
+            patch('iabv_v15.bootstrap.QTimer.singleShot', side_effect=lambda _ms, cb: cb()),
+        ):
+            bs._build_all_lazy_vms()
+
+        assert built_routes == list(bs._ROUTE_TO_VM_ATTR.keys())
+        phases = [call.args[0] for call in bs._timeline.mark.call_args_list]
+        assert 'lazy_vm_prebuild_paused' not in phases
+        assert phases.count('lazy_vm_prebuild_done') == 1
 
     def test_wire_task_a_signals_reads_vms_dynamically(self):
         """_wire_task_a_signals must read VMs at emit time, not connect time."""
