@@ -3092,6 +3092,7 @@ class AppBootstrap:
             self._prebuild_resource_snapshot: Any | None = None
             self._prebuild_resource_snapshot_at: float = 0.0
             self._prebuild_resource_snapshot_lock = threading.Lock()
+            self._prebuild_snapshot_refresh_in_flight: bool = False
 
     def _refresh_prebuild_snapshot_async(self) -> None:
         """Kick off a background thread to refresh the cached snapshot.
@@ -3099,8 +3100,14 @@ class AppBootstrap:
         The thread calls ``take_resource_snapshot()`` (which may be slow
         on Windows — PowerShell/CIM subprocess) and stores the result
         under lock.  The UI thread never blocks on this call.
+
+        **Coalescing:** If a refresh thread is already in-flight, this
+        method returns immediately without spawning another thread.
         """
         self._init_prebuild_snapshot_cache()
+        if self._prebuild_snapshot_refresh_in_flight:
+            return  # coalesce: already refreshing
+        self._prebuild_snapshot_refresh_in_flight = True
         import threading
 
         def _worker() -> None:
@@ -3116,6 +3123,8 @@ class AppBootstrap:
             except Exception:
                 logger.debug('prebuild: background snapshot refresh failed',
                              exc_info=True)
+            finally:
+                self._prebuild_snapshot_refresh_in_flight = False
 
         t = threading.Thread(target=_worker, daemon=True,
                              name='prebuild-snap-refresh')

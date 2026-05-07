@@ -545,3 +545,63 @@ class TestAsyncRefresh:
 
         snap, _ = bs._get_cached_snapshot()
         assert snap is None  # cache not populated on error
+
+
+# ------------------------------------------------------------------ #
+# 10. Prebuild snapshot refresh coalescing
+# ------------------------------------------------------------------ #
+
+class TestRefreshCoalescing:
+    """_refresh_prebuild_snapshot_async must not spawn parallel threads."""
+
+    def test_coalesce_skips_if_in_flight(self):
+        """Second call while first is running should not spawn another thread."""
+        bs = _make_bootstrap()
+        started = threading.Event()
+        proceed = threading.Event()
+
+        def slow_snapshot():
+            started.set()
+            proceed.wait(timeout=5.0)
+            return _make_resource_snapshot(ram_used_pct=50.0)
+
+        with patch(
+            'iabv_v15.services.intelligent_resource_manager.take_resource_snapshot',
+            side_effect=slow_snapshot,
+        ) as mock_snap:
+            bs._refresh_prebuild_snapshot_async()
+            started.wait(timeout=2.0)
+            # First is in-flight now
+            assert bs._prebuild_snapshot_refresh_in_flight is True
+            bs._refresh_prebuild_snapshot_async()  # should be coalesced
+            bs._refresh_prebuild_snapshot_async()  # should be coalesced
+
+        proceed.set()
+        time.sleep(0.5)
+        # Only ONE call to take_resource_snapshot
+        assert mock_snap.call_count == 1
+
+    def test_in_flight_flag_cleared_after_completion(self):
+        bs = _make_bootstrap()
+        fake_snap = _make_resource_snapshot(ram_used_pct=40.0)
+
+        with patch(
+            'iabv_v15.services.intelligent_resource_manager.take_resource_snapshot',
+            return_value=fake_snap,
+        ):
+            bs._refresh_prebuild_snapshot_async()
+            time.sleep(0.5)
+
+        assert bs._prebuild_snapshot_refresh_in_flight is False
+
+    def test_in_flight_flag_cleared_on_failure(self):
+        bs = _make_bootstrap()
+
+        with patch(
+            'iabv_v15.services.intelligent_resource_manager.take_resource_snapshot',
+            side_effect=RuntimeError('fail'),
+        ):
+            bs._refresh_prebuild_snapshot_async()
+            time.sleep(0.5)
+
+        assert bs._prebuild_snapshot_refresh_in_flight is False

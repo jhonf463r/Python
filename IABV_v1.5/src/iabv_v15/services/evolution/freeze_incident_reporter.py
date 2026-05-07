@@ -527,6 +527,9 @@ class UIHeartbeatWatchdog:
     DEFAULT_TICK_INTERVAL_MS = 500
     DEFAULT_STALL_THRESHOLD_MS = 2000
 
+    # Cooldown between incident captures of the same cause type (seconds).
+    _INCIDENT_CAPTURE_COOLDOWN_S: float = 30.0
+
     def __init__(
         self,
         *,
@@ -548,6 +551,9 @@ class UIHeartbeatWatchdog:
         self._window_active: bool = True
         self._dominant_phase: str = ''
         self._active_interaction_id: str | None = None
+        # Anti-storm guard for async incident capture
+        self._capture_in_flight: bool = False
+        self._capture_last_by_cause: dict[str, float] = {}
 
     def tick(self) -> None:
         """Called from the main thread (QTimer). Records heartbeat."""
@@ -616,14 +622,58 @@ class UIHeartbeatWatchdog:
         except Exception:
             pass
 
-        # Promote to FreezeIncidentReporter for severe stalls (>5s)
+        # Promote to FreezeIncidentReporter for severe stalls (>5s).
+        # Runs in a daemon thread to avoid blocking the UI thread —
+        # capture_incident() calls take_resource_snapshot() which takes
+        # 15-18s on Windows (PowerShell/CIM subprocess).
         if duration_ms > 5000 and self._freeze_reporter is not None:
+            self._capture_incident_async(
+                duration_ms=duration_ms,
+                stall_record=stall_record,
+                cause=cause,
+            )
+
+        logger.warning(
+            'ui_heartbeat_stall: %.0fms (startup=%s query=%s phase=%s)',
+            duration_ms, self._startup_active, self._query_pending,
+            self._dominant_phase,
+        )
+
+    def _capture_incident_async(
+        self,
+        *,
+        duration_ms: float,
+        stall_record: dict[str, Any],
+        cause: str,
+    ) -> None:
+        """Launch incident capture in a background thread.
+
+        Anti-storm guards:
+        - At most one capture in-flight at a time.
+        - Cooldown per cause type (``_INCIDENT_CAPTURE_COOLDOWN_S``).
+        """
+        # Guard 1: one in-flight max
+        if self._capture_in_flight:
+            return
+        # Guard 2: cooldown per cause
+        now = time.time()
+        last = self._capture_last_by_cause.get(cause, 0.0)
+        if now - last < self._INCIDENT_CAPTURE_COOLDOWN_S:
+            return
+
+        self._capture_in_flight = True
+        self._capture_last_by_cause[cause] = now
+
+        reporter = self._freeze_reporter
+        phase = self._dominant_phase
+
+        def _worker() -> None:
             try:
-                self._freeze_reporter.capture_incident(
+                reporter.capture_incident(
                     trigger='auto_ui_heartbeat_stall',
                     user_description=(
                         f'UI event loop stall: {duration_ms:.0f}ms '
-                        f'(phase={self._dominant_phase})'
+                        f'(phase={phase})'
                     ),
                     extra_context={
                         'incident_type': 'ui_event_loop_stall',
@@ -633,12 +683,12 @@ class UIHeartbeatWatchdog:
                 )
             except Exception:
                 pass
+            finally:
+                self._capture_in_flight = False
 
-        logger.warning(
-            'ui_heartbeat_stall: %.0fms (startup=%s query=%s phase=%s)',
-            duration_ms, self._startup_active, self._query_pending,
-            self._dominant_phase,
-        )
+        t = threading.Thread(target=_worker, daemon=True,
+                             name='watchdog-incident-capture')
+        t.start()
 
     # --- Context setters (called by bootstrap / viewmodel) ---
 
