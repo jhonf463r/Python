@@ -546,11 +546,14 @@ class UIHeartbeatWatchdog:
         self._max_stalls = 50
         # Context flags — set externally by bootstrap / viewmodel
         self._startup_active: bool = True
+        self._startup_followup_active: bool = False
         self._query_pending: bool = False
         self._window_visible: bool = True
         self._window_active: bool = True
         self._dominant_phase: str = ''
         self._active_interaction_id: str | None = None
+        # Bootstrap active-flags snapshot for incident enrichment
+        self._bootstrap_flags: dict[str, bool] = {}
         # Anti-storm guard for async incident capture
         self._capture_in_flight: bool = False
         self._capture_last_by_cause: dict[str, float] = {}
@@ -571,6 +574,7 @@ class UIHeartbeatWatchdog:
             'timestamp': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
             'duration_ms': round(duration_ms, 1),
             'startup_active': self._startup_active,
+            'startup_followup_active': self._startup_followup_active,
             'query_pending': self._query_pending,
             'window_visible': self._window_visible,
             'window_active': self._window_active,
@@ -579,7 +583,7 @@ class UIHeartbeatWatchdog:
         }
         # Derive semantic cause from context
         cause = 'ui_event_loop_stall'
-        if self._startup_active:
+        if self._startup_active or self._startup_followup_active:
             cause = 'startup_freeze'
         elif self._query_pending and (not self._window_active or not self._window_visible):
             cause = 'query_visible_gap'
@@ -602,6 +606,7 @@ class UIHeartbeatWatchdog:
                 'ui_event_loop_stall',
                 duration_ms=round(duration_ms, 1),
                 startup_active=self._startup_active,
+                startup_followup_active=self._startup_followup_active,
                 query_pending=self._query_pending,
                 window_visible=self._window_visible,
                 window_active=self._window_active,
@@ -667,19 +672,39 @@ class UIHeartbeatWatchdog:
         reporter = self._freeze_reporter
         phase = self._dominant_phase
 
+        bootstrap_flags = dict(self._bootstrap_flags)
+        followup_active = self._startup_followup_active
+
+        # Capture main-thread stack BEFORE spawning the worker.
+        # sys._current_frames() is cheap (~0ms) and safe from any thread.
+        main_stack_lines: list[str] = []
+        try:
+            frames = sys._current_frames()
+            main_tid = threading.main_thread().ident
+            if main_tid is not None and main_tid in frames:
+                import traceback
+                main_stack_lines = traceback.format_stack(frames[main_tid])[-8:]
+        except Exception:
+            pass
+
         def _worker() -> None:
             try:
+                extra: dict[str, Any] = {
+                    'incident_type': 'ui_event_loop_stall',
+                    'severity': 'critical' if duration_ms > 10000 else 'high',
+                    'startup_followup_active': followup_active,
+                    'bootstrap_flags': bootstrap_flags,
+                    **stall_record,
+                }
+                if main_stack_lines:
+                    extra['main_thread_stack'] = main_stack_lines
                 reporter.capture_incident(
                     trigger='auto_ui_heartbeat_stall',
                     user_description=(
                         f'UI event loop stall: {duration_ms:.0f}ms '
                         f'(phase={phase})'
                     ),
-                    extra_context={
-                        'incident_type': 'ui_event_loop_stall',
-                        'severity': 'critical' if duration_ms > 10000 else 'high',
-                        **stall_record,
-                    },
+                    extra_context=extra,
                 )
             except Exception:
                 pass
@@ -694,6 +719,13 @@ class UIHeartbeatWatchdog:
 
     def set_startup_active(self, active: bool) -> None:
         self._startup_active = active
+
+    def set_startup_followup_active(self, active: bool) -> None:
+        self._startup_followup_active = active
+
+    def set_bootstrap_flags(self, flags: dict[str, bool]) -> None:
+        """Snapshot of active bootstrap phases for incident enrichment."""
+        self._bootstrap_flags = dict(flags)
 
     def set_query_pending(self, pending: bool) -> None:
         self._query_pending = pending
