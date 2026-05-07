@@ -1291,7 +1291,9 @@ class TestPortableContextRenderingVisibility:
         assert 'should appear in markdown' in md
         assert 'Gemini' in md
         assert '2500' in md
-        assert 'runtime_audit' in md
+        assert 'source=runtime_audit' in md
+        # Reconstructed episodes are confirmed by durable source — NOT unresolved
+        assert 'UNRESOLVED: interaction_lifecycle_reconstructed_from_audit' not in md
 
     def test_interaction_lifecycle_section_in_latest_json(self) -> None:
         """latest.json section must preserve full episode record."""

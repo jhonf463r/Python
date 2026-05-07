@@ -2768,9 +2768,6 @@ class PortableContextService:
             summary_text = (
                 f'{len(items)} episodio(s) reciente(s){source_note}.'
             )
-        unresolved: list[str] = []
-        if reconstructed:
-            unresolved.append('interaction_lifecycle_reconstructed_from_audit')
         return self._section(
             section_id='interaction_lifecycle',
             title='Ciclo de vida de interacciones recientes',
@@ -2780,7 +2777,7 @@ class PortableContextService:
             source_refs=['data/logs/runtime_audit.jsonl', 'ChatInteractionLifecycle'],
             confidence=0.9 if items else 0.0,
             last_updated=now,
-            unresolved_fields=unresolved,
+            unresolved_fields=[],
             metadata=lifecycle_data,
         )
 
