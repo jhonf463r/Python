@@ -3072,6 +3072,88 @@ class AppBootstrap:
             defer_initial_refresh=True,
         )
 
+    # -- Resource-governed lazy VM prebuild state --
+    _prebuild_paused: bool = False
+    _prebuild_paused_routes: list[str] = []
+
+    # Pressure thresholds for pausing idle prebuild.
+    _PREBUILD_RAM_PAUSE_THRESHOLDS: set[str] = {'high', 'critical'}
+    _PREBUILD_CPU_PAUSE_THRESHOLDS: set[str] = {'high', 'critical'}
+    _PREBUILD_STALL_LOOKBACK_S: float = 30.0
+
+    def _should_pause_prebuild(self, route: str, remaining: list[str]) -> str | None:
+        """Check resource pressure and UI health before building a lazy VM.
+
+        Returns a reason string if prebuild should pause, or ``None`` if
+        it is safe to continue.  Uses existing organs only — no new
+        services are created.
+        """
+        # 1. Resource pressure via take_resource_snapshot()
+        try:
+            from iabv_v15.services.intelligent_resource_manager import (
+                take_resource_snapshot,
+            )
+            snap = take_resource_snapshot()
+            if snap.ram_pressure in self._PREBUILD_RAM_PAUSE_THRESHOLDS:
+                return f'ram_pressure:{snap.ram_pressure}'
+            if snap.cpu_pressure in self._PREBUILD_CPU_PAUSE_THRESHOLDS:
+                return f'cpu_pressure:{snap.cpu_pressure}'
+        except Exception:
+            logger.debug('prebuild: take_resource_snapshot unavailable', exc_info=True)
+
+        # 2. Recent UI stall from UIHeartbeatWatchdog
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        if watchdog is not None:
+            try:
+                recent = watchdog.recent_stalls(limit=5)
+                if recent:
+                    import time as _time
+                    now = _time.time()
+                    for stall in recent:
+                        ts_str = stall.get('timestamp', '')
+                        if ts_str:
+                            from datetime import datetime, timezone
+                            try:
+                                stall_t = datetime.fromisoformat(ts_str).timestamp()
+                                if now - stall_t < self._PREBUILD_STALL_LOOKBACK_S:
+                                    return f'recent_ui_stall:{stall.get("duration_ms", 0):.0f}ms'
+                            except Exception:
+                                pass
+            except Exception:
+                logger.debug('prebuild: watchdog query failed', exc_info=True)
+
+        return None  # safe to continue
+
+    def _emit_prebuild_paused(self, reason: str, route: str, remaining: list[str]) -> None:
+        """Emit timeline marker and log when prebuild is paused."""
+        snap_data: dict[str, Any] = {}
+        try:
+            from iabv_v15.services.intelligent_resource_manager import (
+                take_resource_snapshot,
+            )
+            snap = take_resource_snapshot()
+            snap_data = {
+                'rss_mb': snap.ram_total_mb - snap.ram_available_mb,
+                'available_mb': snap.ram_available_mb,
+                'memory_percent': snap.ram_used_pct,
+            }
+        except Exception:
+            pass
+        try:
+            self._timeline.mark(
+                'lazy_vm_prebuild_paused',
+                reason=reason,
+                route=route,
+                remaining_routes=remaining,
+                **snap_data,
+            )
+        except Exception:
+            pass
+        logger.warning(
+            'lazy_vm_prebuild_paused: reason=%s route=%s remaining=%s %s',
+            reason, route, remaining, snap_data,
+        )
+
     def _build_all_lazy_vms(self) -> None:
         """Pre-build all lazy VMs during idle time (background timer chain).
 
@@ -3079,8 +3161,19 @@ class AppBootstrap:
         yield to the event loop between constructions, keeping the main
         thread responsive.  Errors in individual VMs are logged but do
         NOT break the chain — the next VM is always scheduled.
+
+        **Resource governance (post-audit fix):**
+        Before building each route, checks RAM/CPU pressure via
+        ``take_resource_snapshot()`` and recent UI stalls via
+        ``UIHeartbeatWatchdog``.  If pressure is high or a recent stall
+        is detected, the prebuild chain pauses and emits
+        ``lazy_vm_prebuild_paused`` to the startup timeline.
+        Navigation-triggered construction (``_ensure_vm_for_route``)
+        is never paused — only the idle prebuild chain.
         """
         routes = list(self._ROUTE_TO_VM_ATTR.keys())
+        self._prebuild_paused = False
+        self._prebuild_paused_routes = []
 
         def _build_next(idx: int = 0) -> None:
             if idx >= len(routes):
@@ -3088,9 +3181,22 @@ class AppBootstrap:
                     self._timeline.mark('lazy_vm_prebuild_done')
                 except Exception:
                     pass
+                self._prebuild_paused = False
+                self._prebuild_paused_routes = []
                 logger.info('lazy_vm_prebuild_done: all %d routes processed', len(routes))
                 return
+
             route = routes[idx]
+            remaining = routes[idx + 1:]
+
+            # --- Resource governance gate ---
+            pause_reason = self._should_pause_prebuild(route, remaining)
+            if pause_reason is not None:
+                self._prebuild_paused = True
+                self._prebuild_paused_routes = routes[idx:]
+                self._emit_prebuild_paused(pause_reason, route, routes[idx:])
+                return  # stop the chain; VMs are still built on-demand via navigation
+
             try:
                 self._timeline.mark(f'lazy_vm_prebuild_{route}_start')
             except Exception:
