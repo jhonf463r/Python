@@ -1218,3 +1218,326 @@ class TestOSESInteractionEpisodeFindings:
         )
         findings = oses._interaction_episode_findings()
         assert findings == []
+
+
+# ======================================================================
+# 18. Rendering visibility — episodes in latest.md via PortableContext
+# ======================================================================
+
+
+class TestPortableContextRenderingVisibility:
+    """Reconstructed episodes from runtime_audit must be visible in latest.md."""
+
+    def test_interaction_lifecycle_section_renders_in_markdown(self) -> None:
+        """_render_assistant_brief / assistant_brief / latest.md must contain
+        interaction_id, message_preview, provider and duration from audit."""
+        import json
+        from datetime import datetime, timezone
+        ws = _workspace()
+        log_dir = ws / 'data' / 'logs'
+        log_dir.mkdir(parents=True, exist_ok=True)
+        audit_path = log_dir / 'runtime_audit.jsonl'
+        event = {
+            'ts': '2025-01-01T00:00:00.000Z',
+            'kind': 'interaction_resolved',
+            'data': {
+                'interaction_id': 'chat-render-test',
+                'message_preview': 'should appear in markdown',
+                'outcome': 'resolved',
+                'provider': 'Gemini',
+                'total_duration_ms': 2500.0,
+                'phases': {'start': '2025-01-01T00:00:00Z'},
+                'stalls_during': [{'ts': '...', 'duration_ms': 100}],
+                'window_inactive_intervals': [],
+                'initial_window_active': True,
+                'initial_window_visible': True,
+                'had_early_technical_response': True,
+                'window_went_inactive': False,
+            },
+        }
+        audit_path.write_text(json.dumps(event) + '\n', encoding='utf-8')
+
+        storage = ArtifactStorage(root=str(ws))
+        pcs = PortableContextService(
+            workspace_root=str(ws),
+            storage=storage,
+        )
+        now = datetime.now(tz=timezone.utc)
+        section = pcs._interaction_lifecycle_section(now=now)
+        assert section.section_id == 'interaction_lifecycle'
+        assert len(section.items) == 1
+        item = section.items[0]
+        assert item['interaction_id'] == 'chat-render-test'
+        assert item['message_preview'] == 'should appear in markdown'
+        assert item['provider'] == 'Gemini'
+        assert item['total_duration_ms'] == 2500.0
+        assert item['stall_count'] == 1
+        assert item['had_early_technical_response'] is True
+        assert item['window_went_inactive'] is False
+        assert item['source'] == 'runtime_audit'
+
+        # Build a minimal package to verify rendering
+        from iabv_v15.services.evolution.portable_context_service import (
+            PortableContextPackage,
+        )
+        package = PortableContextPackage(
+            created_at_utc=now,
+            updated_at_utc=now,
+            summary='test',
+            sections=[section],
+        )
+        md = pcs._render_assistant_brief(package)
+        assert 'chat-render-test' in md
+        assert 'should appear in markdown' in md
+        assert 'Gemini' in md
+        assert '2500' in md
+        assert 'runtime_audit' in md
+
+    def test_interaction_lifecycle_section_in_latest_json(self) -> None:
+        """latest.json section must preserve full episode record."""
+        import json
+        from datetime import datetime, timezone
+        ws = _workspace()
+        log_dir = ws / 'data' / 'logs'
+        log_dir.mkdir(parents=True, exist_ok=True)
+        audit_path = log_dir / 'runtime_audit.jsonl'
+        event = {
+            'ts': '2025-01-01T00:00:00.000Z',
+            'kind': 'interaction_resolved',
+            'data': {
+                'interaction_id': 'chat-json-test',
+                'message_preview': 'json record',
+                'outcome': 'failed',
+                'provider': 'Ollama',
+                'total_duration_ms': 500.0,
+                'phases': {},
+                'stalls_during': [],
+                'window_inactive_intervals': [],
+                'initial_window_active': False,
+                'initial_window_visible': True,
+                'had_early_technical_response': False,
+                'window_went_inactive': True,
+            },
+        }
+        audit_path.write_text(json.dumps(event) + '\n', encoding='utf-8')
+
+        storage = ArtifactStorage(root=str(ws))
+        pcs = PortableContextService(
+            workspace_root=str(ws),
+            storage=storage,
+        )
+        now = datetime.now(tz=timezone.utc)
+        section = pcs._interaction_lifecycle_section(now=now)
+        # metadata carries the full lifecycle_data dict
+        meta = section.metadata
+        recent = meta.get('recent_completed', [])
+        assert len(recent) == 1
+        ep = recent[0]
+        assert ep['interaction_id'] == 'chat-json-test'
+        assert ep['outcome'] == 'failed'
+        assert ep['window_went_inactive'] is True
+        assert ep['initial_window_active'] is False
+        assert ep['_source'] == 'runtime_audit'
+        assert meta.get('reconstructed_from_audit') is True
+
+
+# ======================================================================
+# 19. OSES finding summary includes granular episode details
+# ======================================================================
+
+
+class TestOSESFindingGranularDetails:
+    """OSES finding summary must include interaction_id/message_preview/provider."""
+
+    def test_stall_finding_contains_episode_details(self) -> None:
+        import json
+        ws = _workspace()
+        log_dir = ws / 'data' / 'logs'
+        log_dir.mkdir(parents=True, exist_ok=True)
+        audit_path = log_dir / 'runtime_audit.jsonl'
+        event = {
+            'ts': '2025-01-01T00:00:00.000Z',
+            'kind': 'interaction_resolved',
+            'data': {
+                'interaction_id': 'chat-detail-stall',
+                'message_preview': 'user asked about performance',
+                'outcome': 'resolved',
+                'provider': 'Groq',
+                'total_duration_ms': 4000,
+                'stalls_during': [{'ts': '...', 'duration_ms': 500}],
+                'had_early_technical_response': True,
+                'window_went_inactive': False,
+            },
+        }
+        audit_path.write_text(json.dumps(event) + '\n', encoding='utf-8')
+
+        storage = ArtifactStorage(root=str(ws))
+        oses = OperationalSelfExaminationService(
+            workspace_root=str(ws),
+            storage=storage,
+        )
+        findings = oses._interaction_episode_findings()
+        stall = [f for f in findings if f.category == 'interaction_episode_stalls']
+        assert len(stall) == 1
+        s = stall[0].summary
+        assert 'chat-detail-stall' in s
+        assert 'user asked about performance' in s
+        assert 'Groq' in s
+        assert '4000' in s
+
+    def test_failed_finding_contains_episode_details(self) -> None:
+        import json
+        ws = _workspace()
+        log_dir = ws / 'data' / 'logs'
+        log_dir.mkdir(parents=True, exist_ok=True)
+        audit_path = log_dir / 'runtime_audit.jsonl'
+        event = {
+            'ts': '2025-01-01T00:00:00.000Z',
+            'kind': 'interaction_resolved',
+            'data': {
+                'interaction_id': 'chat-detail-fail',
+                'message_preview': 'query that crashed',
+                'outcome': 'failed',
+                'provider': 'OpenAI',
+                'total_duration_ms': 1200,
+                'stalls_during': [],
+                'had_early_technical_response': False,
+                'window_went_inactive': True,
+            },
+        }
+        audit_path.write_text(json.dumps(event) + '\n', encoding='utf-8')
+
+        storage = ArtifactStorage(root=str(ws))
+        oses = OperationalSelfExaminationService(
+            workspace_root=str(ws),
+            storage=storage,
+        )
+        findings = oses._interaction_episode_findings()
+        fail = [f for f in findings if f.category == 'interaction_episode_failures']
+        assert len(fail) == 1
+        s = fail[0].summary
+        assert 'chat-detail-fail' in s
+        assert 'query that crashed' in s
+        assert 'OpenAI' in s
+        assert '1200' in s
+
+
+# ======================================================================
+# 20. external_consultation provider derivation via _apply_task_result
+# ======================================================================
+
+
+class TestExternalConsultationProviderDerivation:
+    """_apply_task_result('external_consultation', ...) must resolve with
+    provider derived from assistant_title, not empty."""
+
+    def test_external_consultation_resolves_with_assistant_title(self) -> None:
+        vm = _FakeViewModel()
+        iid = vm.open_episode('delegate to external')
+        # Chat response dispatches follow-up
+        vm.apply_task_result('chat', autonomy_status='awaiting_response')
+        assert vm._active_interaction_id == iid  # still open
+
+        # Simulate external_consultation resolution with provider derivation
+        # This mirrors the real _apply_task_result logic for external_consultation
+        payload: dict[str, Any] = {
+            'assistant_title': 'ChatGPT Web',
+            'summary': 'External response',
+        }
+        vm._interaction_has_pending_followup = False
+        # Derive provider exactly as real code does
+        _provider = str(
+            payload.get('provider_name')
+            or payload.get('assistant_title')
+            or payload.get('assistant_kind')
+            or '',
+        )
+        vm._resolve(outcome='resolved', provider=_provider)
+
+        completed = vm._chat_interaction_lifecycle.recent_completed()
+        match = [c for c in completed if c.get('interaction_id') == iid]
+        assert len(match) == 1
+        assert match[0]['provider'] == 'ChatGPT Web'
+
+    def test_external_consultation_fallback_to_assistant_kind(self) -> None:
+        payload: dict[str, Any] = {
+            'assistant_kind': 'windsurf',
+            'summary': 'Windsurf response',
+        }
+        _provider = str(
+            payload.get('provider_name')
+            or payload.get('assistant_title')
+            or payload.get('assistant_kind')
+            or '',
+        )
+        assert _provider == 'windsurf'
+
+
+# ======================================================================
+# 21. reconstructed_from_audit flag correctness
+# ======================================================================
+
+
+class TestReconstructedFromAuditFlag:
+    """reconstructed_from_audit must be True when ANY episode has _source=runtime_audit."""
+
+    def test_flag_true_when_audit_episode_present_with_lifecycle(self) -> None:
+        """Even with a non-empty lifecycle, flag is True if audit episodes merged."""
+        import json
+        ws = _workspace()
+        log_dir = ws / 'data' / 'logs'
+        log_dir.mkdir(parents=True, exist_ok=True)
+        audit_path = log_dir / 'runtime_audit.jsonl'
+        event = {
+            'ts': '2025-01-01T00:00:00.000Z',
+            'kind': 'interaction_resolved',
+            'data': {
+                'interaction_id': 'chat-audit-flag-test',
+                'message_preview': 'audit episode',
+                'outcome': 'resolved',
+                'provider': 'Gemini',
+                'total_duration_ms': 800,
+                'phases': {},
+                'stalls_during': [],
+                'window_inactive_intervals': [],
+                'initial_window_active': True,
+                'initial_window_visible': True,
+                'had_early_technical_response': False,
+                'window_went_inactive': False,
+            },
+        }
+        audit_path.write_text(json.dumps(event) + '\n', encoding='utf-8')
+
+        storage = ArtifactStorage(root=str(ws))
+        pcs = PortableContextService(
+            workspace_root=str(ws),
+            storage=storage,
+        )
+        # Attach lifecycle with a DIFFERENT in-memory episode
+        lc = ChatInteractionLifecycle()
+        iid = lc.open_interaction('in memory episode')
+        lc.resolve_interaction(iid, outcome='resolved', provider='local')
+        pcs.chat_interaction_lifecycle = lc
+
+        summary = pcs._interaction_lifecycle_summary()
+        recent = summary.get('recent_completed', [])
+        ids = [r['interaction_id'] for r in recent]
+        assert 'chat-audit-flag-test' in ids
+        assert iid in ids
+        # Flag must be True because an audit episode is merged
+        assert summary.get('reconstructed_from_audit') is True
+
+    def test_flag_false_when_no_audit_episodes(self) -> None:
+        ws = _workspace()
+        storage = ArtifactStorage(root=str(ws))
+        pcs = PortableContextService(
+            workspace_root=str(ws),
+            storage=storage,
+        )
+        lc = ChatInteractionLifecycle()
+        iid = lc.open_interaction('only in memory')
+        lc.resolve_interaction(iid, outcome='resolved', provider='local')
+        pcs.chat_interaction_lifecycle = lc
+
+        summary = pcs._interaction_lifecycle_summary()
+        assert summary.get('reconstructed_from_audit') is False

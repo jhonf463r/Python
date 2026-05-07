@@ -1938,12 +1938,23 @@ class OperationalSelfExaminationService:
             e for e in episodes if e.get('outcome') == 'failed'
         ]
         if stall_episodes:
-            worst = max(stall_episodes, key=lambda e: len(e.get('stalls_during', [])))
+            ep_details: list[str] = []
+            for ep in stall_episodes:
+                sc = len(ep.get('stalls_during') or [])
+                ep_details.append(
+                    f'[{ep.get("interaction_id", "?")}] '
+                    f'"{str(ep.get("message_preview", ""))[:40]}" '
+                    f'provider={ep.get("provider", "?")} '
+                    f'duration={ep.get("total_duration_ms", 0)}ms '
+                    f'stalls={sc} '
+                    f'early_technical={ep.get("had_early_technical_response", False)} '
+                    f'window_inactive={ep.get("window_went_inactive", False)}'
+                )
             findings.append(SelfExaminationFinding(
                 title=f'Interaction episodes with UI stalls: {len(stall_episodes)} of {len(episodes)} recent',
                 summary=(
                     f'{len(stall_episodes)} of the last {len(episodes)} interaction episodes '
-                    f'had UI stalls. Worst had {len(worst.get("stalls_during", []))} stalls.'
+                    f'had UI stalls. Episodes: ' + '; '.join(ep_details)
                 ),
                 severity=IssueSeverity.MEDIUM,
                 category='interaction_episode_stalls',
@@ -1952,16 +1963,27 @@ class OperationalSelfExaminationService:
                 metadata={
                     'stall_episode_count': len(stall_episodes),
                     'total_episodes': len(episodes),
-                    'worst_stall_count': len(worst.get('stalls_during', [])),
+                    'stall_episodes': stall_episodes,
                     'source': 'runtime_audit',
                 },
             ))
         if failed_episodes:
+            ep_details_f: list[str] = []
+            for ep in failed_episodes:
+                ep_details_f.append(
+                    f'[{ep.get("interaction_id", "?")}] '
+                    f'"{str(ep.get("message_preview", ""))[:40]}" '
+                    f'provider={ep.get("provider", "?")} '
+                    f'duration={ep.get("total_duration_ms", 0)}ms '
+                    f'stalls={len(ep.get("stalls_during") or [])} '
+                    f'early_technical={ep.get("had_early_technical_response", False)} '
+                    f'window_inactive={ep.get("window_went_inactive", False)}'
+                )
             findings.append(SelfExaminationFinding(
                 title=f'Failed interaction episodes: {len(failed_episodes)} of {len(episodes)} recent',
                 summary=(
                     f'{len(failed_episodes)} of the last {len(episodes)} interaction episodes '
-                    f'ended with outcome=failed.'
+                    f'ended with outcome=failed. Episodes: ' + '; '.join(ep_details_f)
                 ),
                 severity=IssueSeverity.MEDIUM,
                 category='interaction_episode_failures',
@@ -1970,6 +1992,7 @@ class OperationalSelfExaminationService:
                 metadata={
                     'failed_count': len(failed_episodes),
                     'total_episodes': len(episodes),
+                    'failed_episodes': failed_episodes,
                     'source': 'runtime_audit',
                 },
             ))

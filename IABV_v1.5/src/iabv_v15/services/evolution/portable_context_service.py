@@ -182,6 +182,7 @@ class PortableContextService:
             self._code_audit_section(status=code_audit_status, now=now),
             self._cloud_reasoning_section(status=cloud_reasoning_status, now=now),
             self._startup_health_section(status=startup_health, now=now),
+            self._interaction_lifecycle_section(now=now),
             self._account_resource_section(status=account_resource, now=now),
             self._account_inventory_continuity_section(now=now),
             self._tool_coordination_section(now=now),
@@ -2729,10 +2730,59 @@ class PortableContextService:
         # Keep only most recent 3
         in_memory_recent = in_memory_recent[-3:]
         summary['recent_completed'] = in_memory_recent
-        summary['reconstructed_from_audit'] = bool(
-            audit_recent and not (lifecycle is not None and hasattr(lifecycle, 'summary')),
+        # reconstructed_from_audit = true if ANY episode came from audit
+        summary['reconstructed_from_audit'] = any(
+            ep.get('_source') == 'runtime_audit' for ep in in_memory_recent
         )
         return summary
+
+    def _interaction_lifecycle_section(self, *, now) -> PortableContextSection:
+        """Build a renderable section for recent interaction episodes.
+
+        Merges in-memory lifecycle with durable ``runtime_audit.jsonl``
+        records so that episodes survive process death and appear in
+        ``latest.md`` (not only in ``latest.json`` metadata).
+        """
+        lifecycle_data = self._interaction_lifecycle_summary()
+        recent = list(lifecycle_data.get('recent_completed') or [])
+        reconstructed = bool(lifecycle_data.get('reconstructed_from_audit'))
+        items: list[dict[str, Any]] = []
+        for ep in recent:
+            stall_count = len(ep.get('stalls_during') or [])
+            items.append({
+                'interaction_id': ep.get('interaction_id', ''),
+                'message_preview': ep.get('message_preview', ''),
+                'outcome': ep.get('outcome', ''),
+                'provider': ep.get('provider', ''),
+                'total_duration_ms': ep.get('total_duration_ms', 0),
+                'stall_count': stall_count,
+                'had_early_technical_response': ep.get('had_early_technical_response', False),
+                'window_went_inactive': ep.get('window_went_inactive', False),
+                'source': ep.get('_source', 'in_memory'),
+            })
+        if not items:
+            summary_text = 'Sin episodios de interaccion recientes.'
+        else:
+            sources = set(i.get('source', '') for i in items)
+            source_note = ' (reconstruido desde runtime_audit)' if 'runtime_audit' in sources else ''
+            summary_text = (
+                f'{len(items)} episodio(s) reciente(s){source_note}.'
+            )
+        unresolved: list[str] = []
+        if reconstructed:
+            unresolved.append('interaction_lifecycle_reconstructed_from_audit')
+        return self._section(
+            section_id='interaction_lifecycle',
+            title='Ciclo de vida de interacciones recientes',
+            summary=summary_text,
+            items=items,
+            source_kind='runtime_audit_jsonl+in_memory',
+            source_refs=['data/logs/runtime_audit.jsonl', 'ChatInteractionLifecycle'],
+            confidence=0.9 if items else 0.0,
+            last_updated=now,
+            unresolved_fields=unresolved,
+            metadata=lifecycle_data,
+        )
 
     def _interaction_episodes_from_audit(
         self, *, limit: int = 3,
@@ -3222,6 +3272,21 @@ class PortableContextService:
                     assistant = str(item.get('assistant_kind') or '').strip()
                     suffix = f' | {assistant}' if assistant and assistant.lower() not in label.lower() else ''
                     lines.append(f'- {label}{suffix}: {detail}')
+                elif section.section_id == 'interaction_lifecycle':
+                    iid = str(item.get('interaction_id') or 'n/d')
+                    preview = str(item.get('message_preview') or '')[:60]
+                    outcome = str(item.get('outcome') or 'n/d')
+                    provider = str(item.get('provider') or 'n/d')
+                    dur = item.get('total_duration_ms', 0)
+                    stalls = item.get('stall_count', 0)
+                    early = item.get('had_early_technical_response', False)
+                    inactive = item.get('window_went_inactive', False)
+                    src = str(item.get('source') or 'n/d')
+                    lines.append(
+                        f'- [{iid}] "{preview}" | outcome={outcome} provider={provider} '
+                        f'duration={dur}ms stalls={stalls} early_technical={early} '
+                        f'window_inactive={inactive} source={src}'
+                    )
                 elif section.section_id in {'operational_blocks', 'pending', 'unresolved'}:
                     label = str(item.get('kind') or item.get('issue_id') or item.get('title') or item.get('field') or 'n/d')
                     detail = str(item.get('detail') or item.get('summary') or item.get('recommended_change') or item.get('rationale') or '').strip()
