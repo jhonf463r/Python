@@ -65,6 +65,7 @@ class PortableContextService:
         self.adaptive_task_orchestrator = adaptive_task_orchestrator
         self.adaptive_session_repository = adaptive_session_repository
         self.platform_pending_queue = platform_pending_queue
+        self.control_master_service: Any | None = None
         self.decision_audit_trail: Any | None = None
         self.code_audit_trail: Any | None = None
         self.boot_profile_store: Any | None = None
@@ -198,6 +199,7 @@ class PortableContextService:
             ),
             self._decision_history_section(decision_history=decision_history, now=now),
             self._pending_section(pending_items=pending_items, backlog_items=backlog_items, now=now),
+            self._canonical_work_queue_section(now=now),
             self._unresolved_section(unresolved=unresolved, now=now),
             self._hard_rules_section(now=now),
             self._user_identity_section(now=now),
@@ -3076,6 +3078,51 @@ class PortableContextService:
         except Exception:
             return []
 
+    def _canonical_work_queue_section(self, *, now) -> PortableContextSection:
+        """Project top-5 canonical work queue items from ControlMasterService."""
+        cms = self.control_master_service
+        if cms is None or not hasattr(cms, 'current_work_queue'):
+            return self._section(
+                section_id='canonical_work_queue',
+                title='Cola canónica de trabajo',
+                summary='ControlMasterService no conectado.',
+                items=[],
+                source_kind='control_master',
+                source_refs=['ControlMasterService'],
+                confidence=0.0,
+                last_updated=now,
+                unresolved_fields=['UNRESOLVED:canonical_work_queue_not_connected'],
+            )
+        try:
+            queue = cms.current_work_queue(limit=5)
+        except Exception:
+            queue = []
+        items: list[dict[str, Any]] = []
+        for wq_item in queue:
+            items.append({
+                'id': wq_item.get('id', ''),
+                'title': wq_item.get('title', ''),
+                'status': wq_item.get('status', ''),
+                'priority_score': wq_item.get('priority_score', 0),
+                'priority_label': wq_item.get('priority_label', ''),
+                'source': wq_item.get('source', ''),
+                'next_action': wq_item.get('next_action', ''),
+                'evidence_refs': wq_item.get('evidence_refs', []),
+            })
+        summary = f'{len(queue)} items prioritarios en cola canónica de trabajo.'
+        if not items:
+            summary = 'Cola canónica vacía o sin fuentes conectadas.'
+        return self._section(
+            section_id='canonical_work_queue',
+            title='Cola canónica de trabajo',
+            summary=summary,
+            items=items,
+            source_kind='control_master',
+            source_refs=['ControlMasterService', 'ObjectiveRepository', 'PlatformPendingQueue', 'PendingIssueRepository', 'OSES', 'runtime_audit'],
+            confidence=0.9 if items else 0.0,
+            last_updated=now,
+        )
+
     def _unresolved_section(self, *, unresolved: list[str], now) -> PortableContextSection:
         items = [{'field': item} for item in unresolved]
         summary = 'Todo lo no confirmado queda marcado como UNRESOLVED.'
@@ -3284,6 +3331,14 @@ class PortableContextService:
                         f'duration={dur}ms stalls={stalls} early_technical={early} '
                         f'window_inactive={inactive} source={src}'
                     )
+                elif section.section_id == 'canonical_work_queue':
+                    wid = str(item.get('id') or 'n/d')
+                    wtitle = str(item.get('title') or 'n/d')[:80]
+                    wscore = item.get('priority_score', 0)
+                    wlabel = str(item.get('priority_label') or 'n/d')
+                    wsrc = str(item.get('source') or 'n/d')
+                    wnext = str(item.get('next_action') or 'n/d')[:60]
+                    lines.append(f'- [{wlabel}|{wscore}] {wid}: {wtitle} (src={wsrc}) → {wnext}')
                 elif section.section_id in {'operational_blocks', 'pending', 'unresolved'}:
                     label = str(item.get('kind') or item.get('issue_id') or item.get('title') or item.get('field') or 'n/d')
                     detail = str(item.get('detail') or item.get('summary') or item.get('recommended_change') or item.get('rationale') or '').strip()
