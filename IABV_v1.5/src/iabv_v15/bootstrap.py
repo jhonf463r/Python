@@ -1277,6 +1277,8 @@ class AppBootstrap:
             self_examination_service=self.operational_self_examination_service,
             experiment_lab_repository=self.experiment_lab_repository,
             account_resource_scanner=build_inventory_snapshot,
+            platform_pending_queue=self.platform_pending_queue,
+            workspace_root=self.config.workspace_root,
         )
         self.control_master_digest_builder = ControlMasterDigestBuilder()
         self.git_sync_service = GitSyncService(
@@ -1428,6 +1430,7 @@ class AppBootstrap:
         self.portable_context_service.decision_audit_trail = self.decision_audit_trail
         self.portable_context_service.chat_message_repository = self.chat_message_repository
         self.portable_context_service.code_audit_trail = self.code_audit_trail
+        self.portable_context_service.control_master_service = self.control_master_service
         self.autonomous_validation_cycle.decision_audit_trail = self.decision_audit_trail
         self.autonomous_validation_cycle.api_key_discovery_service = self.api_key_discovery_service
         self.adaptive_model_selector = AdaptiveModelSelector(data_dir=self.config.data_dir)
@@ -3219,7 +3222,11 @@ class AppBootstrap:
         if service is None or builder is None:
             return {}
         state = service.current_state(refresh=refresh)
-        return builder.build(state).model_dump(mode='json')
+        try:
+            work_queue = service.current_work_queue(limit=10)
+        except Exception:
+            work_queue = []
+        return builder.build(state, work_queue=work_queue).model_dump(mode='json')
 
     def _seed_control_master_from_agents_md(self) -> None:
         service = getattr(self, 'control_master_service', None)

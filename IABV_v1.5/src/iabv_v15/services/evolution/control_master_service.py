@@ -497,7 +497,7 @@ class ControlMasterService:
         if self.self_examination_service is None:
             return []
         snapshot = None
-        for method_name in ('current_snapshot', 'latest_snapshot', 'current', 'latest'):
+        for method_name in ('current_review', 'current_snapshot', 'latest_snapshot', 'current', 'latest'):
             method = getattr(self.self_examination_service, method_name, None)
             if method is None:
                 continue
@@ -514,7 +514,7 @@ class ControlMasterService:
             sev = getattr(finding, 'severity', None)
             if sev is None:
                 continue
-            sev_val = sev.value if hasattr(sev, 'value') else str(sev)
+            sev_val = (sev.value if hasattr(sev, 'value') else str(sev)).lower()
             if sev_val not in ('high', 'critical'):
                 continue
             fid = f'oses:{getattr(finding, "finding_id", "") or getattr(finding, "category", "")}'

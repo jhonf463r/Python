@@ -79,7 +79,7 @@ def _fake_self_examination_service(findings: list[SelfExaminationFinding] | None
     svc = MagicMock()
     snapshot = MagicMock()
     snapshot.findings = findings or []
-    svc.current_snapshot.return_value = snapshot
+    svc.current_review.return_value = snapshot
     return svc
 
 
@@ -523,3 +523,148 @@ class TestWorkQueueItemSchema:
             assert required_keys.issubset(set(item.keys()))
         finally:
             shutil.rmtree(ws, ignore_errors=True)
+
+
+class TestBootstrapWiring:
+    """Verify bootstrap wires platform_pending_queue, workspace_root into CMS
+    and control_master_service into PortableContextService."""
+
+    def test_bootstrap_wires_platform_pending_queue(self) -> None:
+        """Simulates bootstrap wiring: CMS receives platform_pending_queue."""
+        ws = _workspace()
+        try:
+            queue = _fake_platform_pending_queue([
+                PlatformPendingTask(id="bp-1", title="Bootstrap task", status=PendingTaskStatus.PENDING),
+            ])
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                platform_pending_queue=queue,
+                workspace_root=str(ws),
+            )
+            assert svc.platform_pending_queue is queue
+            assert svc.workspace_root == str(ws)
+            items = svc.current_work_queue()
+            assert any(i['id'] == 'platform:bp-1' for i in items)
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_portable_context_with_control_master_service(self) -> None:
+        """PCS with CMS wired produces canonical_work_queue section without UNRESOLVED."""
+        from iabv_v15.services.evolution.portable_context_service import PortableContextService
+        from iabv_v15.infra.persistence.storage import ArtifactStorage
+
+        ws = _workspace()
+        try:
+            storage = ArtifactStorage(root=str(ws / "data"))
+            pcs = PortableContextService(workspace_root=str(ws), storage=storage)
+            cms = MagicMock()
+            cms.current_work_queue.return_value = [
+                {
+                    'id': 'objective:bp-test',
+                    'title': 'Wired correctly',
+                    'status': 'active',
+                    'priority_score': 55,
+                    'priority_label': 'high',
+                    'source': 'objective_repository',
+                    'next_action': 'Verify',
+                    'evidence_refs': [],
+                },
+            ]
+            pcs.control_master_service = cms
+            package = pcs.build_package()
+            wq_section = next(
+                (s for s in package.sections if s.section_id == 'canonical_work_queue'),
+                None,
+            )
+            assert wq_section is not None
+            assert len(wq_section.items) == 1
+            # Should NOT have UNRESOLVED when CMS is connected
+            assert 'UNRESOLVED:canonical_work_queue_not_connected' not in wq_section.unresolved_fields
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+
+class TestOSESCurrentReview:
+    """ControlMasterService reads OSES via current_review() per AGENTS.md."""
+
+    def test_oses_reads_via_current_review(self) -> None:
+        ws = _workspace()
+        try:
+            finding = SelfExaminationFinding(
+                finding_id="f-review",
+                title="populate_ui_blocked",
+                severity=IssueSeverity.HIGH,
+                recommendation="Fix phased populate_ui",
+                summary="populate_ui blocked main thread",
+            )
+            # Mock service that only exposes current_review(), not current_snapshot
+            svc_mock = MagicMock(spec=[])
+            snapshot = MagicMock()
+            snapshot.findings = [finding]
+            svc_mock.current_review = MagicMock(return_value=snapshot)
+
+            cms = ControlMasterService(
+                repository=_fake_repo(),
+                self_examination_service=svc_mock,
+                workspace_root=str(ws),
+            )
+            queue = cms.current_work_queue()
+            oses_items = [i for i in queue if i['source'] == 'oses_finding']
+            assert len(oses_items) == 1
+            assert oses_items[0]['title'] == 'populate_ui_blocked'
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_oses_severity_string_uppercase(self) -> None:
+        """Severity as string 'HIGH' or 'CRITICAL' is handled."""
+        ws = _workspace()
+        try:
+            finding = MagicMock()
+            finding.finding_id = "f-str"
+            finding.title = "string_severity_test"
+            finding.severity = "HIGH"  # string, not enum
+            finding.status = "observed"
+            finding.evidence_refs = []
+            finding.recommendation = "Investigate"
+            finding.summary = "Test string severity"
+
+            svc_mock = MagicMock(spec=[])
+            snapshot = MagicMock()
+            snapshot.findings = [finding]
+            svc_mock.current_review = MagicMock(return_value=snapshot)
+
+            cms = ControlMasterService(
+                repository=_fake_repo(),
+                self_examination_service=svc_mock,
+                workspace_root=str(ws),
+            )
+            queue = cms.current_work_queue()
+            oses_items = [i for i in queue if i['source'] == 'oses_finding']
+            assert len(oses_items) == 1
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+
+class TestDigestWorkQueueInOrchestrator:
+    """AdaptiveTaskOrchestrator digest includes work_queue_brief when queue available."""
+
+    def test_digest_has_work_queue_when_service_provides_queue(self) -> None:
+        state = ControlMasterState()
+        work_queue = [
+            {
+                'id': 'objective:orch-1',
+                'title': 'Orchestrator sees this',
+                'status': 'active',
+                'priority_score': 65,
+                'priority_label': 'high',
+                'source': 'objective_repository',
+                'next_action': 'Execute',
+                'evidence_refs': [],
+            },
+        ]
+        builder = ControlMasterDigestBuilder(max_chars=4000)
+        digest = builder.build(state, work_queue=work_queue)
+        assert len(digest.work_queue_brief) >= 1
+        assert 'Orchestrator sees this' in digest.work_queue_brief[0]
+        md = render_digest_markdown(digest)
+        assert 'Orchestrator sees this' in md

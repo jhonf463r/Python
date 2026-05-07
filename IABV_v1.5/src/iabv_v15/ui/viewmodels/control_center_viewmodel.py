@@ -7896,7 +7896,11 @@ class ControlCenterViewModel(QObject):
             return
         try:
             state = service.current_state(refresh=False)
-            digest = builder.build(state).model_dump(mode='json')
+            try:
+                work_queue = service.current_work_queue(limit=10)
+            except Exception:
+                work_queue = []
+            digest = builder.build(state, work_queue=work_queue).model_dump(mode='json')
         except Exception:
             return
         self._control_master_digest = digest

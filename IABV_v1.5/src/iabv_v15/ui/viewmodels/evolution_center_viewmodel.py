@@ -304,7 +304,11 @@ class EvolutionCenterViewModel(QObject):
         if self.control_master_service is not None and self.control_master_digest_builder is not None:
             try:
                 state = self.control_master_service.current_state(refresh=False)
-                control_master_digest = self.control_master_digest_builder.build(state).model_dump(mode='json')
+                try:
+                    work_queue = self.control_master_service.current_work_queue(limit=10)
+                except Exception:
+                    work_queue = []
+                control_master_digest = self.control_master_digest_builder.build(state, work_queue=work_queue).model_dump(mode='json')
             except Exception:
                 control_master_digest = {}
         self._health_snapshot = snapshot.model_dump(mode='json') if snapshot is not None else self._health_snapshot
