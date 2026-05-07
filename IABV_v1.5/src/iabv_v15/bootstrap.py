@@ -3164,8 +3164,18 @@ class AppBootstrap:
                 return f'ram_pressure:{snap.ram_pressure}'
             if snap.cpu_pressure in self._PREBUILD_CPU_PAUSE_THRESHOLDS:
                 return f'cpu_pressure:{snap.cpu_pressure}'
-        # If snapshot is absent or stale, skip resource check — do NOT
-        # block the UI thread to acquire one.
+        elif snap is None and getattr(self, '_prebuild_snapshot_refresh_in_flight', False):
+            # Snapshot not yet available and a refresh is in-flight.
+            # Do NOT build blindly — pause until the snapshot arrives so
+            # the gate can make an informed decision.
+            return 'resource_snapshot_pending'
+        elif snap is None:
+            # No snapshot and no refresh running.  Trigger a refresh and
+            # pause so the next retry will have data.
+            self._refresh_prebuild_snapshot_async()
+            return 'resource_snapshot_unavailable'
+        # If snapshot exists but is stale, skip resource check — the
+        # prebuild already ran at least once with data.
 
         # 2. Recent UI stall from UIHeartbeatWatchdog
         watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
@@ -3221,6 +3231,9 @@ class AppBootstrap:
 
     # ---- Prebuild chain ----
 
+    # How long to wait before retrying when snapshot is pending (ms).
+    _PREBUILD_SNAPSHOT_RETRY_MS: int = 2000
+
     def _build_all_lazy_vms(self) -> None:
         """Pre-build all lazy VMs during idle time (background timer chain).
 
@@ -3229,12 +3242,17 @@ class AppBootstrap:
         thread responsive.  Errors in individual VMs are logged but do
         NOT break the chain — the next VM is always scheduled.
 
-        **Resource governance (post-audit fix v2):**
+        **Resource governance (post-audit fix v3):**
         Before building each route, reads a *cached* resource snapshot
         (refreshed asynchronously in a background thread) and checks
         recent UI stalls via ``UIHeartbeatWatchdog``.  If pressure is
         high or a recent stall is detected, the prebuild chain pauses
         and emits ``lazy_vm_prebuild_paused`` to the startup timeline.
+
+        If the snapshot is not yet available (``resource_snapshot_pending``
+        or ``resource_snapshot_unavailable``), the chain does NOT build
+        blindly — it schedules a retry via ``QTimer`` so the gate can
+        make an informed decision once the background refresh completes.
 
         ``take_resource_snapshot()`` is NEVER called from the UI thread
         — it can take 15-18 s on Windows (PowerShell/CIM).
@@ -3250,6 +3268,13 @@ class AppBootstrap:
         # decision has data (it may arrive by the time QTimer fires).
         self._refresh_prebuild_snapshot_async()
 
+        # Set dominant_phase on the heartbeat watchdog so that any
+        # stall recorded during prebuild carries a meaningful phase
+        # instead of an empty string.
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        if watchdog is not None:
+            watchdog.set_dominant_phase('lazy_vm_prebuild')
+
         def _build_next(idx: int = 0) -> None:
             if idx >= len(routes):
                 try:
@@ -3258,6 +3283,10 @@ class AppBootstrap:
                     pass
                 self._prebuild_paused = False
                 self._prebuild_paused_routes = []
+                # Clear dominant_phase now that prebuild is complete.
+                wd = getattr(self, 'ui_heartbeat_watchdog', None)
+                if wd is not None:
+                    wd.set_dominant_phase('')
                 logger.info('lazy_vm_prebuild_done: all %d routes processed', len(routes))
                 return
 
@@ -3270,12 +3299,27 @@ class AppBootstrap:
                 self._prebuild_paused = True
                 self._prebuild_paused_routes = routes[idx:]
                 self._emit_prebuild_paused(pause_reason, route, routes[idx:])
-                return  # stop the chain; VMs are still built on-demand via navigation
+
+                if pause_reason.startswith('resource_snapshot_'):
+                    # Snapshot not ready yet — schedule a non-blocking
+                    # retry so the chain resumes once the background
+                    # refresh completes, instead of stopping forever.
+                    QTimer.singleShot(
+                        self._PREBUILD_SNAPSHOT_RETRY_MS,
+                        lambda: _build_next(idx),
+                    )
+                return  # yield to event loop; VMs still built on-demand
 
             try:
                 self._timeline.mark(f'lazy_vm_prebuild_{route}_start')
             except Exception:
                 pass
+
+            # Set per-route dominant_phase for watchdog context.
+            wd = getattr(self, 'ui_heartbeat_watchdog', None)
+            if wd is not None:
+                wd.set_dominant_phase(f'lazy_vm_prebuild:{route}')
+
             try:
                 self._ensure_vm_for_route(route)
             except Exception:

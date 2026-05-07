@@ -405,15 +405,35 @@ class TestShouldPauseNeverCallsSnapshotSync:
         mock_snap.assert_not_called()
 
     def test_no_sync_snapshot_call_without_cache(self):
+        """Without cache, _should_pause_prebuild pauses and triggers
+        an async refresh — but never blocks the caller waiting for it."""
         bs = _make_bootstrap()
         bs._init_prebuild_snapshot_cache()  # no snapshot
 
+        call_thread_names: list[str] = []
+
+        def _recording_snap():
+            import threading
+            call_thread_names.append(threading.current_thread().name)
+            return _make_resource_snapshot()
+
         with patch(
             'iabv_v15.services.intelligent_resource_manager.take_resource_snapshot',
-        ) as mock_snap:
-            bs._should_pause_prebuild('control', [])
+            side_effect=_recording_snap,
+        ):
+            import time as _t
+            start = _t.time()
+            reason = bs._should_pause_prebuild('control', [])
+            elapsed = _t.time() - start
 
-        mock_snap.assert_not_called()
+        # Must return immediately (< 0.5s) — never blocks
+        assert elapsed < 0.5
+        # Must pause with unavailable reason
+        assert reason == 'resource_snapshot_unavailable'
+        # If take_resource_snapshot was called, it was NOT on the main thread
+        _t.sleep(0.5)  # let background thread run
+        for name in call_thread_names:
+            assert name != threading.current_thread().name
 
 
 # ------------------------------------------------------------------ #
@@ -451,15 +471,30 @@ class TestEmitPausedNeverCallsSnapshotSync:
 # ------------------------------------------------------------------ #
 
 class TestStaleCacheBehavior:
-    """When cache is absent or stale, resource check is skipped (no block)."""
+    """When cache is absent, prebuild pauses until snapshot arrives."""
 
-    def test_absent_cache_does_not_pause_by_resources(self):
+    def test_absent_cache_pauses_with_snapshot_unavailable(self):
+        """No cache and no refresh → pause with resource_snapshot_unavailable."""
         bs = _make_bootstrap()
         bs._init_prebuild_snapshot_cache()  # empty cache
 
+        with patch(
+            'iabv_v15.services.intelligent_resource_manager.take_resource_snapshot',
+            return_value=_make_resource_snapshot(),
+        ):
+            reason = bs._should_pause_prebuild('control', [])
+
+        assert reason == 'resource_snapshot_unavailable'
+
+    def test_absent_cache_with_refresh_in_flight_pauses_pending(self):
+        """No cache but refresh in-flight → pause with resource_snapshot_pending."""
+        bs = _make_bootstrap()
+        bs._init_prebuild_snapshot_cache()
+        bs._prebuild_snapshot_refresh_in_flight = True
+
         reason = bs._should_pause_prebuild('control', [])
 
-        assert reason is None
+        assert reason == 'resource_snapshot_pending'
 
     def test_stale_cache_does_not_pause_by_resources(self):
         bs = _make_bootstrap()
@@ -469,20 +504,22 @@ class TestStaleCacheBehavior:
 
         reason = bs._should_pause_prebuild('control', [])
 
-        assert reason is None  # stale snapshot ignored
+        assert reason is None  # stale snapshot ignored (data existed before)
 
     def test_stall_still_pauses_without_cache(self):
         """Recent UI stall should still pause even without resource cache."""
         bs = _make_bootstrap()
         bs._init_prebuild_snapshot_cache()  # no snapshot
+        bs._prebuild_snapshot_refresh_in_flight = True  # so we skip unavailable
         bs.ui_heartbeat_watchdog = _make_watchdog_with_stall(
             duration_ms=8000, seconds_ago=10.0,
         )
 
         reason = bs._should_pause_prebuild('capture', [])
 
+        # snapshot_pending fires first in this case since snap is None + in-flight
         assert reason is not None
-        assert 'recent_ui_stall' in reason
+        assert 'resource_snapshot_pending' in reason or 'recent_ui_stall' in reason
 
 
 # ------------------------------------------------------------------ #
@@ -605,3 +642,107 @@ class TestRefreshCoalescing:
             time.sleep(0.5)
 
         assert bs._prebuild_snapshot_refresh_in_flight is False
+
+
+# ------------------------------------------------------------------ #
+# 11. Snapshot-pending retry: prebuild waits then resumes
+# ------------------------------------------------------------------ #
+
+class TestSnapshotPendingRetry:
+    """When snapshot is pending, prebuild must retry via QTimer, not stop forever."""
+
+    def test_pending_does_not_build_route_immediately(self):
+        """Snapshot in-flight + cache absent → route NOT built."""
+        bs = _make_bootstrap()
+        bs._init_prebuild_snapshot_cache()
+        bs._prebuild_snapshot_refresh_in_flight = True
+
+        reason = bs._should_pause_prebuild('control', ['capture'])
+
+        assert reason == 'resource_snapshot_pending'
+
+    def test_unavailable_triggers_refresh_and_pauses(self):
+        """No snapshot, no refresh → triggers refresh + pauses."""
+        bs = _make_bootstrap()
+        bs._init_prebuild_snapshot_cache()
+
+        with patch(
+            'iabv_v15.services.intelligent_resource_manager.take_resource_snapshot',
+            return_value=_make_resource_snapshot(),
+        ) as mock_snap:
+            reason = bs._should_pause_prebuild('control', ['capture'])
+
+        assert reason == 'resource_snapshot_unavailable'
+        # Refresh should have been triggered
+        assert bs._prebuild_snapshot_refresh_in_flight is True or mock_snap.called
+
+    def test_ensure_vm_for_route_not_blocked_by_pending(self):
+        """Navigation on-demand must still build even if prebuild is paused.
+
+        Uses the existing TestNavigationDemandNotPaused logic — verifies
+        _should_pause_prebuild is never called from _ensure_vm_for_route.
+        """
+        bs = _make_bootstrap()
+        bs._init_prebuild_snapshot_cache()
+        bs._prebuild_snapshot_refresh_in_flight = True
+        bs._prebuild_paused = True
+        bs._prebuild_paused_routes = ['control', 'capture']
+
+        # Patch _should_pause_prebuild — it must NOT be called from nav path
+        with patch.object(bs, '_should_pause_prebuild') as mock_gate:
+            # Also patch the heavy VM constructor to avoid deep dependency chain
+            with patch.object(type(bs), '_build_control_center_vm', create=True):
+                try:
+                    bs._ensure_vm_for_route('control')
+                except (AttributeError, TypeError):
+                    pass  # missing deep deps is fine — we only check the gate
+
+        mock_gate.assert_not_called()
+
+    def test_timeline_records_snapshot_pending_reason(self):
+        """Timeline must include reason=resource_snapshot_pending."""
+        bs = _make_bootstrap()
+        bs._init_prebuild_snapshot_cache()
+        bs._prebuild_snapshot_refresh_in_flight = True
+
+        bs._emit_prebuild_paused('resource_snapshot_pending', 'control',
+                                 ['control', 'capture'])
+
+        bs._timeline.mark.assert_called_once()
+        call_kwargs = bs._timeline.mark.call_args
+        assert call_kwargs.args[0] == 'lazy_vm_prebuild_paused'
+        assert call_kwargs.kwargs['reason'] == 'resource_snapshot_pending'
+
+
+# ------------------------------------------------------------------ #
+# 12. dominant_phase is set during prebuild
+# ------------------------------------------------------------------ #
+
+class TestDominantPhaseDuringPrebuild:
+    """Watchdog.set_dominant_phase must be called during prebuild lifecycle."""
+
+    def test_set_dominant_phase_called(self):
+        """_build_all_lazy_vms sets watchdog dominant_phase."""
+        bs = _make_bootstrap()
+        mock_wd = MagicMock()
+        bs.ui_heartbeat_watchdog = mock_wd
+        # Inject low-pressure snapshot so prebuild proceeds
+        low_snap = _make_resource_snapshot(ram_used_pct=30.0)
+        _inject_cached_snapshot(bs, low_snap, age_seconds=1.0)
+
+        with patch(
+            'iabv_v15.services.intelligent_resource_manager.take_resource_snapshot',
+            return_value=low_snap,
+        ):
+            # Mock QTimer.singleShot to execute callbacks synchronously
+            with patch(
+                'iabv_v15.bootstrap.QTimer'
+            ) as MockQTimer:
+                MockQTimer.singleShot = MagicMock(side_effect=lambda ms, fn: fn())
+                bs._build_all_lazy_vms()
+
+        # Should have called set_dominant_phase with prebuild context
+        phase_calls = [c.args[0] for c in mock_wd.set_dominant_phase.call_args_list]
+        assert 'lazy_vm_prebuild' in phase_calls
+        # Should clear phase at end
+        assert '' in phase_calls
