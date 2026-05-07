@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import tempfile
 import uuid
 from pathlib import Path
 from typing import Any
@@ -256,7 +257,7 @@ def _git(*args: str, cwd: Path) -> None:
 
 
 def test_end_to_end_against_real_local_repos() -> None:
-    root = Path("/tmp") / f"iabv_git_sync_{uuid.uuid4().hex[:8]}"
+    root = Path(tempfile.gettempdir()) / f"iabv_git_sync_{uuid.uuid4().hex[:8]}"
     remote = root / "remote.git"
     clone = root / "clone"
     try:

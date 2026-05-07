@@ -795,6 +795,12 @@ class ToolTeachService:
         self.memory.remember_task(task)
         sandbox_result = self.sandbox.run(card=card, task=task, adapter=adapter)
         sandbox_result = self.memory.remember_result(card, task, sandbox_result)
+        sandbox_only = bool(dict(task.metadata.get('goal_parameters') or {}).get('sandbox_only'))
+        if sandbox_only:
+            if self.live_audit_supervisor is not None:
+                sandbox_result = self.live_audit_supervisor.audit_tool_result(card=card, task=task, result=sandbox_result)
+                self.memory.repository.save_result(sandbox_result)
+            return sandbox_result
         approval_required = bool(task.metadata.get('approval_required'))
         if not sandbox_result.success:
             return sandbox_result

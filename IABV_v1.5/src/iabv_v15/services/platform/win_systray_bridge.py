@@ -89,6 +89,8 @@ class WinSystrayBridge:
         if not _TRAY_AVAILABLE:
             return False
         try:
+            if _QApplication is None or _QApplication.instance() is None:
+                return False
             return bool(_QSystemTrayIcon.isSystemTrayAvailable())
         except Exception:
             return False

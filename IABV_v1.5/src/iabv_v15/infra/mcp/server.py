@@ -503,7 +503,7 @@ class IABVMCPServer:
             else:
                 snapshot = svc.current_model()
             result = _to_jsonable(snapshot) or {}
-            result['scan_stats'] = svc.scan_stats
+            result['scan_stats'] = getattr(svc, 'scan_stats', {}) or {}
             return result
 
         @mcp.tool()

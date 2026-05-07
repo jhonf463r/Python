@@ -3707,6 +3707,12 @@ class AdaptiveTaskOrchestrator:
             'resume_context': {},
             'has_resume_hints': False,
             'account_selection': {},
+            'tool_selection_summary': _build_tool_selection_summary(
+                worker_gate=worker_gate,
+                gate_ran=True,
+                governance=governance,
+                session_metadata={},
+            ),
         }
         return {
             'assistant_kind': normalized_assistant,

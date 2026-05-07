@@ -179,9 +179,11 @@ class ControlCenterViewModel(QObject):
         self._busy_label = 'Modo automatico activo. Escribe tu consulta y la consola elegira el rol, el pack y la estrategia por fases.'
         self._provider_cards = self._placeholder_provider_cards()
         self._progress_cards: list[dict[str, Any]] = []
-        self._evolution_overview: dict[str, Any] = {}
-        self._evolution_area_cards: list[dict[str, Any]] = []
-        self._evolution_blockers: list[dict[str, str]] = []
+        (
+            self._evolution_overview,
+            self._evolution_area_cards,
+            self._evolution_blockers,
+        ) = self._default_evolution_panel_state()
         self._agent_cards: list[dict[str, Any]] = []
         self._legacy_cards = self._build_legacy_cards()
         self._role_cards = [profile.model_dump(mode='json') for profile in self.role_router.role_profiles]
@@ -205,7 +207,7 @@ class ControlCenterViewModel(QObject):
         self._last_user_goal = ''
         self._last_goal_context: dict[str, Any] = {}
         self._clipboard_notice = 'Todavia no se ha copiado nada al portapapeles.'
-        self._development_packet = ''
+        self._development_packet = 'Cargando evidencia evolutiva sin bloquear la UI.'
         self._dev_packet_last_ts: float = 0.0
         self._dev_packet_cooldown_s: float = 30.0
         self._latest_response_text = 'Todavia no hay respuesta final en esta sesion.'
@@ -1299,6 +1301,46 @@ class ControlCenterViewModel(QObject):
             'claude_installed',
             'claude_web_assisted',
         ]
+
+    def _default_evolution_panel_state(self) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, str]]]:
+        area_titles = [
+            'Aprendizaje',
+            'Algoritmos probados',
+            'Variables exploradas',
+            'Investigaciones utiles',
+            'Objetivos y tareas',
+            'Auditoria y coherencia',
+            'Memoria y reutilizacion',
+        ]
+        area_cards = [
+            {
+                'title': title,
+                'status': 'idle',
+                'trend': 'sin base',
+                'summary': 'Esperando evidencia operativa.',
+                'detail': 'El refresco inicial todavia no consolida este organo.',
+                'blocker': '',
+                'help': 'Seguir capturando evidencia y ejecutar tareas reales.',
+            }
+            for title in area_titles
+        ]
+        overview = {
+            'title': 'Pulso evolutivo',
+            'status': 'idle',
+            'trend': 'sin base',
+            'summary': f"0/{len(area_cards)} areas con evidencia operativa | bloqueos 0 | objetivo sin objetivo activo | progreso 0.00 | autonomia sin_gobernanza",
+            'detail': 'Todavia no hay suficiente evidencia para resumir la evolucion.',
+            'latest_experiment': 'sin experimentos recientes',
+            'human_help': 'Seguir capturando evidencia y ejecutando tareas reales.',
+            'current_goal': 'sin objetivo activo',
+            'compact_cards': [
+                {'title': 'Aprendizaje', 'value': '0', 'detail': 'autotests recientes'},
+                {'title': 'Experimentos', 'value': '0', 'detail': 'sin ruta sugerida'},
+                {'title': 'Bloqueos', 'value': '0', 'detail': 'autonomia n/d | confianza 0.00'},
+                {'title': 'Reutilizacion', 'value': '0', 'detail': 'patrones o reusos detectados'},
+            ],
+        }
+        return overview, area_cards, []
 
     def _tool_registry(self):
         return getattr(self.tool_teach_service, 'registry', None)
@@ -2960,42 +3002,14 @@ class ControlCenterViewModel(QObject):
         self._clear_autonomy_activity_override()
         self._update_adaptive_state(self._self_examination_conversation_payload(message=message))
 
-        # Build full panorama context for LLM reasoning
         focus = self._self_examination_focus(message)
-        metacognition_context = self._build_metacognition_context(message, focus)
-
-        # Try LLM-grounded reasoning first
-        llm_reply = self._invoke_llm_for_self_examination(message, metacognition_context, focus)
-
-        trace: dict[str, Any] = {'focus': focus, 'anchors_total': 0, 'anchors_cited': 0}
-        if llm_reply:
-            # Validate that the LLM actually used the real data
-            anchors = self._extract_grounding_anchors(metacognition_context)
-            is_grounded, missing = self._validate_response_grounding(llm_reply, anchors)
-            trace['anchors_total'] = len(anchors)
-            trace['anchors_cited'] = len(anchors) - len(missing)
-
-            if is_grounded:
-                reply = llm_reply
-                meta = 'Razonamiento con metacognicion completa (LLM + datos reales).'
-                evidence_tag = 'observed'
-                reasoning_path = 'llm_grounded'
-            else:
-                # LLM responded but didn't ground in data — supplement with template
-                template_reply, template_meta, template_tag = self._self_examination_reply(message)
-                reply = (
-                    f'{llm_reply}\n\n'
-                    f'--- Datos concretos del sistema ---\n'
-                    f'{template_reply}'
-                )
-                meta = 'Razonamiento LLM + suplemento con datos reales (grounding parcial).'
-                evidence_tag = 'inferred'
-                reasoning_path = 'llm_supplemented'
-                trace['missing_anchors'] = missing[:10]
-        else:
-            # LLM unavailable — fall back to template (still has real data)
-            reply, meta, evidence_tag = self._self_examination_reply(message)
-            reasoning_path = 'template_fallback'
+        reply, meta, evidence_tag = self._self_examination_reply(message)
+        trace: dict[str, Any] = {
+            'focus': focus,
+            'source': 'operational_self_examination',
+            'local_only': True,
+        }
+        reasoning_path = 'self_examination_local_evidence'
 
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path=reasoning_path, trace_metadata=trace)
@@ -4852,7 +4866,7 @@ class ControlCenterViewModel(QObject):
         self._agent_cards = self._build_agent_cards()
         self._repo_bridge_text = self.development_assist_service.build_repo_bridge_summary()
         self._local_stack_text = self.development_assist_service.build_local_stack_summary()
-        if not self._working and not self._adaptive_session_id:
+        if not self._working and not self._adaptive_session_id and self._busy_label != 'Respuesta lista.':
             self._busy_label = self._startup_readiness_text(validating_local_stack=True)
         self._seed_development_packet()
         self._refresh_autonomy_dock()
@@ -4934,8 +4948,9 @@ class ControlCenterViewModel(QObject):
                 startup_text = self._startup_readiness_text(validating_local_stack=True)
             except Exception:
                 startup_text = 'Consultando el stack local y los asistentes externos en segundo plano.'
-            self._busy_label = 'Consultando el stack local y los asistentes externos en segundo plano.' if announce else startup_text
-            self.dataChanged.emit()
+            if announce or self._busy_label != 'Respuesta lista.':
+                self._busy_label = 'Consultando el stack local y los asistentes externos en segundo plano.' if announce else startup_text
+                self.dataChanged.emit()
 
         def worker() -> None:
             try:
@@ -7393,7 +7408,7 @@ class ControlCenterViewModel(QObject):
             self._provider_refreshing = False
             self._provider_cards = list(payload)
             self._agent_cards = self._build_agent_cards()
-            if not self._working:
+            if not self._working and self._busy_label != 'Respuesta lista.':
                 self._busy_label = self._startup_readiness_text(validating_local_stack=False)
             self._diagnostic_text = self._build_provider_diagnostic()
             self._diagnostic_truth_state = 'observed'
@@ -7575,12 +7590,35 @@ class ControlCenterViewModel(QObject):
                     mode='external',
                 )
             else:
+                metadata = dict(adaptive_payload.get('metadata') or {})
+                decision_context = dict(metadata.get('decision_context') or {})
+                preflight = dict(metadata.get('external_consultation_preflight') or {})
+                blocked_assistant_kind = str(
+                    external_payload.get('assistant_kind')
+                    or preflight.get('assistant_kind')
+                    or self._assistant_kind_from_tool_id(str(external_payload.get('selected_tool_id') or ''))
+                    or ''
+                ).strip().lower()
                 _has_actionable_guidance = (
                     self._assistant_guidance_mode == 'need_approval'
                     or bool(self._assistant_action_buttons)
                     or bool(adaptive_payload.get('approval_checkpoints'))
                 )
-                if not _has_actionable_guidance:
+                _has_blocking_context = bool(preflight) or bool(decision_context.get('governance'))
+                if not _has_actionable_guidance and _has_blocking_context:
+                    self._apply_assistant_guidance(
+                        self._guidance_for_external_preflight_block(
+                            assistant_kind=blocked_assistant_kind or str(_ext_assistant).strip().lower(),
+                            assistant_title=assistant_title,
+                            governance=dict(decision_context.get('governance') or {}),
+                            approval_checkpoints=[
+                                dict(item)
+                                for item in (adaptive_payload.get('approval_checkpoints') or [])
+                                if isinstance(item, dict)
+                            ],
+                        )
+                    )
+                elif not _has_actionable_guidance:
                     self._reset_assistant_guidance()
                 self._set_autonomy_activity_override(
                     visible=True,
@@ -7631,6 +7669,7 @@ class ControlCenterViewModel(QObject):
         else:
             # Derive provider: external_consultation uses assistant_title,
             # other tasks use provider_name.
+            _resolution_outcome = 'resolved'
             if isinstance(payload, dict):
                 _provider = str(
                     payload.get('provider_name')
@@ -7638,10 +7677,12 @@ class ControlCenterViewModel(QObject):
                     or payload.get('assistant_kind')
                     or '',
                 )
+                if task_name == 'external_consultation' and payload.get('success') is False:
+                    _resolution_outcome = 'blocked'
             else:
                 _provider = ''
             self._resolve_active_interaction(
-                outcome='resolved',
+                outcome=_resolution_outcome,
                 provider=_provider,
             )
         self._update_progress_cards()

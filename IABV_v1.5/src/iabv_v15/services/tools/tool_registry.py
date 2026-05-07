@@ -69,6 +69,7 @@ class ToolRegistry:
 
     def refresh_card(self, card: ToolCard, *, force: bool = False, max_age_seconds: float | None = None) -> ToolCard:
         metadata_signature = self._availability_signature(card)
+        adapter = self.adapters.get(card.adapter_key)
         if not force:
             cached = self._cached_availability(
                 card.tool_id,
@@ -79,7 +80,13 @@ class ToolRegistry:
                 if card.available == cached:
                     return card
                 return card.model_copy(update={'available': cached})
-        adapter = self.adapters.get(card.adapter_key)
+            previous = self._availability_cache.get(card.tool_id)
+            if (
+                previous is not None
+                and previous[2] != metadata_signature
+                and hasattr(adapter, 'invalidate_multi_source_cache')
+            ):
+                adapter.invalidate_multi_source_cache(card.tool_id)
         if force and hasattr(adapter, 'invalidate_multi_source_cache'):
             adapter.invalidate_multi_source_cache(card.tool_id)
         try:

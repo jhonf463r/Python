@@ -276,7 +276,7 @@ class ToolAdapter:
 
     # Cache for multi-source detection results to avoid re-probing
     # filesystem/process/window every ~50 seconds on each MCP session.
-    _multi_source_cache: dict[str, tuple[float, bool]] = {}
+    _multi_source_cache: dict[str, tuple[float, bool, str]] = {}
     _MULTI_SOURCE_CACHE_TTL = 300.0  # seconds — bumped at runtime by auto-correction
     _TTL_PERSISTENCE_PATH: Path | None = None
     # Track which tool_ids have already been logged at INFO for disagreement.
@@ -373,10 +373,11 @@ class ToolAdapter:
         Results are cached for 120 seconds to avoid redundant probes on
         each MCP session reconnect.
         """
+        signature = self._multi_source_signature(card)
         if not force:
             cached = self._multi_source_cache.get(card.tool_id)
             now = time.monotonic()
-            if cached and (now - cached[0]) < self._MULTI_SOURCE_CACHE_TTL:
+            if cached and len(cached) >= 3 and cached[2] == signature and (now - cached[0]) < self._MULTI_SOURCE_CACHE_TTL:
                 return cached[1]
         now = time.monotonic()
 
@@ -407,8 +408,21 @@ class ToolAdapter:
             if not cross_process_logged:
                 self._write_cross_process_marker(card.tool_id)
         result = bool(positives)
-        self._multi_source_cache[card.tool_id] = (now, result)
+        self._multi_source_cache[card.tool_id] = (now, result, signature)
         return result
+
+    def _multi_source_signature(self, card: ToolCard) -> str:
+        metadata = card.metadata or {}
+        values = [
+            card.title,
+            metadata.get('assistant_kind'),
+            metadata.get('command_name'),
+            metadata.get('command_aliases'),
+            metadata.get('executable_path'),
+            metadata.get('windows_default_paths'),
+            metadata.get('launch_mode'),
+        ]
+        return repr(values)
 
     _process_snapshot: list[tuple[str, str]] | None = None
     _process_snapshot_time: float = 0.0
