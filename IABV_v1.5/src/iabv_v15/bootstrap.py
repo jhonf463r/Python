@@ -1661,6 +1661,7 @@ class AppBootstrap:
             return
         self._tool_availability_logged = True
 
+        self._deferred_setup_active = True
         bridge = self.main_window_bridge
         if bridge is not None:
             bridge.set_deferred_setup_active(True)
@@ -1679,6 +1680,8 @@ class AppBootstrap:
                 self._timeline.mark('deferred_post_window_setup_done')
             except Exception:
                 pass
+            self._deferred_setup_active = False
+            self._check_startup_followup_done()
             if bridge is not None:
                 bridge.set_deferred_setup_active(False)
 
@@ -1823,6 +1826,7 @@ class AppBootstrap:
         # that the timeline contains populate_ui_done + page_loader_ready.
         # Without this, latest.md/latest.json keep the stale early snapshot
         # that says "populate_ui never finished".
+        self._truth_refresh_active = True
         threading.Thread(
             target=self._final_startup_truth_refresh,
             name='iabv-startup-truth-refresh',
@@ -1865,6 +1869,8 @@ class AppBootstrap:
             logger.debug('startup_truth_refresh: PortableContext failed: %s', exc)
         if force_refresh:
             self._tracer.trace('metacognition_refresh', reason='stale_data_>24h')
+        self._truth_refresh_active = False
+        self._check_startup_followup_done()
 
     def _metacognition_data_is_stale(self, max_age_hours: float = 24.0) -> bool:
         """Check if OSES / PortableContext latest.json are older than *max_age_hours*."""
@@ -3083,6 +3089,56 @@ class AppBootstrap:
     # Cached snapshot is considered stale after this many seconds.
     _PREBUILD_SNAPSHOT_MAX_AGE_S: float = 60.0
 
+    # -- Background startup phase tracking --
+    # These flags track whether heavy background startup tasks are still
+    # running.  Prebuild pauses while any of them is active so it doesn't
+    # compete for CPU/IO with startup work that can freeze the UI.
+    _deferred_setup_active: bool = False
+    _truth_refresh_active: bool = False
+    _startup_evolution_active: bool = False
+
+    # Extended startup: True until *all* background startup phases finish.
+    # This is what the watchdog reads (startup_followup_active) to avoid
+    # marking stalls as "startup_active=false" when boot work is ongoing.
+    _startup_followup_active: bool = True
+
+    def _check_startup_followup_done(self) -> None:
+        """Clear ``_startup_followup_active`` when all background phases finish.
+
+        Called from each background startup thread when it completes.
+        Updates the watchdog so runtime_audit stalls carry the correct
+        ``startup_active`` / ``startup_followup_active`` context.
+        """
+        self._push_bootstrap_flags_to_watchdog()
+        if (self._deferred_setup_active
+                or self._truth_refresh_active
+                or self._startup_evolution_active):
+            return  # at least one phase still running
+        self._startup_followup_active = False
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        if watchdog is not None:
+            watchdog.set_startup_followup_active(False)
+        logger.info('startup_followup_done: all background startup phases complete')
+
+    def _push_bootstrap_flags_to_watchdog(self) -> None:
+        """Push current background-phase flags to the watchdog for enrichment."""
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        if watchdog is None:
+            return
+        watchdog.set_bootstrap_flags({
+            'prebuild_paused': self._prebuild_paused,
+            'deferred_setup_active': self._deferred_setup_active,
+            'truth_refresh_active': self._truth_refresh_active,
+            'startup_evolution_active': self._startup_evolution_active,
+            'snapshot_refresh_in_flight': getattr(self, '_prebuild_snapshot_refresh_in_flight', False),
+            'startup_followup_active': self._startup_followup_active,
+        })
+
+    # -- Timeline spam prevention --
+    _PREBUILD_PAUSED_COOLDOWN_S: float = 10.0
+    _prebuild_last_paused_key: str = ''
+    _prebuild_last_paused_at: float = 0.0
+
     # ---- Cached resource snapshot (never read synchronously) --------
 
     def _init_prebuild_snapshot_cache(self) -> None:
@@ -3157,6 +3213,16 @@ class AppBootstrap:
         ``_refresh_prebuild_snapshot_async``).  It NEVER calls
         ``take_resource_snapshot()`` directly.
         """
+        # 0. Background startup phases — highest priority.
+        # If any heavy startup task is still running, the event loop is
+        # already under load.  Building VMs on top would cause stalls.
+        if self._deferred_setup_active:
+            return 'startup_background_active:deferred_post_window_setup'
+        if self._truth_refresh_active:
+            return 'startup_background_active:startup_truth_refresh'
+        if self._startup_evolution_active:
+            return 'startup_background_active:startup_evolution'
+
         # 1. Resource pressure from cached snapshot (non-blocking)
         snap, age = self._get_cached_snapshot()
         if snap is not None and age < self._PREBUILD_SNAPSHOT_MAX_AGE_S:
@@ -3164,8 +3230,11 @@ class AppBootstrap:
                 return f'ram_pressure:{snap.ram_pressure}'
             if snap.cpu_pressure in self._PREBUILD_CPU_PAUSE_THRESHOLDS:
                 return f'cpu_pressure:{snap.cpu_pressure}'
-        # If snapshot is absent or stale, skip resource check — do NOT
-        # block the UI thread to acquire one.
+        elif snap is None and getattr(self, '_prebuild_snapshot_refresh_in_flight', False):
+            return 'resource_snapshot_pending'
+        elif snap is None:
+            self._refresh_prebuild_snapshot_async()
+            return 'resource_snapshot_unavailable'
 
         # 2. Recent UI stall from UIHeartbeatWatchdog
         watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
@@ -3195,7 +3264,16 @@ class AppBootstrap:
 
         Uses the cached resource snapshot — never calls
         ``take_resource_snapshot()`` directly.
+
+        **Spam prevention:** Does not emit to the timeline if the same
+        ``reason:route`` pair was emitted within the last
+        ``_PREBUILD_PAUSED_COOLDOWN_S`` seconds.  Always logs to the
+        Python logger regardless of cooldown.
         """
+        import time as _t
+        now = _t.time()
+        dedup_key = f'{reason}:{route}'
+
         snap_data: dict[str, Any] = {}
         snap, age = self._get_cached_snapshot()
         if snap is not None:
@@ -3204,22 +3282,31 @@ class AppBootstrap:
                 'memory_percent': snap.ram_used_pct,
                 'snapshot_age_ms': round(age * 1000, 1),
             }
-        try:
-            self._timeline.mark(
-                'lazy_vm_prebuild_paused',
-                reason=reason,
-                route=route,
-                remaining_routes=remaining,
-                **snap_data,
-            )
-        except Exception:
-            pass
+
+        # Only emit to timeline if reason/route changed or cooldown expired
+        if (dedup_key != self._prebuild_last_paused_key
+                or now - self._prebuild_last_paused_at >= self._PREBUILD_PAUSED_COOLDOWN_S):
+            self._prebuild_last_paused_key = dedup_key
+            self._prebuild_last_paused_at = now
+            try:
+                self._timeline.mark(
+                    'lazy_vm_prebuild_paused',
+                    reason=reason,
+                    route=route,
+                    remaining_routes=remaining,
+                    **snap_data,
+                )
+            except Exception:
+                pass
         logger.warning(
             'lazy_vm_prebuild_paused: reason=%s route=%s remaining=%s %s',
             reason, route, remaining, snap_data,
         )
 
     # ---- Prebuild chain ----
+
+    # How long to wait before retrying when snapshot is pending (ms).
+    _PREBUILD_SNAPSHOT_RETRY_MS: int = 2000
 
     def _build_all_lazy_vms(self) -> None:
         """Pre-build all lazy VMs during idle time (background timer chain).
@@ -3229,12 +3316,17 @@ class AppBootstrap:
         thread responsive.  Errors in individual VMs are logged but do
         NOT break the chain — the next VM is always scheduled.
 
-        **Resource governance (post-audit fix v2):**
+        **Resource governance (post-audit fix v3):**
         Before building each route, reads a *cached* resource snapshot
         (refreshed asynchronously in a background thread) and checks
         recent UI stalls via ``UIHeartbeatWatchdog``.  If pressure is
         high or a recent stall is detected, the prebuild chain pauses
         and emits ``lazy_vm_prebuild_paused`` to the startup timeline.
+
+        If the snapshot is not yet available (``resource_snapshot_pending``
+        or ``resource_snapshot_unavailable``), the chain does NOT build
+        blindly — it schedules a retry via ``QTimer`` so the gate can
+        make an informed decision once the background refresh completes.
 
         ``take_resource_snapshot()`` is NEVER called from the UI thread
         — it can take 15-18 s on Windows (PowerShell/CIM).
@@ -3250,6 +3342,15 @@ class AppBootstrap:
         # decision has data (it may arrive by the time QTimer fires).
         self._refresh_prebuild_snapshot_async()
 
+        # Set dominant_phase on the heartbeat watchdog so that any
+        # stall recorded during prebuild carries a meaningful phase
+        # instead of an empty string.
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        if watchdog is not None:
+            watchdog.set_dominant_phase('lazy_vm_prebuild')
+            watchdog.set_startup_followup_active(self._startup_followup_active)
+        self._push_bootstrap_flags_to_watchdog()
+
         def _build_next(idx: int = 0) -> None:
             if idx >= len(routes):
                 try:
@@ -3258,6 +3359,12 @@ class AppBootstrap:
                     pass
                 self._prebuild_paused = False
                 self._prebuild_paused_routes = []
+                # Clear dominant_phase now that prebuild is complete.
+                wd = getattr(self, 'ui_heartbeat_watchdog', None)
+                if wd is not None:
+                    wd.set_dominant_phase('')
+                self._push_bootstrap_flags_to_watchdog()
+                self._check_startup_followup_done()
                 logger.info('lazy_vm_prebuild_done: all %d routes processed', len(routes))
                 return
 
@@ -3270,12 +3377,42 @@ class AppBootstrap:
                 self._prebuild_paused = True
                 self._prebuild_paused_routes = routes[idx:]
                 self._emit_prebuild_paused(pause_reason, route, routes[idx:])
-                return  # stop the chain; VMs are still built on-demand via navigation
+
+                # For transient reasons (snapshot pending, background
+                # startup active), schedule a non-blocking retry so the
+                # chain resumes once the condition clears.
+                retryable = (
+                    pause_reason.startswith('resource_snapshot_')
+                    or pause_reason.startswith('startup_background_active:')
+                )
+                if retryable:
+                    # Set dominant_phase to waiting state so stalls
+                    # during the wait carry meaningful context.
+                    wd = getattr(self, 'ui_heartbeat_watchdog', None)
+                    if wd is not None:
+                        wd.set_dominant_phase(f'prebuild_waiting:{pause_reason}')
+                    QTimer.singleShot(
+                        self._PREBUILD_SNAPSHOT_RETRY_MS,
+                        lambda: _build_next(idx),
+                    )
+                else:
+                    # Non-transient pause (resource pressure, stall) —
+                    # clear dominant_phase since we're stopping.
+                    wd = getattr(self, 'ui_heartbeat_watchdog', None)
+                    if wd is not None:
+                        wd.set_dominant_phase('')
+                return  # yield to event loop; VMs still built on-demand
 
             try:
                 self._timeline.mark(f'lazy_vm_prebuild_{route}_start')
             except Exception:
                 pass
+
+            # Set per-route dominant_phase for watchdog context.
+            wd = getattr(self, 'ui_heartbeat_watchdog', None)
+            if wd is not None:
+                wd.set_dominant_phase(f'lazy_vm_prebuild:{route}')
+
             try:
                 self._ensure_vm_for_route(route)
             except Exception:
@@ -3880,6 +4017,8 @@ class AppBootstrap:
         if metacog is None and api_discovery is None:
             return
 
+        self._startup_evolution_active = True
+
         def _run_startup_cycle() -> None:
             import time
             time.sleep(5)  # Let UI load first
@@ -3945,6 +4084,9 @@ class AppBootstrap:
                 logger.info('startup_evolution: background cycle complete')
             except Exception as exc:
                 logger.warning('startup_evolution: unexpected error: %s', exc)
+            finally:
+                self._startup_evolution_active = False
+                self._check_startup_followup_done()
 
         threading.Thread(
             target=_run_startup_cycle,
