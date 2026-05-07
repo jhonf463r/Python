@@ -3080,26 +3080,83 @@ class AppBootstrap:
     _PREBUILD_RAM_PAUSE_THRESHOLDS: set[str] = {'high', 'critical'}
     _PREBUILD_CPU_PAUSE_THRESHOLDS: set[str] = {'high', 'critical'}
     _PREBUILD_STALL_LOOKBACK_S: float = 30.0
+    # Cached snapshot is considered stale after this many seconds.
+    _PREBUILD_SNAPSHOT_MAX_AGE_S: float = 60.0
+
+    # ---- Cached resource snapshot (never read synchronously) --------
+
+    def _init_prebuild_snapshot_cache(self) -> None:
+        """Initialise the cache attributes (idempotent)."""
+        if not hasattr(self, '_prebuild_resource_snapshot'):
+            import threading
+            self._prebuild_resource_snapshot: Any | None = None
+            self._prebuild_resource_snapshot_at: float = 0.0
+            self._prebuild_resource_snapshot_lock = threading.Lock()
+
+    def _refresh_prebuild_snapshot_async(self) -> None:
+        """Kick off a background thread to refresh the cached snapshot.
+
+        The thread calls ``take_resource_snapshot()`` (which may be slow
+        on Windows — PowerShell/CIM subprocess) and stores the result
+        under lock.  The UI thread never blocks on this call.
+        """
+        self._init_prebuild_snapshot_cache()
+        import threading
+
+        def _worker() -> None:
+            try:
+                from iabv_v15.services.intelligent_resource_manager import (
+                    take_resource_snapshot,
+                )
+                snap = take_resource_snapshot()
+                import time as _t
+                with self._prebuild_resource_snapshot_lock:
+                    self._prebuild_resource_snapshot = snap
+                    self._prebuild_resource_snapshot_at = _t.time()
+            except Exception:
+                logger.debug('prebuild: background snapshot refresh failed',
+                             exc_info=True)
+
+        t = threading.Thread(target=_worker, daemon=True,
+                             name='prebuild-snap-refresh')
+        t.start()
+
+    def _get_cached_snapshot(self) -> tuple[Any | None, float]:
+        """Read the cached snapshot and its age in seconds.
+
+        Returns ``(snapshot_or_None, age_seconds)``.  Never blocks for
+        more than the lock-acquire time.
+        """
+        self._init_prebuild_snapshot_cache()
+        import time as _t
+        with self._prebuild_resource_snapshot_lock:
+            snap = self._prebuild_resource_snapshot
+            age = (_t.time() - self._prebuild_resource_snapshot_at
+                   if self._prebuild_resource_snapshot_at else float('inf'))
+        return snap, age
+
+    # ---- Decision helpers (UI-thread safe — no subprocess calls) ----
 
     def _should_pause_prebuild(self, route: str, remaining: list[str]) -> str | None:
         """Check resource pressure and UI health before building a lazy VM.
 
         Returns a reason string if prebuild should pause, or ``None`` if
-        it is safe to continue.  Uses existing organs only — no new
-        services are created.
+        it is safe to continue.
+
+        **IMPORTANT:** This method runs on the UI thread.  It reads only
+        the cached resource snapshot (populated asynchronously by
+        ``_refresh_prebuild_snapshot_async``).  It NEVER calls
+        ``take_resource_snapshot()`` directly.
         """
-        # 1. Resource pressure via take_resource_snapshot()
-        try:
-            from iabv_v15.services.intelligent_resource_manager import (
-                take_resource_snapshot,
-            )
-            snap = take_resource_snapshot()
+        # 1. Resource pressure from cached snapshot (non-blocking)
+        snap, age = self._get_cached_snapshot()
+        if snap is not None and age < self._PREBUILD_SNAPSHOT_MAX_AGE_S:
             if snap.ram_pressure in self._PREBUILD_RAM_PAUSE_THRESHOLDS:
                 return f'ram_pressure:{snap.ram_pressure}'
             if snap.cpu_pressure in self._PREBUILD_CPU_PAUSE_THRESHOLDS:
                 return f'cpu_pressure:{snap.cpu_pressure}'
-        except Exception:
-            logger.debug('prebuild: take_resource_snapshot unavailable', exc_info=True)
+        # If snapshot is absent or stale, skip resource check — do NOT
+        # block the UI thread to acquire one.
 
         # 2. Recent UI stall from UIHeartbeatWatchdog
         watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
@@ -3125,20 +3182,19 @@ class AppBootstrap:
         return None  # safe to continue
 
     def _emit_prebuild_paused(self, reason: str, route: str, remaining: list[str]) -> None:
-        """Emit timeline marker and log when prebuild is paused."""
+        """Emit timeline marker and log when prebuild is paused.
+
+        Uses the cached resource snapshot — never calls
+        ``take_resource_snapshot()`` directly.
+        """
         snap_data: dict[str, Any] = {}
-        try:
-            from iabv_v15.services.intelligent_resource_manager import (
-                take_resource_snapshot,
-            )
-            snap = take_resource_snapshot()
+        snap, age = self._get_cached_snapshot()
+        if snap is not None:
             snap_data = {
-                'rss_mb': snap.ram_total_mb - snap.ram_available_mb,
                 'available_mb': snap.ram_available_mb,
                 'memory_percent': snap.ram_used_pct,
+                'snapshot_age_ms': round(age * 1000, 1),
             }
-        except Exception:
-            pass
         try:
             self._timeline.mark(
                 'lazy_vm_prebuild_paused',
@@ -3154,6 +3210,8 @@ class AppBootstrap:
             reason, route, remaining, snap_data,
         )
 
+    # ---- Prebuild chain ----
+
     def _build_all_lazy_vms(self) -> None:
         """Pre-build all lazy VMs during idle time (background timer chain).
 
@@ -3162,18 +3220,26 @@ class AppBootstrap:
         thread responsive.  Errors in individual VMs are logged but do
         NOT break the chain — the next VM is always scheduled.
 
-        **Resource governance (post-audit fix):**
-        Before building each route, checks RAM/CPU pressure via
-        ``take_resource_snapshot()`` and recent UI stalls via
-        ``UIHeartbeatWatchdog``.  If pressure is high or a recent stall
-        is detected, the prebuild chain pauses and emits
-        ``lazy_vm_prebuild_paused`` to the startup timeline.
+        **Resource governance (post-audit fix v2):**
+        Before building each route, reads a *cached* resource snapshot
+        (refreshed asynchronously in a background thread) and checks
+        recent UI stalls via ``UIHeartbeatWatchdog``.  If pressure is
+        high or a recent stall is detected, the prebuild chain pauses
+        and emits ``lazy_vm_prebuild_paused`` to the startup timeline.
+
+        ``take_resource_snapshot()`` is NEVER called from the UI thread
+        — it can take 15-18 s on Windows (PowerShell/CIM).
+
         Navigation-triggered construction (``_ensure_vm_for_route``)
         is never paused — only the idle prebuild chain.
         """
         routes = list(self._ROUTE_TO_VM_ATTR.keys())
         self._prebuild_paused = False
         self._prebuild_paused_routes = []
+
+        # Kick off the first async snapshot refresh so the first gate
+        # decision has data (it may arrive by the time QTimer fires).
+        self._refresh_prebuild_snapshot_async()
 
         def _build_next(idx: int = 0) -> None:
             if idx >= len(routes):
@@ -3209,6 +3275,11 @@ class AppBootstrap:
                 self._timeline.mark(f'lazy_vm_prebuild_{route}_done')
             except Exception:
                 pass
+
+            # Refresh snapshot asynchronously between routes so the
+            # next gate decision has up-to-date data.
+            self._refresh_prebuild_snapshot_async()
+
             QTimer.singleShot(0, lambda: _build_next(idx + 1))
 
         _build_next()
