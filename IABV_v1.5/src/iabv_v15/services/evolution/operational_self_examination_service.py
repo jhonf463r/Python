@@ -685,6 +685,8 @@ class OperationalSelfExaminationService:
         startup_findings = self._startup_health_findings()
         findings.extend(startup_findings)
         self._auto_capture_startup_freeze(startup_findings)
+        findings.extend(self._ui_heartbeat_stall_findings())
+        findings.extend(self._interaction_episode_findings())
         findings.extend(self._boot_profile_findings())
         findings.extend(self._chat_research_backlog_findings())
         # Cognitive meta-patterns: fijación, incubación, atractores, ensambles
@@ -1849,6 +1851,152 @@ class OperationalSelfExaminationService:
                 )
         except Exception:
             logger.debug('_auto_capture_startup_freeze failed', exc_info=True)
+
+    def _ui_heartbeat_stall_findings(self) -> list[SelfExaminationFinding]:
+        """Emit findings from UIHeartbeatWatchdog stall history."""
+        watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
+        if watchdog is None:
+            return []
+        try:
+            summary = watchdog.summary()
+        except Exception:
+            return []
+        stall_count = summary.get('stall_count', 0)
+        if stall_count == 0:
+            return []
+        recent = summary.get('recent_stalls', [])
+        worst_ms = max(
+            (s.get('duration_ms', 0) for s in recent), default=0,
+        )
+        severity = IssueSeverity.HIGH if worst_ms > 5000 else IssueSeverity.MEDIUM
+        phases = [s.get('dominant_phase', '') for s in recent if s.get('dominant_phase')]
+        dominant = phases[0] if phases else 'unknown'
+        return [
+            SelfExaminationFinding(
+                title=f'UI event loop stalls: {stall_count} detected (worst {worst_ms:.0f}ms)',
+                summary=(
+                    f'{stall_count} heartbeat stalls detected. '
+                    f'Worst: {worst_ms:.0f}ms. Dominant phase: {dominant}.'
+                ),
+                severity=severity,
+                category='ui_heartbeat_stall',
+                confidence=0.95,
+                recommendation=(
+                    f'Investigate blocking on main thread during phase "{dominant}". '
+                    'Consider moving heavy work to background threads or adding '
+                    'yield-to-event-loop calls.'
+                ),
+                metadata={
+                    'stall_count': stall_count,
+                    'worst_ms': worst_ms,
+                    'dominant_phase': dominant,
+                    'recent_stalls': recent[-3:],
+                    'tick_count': summary.get('tick_count', 0),
+                },
+            )
+        ]
+
+    def _interaction_episode_findings(self) -> list[SelfExaminationFinding]:
+        """Emit findings for recent interaction episodes from runtime_audit.jsonl.
+
+        Reads the durable audit trail so that episodes are visible even if
+        the in-memory ``ChatInteractionLifecycle`` object was lost (process
+        death, OOM, etc.).
+        """
+        import json as _json
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        audit_path = Path(str(workspace)) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+        episodes: list[dict[str, Any]] = []
+        try:
+            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
+            for line in reversed(lines):
+                if not line.strip():
+                    continue
+                try:
+                    event = _json.loads(line)
+                except Exception:
+                    continue
+                if event.get('kind') != 'interaction_resolved':
+                    continue
+                episodes.append(dict(event.get('data') or {}))
+                if len(episodes) >= 5:
+                    break
+        except Exception:
+            return []
+        if not episodes:
+            return []
+        episodes.reverse()
+        findings: list[SelfExaminationFinding] = []
+        stall_episodes = [
+            e for e in episodes if len(e.get('stalls_during') or []) > 0
+        ]
+        failed_episodes = [
+            e for e in episodes if e.get('outcome') == 'failed'
+        ]
+        if stall_episodes:
+            ep_details: list[str] = []
+            for ep in stall_episodes:
+                sc = len(ep.get('stalls_during') or [])
+                ep_details.append(
+                    f'[{ep.get("interaction_id", "?")}] '
+                    f'"{str(ep.get("message_preview", ""))[:40]}" '
+                    f'provider={ep.get("provider", "?")} '
+                    f'duration={ep.get("total_duration_ms", 0)}ms '
+                    f'stalls={sc} '
+                    f'early_technical={ep.get("had_early_technical_response", False)} '
+                    f'window_inactive={ep.get("window_went_inactive", False)}'
+                )
+            findings.append(SelfExaminationFinding(
+                title=f'Interaction episodes with UI stalls: {len(stall_episodes)} of {len(episodes)} recent',
+                summary=(
+                    f'{len(stall_episodes)} of the last {len(episodes)} interaction episodes '
+                    f'had UI stalls. Episodes: ' + '; '.join(ep_details)
+                ),
+                severity=IssueSeverity.MEDIUM,
+                category='interaction_episode_stalls',
+                confidence=0.9,
+                recommendation='Investigate UI thread blocking during chat interactions.',
+                metadata={
+                    'stall_episode_count': len(stall_episodes),
+                    'total_episodes': len(episodes),
+                    'stall_episodes': stall_episodes,
+                    'source': 'runtime_audit',
+                },
+            ))
+        if failed_episodes:
+            ep_details_f: list[str] = []
+            for ep in failed_episodes:
+                ep_details_f.append(
+                    f'[{ep.get("interaction_id", "?")}] '
+                    f'"{str(ep.get("message_preview", ""))[:40]}" '
+                    f'provider={ep.get("provider", "?")} '
+                    f'duration={ep.get("total_duration_ms", 0)}ms '
+                    f'stalls={len(ep.get("stalls_during") or [])} '
+                    f'early_technical={ep.get("had_early_technical_response", False)} '
+                    f'window_inactive={ep.get("window_went_inactive", False)}'
+                )
+            findings.append(SelfExaminationFinding(
+                title=f'Failed interaction episodes: {len(failed_episodes)} of {len(episodes)} recent',
+                summary=(
+                    f'{len(failed_episodes)} of the last {len(episodes)} interaction episodes '
+                    f'ended with outcome=failed. Episodes: ' + '; '.join(ep_details_f)
+                ),
+                severity=IssueSeverity.MEDIUM,
+                category='interaction_episode_failures',
+                confidence=0.9,
+                recommendation='Review failed interactions for patterns.',
+                metadata={
+                    'failed_count': len(failed_episodes),
+                    'total_episodes': len(episodes),
+                    'failed_episodes': failed_episodes,
+                    'source': 'runtime_audit',
+                },
+            ))
+        return findings
 
     def _startup_health_findings(self) -> list[SelfExaminationFinding]:
         """Read ``data/logs/startup_timeline.jsonl`` and emit degradation findings.

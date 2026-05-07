@@ -182,6 +182,7 @@ class PortableContextService:
             self._code_audit_section(status=code_audit_status, now=now),
             self._cloud_reasoning_section(status=cloud_reasoning_status, now=now),
             self._startup_health_section(status=startup_health, now=now),
+            self._interaction_lifecycle_section(now=now),
             self._account_resource_section(status=account_resource, now=now),
             self._account_inventory_continuity_section(now=now),
             self._tool_coordination_section(now=now),
@@ -2692,6 +2693,142 @@ class PortableContextService:
         except Exception:
             return []
 
+    def _ui_heartbeat_summary(self) -> dict[str, Any]:
+        """Return UI heartbeat watchdog summary for PortableContext."""
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        if watchdog is None or not hasattr(watchdog, 'summary'):
+            return {}
+        try:
+            return watchdog.summary()
+        except Exception:
+            return {}
+
+    def _interaction_lifecycle_summary(self) -> dict[str, Any]:
+        """Return chat interaction lifecycle summary for PortableContext.
+
+        Merges in-memory lifecycle data with durable records from
+        ``runtime_audit.jsonl`` so that episodes survive process death.
+        """
+        lifecycle = getattr(self, 'chat_interaction_lifecycle', None)
+        in_memory_recent: list[dict[str, Any]] = []
+        summary: dict[str, Any] = {}
+        if lifecycle is not None and hasattr(lifecycle, 'summary'):
+            try:
+                summary = lifecycle.summary()
+                in_memory_recent = lifecycle.recent_completed(limit=3)
+            except Exception:
+                pass
+
+        # Reconstruct from runtime_audit.jsonl if in-memory is empty/missing
+        audit_recent = self._interaction_episodes_from_audit(limit=3)
+        # Merge: prefer in-memory for IDs we already have, append audit-only
+        seen_ids = {r.get('interaction_id') for r in in_memory_recent}
+        for ar in audit_recent:
+            if ar.get('interaction_id') not in seen_ids:
+                in_memory_recent.append(ar)
+                seen_ids.add(ar.get('interaction_id'))
+        # Keep only most recent 3
+        in_memory_recent = in_memory_recent[-3:]
+        summary['recent_completed'] = in_memory_recent
+        # reconstructed_from_audit = true if ANY episode came from audit
+        summary['reconstructed_from_audit'] = any(
+            ep.get('_source') == 'runtime_audit' for ep in in_memory_recent
+        )
+        return summary
+
+    def _interaction_lifecycle_section(self, *, now) -> PortableContextSection:
+        """Build a renderable section for recent interaction episodes.
+
+        Merges in-memory lifecycle with durable ``runtime_audit.jsonl``
+        records so that episodes survive process death and appear in
+        ``latest.md`` (not only in ``latest.json`` metadata).
+        """
+        lifecycle_data = self._interaction_lifecycle_summary()
+        recent = list(lifecycle_data.get('recent_completed') or [])
+        reconstructed = bool(lifecycle_data.get('reconstructed_from_audit'))
+        items: list[dict[str, Any]] = []
+        for ep in recent:
+            stall_count = len(ep.get('stalls_during') or [])
+            items.append({
+                'interaction_id': ep.get('interaction_id', ''),
+                'message_preview': ep.get('message_preview', ''),
+                'outcome': ep.get('outcome', ''),
+                'provider': ep.get('provider', ''),
+                'total_duration_ms': ep.get('total_duration_ms', 0),
+                'stall_count': stall_count,
+                'had_early_technical_response': ep.get('had_early_technical_response', False),
+                'window_went_inactive': ep.get('window_went_inactive', False),
+                'source': ep.get('_source', 'in_memory'),
+            })
+        if not items:
+            summary_text = 'Sin episodios de interaccion recientes.'
+        else:
+            sources = set(i.get('source', '') for i in items)
+            source_note = ' (reconstruido desde runtime_audit)' if 'runtime_audit' in sources else ''
+            summary_text = (
+                f'{len(items)} episodio(s) reciente(s){source_note}.'
+            )
+        return self._section(
+            section_id='interaction_lifecycle',
+            title='Ciclo de vida de interacciones recientes',
+            summary=summary_text,
+            items=items,
+            source_kind='runtime_audit_jsonl+in_memory',
+            source_refs=['data/logs/runtime_audit.jsonl', 'ChatInteractionLifecycle'],
+            confidence=0.9 if items else 0.0,
+            last_updated=now,
+            unresolved_fields=[],
+            metadata=lifecycle_data,
+        )
+
+    def _interaction_episodes_from_audit(
+        self, *, limit: int = 3,
+    ) -> list[dict[str, Any]]:
+        """Read recent ``interaction_resolved`` events from runtime_audit.jsonl."""
+        import json as _json
+        audit_path = Path(self.workspace_root) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+        episodes: list[dict[str, Any]] = []
+        try:
+            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
+            for line in reversed(lines):
+                if not line.strip():
+                    continue
+                try:
+                    event = _json.loads(line)
+                except Exception:
+                    continue
+                if event.get('kind') != 'interaction_resolved':
+                    continue
+                data = dict(event.get('data') or {})
+                episodes.append({
+                    'interaction_id': data.get('interaction_id', ''),
+                    'message_preview': data.get('message_preview', ''),
+                    'outcome': data.get('outcome', ''),
+                    'provider': data.get('provider', ''),
+                    'total_duration_ms': data.get('total_duration_ms', 0),
+                    'phases': dict(data.get('phases') or {}),
+                    'stalls_during': list(data.get('stalls_during') or []),
+                    'window_inactive_intervals': list(
+                        data.get('window_inactive_intervals') or [],
+                    ),
+                    'initial_window_active': data.get('initial_window_active', True),
+                    'initial_window_visible': data.get('initial_window_visible', True),
+                    'had_early_technical_response': data.get(
+                        'had_early_technical_response', False,
+                    ),
+                    'window_went_inactive': data.get('window_went_inactive', False),
+                    'resolved': True,
+                    '_source': 'runtime_audit',
+                })
+                if len(episodes) >= limit:
+                    break
+        except Exception:
+            pass
+        episodes.reverse()
+        return episodes
+
     def _startup_health_section(self, *, status: dict[str, Any], now) -> PortableContextSection:
         """Export the latest startup timeline summary as a portable section.
 
@@ -2780,6 +2917,8 @@ class PortableContextService:
                 'phases_seen': list(status.get('phases_seen') or []),
                 'recent_blockers': list(status.get('recent_blockers') or []),
                 'freeze_incidents': freeze_incidents,
+                'ui_heartbeat': self._ui_heartbeat_summary(),
+                'interaction_lifecycle': self._interaction_lifecycle_summary(),
             },
         )
 
@@ -3130,6 +3269,21 @@ class PortableContextService:
                     assistant = str(item.get('assistant_kind') or '').strip()
                     suffix = f' | {assistant}' if assistant and assistant.lower() not in label.lower() else ''
                     lines.append(f'- {label}{suffix}: {detail}')
+                elif section.section_id == 'interaction_lifecycle':
+                    iid = str(item.get('interaction_id') or 'n/d')
+                    preview = str(item.get('message_preview') or '')[:60]
+                    outcome = str(item.get('outcome') or 'n/d')
+                    provider = str(item.get('provider') or 'n/d')
+                    dur = item.get('total_duration_ms', 0)
+                    stalls = item.get('stall_count', 0)
+                    early = item.get('had_early_technical_response', False)
+                    inactive = item.get('window_went_inactive', False)
+                    src = str(item.get('source') or 'n/d')
+                    lines.append(
+                        f'- [{iid}] "{preview}" | outcome={outcome} provider={provider} '
+                        f'duration={dur}ms stalls={stalls} early_technical={early} '
+                        f'window_inactive={inactive} source={src}'
+                    )
                 elif section.section_id in {'operational_blocks', 'pending', 'unresolved'}:
                     label = str(item.get('kind') or item.get('issue_id') or item.get('title') or item.get('field') or 'n/d')
                     detail = str(item.get('detail') or item.get('summary') or item.get('recommended_change') or item.get('rationale') or '').strip()
