@@ -2794,7 +2794,11 @@ class AdaptiveTaskOrchestrator:
             return None
         try:
             state = service.current_state(refresh=False)
-            return builder.build(state)
+            try:
+                work_queue = service.current_work_queue(limit=10)
+            except Exception:
+                work_queue = []
+            return builder.build(state, work_queue=work_queue)
         except Exception:
             return None
 

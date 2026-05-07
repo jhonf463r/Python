@@ -56,6 +56,7 @@ class ControlMasterDigestBuilder:
         state: ControlMasterState,
         autonomy_metrics: dict[str, Any] | None = None,
         coordination_patterns: list[dict[str, Any]] | None = None,
+        work_queue: list[dict[str, Any]] | None = None,
     ) -> ControlMasterDigest:
         rules = [
             rule
@@ -100,6 +101,7 @@ class ControlMasterDigestBuilder:
         tests_state_brief = _render_tests_brief(state.current_tests_state)
         autonomy_brief = _render_autonomy_metrics(autonomy_metrics)
         coordination_brief = _render_coordination_patterns(coordination_patterns)
+        wq_brief, wq_counts = _render_work_queue(work_queue, limit=5)
 
         digest = ControlMasterDigest(
             current_vision=(state.current_vision or "").strip(),
@@ -112,6 +114,8 @@ class ControlMasterDigestBuilder:
             tests_state_brief=tests_state_brief,
             autonomy_metrics_brief=autonomy_brief,
             coordination_patterns_brief=coordination_brief,
+            work_queue_brief=wq_brief,
+            work_queue_counts=wq_counts,
             source_state_id=state.state_id,
         )
         return _truncate(digest, self.max_chars)
@@ -119,6 +123,26 @@ class ControlMasterDigestBuilder:
     def build_markdown(self, state: ControlMasterState) -> str:
         """Convenience: renders the digest as markdown (for injection)."""
         return render_digest_markdown(self.build(state))
+
+
+def _render_work_queue(
+    work_queue: list[dict[str, Any]] | None,
+    limit: int = 5,
+) -> tuple[list[str], dict[str, int]]:
+    if not work_queue:
+        return [], {}
+    brief: list[str] = []
+    counts: dict[str, int] = {}
+    for item in work_queue[:limit]:
+        label = item.get('priority_label', '')
+        source = item.get('source', '')
+        title = str(item.get('title', ''))[:40]
+        action = str(item.get('next_action', ''))[:30]
+        brief.append(f"[{label}] {title} ({source}) {action}")
+    for item in work_queue:
+        status = item.get('status', 'unknown')
+        counts[status] = counts.get(status, 0) + 1
+    return brief, counts
 
 
 def _render_autonomy_metrics(metrics: dict[str, Any] | None) -> str:
@@ -206,6 +230,13 @@ def render_digest_markdown(digest: ControlMasterDigest) -> str:
         lines.append("UNRESOLVED:")
         for item in digest.unresolved:
             lines.append(f"- {item}")
+    if digest.work_queue_brief:
+        lines.append("Cola de trabajo (top next actions):")
+        for item in digest.work_queue_brief:
+            lines.append(f"- {item}")
+    if digest.work_queue_counts:
+        parts = [f"{k}={v}" for k, v in sorted(digest.work_queue_counts.items())]
+        lines.append(f"Work queue counts: {', '.join(parts)}")
     if digest.tests_state_brief:
         lines.append(f"Tests: {digest.tests_state_brief}")
     if digest.autonomy_metrics_brief:
@@ -218,10 +249,13 @@ def render_digest_markdown(digest: ControlMasterDigest) -> str:
 def _truncate(digest: ControlMasterDigest, max_chars: int) -> ControlMasterDigest:
     if len(render_digest_markdown(digest)) <= max_chars:
         return digest
-    # Drop lowest-priority sections first.
+    # Drop lowest-priority sections first.  work_queue_brief is kept
+    # longer than most sections because it is the canonical next-actions
+    # view that downstream consumers rely on.
     for attr in (
         "coordination_patterns_brief",
         "autonomy_metrics_brief",
+        "work_queue_counts",
         "tests_state_brief",
         "recent_decisions_brief",
         "top_backlog",
@@ -231,10 +265,21 @@ def _truncate(digest: ControlMasterDigest, max_chars: int) -> ControlMasterDiges
         current = getattr(digest, attr)
         if isinstance(current, list):
             digest = digest.model_copy(update={attr: []})
+        elif isinstance(current, dict):
+            digest = digest.model_copy(update={attr: {}})
         else:
             digest = digest.model_copy(update={attr: ""})
         if len(render_digest_markdown(digest)) <= max_chars:
             return digest
+    # Trim work_queue_brief progressively before removing it entirely.
+    while len(digest.work_queue_brief) > 1 and len(render_digest_markdown(digest)) > max_chars:
+        digest = digest.model_copy(update={"work_queue_brief": digest.work_queue_brief[:-1]})
+    if len(render_digest_markdown(digest)) <= max_chars:
+        return digest
+    if digest.work_queue_brief and len(render_digest_markdown(digest)) > max_chars:
+        digest = digest.model_copy(update={"work_queue_brief": []})
+    if len(render_digest_markdown(digest)) <= max_chars:
+        return digest
     # Trim rules progressively (keep highest priority first).
     while digest.rules_brief and len(render_digest_markdown(digest)) > max_chars:
         digest = digest.model_copy(update={"rules_brief": digest.rules_brief[:-1]})

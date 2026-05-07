@@ -51,6 +51,8 @@ class ControlMasterService:
         self_examination_service: Any | None = None,
         experiment_lab_repository: Any | None = None,
         account_resource_scanner: Any | None = None,
+        platform_pending_queue: Any | None = None,
+        workspace_root: str | None = None,
         recent_decisions_limit: int = 10,
     ) -> None:
         self.repository = repository
@@ -59,6 +61,8 @@ class ControlMasterService:
         self.self_examination_service = self_examination_service
         self.experiment_lab_repository = experiment_lab_repository
         self.account_resource_scanner = account_resource_scanner
+        self.platform_pending_queue = platform_pending_queue
+        self.workspace_root = workspace_root
         self.recent_decisions_limit = recent_decisions_limit
 
     # ------------------------------------------------------------------
@@ -278,6 +282,335 @@ class ControlMasterService:
         return self.save_state(updated)
 
     # ------------------------------------------------------------------
+    # Canonical work queue projection
+    # ------------------------------------------------------------------
+
+    def current_work_queue(self, *, limit: int = 20) -> list[dict[str, Any]]:
+        """Project a unified, prioritised work queue from all live sources.
+
+        Combines objectives, platform pending tasks, pending issues,
+        OSES findings (HIGH/CRITICAL), and failed/stalled interaction
+        episodes from ``runtime_audit.jsonl``.  Each item carries a
+        deterministic ``priority_score`` with ``score_breakdown``.
+
+        COMPLETED items are excluded.  Projection is idempotent.
+        """
+        items: list[dict[str, Any]] = []
+        seen_ids: set[str] = set()
+
+        # 1. Objectives (active, pending, blocked)
+        items.extend(self._project_objective_queue_items(seen_ids))
+
+        # 2. Platform pending tasks (non-COMPLETED)
+        items.extend(self._project_platform_pending_items(seen_ids))
+
+        # 3. Pending issues
+        items.extend(self._project_pending_issue_items(seen_ids))
+
+        # 4. OSES findings (HIGH/CRITICAL only)
+        items.extend(self._project_oses_finding_items(seen_ids))
+
+        # 5. Failed/stalled interaction episodes from runtime_audit
+        items.extend(self._project_runtime_audit_items(seen_ids))
+
+        # 6. Tests state
+        state = self.current_state()
+        ts = state.current_tests_state
+        if ts and ts.get('failed', 0) > 0:
+            tid = 'tests:failing'
+            if tid not in seen_ids:
+                seen_ids.add(tid)
+                items.append(self._make_item(
+                    item_id=tid,
+                    title=f"Tests failing: {ts.get('failed')} of {ts.get('total', '?')}",
+                    status='needs_fix',
+                    source='tests_state',
+                    evidence_refs=[],
+                    next_action='Fix failing tests before merging',
+                    score_components={'test_failure': 70, 'base': 10},
+                ))
+
+        # Score and sort
+        for item in items:
+            components = item.get('score_breakdown', {})
+            item['priority_score'] = sum(components.values())
+            item['priority_label'] = _score_to_label(item['priority_score'])
+        items.sort(key=lambda x: x.get('priority_score', 0), reverse=True)
+        return items[:limit]
+
+    def _make_item(
+        self,
+        *,
+        item_id: str,
+        title: str,
+        status: str,
+        source: str,
+        evidence_refs: list[str],
+        next_action: str,
+        score_components: dict[str, int],
+        acceptance_tests: list[str] | None = None,
+        dependencies: str = '',
+        parallelizable: bool = True,
+        updated_at: str = '',
+        reason: str = '',
+    ) -> dict[str, Any]:
+        return {
+            'id': item_id,
+            'title': title,
+            'status': status,
+            'priority_score': 0,
+            'priority_label': '',
+            'source': source,
+            'evidence_refs': evidence_refs,
+            'next_action': next_action,
+            'acceptance_tests': list(acceptance_tests or []),
+            'dependencies': dependencies,
+            'parallelizable': parallelizable,
+            'updated_at': updated_at or utc_now().isoformat(),
+            'reason': reason,
+            'score_breakdown': dict(score_components),
+        }
+
+    def _project_objective_queue_items(
+        self, seen_ids: set[str],
+    ) -> list[dict[str, Any]]:
+        if self.objective_repository is None:
+            return []
+        items: list[dict[str, Any]] = []
+        for status_val in (ObjectiveStatus.ACTIVE, ObjectiveStatus.PENDING, ObjectiveStatus.BLOCKED):
+            try:
+                nodes = self.objective_repository.list_recent(status=status_val, limit=20)
+            except Exception:
+                continue
+            for node in nodes:
+                oid = f'objective:{node.objective_id}'
+                if oid in seen_ids:
+                    continue
+                seen_ids.add(oid)
+                score: dict[str, int] = {'base': 20}
+                if node.priority >= 80:
+                    score['high_priority'] = 30
+                elif node.priority >= 60:
+                    score['medium_priority'] = 15
+                if status_val == ObjectiveStatus.BLOCKED:
+                    score['blocked'] = 20
+                items.append(self._make_item(
+                    item_id=oid,
+                    title=node.title,
+                    status=status_val.value,
+                    source='objective_repository',
+                    evidence_refs=list(node.evidence_refs or []),
+                    next_action=node.blocker if node.blocker else 'Continue work',
+                    score_components=score,
+                    dependencies=node.blocker,
+                    parallelizable=not bool(node.blocker),
+                    updated_at=node.updated_at_utc.isoformat(),
+                    reason=node.summary,
+                ))
+        return items
+
+    def _project_platform_pending_items(
+        self, seen_ids: set[str],
+    ) -> list[dict[str, Any]]:
+        queue = self.platform_pending_queue
+        if queue is None:
+            return []
+        items: list[dict[str, Any]] = []
+        try:
+            from iabv_v15.domain.models import PendingTaskStatus as _PTS
+            all_tasks = queue.list_all() if hasattr(queue, 'list_all') else []
+        except Exception:
+            return []
+        for task in all_tasks:
+            if task.status == _PTS.COMPLETED:
+                continue
+            tid = f'platform:{task.id}'
+            if tid in seen_ids:
+                continue
+            seen_ids.add(tid)
+            score: dict[str, int] = {'base': 15}
+            prio_map = {'critical': 50, 'high': 30, 'medium': 15, 'low': 5}
+            score['priority'] = prio_map.get(task.priority, 10)
+            if task.status == _PTS.BLOCKED:
+                score['blocked'] = 15
+            items.append(self._make_item(
+                item_id=tid,
+                title=task.title,
+                status=task.status.value,
+                source='platform_pending_queue',
+                evidence_refs=[],
+                next_action=task.next_action or task.resume_hint or 'Investigate',
+                score_components=score,
+                dependencies=task.dependency_missing,
+                parallelizable=task.status != _PTS.BLOCKED,
+                updated_at=task.updated_at.isoformat(),
+                reason=task.reason or task.description,
+            ))
+        return items
+
+    def _project_pending_issue_items(
+        self, seen_ids: set[str],
+    ) -> list[dict[str, Any]]:
+        if self.pending_issue_repository is None:
+            return []
+        items: list[dict[str, Any]] = []
+        candidates: list[Any] = []
+        for method_name in ('list_recent', 'list_open', 'list_pending', 'list_all'):
+            method = getattr(self.pending_issue_repository, method_name, None)
+            if method is None:
+                continue
+            try:
+                candidates = list(method())
+                break
+            except Exception:
+                continue
+        for issue in candidates[:15]:
+            iid = f'issue:{getattr(issue, "issue_id", "") or id(issue)}'
+            if iid in seen_ids:
+                continue
+            seen_ids.add(iid)
+            score: dict[str, int] = {'base': 25}
+            summary = getattr(issue, 'summary', '') or ''
+            lower_summary = summary.lower()
+            if any(k in lower_summary for k in ('startup', 'freeze', 'crash', 'stall')):
+                score['user_impact'] = 40
+            if any(k in lower_summary for k in ('memory', 'rss', 'oom')):
+                score['memory_critical'] = 35
+            items.append(self._make_item(
+                item_id=iid,
+                title=summary[:120] or 'Pending issue',
+                status=getattr(issue, 'status', 'needs_fix'),
+                source='pending_issue_repository',
+                evidence_refs=list(getattr(issue, 'evidence_refs', []) or []),
+                next_action=getattr(issue, 'recommended_change', '') or 'Investigate',
+                score_components=score,
+                updated_at=getattr(issue, 'created_at_utc', utc_now()).isoformat()
+                if hasattr(getattr(issue, 'created_at_utc', None), 'isoformat')
+                else '',
+                reason=getattr(issue, 'probable_cause', '') or '',
+            ))
+        return items
+
+    def _project_oses_finding_items(
+        self, seen_ids: set[str],
+    ) -> list[dict[str, Any]]:
+        if self.self_examination_service is None:
+            return []
+        snapshot = None
+        for method_name in ('current_review', 'current_snapshot', 'latest_snapshot', 'current', 'latest'):
+            method = getattr(self.self_examination_service, method_name, None)
+            if method is None:
+                continue
+            try:
+                snapshot = method()
+                break
+            except Exception:
+                continue
+        if snapshot is None:
+            return []
+        findings = getattr(snapshot, 'findings', None) or []
+        items: list[dict[str, Any]] = []
+        for finding in findings:
+            sev = getattr(finding, 'severity', None)
+            if sev is None:
+                continue
+            sev_val = (sev.value if hasattr(sev, 'value') else str(sev)).lower()
+            if sev_val not in ('high', 'critical'):
+                continue
+            fid = f'oses:{getattr(finding, "finding_id", "") or getattr(finding, "category", "")}'
+            if fid in seen_ids:
+                continue
+            seen_ids.add(fid)
+            score: dict[str, int] = {'base': 30}
+            if sev_val == 'critical':
+                score['critical_severity'] = 50
+            elif sev_val == 'high':
+                score['high_severity'] = 30
+            title_lower = (getattr(finding, 'title', '') or '').lower()
+            if any(k in title_lower for k in ('startup', 'freeze', 'stall', 'event_loop')):
+                score['startup_impact'] = 25
+            if any(k in title_lower for k in ('memory', 'rss', 'oom')):
+                score['memory_impact'] = 25
+            items.append(self._make_item(
+                item_id=fid,
+                title=getattr(finding, 'title', '') or 'OSES finding',
+                status=getattr(finding, 'status', 'observed'),
+                source='oses_finding',
+                evidence_refs=list(getattr(finding, 'evidence_refs', []) or []),
+                next_action=getattr(finding, 'recommendation', '') or 'Investigate',
+                score_components=score,
+                reason=getattr(finding, 'summary', '') or '',
+            ))
+        return items
+
+    def _project_runtime_audit_items(
+        self, seen_ids: set[str],
+    ) -> list[dict[str, Any]]:
+        """Project failed/stalled interaction episodes from runtime_audit.jsonl.
+
+        Resolved-sane episodes are NOT projected (no false positives).
+        """
+        if not self.workspace_root:
+            return []
+        import json as _json
+        audit_path = Path(str(self.workspace_root)) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+        items: list[dict[str, Any]] = []
+        try:
+            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
+            count = 0
+            for line in reversed(lines):
+                if count >= 10:
+                    break
+                if not line.strip():
+                    continue
+                try:
+                    event = _json.loads(line)
+                except Exception:
+                    continue
+                if event.get('kind') != 'interaction_resolved':
+                    continue
+                count += 1
+                data = dict(event.get('data') or {})
+                outcome = data.get('outcome', '')
+                stalls = list(data.get('stalls_during') or [])
+                # Only project failed or stalled episodes
+                if outcome == 'resolved' and not stalls:
+                    continue
+                iid_raw = data.get('interaction_id', '')
+                aid = f'audit:{iid_raw}'
+                if aid in seen_ids:
+                    continue
+                seen_ids.add(aid)
+                score: dict[str, int] = {'base': 20}
+                if outcome in ('failed', 'abandoned'):
+                    score['failed_interaction'] = 35
+                if stalls:
+                    score['ui_stalls'] = min(len(stalls) * 15, 45)
+                items.append(self._make_item(
+                    item_id=aid,
+                    title=(
+                        f'Interaction {outcome}: '
+                        f'"{data.get("message_preview", "")[:50]}" '
+                        f'provider={data.get("provider", "?")}'
+                    ),
+                    status=outcome,
+                    source='runtime_audit',
+                    evidence_refs=[f'data/logs/runtime_audit.jsonl#{iid_raw}'],
+                    next_action='Investigate interaction failure/stall pattern',
+                    score_components=score,
+                    reason=(
+                        f'duration={data.get("total_duration_ms", 0)}ms '
+                        f'stalls={len(stalls)} '
+                        f'window_inactive={data.get("window_went_inactive", False)}'
+                    ),
+                ))
+        except Exception:
+            pass
+        return items
+
+    # ------------------------------------------------------------------
     # Seeding
     # ------------------------------------------------------------------
 
@@ -466,6 +799,21 @@ class ControlMasterService:
             unresolved = getattr(snapshot, "unresolved_risks", None) or []
             return [str(item) for item in unresolved]
         return []
+
+
+# ----------------------------------------------------------------------
+# Scoring helpers
+# ----------------------------------------------------------------------
+
+
+def _score_to_label(score: int) -> str:
+    if score >= 80:
+        return 'critical'
+    if score >= 50:
+        return 'high'
+    if score >= 30:
+        return 'medium'
+    return 'low'
 
 
 # ----------------------------------------------------------------------

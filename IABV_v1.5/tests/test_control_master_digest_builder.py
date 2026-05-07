@@ -12,6 +12,7 @@ from iabv_v15.domain.models import (
 )
 from iabv_v15.services.evolution.control_master_digest_builder import (
     ControlMasterDigestBuilder,
+    _truncate,
     render_digest_markdown,
 )
 
@@ -138,3 +139,135 @@ def test_digest_is_independent_of_chat_history() -> None:
     state_fields = set(ControlMasterState.model_fields.keys())
     assert "chat_history" not in state_fields
     assert "messages" not in state_fields
+
+
+# --- Truncation priority: work_queue_brief survival tests ---
+
+from iabv_v15.domain.models import ControlMasterDigest
+
+
+def _heavy_digest_with_work_queue() -> ControlMasterDigest:
+    """Build a realistic large digest where work_queue_brief competes for space."""
+    return ControlMasterDigest(
+        current_vision="Sistema vivo, gobernable, auto-observable y portable",
+        rules_brief=[
+            "[irrevocable] No crear otro cerebro ni orquestador",
+            "[strict] Consultar world model antes de rutas externas",
+        ],
+        active_objectives_brief=[
+            "active:obj-startup-perf",
+            "active:obj-autonomy-zero-touch",
+            "active:obj-portable-context",
+        ],
+        top_backlog=[
+            "Cerrar slice startup lazy gate",
+            "Refactor phased populate",
+            "Optimizar tail runtime_audit",
+        ],
+        current_risks=[
+            "[high] RSS memory puede superar umbral en Windows",
+            "[medium] Latencia cloud reasoning degradada",
+        ],
+        recent_decisions_brief=[
+            "[accepted] Aprobar cola canonica en ControlMaster",
+            "[accepted] Persistir episodio durable en runtime_audit",
+        ],
+        unresolved=["validar Codex vivo", "performance tail runtime_audit"],
+        tests_state_brief="passed=160, failed=0, total=160",
+        autonomy_metrics_brief="autonomy=0.72 resilience=0.85 verdict=improving",
+        coordination_patterns_brief="ia-ia: 3 consultas cloud, 1 fallback local",
+        work_queue_brief=[
+            "[CRITICAL] Fix startup freeze (platform) fix congelamiento",
+            "[HIGH] RSS memory monitor (oses) implementar monitor",
+            "[HIGH] Query stall detection (pending) agregar deteccion",
+            "[MEDIUM] Portable context refresh (objective) optimizar refresh",
+            "[LOW] Tool registry cleanup (pending) limpiar registro",
+        ],
+        work_queue_counts={"pending": 3, "blocked": 1, "ready": 1},
+    )
+
+
+def test_work_queue_brief_survives_truncation_under_2000() -> None:
+    """At least 1 work_queue_brief item must survive under max_chars=2000."""
+    digest = _heavy_digest_with_work_queue()
+    truncated = _truncate(digest, max_chars=2000)
+    rendered = render_digest_markdown(truncated)
+    assert len(rendered) <= 2000, f"rendered length {len(rendered)} > 2000"
+    assert len(truncated.work_queue_brief) >= 1, (
+        "work_queue_brief was completely removed; at least 1 item must survive"
+    )
+
+
+def test_work_queue_counts_dropped_before_work_queue_brief() -> None:
+    """work_queue_counts must be discarded before work_queue_brief."""
+    digest = _heavy_digest_with_work_queue()
+    truncated = _truncate(digest, max_chars=2000)
+    if truncated.work_queue_brief:
+        # If brief survived, counts should already be gone or both survive.
+        # Verify: if we still have brief items, counts was dropped first.
+        pass  # The ordering test is structural — confirmed by code order.
+    # Stronger: build a digest where dropping counts alone frees enough space.
+    tight = ControlMasterDigest(
+        current_vision="v" * 200,
+        rules_brief=["[irrevocable] No duplicar cerebro"],
+        unresolved=["item-1"],
+        work_queue_brief=["[HIGH] Fix startup (platform) fix"],
+        work_queue_counts={"pending": 5, "blocked": 2, "ready": 1},
+        coordination_patterns_brief="patterns" * 20,
+        autonomy_metrics_brief="metrics" * 20,
+        tests_state_brief="passed=60, failed=0",
+    )
+    # Use a budget that forces some drops but not all.
+    budget = len(render_digest_markdown(tight)) - 50
+    result = _truncate(tight, max_chars=budget)
+    rendered = render_digest_markdown(result)
+    assert len(rendered) <= budget
+    # work_queue_counts should be dropped before work_queue_brief.
+    assert result.work_queue_counts == {} or len(result.work_queue_brief) > 0
+
+
+def test_work_queue_brief_progressive_trim() -> None:
+    """work_queue_brief should trim progressively (5->4->3->...->1) before removal."""
+    digest = _heavy_digest_with_work_queue()
+    assert len(digest.work_queue_brief) == 5
+    # Use a tight budget that forces progressive trimming of work_queue_brief
+    # after other less-critical sections have already been dropped.
+    budget = 500
+    result = _truncate(digest, max_chars=budget)
+    rendered = render_digest_markdown(result)
+    assert len(rendered) <= budget
+    assert 0 < len(result.work_queue_brief) < 5, (
+        f"Expected progressive trim, got {len(result.work_queue_brief)} items"
+    )
+
+
+def test_rules_and_unresolved_survive_after_work_queue_trim() -> None:
+    """Rules and unresolved must survive even when work_queue_brief is trimmed."""
+    digest = _heavy_digest_with_work_queue()
+    truncated = _truncate(digest, max_chars=2000)
+    rendered = render_digest_markdown(truncated)
+    assert len(rendered) <= 2000
+    assert len(truncated.rules_brief) > 0, "rules_brief must survive truncation"
+    assert len(truncated.unresolved) > 0, "unresolved must survive truncation"
+
+
+def test_render_work_queue_compact_format() -> None:
+    """_render_work_queue must produce compact strings (no 'src=' prefix, truncated)."""
+    from iabv_v15.services.evolution.control_master_digest_builder import (
+        _render_work_queue,
+    )
+
+    queue = [
+        {
+            "priority_label": "CRITICAL",
+            "source": "platform",
+            "title": "A" * 80,  # very long title
+            "next_action": "B" * 60,  # very long action
+            "status": "pending",
+        },
+    ]
+    brief, counts = _render_work_queue(queue)
+    assert len(brief) == 1
+    # Title truncated to 40 chars, action to 30 chars.
+    assert len(brief[0]) < 80 + 60, "Brief line must be shorter than raw fields"
+    assert "src=" not in brief[0], "Compact format must not use 'src=' prefix"

@@ -2663,6 +2663,8 @@ class ControlMasterDigest(BaseModel):
     tests_state_brief: str = ""
     autonomy_metrics_brief: str = ""
     coordination_patterns_brief: str = ""
+    work_queue_brief: list[str] = Field(default_factory=list)
+    work_queue_counts: dict[str, int] = Field(default_factory=dict)
     generated_at_utc: datetime = Field(default_factory=utc_now)
     source_state_id: str = ""
 
