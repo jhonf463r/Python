@@ -622,6 +622,132 @@ def best_account_for_tool(tool: str) -> dict[str, Any] | None:
     return candidates[0]
 
 
+def governed_quota_rotation(
+    tool: str,
+    current_email: str = '',
+) -> dict[str, Any]:
+    """Sovereign rotation policy: pick the next account when quota exhausts.
+
+    Respects AutonomyGovernancePolicy (read-only) by never modifying it.
+    The policy is:
+      1. If current account still has quota, keep it.
+      2. Otherwise, rotate to the account with the most remaining messages.
+      3. If ALL accounts are exhausted, report the earliest reset time.
+      4. Never auto-switch without traceability — every rotation is logged.
+
+    Returns a dict with:
+    - ``action``: 'keep' | 'rotate' | 'wait' | 'no_accounts'
+    - ``current``: status of current account (or None)
+    - ``next``: recommended next account (or None)
+    - ``wait_until``: ISO timestamp when the earliest account resets (if waiting)
+    - ``reason``: human-readable explanation
+    - ``rotation_trace``: audit-friendly record of the decision
+    """
+    import time as _time
+
+    tool_lower = tool.strip().lower()
+    all_status = get_all_quota_status()
+
+    tool_accounts = [
+        s for s in all_status['statuses']
+        if s['tool'] == tool_lower
+    ]
+
+    if not tool_accounts:
+        return {
+            'action': 'no_accounts',
+            'current': None,
+            'next': None,
+            'wait_until': None,
+            'reason': f'No hay cuentas rastreadas para {tool_lower}.',
+            'rotation_trace': {
+                'tool': tool_lower,
+                'decision': 'no_accounts',
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+            },
+        }
+
+    current_status = None
+    if current_email:
+        current_status = next(
+            (s for s in tool_accounts if s['email'].lower() == current_email.lower()),
+            None,
+        )
+
+    if current_status and not current_status['exhausted']:
+        return {
+            'action': 'keep',
+            'current': current_status,
+            'next': None,
+            'wait_until': None,
+            'reason': (
+                f'Cuenta actual {current_email} tiene '
+                f'{current_status["remaining"]}/{current_status["limit"]} msgs.'
+            ),
+            'rotation_trace': {
+                'tool': tool_lower,
+                'decision': 'keep',
+                'email': current_email,
+                'remaining': current_status['remaining'],
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+            },
+        }
+
+    available = [s for s in tool_accounts if not s['exhausted']]
+    available.sort(key=lambda s: s['remaining'], reverse=True)
+
+    if available:
+        next_account = available[0]
+        logger.info(
+            'governed_quota_rotation: rotating %s from %s to %s (remaining=%d)',
+            tool_lower, current_email or '(none)', next_account['email'],
+            next_account['remaining'],
+        )
+        return {
+            'action': 'rotate',
+            'current': current_status,
+            'next': next_account,
+            'wait_until': None,
+            'reason': (
+                f'Rotando a {next_account["email"]} con '
+                f'{next_account["remaining"]}/{next_account["limit"]} msgs.'
+            ),
+            'rotation_trace': {
+                'tool': tool_lower,
+                'decision': 'rotate',
+                'from_email': current_email or '',
+                'to_email': next_account['email'],
+                'remaining': next_account['remaining'],
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+            },
+        }
+
+    # All exhausted — find earliest reset
+    reset_times: list[str] = []
+    for s in tool_accounts:
+        if s.get('resets_at'):
+            reset_times.append(s['resets_at'])
+    earliest_reset = min(reset_times) if reset_times else None
+
+    return {
+        'action': 'wait',
+        'current': current_status,
+        'next': None,
+        'wait_until': earliest_reset,
+        'reason': (
+            f'Todas las cuentas de {tool_lower} agotadas. '
+            f'{"Reactivación más temprana: " + earliest_reset if earliest_reset else "Sin hora de reset conocida."}'
+        ),
+        'rotation_trace': {
+            'tool': tool_lower,
+            'decision': 'wait',
+            'exhausted_count': len(tool_accounts),
+            'earliest_reset': earliest_reset,
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+        },
+    }
+
+
 def format_quota_report() -> str:
     """Human-readable report of quota status for all tracked accounts."""
     all_status = get_all_quota_status()
