@@ -590,7 +590,7 @@ def test_signals_only_for_changed_sections() -> None:
 
 
 def test_emitted_signals_in_audit_reflects_reality() -> None:
-    """emitted_signals in trace must match what was actually emitted."""
+    """emitted_signals in trace must match what was actually emitted, including refreshStatusChanged."""
     vm = _make_minimal_vm()
     traced: list[dict[str, Any]] = []
     vm._trace_refresh = lambda kind, **kw: traced.append({'kind': kind, **kw})
@@ -605,8 +605,67 @@ def test_emitted_signals_in_audit_reflects_reality() -> None:
     assert isinstance(emitted, list)
     # First apply has changes -> multiple signals
     assert 'overviewChanged' in emitted
+    assert 'refreshStatusChanged' in emitted, f'refreshStatusChanged must be in emitted_signals, got: {emitted}'
     # Must contain at least one section signal for the changed data
-    assert len(emitted) > 1
+    assert len(emitted) > 2
+
+
+def test_unchanged_emitted_signals_contains_refreshStatusChanged() -> None:
+    """For unchanged refresh, emitted_signals must contain overviewChanged + refreshStatusChanged but NOT section signals."""
+    vm = _make_minimal_vm()
+    traced: list[dict[str, Any]] = []
+    vm._trace_refresh = lambda kind, **kw: traced.append({'kind': kind, **kw})
+    # First apply populates fingerprints
+    vm._refresh_generation = 1
+    vm._refresh_in_flight = True
+    vm._refresh_status = 'refreshing'
+    vm._apply_refresh_snapshot(1, _make_sample_data())
+    # Second apply with same data
+    traced.clear()
+    vm._refresh_generation = 2
+    vm._refresh_in_flight = True
+    vm._refresh_status = 'refreshing'
+    vm._apply_refresh_snapshot(2, _make_sample_data(_refresh_meta={'refresh_id': 'r000020', 'source': 'user_click', 'generation': 2, 't0': time.perf_counter()}))
+    applied = [t for t in traced if t['kind'] == 'evolution_refresh_applied']
+    assert len(applied) == 1
+    emitted = applied[0]['emitted_signals']
+    assert 'overviewChanged' in emitted
+    assert 'refreshStatusChanged' in emitted
+    for sig in ('dossiersChanged', 'incidentsChanged', 'backlogChanged', 'toolsChanged'):
+        assert sig not in emitted, f'{sig} should NOT be in emitted_signals for unchanged refresh'
+
+
+def test_changed_emitted_signals_contains_section_and_refreshStatus() -> None:
+    """For changed refresh, emitted_signals must include section signals + refreshStatusChanged."""
+    vm = _make_minimal_vm()
+    traced: list[dict[str, Any]] = []
+    vm._trace_refresh = lambda kind, **kw: traced.append({'kind': kind, **kw})
+    vm._refresh_generation = 1
+    vm._refresh_in_flight = True
+    vm._refresh_status = 'refreshing'
+    vm._apply_refresh_snapshot(1, _make_sample_data())
+    applied = [t for t in traced if t['kind'] == 'evolution_refresh_applied']
+    assert len(applied) == 1
+    emitted = applied[0]['emitted_signals']
+    assert 'refreshStatusChanged' in emitted
+    assert any(s in emitted for s in ('dossiersChanged', 'incidentsChanged', 'backlogChanged')), f'Expected at least one section signal for changed refresh, got: {emitted}'
+
+
+def test_started_trace_includes_status_emitted_signals() -> None:
+    """evolution_refresh_started trace must include status_emitted_signals evidence."""
+    vm = _make_minimal_vm()
+    traced: list[dict[str, Any]] = []
+    vm._trace_refresh = lambda kind, **kw: traced.append({'kind': kind, **kw})
+    vm.refreshFromUser()
+    for _ in range(30):
+        if not vm._refresh_in_flight:
+            break
+        time.sleep(0.1)
+    started = [t for t in traced if t['kind'] == 'evolution_refresh_started']
+    assert len(started) == 1
+    assert 'status_emitted_signals' in started[0], f'evolution_refresh_started must include status_emitted_signals, got keys: {list(started[0].keys())}'
+    assert 'refreshStatusChanged' in started[0]['status_emitted_signals']
+    assert 'overviewChanged' in started[0]['status_emitted_signals']
 
 
 def test_refresh_status_shows_refreshing_then_result() -> None:
@@ -658,3 +717,39 @@ def test_section_fingerprint_detects_dict_field_change() -> None:
     fp1 = EvolutionCenterViewModel._section_fingerprint({'assistant_brief': 'v1', 'status': 'ok'})
     fp2 = EvolutionCenterViewModel._section_fingerprint({'assistant_brief': 'v2', 'status': 'ok'})
     assert fp1 != fp2, 'Fingerprint must detect dict field changes beyond just summary/keys'
+
+
+def test_dict_fingerprint_detects_generic_field_not_in_dict_fields() -> None:
+    """control_master_digest with same summary=absent but different work_queue_brief must change fingerprint."""
+    fp1 = EvolutionCenterViewModel._section_fingerprint({'work_queue_brief': 'alpha', 'pending_count': 3})
+    fp2 = EvolutionCenterViewModel._section_fingerprint({'work_queue_brief': 'beta', 'pending_count': 3})
+    assert fp1 != fp2, 'Dict fingerprint must detect generic field changes not in _DICT_FIELDS'
+
+
+def test_dict_fingerprint_detects_last_updated_change() -> None:
+    """world_model with different last_updated must change fingerprint."""
+    fp1 = EvolutionCenterViewModel._section_fingerprint({'last_updated': '2025-01-01T00:00:00', 'status': 'ok'})
+    fp2 = EvolutionCenterViewModel._section_fingerprint({'last_updated': '2025-06-15T12:00:00', 'status': 'ok'})
+    assert fp1 != fp2
+
+
+def test_dict_fingerprint_detects_new_top_level_key() -> None:
+    """Dict with a new top-level key must change fingerprint."""
+    fp1 = EvolutionCenterViewModel._section_fingerprint({'status': 'ok'})
+    fp2 = EvolutionCenterViewModel._section_fingerprint({'status': 'ok', 'new_field': 'value'})
+    assert fp1 != fp2, 'Dict fingerprint must detect new top-level keys'
+
+
+def test_dict_fingerprint_large_payload_does_not_explode() -> None:
+    """Large dict payload should not explode or serialize the full payload."""
+    big = {f'key_{i}': f'value_{i}' * 100 for i in range(200)}
+    fp = EvolutionCenterViewModel._section_fingerprint(big)
+    assert isinstance(fp, str)
+    assert len(fp) == 16  # truncated md5 hash
+
+
+def test_dict_fingerprint_nested_change_detected() -> None:
+    """Nested dict change within depth 2 should be detected."""
+    fp1 = EvolutionCenterViewModel._section_fingerprint({'meta': {'version': 1, 'tag': 'a'}})
+    fp2 = EvolutionCenterViewModel._section_fingerprint({'meta': {'version': 2, 'tag': 'a'}})
+    assert fp1 != fp2, 'Nested dict changes within depth limit must be detected'

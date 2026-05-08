@@ -278,11 +278,39 @@ class EvolutionCenterViewModel(QObject):
     )
 
     @staticmethod
+    def _compact_value(value: Any, depth: int = 0, max_depth: int = 2) -> Any:
+        """Recursively compact a value for deterministic fingerprinting.
+
+        - scalars (str/int/float/bool/None): kept, strings truncated to 64 chars
+        - lists: {"__len": n, "items": first 8 items compacted}
+        - dicts: sorted top-level keys, values compacted recursively up to *max_depth*
+        """
+        if value is None or isinstance(value, (bool, int, float)):
+            return value
+        if isinstance(value, str):
+            return value[:64]
+        if isinstance(value, list):
+            if depth >= max_depth:
+                return {'__len': len(value)}
+            items = [EvolutionCenterViewModel._compact_value(v, depth + 1, max_depth) for v in value[:8]]
+            return {'__len': len(value), 'items': items}
+        if isinstance(value, dict):
+            if depth >= max_depth:
+                return {'__keys': sorted(value.keys())[:16]}
+            compact: dict[str, Any] = {}
+            for k in sorted(value.keys())[:24]:
+                compact[k] = EvolutionCenterViewModel._compact_value(value[k], depth + 1, max_depth)
+            return compact
+        return str(value)[:64]
+
+    @staticmethod
     def _section_fingerprint(value: Any) -> str:
         """Robust lightweight fingerprint for change detection.
 
-        For lists: per-item compact dict of id/status/title/updated_at fields.
-        For dicts: selected useful fields.
+        For lists: per-item compact dict of id/status/title/updated_at fields
+        (first 20 items).
+        For dicts: generic recursive compaction of all top-level keys with
+        depth limit 2, sorted deterministically.
         Result: md5 of json.dumps(sort_keys=True) truncated to 16 hex chars.
         """
         if isinstance(value, list):
@@ -293,8 +321,8 @@ class EvolutionCenterViewModel(QObject):
                     items.append(compact)
             raw = json.dumps({'n': len(value), 'items': items}, sort_keys=True, default=str)
         elif isinstance(value, dict):
-            compact = {k: str(value[k])[:64] for k in EvolutionCenterViewModel._DICT_FIELDS if k in value and value[k] is not None}
-            raw = json.dumps(compact, sort_keys=True, default=str)
+            compact_dict = EvolutionCenterViewModel._compact_value(value, depth=0, max_depth=2)
+            raw = json.dumps(compact_dict, sort_keys=True, default=str)
         elif isinstance(value, str):
             raw = value[:128]
         else:
@@ -600,7 +628,7 @@ class EvolutionCenterViewModel(QObject):
         self.overviewChanged.emit()
 
         t0 = time.perf_counter()
-        self._trace_refresh('evolution_refresh_started', refresh_id=refresh_id, source=source, generation=gen)
+        self._trace_refresh('evolution_refresh_started', refresh_id=refresh_id, source=source, generation=gen, status_emitted_signals=['refreshStatusChanged', 'overviewChanged'])
 
         def _bg() -> dict[str, Any] | None:
             if self._refresh_generation != gen:
@@ -710,12 +738,15 @@ class EvolutionCenterViewModel(QObject):
             else:
                 self._last_refresh_summary = 'Actualizado: no hubo cambios nuevos en las fuentes vivas.'
             self.refreshStatusChanged.emit()
+            all_emitted = list(data.get('_emitted_signals', []))
+            if 'refreshStatusChanged' not in all_emitted:
+                all_emitted.append('refreshStatusChanged')
             self._trace_refresh(
                 'evolution_refresh_applied',
                 refresh_id=refresh_id, source=source, generation=gen,
                 duration_ms=duration_ms, result=result,
                 changed_sections=changed, unchanged_sections=unchanged,
-                emitted_signals=data.get('_emitted_signals', []),
+                emitted_signals=sorted(all_emitted),
             )
         except Exception as exc:
             duration_ms = round((time.perf_counter() - t0) * 1000.0, 1)
