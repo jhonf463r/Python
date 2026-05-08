@@ -32,7 +32,11 @@ data/app.sqlite
 data/**/*.sqlite
 
 # Metacognition runtime logs (local only)
-src/data/metacognition/
+src/data/
 
 # Test run artifacts (generated at runtime)
 data/test_runs/
+data/test_*/
+
+# Runtime artifacts
+data/evolution/auto_install_cooldowns.json

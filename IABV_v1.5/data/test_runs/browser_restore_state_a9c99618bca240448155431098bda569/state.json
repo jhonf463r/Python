@@ -1,1 +1,0 @@
-{"cookies": [{"name": "session", "value": "secret-cookie", "domain": "example.com", "path": "/", "expires": -1, "httpOnly": true, "secure": true, "sameSite": "Lax"}], "origins": [{"origin": "https://example.com", "localStorage": [{"name": "token", "value": "abc"}]}]}

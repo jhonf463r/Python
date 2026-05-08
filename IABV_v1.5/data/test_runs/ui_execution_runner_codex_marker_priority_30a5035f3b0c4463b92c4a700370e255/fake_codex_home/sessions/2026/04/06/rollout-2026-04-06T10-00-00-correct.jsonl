@@ -1,2 +1,0 @@
-{"type": "response_item", "payload": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "Pending issue: issue-123\nDiagnostico breve: bridge lag en wplay"}]}}
-{"type": "response_item", "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "Respuesta correcta del hilo con marcador unico."}]}}
