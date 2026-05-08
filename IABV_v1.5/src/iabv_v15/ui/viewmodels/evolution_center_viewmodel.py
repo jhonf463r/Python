@@ -26,6 +26,20 @@ class EvolutionCenterViewModel(QObject):
     taskFailed = Signal(str, str)
     refreshReady = Signal(int, object)  # (generation, snapshot_dict)
 
+    # Granular property-change signals to avoid mass QML re-evaluation.
+    overviewChanged = Signal()       # statusText, healthSnapshot, working
+    incidentsChanged = Signal()      # recentIncidents, incidentFilter, selectedIncident
+    dossiersChanged = Signal()       # recentDossiers, selectedDossier, evidencePreview, latestPacket
+    backlogChanged = Signal()        # improvementBacklog, recentPendingIssues
+    toolsChanged = Signal()          # knownToolCards, latestToolStatus, toolEvolutionPanel
+    worldModelChanged = Signal()     # worldModel, environmentSelfModel, evidenceBasis
+    metacognitionChanged = Signal()  # portableContext/Brief, selfExamination/Brief, autonomousValidation, controlMaster
+    screenshotsChanged = Signal()    # recentUiScreenshots
+    proactiveChanged = Signal()      # proactiveDashboard, proactiveDashboardBrief
+    publishPrChanged = Signal()      # publishPrStatus, publishPrResult
+    iaComparisonsChanged = Signal()  # iaComparisons
+    clipboardChanged = Signal()      # clipboardNotice
+
     # Señales evolutivas para diálogos UI (Task B)
     credentialPromptRequested = Signal(dict)  # {domain, reason, username_hint}
     clarificationRequested = Signal(dict)     # {id, question, options, context}
@@ -434,7 +448,20 @@ class EvolutionCenterViewModel(QObject):
         validation_summary = str((autonomous_validation or {}).get('summary') or '').strip()
         if validation_summary:
             self._status_text = f'{self._status_text} | Validacion autonoma: {validation_summary}'
-        self.dataChanged.emit()
+        self._emit_granular_signals()
+
+    def _emit_granular_signals(self) -> None:
+        """Emit per-section signals so QML only re-evaluates affected bindings."""
+        self.overviewChanged.emit()
+        self.incidentsChanged.emit()
+        self.dossiersChanged.emit()
+        self.backlogChanged.emit()
+        self.toolsChanged.emit()
+        self.worldModelChanged.emit()
+        self.metacognitionChanged.emit()
+        self.screenshotsChanged.emit()
+        self.proactiveChanged.emit()
+        self.iaComparisonsChanged.emit()
 
     @Slot()
     def refresh(self) -> None:
@@ -448,6 +475,10 @@ class EvolutionCenterViewModel(QObject):
         if snapshot_dict is not None:
             data['_status_summary'] = snapshot_dict.get('summary', '')
         self._apply_collected_data(data)
+        # Backward compat: no QML Property uses notify=dataChanged anymore,
+        # so this does NOT cause mass binding re-evaluation. Kept for
+        # Python-side consumers / tests that connect to dataChanged.
+        self.dataChanged.emit()
 
     @Slot()
     def refreshAsync(self) -> None:
@@ -670,7 +701,9 @@ class EvolutionCenterViewModel(QObject):
         self._latest_packet = self._build_current_packet()
         self._evidence_preview = self._build_evidence_preview()
         self._status_text = f'Dossier seleccionado: {selected.get("title", "sin titulo")}'
-        self.dataChanged.emit()
+        self.overviewChanged.emit()
+        self.dossiersChanged.emit()
+        self.incidentsChanged.emit()
 
     @Slot(str)
     def setIncidentFilter(self, filter_key: str) -> None:
@@ -690,12 +723,14 @@ class EvolutionCenterViewModel(QObject):
         self._latest_packet = self._build_current_packet()
         self._evidence_preview = self._build_evidence_preview()
         self._status_text = f'Incidente seleccionado: {selected.get("incident_kind", "sin tipo")}'
-        self.dataChanged.emit()
+        self.overviewChanged.emit()
+        self.incidentsChanged.emit()
+        self.dossiersChanged.emit()
 
     @Slot()
     def viewIncidentEvidence(self) -> None:
         self._evidence_preview = self._build_evidence_preview()
-        self.dataChanged.emit()
+        self.dossiersChanged.emit()
 
     @Slot()
     def runDeepSelfCheck(self) -> None:
@@ -703,7 +738,7 @@ class EvolutionCenterViewModel(QObject):
             return
         self._working = True
         self._status_text = 'Ejecutando autodiagnostico profundo sobre stack local, embeddings, SQL y replay.'
-        self.dataChanged.emit()
+        self.overviewChanged.emit()
 
         def worker() -> None:
             try:
@@ -730,12 +765,12 @@ class EvolutionCenterViewModel(QObject):
     def sandboxToolCard(self, tool_id: str) -> None:
         if self.tool_record_repository is None or self.tool_teach_service is None:
             self._latest_tool_status = 'La capa Tool Teaching no esta disponible en esta sesion.'
-            self.dataChanged.emit()
+            self.toolsChanged.emit()
             return
         card = self.tool_record_repository.get_card(tool_id)
         if card is None:
             self._latest_tool_status = 'No encontre la ToolCard seleccionada.'
-            self.dataChanged.emit()
+            self.toolsChanged.emit()
             return
         self._latest_tool_status = self._run_tool_sandbox(card)
         self.refresh()
@@ -744,13 +779,14 @@ class EvolutionCenterViewModel(QObject):
     def auditBaseTools(self) -> None:
         if self.tool_record_repository is None or self.tool_teach_service is None:
             self._latest_tool_status = 'La capa Tool Teaching no esta disponible en esta sesion.'
-            self.dataChanged.emit()
+            self.toolsChanged.emit()
             return
         if self._working:
             return
         self._working = True
         self._status_text = 'Ejecutando auditoria base de herramientas en segundo plano...'
-        self.dataChanged.emit()
+        self.overviewChanged.emit()
+        self.toolsChanged.emit()
 
         tool_repo = self.tool_record_repository
 
@@ -803,25 +839,26 @@ class EvolutionCenterViewModel(QObject):
             self._publish_pr_status = (
                 'El servicio GitHubRemoteService no esta disponible en esta sesion.'
             )
-            self.dataChanged.emit()
+            self.publishPrChanged.emit()
             return
         branch = (branch or '').strip()
         title = (title or '').strip()
         base = (base or 'main').strip() or 'main'
         if not branch:
             self._publish_pr_status = 'Falta el nombre de la rama para publicar el PR.'
-            self.dataChanged.emit()
+            self.publishPrChanged.emit()
             return
         if not title:
             self._publish_pr_status = 'Falta el titulo del PR.'
-            self.dataChanged.emit()
+            self.publishPrChanged.emit()
             return
         normalized_diff: int | None = int(diff_lines) if diff_lines and diff_lines > 0 else None
         self._working = True
         self._status_text = f'Publicando rama "{branch}" como PR contra "{base}"...'
         self._publish_pr_status = f'Publicando rama "{branch}" como PR contra "{base}"...'
         self._publish_pr_result = {}
-        self.dataChanged.emit()
+        self.overviewChanged.emit()
+        self.publishPrChanged.emit()
 
         service = self.github_remote_service
 
@@ -983,7 +1020,7 @@ class EvolutionCenterViewModel(QObject):
         else:
             clipboard.setText(text)
             self._clipboard_notice = success_message
-        self.dataChanged.emit()
+        self.clipboardChanged.emit()
 
     def _format_tool_status(self, card: dict[str, Any], result: dict[str, Any]) -> str:
         execution = dict(result.get('execution_state') or {})
@@ -1043,7 +1080,8 @@ class EvolutionCenterViewModel(QObject):
             self._publish_pr_status = self._format_publish_pr_status(data)
             self._status_text = self._publish_pr_status
             self._working = False
-            self.dataChanged.emit()
+            self.overviewChanged.emit()
+            self.publishPrChanged.emit()
             return
         if task_name == 'audit_base_tools':
             data = dict(payload) if isinstance(payload, Mapping) else {}
@@ -1055,7 +1093,7 @@ class EvolutionCenterViewModel(QObject):
             self.refresh()
             return
         self._working = False
-        self.dataChanged.emit()
+        self.overviewChanged.emit()
 
     @Slot(str, str)
     def _apply_failure(self, task_name: str, message: str) -> None:
@@ -1064,9 +1102,11 @@ class EvolutionCenterViewModel(QObject):
         if task_name == 'publish_pr':
             self._publish_pr_status = f'No pude publicar el PR: {message}'
             self._publish_pr_result = {'success': False, 'error': message}
+            self.publishPrChanged.emit()
         elif task_name == 'audit_base_tools':
             self._latest_tool_status = f'Error en auditoria base de herramientas: {message}'
-        self.dataChanged.emit()
+            self.toolsChanged.emit()
+        self.overviewChanged.emit()
 
     @staticmethod
     def _format_publish_pr_status(data: Mapping[str, Any]) -> str:
@@ -1085,36 +1125,36 @@ class EvolutionCenterViewModel(QObject):
         error = data.get('error') or 'error desconocido'
         return f'No pude publicar "{branch}" como PR: {error}'
 
-    working = Property(bool, get_working, notify=dataChanged)
-    statusText = Property(str, get_status_text, notify=dataChanged)
-    healthSnapshot = Property(dict, get_health_snapshot, notify=dataChanged)
-    recentDossiers = Property(list, get_recent_dossiers, notify=dataChanged)
-    recentIncidents = Property(list, get_recent_incidents, notify=dataChanged)
-    incidentFilter = Property(str, get_incident_filter, notify=dataChanged)
-    improvementBacklog = Property(list, get_improvement_backlog, notify=dataChanged)
-    recentPendingIssues = Property(list, get_recent_pending_issues, notify=dataChanged)
-    knownToolCards = Property(list, get_known_tool_cards, notify=dataChanged)
-    iaComparisons = Property(list, get_ia_comparisons, notify=dataChanged)
-    environmentSelfModel = Property(dict, get_environment_self_model, notify=dataChanged)
-    worldModel = Property(dict, get_world_model, notify=dataChanged)
-    autonomousValidation = Property(dict, get_autonomous_validation, notify=dataChanged)
-    portableContext = Property(dict, get_portable_context, notify=dataChanged)
-    portableContextBrief = Property(str, get_portable_context_brief, notify=dataChanged)
-    evidenceBasis = Property(dict, get_evidence_basis, notify=dataChanged)
-    controlMasterDigest = Property(dict, get_control_master_digest, notify=dataChanged)
-    controlMasterBrief = Property(str, get_control_master_brief, notify=dataChanged)
-    toolEvolutionPanel = Property(dict, get_tool_evolution_panel, notify=dataChanged)
-    selfExamination = Property(dict, get_self_examination, notify=dataChanged)
-    selfExaminationBrief = Property(str, get_self_examination_brief, notify=dataChanged)
-    proactiveDashboard = Property(dict, get_proactive_dashboard, notify=dataChanged)
-    proactiveDashboardBrief = Property(str, get_proactive_dashboard_brief, notify=dataChanged)
-    recentUiScreenshots = Property(list, get_recent_ui_screenshots, notify=dataChanged)
-    latestToolStatus = Property(str, get_latest_tool_status, notify=dataChanged)
-    publishPrStatus = Property(str, get_publish_pr_status, notify=dataChanged)
-    publishPrResult = Property('QVariant', get_publish_pr_result, notify=dataChanged)
-    selectedDossier = Property(dict, get_selected_dossier, notify=dataChanged)
-    selectedIncident = Property(dict, get_selected_incident, notify=dataChanged)
-    evidencePreview = Property(str, get_evidence_preview, notify=dataChanged)
-    latestPacket = Property(str, get_latest_packet, notify=dataChanged)
-    clipboardNotice = Property(str, get_clipboard_notice, notify=dataChanged)
+    working = Property(bool, get_working, notify=overviewChanged)
+    statusText = Property(str, get_status_text, notify=overviewChanged)
+    healthSnapshot = Property(dict, get_health_snapshot, notify=overviewChanged)
+    recentDossiers = Property(list, get_recent_dossiers, notify=dossiersChanged)
+    recentIncidents = Property(list, get_recent_incidents, notify=incidentsChanged)
+    incidentFilter = Property(str, get_incident_filter, notify=incidentsChanged)
+    improvementBacklog = Property(list, get_improvement_backlog, notify=backlogChanged)
+    recentPendingIssues = Property(list, get_recent_pending_issues, notify=backlogChanged)
+    knownToolCards = Property(list, get_known_tool_cards, notify=toolsChanged)
+    iaComparisons = Property(list, get_ia_comparisons, notify=iaComparisonsChanged)
+    environmentSelfModel = Property(dict, get_environment_self_model, notify=worldModelChanged)
+    worldModel = Property(dict, get_world_model, notify=worldModelChanged)
+    autonomousValidation = Property(dict, get_autonomous_validation, notify=metacognitionChanged)
+    portableContext = Property(dict, get_portable_context, notify=metacognitionChanged)
+    portableContextBrief = Property(str, get_portable_context_brief, notify=metacognitionChanged)
+    evidenceBasis = Property(dict, get_evidence_basis, notify=worldModelChanged)
+    controlMasterDigest = Property(dict, get_control_master_digest, notify=metacognitionChanged)
+    controlMasterBrief = Property(str, get_control_master_brief, notify=metacognitionChanged)
+    toolEvolutionPanel = Property(dict, get_tool_evolution_panel, notify=toolsChanged)
+    selfExamination = Property(dict, get_self_examination, notify=metacognitionChanged)
+    selfExaminationBrief = Property(str, get_self_examination_brief, notify=metacognitionChanged)
+    proactiveDashboard = Property(dict, get_proactive_dashboard, notify=proactiveChanged)
+    proactiveDashboardBrief = Property(str, get_proactive_dashboard_brief, notify=proactiveChanged)
+    recentUiScreenshots = Property(list, get_recent_ui_screenshots, notify=screenshotsChanged)
+    latestToolStatus = Property(str, get_latest_tool_status, notify=toolsChanged)
+    publishPrStatus = Property(str, get_publish_pr_status, notify=publishPrChanged)
+    publishPrResult = Property('QVariant', get_publish_pr_result, notify=publishPrChanged)
+    selectedDossier = Property(dict, get_selected_dossier, notify=dossiersChanged)
+    selectedIncident = Property(dict, get_selected_incident, notify=incidentsChanged)
+    evidencePreview = Property(str, get_evidence_preview, notify=dossiersChanged)
+    latestPacket = Property(str, get_latest_packet, notify=dossiersChanged)
+    clipboardNotice = Property(str, get_clipboard_notice, notify=clipboardChanged)
 

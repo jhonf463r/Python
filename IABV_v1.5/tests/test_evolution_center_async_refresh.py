@@ -255,3 +255,80 @@ def test_bg_pool_single_threaded() -> None:
 def test_has_refresh_ready_signal() -> None:
     vm = _make_minimal_vm()
     assert hasattr(vm, 'refreshReady')
+
+
+# --- Granular signals ---
+
+def test_apply_collected_data_does_not_emit_dataChanged() -> None:
+    """_apply_collected_data must emit granular signals, not dataChanged."""
+    vm = _make_minimal_vm()
+    data_emissions: list[bool] = []
+    vm.dataChanged.connect(lambda: data_emissions.append(True))
+    data = vm._collect_refresh_data()
+    data['_status_summary'] = 'test'
+    vm._apply_collected_data(data)
+    assert len(data_emissions) == 0, (
+        '_apply_collected_data should NOT emit dataChanged; '
+        f'got {len(data_emissions)} emissions'
+    )
+
+
+def test_apply_collected_data_emits_granular_signals() -> None:
+    """_apply_collected_data must emit all expected granular signals."""
+    vm = _make_minimal_vm()
+    signal_names = [
+        'overviewChanged', 'incidentsChanged', 'dossiersChanged',
+        'backlogChanged', 'toolsChanged', 'worldModelChanged',
+        'metacognitionChanged', 'screenshotsChanged', 'proactiveChanged',
+        'iaComparisonsChanged',
+    ]
+    counts: dict[str, int] = {name: 0 for name in signal_names}
+    for name in signal_names:
+        sig = getattr(vm, name)
+        sig.connect(lambda n=name: counts.__setitem__(n, counts[n] + 1))
+
+    data = vm._collect_refresh_data()
+    data['_status_summary'] = 'test'
+    vm._apply_collected_data(data)
+
+    for name in signal_names:
+        assert counts[name] >= 1, f'{name} was not emitted by _apply_collected_data'
+
+
+def test_sync_refresh_emits_dataChanged_for_compat() -> None:
+    """refresh() (sync) must still emit dataChanged for backward compat."""
+    vm = _make_minimal_vm()
+    emissions: list[bool] = []
+    vm.dataChanged.connect(lambda: emissions.append(True))
+    vm.refresh()
+    assert len(emissions) >= 1, 'refresh() must emit dataChanged for compat'
+
+
+def test_refreshAsync_does_not_emit_dataChanged() -> None:
+    """refreshAsync path must NOT emit dataChanged (only granular)."""
+    vm = _make_minimal_vm()
+    data_emissions: list[bool] = []
+    vm.dataChanged.connect(lambda: data_emissions.append(True))
+    vm._refresh_in_flight = False
+    vm.refreshAsync()
+    for _ in range(30):
+        if not vm._refresh_in_flight:
+            break
+        time.sleep(0.1)
+    assert len(data_emissions) == 0, (
+        'refreshAsync should NOT emit dataChanged; '
+        f'got {len(data_emissions)} emissions'
+    )
+
+
+def test_granular_signals_exist_on_vm() -> None:
+    """All granular signal attributes must exist."""
+    vm = _make_minimal_vm()
+    expected = [
+        'overviewChanged', 'incidentsChanged', 'dossiersChanged',
+        'backlogChanged', 'toolsChanged', 'worldModelChanged',
+        'metacognitionChanged', 'screenshotsChanged', 'proactiveChanged',
+        'publishPrChanged', 'iaComparisonsChanged', 'clipboardChanged',
+    ]
+    for name in expected:
+        assert hasattr(vm, name), f'Missing granular signal: {name}'
