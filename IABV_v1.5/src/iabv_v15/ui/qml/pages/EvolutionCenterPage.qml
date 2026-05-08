@@ -84,9 +84,10 @@ Item {
                     }
 
                     AppButton {
-                        text: "Actualizar"
+                        text: evolutionCenterViewModel && evolutionCenterViewModel.refreshStatus === "refreshing" ? "Actualizando..." : "Actualizar"
                         accent: true
-                        onClicked: if (evolutionCenterViewModel) evolutionCenterViewModel.refreshAsync()
+                        enabled: !evolutionCenterViewModel || evolutionCenterViewModel.refreshStatus !== "refreshing"
+                        onClicked: if (evolutionCenterViewModel) evolutionCenterViewModel.refreshFromUser()
                     }
                     AppButton {
                         text: "Ejecutar autodiagnostico"
@@ -96,6 +97,23 @@ Item {
                         text: "Publicar cambio como PR"
                         onClicked: publishPrDialog.open()
                     }
+                }
+
+                Label {
+                    visible: evolutionCenterViewModel && evolutionCenterViewModel.lastRefreshSummary !== ""
+                    text: evolutionCenterViewModel ? evolutionCenterViewModel.lastRefreshSummary : ""
+                    color: {
+                        if (!evolutionCenterViewModel) return textSecondary
+                        var r = evolutionCenterViewModel.lastRefreshResult
+                        if (r === "changed") return "#4caf50"
+                        if (r === "failed") return "#f44336"
+                        if (r === "started") return "#ff9800"
+                        return textSecondary
+                    }
+                    font.family: bodyFontFamily
+                    font.pixelSize: 12
+                    wrapMode: Label.WordWrap
+                    Layout.fillWidth: true
                 }
 
                 // F2.2: panel de estado de publicacion de PR. Muestra la ultima

@@ -1,8 +1,10 @@
 ﻿from __future__ import annotations
 
 import atexit
+import hashlib
 import logging
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Mapping
 
@@ -39,6 +41,7 @@ class EvolutionCenterViewModel(QObject):
     publishPrChanged = Signal()      # publishPrStatus, publishPrResult
     iaComparisonsChanged = Signal()  # iaComparisons
     clipboardChanged = Signal()      # clipboardNotice
+    refreshStatusChanged = Signal()   # refreshStatus, lastRefreshSummary, lastRefreshResult
 
     # Señales evolutivas para diálogos UI (Task B)
     credentialPromptRequested = Signal(dict)  # {domain, reason, username_hint}
@@ -135,6 +138,10 @@ class EvolutionCenterViewModel(QObject):
         self._evidence_preview = 'Selecciona un incidente o dossier para ver evidencia relacionada.'
         self._latest_packet = 'Todavia no hay un paquete de incidente seleccionado.'
         self._clipboard_notice = 'Nada copiado aun.'
+        self._refresh_status = 'idle'
+        self._last_refresh_summary = ''
+        self._last_refresh_result = 'none'
+        self._section_fingerprints: dict[str, str] = {}
         self._bg_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='ecvm-bg')
         atexit.register(self._shutdown_bg_pool)
         self._refresh_generation: int = 0
@@ -243,9 +250,40 @@ class EvolutionCenterViewModel(QObject):
     def get_clipboard_notice(self) -> str:
         return self._clipboard_notice
 
+    def get_refresh_status(self) -> str:
+        return self._refresh_status
+
+    def get_last_refresh_summary(self) -> str:
+        return self._last_refresh_summary
+
+    def get_last_refresh_result(self) -> str:
+        return self._last_refresh_result
+
     def _shutdown_bg_pool(self) -> None:
         try:
             self._bg_pool.shutdown(wait=False, cancel_futures=True)
+        except Exception:
+            pass
+
+    @staticmethod
+    def _section_fingerprint(value: Any) -> str:
+        """Lightweight fingerprint for change detection. Uses count + ids."""
+        if isinstance(value, list):
+            ids = [str(item.get('dossier_id') or item.get('incident_id') or item.get('issue_id') or item.get('tool_id') or item.get('entry_id') or '') for item in value if isinstance(item, dict)]
+            raw = f'n={len(value)};ids={",".join(ids[:8])}'
+        elif isinstance(value, dict):
+            raw = f'k={sorted(value.keys())[:8]};s={value.get("summary", "")[:32]}'
+        elif isinstance(value, str):
+            raw = value[:64]
+        else:
+            raw = str(value)[:64]
+        return hashlib.md5(raw.encode('utf-8', errors='replace')).hexdigest()[:12]
+
+    def _trace_refresh(self, kind: str, **data: Any) -> None:
+        """Emit a lightweight trace event to RuntimeAuditTracer if available."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(kind, **data)
         except Exception:
             pass
 
@@ -481,18 +519,54 @@ class EvolutionCenterViewModel(QObject):
         self.dataChanged.emit()
 
     @Slot()
+    def refreshFromUser(self) -> None:
+        """Slot for QML Actualizar button — traces as user_click."""
+        self._do_refresh_async('user_click')
+
+    @Slot()
     def refreshAsync(self) -> None:
         """Non-blocking refresh — heavy I/O on ``_bg_pool``, results via signal."""
+        self._do_refresh_async('programmatic')
+
+    def _do_refresh_async(self, source: str = 'programmatic') -> None:
+        refresh_id = f'r{int(time.time() * 1000) % 1_000_000:06d}'
+        self._trace_refresh('evolution_refresh_requested', refresh_id=refresh_id, source=source, generation=self._refresh_generation)
+
         if self._refresh_in_flight:
+            self._trace_refresh('evolution_refresh_skipped', refresh_id=refresh_id, reason='in_flight')
             return
         self._refresh_in_flight = True
         self._refresh_generation += 1
         gen = self._refresh_generation
 
+        self._refresh_status = 'refreshing'
+        self._last_refresh_summary = 'Actualizando Centro Evolutivo...'
+        self._last_refresh_result = 'started'
+        self.refreshStatusChanged.emit()
+        self.overviewChanged.emit()
+
+        t0 = time.perf_counter()
+        self._trace_refresh('evolution_refresh_started', refresh_id=refresh_id, source=source, generation=gen)
+
         def _bg() -> dict[str, Any] | None:
             if self._refresh_generation != gen:
                 return None
-            return self._collect_refresh_data()
+            data = self._collect_refresh_data()
+            data['_refresh_meta'] = {
+                'refresh_id': refresh_id,
+                'source': source,
+                'generation': gen,
+                't0': t0,
+            }
+            section_keys = [
+                'dossiers', 'filtered_incidents', 'backlog', 'pending',
+                'tool_cards', 'ia_comparisons', 'environment_self_model',
+                'world_model', 'portable_context', 'self_examination',
+                'control_master_digest',
+            ]
+            counts = {k: len(data.get(k, [])) if isinstance(data.get(k), list) else (1 if data.get(k) else 0) for k in section_keys}
+            self._trace_refresh('evolution_refresh_collected', refresh_id=refresh_id, section_counts=counts)
+            return data
 
         def _done(fut: Any) -> None:
             self._refresh_in_flight = False
@@ -500,7 +574,13 @@ class EvolutionCenterViewModel(QObject):
                 return
             try:
                 result = fut.result()
-            except Exception:
+            except Exception as exc:
+                self._trace_refresh('evolution_refresh_failed', refresh_id=refresh_id, error=str(exc))
+                self._refresh_status = 'failed'
+                self._last_refresh_result = 'failed'
+                self._last_refresh_summary = f'No pude actualizar: {str(exc)[:80]}'
+                self.refreshStatusChanged.emit()
+                self.overviewChanged.emit()
                 logger.debug('evolution_center bg refresh failed', exc_info=True)
                 return
             if result is None:
@@ -515,12 +595,65 @@ class EvolutionCenterViewModel(QObject):
         """Apply background-collected data on the UI thread."""
         if self._refresh_generation != gen or not isinstance(data, dict):
             return
+        meta = data.pop('_refresh_meta', {})
+        refresh_id = meta.get('refresh_id', '?')
+        source = meta.get('source', '?')
+        t0 = meta.get('t0', time.perf_counter())
+
         snapshot_dict = data.get('snapshot')
         if snapshot_dict is not None:
             data['_status_summary'] = snapshot_dict.get('summary', '')
+
+        section_map = {
+            'dossiers': data.get('dossiers', []),
+            'filtered_incidents': data.get('filtered_incidents', []),
+            'backlog': data.get('backlog', []),
+            'pending': data.get('pending', []),
+            'tool_cards': data.get('tool_cards', []),
+            'ia_comparisons': data.get('ia_comparisons', []),
+            'environment_self_model': data.get('environment_self_model', {}),
+            'world_model': data.get('world_model', {}),
+            'portable_context': data.get('portable_context', {}),
+            'self_examination': data.get('self_examination', {}),
+            'control_master_digest': data.get('control_master_digest', {}),
+        }
+        new_fps = {k: self._section_fingerprint(v) for k, v in section_map.items()}
+        old_fps = self._section_fingerprints
+        changed = [k for k in new_fps if new_fps[k] != old_fps.get(k, '')]
+        unchanged = [k for k in new_fps if new_fps[k] == old_fps.get(k, '')]
+        self._section_fingerprints = new_fps
+
         try:
             self._apply_collected_data(data)
-        except Exception:
+            duration_ms = round((time.perf_counter() - t0) * 1000.0, 1)
+            result = 'changed' if changed else 'unchanged'
+            emitted = [
+                'overviewChanged', 'incidentsChanged', 'dossiersChanged',
+                'backlogChanged', 'toolsChanged', 'worldModelChanged',
+                'metacognitionChanged', 'screenshotsChanged', 'proactiveChanged',
+                'iaComparisonsChanged',
+            ]
+            self._trace_refresh(
+                'evolution_refresh_applied',
+                refresh_id=refresh_id, source=source, generation=gen,
+                duration_ms=duration_ms, result=result,
+                changed_sections=changed, unchanged_sections=unchanged,
+                emitted_signals=emitted,
+            )
+            self._refresh_status = 'idle'
+            self._last_refresh_result = result
+            if changed:
+                self._last_refresh_summary = f'Actualizado: cambiaron {len(changed)} secciones ({", ".join(changed[:4])}).'
+            else:
+                self._last_refresh_summary = 'Actualizado: no hubo cambios nuevos en las fuentes vivas.'
+            self.refreshStatusChanged.emit()
+        except Exception as exc:
+            duration_ms = round((time.perf_counter() - t0) * 1000.0, 1)
+            self._trace_refresh('evolution_refresh_failed', refresh_id=refresh_id, error=str(exc), duration_ms=duration_ms)
+            self._refresh_status = 'failed'
+            self._last_refresh_result = 'failed'
+            self._last_refresh_summary = f'No pude actualizar: {str(exc)[:80]}'
+            self.refreshStatusChanged.emit()
             logger.debug('evolution_center UI apply failed', exc_info=True)
 
     def _build_proactive_dashboard(self) -> dict[str, Any]:
@@ -1157,4 +1290,7 @@ class EvolutionCenterViewModel(QObject):
     evidencePreview = Property(str, get_evidence_preview, notify=dossiersChanged)
     latestPacket = Property(str, get_latest_packet, notify=dossiersChanged)
     clipboardNotice = Property(str, get_clipboard_notice, notify=clipboardChanged)
+    refreshStatus = Property(str, get_refresh_status, notify=refreshStatusChanged)
+    lastRefreshSummary = Property(str, get_last_refresh_summary, notify=refreshStatusChanged)
+    lastRefreshResult = Property(str, get_last_refresh_result, notify=refreshStatusChanged)
 
