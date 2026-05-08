@@ -1920,7 +1920,7 @@ class OperationalSelfExaminationService:
                     event = _json.loads(line)
                 except Exception:
                     continue
-                if event.get('kind') != 'interaction_resolved':
+                if event.get('kind') not in ('interaction_resolved', 'interaction_outcome'):
                     continue
                 episodes.append(dict(event.get('data') or {}))
                 if len(episodes) >= 5:
@@ -1993,6 +1993,44 @@ class OperationalSelfExaminationService:
                     'failed_count': len(failed_episodes),
                     'total_episodes': len(episodes),
                     'failed_episodes': failed_episodes,
+                    'source': 'runtime_audit',
+                },
+            ))
+        # Non-final outcomes: prepared/reused_context/awaiting_external_response
+        non_final_outcomes = {'prepared', 'awaiting_external_response', 'reused_context', 'blocked'}
+        pending_episodes = [
+            e for e in episodes
+            if e.get('outcome') in non_final_outcomes
+            or (not e.get('is_final', True) and e.get('outcome') not in ('resolved', 'failed'))
+        ]
+        if pending_episodes:
+            ep_details_p: list[str] = []
+            for ep in pending_episodes:
+                ep_details_p.append(
+                    f'[{ep.get("interaction_id", "?")}] '
+                    f'"{str(ep.get("message_preview", ""))[:40]}" '
+                    f'outcome={ep.get("outcome", "?")} '
+                    f'provider={ep.get("provider", "?")}'
+                )
+            findings.append(SelfExaminationFinding(
+                title=f'Non-resolved interaction episodes: {len(pending_episodes)} pending',
+                summary=(
+                    f'{len(pending_episodes)} interaction episode(s) have non-final outcomes '
+                    f'(prepared/reused_context/awaiting_external_response/blocked). '
+                    f'These should NOT be presented as resolved. Episodes: '
+                    + '; '.join(ep_details_p)
+                ),
+                severity=IssueSeverity.LOW,
+                category='interaction_episode_pending',
+                confidence=0.9,
+                recommendation=(
+                    'External consultations with outcome=prepared/reused_context/awaiting_external_response '
+                    'are NOT resolved. Track until actual external response is captured.'
+                ),
+                metadata={
+                    'pending_count': len(pending_episodes),
+                    'total_episodes': len(episodes),
+                    'pending_episodes': pending_episodes,
                     'source': 'runtime_audit',
                 },
             ))

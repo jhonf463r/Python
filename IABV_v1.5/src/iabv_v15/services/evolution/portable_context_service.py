@@ -2751,10 +2751,13 @@ class PortableContextService:
         items: list[dict[str, Any]] = []
         for ep in recent:
             stall_count = len(ep.get('stalls_during') or [])
+            outcome = ep.get('outcome', '')
+            is_resolved = ep.get('resolved', outcome in ('resolved', 'failed'))
             items.append({
                 'interaction_id': ep.get('interaction_id', ''),
                 'message_preview': ep.get('message_preview', ''),
-                'outcome': ep.get('outcome', ''),
+                'outcome': outcome,
+                'resolved': is_resolved,
                 'provider': ep.get('provider', ''),
                 'total_duration_ms': ep.get('total_duration_ms', 0),
                 'stall_count': stall_count,
@@ -2801,9 +2804,10 @@ class PortableContextService:
                     event = _json.loads(line)
                 except Exception:
                     continue
-                if event.get('kind') != 'interaction_resolved':
+                if event.get('kind') not in ('interaction_resolved', 'interaction_outcome'):
                     continue
                 data = dict(event.get('data') or {})
+                is_final = data.get('is_final', event.get('kind') == 'interaction_resolved')
                 episodes.append({
                     'interaction_id': data.get('interaction_id', ''),
                     'message_preview': data.get('message_preview', ''),
@@ -2821,7 +2825,7 @@ class PortableContextService:
                         'had_early_technical_response', False,
                     ),
                     'window_went_inactive': data.get('window_went_inactive', False),
-                    'resolved': True,
+                    'resolved': is_final,
                     '_source': 'runtime_audit',
                 })
                 if len(episodes) >= limit:

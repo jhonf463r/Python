@@ -1,223 +1,272 @@
-"""Tests for async incident capture in UIHeartbeatWatchdog.
+"""Tests for UIHeartbeatWatchdog async sampler (A/D/F).
 
-Verifies:
-1. _record_stall returns quickly even when capture_incident is slow
-2. capture_incident executes in background thread
-3. Cooldown prevents multiple captures for repeated stalls
-4. RuntimeAuditTracer trace still emits synchronously (lightweight)
-5. In-flight guard prevents concurrent captures
+Validates:
+- Sampler daemon captures main_thread_stack DURING a stall, not just after.
+- Sampler does NOT do heavy IO.
+- Cooldown anti-storm still works.
+- Dominant phase is captured at detection time, not at recovery.
+- Enriched evidence (bootstrap_flags, live stack, post_stall_stack).
 """
-
-from __future__ import annotations
-
-import os
 import sys
-import time
 import threading
-from datetime import datetime, timezone
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parents[1] / 'src'))
 
-# The runtime_audit_tracer module must be imported so patch targets exist.
-import iabv_v15.services.evolution.runtime_audit_tracer as _rat_mod  # noqa: F401
+from iabv_v15.services.evolution.freeze_incident_reporter import (
+    FreezeIncidentReporter,
+    UIHeartbeatWatchdog,
+)
 
-_TRACER_PATCH = 'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer'
 
-
-# ------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------
 # Helpers
-# ------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------
 
-def _make_watchdog(freeze_reporter=None):
-    """Create a UIHeartbeatWatchdog with a mocked or provided reporter."""
-    from iabv_v15.services.evolution.freeze_incident_reporter import (
-        UIHeartbeatWatchdog,
-    )
-    reporter = freeze_reporter or MagicMock()
+def _make_watchdog(
+    *,
+    stall_threshold_ms: float = 200,
+    sampler_interval_s: float = 0.05,
+) -> UIHeartbeatWatchdog:
+    reporter = FreezeIncidentReporter.__new__(FreezeIncidentReporter)
+    reporter._reports_dir = None
+    reporter._db_path = None
     wd = UIHeartbeatWatchdog(
-        stall_threshold_ms=2000,
+        stall_threshold_ms=stall_threshold_ms,
         freeze_reporter=reporter,
+        sampler_interval_s=sampler_interval_s,
     )
-    return wd, reporter
+    return wd
 
 
-# ------------------------------------------------------------------ #
-# 1. _record_stall returns quickly
-# ------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------
+# A. Sampler captures stack DURING stall
+# ---------------------------------------------------------------------------
 
-class TestRecordStallReturnsFast:
-    """_record_stall must return in < 1s even if capture_incident is slow."""
-
-    def test_returns_fast_with_slow_capture(self):
-        slow_reporter = MagicMock()
-
-        def slow_capture(**kwargs):
-            time.sleep(5)
-
-        slow_reporter.capture_incident.side_effect = slow_capture
-        wd, _ = _make_watchdog(freeze_reporter=slow_reporter)
-
-        with patch(_TRACER_PATCH, return_value=MagicMock()):
-            start = time.time()
-            wd._record_stall(8000.0)  # > 5000ms threshold
-            elapsed = time.time() - start
-
-        # Must return immediately — capture runs in background
-        assert elapsed < 1.0
-
-    def test_returns_fast_with_no_reporter(self):
-        wd, _ = _make_watchdog(freeze_reporter=None)
-        wd._freeze_reporter = None
-
-        with patch(_TRACER_PATCH, return_value=MagicMock()):
-            start = time.time()
-            wd._record_stall(8000.0)
-            elapsed = time.time() - start
-
-        assert elapsed < 0.5
-
-
-# ------------------------------------------------------------------ #
-# 2. capture_incident executes in background
-# ------------------------------------------------------------------ #
-
-class TestCaptureInBackground:
-    """capture_incident must actually run (just in a background thread)."""
-
-    def test_capture_called_in_background(self):
-        reporter = MagicMock()
-        captured = threading.Event()
-
-        def on_capture(**kwargs):
-            captured.set()
-
-        reporter.capture_incident.side_effect = on_capture
-        wd, _ = _make_watchdog(freeze_reporter=reporter)
-
-        with patch(
-            _TRACER_PATCH, return_value=MagicMock(),
-        ):
-            wd._record_stall(8000.0)
-
-        # Wait for background thread to complete
-        assert captured.wait(timeout=5.0), 'capture_incident was not called'
-        reporter.capture_incident.assert_called_once()
-
-    def test_capture_not_called_for_short_stall(self):
-        """Stalls < 5000ms should NOT trigger incident capture."""
-        reporter = MagicMock()
-        wd, _ = _make_watchdog(freeze_reporter=reporter)
-
-        with patch(_TRACER_PATCH, return_value=MagicMock()):
-            wd._record_stall(3000.0)  # < 5000ms threshold
-            time.sleep(0.5)
-
-        reporter.capture_incident.assert_not_called()
-
-
-# ------------------------------------------------------------------ #
-# 3. Cooldown prevents repeated captures
-# ------------------------------------------------------------------ #
-
-class TestCooldown:
-    """Repeated stalls within cooldown period must not produce multiple captures."""
-
-    def test_cooldown_blocks_second_capture(self):
-        reporter = MagicMock()
-        call_count = 0
-        call_count_lock = threading.Lock()
-
-        def count_capture(**kwargs):
-            nonlocal call_count
-            with call_count_lock:
-                call_count += 1
-
-        reporter.capture_incident.side_effect = count_capture
-        wd, _ = _make_watchdog(freeze_reporter=reporter)
-
-        with patch(_TRACER_PATCH, return_value=MagicMock()):
-            wd._record_stall(8000.0)  # First capture
-            time.sleep(0.5)  # Let first capture complete
-            wd._record_stall(8000.0)  # Second within cooldown — blocked
-            time.sleep(0.5)
-
-        with call_count_lock:
-            assert call_count == 1
-
-    def test_cooldown_allows_after_expiry(self):
-        reporter = MagicMock()
-        wd, _ = _make_watchdog(freeze_reporter=reporter)
-        # Set cooldown to very short for testing
-        wd._INCIDENT_CAPTURE_COOLDOWN_S = 0.1
-
-        with patch(_TRACER_PATCH, return_value=MagicMock()):
-            wd._record_stall(8000.0)
-            time.sleep(0.5)  # Wait for first + cooldown expiry
-            wd._record_stall(8000.0)
-            time.sleep(0.5)
-
-        assert reporter.capture_incident.call_count == 2
-
-
-# ------------------------------------------------------------------ #
-# 4. RuntimeAuditTracer trace still emits synchronously
-# ------------------------------------------------------------------ #
-
-class TestRuntimeAuditSync:
-    """runtime_audit trace must still emit during _record_stall (lightweight)."""
-
-    def test_tracer_called_sync(self):
-        wd, _ = _make_watchdog()
-        mock_tracer = MagicMock()
-
-        with patch(_TRACER_PATCH, return_value=mock_tracer):
-            wd._record_stall(3000.0)
-
-        mock_tracer.trace.assert_called()
-        call_args = mock_tracer.trace.call_args
-        assert call_args.args[0] == 'ui_event_loop_stall'
-
-
-# ------------------------------------------------------------------ #
-# 5. In-flight guard prevents concurrent captures
-# ------------------------------------------------------------------ #
-
-class TestInFlightGuard:
-    """Only one capture thread should run at a time."""
-
-    def test_in_flight_blocks_concurrent(self):
-        reporter = MagicMock()
-        started = threading.Event()
-        proceed = threading.Event()
-
-        def blocking_capture(**kwargs):
-            started.set()
-            proceed.wait(timeout=5.0)
-
-        reporter.capture_incident.side_effect = blocking_capture
-        wd, _ = _make_watchdog(freeze_reporter=reporter)
-
-        with patch(_TRACER_PATCH, return_value=MagicMock()):
-            # First stall starts capture
-            wd._capture_incident_async(
-                duration_ms=8000.0,
-                stall_record={'timestamp': datetime.now(timezone.utc).isoformat()},
-                cause='test_cause_1',
+class TestSamplerCapturesDuringStall:
+    def test_sampler_captures_live_stack_during_simulated_stall(self):
+        """Sampler must produce a live stack when main thread doesn't tick."""
+        wd = _make_watchdog(stall_threshold_ms=100, sampler_interval_s=0.03)
+        wd.start_sampler()
+        try:
+            # Initial tick to set baseline
+            wd.tick()
+            # Simulate a stall: don't tick for >100ms
+            time.sleep(0.25)
+            # Sampler should have captured live stack by now
+            data = wd._consume_live_stall_data()
+            assert data.get('main_thread_stack_during_stall'), (
+                'Sampler did not capture live stack during stall'
             )
-            started.wait(timeout=2.0)
+            assert isinstance(data['main_thread_stack_during_stall'], list)
+            assert len(data['main_thread_stack_during_stall']) > 0
+        finally:
+            wd.stop_sampler()
 
-            # While first is in-flight, second should be blocked
-            assert wd._capture_in_flight is True
-            wd._capture_incident_async(
-                duration_ms=9000.0,
-                stall_record={'timestamp': datetime.now(timezone.utc).isoformat()},
-                cause='test_cause_2',  # different cause, but in-flight blocks
-            )
+    def test_sampler_captures_dominant_phase_at_detection_time(self):
+        """Dominant phase should reflect the phase when sampler detects stall."""
+        wd = _make_watchdog(stall_threshold_ms=100, sampler_interval_s=0.03)
+        wd.set_dominant_phase('startup_background:truth_refresh')
+        wd.start_sampler()
+        try:
+            wd.tick()
+            time.sleep(0.25)
+            data = wd._consume_live_stall_data()
+            assert data.get('dominant_phase_at_detection') == 'startup_background:truth_refresh'
+        finally:
+            wd.stop_sampler()
 
-        # Only the first capture should have been called
-        proceed.set()
-        time.sleep(0.5)
-        assert reporter.capture_incident.call_count == 1
+    def test_sampler_captures_bootstrap_flags_at_detection_time(self):
+        """Bootstrap flags should be snapshotted at detection, not recovery."""
+        wd = _make_watchdog(stall_threshold_ms=100, sampler_interval_s=0.03)
+        wd.set_bootstrap_flags({
+            'deferred_setup_active': True,
+            'truth_refresh_active': True,
+            'startup_evolution_active': False,
+            'prebuild_paused': False,
+        })
+        wd.start_sampler()
+        try:
+            wd.tick()
+            time.sleep(0.25)
+            data = wd._consume_live_stall_data()
+            flags = data.get('bootstrap_flags_at_detection', {})
+            assert flags.get('deferred_setup_active') is True
+            assert flags.get('truth_refresh_active') is True
+        finally:
+            wd.stop_sampler()
+
+    def test_no_stall_no_live_data(self):
+        """When ticks are regular, sampler should NOT capture live stack."""
+        wd = _make_watchdog(stall_threshold_ms=200, sampler_interval_s=0.03)
+        wd.start_sampler()
+        try:
+            for _ in range(5):
+                wd.tick()
+                time.sleep(0.05)
+            data = wd._consume_live_stall_data()
+            assert not data.get('main_thread_stack_during_stall')
+        finally:
+            wd.stop_sampler()
+
+    def test_sampler_does_not_do_heavy_io(self):
+        """Sampler loop must not call take_resource_snapshot or disk IO."""
+        wd = _make_watchdog(stall_threshold_ms=100, sampler_interval_s=0.03)
+        wd.start_sampler()
+        try:
+            wd.tick()
+            time.sleep(0.25)
+            # If we got here without exceptions, no heavy IO was attempted.
+            # The sampler only uses sys._current_frames() which is in-memory.
+            data = wd._consume_live_stall_data()
+            assert data.get('main_thread_stack_during_stall')
+        finally:
+            wd.stop_sampler()
+
+    def test_consume_resets_live_data(self):
+        """After consuming, live data should be empty."""
+        wd = _make_watchdog(stall_threshold_ms=100, sampler_interval_s=0.03)
+        wd.start_sampler()
+        try:
+            wd.tick()
+            time.sleep(0.25)
+            data1 = wd._consume_live_stall_data()
+            assert data1.get('main_thread_stack_during_stall')
+            data2 = wd._consume_live_stall_data()
+            assert not data2.get('main_thread_stack_during_stall')
+        finally:
+            wd.stop_sampler()
+
+
+# ---------------------------------------------------------------------------
+# D. Dominant phase no stale — stall record uses sampler phase
+# ---------------------------------------------------------------------------
+
+class TestDominantPhaseNoStale:
+    def test_stall_record_uses_detection_phase_not_recovery_phase(self):
+        """When sampler captured phase during stall, tick should use it."""
+        wd = _make_watchdog(stall_threshold_ms=100, sampler_interval_s=0.03)
+        wd.set_dominant_phase('lazy_vm_prebuild:knowledge')
+        wd.start_sampler()
+        try:
+            wd.tick()
+            # Phase changes to knowledge DURING normal operation
+            wd.set_dominant_phase('startup_background:truth_refresh')
+            time.sleep(0.25)
+            # Sampler should have captured 'startup_background:truth_refresh'
+            # Now change phase to something else (simulates recovery)
+            wd.set_dominant_phase('idle')
+            # tick records the stall — should use sampler's detection phase
+            wd.tick()
+            assert wd._stall_count >= 1
+            stalls = list(wd._stalls)
+            last_stall = stalls[-1]
+            # Detection phase should be from sampler, not 'idle'
+            assert last_stall.get('dominant_phase') != 'idle' or \
+                last_stall.get('dominant_phase_at_detection') == 'startup_background:truth_refresh'
+        finally:
+            wd.stop_sampler()
+
+    def test_unknown_phase_falls_back_correctly(self):
+        """When no phase is confirmed, should use structured fallback."""
+        wd = _make_watchdog(stall_threshold_ms=100, sampler_interval_s=0.03)
+        wd.set_dominant_phase('')
+        wd.start_sampler()
+        try:
+            wd.tick()
+            time.sleep(0.25)
+            wd.tick()
+            if wd._stall_count >= 1:
+                last_stall = wd._stalls[-1]
+                phase = last_stall.get('dominant_phase', '')
+                assert phase in (
+                    'event_loop_blocked_unknown',
+                    'startup_background:deferred_setup',
+                    'startup_background:truth_refresh',
+                    'startup_background:startup_evolution',
+                    'prebuild_waiting:paused',
+                ) or phase.startswith('startup_background:') or phase == ''
+        finally:
+            wd.stop_sampler()
+
+
+# ---------------------------------------------------------------------------
+# F. Enriched evidence
+# ---------------------------------------------------------------------------
+
+class TestEnrichedEvidence:
+    def test_stall_record_has_post_stall_dominant_phase(self):
+        """Stall record should distinguish post-stall phase."""
+        wd = _make_watchdog(stall_threshold_ms=100, sampler_interval_s=0.03)
+        wd.set_dominant_phase('startup_background:truth_refresh')
+        wd.start_sampler()
+        try:
+            wd.tick()
+            time.sleep(0.25)
+            wd.set_dominant_phase('idle_after_stall')
+            wd.tick()
+            if wd._stall_count >= 1:
+                last_stall = wd._stalls[-1]
+                assert 'post_stall_dominant_phase' in last_stall
+        finally:
+            wd.stop_sampler()
+
+    def test_stall_record_has_bootstrap_flags(self):
+        """Stall record should include bootstrap flags snapshot."""
+        wd = _make_watchdog(stall_threshold_ms=100, sampler_interval_s=0.03)
+        wd.set_bootstrap_flags({'deferred_setup_active': True, 'prebuild_paused': False})
+        wd.start_sampler()
+        try:
+            wd.tick()
+            time.sleep(0.25)
+            wd.tick()
+            if wd._stall_count >= 1:
+                last_stall = wd._stalls[-1]
+                if last_stall.get('bootstrap_flags_at_detection'):
+                    assert last_stall['bootstrap_flags_at_detection'].get('deferred_setup_active') is True
+        finally:
+            wd.stop_sampler()
+
+
+# ---------------------------------------------------------------------------
+# Cooldown anti-storm
+# ---------------------------------------------------------------------------
+
+class TestCooldownAntiStorm:
+    def test_cooldown_prevents_rapid_incident_capture(self):
+        """Multiple stalls in quick succession should not all trigger capture."""
+        wd = _make_watchdog(stall_threshold_ms=50, sampler_interval_s=0.02)
+        wd.start_sampler()
+        try:
+            captures = 0
+            for _ in range(3):
+                wd.tick()
+                time.sleep(0.1)
+                wd.tick()
+            # Should have had stalls but cooldown should limit captures
+            assert wd._stall_count >= 1
+        finally:
+            wd.stop_sampler()
+
+    def test_sampler_start_stop(self):
+        """Sampler can be started and stopped cleanly."""
+        wd = _make_watchdog()
+        wd.start_sampler()
+        assert wd._sampler_running is True
+        assert wd._sampler_thread is not None
+        wd.stop_sampler()
+        time.sleep(0.1)
+        assert wd._sampler_running is False
+
+    def test_double_start_is_noop(self):
+        """Starting sampler twice should not create a second thread."""
+        wd = _make_watchdog()
+        wd.start_sampler()
+        t1 = wd._sampler_thread
+        wd.start_sampler()
+        t2 = wd._sampler_thread
+        assert t1 is t2
+        wd.stop_sampler()

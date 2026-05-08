@@ -3979,16 +3979,28 @@ class ControlCenterViewModel(QObject):
         except Exception:
             pass
 
+    # Outcomes that count as final episode closure.
+    _FINAL_INTERACTION_OUTCOMES: frozenset[str] = frozenset({
+        'resolved', 'failed',
+    })
+
     def _resolve_active_interaction(
         self,
         *,
         outcome: str = 'resolved',
         provider: str = '',
     ) -> None:
-        """Close the active interaction episode and reset watchdog state."""
+        """Close the active interaction episode and reset watchdog state.
+
+        Non-final outcomes (``prepared``, ``awaiting_external_response``,
+        ``reused_context``, ``blocked``) record the outcome in the
+        lifecycle but keep the interaction_id and watchdog state active
+        so that the episode stays open until true resolution.
+        """
         interaction_id = getattr(self, '_active_interaction_id', None)
         if not interaction_id:
             return
+        is_final = outcome in self._FINAL_INTERACTION_OUTCOMES
         lifecycle = getattr(self, '_chat_interaction_lifecycle', None)
         if lifecycle is not None:
             try:
@@ -3999,15 +4011,59 @@ class ControlCenterViewModel(QObject):
                 )
             except Exception:
                 pass
-        self._active_interaction_id = None
-        watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
-        if watchdog is not None:
-            watchdog.set_query_pending(False)
-            watchdog.set_active_interaction(None)
-        # Promote OSES/PortableContext on final resolution so the next
-        # session inherits the state of this resolved interaction.
-        if outcome in ('resolved', 'failed'):
+        if is_final:
+            self._active_interaction_id = None
+            watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
+            if watchdog is not None:
+                watchdog.set_query_pending(False)
+                watchdog.set_active_interaction(None)
             self._promote_metacognition_after_resolution()
+
+    @staticmethod
+    def _derive_external_consultation_outcome(payload: Any) -> str:
+        """Derive semantic outcome from external_consultation payload.
+
+        Returns one of: ``resolved``, ``prepared``,
+        ``awaiting_external_response``, ``reused_context``, ``blocked``.
+        """
+        if not isinstance(payload, dict):
+            return 'resolved'
+        success = bool(payload.get('success'))
+        if not success:
+            return 'blocked'
+        # Check if the consultation actually captured a useful response.
+        ext_payload = dict(payload.get('payload') or {})
+        ext_meta = dict(ext_payload.get('metadata') or {})
+        ext_consultation = dict(
+            ext_meta.get('external_consultation')
+            or ext_meta.get('autonomous_evolution')
+            or {},
+        )
+        status = str(ext_consultation.get('status') or '').strip().lower()
+        has_response = bool(
+            ext_consultation.get('response_captured')
+            or ext_consultation.get('response_ingested_at_utc')
+            or ext_consultation.get('response_validation')
+        )
+        if has_response:
+            return 'resolved'
+        if status in ('prepared', 'reused'):
+            # Check message for reuse patterns
+            message = str(payload.get('message') or '').lower()
+            if any(kw in message for kw in ('ya ten', 'equivalente', 'reutiliz', 'reused')):
+                return 'reused_context'
+            return 'prepared'
+        if status == 'awaiting_response':
+            return 'awaiting_external_response'
+        if status in ('blocked_external', 'failed'):
+            return 'blocked'
+        # Default: check if the message looks like a dispatch/preparation
+        message = str(payload.get('message') or '').lower()
+        if any(kw in message for kw in ('aceptada', 'preparando', 'preparada', 'encaminada', 'accepted')):
+            return 'prepared'
+        if any(kw in message for kw in ('ya ten', 'equivalente', 'reutiliz', 'reused')):
+            return 'reused_context'
+        return 'resolved'
 
     def _promote_metacognition_after_resolution(self) -> None:
         """Refresh OSES and PortableContext after a resolved interaction."""
@@ -7615,11 +7671,40 @@ class ControlCenterViewModel(QObject):
         # (external consultation dispatched, autonomy awaiting_response, etc.).
         # The episode must stay open until the *real* final resolution.
         _has_pending_followup = getattr(self, '_interaction_has_pending_followup', False)
-        if task_name in {'external_consultation', 'adaptive_action'}:
-            # These task types ARE the follow-up — they complete the episode.
+        if task_name == 'external_consultation':
+            # Derive semantic outcome from external consultation status.
+            _ext_outcome = self._derive_external_consultation_outcome(payload)
+            if isinstance(payload, dict):
+                _provider = str(
+                    payload.get('assistant_title')
+                    or payload.get('assistant_kind')
+                    or '',
+                )
+            else:
+                _provider = ''
+            if _ext_outcome in ('resolved', 'failed'):
+                self._interaction_has_pending_followup = False
+                self._resolve_active_interaction(
+                    outcome=_ext_outcome,
+                    provider=_provider,
+                )
+            else:
+                # Non-final: record the semantic outcome but keep the
+                # interaction open for eventual true resolution.
+                self._resolve_active_interaction(
+                    outcome=_ext_outcome,
+                    provider=_provider,
+                )
+        elif task_name == 'adaptive_action':
             self._interaction_has_pending_followup = False
-            _has_pending_followup = False
-        if _has_pending_followup:
+            if isinstance(payload, dict):
+                _provider = str(
+                    payload.get('provider_name') or payload.get('assistant_kind') or '',
+                )
+            else:
+                _provider = ''
+            self._resolve_active_interaction(outcome='resolved', provider=_provider)
+        elif _has_pending_followup:
             # Mark lifecycle phase but keep episode open
             _lc = getattr(self, '_chat_interaction_lifecycle', None)
             _iid = getattr(self, '_active_interaction_id', None)
@@ -7629,8 +7714,7 @@ class ControlCenterViewModel(QObject):
                 except Exception:
                     pass
         else:
-            # Derive provider: external_consultation uses assistant_title,
-            # other tasks use provider_name.
+            # Derive provider: other tasks use provider_name.
             if isinstance(payload, dict):
                 _provider = str(
                     payload.get('provider_name')
