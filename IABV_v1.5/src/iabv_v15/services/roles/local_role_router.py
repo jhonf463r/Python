@@ -907,6 +907,136 @@ class LocalRoleRouter:
     def _contains_any(self, text: str, patterns: list[str]) -> bool:
         return any(pattern in text for pattern in patterns)
 
+    # ------------------------------------------------------------------
+    # Task 3: Sovereign route ranking — unified API + web session + local
+    # ------------------------------------------------------------------
+
+    def sovereign_route_ranking(
+        self,
+        *,
+        target_assistant: str = '',
+        block_signals: dict[str, list[str]] | None = None,
+        include_local: bool = True,
+    ) -> dict[str, Any]:
+        """Unified ranking that compares API free routes, web sessions and local shadow.
+
+        Returns a dict with:
+        - ``ranked``: list of route candidates sorted by composite score (desc)
+        - ``recommended``: the single best route
+        - ``route_kind``: 'api_free' | 'web_session' | 'local_shadow'
+        - ``unresolved``: honest list of gaps
+
+        Each candidate carries ``route_kind``, ``score``, ``tool``, ``email``,
+        ``remaining`` and ``reason`` so the caller has full traceability.
+
+        This does NOT create a new service — it composes existing scanner
+        functions (``best_account_for_tool``, ``get_web_session_status``,
+        ``rank_workers_for_target``) with the local provider health check.
+        """
+        from iabv_v15.services.account_resource_scanner import (
+            best_account_for_tool,
+            get_web_session_status,
+            rank_workers_for_target,
+            scan_ollama_api,
+        )
+
+        candidates: list[dict[str, Any]] = []
+        unresolved: list[str] = []
+        target = (target_assistant or '').strip().lower()
+
+        # --- 1. API free-tier workers (scanner pool) ---
+        pool_gate = self.worker_health_gate(
+            target_assistant=target,
+            block_signals=block_signals,
+        )
+        for w in pool_gate.get('ranked_workers', []):
+            tool = str(w.get('tool', ''))
+            score = float(w.get('score', 0.0))
+            candidates.append({
+                'route_kind': 'api_free',
+                'tool': tool,
+                'email': str(w.get('email', '')),
+                'remaining': w.get('remaining', 0),
+                'score': score,
+                'block_risk': float(w.get('block_risk', 0.0)),
+                'reason': f'Free-tier worker {tool} con cuota disponible.',
+            })
+        if not pool_gate.get('usable') and not pool_gate.get('ranked_workers'):
+            unresolved.append(
+                f'UNRESOLVED:api_free — {pool_gate.get("reason", "sin workers disponibles")}'
+            )
+
+        # --- 2. Web session routes ---
+        web_tools = [target] if target else ['chatgpt', 'claude', 'codex']
+        for tool_name in web_tools:
+            try:
+                ws = get_web_session_status(tool_name)
+            except Exception:
+                ws = {'session_status': 'unknown', 'tool': tool_name}
+            status = ws.get('session_status', 'unknown')
+            if status == 'active':
+                score = 0.6
+                if ws.get('expires_hint'):
+                    score = 0.5
+                candidates.append({
+                    'route_kind': 'web_session',
+                    'tool': tool_name,
+                    'email': ws.get('account_email', ''),
+                    'remaining': None,
+                    'score': score,
+                    'block_risk': 0.0,
+                    'reason': f'Web session activa para {tool_name}.',
+                })
+            elif status == 'needs_refresh':
+                candidates.append({
+                    'route_kind': 'web_session',
+                    'tool': tool_name,
+                    'email': ws.get('account_email', ''),
+                    'remaining': None,
+                    'score': 0.2,
+                    'block_risk': 0.3,
+                    'reason': f'Web session {tool_name} necesita re-auth.',
+                })
+            else:
+                unresolved.append(
+                    f'UNRESOLVED:web_session_{tool_name} — status={status}'
+                )
+
+        # --- 3. Local shadow (Ollama) ---
+        if include_local:
+            try:
+                ollama = scan_ollama_api()
+            except Exception:
+                ollama = {'available': False}
+            if ollama.get('available'):
+                model_count = ollama.get('models_count', 0)
+                score = 0.35 if model_count > 0 else 0.1
+                candidates.append({
+                    'route_kind': 'local_shadow',
+                    'tool': 'ollama',
+                    'email': '',
+                    'remaining': None,
+                    'score': score,
+                    'block_risk': 0.0,
+                    'reason': f'Local shadow via Ollama ({model_count} modelos).',
+                })
+            else:
+                unresolved.append('UNRESOLVED:local_shadow — Ollama no disponible')
+
+        # --- Sort by score descending ---
+        candidates.sort(key=lambda c: c['score'], reverse=True)
+
+        recommended = candidates[0] if candidates else None
+        recommended_kind = recommended['route_kind'] if recommended else 'none'
+
+        return {
+            'ranked': candidates,
+            'recommended': recommended,
+            'route_kind': recommended_kind,
+            'candidate_count': len(candidates),
+            'unresolved': unresolved,
+        }
+
     def _build_model_profiles(self) -> list[ModelProfile]:
         return [
             ModelProfile(
