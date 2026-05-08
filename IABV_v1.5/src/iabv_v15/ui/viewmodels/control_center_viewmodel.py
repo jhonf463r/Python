@@ -222,6 +222,7 @@ class ControlCenterViewModel(QObject):
         self._live_work_items: list[dict[str, Any]] = []
         self._assistant_session_cards: list[dict[str, Any]] = []
         self._autonomy_timeline: list[dict[str, Any]] = []
+        self._autonomy_dock_generation: int = 0
 
         self._adaptive_session_id = ''
         self._adaptive_status_text = 'Sin sesion adaptativa activa.'
@@ -4787,7 +4788,7 @@ class ControlCenterViewModel(QObject):
             'execute': bool(self._adaptive_session_id and execution_state.get('executor_available') and not execution_state.get('simulation_only')),
             'abort': bool(self._adaptive_session_id and status not in {'aborted', 'completed'}),
         }
-        self._refresh_autonomy_dock()
+        self._refresh_autonomy_dock_async()
 
     def get_chat_messages(self) -> list[dict[str, str]]:
         with self._ui_state_lock:
@@ -5011,8 +5012,62 @@ class ControlCenterViewModel(QObject):
         self._assistant_session_cards = [dict(item) for item in (projected.get('assistant_session_cards') or [])]
         self._autonomy_timeline = [dict(item) for item in (projected.get('autonomy_timeline') or [])]
 
+    def _refresh_autonomy_dock_async(self) -> None:
+        """Run autonomy dock projection on ``_bg_pool`` and apply to UI."""
+        self._autonomy_dock_generation += 1
+        gen = self._autonomy_dock_generation
+        projector = self.autonomy_activity_projector
+        if projector is None:
+            self._live_process_summary = {}
+            self._live_work_items = []
+            self._assistant_session_cards = []
+            self._autonomy_timeline = []
+            self.dataChanged.emit()
+            return
+        goal = self._goal_context_for_display(self._current_site_id() or None)
+        audit = self._latest_live_audit()
+        replay = self._latest_replay_visual_summary()
+        activity = self.get_autonomy_activity()
+
+        def _bg() -> dict[str, Any] | None:
+            if self._autonomy_dock_generation != gen:
+                return None
+            watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
+            if watchdog is not None:
+                watchdog.set_dominant_phase('control_center_refresh_autonomy_dock')
+            try:
+                return projector.project(
+                    goal_context=goal,
+                    live_audit=audit,
+                    replay_visual_summary=replay,
+                    autonomy_activity=activity,
+                )
+            finally:
+                if watchdog is not None:
+                    watchdog.set_dominant_phase('')
+
+        def _apply(fut: Any) -> None:
+            if self._autonomy_dock_generation != gen:
+                return
+            try:
+                projected = fut.result()
+            except Exception:
+                logger.debug('autonomy dock bg projection failed', exc_info=True)
+                return
+            if projected is None:
+                return
+            self._live_process_summary = dict(projected.get('live_process_summary') or {})
+            self._live_work_items = [dict(item) for item in (projected.get('live_work_items') or [])]
+            self._assistant_session_cards = [dict(item) for item in (projected.get('assistant_session_cards') or [])]
+            self._autonomy_timeline = [dict(item) for item in (projected.get('autonomy_timeline') or [])]
+            self.dataChanged.emit()
+
+        future = self._bg_pool.submit(_bg)
+        future.add_done_callback(_apply)
+
     @Slot()
     def refreshAutonomyDock(self) -> None:
+        """Synchronous refresh for tests and programmatic callers."""
         self._refresh_autonomy_dock()
         self.dataChanged.emit()
 
@@ -7767,8 +7822,7 @@ class ControlCenterViewModel(QObject):
         self._update_evolution_snapshot()
         self._agent_cards = self._build_agent_cards()
         self._refresh_development_packet()
-        self._refresh_autonomy_dock()
-        self.dataChanged.emit()
+        self._refresh_autonomy_dock_async()
 
     @Slot(str, str)
     def _apply_task_failure(self, task_name: str, message: str) -> None:
@@ -7811,8 +7865,7 @@ class ControlCenterViewModel(QObject):
         )
         self._diagnostic_truth_state = 'observed'
         self._refresh_development_packet()
-        self._refresh_autonomy_dock()
-        self.dataChanged.emit()
+        self._refresh_autonomy_dock_async()
 
     def _build_provider_diagnostic(self) -> str:
         goal_context = self._goal_context_for_display(self._current_site_id() or None)

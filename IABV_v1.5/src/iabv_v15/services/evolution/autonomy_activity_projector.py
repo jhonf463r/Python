@@ -43,7 +43,8 @@ class AutonomyActivityProjector:
         replay = dict(replay_visual_summary or {})
         activity = dict(autonomy_activity or {})
         tasks = [task for task in self.tool_record_repository.list_tasks(limit=36) if self._is_assistant_task(task)]
-        latest_results = {task.task_id: self._latest_result(task.task_id) for task in tasks}
+        task_ids = [task.task_id for task in tasks]
+        latest_results: dict[str, Any | None] = self.tool_record_repository.latest_results_by_task_ids(task_ids) if task_ids else {}
         tasks.sort(key=lambda item: self._sort_key(item, latest_results.get(item.task_id)), reverse=True)
         assistant_session_cards = self._assistant_session_cards(tasks, latest_results)
         live_work_items = [self._work_item(task, latest_results.get(task.task_id)) for task in tasks[:6]]

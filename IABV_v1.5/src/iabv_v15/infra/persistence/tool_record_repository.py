@@ -176,6 +176,37 @@ class ToolRecordRepository:
                 items.append(loaded)
         return items
 
+    def latest_results_by_task_ids(self, task_ids: list[str]) -> dict[str, ToolResult]:
+        """Return the most recent ToolResult for each *task_id* in one query.
+
+        Used by ``AutonomyActivityProjector.project()`` to avoid N+1 calls
+        to ``list_results(task_id=..., limit=1)``.
+        """
+        if not task_ids:
+            return {}
+        placeholders = ','.join('?' for _ in task_ids)
+        sql = (
+            'SELECT r.result_id, r.task_id, r.path '
+            'FROM tool_results r '
+            'INNER JOIN ('
+            '  SELECT task_id, MAX(created_at_utc) AS max_ts '
+            '  FROM tool_results '
+            f'  WHERE task_id IN ({placeholders}) '
+            '  GROUP BY task_id'
+            ') latest ON r.task_id = latest.task_id '
+            'AND r.created_at_utc = latest.max_ts'
+        )
+        rows = self.db.fetchall(sql, tuple(task_ids))
+        result_map: dict[str, ToolResult] = {}
+        for row in rows:
+            tid = row['task_id']
+            if tid in result_map:
+                continue
+            loaded = self._load_result_safe(row['result_id'], row['path'])
+            if loaded is not None:
+                result_map[tid] = loaded
+        return result_map
+
     def log_execution(self, *, tool_id: str, task_id: str | None, action_type: str, state: str, payload: dict[str, Any], created_at_utc: str) -> str:
         log_id = str(uuid4())
         relative_path = f"log/{log_id}.json"
