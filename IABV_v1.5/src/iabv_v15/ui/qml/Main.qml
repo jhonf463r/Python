@@ -296,20 +296,17 @@ ApplicationWindow {
                     onTriggered: pageLoader.active = true
                 }
 
-                // Brecha 1.2: Deferred preload of heavy secondary pages.
-                // After the initial page_loader_ready, we start preloading
-                // the next heaviest pages in background so navigating to
-                // them later is instant.  Each uses asynchronous: true and
-                // only activates after a staggered delay.
+                // Secondary page preload stays disabled by default. These
+                // pages execute ViewModel refresh logic when instantiated,
+                // so invisible preloading can still block the event loop.
+                // Real navigation remains on-demand through pageLoader.
                 Timer {
                     id: secondaryPreloadKickoff
                     interval: 2000  // 2s after initial page ready
                     repeat: false
                     running: false
                     onTriggered: {
-                        controlPreloader.active = true
-                        evolutionPreloader.active = true
-                        capturePreloader.active = true
+                        // Intentionally empty.
                     }
                 }
 
@@ -333,7 +330,7 @@ ApplicationWindow {
                             mainWindowBridge.signal_page_loader_ready()
                             if (!parent.initialPageLoaded) {
                                 parent.initialPageLoaded = true
-                                secondaryPreloadKickoff.start()
+                                // Do not preload heavy pages after first paint.
                             }
                         }
                     }

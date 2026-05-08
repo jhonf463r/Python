@@ -1969,6 +1969,33 @@ class AppBootstrap:
         the final boot state.  Then PortableContext persists with the
         up-to-date OSES summary — not a stale one.
         """
+        defer_reason = self._startup_truth_refresh_defer_reason()
+        if defer_reason:
+            attempt = int(getattr(self, '_truth_refresh_attempt', 0) or 0) + 1
+            self._truth_refresh_attempt = attempt
+            try:
+                self._timeline.mark(
+                    'startup_truth_refresh_deferred',
+                    reason=defer_reason,
+                    attempt=attempt,
+                )
+            except Exception:
+                pass
+            logger.info(
+                'startup_truth_refresh: deferred (%s, attempt=%s)',
+                defer_reason,
+                attempt,
+            )
+            self._truth_refresh_active = False
+            self._push_bootstrap_flags_to_watchdog()
+            self._check_startup_followup_done()
+            if attempt < 3:
+                delay_s = 180.0 * attempt
+                timer = threading.Timer(delay_s, self._start_deferred_truth_refresh_retry)
+                timer.daemon = True
+                timer.start()
+            return
+
         force_refresh = self._metacognition_data_is_stale()
         if force_refresh:
             logger.info('startup_truth_refresh: metacognition data stale (>24h), forcing full regeneration')
@@ -1991,6 +2018,43 @@ class AppBootstrap:
         self._truth_refresh_active = False
         self._push_bootstrap_flags_to_watchdog()
         self._check_startup_followup_done()
+
+    def _start_deferred_truth_refresh_retry(self) -> None:
+        if self._truth_refresh_active:
+            return
+        self._truth_refresh_active = True
+        self._push_bootstrap_flags_to_watchdog()
+        threading.Thread(
+            target=self._final_startup_truth_refresh,
+            name='iabv-startup-truth-refresh',
+            daemon=True,
+        ).start()
+
+    def _startup_truth_refresh_defer_reason(self) -> str:
+        snap, age = self._get_cached_snapshot()
+        if snap is None:
+            self._refresh_prebuild_snapshot_async()
+            return 'resource_snapshot_unavailable'
+        if age > self._PREBUILD_SNAPSHOT_MAX_AGE_S:
+            self._refresh_prebuild_snapshot_async()
+            return 'resource_snapshot_stale'
+        try:
+            if float(getattr(snap, 'ram_used_pct', 0.0) or 0.0) >= 70.0:
+                return 'ram_used_pct_high'
+            if int(getattr(snap, 'ram_available_mb', 0) or 0) < 6000:
+                return 'ram_available_low'
+        except Exception:
+            return 'resource_snapshot_invalid'
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        if watchdog is not None:
+            try:
+                for stall in watchdog.recent_stalls(limit=3):
+                    duration = float(stall.get('duration_ms', 0.0) or 0.0)
+                    if duration >= 2000.0:
+                        return f'recent_ui_stall:{int(duration)}ms'
+            except Exception:
+                pass
+        return ''
 
     def _metacognition_data_is_stale(self, max_age_hours: float = 24.0) -> bool:
         """Check if OSES / PortableContext latest.json are older than *max_age_hours*."""
@@ -3438,31 +3502,50 @@ class AppBootstrap:
     _PREBUILD_SNAPSHOT_RETRY_MS: int = 2000
 
     def _build_all_lazy_vms(self) -> None:
-        """Pre-build all lazy VMs during idle time (background timer chain).
+        """Skip idle VM prebuild; keep lazy pages strictly on-demand.
 
-        Each VM is constructed in its own QTimer.singleShot(0) slot to
-        yield to the event loop between constructions, keeping the main
-        thread responsive.  Errors in individual VMs are logged but do
-        NOT break the chain — the next VM is always scheduled.
+        Live Windows audits showed that constructing hidden ViewModels is
+        not passive: some pages schedule refreshes that read large SQLite /
+        JSON histories on the main thread.  Resource gates cannot make that
+        safe because the side effect happens after the VM exists.
 
-        **Resource governance (post-audit fix v3):**
-        Before building each route, reads a *cached* resource snapshot
-        (refreshed asynchronously in a background thread) and checks
-        recent UI stalls via ``UIHeartbeatWatchdog``.  If pressure is
-        high or a recent stall is detected, the prebuild chain pauses
-        and emits ``lazy_vm_prebuild_paused`` to the startup timeline.
-
-        If the snapshot is not yet available (``resource_snapshot_pending``
-        or ``resource_snapshot_unavailable``), the chain does NOT build
-        blindly — it schedules a retry via ``QTimer`` so the gate can
-        make an informed decision once the background refresh completes.
-
-        ``take_resource_snapshot()`` is NEVER called from the UI thread
-        — it can take 15-18 s on Windows (PowerShell/CIM).
-
-        Navigation-triggered construction (``_ensure_vm_for_route``)
-        is never paused — only the idle prebuild chain.
+        Navigation-triggered construction (``_ensure_vm_for_route``) stays
+        intact and never consults prebuild gates.  The user can still open
+        every section; IABV just stops doing invisible page construction
+        after startup.
         """
+        routes = list(self._ROUTE_TO_VM_ATTR.keys())
+        self._prebuild_paused = False
+        self._prebuild_paused_routes = []
+        wd = getattr(self, 'ui_heartbeat_watchdog', None)
+        if wd is not None:
+            try:
+                wd.set_dominant_phase('')
+                wd.set_startup_followup_active(self._startup_followup_active)
+            except Exception:
+                pass
+        try:
+            self._timeline.mark(
+                'lazy_vm_prebuild_skipped',
+                reason='on_demand_only_viewmodel_side_effects',
+                remaining_routes=routes,
+            )
+            self._timeline.mark(
+                'lazy_vm_prebuild_done',
+                status='skipped',
+                reason='on_demand_only_viewmodel_side_effects',
+                remaining_routes=routes,
+            )
+        except Exception:
+            pass
+        self._push_bootstrap_flags_to_watchdog()
+        self._check_startup_followup_done()
+        logger.info(
+            'lazy_vm_prebuild_skipped: on-demand only for %d routes',
+            len(routes),
+        )
+        return
+
         routes = list(self._ROUTE_TO_VM_ATTR.keys())
         self._prebuild_paused = False
         self._prebuild_paused_routes = []

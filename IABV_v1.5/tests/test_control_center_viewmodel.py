@@ -2089,7 +2089,7 @@ def test_control_center_viewmodel_projects_live_external_assistant_dock() -> Non
 
         viewmodel = bootstrap.control_center_viewmodel
         assert viewmodel is not None
-        viewmodel.refreshAutonomyDock()
+        viewmodel._refresh_autonomy_dock()
 
         summary = viewmodel.get_live_process_summary()
         work_items = viewmodel.get_live_work_items()

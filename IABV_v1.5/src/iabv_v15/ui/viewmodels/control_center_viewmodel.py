@@ -57,6 +57,10 @@ class ControlCenterViewModel(QObject):
     dataChanged = Signal()
     taskResolved = Signal(str, object)
     taskFailed = Signal(str, str)
+    autonomyDockProjected = Signal(int, object)
+    developmentPacketReady = Signal(int, str)
+    evolutionSnapshotReady = Signal(int, object)
+    agentCardsReady = Signal(int, object)
 
     # Señales evolutivas para diálogos UI (Task B)
     credentialPromptRequested = Signal(dict)  # {domain, reason, username_hint}
@@ -182,11 +186,13 @@ class ControlCenterViewModel(QObject):
         self._evolution_overview: dict[str, Any] = {}
         self._evolution_area_cards: list[dict[str, Any]] = []
         self._evolution_blockers: list[dict[str, str]] = []
+        self._evolution_snapshot_generation: int = 0
         self._agent_cards: list[dict[str, Any]] = []
+        self._agent_cards_generation: int = 0
         self._legacy_cards = self._build_legacy_cards()
         self._role_cards = [profile.model_dump(mode='json') for profile in self.role_router.role_profiles]
         self._ui_state_lock = threading.Lock()
-        self._bg_pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix='ccvm-bg')
+        self._bg_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='ccvm-bg')
         atexit.register(self._shutdown_bg_pool)
         self._chat_messages: list[dict[str, str]] = []
         self._attached_files: list[dict[str, Any]] = []
@@ -206,6 +212,7 @@ class ControlCenterViewModel(QObject):
         self._last_goal_context: dict[str, Any] = {}
         self._clipboard_notice = 'Todavia no se ha copiado nada al portapapeles.'
         self._development_packet = ''
+        self._development_packet_generation: int = 0
         self._dev_packet_last_ts: float = 0.0
         self._dev_packet_cooldown_s: float = 30.0
         self._latest_response_text = 'Todavia no hay respuesta final en esta sesion.'
@@ -223,6 +230,9 @@ class ControlCenterViewModel(QObject):
         self._assistant_session_cards: list[dict[str, Any]] = []
         self._autonomy_timeline: list[dict[str, Any]] = []
         self._autonomy_dock_generation: int = 0
+        self._autonomy_dock_refresh_in_flight: bool = False
+        self._autonomy_dock_last_refresh_started: float = 0.0
+        self._autonomy_dock_min_interval_s: float = 8.0
 
         self._adaptive_session_id = ''
         self._adaptive_status_text = 'Sin sesion adaptativa activa.'
@@ -263,6 +273,10 @@ class ControlCenterViewModel(QObject):
         }
         self.taskResolved.connect(self._apply_task_result)
         self.taskFailed.connect(self._apply_task_failure)
+        self.autonomyDockProjected.connect(self._apply_autonomy_dock_projection)
+        self.developmentPacketReady.connect(self._apply_development_packet)
+        self.evolutionSnapshotReady.connect(self._apply_evolution_snapshot)
+        self.agentCardsReady.connect(self._apply_agent_cards)
         self.bridgeChatRequested.connect(self._dispatch_bridge_chat)
         self._seed_messages()
         # Always defer heavy work to keep constructor fast and avoid
@@ -295,13 +309,18 @@ class ControlCenterViewModel(QObject):
         self._bg_pool.shutdown(wait=False)
 
     def _deferred_initial_refresh(self) -> None:
-        """Run initial data load on background thread to keep main thread free.
+        """Keep first Control Center paint light.
 
-        Delegates to ``_refresh_all_data`` on ``_bg_pool`` so the event
-        loop stays free for lazy VM prebuild.  This eliminates the code
-        duplication that existed between refresh() and this method.
+        A full refresh scans repositories, task records and evolution
+        summaries.  Live Windows audits showed that doing that immediately
+        after navigation can starve the Qt event loop even from a worker
+        thread because of GIL and memory pressure.  The full synchronous
+        ``refresh()`` and explicit QML refresh actions still exist; initial
+        navigation only updates cache-based labels.
         """
-        self._bg_pool.submit(self._refresh_all_data)
+        if not self._working and not self._adaptive_session_id:
+            self._busy_label = self._startup_readiness_text(validating_local_stack=False)
+        self.dataChanged.emit()
 
     def _placeholder_provider_cards(self) -> list[dict[str, Any]]:
         return [
@@ -1019,7 +1038,7 @@ class ControlCenterViewModel(QObject):
             'focus': focus,
         }
 
-    def _update_evolution_snapshot(self) -> None:
+    def _build_evolution_snapshot(self) -> dict[str, Any]:
         health_snapshot = self.evolution_review_service.build_project_health().model_dump(mode='json') if self.evolution_review_service is not None else {}
         experiment_runs = self.experiment_lab_repository.list_runs(limit=12) if self.experiment_lab_repository is not None else []
         experiment_recommendations = self.experiment_lab_repository.list_recommendations(limit=3) if self.experiment_lab_repository is not None else []
@@ -1264,7 +1283,7 @@ class ControlCenterViewModel(QObject):
         else:
             overall_trend = 'sin base'
         next_help = blockers[0]['help'] if blockers else (self._assistant_action_buttons[0]['label'] if self._assistant_action_buttons else 'Seguir capturando evidencia y ejecutando tareas reales.')
-        self._evolution_overview = {
+        overview = {
             'title': 'Pulso evolutivo',
             'status': overall_status,
             'trend': overall_trend,
@@ -1283,8 +1302,53 @@ class ControlCenterViewModel(QObject):
                 {'title': 'Reutilizacion', 'value': str(reusable_patterns + reused_episodes), 'detail': 'patrones o reusos detectados'},
             ],
         }
-        self._evolution_area_cards = area_cards
-        self._evolution_blockers = blockers
+        return {
+            'overview': overview,
+            'area_cards': area_cards,
+            'blockers': blockers,
+        }
+
+    def _update_evolution_snapshot(self) -> None:
+        self._apply_evolution_snapshot(0, self._build_evolution_snapshot(), accept_any_generation=True)
+
+    def _refresh_evolution_snapshot_async(self) -> None:
+        self._evolution_snapshot_generation += 1
+        gen = self._evolution_snapshot_generation
+
+        def _bg() -> dict[str, Any]:
+            return self._build_evolution_snapshot()
+
+        def _done(fut: Any) -> None:
+            if self._evolution_snapshot_generation != gen:
+                return
+            try:
+                snapshot = fut.result()
+            except Exception:
+                logger.debug('evolution snapshot bg refresh failed', exc_info=True)
+                return
+            self.evolutionSnapshotReady.emit(gen, snapshot)
+
+        future = self._bg_pool.submit(_bg)
+        future.add_done_callback(_done)
+
+    @Slot(int, object)
+    def _apply_evolution_snapshot(
+        self,
+        gen: int,
+        snapshot: object,
+        *,
+        accept_any_generation: bool = False,
+    ) -> None:
+        if not accept_any_generation and self._evolution_snapshot_generation != gen:
+            return
+        if not isinstance(snapshot, dict):
+            return
+        self._evolution_overview = dict(snapshot.get('overview') or {})
+        self._evolution_area_cards = [dict(item) for item in (snapshot.get('area_cards') or [])]
+        self._evolution_blockers = [dict(item) for item in (snapshot.get('blockers') or [])]
+        if not accept_any_generation:
+            self.dataChanged.emit()
+
     def _assistant_tool_ids(self) -> list[str]:
         # devin_api y github_api son adapters activos (API REST) que el usuario
         # tambien entiende como "IAs con las que me conecto". Dejarlos fuera hacia
@@ -1424,9 +1488,18 @@ class ControlCenterViewModel(QObject):
         return [grouped[key] for key in order if key in grouped]
 
     def _startup_readiness_text(self, *, validating_local_stack: bool = False) -> str:
-        goal_context = self._goal_context_for_display(self._current_site_id() or None)
+        goal_context = dict(self._last_goal_context or {})
         active_title = str((goal_context.get('objective') or {}).get('title') or goal_context.get('active_title') or 'sin objetivo activo').strip() or 'sin objetivo activo'
-        assistant_cards = self._assistant_tool_cards()
+        assistant_cards = list(self._agent_cards or [])
+        if not assistant_cards:
+            assistant_cards = [
+                {
+                    'name': str(card.get('provider_name') or 'Asistente'),
+                    'status': 'listo automatico' if card.get('available') else 'no disponible',
+                }
+                for card in self._provider_cards
+                if isinstance(card, dict)
+            ]
         total = len(assistant_cards) or 1
         available_cards = [item for item in assistant_cards if item.get('status') != 'no disponible']
         automatic_cards = [item for item in assistant_cards if item.get('status') == 'listo automatico']
@@ -3874,6 +3947,35 @@ class ControlCenterViewModel(QObject):
         cards.extend(self._assistant_tool_cards())
         return cards
 
+    def _refresh_agent_cards_async(self) -> None:
+        self._agent_cards_generation += 1
+        gen = self._agent_cards_generation
+
+        def _bg() -> list[dict[str, str]]:
+            return self._build_agent_cards()
+
+        def _done(fut: Any) -> None:
+            if self._agent_cards_generation != gen:
+                return
+            try:
+                cards = fut.result()
+            except Exception:
+                logger.debug('agent cards bg refresh failed', exc_info=True)
+                return
+            self.agentCardsReady.emit(gen, cards)
+
+        future = self._bg_pool.submit(_bg)
+        future.add_done_callback(_done)
+
+    @Slot(int, object)
+    def _apply_agent_cards(self, gen: int, cards: object) -> None:
+        if self._agent_cards_generation != gen:
+            return
+        if not isinstance(cards, list):
+            return
+        self._agent_cards = [dict(item) for item in cards if isinstance(item, dict)]
+        self.dataChanged.emit()
+
     def _estimate_complexity(self, message: str) -> ComplexityLevel:
         text = message.lower()
         if len(message.split()) >= 24 or any(token in text for token in ['plan', 'estrategia', 'compar', 'analiza a fondo', 'pasos']):
@@ -4257,6 +4359,48 @@ class ControlCenterViewModel(QObject):
             selected_role_title='Automatico' if self._auto_route_enabled else self._selected_role_title(),
             force=force,
         )
+
+    def _refresh_development_packet_async(
+        self, user_goal: str | None = None, *, force: bool = False,
+    ) -> None:
+        import time as _time
+        if user_goal is not None:
+            self._last_user_goal = user_goal.strip()
+        now = _time.monotonic()
+        if not force and (now - self._dev_packet_last_ts) < self._dev_packet_cooldown_s:
+            return
+        self._dev_packet_last_ts = now
+        self._development_packet_generation += 1
+        gen = self._development_packet_generation
+        goal = self._last_user_goal
+        selected_role_title = 'Automatico' if self._auto_route_enabled else self._selected_role_title()
+
+        def _bg() -> str:
+            return self.engineering_review_service.build_codex_packet(
+                user_goal=goal,
+                selected_role_title=selected_role_title,
+                force=force,
+            )
+
+        def _done(fut: Any) -> None:
+            if self._development_packet_generation != gen:
+                return
+            try:
+                packet = str(fut.result() or '')
+            except Exception:
+                logger.debug('development packet bg refresh failed', exc_info=True)
+                return
+            self.developmentPacketReady.emit(gen, packet)
+
+        future = self._bg_pool.submit(_bg)
+        future.add_done_callback(_done)
+
+    @Slot(int, str)
+    def _apply_development_packet(self, gen: int, packet: str) -> None:
+        if self._development_packet_generation != gen:
+            return
+        self._development_packet = packet
+        self.dataChanged.emit()
 
     def _seed_development_packet(self, user_goal: str | None = None) -> None:
         if user_goal is not None:
@@ -4962,7 +5106,7 @@ class ControlCenterViewModel(QObject):
         self._pbt_candidates = self._pbt_state.get('candidates', [])[:4]
         self._last_goal_context = self._goal_context_from_repository(self._current_site_id() or None)
         self._update_progress_cards()
-        self._update_evolution_snapshot()
+        self._refresh_evolution_snapshot_async()
         self._agent_cards = self._build_agent_cards()
         self._repo_bridge_text = self.development_assist_service.build_repo_bridge_summary()
         self._local_stack_text = self.development_assist_service.build_local_stack_summary()
@@ -5014,21 +5158,25 @@ class ControlCenterViewModel(QObject):
 
     def _refresh_autonomy_dock_async(self) -> None:
         """Run autonomy dock projection on ``_bg_pool`` and apply to UI."""
+        import time as _time
+        if self._autonomy_dock_refresh_in_flight:
+            return
+        now = _time.monotonic()
+        if (now - self._autonomy_dock_last_refresh_started) < self._autonomy_dock_min_interval_s:
+            return
+        self._autonomy_dock_refresh_in_flight = True
+        self._autonomy_dock_last_refresh_started = now
         self._autonomy_dock_generation += 1
         gen = self._autonomy_dock_generation
         projector = self.autonomy_activity_projector
         if projector is None:
+            self._autonomy_dock_refresh_in_flight = False
             self._live_process_summary = {}
             self._live_work_items = []
             self._assistant_session_cards = []
             self._autonomy_timeline = []
             self.dataChanged.emit()
             return
-        goal = self._goal_context_for_display(self._current_site_id() or None)
-        audit = self._latest_live_audit()
-        replay = self._latest_replay_visual_summary()
-        activity = self.get_autonomy_activity()
-
         def _bg() -> dict[str, Any] | None:
             if self._autonomy_dock_generation != gen:
                 return None
@@ -5036,6 +5184,10 @@ class ControlCenterViewModel(QObject):
             if watchdog is not None:
                 watchdog.set_dominant_phase('control_center_refresh_autonomy_dock')
             try:
+                goal = self._goal_context_for_display(self._current_site_id() or None)
+                audit = self._latest_live_audit()
+                replay = self._latest_replay_visual_summary()
+                activity = self.get_autonomy_activity()
                 return projector.project(
                     goal_context=goal,
                     live_audit=audit,
@@ -5047,6 +5199,7 @@ class ControlCenterViewModel(QObject):
                     watchdog.set_dominant_phase('')
 
         def _apply(fut: Any) -> None:
+            self._autonomy_dock_refresh_in_flight = False
             if self._autonomy_dock_generation != gen:
                 return
             try:
@@ -5056,20 +5209,28 @@ class ControlCenterViewModel(QObject):
                 return
             if projected is None:
                 return
+            self.autonomyDockProjected.emit(gen, projected)
+
+        future = self._bg_pool.submit(_bg)
+        future.add_done_callback(_apply)
+
+    @Slot(int, object)
+    def _apply_autonomy_dock_projection(self, gen: int, projected: object) -> None:
+        if self._autonomy_dock_generation != gen or not isinstance(projected, dict):
+            return
+        try:
             self._live_process_summary = dict(projected.get('live_process_summary') or {})
             self._live_work_items = [dict(item) for item in (projected.get('live_work_items') or [])]
             self._assistant_session_cards = [dict(item) for item in (projected.get('assistant_session_cards') or [])]
             self._autonomy_timeline = [dict(item) for item in (projected.get('autonomy_timeline') or [])]
             self.dataChanged.emit()
-
-        future = self._bg_pool.submit(_bg)
-        future.add_done_callback(_apply)
+        except Exception:
+            logger.debug('autonomy dock UI projection apply failed', exc_info=True)
 
     @Slot()
     def refreshAutonomyDock(self) -> None:
-        """Synchronous refresh for tests and programmatic callers."""
-        self._refresh_autonomy_dock()
-        self.dataChanged.emit()
+        """Non-blocking QML refresh for the autonomy dock."""
+        self._refresh_autonomy_dock_async()
 
     @Slot(str)
     def setRole(self, role: str) -> None:
@@ -5078,14 +5239,14 @@ class ControlCenterViewModel(QObject):
         if role == 'auto':
             self._auto_route_enabled = True
             self._busy_label = 'Modo automatico restaurado. La consola detectara intencion, pack y aprobaciones.'
-            self._bg_pool.submit(self._refresh_development_packet)
+            self._refresh_development_packet_async()
             self.dataChanged.emit()
             return
         if role in valid_roles:
             self._selected_role = role
             self._auto_route_enabled = False
             self._busy_label = f'Rol forzado a {self._selected_role_title()}.'
-            self._bg_pool.submit(self._refresh_development_packet)
+            self._refresh_development_packet_async()
             self.dataChanged.emit()
 
     @Slot()
@@ -7204,7 +7365,7 @@ class ControlCenterViewModel(QObject):
         # Ingerir capabilities y actualizar packet en background (thread pool
         # compartido — evita crear 2+ threads por mensaje).
         self._bg_pool.submit(self._ingest_chat_capabilities, message)
-        self._bg_pool.submit(self._refresh_development_packet, message)
+        self._refresh_development_packet_async(message)
         # _chat_shortcut_analysis puede llamar a LLM — ejecutar con timeout
         # APRENDIDO: NO usar 'with ThreadPoolExecutor' en hilo de UI porque
         # pool.shutdown(wait=True) bloquea al salir del with aunque el timeout
@@ -7448,8 +7609,8 @@ class ControlCenterViewModel(QObject):
 
     @Slot(str)
     def buildDevelopmentPacket(self, text: str) -> None:
-        self._refresh_development_packet(text, force=True)
-        self._busy_label = 'Paquete para Codex actualizado.'
+        self._refresh_development_packet_async(text, force=True)
+        self._busy_label = 'Paquete para Codex actualizandose en segundo plano.'
         self.dataChanged.emit()
 
     @Slot()
@@ -7560,7 +7721,7 @@ class ControlCenterViewModel(QObject):
         if task_name == 'provider_health':
             self._provider_refreshing = False
             self._provider_cards = list(payload)
-            self._agent_cards = self._build_agent_cards()
+            self._refresh_agent_cards_async()
             if not self._working:
                 self._busy_label = self._startup_readiness_text(validating_local_stack=False)
             self._diagnostic_text = self._build_provider_diagnostic()
@@ -7819,9 +7980,9 @@ class ControlCenterViewModel(QObject):
                 provider=_provider,
             )
         self._update_progress_cards()
-        self._update_evolution_snapshot()
-        self._agent_cards = self._build_agent_cards()
-        self._refresh_development_packet()
+        self._refresh_evolution_snapshot_async()
+        self._refresh_agent_cards_async()
+        self._refresh_development_packet_async()
         self._refresh_autonomy_dock_async()
 
     @Slot(str, str)
@@ -7864,7 +8025,7 @@ class ControlCenterViewModel(QObject):
             f"Detalle: {message}"
         )
         self._diagnostic_truth_state = 'observed'
-        self._refresh_development_packet()
+        self._refresh_development_packet_async()
         self._refresh_autonomy_dock_async()
 
     def _build_provider_diagnostic(self) -> str:

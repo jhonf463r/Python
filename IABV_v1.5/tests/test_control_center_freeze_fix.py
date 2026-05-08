@@ -267,7 +267,7 @@ def test_refresh_autonomy_dock_async_runs_off_ui_thread() -> None:
 
 
 def test_refresh_autonomy_dock_generation_coalesces() -> None:
-    """Multiple rapid calls to _refresh_autonomy_dock_async only process latest."""
+    """Multiple rapid calls to _refresh_autonomy_dock_async do not pile up work."""
     from iabv_v15.bootstrap import AppBootstrap
 
     workspace = Path.cwd() / 'data' / f'test_freeze_fix_gen_{uuid4().hex}'
@@ -289,13 +289,360 @@ def test_refresh_autonomy_dock_generation_coalesces() -> None:
         gen_3 = vm._autonomy_dock_generation
 
         assert gen_1 == gen_before + 1
-        assert gen_2 == gen_before + 2
-        assert gen_3 == gen_before + 3
+        assert gen_2 == gen_1
+        assert gen_3 == gen_1
     finally:
         stop = getattr(bootstrap, 'stop', None)
         if callable(stop):
             stop()
         shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_public_refresh_autonomy_dock_slot_is_non_blocking() -> None:
+    """QML entrypoint delegates to async refresh instead of sync projection."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self.async_calls = 0
+            self.sync_calls = 0
+
+        def _refresh_autonomy_dock_async(self) -> None:
+            self.async_calls += 1
+
+        def _refresh_autonomy_dock(self) -> None:
+            self.sync_calls += 1
+
+    dummy = DummyViewModel()
+
+    ControlCenterViewModel.refreshAutonomyDock(dummy)  # type: ignore[arg-type]
+
+    assert dummy.async_calls == 1
+    assert dummy.sync_calls == 0
+
+
+def test_autonomy_dock_projection_applies_on_matching_generation() -> None:
+    """UI projection apply is isolated from the worker callback."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class Emitter:
+        def __init__(self) -> None:
+            self.count = 0
+
+        def emit(self) -> None:
+            self.count += 1
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self._autonomy_dock_generation = 7
+            self.dataChanged = Emitter()
+
+    dummy = DummyViewModel()
+    projected = {
+        'live_process_summary': {'status': 'ok'},
+        'live_work_items': [{'task_id': 'task-1'}],
+        'assistant_session_cards': [{'assistant_kind': 'chatgpt'}],
+        'autonomy_timeline': [{'trace_id': 'trace-1'}],
+    }
+
+    ControlCenterViewModel._apply_autonomy_dock_projection(dummy, 7, projected)  # type: ignore[arg-type]
+
+    assert dummy._live_process_summary == {'status': 'ok'}
+    assert dummy._live_work_items == [{'task_id': 'task-1'}]
+    assert dummy._assistant_session_cards == [{'assistant_kind': 'chatgpt'}]
+    assert dummy._autonomy_timeline == [{'trace_id': 'trace-1'}]
+    assert dummy.dataChanged.count == 1
+
+
+def test_autonomy_dock_projection_ignores_stale_generation() -> None:
+    """Older background projections cannot overwrite newer dock state."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class Emitter:
+        def __init__(self) -> None:
+            self.count = 0
+
+        def emit(self) -> None:
+            self.count += 1
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self._autonomy_dock_generation = 8
+            self._live_process_summary = {'status': 'new'}
+            self.dataChanged = Emitter()
+
+    dummy = DummyViewModel()
+
+    ControlCenterViewModel._apply_autonomy_dock_projection(  # type: ignore[arg-type]
+        dummy,
+        7,
+        {'live_process_summary': {'status': 'old'}},
+    )
+
+    assert dummy._live_process_summary == {'status': 'new'}
+    assert dummy.dataChanged.count == 0
+
+
+def test_build_development_packet_slot_is_non_blocking() -> None:
+    """Manual QML packet rebuild delegates to background refresh."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class Emitter:
+        def __init__(self) -> None:
+            self.count = 0
+
+        def emit(self) -> None:
+            self.count += 1
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self.calls: list[tuple[str, bool]] = []
+            self._busy_label = ''
+            self.dataChanged = Emitter()
+
+        def _refresh_development_packet_async(self, text: str, *, force: bool = False) -> None:
+            self.calls.append((text, force))
+
+        def _refresh_development_packet(self, text: str, *, force: bool = False) -> None:
+            raise AssertionError('sync development packet refresh must not run from QML slot')
+
+    dummy = DummyViewModel()
+
+    ControlCenterViewModel.buildDevelopmentPacket(dummy, 'estado actual')  # type: ignore[arg-type]
+
+    assert dummy.calls == [('estado actual', True)]
+    assert 'segundo plano' in dummy._busy_label
+    assert dummy.dataChanged.count == 1
+
+
+def test_development_packet_apply_ignores_stale_generation() -> None:
+    """Older packet builds cannot overwrite the latest packet."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class Emitter:
+        def __init__(self) -> None:
+            self.count = 0
+
+        def emit(self) -> None:
+            self.count += 1
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self._development_packet_generation = 2
+            self._development_packet = 'new packet'
+            self.dataChanged = Emitter()
+
+    dummy = DummyViewModel()
+
+    ControlCenterViewModel._apply_development_packet(dummy, 1, 'old packet')  # type: ignore[arg-type]
+
+    assert dummy._development_packet == 'new packet'
+    assert dummy.dataChanged.count == 0
+
+
+def test_development_packet_apply_accepts_current_generation() -> None:
+    """Current async packet result is applied on the UI side."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class Emitter:
+        def __init__(self) -> None:
+            self.count = 0
+
+        def emit(self) -> None:
+            self.count += 1
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self._development_packet_generation = 3
+            self._development_packet = ''
+            self.dataChanged = Emitter()
+
+    dummy = DummyViewModel()
+
+    ControlCenterViewModel._apply_development_packet(dummy, 3, 'packet ready')  # type: ignore[arg-type]
+
+    assert dummy._development_packet == 'packet ready'
+    assert dummy.dataChanged.count == 1
+
+
+def test_evolution_snapshot_apply_ignores_stale_generation() -> None:
+    """Older evolution snapshots cannot overwrite current UI state."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class Emitter:
+        def __init__(self) -> None:
+            self.count = 0
+
+        def emit(self) -> None:
+            self.count += 1
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self._evolution_snapshot_generation = 4
+            self._evolution_overview = {'status': 'new'}
+            self.dataChanged = Emitter()
+
+    dummy = DummyViewModel()
+
+    ControlCenterViewModel._apply_evolution_snapshot(  # type: ignore[arg-type]
+        dummy,
+        3,
+        {'overview': {'status': 'old'}},
+    )
+
+    assert dummy._evolution_overview == {'status': 'new'}
+    assert dummy.dataChanged.count == 0
+
+
+def test_evolution_snapshot_apply_accepts_current_generation() -> None:
+    """Current async evolution snapshot result updates the UI model."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class Emitter:
+        def __init__(self) -> None:
+            self.count = 0
+
+        def emit(self) -> None:
+            self.count += 1
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self._evolution_snapshot_generation = 5
+            self.dataChanged = Emitter()
+
+    dummy = DummyViewModel()
+    snapshot = {
+        'overview': {'status': 'active'},
+        'area_cards': [{'title': 'Aprendizaje'}],
+        'blockers': [{'title': 'Bloqueo'}],
+    }
+
+    ControlCenterViewModel._apply_evolution_snapshot(dummy, 5, snapshot)  # type: ignore[arg-type]
+
+    assert dummy._evolution_overview == {'status': 'active'}
+    assert dummy._evolution_area_cards == [{'title': 'Aprendizaje'}]
+    assert dummy._evolution_blockers == [{'title': 'Bloqueo'}]
+    assert dummy.dataChanged.count == 1
+
+
+def test_agent_cards_apply_accepts_current_generation() -> None:
+    """Current async agent card result updates the UI model."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class Emitter:
+        def __init__(self) -> None:
+            self.count = 0
+
+        def emit(self) -> None:
+            self.count += 1
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self._agent_cards_generation = 4
+            self._agent_cards = []
+            self.dataChanged = Emitter()
+
+    dummy = DummyViewModel()
+
+    ControlCenterViewModel._apply_agent_cards(  # type: ignore[arg-type]
+        dummy,
+        4,
+        [{'name': 'Tool registry', 'status': 'listo'}],
+    )
+
+    assert dummy._agent_cards == [{'name': 'Tool registry', 'status': 'listo'}]
+    assert dummy.dataChanged.count == 1
+
+
+def test_agent_cards_apply_ignores_stale_generation() -> None:
+    """Older background card builds cannot overwrite newer UI state."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class Emitter:
+        def __init__(self) -> None:
+            self.count = 0
+
+        def emit(self) -> None:
+            self.count += 1
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self._agent_cards_generation = 8
+            self._agent_cards = [{'name': 'actual'}]
+            self.dataChanged = Emitter()
+
+    dummy = DummyViewModel()
+
+    ControlCenterViewModel._apply_agent_cards(  # type: ignore[arg-type]
+        dummy,
+        7,
+        [{'name': 'stale'}],
+    )
+
+    assert dummy._agent_cards == [{'name': 'actual'}]
+    assert dummy.dataChanged.count == 0
+
+
+def test_autonomy_dock_async_skips_when_projection_in_flight() -> None:
+    """QML timer must not pile up autonomy dock projections."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class BgPool:
+        def submit(self, *_args: Any, **_kwargs: Any) -> None:
+            raise AssertionError('submit must not run while refresh is in-flight')
+
+    dummy = SimpleNamespace(
+        _autonomy_dock_refresh_in_flight=True,
+        _bg_pool=BgPool(),
+    )
+
+    ControlCenterViewModel._refresh_autonomy_dock_async(dummy)  # type: ignore[arg-type]
+
+
+def test_autonomy_dock_async_respects_min_interval() -> None:
+    """Repeated QML timer ticks are coalesced even after the prior run."""
+    import time as _time
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class BgPool:
+        def submit(self, *_args: Any, **_kwargs: Any) -> None:
+            raise AssertionError('submit must not run during cooldown')
+
+    dummy = SimpleNamespace(
+        _autonomy_dock_refresh_in_flight=False,
+        _autonomy_dock_last_refresh_started=_time.monotonic(),
+        _autonomy_dock_min_interval_s=8.0,
+        _bg_pool=BgPool(),
+    )
+
+    ControlCenterViewModel._refresh_autonomy_dock_async(dummy)  # type: ignore[arg-type]
+
+
+def test_startup_truth_refresh_defers_under_resource_pressure() -> None:
+    """Startup truth refresh must not build OSES/PC when resources are hot."""
+    from iabv_v15.bootstrap import AppBootstrap
+
+    marks: list[dict[str, Any]] = []
+    dummy = SimpleNamespace(
+        _truth_refresh_active=True,
+        _truth_refresh_attempt=3,
+        _timeline=SimpleNamespace(mark=lambda phase, **extra: marks.append({'phase': phase, **extra})),
+        operational_self_examination_service=SimpleNamespace(build_review=MagicMock()),
+        portable_context_service=SimpleNamespace(build_package=MagicMock()),
+        _tracer=SimpleNamespace(trace=MagicMock()),
+        _startup_truth_refresh_defer_reason=lambda: 'ram_used_pct_high',
+        _metacognition_data_is_stale=lambda: False,
+        _push_bootstrap_flags_to_watchdog=MagicMock(),
+        _check_startup_followup_done=MagicMock(),
+    )
+
+    AppBootstrap._final_startup_truth_refresh(dummy)  # type: ignore[arg-type]
+
+    assert dummy._truth_refresh_active is False
+    assert marks and marks[-1]['phase'] == 'startup_truth_refresh_deferred'
+    assert marks[-1]['reason'] == 'ram_used_pct_high'
+    dummy.operational_self_examination_service.build_review.assert_not_called()
+    dummy.portable_context_service.build_package.assert_not_called()
 
 
 # ── UIBridgeService readiness contract ──────────────────────────────
