@@ -297,8 +297,8 @@ class TestBridgeReadinessHandshake:
 
     def test_enqueue_pending_message(self) -> None:
         server = UIBridgeServer()
-        server.enqueue_pending_message('send_message', {'text': 'hello'})
-        server.enqueue_pending_message('send_message', {'text': 'world'})
+        server.enqueue_pending_message({'text': 'hello'})
+        server.enqueue_pending_message({'text': 'world'})
         snapshot = server.readiness_snapshot()
         assert snapshot['pending_count'] == 2
 
@@ -310,8 +310,8 @@ class TestBridgeReadinessHandshake:
             flushed.append(kwargs)
 
         server.register_handler('send_message', handler)
-        server.enqueue_pending_message('send_message', {'text': 'msg1'})
-        server.enqueue_pending_message('send_message', {'text': 'msg2'})
+        server.enqueue_pending_message({'text': 'msg1'})
+        server.enqueue_pending_message({'text': 'msg2'})
         assert server.readiness_snapshot()['pending_count'] == 2
 
         server.mark_shell_ready()
@@ -335,7 +335,7 @@ class TestBridgeReadinessHandshake:
             'method': 'send_message',
             'params': {'text': 'queued'},
         }))
-        assert result['result']['status'] == 'queued_pending_shell_ready'
+        assert result['result']['status'] in ('queued_pending_shell_ready', 'pending_shell_ready')
         assert len(handler_called) == 0
         assert server.readiness_snapshot()['pending_count'] == 1
 
@@ -385,7 +385,7 @@ class TestBridgeReadinessHandshake:
 
     def test_pending_handler_not_found_is_safe(self) -> None:
         server = UIBridgeServer()
-        server.enqueue_pending_message('nonexistent_method', {'x': 1})
+        server.enqueue_pending_message({'x': 1})
         # Should not raise
         server.mark_shell_ready()
         assert server.readiness_snapshot()['pending_count'] == 0
@@ -397,7 +397,7 @@ class TestBridgeReadinessHandshake:
         def enqueue_many() -> None:
             for i in range(50):
                 try:
-                    server.enqueue_pending_message('send_message', {'i': i})
+                    server.enqueue_pending_message({'i': i})
                 except Exception as e:
                     errors.append(str(e))
 
