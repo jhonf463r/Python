@@ -590,3 +590,61 @@ class TestBlockedFinality:
         assert 'prepared' in ChatInteractionLifecycle._NON_FINAL_OUTCOMES
         assert 'awaiting_external_response' in ChatInteractionLifecycle._NON_FINAL_OUTCOMES
         assert 'reused_context' in ChatInteractionLifecycle._NON_FINAL_OUTCOMES
+
+
+# ---------------------------------------------------------------------------
+# Diagnostic freeze fixes (runtime_audit analysis)
+# ---------------------------------------------------------------------------
+
+class TestDiagnosticFreezeFixesG:
+    """Tests for fixes G-K from runtime_audit log analysis."""
+
+    def test_dominant_phase_prebuild_paused_after_startup(self):
+        """Watchdog: prebuild_paused=True after startup produces
+        'prebuild_paused_stalled', not 'event_loop_blocked_unknown'."""
+        wd = UIHeartbeatWatchdog(stall_threshold_ms=50)
+        wd.set_startup_active(False)
+        wd.set_startup_followup_active(False)
+        wd.set_bootstrap_flags({
+            'prebuild_paused': True,
+            'deferred_setup_active': False,
+            'truth_refresh_active': False,
+            'startup_evolution_active': False,
+            'snapshot_refresh_in_flight': False,
+            'startup_followup_active': False,
+        })
+        wd.set_dominant_phase('')
+        # Force a stall record
+        wd._last_tick = time.perf_counter() - 1.0
+        wd._record_stall(500.0)
+        assert len(wd._stalls) == 1
+        stall = wd._stalls[0]
+        assert stall['dominant_phase'] == 'prebuild_paused_stalled'
+
+    def test_dominant_phase_event_loop_unknown_when_no_prebuild(self):
+        """Watchdog: no prebuild_paused after startup => 'event_loop_blocked_unknown'."""
+        wd = UIHeartbeatWatchdog(stall_threshold_ms=50)
+        wd.set_startup_active(False)
+        wd.set_startup_followup_active(False)
+        wd.set_bootstrap_flags({
+            'prebuild_paused': False,
+            'deferred_setup_active': False,
+            'truth_refresh_active': False,
+        })
+        wd.set_dominant_phase('')
+        wd._last_tick = time.perf_counter() - 1.0
+        wd._record_stall(500.0)
+        assert wd._stalls[0]['dominant_phase'] == 'event_loop_blocked_unknown'
+
+    def test_truth_refresh_timeout_constant_exists(self):
+        """AppBootstrap must define _TRUTH_REFRESH_TIMEOUT_S."""
+        from iabv_v15.bootstrap import AppBootstrap
+        assert hasattr(AppBootstrap, '_TRUTH_REFRESH_TIMEOUT_S')
+        assert AppBootstrap._TRUTH_REFRESH_TIMEOUT_S > 0
+        assert AppBootstrap._TRUTH_REFRESH_TIMEOUT_S <= 300
+
+    def test_prebuild_stall_retry_constant_exists(self):
+        """AppBootstrap must define _PREBUILD_STALL_RETRY_MS."""
+        from iabv_v15.bootstrap import AppBootstrap
+        assert hasattr(AppBootstrap, '_PREBUILD_STALL_RETRY_MS')
+        assert AppBootstrap._PREBUILD_STALL_RETRY_MS >= 3000

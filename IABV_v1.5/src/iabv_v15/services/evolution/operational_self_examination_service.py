@@ -1837,6 +1837,7 @@ class OperationalSelfExaminationService:
                 tracer = get_runtime_tracer()
                 dominant = high_findings[0]
                 meta = dict(dominant.metadata or {})
+                rss = self._read_process_rss_mb() or 0.0
                 tracer.trace_freeze_incident(
                     'startup_freeze',
                     severity=str(dominant.severity),
@@ -1846,7 +1847,7 @@ class OperationalSelfExaminationService:
                         or 0,
                     ),
                     dominant_phase=str(meta.get('phase', '')),
-                    rss_mb=0.0,
+                    rss_mb=round(rss, 1),
                     report_path=str(path),
                 )
         except Exception:

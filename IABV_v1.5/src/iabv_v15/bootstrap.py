@@ -1836,6 +1836,10 @@ class AppBootstrap:
             daemon=True,
         ).start()
 
+    # Maximum time (seconds) the truth-refresh thread may run before
+    # we force-clear the flag to prevent indefinite prebuild pausing.
+    _TRUTH_REFRESH_TIMEOUT_S: float = 120.0
+
     def _final_startup_truth_refresh(self) -> None:
         """Re-persist OSES and PortableContext after boot is truly complete.
 
@@ -1852,7 +1856,12 @@ class AppBootstrap:
         Order matters: OSES must refresh FIRST so its review reflects
         the final boot state.  Then PortableContext persists with the
         up-to-date OSES summary — not a stale one.
+
+        A safety timeout ensures the flag is cleared even if the
+        underlying services hang (e.g. network-dependent operations).
         """
+        import time as _time
+        _t0 = _time.monotonic()
         force_refresh = self._metacognition_data_is_stale()
         if force_refresh:
             logger.info('startup_truth_refresh: metacognition data stale (>24h), forcing full regeneration')
@@ -1863,15 +1872,25 @@ class AppBootstrap:
                 logger.info('startup_truth_refresh: OSES re-persisted')
         except Exception as exc:
             logger.debug('startup_truth_refresh: OSES failed: %s', exc)
-        try:
-            pcs = getattr(self, 'portable_context_service', None)
-            if pcs is not None:
-                pcs.build_package()
-                logger.info('startup_truth_refresh: PortableContext re-persisted')
-        except Exception as exc:
-            logger.debug('startup_truth_refresh: PortableContext failed: %s', exc)
+        elapsed = _time.monotonic() - _t0
+        if elapsed > self._TRUTH_REFRESH_TIMEOUT_S:
+            logger.warning(
+                'startup_truth_refresh: timeout after %.1fs, skipping PortableContext',
+                elapsed,
+            )
+        else:
+            try:
+                pcs = getattr(self, 'portable_context_service', None)
+                if pcs is not None:
+                    pcs.build_package()
+                    logger.info('startup_truth_refresh: PortableContext re-persisted')
+            except Exception as exc:
+                logger.debug('startup_truth_refresh: PortableContext failed: %s', exc)
         if force_refresh:
             self._tracer.trace('metacognition_refresh', reason='stale_data_>24h')
+        total = _time.monotonic() - _t0
+        if total > self._TRUTH_REFRESH_TIMEOUT_S:
+            logger.warning('startup_truth_refresh: completed late (%.1fs)', total)
         self._truth_refresh_active = False
         self._push_bootstrap_flags_to_watchdog()
         self._check_startup_followup_done()
@@ -3090,6 +3109,9 @@ class AppBootstrap:
     _PREBUILD_RAM_PAUSE_THRESHOLDS: set[str] = {'high', 'critical'}
     _PREBUILD_CPU_PAUSE_THRESHOLDS: set[str] = {'high', 'critical'}
     _PREBUILD_STALL_LOOKBACK_S: float = 30.0
+    # Retry delay for stall-based pauses (longer than snapshot retries
+    # to let the event loop settle).
+    _PREBUILD_STALL_RETRY_MS: int = 5000
     # Cached snapshot is considered stale after this many seconds.
     _PREBUILD_SNAPSHOT_MAX_AGE_S: float = 60.0
 
@@ -3406,6 +3428,7 @@ class AppBootstrap:
                 retryable = (
                     pause_reason.startswith('resource_snapshot_')
                     or pause_reason.startswith('startup_background_active:')
+                    or pause_reason.startswith('recent_ui_stall:')
                 )
                 if retryable:
                     # Set dominant_phase to waiting state so stalls
@@ -3413,16 +3436,27 @@ class AppBootstrap:
                     wd = getattr(self, 'ui_heartbeat_watchdog', None)
                     if wd is not None:
                         wd.set_dominant_phase(f'prebuild_waiting:{pause_reason}')
+                    # Stall-based pauses use a longer retry delay to
+                    # let the event loop settle before re-checking.
+                    delay_ms = (
+                        self._PREBUILD_STALL_RETRY_MS
+                        if pause_reason.startswith('recent_ui_stall:')
+                        else self._PREBUILD_SNAPSHOT_RETRY_MS
+                    )
                     QTimer.singleShot(
-                        self._PREBUILD_SNAPSHOT_RETRY_MS,
+                        delay_ms,
                         lambda: _build_next(idx),
                     )
                 else:
-                    # Non-transient pause (resource pressure, stall) —
-                    # clear dominant_phase since we're stopping.
+                    # Non-transient pause (resource pressure) —
+                    # clear prebuild_paused since chain stops, and
+                    # clear dominant_phase.
+                    self._prebuild_paused = False
+                    self._prebuild_paused_routes = []
                     wd = getattr(self, 'ui_heartbeat_watchdog', None)
                     if wd is not None:
                         wd.set_dominant_phase('')
+                    self._push_bootstrap_flags_to_watchdog()
                 return  # yield to event loop; VMs still built on-demand
 
             try:

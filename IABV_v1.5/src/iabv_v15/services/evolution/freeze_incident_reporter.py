@@ -677,6 +677,8 @@ class UIHeartbeatWatchdog:
                         effective_dominant_phase = 'prebuild_waiting:paused'
                     else:
                         effective_dominant_phase = 'event_loop_blocked_unknown'
+            elif self._bootstrap_flags.get('prebuild_paused'):
+                effective_dominant_phase = 'prebuild_paused_stalled'
             else:
                 effective_dominant_phase = 'event_loop_blocked_unknown'
 
