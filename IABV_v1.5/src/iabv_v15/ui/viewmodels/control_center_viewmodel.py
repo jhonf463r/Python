@@ -4020,6 +4020,7 @@ class ControlCenterViewModel(QObject):
             if watchdog is not None:
                 watchdog.set_query_pending(False)
                 watchdog.set_active_interaction(None)
+            self._set_live_status('idle')
             self._promote_metacognition_after_resolution()
 
     @staticmethod
@@ -4067,6 +4068,59 @@ class ControlCenterViewModel(QObject):
         if any(kw in message for kw in ('ya ten', 'equivalente', 'reutiliz', 'reused')):
             return 'reused_context'
         return 'resolved'
+
+    def _set_external_consultation_activity(
+        self,
+        *,
+        external_payload: dict[str, Any],
+        adaptive_payload: dict[str, Any],
+        assistant_title: str,
+        message: str,
+        external_notice: str,
+        outcome: str,
+    ) -> None:
+        """Project external-consultation state into the visible activity panel.
+
+        ``payload.success`` means the external path was launched/prepared; it
+        does not guarantee a verified answer.  The semantic lifecycle outcome
+        is the source of truth for the UI state.
+        """
+        success = bool(external_payload.get('success'))
+        if outcome == 'blocked' or not success:
+            _has_actionable_guidance = (
+                self._assistant_guidance_mode == 'need_approval'
+                or bool(self._assistant_action_buttons)
+                or bool(adaptive_payload.get('approval_checkpoints'))
+            )
+            if not _has_actionable_guidance:
+                self._reset_assistant_guidance()
+            self._set_autonomy_activity_override(
+                visible=True,
+                title='Consulta externa bloqueada',
+                status='blocked',
+                stage='bloqueo de entorno, acceso o captura',
+                progress=1.0,
+                detail=external_notice or message,
+                tool=assistant_title,
+                next_step='Seguire por aqui con lo que ya tenemos o puedo preparar otra via si hace falta.',
+                human_help='Si quieres, puedo intentar otra herramienta o revisar el acceso externo.',
+                learning_note='Este bloqueo queda registrado para no fingir que la consulta si se hizo.',
+                mode='external',
+            )
+            return
+        self._set_autonomy_activity_override(
+            visible=True,
+            title='Consulta externa lista',
+            status='active',
+            stage='consulta preparada',
+            progress=1.0,
+            detail=message,
+            tool=assistant_title,
+            next_step='Seguire con la respuesta externa o con su reutilizacion segura.',
+            human_help='Si hace falta, luego puedo ingerir la respuesta o cambiar de via.',
+            learning_note='La consulta externa ya quedo trazada en esta sesion.',
+            mode='external',
+        )
 
     def _promote_metacognition_after_resolution(self) -> None:
         """Refresh OSES and PortableContext after a resolved interaction."""
@@ -7619,44 +7673,18 @@ class ControlCenterViewModel(QObject):
             self._latest_response_meta = meta
             assistant_title = str(external_payload.get('assistant_title') or 'Asistente externo')
             external_notice = self._external_state_notice(list(external_payload.get('external_state_flags') or []))
-            if bool(external_payload.get('success')):
-                self._set_autonomy_activity_override(
-                    visible=True,
-                    title='Consulta externa lista',
-                    status='active',
-                    stage='consulta preparada',
-                    progress=1.0,
-                    detail=message,
-                    tool=assistant_title,
-                    next_step='Seguire con la respuesta externa o con su reutilizacion segura.',
-                    human_help='Si hace falta, luego puedo ingerir la respuesta o cambiar de via.',
-                    learning_note='La consulta externa ya quedo trazada en esta sesion.',
-                    mode='external',
-                )
-            else:
-                _has_actionable_guidance = (
-                    self._assistant_guidance_mode == 'need_approval'
-                    or bool(self._assistant_action_buttons)
-                    or bool(adaptive_payload.get('approval_checkpoints'))
-                )
-                if not _has_actionable_guidance:
-                    self._reset_assistant_guidance()
-                self._set_autonomy_activity_override(
-                    visible=True,
-                    title='Consulta externa bloqueada',
-                    status='blocked',
-                    stage='bloqueo de entorno o acceso',
-                    progress=1.0,
-                    detail=message,
-                    tool=assistant_title,
-                    next_step='Seguire por aqui con lo que ya tenemos o puedo preparar otra via si hace falta.',
-                    human_help='Si quieres, puedo intentar otra herramienta o revisar el acceso externo.',
-                    learning_note='Este bloqueo queda registrado para no fingir que la consulta si se hizo.',
-                    mode='external',
-                )
+            _external_consultation_outcome = self._derive_external_consultation_outcome(external_payload)
+            self._set_external_consultation_activity(
+                external_payload=external_payload,
+                adaptive_payload=adaptive_payload,
+                assistant_title=assistant_title,
+                message=message,
+                external_notice=external_notice,
+                outcome=_external_consultation_outcome,
+            )
             self._busy_label = (
                 f'Consulta externa lista con {assistant_title}.'
-                if bool(external_payload.get('success'))
+                if bool(external_payload.get('success')) and _external_consultation_outcome != 'blocked'
                 else external_notice or message
             )
         elif task_name == 'payload':
@@ -7676,7 +7704,11 @@ class ControlCenterViewModel(QObject):
         _has_pending_followup = getattr(self, '_interaction_has_pending_followup', False)
         if task_name == 'external_consultation':
             # Derive semantic outcome from external consultation status.
-            _ext_outcome = self._derive_external_consultation_outcome(payload)
+            _ext_outcome = (
+                _external_consultation_outcome
+                if '_external_consultation_outcome' in locals()
+                else self._derive_external_consultation_outcome(payload)
+            )
             if isinstance(payload, dict):
                 _provider = str(
                     payload.get('assistant_title')

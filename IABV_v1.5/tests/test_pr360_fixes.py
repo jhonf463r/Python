@@ -581,6 +581,61 @@ class TestBlockedFinality:
         )
         assert 'blocked' in ControlCenterViewModel._FINAL_INTERACTION_OUTCOMES
 
+    def test_viewmodel_final_blocked_clears_live_status(self):
+        """Final blocked outcome must clear the visible processing chip."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import (
+            ControlCenterViewModel,
+        )
+        from iabv_v15.services.evolution.freeze_incident_reporter import (
+            ChatInteractionLifecycle,
+        )
+
+        vm = ControlCenterViewModel.__new__(ControlCenterViewModel)
+        lifecycle = ChatInteractionLifecycle()
+        iid = lifecycle.open_interaction(message_preview='blocked live status')
+        vm._active_interaction_id = iid
+        vm._chat_interaction_lifecycle = lifecycle
+        vm._ui_heartbeat_watchdog = None
+        seen: list[str] = []
+        vm._set_live_status = lambda status: seen.append(status)
+        vm._promote_metacognition_after_resolution = lambda: None
+
+        ControlCenterViewModel._resolve_active_interaction(
+            vm,
+            outcome='blocked',
+            provider='ChatGPT',
+        )
+
+        assert vm._active_interaction_id is None
+        assert seen == ['idle']
+
+    def test_external_success_with_blocked_outcome_projects_blocked_activity(self):
+        """success=True can still be semantically blocked if capture failed."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import (
+            ControlCenterViewModel,
+        )
+
+        vm = ControlCenterViewModel.__new__(ControlCenterViewModel)
+        captured: dict[str, object] = {}
+        vm._assistant_guidance_mode = 'idle'
+        vm._assistant_action_buttons = {}
+        vm._reset_assistant_guidance = lambda: None
+        vm._set_autonomy_activity_override = lambda **payload: captured.update(payload)
+
+        ControlCenterViewModel._set_external_consultation_activity(
+            vm,
+            external_payload={'success': True},
+            adaptive_payload={},
+            assistant_title='ChatGPT web asistido',
+            message='Consulta preparada, pero la captura no se pudo verificar.',
+            external_notice='Captura no verificada.',
+            outcome='blocked',
+        )
+
+        assert captured['status'] == 'blocked'
+        assert captured['title'] == 'Consulta externa bloqueada'
+        assert 'no fingir' in str(captured['learning_note'])
+
     def test_non_final_outcomes_exclude_blocked(self):
         """ChatInteractionLifecycle._NON_FINAL_OUTCOMES must NOT contain blocked."""
         from iabv_v15.services.evolution.freeze_incident_reporter import (
