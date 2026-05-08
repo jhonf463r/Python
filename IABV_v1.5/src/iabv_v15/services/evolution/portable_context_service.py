@@ -2956,6 +2956,22 @@ class PortableContextService:
                 'timestamp': fi.get('timestamp', ''),
                 'file': fi.get('file', ''),
             })
+        freeze_diagnosis: dict[str, Any] = {}
+        reporter = getattr(self, 'freeze_incident_reporter', None)
+        if reporter is not None and freeze_incidents:
+            try:
+                freeze_diagnosis = reporter.diagnose_freeze_cause(limit=10)
+                items.append({
+                    'label': 'freeze_diagnosis',
+                    'dominant_cause': freeze_diagnosis.get('dominant_cause', ''),
+                    'dominant_phase': freeze_diagnosis.get('dominant_phase', ''),
+                    'severity_trend': freeze_diagnosis.get('severity_trend', ''),
+                    'avg_duration_ms': freeze_diagnosis.get('avg_duration_ms', 0),
+                    'incident_count': freeze_diagnosis.get('incident_count', 0),
+                    'config_recommendations': freeze_diagnosis.get('config_recommendations', []),
+                })
+            except Exception:
+                pass
         if st == 'analyzed':
             init = status.get('init_ms')
             window = status.get('run_to_window_ms')
@@ -2997,6 +3013,7 @@ class PortableContextService:
                 'phases_seen': list(status.get('phases_seen') or []),
                 'recent_blockers': list(status.get('recent_blockers') or []),
                 'freeze_incidents': freeze_incidents,
+                'freeze_diagnosis': freeze_diagnosis,
                 'ui_heartbeat': self._ui_heartbeat_summary(),
                 'interaction_lifecycle': self._interaction_lifecycle_summary(),
             },

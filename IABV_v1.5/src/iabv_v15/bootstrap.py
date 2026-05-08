@@ -9,7 +9,7 @@ import sys
 
 
 def _rss_mb() -> float:
-    """Return current RSS in MB (Linux/macOS).  Returns 0.0 on error."""
+    """Return current RSS in MB (Linux/macOS/Windows).  Returns 0.0 on error."""
     try:
         import resource
         # ru_maxrss is in KB on Linux, bytes on macOS
@@ -17,6 +17,12 @@ def _rss_mb() -> float:
         if sys.platform == 'darwin':
             return raw / (1024.0 * 1024.0)
         return raw / 1024.0
+    except ImportError:
+        try:
+            import psutil
+            return psutil.Process().memory_info().rss / (1024 * 1024)
+        except Exception:
+            return 0.0
     except Exception:
         return 0.0
 
@@ -3081,6 +3087,7 @@ class AppBootstrap:
                     )
                     bridge = build_ui_bridge_server(
                         control_center_viewmodel=ccvm_ref,
+                        bootstrap=self,
                     )
                     self.ui_bridge_server = bridge
                     bridge.start()

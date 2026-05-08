@@ -382,6 +382,7 @@ def build_ui_bridge_server(
     control_center_viewmodel: Any = None,
     host: str = DEFAULT_BRIDGE_HOST,
     port: int = DEFAULT_BRIDGE_PORT,
+    bootstrap: Any = None,
 ) -> UIBridgeServer:
     """Construye un UIBridgeServer con handlers para la UI.
 
@@ -542,6 +543,25 @@ def build_ui_bridge_server(
         """Returns the current readiness state of the bridge."""
         return server.readiness_snapshot()
 
+    def _on_mcp_supervision_status() -> dict[str, Any]:
+        """Returns the current MCP supervision status from bootstrap."""
+        if bootstrap is not None:
+            try:
+                return bootstrap.mcp_supervision_status()
+            except Exception as exc:
+                return {"status": "error", "detail": str(exc)[:200]}
+        return {"status": "unavailable", "detail": "bootstrap not wired"}
+
+    def _on_freeze_diagnosis(limit: int = 10) -> dict[str, Any]:
+        """Returns freeze cause diagnosis from the FreezeIncidentReporter."""
+        reporter = getattr(bootstrap, 'freeze_incident_reporter', None) if bootstrap is not None else None
+        if reporter is not None:
+            try:
+                return reporter.diagnose_freeze_cause(limit=limit)
+            except Exception as exc:
+                return {"status": "error", "detail": str(exc)[:200]}
+        return {"status": "unavailable", "detail": "freeze_reporter not wired"}
+
     server.register_handler("send_message", _on_send_message)
     server.register_handler("read_messages", _on_read_messages)
     server.register_handler("get_ui_state", _on_get_ui_state)
@@ -549,5 +569,7 @@ def build_ui_bridge_server(
     server.register_handler("capture_screenshot", _on_capture_screenshot)
     server.register_handler("push_chat_message", _on_push_chat_message)
     server.register_handler("bridge_readiness", _on_bridge_readiness)
+    server.register_handler("mcp_supervision_status", _on_mcp_supervision_status)
+    server.register_handler("freeze_diagnosis", _on_freeze_diagnosis)
 
     return server
