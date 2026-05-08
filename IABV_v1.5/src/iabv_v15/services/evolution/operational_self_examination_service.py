@@ -1902,6 +1902,10 @@ class OperationalSelfExaminationService:
         Reads the durable audit trail so that episodes are visible even if
         the in-memory ``ChatInteractionLifecycle`` object was lost (process
         death, OOM, etc.).
+
+        Deduplicates by ``interaction_id``: only the most recent event per
+        id is kept so that a ``prepared`` followed by ``resolved`` for the
+        same id counts once (as resolved), not twice.
         """
         import json as _json
         workspace = getattr(self, 'workspace_root', None)
@@ -1910,6 +1914,7 @@ class OperationalSelfExaminationService:
         audit_path = Path(str(workspace)) / 'data' / 'logs' / 'runtime_audit.jsonl'
         if not audit_path.exists():
             return []
+        seen_ids: set[str] = set()
         episodes: list[dict[str, Any]] = []
         try:
             lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
@@ -1920,9 +1925,15 @@ class OperationalSelfExaminationService:
                     event = _json.loads(line)
                 except Exception:
                     continue
-                if event.get('kind') != 'interaction_resolved':
+                if event.get('kind') not in ('interaction_resolved', 'interaction_outcome'):
                     continue
-                episodes.append(dict(event.get('data') or {}))
+                data = dict(event.get('data') or {})
+                iid = data.get('interaction_id', '')
+                if iid and iid in seen_ids:
+                    continue
+                if iid:
+                    seen_ids.add(iid)
+                episodes.append(data)
                 if len(episodes) >= 5:
                     break
         except Exception:
@@ -1993,6 +2004,76 @@ class OperationalSelfExaminationService:
                     'failed_count': len(failed_episodes),
                     'total_episodes': len(episodes),
                     'failed_episodes': failed_episodes,
+                    'source': 'runtime_audit',
+                },
+            ))
+        # Blocked episodes: terminal but not successful (is_final=true, resolved=false)
+        blocked_episodes = [
+            e for e in episodes if e.get('outcome') == 'blocked'
+        ]
+        if blocked_episodes:
+            ep_details_b: list[str] = []
+            for ep in blocked_episodes:
+                ep_details_b.append(
+                    f'[{ep.get("interaction_id", "?")}] '
+                    f'"{str(ep.get("message_preview", ""))[:40]}" '
+                    f'outcome=blocked '
+                    f'provider={ep.get("provider", "?")}'
+                )
+            findings.append(SelfExaminationFinding(
+                title=f'Blocked interaction episodes: {len(blocked_episodes)} of {len(episodes)} recent',
+                summary=(
+                    f'{len(blocked_episodes)} of the last {len(episodes)} interaction episodes '
+                    f'were blocked (terminal, not resolved). Episodes: '
+                    + '; '.join(ep_details_b)
+                ),
+                severity=IssueSeverity.MEDIUM,
+                category='interaction_episode_blocked',
+                confidence=0.9,
+                recommendation='Review blocked interactions for access, quota or preflight issues.',
+                metadata={
+                    'blocked_count': len(blocked_episodes),
+                    'total_episodes': len(episodes),
+                    'blocked_episodes': blocked_episodes,
+                    'source': 'runtime_audit',
+                },
+            ))
+        # Non-final outcomes: prepared/reused_context/awaiting_external_response
+        # NOTE: blocked is NOT pending — it is terminal (is_final=true).
+        non_final_outcomes = {'prepared', 'awaiting_external_response', 'reused_context'}
+        pending_episodes = [
+            e for e in episodes
+            if e.get('outcome') in non_final_outcomes
+            or (not e.get('is_final', True) and e.get('outcome') not in ('resolved', 'failed', 'blocked'))
+        ]
+        if pending_episodes:
+            ep_details_p: list[str] = []
+            for ep in pending_episodes:
+                ep_details_p.append(
+                    f'[{ep.get("interaction_id", "?")}] '
+                    f'"{str(ep.get("message_preview", ""))[:40]}" '
+                    f'outcome={ep.get("outcome", "?")} '
+                    f'provider={ep.get("provider", "?")}'
+                )
+            findings.append(SelfExaminationFinding(
+                title=f'Non-resolved interaction episodes: {len(pending_episodes)} pending',
+                summary=(
+                    f'{len(pending_episodes)} interaction episode(s) have non-final outcomes '
+                    f'(prepared/reused_context/awaiting_external_response). '
+                    f'These should NOT be presented as resolved. Episodes: '
+                    + '; '.join(ep_details_p)
+                ),
+                severity=IssueSeverity.LOW,
+                category='interaction_episode_pending',
+                confidence=0.9,
+                recommendation=(
+                    'External consultations with outcome=prepared/reused_context/awaiting_external_response '
+                    'are NOT resolved. Track until actual external response is captured.'
+                ),
+                metadata={
+                    'pending_count': len(pending_episodes),
+                    'total_episodes': len(episodes),
+                    'pending_episodes': pending_episodes,
                     'source': 'runtime_audit',
                 },
             ))

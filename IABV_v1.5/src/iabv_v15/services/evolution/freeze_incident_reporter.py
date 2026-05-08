@@ -360,9 +360,13 @@ class FreezeIncidentReporter:
                 'incident_type': extra.get('incident_type', full.get('trigger', '')),
                 'severity': extra.get('severity', ''),
                 'dominant_phase': extra.get('dominant_phase', ''),
+                'dominant_phase_at_detection': extra.get('dominant_phase_at_detection', ''),
                 'duration_ms': extra.get('duration_ms') or extra.get('dominant_phase_ms', 0),
                 'timed_out': extra.get('timed_out'),
                 'finding_titles': extra.get('finding_titles', []),
+                'has_live_stack': bool(extra.get('main_thread_stack_during_stall')),
+                'startup_followup_active': extra.get('startup_followup_active'),
+                'bootstrap_flags': extra.get('bootstrap_flags', {}),
             })
         return result
 
@@ -526,6 +530,7 @@ class UIHeartbeatWatchdog:
 
     DEFAULT_TICK_INTERVAL_MS = 500
     DEFAULT_STALL_THRESHOLD_MS = 2000
+    DEFAULT_SAMPLER_INTERVAL_S: float = 0.5
 
     # Cooldown between incident captures of the same cause type (seconds).
     _INCIDENT_CAPTURE_COOLDOWN_S: float = 30.0
@@ -535,6 +540,7 @@ class UIHeartbeatWatchdog:
         *,
         stall_threshold_ms: float = DEFAULT_STALL_THRESHOLD_MS,
         freeze_reporter: FreezeIncidentReporter | None = None,
+        sampler_interval_s: float = DEFAULT_SAMPLER_INTERVAL_S,
     ) -> None:
         self._stall_threshold_ms = stall_threshold_ms
         self._freeze_reporter = freeze_reporter
@@ -557,6 +563,88 @@ class UIHeartbeatWatchdog:
         # Anti-storm guard for async incident capture
         self._capture_in_flight: bool = False
         self._capture_last_by_cause: dict[str, float] = {}
+        # --- Async sampler state (captures DURING stall) ---
+        self._sampler_interval_s = sampler_interval_s
+        self._sampler_running: bool = False
+        self._sampler_thread: threading.Thread | None = None
+        # Stack captured by the sampler DURING a stall window.
+        self._live_stall_stack: list[str] = []
+        self._live_stall_dominant_phase: str = ''
+        self._live_stall_bootstrap_flags: dict[str, bool] = {}
+        self._live_stall_timestamp: str = ''
+
+    # --- Async sampler (daemon thread external to event loop) ---
+
+    def start_sampler(self) -> None:
+        """Start the background sampler daemon thread.
+
+        The sampler observes ``_last_tick`` every ~500ms.  When the gap
+        exceeds ``_stall_threshold_ms`` it captures
+        ``sys._current_frames()[main_thread_id]`` **during** the stall.
+        No heavy IO is performed from the sampler.
+        """
+        if self._sampler_running:
+            return
+        self._sampler_running = True
+        self._sampler_thread = threading.Thread(
+            target=self._sampler_loop,
+            name='watchdog-sampler',
+            daemon=True,
+        )
+        self._sampler_thread.start()
+
+    def stop_sampler(self) -> None:
+        self._sampler_running = False
+
+    def _sampler_loop(self) -> None:
+        """Lightweight sampler loop running on a daemon thread.
+
+        Reads ``_last_tick`` (cheap) and when a gap exceeds threshold,
+        captures the main-thread stack via ``sys._current_frames()``.
+        Does NOT do any IO / take_resource_snapshot / disk writes.
+        """
+        main_tid = threading.main_thread().ident
+        while self._sampler_running:
+            time.sleep(self._sampler_interval_s)
+            if not self._sampler_running:
+                break
+            now = time.perf_counter()
+            with self._lock:
+                gap_ms = (now - self._last_tick) * 1000.0
+            if gap_ms > self._stall_threshold_ms:
+                # Capture live stack DURING the stall
+                stack_lines: list[str] = []
+                try:
+                    frames = sys._current_frames()
+                    if main_tid is not None and main_tid in frames:
+                        import traceback as _tb
+                        stack_lines = _tb.format_stack(frames[main_tid])[-12:]
+                except Exception:
+                    pass
+                # Snapshot phase/flags at detection time (not recovery time)
+                with self._lock:
+                    self._live_stall_stack = stack_lines
+                    self._live_stall_dominant_phase = self._dominant_phase
+                    self._live_stall_bootstrap_flags = dict(self._bootstrap_flags)
+                    self._live_stall_timestamp = (
+                        datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    )
+
+    def _consume_live_stall_data(self) -> dict[str, Any]:
+        """Consume the live stall data captured by the sampler."""
+        with self._lock:
+            data: dict[str, Any] = {}
+            if self._live_stall_stack:
+                data['main_thread_stack_during_stall'] = list(self._live_stall_stack)
+                data['dominant_phase_at_detection'] = self._live_stall_dominant_phase
+                data['bootstrap_flags_at_detection'] = dict(self._live_stall_bootstrap_flags)
+                data['sampler_capture_timestamp'] = self._live_stall_timestamp
+            # Reset after consumption
+            self._live_stall_stack = []
+            self._live_stall_dominant_phase = ''
+            self._live_stall_bootstrap_flags = {}
+            self._live_stall_timestamp = ''
+            return data
 
     def tick(self) -> None:
         """Called from the main thread (QTimer). Records heartbeat."""
@@ -570,6 +658,28 @@ class UIHeartbeatWatchdog:
             self._record_stall(gap_ms)
 
     def _record_stall(self, duration_ms: float) -> None:
+        # Consume live stall data captured by sampler DURING the stall.
+        live_data = self._consume_live_stall_data()
+        # Use dominant_phase from detection time if available;
+        # fall back to current phase (which may be stale).
+        dominant_phase_at_detection = live_data.get('dominant_phase_at_detection', '')
+        effective_dominant_phase = dominant_phase_at_detection or self._dominant_phase
+        if not effective_dominant_phase:
+            if self._startup_active or self._startup_followup_active:
+                # Derive from bootstrap flags
+                for flag_name in ('deferred_setup_active', 'truth_refresh_active',
+                                  'startup_evolution_active'):
+                    if self._bootstrap_flags.get(flag_name):
+                        effective_dominant_phase = f'startup_background:{flag_name.replace("_active", "")}'
+                        break
+                if not effective_dominant_phase:
+                    if self._bootstrap_flags.get('prebuild_paused'):
+                        effective_dominant_phase = 'prebuild_waiting:paused'
+                    else:
+                        effective_dominant_phase = 'event_loop_blocked_unknown'
+            else:
+                effective_dominant_phase = 'event_loop_blocked_unknown'
+
         stall_record: dict[str, Any] = {
             'timestamp': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
             'duration_ms': round(duration_ms, 1),
@@ -578,9 +688,17 @@ class UIHeartbeatWatchdog:
             'query_pending': self._query_pending,
             'window_visible': self._window_visible,
             'window_active': self._window_active,
-            'dominant_phase': self._dominant_phase,
+            'dominant_phase': effective_dominant_phase,
             'interaction_id': self._active_interaction_id,
         }
+        # Include live stall data from sampler
+        if live_data.get('main_thread_stack_during_stall'):
+            stall_record['main_thread_stack_during_stall'] = live_data['main_thread_stack_during_stall']
+            stall_record['dominant_phase_at_detection'] = dominant_phase_at_detection
+            stall_record['bootstrap_flags_at_detection'] = live_data.get('bootstrap_flags_at_detection', {})
+            stall_record['sampler_capture_timestamp'] = live_data.get('sampler_capture_timestamp', '')
+        # Post-stall stack (captured here, after event loop resumed)
+        stall_record['post_stall_dominant_phase'] = self._dominant_phase
         # Derive semantic cause from context
         cause = 'ui_event_loop_stall'
         if self._startup_active or self._startup_followup_active:
@@ -602,18 +720,22 @@ class UIHeartbeatWatchdog:
                 get_runtime_tracer,
             )
             tracer = get_runtime_tracer()
-            tracer.trace(
-                'ui_event_loop_stall',
-                duration_ms=round(duration_ms, 1),
-                startup_active=self._startup_active,
-                startup_followup_active=self._startup_followup_active,
-                query_pending=self._query_pending,
-                window_visible=self._window_visible,
-                window_active=self._window_active,
-                dominant_phase=self._dominant_phase,
-                interaction_id=self._active_interaction_id,
-                cause=cause,
-            )
+            audit_data: dict[str, Any] = {
+                'duration_ms': round(duration_ms, 1),
+                'startup_active': self._startup_active,
+                'startup_followup_active': self._startup_followup_active,
+                'query_pending': self._query_pending,
+                'window_visible': self._window_visible,
+                'window_active': self._window_active,
+                'dominant_phase': effective_dominant_phase,
+                'interaction_id': self._active_interaction_id,
+                'cause': cause,
+                'bootstrap_flags': dict(self._bootstrap_flags),
+            }
+            if live_data.get('main_thread_stack_during_stall'):
+                audit_data['has_live_stack'] = True
+                audit_data['dominant_phase_at_detection'] = dominant_phase_at_detection
+            tracer.trace('ui_event_loop_stall', **audit_data)
             # Emit separate query_visible_gap event when applicable
             if cause == 'query_visible_gap':
                 tracer.trace(
@@ -675,15 +797,15 @@ class UIHeartbeatWatchdog:
         bootstrap_flags = dict(self._bootstrap_flags)
         followup_active = self._startup_followup_active
 
-        # Capture main-thread stack BEFORE spawning the worker.
+        # Capture post-stall main-thread stack (event loop has resumed).
         # sys._current_frames() is cheap (~0ms) and safe from any thread.
-        main_stack_lines: list[str] = []
+        post_stall_stack: list[str] = []
         try:
             frames = sys._current_frames()
             main_tid = threading.main_thread().ident
             if main_tid is not None and main_tid in frames:
                 import traceback
-                main_stack_lines = traceback.format_stack(frames[main_tid])[-8:]
+                post_stall_stack = traceback.format_stack(frames[main_tid])[-8:]
         except Exception:
             pass
 
@@ -696,8 +818,8 @@ class UIHeartbeatWatchdog:
                     'bootstrap_flags': bootstrap_flags,
                     **stall_record,
                 }
-                if main_stack_lines:
-                    extra['main_thread_stack'] = main_stack_lines
+                if post_stall_stack:
+                    extra['post_stall_stack'] = post_stall_stack
                 reporter.capture_incident(
                     trigger='auto_ui_heartbeat_stall',
                     user_description=(
@@ -888,6 +1010,11 @@ class ChatInteractionLifecycle:
             if intervals and 'active_at' not in intervals[-1]:
                 intervals[-1]['active_at'] = now_utc
 
+    # Semantic outcomes that do NOT count as final resolution.
+    _NON_FINAL_OUTCOMES: frozenset[str] = frozenset({
+        'prepared', 'awaiting_external_response', 'reused_context',
+    })
+
     def resolve_interaction(
         self,
         interaction_id: str,
@@ -895,32 +1022,50 @@ class ChatInteractionLifecycle:
         outcome: str = 'resolved',
         provider: str = '',
     ) -> dict[str, Any] | None:
-        """Close an interaction episode and move it to completed list."""
+        """Close an interaction episode and move it to completed list.
+
+        ``is_final`` and ``resolved`` are separate:
+        - ``is_final=True``: ``resolved``, ``failed``, ``blocked`` — the
+          episode is closed and moved to completed.
+        - ``resolved=True``: only ``outcome == 'resolved'`` — the
+          episode reached successful resolution.
+        - ``blocked`` and ``failed`` are ``is_final=True, resolved=False``.
+        - ``prepared``, ``awaiting_external_response``, ``reused_context``
+          stay open (``is_final=False``).
+        """
+        is_final = outcome not in self._NON_FINAL_OUTCOMES
         now = time.perf_counter()
         now_utc = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
         with self._lock:
             record = self._interactions.pop(interaction_id, None)
             if record is None:
                 return None
-            record['phases']['final_resolution'] = now_utc
-            record['resolved'] = True
+            phase_key = 'final_resolution' if is_final else f'outcome_{outcome}'
+            record['phases'][phase_key] = now_utc
+            record['resolved'] = outcome == 'resolved'
             record['outcome'] = outcome
             record['provider'] = provider
-            record['total_duration_ms'] = round(
-                (now - record.pop('_t0', now)) * 1000.0, 1,
-            )
-            self._completed.append(record)
-            if len(self._completed) > self._max_completed:
-                self._completed = self._completed[-self._max_completed:]
-        # Trace — persist the COMPLETE record for durable reconstruction.
-        # If the process dies before OSES/PortableContext refresh, the next
-        # session can read runtime_audit.jsonl and reconstruct the episode.
+            if is_final:
+                record['total_duration_ms'] = round(
+                    (now - record.pop('_t0', now)) * 1000.0, 1,
+                )
+                self._completed.append(record)
+                if len(self._completed) > self._max_completed:
+                    self._completed = self._completed[-self._max_completed:]
+            else:
+                # Non-final: keep in active interactions for re-resolution.
+                record['elapsed_ms_so_far'] = round(
+                    (now - record.get('_t0', now)) * 1000.0, 1,
+                )
+                self._interactions[interaction_id] = record
+        # Trace — persist the record for durable reconstruction.
+        trace_kind = 'interaction_resolved' if is_final else 'interaction_outcome'
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import (
                 get_runtime_tracer,
             )
             get_runtime_tracer().trace(
-                'interaction_resolved',
+                trace_kind,
                 interaction_id=interaction_id,
                 message_preview=record.get('message_preview', ''),
                 outcome=outcome,
@@ -940,6 +1085,7 @@ class ChatInteractionLifecycle:
                 window_went_inactive=bool(
                     record.get('window_inactive_intervals'),
                 ),
+                is_final=is_final,
             )
         except Exception:
             pass

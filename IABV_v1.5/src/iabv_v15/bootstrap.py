@@ -1662,6 +1662,7 @@ class AppBootstrap:
         self._tool_availability_logged = True
 
         self._deferred_setup_active = True
+        self._push_bootstrap_flags_to_watchdog()
         bridge = self.main_window_bridge
         if bridge is not None:
             bridge.set_deferred_setup_active(True)
@@ -1681,6 +1682,7 @@ class AppBootstrap:
             except Exception:
                 pass
             self._deferred_setup_active = False
+            self._push_bootstrap_flags_to_watchdog()
             self._check_startup_followup_done()
             if bridge is not None:
                 bridge.set_deferred_setup_active(False)
@@ -1827,6 +1829,7 @@ class AppBootstrap:
         # Without this, latest.md/latest.json keep the stale early snapshot
         # that says "populate_ui never finished".
         self._truth_refresh_active = True
+        self._push_bootstrap_flags_to_watchdog()
         threading.Thread(
             target=self._final_startup_truth_refresh,
             name='iabv-startup-truth-refresh',
@@ -1870,6 +1873,7 @@ class AppBootstrap:
         if force_refresh:
             self._tracer.trace('metacognition_refresh', reason='stale_data_>24h')
         self._truth_refresh_active = False
+        self._push_bootstrap_flags_to_watchdog()
         self._check_startup_followup_done()
 
     def _metacognition_data_is_stale(self, max_age_hours: float = 24.0) -> bool:
@@ -3108,16 +3112,22 @@ class AppBootstrap:
         Called from each background startup thread when it completes.
         Updates the watchdog so runtime_audit stalls carry the correct
         ``startup_active`` / ``startup_followup_active`` context.
+
+        Includes snapshot_refresh_in_flight because prebuild depends
+        on a fresh resource snapshot — if a refresh is in-flight, the
+        extended startup is not yet complete.
         """
         self._push_bootstrap_flags_to_watchdog()
+        snapshot_in_flight = getattr(self, '_prebuild_snapshot_refresh_in_flight', False)
         if (self._deferred_setup_active
                 or self._truth_refresh_active
-                or self._startup_evolution_active):
+                or self._startup_evolution_active
+                or snapshot_in_flight):
             return  # at least one phase still running
         self._startup_followup_active = False
-        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
-        if watchdog is not None:
-            watchdog.set_startup_followup_active(False)
+        # Re-push flags AFTER clearing so bootstrap_flags dict and
+        # top-level watchdog._startup_followup_active agree.
+        self._push_bootstrap_flags_to_watchdog()
         logger.info('startup_followup_done: all background startup phases complete')
 
     def _push_bootstrap_flags_to_watchdog(self) -> None:
@@ -3125,6 +3135,7 @@ class AppBootstrap:
         watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
         if watchdog is None:
             return
+        watchdog.set_startup_followup_active(self._startup_followup_active)
         watchdog.set_bootstrap_flags({
             'prebuild_paused': self._prebuild_paused,
             'deferred_setup_active': self._deferred_setup_active,
@@ -3164,6 +3175,7 @@ class AppBootstrap:
         if self._prebuild_snapshot_refresh_in_flight:
             return  # coalesce: already refreshing
         self._prebuild_snapshot_refresh_in_flight = True
+        self._push_bootstrap_flags_to_watchdog()
         import threading
 
         def _worker() -> None:
@@ -3181,6 +3193,8 @@ class AppBootstrap:
                              exc_info=True)
             finally:
                 self._prebuild_snapshot_refresh_in_flight = False
+                self._push_bootstrap_flags_to_watchdog()
+                self._check_startup_followup_done()
 
         t = threading.Thread(target=_worker, daemon=True,
                              name='prebuild-snap-refresh')
@@ -3222,6 +3236,14 @@ class AppBootstrap:
             return 'startup_background_active:startup_truth_refresh'
         if self._startup_evolution_active:
             return 'startup_background_active:startup_evolution'
+
+        # 0b. Snapshot refresh in-flight during extended startup.
+        # Even if a cached snapshot exists, a refresh in-flight means
+        # resource data may be stale.  During startup_followup_active
+        # the event loop is fragile, so pause until the refresh lands.
+        if (getattr(self, '_prebuild_snapshot_refresh_in_flight', False)
+                and self._startup_followup_active):
+            return 'resource_snapshot_refresh_in_flight'
 
         # 1. Resource pressure from cached snapshot (non-blocking)
         snap, age = self._get_cached_snapshot()
@@ -3421,6 +3443,12 @@ class AppBootstrap:
                 self._timeline.mark(f'lazy_vm_prebuild_{route}_done')
             except Exception:
                 pass
+
+            # Clear dominant_phase immediately after route_done so that
+            # stalls between routes don't carry a stale phase label.
+            wd = getattr(self, 'ui_heartbeat_watchdog', None)
+            if wd is not None:
+                wd.set_dominant_phase('')
 
             # Refresh snapshot asynchronously between routes so the
             # next gate decision has up-to-date data.
@@ -4018,6 +4046,7 @@ class AppBootstrap:
             return
 
         self._startup_evolution_active = True
+        self._push_bootstrap_flags_to_watchdog()
 
         def _run_startup_cycle() -> None:
             import time
@@ -4086,6 +4115,7 @@ class AppBootstrap:
                 logger.warning('startup_evolution: unexpected error: %s', exc)
             finally:
                 self._startup_evolution_active = False
+                self._push_bootstrap_flags_to_watchdog()
                 self._check_startup_followup_done()
 
         threading.Thread(
@@ -4416,6 +4446,7 @@ class AppBootstrap:
                     self.ui_heartbeat_watchdog.tick,
                 )
                 self._heartbeat_timer.start()
+                self.ui_heartbeat_watchdog.start_sampler()
                 self._timeline.mark('ui_heartbeat_watchdog_started')
             except Exception:
                 logger.debug('ui_heartbeat_watchdog: failed to start', exc_info=True)

@@ -489,10 +489,16 @@ class TestStaleCacheBehavior:
         assert reason == 'resource_snapshot_unavailable'
 
     def test_absent_cache_with_refresh_in_flight_pauses_pending(self):
-        """No cache but refresh in-flight → pause with resource_snapshot_pending."""
+        """No cache but refresh in-flight → pause with resource_snapshot_pending.
+
+        Note: startup_followup_active is disabled to isolate the
+        snapshot-pending codepath (Fix B adds a higher-priority check
+        when startup_followup_active is True).
+        """
         bs = _make_bootstrap()
         bs._init_prebuild_snapshot_cache()
         bs._prebuild_snapshot_refresh_in_flight = True
+        bs._startup_followup_active = False
 
         reason = bs._should_pause_prebuild('control', [])
 
@@ -513,6 +519,7 @@ class TestStaleCacheBehavior:
         bs = _make_bootstrap()
         bs._init_prebuild_snapshot_cache()  # no snapshot
         bs._prebuild_snapshot_refresh_in_flight = True  # so we skip unavailable
+        bs._startup_followup_active = False  # isolate snapshot-pending path
         bs.ui_heartbeat_watchdog = _make_watchdog_with_stall(
             duration_ms=8000, seconds_ago=10.0,
         )
@@ -658,6 +665,7 @@ class TestSnapshotPendingRetry:
         bs = _make_bootstrap()
         bs._init_prebuild_snapshot_cache()
         bs._prebuild_snapshot_refresh_in_flight = True
+        bs._startup_followup_active = False  # isolate snapshot-pending path
 
         reason = bs._should_pause_prebuild('control', ['capture'])
 
@@ -962,7 +970,7 @@ class TestFreezeReporterEnrichment:
 
         reporter.capture_incident.assert_called_once()
         extra = reporter.capture_incident.call_args.kwargs['extra_context']
-        assert 'main_thread_stack' in extra
+        assert 'post_stall_stack' in extra or 'main_thread_stack_during_stall' in extra
         assert 'bootstrap_flags' in extra
         assert extra['bootstrap_flags']['prebuild_paused'] is True
 

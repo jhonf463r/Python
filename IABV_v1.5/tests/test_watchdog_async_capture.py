@@ -221,3 +221,172 @@ class TestInFlightGuard:
         proceed.set()
         time.sleep(0.5)
         assert reporter.capture_incident.call_count == 1
+
+
+# ------------------------------------------------------------------ #
+# PR #360 — Sampler coverage (added on top of historical tests)
+# ------------------------------------------------------------------ #
+
+def _make_sampler_watchdog(
+    *,
+    stall_threshold_ms: float = 200,
+    sampler_interval_s: float = 0.05,
+):
+    from iabv_v15.services.evolution.freeze_incident_reporter import (
+        FreezeIncidentReporter,
+        UIHeartbeatWatchdog,
+    )
+    reporter = FreezeIncidentReporter.__new__(FreezeIncidentReporter)
+    reporter._reports_dir = None
+    reporter._db_path = None
+    wd = UIHeartbeatWatchdog(
+        stall_threshold_ms=stall_threshold_ms,
+        freeze_reporter=reporter,
+        sampler_interval_s=sampler_interval_s,
+    )
+    return wd
+
+
+class TestSamplerCapturesDuringStall:
+    def test_sampler_captures_live_stack_during_simulated_stall(self):
+        wd = _make_sampler_watchdog(stall_threshold_ms=100, sampler_interval_s=0.03)
+        wd.start_sampler()
+        try:
+            wd.tick()
+            time.sleep(0.25)
+            data = wd._consume_live_stall_data()
+            assert data.get('main_thread_stack_during_stall'), (
+                'Sampler did not capture live stack during stall'
+            )
+            assert isinstance(data['main_thread_stack_during_stall'], list)
+            assert len(data['main_thread_stack_during_stall']) > 0
+        finally:
+            wd.stop_sampler()
+
+    def test_sampler_captures_dominant_phase_at_detection_time(self):
+        wd = _make_sampler_watchdog(stall_threshold_ms=100, sampler_interval_s=0.03)
+        wd.set_dominant_phase('startup_background:truth_refresh')
+        wd.start_sampler()
+        try:
+            wd.tick()
+            time.sleep(0.25)
+            data = wd._consume_live_stall_data()
+            assert data.get('dominant_phase_at_detection') == 'startup_background:truth_refresh'
+        finally:
+            wd.stop_sampler()
+
+    def test_sampler_captures_bootstrap_flags_at_detection_time(self):
+        wd = _make_sampler_watchdog(stall_threshold_ms=100, sampler_interval_s=0.03)
+        wd.set_bootstrap_flags({
+            'deferred_setup_active': True,
+            'truth_refresh_active': True,
+            'startup_evolution_active': False,
+            'prebuild_paused': False,
+        })
+        wd.start_sampler()
+        try:
+            wd.tick()
+            time.sleep(0.25)
+            data = wd._consume_live_stall_data()
+            flags = data.get('bootstrap_flags_at_detection', {})
+            assert flags.get('deferred_setup_active') is True
+            assert flags.get('truth_refresh_active') is True
+        finally:
+            wd.stop_sampler()
+
+    def test_no_stall_no_live_data(self):
+        wd = _make_sampler_watchdog(stall_threshold_ms=200, sampler_interval_s=0.03)
+        wd.start_sampler()
+        try:
+            for _ in range(5):
+                wd.tick()
+                time.sleep(0.05)
+            data = wd._consume_live_stall_data()
+            assert not data.get('main_thread_stack_during_stall')
+        finally:
+            wd.stop_sampler()
+
+    def test_consume_resets_live_data(self):
+        wd = _make_sampler_watchdog(stall_threshold_ms=100, sampler_interval_s=0.03)
+        wd.start_sampler()
+        try:
+            wd.tick()
+            time.sleep(0.25)
+            data1 = wd._consume_live_stall_data()
+            assert data1.get('main_thread_stack_during_stall')
+            data2 = wd._consume_live_stall_data()
+            assert not data2.get('main_thread_stack_during_stall')
+        finally:
+            wd.stop_sampler()
+
+
+class TestSamplerDominantPhaseNoStale:
+    def test_stall_record_uses_detection_phase_not_recovery_phase(self):
+        wd = _make_sampler_watchdog(stall_threshold_ms=100, sampler_interval_s=0.03)
+        wd.set_dominant_phase('lazy_vm_prebuild:knowledge')
+        wd.start_sampler()
+        try:
+            wd.tick()
+            wd.set_dominant_phase('startup_background:truth_refresh')
+            time.sleep(0.25)
+            wd.set_dominant_phase('idle')
+            wd.tick()
+            assert wd._stall_count >= 1
+            stalls = list(wd._stalls)
+            last_stall = stalls[-1]
+            assert last_stall.get('dominant_phase') != 'idle' or \
+                last_stall.get('dominant_phase_at_detection') == 'startup_background:truth_refresh'
+        finally:
+            wd.stop_sampler()
+
+
+class TestSamplerEnrichedEvidence:
+    def test_stall_record_has_post_stall_dominant_phase(self):
+        wd = _make_sampler_watchdog(stall_threshold_ms=100, sampler_interval_s=0.03)
+        wd.set_dominant_phase('startup_background:truth_refresh')
+        wd.start_sampler()
+        try:
+            wd.tick()
+            time.sleep(0.25)
+            wd.set_dominant_phase('idle_after_stall')
+            wd.tick()
+            if wd._stall_count >= 1:
+                last_stall = wd._stalls[-1]
+                assert 'post_stall_dominant_phase' in last_stall
+        finally:
+            wd.stop_sampler()
+
+    def test_stall_record_has_bootstrap_flags(self):
+        wd = _make_sampler_watchdog(stall_threshold_ms=100, sampler_interval_s=0.03)
+        wd.set_bootstrap_flags({'deferred_setup_active': True, 'prebuild_paused': False})
+        wd.start_sampler()
+        try:
+            wd.tick()
+            time.sleep(0.25)
+            wd.tick()
+            if wd._stall_count >= 1:
+                last_stall = wd._stalls[-1]
+                if last_stall.get('bootstrap_flags_at_detection'):
+                    assert last_stall['bootstrap_flags_at_detection'].get('deferred_setup_active') is True
+        finally:
+            wd.stop_sampler()
+
+
+class TestSamplerStartStop:
+    def test_sampler_start_stop(self):
+        wd = _make_sampler_watchdog()
+        wd.start_sampler()
+        assert wd._sampler_running is True
+        assert wd._sampler_thread is not None
+        wd.stop_sampler()
+        time.sleep(0.1)
+        assert wd._sampler_running is False
+
+    def test_double_start_is_noop(self):
+        wd = _make_sampler_watchdog()
+        wd.start_sampler()
+        t1 = wd._sampler_thread
+        wd.start_sampler()
+        t2 = wd._sampler_thread
+        assert t1 is t2
+        wd.stop_sampler()
