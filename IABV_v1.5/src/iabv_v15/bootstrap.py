@@ -1706,6 +1706,15 @@ class AppBootstrap:
                 )
             except Exception:
                 pass
+            # Issue #266: flush startup_health into portable_context/latest.json
+            # so short-lived runs don't leave stale data.
+            pcs = getattr(self, 'portable_context_service', None)
+            if pcs is not None:
+                try:
+                    pcs.flush_startup_health()
+                except Exception:
+                    logger.debug('flush_startup_health failed', exc_info=True)
+
             self._deferred_setup_active = False
             self._push_bootstrap_flags_to_watchdog()
             self._check_startup_followup_done()
