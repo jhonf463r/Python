@@ -371,6 +371,143 @@ class FreezeIncidentReporter:
         return result
 
     # ------------------------------------------------------------------
+    # Task 10: Freeze diagnostics — analyze WHY freezes happen and
+    # recommend configuration adjustments for future sessions.
+    # ------------------------------------------------------------------
+
+    def diagnose_freeze_cause(self, *, limit: int = 10) -> dict[str, Any]:
+        """Analyze recent freeze incidents and produce a diagnosis.
+
+        Returns a structured diagnosis with:
+        - dominant_cause: most frequent freeze cause
+        - cause_distribution: count per cause type
+        - severity_trend: whether freezes are getting worse
+        - config_recommendations: actionable adjustments
+        - summary: human-readable explanation
+
+        Uses existing incident reports — does NOT create new services.
+        """
+        incidents = self.recent_incidents(limit=limit)
+        if not incidents:
+            return {
+                'dominant_cause': 'none',
+                'cause_distribution': {},
+                'severity_trend': 'stable',
+                'config_recommendations': [],
+                'summary': 'No recent freeze incidents to analyze.',
+                'incident_count': 0,
+            }
+
+        cause_counts: dict[str, int] = {}
+        severity_counts: dict[str, int] = {}
+        phase_counts: dict[str, int] = {}
+        total_duration_ms: float = 0.0
+        startup_related = 0
+
+        for inc in incidents:
+            cause = inc.get('incident_type', 'unknown')
+            cause_counts[cause] = cause_counts.get(cause, 0) + 1
+            sev = inc.get('severity', 'unknown')
+            severity_counts[sev] = severity_counts.get(sev, 0) + 1
+            phase = inc.get('dominant_phase') or inc.get('dominant_phase_at_detection') or 'unknown'
+            phase_counts[phase] = phase_counts.get(phase, 0) + 1
+            total_duration_ms += inc.get('duration_ms', 0)
+            if inc.get('startup_followup_active'):
+                startup_related += 1
+
+        dominant_cause = max(cause_counts, key=cause_counts.get)  # type: ignore[arg-type]
+        dominant_phase = max(phase_counts, key=phase_counts.get)  # type: ignore[arg-type]
+
+        # Severity trend: compare recent half vs older half.
+        # Incidents arrive newest-first from recent_incidents().
+        half = len(incidents) // 2
+        if half > 0:
+            recent_half_critical = sum(
+                1 for i in incidents[:half]
+                if i.get('severity') in ('critical', 'high')
+            )
+            older_half_critical = sum(
+                1 for i in incidents[half:]
+                if i.get('severity') in ('critical', 'high')
+            )
+            if recent_half_critical > older_half_critical:
+                severity_trend = 'worsening'
+            elif recent_half_critical < older_half_critical:
+                severity_trend = 'improving'
+            else:
+                severity_trend = 'stable'
+        else:
+            severity_trend = 'insufficient_data'
+
+        recommendations: list[dict[str, str]] = []
+
+        if startup_related > len(incidents) * 0.5:
+            recommendations.append({
+                'config': 'IABV_DEFER_METACOGNITION',
+                'value': '1',
+                'reason': f'{startup_related}/{len(incidents)} freezes are startup-related; '
+                          'defer metacognition scans to reduce boot pressure.',
+            })
+
+        if dominant_phase.startswith('startup_background:'):
+            recommendations.append({
+                'config': 'IABV_STARTUP_EVOLUTION_DELAY_S',
+                'value': '30',
+                'reason': f'Dominant freeze phase is {dominant_phase}; '
+                          'increase evolution delay to let UI stabilize first.',
+            })
+
+        avg_duration = total_duration_ms / len(incidents) if incidents else 0
+        if avg_duration > 8000:
+            recommendations.append({
+                'config': 'IABV_REDUCE_PARALLEL_SCANS',
+                'value': '1',
+                'reason': f'Average freeze duration is {avg_duration:.0f}ms; '
+                          'reduce parallel background scans to lower contention.',
+            })
+
+        if cause_counts.get('chat_stall', 0) > 2:
+            recommendations.append({
+                'config': 'IABV_CHAT_ASYNC_THRESHOLD_MS',
+                'value': '1500',
+                'reason': f'{cause_counts["chat_stall"]} chat stall incidents; '
+                          'lower async threshold to offload processing sooner.',
+            })
+
+        if severity_trend == 'worsening':
+            recommendations.append({
+                'config': 'IABV_AGGRESSIVE_GC',
+                'value': '1',
+                'reason': 'Freeze severity is worsening over time; '
+                          'enable aggressive GC between phases.',
+            })
+
+        summary_parts = [
+            f'{len(incidents)} recent freeze incidents analyzed.',
+            f'Dominant cause: {dominant_cause} ({cause_counts[dominant_cause]}x).',
+            f'Dominant phase: {dominant_phase}.',
+            f'Severity trend: {severity_trend}.',
+        ]
+        if recommendations:
+            summary_parts.append(
+                f'{len(recommendations)} configuration adjustment(s) recommended.'
+            )
+
+        return {
+            'dominant_cause': dominant_cause,
+            'dominant_phase': dominant_phase,
+            'cause_distribution': cause_counts,
+            'phase_distribution': phase_counts,
+            'severity_distribution': severity_counts,
+            'severity_trend': severity_trend,
+            'avg_duration_ms': round(avg_duration, 1),
+            'startup_related_ratio': round(startup_related / len(incidents), 2) if incidents else 0,
+            'config_recommendations': recommendations,
+            'summary': ' '.join(summary_parts),
+            'incident_count': len(incidents),
+        }
+
+    # ------------------------------------------------------------------
     # Private capture helpers
     # ------------------------------------------------------------------
 

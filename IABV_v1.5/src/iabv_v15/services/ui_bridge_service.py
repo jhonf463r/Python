@@ -291,6 +291,14 @@ class UIBridgeServer:
                 "error": f"unknown_method: {method}",
                 "available_methods": sorted(self._handlers.keys()),
             }
+
+        # Task 9: if shell is not ready, buffer send_message calls
+        with self._lock:
+            shell_ready = self._shell_ready
+        if not shell_ready and method == 'send_message':
+            self.enqueue_pending_message(method, params if isinstance(params, dict) else {})
+            return {"id": req_id, "result": {"status": "queued_pending_shell_ready"}}
+
         try:
             result = handler(**params) if isinstance(params, dict) else handler(params)
             return {"id": req_id, "result": result}
