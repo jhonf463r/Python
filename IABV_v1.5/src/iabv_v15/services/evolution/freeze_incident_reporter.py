@@ -1012,7 +1012,7 @@ class ChatInteractionLifecycle:
 
     # Semantic outcomes that do NOT count as final resolution.
     _NON_FINAL_OUTCOMES: frozenset[str] = frozenset({
-        'prepared', 'awaiting_external_response', 'reused_context', 'blocked',
+        'prepared', 'awaiting_external_response', 'reused_context',
     })
 
     def resolve_interaction(
@@ -1024,11 +1024,14 @@ class ChatInteractionLifecycle:
     ) -> dict[str, Any] | None:
         """Close an interaction episode and move it to completed list.
 
-        Semantic outcomes ``prepared``, ``awaiting_external_response``,
-        ``reused_context`` and ``blocked`` are recorded but the
-        interaction is NOT marked as ``resolved=True`` — it stays
-        visible as an open/pending episode for PortableContext and OSES.
-        Only ``resolved`` and ``failed`` count as true closure.
+        ``is_final`` and ``resolved`` are separate:
+        - ``is_final=True``: ``resolved``, ``failed``, ``blocked`` — the
+          episode is closed and moved to completed.
+        - ``resolved=True``: only ``outcome == 'resolved'`` — the
+          episode reached successful resolution.
+        - ``blocked`` and ``failed`` are ``is_final=True, resolved=False``.
+        - ``prepared``, ``awaiting_external_response``, ``reused_context``
+          stay open (``is_final=False``).
         """
         is_final = outcome not in self._NON_FINAL_OUTCOMES
         now = time.perf_counter()
@@ -1039,7 +1042,7 @@ class ChatInteractionLifecycle:
                 return None
             phase_key = 'final_resolution' if is_final else f'outcome_{outcome}'
             record['phases'][phase_key] = now_utc
-            record['resolved'] = is_final
+            record['resolved'] = outcome == 'resolved'
             record['outcome'] = outcome
             record['provider'] = provider
             if is_final:

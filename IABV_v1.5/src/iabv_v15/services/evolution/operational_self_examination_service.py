@@ -2007,12 +2007,44 @@ class OperationalSelfExaminationService:
                     'source': 'runtime_audit',
                 },
             ))
+        # Blocked episodes: terminal but not successful (is_final=true, resolved=false)
+        blocked_episodes = [
+            e for e in episodes if e.get('outcome') == 'blocked'
+        ]
+        if blocked_episodes:
+            ep_details_b: list[str] = []
+            for ep in blocked_episodes:
+                ep_details_b.append(
+                    f'[{ep.get("interaction_id", "?")}] '
+                    f'"{str(ep.get("message_preview", ""))[:40]}" '
+                    f'outcome=blocked '
+                    f'provider={ep.get("provider", "?")}'
+                )
+            findings.append(SelfExaminationFinding(
+                title=f'Blocked interaction episodes: {len(blocked_episodes)} of {len(episodes)} recent',
+                summary=(
+                    f'{len(blocked_episodes)} of the last {len(episodes)} interaction episodes '
+                    f'were blocked (terminal, not resolved). Episodes: '
+                    + '; '.join(ep_details_b)
+                ),
+                severity=IssueSeverity.MEDIUM,
+                category='interaction_episode_blocked',
+                confidence=0.9,
+                recommendation='Review blocked interactions for access, quota or preflight issues.',
+                metadata={
+                    'blocked_count': len(blocked_episodes),
+                    'total_episodes': len(episodes),
+                    'blocked_episodes': blocked_episodes,
+                    'source': 'runtime_audit',
+                },
+            ))
         # Non-final outcomes: prepared/reused_context/awaiting_external_response
-        non_final_outcomes = {'prepared', 'awaiting_external_response', 'reused_context', 'blocked'}
+        # NOTE: blocked is NOT pending — it is terminal (is_final=true).
+        non_final_outcomes = {'prepared', 'awaiting_external_response', 'reused_context'}
         pending_episodes = [
             e for e in episodes
             if e.get('outcome') in non_final_outcomes
-            or (not e.get('is_final', True) and e.get('outcome') not in ('resolved', 'failed'))
+            or (not e.get('is_final', True) and e.get('outcome') not in ('resolved', 'failed', 'blocked'))
         ]
         if pending_episodes:
             ep_details_p: list[str] = []
@@ -2027,7 +2059,7 @@ class OperationalSelfExaminationService:
                 title=f'Non-resolved interaction episodes: {len(pending_episodes)} pending',
                 summary=(
                     f'{len(pending_episodes)} interaction episode(s) have non-final outcomes '
-                    f'(prepared/reused_context/awaiting_external_response/blocked). '
+                    f'(prepared/reused_context/awaiting_external_response). '
                     f'These should NOT be presented as resolved. Episodes: '
                     + '; '.join(ep_details_p)
                 ),

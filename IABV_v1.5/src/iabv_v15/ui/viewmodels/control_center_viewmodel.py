@@ -3981,7 +3981,7 @@ class ControlCenterViewModel(QObject):
 
     # Outcomes that count as final episode closure.
     _FINAL_INTERACTION_OUTCOMES: frozenset[str] = frozenset({
-        'resolved', 'failed',
+        'resolved', 'failed', 'blocked',
     })
 
     def _resolve_active_interaction(
@@ -3993,9 +3993,12 @@ class ControlCenterViewModel(QObject):
         """Close the active interaction episode and reset watchdog state.
 
         Non-final outcomes (``prepared``, ``awaiting_external_response``,
-        ``reused_context``, ``blocked``) record the outcome in the
-        lifecycle but keep the interaction_id and watchdog state active
-        so that the episode stays open until true resolution.
+        ``reused_context``) record the outcome in the lifecycle but
+        keep the interaction_id and watchdog state active so that the
+        episode stays open until true resolution.
+
+        Terminal non-successful outcomes (``blocked``, ``failed``) close
+        the episode and clear watchdog state, but ``resolved=False``.
         """
         interaction_id = getattr(self, '_active_interaction_id', None)
         if not interaction_id:
@@ -7682,7 +7685,7 @@ class ControlCenterViewModel(QObject):
                 )
             else:
                 _provider = ''
-            if _ext_outcome in ('resolved', 'failed'):
+            if _ext_outcome in self._FINAL_INTERACTION_OUTCOMES:
                 self._interaction_has_pending_followup = False
                 self._resolve_active_interaction(
                     outcome=_ext_outcome,

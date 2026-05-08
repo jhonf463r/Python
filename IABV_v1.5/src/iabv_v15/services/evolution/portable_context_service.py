@@ -2752,12 +2752,14 @@ class PortableContextService:
         for ep in recent:
             stall_count = len(ep.get('stalls_during') or [])
             outcome = ep.get('outcome', '')
-            is_resolved = ep.get('resolved', outcome in ('resolved', 'failed'))
+            is_resolved = ep.get('resolved', outcome == 'resolved')
+            is_final = ep.get('is_final', outcome not in ('prepared', 'awaiting_external_response', 'reused_context'))
             items.append({
                 'interaction_id': ep.get('interaction_id', ''),
                 'message_preview': ep.get('message_preview', ''),
                 'outcome': outcome,
                 'resolved': is_resolved,
+                'is_final': is_final,
                 'provider': ep.get('provider', ''),
                 'total_duration_ms': ep.get('total_duration_ms', 0),
                 'stall_count': stall_count,
@@ -2820,10 +2822,11 @@ class PortableContextService:
                 if iid:
                     seen_ids.add(iid)
                 is_final = data.get('is_final', event.get('kind') == 'interaction_resolved')
+                ep_outcome = data.get('outcome', '')
                 episodes.append({
                     'interaction_id': iid,
                     'message_preview': data.get('message_preview', ''),
-                    'outcome': data.get('outcome', ''),
+                    'outcome': ep_outcome,
                     'provider': data.get('provider', ''),
                     'total_duration_ms': data.get('total_duration_ms', 0),
                     'phases': dict(data.get('phases') or {}),
@@ -2837,7 +2840,8 @@ class PortableContextService:
                         'had_early_technical_response', False,
                     ),
                     'window_went_inactive': data.get('window_went_inactive', False),
-                    'resolved': is_final,
+                    'resolved': ep_outcome == 'resolved',
+                    'is_final': is_final,
                     '_source': 'runtime_audit',
                 })
                 if len(episodes) >= limit:
@@ -3336,7 +3340,8 @@ class PortableContextService:
                     iid = str(item.get('interaction_id') or 'n/d')
                     preview = str(item.get('message_preview') or '')[:60]
                     outcome = str(item.get('outcome') or 'n/d')
-                    resolved = item.get('resolved', outcome in ('resolved', 'failed'))
+                    resolved = item.get('resolved', outcome == 'resolved')
+                    is_final = item.get('is_final', outcome not in ('prepared', 'awaiting_external_response', 'reused_context'))
                     provider = str(item.get('provider') or 'n/d')
                     dur = item.get('total_duration_ms', 0)
                     stalls = item.get('stall_count', 0)
@@ -3345,6 +3350,7 @@ class PortableContextService:
                     src = str(item.get('source') or 'n/d')
                     lines.append(
                         f'- [{iid}] "{preview}" | outcome={outcome} resolved={str(resolved).lower()} '
+                        f'is_final={str(is_final).lower()} '
                         f'provider={provider} duration={dur}ms stalls={stalls} '
                         f'early_technical={early} window_inactive={inactive} source={src}'
                     )

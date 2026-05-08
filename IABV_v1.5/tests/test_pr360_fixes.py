@@ -420,3 +420,173 @@ class TestMarkdownResolvedField:
         md = '\n'.join(md_lines)
         assert 'resolved=false' in md
         assert 'resolved=true' in md
+
+
+# ---------------------------------------------------------------------------
+# Blocked finality tests (PR #360 v2)
+# ---------------------------------------------------------------------------
+
+class TestBlockedFinality:
+    """blocked is terminal (is_final=true) but not successful (resolved=false)."""
+
+    def test_lifecycle_blocked_is_final(self):
+        """ChatInteractionLifecycle: blocked => is_final=True, resolved=False."""
+        from iabv_v15.services.evolution.freeze_incident_reporter import (
+            ChatInteractionLifecycle,
+        )
+        lc = ChatInteractionLifecycle()
+        iid = lc.open_interaction(message_preview='test blocked')
+        record = lc.resolve_interaction(iid, outcome='blocked', provider='ChatGPT')
+        assert record is not None
+        assert record['resolved'] is False
+        assert record['outcome'] == 'blocked'
+        # Should be in completed (final), not in active interactions
+        assert lc.active_interaction() is None
+        completed = lc.recent_completed()
+        assert any(c['interaction_id'] == iid for c in completed)
+
+    def test_lifecycle_resolved_is_final_and_resolved(self):
+        """ChatInteractionLifecycle: resolved => is_final=True, resolved=True."""
+        from iabv_v15.services.evolution.freeze_incident_reporter import (
+            ChatInteractionLifecycle,
+        )
+        lc = ChatInteractionLifecycle()
+        iid = lc.open_interaction(message_preview='test resolved')
+        record = lc.resolve_interaction(iid, outcome='resolved', provider='local')
+        assert record is not None
+        assert record['resolved'] is True
+
+    def test_lifecycle_failed_is_final_not_resolved(self):
+        """ChatInteractionLifecycle: failed => is_final=True, resolved=False."""
+        from iabv_v15.services.evolution.freeze_incident_reporter import (
+            ChatInteractionLifecycle,
+        )
+        lc = ChatInteractionLifecycle()
+        iid = lc.open_interaction(message_preview='test failed')
+        record = lc.resolve_interaction(iid, outcome='failed', provider='local')
+        assert record is not None
+        assert record['resolved'] is False
+        assert lc.active_interaction() is None
+
+    def test_lifecycle_prepared_stays_open(self):
+        """ChatInteractionLifecycle: prepared => non-final, stays in active."""
+        from iabv_v15.services.evolution.freeze_incident_reporter import (
+            ChatInteractionLifecycle,
+        )
+        lc = ChatInteractionLifecycle()
+        iid = lc.open_interaction(message_preview='test prepared')
+        record = lc.resolve_interaction(iid, outcome='prepared', provider='ChatGPT')
+        assert record is not None
+        assert record['resolved'] is False
+        # Should still be active (non-final)
+        active = lc.active_interaction()
+        assert active is not None
+        assert active['interaction_id'] == iid
+
+    def test_blocked_runtime_audit_is_final_true_resolved_false(self, tmp_path):
+        """blocked in runtime_audit must have is_final=true, and PortableContext
+        must reconstruct it as resolved=false."""
+        from iabv_v15.services.evolution.portable_context_service import (
+            PortableContextService,
+        )
+        workspace = tmp_path / 'workspace'
+        _write_audit_events(workspace, [
+            {
+                'kind': 'interaction_resolved',
+                'data': {
+                    'interaction_id': 'chat-blk-audit',
+                    'message_preview': 'consulta bloqueada',
+                    'outcome': 'blocked',
+                    'provider': 'ChatGPT',
+                    'total_duration_ms': 800,
+                    'is_final': True,
+                },
+            },
+        ])
+        pcs = PortableContextService.__new__(PortableContextService)
+        pcs.workspace_root = str(workspace)
+        pcs.chat_interaction_lifecycle = None
+        episodes = pcs._interaction_episodes_from_audit(limit=10)
+        assert len(episodes) == 1
+        assert episodes[0]['outcome'] == 'blocked'
+        assert episodes[0]['resolved'] is False
+        assert episodes[0]['is_final'] is True
+
+    def test_portable_context_renders_blocked_with_is_final(self, tmp_path):
+        """latest.md shows outcome=blocked resolved=false is_final=true."""
+        from iabv_v15.services.evolution.portable_context_service import (
+            PortableContextService,
+        )
+        workspace = tmp_path / 'workspace'
+        _write_audit_events(workspace, [
+            {
+                'kind': 'interaction_resolved',
+                'data': {
+                    'interaction_id': 'chat-blk-md',
+                    'message_preview': 'blocked query',
+                    'outcome': 'blocked',
+                    'provider': 'ChatGPT',
+                    'total_duration_ms': 1200,
+                    'is_final': True,
+                },
+            },
+        ])
+        pcs = PortableContextService.__new__(PortableContextService)
+        pcs.workspace_root = str(workspace)
+        pcs.chat_interaction_lifecycle = None
+        pcs.freeze_incident_reporter = None
+        pcs.ui_heartbeat_watchdog = None
+        now = datetime.now(timezone.utc)
+        section = pcs._interaction_lifecycle_section(now=now)
+        assert len(section.items) >= 1
+        item = section.items[0]
+        assert item['resolved'] is False
+        assert item.get('is_final') is True
+
+    def test_oses_blocked_not_counted_as_pending(self, tmp_path):
+        """OSES: blocked episodes must NOT appear as pending; must be
+        counted as blocked interaction finding."""
+        from iabv_v15.services.evolution.operational_self_examination_service import (
+            OperationalSelfExaminationService,
+        )
+        workspace = tmp_path / 'workspace'
+        _write_audit_events(workspace, [
+            {
+                'kind': 'interaction_resolved',
+                'data': {
+                    'interaction_id': 'chat-blk-oses',
+                    'message_preview': 'blocked ext consultation',
+                    'outcome': 'blocked',
+                    'provider': 'ChatGPT',
+                    'total_duration_ms': 900,
+                    'is_final': True,
+                },
+            },
+        ])
+        oses = OperationalSelfExaminationService.__new__(OperationalSelfExaminationService)
+        oses.workspace_root = str(workspace)
+        oses._freeze_incident_reporter = None
+        oses._ui_heartbeat_watchdog = None
+        findings = oses._interaction_episode_findings()
+        pending = [f for f in findings if f.category == 'interaction_episode_pending']
+        blocked = [f for f in findings if f.category == 'interaction_episode_blocked']
+        assert len(pending) == 0, 'blocked must NOT be counted as pending'
+        assert len(blocked) == 1, 'blocked must produce a blocked finding'
+
+    def test_viewmodel_blocked_clears_active_interaction(self):
+        """ControlCenterViewModel: blocked external_consultation must clear
+        _active_interaction_id and query_pending."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import (
+            ControlCenterViewModel,
+        )
+        assert 'blocked' in ControlCenterViewModel._FINAL_INTERACTION_OUTCOMES
+
+    def test_non_final_outcomes_exclude_blocked(self):
+        """ChatInteractionLifecycle._NON_FINAL_OUTCOMES must NOT contain blocked."""
+        from iabv_v15.services.evolution.freeze_incident_reporter import (
+            ChatInteractionLifecycle,
+        )
+        assert 'blocked' not in ChatInteractionLifecycle._NON_FINAL_OUTCOMES
+        assert 'prepared' in ChatInteractionLifecycle._NON_FINAL_OUTCOMES
+        assert 'awaiting_external_response' in ChatInteractionLifecycle._NON_FINAL_OUTCOMES
+        assert 'reused_context' in ChatInteractionLifecycle._NON_FINAL_OUTCOMES
