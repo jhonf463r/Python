@@ -2,6 +2,7 @@
 
 import atexit
 import hashlib
+import json
 import logging
 import threading
 import time
@@ -265,19 +266,40 @@ class EvolutionCenterViewModel(QObject):
         except Exception:
             pass
 
+    _ITEM_FIELDS = (
+        'dossier_id', 'incident_id', 'issue_id', 'tool_id', 'entry_id',
+        'status', 'outcome', 'severity', 'title', 'summary',
+        'updated_at', 'created_at', 'timestamp',
+    )
+    _DICT_FIELDS = (
+        'summary', 'status', 'assistant_brief', 'updated_at_utc',
+        'last_updated', 'generated_at', 'generated_at_epoch',
+        'pending_attention_count', 'learned_policies_count', 'truthState',
+    )
+
     @staticmethod
     def _section_fingerprint(value: Any) -> str:
-        """Lightweight fingerprint for change detection. Uses count + ids."""
+        """Robust lightweight fingerprint for change detection.
+
+        For lists: per-item compact dict of id/status/title/updated_at fields.
+        For dicts: selected useful fields.
+        Result: md5 of json.dumps(sort_keys=True) truncated to 16 hex chars.
+        """
         if isinstance(value, list):
-            ids = [str(item.get('dossier_id') or item.get('incident_id') or item.get('issue_id') or item.get('tool_id') or item.get('entry_id') or '') for item in value if isinstance(item, dict)]
-            raw = f'n={len(value)};ids={",".join(ids[:8])}'
+            items = []
+            for item in value[:20]:
+                if isinstance(item, dict):
+                    compact = {k: str(item[k])[:48] for k in EvolutionCenterViewModel._ITEM_FIELDS if k in item and item[k] is not None}
+                    items.append(compact)
+            raw = json.dumps({'n': len(value), 'items': items}, sort_keys=True, default=str)
         elif isinstance(value, dict):
-            raw = f'k={sorted(value.keys())[:8]};s={value.get("summary", "")[:32]}'
+            compact = {k: str(value[k])[:64] for k in EvolutionCenterViewModel._DICT_FIELDS if k in value and value[k] is not None}
+            raw = json.dumps(compact, sort_keys=True, default=str)
         elif isinstance(value, str):
-            raw = value[:64]
+            raw = value[:128]
         else:
-            raw = str(value)[:64]
-        return hashlib.md5(raw.encode('utf-8', errors='replace')).hexdigest()[:12]
+            raw = str(value)[:128]
+        return hashlib.md5(raw.encode('utf-8', errors='replace')).hexdigest()[:16]
 
     def _trace_refresh(self, kind: str, **data: Any) -> None:
         """Emit a lightweight trace event to RuntimeAuditTracer if available."""
@@ -486,20 +508,52 @@ class EvolutionCenterViewModel(QObject):
         validation_summary = str((autonomous_validation or {}).get('summary') or '').strip()
         if validation_summary:
             self._status_text = f'{self._status_text} | Validacion autonoma: {validation_summary}'
-        self._emit_granular_signals()
+        changed_sections = data.get('_changed_sections')
+        emitted = self._emit_granular_signals(changed_sections)
+        data['_emitted_signals'] = emitted
 
-    def _emit_granular_signals(self) -> None:
-        """Emit per-section signals so QML only re-evaluates affected bindings."""
-        self.overviewChanged.emit()
-        self.incidentsChanged.emit()
-        self.dossiersChanged.emit()
-        self.backlogChanged.emit()
-        self.toolsChanged.emit()
-        self.worldModelChanged.emit()
-        self.metacognitionChanged.emit()
-        self.screenshotsChanged.emit()
-        self.proactiveChanged.emit()
-        self.iaComparisonsChanged.emit()
+    _SECTION_SIGNAL_MAP: dict[str, str] = {
+        'dossiers': 'dossiersChanged',
+        'filtered_incidents': 'incidentsChanged',
+        'backlog': 'backlogChanged',
+        'pending': 'backlogChanged',
+        'tool_cards': 'toolsChanged',
+        'ia_comparisons': 'iaComparisonsChanged',
+        'environment_self_model': 'worldModelChanged',
+        'world_model': 'worldModelChanged',
+        'portable_context': 'metacognitionChanged',
+        'self_examination': 'metacognitionChanged',
+        'control_master_digest': 'metacognitionChanged',
+    }
+
+    def _emit_granular_signals(self, changed_sections: list[str] | None = None) -> list[str]:
+        """Emit per-section signals so QML only re-evaluates affected bindings.
+
+        When *changed_sections* is given, only signals mapped to those sections
+        are emitted.  When ``None`` (legacy/sync path), all signals fire.
+        Returns the list of signal names actually emitted.
+        """
+        if changed_sections is None:
+            all_signals = [
+                'overviewChanged', 'incidentsChanged', 'dossiersChanged',
+                'backlogChanged', 'toolsChanged', 'worldModelChanged',
+                'metacognitionChanged', 'screenshotsChanged', 'proactiveChanged',
+                'iaComparisonsChanged',
+            ]
+            for name in all_signals:
+                getattr(self, name).emit()
+            return list(all_signals)
+
+        signal_names: set[str] = set()
+        for section in changed_sections:
+            sig = self._SECTION_SIGNAL_MAP.get(section)
+            if sig:
+                signal_names.add(sig)
+        signal_names.add('overviewChanged')
+        emitted: list[str] = sorted(signal_names)
+        for name in emitted:
+            getattr(self, name).emit()
+        return emitted
 
     @Slot()
     def refresh(self) -> None:
@@ -569,12 +623,19 @@ class EvolutionCenterViewModel(QObject):
             return data
 
         def _done(fut: Any) -> None:
-            self._refresh_in_flight = False
             if self._refresh_generation != gen:
+                self._refresh_in_flight = False
+                self._trace_refresh('evolution_refresh_stale', refresh_id=refresh_id, reason='generation_superseded')
+                if self._refresh_status == 'refreshing':
+                    self._refresh_status = 'idle'
+                    self._last_refresh_summary = 'Refresh cancelado: se solicit\u00f3 uno nuevo.'
+                    self._last_refresh_result = 'cancelled'
+                    self.refreshStatusChanged.emit()
                 return
             try:
                 result = fut.result()
             except Exception as exc:
+                self._refresh_in_flight = False
                 self._trace_refresh('evolution_refresh_failed', refresh_id=refresh_id, error=str(exc))
                 self._refresh_status = 'failed'
                 self._last_refresh_result = 'failed'
@@ -584,6 +645,13 @@ class EvolutionCenterViewModel(QObject):
                 logger.debug('evolution_center bg refresh failed', exc_info=True)
                 return
             if result is None:
+                self._refresh_in_flight = False
+                self._trace_refresh('evolution_refresh_stale', refresh_id=refresh_id, reason='result_none')
+                if self._refresh_status == 'refreshing':
+                    self._refresh_status = 'idle'
+                    self._last_refresh_summary = 'Refresh cancelado: generaci\u00f3n obsoleta.'
+                    self._last_refresh_result = 'cancelled'
+                    self.refreshStatusChanged.emit()
                 return
             self.refreshReady.emit(gen, result)
 
@@ -594,6 +662,12 @@ class EvolutionCenterViewModel(QObject):
     def _apply_refresh_snapshot(self, gen: int, data: object) -> None:
         """Apply background-collected data on the UI thread."""
         if self._refresh_generation != gen or not isinstance(data, dict):
+            self._refresh_in_flight = False
+            if self._refresh_status == 'refreshing':
+                self._refresh_status = 'idle'
+                self._last_refresh_result = 'cancelled'
+                self._last_refresh_summary = 'Refresh descartado: generaci\u00f3n obsoleta.'
+                self.refreshStatusChanged.emit()
             return
         meta = data.pop('_refresh_meta', {})
         refresh_id = meta.get('refresh_id', '?')
@@ -624,22 +698,11 @@ class EvolutionCenterViewModel(QObject):
         self._section_fingerprints = new_fps
 
         try:
+            data['_changed_sections'] = changed
             self._apply_collected_data(data)
             duration_ms = round((time.perf_counter() - t0) * 1000.0, 1)
             result = 'changed' if changed else 'unchanged'
-            emitted = [
-                'overviewChanged', 'incidentsChanged', 'dossiersChanged',
-                'backlogChanged', 'toolsChanged', 'worldModelChanged',
-                'metacognitionChanged', 'screenshotsChanged', 'proactiveChanged',
-                'iaComparisonsChanged',
-            ]
-            self._trace_refresh(
-                'evolution_refresh_applied',
-                refresh_id=refresh_id, source=source, generation=gen,
-                duration_ms=duration_ms, result=result,
-                changed_sections=changed, unchanged_sections=unchanged,
-                emitted_signals=emitted,
-            )
+            self._refresh_in_flight = False
             self._refresh_status = 'idle'
             self._last_refresh_result = result
             if changed:
@@ -647,8 +710,16 @@ class EvolutionCenterViewModel(QObject):
             else:
                 self._last_refresh_summary = 'Actualizado: no hubo cambios nuevos en las fuentes vivas.'
             self.refreshStatusChanged.emit()
+            self._trace_refresh(
+                'evolution_refresh_applied',
+                refresh_id=refresh_id, source=source, generation=gen,
+                duration_ms=duration_ms, result=result,
+                changed_sections=changed, unchanged_sections=unchanged,
+                emitted_signals=data.get('_emitted_signals', []),
+            )
         except Exception as exc:
             duration_ms = round((time.perf_counter() - t0) * 1000.0, 1)
+            self._refresh_in_flight = False
             self._trace_refresh('evolution_refresh_failed', refresh_id=refresh_id, error=str(exc), duration_ms=duration_ms)
             self._refresh_status = 'failed'
             self._last_refresh_result = 'failed'
