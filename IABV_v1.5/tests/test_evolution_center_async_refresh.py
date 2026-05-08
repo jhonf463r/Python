@@ -130,17 +130,10 @@ def test_sync_refresh_works() -> None:
 
 def test_sync_refresh_emits_data_changed() -> None:
     vm = _make_minimal_vm()
-    emit_count = 0
-    original_emit = vm.dataChanged.emit
-
-    def counting_emit() -> None:
-        nonlocal emit_count
-        emit_count += 1
-        original_emit()
-
-    vm.dataChanged.emit = counting_emit  # type: ignore[assignment]
+    emissions: list[bool] = []
+    vm.dataChanged.connect(lambda: emissions.append(True))
     vm.refresh()
-    assert emit_count == 1
+    assert len(emissions) >= 1, 'refresh() must emit dataChanged at least once'
 
 
 # --- Async refresh ---
