@@ -2789,11 +2789,18 @@ class PortableContextService:
     def _interaction_episodes_from_audit(
         self, *, limit: int = 3,
     ) -> list[dict[str, Any]]:
-        """Read recent ``interaction_resolved`` events from runtime_audit.jsonl."""
+        """Read recent ``interaction_resolved`` events from runtime_audit.jsonl.
+
+        Deduplicates by ``interaction_id``: if both ``interaction_outcome``
+        (prepared/reused) and ``interaction_resolved`` (final) exist for the
+        same id, only the most recent event is kept.  Since the file is read
+        in reverse chronological order, the first occurrence per id wins.
+        """
         import json as _json
         audit_path = Path(self.workspace_root) / 'data' / 'logs' / 'runtime_audit.jsonl'
         if not audit_path.exists():
             return []
+        seen_ids: set[str] = set()
         episodes: list[dict[str, Any]] = []
         try:
             lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
@@ -2807,9 +2814,14 @@ class PortableContextService:
                 if event.get('kind') not in ('interaction_resolved', 'interaction_outcome'):
                     continue
                 data = dict(event.get('data') or {})
+                iid = data.get('interaction_id', '')
+                if iid and iid in seen_ids:
+                    continue  # already have a more recent event for this id
+                if iid:
+                    seen_ids.add(iid)
                 is_final = data.get('is_final', event.get('kind') == 'interaction_resolved')
                 episodes.append({
-                    'interaction_id': data.get('interaction_id', ''),
+                    'interaction_id': iid,
                     'message_preview': data.get('message_preview', ''),
                     'outcome': data.get('outcome', ''),
                     'provider': data.get('provider', ''),
@@ -3324,6 +3336,7 @@ class PortableContextService:
                     iid = str(item.get('interaction_id') or 'n/d')
                     preview = str(item.get('message_preview') or '')[:60]
                     outcome = str(item.get('outcome') or 'n/d')
+                    resolved = item.get('resolved', outcome in ('resolved', 'failed'))
                     provider = str(item.get('provider') or 'n/d')
                     dur = item.get('total_duration_ms', 0)
                     stalls = item.get('stall_count', 0)
@@ -3331,9 +3344,9 @@ class PortableContextService:
                     inactive = item.get('window_went_inactive', False)
                     src = str(item.get('source') or 'n/d')
                     lines.append(
-                        f'- [{iid}] "{preview}" | outcome={outcome} provider={provider} '
-                        f'duration={dur}ms stalls={stalls} early_technical={early} '
-                        f'window_inactive={inactive} source={src}'
+                        f'- [{iid}] "{preview}" | outcome={outcome} resolved={str(resolved).lower()} '
+                        f'provider={provider} duration={dur}ms stalls={stalls} '
+                        f'early_technical={early} window_inactive={inactive} source={src}'
                     )
                 elif section.section_id == 'canonical_work_queue':
                     wid = str(item.get('id') or 'n/d')

@@ -1902,6 +1902,10 @@ class OperationalSelfExaminationService:
         Reads the durable audit trail so that episodes are visible even if
         the in-memory ``ChatInteractionLifecycle`` object was lost (process
         death, OOM, etc.).
+
+        Deduplicates by ``interaction_id``: only the most recent event per
+        id is kept so that a ``prepared`` followed by ``resolved`` for the
+        same id counts once (as resolved), not twice.
         """
         import json as _json
         workspace = getattr(self, 'workspace_root', None)
@@ -1910,6 +1914,7 @@ class OperationalSelfExaminationService:
         audit_path = Path(str(workspace)) / 'data' / 'logs' / 'runtime_audit.jsonl'
         if not audit_path.exists():
             return []
+        seen_ids: set[str] = set()
         episodes: list[dict[str, Any]] = []
         try:
             lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
@@ -1922,7 +1927,13 @@ class OperationalSelfExaminationService:
                     continue
                 if event.get('kind') not in ('interaction_resolved', 'interaction_outcome'):
                     continue
-                episodes.append(dict(event.get('data') or {}))
+                data = dict(event.get('data') or {})
+                iid = data.get('interaction_id', '')
+                if iid and iid in seen_ids:
+                    continue
+                if iid:
+                    seen_ids.add(iid)
+                episodes.append(data)
                 if len(episodes) >= 5:
                     break
         except Exception:
