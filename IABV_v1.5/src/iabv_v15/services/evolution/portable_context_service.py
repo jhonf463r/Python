@@ -309,6 +309,64 @@ class PortableContextService:
             'unresolved_fields': list(resolved.unresolved_fields or []),
         }
 
+    def flush_startup_health(self) -> bool:
+        """Patch ``startup_health`` into ``portable_context/latest.json`` in-place.
+
+        In short runs the full ``build_package()`` may never execute before
+        the process exits, leaving ``latest.json`` without the new
+        ``startup_health`` fields collected during this boot.  This method
+        reads the persisted package, replaces only the ``startup_health``
+        section and its metadata entry, and writes back — without
+        rebuilding every other section (which would be expensive and
+        could overwrite fresher data from a concurrent MCP call).
+
+        Returns ``True`` if the flush wrote data, ``False`` if skipped
+        (no existing package, no storage, or error).
+        """
+        try:
+            if not self.storage.exists('portable_context/latest.json'):
+                return False
+            payload = self.storage.load_json('portable_context/latest.json')
+        except Exception:
+            logging.getLogger(__name__).debug(
+                'flush_startup_health: cannot load latest.json', exc_info=True,
+            )
+            return False
+
+        startup_health = self._startup_health_snapshot()
+        if startup_health.get('status') in ('no_log', 'no_data', 'error', None):
+            return False
+
+        try:
+            sections = payload.get('sections') or []
+            replaced = False
+            for section in sections:
+                if section.get('section_id') == 'startup_health':
+                    section['items'] = [startup_health]
+                    section['metadata'] = section.get('metadata') or {}
+                    section['metadata']['flushed_at_boot'] = True
+                    replaced = True
+                    break
+            if not replaced:
+                return False
+
+            metadata = payload.get('metadata') or {}
+            metadata['startup_health'] = dict(startup_health)
+            payload['metadata'] = metadata
+            payload['updated_at_utc'] = utc_now().isoformat()
+
+            self.storage.save_json_atomic('portable_context/latest.json', payload)
+            logging.getLogger(__name__).info(
+                'flush_startup_health: patched latest.json (status=%s)',
+                startup_health.get('status'),
+            )
+            return True
+        except Exception:
+            logging.getLogger(__name__).debug(
+                'flush_startup_health: write failed', exc_info=True,
+            )
+            return False
+
     def _load_latest_package(self) -> PortableContextPackage | None:
         try:
             if not self.storage.exists('portable_context/latest.json'):

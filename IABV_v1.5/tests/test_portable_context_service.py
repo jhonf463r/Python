@@ -311,6 +311,92 @@ def test_portable_context_service_infers_active_goal_from_recent_adaptive_sessio
         shutil.rmtree(root, ignore_errors=True)
 
 
+def test_flush_startup_health_patches_latest_json_in_place() -> None:
+    """Issue #266: flush_startup_health writes startup_health into an existing
+    latest.json without rebuilding the full package, so short-lived runs
+    don't leave stale data."""
+    import json
+
+    root = _workspace('flush_startup_health')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        pcs = bootstrap.portable_context_service
+
+        # Build a full package first so latest.json exists.
+        pcs.build_package()
+        latest_path = Path(pcs.storage.resolve('portable_context/latest.json'))
+        assert latest_path.exists()
+
+        # Tamper the startup_health section to simulate stale data.
+        payload = json.loads(latest_path.read_text(encoding='utf-8'))
+        for section in payload.get('sections', []):
+            if section.get('section_id') == 'startup_health':
+                section['items'] = [{'status': 'stale_placeholder'}]
+                break
+        latest_path.write_text(json.dumps(payload), encoding='utf-8')
+
+        # Write a fake startup_timeline.jsonl so _startup_health_snapshot
+        # returns analyzed data.
+        timeline_dir = Path(pcs.workspace_root) / 'data' / 'logs'
+        timeline_dir.mkdir(parents=True, exist_ok=True)
+        timeline_path = timeline_dir / 'startup_timeline.jsonl'
+        timeline_path.write_text(
+            json.dumps({'phase': 'bootstrap_init_start', 't_ms_from_start': 0, 'rss_mb': 50}) + '\n'
+            + json.dumps({'phase': 'bootstrap_init_done', 't_ms_from_start': 200, 'rss_mb': 55}) + '\n'
+            + json.dumps({'phase': 'main_window_shown', 't_ms_from_start': 1500, 'rss_mb': 80}) + '\n',
+            encoding='utf-8',
+        )
+
+        result = pcs.flush_startup_health()
+        assert result is True
+
+        # Verify the patched data.
+        patched = json.loads(latest_path.read_text(encoding='utf-8'))
+        for section in patched.get('sections', []):
+            if section.get('section_id') == 'startup_health':
+                assert section['items'][0].get('status') == 'analyzed'
+                assert section['metadata'].get('flushed_at_boot') is True
+                break
+        else:
+            raise AssertionError('startup_health section not found in patched latest.json')
+
+        assert patched['metadata']['startup_health']['status'] == 'analyzed'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_flush_startup_health_returns_false_when_no_latest_json() -> None:
+    """flush_startup_health returns False when latest.json doesn't exist."""
+    root = _workspace('flush_no_latest')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        result = bootstrap.portable_context_service.flush_startup_health()
+        assert result is False
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_flush_startup_health_returns_false_when_no_timeline() -> None:
+    """flush_startup_health returns False when there's no startup timeline data."""
+    root = _workspace('flush_no_timeline')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        pcs = bootstrap.portable_context_service
+        # Build package so latest.json exists, but no timeline file.
+        pcs.build_package()
+        result = pcs.flush_startup_health()
+        assert result is False
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_flush_startup_health_wired_in_bootstrap_deferred_setup() -> None:
+    """Verify that bootstrap._bg_post_window_setup calls flush_startup_health."""
+    import inspect
+    source = inspect.getsource(AppBootstrap._run_deferred_post_window_setup)
+    assert 'flush_startup_health' in source
+
+
 def test_portable_context_service_keeps_unresolved_when_adaptive_session_is_stale() -> None:
     """H1: proteccion contra stale. Si la sesion mas reciente es
     anterior a la ventana de recencia, el servicio NO propaga su
