@@ -337,6 +337,33 @@ def test_granular_signals_exist_on_vm() -> None:
 
 # --- Refresh episodes & telemetry ---
 
+def _make_sample_data(**overrides: Any) -> dict[str, Any]:
+    """Build a sample collected-data dict for _apply_refresh_snapshot tests."""
+    base: dict[str, Any] = {
+        'snapshot': {'summary': 'health ok'},
+        'dossiers': [{'dossier_id': 'd1', 'title': 'D1'}],
+        'filtered_incidents': [{'incident_id': 'i1', 'severity': 'medium', 'status': 'open', 'summary': 'inc1'}],
+        'backlog': [{'issue_id': 'b1'}],
+        'pending': [{'issue_id': 'p1'}],
+        'tool_cards': [{'tool_id': 't1'}],
+        'ia_comparisons': [],
+        'environment_self_model': {},
+        'world_model': {},
+        'autonomous_validation': {},
+        'portable_context': {},
+        'self_examination': {},
+        'control_master_digest': {},
+        '_refresh_meta': {
+            'refresh_id': 'r000001',
+            'source': 'user_click',
+            'generation': 1,
+            't0': time.perf_counter(),
+        },
+    }
+    base.update(overrides)
+    return base
+
+
 def test_refreshFromUser_traces_user_click() -> None:
     """refreshFromUser must trace evolution_refresh_requested with source=user_click."""
     vm = _make_minimal_vm()
@@ -364,68 +391,155 @@ def test_in_flight_refresh_traces_skipped() -> None:
     assert 'evolution_refresh_skipped' in kinds
     skipped = next(t for t in traced if t['kind'] == 'evolution_refresh_skipped')
     assert skipped['reason'] == 'in_flight'
+    # in-flight skip must NOT change refreshStatus
+    assert vm._refresh_status != 'refreshing'
 
 
 def test_refresh_episode_full_lifecycle() -> None:
-    """refreshFromUser must trace requested→started→collected→applied."""
+    """Direct call to _apply_refresh_snapshot must trace requested→started→collected→applied."""
     vm = _make_minimal_vm()
     traced: list[dict[str, Any]] = []
     vm._trace_refresh = lambda kind, **kw: traced.append({'kind': kind, **kw})
-    vm.refreshFromUser()
-    for _ in range(30):
-        if not vm._refresh_in_flight:
-            break
-        time.sleep(0.1)
-    # Wait for _apply_refresh_snapshot which runs on main thread via signal
-    time.sleep(0.3)
+    vm._refresh_generation = 1
+    vm._refresh_in_flight = True
+    vm._refresh_status = 'refreshing'
+    data = _make_sample_data()
+    vm._apply_refresh_snapshot(1, data)
     kinds = [t['kind'] for t in traced]
-    assert 'evolution_refresh_requested' in kinds
-    assert 'evolution_refresh_started' in kinds
-    assert 'evolution_refresh_collected' in kinds
+    assert 'evolution_refresh_applied' in kinds, f'Expected evolution_refresh_applied, got: {kinds}'
+    applied = next(t for t in traced if t['kind'] == 'evolution_refresh_applied')
+    assert 'duration_ms' in applied
+    assert 'changed_sections' in applied
+    assert 'unchanged_sections' in applied
+    assert 'emitted_signals' in applied
+    assert applied['source'] == 'user_click'
+    assert applied['refresh_id'] == 'r000001'
+    assert vm._refresh_status == 'idle'
+    assert vm._refresh_in_flight is False
 
 
 def test_unchanged_refresh_produces_correct_result() -> None:
-    """Two consecutive refreshes produce result=unchanged on second."""
+    """Two _apply_refresh_snapshot with same data -> second produces unchanged."""
     vm = _make_minimal_vm()
     traced: list[dict[str, Any]] = []
     vm._trace_refresh = lambda kind, **kw: traced.append({'kind': kind, **kw})
-    # First refresh to populate fingerprints
-    vm.refreshFromUser()
-    for _ in range(30):
-        if not vm._refresh_in_flight:
-            break
-        time.sleep(0.1)
-    time.sleep(0.3)
-    # Second refresh — same data, should be unchanged
+    vm._refresh_generation = 1
+    vm._refresh_in_flight = True
+    vm._refresh_status = 'refreshing'
+    # First apply populates fingerprints
+    data1 = _make_sample_data()
+    vm._apply_refresh_snapshot(1, data1)
+    # Second apply with same data — must be unchanged
     traced.clear()
-    vm.refreshFromUser()
-    for _ in range(30):
-        if not vm._refresh_in_flight:
-            break
-        time.sleep(0.1)
-    time.sleep(0.3)
+    vm._refresh_generation = 2
+    vm._refresh_in_flight = True
+    vm._refresh_status = 'refreshing'
+    data2 = _make_sample_data(_refresh_meta={'refresh_id': 'r000002', 'source': 'user_click', 'generation': 2, 't0': time.perf_counter()})
+    vm._apply_refresh_snapshot(2, data2)
     applied = [t for t in traced if t['kind'] == 'evolution_refresh_applied']
-    if applied:
-        assert applied[0]['result'] == 'unchanged'
-        assert vm._last_refresh_result == 'unchanged'
-        assert 'no hubo cambios' in vm._last_refresh_summary
+    assert len(applied) == 1, f'Expected 1 evolution_refresh_applied, got {len(applied)}: {[t["kind"] for t in traced]}'
+    assert applied[0]['result'] == 'unchanged'
+    assert vm._last_refresh_result == 'unchanged'
+    assert 'no hubo cambios' in vm._last_refresh_summary
 
 
 def test_changed_refresh_detects_sections() -> None:
-    """First refresh with data should detect changed sections."""
+    """First _apply_refresh_snapshot with data must detect changed sections."""
     vm = _make_minimal_vm()
     traced: list[dict[str, Any]] = []
     vm._trace_refresh = lambda kind, **kw: traced.append({'kind': kind, **kw})
-    vm.refreshFromUser()
-    for _ in range(30):
-        if not vm._refresh_in_flight:
-            break
-        time.sleep(0.1)
-    time.sleep(0.3)
+    vm._refresh_generation = 1
+    vm._refresh_in_flight = True
+    vm._refresh_status = 'refreshing'
+    data = _make_sample_data()
+    vm._apply_refresh_snapshot(1, data)
     applied = [t for t in traced if t['kind'] == 'evolution_refresh_applied']
-    if applied:
-        assert applied[0]['result'] == 'changed'
-        assert len(applied[0]['changed_sections']) > 0
+    assert len(applied) == 1, f'Expected 1 evolution_refresh_applied, got {len(applied)}'
+    assert applied[0]['result'] == 'changed'
+    assert len(applied[0]['changed_sections']) > 0
+    assert vm._last_refresh_result == 'changed'
+    assert 'cambiaron' in vm._last_refresh_summary
+
+
+def test_content_change_same_id_produces_changed() -> None:
+    """If item content changes but id stays the same, fingerprint must detect it."""
+    vm = _make_minimal_vm()
+    traced: list[dict[str, Any]] = []
+    vm._trace_refresh = lambda kind, **kw: traced.append({'kind': kind, **kw})
+    # First apply
+    vm._refresh_generation = 1
+    vm._refresh_in_flight = True
+    vm._refresh_status = 'refreshing'
+    data1 = _make_sample_data(dossiers=[{'dossier_id': 'd1', 'title': 'original', 'status': 'open'}])
+    vm._apply_refresh_snapshot(1, data1)
+    # Second apply with same id but different content
+    traced.clear()
+    vm._refresh_generation = 2
+    vm._refresh_in_flight = True
+    vm._refresh_status = 'refreshing'
+    data2 = _make_sample_data(
+        dossiers=[{'dossier_id': 'd1', 'title': 'modified', 'status': 'closed'}],
+        _refresh_meta={'refresh_id': 'r000003', 'source': 'user_click', 'generation': 2, 't0': time.perf_counter()},
+    )
+    vm._apply_refresh_snapshot(2, data2)
+    applied = [t for t in traced if t['kind'] == 'evolution_refresh_applied']
+    assert len(applied) == 1
+    assert applied[0]['result'] == 'changed'
+    assert 'dossiers' in applied[0]['changed_sections']
+
+
+def test_stale_generation_cleans_status() -> None:
+    """If generation is stale, _apply_refresh_snapshot must clean refreshStatus."""
+    vm = _make_minimal_vm()
+    traced: list[dict[str, Any]] = []
+    vm._trace_refresh = lambda kind, **kw: traced.append({'kind': kind, **kw})
+    vm._refresh_generation = 5
+    vm._refresh_in_flight = True
+    vm._refresh_status = 'refreshing'
+    data = _make_sample_data(_refresh_meta={'refresh_id': 'rstale', 'source': 'user_click', 'generation': 3, 't0': time.perf_counter()})
+    vm._apply_refresh_snapshot(3, data)  # gen 3 vs current 5 — stale
+    assert vm._refresh_status == 'idle', 'refreshStatus must be cleaned on stale generation'
+    assert vm._last_refresh_result == 'cancelled'
+    assert vm._refresh_in_flight is False
+
+
+def test_result_none_cleans_status() -> None:
+    """If _done receives result=None, refreshStatus must not stay as refreshing."""
+    vm = _make_minimal_vm()
+    traced: list[dict[str, Any]] = []
+    vm._trace_refresh = lambda kind, **kw: traced.append({'kind': kind, **kw})
+    vm._refresh_in_flight = True
+    vm._refresh_status = 'refreshing'
+    vm._refresh_generation = 1
+    # Simulate _bg returning None — call _apply_refresh_snapshot with non-dict
+    vm._apply_refresh_snapshot(1, None)
+    assert vm._refresh_status == 'idle'
+    assert vm._last_refresh_result == 'cancelled'
+    assert vm._refresh_in_flight is False
+
+
+def test_failed_apply_produces_failed_status() -> None:
+    """If _apply_collected_data raises, refreshStatus must be failed."""
+    vm = _make_minimal_vm()
+    traced: list[dict[str, Any]] = []
+    vm._trace_refresh = lambda kind, **kw: traced.append({'kind': kind, **kw})
+    vm._refresh_generation = 1
+    vm._refresh_in_flight = True
+    vm._refresh_status = 'refreshing'
+    # Inject a broken _apply_collected_data
+    original_apply = vm._apply_collected_data
+    def broken_apply(data: dict) -> None:
+        raise RuntimeError('test apply failure')
+    vm._apply_collected_data = broken_apply
+    data = _make_sample_data()
+    vm._apply_refresh_snapshot(1, data)
+    assert vm._refresh_status == 'failed'
+    assert vm._last_refresh_result == 'failed'
+    assert 'No pude actualizar' in vm._last_refresh_summary
+    assert vm._refresh_in_flight is False
+    failed = [t for t in traced if t['kind'] == 'evolution_refresh_failed']
+    assert len(failed) == 1
+    vm._apply_collected_data = original_apply
 
 
 def test_refresh_status_properties_use_granular_signal() -> None:
@@ -435,18 +549,68 @@ def test_refresh_status_properties_use_granular_signal() -> None:
     data_emissions: list[bool] = []
     vm.refreshStatusChanged.connect(lambda: status_emissions.append(True))
     vm.dataChanged.connect(lambda: data_emissions.append(True))
-    vm.refreshFromUser()
-    for _ in range(30):
-        if not vm._refresh_in_flight:
-            break
-        time.sleep(0.1)
-    time.sleep(0.3)
+    vm._refresh_generation = 1
+    vm._refresh_in_flight = True
+    vm._refresh_status = 'refreshing'
+    data = _make_sample_data()
+    vm._apply_refresh_snapshot(1, data)
     assert len(status_emissions) >= 1, 'refreshStatusChanged must fire'
-    assert len(data_emissions) == 0, 'dataChanged must NOT fire from refreshFromUser'
+    assert len(data_emissions) == 0, 'dataChanged must NOT fire from _apply_refresh_snapshot'
+
+
+def test_signals_only_for_changed_sections() -> None:
+    """Unchanged refresh must NOT emit all granular signals — only overviewChanged."""
+    vm = _make_minimal_vm()
+    # First apply populates fingerprints
+    vm._refresh_generation = 1
+    vm._refresh_in_flight = True
+    vm._refresh_status = 'refreshing'
+    data1 = _make_sample_data()
+    vm._apply_refresh_snapshot(1, data1)
+    # Now connect signals and do unchanged refresh
+    emitted_signals: list[str] = []
+    vm.dossiersChanged.connect(lambda: emitted_signals.append('dossiersChanged'))
+    vm.incidentsChanged.connect(lambda: emitted_signals.append('incidentsChanged'))
+    vm.backlogChanged.connect(lambda: emitted_signals.append('backlogChanged'))
+    vm.toolsChanged.connect(lambda: emitted_signals.append('toolsChanged'))
+    vm.overviewChanged.connect(lambda: emitted_signals.append('overviewChanged'))
+    vm.worldModelChanged.connect(lambda: emitted_signals.append('worldModelChanged'))
+    vm.metacognitionChanged.connect(lambda: emitted_signals.append('metacognitionChanged'))
+    vm.iaComparisonsChanged.connect(lambda: emitted_signals.append('iaComparisonsChanged'))
+    vm._refresh_generation = 2
+    vm._refresh_in_flight = True
+    vm._refresh_status = 'refreshing'
+    data2 = _make_sample_data(_refresh_meta={'refresh_id': 'r000010', 'source': 'user_click', 'generation': 2, 't0': time.perf_counter()})
+    vm._apply_refresh_snapshot(2, data2)
+    # overviewChanged always fires; section-specific signals must NOT fire for unchanged
+    assert 'overviewChanged' in emitted_signals
+    # No section-specific signals for unchanged data
+    assert 'dossiersChanged' not in emitted_signals, f'dossiersChanged should not fire for unchanged data, got: {emitted_signals}'
+    assert 'incidentsChanged' not in emitted_signals
+
+
+def test_emitted_signals_in_audit_reflects_reality() -> None:
+    """emitted_signals in trace must match what was actually emitted."""
+    vm = _make_minimal_vm()
+    traced: list[dict[str, Any]] = []
+    vm._trace_refresh = lambda kind, **kw: traced.append({'kind': kind, **kw})
+    vm._refresh_generation = 1
+    vm._refresh_in_flight = True
+    vm._refresh_status = 'refreshing'
+    data = _make_sample_data()
+    vm._apply_refresh_snapshot(1, data)
+    applied = [t for t in traced if t['kind'] == 'evolution_refresh_applied']
+    assert len(applied) == 1
+    emitted = applied[0]['emitted_signals']
+    assert isinstance(emitted, list)
+    # First apply has changes -> multiple signals
+    assert 'overviewChanged' in emitted
+    # Must contain at least one section signal for the changed data
+    assert len(emitted) > 1
 
 
 def test_refresh_status_shows_refreshing_then_result() -> None:
-    """After refreshFromUser, status should transition through refreshing."""
+    """refreshFromUser transitions status through refreshing → idle."""
     vm = _make_minimal_vm()
     statuses: list[str] = []
     vm.refreshStatusChanged.connect(lambda: statuses.append(vm._refresh_status))
@@ -480,3 +644,17 @@ def test_section_fingerprint_detects_dict_changes() -> None:
     fp1 = EvolutionCenterViewModel._section_fingerprint({'summary': 'hello'})
     fp2 = EvolutionCenterViewModel._section_fingerprint({'summary': 'world'})
     assert fp1 != fp2
+
+
+def test_section_fingerprint_detects_content_change_same_id() -> None:
+    """Fingerprint changes when list item content changes but id stays the same."""
+    fp1 = EvolutionCenterViewModel._section_fingerprint([{'dossier_id': 'a', 'status': 'open', 'title': 'foo'}])
+    fp2 = EvolutionCenterViewModel._section_fingerprint([{'dossier_id': 'a', 'status': 'closed', 'title': 'foo'}])
+    assert fp1 != fp2, 'Fingerprint must detect content change even when id is the same'
+
+
+def test_section_fingerprint_detects_dict_field_change() -> None:
+    """Fingerprint changes when dict fields like assistant_brief change."""
+    fp1 = EvolutionCenterViewModel._section_fingerprint({'assistant_brief': 'v1', 'status': 'ok'})
+    fp2 = EvolutionCenterViewModel._section_fingerprint({'assistant_brief': 'v2', 'status': 'ok'})
+    assert fp1 != fp2, 'Fingerprint must detect dict field changes beyond just summary/keys'
