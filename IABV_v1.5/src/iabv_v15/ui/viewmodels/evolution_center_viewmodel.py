@@ -1,7 +1,9 @@
 ﻿from __future__ import annotations
 
+import atexit
 import logging
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Mapping
 
 logger = logging.getLogger(__name__)
@@ -22,6 +24,7 @@ class EvolutionCenterViewModel(QObject):
     dataChanged = Signal()
     taskResolved = Signal(str, object)
     taskFailed = Signal(str, str)
+    refreshReady = Signal(int, object)  # (generation, snapshot_dict)
 
     # Señales evolutivas para diálogos UI (Task B)
     credentialPromptRequested = Signal(dict)  # {domain, reason, username_hint}
@@ -118,10 +121,15 @@ class EvolutionCenterViewModel(QObject):
         self._evidence_preview = 'Selecciona un incidente o dossier para ver evidencia relacionada.'
         self._latest_packet = 'Todavia no hay un paquete de incidente seleccionado.'
         self._clipboard_notice = 'Nada copiado aun.'
+        self._bg_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='ecvm-bg')
+        atexit.register(self._shutdown_bg_pool)
+        self._refresh_generation: int = 0
+        self._refresh_in_flight: bool = False
+        self.refreshReady.connect(self._apply_refresh_snapshot)
         self.taskResolved.connect(self._apply_result)
         self.taskFailed.connect(self._apply_failure)
         if defer_initial_refresh:
-            QTimer.singleShot(0, self.refresh)
+            QTimer.singleShot(0, self.refreshAsync)
         else:
             self.refresh()
 
@@ -221,8 +229,14 @@ class EvolutionCenterViewModel(QObject):
     def get_clipboard_notice(self) -> str:
         return self._clipboard_notice
 
-    @Slot()
-    def refresh(self) -> None:
+    def _shutdown_bg_pool(self) -> None:
+        try:
+            self._bg_pool.shutdown(wait=False, cancel_futures=True)
+        except Exception:
+            pass
+
+    def _collect_refresh_data(self) -> dict[str, Any]:
+        """Collect all data for refresh. Safe to call from a background thread."""
         snapshot = None
         try:
             snapshot = self.evolution_review_service.build_project_health()
@@ -311,7 +325,38 @@ class EvolutionCenterViewModel(QObject):
                 control_master_digest = self.control_master_digest_builder.build(state, work_queue=work_queue).model_dump(mode='json')
             except Exception:
                 control_master_digest = {}
-        self._health_snapshot = snapshot.model_dump(mode='json') if snapshot is not None else self._health_snapshot
+        return {
+            'snapshot': snapshot.model_dump(mode='json') if snapshot is not None else None,
+            'dossiers': dossiers,
+            'filtered_incidents': filtered_incidents,
+            'backlog': backlog,
+            'pending': pending,
+            'tool_cards': tool_cards,
+            'ia_comparisons': ia_comparisons,
+            'environment_self_model': environment_self_model,
+            'world_model': world_model,
+            'autonomous_validation': autonomous_validation,
+            'portable_context': portable_context,
+            'self_examination': self_examination,
+            'control_master_digest': control_master_digest,
+        }
+
+    def _apply_collected_data(self, data: dict[str, Any]) -> None:
+        """Apply collected refresh data to UI properties. Must run on UI thread."""
+        snapshot_dict = data.get('snapshot')
+        dossiers = data.get('dossiers', [])
+        filtered_incidents = data.get('filtered_incidents', [])
+        backlog = data.get('backlog', [])
+        pending = data.get('pending', [])
+        tool_cards = data.get('tool_cards', [])
+        ia_comparisons = data.get('ia_comparisons', [])
+        environment_self_model = data.get('environment_self_model', {})
+        world_model = data.get('world_model', {})
+        autonomous_validation = data.get('autonomous_validation', {})
+        portable_context = data.get('portable_context', {})
+        self_examination = data.get('self_examination', {})
+        control_master_digest = data.get('control_master_digest', {})
+        self._health_snapshot = snapshot_dict if snapshot_dict is not None else self._health_snapshot
         self._recent_dossiers = dossiers
         self._recent_incidents = filtered_incidents
         self._improvement_backlog = backlog
@@ -384,11 +429,68 @@ class EvolutionCenterViewModel(QObject):
             self._pinned_incident_selection = False
         self._latest_packet = self._build_current_packet()
         self._evidence_preview = self._build_evidence_preview()
-        self._status_text = snapshot.summary if snapshot is not None else self._status_text
+        status_summary = str(data.get('_status_summary') or '')
+        self._status_text = status_summary if status_summary else self._status_text
         validation_summary = str((autonomous_validation or {}).get('summary') or '').strip()
         if validation_summary:
             self._status_text = f'{self._status_text} | Validacion autonoma: {validation_summary}'
         self.dataChanged.emit()
+
+    @Slot()
+    def refresh(self) -> None:
+        """Synchronous refresh — runs all queries on calling thread.
+
+        Used by tests and programmatic callers that need immediate results.
+        For UI/QML callers use :meth:`refreshAsync` instead.
+        """
+        data = self._collect_refresh_data()
+        snapshot_dict = data.get('snapshot')
+        if snapshot_dict is not None:
+            data['_status_summary'] = snapshot_dict.get('summary', '')
+        self._apply_collected_data(data)
+
+    @Slot()
+    def refreshAsync(self) -> None:
+        """Non-blocking refresh — heavy I/O on ``_bg_pool``, results via signal."""
+        if self._refresh_in_flight:
+            return
+        self._refresh_in_flight = True
+        self._refresh_generation += 1
+        gen = self._refresh_generation
+
+        def _bg() -> dict[str, Any] | None:
+            if self._refresh_generation != gen:
+                return None
+            return self._collect_refresh_data()
+
+        def _done(fut: Any) -> None:
+            self._refresh_in_flight = False
+            if self._refresh_generation != gen:
+                return
+            try:
+                result = fut.result()
+            except Exception:
+                logger.debug('evolution_center bg refresh failed', exc_info=True)
+                return
+            if result is None:
+                return
+            self.refreshReady.emit(gen, result)
+
+        future = self._bg_pool.submit(_bg)
+        future.add_done_callback(_done)
+
+    @Slot(int, object)
+    def _apply_refresh_snapshot(self, gen: int, data: object) -> None:
+        """Apply background-collected data on the UI thread."""
+        if self._refresh_generation != gen or not isinstance(data, dict):
+            return
+        snapshot_dict = data.get('snapshot')
+        if snapshot_dict is not None:
+            data['_status_summary'] = snapshot_dict.get('summary', '')
+        try:
+            self._apply_collected_data(data)
+        except Exception:
+            logger.debug('evolution_center UI apply failed', exc_info=True)
 
     def _build_proactive_dashboard(self) -> dict[str, Any]:
         """Consulta `ProactiveDashboardService` si esta wired; caso contrario

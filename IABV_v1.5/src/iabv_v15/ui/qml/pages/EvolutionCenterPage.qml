@@ -77,7 +77,7 @@ Item {
                     AppButton {
                         text: "Actualizar"
                         accent: true
-                        onClicked: if (evolutionCenterViewModel) evolutionCenterViewModel.refresh()
+                        onClicked: if (evolutionCenterViewModel) evolutionCenterViewModel.refreshAsync()
                     }
                     AppButton {
                         text: "Ejecutar autodiagnostico"
