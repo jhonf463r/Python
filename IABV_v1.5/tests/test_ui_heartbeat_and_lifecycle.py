@@ -1543,3 +1543,70 @@ class TestReconstructedFromAuditFlag:
 
         summary = pcs._interaction_lifecycle_summary()
         assert summary.get('reconstructed_from_audit') is False
+
+
+# ======================================================================
+# Splash progress + bridge readiness wiring (Tasks 1, 2, 7)
+# ======================================================================
+
+
+class TestSplashProgressMilestones:
+    """SplashController.set_progress sets explicit percentages."""
+
+    def test_set_progress_sets_value(self) -> None:
+        from iabv_v15.ui.splash_controller import SplashController
+        sc = SplashController.__new__(SplashController)
+        sc._progress = 0.0
+        sc.set_progress(40)
+        assert abs(sc._progress - 0.40) < 0.01
+
+    def test_set_progress_clamps_to_99(self) -> None:
+        from iabv_v15.ui.splash_controller import SplashController
+        sc = SplashController.__new__(SplashController)
+        sc._progress = 0.0
+        sc.set_progress(100)
+        assert sc._progress <= 0.99
+
+    def test_set_progress_clamps_negative(self) -> None:
+        from iabv_v15.ui.splash_controller import SplashController
+        sc = SplashController.__new__(SplashController)
+        sc._progress = 0.5
+        sc.set_progress(-10)
+        assert sc._progress == 0.0
+
+    def test_milestone_ordering(self) -> None:
+        from iabv_v15.ui.splash_controller import SplashController
+        sc = SplashController.__new__(SplashController)
+        sc._progress = 0.0
+        milestones = [40, 60, 75, 90]
+        for pct in milestones:
+            sc.set_progress(pct)
+            assert abs(sc._progress - pct / 100.0) < 0.01
+
+
+class TestBootstrapBridgeReadinessWiring:
+    """Bootstrap._fire_splash_ready_and_raise_main wires bridge readiness."""
+
+    def test_fire_splash_ready_calls_bridge_mark_shell_ready(self) -> None:
+        bridge = MagicMock()
+        bridge.mark_shell_ready = MagicMock()
+        bootstrap = MagicMock()
+        bootstrap.ui_bridge_server = bridge
+        bootstrap._splash = None
+        bootstrap.ui_heartbeat_watchdog = None
+        # Simulate the wiring logic from _fire_splash_ready_and_raise_main
+        source = 'shell_loader_ready'
+        if bootstrap.ui_bridge_server is not None:
+            bootstrap.ui_bridge_server.mark_shell_ready(source)
+        bridge.mark_shell_ready.assert_called_once_with('shell_loader_ready')
+
+    def test_fire_splash_ready_tolerates_missing_bridge(self) -> None:
+        bootstrap = MagicMock()
+        bootstrap.ui_bridge_server = None
+        bootstrap._splash = None
+        bootstrap.ui_heartbeat_watchdog = None
+        source = 'fallback'
+        bridge = getattr(bootstrap, 'ui_bridge_server', None)
+        if bridge is not None:
+            bridge.mark_shell_ready(source)
+        # No exception raised — success

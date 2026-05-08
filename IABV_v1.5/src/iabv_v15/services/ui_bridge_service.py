@@ -83,6 +83,15 @@ class UIBridgeServer:
         self._lock = threading.Lock()
         self._status = UIBridgeStatus(host=host, port=port)
         self._listeners: list[Callable[[UIBridgeStatus], None]] = []
+        # --- Readiness handshake (Task 2 / Task 7) ---
+        # Messages arriving before the shell is interactive are buffered
+        # and flushed once ``mark_shell_ready()`` is called.
+        self._shell_ready = False
+        self._pending_messages: list[dict[str, Any]] = []
+        self._ready_lock = threading.Lock()
+        self._ready_source: str = ''
+        self._ready_at: float = 0.0
+        self._deferred_setup_active = False
 
     @property
     def status(self) -> UIBridgeStatus:
@@ -94,6 +103,68 @@ class UIBridgeServer:
 
     def attach_listener(self, listener: Callable[[UIBridgeStatus], None]) -> None:
         self._listeners.append(listener)
+
+    @property
+    def shell_ready(self) -> bool:
+        """Whether the main shell is interactive and ready for traffic."""
+        return self._shell_ready
+
+    def mark_shell_ready(self, source: str = 'unknown') -> None:
+        """Signal that the main shell is interactive.
+
+        Called by bootstrap when ``shell_loader_ready`` (honest) or the
+        fallback fires.  Flushes any messages that arrived while the
+        splash was still visible.
+        """
+        with self._ready_lock:
+            if self._shell_ready:
+                return
+            self._shell_ready = True
+            self._ready_source = source
+            self._ready_at = time.time()
+            pending = list(self._pending_messages)
+            self._pending_messages.clear()
+        logger.info(
+            'UIBridgeServer: shell_ready (source=%s, flushing %d pending)',
+            source, len(pending),
+        )
+        # Flush pending send_message calls now that the shell can process them.
+        handler = self._handlers.get('send_message')
+        if handler is not None:
+            for msg in pending:
+                try:
+                    handler(**msg)
+                except Exception:
+                    logger.debug('UIBridgeServer: flush pending failed', exc_info=True)
+        self._status.ui_available = True
+        self._notify_listeners()
+
+    def enqueue_pending_message(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Buffer a send_message call until the shell is ready."""
+        with self._ready_lock:
+            if self._shell_ready:
+                return {}  # empty means "not buffered, process normally"
+            self._pending_messages.append(dict(params))
+            return {
+                'status': 'pending_shell_ready',
+                'queue_position': len(self._pending_messages),
+                'detail': 'Message buffered until shell is interactive.',
+            }
+
+    def readiness_snapshot(self) -> dict[str, Any]:
+        """Observable readiness state for diagnostics."""
+        with self._ready_lock:
+            return {
+                'shell_ready': self._shell_ready,
+                'ready_source': self._ready_source,
+                'ready_at': self._ready_at,
+                'pending_count': len(self._pending_messages),
+                'deferred_setup_active': self._deferred_setup_active,
+            }
+
+    def set_deferred_setup_active(self, active: bool) -> None:
+        """Track whether deferred post-window setup is running."""
+        self._deferred_setup_active = active
 
     def _notify_listeners(self) -> None:
         for listener in list(self._listeners):
@@ -314,9 +385,19 @@ def build_ui_bridge_server(
     _chat_lock = threading.Lock()
 
     def _on_send_message(text: str = "") -> dict[str, Any]:
-        """Envia un mensaje al chat de la UI."""
+        """Envia un mensaje al chat de la UI.
+
+        If the shell is not yet ready (splash still visible), the message
+        is buffered and will be flushed when ``mark_shell_ready()`` fires.
+        This prevents the "bridge queue without response" problem (Task 9 /
+        Task 2) where MCP sends messages that never reach the chat.
+        """
         if not text:
             return {"status": "error", "detail": "text is required"}
+        # --- Readiness gate: buffer if shell not interactive yet ---
+        pending_result = server.enqueue_pending_message({'text': text})
+        if pending_result:
+            return pending_result
         if control_center_viewmodel is not None:
             try:
                 result = control_center_viewmodel.send_message_from_bridge(text)
@@ -447,11 +528,16 @@ def build_ui_bridge_server(
             })
         return {"status": "recorded"}
 
+    def _on_bridge_readiness() -> dict[str, Any]:
+        """Returns the current readiness state of the bridge."""
+        return server.readiness_snapshot()
+
     server.register_handler("send_message", _on_send_message)
     server.register_handler("read_messages", _on_read_messages)
     server.register_handler("get_ui_state", _on_get_ui_state)
     server.register_handler("navigate", _on_navigate)
     server.register_handler("capture_screenshot", _on_capture_screenshot)
     server.register_handler("push_chat_message", _on_push_chat_message)
+    server.register_handler("bridge_readiness", _on_bridge_readiness)
 
     return server

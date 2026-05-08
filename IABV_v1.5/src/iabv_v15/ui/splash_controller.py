@@ -133,6 +133,19 @@ class SplashController(QObject):
             pass
         logger.error('splash error: %s — %s', message, detail)
 
+    def set_progress(self, percent: int) -> None:
+        """Set splash progress to an explicit percentage (0-100).
+
+        Used by bootstrap to report honest progress milestones during
+        the splash→shell transition instead of relying solely on the
+        auto-incrementing step counter.
+        """
+        self._progress = max(0.0, min(float(percent) / 100.0, 0.99))
+        try:
+            self.progressChanged.emit()
+        except Exception:
+            pass
+
     def set_ready(self) -> None:
         """Signal that bootstrap is complete — splash will fade out."""
         total_elapsed = time.time() - self._start_time
