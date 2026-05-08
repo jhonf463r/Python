@@ -136,6 +136,7 @@ class TestBuildUIBridgeServer:
     def test_build_without_viewmodel(self) -> None:
         port = _find_free_port()
         server = build_ui_bridge_server(port=port)
+        server.mark_shell_ready('test')  # shell must be ready to accept traffic
         server.start()
         try:
             client = UIBridgeClient(port=port)
@@ -195,6 +196,7 @@ class TestBuildUIBridgeServer:
 
         port = _find_free_port()
         server = build_ui_bridge_server(_FakeViewModel(), port=port)
+        server.mark_shell_ready('test')  # shell must be ready to accept traffic
         server.start()
         try:
             client = UIBridgeClient(port=port)
@@ -208,6 +210,100 @@ class TestBuildUIBridgeServer:
             assert payload.get('total') == 3
             assert messages[-1]['text'] == 'ok'
             assert messages[-1]['speaker'] == 'IABV'
+        finally:
+            server.stop()
+
+
+class TestBridgeReadinessHandshake:
+    """Tests for the shell readiness handshake (Tasks 1, 2, 7)."""
+
+    def test_server_starts_not_ready(self) -> None:
+        server = UIBridgeServer(port=_find_free_port())
+        assert server.shell_ready is False
+
+    def test_mark_shell_ready_sets_flag(self) -> None:
+        server = UIBridgeServer(port=_find_free_port())
+        server.mark_shell_ready('test_source')
+        assert server.shell_ready is True
+
+    def test_mark_shell_ready_idempotent(self) -> None:
+        server = UIBridgeServer(port=_find_free_port())
+        server.mark_shell_ready('first')
+        server.mark_shell_ready('second')
+        snap = server.readiness_snapshot()
+        assert snap['ready_source'] == 'first'
+
+    def test_enqueue_buffers_when_not_ready(self) -> None:
+        server = UIBridgeServer(port=_find_free_port())
+        result = server.enqueue_pending_message({'text': 'hello'})
+        assert result['status'] == 'pending_shell_ready'
+        assert result['queue_position'] == 1
+
+    def test_enqueue_passthrough_when_ready(self) -> None:
+        server = UIBridgeServer(port=_find_free_port())
+        server.mark_shell_ready('test')
+        result = server.enqueue_pending_message({'text': 'hello'})
+        assert result == {}
+
+    def test_mark_ready_flushes_pending(self) -> None:
+        server = UIBridgeServer(port=_find_free_port())
+        flushed: list[str] = []
+        server.register_handler('send_message', lambda text='': flushed.append(text))
+        server.enqueue_pending_message({'text': 'msg1'})
+        server.enqueue_pending_message({'text': 'msg2'})
+        assert len(flushed) == 0
+        server.mark_shell_ready('test')
+        assert flushed == ['msg1', 'msg2']
+
+    def test_readiness_snapshot_shape(self) -> None:
+        server = UIBridgeServer(port=_find_free_port())
+        snap = server.readiness_snapshot()
+        assert snap['shell_ready'] is False
+        assert snap['pending_count'] == 0
+        assert snap['ready_source'] == ''
+
+    def test_set_deferred_setup_active(self) -> None:
+        server = UIBridgeServer(port=_find_free_port())
+        server.set_deferred_setup_active(True)
+        assert server.readiness_snapshot()['deferred_setup_active'] is True
+        server.set_deferred_setup_active(False)
+        assert server.readiness_snapshot()['deferred_setup_active'] is False
+
+    def test_send_message_buffered_before_ready(self) -> None:
+        port = _find_free_port()
+        server = build_ui_bridge_server(port=port)
+        server.start()
+        try:
+            client = UIBridgeClient(port=port)
+            result = client.call('send_message', text='pre-ready msg')
+            payload = result.get('result', {})
+            assert payload.get('status') == 'pending_shell_ready'
+        finally:
+            server.stop()
+
+    def test_send_message_works_after_ready(self) -> None:
+        port = _find_free_port()
+        server = build_ui_bridge_server(port=port)
+        server.mark_shell_ready('test')
+        server.start()
+        try:
+            client = UIBridgeClient(port=port)
+            result = client.call('send_message', text='post-ready msg')
+            payload = result.get('result', {})
+            assert payload.get('status') == 'buffered'
+        finally:
+            server.stop()
+
+    def test_bridge_readiness_handler(self) -> None:
+        port = _find_free_port()
+        server = build_ui_bridge_server(port=port)
+        server.start()
+        try:
+            client = UIBridgeClient(port=port)
+            result = client.call('bridge_readiness')
+            payload = result.get('result', {})
+            assert 'shell_ready' in payload
+            assert payload['shell_ready'] is False
         finally:
             server.stop()
 

@@ -1716,6 +1716,13 @@ class AppBootstrap:
         if getattr(self, '_shell_loader_ready_handled', False):
             return
         self._shell_loader_ready_handled = True
+        # Update splash to 90% before closing — honest progress.
+        splash = getattr(self, '_splash', None)
+        if splash is not None:
+            try:
+                splash.set_progress(90)
+            except Exception:
+                pass
         try:
             self._timeline.mark('shell_loader_ready')
         except Exception:
@@ -1917,6 +1924,10 @@ class AppBootstrap:
 
         Used by both honest (``_handle_shell_loader_ready``) and
         fallback (``_force_splash_ready_fallback``) entry points.
+
+        Also notifies the UIBridgeServer that the shell is interactive
+        so it can flush any messages buffered during the splash phase
+        (Task 2: readiness handshake).
         """
         splash = getattr(self, '_splash', None)
         if splash is not None:
@@ -1929,6 +1940,13 @@ class AppBootstrap:
         watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
         if watchdog is not None:
             watchdog.set_startup_active(False)
+        # Notify bridge that the shell is interactive (Task 2 handshake).
+        bridge = getattr(self, 'ui_bridge_server', None)
+        if bridge is not None:
+            try:
+                bridge.mark_shell_ready(source)
+            except Exception:
+                logger.debug('bridge.mark_shell_ready failed from %s', source, exc_info=True)
         self._raise_main_window_now(source)
 
     def _raise_main_window(self) -> None:
@@ -4384,6 +4402,10 @@ class AppBootstrap:
             if self._splash:
                 self._splash.set_status('Cargando interfaz principal...')
                 try:
+                    self._splash.set_progress(40)
+                except Exception:
+                    pass
+                try:
                     QGuiApplication.instance().processEvents()
                 except Exception:
                     pass
@@ -4391,6 +4413,17 @@ class AppBootstrap:
             self._timeline.mark('engine_load_main_qml_start')
             app, _engine = self.create_engine(defer_vm_creation=True)
             self._timeline.mark('engine_load_main_qml_done')
+
+            # Update splash progress after QML engine is loaded.
+            if self._splash:
+                try:
+                    self._splash.set_progress(60)
+                except Exception:
+                    pass
+                try:
+                    QGuiApplication.instance().processEvents()
+                except Exception:
+                    pass
 
             # Explicitly show + raise the main window.  Guardamos la
             # referencia en ``self._main_win`` para que los handlers de
@@ -4406,6 +4439,17 @@ class AppBootstrap:
                 self._force_win32_visibility(main_win, 'initial_show')
                 self._timeline.mark('main_window_shown')
                 self._connect_window_lifecycle_signals(main_win)
+
+            # Update splash progress: main window is shown.
+            if self._splash:
+                try:
+                    self._splash.set_progress(75)
+                except Exception:
+                    pass
+                try:
+                    QGuiApplication.instance().processEvents()
+                except Exception:
+                    pass
 
             QTimer.singleShot(15000, self._schedule_startup_evolution)
 
@@ -4425,13 +4469,13 @@ class AppBootstrap:
             # esa senal nunca llega.
             if self._splash is not None:
                 import time as _time
-                fallback_ms = 5000
+                fallback_ms = 3000
                 try:
                     raw = os.environ.get('IABV_SHELL_READY_FALLBACK_MS')
                     if raw is not None:
                         fallback_ms = max(1000, int(raw))
                 except Exception:
-                    fallback_ms = 5000
+                    fallback_ms = 3000
                 self._shell_ready_fallback_ms = fallback_ms
                 self._shell_ready_wall_t0 = _time.perf_counter()
                 QTimer.singleShot(fallback_ms, self._force_splash_ready_fallback)
