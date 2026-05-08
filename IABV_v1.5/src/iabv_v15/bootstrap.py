@@ -4057,6 +4057,140 @@ class AppBootstrap:
             logger.warning('mcp_autostart: failed to launch tunnel: %s', exc)
             return None
 
+    # ------------------------------------------------------------------
+    # Task 8: MCP supervision — heartbeat + auto-restart
+    # ------------------------------------------------------------------
+
+    _MCP_HEARTBEAT_INTERVAL_S: float = 15.0
+    _MCP_MAX_RESTART_ATTEMPTS: int = 3
+    _MCP_RESTART_COOLDOWN_S: float = 10.0
+
+    def _mcp_supervision_loop(self) -> None:
+        """Background daemon that monitors MCP + tunnel subprocesses.
+
+        Periodically checks if the processes are alive.  When a crash is
+        detected, attempts a controlled restart (up to
+        ``_MCP_MAX_RESTART_ATTEMPTS``).  Status is logged so UI can
+        surface dead-session detection.
+        """
+        import time as _time
+
+        mcp_restarts = 0
+        tunnel_restarts = 0
+        last_mcp_restart: float = 0
+        last_tunnel_restart: float = 0
+
+        while getattr(self, '_mcp_supervisor_running', True):
+            _time.sleep(self._MCP_HEARTBEAT_INTERVAL_S)
+
+            if not getattr(self, '_mcp_supervisor_running', True):
+                break
+
+            now = _time.monotonic()
+
+            # --- Check MCP subprocess ---
+            mcp = getattr(self, '_mcp_proc', None)
+            if mcp is not None and mcp.poll() is not None:
+                exit_code = mcp.returncode
+                logger.warning(
+                    'mcp_supervisor: MCP server died (exit=%s, restarts=%d/%d)',
+                    exit_code, mcp_restarts, self._MCP_MAX_RESTART_ATTEMPTS,
+                )
+                if (
+                    mcp_restarts < self._MCP_MAX_RESTART_ATTEMPTS
+                    and (now - last_mcp_restart) > self._MCP_RESTART_COOLDOWN_S
+                ):
+                    mcp_restarts += 1
+                    last_mcp_restart = now
+                    logger.info('mcp_supervisor: restarting MCP server (attempt %d)', mcp_restarts)
+                    self._mcp_proc = self._start_mcp_subprocess()
+                    if self._mcp_proc is not None:
+                        logger.info(
+                            'mcp_supervisor: MCP server restarted (PID %d)',
+                            self._mcp_proc.pid,
+                        )
+                    else:
+                        logger.error('mcp_supervisor: MCP server restart failed')
+                elif mcp_restarts >= self._MCP_MAX_RESTART_ATTEMPTS:
+                    logger.error(
+                        'mcp_supervisor: MCP server max restarts (%d) reached, giving up',
+                        self._MCP_MAX_RESTART_ATTEMPTS,
+                    )
+
+            # --- Check tunnel subprocess ---
+            tunnel = getattr(self, '_tunnel_proc', None)
+            if tunnel is not None and tunnel.poll() is not None:
+                exit_code = tunnel.returncode
+                logger.warning(
+                    'mcp_supervisor: tunnel died (exit=%s, restarts=%d/%d)',
+                    exit_code, tunnel_restarts, self._MCP_MAX_RESTART_ATTEMPTS,
+                )
+                if (
+                    tunnel_restarts < self._MCP_MAX_RESTART_ATTEMPTS
+                    and (now - last_tunnel_restart) > self._MCP_RESTART_COOLDOWN_S
+                ):
+                    tunnel_restarts += 1
+                    last_tunnel_restart = now
+                    logger.info('mcp_supervisor: restarting tunnel (attempt %d)', tunnel_restarts)
+                    self._tunnel_proc = self._start_tunnel_subprocess()
+                    if self._tunnel_proc is not None:
+                        logger.info(
+                            'mcp_supervisor: tunnel restarted (PID %d)',
+                            self._tunnel_proc.pid,
+                        )
+                    else:
+                        logger.error('mcp_supervisor: tunnel restart failed')
+                elif tunnel_restarts >= self._MCP_MAX_RESTART_ATTEMPTS:
+                    logger.error(
+                        'mcp_supervisor: tunnel max restarts (%d) reached, giving up',
+                        self._MCP_MAX_RESTART_ATTEMPTS,
+                    )
+
+            # Update supervision status for UI visibility
+            self._mcp_supervision_status = {
+                'mcp_alive': (
+                    getattr(self, '_mcp_proc', None) is not None
+                    and getattr(self, '_mcp_proc').poll() is None
+                ),
+                'tunnel_alive': (
+                    getattr(self, '_tunnel_proc', None) is not None
+                    and getattr(self, '_tunnel_proc').poll() is None
+                ),
+                'mcp_restarts': mcp_restarts,
+                'tunnel_restarts': tunnel_restarts,
+                'mcp_max_restarts_reached': mcp_restarts >= self._MCP_MAX_RESTART_ATTEMPTS,
+                'tunnel_max_restarts_reached': tunnel_restarts >= self._MCP_MAX_RESTART_ATTEMPTS,
+            }
+
+        logger.info('mcp_supervisor: supervision loop exited')
+
+    def mcp_supervision_status(self) -> dict[str, Any]:
+        """Return the current MCP supervision status for UI display."""
+        return getattr(self, '_mcp_supervision_status', {
+            'mcp_alive': False,
+            'tunnel_alive': False,
+            'mcp_restarts': 0,
+            'tunnel_restarts': 0,
+            'mcp_max_restarts_reached': False,
+            'tunnel_max_restarts_reached': False,
+        })
+
+    def _start_mcp_supervisor(self) -> None:
+        """Start the MCP supervision daemon thread."""
+        self._mcp_supervisor_running = True
+        self._mcp_supervision_status: dict[str, Any] = {}
+        self._mcp_supervisor_thread = threading.Thread(
+            target=self._mcp_supervision_loop,
+            name='mcp-supervisor',
+            daemon=True,
+        )
+        self._mcp_supervisor_thread.start()
+        logger.info('mcp_supervisor: supervision daemon started')
+
+    def _stop_mcp_supervisor(self) -> None:
+        """Signal the MCP supervision loop to stop."""
+        self._mcp_supervisor_running = False
+
     def _auto_optimize_brain(self) -> None:
         """Auto-optimize the reasoning brain on startup.
 
@@ -4216,6 +4350,26 @@ class AppBootstrap:
                             )
                     except Exception as exc:
                         logger.warning('startup_evolution: resource metacognition failed: %s', exc)
+
+                # Step 5 (Task 10): Freeze diagnostics — analyze recent incidents
+                freeze_reporter = getattr(self, 'freeze_reporter', None)
+                if freeze_reporter is not None and hasattr(freeze_reporter, 'diagnose_freeze_cause'):
+                    try:
+                        diagnosis = freeze_reporter.diagnose_freeze_cause()
+                        if diagnosis.get('incident_count', 0) > 0:
+                            logger.info(
+                                'startup_evolution: freeze diagnostics — %s',
+                                diagnosis.get('summary', 'no summary'),
+                            )
+                            for rec in diagnosis.get('config_recommendations', []):
+                                logger.info(
+                                    'startup_evolution: freeze recommendation — %s=%s (%s)',
+                                    rec.get('config'), rec.get('value'), rec.get('reason'),
+                                )
+                        else:
+                            logger.info('startup_evolution: freeze diagnostics — no recent incidents')
+                    except Exception as exc:
+                        logger.debug('startup_evolution: freeze diagnostics failed: %s', exc)
 
                 logger.info('startup_evolution: background cycle complete')
             except Exception as exc:
@@ -4471,6 +4625,8 @@ class AppBootstrap:
                         import time
                         time.sleep(2)
                         self._tunnel_proc = self._start_tunnel_subprocess()
+                    # Task 8: start supervision after initial launch
+                    self._start_mcp_supervisor()
                 threading.Thread(
                     target=_deferred_mcp_start,
                     name='mcp-deferred-start',
@@ -4600,6 +4756,11 @@ class AppBootstrap:
             logger.critical('bootstrap.run() crashed: %s', fatal, exc_info=True)
             raise
         finally:
+            # Task 8: stop MCP supervisor before terminating processes
+            try:
+                self._stop_mcp_supervisor()
+            except Exception:
+                pass
             for proc in (self._tunnel_proc, self._mcp_proc):
                 if proc and proc.poll() is None:
                     try:
