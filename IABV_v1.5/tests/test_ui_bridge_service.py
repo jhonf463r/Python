@@ -169,6 +169,7 @@ class TestBuildUIBridgeServer:
     def test_send_message_empty_text_error(self) -> None:
         port = _find_free_port()
         server = build_ui_bridge_server(port=port)
+        server.mark_shell_ready('test')
         server.start()
         try:
             client = UIBridgeClient(port=port)
