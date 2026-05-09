@@ -100,6 +100,153 @@ def test_operational_budget_requires_rest_window_for_timer_refreshes() -> None:
     assert budget['defer_seconds'] == 110.0
 
 
+def test_operational_budget_defers_background_while_ui_route_stabilizes() -> None:
+    policy = AutonomyGovernancePolicy()
+
+    budget = policy.evaluate_operational_budget(
+        work_class='metacognition',
+        source='startup_evolution',
+        rss_mb=250.0,
+        idle_seconds=300.0,
+        ui_route_stability_age_s=25.0,
+        active_route='control',
+    )
+
+    assert budget['allowed'] is False
+    assert budget['decision'] == 'defer'
+    assert budget['reason'] == 'ui_route_stabilizing:control'
+    assert budget['recommended_mode'] == 'wait_for_ui_route_stability'
+    assert budget['evidence']['active_route'] == 'control'
+    assert budget['evidence']['ui_route_stability_age_s'] == 25.0
+
+
+def test_operational_budget_defers_metacognition_promotion_during_route_stability() -> None:
+    """Post-chat OSES/PortableContext promotion is background metabolic work."""
+    policy = AutonomyGovernancePolicy()
+
+    budget = policy.evaluate_operational_budget(
+        work_class='metacognition_promotion',
+        source='interaction_resolution',
+        rss_mb=353.0,
+        idle_seconds=0.3,
+        ui_route_stability_age_s=21.4,
+        active_route='control',
+        confidence=0.86,
+    )
+
+    assert budget['allowed'] is False
+    assert budget['decision'] == 'defer'
+    assert budget['reason'] == 'ui_route_stabilizing:control'
+    assert budget['recommended_mode'] == 'wait_for_ui_route_stability'
+
+
+def test_operational_budget_defers_control_post_task_refresh_during_rest_window() -> None:
+    """Chat-triggered secondary surfaces must not run right after a response."""
+    policy = AutonomyGovernancePolicy()
+
+    budget = policy.evaluate_operational_budget(
+        work_class='control_post_task_refresh',
+        source='post_task:chat',
+        rss_mb=400.0,
+        idle_seconds=10.0,
+        ui_route_stability_age_s=300.0,
+        active_route='control',
+        confidence=0.86,
+    )
+
+    assert budget['allowed'] is False
+    assert budget['decision'] == 'defer'
+    assert budget['reason'] == 'post_task_rest_window_not_reached'
+    assert budget['recommended_mode'] == 'wait_for_deep_idle'
+
+
+def test_operational_budget_defers_post_task_autonomy_dock_longer_than_timer() -> None:
+    """Post-consultation dock refreshes are more conservative than routine timers."""
+    policy = AutonomyGovernancePolicy()
+
+    timer_budget = policy.evaluate_operational_budget(
+        work_class='autonomy_dock_refresh',
+        source='timer',
+        rss_mb=400.0,
+        idle_seconds=180.0,
+        ui_route_stability_age_s=300.0,
+        active_route='control',
+        confidence=0.86,
+    )
+    post_task_budget = policy.evaluate_operational_budget(
+        work_class='autonomy_dock_refresh',
+        source='post_task:external_consultation',
+        rss_mb=400.0,
+        idle_seconds=180.0,
+        ui_route_stability_age_s=300.0,
+        active_route='control',
+        confidence=0.86,
+    )
+
+    assert timer_budget['allowed'] is True
+    assert post_task_budget['allowed'] is False
+    assert post_task_budget['reason'] == 'post_task_rest_window_not_reached'
+    assert post_task_budget['defer_seconds'] == 420.0
+
+
+def test_operational_budget_defers_post_task_refresh_on_lower_memory_pressure() -> None:
+    """A post-task refresh should not start when the UI process is already large."""
+    policy = AutonomyGovernancePolicy()
+
+    budget = policy.evaluate_operational_budget(
+        work_class='autonomy_dock_refresh',
+        source='post_task:external_consultation',
+        rss_mb=1800.0,
+        idle_seconds=900.0,
+        ui_route_stability_age_s=900.0,
+        active_route='control',
+        confidence=0.86,
+    )
+
+    assert budget['allowed'] is False
+    assert budget['reason'] == 'post_task_resource_pressure_high'
+    assert budget['recommended_mode'] == 'wait_for_lower_memory'
+
+
+def test_operational_budget_defers_post_task_refresh_after_small_stall() -> None:
+    """A post-task refresh must wait after even a moderate UI stall."""
+    policy = AutonomyGovernancePolicy()
+
+    budget = policy.evaluate_operational_budget(
+        work_class='control_post_task_refresh',
+        source='post_task:chat',
+        rss_mb=400.0,
+        recent_stall_ms=2500.0,
+        idle_seconds=900.0,
+        ui_route_stability_age_s=900.0,
+        active_route='control',
+        confidence=0.86,
+    )
+
+    assert budget['allowed'] is False
+    assert budget['reason'] == 'post_task_recent_ui_stall:2500ms'
+    assert budget['recommended_mode'] == 'wait_for_stable_ui'
+
+
+def test_operational_budget_defers_post_task_refresh_during_route_settle_after_idle() -> None:
+    """Deep idle is not enough if the visible route itself is still settling."""
+    policy = AutonomyGovernancePolicy()
+
+    budget = policy.evaluate_operational_budget(
+        work_class='autonomy_dock_refresh',
+        source='post_task:external_consultation',
+        rss_mb=400.0,
+        idle_seconds=900.0,
+        ui_route_stability_age_s=180.0,
+        active_route='evolution',
+        confidence=0.86,
+    )
+
+    assert budget['allowed'] is False
+    assert budget['reason'] == 'post_task_ui_route_stabilizing:evolution'
+    assert budget['recommended_mode'] == 'wait_for_ui_route_stability'
+
+
 def test_operational_budget_allows_idle_self_test_only_in_rest_window() -> None:
     policy = AutonomyGovernancePolicy()
 
@@ -114,6 +261,7 @@ def test_operational_budget_allows_idle_self_test_only_in_rest_window() -> None:
         source='timer',
         rss_mb=250.0,
         idle_seconds=180.0,
+        ui_route_stability_age_s=180.0,
     )
 
     assert early['allowed'] is False

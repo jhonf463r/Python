@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import csv
 import io
+import math
 import os
+from pathlib import Path
 import subprocess
 import threading
 import time
@@ -60,6 +62,83 @@ class UniversalPerceptionService:
                 external_state_flags=external_state_flags,
             )
         return base_signal
+
+    def analyze_visual_evidence(
+        self,
+        *,
+        image_path: str,
+        assistant_kind: str = "",
+        permission_granted: bool = False,
+        source: str = "external_evidence_panel",
+        metadata: dict[str, Any] | None = None,
+    ) -> VisualSignalSnapshot:
+        """Build a lightweight semantic signal for a stored screenshot.
+
+        This intentionally avoids heavy OCR/model calls on the UI path.  OCR
+        can be enabled explicitly with IABV_ENABLE_VISUAL_OCR=1, otherwise the
+        signal records the missing OCR layer as UNRESOLVED so downstream logic
+        knows what is known visually and what is still blind.
+        """
+        metadata = dict(metadata or {})
+        metadata["permission_granted"] = bool(permission_granted)
+        path = Path(str(image_path or ""))
+        metrics = self._image_metrics(path)
+        ocr = self._optional_ocr(path)
+        unresolved_fields = list(metrics.get("unresolved_fields") or [])
+        unresolved_fields.extend(ocr.get("unresolved_fields") or [])
+        unresolved_fields = list(dict.fromkeys(str(item) for item in unresolved_fields if str(item)))
+        labels = self._visual_semantic_labels(
+            metrics=metrics,
+            ocr=ocr,
+            assistant_kind=assistant_kind,
+            metadata=metadata,
+        )
+        capture_available = bool(metrics.get("status") == "available")
+        confidence = self._visual_evidence_confidence(metrics=metrics, ocr=ocr, permission_granted=permission_granted)
+        state = self._visual_state_hypothesis(
+            metrics=metrics,
+            ocr=ocr,
+            permission_granted=permission_granted,
+            metadata=metadata,
+        )
+        visual_snapshot = {
+            **metrics,
+            "ocr_status": str(ocr.get("status") or "disabled"),
+            "ocr_text_preview": str(ocr.get("text_preview") or ""),
+            "semantic_labels": labels,
+            "state_hypothesis": state,
+            "permission_granted": bool(permission_granted),
+            "target_window_found": bool(metadata.get("target_window_found")),
+            "target_window_title": str(metadata.get("target_window_title") or ""),
+            "capture_scope": str(metadata.get("capture_scope") or ""),
+        }
+        return VisualSignalSnapshot(
+            source=source,
+            source_app=str(assistant_kind or "external_tool"),
+            capture_available=capture_available,
+            dom_available=False,
+            latest_title=str(metadata.get("latest_title") or metadata.get("assistant_title") or ""),
+            visible_targets=labels[:8],
+            login_detected=any(label in labels for label in ("login_screen_candidate", "credential_form_candidate")),
+            learning_ready=capture_available,
+            cross_check_status="visual_snapshot_recorded" if capture_available else "visual_snapshot_unavailable",
+            visual_evidence_refs=[str(path)] if path else [],
+            visual_snapshot=visual_snapshot,
+            dom_summary={"status": "no_disponible", "reason": "screenshot_only_no_dom"},
+            available_actions=[
+                {"action": "annotate_visual_evidence", "label": "Etiquetar visualmente", "available": capture_available},
+                {"action": "enable_background_ocr", "label": "Activar OCR en background", "available": False},
+            ],
+            detected_blocks=list(unresolved_fields),
+            confidence=confidence,
+            unresolved_fields=unresolved_fields,
+            metadata={
+                "image_path": str(path),
+                "assistant_kind": str(assistant_kind or ""),
+                "permission_granted": bool(permission_granted),
+                "ocr_enabled": bool(os.environ.get("IABV_ENABLE_VISUAL_OCR") == "1"),
+            },
+        )
 
     def build_capture_signal(
         self,
@@ -217,6 +296,193 @@ class UniversalPerceptionService:
                 "login_status": str(login_learning.get("status") or ""),
             },
         )
+
+    def _image_metrics(self, path: Path) -> dict[str, Any]:
+        if not path.exists():
+            return {
+                "status": "missing",
+                "image_width": 0,
+                "image_height": 0,
+                "brightness": 0.0,
+                "contrast": 0.0,
+                "colorfulness": 0.0,
+                "blank_probability": 1.0,
+                "unresolved_fields": ["UNRESOLVED:visual_image_missing"],
+            }
+        try:
+            from PIL import Image  # type: ignore
+        except Exception:
+            return {
+                "status": "unavailable",
+                "image_width": 0,
+                "image_height": 0,
+                "brightness": 0.0,
+                "contrast": 0.0,
+                "colorfulness": 0.0,
+                "blank_probability": 0.0,
+                "unresolved_fields": ["UNRESOLVED:pillow_not_available"],
+            }
+        try:
+            with Image.open(path) as img:
+                width, height = img.size
+                sample = img.convert("RGB")
+                sample.thumbnail((96, 96))
+                raw = sample.tobytes()
+                pixels = list(zip(raw[0::3], raw[1::3], raw[2::3]))
+        except Exception:
+            return {
+                "status": "unreadable",
+                "image_width": 0,
+                "image_height": 0,
+                "brightness": 0.0,
+                "contrast": 0.0,
+                "colorfulness": 0.0,
+                "blank_probability": 1.0,
+                "unresolved_fields": ["UNRESOLVED:visual_image_unreadable"],
+            }
+        if not pixels:
+            return {
+                "status": "empty",
+                "image_width": int(width),
+                "image_height": int(height),
+                "brightness": 0.0,
+                "contrast": 0.0,
+                "colorfulness": 0.0,
+                "blank_probability": 1.0,
+                "unresolved_fields": ["UNRESOLVED:visual_image_empty"],
+            }
+        luminance = [(0.2126 * r) + (0.7152 * g) + (0.0722 * b) for r, g, b in pixels]
+        brightness = sum(luminance) / len(luminance)
+        variance = sum((value - brightness) ** 2 for value in luminance) / len(luminance)
+        contrast = math.sqrt(variance)
+        channel_diff = sum((abs(r - g) + abs(g - b) + abs(r - b)) / 3.0 for r, g, b in pixels) / len(pixels)
+        blank_probability = 0.0
+        if contrast < 4.0 and channel_diff < 3.0:
+            blank_probability = 0.92
+        elif contrast < 10.0:
+            blank_probability = 0.58
+        elif contrast < 18.0:
+            blank_probability = 0.24
+        return {
+            "status": "available",
+            "image_width": int(width),
+            "image_height": int(height),
+            "brightness": round(brightness / 255.0, 4),
+            "contrast": round(contrast / 255.0, 4),
+            "colorfulness": round(channel_diff / 255.0, 4),
+            "blank_probability": round(blank_probability, 4),
+            "unresolved_fields": [],
+        }
+
+    def _optional_ocr(self, path: Path) -> dict[str, Any]:
+        if os.environ.get("IABV_ENABLE_VISUAL_OCR") != "1":
+            return {
+                "status": "disabled",
+                "text_preview": "",
+                "unresolved_fields": ["UNRESOLVED:ocr_not_enabled_on_ui_path"],
+            }
+        try:
+            import pytesseract  # type: ignore
+        except Exception:
+            return {
+                "status": "unavailable",
+                "text_preview": "",
+                "unresolved_fields": ["UNRESOLVED:pytesseract_not_available"],
+            }
+        try:
+            text = str(pytesseract.image_to_string(str(path), timeout=4) or "").strip()
+        except Exception:
+            return {
+                "status": "failed",
+                "text_preview": "",
+                "unresolved_fields": ["UNRESOLVED:ocr_failed_or_timed_out"],
+            }
+        return {
+            "status": "available" if text else "empty",
+            "text_preview": " ".join(text.split())[:500],
+            "unresolved_fields": [] if text else ["UNRESOLVED:ocr_empty"],
+        }
+
+    def _visual_semantic_labels(
+        self,
+        *,
+        metrics: dict[str, Any],
+        ocr: dict[str, Any],
+        assistant_kind: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> list[str]:
+        metadata = dict(metadata or {})
+        labels: list[str] = []
+        if str(assistant_kind or "").strip():
+            labels.append(f"assistant:{str(assistant_kind).strip().lower()}")
+        capture_scope = str(metadata.get("capture_scope") or "").strip()
+        if capture_scope:
+            labels.append(f"capture_scope:{capture_scope}")
+        if metadata.get("captured_self_only"):
+            labels.append("captured_iabv_only")
+        if metadata.get("target_window_found"):
+            labels.append("external_target_window_found")
+        elif metadata.get("permission_granted") or capture_scope == "screen_fallback_no_target":
+            labels.append("external_target_window_missing")
+        if metrics.get("status") == "available":
+            labels.append("screenshot_available")
+        if float(metrics.get("blank_probability") or 0.0) >= 0.8:
+            labels.append("blank_or_static_screen_candidate")
+        if float(metrics.get("contrast") or 0.0) >= 0.05:
+            labels.append("ui_content_visible")
+        text = str(ocr.get("text_preview") or "").lower()
+        if any(token in text for token in ("login", "iniciar", "password", "contraseña", "correo", "email")):
+            labels.append("login_screen_candidate")
+        if any(token in text for token in ("chatgpt", "chat", "message", "mensaje", "consulta")):
+            labels.append("chat_surface_candidate")
+        if ocr.get("status") == "available":
+            labels.append("ocr_text_available")
+        else:
+            labels.append("ocr_text_unresolved")
+        return list(dict.fromkeys(labels))
+
+    def _visual_state_hypothesis(
+        self,
+        *,
+        metrics: dict[str, Any],
+        ocr: dict[str, Any],
+        permission_granted: bool,
+        metadata: dict[str, Any] | None = None,
+    ) -> str:
+        metadata = dict(metadata or {})
+        if metrics.get("status") != "available":
+            return "visual_unavailable"
+        if not permission_granted:
+            return "iabv_window_only_external_unresolved"
+        if metadata.get("captured_self_only"):
+            return "iabv_window_only_external_unresolved"
+        if metadata.get("target_window_found") is False or str(metadata.get("capture_scope") or "") == "screen_fallback_no_target":
+            return "external_target_window_not_found"
+        if float(metrics.get("blank_probability") or 0.0) >= 0.8:
+            return "screen_visible_but_low_information"
+        if ocr.get("status") == "available":
+            return "screen_visible_with_text"
+        return "screen_visible_without_ocr"
+
+    def _visual_evidence_confidence(
+        self,
+        *,
+        metrics: dict[str, Any],
+        ocr: dict[str, Any],
+        permission_granted: bool,
+    ) -> float:
+        if metrics.get("status") != "available":
+            return 0.0
+        confidence = 0.35
+        if permission_granted:
+            confidence += 0.2
+        if float(metrics.get("contrast") or 0.0) >= 0.05:
+            confidence += 0.18
+        if float(metrics.get("blank_probability") or 0.0) < 0.5:
+            confidence += 0.12
+        if ocr.get("status") == "available":
+            confidence += 0.15
+        return round(min(0.95, confidence), 3)
 
     def scan_codex_local(self) -> VisualSignalSnapshot:
         return self.scan_tool_context(tool_id="codex_installed", assistant_kind="codex")

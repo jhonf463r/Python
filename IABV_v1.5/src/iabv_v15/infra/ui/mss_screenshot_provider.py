@@ -36,6 +36,7 @@ class MssScreenshotProvider:
     """Captura screenshots via python-mss."""
 
     _MONITOR_RE = re.compile(r"^monitor[_\-]?(\d+)$")
+    _BBOX_RE = re.compile(r"^bbox:(-?\d+),(-?\d+),(\d+),(\d+)$")
 
     def __init__(self, *, mss_factory: Any | None = None) -> None:
         """Args:
@@ -86,6 +87,12 @@ class MssScreenshotProvider:
         region_key = (region or "").strip().lower()
         monitors = list(getattr(sct, "monitors", []) or [])
         if not monitors:
+            return None
+        bbox = self._BBOX_RE.match(region_key)
+        if bbox:
+            left, top, width, height = [int(part) for part in bbox.groups()]
+            if width > 0 and height > 0:
+                return {"left": left, "top": top, "width": width, "height": height}
             return None
         if region_key in {"all"}:
             return monitors[0]

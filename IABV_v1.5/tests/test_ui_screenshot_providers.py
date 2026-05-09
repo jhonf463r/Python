@@ -132,6 +132,78 @@ def test_qt_provider_captures_via_factory_with_fake_screen(monkeypatch: pytest.M
     assert len(data) > 8
 
 
+def test_qt_provider_captures_external_hwnd(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`region='hwnd:N'` captures that native window id, not the IABV window."""
+
+    png_magic = b"\x89PNG\r\n\x1a\n" + b"HWND_PAYLOAD"
+    captured: dict[str, int] = {}
+
+    class _FakeBuffer:
+        def __init__(self) -> None:
+            self._data = bytearray()
+
+        def open(self, mode: object) -> bool:
+            return True
+
+        def close(self) -> None:
+            return None
+
+        def data(self) -> bytes:
+            return bytes(self._data)
+
+    class _FakePixmap:
+        def isNull(self) -> bool:
+            return False
+
+        def save(self, buffer: _FakeBuffer, fmt: str) -> bool:
+            buffer._data.extend(png_magic)
+            return True
+
+    class _FakeScreen:
+        def grabWindow(self, wid: int) -> _FakePixmap:
+            captured["wid"] = wid
+            return _FakePixmap()
+
+    class _FakeQGuiApplication:
+        @staticmethod
+        def primaryScreen() -> _FakeScreen:
+            return _FakeScreen()
+
+        @staticmethod
+        def topLevelWindows() -> list[object]:
+            raise AssertionError("hwnd capture must not enumerate IABV windows")
+
+    class _FakeIODeviceFlag:
+        WriteOnly = 1
+
+    class _FakeQIODevice:
+        OpenModeFlag = _FakeIODeviceFlag
+
+    import sys
+    import types as _types
+
+    pyside6_core = _types.ModuleType("PySide6.QtCore")
+    pyside6_core.QBuffer = _FakeBuffer  # type: ignore[attr-defined]
+    pyside6_core.QIODevice = _FakeQIODevice  # type: ignore[attr-defined]
+
+    pyside6_gui = _types.ModuleType("PySide6.QtGui")
+    pyside6_gui.QGuiApplication = _FakeQGuiApplication  # type: ignore[attr-defined]
+
+    pyside6_pkg = _types.ModuleType("PySide6")
+    pyside6_pkg.QtCore = pyside6_core  # type: ignore[attr-defined]
+    pyside6_pkg.QtGui = pyside6_gui  # type: ignore[attr-defined]
+
+    monkeypatch.setitem(sys.modules, "PySide6", pyside6_pkg)
+    monkeypatch.setitem(sys.modules, "PySide6.QtCore", pyside6_core)
+    monkeypatch.setitem(sys.modules, "PySide6.QtGui", pyside6_gui)
+
+    provider = QtScreenshotProvider(app_factory=lambda: _FakeQGuiApplication())
+    data = provider.capture("hwnd:4321")
+
+    assert captured["wid"] == 4321
+    assert data.startswith(b"\x89PNG\r\n\x1a\n")
+
+
 # ---------------------------------------------------------------------------
 # MssScreenshotProvider
 
@@ -206,6 +278,37 @@ def test_mss_provider_resolves_monitor_by_index() -> None:
     provider.capture("monitor_2")
 
     assert captured["monitor"] is _FakeSct.monitors[2]
+
+
+def test_mss_provider_resolves_bbox_region() -> None:
+    """`bbox:x,y,w,h` captures an explicit window rectangle."""
+
+    class _FakeShot:
+        size = (2, 2)
+        rgb = bytes([0x00, 0x00, 0xFF] * 4)
+
+    captured: dict = {}
+
+    class _FakeSct:
+        monitors = [
+            {"left": 0, "top": 0, "width": 3840, "height": 1080},
+            {"left": 0, "top": 0, "width": 1920, "height": 1080},
+        ]
+
+        def grab(self, monitor: object) -> _FakeShot:
+            captured["monitor"] = monitor
+            return _FakeShot()
+
+        def __enter__(self) -> "_FakeSct":
+            return self
+
+        def __exit__(self, *exc: object) -> None:
+            return None
+
+    provider = MssScreenshotProvider(mss_factory=lambda: _FakeSct())
+    provider.capture("bbox:10,20,300,400")
+
+    assert captured["monitor"] == {"left": 10, "top": 20, "width": 300, "height": 400}
 
 
 # ---------------------------------------------------------------------------

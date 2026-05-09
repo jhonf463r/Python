@@ -85,7 +85,12 @@ class QtScreenshotProvider:
         region_key = (region or "").strip().lower()
         pixmap = None
 
-        if region_key in _WINDOW_REGIONS or region_key == "":
+        if region_key.startswith("hwnd:"):
+            pixmap = self._grab_external_hwnd(app, region_key)
+            if pixmap is None or pixmap.isNull():
+                return b""
+
+        if (pixmap is None or pixmap.isNull()) and (region_key in _WINDOW_REGIONS or region_key == ""):
             pixmap = self._grab_iabv_window(app)
 
         if pixmap is None or pixmap.isNull():
@@ -158,6 +163,32 @@ class QtScreenshotProvider:
             return screen.grabWindow(wid)
         except Exception as exc:  # pragma: no cover
             logger.debug("screen.grabWindow(winId) falló: %r", exc)
+            return None
+
+    def _grab_external_hwnd(self, app: Any, region_key: str) -> Any:
+        """Capture a specific native window id when WorldModel found it."""
+        try:
+            hwnd = int(str(region_key).split(":", 1)[1].strip() or "0")
+        except Exception:
+            return None
+        if hwnd <= 0:
+            return None
+        try:
+            screen = app.primaryScreen()
+        except Exception:
+            screen = None
+        if screen is None:
+            try:
+                screens = list(app.screens() or [])
+                screen = screens[0] if screens else None
+            except Exception:
+                screen = None
+        if screen is None:
+            return None
+        try:
+            return screen.grabWindow(hwnd)
+        except Exception as exc:  # pragma: no cover
+            logger.debug("screen.grabWindow(external hwnd=%s) fallÃ³: %r", hwnd, exc)
             return None
 
     def _grab_primary_screen(self, app: Any) -> Any:

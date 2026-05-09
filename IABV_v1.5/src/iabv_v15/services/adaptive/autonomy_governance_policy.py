@@ -128,6 +128,8 @@ class AutonomyGovernancePolicy:
         'idle_self_test',
         'deep_scan',
         'metacognition',
+        'metacognition_promotion',
+        'control_post_task_refresh',
         'tool_scan',
         'branch_cleanup',
     }
@@ -135,6 +137,10 @@ class AutonomyGovernancePolicy:
     _OPERATIONAL_HIGH_RSS_MB = 2500.0
     _OPERATIONAL_STALL_MS = 5000.0
     _OPERATIONAL_IDLE_REST_WINDOW_S = 120.0
+    _OPERATIONAL_UI_ROUTE_STABILITY_WINDOW_S = 180.0
+    _OPERATIONAL_POST_TASK_REST_WINDOW_S = 600.0
+    _OPERATIONAL_POST_TASK_HIGH_RSS_MB = 1500.0
+    _OPERATIONAL_POST_TASK_STALL_MS = 2000.0
 
     def evaluate_operational_budget(
         self,
@@ -148,6 +154,8 @@ class AutonomyGovernancePolicy:
         recent_stall_ms: float = 0.0,
         event_loop_lag_ms: float = 0.0,
         idle_seconds: float = 0.0,
+        ui_route_stability_age_s: float | None = None,
+        active_route: str = '',
         background_active: bool = False,
         confidence: float = 1.0,
     ) -> dict[str, Any]:
@@ -174,6 +182,11 @@ class AutonomyGovernancePolicy:
             idle = max(0.0, float(idle_seconds or 0.0))
         except Exception:
             idle = 0.0
+        route_age: float | None
+        try:
+            route_age = max(0.0, float(ui_route_stability_age_s)) if ui_route_stability_age_s is not None else None
+        except Exception:
+            route_age = None
         try:
             conf = max(0.0, min(float(confidence or 0.0), 1.0))
         except Exception:
@@ -188,6 +201,8 @@ class AutonomyGovernancePolicy:
             'rss_mb': round(rss, 1),
             'recent_stall_ms': round(stall, 1),
             'idle_seconds': round(idle, 1),
+            'ui_route_stability_age_s': round(route_age, 1) if route_age is not None else None,
+            'active_route': str(active_route or '').strip(),
             'background_active': bool(background_active),
             'confidence': round(conf, 3),
         }
@@ -196,6 +211,18 @@ class AutonomyGovernancePolicy:
         high_rss_mb = float(thresholds.get('high_rss_mb') or self._OPERATIONAL_HIGH_RSS_MB)
         stall_ms = float(thresholds.get('stall_ms') or self._OPERATIONAL_STALL_MS)
         idle_rest_window_s = float(thresholds.get('idle_rest_window_s') or self._OPERATIONAL_IDLE_REST_WINDOW_S)
+        ui_route_stability_window_s = float(
+            thresholds.get('ui_route_stability_window_s') or self._OPERATIONAL_UI_ROUTE_STABILITY_WINDOW_S
+        )
+        post_task_rest_window_s = float(
+            thresholds.get('post_task_rest_window_s') or self._OPERATIONAL_POST_TASK_REST_WINDOW_S
+        )
+        post_task_high_rss_mb = float(
+            thresholds.get('post_task_high_rss_mb') or self._OPERATIONAL_POST_TASK_HIGH_RSS_MB
+        )
+        post_task_stall_ms = float(
+            thresholds.get('post_task_stall_ms') or self._OPERATIONAL_POST_TASK_STALL_MS
+        )
 
         def _budget(
             decision: str,
@@ -227,6 +254,60 @@ class AutonomyGovernancePolicy:
         if bool(background_active) and not foreground:
             return _budget('defer', 'startup_or_background_active', defer_seconds=20.0)
 
+        post_task_background = (
+            src.startswith('post_task:')
+            and work in self._OPERATIONAL_BACKGROUND_CLASSES
+            and prio not in {'critical', 'foreground'}
+        )
+        if post_task_background:
+            if stall >= post_task_stall_ms:
+                return _budget(
+                    'defer',
+                    f'post_task_recent_ui_stall:{int(stall)}ms',
+                    defer_seconds=60.0,
+                    recommended_mode='wait_for_stable_ui',
+                )
+            if rss >= post_task_high_rss_mb:
+                return _budget(
+                    'defer',
+                    'post_task_resource_pressure_high',
+                    defer_seconds=60.0,
+                    recommended_mode='wait_for_lower_memory',
+                )
+            if idle < post_task_rest_window_s:
+                return _budget(
+                    'defer',
+                    'post_task_rest_window_not_reached',
+                    defer_seconds=post_task_rest_window_s - idle,
+                    recommended_mode='wait_for_deep_idle',
+                )
+            if route_age is not None and route_age < post_task_rest_window_s:
+                route_label = (str(active_route or '').strip().lower() or 'unknown').replace(' ', '_')[:40]
+                return _budget(
+                    'defer',
+                    f'post_task_ui_route_stabilizing:{route_label}',
+                    defer_seconds=post_task_rest_window_s - route_age,
+                    recommended_mode='wait_for_ui_route_stability',
+                )
+
+        route_stability_required = (
+            work in self._OPERATIONAL_BACKGROUND_CLASSES
+            and src != 'user_click'
+            and prio not in {'critical', 'foreground'}
+        )
+        if (
+            route_stability_required
+            and route_age is not None
+            and route_age < ui_route_stability_window_s
+        ):
+            route_label = (str(active_route or '').strip().lower() or 'unknown').replace(' ', '_')[:40]
+            return _budget(
+                'defer',
+                f'ui_route_stabilizing:{route_label}',
+                defer_seconds=ui_route_stability_window_s - route_age,
+                recommended_mode='wait_for_ui_route_stability',
+            )
+
         if stall >= stall_ms and not foreground:
             return _budget('defer', f'recent_ui_stall:{int(stall)}ms', defer_seconds=30.0)
 
@@ -237,7 +318,16 @@ class AutonomyGovernancePolicy:
             return _budget('defer', 'resource_pressure_high', defer_seconds=30.0)
 
         rest_window_required = (
-            work in {'autonomy_dock_refresh', 'ui_refresh', 'idle_self_test', 'deep_scan', 'metacognition', 'tool_scan'}
+            work in {
+                'autonomy_dock_refresh',
+                'ui_refresh',
+                'idle_self_test',
+                'deep_scan',
+                'metacognition',
+                'metacognition_promotion',
+                'control_post_task_refresh',
+                'tool_scan',
+            }
             and src != 'user_click'
             and prio not in {'critical', 'foreground'}
         )
@@ -249,7 +339,14 @@ class AutonomyGovernancePolicy:
                 recommended_mode='wait_for_idle',
             )
 
-        if work in {'idle_self_test', 'deep_scan', 'metacognition', 'tool_scan'} and prio not in {'critical'}:
+        if work in {
+            'idle_self_test',
+            'deep_scan',
+            'metacognition',
+            'metacognition_promotion',
+            'control_post_task_refresh',
+            'tool_scan',
+        } and prio not in {'critical'}:
             return _budget('allow', 'idle_rest_window_available', recommended_mode='background_idle')
 
         return _budget('allow', 'budget_available')
@@ -1208,6 +1305,10 @@ _OPERATIONAL_BUDGET_THRESHOLD_BOUNDS: dict[str, tuple[float, float]] = {
     'high_rss_mb': (500.0, 15000.0),
     'stall_ms': (500.0, 60000.0),
     'idle_rest_window_s': (10.0, 1800.0),
+    'ui_route_stability_window_s': (30.0, 1800.0),
+    'post_task_rest_window_s': (60.0, 3600.0),
+    'post_task_high_rss_mb': (500.0, 15000.0),
+    'post_task_stall_ms': (500.0, 60000.0),
 }
 
 
@@ -1247,6 +1348,10 @@ def operational_budget_default_thresholds() -> dict[str, float]:
         'high_rss_mb': AutonomyGovernancePolicy._OPERATIONAL_HIGH_RSS_MB,
         'stall_ms': AutonomyGovernancePolicy._OPERATIONAL_STALL_MS,
         'idle_rest_window_s': AutonomyGovernancePolicy._OPERATIONAL_IDLE_REST_WINDOW_S,
+        'ui_route_stability_window_s': AutonomyGovernancePolicy._OPERATIONAL_UI_ROUTE_STABILITY_WINDOW_S,
+        'post_task_rest_window_s': AutonomyGovernancePolicy._OPERATIONAL_POST_TASK_REST_WINDOW_S,
+        'post_task_high_rss_mb': AutonomyGovernancePolicy._OPERATIONAL_POST_TASK_HIGH_RSS_MB,
+        'post_task_stall_ms': AutonomyGovernancePolicy._OPERATIONAL_POST_TASK_STALL_MS,
     }
 
 
