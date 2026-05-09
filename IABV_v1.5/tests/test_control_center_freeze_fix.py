@@ -47,6 +47,15 @@ def _valid_png_bytes() -> bytes:
     return buffer.getvalue()
 
 
+def _black_png_bytes(width: int = 640, height: int = 360) -> bytes:
+    from PIL import Image  # type: ignore
+
+    image = Image.new('RGB', (width, height), color='black')
+    buffer = io.BytesIO()
+    image.save(buffer, format='PNG')
+    return buffer.getvalue()
+
+
 def _workspace(name: str) -> Path:
     base = Path(__file__).resolve().parents[1] / 'data' / 'test_runs'
     base.mkdir(parents=True, exist_ok=True)
@@ -690,8 +699,8 @@ def test_visual_evidence_capture_with_permission_marks_missing_target_window(tmp
     assert dummy.traces[-1]['target_window_found'] is False
 
 
-def test_visual_evidence_capture_with_permission_uses_target_window(tmp_path: Path) -> None:
-    """When WorldModel has a target hwnd, capture that window instead of IABV/screen fallback."""
+def test_visual_evidence_capture_with_permission_prefers_visible_bbox(tmp_path: Path) -> None:
+    """When WorldModel has a target rect, capture visible pixels before hwnd."""
     from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
 
     class Emitter:
@@ -773,15 +782,125 @@ def test_visual_evidence_capture_with_permission_uses_target_window(tmp_path: Pa
             announce=False,
         )
 
-    assert provider.regions == ['hwnd:4321']
+    assert provider.regions == ['bbox:10,20,900,700']
     assert entry['permission_granted'] is True
     assert entry['target_window_found'] is True
-    assert entry['capture_scope'] == 'external_target_window'
+    assert entry['capture_scope'] == 'external_target_window_bbox'
     assert entry['target_window_title'] == 'ChatGPT - Google Chrome'
     assert 'UNRESOLVED:external_target_window_not_found' not in entry['unresolved_fields']
-    assert dummy._external_evidence_panel['visual_evidence'][0]['region'] == 'hwnd:4321'
+    assert dummy._external_evidence_panel['visual_evidence'][0]['region'] == 'bbox:10,20,900,700'
     assert dummy.traces[-1]['target_window_found'] is True
     assert dummy.traces[-1]['target_window_title'] == 'ChatGPT - Google Chrome'
+    assert dummy.traces[-1]['capture_quality']['useful'] is True
+
+
+def test_visual_capture_quality_detects_black_chromium_capture() -> None:
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    quality = ControlCenterViewModel._visual_capture_quality(_black_png_bytes(1920, 1020))
+
+    assert quality['useful'] is False
+    assert quality['blank_probability'] >= 0.8
+    assert quality['reason'] == 'low_information_pixels'
+
+
+def test_visual_evidence_retries_after_low_information_capture(tmp_path: Path) -> None:
+    """A black bbox/hwnd attempt must not be reported as complete evidence."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class Emitter:
+        def emit(self) -> None:
+            pass
+
+    class FakeProvider:
+        def __init__(self) -> None:
+            self.regions: list[str] = []
+
+        def capture(self, region: str) -> bytes:
+            self.regions.append(region)
+            if region.startswith('bbox:'):
+                return _black_png_bytes()
+            return _valid_png_bytes()
+
+    class FakeWorldModel:
+        def permission_snapshot(self) -> list[dict[str, Any]]:
+            return [{'scope': 'observe_window_content:chatgpt', 'granted': True}]
+
+        def current_model(self) -> Any:
+            return SimpleNamespace(
+                active_windows=[
+                    SimpleNamespace(
+                        title='ChatGPT - Google Chrome',
+                        app_name='Google Chrome',
+                        assistant_kind='chatgpt',
+                        tool_id='chatgpt_web_assisted',
+                        pid=123,
+                        focused=True,
+                        visible=True,
+                        metadata={'hwnd': 4321, 'rect': [10, 20, 900, 700]},
+                    )
+                ]
+            )
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self.config = SimpleNamespace(workspace_root=str(tmp_path))
+            self.adaptive_orchestrator = SimpleNamespace(
+                context_assembler=SimpleNamespace(world_model_service=FakeWorldModel())
+            )
+            self._external_evidence_panel = {'assistant': 'ChatGPT web asistido', 'metadata': [], 'actions': []}
+            self._last_adaptive_payload = {}
+            self._active_interaction_id = 'chat-visual'
+            self.chatChanged = Emitter()
+            self.dataChanged = Emitter()
+            self.traces: list[dict[str, Any]] = []
+
+        def _pending_observation_permission_assistant(self) -> str:
+            return ''
+
+        def _observation_permission_granted(self, assistant_kind: str) -> bool:
+            return ControlCenterViewModel._observation_permission_granted(self, assistant_kind)  # type: ignore[arg-type]
+
+        def _visual_evidence_semantic_summary(self, entry: dict[str, Any]) -> dict[str, Any]:
+            return {
+                'status': 'available',
+                'state_hypothesis': 'screen_visible_without_ocr',
+                'confidence': 0.7,
+                'labels': ['screenshot_available'],
+                'unresolved_fields': ['UNRESOLVED:ocr_not_enabled_on_ui_path'],
+            }
+
+        def _assistant_display_name(self, kind: str) -> str:
+            return {'chatgpt': 'ChatGPT'}.get(kind, kind or 'IABV')
+
+        def _assistant_action(self, action: str, label: str, detail: str = '') -> dict[str, str]:
+            return {'action': action, 'label': label, 'detail': detail}
+
+        def _set_external_evidence_panel(self, **kwargs: Any) -> None:
+            ControlCenterViewModel._set_external_evidence_panel(self, **kwargs)  # type: ignore[arg-type]
+
+        def _trace_external_followup(self, kind: str, **data: Any) -> None:
+            self.traces.append({'kind': kind, **data})
+
+        def _append_message(self, *args: Any, **kwargs: Any) -> None:
+            pass
+
+    provider = FakeProvider()
+    dummy = DummyViewModel()
+    with patch('iabv_v15.infra.ui.build_ui_screenshot_provider', return_value=provider):
+        entry = ControlCenterViewModel._capture_visual_evidence_snapshot(  # type: ignore[arg-type]
+            dummy,
+            assistant_kind='chatgpt',
+            reason='test',
+            announce=False,
+        )
+
+    assert provider.regions == ['bbox:10,20,900,700', 'hwnd:4321']
+    assert entry['region'] == 'hwnd:4321'
+    assert entry['capture_quality']['useful'] is True
+    assert entry['capture_attempts'][0]['useful'] is False
+    assert 'UNRESOLVED:visual_capture_low_information' not in entry['unresolved_fields']
+    assert dummy.traces[-1]['capture_attempts'][0]['reason'] == 'low_information_pixels'
 
 
 def test_universal_perception_builds_light_semantic_signal_for_visual_evidence(tmp_path: Path) -> None:

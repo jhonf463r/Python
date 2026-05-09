@@ -3351,6 +3351,8 @@ class ControlCenterViewModel(QObject):
                     'region': str(item.get('region') or '')[:32],
                     'semantic_summary': dict(item.get('semantic_summary') or {}),
                     'semantic_path': str(item.get('semantic_path') or '')[:260],
+                    'capture_quality': dict(item.get('capture_quality') or {}),
+                    'capture_attempts': list(item.get('capture_attempts') or [])[:4],
                 }
                 for item in list(visual_evidence or [])[-4:]
                 if isinstance(item, dict) and str(item.get('path') or item.get('image_url') or '').strip()
@@ -3676,15 +3678,101 @@ class ControlCenterViewModel(QObject):
 
     @staticmethod
     def _capture_region_for_target_window(target_window: dict[str, Any]) -> str:
-        hwnd = int(dict(target_window or {}).get('hwnd') or 0)
-        if hwnd > 0:
-            return f'hwnd:{hwnd}'
         rect = list(dict(target_window or {}).get('rect') or [])
         if len(rect) >= 4:
             left, top, width, height = [int(value or 0) for value in rect[:4]]
             if width > 0 and height > 0:
                 return f'bbox:{left},{top},{width},{height}'
+        hwnd = int(dict(target_window or {}).get('hwnd') or 0)
+        if hwnd > 0:
+            return f'hwnd:{hwnd}'
         return ''
+
+    @staticmethod
+    def _capture_region_candidates_for_target_window(target_window: dict[str, Any]) -> list[dict[str, str]]:
+        """Return capture attempts ordered by visual reliability.
+
+        For external Chromium windows, native hwnd capture can be all black.
+        The visible bbox is closer to what the user sees, so it goes first
+        when WorldModel exposes a rectangle; hwnd remains as fallback evidence.
+        """
+        target = dict(target_window or {})
+        candidates: list[dict[str, str]] = []
+        rect = list(target.get('rect') or [])
+        if len(rect) >= 4:
+            left, top, width, height = [int(value or 0) for value in rect[:4]]
+            if width > 0 and height > 0:
+                candidates.append(
+                    {
+                        'region': f'bbox:{left},{top},{width},{height}',
+                        'capture_scope': 'external_target_window_bbox',
+                    }
+                )
+        hwnd = int(target.get('hwnd') or 0)
+        if hwnd > 0:
+            candidates.append({'region': f'hwnd:{hwnd}', 'capture_scope': 'external_target_window_hwnd'})
+        return candidates
+
+    @staticmethod
+    def _visual_capture_quality(screenshot_data: bytes) -> dict[str, Any]:
+        """Estimate whether a screenshot has enough visual information.
+
+        This is intentionally cheap and deterministic. It catches the common
+        Windows/Chromium failure mode where a valid PNG is completely black.
+        """
+        size_bytes = len(screenshot_data or b'')
+        if not screenshot_data:
+            return {
+                'status': 'empty',
+                'size_bytes': 0,
+                'blank_probability': 1.0,
+                'useful': False,
+                'reason': 'empty_capture',
+            }
+        try:
+            import io
+            from PIL import Image, ImageStat  # type: ignore
+
+            image = Image.open(io.BytesIO(screenshot_data)).convert('RGB')
+            width, height = image.size
+            stat = ImageStat.Stat(image)
+            extrema = image.getextrema()
+            dynamic_range = max((hi - lo) for lo, hi in extrema)
+            mean_stddev = sum(float(value) for value in stat.stddev) / 3.0
+            unique_colors = image.getcolors(maxcolors=256)
+            unique_color_count = 257 if unique_colors is None else len(unique_colors)
+            blank_probability = 0.0
+            if width <= 0 or height <= 0:
+                blank_probability = 1.0
+            elif dynamic_range <= 2 and mean_stddev <= 1.0:
+                blank_probability = 0.98
+            elif unique_color_count <= 2 and mean_stddev <= 2.0:
+                blank_probability = 0.9
+            elif size_bytes < 12000 and width * height >= 250000 and mean_stddev < 8.0:
+                blank_probability = 0.84
+            elif mean_stddev < 5.0:
+                blank_probability = 0.62
+            useful = blank_probability < 0.8
+            return {
+                'status': 'analyzed',
+                'size_bytes': size_bytes,
+                'image_width': int(width),
+                'image_height': int(height),
+                'mean_stddev': round(mean_stddev, 4),
+                'dynamic_range': int(dynamic_range),
+                'unique_color_count': int(unique_color_count),
+                'blank_probability': round(blank_probability, 4),
+                'useful': useful,
+                'reason': 'ok' if useful else 'low_information_pixels',
+            }
+        except Exception as exc:
+            return {
+                'status': 'unresolved',
+                'size_bytes': size_bytes,
+                'blank_probability': 0.0,
+                'useful': True,
+                'reason': f'quality_analysis_unavailable:{str(exc)[:80]}',
+            }
 
     @staticmethod
     def _visual_evidence_image_url(path: str) -> str:
@@ -3774,12 +3862,19 @@ class ControlCenterViewModel(QObject):
         permission_granted = self._observation_permission_granted(assistant_kind)
         target_window: dict[str, Any] = {}
         target_region = ''
+        capture_attempt_plan: list[dict[str, str]] = []
         if assistant_kind and permission_granted:
             target_window = ControlCenterViewModel._target_window_for_visual_evidence(self, assistant_kind)  # type: ignore[arg-type]
-            target_region = ControlCenterViewModel._capture_region_for_target_window(target_window)
-        target_found = bool(target_window and target_region)
-        region = target_region if target_found else ('screen' if permission_granted else 'main')
-        capture_scope = 'external_target_window' if target_found else ('screen_fallback_no_target' if permission_granted else 'iabv_window_only')
+            capture_attempt_plan = ControlCenterViewModel._capture_region_candidates_for_target_window(target_window)
+            target_region = capture_attempt_plan[0]['region'] if capture_attempt_plan else ''
+        target_found = bool(target_window and capture_attempt_plan)
+        if target_found:
+            region = target_region
+            capture_scope = capture_attempt_plan[0]['capture_scope']
+        else:
+            region = 'screen' if permission_granted else 'main'
+            capture_scope = 'screen_fallback_no_target' if permission_granted else 'iabv_window_only'
+            capture_attempt_plan = [{'region': region, 'capture_scope': capture_scope}]
         target_title = str(target_window.get('title') or '').strip()
         captured_self_only = (not permission_granted) or ('iabv' in target_title.lower() and assistant_kind != 'iabv')
         unresolved_fields: list[str] = []
@@ -3794,9 +3889,37 @@ class ControlCenterViewModel(QObject):
             provider = build_ui_screenshot_provider()
             if provider is None:
                 raise RuntimeError('screenshot_provider_unavailable')
-            screenshot_data = provider.capture(region)
+            screenshot_data = b''
+            capture_quality: dict[str, Any] = {}
+            capture_attempts: list[dict[str, Any]] = []
+            selected_attempt: dict[str, str] = dict(capture_attempt_plan[0] if capture_attempt_plan else {'region': region, 'capture_scope': capture_scope})
+            for attempt in capture_attempt_plan:
+                attempt_region = str(attempt.get('region') or '')
+                attempt_scope = str(attempt.get('capture_scope') or '')
+                attempt_data = provider.capture(attempt_region)
+                attempt_quality = ControlCenterViewModel._visual_capture_quality(attempt_data)
+                capture_attempts.append(
+                    {
+                        'region': attempt_region,
+                        'capture_scope': attempt_scope,
+                        'size_bytes': int(attempt_quality.get('size_bytes') or len(attempt_data or b'')),
+                        'blank_probability': float(attempt_quality.get('blank_probability') or 0.0),
+                        'useful': bool(attempt_quality.get('useful')),
+                        'reason': str(attempt_quality.get('reason') or ''),
+                    }
+                )
+                if attempt_data and (not screenshot_data or bool(attempt_quality.get('useful'))):
+                    screenshot_data = attempt_data
+                    capture_quality = attempt_quality
+                    selected_attempt = attempt
+                if screenshot_data and bool(attempt_quality.get('useful')):
+                    break
+            region = str(selected_attempt.get('region') or region)
+            capture_scope = str(selected_attempt.get('capture_scope') or capture_scope)
             if not screenshot_data:
                 raise RuntimeError('screenshot_capture_empty')
+            if capture_quality and not bool(capture_quality.get('useful', True)):
+                unresolved_fields.append('UNRESOLVED:visual_capture_low_information')
             evidence_dir = Path(str(getattr(self.config, 'workspace_root', '') or '.')) / 'data' / 'evolution' / 'visual_evidence'
             evidence_dir.mkdir(parents=True, exist_ok=True)
             stamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S_%f')
@@ -3829,6 +3952,8 @@ class ControlCenterViewModel(QObject):
                 'target_window': target_window,
                 'captured_self_only': captured_self_only,
                 'size_bytes': len(screenshot_data),
+                'capture_quality': capture_quality,
+                'capture_attempts': capture_attempts,
                 'unresolved_fields': unresolved_fields,
             }
             status = 'ok'
@@ -3848,6 +3973,8 @@ class ControlCenterViewModel(QObject):
                 'target_window': target_window,
                 'captured_self_only': captured_self_only,
                 'size_bytes': 0,
+                'capture_quality': {},
+                'capture_attempts': [],
                 'unresolved_fields': list(dict.fromkeys(unresolved_fields + ['visual_capture_failed'])),
             }
             status = 'error'
@@ -3886,6 +4013,9 @@ class ControlCenterViewModel(QObject):
                 {'key': 'visual_evidence_status', 'value': status},
                 {'key': 'visual_evidence_region', 'value': region},
                 {'key': 'visual_capture_scope', 'value': capture_scope},
+                {'key': 'visual_capture_quality', 'value': str(dict(entry.get('capture_quality') or {}).get('reason') or '')},
+                {'key': 'visual_blank_probability', 'value': str(dict(entry.get('capture_quality') or {}).get('blank_probability') or 0.0)},
+                {'key': 'visual_capture_attempts', 'value': json.dumps(entry.get('capture_attempts') or [], ensure_ascii=False)[:160]},
                 {'key': 'visual_target_window_found', 'value': str(target_found)},
                 {'key': 'visual_target_window_title', 'value': target_title or 'UNRESOLVED'},
                 {'key': 'visual_permission_granted', 'value': str(permission_granted)},
@@ -3941,6 +4071,8 @@ class ControlCenterViewModel(QObject):
                 permission_granted=permission_granted,
                 path=str(entry.get('path') or ''),
                 size_bytes=int(entry.get('size_bytes') or 0),
+                capture_quality=dict(entry.get('capture_quality') or {}),
+                capture_attempts=list(entry.get('capture_attempts') or []),
                 unresolved_fields=list(entry.get('unresolved_fields') or []),
                 semantic_state=str(semantic_summary.get('state_hypothesis') or ''),
                 semantic_confidence=float(semantic_summary.get('confidence') or 0.0),

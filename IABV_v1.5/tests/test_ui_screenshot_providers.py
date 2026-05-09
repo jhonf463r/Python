@@ -204,6 +204,86 @@ def test_qt_provider_captures_external_hwnd(monkeypatch: pytest.MonkeyPatch) -> 
     assert data.startswith(b"\x89PNG\r\n\x1a\n")
 
 
+def test_qt_provider_captures_bbox_visible_pixels(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`region='bbox:x,y,w,h'` captures screen pixels, avoiding black hwnd grabs."""
+
+    png_magic = b"\x89PNG\r\n\x1a\n" + b"BBOX_PAYLOAD"
+    captured: dict[str, tuple[int, ...]] = {}
+
+    class _FakeBuffer:
+        def __init__(self) -> None:
+            self._data = bytearray()
+
+        def open(self, mode: object) -> bool:
+            return True
+
+        def close(self) -> None:
+            return None
+
+        def data(self) -> bytes:
+            return bytes(self._data)
+
+    class _FakePixmap:
+        def isNull(self) -> bool:
+            return False
+
+        def save(self, buffer: _FakeBuffer, fmt: str) -> bool:
+            buffer._data.extend(png_magic)
+            return True
+
+    class _FakeScreen:
+        def grabWindow(self, *args: int) -> _FakePixmap:
+            captured["args"] = tuple(args)
+            return _FakePixmap()
+
+    class _FakePoint:
+        def __init__(self, x: int, y: int) -> None:
+            self.x = x
+            self.y = y
+
+    class _FakeQGuiApplication:
+        @staticmethod
+        def screenAt(point: _FakePoint) -> _FakeScreen:
+            captured["point"] = (point.x, point.y)
+            return _FakeScreen()
+
+        @staticmethod
+        def primaryScreen() -> _FakeScreen:
+            return _FakeScreen()
+
+    class _FakeIODeviceFlag:
+        WriteOnly = 1
+
+    class _FakeQIODevice:
+        OpenModeFlag = _FakeIODeviceFlag
+
+    import sys
+    import types as _types
+
+    pyside6_core = _types.ModuleType("PySide6.QtCore")
+    pyside6_core.QBuffer = _FakeBuffer  # type: ignore[attr-defined]
+    pyside6_core.QIODevice = _FakeQIODevice  # type: ignore[attr-defined]
+    pyside6_core.QPoint = _FakePoint  # type: ignore[attr-defined]
+
+    pyside6_gui = _types.ModuleType("PySide6.QtGui")
+    pyside6_gui.QGuiApplication = _FakeQGuiApplication  # type: ignore[attr-defined]
+
+    pyside6_pkg = _types.ModuleType("PySide6")
+    pyside6_pkg.QtCore = pyside6_core  # type: ignore[attr-defined]
+    pyside6_pkg.QtGui = pyside6_gui  # type: ignore[attr-defined]
+
+    monkeypatch.setitem(sys.modules, "PySide6", pyside6_pkg)
+    monkeypatch.setitem(sys.modules, "PySide6.QtCore", pyside6_core)
+    monkeypatch.setitem(sys.modules, "PySide6.QtGui", pyside6_gui)
+
+    provider = QtScreenshotProvider(app_factory=lambda: _FakeQGuiApplication())
+    data = provider.capture("bbox:10,20,300,400")
+
+    assert captured["point"] == (160, 220)
+    assert captured["args"] == (0, 10, 20, 300, 400)
+    assert data.startswith(b"\x89PNG\r\n\x1a\n")
+
+
 # ---------------------------------------------------------------------------
 # MssScreenshotProvider
 
