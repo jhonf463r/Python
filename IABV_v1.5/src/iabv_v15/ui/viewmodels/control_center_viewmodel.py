@@ -7730,6 +7730,12 @@ class ControlCenterViewModel(QObject):
         if not message:
             return
         self._autonomy_dock_rest_window_started_at = time.monotonic()
+        validation_cycle = getattr(self, 'autonomous_validation_cycle', None)
+        if validation_cycle is not None and hasattr(validation_cycle, 'note_user_activity'):
+            try:
+                validation_cycle.note_user_activity(reason='control_center_chat')
+            except Exception:
+                pass
         # --- Open canonical interaction episode ---
         self._interaction_has_pending_followup = False
         self._interaction_pending_followup_outcome = ''
