@@ -1017,8 +1017,17 @@ class AppBootstrap:
 
         self.intent_understanding_service = IntentUnderstandingService()
         self.autonomy_governance_policy = AutonomyGovernancePolicy()
+        try:
+            self.autonomy_governance_policy.apply_runtime_tuning_profile(
+                self.runtime_tuning_repository.get('global'),
+            )
+        except Exception:
+            pass
         self.operational_self_examination_service.autonomy_governance_policy = (
             self.autonomy_governance_policy
+        )
+        self.operational_self_examination_service.runtime_tuning_repository = (
+            self.runtime_tuning_repository
         )
         self.goal_engine = GoalEngine(self.objective_repository)
         self.portable_context_service = PortableContextService(

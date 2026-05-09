@@ -24,6 +24,7 @@ from iabv_v15.domain.models import (
 )
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 from iabv_v15.services.adaptive.autonomy_governance_policy import (
+    apply_operational_budget_calibration_to_runtime_tuning,
     record_operational_budget_experiment,
     summarize_operational_budget_calibration,
 )
@@ -95,6 +96,7 @@ class OperationalSelfExaminationService:
         self.code_audit_trail: Any | None = None
         self.boot_profile_store: Any | None = None
         self.chat_message_repository: Any | None = None
+        self.runtime_tuning_repository: Any | None = None
         self._current_review: SelfExaminationSnapshot | None = None
         # Read-only cache for GitHub API rate-limit data.  Populated
         # externally (e.g. auto-correction scan); _account_resource_health_findings
@@ -361,6 +363,58 @@ class OperationalSelfExaminationService:
                 metadata=calibration,
             )
         ]
+
+    def _recent_operational_budget_stall_ms(self) -> float:
+        watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
+        if watchdog is None or not hasattr(watchdog, 'recent_stalls'):
+            return 0.0
+        try:
+            stalls = list(watchdog.recent_stalls(limit=5) or [])
+        except Exception:
+            return 0.0
+        values: list[float] = []
+        for stall in stalls:
+            if not isinstance(stall, dict):
+                continue
+            try:
+                values.append(float(stall.get('duration_ms') or 0.0))
+            except Exception:
+                continue
+        return max(values or [0.0])
+
+    def _apply_operational_budget_runtime_tuning(
+        self,
+        calibration: dict[str, Any],
+    ) -> dict[str, Any]:
+        """A5: persist safe operational-budget thresholds as runtime tuning."""
+
+        repo = getattr(self, 'runtime_tuning_repository', None)
+        recent_stall_ms = self._recent_operational_budget_stall_ms()
+        result = apply_operational_budget_calibration_to_runtime_tuning(
+            repository=repo,
+            calibration=calibration,
+            recent_stall_ms=recent_stall_ms,
+            evidence_refs=['OperationalSelfExaminationService.current_review'],
+        )
+        if result.get('applied') or result.get('reason') in {'already_applied', 'already_effective'}:
+            policy = getattr(self, 'autonomy_governance_policy', None)
+            if policy is not None and hasattr(policy, 'apply_runtime_tuning_profile') and repo is not None:
+                try:
+                    policy.apply_runtime_tuning_profile(repo.get('global'))
+                except Exception:
+                    pass
+            acs = getattr(self, '_autonomy_cycle_service', None)
+            queue = getattr(acs, 'queue', None)
+            if queue is not None and hasattr(queue, 'mark_status'):
+                try:
+                    from iabv_v15.domain.models import PendingTaskStatus
+                    queue.mark_status(
+                        'inv_phase_a5_runtime_budget_threshold_application',
+                        PendingTaskStatus.COMPLETED,
+                    )
+                except Exception:
+                    pass
+        return result
 
     def _deferred_deep_cognition_findings(
         self,
@@ -864,6 +918,11 @@ class OperationalSelfExaminationService:
         operational_budget_calibration = summarize_operational_budget_calibration(
             operational_budget_runs_for_review,
         )
+        operational_budget_runtime_application = (
+            self._apply_operational_budget_runtime_tuning(
+                operational_budget_calibration,
+            )
+        )
 
         findings: list[SelfExaminationFinding] = []
         findings.extend(self._recurring_failure_findings(recent_runs=recent_runs))
@@ -1104,6 +1163,7 @@ class OperationalSelfExaminationService:
                 },
                 'operational_budget_learning': operational_budget_learning,
                 'operational_budget_calibration': operational_budget_calibration,
+                'operational_budget_runtime_application': operational_budget_runtime_application,
             },
         )
         # Metacognitive feedback loop: convert overconfidence/underconfidence

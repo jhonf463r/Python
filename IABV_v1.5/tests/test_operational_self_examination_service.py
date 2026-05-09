@@ -18,6 +18,7 @@ from iabv_v15.domain.models import (
     RoleRoute,
     RunRecord,
     RunStatus,
+    RuntimeTuningProfile,
     SandboxExperiment,
     SelfExaminationFinding,
     SelfExaminationSnapshot,
@@ -60,6 +61,20 @@ class _BudgetExperimentRepo:
 
     def list_recommendations(self, *args, **kwargs) -> list[ExperimentRecommendation]:
         return []
+
+
+class _RuntimeTuningRepo:
+    def __init__(self) -> None:
+        self.profile: RuntimeTuningProfile | None = None
+        self.saved: list[RuntimeTuningProfile] = []
+
+    def get(self, scope_key: str = 'global') -> RuntimeTuningProfile | None:
+        return self.profile
+
+    def save(self, profile: RuntimeTuningProfile) -> RuntimeTuningProfile:
+        self.profile = profile
+        self.saved.append(profile)
+        return profile
 
 
 def test_oses_defers_deep_cognition_and_auto_correction_until_rest_window() -> None:
@@ -136,6 +151,47 @@ def test_oses_emits_operational_budget_calibration_finding_after_enough_evidence
         assert findings[0].category == 'operational_budget_calibration'
         assert findings[0].metadata['status'] == 'stable_guardrails'
         assert findings[0].metadata['recommended_thresholds'] == findings[0].metadata['current_thresholds']
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_oses_applies_mature_operational_budget_calibration_to_runtime_tuning() -> None:
+    root = _workspace('oses_operational_budget_runtime_tuning')
+    try:
+        repo = _BudgetExperimentRepo()
+        runtime_repo = _RuntimeTuningRepo()
+        policy = AutonomyGovernancePolicy()
+        for idx in range(6):
+            budget = policy.evaluate_operational_budget(
+                work_class='idle_self_test',
+                source=f'timer_allow_{idx}',
+                idle_seconds=180.0,
+            )
+            record_operational_budget_experiment(repository=repo, budget=budget)
+        for idx in range(5):
+            budget = policy.evaluate_operational_budget(
+                work_class='tool_scan',
+                source=f'timer_defer_{idx}',
+                idle_seconds=15.0,
+            )
+            record_operational_budget_experiment(repository=repo, budget=budget)
+        service = OperationalSelfExaminationService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'evolution')),
+            experiment_lab_repository=repo,
+        )
+        service.autonomy_governance_policy = policy
+        service.runtime_tuning_repository = runtime_repo
+
+        review = service.build_review()
+
+        applied = review.metadata['operational_budget_runtime_application']
+        assert applied['applied'] is True
+        assert applied['reason'] == 'runtime_tuning_profile_updated'
+        assert runtime_repo.profile is not None
+        payload = runtime_repo.profile.metadata['operational_budget_thresholds']
+        assert payload['thresholds']['idle_rest_window_s'] == 120.0
+        assert policy.operational_budget_thresholds()['idle_rest_window_s'] == 120.0
     finally:
         shutil.rmtree(root, ignore_errors=True)
 

@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 
+import json
 import time
 from typing import Any
 
@@ -14,8 +15,11 @@ from iabv_v15.domain.models import (
     ExperimentRun,
     GoalContext,
     IssueSeverity,
+    RuntimeAdjustment,
+    RuntimeTuningProfile,
     WorldModelSnapshot,
     canonical_external_state_flags,
+    utc_now,
 )
 
 
@@ -30,13 +34,63 @@ class AutonomyGovernancePolicy:
         'critical_object_missing',
     }
 
-    def __init__(self, *, allow_parallel_comparison: bool = True) -> None:
+    def __init__(
+        self,
+        *,
+        allow_parallel_comparison: bool = True,
+        operational_budget_thresholds: dict[str, Any] | None = None,
+    ) -> None:
         # Flag que habilita el cotejo en paralelo de IAs externas sobre el mismo
         # ``SynapticRoutingDecision``. Por defecto encendido: la politica es
         # descriptiva y el cotejo no ejecuta rutas operativas, solo prepara /
         # compara consultas via ``AutonomousEvolutionService``. Los tests o el
         # bootstrap pueden apagarlo para forzar ruta IA unica.
         self.allow_parallel_comparison = bool(allow_parallel_comparison)
+        self._operational_budget_threshold_source = 'compiled_defaults'
+        self._operational_budget_thresholds = _normalize_operational_budget_thresholds(
+            operational_budget_thresholds,
+        )
+        if operational_budget_thresholds:
+            self._operational_budget_threshold_source = 'runtime_constructor'
+
+    def operational_budget_thresholds(self) -> dict[str, float]:
+        """Return the effective runtime thresholds used by the budget gate."""
+
+        return dict(self._operational_budget_thresholds)
+
+    def configure_operational_budget_thresholds(
+        self,
+        thresholds: dict[str, Any] | None,
+        *,
+        source: str = 'runtime_tuning',
+    ) -> dict[str, float]:
+        """Apply governed operational-budget thresholds to this policy instance."""
+
+        self._operational_budget_thresholds = _normalize_operational_budget_thresholds(thresholds)
+        self._operational_budget_threshold_source = str(source or 'runtime_tuning')
+        return self.operational_budget_thresholds()
+
+    def apply_runtime_tuning_profile(
+        self,
+        profile: RuntimeTuningProfile | Any | None,
+    ) -> dict[str, float]:
+        """Load operational-budget thresholds from an existing tuning profile."""
+
+        if profile is None:
+            self._operational_budget_thresholds = _normalize_operational_budget_thresholds(None)
+            self._operational_budget_threshold_source = 'compiled_defaults'
+            return self.operational_budget_thresholds()
+        metadata = dict(getattr(profile, 'metadata', {}) or {})
+        payload = metadata.get('operational_budget_thresholds') or {}
+        thresholds: dict[str, Any] = {}
+        if isinstance(payload, dict):
+            raw = payload.get('thresholds') or payload.get('recommended_thresholds') or payload
+            if isinstance(raw, dict):
+                thresholds = raw
+        return self.configure_operational_budget_thresholds(
+            thresholds,
+            source='runtime_tuning_profile',
+        )
 
     def allow_parallel_ia_comparison(self) -> tuple[bool, str | None]:
         """Gate para ``AdaptiveTaskOrchestrator._parallel_ia_comparison``.
@@ -137,6 +191,11 @@ class AutonomyGovernancePolicy:
             'background_active': bool(background_active),
             'confidence': round(conf, 3),
         }
+        thresholds = self.operational_budget_thresholds()
+        critical_rss_mb = float(thresholds.get('critical_rss_mb') or self._OPERATIONAL_CRITICAL_RSS_MB)
+        high_rss_mb = float(thresholds.get('high_rss_mb') or self._OPERATIONAL_HIGH_RSS_MB)
+        stall_ms = float(thresholds.get('stall_ms') or self._OPERATIONAL_STALL_MS)
+        idle_rest_window_s = float(thresholds.get('idle_rest_window_s') or self._OPERATIONAL_IDLE_REST_WINDOW_S)
 
         def _budget(
             decision: str,
@@ -155,6 +214,8 @@ class AutonomyGovernancePolicy:
                 'defer_seconds': round(max(0.0, defer_seconds), 1),
                 'evidence': evidence,
                 'decision_source': 'autonomy_governance_policy.operational_budget',
+                'threshold_source': self._operational_budget_threshold_source,
+                'effective_thresholds': thresholds,
             }
 
         if conf < 0.45 and work in {'external_action', 'destructive_action', 'branch_cleanup'}:
@@ -166,13 +227,13 @@ class AutonomyGovernancePolicy:
         if bool(background_active) and not foreground:
             return _budget('defer', 'startup_or_background_active', defer_seconds=20.0)
 
-        if stall >= self._OPERATIONAL_STALL_MS and not foreground:
+        if stall >= stall_ms and not foreground:
             return _budget('defer', f'recent_ui_stall:{int(stall)}ms', defer_seconds=30.0)
 
-        if rss >= self._OPERATIONAL_CRITICAL_RSS_MB and not foreground:
+        if rss >= critical_rss_mb and not foreground:
             return _budget('defer', 'resource_pressure_critical', defer_seconds=60.0)
 
-        if rss >= self._OPERATIONAL_HIGH_RSS_MB and not foreground:
+        if rss >= high_rss_mb and not foreground:
             return _budget('defer', 'resource_pressure_high', defer_seconds=30.0)
 
         rest_window_required = (
@@ -180,11 +241,11 @@ class AutonomyGovernancePolicy:
             and src != 'user_click'
             and prio not in {'critical', 'foreground'}
         )
-        if rest_window_required and idle < self._OPERATIONAL_IDLE_REST_WINDOW_S:
+        if rest_window_required and idle < idle_rest_window_s:
             return _budget(
                 'defer',
                 'rest_window_not_reached',
-                defer_seconds=self._OPERATIONAL_IDLE_REST_WINDOW_S - idle,
+                defer_seconds=idle_rest_window_s - idle,
                 recommended_mode='wait_for_idle',
             )
 
@@ -1142,6 +1203,37 @@ def record_operational_budget_experiment(
         return None
 
 
+_OPERATIONAL_BUDGET_THRESHOLD_BOUNDS: dict[str, tuple[float, float]] = {
+    'critical_rss_mb': (1500.0, 20000.0),
+    'high_rss_mb': (500.0, 15000.0),
+    'stall_ms': (500.0, 60000.0),
+    'idle_rest_window_s': (10.0, 1800.0),
+}
+
+
+def _normalize_operational_budget_thresholds(
+    thresholds: dict[str, Any] | None,
+) -> dict[str, float]:
+    """Return safe operational-budget thresholds with bounded overrides."""
+
+    defaults = operational_budget_default_thresholds()
+    normalized = dict(defaults)
+    raw = dict(thresholds or {})
+    for key, (minimum, maximum) in _OPERATIONAL_BUDGET_THRESHOLD_BOUNDS.items():
+        if key not in raw:
+            continue
+        try:
+            value = float(raw.get(key))
+        except Exception:
+            continue
+        if value <= 0:
+            continue
+        normalized[key] = round(max(minimum, min(maximum, value)), 1)
+    if normalized['critical_rss_mb'] < normalized['high_rss_mb']:
+        normalized['critical_rss_mb'] = normalized['high_rss_mb']
+    return normalized
+
+
 def operational_budget_default_thresholds() -> dict[str, float]:
     """Return the currently compiled guardrail thresholds.
 
@@ -1285,6 +1377,182 @@ def summarize_operational_budget_calibration(
         'avg_score_by_decision': avg_score_by_decision,
         'evidence_ranges': evidence_ranges,
     }
+
+
+def apply_operational_budget_calibration_to_runtime_tuning(
+    *,
+    repository: Any | None,
+    calibration: dict[str, Any] | None,
+    scope_key: str = 'global',
+    recent_stall_ms: float = 0.0,
+    background_active: bool = False,
+    evidence_refs: list[str] | None = None,
+) -> dict[str, Any]:
+    """Promote a mature operational-budget calibration into runtime tuning.
+
+    This is A5: a governed, reversible application step.  It does not invent
+    thresholds; it persists the recommendation already derived from
+    ExperimentLab/OSES and lets ``AutonomyGovernancePolicy`` consume it on the
+    next evaluation.
+    """
+
+    if repository is None or not hasattr(repository, 'get') or not hasattr(repository, 'save'):
+        return {'applied': False, 'status': 'unavailable', 'reason': 'runtime_tuning_repository_missing'}
+    data = dict(calibration or {})
+    status = str(data.get('status') or '').strip().lower()
+    recommendation = str(data.get('recommendation') or '').strip() or 'keep_current_thresholds'
+    sample_count = int(data.get('sample_count') or 0)
+    minimum_sample = int(data.get('minimum_sample') or 10)
+    if sample_count < minimum_sample:
+        return {
+            'applied': False,
+            'status': status or 'insufficient_sample',
+            'reason': 'minimum_sample_not_reached',
+            'sample_count': sample_count,
+            'minimum_sample': minimum_sample,
+        }
+    if status in {'no_data', 'insufficient_sample', 'needs_allow_samples', 'human_gate_observed'}:
+        return {
+            'applied': False,
+            'status': status,
+            'reason': f'calibration_not_safe_to_apply:{status}',
+            'sample_count': sample_count,
+            'minimum_sample': minimum_sample,
+        }
+    try:
+        stall = max(0.0, float(recent_stall_ms or 0.0))
+    except Exception:
+        stall = 0.0
+    if stall >= AutonomyGovernancePolicy._OPERATIONAL_STALL_MS:
+        return {
+            'applied': False,
+            'status': status,
+            'reason': f'recent_ui_stall:{int(stall)}ms',
+            'sample_count': sample_count,
+            'minimum_sample': minimum_sample,
+        }
+    if bool(background_active):
+        return {
+            'applied': False,
+            'status': status,
+            'reason': 'background_active',
+            'sample_count': sample_count,
+            'minimum_sample': minimum_sample,
+        }
+
+    thresholds = _normalize_operational_budget_thresholds(data.get('recommended_thresholds') or {})
+    profile = repository.get(scope_key) or RuntimeTuningProfile(scope_key=scope_key)
+    metadata = dict(profile.metadata or {})
+    existing_payload = dict(metadata.get('operational_budget_thresholds') or {})
+    previous_thresholds = _normalize_operational_budget_thresholds(
+        existing_payload.get('thresholds') if isinstance(existing_payload, dict) else None
+    )
+    signature = _operational_budget_calibration_signature(data, thresholds)
+    if (
+        existing_payload
+        and previous_thresholds == thresholds
+        and str(existing_payload.get('calibration_status') or '').strip().lower() == status
+        and str(existing_payload.get('recommendation') or '').strip() == recommendation
+    ):
+        metadata['operational_budget_thresholds'] = {
+            **existing_payload,
+            'thresholds': thresholds,
+            'calibration_status': status,
+            'recommendation': recommendation,
+            'sample_count': sample_count,
+            'minimum_sample': minimum_sample,
+            'confidence': float(data.get('confidence') or 0.0),
+            'policy_version': data.get('policy_version') or 'operational_budget_v1',
+            'calibration_signature': signature,
+            'last_confirmed_at_utc': utc_now().isoformat(),
+        }
+        profile.metadata = metadata
+        profile.updated_at_utc = utc_now()
+        repository.save(profile)
+        return {
+            'applied': False,
+            'status': status,
+            'reason': 'already_effective',
+            'sample_count': sample_count,
+            'minimum_sample': minimum_sample,
+            'thresholds': thresholds,
+            'profile_id': profile.profile_id,
+        }
+    if existing_payload.get('calibration_signature') == signature:
+        return {
+            'applied': False,
+            'status': status,
+            'reason': 'already_applied',
+            'sample_count': sample_count,
+            'minimum_sample': minimum_sample,
+            'thresholds': thresholds,
+            'profile_id': profile.profile_id,
+        }
+
+    adjustment = RuntimeAdjustment(
+        target_key='autonomy_governance_policy.operational_budget.thresholds',
+        previous_value=previous_thresholds,
+        new_value=thresholds,
+        reason=(
+            f'A5 operational budget calibration: {recommendation} '
+            f'({status}, samples={sample_count}/{minimum_sample}).'
+        ),
+        evidence_refs=[
+            *(evidence_refs or []),
+            'ExperimentLab:operational_budget',
+            'OSES:operational_budget_calibration',
+        ],
+        reversible=True,
+        helped=None,
+        metadata={
+            'calibration_status': status,
+            'recommendation': recommendation,
+            'sample_count': sample_count,
+            'minimum_sample': minimum_sample,
+            'confidence': float(data.get('confidence') or 0.0),
+            'calibration_signature': signature,
+        },
+    )
+    metadata['operational_budget_thresholds'] = {
+        'thresholds': thresholds,
+        'calibration_status': status,
+        'recommendation': recommendation,
+        'sample_count': sample_count,
+        'minimum_sample': minimum_sample,
+        'confidence': float(data.get('confidence') or 0.0),
+        'policy_version': data.get('policy_version') or 'operational_budget_v1',
+        'calibration_signature': signature,
+        'applied_at_utc': utc_now().isoformat(),
+    }
+    profile.adjustments.append(adjustment)
+    profile.metadata = metadata
+    profile.updated_at_utc = utc_now()
+    repository.save(profile)
+    return {
+        'applied': True,
+        'status': status,
+        'reason': 'runtime_tuning_profile_updated',
+        'sample_count': sample_count,
+        'minimum_sample': minimum_sample,
+        'thresholds': thresholds,
+        'profile_id': profile.profile_id,
+        'adjustment_id': adjustment.adjustment_id,
+    }
+
+
+def _operational_budget_calibration_signature(
+    calibration: dict[str, Any],
+    thresholds: dict[str, float],
+) -> str:
+    payload = {
+        'policy_version': calibration.get('policy_version') or 'operational_budget_v1',
+        'status': calibration.get('status') or '',
+        'recommendation': calibration.get('recommendation') or '',
+        'sample_count': int(calibration.get('sample_count') or 0),
+        'minimum_sample': int(calibration.get('minimum_sample') or 10),
+        'thresholds': thresholds,
+    }
+    return json.dumps(payload, sort_keys=True, ensure_ascii=True)
 
 
 def _clamp_float(value: Any, *, default: float = 0.0) -> float:

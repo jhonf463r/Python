@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from iabv_v15.services.adaptive.autonomy_governance_policy import (
     AutonomyGovernancePolicy,
+    apply_operational_budget_calibration_to_runtime_tuning,
     record_operational_budget_experiment,
     summarize_operational_budget_calibration,
 )
+from iabv_v15.domain.models import RuntimeTuningProfile
 
 
 class _RunRepo:
@@ -14,6 +16,20 @@ class _RunRepo:
     def save_run(self, run):
         self.runs.append(run)
         return run
+
+
+class _RuntimeTuningRepo:
+    def __init__(self) -> None:
+        self.profile: RuntimeTuningProfile | None = None
+        self.saved: list[RuntimeTuningProfile] = []
+
+    def get(self, scope_key: str = 'global') -> RuntimeTuningProfile | None:
+        return self.profile
+
+    def save(self, profile: RuntimeTuningProfile) -> RuntimeTuningProfile:
+        self.profile = profile
+        self.saved.append(profile)
+        return profile
 
 
 def test_operational_budget_defers_background_work_while_user_waits() -> None:
@@ -242,3 +258,172 @@ def test_operational_budget_calibration_does_not_tune_without_allow_samples() ->
     assert summary['status'] == 'needs_allow_samples'
     assert summary['recommendation'] == 'collect_post_rest_allow_evidence_before_tuning'
     assert summary['by_reason']['rest_window_not_reached'] == 10
+
+
+def test_operational_budget_policy_uses_runtime_tuning_thresholds() -> None:
+    profile = RuntimeTuningProfile(
+        scope_key='global',
+        metadata={
+            'operational_budget_thresholds': {
+                'thresholds': {
+                    'high_rss_mb': 1000.0,
+                    'critical_rss_mb': 3000.0,
+                    'stall_ms': 5000.0,
+                    'idle_rest_window_s': 60.0,
+                }
+            }
+        },
+    )
+    policy = AutonomyGovernancePolicy()
+    policy.apply_runtime_tuning_profile(profile)
+
+    budget = policy.evaluate_operational_budget(
+        work_class='ui_refresh',
+        source='timer',
+        rss_mb=1200.0,
+        idle_seconds=90.0,
+    )
+
+    assert budget['decision'] == 'defer'
+    assert budget['reason'] == 'resource_pressure_high'
+    assert budget['threshold_source'] == 'runtime_tuning_profile'
+    assert budget['effective_thresholds']['high_rss_mb'] == 1000.0
+
+
+def test_operational_budget_runtime_application_blocks_immature_calibration() -> None:
+    runtime_repo = _RuntimeTuningRepo()
+    result = apply_operational_budget_calibration_to_runtime_tuning(
+        repository=runtime_repo,
+        calibration={
+            'status': 'insufficient_sample',
+            'sample_count': 3,
+            'minimum_sample': 10,
+            'recommended_thresholds': {'idle_rest_window_s': 120.0},
+        },
+    )
+
+    assert result['applied'] is False
+    assert result['reason'] == 'minimum_sample_not_reached'
+    assert runtime_repo.saved == []
+
+
+def test_operational_budget_runtime_application_persists_reversible_profile() -> None:
+    runtime_repo = _RuntimeTuningRepo()
+    calibration = {
+        'status': 'rest_window_dominant',
+        'policy_version': 'operational_budget_v1',
+        'sample_count': 11,
+        'minimum_sample': 10,
+        'recommendation': 'keep_idle_rest_window_and_collect_more_after_idle_samples',
+        'confidence': 0.495,
+        'recommended_thresholds': {
+            'critical_rss_mb': 6000.0,
+            'high_rss_mb': 2500.0,
+            'stall_ms': 5000.0,
+            'idle_rest_window_s': 120.0,
+        },
+    }
+
+    result = apply_operational_budget_calibration_to_runtime_tuning(
+        repository=runtime_repo,
+        calibration=calibration,
+        evidence_refs=['test:evidence'],
+    )
+
+    assert result['applied'] is True
+    assert result['status'] == 'rest_window_dominant'
+    assert runtime_repo.profile is not None
+    payload = runtime_repo.profile.metadata['operational_budget_thresholds']
+    assert payload['thresholds']['idle_rest_window_s'] == 120.0
+    assert payload['recommendation'] == calibration['recommendation']
+    assert len(runtime_repo.profile.adjustments) == 1
+    adjustment = runtime_repo.profile.adjustments[0]
+    assert adjustment.target_key == 'autonomy_governance_policy.operational_budget.thresholds'
+    assert adjustment.reversible is True
+    assert 'test:evidence' in adjustment.evidence_refs
+
+
+def test_operational_budget_runtime_application_is_idempotent_for_same_calibration() -> None:
+    runtime_repo = _RuntimeTuningRepo()
+    calibration = {
+        'status': 'stable_guardrails',
+        'sample_count': 12,
+        'minimum_sample': 10,
+        'recommendation': 'keep_current_thresholds',
+        'recommended_thresholds': {
+            'critical_rss_mb': 6000.0,
+            'high_rss_mb': 2500.0,
+            'stall_ms': 5000.0,
+            'idle_rest_window_s': 120.0,
+        },
+    }
+
+    first = apply_operational_budget_calibration_to_runtime_tuning(
+        repository=runtime_repo,
+        calibration=calibration,
+    )
+    second = apply_operational_budget_calibration_to_runtime_tuning(
+        repository=runtime_repo,
+        calibration=calibration,
+    )
+
+    assert first['applied'] is True
+    assert second['applied'] is False
+    assert second['reason'] == 'already_effective'
+    assert runtime_repo.profile is not None
+    assert len(runtime_repo.profile.adjustments) == 1
+
+
+def test_operational_budget_runtime_application_updates_evidence_without_duplicate_adjustment() -> None:
+    runtime_repo = _RuntimeTuningRepo()
+    calibration = {
+        'status': 'rest_window_dominant',
+        'sample_count': 11,
+        'minimum_sample': 10,
+        'recommendation': 'keep_idle_rest_window_and_collect_more_after_idle_samples',
+        'recommended_thresholds': {
+            'critical_rss_mb': 6000.0,
+            'high_rss_mb': 2500.0,
+            'stall_ms': 5000.0,
+            'idle_rest_window_s': 120.0,
+        },
+    }
+    first = apply_operational_budget_calibration_to_runtime_tuning(
+        repository=runtime_repo,
+        calibration=calibration,
+    )
+    second = apply_operational_budget_calibration_to_runtime_tuning(
+        repository=runtime_repo,
+        calibration={**calibration, 'sample_count': 13},
+    )
+
+    assert first['applied'] is True
+    assert second['applied'] is False
+    assert second['reason'] == 'already_effective'
+    assert runtime_repo.profile is not None
+    assert len(runtime_repo.profile.adjustments) == 1
+    assert runtime_repo.profile.metadata['operational_budget_thresholds']['sample_count'] == 13
+
+
+def test_operational_budget_runtime_application_waits_out_recent_stall() -> None:
+    runtime_repo = _RuntimeTuningRepo()
+    result = apply_operational_budget_calibration_to_runtime_tuning(
+        repository=runtime_repo,
+        calibration={
+            'status': 'stable_guardrails',
+            'sample_count': 12,
+            'minimum_sample': 10,
+            'recommendation': 'keep_current_thresholds',
+            'recommended_thresholds': {
+                'critical_rss_mb': 6000.0,
+                'high_rss_mb': 2500.0,
+                'stall_ms': 5000.0,
+                'idle_rest_window_s': 120.0,
+            },
+        },
+        recent_stall_ms=9000.0,
+    )
+
+    assert result['applied'] is False
+    assert result['reason'] == 'recent_ui_stall:9000ms'
+    assert runtime_repo.saved == []
