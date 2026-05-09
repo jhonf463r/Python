@@ -7742,6 +7742,12 @@ class ControlCenterViewModel(QObject):
                 oses.note_user_activity(reason='control_center_chat')
             except Exception:
                 pass
+        bootstrap = getattr(self, '_bootstrap_ref', None)
+        if bootstrap is not None and hasattr(bootstrap, 'note_user_activity_for_operational_budget'):
+            try:
+                bootstrap.note_user_activity_for_operational_budget(reason='control_center_chat')
+            except Exception:
+                pass
         # --- Open canonical interaction episode ---
         self._interaction_has_pending_followup = False
         self._interaction_pending_followup_outcome = ''

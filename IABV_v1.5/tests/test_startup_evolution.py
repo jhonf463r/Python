@@ -46,6 +46,35 @@ class TestScheduleStartupEvolution:
         finally:
             shutil.rmtree(workspace, ignore_errors=True)
 
+    def test_startup_evolution_budget_defers_before_rest_window(self) -> None:
+        bootstrap, workspace = _make_bootstrap()
+        try:
+            budget = bootstrap._operational_budget_for_auxiliary_work(
+                work_class='metacognition',
+                source='startup_evolution',
+                priority='background',
+            )
+
+            assert budget['decision'] == 'defer'
+            assert budget['reason'] == 'rest_window_not_reached'
+        finally:
+            shutil.rmtree(workspace, ignore_errors=True)
+
+    def test_startup_evolution_budget_allows_after_rest_window(self) -> None:
+        bootstrap, workspace = _make_bootstrap()
+        try:
+            bootstrap._auxiliary_work_rest_started_at -= 300.0
+            budget = bootstrap._operational_budget_for_auxiliary_work(
+                work_class='metacognition',
+                source='startup_evolution',
+                priority='background',
+            )
+
+            assert budget['decision'] == 'allow'
+            assert budget['reason'] == 'idle_rest_window_available'
+        finally:
+            shutil.rmtree(workspace, ignore_errors=True)
+
 
 class TestAutoOptimizeBrain:
 

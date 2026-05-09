@@ -6,6 +6,7 @@ import re
 import threading
 from pathlib import Path
 import sys
+from typing import Any
 
 
 def _rss_mb() -> float:
@@ -431,6 +432,8 @@ class AppBootstrap:
 
         self._services_wired = False
         self._defer_services = _defer_services
+        import time as _time
+        self._auxiliary_work_rest_started_at = _time.monotonic()
 
         # VM placeholders needed by create_engine(defer_vm_creation=True)
         # which sets context properties to these (initially None) values.
@@ -3129,6 +3132,7 @@ class AppBootstrap:
         self.control_center_viewmodel._freeze_incident_reporter = self.freeze_incident_reporter
         self.control_center_viewmodel._ui_heartbeat_watchdog = self.ui_heartbeat_watchdog
         self.control_center_viewmodel._chat_interaction_lifecycle = self.chat_interaction_lifecycle
+        self.control_center_viewmodel._bootstrap_ref = self
         self.control_center_viewmodel._oses_ref = self.operational_self_examination_service
         self.control_center_viewmodel._portable_context_ref = self.portable_context_service
         # Wire CaptureStudioVM reference if already built.
@@ -3279,6 +3283,91 @@ class AppBootstrap:
     # This is what the watchdog reads (startup_followup_active) to avoid
     # marking stalls as "startup_active=false" when boot work is ongoing.
     _startup_followup_active: bool = True
+
+    def note_user_activity_for_operational_budget(self, *, reason: str = 'user_activity') -> None:
+        """Reset the rest window used by bootstrap auxiliary work."""
+        import time as _time
+        self._auxiliary_work_rest_started_at = _time.monotonic()
+
+    @staticmethod
+    def _operational_process_rss_mb() -> float:
+        try:
+            import psutil  # type: ignore
+            return round(float(psutil.Process(os.getpid()).memory_info().rss) / (1024 * 1024), 1)
+        except Exception:
+            return 0.0
+
+    def _recent_watchdog_stall_ms(self) -> float:
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        if watchdog is None or not hasattr(watchdog, 'recent_stalls'):
+            return 0.0
+        try:
+            recent = list(watchdog.recent_stalls(limit=5) or [])
+            return max((float(item.get('duration_ms', 0.0) or 0.0) for item in recent), default=0.0)
+        except Exception:
+            return 0.0
+
+    def _operational_budget_for_auxiliary_work(
+        self,
+        *,
+        work_class: str,
+        source: str,
+        priority: str = 'background',
+    ) -> dict[str, Any]:
+        import time as _time
+        policy = getattr(self, 'autonomy_governance_policy', None)
+        idle_seconds = max(
+            0.0,
+            _time.monotonic() - float(getattr(self, '_auxiliary_work_rest_started_at', 0.0) or 0.0),
+        )
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        query_pending = bool(getattr(watchdog, '_query_pending', False)) if watchdog is not None else False
+        background_active = bool(
+            getattr(self, '_deferred_setup_active', False)
+            or getattr(self, '_truth_refresh_active', False)
+            or getattr(self, '_prebuild_snapshot_refresh_in_flight', False)
+        )
+        rss_mb = self._operational_process_rss_mb()
+        recent_stall_ms = self._recent_watchdog_stall_ms()
+        if policy is not None and hasattr(policy, 'evaluate_operational_budget'):
+            try:
+                return dict(policy.evaluate_operational_budget(
+                    work_class=work_class,
+                    source=source,
+                    priority=priority,
+                    query_pending=query_pending,
+                    rss_mb=rss_mb,
+                    recent_stall_ms=recent_stall_ms,
+                    idle_seconds=idle_seconds,
+                    background_active=background_active,
+                    confidence=0.82,
+                ))
+            except Exception:
+                pass
+        return {
+            'decision': 'allow',
+            'allowed': True,
+            'reason': 'budget_unavailable_legacy_allow',
+            'work_class': work_class,
+            'priority': priority,
+            'recommended_mode': 'normal',
+            'defer_seconds': 0.0,
+            'evidence': {
+                'source': source,
+                'rss_mb': rss_mb,
+                'recent_stall_ms': recent_stall_ms,
+                'idle_seconds': round(idle_seconds, 1),
+                'query_pending': query_pending,
+                'background_active': background_active,
+            },
+            'decision_source': 'bootstrap.legacy_auxiliary_budget',
+        }
+
+    def _schedule_auxiliary_retry(self, delay_seconds: float, callback: Any) -> None:
+        delay = max(10.0, min(float(delay_seconds or 0.0), 120.0))
+        timer = threading.Timer(delay, callback)
+        timer.daemon = True
+        timer.start()
 
     def _check_startup_followup_done(self) -> None:
         """Clear ``_startup_followup_active`` when all background phases finish.
@@ -4371,6 +4460,8 @@ class AppBootstrap:
         api_discovery = getattr(self, 'api_key_discovery_service', None)
         if metacog is None and api_discovery is None:
             return
+        if getattr(self, '_startup_evolution_active', False):
+            return
 
         self._startup_evolution_active = True
         self._push_bootstrap_flags_to_watchdog()
@@ -4378,6 +4469,36 @@ class AppBootstrap:
         def _run_startup_cycle() -> None:
             import time
             time.sleep(5)  # Let UI load first
+            budget = self._operational_budget_for_auxiliary_work(
+                work_class='metacognition',
+                source='startup_evolution',
+                priority='background',
+            )
+            if not bool(budget.get('allowed')):
+                reason = str(budget.get('reason') or 'deferred')
+                defer_seconds = float(budget.get('defer_seconds', 30.0) or 30.0)
+                self._timeline.mark(
+                    'startup_evolution_deferred',
+                    reason=reason,
+                    defer_seconds=round(defer_seconds, 1),
+                    budget=budget,
+                )
+                self._tracer.trace(
+                    'startup_evolution_deferred',
+                    reason=reason,
+                    defer_seconds=round(defer_seconds, 1),
+                    budget=budget,
+                )
+                logger.info(
+                    'startup_evolution: deferred (%s, retry=%.1fs)',
+                    reason,
+                    defer_seconds,
+                )
+                self._startup_evolution_active = False
+                self._push_bootstrap_flags_to_watchdog()
+                self._check_startup_followup_done()
+                self._schedule_auxiliary_retry(defer_seconds, self._schedule_startup_evolution)
+                return
             logger.info('startup_evolution: beginning background cycle')
             try:
                 # Step 0a: Detect if code was updated since last run
