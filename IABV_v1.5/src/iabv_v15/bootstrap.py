@@ -1796,6 +1796,38 @@ class AppBootstrap:
         missing = getattr(self, '_deferred_missing_tools', [])
         if not missing:
             return
+        budget = self._operational_budget_for_auxiliary_work(
+            work_class='tool_scan',
+            source='deferred_auto_install_missing_tools',
+            priority='background',
+        )
+        if not bool(budget.get('allowed')):
+            reason = str(budget.get('reason') or 'deferred')
+            defer_seconds = float(budget.get('defer_seconds', 30.0) or 30.0)
+            try:
+                self._timeline.mark(
+                    'deferred_auto_install_deferred',
+                    reason=reason,
+                    defer_seconds=round(defer_seconds, 1),
+                    missing_tools=list(missing),
+                    budget=budget,
+                )
+                self._tracer.trace(
+                    'deferred_auto_install_deferred',
+                    reason=reason,
+                    defer_seconds=round(defer_seconds, 1),
+                    missing_tools=list(missing),
+                    budget=budget,
+                )
+            except Exception:
+                pass
+            logger.info(
+                'deferred_auto_install: deferred (%s, retry=%.1fs)',
+                reason,
+                defer_seconds,
+            )
+            self._schedule_auxiliary_retry(defer_seconds, self._deferred_auto_install_missing_tools)
+            return
         try:
             from iabv_v15.services.auto_correction_engine import auto_fix_missing_tools
             install_result = auto_fix_missing_tools(missing)

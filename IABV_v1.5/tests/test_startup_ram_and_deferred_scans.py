@@ -177,6 +177,7 @@ class TestDeferredAutoInstall:
         """Auto-install is called with the stashed missing tools list."""
         boot = self._make_bootstrap(tmp_path)
         boot._deferred_missing_tools = ['fake_tool_1', 'fake_tool_2']
+        boot._auxiliary_work_rest_started_at -= 300.0
 
         with patch(
             'iabv_v15.services.auto_correction_engine.auto_fix_missing_tools',
@@ -189,6 +190,7 @@ class TestDeferredAutoInstall:
         """Auto-install failure does not propagate."""
         boot = self._make_bootstrap(tmp_path)
         boot._deferred_missing_tools = ['broken_tool']
+        boot._auxiliary_work_rest_started_at -= 300.0
 
         with patch(
             'iabv_v15.services.auto_correction_engine.auto_fix_missing_tools',
@@ -196,6 +198,22 @@ class TestDeferredAutoInstall:
         ):
             # Should not raise
             boot._deferred_auto_install_missing_tools()
+
+    def test_install_deferred_until_operational_rest_window(self, tmp_path: Path) -> None:
+        """Heavy auto-install must not start while the shell just became interactive."""
+        boot = self._make_bootstrap(tmp_path)
+        boot._deferred_missing_tools = ['fake_tool_1']
+        scheduled: list[float] = []
+        boot._schedule_auxiliary_retry = lambda delay, callback: scheduled.append(delay)  # type: ignore[method-assign]
+
+        with patch(
+            'iabv_v15.services.auto_correction_engine.auto_fix_missing_tools',
+            return_value={'installed': 1, 'results': []},
+        ) as mock_fix:
+            boot._deferred_auto_install_missing_tools()
+
+        mock_fix.assert_not_called()
+        assert scheduled
 
 
 # ======================================================================
