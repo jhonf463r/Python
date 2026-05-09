@@ -24,6 +24,9 @@ from iabv_v15.domain.models import (
 )  # noqa: F401  (ProposalValidationResult used as type hint in _maybe_publish_promotion)
 from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
 from iabv_v15.infra.persistence.storage import ArtifactStorage
+from iabv_v15.services.adaptive.autonomy_governance_policy import (
+    record_operational_budget_experiment,
+)
 from iabv_v15.services.lab.experiment_lab import ExperimentLab
 from iabv_v15.services.self_teach.sandbox_experiment_service import SandboxExperimentService
 
@@ -77,6 +80,7 @@ class AutonomousValidationCycleService:
         self._thread: threading.Thread | None = None
         self._operational_budget_rest_started_at = time.monotonic()
         self._last_operational_budget: dict[str, Any] = {}
+        self._operational_budget_experiment_throttle: dict[str, float] = {}
         self._decision_log = self._load_decision_log() or ToolEvolutionDecisionLog()
         self._auto_executed_keys: set[str] = set()
         self._current_snapshot = AutonomousValidationSnapshot(
@@ -307,6 +311,10 @@ class AutonomousValidationCycleService:
                     confidence=0.84,
                 ))
                 self._last_operational_budget = budget
+                self._record_operational_budget_experiment(
+                    budget,
+                    observed_summary=f'{source} -> {budget.get("decision")}:{budget.get("reason")}',
+                )
                 return budget
             except Exception:
                 pass
@@ -330,7 +338,27 @@ class AutonomousValidationCycleService:
             'decision_source': 'autonomous_validation_cycle.fallback_budget',
         }
         self._last_operational_budget = budget
+        self._record_operational_budget_experiment(
+            budget,
+            observed_summary=f'{source} -> fallback {budget.get("decision")}:{budget.get("reason")}',
+        )
         return budget
+
+    def _record_operational_budget_experiment(
+        self,
+        budget: dict[str, Any],
+        *,
+        observed_summary: str = '',
+    ) -> None:
+        record_operational_budget_experiment(
+            repository=self.experiment_lab_repository,
+            budget=budget,
+            observed_summary=observed_summary,
+            evidence_refs=['AutonomousValidationCycleService', 'ExperimentLab'],
+            metadata={'caller': 'AutonomousValidationCycleService'},
+            throttle_state=self._operational_budget_experiment_throttle,
+            throttle_seconds=60.0,
+        )
 
     def run_once(self, *, reason: str = 'manual') -> AutonomousValidationSnapshot:
         monitor_status = self._current_tool_evolution_status()

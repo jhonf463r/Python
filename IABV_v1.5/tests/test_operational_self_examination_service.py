@@ -43,6 +43,21 @@ def _workspace(name: str) -> Path:
     return root
 
 
+class _BudgetExperimentRepo:
+    def __init__(self) -> None:
+        self.runs: list[ExperimentRun] = []
+
+    def save_run(self, run: ExperimentRun) -> ExperimentRun:
+        self.runs.append(run)
+        return run
+
+    def list_runs(self, *args, **kwargs) -> list[ExperimentRun]:
+        return list(self.runs)
+
+    def list_recommendations(self, *args, **kwargs) -> list[ExperimentRecommendation]:
+        return []
+
+
 def test_oses_defers_deep_cognition_and_auto_correction_until_rest_window() -> None:
     root = _workspace('oses_operational_budget_defer')
     try:
@@ -63,6 +78,28 @@ def test_oses_defers_deep_cognition_and_auto_correction_until_rest_window() -> N
         assert budget['deep_cognition']['decision'] == 'defer'
         assert budget['deep_cognition']['reason'] == 'rest_window_not_reached'
         assert budget['auto_correction']['decision'] == 'defer'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_oses_records_operational_budget_decisions_in_experiment_lab() -> None:
+    root = _workspace('oses_operational_budget_experiment')
+    try:
+        repo = _BudgetExperimentRepo()
+        service = OperationalSelfExaminationService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'evolution')),
+            experiment_lab_repository=repo,
+        )
+        service.autonomy_governance_policy = AutonomyGovernancePolicy()
+
+        review = service.build_review()
+
+        budget_runs = [run for run in repo.runs if run.suite_name == 'operational_budget']
+        assert len(budget_runs) == 2
+        assert {run.metadata['work_class'] for run in budget_runs} == {'deep_scan', 'metacognition'}
+        assert review.metadata['operational_budget_learning']['total_runs'] == 2
+        assert review.metadata['operational_budget_learning']['by_decision']['defer'] == 2
     finally:
         shutil.rmtree(root, ignore_errors=True)
 

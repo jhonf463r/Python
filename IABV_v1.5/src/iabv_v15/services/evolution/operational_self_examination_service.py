@@ -23,6 +23,9 @@ from iabv_v15.domain.models import (
     utc_now,
 )
 from iabv_v15.infra.persistence.storage import ArtifactStorage
+from iabv_v15.services.adaptive.autonomy_governance_policy import (
+    record_operational_budget_experiment,
+)
 
 # Startup health thresholds (in milliseconds).  Crossing any of these emits a
 # ``startup_degradation`` finding from :meth:`_startup_health_findings`.  They
@@ -102,6 +105,8 @@ class OperationalSelfExaminationService:
         self.autonomy_governance_policy: Any | None = None
         self._operational_budget_rest_started_at = time.monotonic()
         self._last_operational_budget: dict[str, Any] = {}
+        self._operational_budget_experiment_throttle: dict[str, float] = {}
+        self._recent_operational_budget_runs: list[ExperimentRun] = []
 
     def note_user_activity(self, *, reason: str = 'user_activity') -> None:
         """Reset the rest window used by deferred self-examination work."""
@@ -234,6 +239,10 @@ class OperationalSelfExaminationService:
                     confidence=0.82,
                 ))
                 self._last_operational_budget = budget
+                self._record_operational_budget_experiment(
+                    budget,
+                    observed_summary=f'{source} -> {budget.get("decision")}:{budget.get("reason")}',
+                )
                 return budget
             except Exception:
                 pass
@@ -254,7 +263,70 @@ class OperationalSelfExaminationService:
             'decision_source': 'operational_self_examination_service.legacy_budget',
         }
         self._last_operational_budget = budget
+        self._record_operational_budget_experiment(
+            budget,
+            observed_summary=f'{source} -> legacy allow',
+        )
         return budget
+
+    def _record_operational_budget_experiment(
+        self,
+        budget: dict[str, Any],
+        *,
+        observed_summary: str = '',
+    ) -> ExperimentRun | None:
+        run = record_operational_budget_experiment(
+            repository=self.experiment_lab_repository,
+            budget=budget,
+            observed_summary=observed_summary,
+            evidence_refs=['OperationalSelfExaminationService', 'OSES'],
+            metadata={'caller': 'OperationalSelfExaminationService'},
+            throttle_state=self._operational_budget_experiment_throttle,
+            throttle_seconds=60.0,
+        )
+        if run is not None:
+            self._recent_operational_budget_runs.append(run)
+        return run
+
+    def _operational_budget_learning_summary(
+        self,
+        experiment_runs: list[ExperimentRun],
+    ) -> dict[str, Any]:
+        budget_runs = [
+            run for run in experiment_runs
+            if str(run.suite_name or '') == 'operational_budget'
+            or str(dict(run.metadata or {}).get('suite_name') or '') == 'operational_budget'
+        ]
+        by_decision: dict[str, int] = {}
+        by_reason: dict[str, int] = {}
+        by_work_class: dict[str, int] = {}
+        for run in budget_runs:
+            metadata = dict(run.metadata or {})
+            decision = str(metadata.get('budget_decision') or '').strip() or 'unknown'
+            reason = str(metadata.get('budget_reason') or '').strip() or 'unknown'
+            work_class = str(metadata.get('work_class') or '').strip() or 'unknown'
+            by_decision[decision] = by_decision.get(decision, 0) + 1
+            by_reason[reason] = by_reason.get(reason, 0) + 1
+            by_work_class[work_class] = by_work_class.get(work_class, 0) + 1
+        latest = []
+        for run in budget_runs[:6]:
+            metadata = dict(run.metadata or {})
+            latest.append({
+                'run_id': run.run_id,
+                'decision': str(metadata.get('budget_decision') or ''),
+                'reason': str(metadata.get('budget_reason') or ''),
+                'work_class': str(metadata.get('work_class') or ''),
+                'score': float(getattr(run.metrics, 'total_score', 0.0) or 0.0),
+                'created_at_utc': run.created_at_utc.isoformat(),
+            })
+        return {
+            'total_runs': len(budget_runs),
+            'by_decision': by_decision,
+            'by_reason': by_reason,
+            'by_work_class': by_work_class,
+            'latest': latest,
+            'active': bool(budget_runs),
+        }
 
     def _deferred_deep_cognition_findings(
         self,
@@ -738,6 +810,7 @@ class OperationalSelfExaminationService:
         backlog = self._improvement_backlog()
         world = self._world_model()
         validation = self._validation_snapshot()
+        self._recent_operational_budget_runs = []
         deep_cognition_budget = self._operational_budget_for_work(
             work_class='deep_scan',
             source='oses_deep_cognition',
@@ -937,6 +1010,10 @@ class OperationalSelfExaminationService:
             validation=validation,
         )
         feedback_summary = self._feedback_summary(recommendation_feedback)
+        operational_budget_learning = self._operational_budget_learning_summary([
+            *self._recent_operational_budget_runs,
+            *experiment_runs,
+        ])
         recommended_adjustments = self._apply_feedback_to_adjustments(
             recommended_adjustments=recommended_adjustments,
             recommendation_feedback=recommendation_feedback,
@@ -980,6 +1057,7 @@ class OperationalSelfExaminationService:
                     'deep_cognition': deep_cognition_budget,
                     'auto_correction': auto_correction_budget,
                 },
+                'operational_budget_learning': operational_budget_learning,
             },
         )
         # Metacognitive feedback loop: convert overconfidence/underconfidence

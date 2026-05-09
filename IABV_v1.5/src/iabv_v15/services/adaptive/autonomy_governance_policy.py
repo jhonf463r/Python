@@ -1,12 +1,17 @@
 ﻿from __future__ import annotations
 
+import time
 from typing import Any
 
 from iabv_v15.domain.models import (
     AdaptiveSessionStatus,
     CapabilityReadiness,
     EnvironmentSelfModel,
+    EvaluationRoute,
     ExternalStateFlag,
+    ExperimentDomain,
+    ExperimentMetric,
+    ExperimentRun,
     GoalContext,
     IssueSeverity,
     WorldModelSnapshot,
@@ -1056,5 +1061,92 @@ class AutonomyGovernancePolicy:
 
         return None
 
+
+def record_operational_budget_experiment(
+    *,
+    repository: Any | None,
+    budget: dict[str, Any] | None,
+    observed_summary: str = '',
+    evidence_refs: list[str] | None = None,
+    metadata: dict[str, Any] | None = None,
+    execution_ms: int = 0,
+    throttle_state: dict[str, float] | None = None,
+    throttle_seconds: float = 60.0,
+) -> ExperimentRun | None:
+    """Persist an operational-budget decision into ExperimentLab history."""
+
+    if repository is None or not hasattr(repository, 'save_run') or not isinstance(budget, dict):
+        return None
+    decision = str(budget.get('decision') or '').strip().lower() or 'unknown'
+    reason = str(budget.get('reason') or '').strip().lower() or 'unknown'
+    work_class = str(budget.get('work_class') or 'unknown').strip().lower() or 'unknown'
+    source = str(dict(budget.get('evidence') or {}).get('source') or '').strip().lower()
+    signature = f'{work_class}:{source}:{decision}:{reason}'
+    if throttle_state is not None:
+        now = time.monotonic()
+        last = float(throttle_state.get(signature, 0.0) or 0.0)
+        if last > 0.0 and (now - last) < float(throttle_seconds or 0.0):
+            return None
+        throttle_state[signature] = now
+
+    evidence = dict(budget.get('evidence') or {})
+    confidence = _clamp_float(evidence.get('confidence'), default=0.5)
+    allowed = bool(budget.get('allowed'))
+    protective = 1.0 if decision in {'defer', 'ask_user'} and reason != 'budget_available' else 0.55
+    progress = 1.0 if allowed else 0.35 if decision == 'defer' else 0.2
+    metric = ExperimentMetric(
+        precision=confidence,
+        robustness=protective,
+        user_progress=progress,
+        execution_ms=max(0, int(execution_ms or 0)),
+        total_score=round((confidence * 0.45) + (protective * 0.35) + (progress * 0.20), 4),
+        metadata={
+            'budget_decision': decision,
+            'budget_reason': reason,
+            'work_class': work_class,
+            'allowed': allowed,
+        },
+    )
+    summary = (observed_summary or f'{work_class} -> {decision}:{reason}')[:240]
+    run = ExperimentRun(
+        domain=ExperimentDomain.ALGORITHM,
+        suite_name='operational_budget',
+        objective='Regular trabajo interno sin bloquear la experiencia visible',
+        subject_key=f'operational_budget:{work_class}',
+        comparison_scope_key='operational_budget',
+        route=EvaluationRoute.BACKGROUND,
+        assistant_kind='iabv_self',
+        config_signature='autonomy_governance_policy.operational_budget',
+        candidate_label=f'{decision}:{reason}'[:120],
+        success=decision in {'allow', 'defer', 'ask_user'},
+        expected_summary='Decidir si un organo interno puede trabajar ahora o debe esperar.',
+        observed_summary=summary,
+        metrics=metric,
+        evidence_refs=list(evidence_refs or []),
+        metadata={
+            **dict(metadata or {}),
+            'suite_name': 'operational_budget',
+            'assistant_kind': 'iabv_self',
+            'comparison_scope_key': 'operational_budget',
+            'operational_budget': budget,
+            'budget_decision': decision,
+            'budget_reason': reason,
+            'work_class': work_class,
+            'source': source,
+            'outcome_summary': summary,
+        },
+    )
+    try:
+        return repository.save_run(run)
+    except Exception:
+        return None
+
+
+def _clamp_float(value: Any, *, default: float = 0.0) -> float:
+    try:
+        parsed = float(value)
+    except Exception:
+        parsed = default
+    return max(0.0, min(parsed, 1.0))
 
 

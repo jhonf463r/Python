@@ -43,6 +43,9 @@ from iabv_v15.infra.persistence.session_artifact_repository import SessionArtifa
 from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
 from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
 from iabv_v15.services.adaptive.assistant_preference_resolver import AssistantPreferenceResolver
+from iabv_v15.services.adaptive.autonomy_governance_policy import (
+    record_operational_budget_experiment,
+)
 from iabv_v15.services.development.development_assist_service import DevelopmentAssistService
 from iabv_v15.services.evolution.autonomy_activity_projector import AutonomyActivityProjector
 from iabv_v15.services.evolution.evolution_review_service import EvolutionReviewService
@@ -251,6 +254,7 @@ class ControlCenterViewModel(QObject):
         self._autonomy_dock_last_skip_trace_at: float = 0.0
         self._autonomy_dock_rest_window_started_at: float = time.monotonic()
         self._autonomy_dock_last_budget_decision: dict[str, Any] = {}
+        self._operational_budget_experiment_throttle: dict[str, float] = {}
         self._interaction_pending_followup_outcome: str = ''
         self._interaction_pending_followup_provider: str = ''
 
@@ -5105,9 +5109,19 @@ class ControlCenterViewModel(QObject):
         visible_wait = self._visible_query_wait_active()
         idle_seconds = max(0.0, time.monotonic() - float(getattr(self, '_autonomy_dock_rest_window_started_at', 0.0) or 0.0))
         recent_stall_ms = self._recent_ui_stall_ms()
+
+        def _record(budget: dict[str, Any], summary: str) -> None:
+            recorder = getattr(self, '_record_operational_budget_experiment', None)
+            if not callable(recorder):
+                return
+            try:
+                recorder(budget, observed_summary=summary)
+            except Exception:
+                pass
+
         if policy is not None and hasattr(policy, 'evaluate_operational_budget'):
             try:
-                return dict(policy.evaluate_operational_budget(
+                budget = dict(policy.evaluate_operational_budget(
                     work_class='autonomy_dock_refresh',
                     source=source,
                     priority='background',
@@ -5119,39 +5133,81 @@ class ControlCenterViewModel(QObject):
                     background_active=bool(getattr(self, '_provider_refreshing', False)),
                     confidence=0.84,
                 ))
+                _record(
+                    budget,
+                    f'autonomy_dock_refresh:{source} -> {budget.get("decision")}:{budget.get("reason")}',
+                )
+                return budget
             except Exception:
                 pass
         if visible_wait:
-            return {
+            budget = {
                 'allowed': False,
                 'decision': 'defer',
                 'reason': 'visible_query_wait_active',
+                'work_class': 'autonomy_dock_refresh',
+                'priority': 'background',
                 'evidence': {'rss_mb': rss_mb, 'idle_seconds': round(idle_seconds, 1), 'recent_stall_ms': recent_stall_ms},
                 'decision_source': 'control_center_viewmodel.fallback_budget',
             }
-        if rss_mb >= self._AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB:
-            return {
+            _record(budget, f'autonomy_dock_refresh:{source} -> fallback defer')
+            return budget
+        rss_limit = float(getattr(
+            self,
+            '_AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB',
+            ControlCenterViewModel._AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB,
+        ))
+        if rss_mb >= rss_limit:
+            budget = {
                 'allowed': False,
                 'decision': 'defer',
                 'reason': 'resource_pressure_high',
+                'work_class': 'autonomy_dock_refresh',
+                'priority': 'background',
                 'evidence': {'rss_mb': rss_mb, 'idle_seconds': round(idle_seconds, 1), 'recent_stall_ms': recent_stall_ms},
                 'decision_source': 'control_center_viewmodel.fallback_budget',
             }
+            _record(budget, f'autonomy_dock_refresh:{source} -> fallback defer')
+            return budget
         if source != 'user_click' and idle_seconds < 120.0:
-            return {
+            budget = {
                 'allowed': False,
                 'decision': 'defer',
                 'reason': 'rest_window_not_reached',
+                'work_class': 'autonomy_dock_refresh',
+                'priority': 'background',
                 'evidence': {'rss_mb': rss_mb, 'idle_seconds': round(idle_seconds, 1), 'recent_stall_ms': recent_stall_ms},
                 'decision_source': 'control_center_viewmodel.fallback_budget',
             }
-        return {
+            _record(budget, f'autonomy_dock_refresh:{source} -> fallback defer')
+            return budget
+        budget = {
             'allowed': True,
             'decision': 'allow',
             'reason': 'budget_available',
+            'work_class': 'autonomy_dock_refresh',
+            'priority': 'background',
             'evidence': {'rss_mb': rss_mb, 'idle_seconds': round(idle_seconds, 1), 'recent_stall_ms': recent_stall_ms},
             'decision_source': 'control_center_viewmodel.fallback_budget',
         }
+        _record(budget, f'autonomy_dock_refresh:{source} -> fallback allow')
+        return budget
+
+    def _record_operational_budget_experiment(
+        self,
+        budget: dict[str, Any],
+        *,
+        observed_summary: str = '',
+    ) -> None:
+        record_operational_budget_experiment(
+            repository=self.experiment_lab_repository,
+            budget=budget,
+            observed_summary=observed_summary,
+            evidence_refs=['ControlCenterViewModel', 'runtime_audit'],
+            metadata={'caller': 'ControlCenterViewModel'},
+            throttle_state=self._operational_budget_experiment_throttle,
+            throttle_seconds=60.0,
+        )
 
     def _autonomy_dock_defer_reason(self, *, source: str, force: bool) -> tuple[str, float]:
         """Return a reason to defer timer-driven dock refreshes under pressure."""

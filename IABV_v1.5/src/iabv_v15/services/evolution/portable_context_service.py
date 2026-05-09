@@ -129,6 +129,7 @@ class PortableContextService:
         tool_evolution_decisions = self._tool_evolution_decision_snapshot()
         self_examination = self._self_examination_snapshot()
         cloud_reasoning_status = self._cloud_reasoning_snapshot()
+        operational_budget_learning = self._operational_budget_learning_snapshot()
         code_audit_status = self._code_audit_snapshot()
         startup_health = self._startup_health_snapshot()
         account_resource = self._account_resource_snapshot()
@@ -170,6 +171,10 @@ class PortableContextService:
                 adaptive_learning=adaptive_learning,
                 learned_patterns=learned_patterns,
                 recommendations=recommendations,
+                now=now,
+            ),
+            self._operational_budget_learning_section(
+                snapshot=operational_budget_learning,
                 now=now,
             ),
             self._coordination_patterns_section(
@@ -225,6 +230,7 @@ class PortableContextService:
                 'refresh_policy': 'refresh_if_stale_or_goal_shift',
                 'source_count': sum(len(section.source_refs) for section in sections),
                 'tool_discovery_summary': dict(tool_discovery.get('summary_payload') or {}),
+                'operational_budget_learning': operational_budget_learning,
                 'tool_discovery_signals': list(tool_discovery.get('signals') or []),
                 'tool_evolution_summary': dict(tool_evolution.get('summary_payload') or {}),
                 'tool_evolution_proposals': list(tool_evolution.get('proposals') or []),
@@ -1665,6 +1671,50 @@ class PortableContextService:
                 'recommendations': [],
             }
 
+    def _operational_budget_learning_snapshot(self) -> dict[str, Any]:
+        repo = self.experiment_lab_repository
+        if repo is None or not hasattr(repo, 'list_runs'):
+            return {'status': 'not_configured', 'total_runs': 0, 'items': []}
+        try:
+            runs = list(repo.list_runs(domain='algorithm', limit=80))
+        except Exception:
+            return {'status': 'error', 'total_runs': 0, 'items': []}
+        budget_runs = [
+            run for run in runs
+            if str(getattr(run, 'suite_name', '') or '') == 'operational_budget'
+            or str(dict(getattr(run, 'metadata', {}) or {}).get('suite_name') or '') == 'operational_budget'
+        ]
+        by_decision: dict[str, int] = {}
+        by_reason: dict[str, int] = {}
+        by_work_class: dict[str, int] = {}
+        items: list[dict[str, Any]] = []
+        for run in budget_runs[:8]:
+            metadata = dict(getattr(run, 'metadata', {}) or {})
+            decision = str(metadata.get('budget_decision') or '')
+            reason = str(metadata.get('budget_reason') or '')
+            work_class = str(metadata.get('work_class') or '')
+            by_decision[decision or 'unknown'] = by_decision.get(decision or 'unknown', 0) + 1
+            by_reason[reason or 'unknown'] = by_reason.get(reason or 'unknown', 0) + 1
+            by_work_class[work_class or 'unknown'] = by_work_class.get(work_class or 'unknown', 0) + 1
+            items.append({
+                'run_id': getattr(run, 'run_id', ''),
+                'decision': decision,
+                'reason': reason,
+                'work_class': work_class,
+                'source': str(metadata.get('source') or ''),
+                'score': float(getattr(getattr(run, 'metrics', None), 'total_score', 0.0) or 0.0),
+                'observed_summary': str(getattr(run, 'observed_summary', '') or ''),
+                'created_at_utc': getattr(run, 'created_at_utc', utc_now()).isoformat(),
+            })
+        return {
+            'status': 'active' if budget_runs else 'empty',
+            'total_runs': len(budget_runs),
+            'by_decision': by_decision,
+            'by_reason': by_reason,
+            'by_work_class': by_work_class,
+            'items': items,
+        }
+
     def _chat_stats_snapshot(self) -> dict[str, Any]:
         """Snapshot of chat persistence stats for the portable context."""
         repo = self.chat_message_repository
@@ -2447,6 +2497,42 @@ class PortableContextService:
             confidence=float(adaptive_learning.get('confidence') or 0.58),
             last_updated=now,
             unresolved_fields=[] if items else ['UNRESOLVED:learning_summary'],
+        )
+
+    def _operational_budget_learning_section(
+        self,
+        *,
+        snapshot: dict[str, Any],
+        now,
+    ) -> PortableContextSection:
+        items: list[dict[str, Any]] = []
+        for item in list(snapshot.get('items') or [])[:6]:
+            items.append({
+                'label': f"{item.get('work_class') or 'unknown'}:{item.get('decision') or 'unknown'}",
+                'detail': (
+                    f"reason={item.get('reason') or 'unknown'} | "
+                    f"source={item.get('source') or 'unknown'} | "
+                    f"score={float(item.get('score') or 0.0):.2f}"
+                ),
+                'observed_summary': str(item.get('observed_summary') or ''),
+            })
+        total = int(snapshot.get('total_runs') or 0)
+        summary = (
+            f'{total} decisiones de presupuesto operativo registradas en ExperimentLab.'
+            if total else
+            'Sin decisiones de presupuesto operativo persistidas aun.'
+        )
+        return self._section(
+            section_id='operational_budget_learning',
+            title='Aprendizaje del presupuesto operativo',
+            summary=summary,
+            items=items,
+            source_kind='persistent_learning',
+            source_refs=['AutonomyGovernancePolicy', 'ExperimentLab', 'OSES'],
+            confidence=0.84 if items else 0.2,
+            last_updated=now,
+            unresolved_fields=[] if items else ['UNRESOLVED:operational_budget_learning'],
+            metadata=snapshot,
         )
 
     def _tool_discovery_section(self, *, status: dict[str, Any], now) -> PortableContextSection:

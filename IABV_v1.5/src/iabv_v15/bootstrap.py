@@ -219,7 +219,10 @@ from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOr
 from iabv_v15.services.adaptive.adaptive_model_selector import AdaptiveModelSelector
 from iabv_v15.services.adaptive.cloud_reasoning_planner import CloudReasoningPlannerService
 from iabv_v15.services.adaptive.adaptive_weight_layer import AdaptiveWeightLayer
-from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
+from iabv_v15.services.adaptive.autonomy_governance_policy import (
+    AutonomyGovernancePolicy,
+    record_operational_budget_experiment,
+)
 from iabv_v15.services.adaptive.approval_gate_service import ApprovalGateService
 from iabv_v15.services.adaptive.capability_readiness_service import CapabilityReadinessService
 from iabv_v15.services.adaptive.execution_playbook_service import ExecutionPlaybookService, NullOperationalExecutor
@@ -434,6 +437,7 @@ class AppBootstrap:
         self._defer_services = _defer_services
         import time as _time
         self._auxiliary_work_rest_started_at = _time.monotonic()
+        self._operational_budget_experiment_throttle: dict[str, float] = {}
 
         # VM placeholders needed by create_engine(defer_vm_creation=True)
         # which sets context properties to these (initially None) values.
@@ -3363,7 +3367,7 @@ class AppBootstrap:
         recent_stall_ms = self._recent_watchdog_stall_ms()
         if policy is not None and hasattr(policy, 'evaluate_operational_budget'):
             try:
-                return dict(policy.evaluate_operational_budget(
+                budget = dict(policy.evaluate_operational_budget(
                     work_class=work_class,
                     source=source,
                     priority=priority,
@@ -3374,9 +3378,14 @@ class AppBootstrap:
                     background_active=background_active,
                     confidence=0.82,
                 ))
+                self._record_operational_budget_experiment(
+                    budget,
+                    observed_summary=f'{source} -> {budget.get("decision")}:{budget.get("reason")}',
+                )
+                return budget
             except Exception:
                 pass
-        return {
+        budget = {
             'decision': 'allow',
             'allowed': True,
             'reason': 'budget_unavailable_legacy_allow',
@@ -3394,6 +3403,30 @@ class AppBootstrap:
             },
             'decision_source': 'bootstrap.legacy_auxiliary_budget',
         }
+        self._record_operational_budget_experiment(
+            budget,
+            observed_summary=f'{source} -> legacy allow',
+        )
+        return budget
+
+    def _record_operational_budget_experiment(
+        self,
+        budget: dict[str, Any],
+        *,
+        observed_summary: str = '',
+    ) -> None:
+        try:
+            record_operational_budget_experiment(
+                repository=getattr(self, 'experiment_lab_repository', None),
+                budget=budget,
+                observed_summary=observed_summary,
+                evidence_refs=['bootstrap', 'runtime_audit', 'startup_timeline'],
+                metadata={'caller': 'AppBootstrap'},
+                throttle_state=self._operational_budget_experiment_throttle,
+                throttle_seconds=60.0,
+            )
+        except Exception:
+            pass
 
     def _schedule_auxiliary_retry(self, delay_seconds: float, callback: Any) -> None:
         delay = max(10.0, min(float(delay_seconds or 0.0), 120.0))

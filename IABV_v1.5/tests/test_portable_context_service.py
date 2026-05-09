@@ -25,6 +25,10 @@ from iabv_v15.domain.models import (
     WindowObservation,
     WorldModelSnapshot,
 )
+from iabv_v15.services.adaptive.autonomy_governance_policy import (
+    AutonomyGovernancePolicy,
+    record_operational_budget_experiment,
+)
 
 
 def _workspace(name: str) -> Path:
@@ -82,6 +86,16 @@ def test_portable_context_service_builds_and_persists_package_from_live_state() 
                 'config_signature': 'codex-portable',
                 'comparison_scope_key': 'iabv:portable-context',
             },
+        )
+        budget = AutonomyGovernancePolicy().evaluate_operational_budget(
+            work_class='metacognition',
+            source='startup_evolution',
+            idle_seconds=10.0,
+        )
+        record_operational_budget_experiment(
+            repository=bootstrap.experiment_lab_repository,
+            budget=budget,
+            observed_summary='startup_evolution -> defer por rest window',
         )
         bootstrap.pending_issue_repository.save(
             CodexPendingIssue(
@@ -251,6 +265,10 @@ def test_portable_context_service_builds_and_persists_package_from_live_state() 
         assert package.metadata['tool_evolution_summary']['decided_proposal_count'] >= 1
         assert package.metadata['tool_evolution_proposals'] == []
         assert package.metadata['tool_evolution_decision_summary']['winning_by_problem']['iabv:portable-context'] == 'codex'
+        assert package.metadata['operational_budget_learning']['total_runs'] >= 1
+        budget_section = next(section for section in package.sections if section.section_id == 'operational_budget_learning')
+        assert budget_section.items
+        assert budget_section.items[0]['label'].startswith('metacognition:')
         assert package.metadata['tool_evolution_validated_proposals'][0]['decision'] == 'promoted'
         tool_discovery = next(section for section in package.sections if section.section_id == 'tool_discovery')
         assert tool_discovery.metadata['promoted_signal_count'] == 1
