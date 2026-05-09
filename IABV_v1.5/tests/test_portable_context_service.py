@@ -266,9 +266,19 @@ def test_portable_context_service_builds_and_persists_package_from_live_state() 
         assert package.metadata['tool_evolution_proposals'] == []
         assert package.metadata['tool_evolution_decision_summary']['winning_by_problem']['iabv:portable-context'] == 'codex'
         assert package.metadata['operational_budget_learning']['total_runs'] >= 1
+        assert package.metadata['operational_budget_learning']['calibration']['status'] in {
+            'insufficient_sample',
+            'needs_allow_samples',
+            'stable_guardrails',
+            'rest_window_dominant',
+            'protective_thresholds_active',
+            'human_gate_observed',
+        }
         budget_section = next(section for section in package.sections if section.section_id == 'operational_budget_learning')
         assert budget_section.items
         assert budget_section.items[0]['label'].startswith('metacognition:')
+        assert any(str(item.get('label') or '').startswith('calibration:') for item in budget_section.items)
+        assert budget_section.metadata['calibration']['current_thresholds']['stall_ms'] == 5000.0
         assert package.metadata['tool_evolution_validated_proposals'][0]['decision'] == 'promoted'
         tool_discovery = next(section for section in package.sections if section.section_id == 'tool_discovery')
         assert tool_discovery.metadata['promoted_signal_count'] == 1

@@ -1142,6 +1142,151 @@ def record_operational_budget_experiment(
         return None
 
 
+def operational_budget_default_thresholds() -> dict[str, float]:
+    """Return the currently compiled guardrail thresholds.
+
+    The returned values are observational metadata, not mutable state.  Runtime
+    tuning may recommend different values, but applying them remains a separate
+    governed step.
+    """
+
+    return {
+        'critical_rss_mb': AutonomyGovernancePolicy._OPERATIONAL_CRITICAL_RSS_MB,
+        'high_rss_mb': AutonomyGovernancePolicy._OPERATIONAL_HIGH_RSS_MB,
+        'stall_ms': AutonomyGovernancePolicy._OPERATIONAL_STALL_MS,
+        'idle_rest_window_s': AutonomyGovernancePolicy._OPERATIONAL_IDLE_REST_WINDOW_S,
+    }
+
+
+def summarize_operational_budget_calibration(
+    experiment_runs: list[ExperimentRun] | list[Any],
+    *,
+    min_sample: int = 10,
+) -> dict[str, Any]:
+    """Summarize whether operational-budget thresholds are ready to tune.
+
+    This is deliberately conservative: it converts ExperimentLab evidence into
+    a calibration recommendation, but it does not mutate thresholds.  Applying a
+    threshold change belongs to the existing runtime-tuning/governance path.
+    """
+
+    budget_runs = [
+        run for run in list(experiment_runs or [])
+        if str(getattr(run, 'suite_name', '') or '') == 'operational_budget'
+        or str(dict(getattr(run, 'metadata', {}) or {}).get('suite_name') or '') == 'operational_budget'
+    ]
+    current_thresholds = operational_budget_default_thresholds()
+    by_decision: dict[str, int] = {}
+    by_reason: dict[str, int] = {}
+    by_work_class: dict[str, int] = {}
+    score_by_decision: dict[str, list[float]] = {}
+    evidence_ranges: dict[str, dict[str, float]] = {
+        'rss_mb': {'min': 0.0, 'max': 0.0, 'avg': 0.0},
+        'recent_stall_ms': {'min': 0.0, 'max': 0.0, 'avg': 0.0},
+        'idle_seconds': {'min': 0.0, 'max': 0.0, 'avg': 0.0},
+    }
+    evidence_values: dict[str, list[float]] = {key: [] for key in evidence_ranges}
+
+    for run in budget_runs:
+        metadata = dict(getattr(run, 'metadata', {}) or {})
+        budget = dict(metadata.get('operational_budget') or {})
+        evidence = dict(budget.get('evidence') or {})
+        decision = str(metadata.get('budget_decision') or budget.get('decision') or '').strip().lower() or 'unknown'
+        reason = str(metadata.get('budget_reason') or budget.get('reason') or '').strip().lower() or 'unknown'
+        work_class = str(metadata.get('work_class') or budget.get('work_class') or '').strip().lower() or 'unknown'
+        by_decision[decision] = by_decision.get(decision, 0) + 1
+        by_reason[reason] = by_reason.get(reason, 0) + 1
+        by_work_class[work_class] = by_work_class.get(work_class, 0) + 1
+        try:
+            score = float(getattr(getattr(run, 'metrics', None), 'total_score', 0.0) or 0.0)
+        except Exception:
+            score = 0.0
+        score_by_decision.setdefault(decision, []).append(score)
+        for key in evidence_values:
+            try:
+                evidence_values[key].append(float(evidence.get(key) or 0.0))
+            except Exception:
+                pass
+
+    for key, values in evidence_values.items():
+        non_empty = [float(v) for v in values]
+        if non_empty:
+            evidence_ranges[key] = {
+                'min': round(min(non_empty), 2),
+                'max': round(max(non_empty), 2),
+                'avg': round(sum(non_empty) / len(non_empty), 2),
+            }
+
+    avg_score_by_decision = {
+        key: round(sum(values) / max(len(values), 1), 4)
+        for key, values in score_by_decision.items()
+        if values
+    }
+    total = len(budget_runs)
+    if total <= 0:
+        return {
+            'status': 'no_data',
+            'policy_version': 'operational_budget_v1',
+            'sample_count': 0,
+            'minimum_sample': int(min_sample),
+            'current_thresholds': current_thresholds,
+            'recommended_thresholds': current_thresholds,
+            'confidence': 0.0,
+            'recommendation': 'collect_operational_budget_samples',
+            'by_decision': {},
+            'by_reason': {},
+            'by_work_class': {},
+            'avg_score_by_decision': {},
+            'evidence_ranges': evidence_ranges,
+        }
+
+    confidence = round(min(0.95, max(0.1, total / max(int(min_sample), 1) * 0.45)), 3)
+    if total < int(min_sample):
+        status = 'insufficient_sample'
+        recommendation = 'collect_more_evidence_before_tuning'
+    else:
+        defer_count = int(by_decision.get('defer', 0))
+        allow_count = int(by_decision.get('allow', 0))
+        ask_count = int(by_decision.get('ask_user', 0))
+        rest_count = int(by_reason.get('rest_window_not_reached', 0))
+        stall_count = sum(
+            count for reason, count in by_reason.items()
+            if str(reason).startswith('recent_ui_stall')
+        )
+        pressure_count = int(by_reason.get('resource_pressure_high', 0)) + int(by_reason.get('resource_pressure_critical', 0))
+        if allow_count <= 0:
+            status = 'needs_allow_samples'
+            recommendation = 'collect_post_rest_allow_evidence_before_tuning'
+        elif ask_count > 0:
+            status = 'human_gate_observed'
+            recommendation = 'keep_thresholds_and_review_low_confidence_actions'
+        elif pressure_count or stall_count:
+            status = 'protective_thresholds_active'
+            recommendation = 'keep_current_thresholds_until_stalls_and_pressure_decline'
+        elif rest_count >= max(3, total // 2) and defer_count > allow_count:
+            status = 'rest_window_dominant'
+            recommendation = 'keep_idle_rest_window_and_collect_more_after_idle_samples'
+        else:
+            status = 'stable_guardrails'
+            recommendation = 'keep_current_thresholds'
+
+    return {
+        'status': status,
+        'policy_version': 'operational_budget_v1',
+        'sample_count': total,
+        'minimum_sample': int(min_sample),
+        'current_thresholds': current_thresholds,
+        'recommended_thresholds': current_thresholds,
+        'confidence': confidence,
+        'recommendation': recommendation,
+        'by_decision': by_decision,
+        'by_reason': by_reason,
+        'by_work_class': by_work_class,
+        'avg_score_by_decision': avg_score_by_decision,
+        'evidence_ranges': evidence_ranges,
+    }
+
+
 def _clamp_float(value: Any, *, default: float = 0.0) -> float:
     try:
         parsed = float(value)

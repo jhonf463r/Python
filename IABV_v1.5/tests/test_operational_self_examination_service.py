@@ -29,7 +29,11 @@ from iabv_v15.domain.models import (
     utc_now,
 )
 from iabv_v15.infra.persistence.storage import ArtifactStorage
-from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
+from iabv_v15.services.adaptive.autonomy_governance_policy import (
+    AutonomyGovernancePolicy,
+    record_operational_budget_experiment,
+    summarize_operational_budget_calibration,
+)
 from iabv_v15.services.evolution.operational_self_examination_service import (
     OperationalSelfExaminationService,
 )
@@ -100,6 +104,38 @@ def test_oses_records_operational_budget_decisions_in_experiment_lab() -> None:
         assert {run.metadata['work_class'] for run in budget_runs} == {'deep_scan', 'metacognition'}
         assert review.metadata['operational_budget_learning']['total_runs'] == 2
         assert review.metadata['operational_budget_learning']['by_decision']['defer'] == 2
+        calibration = review.metadata['operational_budget_calibration']
+        assert calibration['status'] == 'insufficient_sample'
+        assert calibration['sample_count'] == 2
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_oses_emits_operational_budget_calibration_finding_after_enough_evidence() -> None:
+    root = _workspace('oses_operational_budget_calibration')
+    try:
+        repo = _BudgetExperimentRepo()
+        policy = AutonomyGovernancePolicy()
+        for idx in range(10):
+            budget = policy.evaluate_operational_budget(
+                work_class='idle_self_test',
+                source=f'timer_allow_{idx}',
+                idle_seconds=180.0,
+            )
+            record_operational_budget_experiment(repository=repo, budget=budget)
+        calibration = summarize_operational_budget_calibration(repo.runs, min_sample=10)
+        service = OperationalSelfExaminationService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'evolution')),
+            experiment_lab_repository=repo,
+        )
+
+        findings = service._operational_budget_calibration_findings(calibration)
+
+        assert findings
+        assert findings[0].category == 'operational_budget_calibration'
+        assert findings[0].metadata['status'] == 'stable_guardrails'
+        assert findings[0].metadata['recommended_thresholds'] == findings[0].metadata['current_thresholds']
     finally:
         shutil.rmtree(root, ignore_errors=True)
 

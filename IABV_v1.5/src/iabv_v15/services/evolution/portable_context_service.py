@@ -18,6 +18,9 @@ from iabv_v15.domain.models import (
     utc_now,
 )
 from iabv_v15.infra.persistence.storage import ArtifactStorage
+from iabv_v15.services.adaptive.autonomy_governance_policy import (
+    summarize_operational_budget_calibration,
+)
 
 
 class PortableContextService:
@@ -1713,6 +1716,7 @@ class PortableContextService:
             'by_reason': by_reason,
             'by_work_class': by_work_class,
             'items': items,
+            'calibration': summarize_operational_budget_calibration(budget_runs),
         }
 
     def _chat_stats_snapshot(self) -> dict[str, Any]:
@@ -2516,12 +2520,25 @@ class PortableContextService:
                 ),
                 'observed_summary': str(item.get('observed_summary') or ''),
             })
+        calibration = dict(snapshot.get('calibration') or {})
+        if calibration:
+            items.append({
+                'label': f"calibration:{calibration.get('status') or 'unknown'}",
+                'detail': (
+                    f"samples={int(calibration.get('sample_count') or 0)}/"
+                    f"{int(calibration.get('minimum_sample') or 0)} | "
+                    f"recommendation={calibration.get('recommendation') or 'n/d'}"
+                ),
+                'observed_summary': 'Calibracion derivada desde ExperimentLab; no aplica umbrales sin ruta gobernada.',
+            })
         total = int(snapshot.get('total_runs') or 0)
         summary = (
             f'{total} decisiones de presupuesto operativo registradas en ExperimentLab.'
             if total else
             'Sin decisiones de presupuesto operativo persistidas aun.'
         )
+        if calibration:
+            summary += f" Calibracion: {calibration.get('status') or 'unknown'}."
         return self._section(
             section_id='operational_budget_learning',
             title='Aprendizaje del presupuesto operativo',

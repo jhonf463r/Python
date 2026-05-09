@@ -309,6 +309,69 @@ class PlatformPendingQueue:
             'category': CATEGORY_INVESTIGATION,
         },
         {
+            'id': 'inv_phase_a3_budget_experiment_feedback',
+            'title': 'Fase A3: Evaluar presupuesto operativo con ExperimentLab',
+            'description': (
+                'Cada decision del presupuesto operativo queda registrada como '
+                'ExperimentRun comparable para que OSES y PortableContext puedan '
+                'aprender de defer/allow/ask_user sin depender de impresiones.'
+            ),
+            'reason': (
+                'El sistema necesita evidencia historica testeable antes de '
+                'cambiar sus propios umbrales de RAM, stalls o ventana de descanso.'
+            ),
+            'dependency_missing': 'inv_phase_a2_budgeted_idle_self_tests',
+            'priority': 'high',
+            'next_action': (
+                'Registrar outcomes de evaluate_operational_budget en ExperimentLab '
+                'y exportarlos en OSES/PortableContext.'
+            ),
+            'status': 'PENDING',
+            'category': CATEGORY_INVESTIGATION,
+        },
+        {
+            'id': 'inv_phase_a4_budget_threshold_calibration',
+            'title': 'Fase A4: Calibrar umbrales del presupuesto operativo por evidencia',
+            'description': (
+                'OSES lee los ExperimentRun del presupuesto operativo y decide si '
+                'hay muestra suficiente para conservar, ajustar o aplazar cambios '
+                'de umbral sin improvisar.'
+            ),
+            'reason': (
+                'La autonomia debe testear sus propias constantes antes de aplicar '
+                'cambios: idle_rest_window, stall_ms y umbrales de RSS.'
+            ),
+            'dependency_missing': 'inv_phase_a3_budget_experiment_feedback',
+            'priority': 'high',
+            'next_action': (
+                'Agregar resumen de calibracion a OSES/PortableContext y emitir '
+                'finding solo cuando la muestra sea suficiente.'
+            ),
+            'status': 'PENDING',
+            'category': CATEGORY_INVESTIGATION,
+        },
+        {
+            'id': 'inv_phase_a5_runtime_budget_threshold_application',
+            'title': 'Fase A5: Aplicacion gobernada de umbrales runtime',
+            'description': (
+                'Convertir recomendaciones de calibracion en ajustes runtime '
+                'reversibles usando RuntimeTuningRepository, con evidencia antes '
+                'y despues y sin tocar politica sensible a ciegas.'
+            ),
+            'reason': (
+                'A4 puede recomendar; A5 debe aplicar solo cambios seguros, '
+                'versionados y reversibles cuando haya evidencia suficiente.'
+            ),
+            'dependency_missing': 'inv_phase_a4_budget_threshold_calibration',
+            'priority': 'medium',
+            'next_action': (
+                'Definir gate para promover recommended_thresholds a RuntimeTuning '
+                'solo si OSES reporta muestra suficiente y no hay stalls recientes.'
+            ),
+            'status': 'PENDING',
+            'category': CATEGORY_INVESTIGATION,
+        },
+        {
             'id': 'inv_phase_b_visual_metacognition',
             'title': 'Fase B: Percepción visual del UI propio (metacognición visual)',
             'description': (

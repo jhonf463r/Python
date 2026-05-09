@@ -25,6 +25,7 @@ from iabv_v15.domain.models import (
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 from iabv_v15.services.adaptive.autonomy_governance_policy import (
     record_operational_budget_experiment,
+    summarize_operational_budget_calibration,
 )
 
 # Startup health thresholds (in milliseconds).  Crossing any of these emits a
@@ -325,8 +326,41 @@ class OperationalSelfExaminationService:
             'by_reason': by_reason,
             'by_work_class': by_work_class,
             'latest': latest,
+            'calibration': summarize_operational_budget_calibration(budget_runs),
             'active': bool(budget_runs),
         }
+
+    def _operational_budget_calibration_findings(
+        self,
+        calibration: dict[str, Any],
+    ) -> list[SelfExaminationFinding]:
+        """Surface operational-budget calibration when evidence is actionable."""
+
+        status = str(calibration.get('status') or '').strip()
+        sample_count = int(calibration.get('sample_count') or 0)
+        minimum_sample = int(calibration.get('minimum_sample') or 10)
+        if status in {'', 'no_data', 'insufficient_sample'} or sample_count < minimum_sample:
+            return []
+        recommendation = str(calibration.get('recommendation') or 'keep_current_thresholds')
+        severity = IssueSeverity.LOW
+        if status in {'protective_thresholds_active', 'human_gate_observed'}:
+            severity = IssueSeverity.MEDIUM
+        return [
+            SelfExaminationFinding(
+                category='operational_budget_calibration',
+                severity=severity,
+                title=f'Calibracion presupuesto operativo: {status}',
+                summary=(
+                    f'{sample_count} decisiones de presupuesto operativo permiten '
+                    f'evaluar la politica actual. Decision por muestra: '
+                    f'{dict(calibration.get("by_decision") or {})}.'
+                ),
+                recommendation=recommendation,
+                confidence=float(calibration.get('confidence') or 0.0),
+                source_refs=['ExperimentLab', 'AutonomyGovernancePolicy', 'OSES'],
+                metadata=calibration,
+            )
+        ]
 
     def _deferred_deep_cognition_findings(
         self,
@@ -823,6 +857,13 @@ class OperationalSelfExaminationService:
             priority='background',
             world=world,
         )
+        operational_budget_runs_for_review = [
+            *self._recent_operational_budget_runs,
+            *experiment_runs,
+        ]
+        operational_budget_calibration = summarize_operational_budget_calibration(
+            operational_budget_runs_for_review,
+        )
 
         findings: list[SelfExaminationFinding] = []
         findings.extend(self._recurring_failure_findings(recent_runs=recent_runs))
@@ -899,6 +940,9 @@ class OperationalSelfExaminationService:
         # Chat observability: detect chat persistence anomalies, reasoning
         # path imbalance and evidence tag gaps from ChatMessageRepository.
         findings.extend(self._chat_observability_findings())
+        findings.extend(self._operational_budget_calibration_findings(
+            operational_budget_calibration,
+        ))
 
         # RuntimePerformance: always runs — detects memory pressure, excessive
         # threads, slow network probes and other bottlenecks that cause the UI
@@ -1014,6 +1058,7 @@ class OperationalSelfExaminationService:
             *self._recent_operational_budget_runs,
             *experiment_runs,
         ])
+        operational_budget_learning['calibration'] = operational_budget_calibration
         recommended_adjustments = self._apply_feedback_to_adjustments(
             recommended_adjustments=recommended_adjustments,
             recommendation_feedback=recommendation_feedback,
@@ -1058,6 +1103,7 @@ class OperationalSelfExaminationService:
                     'auto_correction': auto_correction_budget,
                 },
                 'operational_budget_learning': operational_budget_learning,
+                'operational_budget_calibration': operational_budget_calibration,
             },
         )
         # Metacognitive feedback loop: convert overconfidence/underconfidence

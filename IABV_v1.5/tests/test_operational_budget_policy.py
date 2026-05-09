@@ -3,6 +3,7 @@ from __future__ import annotations
 from iabv_v15.services.adaptive.autonomy_governance_policy import (
     AutonomyGovernancePolicy,
     record_operational_budget_experiment,
+    summarize_operational_budget_calibration,
 )
 
 
@@ -175,3 +176,69 @@ def test_operational_budget_experiment_recording_is_throttled_by_signature() -> 
     assert first is not None
     assert second is None
     assert len(repo.runs) == 1
+
+
+def test_operational_budget_calibration_requires_minimum_sample() -> None:
+    policy = AutonomyGovernancePolicy()
+    repo = _RunRepo()
+    for idx in range(3):
+        budget = policy.evaluate_operational_budget(
+            work_class='tool_scan',
+            source=f'timer_{idx}',
+            idle_seconds=10.0,
+        )
+        record_operational_budget_experiment(repository=repo, budget=budget)
+
+    summary = summarize_operational_budget_calibration(repo.runs, min_sample=10)
+
+    assert summary['status'] == 'insufficient_sample'
+    assert summary['sample_count'] == 3
+    assert summary['minimum_sample'] == 10
+    assert summary['recommendation'] == 'collect_more_evidence_before_tuning'
+    assert summary['current_thresholds']['idle_rest_window_s'] == 120.0
+
+
+def test_operational_budget_calibration_reports_stable_guardrails_with_mixed_sample() -> None:
+    policy = AutonomyGovernancePolicy()
+    repo = _RunRepo()
+    for idx in range(6):
+        budget = policy.evaluate_operational_budget(
+            work_class='idle_self_test',
+            source=f'timer_allow_{idx}',
+            idle_seconds=180.0,
+        )
+        record_operational_budget_experiment(repository=repo, budget=budget)
+    for idx in range(5):
+        budget = policy.evaluate_operational_budget(
+            work_class='tool_scan',
+            source=f'timer_defer_{idx}',
+            idle_seconds=20.0,
+        )
+        record_operational_budget_experiment(repository=repo, budget=budget)
+
+    summary = summarize_operational_budget_calibration(repo.runs, min_sample=10)
+
+    assert summary['status'] == 'stable_guardrails'
+    assert summary['sample_count'] == 11
+    assert summary['by_decision']['allow'] == 6
+    assert summary['by_decision']['defer'] == 5
+    assert summary['recommended_thresholds'] == summary['current_thresholds']
+    assert summary['confidence'] > 0.0
+
+
+def test_operational_budget_calibration_does_not_tune_without_allow_samples() -> None:
+    policy = AutonomyGovernancePolicy()
+    repo = _RunRepo()
+    for idx in range(10):
+        budget = policy.evaluate_operational_budget(
+            work_class='metacognition',
+            source=f'startup_evolution_{idx}',
+            idle_seconds=5.0,
+        )
+        record_operational_budget_experiment(repository=repo, budget=budget)
+
+    summary = summarize_operational_budget_calibration(repo.runs, min_sample=10)
+
+    assert summary['status'] == 'needs_allow_samples'
+    assert summary['recommendation'] == 'collect_post_rest_allow_evidence_before_tuning'
+    assert summary['by_reason']['rest_window_not_reached'] == 10

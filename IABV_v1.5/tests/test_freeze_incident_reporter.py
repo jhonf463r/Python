@@ -193,15 +193,18 @@ class TestMetacognitionPhases:
     def queue(self, tmp_path: Path) -> PlatformPendingQueue:
         return PlatformPendingQueue(evolution_dir=str(tmp_path))
 
-    def test_seed_creates_four_tasks(self, queue: PlatformPendingQueue) -> None:
+    def test_seed_creates_seven_tasks(self, queue: PlatformPendingQueue) -> None:
         seeded = queue.seed_metacognition_investigation_phases()
-        assert len(seeded) == 4
+        assert len(seeded) == 7
 
     def test_phase_ids_are_correct(self, queue: PlatformPendingQueue) -> None:
         queue.seed_metacognition_investigation_phases()
         expected_ids = {
             'inv_phase_a_antifreeze',
             'inv_phase_a2_budgeted_idle_self_tests',
+            'inv_phase_a3_budget_experiment_feedback',
+            'inv_phase_a4_budget_threshold_calibration',
+            'inv_phase_a5_runtime_budget_threshold_application',
             'inv_phase_b_visual_metacognition',
             'inv_phase_c_guided_replay',
         }
@@ -218,7 +221,7 @@ class TestMetacognitionPhases:
         queue.seed_metacognition_investigation_phases()
         queue.seed_metacognition_investigation_phases()
         inv_tasks = [t for t in queue.list_all() if t.id.startswith('inv_')]
-        assert len(inv_tasks) == 4
+        assert len(inv_tasks) == 7
 
     def test_completed_phase_not_overwritten(self, queue: PlatformPendingQueue) -> None:
         from iabv_v15.domain.models import PendingTaskStatus
@@ -235,9 +238,18 @@ class TestMetacognitionPhases:
     def test_phase_b_depends_on_phase_a(self, queue: PlatformPendingQueue) -> None:
         queue.seed_metacognition_investigation_phases()
         phase_a2 = queue.get('inv_phase_a2_budgeted_idle_self_tests')
+        phase_a3 = queue.get('inv_phase_a3_budget_experiment_feedback')
+        phase_a4 = queue.get('inv_phase_a4_budget_threshold_calibration')
+        phase_a5 = queue.get('inv_phase_a5_runtime_budget_threshold_application')
         phase_b = queue.get('inv_phase_b_visual_metacognition')
         assert phase_a2 is not None
         assert 'inv_phase_a_antifreeze' in phase_a2.dependency_missing
+        assert phase_a3 is not None
+        assert 'inv_phase_a2_budgeted_idle_self_tests' in phase_a3.dependency_missing
+        assert phase_a4 is not None
+        assert 'inv_phase_a3_budget_experiment_feedback' in phase_a4.dependency_missing
+        assert phase_a5 is not None
+        assert 'inv_phase_a4_budget_threshold_calibration' in phase_a5.dependency_missing
         assert phase_b is not None
         assert 'inv_phase_a2_budgeted_idle_self_tests' in phase_b.dependency_missing
 
@@ -245,10 +257,16 @@ class TestMetacognitionPhases:
         queue.seed_metacognition_investigation_phases()
         a = queue.get('inv_phase_a_antifreeze')
         a2 = queue.get('inv_phase_a2_budgeted_idle_self_tests')
+        a3 = queue.get('inv_phase_a3_budget_experiment_feedback')
+        a4 = queue.get('inv_phase_a4_budget_threshold_calibration')
+        a5 = queue.get('inv_phase_a5_runtime_budget_threshold_application')
         b = queue.get('inv_phase_b_visual_metacognition')
         c = queue.get('inv_phase_c_guided_replay')
         assert a is not None and a.priority == 'high'
         assert a2 is not None and a2.priority == 'high'
+        assert a3 is not None and a3.priority == 'high'
+        assert a4 is not None and a4.priority == 'high'
+        assert a5 is not None and a5.priority == 'medium'
         assert b is not None and b.priority == 'medium'
         assert c is not None and c.priority == 'low'
 
