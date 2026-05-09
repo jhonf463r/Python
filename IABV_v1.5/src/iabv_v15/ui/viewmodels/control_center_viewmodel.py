@@ -7736,6 +7736,12 @@ class ControlCenterViewModel(QObject):
                 validation_cycle.note_user_activity(reason='control_center_chat')
             except Exception:
                 pass
+        oses = self.self_examination_service or getattr(self, '_oses_ref', None)
+        if oses is not None and hasattr(oses, 'note_user_activity'):
+            try:
+                oses.note_user_activity(reason='control_center_chat')
+            except Exception:
+                pass
         # --- Open canonical interaction episode ---
         self._interaction_has_pending_followup = False
         self._interaction_pending_followup_outcome = ''

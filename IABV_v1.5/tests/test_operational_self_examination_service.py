@@ -28,6 +28,8 @@ from iabv_v15.domain.models import (
     WorldModelSnapshot,
     utc_now,
 )
+from iabv_v15.infra.persistence.storage import ArtifactStorage
+from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
 from iabv_v15.services.evolution.operational_self_examination_service import (
     OperationalSelfExaminationService,
 )
@@ -39,6 +41,52 @@ def _workspace(name: str) -> Path:
     root = base / f'{name}_{uuid4().hex}'
     root.mkdir(parents=True, exist_ok=True)
     return root
+
+
+def test_oses_defers_deep_cognition_and_auto_correction_until_rest_window() -> None:
+    root = _workspace('oses_operational_budget_defer')
+    try:
+        service = OperationalSelfExaminationService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'evolution')),
+        )
+        service.autonomy_governance_policy = AutonomyGovernancePolicy()
+        calls: list[str] = []
+        service._deferred_deep_cognition_findings = lambda **kwargs: calls.append('deep') or []  # type: ignore[method-assign]
+        service._deep_analysis_queue_findings = lambda **kwargs: calls.append('queue') or []  # type: ignore[method-assign]
+        service._auto_correct_from_findings = lambda findings: calls.append('auto_correct')  # type: ignore[method-assign]
+
+        review = service.build_review()
+        budget = review.metadata['operational_budget']
+
+        assert calls == []
+        assert budget['deep_cognition']['decision'] == 'defer'
+        assert budget['deep_cognition']['reason'] == 'rest_window_not_reached'
+        assert budget['auto_correction']['decision'] == 'defer'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_oses_runs_deep_cognition_after_rest_window_budget_allows() -> None:
+    root = _workspace('oses_operational_budget_allow')
+    try:
+        service = OperationalSelfExaminationService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'evolution')),
+        )
+        service.autonomy_governance_policy = AutonomyGovernancePolicy()
+        service._operational_budget_rest_started_at -= 300.0
+        calls: list[str] = []
+        service._deferred_deep_cognition_findings = lambda **kwargs: calls.append('deep') or []  # type: ignore[method-assign]
+        service._deep_analysis_queue_findings = lambda **kwargs: calls.append('queue') or []  # type: ignore[method-assign]
+
+        review = service.build_review()
+        budget = review.metadata['operational_budget']
+
+        assert calls == ['deep', 'queue']
+        assert budget['deep_cognition']['decision'] == 'allow'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
 
 
 def test_operational_self_examination_service_detects_repeated_blocks_and_adjustments() -> None:

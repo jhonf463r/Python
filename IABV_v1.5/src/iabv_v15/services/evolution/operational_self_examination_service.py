@@ -99,6 +99,18 @@ class OperationalSelfExaminationService:
         self._gh_api_cached_at: float = 0.0
         self._GH_API_TTL: float = 60.0
         self._freeze_incident_reporter: Any | None = None
+        self.autonomy_governance_policy: Any | None = None
+        self._operational_budget_rest_started_at = time.monotonic()
+        self._last_operational_budget: dict[str, Any] = {}
+
+    def note_user_activity(self, *, reason: str = 'user_activity') -> None:
+        """Reset the rest window used by deferred self-examination work."""
+        self._operational_budget_rest_started_at = time.monotonic()
+        current = self._current_review
+        if current is not None:
+            metadata = dict(current.metadata or {})
+            metadata['last_user_activity_reason'] = reason
+            self._current_review = current.model_copy(update={'metadata': metadata})
 
     def current_review(
         self,
@@ -180,6 +192,69 @@ class OperationalSelfExaminationService:
         if len(active_blocks) > 3:
             return False
         return True
+
+    @staticmethod
+    def _process_rss_mb() -> float:
+        try:
+            import psutil  # type: ignore
+            return round(float(psutil.Process(os.getpid()).memory_info().rss) / (1024 * 1024), 1)
+        except Exception:
+            return 0.0
+
+    @staticmethod
+    def _background_heavy_active(world: WorldModelSnapshot | None) -> bool:
+        if world is None:
+            return False
+        for process in getattr(world, 'background_processes', []) or []:
+            state = str(getattr(process, 'state', '') or '').strip().lower()
+            if state in {'cpu_heavy', 'memory_heavy'}:
+                return True
+        return False
+
+    def _operational_budget_for_work(
+        self,
+        *,
+        work_class: str,
+        source: str,
+        priority: str,
+        world: WorldModelSnapshot | None,
+    ) -> dict[str, Any]:
+        policy = self.autonomy_governance_policy
+        idle_seconds = max(0.0, time.monotonic() - float(self._operational_budget_rest_started_at or 0.0))
+        rss_mb = self._process_rss_mb()
+        if policy is not None and hasattr(policy, 'evaluate_operational_budget'):
+            try:
+                budget = dict(policy.evaluate_operational_budget(
+                    work_class=work_class,
+                    source=source,
+                    priority=priority,
+                    rss_mb=rss_mb,
+                    idle_seconds=idle_seconds,
+                    background_active=self._background_heavy_active(world),
+                    confidence=0.82,
+                ))
+                self._last_operational_budget = budget
+                return budget
+            except Exception:
+                pass
+        budget = {
+            'decision': 'allow',
+            'allowed': True,
+            'reason': 'budget_unavailable_legacy_allow',
+            'work_class': work_class,
+            'priority': priority,
+            'recommended_mode': 'normal',
+            'defer_seconds': 0.0,
+            'evidence': {
+                'source': source,
+                'rss_mb': rss_mb,
+                'idle_seconds': round(idle_seconds, 1),
+                'background_active': self._background_heavy_active(world),
+            },
+            'decision_source': 'operational_self_examination_service.legacy_budget',
+        }
+        self._last_operational_budget = budget
+        return budget
 
     def _deferred_deep_cognition_findings(
         self,
@@ -663,6 +738,18 @@ class OperationalSelfExaminationService:
         backlog = self._improvement_backlog()
         world = self._world_model()
         validation = self._validation_snapshot()
+        deep_cognition_budget = self._operational_budget_for_work(
+            work_class='deep_scan',
+            source='oses_deep_cognition',
+            priority='background',
+            world=world,
+        )
+        auto_correction_budget = self._operational_budget_for_work(
+            work_class='metacognition',
+            source='oses_auto_correction',
+            priority='background',
+            world=world,
+        )
 
         findings: list[SelfExaminationFinding] = []
         findings.extend(self._recurring_failure_findings(recent_runs=recent_runs))
@@ -763,7 +850,7 @@ class OperationalSelfExaminationService:
         # análisis más profundos que serían costosos bajo presión normal.
         # Cross-correlación de fallos, detección de tendencias, y decay de
         # estrategias. Solo se activa cuando _is_low_load() retorna True.
-        if self._is_low_load(world):
+        if self._is_low_load(world) and bool(deep_cognition_budget.get('allowed')):
             findings.extend(self._deferred_deep_cognition_findings(
                 experiment_runs=experiment_runs,
                 recent_runs=recent_runs,
@@ -889,6 +976,10 @@ class OperationalSelfExaminationService:
                 'recommendation_feedback': recommendation_feedback[:6],
                 'feedback_summary': feedback_summary,
                 'solution_proposals': solution_proposals[:4],
+                'operational_budget': {
+                    'deep_cognition': deep_cognition_budget,
+                    'auto_correction': auto_correction_budget,
+                },
             },
         )
         # Metacognitive feedback loop: convert overconfidence/underconfidence
@@ -927,7 +1018,8 @@ class OperationalSelfExaminationService:
 
         # Self-audit auto-correction loop: feed HIGH-severity findings
         # into the auto-correction engine for safe, automatic fixes.
-        self._auto_correct_from_findings(findings)
+        if bool(auto_correction_budget.get('allowed')):
+            self._auto_correct_from_findings(findings)
 
         # Close the auto-improvement loop: materialize qualifying
         # task_packet findings as persistent pending issues so the

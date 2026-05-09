@@ -1010,6 +1010,9 @@ class AppBootstrap:
 
         self.intent_understanding_service = IntentUnderstandingService()
         self.autonomy_governance_policy = AutonomyGovernancePolicy()
+        self.operational_self_examination_service.autonomy_governance_policy = (
+            self.autonomy_governance_policy
+        )
         self.goal_engine = GoalEngine(self.objective_repository)
         self.portable_context_service = PortableContextService(
             workspace_root=self.config.workspace_root,
