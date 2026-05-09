@@ -3,10 +3,14 @@
 import atexit
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+import hashlib
+import json
 import logging
+import os
 from pathlib import Path
 import re
 import threading
+import time
 import uuid
 from typing import Any
 
@@ -58,6 +62,8 @@ class ControlCenterViewModel(QObject):
     taskResolved = Signal(str, object)
     taskFailed = Signal(str, str)
     autonomyDockProjected = Signal(int, object)
+    autonomyDockChanged = Signal()
+    autonomyDockStatusChanged = Signal()
     developmentPacketReady = Signal(int, str)
     evolutionSnapshotReady = Signal(int, object)
     agentCardsReady = Signal(int, object)
@@ -232,7 +238,11 @@ class ControlCenterViewModel(QObject):
         self._autonomy_dock_generation: int = 0
         self._autonomy_dock_refresh_in_flight: bool = False
         self._autonomy_dock_last_refresh_started: float = 0.0
-        self._autonomy_dock_min_interval_s: float = 8.0
+        self._autonomy_dock_min_interval_s: float = 20.0
+        self._autonomy_dock_last_fingerprint: str = ''
+        self._autonomy_dock_status: str = 'idle'
+        self._autonomy_dock_last_result: str = 'idle'
+        self._autonomy_dock_last_summary: str = 'Dock de autonomia sin refresco reciente.'
 
         self._adaptive_session_id = ''
         self._adaptive_status_text = 'Sin sesion adaptativa activa.'
@@ -4956,6 +4966,74 @@ class ControlCenterViewModel(QObject):
     def get_autonomy_timeline(self) -> list[dict[str, Any]]:
         return self._autonomy_timeline
 
+    def get_autonomy_dock_status(self) -> str:
+        return self._autonomy_dock_status
+
+    def get_autonomy_dock_last_result(self) -> str:
+        return self._autonomy_dock_last_result
+
+    def get_autonomy_dock_last_summary(self) -> str:
+        return self._autonomy_dock_last_summary
+
+    @staticmethod
+    def _compact_autonomy_dock_value(value: Any, depth: int = 0, max_depth: int = 2) -> Any:
+        if value is None or isinstance(value, (bool, int, float)):
+            return value
+        if isinstance(value, str):
+            return value[:96]
+        if isinstance(value, list):
+            if depth >= max_depth:
+                return {'__len': len(value)}
+            return {
+                '__len': len(value),
+                'items': [
+                    ControlCenterViewModel._compact_autonomy_dock_value(item, depth + 1, max_depth)
+                    for item in value[:12]
+                ],
+            }
+        if isinstance(value, dict):
+            if depth >= max_depth:
+                return {'__keys': sorted(str(key) for key in value.keys())[:24]}
+            return {
+                str(key): ControlCenterViewModel._compact_autonomy_dock_value(value[key], depth + 1, max_depth)
+                for key in sorted(value.keys(), key=str)[:32]
+            }
+        return str(value)[:96]
+
+    @staticmethod
+    def _autonomy_dock_fingerprint(projected: dict[str, Any]) -> str:
+        compact = {
+            'live_process_summary': ControlCenterViewModel._compact_autonomy_dock_value(
+                projected.get('live_process_summary') or {}
+            ),
+            'live_work_items': ControlCenterViewModel._compact_autonomy_dock_value(
+                projected.get('live_work_items') or []
+            ),
+            'assistant_session_cards': ControlCenterViewModel._compact_autonomy_dock_value(
+                projected.get('assistant_session_cards') or []
+            ),
+            'autonomy_timeline': ControlCenterViewModel._compact_autonomy_dock_value(
+                projected.get('autonomy_timeline') or []
+            ),
+        }
+        raw = json.dumps(compact, sort_keys=True, default=str)
+        return hashlib.md5(raw.encode('utf-8', errors='replace')).hexdigest()[:16]
+
+    @staticmethod
+    def _process_rss_mb() -> float:
+        try:
+            import psutil  # type: ignore
+            return round(float(psutil.Process(os.getpid()).memory_info().rss) / (1024 * 1024), 1)
+        except Exception:
+            return 0.0
+
+    def _trace_autonomy_dock(self, kind: str, **data: Any) -> None:
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(kind, **data)
+        except Exception:
+            pass
+
     def get_evolution_overview(self) -> dict[str, Any]:
         return self._evolution_overview
 
@@ -5156,26 +5234,67 @@ class ControlCenterViewModel(QObject):
         self._assistant_session_cards = [dict(item) for item in (projected.get('assistant_session_cards') or [])]
         self._autonomy_timeline = [dict(item) for item in (projected.get('autonomy_timeline') or [])]
 
-    def _refresh_autonomy_dock_async(self) -> None:
+    def _refresh_autonomy_dock_async(self, *, source: str = 'timer', force: bool = False) -> None:
         """Run autonomy dock projection on ``_bg_pool`` and apply to UI."""
-        import time as _time
+        trace_hook = getattr(self, '_trace_autonomy_dock', None)
+
+        def _trace(kind: str, **data: Any) -> None:
+            if callable(trace_hook):
+                trace_hook(kind, **data)
+
         if self._autonomy_dock_refresh_in_flight:
+            _trace('control_autonomy_dock_refresh_skipped', source=source, reason='in_flight')
             return
-        now = _time.monotonic()
-        if (now - self._autonomy_dock_last_refresh_started) < self._autonomy_dock_min_interval_s:
+        now = time.monotonic()
+        elapsed_since_last = now - self._autonomy_dock_last_refresh_started
+        if not force and elapsed_since_last < self._autonomy_dock_min_interval_s:
+            _trace(
+                'control_autonomy_dock_refresh_skipped',
+                source=source,
+                reason='cooldown',
+                cooldown_remaining_ms=round((self._autonomy_dock_min_interval_s - elapsed_since_last) * 1000.0, 1),
+            )
             return
         self._autonomy_dock_refresh_in_flight = True
+        self._autonomy_dock_status = 'refreshing'
+        self._autonomy_dock_last_result = 'running'
+        self._autonomy_dock_last_summary = 'Actualizando dock de autonomia...'
         self._autonomy_dock_last_refresh_started = now
         self._autonomy_dock_generation += 1
         gen = self._autonomy_dock_generation
+        refresh_id = f'ccdock-{uuid.uuid4().hex[:8]}'
+        t0 = time.perf_counter()
+        self.autonomyDockStatusChanged.emit()
+        _trace(
+            'control_autonomy_dock_refresh_started',
+            refresh_id=refresh_id,
+            source=source,
+            generation=gen,
+            rss_mb=self._process_rss_mb(),
+            status_emitted_signals=['autonomyDockStatusChanged'],
+        )
         projector = self.autonomy_activity_projector
         if projector is None:
             self._autonomy_dock_refresh_in_flight = False
+            self._autonomy_dock_status = 'idle'
+            self._autonomy_dock_last_result = 'unavailable'
+            self._autonomy_dock_last_summary = 'Dock de autonomia no disponible en esta sesion.'
             self._live_process_summary = {}
             self._live_work_items = []
             self._assistant_session_cards = []
             self._autonomy_timeline = []
-            self.dataChanged.emit()
+            self.autonomyDockStatusChanged.emit()
+            self.autonomyDockChanged.emit()
+            _trace(
+                'control_autonomy_dock_refresh_applied',
+                refresh_id=refresh_id,
+                source=source,
+                generation=gen,
+                duration_ms=round((time.perf_counter() - t0) * 1000.0, 1),
+                result='unavailable',
+                rss_mb=self._process_rss_mb(),
+                emitted_signals=['autonomyDockChanged', 'autonomyDockStatusChanged'],
+            )
             return
         def _bg() -> dict[str, Any] | None:
             if self._autonomy_dock_generation != gen:
@@ -5201,14 +5320,56 @@ class ControlCenterViewModel(QObject):
         def _apply(fut: Any) -> None:
             self._autonomy_dock_refresh_in_flight = False
             if self._autonomy_dock_generation != gen:
+                self._autonomy_dock_status = 'idle'
+                self._autonomy_dock_last_result = 'cancelled'
+                self._autonomy_dock_last_summary = 'Refresh de autonomia cancelado por una generacion mas nueva.'
+                self.autonomyDockStatusChanged.emit()
+                _trace(
+                    'control_autonomy_dock_refresh_stale',
+                    refresh_id=refresh_id,
+                    source=source,
+                    generation=gen,
+                    duration_ms=round((time.perf_counter() - t0) * 1000.0, 1),
+                    rss_mb=self._process_rss_mb(),
+                )
                 return
             try:
                 projected = fut.result()
             except Exception:
                 logger.debug('autonomy dock bg projection failed', exc_info=True)
+                self._autonomy_dock_status = 'failed'
+                self._autonomy_dock_last_result = 'failed'
+                self._autonomy_dock_last_summary = 'No pude actualizar el dock de autonomia.'
+                self.autonomyDockStatusChanged.emit()
+                _trace(
+                    'control_autonomy_dock_refresh_failed',
+                    refresh_id=refresh_id,
+                    source=source,
+                    generation=gen,
+                    duration_ms=round((time.perf_counter() - t0) * 1000.0, 1),
+                    rss_mb=self._process_rss_mb(),
+                )
                 return
             if projected is None:
+                self._autonomy_dock_status = 'idle'
+                self._autonomy_dock_last_result = 'cancelled'
+                self._autonomy_dock_last_summary = 'Refresh de autonomia cancelado antes de aplicar.'
+                self.autonomyDockStatusChanged.emit()
+                _trace(
+                    'control_autonomy_dock_refresh_stale',
+                    refresh_id=refresh_id,
+                    source=source,
+                    generation=gen,
+                    duration_ms=round((time.perf_counter() - t0) * 1000.0, 1),
+                    rss_mb=self._process_rss_mb(),
+                )
                 return
+            projected['_refresh_meta'] = {
+                'refresh_id': refresh_id,
+                'source': source,
+                'generation': gen,
+                't0': t0,
+            }
             self.autonomyDockProjected.emit(gen, projected)
 
         future = self._bg_pool.submit(_bg)
@@ -5219,18 +5380,64 @@ class ControlCenterViewModel(QObject):
         if self._autonomy_dock_generation != gen or not isinstance(projected, dict):
             return
         try:
-            self._live_process_summary = dict(projected.get('live_process_summary') or {})
-            self._live_work_items = [dict(item) for item in (projected.get('live_work_items') or [])]
-            self._assistant_session_cards = [dict(item) for item in (projected.get('assistant_session_cards') or [])]
-            self._autonomy_timeline = [dict(item) for item in (projected.get('autonomy_timeline') or [])]
-            self.dataChanged.emit()
+            meta = dict(projected.get('_refresh_meta') or {})
+            refresh_id = str(meta.get('refresh_id') or '')
+            source = str(meta.get('source') or 'unknown')
+            t0 = float(meta.get('t0') or time.perf_counter())
+            fingerprint = ControlCenterViewModel._autonomy_dock_fingerprint(projected)
+            changed = fingerprint != self._autonomy_dock_last_fingerprint
+            emitted_signals = ['autonomyDockStatusChanged']
+            self._autonomy_dock_status = 'idle'
+            self._autonomy_dock_last_result = 'changed' if changed else 'unchanged'
+            if changed:
+                self._live_process_summary = dict(projected.get('live_process_summary') or {})
+                self._live_work_items = [dict(item) for item in (projected.get('live_work_items') or [])]
+                self._assistant_session_cards = [dict(item) for item in (projected.get('assistant_session_cards') or [])]
+                self._autonomy_timeline = [dict(item) for item in (projected.get('autonomy_timeline') or [])]
+                self._autonomy_dock_last_fingerprint = fingerprint
+                self._autonomy_dock_last_summary = (
+                    f'Dock actualizado: {len(self._live_work_items)} trabajos, '
+                    f'{len(self._assistant_session_cards)} asistentes, '
+                    f'{len(self._autonomy_timeline)} eventos.'
+                )
+                self.autonomyDockChanged.emit()
+                emitted_signals.append('autonomyDockChanged')
+            else:
+                self._autonomy_dock_last_summary = 'Dock actualizado: sin cambios nuevos.'
+            self.autonomyDockStatusChanged.emit()
+            trace_hook = getattr(self, '_trace_autonomy_dock', None)
+            if callable(trace_hook):
+                trace_hook(
+                    'control_autonomy_dock_refresh_applied',
+                    refresh_id=refresh_id,
+                    source=source,
+                    generation=gen,
+                    duration_ms=round((time.perf_counter() - t0) * 1000.0, 1),
+                    result=self._autonomy_dock_last_result,
+                    item_counts={
+                        'live_work_items': len(projected.get('live_work_items') or []),
+                        'assistant_session_cards': len(projected.get('assistant_session_cards') or []),
+                        'autonomy_timeline': len(projected.get('autonomy_timeline') or []),
+                    },
+                    rss_mb=self._process_rss_mb(),
+                    emitted_signals=emitted_signals,
+                )
         except Exception:
+            self._autonomy_dock_status = 'failed'
+            self._autonomy_dock_last_result = 'failed'
+            self._autonomy_dock_last_summary = 'No pude aplicar el refresh del dock de autonomia.'
+            self.autonomyDockStatusChanged.emit()
             logger.debug('autonomy dock UI projection apply failed', exc_info=True)
 
     @Slot()
     def refreshAutonomyDock(self) -> None:
         """Non-blocking QML refresh for the autonomy dock."""
-        self._refresh_autonomy_dock_async()
+        self._refresh_autonomy_dock_async(source='timer', force=False)
+
+    @Slot()
+    def refreshAutonomyDockFromUser(self) -> None:
+        """Manual QML refresh for the autonomy dock; bypasses cooldown."""
+        self._refresh_autonomy_dock_async(source='user_click', force=True)
 
     @Slot(str)
     def setRole(self, role: str) -> None:
@@ -8052,10 +8259,13 @@ class ControlCenterViewModel(QObject):
     chatMessages = Property(list, get_chat_messages, notify=dataChanged)
     providerCards = Property(list, get_provider_cards, notify=dataChanged)
     progressCards = Property(list, get_progress_cards, notify=dataChanged)
-    liveProcessSummary = Property(dict, get_live_process_summary, notify=dataChanged)
-    liveWorkItems = Property(list, get_live_work_items, notify=dataChanged)
-    assistantSessionCards = Property(list, get_assistant_session_cards, notify=dataChanged)
-    autonomyTimeline = Property(list, get_autonomy_timeline, notify=dataChanged)
+    liveProcessSummary = Property(dict, get_live_process_summary, notify=autonomyDockChanged)
+    liveWorkItems = Property(list, get_live_work_items, notify=autonomyDockChanged)
+    assistantSessionCards = Property(list, get_assistant_session_cards, notify=autonomyDockChanged)
+    autonomyTimeline = Property(list, get_autonomy_timeline, notify=autonomyDockChanged)
+    autonomyDockStatus = Property(str, get_autonomy_dock_status, notify=autonomyDockStatusChanged)
+    autonomyDockLastResult = Property(str, get_autonomy_dock_last_result, notify=autonomyDockStatusChanged)
+    autonomyDockLastSummary = Property(str, get_autonomy_dock_last_summary, notify=autonomyDockStatusChanged)
     evolutionOverview = Property(dict, get_evolution_overview, notify=dataChanged)
     evolutionAreaCards = Property(list, get_evolution_area_cards, notify=dataChanged)
     evolutionBlockers = Property(list, get_evolution_blockers, notify=dataChanged)

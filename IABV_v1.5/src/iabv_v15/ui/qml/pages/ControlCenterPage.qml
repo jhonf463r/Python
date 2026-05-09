@@ -20,6 +20,9 @@ Item {
     property var assistantSessionCardsModel: controlCenterViewModel ? controlCenterViewModel.assistantSessionCards : []
     property var autonomyTimelineModel: controlCenterViewModel ? controlCenterViewModel.autonomyTimeline : []
     property var autonomyActivityModel: controlCenterViewModel ? controlCenterViewModel.autonomyActivity : ({})
+    property string autonomyDockStatusValue: controlCenterViewModel ? controlCenterViewModel.autonomyDockStatus : "idle"
+    property string autonomyDockLastResultValue: controlCenterViewModel ? controlCenterViewModel.autonomyDockLastResult : "idle"
+    property string autonomyDockLastSummaryValue: controlCenterViewModel ? controlCenterViewModel.autonomyDockLastSummary : ""
     property var assistantActionButtonsModel: controlCenterViewModel ? controlCenterViewModel.assistantActionButtons : []
     property bool advancedVisible: controlCenterViewModel ? controlCenterViewModel.advancedVisible : false
     property bool workingState: controlCenterViewModel ? controlCenterViewModel.working : false
@@ -61,7 +64,7 @@ Item {
 
     Timer {
         id: autonomyDockTimer
-        interval: 1500
+        interval: 5000
         repeat: true
         running: Boolean(controlCenterViewModel) && (
             workingState
@@ -386,7 +389,21 @@ Item {
                                 spacing: 10
                                 Label { Layout.fillWidth: true; text: "Dock vivo de autonomia"; color: textPrimary; font.pixelSize: 18; font.family: "Segoe UI" }
                                 AppButton { text: liveDockExpanded ? "Compactar" : "Expandir"; onClicked: liveDockExpanded = !liveDockExpanded }
-                                AppButton { text: "Refrescar"; onClicked: if (controlCenterViewModel) controlCenterViewModel.refreshAutonomyDock() }
+                                AppButton {
+                                    text: autonomyDockStatusValue === "refreshing" ? "Actualizando..." : "Refrescar"
+                                    enabled: autonomyDockStatusValue !== "refreshing"
+                                    onClicked: if (controlCenterViewModel) controlCenterViewModel.refreshAutonomyDockFromUser()
+                                }
+                            }
+
+                            Label {
+                                width: liveDockCol.width
+                                visible: Boolean(autonomyDockLastSummaryValue)
+                                text: autonomyDockLastSummaryValue
+                                color: autonomyDockLastResultValue === "failed" ? "#cf7e7e" : (autonomyDockLastResultValue === "changed" ? "#8ccf8b" : textSecondary)
+                                wrapMode: Label.WordWrap
+                                font.pixelSize: 11
+                                font.family: "Segoe UI"
                             }
 
                             Label {

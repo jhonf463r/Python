@@ -307,7 +307,7 @@ def test_public_refresh_autonomy_dock_slot_is_non_blocking() -> None:
             self.async_calls = 0
             self.sync_calls = 0
 
-        def _refresh_autonomy_dock_async(self) -> None:
+        def _refresh_autonomy_dock_async(self, **_kwargs: Any) -> None:
             self.async_calls += 1
 
         def _refresh_autonomy_dock(self) -> None:
@@ -335,7 +335,20 @@ def test_autonomy_dock_projection_applies_on_matching_generation() -> None:
     class DummyViewModel:
         def __init__(self) -> None:
             self._autonomy_dock_generation = 7
+            self._autonomy_dock_last_fingerprint = ''
+            self._autonomy_dock_status = ''
+            self._autonomy_dock_last_result = ''
+            self._autonomy_dock_last_summary = ''
             self.dataChanged = Emitter()
+            self.autonomyDockChanged = Emitter()
+            self.autonomyDockStatusChanged = Emitter()
+            self.traces: list[dict[str, Any]] = []
+
+        def _trace_autonomy_dock(self, kind: str, **data: Any) -> None:
+            self.traces.append({'kind': kind, **data})
+
+        def _process_rss_mb(self) -> float:
+            return 123.4
 
     dummy = DummyViewModel()
     projected = {
@@ -351,7 +364,12 @@ def test_autonomy_dock_projection_applies_on_matching_generation() -> None:
     assert dummy._live_work_items == [{'task_id': 'task-1'}]
     assert dummy._assistant_session_cards == [{'assistant_kind': 'chatgpt'}]
     assert dummy._autonomy_timeline == [{'trace_id': 'trace-1'}]
-    assert dummy.dataChanged.count == 1
+    assert dummy.dataChanged.count == 0
+    assert dummy.autonomyDockChanged.count == 1
+    assert dummy.autonomyDockStatusChanged.count == 1
+    assert dummy.traces[-1]['kind'] == 'control_autonomy_dock_refresh_applied'
+    assert dummy.traces[-1]['rss_mb'] == 123.4
+    assert dummy.traces[-1]['emitted_signals'] == ['autonomyDockStatusChanged', 'autonomyDockChanged']
 
 
 def test_autonomy_dock_projection_ignores_stale_generation() -> None:
@@ -370,6 +388,8 @@ def test_autonomy_dock_projection_ignores_stale_generation() -> None:
             self._autonomy_dock_generation = 8
             self._live_process_summary = {'status': 'new'}
             self.dataChanged = Emitter()
+            self.autonomyDockChanged = Emitter()
+            self.autonomyDockStatusChanged = Emitter()
 
     dummy = DummyViewModel()
 
@@ -381,6 +401,77 @@ def test_autonomy_dock_projection_ignores_stale_generation() -> None:
 
     assert dummy._live_process_summary == {'status': 'new'}
     assert dummy.dataChanged.count == 0
+    assert dummy.autonomyDockChanged.count == 0
+
+
+def test_autonomy_dock_projection_unchanged_emits_status_only() -> None:
+    """Repeated equal projection must not re-evaluate the whole dock QML tree."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class Emitter:
+        def __init__(self) -> None:
+            self.count = 0
+
+        def emit(self) -> None:
+            self.count += 1
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self._autonomy_dock_generation = 7
+            self._autonomy_dock_last_fingerprint = ''
+            self._autonomy_dock_status = ''
+            self._autonomy_dock_last_result = ''
+            self._autonomy_dock_last_summary = ''
+            self.dataChanged = Emitter()
+            self.autonomyDockChanged = Emitter()
+            self.autonomyDockStatusChanged = Emitter()
+            self.traces: list[dict[str, Any]] = []
+
+        def _trace_autonomy_dock(self, kind: str, **data: Any) -> None:
+            self.traces.append({'kind': kind, **data})
+
+        def _process_rss_mb(self) -> float:
+            return 123.4
+
+    projected = {
+        'live_process_summary': {'status': 'ok'},
+        'live_work_items': [{'task_id': 'task-1'}],
+        'assistant_session_cards': [{'assistant_kind': 'chatgpt'}],
+        'autonomy_timeline': [{'trace_id': 'trace-1'}],
+    }
+    dummy = DummyViewModel()
+    ControlCenterViewModel._apply_autonomy_dock_projection(dummy, 7, dict(projected))  # type: ignore[arg-type]
+    dummy.autonomyDockChanged.count = 0
+    dummy.autonomyDockStatusChanged.count = 0
+    dummy.dataChanged.count = 0
+    ControlCenterViewModel._apply_autonomy_dock_projection(dummy, 7, dict(projected))  # type: ignore[arg-type]
+
+    assert dummy._autonomy_dock_last_result == 'unchanged'
+    assert dummy.dataChanged.count == 0
+    assert dummy.autonomyDockChanged.count == 0
+    assert dummy.autonomyDockStatusChanged.count == 1
+    assert dummy.traces[-1]['rss_mb'] == 123.4
+    assert dummy.traces[-1]['emitted_signals'] == ['autonomyDockStatusChanged']
+
+
+def test_manual_autonomy_dock_refresh_bypasses_cooldown() -> None:
+    """Manual QML button must force refresh while timer ticks stay throttled."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, Any]] = []
+
+        def _refresh_autonomy_dock_async(self, **kwargs: Any) -> None:
+            self.calls.append(kwargs)
+
+    dummy = DummyViewModel()
+
+    ControlCenterViewModel.refreshAutonomyDock(dummy)  # type: ignore[arg-type]
+    ControlCenterViewModel.refreshAutonomyDockFromUser(dummy)  # type: ignore[arg-type]
+
+    assert dummy.calls[0] == {'source': 'timer', 'force': False}
+    assert dummy.calls[1] == {'source': 'user_click', 'force': True}
 
 
 def test_build_development_packet_slot_is_non_blocking() -> None:
@@ -594,6 +685,7 @@ def test_autonomy_dock_async_skips_when_projection_in_flight() -> None:
     dummy = SimpleNamespace(
         _autonomy_dock_refresh_in_flight=True,
         _bg_pool=BgPool(),
+        _trace_autonomy_dock=lambda *_args, **_kwargs: None,
     )
 
     ControlCenterViewModel._refresh_autonomy_dock_async(dummy)  # type: ignore[arg-type]
@@ -613,6 +705,7 @@ def test_autonomy_dock_async_respects_min_interval() -> None:
         _autonomy_dock_last_refresh_started=_time.monotonic(),
         _autonomy_dock_min_interval_s=8.0,
         _bg_pool=BgPool(),
+        _trace_autonomy_dock=lambda *_args, **_kwargs: None,
     )
 
     ControlCenterViewModel._refresh_autonomy_dock_async(dummy)  # type: ignore[arg-type]
