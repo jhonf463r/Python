@@ -56,6 +56,138 @@ class AutonomyGovernancePolicy:
 
         return True, None
 
+    _OPERATIONAL_FOREGROUND_CLASSES = {
+        'foreground_response',
+        'interaction_lifecycle',
+        'visible_ui_update',
+        'human_approval',
+        'watchdog',
+    }
+    _OPERATIONAL_BACKGROUND_CLASSES = {
+        'autonomy_dock_refresh',
+        'ui_refresh',
+        'idle_self_test',
+        'deep_scan',
+        'metacognition',
+        'tool_scan',
+        'branch_cleanup',
+    }
+    _OPERATIONAL_CRITICAL_RSS_MB = 6000.0
+    _OPERATIONAL_HIGH_RSS_MB = 2500.0
+    _OPERATIONAL_STALL_MS = 5000.0
+    _OPERATIONAL_IDLE_REST_WINDOW_S = 120.0
+
+    def evaluate_operational_budget(
+        self,
+        *,
+        work_class: str,
+        source: str = '',
+        priority: str = 'normal',
+        user_waiting: bool = False,
+        query_pending: bool = False,
+        rss_mb: float = 0.0,
+        recent_stall_ms: float = 0.0,
+        event_loop_lag_ms: float = 0.0,
+        idle_seconds: float = 0.0,
+        background_active: bool = False,
+        confidence: float = 1.0,
+    ) -> dict[str, Any]:
+        """Budget gate for routine organs that must not starve the UI.
+
+        This is the small "metabolic" rule set used by UI refreshes, idle
+        self-tests and other auxiliary work.  It does not decide user intent
+        and it does not replace the orchestrator; it only answers whether a
+        work item is allowed in the current resource/attention window.
+        """
+
+        work = str(work_class or '').strip().lower() or 'unknown'
+        src = str(source or '').strip().lower()
+        prio = str(priority or 'normal').strip().lower()
+        try:
+            rss = max(0.0, float(rss_mb or 0.0))
+        except Exception:
+            rss = 0.0
+        try:
+            stall = max(float(recent_stall_ms or 0.0), float(event_loop_lag_ms or 0.0), 0.0)
+        except Exception:
+            stall = 0.0
+        try:
+            idle = max(0.0, float(idle_seconds or 0.0))
+        except Exception:
+            idle = 0.0
+        try:
+            conf = max(0.0, min(float(confidence or 0.0), 1.0))
+        except Exception:
+            conf = 0.0
+
+        foreground = work in self._OPERATIONAL_FOREGROUND_CLASSES
+        evidence = {
+            'source': src,
+            'priority': prio,
+            'user_waiting': bool(user_waiting),
+            'query_pending': bool(query_pending),
+            'rss_mb': round(rss, 1),
+            'recent_stall_ms': round(stall, 1),
+            'idle_seconds': round(idle, 1),
+            'background_active': bool(background_active),
+            'confidence': round(conf, 3),
+        }
+
+        def _budget(
+            decision: str,
+            reason: str,
+            *,
+            defer_seconds: float = 0.0,
+            recommended_mode: str = 'normal',
+        ) -> dict[str, Any]:
+            return {
+                'decision': decision,
+                'allowed': decision == 'allow',
+                'reason': reason,
+                'work_class': work,
+                'priority': prio,
+                'recommended_mode': recommended_mode,
+                'defer_seconds': round(max(0.0, defer_seconds), 1),
+                'evidence': evidence,
+                'decision_source': 'autonomy_governance_policy.operational_budget',
+            }
+
+        if conf < 0.45 and work in {'external_action', 'destructive_action', 'branch_cleanup'}:
+            return _budget('ask_user', 'confidence_too_low_for_action')
+
+        if (user_waiting or query_pending) and not foreground:
+            return _budget('defer', 'visible_query_wait_active', defer_seconds=30.0)
+
+        if bool(background_active) and not foreground:
+            return _budget('defer', 'startup_or_background_active', defer_seconds=20.0)
+
+        if stall >= self._OPERATIONAL_STALL_MS and not foreground:
+            return _budget('defer', f'recent_ui_stall:{int(stall)}ms', defer_seconds=30.0)
+
+        if rss >= self._OPERATIONAL_CRITICAL_RSS_MB and not foreground:
+            return _budget('defer', 'resource_pressure_critical', defer_seconds=60.0)
+
+        if rss >= self._OPERATIONAL_HIGH_RSS_MB and not foreground:
+            return _budget('defer', 'resource_pressure_high', defer_seconds=30.0)
+
+        rest_window_required = (
+            work in {'autonomy_dock_refresh', 'ui_refresh', 'idle_self_test', 'deep_scan', 'metacognition', 'tool_scan'}
+            and src != 'user_click'
+            and prio not in {'critical', 'foreground'}
+        )
+        if rest_window_required and idle < self._OPERATIONAL_IDLE_REST_WINDOW_S:
+            return _budget(
+                'defer',
+                'rest_window_not_reached',
+                defer_seconds=self._OPERATIONAL_IDLE_REST_WINDOW_S - idle,
+                recommended_mode='wait_for_idle',
+            )
+
+        if work in {'idle_self_test', 'deep_scan', 'metacognition', 'tool_scan'} and prio not in {'critical'}:
+            return _budget('allow', 'idle_rest_window_available', recommended_mode='background_idle')
+
+        return _budget('allow', 'budget_available')
+
     # --- Reglas Nivel 1 para auto-merge gobernado de PRs via GitHubApiToolAdapter.
     # El control fino lo siguen haciendo los ToolAdapters y GitHub (CI, branch
     # protection), pero este metodo deja explicita la decision de politica para

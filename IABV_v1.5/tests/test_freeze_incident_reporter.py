@@ -187,20 +187,21 @@ class TestSqliteLockProbe:
 
 
 class TestMetacognitionPhases:
-    """Seed and inspect the 3 investigation phases."""
+    """Seed and inspect the metacognition investigation phases."""
 
     @pytest.fixture()
     def queue(self, tmp_path: Path) -> PlatformPendingQueue:
         return PlatformPendingQueue(evolution_dir=str(tmp_path))
 
-    def test_seed_creates_three_tasks(self, queue: PlatformPendingQueue) -> None:
+    def test_seed_creates_four_tasks(self, queue: PlatformPendingQueue) -> None:
         seeded = queue.seed_metacognition_investigation_phases()
-        assert len(seeded) == 3
+        assert len(seeded) == 4
 
     def test_phase_ids_are_correct(self, queue: PlatformPendingQueue) -> None:
         queue.seed_metacognition_investigation_phases()
         expected_ids = {
             'inv_phase_a_antifreeze',
+            'inv_phase_a2_budgeted_idle_self_tests',
             'inv_phase_b_visual_metacognition',
             'inv_phase_c_guided_replay',
         }
@@ -217,7 +218,7 @@ class TestMetacognitionPhases:
         queue.seed_metacognition_investigation_phases()
         queue.seed_metacognition_investigation_phases()
         inv_tasks = [t for t in queue.list_all() if t.id.startswith('inv_')]
-        assert len(inv_tasks) == 3
+        assert len(inv_tasks) == 4
 
     def test_completed_phase_not_overwritten(self, queue: PlatformPendingQueue) -> None:
         from iabv_v15.domain.models import PendingTaskStatus
@@ -233,16 +234,21 @@ class TestMetacognitionPhases:
 
     def test_phase_b_depends_on_phase_a(self, queue: PlatformPendingQueue) -> None:
         queue.seed_metacognition_investigation_phases()
+        phase_a2 = queue.get('inv_phase_a2_budgeted_idle_self_tests')
         phase_b = queue.get('inv_phase_b_visual_metacognition')
+        assert phase_a2 is not None
+        assert 'inv_phase_a_antifreeze' in phase_a2.dependency_missing
         assert phase_b is not None
-        assert 'inv_phase_a_antifreeze' in phase_b.dependency_missing
+        assert 'inv_phase_a2_budgeted_idle_self_tests' in phase_b.dependency_missing
 
     def test_phase_priorities(self, queue: PlatformPendingQueue) -> None:
         queue.seed_metacognition_investigation_phases()
         a = queue.get('inv_phase_a_antifreeze')
+        a2 = queue.get('inv_phase_a2_budgeted_idle_self_tests')
         b = queue.get('inv_phase_b_visual_metacognition')
         c = queue.get('inv_phase_c_guided_replay')
         assert a is not None and a.priority == 'high'
+        assert a2 is not None and a2.priority == 'high'
         assert b is not None and b.priority == 'medium'
         assert c is not None and c.priority == 'low'
 

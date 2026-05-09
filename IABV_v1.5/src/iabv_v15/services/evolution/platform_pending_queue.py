@@ -270,15 +270,40 @@ class PlatformPendingQueue:
                 'El programa monitorea su propio consumo (CPU, RAM, hilos, '
                 'SQLite locks) y se auto-regula — si detecta que va a '
                 'saturarse, pausa o reduce procesos antes de congelarse. '
-                'Extiende _assess_resource_pressure y BackgroundResourceMonitor.'
+                'Extiende AutonomyGovernancePolicy, _assess_resource_pressure '
+                'y BackgroundResourceMonitor.'
             ),
             'reason': 'El usuario reporta congelamientos; el programa debe prevenirlos proactivamente.',
             'dependency_missing': '',
             'priority': 'high',
             'next_action': (
-                'Integrar AdaptiveResourceOrchestrator en bootstrap, '
-                'conectar BackgroundResourceMonitor con auto-throttle de '
-                'tareas cuando presion >= HIGH.'
+                'Aplicar evaluate_operational_budget() a cada trabajo auxiliar '
+                'pesado antes de ejecutarlo; pausar o degradar tareas cuando '
+                'hay usuario esperando, stalls recientes o presion >= HIGH.'
+            ),
+            'status': 'PENDING',
+            'category': CATEGORY_INVESTIGATION,
+        },
+        {
+            'id': 'inv_phase_a2_budgeted_idle_self_tests',
+            'title': 'Fase A2: Auto-tests periodicos con presupuesto operativo',
+            'description': (
+                'Ejecutar reexamenes, pruebas de coherencia, limpieza de '
+                'contexto y verificaciones de ramas solo durante ventanas de '
+                'descanso: usuario no esperando, RSS estable, sin stalls '
+                'recientes y confianza suficiente.'
+            ),
+            'reason': (
+                'El sistema ya detecta problemas, pero necesita decidir '
+                'cuando puede testearse a si mismo sin saturar la UI ni '
+                'romper la conversacion visible.'
+            ),
+            'dependency_missing': 'inv_phase_a_antifreeze',
+            'priority': 'high',
+            'next_action': (
+                'Conectar AutonomousValidationCycleService y OSES al nuevo '
+                'evaluate_operational_budget(work_class=idle_self_test); '
+                'registrar resultados en ExperimentLab/OSES/ControlMaster.'
             ),
             'status': 'PENDING',
             'category': CATEGORY_INVESTIGATION,
@@ -293,7 +318,7 @@ class PlatformPendingQueue:
                 'grabación externa.'
             ),
             'reason': 'Necesario para auditoría automática y replay guiado.',
-            'dependency_missing': 'inv_phase_a_antifreeze',
+            'dependency_missing': 'inv_phase_a2_budgeted_idle_self_tests',
             'priority': 'medium',
             'next_action': (
                 'Diseñar QML introspection layer que exponga el árbol '

@@ -249,6 +249,8 @@ class ControlCenterViewModel(QObject):
         self._autonomy_dock_last_summary: str = 'Dock de autonomia sin refresco reciente.'
         self._autonomy_dock_last_skip_trace_key: str = ''
         self._autonomy_dock_last_skip_trace_at: float = 0.0
+        self._autonomy_dock_rest_window_started_at: float = time.monotonic()
+        self._autonomy_dock_last_budget_decision: dict[str, Any] = {}
         self._interaction_pending_followup_outcome: str = ''
         self._interaction_pending_followup_provider: str = ''
 
@@ -5079,16 +5081,86 @@ class ControlCenterViewModel(QObject):
             return True
         return False
 
+    def _recent_ui_stall_ms(self) -> float:
+        watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
+        if watchdog is None:
+            return 0.0
+        recent_stalls = []
+        try:
+            recent_stalls = list(watchdog.recent_stalls(limit=3))
+        except Exception:
+            return 0.0
+        durations: list[float] = []
+        for item in recent_stalls:
+            if not isinstance(item, dict):
+                continue
+            try:
+                durations.append(float(item.get('duration_ms') or 0.0))
+            except Exception:
+                continue
+        return max(durations or [0.0])
+
+    def _autonomy_dock_budget_decision(self, *, source: str, rss_mb: float) -> dict[str, Any]:
+        policy = getattr(getattr(self, 'adaptive_orchestrator', None), 'autonomy_governance_policy', None)
+        visible_wait = self._visible_query_wait_active()
+        idle_seconds = max(0.0, time.monotonic() - float(getattr(self, '_autonomy_dock_rest_window_started_at', 0.0) or 0.0))
+        recent_stall_ms = self._recent_ui_stall_ms()
+        if policy is not None and hasattr(policy, 'evaluate_operational_budget'):
+            try:
+                return dict(policy.evaluate_operational_budget(
+                    work_class='autonomy_dock_refresh',
+                    source=source,
+                    priority='background',
+                    user_waiting=visible_wait,
+                    query_pending=visible_wait,
+                    rss_mb=rss_mb,
+                    recent_stall_ms=recent_stall_ms,
+                    idle_seconds=idle_seconds,
+                    background_active=bool(getattr(self, '_provider_refreshing', False)),
+                    confidence=0.84,
+                ))
+            except Exception:
+                pass
+        if visible_wait:
+            return {
+                'allowed': False,
+                'decision': 'defer',
+                'reason': 'visible_query_wait_active',
+                'evidence': {'rss_mb': rss_mb, 'idle_seconds': round(idle_seconds, 1), 'recent_stall_ms': recent_stall_ms},
+                'decision_source': 'control_center_viewmodel.fallback_budget',
+            }
+        if rss_mb >= self._AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB:
+            return {
+                'allowed': False,
+                'decision': 'defer',
+                'reason': 'resource_pressure_high',
+                'evidence': {'rss_mb': rss_mb, 'idle_seconds': round(idle_seconds, 1), 'recent_stall_ms': recent_stall_ms},
+                'decision_source': 'control_center_viewmodel.fallback_budget',
+            }
+        if source != 'user_click' and idle_seconds < 120.0:
+            return {
+                'allowed': False,
+                'decision': 'defer',
+                'reason': 'rest_window_not_reached',
+                'evidence': {'rss_mb': rss_mb, 'idle_seconds': round(idle_seconds, 1), 'recent_stall_ms': recent_stall_ms},
+                'decision_source': 'control_center_viewmodel.fallback_budget',
+            }
+        return {
+            'allowed': True,
+            'decision': 'allow',
+            'reason': 'budget_available',
+            'evidence': {'rss_mb': rss_mb, 'idle_seconds': round(idle_seconds, 1), 'recent_stall_ms': recent_stall_ms},
+            'decision_source': 'control_center_viewmodel.fallback_budget',
+        }
+
     def _autonomy_dock_defer_reason(self, *, source: str, force: bool) -> tuple[str, float]:
         """Return a reason to defer timer-driven dock refreshes under pressure."""
-        if force or source == 'user_click':
-            return '', 0.0
-        if self._visible_query_wait_active():
-            return 'visible_query_wait_active', 0.0
         rss_mb = self._process_rss_mb()
-        if rss_mb >= self._AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB:
-            return 'rss_pressure', rss_mb
-        return '', rss_mb
+        budget = self._autonomy_dock_budget_decision(source=source, rss_mb=rss_mb)
+        self._autonomy_dock_last_budget_decision = dict(budget)
+        if bool(budget.get('allowed')):
+            return '', rss_mb
+        return str(budget.get('reason') or 'operational_budget_deferred'), rss_mb
 
     def _trace_autonomy_dock_skip_once(
         self,
@@ -5117,6 +5189,9 @@ class ControlCenterViewModel(QObject):
             self._autonomy_dock_last_skip_trace_at = now
         payload = dict(data)
         payload.update({'source': source, 'reason': reason})
+        budget = getattr(self, '_autonomy_dock_last_budget_decision', None)
+        if isinstance(budget, dict) and budget:
+            payload.setdefault('operational_budget', budget)
         active_interaction_id = getattr(self, '_active_interaction_id', None)
         if active_interaction_id:
             payload.setdefault('interaction_id', active_interaction_id)
@@ -5360,6 +5435,7 @@ class ControlCenterViewModel(QObject):
                 'rss_mb': defer_rss_mb or self._process_rss_mb(),
                 'live_status': self._live_status,
                 'working': bool(self._working),
+                'operational_budget': dict(getattr(self, '_autonomy_dock_last_budget_decision', {}) or {}),
             }
             if callable(skip_once):
                 skip_once(
@@ -7653,6 +7729,7 @@ class ControlCenterViewModel(QObject):
         message = text.strip()
         if not message:
             return
+        self._autonomy_dock_rest_window_started_at = time.monotonic()
         # --- Open canonical interaction episode ---
         self._interaction_has_pending_followup = False
         self._interaction_pending_followup_outcome = ''

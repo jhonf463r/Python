@@ -278,6 +278,7 @@ def test_refresh_autonomy_dock_generation_coalesces() -> None:
         bootstrap._build_ui_objects()
         vm = bootstrap.control_center_viewmodel
         assert vm is not None
+        vm._autonomy_dock_rest_window_started_at = time.monotonic() - 300.0
 
         # Read generation after bootstrap (may have been incremented by deferred init)
         gen_before = vm._autonomy_dock_generation
@@ -545,6 +546,131 @@ def test_timer_autonomy_dock_skip_trace_is_rate_limited() -> None:
 
     assert len(dummy.traces) == 1
     assert dummy.traces[0]['reason'] == 'in_flight'
+
+
+def test_timer_autonomy_dock_refresh_waits_for_rest_window() -> None:
+    """Timer-driven dock work must wait until the user/system has a rest window."""
+    from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self.adaptive_orchestrator = SimpleNamespace(autonomy_governance_policy=AutonomyGovernancePolicy())
+            self._working = False
+            self._live_status = 'idle'
+            self._active_interaction_id = ''
+            self._provider_refreshing = False
+            self._ui_heartbeat_watchdog = None
+            self._autonomy_dock_rest_window_started_at = time.monotonic()
+            self._autonomy_dock_last_budget_decision: dict[str, Any] = {}
+
+        def _process_rss_mb(self) -> float:
+            return 210.0
+
+        def _visible_query_wait_active(self) -> bool:
+            return ControlCenterViewModel._visible_query_wait_active(self)  # type: ignore[arg-type]
+
+        def _recent_ui_stall_ms(self) -> float:
+            return 0.0
+
+        def _autonomy_dock_budget_decision(self, **kwargs: Any) -> dict[str, Any]:
+            return ControlCenterViewModel._autonomy_dock_budget_decision(self, **kwargs)  # type: ignore[arg-type]
+
+    dummy = DummyViewModel()
+
+    reason, rss_mb = ControlCenterViewModel._autonomy_dock_defer_reason(  # type: ignore[arg-type]
+        dummy,
+        source='timer',
+        force=False,
+    )
+
+    assert reason == 'rest_window_not_reached'
+    assert rss_mb == 210.0
+    assert dummy._autonomy_dock_last_budget_decision['decision_source'] == (
+        'autonomy_governance_policy.operational_budget'
+    )
+
+
+def test_user_click_autonomy_dock_refresh_bypasses_rest_window_when_safe() -> None:
+    """Manual refresh can run before the rest window if resources are safe."""
+    from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self.adaptive_orchestrator = SimpleNamespace(autonomy_governance_policy=AutonomyGovernancePolicy())
+            self._working = False
+            self._live_status = 'idle'
+            self._active_interaction_id = ''
+            self._provider_refreshing = False
+            self._ui_heartbeat_watchdog = None
+            self._autonomy_dock_rest_window_started_at = time.monotonic()
+            self._autonomy_dock_last_budget_decision: dict[str, Any] = {}
+
+        def _process_rss_mb(self) -> float:
+            return 210.0
+
+        def _visible_query_wait_active(self) -> bool:
+            return ControlCenterViewModel._visible_query_wait_active(self)  # type: ignore[arg-type]
+
+        def _recent_ui_stall_ms(self) -> float:
+            return 0.0
+
+        def _autonomy_dock_budget_decision(self, **kwargs: Any) -> dict[str, Any]:
+            return ControlCenterViewModel._autonomy_dock_budget_decision(self, **kwargs)  # type: ignore[arg-type]
+
+    dummy = DummyViewModel()
+
+    reason, rss_mb = ControlCenterViewModel._autonomy_dock_defer_reason(  # type: ignore[arg-type]
+        dummy,
+        source='user_click',
+        force=True,
+    )
+
+    assert reason == ''
+    assert rss_mb == 210.0
+    assert dummy._autonomy_dock_last_budget_decision['allowed'] is True
+
+
+def test_user_click_autonomy_dock_refresh_is_deferred_under_rss_pressure() -> None:
+    """Even manual refresh must not force a heavy organ under memory pressure."""
+    from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self.adaptive_orchestrator = SimpleNamespace(autonomy_governance_policy=AutonomyGovernancePolicy())
+            self._working = False
+            self._live_status = 'idle'
+            self._active_interaction_id = ''
+            self._provider_refreshing = False
+            self._ui_heartbeat_watchdog = None
+            self._autonomy_dock_rest_window_started_at = time.monotonic() - 300.0
+            self._autonomy_dock_last_budget_decision: dict[str, Any] = {}
+
+        def _process_rss_mb(self) -> float:
+            return 3200.0
+
+        def _visible_query_wait_active(self) -> bool:
+            return ControlCenterViewModel._visible_query_wait_active(self)  # type: ignore[arg-type]
+
+        def _recent_ui_stall_ms(self) -> float:
+            return 0.0
+
+        def _autonomy_dock_budget_decision(self, **kwargs: Any) -> dict[str, Any]:
+            return ControlCenterViewModel._autonomy_dock_budget_decision(self, **kwargs)  # type: ignore[arg-type]
+
+    dummy = DummyViewModel()
+
+    reason, rss_mb = ControlCenterViewModel._autonomy_dock_defer_reason(  # type: ignore[arg-type]
+        dummy,
+        source='user_click',
+        force=True,
+    )
+
+    assert reason == 'resource_pressure_high'
+    assert rss_mb == 3200.0
+    assert dummy._autonomy_dock_last_budget_decision['allowed'] is False
 
 
 def test_chat_display_text_truncates_large_auto_analysis_for_ui() -> None:
@@ -913,6 +1039,7 @@ def test_dominant_phase_set_during_projection() -> None:
             _window_visible=True,
         )
         vm._ui_heartbeat_watchdog = watchdog  # type: ignore[attr-defined]
+        vm._autonomy_dock_rest_window_started_at = time.monotonic() - 300.0
 
         vm._refresh_autonomy_dock_async()
         time.sleep(1.0)
