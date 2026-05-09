@@ -66,9 +66,8 @@ Item {
         id: autonomyDockTimer
         interval: 5000
         repeat: true
-        running: Boolean(controlCenterViewModel) && (
-            workingState
-            || Boolean(autonomyActivityModel.visible)
+        running: Boolean(controlCenterViewModel) && !workingState && autonomyDockStatusValue !== "refreshing" && (
+            Boolean(autonomyActivityModel.visible)
             || (liveProcessSummaryModel.status || "") === "awaiting_response"
             || (liveProcessSummaryModel.status || "") === "active"
         )
@@ -391,7 +390,7 @@ Item {
                                 AppButton { text: liveDockExpanded ? "Compactar" : "Expandir"; onClicked: liveDockExpanded = !liveDockExpanded }
                                 AppButton {
                                     text: autonomyDockStatusValue === "refreshing" ? "Actualizando..." : "Refrescar"
-                                    enabled: autonomyDockStatusValue !== "refreshing"
+                                    enabled: !workingState && autonomyDockStatusValue !== "refreshing"
                                     onClicked: if (controlCenterViewModel) controlCenterViewModel.refreshAutonomyDockFromUser()
                                 }
                             }

@@ -474,6 +474,122 @@ def test_manual_autonomy_dock_refresh_bypasses_cooldown() -> None:
     assert dummy.calls[1] == {'source': 'user_click', 'force': True}
 
 
+def test_qml_autonomy_dock_timer_pauses_while_chat_working() -> None:
+    """The live dock timer must not run while the user is waiting on chat."""
+    qml = Path('src/iabv_v15/ui/qml/pages/ControlCenterPage.qml').read_text(encoding='utf-8')
+
+    assert '!workingState' in qml
+    assert 'workingState\n            ||' not in qml
+    assert 'controlCenterViewModel.refreshAutonomyDock()' in qml
+
+
+def test_timer_autonomy_dock_refresh_deferred_during_visible_query() -> None:
+    """Timer refreshes are suspended while foreground query work is active."""
+    from iabv_v15.bootstrap import AppBootstrap
+
+    workspace = Path.cwd() / 'data' / f'test_freeze_fix_query_defer_{uuid4().hex}'
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    try:
+        bootstrap = AppBootstrap(str(workspace))
+        bootstrap._build_ui_objects()
+        vm = bootstrap.control_center_viewmodel
+        assert vm is not None
+        traces: list[dict[str, Any]] = []
+
+        def trace(kind: str, **data: Any) -> None:
+            traces.append({'kind': kind, **data})
+
+        vm._trace_autonomy_dock = trace  # type: ignore[method-assign]
+        vm._working = True
+        vm._live_status = 'processing'
+        vm._refresh_autonomy_dock_async(source='timer', force=False)
+
+        assert vm._autonomy_dock_refresh_in_flight is False
+        assert traces[-1]['kind'] == 'control_autonomy_dock_refresh_deferred'
+        assert traces[-1]['reason'] == 'visible_query_wait_active'
+    finally:
+        stop = getattr(bootstrap, 'stop', None)
+        if callable(stop):
+            stop()
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_timer_autonomy_dock_skip_trace_is_rate_limited() -> None:
+    """Routine timer skip telemetry is sparse, not one sync file write per tick."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self.traces: list[dict[str, Any]] = []
+            self._autonomy_dock_last_skip_trace_key = ''
+            self._autonomy_dock_last_skip_trace_at = 0.0
+
+        def _trace_autonomy_dock(self, kind: str, **data: Any) -> None:
+            self.traces.append({'kind': kind, **data})
+
+    dummy = DummyViewModel()
+
+    ControlCenterViewModel._trace_autonomy_dock_skip_once(  # type: ignore[arg-type]
+        dummy,
+        event='control_autonomy_dock_refresh_skipped',
+        source='timer',
+        reason='in_flight',
+    )
+    ControlCenterViewModel._trace_autonomy_dock_skip_once(  # type: ignore[arg-type]
+        dummy,
+        event='control_autonomy_dock_refresh_skipped',
+        source='timer',
+        reason='in_flight',
+    )
+
+    assert len(dummy.traces) == 1
+    assert dummy.traces[0]['reason'] == 'in_flight'
+
+
+def test_chat_display_text_truncates_large_auto_analysis_for_ui() -> None:
+    """Large self-analysis reports stay persisted but are compact in QML."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    raw = 'x' * (ControlCenterViewModel._CHAT_INLINE_TEXT_LIMIT + 500)
+    display = ControlCenterViewModel._chat_display_text(raw)
+
+    assert len(display) < len(raw)
+    assert 'historial local' in display
+    assert 'mantener la UI fluida' in display
+
+
+def test_release_visible_query_wait_clears_watchdog_query_pending() -> None:
+    """Background follow-up must not leave the visible query flag stuck."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class DummyWatchdog:
+        def __init__(self) -> None:
+            self.query_values: list[bool] = []
+
+        def set_query_pending(self, value: bool) -> None:
+            self.query_values.append(value)
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self._ui_heartbeat_watchdog = DummyWatchdog()
+            self._live_status = 'processing'
+            self._active_interaction_id = 'chat-test'
+
+        def _set_live_status(self, status: str) -> None:
+            self._live_status = status
+
+    dummy = DummyViewModel()
+
+    ControlCenterViewModel._release_visible_query_wait(  # type: ignore[arg-type]
+        dummy,
+        reason='background_followup:prepared',
+    )
+
+    assert dummy._ui_heartbeat_watchdog.query_values == [False]
+    assert dummy._live_status == 'idle'
+
+
 def test_build_development_packet_slot_is_non_blocking() -> None:
     """Manual QML packet rebuild delegates to background refresh."""
     from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel

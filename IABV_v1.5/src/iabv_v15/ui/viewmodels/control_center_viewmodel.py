@@ -58,6 +58,10 @@ from iabv_v15.ui.qt import QObject, Property, QGuiApplication, QTimer, Signal, S
 
 
 class ControlCenterViewModel(QObject):
+    _CHAT_INLINE_TEXT_LIMIT = 3500
+    _AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB = 2500.0
+    _AUTONOMY_DOCK_SKIP_TRACE_COOLDOWN_S = 60.0
+
     dataChanged = Signal()
     taskResolved = Signal(str, object)
     taskFailed = Signal(str, str)
@@ -243,6 +247,10 @@ class ControlCenterViewModel(QObject):
         self._autonomy_dock_status: str = 'idle'
         self._autonomy_dock_last_result: str = 'idle'
         self._autonomy_dock_last_summary: str = 'Dock de autonomia sin refresco reciente.'
+        self._autonomy_dock_last_skip_trace_key: str = ''
+        self._autonomy_dock_last_skip_trace_at: float = 0.0
+        self._interaction_pending_followup_outcome: str = ''
+        self._interaction_pending_followup_provider: str = ''
 
         self._adaptive_session_id = ''
         self._adaptive_status_text = 'Sin sesion adaptativa activa.'
@@ -374,13 +382,18 @@ class ControlCenterViewModel(QObject):
                 return []
             messages: list[dict[str, Any]] = []
             for row in rows:
+                raw_text = str(row['text'] or '')
+                display_text = self._chat_display_text(raw_text)
                 msg: dict[str, Any] = {
                     'role': row['role'],
                     'speaker': row['speaker'],
-                    'text': row['text'],
+                    'text': display_text,
                     'meta': row.get('meta', ''),
                     'timestamp': row.get('created_at_utc', '')[:5],
                 }
+                if display_text != raw_text:
+                    msg['textTruncated'] = True
+                    msg['fullTextChars'] = len(raw_text)
                 if row.get('evidence_tag'):
                     msg['evidenceTag'] = row['evidence_tag']
                 if row.get('reasoning_path'):
@@ -421,6 +434,19 @@ class ControlCenterViewModel(QObject):
             'idle': 'inactivo',
         }.get(status, status)
 
+    @classmethod
+    def _chat_display_text(cls, text: str) -> str:
+        """Return a UI-safe message body while preserving full text in storage."""
+        raw = str(text or '')
+        limit = int(getattr(cls, '_CHAT_INLINE_TEXT_LIMIT', 3500))
+        if len(raw) <= limit:
+            return raw
+        omitted = len(raw) - limit
+        return (
+            raw[:limit].rstrip()
+            + f"\n\n[Salida completa persistida en el historial local; se omitieron {omitted} caracteres para mantener la UI fluida.]"
+        )
+
     def _append_message(self, role: str, speaker: str, text: str, meta: str = '',
                         *, attachments: list[dict[str, Any]] | None = None,
                         code_blocks: list[dict[str, Any]] | None = None,
@@ -429,8 +455,13 @@ class ControlCenterViewModel(QObject):
                         evidence_tag: str = '',
                         reasoning_path: str = '',
                         trace_metadata: dict[str, Any] | None = None) -> None:
-        msg: dict[str, Any] = {'role': role, 'speaker': speaker, 'text': text, 'meta': meta,
+        display_text = self._chat_display_text(text)
+        raw_text = str(text or '')
+        msg: dict[str, Any] = {'role': role, 'speaker': speaker, 'text': display_text, 'meta': meta,
                                'status': status, 'timestamp': datetime.now(timezone.utc).strftime('%H:%M')}
+        if display_text != raw_text:
+            msg['textTruncated'] = True
+            msg['fullTextChars'] = len(raw_text)
         if attachments:
             msg['attachments'] = attachments
         if code_blocks:
@@ -442,6 +473,10 @@ class ControlCenterViewModel(QObject):
         effective_reasoning_path = reasoning_path or self._last_reasoning_path
         if effective_reasoning_path:
             msg['reasoningPath'] = effective_reasoning_path
+        persist_metadata = dict(trace_metadata or {})
+        if display_text != raw_text:
+            persist_metadata.setdefault('ui_text_truncated', True)
+            persist_metadata.setdefault('full_text_chars', len(raw_text))
         with self._ui_state_lock:
             self._chat_messages.append(msg)
             self._chat_messages = self._chat_messages[-30:]
@@ -449,7 +484,7 @@ class ControlCenterViewModel(QObject):
             role=role, speaker=speaker, text=text, meta=meta,
             evidence_tag=evidence_tag,
             reasoning_path=effective_reasoning_path,
-            trace_metadata=trace_metadata,
+            trace_metadata=persist_metadata or trace_metadata,
         )
         self._last_reasoning_path = ''
         self._refresh_contextual_suggestions()
@@ -4129,6 +4164,8 @@ class ControlCenterViewModel(QObject):
                 pass
         if is_final:
             self._active_interaction_id = None
+            self._interaction_pending_followup_outcome = ''
+            self._interaction_pending_followup_provider = ''
             watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
             if watchdog is not None:
                 watchdog.set_query_pending(False)
@@ -5034,6 +5071,76 @@ class ControlCenterViewModel(QObject):
         except Exception:
             pass
 
+    def _visible_query_wait_active(self) -> bool:
+        """True while the user is still waiting for the foreground chat answer."""
+        if self._working:
+            return True
+        if getattr(self, '_active_interaction_id', None) and self._live_status in {'processing', 'streaming'}:
+            return True
+        return False
+
+    def _autonomy_dock_defer_reason(self, *, source: str, force: bool) -> tuple[str, float]:
+        """Return a reason to defer timer-driven dock refreshes under pressure."""
+        if force or source == 'user_click':
+            return '', 0.0
+        if self._visible_query_wait_active():
+            return 'visible_query_wait_active', 0.0
+        rss_mb = self._process_rss_mb()
+        if rss_mb >= self._AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB:
+            return 'rss_pressure', rss_mb
+        return '', rss_mb
+
+    def _trace_autonomy_dock_skip_once(
+        self,
+        *,
+        event: str,
+        source: str,
+        reason: str,
+        **data: Any,
+    ) -> None:
+        """Trace routine timer skips sparsely so telemetry cannot freeze the UI."""
+        now = time.monotonic()
+        key = f'{event}:{source}:{reason}'
+        if source == 'timer':
+            last_key = getattr(self, '_autonomy_dock_last_skip_trace_key', '')
+            last_at = float(getattr(self, '_autonomy_dock_last_skip_trace_at', 0.0) or 0.0)
+            cooldown_s = float(
+                getattr(
+                    self,
+                    '_AUTONOMY_DOCK_SKIP_TRACE_COOLDOWN_S',
+                    ControlCenterViewModel._AUTONOMY_DOCK_SKIP_TRACE_COOLDOWN_S,
+                )
+            )
+            if key == last_key and (now - last_at) < cooldown_s:
+                return
+            self._autonomy_dock_last_skip_trace_key = key
+            self._autonomy_dock_last_skip_trace_at = now
+        payload = dict(data)
+        payload.update({'source': source, 'reason': reason})
+        active_interaction_id = getattr(self, '_active_interaction_id', None)
+        if active_interaction_id:
+            payload.setdefault('interaction_id', active_interaction_id)
+        self._trace_autonomy_dock(event, **payload)
+
+    def _release_visible_query_wait(self, *, reason: str) -> None:
+        """Stop marking the UI as waiting once the user already got a visible reply."""
+        watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
+        if watchdog is not None:
+            try:
+                watchdog.set_query_pending(False)
+            except Exception:
+                pass
+        self._set_live_status('idle')
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'interaction_visible_wait_released',
+                interaction_id=getattr(self, '_active_interaction_id', '') or '',
+                reason=reason,
+            )
+        except Exception:
+            pass
+
     def get_evolution_overview(self) -> dict[str, Any]:
         return self._evolution_overview
 
@@ -5242,18 +5349,53 @@ class ControlCenterViewModel(QObject):
             if callable(trace_hook):
                 trace_hook(kind, **data)
 
+        defer_helper = getattr(self, '_autonomy_dock_defer_reason', None)
+        if callable(defer_helper):
+            defer_reason, defer_rss_mb = defer_helper(source=source, force=force)
+        else:
+            defer_reason, defer_rss_mb = '', 0.0
+        skip_once = getattr(self, '_trace_autonomy_dock_skip_once', None)
+        if defer_reason:
+            payload = {
+                'rss_mb': defer_rss_mb or self._process_rss_mb(),
+                'live_status': self._live_status,
+                'working': bool(self._working),
+            }
+            if callable(skip_once):
+                skip_once(
+                    event='control_autonomy_dock_refresh_deferred',
+                    source=source,
+                    reason=defer_reason,
+                    **payload,
+                )
+            else:
+                _trace('control_autonomy_dock_refresh_deferred', source=source, reason=defer_reason, **payload)
+            return
         if self._autonomy_dock_refresh_in_flight:
-            _trace('control_autonomy_dock_refresh_skipped', source=source, reason='in_flight')
+            if callable(skip_once):
+                skip_once(
+                    event='control_autonomy_dock_refresh_skipped',
+                    source=source,
+                    reason='in_flight',
+                )
+            else:
+                _trace('control_autonomy_dock_refresh_skipped', source=source, reason='in_flight')
             return
         now = time.monotonic()
         elapsed_since_last = now - self._autonomy_dock_last_refresh_started
         if not force and elapsed_since_last < self._autonomy_dock_min_interval_s:
-            _trace(
-                'control_autonomy_dock_refresh_skipped',
-                source=source,
-                reason='cooldown',
-                cooldown_remaining_ms=round((self._autonomy_dock_min_interval_s - elapsed_since_last) * 1000.0, 1),
-            )
+            payload = {
+                'cooldown_remaining_ms': round((self._autonomy_dock_min_interval_s - elapsed_since_last) * 1000.0, 1),
+            }
+            if callable(skip_once):
+                skip_once(
+                    event='control_autonomy_dock_refresh_skipped',
+                    source=source,
+                    reason='cooldown',
+                    **payload,
+                )
+            else:
+                _trace('control_autonomy_dock_refresh_skipped', source=source, reason='cooldown', **payload)
             return
         self._autonomy_dock_refresh_in_flight = True
         self._autonomy_dock_status = 'refreshing'
@@ -7513,6 +7655,8 @@ class ControlCenterViewModel(QObject):
             return
         # --- Open canonical interaction episode ---
         self._interaction_has_pending_followup = False
+        self._interaction_pending_followup_outcome = ''
+        self._interaction_pending_followup_provider = ''
         lifecycle = getattr(self, '_chat_interaction_lifecycle', None)
         interaction_id: str | None = None
         if lifecycle is not None:
@@ -8018,6 +8162,14 @@ class ControlCenterViewModel(QObject):
                 _autonomy_status = str((autonomy_result or {}).get('status') or '')
                 if _autonomy_status in {'awaiting_response', 'prepared'}:
                     self._interaction_has_pending_followup = True
+                    self._interaction_pending_followup_outcome = (
+                        'awaiting_external_response'
+                        if _autonomy_status == 'awaiting_response'
+                        else 'prepared'
+                    )
+                    self._interaction_pending_followup_provider = self._assistant_display_name(
+                        str((autonomy_result or {}).get('assistant_kind') or '')
+                    )
                 self._clear_autonomy_activity_override()
         elif task_name == 'adaptive_action':
             self._clear_autonomy_activity_override()
@@ -8163,7 +8315,18 @@ class ControlCenterViewModel(QObject):
                 _provider = ''
             self._resolve_active_interaction(outcome='resolved', provider=_provider)
         elif _has_pending_followup:
-            # Mark lifecycle phase but keep episode open
+            # Record the background follow-up but release the foreground wait:
+            # the user already received a visible answer, so UI stalls after
+            # this point must not be counted as "query pending".
+            _pending_outcome = (
+                getattr(self, '_interaction_pending_followup_outcome', '') or 'prepared'
+            )
+            _pending_provider = getattr(self, '_interaction_pending_followup_provider', '') or ''
+            self._resolve_active_interaction(
+                outcome=_pending_outcome,
+                provider=_pending_provider,
+            )
+            self._release_visible_query_wait(reason=f'background_followup:{_pending_outcome}')
             _lc = getattr(self, '_chat_interaction_lifecycle', None)
             _iid = getattr(self, '_active_interaction_id', None)
             if _iid and _lc is not None:
