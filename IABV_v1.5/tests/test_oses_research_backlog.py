@@ -98,6 +98,28 @@ def test_chat_research_backlog_findings_emits_finding_per_open_entry() -> None:
         assert 'ChatCapabilityIngestionService' in finding.source_refs
 
 
+def test_chat_research_backlog_findings_labels_operational_directives() -> None:
+    workspace = _workspace('oses_backlog_operational_directive')
+    backlog_dir = workspace / 'data' / 'chat_research_backlog'
+    _write_backlog_entry(
+        backlog_dir,
+        session_id='session-op',
+        kind='operational_self_testing',
+        label='Auto-test de algoritmos, rendimiento y razonamiento',
+        matched_text='testea los algoritmos',
+        research_hint='Usar AutonomousValidationCycle, ExperimentLab y OSES para probar configuraciones.',
+    )
+
+    service = _make_service(workspace)
+    findings = service._chat_research_backlog_findings()
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.title.startswith('Directiva operativa sin validar')
+    assert 'directiva operativa' in finding.summary.lower()
+    assert finding.metadata['kind'] == 'operational_self_testing'
+
+
 def test_chat_research_backlog_findings_returns_empty_when_no_backlog() -> None:
     workspace = _workspace('oses_backlog_missing')
 

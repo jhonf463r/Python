@@ -3307,11 +3307,19 @@ class OperationalSelfExaminationService:
             sessions = sorted(per_kind_sessions[kind])
             detected_at = str(entry.get('detected_at_utc') or '').strip()
 
-            summary_parts = [
-                f'El usuario declaro "{label}"'
-                + (f' (detectado como "{matched_text}")' if matched_text else '')
-                + ' en el chat, pero el sistema aun no valido su impacto.',
-            ]
+            is_operational_directive = kind.startswith('operational_')
+            if is_operational_directive:
+                summary_parts = [
+                    f'El usuario dejo una directiva operativa "{label}"'
+                    + (f' (detectada como "{matched_text}")' if matched_text else '')
+                    + ' en el chat, pero el sistema aun no valido su cobertura con evidencia.',
+                ]
+            else:
+                summary_parts = [
+                    f'El usuario declaro "{label}"'
+                    + (f' (detectado como "{matched_text}")' if matched_text else '')
+                    + ' en el chat, pero el sistema aun no valido su impacto.',
+                ]
             if hint:
                 summary_parts.append(f'Investigacion pendiente: {hint}')
             if occurrences > 1:
@@ -3330,7 +3338,11 @@ class OperationalSelfExaminationService:
             findings.append(
                 SelfExaminationFinding(
                     category='research_gap',
-                    title=f'Capacidad declarada sin validar: {label}',
+                    title=(
+                        f'Directiva operativa sin validar: {label}'
+                        if is_operational_directive
+                        else f'Capacidad declarada sin validar: {label}'
+                    ),
                     summary=summary,
                     severity=IssueSeverity.MEDIUM,
                     confidence=0.6,

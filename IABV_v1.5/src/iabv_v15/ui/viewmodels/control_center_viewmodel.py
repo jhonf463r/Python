@@ -10042,10 +10042,28 @@ class ControlCenterViewModel(QObject):
             return
         if self._try_resolve_pending_observation_permission(message):
             return
+        explicit_for_ingestion = ''
+        explicit_checker = getattr(self, '_explicit_assistant_preference', None)
+        if callable(explicit_checker):
+            try:
+                explicit_for_ingestion = str(explicit_checker(message) or '')
+            except Exception:
+                explicit_for_ingestion = ''
+        if not explicit_for_ingestion:
+            # Escucha pasiva de capacidades y directivas operativas declaradas
+            # en mensajes locales. Debe correr antes del chat local rapido para
+            # que "una sola ventana" o "testea tus algoritmos" no se pierdan,
+            # pero no debe contaminar aprobaciones de permiso ni el camino
+            # liviano de consulta externa explicita.
+            bg_pool = getattr(self, '_bg_pool', None)
+            submit = getattr(bg_pool, 'submit', None)
+            ingest = getattr(self, '_ingest_chat_capabilities', None)
+            if callable(submit) and callable(ingest):
+                submit(ingest, processing_message)
         if self._try_handle_lightweight_chat(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
-        explicit_assistant = self._explicit_assistant_preference(message)
+        explicit_assistant = explicit_for_ingestion or self._explicit_assistant_preference(message)
         if explicit_assistant:
             self._last_user_goal = processing_message
             self._interaction_has_pending_followup = True
@@ -10058,14 +10076,6 @@ class ControlCenterViewModel(QObject):
             )
             self._run_external_consultation(explicit_assistant, announce=True)
             return
-        # Escucha pasiva de capacidades declaradas (GPU, modelos, cuentas, runtimes).
-        # Persiste detecciones a data/chat_research_backlog/*.jsonl para que OSES
-        # y ExperimentLab las consuman despues como areas de investigacion. No
-        # modifica el ruteo; solo anota y avisa al usuario en una linea corta
-        # para que sepa que su dato quedo registrado (antes se perdian en memoria).
-        # Ingerir capabilities y actualizar packet en background (thread pool
-        # compartido — evita crear 2+ threads por mensaje).
-        self._bg_pool.submit(self._ingest_chat_capabilities, processing_message)
         self._refresh_development_packet_async(processing_message)
         # _chat_shortcut_analysis puede llamar a LLM — ejecutar con timeout
         # APRENDIDO: NO usar 'with ThreadPoolExecutor' en hilo de UI porque

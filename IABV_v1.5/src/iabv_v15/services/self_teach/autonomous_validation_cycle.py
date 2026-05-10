@@ -1030,6 +1030,11 @@ class AutonomousValidationCycleService:
         'local_model': ('ollama',),
         'external_account': (),
         'local_runtime': (),
+        'operational_autonomy_contract': (),
+        'operational_visual_replay': (),
+        'operational_context_hygiene': (),
+        'operational_self_testing': (),
+        'operational_cross_device_universal': (),
     }
 
     # ------------------------------------------------------------------

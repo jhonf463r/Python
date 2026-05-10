@@ -2413,6 +2413,23 @@ class PortableContextService:
                 'detail': 'El sistema puede detectar presencia/sesion y recomendar rutas, pero no extrae contrasenas, cookies ni tokens; pide permiso cuando corresponda.',
             },
         ]
+        for directive in self._recent_operational_directives_from_backlog(limit=6):
+            label = str(directive.get('label') or '').strip()
+            hint = str(directive.get('research_hint') or '').strip()
+            matched = str(directive.get('matched_text') or '').strip()
+            if not label:
+                continue
+            detail = hint or 'Directiva operativa pendiente de validar por los ciclos existentes.'
+            if matched:
+                detail = f'{detail} Evidencia de chat: "{matched}".'
+            items.append(
+                {
+                    'label': str(directive.get('kind') or 'operational_directive'),
+                    'detail': detail,
+                    'source': 'chat_research_backlog',
+                    'detected_at_utc': str(directive.get('detected_at_utc') or ''),
+                }
+            )
         return self._section(
             section_id='user_metacognitive_intent',
             title='Intencion persistente del usuario',
@@ -2423,6 +2440,49 @@ class PortableContextService:
             confidence=0.9,
             last_updated=now,
         )
+
+    def _recent_operational_directives_from_backlog(self, *, limit: int = 6) -> list[dict[str, Any]]:
+        backlog_dir = Path(self.workspace_root) / 'data' / 'chat_research_backlog'
+        if not backlog_dir.exists() or not backlog_dir.is_dir():
+            return []
+        collected: list[dict[str, Any]] = []
+        try:
+            files = sorted(backlog_dir.glob('*.jsonl'))
+        except OSError:
+            return []
+        for path in files:
+            try:
+                with path.open('r', encoding='utf-8') as handle:
+                    for line in handle:
+                        stripped = line.strip()
+                        if not stripped:
+                            continue
+                        try:
+                            payload = json.loads(stripped)
+                        except json.JSONDecodeError:
+                            continue
+                        if not isinstance(payload, dict):
+                            continue
+                        kind = str(payload.get('kind') or '').strip()
+                        if not kind.startswith('operational_'):
+                            continue
+                        if str(payload.get('status') or 'open').lower() not in {'open', 'in_progress'}:
+                            continue
+                        collected.append(payload)
+            except OSError:
+                continue
+        collected.sort(key=lambda item: str(item.get('detected_at_utc') or ''), reverse=True)
+        deduped: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for item in collected:
+            kind = str(item.get('kind') or '').strip()
+            if not kind or kind in seen:
+                continue
+            seen.add(kind)
+            deduped.append(item)
+            if len(deduped) >= limit:
+                break
+        return deduped
 
     def _implemented_capabilities_section(
         self,

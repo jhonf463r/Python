@@ -1,15 +1,15 @@
-"""Detecta menciones de capacidades del usuario en el chat y las anota como
-tareas de investigacion pendientes.
+"""Detecta menciones de capacidades y directivas operativas en el chat.
 
 El problema que resuelve: cuando el usuario escribe algo como "tengo GPU" o
-"tengo instalado qwen", el chat responde con la heuristica del momento y el
-dato se pierde en memoria. Este servicio persiste cada mencion a disco
+"tengo instalado qwen", o cuando fija una regla como "usa una sola ventana",
+el chat responde con la heuristica del momento y el dato se pierde en memoria.
+Este servicio persiste cada mencion a disco
 (`data/chat_research_backlog/<session>.jsonl`) para que:
 
 1. Quede registro durable aun si cerras la UI.
 2. `OperationalSelfExaminationService` y `ExperimentLab` puedan leerlo
    despues y proponer pruebas reales (ej: medir si la GPU acelera un modelo
-   local).
+   local, o si el replay visual reconstruye lo que ve el usuario).
 3. El mismo chat pueda responder al usuario "ya lo anote como tarea, ese
    dato no se me pierde" en vez de silenciarlo.
 
@@ -36,6 +36,7 @@ class CapabilityPattern:
     label: str
     pattern: re.Pattern[str]
     research_hint: str
+    requires_possession_marker: bool = True
 
 
 @dataclass(frozen=True)
@@ -126,6 +127,80 @@ def _build_patterns() -> tuple[CapabilityPattern, ...]:
                 'version para que las rutas que lo necesiten lo declaren.'
             ),
         ),
+        CapabilityPattern(
+            kind='operational_autonomy_contract',
+            label='Contrato operativo de autonomia',
+            pattern=re.compile(
+                r'\b(autonom[oa]|asistente\s+maestro|toda\s+mi\s+laptop|una\s+sola\s+ventana|'
+                r'unica\s+ventana|sin\s+powershell|por\s+la\s+interfaz|se\s+valga\s+por\s+si\s+solo|'
+                r'coordinador\s+central)\b',
+                re.IGNORECASE,
+            ),
+            research_hint=(
+                'Validar que la UI, el Control Master, OSES y el ciclo de validacion '
+                'convierten este contrato en acciones visibles sin pedir terminal al usuario.'
+            ),
+            requires_possession_marker=False,
+        ),
+        CapabilityPattern(
+            kind='operational_visual_replay',
+            label='Replay visual y percepcion guiada',
+            pattern=re.compile(
+                r'\b(replay\s+visual|mostrar(?:me)?\s+visualmente|lo\s+que\s+ves|que\s+ve\s+el\s+programa|'
+                r'captura(?:r)?\s+(?:vista|pantalla)|metadatos|etiquetas|bbox|hacer\s+clic|'
+                r'navegar\s+bien|verificacion\s+visual)\b',
+                re.IGNORECASE,
+            ),
+            research_hint=(
+                'Medir si WorldModel, captura visual, anotaciones y replay reconstruyen '
+                'lo que ve el usuario con coordenadas accionables y evidencia revisable.'
+            ),
+            requires_possession_marker=False,
+        ),
+        CapabilityPattern(
+            kind='operational_context_hygiene',
+            label='Higiene de contexto y reinicio cognitivo',
+            pattern=re.compile(
+                r'\b(reiniciar\s+(?:el\s+)?chat|vaciar\s+(?:el\s+)?chat|limpiar\s+contexto|'
+                r'contexto\s+limpio|perdiendo\s+(?:su\s+)?logica|sesgo\s+heredado|'
+                r'reset(?:ear)?\s+contexto|chat\s+limpio)\b',
+                re.IGNORECASE,
+            ),
+            research_hint=(
+                'Definir metricas testeables para detectar degradacion de coherencia, '
+                'recomendar compactacion/reinicio y preservar solo contexto portable valido.'
+            ),
+            requires_possession_marker=False,
+        ),
+        CapabilityPattern(
+            kind='operational_self_testing',
+            label='Auto-test de algoritmos, rendimiento y razonamiento',
+            pattern=re.compile(
+                r'\b(test(?:ea|ear|eo|s)?\s+(?:los\s+)?algoritmos|configuraciones|rendimiento|'
+                r'razonamiento|variables\s+testeables|pruebas\s+periodicas|autoexaminarse|'
+                r'cuando\s+reiniciar|cambiar\s+configuraciones|mediciones)\b',
+                re.IGNORECASE,
+            ),
+            research_hint=(
+                'Usar AutonomousValidationCycle, ExperimentLab y OSES para probar '
+                'configuraciones de rendimiento/razonamiento durante ventanas de descanso.'
+            ),
+            requires_possession_marker=False,
+        ),
+        CapabilityPattern(
+            kind='operational_cross_device_universal',
+            label='Portabilidad universal multi-dispositivo',
+            pattern=re.compile(
+                r'\b(universal|diferentes\s+dispositivos|multi[-\s]?dispositivo|sistema\s+operativo|'
+                r'otro\s+dispositivo|portab(?:le|ilidad)|entorno\s+nuevo|recipiente)\b',
+                re.IGNORECASE,
+            ),
+            research_hint=(
+                'Convertir la mejora en contrato portable: no depender de rutas, ventanas, '
+                'hardware o cuentas especificas de una sola maquina.'
+            ),
+            requires_possession_marker=False,
+        ),
     )
 
 
@@ -157,11 +232,12 @@ class ChatCapabilityIngestionService:
         if not normalized:
             return []
         lowered = normalized.lower()
-        if not any(marker in lowered for marker in _POSSESSION_MARKERS):
-            return []
+        has_possession_marker = any(marker in lowered for marker in _POSSESSION_MARKERS)
         detections: list[CapabilityDetection] = []
         seen: set[tuple[str, str]] = set()
         for pattern in self._patterns:
+            if pattern.requires_possession_marker and not has_possession_marker:
+                continue
             for match in pattern.pattern.finditer(normalized):
                 matched = match.group(0).strip()
                 key = (pattern.kind, matched.lower())
