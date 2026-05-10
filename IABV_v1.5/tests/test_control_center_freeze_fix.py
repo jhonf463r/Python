@@ -2250,6 +2250,9 @@ def test_open_external_assistant_for_human_verification_uses_program_profile(tmp
         def _assistant_program_browser_profile_dir(self, assistant_kind: str) -> Path:
             return ControlCenterViewModel._assistant_program_browser_profile_dir(self, assistant_kind)  # type: ignore[arg-type]
 
+        def _prefer_user_browser_for_external(self, assistant_kind: str) -> bool:
+            return False
+
         def _assistant_action(self, action: str, label: str, detail: str = '') -> dict[str, str]:
             return {'action': action, 'label': label, 'detail': detail}
 
@@ -2282,6 +2285,88 @@ def test_open_external_assistant_for_human_verification_uses_program_profile(tmp
     assert dummy._external_evidence_panel['status'] == 'needs_human_verification'
     assert any(item['action'] == 'consult_chatgpt' for item in dummy._external_evidence_panel['actions'])
     assert dummy.traces[-1]['mode'] == 'program_profile_visible'
+
+
+def test_browser_session_preference_intent_is_operational_not_general_chat() -> None:
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    assert ControlCenterViewModel._is_user_browser_session_request(
+        'usa mis navegadores donde ya tengo los inicios de sesion para ChatGPT'
+    )
+    assert ControlCenterViewModel._is_user_browser_session_request(
+        'abre chatgpt con mi navegador y mis cuentas logueadas'
+    )
+    assert not ControlCenterViewModel._is_user_browser_session_request('hola como estas')
+
+
+def test_open_external_assistant_uses_user_default_browser_when_preferred(tmp_path: Path) -> None:
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class ImmediateThread:
+        def __init__(self, target=None, *args, **kwargs) -> None:
+            self._target = target
+
+        def start(self) -> None:
+            if self._target:
+                self._target()
+
+    class Signal:
+        def emit(self, *args: Any, **kwargs: Any) -> None:
+            return None
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self.config = SimpleNamespace(workspace_root=str(tmp_path))
+            self._external_evidence_panel: dict[str, Any] = {}
+            self._visible_external_sessions: dict[str, Any] = {}
+            self._external_visible_verification_opened_at: dict[str, float] = {}
+            self._active_interaction_id = 'chat-open'
+            self.chatChanged = Signal()
+            self.dataChanged = Signal()
+            self.messages: list[str] = []
+            self.traces: list[dict[str, Any]] = []
+
+        def _external_evidence_assistant_kind(self) -> str:
+            return ''
+
+        def _assistant_display_name(self, kind: str) -> str:
+            return {'chatgpt': 'ChatGPT'}.get(kind, kind or 'asistente')
+
+        def _prefer_user_browser_for_external(self, assistant_kind: str) -> bool:
+            return True
+
+        def _assistant_program_browser_profile_dir(self, assistant_kind: str) -> Path:
+            return ControlCenterViewModel._assistant_program_browser_profile_dir(self, assistant_kind)  # type: ignore[arg-type]
+
+        def _assistant_action(self, action: str, label: str, detail: str = '') -> dict[str, str]:
+            return {'action': action, 'label': label, 'detail': detail}
+
+        def _set_external_evidence_panel(self, **kwargs: Any) -> None:
+            return ControlCenterViewModel._set_external_evidence_panel(self, **kwargs)  # type: ignore[arg-type]
+
+        def _append_message(self, role: str, speaker: str, text: str, meta: str = '', **kwargs: Any) -> None:
+            self.messages.append(text)
+
+        def _trace_external_followup(self, kind: str, **data: Any) -> None:
+            self.traces.append({'kind': kind, **data})
+
+    dummy = DummyViewModel()
+    with patch('iabv_v15.ui.viewmodels.control_center_viewmodel.threading.Thread', ImmediateThread), \
+        patch('webbrowser.open', return_value=True) as open_browser:
+        opened = ControlCenterViewModel._open_external_assistant_for_human_verification(  # type: ignore[arg-type]
+            dummy,
+            'chatgpt',
+            reason='test',
+            announce=True,
+        )
+
+    assert opened is True
+    open_browser.assert_called_once_with('https://chatgpt.com/')
+    assert 'chatgpt' not in dummy._visible_external_sessions
+    metadata = {item['key']: item['value'] for item in dummy._external_evidence_panel['metadata']}
+    assert metadata['browser_session_mode'] == 'user_default_browser_visible'
+    assert metadata['isolated_program_profile'] == 'False'
+    assert dummy.traces[-1]['mode'] == 'user_default_browser_visible'
 
 
 def test_attachment_context_pack_reads_bounded_text_file(tmp_path: Path) -> None:

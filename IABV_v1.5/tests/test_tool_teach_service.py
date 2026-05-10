@@ -1052,6 +1052,69 @@ def test_tool_teach_service_external_consultation_tracks_dedicated_session_metad
         shutil.rmtree(root, ignore_errors=True)
 
 
+def test_tool_teach_service_user_browser_override_disables_program_profile_dom_capture() -> None:
+    root = _workspace('tool_teach_service_user_browser_override')
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        service, repository = _service(root)
+        chatgpt_desktop = repository.get_card('chatgpt_installed')
+        assert chatgpt_desktop is not None
+        repository.save_card(
+            chatgpt_desktop.model_copy(
+                update={
+                    'metadata': {
+                        **chatgpt_desktop.metadata,
+                        'executable_path': '',
+                        'command_name': 'definitely_missing_external_app',
+                        'command_aliases': [],
+                        'windows_default_paths': [],
+                    }
+                }
+            )
+        )
+        chatgpt_web = repository.get_card('chatgpt_web_assisted')
+        assert chatgpt_web is not None
+        repository.save_card(chatgpt_web.model_copy(update={'metadata': {**chatgpt_web.metadata, 'dry_run_launch': True}}))
+        refreshed = repository.get_card('chatgpt_web_assisted')
+        assert refreshed is not None
+        service.registry.refresh_card(refreshed)
+
+        task, result, _ = service.execute_external_consultation(
+            user_goal='consulta esto en ChatGPT',
+            assistant_preference='chatgpt',
+            context_pack='Contexto minimo.',
+            site_id='general',
+            goal_parameters={
+                'browser_session_mode': 'user_default_browser',
+                'user_browser_requested': True,
+                'response_capture_mode': 'manual_pasteback',
+                'background_capture_mode': 'user_visible_browser',
+                'requires_manual_pasteback': True,
+                'session_scope': 'user_browser',
+                'isolated_session_required': False,
+            },
+            approved=True,
+            launch_dry_run=True,
+        )
+
+        assert task.tool_id == 'chatgpt_web_assisted'
+        assert task.metadata['browser_session_mode'] == 'user_default_browser'
+        assert task.metadata['user_browser_requested'] is True
+        assert task.metadata['response_capture_mode'] == 'manual_pasteback'
+        assert task.metadata['background_capture_mode'] == 'user_visible_browser'
+        assert task.metadata['requires_manual_pasteback'] is True
+        assert task.metadata['session_scope'] == 'user_browser'
+        assert task.metadata['isolated_session_required'] is False
+        assert task.metadata['capture_lane'] == 'manual'
+        assert task.metadata['session_profile_dir'] == ''
+        assert result.execution_state.metadata['manual_pasteback_required'] is True
+        assert result.execution_state.metadata['session_scope'] == 'user_browser'
+        assert result.execution_state.metadata['capture_lane'] == 'manual'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def test_tool_teach_service_explicit_chatgpt_preference_stays_in_chatgpt_family_under_technical_pressure() -> None:
     root = _workspace('tool_teach_service_explicit_chatgpt_family')
     shutil.rmtree(root, ignore_errors=True)

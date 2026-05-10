@@ -246,6 +246,7 @@ class ControlCenterViewModel(QObject):
         self._external_evidence_panel: dict[str, Any] = {}
         self._visible_external_sessions: dict[str, Any] = {}
         self._external_visible_verification_opened_at: dict[str, float] = {}
+        self._external_browser_session_preferences: dict[str, dict[str, Any]] = {}
         self._last_adaptive_payload: dict[str, Any] = {}
         self._autonomy_activity_override: dict[str, Any] = {}
         self._live_process_summary: dict[str, Any] = {}
@@ -3434,6 +3435,136 @@ class ControlCenterViewModel(QObject):
             / 'browser_profile'
         )
 
+    @staticmethod
+    def _is_user_browser_session_request(message: str) -> bool:
+        command = ' '.join(str(message or '').lower().strip().split())
+        if not command:
+            return False
+        browser_terms = (
+            'mi navegador',
+            'mis navegadores',
+            'navegador donde',
+            'navegadores donde',
+            'chrome donde',
+            'edge donde',
+            'perfil de chrome',
+            'perfil de edge',
+            'sesion iniciada',
+            'sesión iniciada',
+            'inicios de sesion',
+            'inicios de sesión',
+            'ya tengo sesion',
+            'ya tengo sesión',
+            'ya logueado',
+            'ya logueada',
+            'mis cuentas',
+            'mis correos',
+            'cuentas logueadas',
+        )
+        action_terms = ('usa', 'usar', 'utiliza', 'utilizar', 'abre', 'abrir', 'reusa', 'reusar', 'aprovecha', 'aprovechar')
+        return any(term in command for term in browser_terms) and any(term in command for term in action_terms)
+
+    def _assistant_for_browser_session_preference(self, message: str) -> str:
+        explicit = self._explicit_assistant_preference(message)
+        if explicit:
+            return explicit
+        panel_kind = self._external_evidence_assistant_kind()
+        if panel_kind:
+            return panel_kind
+        command = str(message or '').lower()
+        for candidate in ('chatgpt', 'claude', 'codex', 'devin'):
+            if candidate in command:
+                return candidate
+        return 'chatgpt'
+
+    def _external_browser_session_preference(self, assistant_kind: str) -> dict[str, Any]:
+        assistant_kind = str(assistant_kind or '').strip().lower()
+        if not assistant_kind:
+            return {}
+        return dict((getattr(self, '_external_browser_session_preferences', {}) or {}).get(assistant_kind) or {})
+
+    def _prefer_user_browser_for_external(self, assistant_kind: str) -> bool:
+        preference = self._external_browser_session_preference(assistant_kind)
+        mode = str(preference.get('mode') or '').strip().lower()
+        return mode in {'user_default_browser', 'user_existing_browser', 'user_existing_cdp'}
+
+    def _external_session_goal_overrides(self, assistant_kind: str) -> dict[str, Any]:
+        preference = self._external_browser_session_preference(assistant_kind)
+        if not preference:
+            return {}
+        mode = str(preference.get('mode') or '').strip().lower()
+        if mode not in {'user_default_browser', 'user_existing_browser', 'user_existing_cdp'}:
+            return {}
+        return {
+            'browser_session_mode': mode,
+            'user_browser_requested': True,
+            'background_preference_requested': bool(preference.get('background_preference_requested', False)),
+            'response_capture_mode': 'manual_pasteback',
+            'background_capture_mode': 'user_visible_browser',
+            'requires_manual_pasteback': True,
+            'session_scope': 'user_browser',
+            'session_label': 'Navegador del usuario',
+            'isolated_session_required': False,
+        }
+
+    def _handle_user_browser_session_request(self, message: str) -> bool:
+        if not ControlCenterViewModel._is_user_browser_session_request(message):
+            return False
+        assistant_kind = self._assistant_for_browser_session_preference(message)
+        assistant_title = self._assistant_display_name(assistant_kind)
+        command = ' '.join(str(message or '').lower().strip().split())
+        preference = {
+            'mode': 'user_default_browser',
+            'assistant_kind': assistant_kind,
+            'background_preference_requested': 'segundo plano' in command or 'background' in command,
+            'source': 'chat_instruction',
+            'updated_at_utc': datetime.now(timezone.utc).isoformat(),
+            'message_preview': str(message or '')[:160],
+        }
+        self._external_browser_session_preferences[assistant_kind] = preference
+        self._trace_external_followup(
+            'external_browser_session_preference_updated',
+            assistant_kind=assistant_kind,
+            mode=preference['mode'],
+            background_preference_requested=preference['background_preference_requested'],
+            message_preview=preference['message_preview'],
+        )
+        self._set_external_evidence_panel(
+            title=f'Ruta externa ajustada para {assistant_title}',
+            status='user_browser_preferred',
+            assistant_title=assistant_title,
+            interaction_id=str(getattr(self, '_active_interaction_id', '') or ''),
+            phases=[{'phase': 'browser_session_preference_updated', 'detail': 'user_default_browser'}],
+            metadata=[
+                {'key': 'browser_session_mode', 'value': 'user_default_browser'},
+                {'key': 'isolated_program_profile', 'value': 'false'},
+                {'key': 'background_preference_requested', 'value': str(preference['background_preference_requested']).lower()},
+                {'key': 'confirmed_login_state', 'value': 'UNRESOLVED'},
+            ],
+            user_help=(
+                f'Voy a priorizar tu navegador predeterminado para {assistant_title}, no el perfil aislado del programa. '
+                'No voy a asumir que una cuenta esta disponible hasta verificarlo en vivo. Si aparece login o verificacion, te mostrare esa ventana para que puedas resolverla.'
+            ),
+            actions=[
+                self._assistant_action(f'open_external_assistant_{assistant_kind}', f'Abrir {assistant_title}', 'Abrir la pagina en tu navegador predeterminado.'),
+                self._assistant_action(f'consult_{assistant_kind}', f'Consultar {assistant_title}', 'Reintentar la consulta usando esta preferencia.'),
+                self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Cruzar lo visible con los metadatos despues de abrir.'),
+            ],
+        )
+        self._append_message(
+            'assistant',
+            'IABV',
+            (
+                f'Entendido. Para {assistant_title} voy a usar tu navegador predeterminado y tus sesiones visibles antes que el perfil aislado del programa. '
+                'El estado de login queda UNRESOLVED hasta observar la pagina real.'
+            ),
+            'Preferencia de navegador actualizada.',
+            reasoning_path='external_browser_session_preference',
+            evidence_tag='observed',
+        )
+        self.dataChanged.emit()
+        return True
+
     def _open_external_assistant_for_human_verification(
         self,
         assistant_kind: str,
@@ -3453,8 +3584,11 @@ class ControlCenterViewModel(QObject):
                 self._append_message('assistant', 'IABV', f'No tengo URL visible configurada para {assistant_kind}.', 'Ruta visible no disponible.')
             return False
         assistant_title = self._assistant_display_name(assistant_kind)
+        use_user_browser = self._prefer_user_browser_for_external(assistant_kind)
         profile_dir = self._assistant_program_browser_profile_dir(assistant_kind)
-        profile_dir.mkdir(parents=True, exist_ok=True)
+        if not use_user_browser:
+            profile_dir.mkdir(parents=True, exist_ok=True)
+        browser_mode = 'user_default_browser_visible' if use_user_browser else 'program_profile_visible'
         self._external_visible_verification_opened_at[assistant_kind] = time.monotonic()
         self._set_external_evidence_panel(
             title=f'Verificacion visible de {assistant_title}',
@@ -3465,13 +3599,19 @@ class ControlCenterViewModel(QObject):
             metadata={
                 'assistant_kind': assistant_kind,
                 'url': url,
-                'browser_profile_dir': str(profile_dir),
+                'browser_session_mode': browser_mode,
+                'browser_profile_dir': '' if use_user_browser else str(profile_dir),
+                'isolated_program_profile': not use_user_browser,
                 'reason': reason,
                 'source': 'ControlCenterViewModel._open_external_assistant_for_human_verification',
             },
             user_help=(
-                f'Abro una ventana visible de {assistant_title} usando el perfil del programa. '
-                'Si aparece una verificacion de seguridad, resuelvela ahi. Despues pulsa Reintentar o Capturar vista para que IABV cruce lo visible con sus metadatos.'
+                (
+                    f'Abro una ventana visible de {assistant_title} usando tu navegador predeterminado. '
+                    if use_user_browser
+                    else f'Abro una ventana visible de {assistant_title} usando el perfil del programa. '
+                )
+                + 'Si aparece una verificacion de seguridad, resuelvela ahi. Despues pulsa Reintentar o Capturar vista para que IABV cruce lo visible con sus metadatos.'
             ),
             actions=[
                 self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar lo que se ve despues de abrir la verificacion.'),
@@ -3485,7 +3625,7 @@ class ControlCenterViewModel(QObject):
                 'assistant',
                 'IABV',
                 (
-                    f'Voy a abrir una ventana visible de {assistant_title} para que puedas resolver la verificacion de seguridad. '
+                    f'Voy a abrir una ventana visible de {assistant_title} para que puedas resolver login o verificacion de seguridad. '
                     'Despues de resolverla, pulsa Reintentar o Capturar vista.'
                 ),
                 f'Verificacion visible de {assistant_title}.',
@@ -3498,14 +3638,22 @@ class ControlCenterViewModel(QObject):
             mode = 'unresolved'
             error = ''
             try:
-                from iabv_v15.services.capture.browser_session_controller import BrowserSessionController
+                if use_user_browser:
+                    import webbrowser
 
-                controller = BrowserSessionController(user_data_dir=str(profile_dir), headless=False)
-                controller.start()
-                page = controller.page or controller.new_page()
-                page.goto(url, wait_until='domcontentloaded')
-                self._visible_external_sessions[assistant_kind] = controller
-                mode = 'program_profile_visible'
+                    opened = bool(webbrowser.open(url))
+                    mode = 'user_default_browser_visible' if opened else 'failed'
+                    if not opened:
+                        error = 'webbrowser.open returned False'
+                else:
+                    from iabv_v15.services.capture.browser_session_controller import BrowserSessionController
+
+                    controller = BrowserSessionController(user_data_dir=str(profile_dir), headless=False)
+                    controller.start()
+                    page = controller.page or controller.new_page()
+                    page.goto(url, wait_until='domcontentloaded')
+                    self._visible_external_sessions[assistant_kind] = controller
+                    mode = 'program_profile_visible'
             except Exception as exc:
                 error = str(exc)[:240]
                 try:
@@ -3522,7 +3670,9 @@ class ControlCenterViewModel(QObject):
                     assistant_kind=assistant_kind,
                     assistant_title=assistant_title,
                     url=url,
-                    browser_profile_dir=str(profile_dir),
+                    browser_session_mode=browser_mode,
+                    browser_profile_dir='' if use_user_browser else str(profile_dir),
+                    isolated_program_profile=not use_user_browser,
                     mode=mode,
                     error=error,
                     reason=reason,
@@ -7758,6 +7908,13 @@ class ControlCenterViewModel(QObject):
         incident_kind: str,
     ) -> dict[str, Any]:
         self._trace_external_consultation_phase('reuse_probe_start', assistant_kind=assistant_kind)
+        goal_overrides: dict[str, Any] = {}
+        override_getter = getattr(self, '_external_session_goal_overrides', None)
+        if callable(override_getter):
+            try:
+                goal_overrides = dict(override_getter(assistant_kind) or {})
+            except Exception:
+                goal_overrides = {}
         preview = self.tool_teach_service.preview_external_consultation(
             user_goal=self._last_user_goal or 'abre Wplay e inicia sesion',
             assistant_preference=assistant_kind,
@@ -7766,6 +7923,7 @@ class ControlCenterViewModel(QObject):
             diagnostic_category=diagnostic_category,
             incident_kind=incident_kind,
             launch_dry_run=False,
+            goal_parameters=goal_overrides,
         )
         tool_task = dict(preview.get('tool_task') or {})
         reuse_guard = bool(dict(tool_task.get('metadata') or {}).get('reuse_guard_active'))
@@ -7884,6 +8042,13 @@ class ControlCenterViewModel(QObject):
         self._trace_external_consultation_phase('context_pack_build_start', assistant_kind=assistant_kind)
         context_pack = self._build_external_context_pack(assistant_kind)
         self._trace_external_consultation_phase('context_pack_build_done', assistant_kind=assistant_kind, context_chars=len(context_pack))
+        goal_overrides: dict[str, Any] = {}
+        override_getter = getattr(self, '_external_session_goal_overrides', None)
+        if callable(override_getter):
+            try:
+                goal_overrides = dict(override_getter(assistant_kind) or {})
+            except Exception:
+                goal_overrides = {}
         preview = self.tool_teach_service.preview_external_consultation(
             user_goal=self._last_user_goal or 'abre Wplay e inicia sesion',
             assistant_preference=assistant_kind,
@@ -7892,6 +8057,7 @@ class ControlCenterViewModel(QObject):
             diagnostic_category=diagnostic_category,
             incident_kind=incident_kind,
             launch_dry_run=False,
+            goal_parameters=goal_overrides,
         )
         tool_card = dict(preview.get('tool_card') or {})
         tool_task = dict(preview.get('tool_task') or {})
@@ -7939,6 +8105,7 @@ class ControlCenterViewModel(QObject):
             incident_kind=incident_kind,
             approved=True,
             launch_dry_run=False,
+            goal_parameters=goal_overrides,
         )
         launch_mode = str(result.execution_state.metadata.get('launch_mode') or tool_card.get('metadata', {}).get('launch_mode') or '')
         response_capture_mode = str(result.execution_state.metadata.get('response_capture_mode') or tool_card.get('metadata', {}).get('response_capture_mode') or '')
@@ -9682,6 +9849,8 @@ class ControlCenterViewModel(QObject):
         self.sendChat(text)
 
     def _try_handle_lightweight_chat(self, message: str) -> bool:
+        if self._handle_user_browser_session_request(message):
+            return True
         if self._is_external_consultation_diagnosis_question(message):
             self._answer_external_consultation_diagnosis_question(message)
             return True

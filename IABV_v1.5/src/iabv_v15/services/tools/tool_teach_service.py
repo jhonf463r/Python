@@ -637,6 +637,9 @@ class ToolTeachService:
                 'session_label': str(goal_parameters.get('session_label') or ''),
                 'isolated_session_required': bool(goal_parameters.get('isolated_session_required', False)),
                 'background_capture_mode': str(goal_parameters.get('background_capture_mode') or ''),
+                'browser_session_mode': str(goal_parameters.get('browser_session_mode') or ''),
+                'user_browser_requested': bool(goal_parameters.get('user_browser_requested', False)),
+                'background_preference_requested': bool(goal_parameters.get('background_preference_requested', False)),
                 'assistant_configuration': assistant_configuration.model_dump(mode='json'),
                 'config_signature': config_signature,
             },
@@ -1082,15 +1085,15 @@ class ToolTeachService:
     def _sync_external_consultation_task(self, task: ToolTask, card: ToolCard) -> ToolTask:
         if task.metadata.get('consultation_scope') != 'external_assistant':
             return task
-        response_capture_mode = str(card.metadata.get('response_capture_mode') or task.metadata.get('response_capture_mode') or 'manual_pasteback')
-        background_capture_mode = str(card.metadata.get('background_capture_mode') or task.metadata.get('background_capture_mode') or '')
+        response_capture_mode = str(task.metadata.get('response_capture_mode') or card.metadata.get('response_capture_mode') or 'manual_pasteback')
+        background_capture_mode = str(task.metadata.get('background_capture_mode') or card.metadata.get('background_capture_mode') or '')
         direct_response_text = str(card.metadata.get('direct_response_text') or task.metadata.get('direct_response_text') or '').strip()
         direct_capture = response_capture_mode.strip().lower() in {'direct_text', 'tool_result'} and bool(direct_response_text)
         requested_assistant_kind = str(task.metadata.get('requested_assistant_kind') or ((task.metadata.get('goal_parameters') or {}).get('assistant_preference') if isinstance(task.metadata.get('goal_parameters'), dict) else '') or task.metadata.get('assistant_kind') or '')
         assistant_kind = str(card.metadata.get('assistant_kind') or task.metadata.get('actual_assistant_kind') or task.metadata.get('assistant_kind') or '')
-        session_scope = str(card.metadata.get('session_scope') or task.metadata.get('session_scope') or '')
-        session_label = str(card.metadata.get('session_label') or task.metadata.get('session_label') or '')
-        isolated_session_required = bool(card.metadata.get('isolated_session_required', task.metadata.get('isolated_session_required', False)))
+        session_scope = str(task.metadata.get('session_scope') or card.metadata.get('session_scope') or '')
+        session_label = str(task.metadata.get('session_label') or card.metadata.get('session_label') or '')
+        isolated_session_required = bool(task.metadata.get('isolated_session_required', card.metadata.get('isolated_session_required', False)))
         session_profile_dir = str(task.metadata.get('session_profile_dir') or self._session_profile_dir_for_tool(tool_id=card.tool_id, assistant_kind=assistant_kind, background_capture_mode=background_capture_mode, isolated_session_required=isolated_session_required))
         capture_lane = str(task.metadata.get('capture_lane') or self._lane_for_consultation(response_capture_mode=response_capture_mode, background_capture_mode=background_capture_mode))
         metadata = {
@@ -1099,7 +1102,7 @@ class ToolTeachService:
             'assistant_kind': assistant_kind,
             'actual_assistant_kind': assistant_kind,
             'response_capture_mode': response_capture_mode,
-            'requires_manual_pasteback': False if direct_capture else bool(card.metadata.get('requires_manual_pasteback', task.metadata.get('requires_manual_pasteback', True))),
+            'requires_manual_pasteback': False if direct_capture else bool(task.metadata.get('requires_manual_pasteback', card.metadata.get('requires_manual_pasteback', True))),
             'session_scope': session_scope,
             'session_label': session_label,
             'isolated_session_required': isolated_session_required,
@@ -1503,10 +1506,12 @@ class ToolTeachService:
                 assistant_title = 'ChatGPT'
                 assistant_kind = 'chatgpt'
                 prompt_template_id = 'chatgpt_consult_v1' if preferred_tool_id == 'chatgpt_installed' else 'chatgpt_web_consult_v1'
-            response_capture_mode = str(preferred_metadata.get('response_capture_mode') or ('clipboard_capture' if desktop_capture else 'manual_pasteback'))
-            requires_manual_pasteback = bool(preferred_metadata.get('requires_manual_pasteback', False if desktop_capture else True))
-            session_scope = str(preferred_metadata.get('session_scope') or ('program_chat' if preferred_tool_id.endswith('_web_assisted') else 'external_app'))
-            isolated_session_required = bool(preferred_metadata.get('isolated_session_required', False))
+            response_capture_mode = str(goal_payload.get('response_capture_mode') or preferred_metadata.get('response_capture_mode') or ('clipboard_capture' if desktop_capture else 'manual_pasteback'))
+            requires_manual_pasteback = bool(goal_payload.get('requires_manual_pasteback', preferred_metadata.get('requires_manual_pasteback', False if desktop_capture else True)))
+            if 'background_capture_mode' in goal_payload:
+                background_capture_mode = str(goal_payload.get('background_capture_mode') or '')
+            session_scope = str(goal_payload.get('session_scope') or preferred_metadata.get('session_scope') or ('program_chat' if preferred_tool_id.endswith('_web_assisted') else 'external_app'))
+            isolated_session_required = bool(goal_payload.get('isolated_session_required', preferred_metadata.get('isolated_session_required', False)))
             if response_capture_mode in {'clipboard_capture', 'dom_capture'} and not requires_manual_pasteback:
                 expected_outcome = 'Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.'
             else:
@@ -1543,6 +1548,7 @@ class ToolTeachService:
                 'assistant_kind': assistant_kind,
                 'consultation_scope': 'external_assistant',
                 'response_capture_mode': response_capture_mode,
+                'background_capture_mode': background_capture_mode,
                 'requires_manual_pasteback': requires_manual_pasteback,
                 'prompt_template_id': prompt_template_id,
                 'execution_scope': 'read_only',
@@ -1553,6 +1559,9 @@ class ToolTeachService:
                 'dry_run_launch': launch_dry_run,
                 'allow_local_automatic_consultation': allow_local_automatic_consultation,
                 'session_scope': session_scope,
+                'browser_session_mode': str(goal_payload.get('browser_session_mode') or ''),
+                'user_browser_requested': bool(goal_payload.get('user_browser_requested', False)),
+                'background_preference_requested': bool(goal_payload.get('background_preference_requested', False)),
                 'isolated_session_required': isolated_session_required,
                 'session_label': consultation_metadata['session_label'],
                 'thread_key': consultation_metadata['thread_key'],

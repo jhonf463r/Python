@@ -530,10 +530,10 @@ class ToolAdapter:
         start = time.perf_counter()
         launch_mode = str(card.metadata.get('launch_mode') or '').strip().lower()
         assistant_kind = str(card.metadata.get('assistant_kind') or card.tool_id)
-        response_capture_mode = str(card.metadata.get('response_capture_mode') or task.metadata.get('response_capture_mode') or 'manual_pasteback').strip().lower()
+        response_capture_mode = str(task.metadata.get('response_capture_mode') or card.metadata.get('response_capture_mode') or 'manual_pasteback').strip().lower()
         direct_response_text = str(card.metadata.get('direct_response_text') or task.metadata.get('direct_response_text') or '').strip()
         direct_capture = response_capture_mode in {'direct_text', 'tool_result'} and bool(direct_response_text)
-        requires_manual_pasteback = False if direct_capture else bool(card.metadata.get('requires_manual_pasteback', task.metadata.get('requires_manual_pasteback', True)))
+        requires_manual_pasteback = False if direct_capture else bool(task.metadata.get('requires_manual_pasteback', card.metadata.get('requires_manual_pasteback', True)))
         prompt_text = next((action.value for action in task.actions if action.action_type == ToolActionType.LLM_QUERY and action.value), task.objective)
         prompt_preview = prompt_text[:400]
         launch_target = str(card.metadata.get('web_url') or '') if launch_mode == 'web_assisted' else self._resolve_launch_target(card)
@@ -542,7 +542,7 @@ class ToolAdapter:
             launch_target = str(card.metadata.get('command_name') or assistant_kind)
             process_detected_running = True
         clipboard_capture = response_capture_mode == 'clipboard_capture' and launch_mode == 'desktop_app'
-        background_capture_mode = str(card.metadata.get('background_capture_mode') or task.metadata.get('background_capture_mode') or '').strip().lower()
+        background_capture_mode = str(task.metadata.get('background_capture_mode') or card.metadata.get('background_capture_mode') or '').strip().lower()
         # Auto-promote web_assisted to browser_dom when running autonomously
         # to avoid opening visible browser tabs that interrupt the user
         if launch_mode == 'web_assisted' and not background_capture_mode and response_capture_mode not in {'dom_capture', 'browser_dom'}:
