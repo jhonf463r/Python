@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Dialogs
 import "../components"
 
 Item {
@@ -9,22 +10,25 @@ Item {
     readonly property color textSecondary: "#d1d8df"
     readonly property color borderSoft: "#42505d"
 
+    property bool liveDockExpanded: false
     property var chatMessagesModel: controlCenterViewModel ? controlCenterViewModel.chatMessages : []
-    property var providerCardsModel: controlCenterViewModel ? controlCenterViewModel.providerCards : []
-    property var progressCardsModel: controlCenterViewModel ? controlCenterViewModel.progressCards : []
-    property var evolutionOverviewModel: controlCenterViewModel ? controlCenterViewModel.evolutionOverview : ({})
-    property var evolutionAreaCardsModel: controlCenterViewModel ? controlCenterViewModel.evolutionAreaCards : []
-    property var evolutionBlockersModel: controlCenterViewModel ? controlCenterViewModel.evolutionBlockers : []
-    property var liveProcessSummaryModel: controlCenterViewModel ? controlCenterViewModel.liveProcessSummary : ({})
-    property var liveWorkItemsModel: controlCenterViewModel ? controlCenterViewModel.liveWorkItems : []
-    property var assistantSessionCardsModel: controlCenterViewModel ? controlCenterViewModel.assistantSessionCards : []
-    property var autonomyTimelineModel: controlCenterViewModel ? controlCenterViewModel.autonomyTimeline : []
+    property bool advancedVisible: controlCenterViewModel ? controlCenterViewModel.advancedVisible : false
+    property bool liveDockHydrated: liveDockExpanded
+    property var liveProcessSummaryModel: liveDockHydrated && controlCenterViewModel ? controlCenterViewModel.liveProcessSummary : ({})
+    property var liveWorkItemsModel: liveDockExpanded && controlCenterViewModel ? controlCenterViewModel.liveWorkItems : []
+    property var assistantSessionCardsModel: liveDockExpanded && controlCenterViewModel ? controlCenterViewModel.assistantSessionCards : []
+    property var autonomyTimelineModel: liveDockExpanded && controlCenterViewModel ? controlCenterViewModel.autonomyTimeline : []
     property var autonomyActivityModel: controlCenterViewModel ? controlCenterViewModel.autonomyActivity : ({})
+    property bool compactPulseVisible: chatMessagesModel.length === 0 && !Boolean(autonomyActivityModel.visible)
+    property var providerCardsModel: advancedVisible && controlCenterViewModel ? controlCenterViewModel.providerCards : []
+    property var progressCardsModel: advancedVisible && controlCenterViewModel ? controlCenterViewModel.progressCards : []
+    property var evolutionOverviewModel: (advancedVisible || compactPulseVisible) && controlCenterViewModel ? controlCenterViewModel.evolutionOverview : ({})
+    property var evolutionAreaCardsModel: advancedVisible && controlCenterViewModel ? controlCenterViewModel.evolutionAreaCards : []
+    property var evolutionBlockersModel: advancedVisible && controlCenterViewModel ? controlCenterViewModel.evolutionBlockers : []
     property string autonomyDockStatusValue: controlCenterViewModel ? controlCenterViewModel.autonomyDockStatus : "idle"
     property string autonomyDockLastResultValue: controlCenterViewModel ? controlCenterViewModel.autonomyDockLastResult : "idle"
     property string autonomyDockLastSummaryValue: controlCenterViewModel ? controlCenterViewModel.autonomyDockLastSummary : ""
     property var assistantActionButtonsModel: controlCenterViewModel ? controlCenterViewModel.assistantActionButtons : []
-    property bool advancedVisible: controlCenterViewModel ? controlCenterViewModel.advancedVisible : false
     property bool workingState: controlCenterViewModel ? controlCenterViewModel.working : false
     property bool canApproveStrategyValue: controlCenterViewModel ? controlCenterViewModel.canApproveStrategy : false
     property bool canApproveNextPhaseValue: controlCenterViewModel ? controlCenterViewModel.canApproveNextPhase : false
@@ -33,40 +37,76 @@ Item {
     property bool canAbortValue: controlCenterViewModel ? controlCenterViewModel.canAbort : false
     property bool canApproveObservationValue: controlCenterViewModel ? controlCenterViewModel.canApproveObservation : false
     property bool approvalDialogVisibleValue: controlCenterViewModel ? controlCenterViewModel.approvalDialogVisible : false
-    property bool liveDockExpanded: true
     property string routingModeLabelValue: controlCenterViewModel ? controlCenterViewModel.routingModeLabel : "Modo automatico"
     property string busyLabelText: controlCenterViewModel ? controlCenterViewModel.busyLabel : "Listo"
     property string clipboardNoticeValue: controlCenterViewModel ? controlCenterViewModel.clipboardNotice : ""
     property string assistantGuidanceModeValue: controlCenterViewModel ? controlCenterViewModel.assistantGuidanceMode : "idle"
     property string assistantGuidanceTextValue: controlCenterViewModel ? controlCenterViewModel.assistantGuidanceText : "Describe una tarea y te dire si me falta ensenanza, aprobacion, revision evolutiva o apoyo de Codex."
+    property var externalEvidencePanelModel: controlCenterViewModel ? controlCenterViewModel.externalEvidencePanel : ({})
     property string approvalDialogTitleValue: controlCenterViewModel ? controlCenterViewModel.approvalDialogTitle : "Aprobacion requerida"
     property string approvalDialogTextValue: controlCenterViewModel ? controlCenterViewModel.approvalDialogText : ""
-    property string recommendationTextValue: controlCenterViewModel ? controlCenterViewModel.recommendationText : ""
-    property string strategyTextValue: controlCenterViewModel ? controlCenterViewModel.strategyText : ""
-    property string diagnosticTextValue: controlCenterViewModel ? controlCenterViewModel.diagnosticText : "Diagnostico pendiente."
-    property string diagnosticTruthStateValue: controlCenterViewModel ? controlCenterViewModel.diagnosticTruthState : ""
-    property string repoBridgeTextValue: controlCenterViewModel ? controlCenterViewModel.repoBridgeText : ""
-    property string localStackTextValue: controlCenterViewModel ? controlCenterViewModel.localStackText : ""
-    property string developmentPacketValue: controlCenterViewModel ? controlCenterViewModel.developmentPacket : ""
-    property string adaptiveStatusTextValue: controlCenterViewModel ? controlCenterViewModel.adaptiveStatusText : "Sin sesion"
-    property string adaptiveIntentTextValue: controlCenterViewModel ? controlCenterViewModel.adaptiveIntentText : ""
-    property string adaptiveContextTextValue: controlCenterViewModel ? controlCenterViewModel.adaptiveContextText : ""
-    property string adaptiveStrategyTextValue: controlCenterViewModel ? controlCenterViewModel.adaptiveStrategyText : ""
-    property string adaptiveExecutionTextValue: controlCenterViewModel ? controlCenterViewModel.adaptiveExecutionText : ""
-    property string adaptiveEvidenceTextValue: controlCenterViewModel ? controlCenterViewModel.adaptiveEvidenceText : ""
-    property string adaptiveEvolutionTextValue: controlCenterViewModel ? controlCenterViewModel.adaptiveEvolutionText : ""
+    property string recommendationTextValue: advancedVisible && controlCenterViewModel ? controlCenterViewModel.recommendationText : ""
+    property string strategyTextValue: advancedVisible && controlCenterViewModel ? controlCenterViewModel.strategyText : ""
+    property string diagnosticTextValue: advancedVisible && controlCenterViewModel ? controlCenterViewModel.diagnosticText : "Diagnostico pendiente."
+    property string diagnosticTruthStateValue: advancedVisible && controlCenterViewModel ? controlCenterViewModel.diagnosticTruthState : ""
+    property string repoBridgeTextValue: advancedVisible && controlCenterViewModel ? controlCenterViewModel.repoBridgeText : ""
+    property string localStackTextValue: advancedVisible && controlCenterViewModel ? controlCenterViewModel.localStackText : ""
+    property string developmentPacketValue: advancedVisible && controlCenterViewModel ? controlCenterViewModel.developmentPacket : ""
+    property string adaptiveStatusTextValue: advancedVisible && controlCenterViewModel ? controlCenterViewModel.adaptiveStatusText : "Sin sesion"
+    property string adaptiveIntentTextValue: advancedVisible && controlCenterViewModel ? controlCenterViewModel.adaptiveIntentText : ""
+    property string adaptiveContextTextValue: advancedVisible && controlCenterViewModel ? controlCenterViewModel.adaptiveContextText : ""
+    property string adaptiveStrategyTextValue: advancedVisible && controlCenterViewModel ? controlCenterViewModel.adaptiveStrategyText : ""
+    property string adaptiveExecutionTextValue: advancedVisible && controlCenterViewModel ? controlCenterViewModel.adaptiveExecutionText : ""
+    property string adaptiveEvidenceTextValue: advancedVisible && controlCenterViewModel ? controlCenterViewModel.adaptiveEvidenceText : ""
+    property string adaptiveEvolutionTextValue: advancedVisible && controlCenterViewModel ? controlCenterViewModel.adaptiveEvolutionText : ""
 
     // ── Propiedades avanzadas del chat ──
     property int attachedFileCountValue: controlCenterViewModel ? controlCenterViewModel.attachedFileCount : 0
     property string liveStatusValue: controlCenterViewModel ? controlCenterViewModel.liveStatus : "idle"
-    property var contextualSuggestionsModel: controlCenterViewModel ? controlCenterViewModel.contextualSuggestions : []
+    property var contextualSuggestionsModel: advancedVisible && controlCenterViewModel ? controlCenterViewModel.contextualSuggestions : []
     property var attachedFilesModel: controlCenterViewModel ? controlCenterViewModel.attachedFiles : []
+
+    function localPathFromFileUrl(fileUrl) {
+        var raw = String(fileUrl || "")
+        if (raw.indexOf("file:///") === 0) {
+            return decodeURIComponent(raw.substring(8))
+        }
+        if (raw.indexOf("file://") === 0) {
+            return decodeURIComponent(raw.substring(7))
+        }
+        return decodeURIComponent(raw)
+    }
+
+    function fileNameFromPath(path) {
+        var parts = String(path || "").split(/[\\/]/)
+        return parts.length > 0 ? parts[parts.length - 1] : String(path || "")
+    }
+
+    FileDialog {
+        id: attachmentDialog
+        title: "Adjuntar archivo"
+        fileMode: FileDialog.OpenFiles
+        nameFilters: [
+            "Documentos y datos (*.txt *.md *.pdf *.docx *.xlsx *.csv *.json *.py *.js *.ts *.qml *.png *.jpg *.jpeg)",
+            "Todos los archivos (*)"
+        ]
+        onAccepted: {
+            if (!controlCenterViewModel) return
+            var selected = selectedFiles || []
+            for (var i = 0; i < selected.length; i++) {
+                var path = localPathFromFileUrl(selected[i])
+                if (path.length > 0) {
+                    controlCenterViewModel.attachFile(fileNameFromPath(path), path, 0, "application/octet-stream")
+                }
+            }
+        }
+    }
 
     Timer {
         id: autonomyDockTimer
         interval: 5000
         repeat: true
-        running: Boolean(controlCenterViewModel) && !workingState && autonomyDockStatusValue !== "refreshing" && (
+        running: liveDockExpanded && Boolean(controlCenterViewModel) && !workingState && autonomyDockStatusValue !== "refreshing" && (
             Boolean(autonomyActivityModel.visible)
             || (liveProcessSummaryModel.status || "") === "awaiting_response"
             || (liveProcessSummaryModel.status || "") === "active"
@@ -161,7 +201,7 @@ Item {
 
             GlassPanel {
                 width: parent.width
-                visible: chatMessagesModel.length === 0 && !Boolean(autonomyActivityModel.visible)
+                visible: compactPulseVisible
                 fillColor: "#1c2630"
                 strokeColor: borderSoft
                 implicitHeight: evolutionCompactCol.implicitHeight + 34
@@ -234,38 +274,39 @@ Item {
                         wrapMode: Label.WordWrap
                         font.family: "Segoe UI"
                     }
-                    ScrollView {
+                    ListView {
+                        id: chatListView
                         width: chatCol.width
-                        implicitHeight: 300
+                        height: 300
                         clip: true
-                        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                        spacing: 10
+                        model: chatMessagesModel
+                        reuseItems: true
+                        cacheBuffer: 480
+                        boundsBehavior: Flickable.StopAtBounds
+                        ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
-                        Column {
-                            width: parent.width
-                            spacing: 10
-
-                            Repeater {
-                                model: chatMessagesModel
-                                delegate: ChatMessageDelegate {
-                                    width: chatCol.width
-                                    onCopyRequested: function(text) {
-                                        if (controlCenterViewModel) controlCenterViewModel.copyToClipboard(text)
-                                    }
-                                    onDownloadRequested: function(text, filename) {
-                                        if (controlCenterViewModel) controlCenterViewModel.downloadChat(text, filename)
-                                    }
-                                    onApplyCodeRequested: function(code, language) {
-                                        if (controlCenterViewModel) controlCenterViewModel.applyCode(code, language)
-                                    }
-                                    onActionRequested: function(actionId, actionData) {
-                                        if (controlCenterViewModel) controlCenterViewModel.handleSuggestionAction(actionId, actionData.label || "")
-                                    }
-                                    onAttachmentClicked: function(path, name) {
-                                        console.log("Attachment clicked:", path, name)
-                                    }
-                                }
+                        delegate: ChatMessageDelegate {
+                            width: chatListView.width
+                            onCopyRequested: function(text) {
+                                if (controlCenterViewModel) controlCenterViewModel.copyToClipboard(text)
+                            }
+                            onDownloadRequested: function(text, filename) {
+                                if (controlCenterViewModel) controlCenterViewModel.downloadChat(text, filename)
+                            }
+                            onApplyCodeRequested: function(code, language) {
+                                if (controlCenterViewModel) controlCenterViewModel.applyCode(code, language)
+                            }
+                            onActionRequested: function(actionId, actionData) {
+                                if (controlCenterViewModel) controlCenterViewModel.handleSuggestionAction(actionId, actionData.label || "")
+                            }
+                            onAttachmentClicked: function(path, name) {
+                                console.log("Attachment clicked:", path, name)
                             }
                         }
+
+                        onCountChanged: positionViewAtEnd()
+                        Component.onCompleted: positionViewAtEnd()
                     }
 
                     Rectangle {
@@ -308,43 +349,228 @@ Item {
                     }
 
                     // ── Toolbar avanzado del chat ──
-                    ChatToolbar {
-                        id: chatToolbar
+                    Rectangle {
                         width: chatCol.width
-                        toolCount: controlCenterViewModel ? controlCenterViewModel.providerCards.length : 0
-                        activeProvider: routingModeLabelValue.toLowerCase().indexOf("chatgpt") >= 0 ? "chatgpt" : (routingModeLabelValue.toLowerCase().indexOf("claude") >= 0 ? "claude" : (routingModeLabelValue.toLowerCase().indexOf("devin") >= 0 ? "devin" : (routingModeLabelValue.toLowerCase().indexOf("ollama") >= 0 ? "ollama" : "auto")))
-                        codeMode: false
-                        canAttach: true
-                        attachedCount: attachedFileCountValue
-                        systemStatus: liveStatusValue === "idle" ? "idle" : (liveStatusValue === "error" ? "error" : "processing")
-                        onAttachClicked: {
-                            if (controlCenterViewModel) controlCenterViewModel.attachFile("test.txt", "C:/tmp/test.txt", 1024, "text/plain")
+                        visible: Boolean(externalEvidencePanelModel.visible)
+                        radius: 10
+                        color: "#141e26"
+                        border.width: 1
+                        border.color: "#4f6d7a"
+                        implicitHeight: externalEvidenceCol.implicitHeight + 20
+
+                        Column {
+                            id: externalEvidenceCol
+                            anchors.fill: parent
+                            anchors.margins: 10
+                            spacing: 8
+
+                            Label {
+                                width: externalEvidenceCol.width
+                                text: externalEvidencePanelModel.title || "Evidencia externa"
+                                color: textPrimary
+                                font.pixelSize: 14
+                                font.family: "Segoe UI"
+                                wrapMode: Label.WordWrap
+                            }
+                            Label {
+                                width: externalEvidenceCol.width
+                                text: "Estado: " + (externalEvidencePanelModel.status || "unresolved")
+                                      + " | asistente: " + (externalEvidencePanelModel.assistant || "sin confirmar")
+                                      + " | interaction_id: " + (externalEvidencePanelModel.interaction_id || "sin id")
+                                color: textSecondary
+                                font.pixelSize: 11
+                                font.family: "Segoe UI"
+                                wrapMode: Label.WordWrap
+                            }
+                            Flow {
+                                width: externalEvidenceCol.width
+                                spacing: 6
+                                Repeater {
+                                    model: externalEvidencePanelModel.phases || []
+                                    delegate: Rectangle {
+                                        radius: 6
+                                        color: "#1b2a34"
+                                        border.width: 1
+                                        border.color: "#315c6e"
+                                        implicitWidth: phaseLabel.implicitWidth + 16
+                                        implicitHeight: phaseLabel.implicitHeight + 10
+                                        Label {
+                                            id: phaseLabel
+                                            anchors.centerIn: parent
+                                            text: (modelData.label || "")
+                                                  + (modelData.detail ? " | " + modelData.detail : "")
+                                            color: textSecondary
+                                            font.pixelSize: 10
+                                            font.family: "Segoe UI"
+                                        }
+                                    }
+                                }
+                            }
+                            Repeater {
+                                model: externalEvidencePanelModel.metadata || []
+                                delegate: Label {
+                                    width: externalEvidenceCol.width
+                                    text: (modelData.key || "") + ": " + (modelData.value || "")
+                                    color: textSecondary
+                                    font.pixelSize: 11
+                                    font.family: "Segoe UI"
+                                    wrapMode: Label.WordWrap
+                                }
+                            }
+                            Repeater {
+                                model: externalEvidencePanelModel.visual_evidence || []
+                                delegate: Column {
+                                    width: externalEvidenceCol.width
+                                    spacing: 4
+                                    Label {
+                                        width: parent.width
+                                        text: (modelData.label || "Evidencia visual")
+                                              + (modelData.detail ? " | " + modelData.detail : "")
+                                        color: textSecondary
+                                        font.pixelSize: 11
+                                        font.family: "Segoe UI"
+                                        wrapMode: Label.WordWrap
+                                    }
+                                    Label {
+                                        width: parent.width
+                                        visible: Boolean(modelData.semantic_summary)
+                                        text: "Lectura: " + (((modelData.semantic_summary || ({})).state_hypothesis) || "sin lectura")
+                                              + " | confianza=" + (((modelData.semantic_summary || ({})).confidence) || 0)
+                                              + " | labels=" + ((((modelData.semantic_summary || ({})).labels) || []).join(", "))
+                                        color: "#9fd0ff"
+                                        font.pixelSize: 10
+                                        font.family: "Segoe UI"
+                                        wrapMode: Label.WordWrap
+                                    }
+                                    Rectangle {
+                                        width: parent.width
+                                        height: 170
+                                        radius: 8
+                                        color: "#0f171d"
+                                        border.width: 1
+                                        border.color: modelData.permission_granted ? "#3d8f5c" : "#7a5e2b"
+                                        clip: true
+                                        Image {
+                                            anchors.fill: parent
+                                            anchors.margins: 6
+                                            source: modelData.image_url || ""
+                                            fillMode: Image.PreserveAspectFit
+                                            asynchronous: true
+                                            cache: false
+                                        }
+                                    }
+                                    Label {
+                                        width: parent.width
+                                        text: modelData.path || ""
+                                        color: mutedText
+                                        font.pixelSize: 10
+                                        font.family: "Consolas"
+                                        wrapMode: Text.WrapAnywhere
+                                    }
+                                }
+                            }
+                            Label {
+                                width: externalEvidenceCol.width
+                                text: externalEvidencePanelModel.user_help || ""
+                                visible: Boolean(externalEvidencePanelModel.user_help)
+                                color: "#d9b15f"
+                                font.pixelSize: 11
+                                font.family: "Segoe UI"
+                                wrapMode: Label.WordWrap
+                            }
+                            Flow {
+                                width: externalEvidenceCol.width
+                                spacing: 8
+                                visible: (externalEvidencePanelModel.actions || []).length > 0
+                                Repeater {
+                                    model: externalEvidencePanelModel.actions || []
+                                    delegate: AppButton {
+                                        text: modelData.label || modelData.action || "Accion"
+                                        accent: index === 0
+                                        onClicked: if (controlCenterViewModel) controlCenterViewModel.applySuggestedAction(modelData.action)
+                                    }
+                                }
+                            }
                         }
-                        onClearAttachments: {
-                            if (controlCenterViewModel) controlCenterViewModel.clearAttachedFiles()
-                        }
-                        onCodeModeToggled: console.log("Code mode toggled")
-                        onSearchClicked: console.log("Search clicked")
-                        onProviderSwitchClicked: {
-                            if (controlCenterViewModel) controlCenterViewModel.setRole("auto")
-                        }
-                        onKeyInputRequested: {
-                            if (controlCenterViewModel) controlCenterViewModel.sendChat("ingresar clave")
-                        }
-                        onSearchQueryChanged: {
-                            if (controlCenterViewModel) controlCenterViewModel.searchChatHistory(chatToolbar.searchQuery)
+                    }
+
+                    Loader {
+                        width: chatCol.width
+                        active: true
+                        visible: true
+                        sourceComponent: chatToolbarComponent
+                    }
+
+                    Rectangle {
+                        width: chatCol.width
+                        visible: attachedFilesModel.length > 0
+                        radius: 8
+                        color: "#121b22"
+                        border.width: 1
+                        border.color: "#2e4453"
+                        implicitHeight: attachedFilesCol.implicitHeight + 18
+
+                        Column {
+                            id: attachedFilesCol
+                            anchors.fill: parent
+                            anchors.margins: 9
+                            spacing: 6
+
+                            Label {
+                                width: attachedFilesCol.width
+                                text: attachedFilesModel.length + " archivo(s) adjunto(s) para el siguiente mensaje"
+                                color: textSecondary
+                                font.pixelSize: 11
+                                font.family: "Segoe UI"
+                                wrapMode: Label.WordWrap
+                            }
+                            Flow {
+                                width: attachedFilesCol.width
+                                spacing: 6
+                                Repeater {
+                                    model: attachedFilesModel
+                                    delegate: Rectangle {
+                                        radius: 6
+                                        color: "#1b2a34"
+                                        border.width: 1
+                                        border.color: "#315c6e"
+                                        implicitWidth: Math.min(attachedFilesCol.width, fileChipRow.implicitWidth + 16)
+                                        implicitHeight: fileChipRow.implicitHeight + 8
+
+                                        Row {
+                                            id: fileChipRow
+                                            anchors.centerIn: parent
+                                            spacing: 6
+                                            Label {
+                                                text: modelData.name || fileNameFromPath(modelData.path || "")
+                                                color: textSecondary
+                                                font.pixelSize: 10
+                                                font.family: "Segoe UI"
+                                                elide: Label.ElideRight
+                                                width: Math.min(260, attachedFilesCol.width - 50)
+                                            }
+                                            ToolButton {
+                                                width: 18
+                                                height: 18
+                                                text: "x"
+                                                onClicked: if (controlCenterViewModel) controlCenterViewModel.detachFile(modelData.path || "")
+                                                ToolTip.visible: hovered
+                                                ToolTip.text: "Quitar adjunto"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
 
                     // ── Panel de sugerencias contextuales ──
-                    ContextualSuggestionsPanel {
-                        id: suggestionsPanel
+                    Loader {
+                        id: suggestionsPanelLoader
                         width: chatCol.width
-                        suggestions: contextualSuggestionsModel
-                        onSuggestionClicked: function(action, text) {
-                            if (controlCenterViewModel) controlCenterViewModel.handleSuggestionAction(action, text)
-                        }
-                        onDismissed: visible = false
+                        active: advancedVisible && contextualSuggestionsModel.length > 0
+                        visible: active
+                        sourceComponent: contextualSuggestionsComponent
                     }
 
                     AppTextArea { id: chatInput; width: chatCol.width; implicitHeight: 92; selectByMouse: true; placeholderText: "Describe la tarea cotidiana que quieres resolver o automatizar por fases..." }
@@ -361,7 +587,7 @@ Item {
                                     if (outgoing.length > 0) {
                                         controlCenterViewModel.sendChat(outgoing);
                                         chatInput.text = "";
-                                        suggestionsPanel.visible = false;
+                                        suggestionsPanelLoader.visible = false;
                                     }
                                 }
                             }
@@ -397,252 +623,144 @@ Item {
 
                             Label {
                                 width: liveDockCol.width
-                                visible: Boolean(autonomyDockLastSummaryValue)
-                                text: autonomyDockLastSummaryValue
-                                color: autonomyDockLastResultValue === "failed" ? "#cf7e7e" : (autonomyDockLastResultValue === "changed" ? "#8ccf8b" : textSecondary)
-                                wrapMode: Label.WordWrap
-                                font.pixelSize: 11
-                                font.family: "Segoe UI"
-                            }
-
-                            Label {
-                                width: liveDockCol.width
-                                text: liveProcessSummaryModel.summary || "Todavia no hay trabajo autonomo consolidado."
+                                text: liveDockExpanded ? "Cargando detalle vivo bajo demanda." : "Compactado para proteger la ventana. Pulsa Expandir para ver Actividad autonoma, Trabajo vivo y Timeline."
                                 color: textSecondary
                                 wrapMode: Label.WordWrap
                                 font.pixelSize: 12
                                 font.family: "Segoe UI"
                             }
-                            RowLayout {
+
+                            Loader {
+                                id: liveDockDetailsLoader
                                 width: liveDockCol.width
-                                spacing: 10
-
-                                BusyIndicator {
-                                    running: (liveProcessSummaryModel.status || "") === "awaiting_response" || (liveProcessSummaryModel.status || "") === "active"
-                                    visible: running
-                                    Layout.alignment: Qt.AlignTop
-                                    implicitWidth: 22
-                                    implicitHeight: 22
-                                }
-
-                                Flow {
-                                    Layout.fillWidth: true
-                                    spacing: 10
-                                    StatusPill {
-                                        label: "Etapa: " + (liveProcessSummaryModel.stage || "sin actividad")
-                                        accentColor: evolutionStatusColor(liveProcessSummaryModel.status || "idle")
-                                        pulsing: (liveProcessSummaryModel.status || "") === "awaiting_response"
-                                        minPillWidth: 170
-                                        maxPillWidth: 340
-                                    }
-                                    StatusPill {
-                                        label: "IA: " + (liveProcessSummaryModel.assistant_title || "motor local")
-                                        accentColor: "#315c6e"
-                                        minPillWidth: 150
-                                        maxPillWidth: 260
-                                    }
-                                    StatusPill {
-                                        label: "Lane: " + (liveProcessSummaryModel.lane || "local")
-                                        accentColor: "#42505d"
-                                        minPillWidth: 150
-                                        maxPillWidth: 220
-                                    }
-                                    StatusPill {
-                                        label: "Progreso: " + pctLabel(liveProcessSummaryModel.progress_pct) + "%"
-                                        accentColor: "#3e7b63"
-                                        minPillWidth: 150
-                                        maxPillWidth: 220
-                                    }
-                                }
-                            }
-
-                            Rectangle {
-                                width: liveDockCol.width
-                                height: 10
-                                radius: 5
-                                color: "#24303a"
-                                border.width: 1
-                                border.color: borderSoft
-
-                                Rectangle {
-                                    width: Math.max(10, (parent.width - 2) * Math.max(0, Math.min(1, liveProcessSummaryModel.progress || 0)))
-                                    height: parent.height - 2
-                                    x: 1
-                                    y: 1
-                                    radius: 4
-                                    color: evolutionStatusColor(liveProcessSummaryModel.status || "idle")
-                                    visible: (liveProcessSummaryModel.progress || 0) > 0
-                                }
-                            }
-
-                            Label { width: liveDockCol.width; text: "Objetivo: " + (liveProcessSummaryModel.goal_title || "sin objetivo") + (liveProcessSummaryModel.project_title ? " | Proyecto: " + liveProcessSummaryModel.project_title : ""); color: textPrimary; wrapMode: Label.WordWrap; font.pixelSize: 12; font.family: "Segoe UI" }
-                            Label { width: liveDockCol.width; text: "Paso actual: " + (liveProcessSummaryModel.current_step || "sin actividad") + " | Falta: " + pctLabel(liveProcessSummaryModel.remaining_pct) + "%"; color: textSecondary; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
-                            Label { width: liveDockCol.width; visible: Boolean(liveProcessSummaryModel.pending_summary); text: "Pendiente: " + (liveProcessSummaryModel.pending_summary || ""); color: textSecondary; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
-                            Label { width: liveDockCol.width; visible: Boolean(liveProcessSummaryModel.thread_title) || Boolean(liveProcessSummaryModel.thread_key); text: "Hilo activo: " + (liveProcessSummaryModel.thread_title || liveProcessSummaryModel.thread_key || "sin hilo"); color: textSecondary; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
-                            Label { width: liveDockCol.width; visible: Boolean(liveProcessSummaryModel.blocker); text: "Bloqueo: " + (liveProcessSummaryModel.blocker || ""); color: "#ffd8b4"; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
-                            Label { width: liveDockCol.width; visible: Boolean(liveProcessSummaryModel.human_help); text: "Ayuda humana: " + (liveProcessSummaryModel.human_help || ""); color: textSecondary; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
-                            Label { width: liveDockCol.width; text: "Ultimo experimento o evaluacion: " + (liveProcessSummaryModel.latest_experiment || "Sin evaluaciones recientes."); color: textSecondary; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
-
-                            Rectangle {
-                                visible: Boolean(autonomyActivityModel.visible)
-                                width: liveDockCol.width
-                                radius: 14
-                                color: "#17212a"
-                                border.width: 1
-                                border.color: evolutionStatusColor(autonomyActivityModel.status || "idle")
-                                implicitHeight: liveActivityCol.implicitHeight + 16
-
-                                Column {
-                                    id: liveActivityCol
-                                    anchors.fill: parent
-                                    anchors.margins: 10
-                                    spacing: 6
-
-                                    Label { text: autonomyActivityModel.title || "Actividad autonoma"; color: textPrimary; font.pixelSize: 14; font.family: "Segoe UI" }
-                                    Label { width: parent.width; text: autonomyActivityModel.detail || "Sin detalle."; color: textSecondary; wrapMode: Label.WordWrap; font.pixelSize: 12; font.family: "Segoe UI" }
-                                    Label { visible: Boolean(autonomyActivityModel.next_step); width: parent.width; text: "Siguiente paso: " + (autonomyActivityModel.next_step || ""); color: textPrimary; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
-                                    Label { visible: Boolean(autonomyActivityModel.learning_note); width: parent.width; text: "Aprendizaje: " + (autonomyActivityModel.learning_note || ""); color: textSecondary; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
-                                    Label { visible: Boolean(autonomyActivityModel.human_help); width: parent.width; text: "Ayuda humana: " + (autonomyActivityModel.human_help || ""); color: textSecondary; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
-                                }
-                            }
-
-                            Rectangle {
-                                visible: assistantGuidanceModeValue !== "idle" || assistantActionButtonsModel.length > 0
-                                width: liveDockCol.width
-                                radius: 14
-                                color: "#17212a"
-                                border.width: 1
-                                border.color: assistantGuidanceModeValue === "need_approval" ? "#d9b15f" : (assistantGuidanceModeValue === "need_codex_fix" ? "#cf7e7e" : "#315c6e")
-                                implicitHeight: liveGuidanceCol.implicitHeight + 16
-
-                                Column {
-                                    id: liveGuidanceCol
-                                    anchors.fill: parent
-                                    anchors.margins: 10
-                                    spacing: 6
-                                    Label { text: "Siguiente gesto sugerido"; color: textPrimary; font.pixelSize: 14; font.family: "Segoe UI" }
-                                    Label { width: parent.width; text: assistantGuidanceTextValue; color: textSecondary; wrapMode: Label.WordWrap; font.pixelSize: 12; font.family: "Segoe UI" }
-                                    Flow {
-                                        width: parent.width
-                                        spacing: 8
-                                        Repeater {
-                                            model: assistantActionButtonsModel
-                                            delegate: AppButton {
-                                                text: modelData.label
-                                                accent: index === 0
-                                                onClicked: if (controlCenterViewModel) controlCenterViewModel.applySuggestedAction(modelData.action)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            Column {
+                                active: liveDockExpanded
                                 visible: liveDockExpanded
-                                width: liveDockCol.width
-                                spacing: 10
-
-                                Label { text: "Sesiones de asistentes"; color: textPrimary; font.pixelSize: 14; font.family: "Segoe UI" }
-                                Repeater {
-                                    model: assistantSessionCardsModel
-                                    delegate: Rectangle {
-                                        width: liveDockCol.width
-                                        radius: 12
-                                        color: "#1b252d"
-                                        border.width: 1
-                                        border.color: (modelData.coherence_flags && modelData.coherence_flags.length > 0) ? "#cf7e7e" : borderSoft
-                                        implicitHeight: sessionCardCol.implicitHeight + 16
-
-                                        Column {
-                                            id: sessionCardCol
-                                            anchors.fill: parent
-                                            anchors.margins: 10
-                                            spacing: 4
-                                            Label { width: parent.width; text: modelData.title + " | " + (modelData.status || "n/d") + " | lane " + (modelData.lane || "n/d") + " | " + pctLabel(modelData.progress_pct) + "%"; color: textPrimary; font.pixelSize: 12; font.family: "Segoe UI"; wrapMode: Label.WordWrap }
-                                            Label { visible: Boolean(modelData.current_step); width: parent.width; text: "Paso actual: " + (modelData.current_step || ""); color: textSecondary; font.pixelSize: 11; font.family: "Segoe UI"; wrapMode: Label.WordWrap }
-                                            Label { visible: Boolean(modelData.thread_title) || Boolean(modelData.thread_key); width: parent.width; text: "Hilo: " + (modelData.thread_title || modelData.thread_key || "sin hilo"); color: textSecondary; font.pixelSize: 11; font.family: "Segoe UI"; wrapMode: Label.WordWrap }
-                                            Label { visible: Boolean(modelData.pending_summary); width: parent.width; text: "Pendiente: " + (modelData.pending_summary || ""); color: textSecondary; font.pixelSize: 11; font.family: "Segoe UI"; wrapMode: Label.WordWrap }
-                                            Label { visible: Boolean(modelData.blocker); width: parent.width; text: "Bloqueo: " + (modelData.blocker || ""); color: "#ffd8b4"; font.pixelSize: 11; font.family: "Segoe UI"; wrapMode: Label.WordWrap }
-                                            Label { visible: modelData.coherence_flags && modelData.coherence_flags.length > 0; width: parent.width; text: "Coherencia: " + modelData.coherence_flags.join(" | "); color: "#ffd8b4"; font.pixelSize: 10; font.family: "Segoe UI"; wrapMode: Label.WordWrap }
-                                        }
-                                    }
-                                }
-
-                                Label { text: "Trabajo vivo"; color: textPrimary; font.pixelSize: 14; font.family: "Segoe UI" }
-                                Repeater {
-                                    model: liveWorkItemsModel
-                                    delegate: Rectangle {
-                                        width: liveDockCol.width
-                                        radius: 12
-                                        color: "#1b252d"
-                                        border.width: 1
-                                        border.color: evolutionStatusColor(modelData.status || "idle")
-                                        implicitHeight: liveWorkCol.implicitHeight + 16
-
-                                        Column {
-                                            id: liveWorkCol
-                                            anchors.fill: parent
-                                            anchors.margins: 10
-                                            spacing: 4
-                                            Label { width: parent.width; text: modelData.assistant_title + " | " + modelData.stage + " | " + pctLabel(modelData.progress_pct) + "%"; color: textPrimary; font.pixelSize: 12; font.family: "Segoe UI"; wrapMode: Label.WordWrap }
-                                            Rectangle {
-                                                width: parent.width
-                                                height: 8
-                                                radius: 4
-                                                color: "#24303a"
-                                                border.width: 1
-                                                border.color: borderSoft
-                                                Rectangle {
-                                                    width: Math.max(8, (parent.width - 2) * Math.max(0, Math.min(1, (modelData.progress || 0))))
-                                                    height: parent.height - 2
-                                                    x: 1
-                                                    y: 1
-                                                    radius: 3
-                                                    color: evolutionStatusColor(modelData.status || "idle")
-                                                }
-                                            }
-                                            Label { width: parent.width; text: modelData.title; color: textSecondary; font.pixelSize: 11; font.family: "Segoe UI"; wrapMode: Label.WordWrap }
-                                            Label { width: parent.width; visible: Boolean(modelData.current_step); text: "Paso: " + (modelData.current_step || ""); color: textSecondary; font.pixelSize: 11; font.family: "Segoe UI"; wrapMode: Label.WordWrap }
-                                            Label { width: parent.width; visible: Boolean(modelData.pending_summary); text: "Pendiente: " + (modelData.pending_summary || ""); color: textSecondary; font.pixelSize: 10; font.family: "Segoe UI"; wrapMode: Label.WordWrap }
-                                            Label { width: parent.width; visible: Boolean(modelData.blocker); text: "Bloqueo: " + (modelData.blocker || ""); color: "#ffd8b4"; font.pixelSize: 10; font.family: "Segoe UI"; wrapMode: Label.WordWrap }
-                                            Label { width: parent.width; text: modelData.detail; color: textSecondary; font.pixelSize: 10; font.family: "Segoe UI"; wrapMode: Label.WordWrap }
-                                        }
-                                    }
-                                }
-
-                                Label { text: "Timeline"; color: textPrimary; font.pixelSize: 14; font.family: "Segoe UI" }
-                                Repeater {
-                                    model: autonomyTimelineModel
-                                    delegate: Label {
-                                        width: liveDockCol.width
-                                        text: (modelData.assistant_title || "IABV") + ": " + modelData.title + " | " + (modelData.detail || "sin detalle")
-                                        color: textSecondary
-                                        font.pixelSize: 10
-                                        font.family: "Segoe UI"
-                                        wrapMode: Label.WordWrap
-                                    }
-                                }
-                            }
-
-                            Flow {
-                                width: liveDockCol.width
-                                spacing: 8
-                                visible: Boolean(liveProcessSummaryModel.task_id)
-                                AppButton { text: "Vas bien"; onClicked: if (captureStudioViewModel) captureStudioViewModel.recordAssistantReplayFeedback(liveProcessSummaryModel.task_id || "", "vas bien") }
-                                AppButton { text: "Corrige ruta"; onClicked: if (captureStudioViewModel) captureStudioViewModel.recordAssistantReplayFeedback(liveProcessSummaryModel.task_id || "", "corrige ruta") }
-                                AppButton { text: "No uses este chat"; onClicked: if (captureStudioViewModel) captureStudioViewModel.recordAssistantReplayFeedback(liveProcessSummaryModel.task_id || "", "no uses este chat") }
-                                AppButton { text: "Aprendizaje util"; onClicked: if (captureStudioViewModel) captureStudioViewModel.recordAssistantReplayFeedback(liveProcessSummaryModel.task_id || "", "aprendizaje util") }
-                                AppButton { text: "Aprendizaje incorrecto"; onClicked: if (captureStudioViewModel) captureStudioViewModel.recordAssistantReplayFeedback(liveProcessSummaryModel.task_id || "", "aprendizaje incorrecto") }
+                                sourceComponent: liveDockDetailsComponent
                             }
                         }
                     }
                 }
             }
 
-            Column {
+            Loader {
                 width: parent.width
-                spacing: 16
+                active: advancedVisible
                 visible: advancedVisible
+                sourceComponent: advancedPanelComponent
+            }
+
+            Component {
+                id: chatToolbarComponent
+
+                ChatToolbar {
+                    id: chatToolbar
+                    width: chatCol.width
+                    toolCount: providerCardsModel.length
+                    activeProvider: routingModeLabelValue.toLowerCase().indexOf("chatgpt") >= 0 ? "chatgpt" : (routingModeLabelValue.toLowerCase().indexOf("claude") >= 0 ? "claude" : (routingModeLabelValue.toLowerCase().indexOf("devin") >= 0 ? "devin" : (routingModeLabelValue.toLowerCase().indexOf("ollama") >= 0 ? "ollama" : "auto")))
+                    codeMode: false
+                    canAttach: true
+                    attachedCount: attachedFileCountValue
+                    systemStatus: liveStatusValue === "idle" ? "idle" : (liveStatusValue === "error" ? "error" : "processing")
+                    onAttachClicked: {
+                        attachmentDialog.open()
+                    }
+                    onClearAttachments: {
+                        if (controlCenterViewModel) controlCenterViewModel.clearAttachedFiles()
+                    }
+                    onCodeModeToggled: console.log("Code mode toggled")
+                    onSearchClicked: console.log("Search clicked")
+                    onProviderSwitchClicked: {
+                        if (controlCenterViewModel) controlCenterViewModel.setRole("auto")
+                    }
+                    onKeyInputRequested: {
+                        if (controlCenterViewModel) controlCenterViewModel.sendChat("ingresar clave")
+                    }
+                    onSearchQueryChanged: {
+                        if (controlCenterViewModel) controlCenterViewModel.searchChatHistory(chatToolbar.searchQuery)
+                    }
+                }
+            }
+
+            Component {
+                id: contextualSuggestionsComponent
+
+                ContextualSuggestionsPanel {
+                    width: chatCol.width
+                    suggestions: contextualSuggestionsModel
+                    onSuggestionClicked: function(action, text) {
+                        if (controlCenterViewModel) controlCenterViewModel.handleSuggestionAction(action, text)
+                    }
+                    onDismissed: suggestionsPanelLoader.visible = false
+                }
+            }
+
+            Component {
+                id: liveDockDetailsComponent
+
+                Column {
+                    width: liveDockDetailsLoader.width
+                    spacing: 10
+
+                    Label {
+                        width: parent.width
+                        visible: Boolean(autonomyDockLastSummaryValue)
+                        text: autonomyDockLastSummaryValue
+                        color: autonomyDockLastResultValue === "failed" ? "#cf7e7e" : (autonomyDockLastResultValue === "changed" ? "#8ccf8b" : textSecondary)
+                        wrapMode: Label.WordWrap
+                        font.pixelSize: 11
+                        font.family: "Segoe UI"
+                    }
+                    Label {
+                        width: parent.width
+                        text: liveProcessSummaryModel.summary || "Todavia no hay trabajo autonomo consolidado."
+                        color: textSecondary
+                        wrapMode: Label.WordWrap
+                        font.pixelSize: 12
+                        font.family: "Segoe UI"
+                    }
+                    Flow {
+                        width: parent.width
+                        spacing: 10
+                        StatusPill {
+                            label: "Etapa: " + (liveProcessSummaryModel.stage || "sin actividad")
+                            accentColor: evolutionStatusColor(liveProcessSummaryModel.status || "idle")
+                            pulsing: (liveProcessSummaryModel.status || "") === "awaiting_response"
+                            minPillWidth: 170
+                            maxPillWidth: 340
+                        }
+                        StatusPill {
+                            label: "Progreso: " + pctLabel(liveProcessSummaryModel.progress_pct) + "%"
+                            accentColor: "#3e7b63"
+                            minPillWidth: 150
+                            maxPillWidth: 220
+                        }
+                    }
+                    Label { width: parent.width; text: "Objetivo: " + (liveProcessSummaryModel.goal_title || "sin objetivo"); color: textPrimary; wrapMode: Label.WordWrap; font.pixelSize: 12; font.family: "Segoe UI" }
+                    Label { width: parent.width; text: "Paso actual: " + (liveProcessSummaryModel.current_step || "sin actividad"); color: textSecondary; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
+                    Label { width: parent.width; text: "Actividad autonoma"; color: textPrimary; font.pixelSize: 14; font.family: "Segoe UI" }
+                    Label { width: parent.width; text: autonomyActivityModel.detail || "Sin actividad visible."; color: textSecondary; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
+                    Label { width: parent.width; visible: Boolean(autonomyActivityModel.next_step); text: "Siguiente paso: " + (autonomyActivityModel.next_step || ""); color: textPrimary; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
+                    Label { width: parent.width; visible: Boolean(autonomyActivityModel.learning_note); text: "Aprendizaje: " + (autonomyActivityModel.learning_note || ""); color: textSecondary; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
+                    Label { width: parent.width; text: "Trabajo vivo y Timeline se cargan bajo demanda para evitar congelamientos del usuario."; color: textSecondary; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
+                    Flow {
+                        width: parent.width
+                        spacing: 8
+                        visible: Boolean(liveProcessSummaryModel.task_id)
+                        AppButton { text: "Vas bien"; onClicked: if (captureStudioViewModel) captureStudioViewModel.recordAssistantReplayFeedback(liveProcessSummaryModel.task_id || "", "vas bien") }
+                        AppButton { text: "Corrige ruta"; onClicked: if (captureStudioViewModel) captureStudioViewModel.recordAssistantReplayFeedback(liveProcessSummaryModel.task_id || "", "corrige ruta") }
+                        AppButton { text: "No uses este chat"; onClicked: if (captureStudioViewModel) captureStudioViewModel.recordAssistantReplayFeedback(liveProcessSummaryModel.task_id || "", "no uses este chat") }
+                        AppButton { text: "Aprendizaje util"; onClicked: if (captureStudioViewModel) captureStudioViewModel.recordAssistantReplayFeedback(liveProcessSummaryModel.task_id || "", "aprendizaje util") }
+                        AppButton { text: "Aprendizaje incorrecto"; onClicked: if (captureStudioViewModel) captureStudioViewModel.recordAssistantReplayFeedback(liveProcessSummaryModel.task_id || "", "aprendizaje incorrecto") }
+                    }
+                }
+            }
+
+            Component {
+                id: advancedPanelComponent
+
+                Column {
+                width: root.width
+                spacing: 16
 
                 GlassPanel {
                     width: parent.width
@@ -812,7 +930,7 @@ Item {
                         ToolHealthPanel {
                             id: toolHealthPanel
                             width: parent.width
-                            providers: controlCenterViewModel ? controlCenterViewModel.providerCards : []
+                            providers: providerCardsModel
                             onRotateToolRequested: {
                                 if (controlCenterViewModel) controlCenterViewModel.rotateToolRequested()
                             }
@@ -928,6 +1046,7 @@ Item {
                         }
                     }
                 }
+            }
             }
         }
     }

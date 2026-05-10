@@ -67,6 +67,7 @@ class ControlCenterViewModel(QObject):
     _AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB = 2500.0
     _AUTONOMY_DOCK_SKIP_TRACE_COOLDOWN_S = 60.0
     _EXTERNAL_FOLLOWUP_TIMEOUT_MS = 120_000
+    _EXTERNAL_CONSULTATION_VISIBLE_TIMEOUT_MS = 75_000
     _LOCAL_CHAT_TIMEOUT_MS = 60_000
     _EXTERNAL_CONTEXT_ITEM_LIMIT = 700
     _EXTERNAL_CONTEXT_PACK_LIMIT = 12000
@@ -4262,6 +4263,14 @@ class ControlCenterViewModel(QObject):
         self._visible_work_timeout_generation = int(getattr(self, '_visible_work_timeout_generation', 0)) + 1
         generation = self._visible_work_timeout_generation
         delay_ms = int(timeout_ms or self._LOCAL_CHAT_TIMEOUT_MS)
+        if str(reason or '').startswith('external_consultation:'):
+            self._trace_external_followup(
+                'external_consultation_visible_timeout_scheduled',
+                reason=reason,
+                timeout_ms=delay_ms,
+                generation=generation,
+                interaction_id=getattr(self, '_active_interaction_id', '') or '',
+            )
 
         def _expire() -> None:
             self._expire_visible_work_if_stale(generation, reason=reason)
@@ -4278,25 +4287,87 @@ class ControlCenterViewModel(QObject):
             return
         if not bool(getattr(self, '_working', False)):
             return
+        reason_text = str(reason or '')
+        is_external = reason_text.startswith('external_consultation:')
+        assistant_kind = reason_text.split(':', 1)[1].strip() if is_external and ':' in reason_text else ''
+        if is_external:
+            try:
+                provider = self._assistant_display_name(assistant_kind)
+            except Exception:
+                provider = assistant_kind or 'asistente externo'
+            outcome = 'blocked'
+            user_text = (
+                f'La consulta externa con {provider} no devolvio un resultado util dentro del tiempo visible. '
+                'Cierro "Consultando..." como bloqueado para que puedas seguir. '
+                'Queda registrada la causa y puedo continuar con la ruta local/offline disponible sin depender de creditos o internet.'
+            )
+            meta = f'Timeout externo visible: {provider}.'
+            self._trace_external_followup(
+                'external_consultation_visible_timeout',
+                reason=reason_text,
+                assistant_kind=assistant_kind,
+                provider=provider,
+                generation=generation,
+                interaction_id=getattr(self, '_active_interaction_id', '') or '',
+            )
+            self._trace_external_followup(
+                'external_consultation_blocked',
+                reason='visible_timeout',
+                assistant_kind=assistant_kind,
+                provider=provider,
+                fallback_route='local_or_ollama',
+                interaction_id=getattr(self, '_active_interaction_id', '') or '',
+            )
+        else:
+            provider = 'local'
+            outcome = 'failed'
+            user_text = (
+                'La respuesta interna se paso del tiempo limite visible. Cierro el estado Consultando para que puedas seguir interactuando; '
+                'si llega una respuesta tardia quedara como evidencia secundaria, pero no la doy por confirmada.'
+            )
+            meta = f'Timeout visible: {reason_text}.'
         self._working = False
         self._interaction_has_pending_followup = False
+        self._interaction_pending_followup_outcome = ''
+        self._interaction_pending_followup_provider = ''
         self._set_live_status('idle')
-        self._busy_label = 'La consulta se pauso por timeout visible; no voy a dejar la UI en Consultando.'
+        self._busy_label = (
+            'Consulta externa bloqueada por timeout visible; la interfaz vuelve a quedar disponible.'
+            if is_external
+            else 'La consulta se pauso por timeout visible; no voy a dejar la UI en Consultando.'
+        )
         self._clear_autonomy_activity_override()
+        if is_external:
+            try:
+                self._set_autonomy_activity_override(
+                    visible=True,
+                    title='Consulta externa bloqueada',
+                    status='blocked',
+                    stage='timeout visible',
+                    progress=1.0,
+                    detail=user_text,
+                    tool=provider,
+                    next_step='Seguir local/offline o reintentar una via externa con evidencia nueva.',
+                    human_help='Si ves una verificacion o respuesta en el navegador, puedes mostrarla o ingerirla manualmente.',
+                    learning_note='El timeout queda registrado para no dejar la UI en consultando ni fingir respuesta externa.',
+                    mode='external',
+                )
+            except Exception:
+                pass
         self._append_message(
             'assistant',
             'IABV',
-            'La respuesta interna se paso del tiempo limite visible. Cierro el estado Consultando para que puedas seguir interactuando; si llega una respuesta tardia quedara como evidencia secundaria, pero no la doy por confirmada.',
-            f'Timeout visible: {reason}.',
+            user_text,
+            meta,
             evidence_tag='observed',
-            reasoning_path='visible_work_timeout',
+            reasoning_path='external_visible_timeout' if is_external else 'visible_work_timeout',
         )
         self._record_chat_audit(
-            reasoning_path='visible_work_timeout',
+            reasoning_path='external_visible_timeout' if is_external else 'visible_work_timeout',
             user_goal=self._last_user_goal or '',
-            error_detail=f'timeout:{reason}',
+            error_detail=f'timeout:{reason_text}',
         )
-        self._resolve_active_interaction(outcome='failed', provider='local')
+        self._resolve_active_interaction(outcome=outcome, provider=provider)
         self.chatChanged.emit()
 
     def _latest_external_consultation_audit_summary(self) -> dict[str, Any]:
@@ -8588,6 +8659,7 @@ class ControlCenterViewModel(QObject):
     def _run_external_consultation(self, assistant_kind: str, *, announce: bool = True) -> bool:
         assistant_title = self._assistant_display_name(assistant_kind)
         self._working = True
+        self._working_since = time.time()
         self._busy_label = f'Voy a preparar una consulta con {assistant_title}.'
         self._latest_response_text = (
             f'Consulta externa aceptada para {assistant_title}. '
@@ -8608,6 +8680,14 @@ class ControlCenterViewModel(QObject):
         )
         if announce:
             self._append_message('assistant', 'IABV', self._latest_response_text, self._latest_response_meta)
+        self._schedule_visible_work_timeout(
+            reason=f'external_consultation:{assistant_kind}',
+            timeout_ms=int(getattr(
+                self,
+                '_EXTERNAL_CONSULTATION_VISIBLE_TIMEOUT_MS',
+                ControlCenterViewModel._EXTERNAL_CONSULTATION_VISIBLE_TIMEOUT_MS,
+            )),
+        )
         self.dataChanged.emit()
 
         def worker() -> None:

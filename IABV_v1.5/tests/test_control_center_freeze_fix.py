@@ -507,6 +507,15 @@ def test_qml_autonomy_dock_timer_pauses_while_chat_working() -> None:
     assert 'controlCenterViewModel.refreshAutonomyDock()' in qml
 
 
+def test_qml_keeps_autonomy_activity_visible_when_dock_collapsed() -> None:
+    """The active external-consultation status is lightweight and must remain visible."""
+    qml = Path('src/iabv_v15/ui/qml/pages/ControlCenterPage.qml').read_text(encoding='utf-8')
+
+    assert 'property bool liveDockExpanded: false' in qml
+    assert 'property var autonomyActivityModel: controlCenterViewModel ? controlCenterViewModel.autonomyActivity : ({})' in qml
+    assert 'property var autonomyActivityModel: liveDockHydrated && controlCenterViewModel' not in qml
+
+
 def test_qml_exposes_external_evidence_panel() -> None:
     """Blocked external consultations must have a visible evidence panel."""
     qml = Path('src/iabv_v15/ui/qml/pages/ControlCenterPage.qml').read_text(encoding='utf-8')
@@ -1362,6 +1371,149 @@ def test_release_visible_query_wait_clears_watchdog_query_pending() -> None:
     assert dummy._ui_heartbeat_watchdog.query_values == [False]
     assert dummy._ui_heartbeat_watchdog.active_values == [None]
     assert dummy._live_status == 'idle'
+
+
+def test_external_consultation_worker_arms_visible_timeout(monkeypatch: Any) -> None:
+    """An external worker that never returns must not leave the chat in Consultando."""
+    import iabv_v15.ui.viewmodels.control_center_viewmodel as ccvm_module
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class Emitter:
+        def __init__(self) -> None:
+            self.count = 0
+
+        def emit(self, *_args: Any) -> None:
+            self.count += 1
+
+    started_threads: list[bool] = []
+
+    class FakeThread:
+        def __init__(self, *, target: Any, daemon: bool = False) -> None:
+            self.target = target
+            self.daemon = daemon
+
+        def start(self) -> None:
+            started_threads.append(self.daemon)
+
+    class DummyViewModel:
+        _EXTERNAL_CONSULTATION_VISIBLE_TIMEOUT_MS = 1234
+
+        def __init__(self) -> None:
+            self._working = False
+            self._busy_label = ''
+            self._latest_response_text = ''
+            self._latest_response_meta = ''
+            self.activity: dict[str, Any] = {}
+            self.messages: list[tuple[str, str, str, str]] = []
+            self.scheduled: list[tuple[str, int]] = []
+            self.dataChanged = Emitter()
+
+        def _assistant_display_name(self, assistant_kind: str) -> str:
+            return {'chatgpt': 'ChatGPT web asistido'}.get(assistant_kind, assistant_kind)
+
+        def _set_autonomy_activity_override(self, **kwargs: Any) -> None:
+            self.activity = kwargs
+
+        def _append_message(self, role: str, speaker: str, text: str, meta: str, **_: Any) -> None:
+            self.messages.append((role, speaker, text, meta))
+
+        def _schedule_visible_work_timeout(self, *, reason: str, timeout_ms: int | None = None) -> None:
+            self.scheduled.append((reason, int(timeout_ms or 0)))
+
+    monkeypatch.setattr(ccvm_module.threading, 'Thread', FakeThread)
+    dummy = DummyViewModel()
+
+    ok = ControlCenterViewModel._run_external_consultation(  # type: ignore[arg-type]
+        dummy,
+        'chatgpt',
+        announce=True,
+    )
+
+    assert ok is True
+    assert dummy._working is True
+    assert dummy.scheduled == [('external_consultation:chatgpt', 1234)]
+    assert dummy.activity['status'] == 'active'
+    assert dummy.messages
+    assert dummy.dataChanged.count == 1
+    assert started_threads == [True]
+
+
+def test_external_visible_timeout_blocks_interaction_and_offers_local_fallback() -> None:
+    """If ChatGPT hangs, IABV closes the episode and exposes a local/offline path."""
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+
+    class Emitter:
+        def __init__(self) -> None:
+            self.count = 0
+
+        def emit(self) -> None:
+            self.count += 1
+
+    class DummyViewModel:
+        def __init__(self) -> None:
+            self._visible_work_timeout_generation = 9
+            self._working = True
+            self._interaction_has_pending_followup = True
+            self._interaction_pending_followup_outcome = 'awaiting_external_response'
+            self._interaction_pending_followup_provider = 'ChatGPT web asistido'
+            self._active_interaction_id = 'chat-timeout'
+            self._last_user_goal = 'haz una consulta a chatgpt'
+            self._live_status = 'processing'
+            self._busy_label = ''
+            self.traces: list[tuple[str, dict[str, Any]]] = []
+            self.messages: list[tuple[str, str, str, str]] = []
+            self.audit: list[dict[str, Any]] = []
+            self.resolved: list[tuple[str, str]] = []
+            self.activity: dict[str, Any] = {}
+            self.chatChanged = Emitter()
+
+        def _assistant_display_name(self, assistant_kind: str) -> str:
+            return {'chatgpt': 'ChatGPT web asistido'}.get(assistant_kind, assistant_kind)
+
+        def _trace_external_followup(self, kind: str, **data: Any) -> None:
+            self.traces.append((kind, data))
+
+        def _set_live_status(self, status: str) -> None:
+            self._live_status = status
+
+        def _clear_autonomy_activity_override(self) -> None:
+            self.activity = {}
+
+        def _set_autonomy_activity_override(self, **kwargs: Any) -> None:
+            self.activity = kwargs
+
+        def _append_message(self, role: str, speaker: str, text: str, meta: str, **_: Any) -> None:
+            self.messages.append((role, speaker, text, meta))
+
+        def _record_chat_audit(self, **kwargs: Any) -> None:
+            self.audit.append(kwargs)
+
+        def _resolve_active_interaction(self, *, outcome: str = 'resolved', provider: str = '') -> None:
+            self.resolved.append((outcome, provider))
+
+    dummy = DummyViewModel()
+
+    ControlCenterViewModel._expire_visible_work_if_stale(  # type: ignore[arg-type]
+        dummy,
+        generation=9,
+        reason='external_consultation:chatgpt',
+    )
+
+    assert dummy._working is False
+    assert dummy._interaction_has_pending_followup is False
+    assert dummy._interaction_pending_followup_outcome == ''
+    assert dummy._interaction_pending_followup_provider == ''
+    assert dummy._live_status == 'idle'
+    assert dummy.activity['status'] == 'blocked'
+    assert dummy.resolved == [('blocked', 'ChatGPT web asistido')]
+    assert dummy.messages
+    assert 'local/offline' in dummy.messages[0][2]
+    assert dummy.audit[-1]['reasoning_path'] == 'external_visible_timeout'
+    assert dummy.chatChanged.count == 1
+    assert [kind for kind, _ in dummy.traces] == [
+        'external_consultation_visible_timeout',
+        'external_consultation_blocked',
+    ]
 
 
 def test_non_final_external_outcome_releases_visible_wait_and_arms_timeout() -> None:
