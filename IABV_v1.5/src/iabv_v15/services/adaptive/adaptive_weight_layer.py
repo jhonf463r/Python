@@ -1,16 +1,36 @@
 from __future__ import annotations
 
+import json
+import logging
+import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from iabv_v15.domain.models import ExperimentRun
+
+_logger = logging.getLogger(__name__)
 
 
 class AdaptiveWeightLayer:
     """Sugiere preferencias adaptativas a partir de corridas historicas reales."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, persistence_path: str | None = None) -> None:
         self._metacognitive_adjustments: dict[str, dict[str, Any]] = {}
+        _rel = Path('data') / 'evolution' / 'adaptive_weights' / 'metacognitive_adjustments.json'
+        if persistence_path is not None:
+            self._weights_path: Path | None = Path(persistence_path)
+        else:
+            workspace = (
+                os.environ.get('IABV_WORKSPACE')
+                or os.environ.get('IABV_WORKSPACE_ROOT')
+                or ''
+            )
+            if workspace:
+                self._weights_path = Path(workspace) / _rel
+            else:
+                self._weights_path = Path.cwd() / _rel
+        self._load_persisted()
 
     def apply_metacognitive_adjustment(
         self,
@@ -33,6 +53,7 @@ class AdaptiveWeightLayer:
             'reason': reason,
             'applied_at': datetime.now(timezone.utc).isoformat(),
         }
+        self._persist()
         return self._metacognitive_adjustments[key]
 
     def get_metacognitive_adjustment(self, route: str, assistant_kind: str) -> float:
@@ -253,3 +274,31 @@ class AdaptiveWeightLayer:
         entry = self._metacognitive_adjustments.get(key)
         return float(entry['adjustment']) if entry else 0.0
         return [value for value, _ in ordered[:3]]
+
+    # ── Persistence ────────────────────────────────────────────
+
+    def _load_persisted(self) -> None:
+        if self._weights_path is None or not self._weights_path.exists():
+            return
+        try:
+            raw = self._weights_path.read_text(encoding='utf-8')
+            data = json.loads(raw)
+            if isinstance(data, dict):
+                version = data.pop('_version', None)
+                for k, v in data.items():
+                    if isinstance(v, dict) and 'adjustment' in v:
+                        self._metacognitive_adjustments[k] = v
+        except Exception:
+            _logger.debug('metacognitive_adjustments: corrupt file, starting empty')
+
+    def _persist(self) -> None:
+        if self._weights_path is None:
+            return
+        try:
+            self._weights_path.parent.mkdir(parents=True, exist_ok=True)
+            payload = {**self._metacognitive_adjustments, '_version': 1}
+            tmp = self._weights_path.with_suffix('.tmp')
+            tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
+            tmp.replace(self._weights_path)
+        except Exception:
+            _logger.warning('metacognitive_adjustments: persistence failed', exc_info=True)

@@ -184,3 +184,179 @@ def test_live_audit_supervisor_marks_external_capture_block_as_blocked_not_succe
         assert 'external_route_blocked' in [item['kind'] for item in live_audit['findings']]
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+# ---- GAP 1: correlation keys in live_audit runs ----
+
+
+def test_run_lab_for_tool_propagates_correlation_keys() -> None:
+    """ExperimentRuns created by _run_lab_for_tool must carry trace_id,
+    comparison_scope_key and non-empty source_trace_ids."""
+    root = _workspace('live_audit_correlation_tool')
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
+        from iabv_v15.infra.persistence.storage import ArtifactStorage
+        from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
+        from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
+        from iabv_v15.services.lab.experiment_lab import ExperimentLab
+        from iabv_v15.services.adaptive.adaptive_weight_layer import AdaptiveWeightLayer
+        from iabv_v15.services.lab.strategy_selector import StrategySelector
+
+        db = AppDatabase(str(root / 'app.sqlite'))
+        storage = ArtifactStorage(str(root / 'evolution'))
+        lab_repo = ExperimentLabRepository(db, storage)
+        lab = ExperimentLab(
+            repository=lab_repo,
+            registry=AlgorithmBenchmarkRegistry(),
+            scoring_engine=DecisionScoringEngine(),
+            strategy_selector=StrategySelector(adaptive_weight_layer=AdaptiveWeightLayer()),
+        )
+        repository = ToolRecordRepository(db, ArtifactStorage(str(root / 'tools')))
+        supervisor = LiveAuditSupervisor(tool_record_repository=repository, experiment_lab=lab)
+
+        card = ToolCard(
+            tool_id='chatgpt_web_assisted',
+            title='ChatGPT web asistido',
+            tool_type=ToolType.LLM_WEB_UI,
+            adapter_key='external_assistant',
+        )
+        task = ToolTask(
+            tool_id='chatgpt_web_assisted',
+            title='Consultar ChatGPT',
+            objective='Revisar estado de red',
+            requested_by_role=TaskRole.TOOL_USE,
+            site_id='wplay',
+        )
+        result = ToolResult(
+            task_id=task.task_id,
+            tool_id='chatgpt_web_assisted',
+            tool_type=ToolType.LLM_WEB_UI,
+            success=True,
+            output_text='Red disponible y estable.',
+            execution_state=ExecutionState(state='completed', detail='ok'),
+        )
+        supervisor.audit_tool_result(card=card, task=task, result=result)
+        from iabv_v15.domain.models import ExperimentDomain
+        runs = lab_repo.list_runs(domain=ExperimentDomain.LANGUAGE.value, subject_key='wplay', limit=5)
+        assert len(runs) >= 1
+        latest = runs[-1]
+        assert latest.metadata.get('comparison_scope_key'), 'comparison_scope_key must not be empty'
+        assert latest.metadata.get('trace_id'), 'trace_id must not be empty'
+        assert latest.metadata.get('source_trace_ids'), 'source_trace_ids must not be empty list'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_run_lab_for_teaching_propagates_correlation_keys() -> None:
+    """ExperimentRuns created by _run_lab_for_teaching must carry correlation keys."""
+    root = _workspace('live_audit_correlation_teaching')
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
+        from iabv_v15.infra.persistence.storage import ArtifactStorage
+        from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
+        from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
+        from iabv_v15.services.lab.experiment_lab import ExperimentLab
+        from iabv_v15.services.adaptive.adaptive_weight_layer import AdaptiveWeightLayer
+        from iabv_v15.services.lab.strategy_selector import StrategySelector
+
+        db = AppDatabase(str(root / 'app.sqlite'))
+        storage = ArtifactStorage(str(root / 'evolution'))
+        lab_repo = ExperimentLabRepository(db, storage)
+        lab = ExperimentLab(
+            repository=lab_repo,
+            registry=AlgorithmBenchmarkRegistry(),
+            scoring_engine=DecisionScoringEngine(),
+            strategy_selector=StrategySelector(adaptive_weight_layer=AdaptiveWeightLayer()),
+        )
+        repository = ToolRecordRepository(db, ArtifactStorage(str(root / 'tools')))
+        supervisor = LiveAuditSupervisor(tool_record_repository=repository, experiment_lab=lab)
+
+        episode = InteractionEpisode(
+            objective='Abrir Wplay e iniciar sesion.',
+            mode_used=InteractionChannel.UI,
+            confidence=0.65,
+            tool_id='playwright_browser',
+            tool_type=ToolType.BROWSER,
+            site_id='wplay',
+            metadata={'source': 'teaching_session'},
+            result=InteractionResult(
+                success=True,
+                execution_state=ExecutionState(state='completed', detail='ok'),
+                summary='Login exitoso.',
+                confidence=0.65,
+            ),
+        )
+        learning_packet = {
+            'capture_stats': {'step_count': 5, 'relevant_step_count': 4, 'visible_step_count': 3, 'screenshot_count': 2},
+            'learning_readiness': {'status': 'ready'},
+            'login_learning': {'status': 'ready'},
+            'visual_summary': {'visual_alignment_score': 0.8, 'critical_object_coverage': 0.7, 'critical_objects': ['login_form']},
+            'interaction_confidence': 0.65,
+        }
+        supervisor.audit_teaching_session(
+            site_id='wplay', display_name='Wplay',
+            learning_packet=learning_packet, interaction_episode=episode,
+        )
+        from iabv_v15.domain.models import ExperimentDomain
+        runs = lab_repo.list_runs(domain=ExperimentDomain.OCR.value, subject_key='wplay', limit=5)
+        assert len(runs) >= 1
+        latest = runs[-1]
+        assert latest.metadata.get('comparison_scope_key'), 'comparison_scope_key must not be empty'
+        assert latest.metadata.get('trace_id'), 'trace_id must not be empty'
+        assert latest.metadata.get('source_trace_ids'), 'source_trace_ids must not be empty list'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_backward_compat_no_metadata_in_task() -> None:
+    """When task/result have no special metadata, correlation keys should still be generated."""
+    root = _workspace('live_audit_backward_compat')
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
+        from iabv_v15.infra.persistence.storage import ArtifactStorage
+        from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
+        from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
+        from iabv_v15.services.lab.experiment_lab import ExperimentLab
+        from iabv_v15.services.adaptive.adaptive_weight_layer import AdaptiveWeightLayer
+        from iabv_v15.services.lab.strategy_selector import StrategySelector
+
+        db = AppDatabase(str(root / 'app.sqlite'))
+        storage = ArtifactStorage(str(root / 'evolution'))
+        lab_repo = ExperimentLabRepository(db, storage)
+        lab = ExperimentLab(
+            repository=lab_repo,
+            registry=AlgorithmBenchmarkRegistry(),
+            scoring_engine=DecisionScoringEngine(),
+            strategy_selector=StrategySelector(adaptive_weight_layer=AdaptiveWeightLayer()),
+        )
+        supervisor = LiveAuditSupervisor(experiment_lab=lab)
+
+        task = ToolTask(
+            tool_id='shell_cmd',
+            title='Run command',
+            objective='Check disk usage',
+            requested_by_role=TaskRole.TOOL_USE,
+        )
+        result = ToolResult(
+            task_id=task.task_id,
+            tool_id='shell_cmd',
+            tool_type=ToolType.SHELL,
+            success=True,
+            output_text='Disk: 50% used',
+            execution_state=ExecutionState(state='completed', detail='ok'),
+        )
+        supervisor.audit_tool_result(card=None, task=task, result=result)
+        from iabv_v15.domain.models import ExperimentDomain
+        runs = lab_repo.list_runs(domain=ExperimentDomain.LANGUAGE.value, subject_key='shell_cmd', limit=5)
+        assert len(runs) >= 1
+        latest = runs[-1]
+        assert latest.metadata.get('trace_id'), 'trace_id should be generated from task_id'
+        assert 'live_audit:' in latest.metadata.get('comparison_scope_key', ''), 'comparison_scope_key should have live_audit prefix'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)

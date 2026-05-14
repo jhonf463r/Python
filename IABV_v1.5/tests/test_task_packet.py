@@ -234,6 +234,8 @@ PACKET_KEYS = {
     'objective', 'intent_key', 'route_summary', 'worker_gate_summary',
     'selected_worker', 'evidence_basis', 'governance_flags', 'unresolved',
     'resume_context', 'has_resume_hints', 'account_selection',
+    'tool_selection_summary', 'trace_id', 'comparison_scope_key',
+    'source_trace_ids', 'budget_tier', 'quota_remaining',
 }
 
 
@@ -304,7 +306,9 @@ def test_packet_preserves_evidence_basis_from_dc_metadata() -> None:
     packet = AdaptiveTaskOrchestrator._build_task_packet(
         session=session, decision_context=dc, perception=perception,
     )
-    assert packet['evidence_basis'] == evidence
+    assert packet['evidence_basis']['state'] == 'observed'
+    assert packet['evidence_basis']['evidence_state'] == 'observed'
+    assert packet['evidence_basis']['live_sources'] == ['world_model']
 
 
 def test_packet_evidence_basis_fallback_to_perception_metadata() -> None:
@@ -315,7 +319,8 @@ def test_packet_evidence_basis_fallback_to_perception_metadata() -> None:
     packet = AdaptiveTaskOrchestrator._build_task_packet(
         session=session, decision_context=dc, perception=perception,
     )
-    assert packet['evidence_basis'] == evidence
+    assert packet['evidence_basis']['state'] == 'inferred'
+    assert packet['evidence_basis']['evidence_state'] == 'inferred'
 
 
 def test_packet_evidence_basis_empty_when_missing() -> None:
@@ -325,7 +330,7 @@ def test_packet_evidence_basis_empty_when_missing() -> None:
     packet = AdaptiveTaskOrchestrator._build_task_packet(
         session=session, decision_context=dc, perception=perception,
     )
-    assert packet['evidence_basis'] == {}
+    assert packet['evidence_basis']['evidence_state'] == 'unresolved'
 
 
 def test_packet_preserves_selected_worker_from_gate() -> None:
@@ -343,8 +348,10 @@ def test_packet_preserves_selected_worker_from_gate() -> None:
     packet = AdaptiveTaskOrchestrator._build_task_packet(
         session=session, decision_context=dc, perception=perception,
     )
-    assert packet['selected_worker'] == top
-    assert packet['worker_gate_summary']['top_worker'] == top
+    assert packet['selected_worker']['tool'] == 'chatgpt'
+    assert packet['selected_worker']['browser'] == 'chrome'
+    assert '***@' in packet['selected_worker']['email'], 'email must be masked'
+    assert packet['worker_gate_summary']['top_worker'] == packet['selected_worker']
     assert packet['worker_gate_summary']['ran'] is True
     assert packet['worker_gate_summary']['usable'] is True
     assert packet['worker_gate_summary']['available_count'] == 1
@@ -699,3 +706,102 @@ def test_preflight_backward_compat() -> None:
     assert 'worker_health' in result
     packet = result['task_packet']
     assert set(packet.keys()) == PACKET_KEYS
+
+
+# ─── GAP 3: correlation + privacy in task_packet ─────────────
+
+
+def test_packet_trace_id_never_empty() -> None:
+    """trace_id in task_packet must never be empty."""
+    session = _minimal_session()
+    dc = _minimal_decision_context()
+    perception = _minimal_perception()
+    packet = AdaptiveTaskOrchestrator._build_task_packet(
+        session=session, decision_context=dc, perception=perception,
+    )
+    assert packet['trace_id'], 'trace_id must not be empty'
+
+
+def test_packet_comparison_scope_key_not_empty_with_intent() -> None:
+    """comparison_scope_key must not be empty when intent_key exists."""
+    session = _minimal_session()
+    dc = _minimal_decision_context()
+    perception = _minimal_perception()
+    packet = AdaptiveTaskOrchestrator._build_task_packet(
+        session=session, decision_context=dc, perception=perception,
+    )
+    assert packet['comparison_scope_key'], 'comparison_scope_key must not be empty'
+    assert 'general.test' in packet['comparison_scope_key']
+
+
+def test_packet_source_trace_ids_includes_trace_id() -> None:
+    """source_trace_ids should contain at least the trace_id."""
+    session = _minimal_session()
+    dc = _minimal_decision_context()
+    perception = _minimal_perception()
+    packet = AdaptiveTaskOrchestrator._build_task_packet(
+        session=session, decision_context=dc, perception=perception,
+    )
+    assert packet['trace_id'] in packet['source_trace_ids']
+
+
+def test_packet_sanitizes_email_in_account_selection() -> None:
+    """Raw email must be masked in account_selection for privacy."""
+    session = _minimal_session(metadata={
+        'worker_gate': {
+            'usable': True,
+            'top_worker': {'tool': 'chatgpt', 'email': 'john@example.com'},
+            'available_count': 1,
+            'recommended_account': {'tool': 'chatgpt', 'email': 'john@example.com'},
+            'approved_account': {},
+        },
+    })
+    dc = _minimal_decision_context()
+    perception = _minimal_perception()
+    packet = AdaptiveTaskOrchestrator._build_task_packet(
+        session=session, decision_context=dc, perception=perception,
+    )
+    recommended = packet['account_selection']['recommended_account']
+    assert 'john@example.com' not in str(recommended), 'raw email must be masked'
+    assert '***@' in str(recommended.get('email', '')), 'email should be partially masked'
+
+
+def test_packet_evidence_state_normalized() -> None:
+    """evidence_basis should include evidence_state derived from state field."""
+    evidence = {'state': 'observed', 'live_sources': ['world_model']}
+    dc = _minimal_decision_context(metadata={'evidence_basis': evidence})
+    session = _minimal_session()
+    perception = _minimal_perception()
+    packet = AdaptiveTaskOrchestrator._build_task_packet(
+        session=session, decision_context=dc, perception=perception,
+    )
+    assert packet['evidence_basis']['evidence_state'] in ('observed', 'inferred', 'unresolved')
+
+
+def test_packet_no_raw_email_anywhere() -> None:
+    """No raw email must survive anywhere in the serialized task_packet."""
+    import json
+    raw_email = 'user@example.com'
+    session = _minimal_session(metadata={
+        'worker_gate': {
+            'usable': True,
+            'top_worker': {'tool': 'chatgpt', 'email': raw_email},
+            'available_count': 2,
+            'recommended_account': {'tool': 'chatgpt', 'email': raw_email},
+            'approved_account': {'tool': 'chatgpt', 'email': raw_email},
+            'ranked_workers': [
+                {'tool': 'chatgpt', 'email': raw_email},
+                {'tool': 'gemini', 'email': 'alt@example.com'},
+            ],
+            'account_selection_source': 'auto_ranked',
+        },
+    })
+    dc = _minimal_decision_context()
+    perception = _minimal_perception()
+    packet = AdaptiveTaskOrchestrator._build_task_packet(
+        session=session, decision_context=dc, perception=perception,
+    )
+    serialized = json.dumps(packet)
+    assert raw_email not in serialized, f'raw email {raw_email} leaked into task_packet'
+    assert 'alt@example.com' not in serialized, 'discarded alt email leaked into task_packet'
+    assert '***@' in serialized, 'masked emails should be present'
