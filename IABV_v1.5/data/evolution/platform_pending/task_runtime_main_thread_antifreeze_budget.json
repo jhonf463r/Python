@@ -1,0 +1,18 @@
+{
+  "task_id": "runtime_main_thread_antifreeze_budget",
+  "title": "Anti-freeze gating — prevent UI thread blocking under pressure",
+  "status": "READY_FOR_NEXT_SLICE",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Heavy deferred work (evolution snapshot, dev packet, autonomy dock) is gated under HIGH/CRITICAL resource pressure so the UI thread stays responsive.",
+  "metadata": {
+    "covered_by_pr": "#377",
+    "coverage_detail": "_should_defer_heavy_work() gate using _assess_resource_pressure(). Fixed IssueSeverity comparison bug (str(IssueSeverity.HIGH) returns 'IssueSeverity.HIGH' not 'high'). Gate applied in both _apply_task_result and _apply_task_failure.",
+    "p01_additions": "Stub tests for _should_defer_heavy_work extracted to lightweight suite (no AppBootstrap)."
+  },
+  "remaining": [
+    "Budget accounting for total UI-thread time per frame",
+    "BackgroundResourceMonitor integration if available"
+  ],
+  "unresolved": "User-visible UI proof pending — requires live testing on user's Windows machine"
+}

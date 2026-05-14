@@ -208,6 +208,33 @@ class RuntimeAuditTracer:
             **extra,
         )
 
+    def trace_dispatch_terminal(
+        self,
+        *,
+        task_name: str,
+        dispatch_id: str = '',
+        terminal_state: str,
+        interaction_id: str = '',
+        provider: str = '',
+        reason: str = '',
+        user_visible_message_present: bool = False,
+    ) -> dict[str, Any]:
+        """Record a dispatch reaching a terminal state.
+
+        Covers: timeout watchdog, stale worker discard, external tool blocked,
+        security_verification / permission / quota blocks, and normal success/failure.
+        """
+        return self.trace(
+            'dispatch_terminal',
+            task_name=task_name,
+            dispatch_id=dispatch_id[:12] if dispatch_id else '',
+            terminal_state=terminal_state,
+            interaction_id=interaction_id,
+            provider=provider,
+            reason=reason[:200] if reason else '',
+            user_visible_message_present=user_visible_message_present,
+        )
+
     def trace_ui_event(
         self,
         event_type: str,

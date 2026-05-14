@@ -1,0 +1,18 @@
+{
+  "task_id": "runtime_consulting_lifecycle_recovery",
+  "title": "Runtime consulting lifecycle — prevent infinite 'consultando...'",
+  "status": "READY_FOR_NEXT_SLICE",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Every chat/external dispatch must reach a terminal state. Timeout watchdog + dispatch_id guards prevent the UI from staying in busy/consultando indefinitely.",
+  "metadata": {
+    "covered_by_pr": "#377",
+    "coverage_detail": "Timeout watchdog (120s chat, 180s external), dispatch_id stale-result guards, 8 terminal states defined, _humanize_task_failure classifier, _human_external_consultation_failure structured handoff.",
+    "p01_additions": "Runtime audit trace on all terminal events (trace_dispatch_terminal). adaptive_action now guarded with dispatch_id + timeout watchdog."
+  },
+  "remaining": [
+    "Live UI proof with real user interaction",
+    "UIBridgeService paths not yet fully audited for terminal-state coverage"
+  ],
+  "unresolved": "User-visible UI proof pending — requires live testing on user's Windows machine"
+}
