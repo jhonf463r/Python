@@ -601,13 +601,17 @@ class AdaptiveTaskOrchestrator:
             if not risk_signals:
                 return result
             signal_kinds = [str(getattr(s, 'kind', '') or '') for s in risk_signals]
-            severities = [str(getattr(s, 'severity', '') or '').upper() for s in risk_signals]
-            has_critical = 'CRITICAL' in severities or any(
-                str(getattr(s, 'severity', None)) == 'critical' for s in risk_signals
-            )
-            has_high = 'HIGH' in severities or any(
-                str(getattr(s, 'severity', None)) == 'high' for s in risk_signals
-            )
+
+            def _sev_value(s: Any) -> str:
+                raw = getattr(s, 'severity', None)
+                if raw is None:
+                    return ''
+                val = getattr(raw, 'value', None)
+                return str(val or raw).upper()
+
+            severities = [_sev_value(s) for s in risk_signals]
+            has_critical = 'CRITICAL' in severities
+            has_high = 'HIGH' in severities
             result['active_signals'] = signal_kinds
             if has_critical:
                 result['under_pressure'] = True

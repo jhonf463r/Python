@@ -54,6 +54,23 @@ from iabv_v15.ui.qt import QObject, Property, QGuiApplication, QTimer, Signal, S
 
 
 class ControlCenterViewModel(QObject):
+    # --- Timeout constants for worker threads (Sub-objective A) ---
+    _CHAT_WORKER_TIMEOUT_S: float = 120.0
+    _EXTERNAL_WORKER_TIMEOUT_S: float = 180.0
+
+    # --- Terminal dispatch states (Sub-objective A) ---
+    # Every dispatch MUST end in one of these states visible to the user.
+    _TERMINAL_DISPATCH_STATES: frozenset[str] = frozenset({
+        'success',
+        'blocked_by_permission',
+        'blocked_by_security_verification',
+        'blocked_by_quota',
+        'timeout',
+        'cancelled',
+        'failed_with_actionable_reason',
+        'needs_human_handoff',
+    })
+
     dataChanged = Signal()
     taskResolved = Signal(str, object)
     taskFailed = Signal(str, str)
@@ -3457,66 +3474,126 @@ class ControlCenterViewModel(QObject):
     def _humanize_task_failure(self, task_name: str, message: str) -> tuple[str, str]:
         detail = str(message or '').strip()
         lowered = detail.lower()
+        if 'supero el tiempo maximo' in lowered or 'timeout' in lowered:
+            return (
+                f'{detail} Puedes verificar la conexion o reenviar tu consulta.',
+                'timeout',
+            )
         if task_name == 'external_consultation':
             if 'acceso denegado' in lowered or 'access denied' in lowered:
                 return (
-                    'No pude abrir o capturar la consulta externa desde este entorno. Voy a seguir con lo que ya tenemos aqui y, si hace falta, preparo otra via.',
-                    'Bloqueo al preparar consulta externa.',
+                    f'Herramienta externa bloqueada por permisos. {detail[:200]}',
+                    'blocked_by_permission',
                 )
         if any(token in lowered for token in ('login', 'session', 'sesion')):
             return (
-                'La consulta externa no quedo lista porque la sesion del asistente no estaba disponible. Sigo por aqui y, si hace falta, la reintento cuando el acceso este listo.',
-                'Sesion externa no disponible.',
+                f'Sesion del asistente no disponible. Accion: inicia sesion en la herramienta y reintenta. {detail[:200]}',
+                'blocked_by_permission',
             )
-        return (
-            'No pude completar la consulta externa en este momento. Voy a seguir con lo que ya tenemos aqui y, si hace falta, preparo otra via.',
-            'Consulta externa no disponible.',
+        if any(token in lowered for token in ('cuota', 'quota', 'rate limit')):
+            return (
+                f'Cuota o limite alcanzado. Accion: espera o cambia de herramienta. {detail[:200]}',
+                'blocked_by_quota',
             )
-        return detail, 'Error en la ultima operacion local.'
+        # Strip Python exception traces from user-visible messages.
+        _has_traceback = any(t in lowered for t in (
+            'traceback', 'nonetype', 'attributeerror', 'keyerror',
+            'typeerror', 'valueerror', 'object has no attribute',
+        ))
+        if _has_traceback or not detail:
+            visible = (
+                'No pude completar la consulta externa en este momento. '
+                'Voy a seguir con lo que ya tenemos aqui y, si hace falta, preparo otra via.'
+            )
+        else:
+            visible = f'{detail} Sigo con la via local.'
+        return visible, 'failed_with_actionable_reason'
 
     def _human_external_consultation_failure(self, assistant_title: str, failure_detail: str, external_state_flags: list[str] | None = None) -> tuple[str, str, str]:
         detail = str(failure_detail or '').strip()
         lowered = detail.lower()
         external_notice = self._external_state_notice(external_state_flags)
+        # --- Sub-objective C: structured handoff on external tool failure ---
+        # Each branch now tells the user: WHAT tool, WHAT block, WHAT evidence,
+        # WHAT human action is needed, and whether local fallback is viable.
         if 'browser_security_verification' in lowered:
+            human_action = 'Abre el navegador, completa el captcha o verificacion de seguridad y vuelve a intentar.'
             message = (
-                f'No pude completar la consulta con {assistant_title} porque el sitio activo una verificacion de seguridad '
-                'antes de abrir el chat. Sigo con la mejor via disponible y dejo el bloqueo trazado.'
+                f'Herramienta: {assistant_title}. '
+                f'Bloqueo: verificacion de seguridad del sitio. '
+                f'Evidencia: el sitio pidio captcha o challenge antes de abrir el chat. '
+                f'Accion humana: {human_action} '
+                'Mientras tanto, sigo con la mejor via local disponible.'
             )
             if external_notice:
                 message = f'{message} {external_notice}'
-            meta = f'Consulta con {assistant_title} bloqueada por verificacion del sitio.'
+            meta = f'{assistant_title}: blocked_by_security_verification'
             busy = message
         elif 'codex_state_missing' in lowered:
+            human_action = 'Verifica que la extension de Codex este instalada y autenticada en este entorno.'
             message = (
-                f'Abrí {assistant_title}, pero esta instalacion no expone el tracking del hilo que necesito para verificar '
-                'la respuesta de forma segura. Sigo con la mejor via disponible y dejo el bloqueo trazado.'
+                f'Herramienta: {assistant_title}. '
+                f'Bloqueo: falta tracking del hilo de conversacion. '
+                f'Evidencia: la instalacion no expone el estado del hilo. '
+                f'Accion humana: {human_action} '
+                'Sigo con la via local.'
             )
             if external_notice:
                 message = f'{message} {external_notice}'
-            meta = f'Consulta con {assistant_title} bloqueada por falta de tracking.'
+            meta = f'{assistant_title}: needs_human_handoff'
             busy = message
         elif 'acceso denegado' in lowered or 'access denied' in lowered:
+            human_action = 'Revisa permisos o credenciales para acceder a la herramienta externa.'
             message = (
-                f'No pude abrir la consulta externa con {assistant_title} desde este entorno. '
-                'Voy a seguir con lo que ya tenemos aqui y, si hace falta, preparo otra via.'
+                f'Herramienta: {assistant_title}. '
+                f'Bloqueo: acceso denegado desde este entorno. '
+                f'Evidencia: {detail[:120] or "sin detalle adicional"}. '
+                f'Accion humana: {human_action} '
+                'Sigo con la via local.'
             )
-            meta = f'Consulta con {assistant_title} bloqueada por el entorno.'
+            meta = f'{assistant_title}: blocked_by_permission'
             busy = message
         elif 'session' in lowered or 'sesion' in lowered or 'login' in lowered:
+            human_action = 'Inicia sesion en la herramienta externa y vuelve a intentar.'
             message = (
-                f'La sesion de {assistant_title} no estaba lista para usarla ahora mismo. '
-                'Sigo por aqui y, si hace falta, la reintento cuando el acceso este disponible.'
+                f'Herramienta: {assistant_title}. '
+                f'Bloqueo: sesion no activa o expirada. '
+                f'Evidencia: {detail[:120] or "sin detalle adicional"}. '
+                f'Accion humana: {human_action} '
+                'Sigo con la via local mientras tanto.'
             )
-            meta = f'Sesion de {assistant_title} no disponible.'
+            meta = f'{assistant_title}: blocked_by_permission'
+            busy = message
+        elif 'timeout' in lowered or 'timed out' in lowered or 'tiempo' in lowered:
+            message = (
+                f'Herramienta: {assistant_title}. '
+                f'Bloqueo: la operacion tomo demasiado tiempo. '
+                f'Evidencia: {detail[:120] or "timeout sin detalle adicional"}. '
+                'Accion humana: verifica que la herramienta este respondiendo y reintenta. '
+                'Sigo con la via local.'
+            )
+            meta = f'{assistant_title}: timeout'
+            busy = message
+        elif 'cuota' in lowered or 'quota' in lowered or 'rate' in lowered or 'limit' in lowered:
+            message = (
+                f'Herramienta: {assistant_title}. '
+                f'Bloqueo: cuota o limite de uso alcanzado. '
+                f'Evidencia: {detail[:120] or "sin detalle adicional"}. '
+                'Accion humana: espera a que se renueve la cuota o usa otra herramienta. '
+                'Sigo con la via local.'
+            )
+            meta = f'{assistant_title}: blocked_by_quota'
             busy = message
         else:
-            message = f'No pude preparar la consulta externa con {assistant_title} en este momento.'
+            message = (
+                f'Herramienta: {assistant_title}. '
+                f'Bloqueo: fallo no clasificado. '
+                f'Evidencia: {detail[:120] or "sin detalle"}. '
+            )
             if external_notice:
-                message = f'{message} {external_notice}'
-            else:
-                message = f'{message} Voy a seguir con lo que ya tenemos aqui y, si hace falta, preparo otra via.'
-            meta = f'Consulta con {assistant_title} no disponible.'
+                message = f'{message}{external_notice} '
+            message = f'{message}Sigo con la via local.'
+            meta = f'{assistant_title}: failed_with_actionable_reason'
             busy = message
         return message, meta, busy
 
@@ -4022,6 +4099,47 @@ class ControlCenterViewModel(QObject):
                 watchdog.set_active_interaction(None)
             self._set_live_status('idle')
             self._promote_metacognition_after_resolution()
+
+    # ── Worker timeout watchdog (Sub-objective A) ──────────────
+    def _schedule_worker_timeout(
+        self,
+        *,
+        done_event: threading.Event,
+        task_name: str,
+        timeout_s: float,
+    ) -> None:
+        """Fire taskFailed if *done_event* is not set within *timeout_s*.
+
+        Runs a lightweight daemon thread that waits on the event; if it
+        times out and ``_working`` is still True, it emits ``taskFailed``
+        so the UI never stays in "consultando..." indefinitely.
+        """
+        def _watchdog() -> None:
+            if done_event.wait(timeout=timeout_s):
+                return  # worker finished in time
+            if not self._working:
+                return  # already resolved by other path
+            self.taskFailed.emit(
+                task_name,
+                f'La operacion ({task_name}) supero el tiempo maximo de {int(timeout_s)}s. '
+                'Puedes intentar de nuevo o verificar que las herramientas esten accesibles.',
+            )
+
+        threading.Thread(target=_watchdog, daemon=True, name=f'{task_name}-timeout').start()
+
+    # ── Pressure gating for deferred heavy work (Sub-objective B) ──
+    def _should_defer_heavy_work(self) -> bool:
+        """Return True when heavy background ops should be skipped.
+
+        Uses AdaptiveTaskOrchestrator._assess_resource_pressure() to read
+        live environment risk signals.  Under HIGH or CRITICAL pressure
+        the UI thread must stay free for user interaction.
+        """
+        try:
+            pressure = self.adaptive_orchestrator._assess_resource_pressure()
+            return bool(pressure.get('under_pressure'))
+        except Exception:
+            return False
 
     @staticmethod
     def _derive_external_consultation_outcome(payload: Any) -> str:
@@ -5807,14 +5925,23 @@ class ControlCenterViewModel(QObject):
             self._append_message('assistant', 'IABV', self._latest_response_text, self._latest_response_meta)
         self.dataChanged.emit()
 
+        _ext_done = threading.Event()
+
         def worker() -> None:
             try:
                 result_payload = self._execute_external_consultation_sync(assistant_kind)
                 self.taskResolved.emit('external_consultation', result_payload)
             except Exception as exc:
                 self.taskFailed.emit('external_consultation', f'No pude completar la consulta externa guiada: {exc}')
+            finally:
+                _ext_done.set()
 
         threading.Thread(target=worker, daemon=True).start()
+        self._schedule_worker_timeout(
+            done_event=_ext_done,
+            task_name='external_consultation',
+            timeout_s=self._EXTERNAL_WORKER_TIMEOUT_S,
+        )
         return True
 
     def _perform_guidance_action(self, action: str, *, announce: bool = True) -> bool:
@@ -7226,6 +7353,8 @@ class ControlCenterViewModel(QObject):
         )
         self.dataChanged.emit()
 
+        _worker_done = threading.Event()
+
         def worker() -> None:
             try:
                 # Mark lifecycle phase: first_technical_response
@@ -7260,8 +7389,15 @@ class ControlCenterViewModel(QObject):
                 )
             except Exception as exc:
                 self.taskFailed.emit('chat', f'No pude completar la consulta local: {exc}')
+            finally:
+                _worker_done.set()
 
         threading.Thread(target=worker, daemon=True).start()
+        self._schedule_worker_timeout(
+            done_event=_worker_done,
+            task_name='chat',
+            timeout_s=self._CHAT_WORKER_TIMEOUT_S,
+        )
 
     def _role_title_from_task(self, role: TaskRole) -> str:
         return next((profile.title for profile in self.role_router.role_profiles if profile.role == role), role.value)
@@ -7764,10 +7900,12 @@ class ControlCenterViewModel(QObject):
                 provider=_provider,
             )
         self._update_progress_cards()
-        self._update_evolution_snapshot()
-        self._agent_cards = self._build_agent_cards()
-        self._refresh_development_packet()
-        self._refresh_autonomy_dock()
+        # Gate heavy deferred work under resource pressure (Sub-objective B).
+        if not self._should_defer_heavy_work():
+            self._update_evolution_snapshot()
+            self._agent_cards = self._build_agent_cards()
+            self._refresh_development_packet()
+            self._refresh_autonomy_dock()
         self.dataChanged.emit()
 
     @Slot(str, str)
@@ -7797,7 +7935,6 @@ class ControlCenterViewModel(QObject):
         self._interaction_has_pending_followup = False
         self._resolve_active_interaction(outcome='failed')
         self._busy_label = visible_message
-        self._update_evolution_snapshot()
         self._diagnostic_text = (
             'Ultimo error\n'
             f"Modo de ruteo: {'automatico' if self._auto_route_enabled else 'manual'}\n"
@@ -7810,8 +7947,11 @@ class ControlCenterViewModel(QObject):
             f"Detalle: {message}"
         )
         self._diagnostic_truth_state = 'observed'
-        self._refresh_development_packet()
-        self._refresh_autonomy_dock()
+        # Gate heavy deferred work under resource pressure (Sub-objective B).
+        if not self._should_defer_heavy_work():
+            self._update_evolution_snapshot()
+            self._refresh_development_packet()
+            self._refresh_autonomy_dock()
         self.dataChanged.emit()
 
     def _build_provider_diagnostic(self) -> str:
