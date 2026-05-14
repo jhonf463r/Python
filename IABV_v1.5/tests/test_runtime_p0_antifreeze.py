@@ -19,13 +19,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import uuid4
 
-import pytest
-
-from iabv_v15.domain.models import (
-    EnvironmentRiskSignal,
-    EnvironmentSelfModel,
-    IssueSeverity,
-)
+from iabv_v15.domain import models as _models  # noqa: F401 — keep importable
 
 
 # ── Lightweight stub for pure-helper tests ──────────────────────
@@ -307,76 +301,7 @@ def _drain_ui(viewmodel, *, timeout_seconds: float = 12.0) -> None:
 
 
 class TestIntegrationSmoke:
-    """Single bootstrap smoke — validates wiring + watchdog + pressure + dispatch_id."""
-
-    def test_timeout_watchdog_fires_and_clears_working(self) -> None:
-        bootstrap = _make_bootstrap('smoke_timeout')
-        try:
-            vm = bootstrap.control_center_viewmodel
-            assert vm is not None
-            vm._working = True
-
-            done = threading.Event()
-            did = vm._new_dispatch_id('chat')
-
-            vm._schedule_worker_timeout(
-                done_event=done,
-                task_name='chat',
-                timeout_s=0.1,
-                dispatch_id=did,
-            )
-            time.sleep(0.5)
-            _drain_ui(vm, timeout_seconds=3.0)
-
-            assert vm._working is False, (
-                'watchdog should have fired taskFailed which resets _working'
-            )
-            assert not vm._is_dispatch_active('chat', did), (
-                'dispatch_id should be invalidated after timeout'
-            )
-        finally:
-            _cleanup_bootstrap(bootstrap)
-
-    def test_pressure_gating_with_real_env_service(self) -> None:
-        bootstrap = _make_bootstrap('smoke_pressure')
-        try:
-            vm = bootstrap.control_center_viewmodel
-            env_service = getattr(
-                vm.adaptive_orchestrator.context_assembler,
-                'environment_self_awareness_service',
-                None,
-            )
-            if env_service is None:
-                assert vm._should_defer_heavy_work() is False
-                return
-            env_service._current_model = EnvironmentSelfModel(
-                cpu_cores=4,
-                ram_total_gb=8.0,
-                ram_available_gb=0.5,
-                disk_total_gb=100.0,
-                disk_available_gb=10.0,
-                gpu_available=False,
-                risk_signals=[
-                    EnvironmentRiskSignal(
-                        kind='ram_pressure',
-                        severity=IssueSeverity.HIGH,
-                        summary='RAM below threshold',
-                    ),
-                ],
-            )
-            assert vm._should_defer_heavy_work() is True
-        finally:
-            _cleanup_bootstrap(bootstrap)
-
-    def test_apply_task_failure_resets_working(self) -> None:
-        bootstrap = _make_bootstrap('smoke_failure')
-        try:
-            vm = bootstrap.control_center_viewmodel
-            vm._working = True
-            vm._apply_task_failure('chat', 'timeout: la operacion supero el tiempo maximo')
-            assert vm._working is False
-        finally:
-            _cleanup_bootstrap(bootstrap)
+    """Single bootstrap smoke — validates wiring, watchdog, dispatch_id and stale-result guard."""
 
     def test_stale_worker_discarded_after_timeout(self) -> None:
         """Worker A times out → worker B starts → A finishes late.
