@@ -315,3 +315,19 @@ def test_centro_vivo_navigation_route_exists():
 
     nav.navigate('centro_vivo')
     assert nav.get_current_route() == 'centro_vivo'
+
+
+def test_navigation_controller_traces_user_navigation():
+    """Route changes are durable UI-interaction evidence for freeze analysis."""
+    from iabv_v15.ui.controllers.navigation_controller import NavigationController
+
+    nav = NavigationController()
+    events = []
+    nav._trace_navigation = lambda kind, **data: events.append({'kind': kind, **data})  # type: ignore[method-assign]
+
+    nav.navigate('control')
+
+    assert events == [
+        {'kind': 'ui_navigation_requested', 'from_route': 'dashboard', 'to_route': 'control'},
+        {'kind': 'ui_navigation_applied', 'from_route': 'dashboard', 'to_route': 'control'},
+    ]

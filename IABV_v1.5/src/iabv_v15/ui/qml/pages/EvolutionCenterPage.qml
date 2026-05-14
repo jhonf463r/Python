@@ -33,6 +33,15 @@ Item {
     // F1.3: evidencia visual de la UI de IABV (UIScreenshotService).
     property var recentUiScreenshots: evolutionCenterViewModel ? evolutionCenterViewModel.recentUiScreenshots : []
 
+    // Progressive render: defer heavy sections so first paint is instant.
+    property int _renderPhase: 0
+    Timer {
+        interval: 120
+        repeat: true
+        running: root._renderPhase < 2
+        onTriggered: root._renderPhase++
+    }
+
     GlassPanel {
         anchors.fill: parent
         fillColor: "#1c2630"
@@ -75,9 +84,10 @@ Item {
                     }
 
                     AppButton {
-                        text: "Actualizar"
+                        text: evolutionCenterViewModel && evolutionCenterViewModel.refreshStatus === "refreshing" ? "Actualizando..." : "Actualizar"
                         accent: true
-                        onClicked: if (evolutionCenterViewModel) evolutionCenterViewModel.refresh()
+                        enabled: !evolutionCenterViewModel || evolutionCenterViewModel.refreshStatus !== "refreshing"
+                        onClicked: if (evolutionCenterViewModel) evolutionCenterViewModel.refreshFromUser()
                     }
                     AppButton {
                         text: "Ejecutar autodiagnostico"
@@ -87,6 +97,23 @@ Item {
                         text: "Publicar cambio como PR"
                         onClicked: publishPrDialog.open()
                     }
+                }
+
+                Label {
+                    visible: evolutionCenterViewModel && evolutionCenterViewModel.lastRefreshSummary !== ""
+                    text: evolutionCenterViewModel ? evolutionCenterViewModel.lastRefreshSummary : ""
+                    color: {
+                        if (!evolutionCenterViewModel) return textSecondary
+                        var r = evolutionCenterViewModel.lastRefreshResult
+                        if (r === "changed") return "#4caf50"
+                        if (r === "failed") return "#f44336"
+                        if (r === "started") return "#ff9800"
+                        return textSecondary
+                    }
+                    font.family: bodyFontFamily
+                    font.pixelSize: 12
+                    wrapMode: Label.WordWrap
+                    Layout.fillWidth: true
                 }
 
                 // F2.2: panel de estado de publicacion de PR. Muestra la ultima
@@ -220,13 +247,33 @@ Item {
                     }
                 }
 
-                // Panel F1.3: evidencia visual reciente (UIScreenshotService).
-                // Consume `recentUiScreenshots` del ViewModel. Se oculta cuando
-                // no hay capturas para no ensuciar la UI. Solo lista metadatos:
-                // el QML no decide rutas ni carga PNGs (AGENTS.md: el VM/QML no
-                // inventa datos; el servicio persiste la foto en disco).
-                Rectangle {
-                    id: uiScreenshotsPanel
+                // --- Phase 1: deferred medium-weight sections ---
+                Loader {
+                    active: root._renderPhase >= 1
+                    width: parent.width
+                    sourceComponent: cmpPhase1
+                }
+
+                // --- Phase 2: deferred heavy sections ---
+                Loader {
+                    active: root._renderPhase >= 2
+                    width: parent.width
+                    sourceComponent: cmpPhase2
+                }
+            }
+        }
+    }
+
+    // Phase 1 component: medium sections loaded ~120ms after first paint.
+    Component {
+        id: cmpPhase1
+        Column {
+            width: parent ? parent.width : 0
+            spacing: 16
+
+            // Panel F1.3: evidencia visual reciente (UIScreenshotService).
+            Rectangle {
+                id: uiScreenshotsPanel
                     width: parent.width
                     radius: 18
                     color: "#22313a"
@@ -787,6 +834,15 @@ Item {
                         }
                     }
                 }
+        }
+    }
+
+    // Phase 2 component: heavy sections loaded ~240ms after first paint.
+    Component {
+        id: cmpPhase2
+        Column {
+            width: parent ? parent.width : 0
+            spacing: 16
 
                 Rectangle {
                     width: parent.width
@@ -1242,7 +1298,6 @@ Item {
                         }
                     }
                 }
-            }
         }
     }
 

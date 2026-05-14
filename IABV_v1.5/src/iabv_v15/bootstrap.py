@@ -6,6 +6,7 @@ import re
 import threading
 from pathlib import Path
 import sys
+from typing import Any
 
 
 def _rss_mb() -> float:
@@ -218,7 +219,10 @@ from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOr
 from iabv_v15.services.adaptive.adaptive_model_selector import AdaptiveModelSelector
 from iabv_v15.services.adaptive.cloud_reasoning_planner import CloudReasoningPlannerService
 from iabv_v15.services.adaptive.adaptive_weight_layer import AdaptiveWeightLayer
-from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
+from iabv_v15.services.adaptive.autonomy_governance_policy import (
+    AutonomyGovernancePolicy,
+    record_operational_budget_experiment,
+)
 from iabv_v15.services.adaptive.approval_gate_service import ApprovalGateService
 from iabv_v15.services.adaptive.capability_readiness_service import CapabilityReadinessService
 from iabv_v15.services.adaptive.execution_playbook_service import ExecutionPlaybookService, NullOperationalExecutor
@@ -431,6 +435,9 @@ class AppBootstrap:
 
         self._services_wired = False
         self._defer_services = _defer_services
+        import time as _time
+        self._auxiliary_work_rest_started_at = _time.monotonic()
+        self._operational_budget_experiment_throttle: dict[str, float] = {}
 
         # VM placeholders needed by create_engine(defer_vm_creation=True)
         # which sets context properties to these (initially None) values.
@@ -1012,6 +1019,18 @@ class AppBootstrap:
 
         self.intent_understanding_service = IntentUnderstandingService()
         self.autonomy_governance_policy = AutonomyGovernancePolicy()
+        try:
+            self.autonomy_governance_policy.apply_runtime_tuning_profile(
+                self.runtime_tuning_repository.get('global'),
+            )
+        except Exception:
+            pass
+        self.operational_self_examination_service.autonomy_governance_policy = (
+            self.autonomy_governance_policy
+        )
+        self.operational_self_examination_service.runtime_tuning_repository = (
+            self.runtime_tuning_repository
+        )
         self.goal_engine = GoalEngine(self.objective_repository)
         self.portable_context_service = PortableContextService(
             workspace_root=self.config.workspace_root,
@@ -1792,6 +1811,38 @@ class AppBootstrap:
         missing = getattr(self, '_deferred_missing_tools', [])
         if not missing:
             return
+        budget = self._operational_budget_for_auxiliary_work(
+            work_class='tool_scan',
+            source='deferred_auto_install_missing_tools',
+            priority='background',
+        )
+        if not bool(budget.get('allowed')):
+            reason = str(budget.get('reason') or 'deferred')
+            defer_seconds = float(budget.get('defer_seconds', 30.0) or 30.0)
+            try:
+                self._timeline.mark(
+                    'deferred_auto_install_deferred',
+                    reason=reason,
+                    defer_seconds=round(defer_seconds, 1),
+                    missing_tools=list(missing),
+                    budget=budget,
+                )
+                self._tracer.trace(
+                    'deferred_auto_install_deferred',
+                    reason=reason,
+                    defer_seconds=round(defer_seconds, 1),
+                    missing_tools=list(missing),
+                    budget=budget,
+                )
+            except Exception:
+                pass
+            logger.info(
+                'deferred_auto_install: deferred (%s, retry=%.1fs)',
+                reason,
+                defer_seconds,
+            )
+            self._schedule_auxiliary_retry(defer_seconds, self._deferred_auto_install_missing_tools)
+            return
         try:
             from iabv_v15.services.auto_correction_engine import auto_fix_missing_tools
             install_result = auto_fix_missing_tools(missing)
@@ -1971,6 +2022,33 @@ class AppBootstrap:
         the final boot state.  Then PortableContext persists with the
         up-to-date OSES summary — not a stale one.
         """
+        defer_reason = self._startup_truth_refresh_defer_reason()
+        if defer_reason:
+            attempt = int(getattr(self, '_truth_refresh_attempt', 0) or 0) + 1
+            self._truth_refresh_attempt = attempt
+            try:
+                self._timeline.mark(
+                    'startup_truth_refresh_deferred',
+                    reason=defer_reason,
+                    attempt=attempt,
+                )
+            except Exception:
+                pass
+            logger.info(
+                'startup_truth_refresh: deferred (%s, attempt=%s)',
+                defer_reason,
+                attempt,
+            )
+            self._truth_refresh_active = False
+            self._push_bootstrap_flags_to_watchdog()
+            self._check_startup_followup_done()
+            if attempt < 3:
+                delay_s = 180.0 * attempt
+                timer = threading.Timer(delay_s, self._start_deferred_truth_refresh_retry)
+                timer.daemon = True
+                timer.start()
+            return
+
         force_refresh = self._metacognition_data_is_stale()
         if force_refresh:
             logger.info('startup_truth_refresh: metacognition data stale (>24h), forcing full regeneration')
@@ -1993,6 +2071,43 @@ class AppBootstrap:
         self._truth_refresh_active = False
         self._push_bootstrap_flags_to_watchdog()
         self._check_startup_followup_done()
+
+    def _start_deferred_truth_refresh_retry(self) -> None:
+        if self._truth_refresh_active:
+            return
+        self._truth_refresh_active = True
+        self._push_bootstrap_flags_to_watchdog()
+        threading.Thread(
+            target=self._final_startup_truth_refresh,
+            name='iabv-startup-truth-refresh',
+            daemon=True,
+        ).start()
+
+    def _startup_truth_refresh_defer_reason(self) -> str:
+        snap, age = self._get_cached_snapshot()
+        if snap is None:
+            self._refresh_prebuild_snapshot_async()
+            return 'resource_snapshot_unavailable'
+        if age > self._PREBUILD_SNAPSHOT_MAX_AGE_S:
+            self._refresh_prebuild_snapshot_async()
+            return 'resource_snapshot_stale'
+        try:
+            if float(getattr(snap, 'ram_used_pct', 0.0) or 0.0) >= 70.0:
+                return 'ram_used_pct_high'
+            if int(getattr(snap, 'ram_available_mb', 0) or 0) < 6000:
+                return 'ram_available_low'
+        except Exception:
+            return 'resource_snapshot_invalid'
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        if watchdog is not None:
+            try:
+                for stall in watchdog.recent_stalls(limit=3):
+                    duration = float(stall.get('duration_ms', 0.0) or 0.0)
+                    if duration >= 2000.0:
+                        return f'recent_ui_stall:{int(duration)}ms'
+            except Exception:
+                pass
+        return ''
 
     def _metacognition_data_is_stale(self, max_age_hours: float = 24.0) -> bool:
         """Check if OSES / PortableContext latest.json are older than *max_age_hours*."""
@@ -3064,6 +3179,7 @@ class AppBootstrap:
         self.control_center_viewmodel._freeze_incident_reporter = self.freeze_incident_reporter
         self.control_center_viewmodel._ui_heartbeat_watchdog = self.ui_heartbeat_watchdog
         self.control_center_viewmodel._chat_interaction_lifecycle = self.chat_interaction_lifecycle
+        self.control_center_viewmodel._bootstrap_ref = self
         self.control_center_viewmodel._oses_ref = self.operational_self_examination_service
         self.control_center_viewmodel._portable_context_ref = self.portable_context_service
         # Wire CaptureStudioVM reference if already built.
@@ -3214,6 +3330,120 @@ class AppBootstrap:
     # This is what the watchdog reads (startup_followup_active) to avoid
     # marking stalls as "startup_active=false" when boot work is ongoing.
     _startup_followup_active: bool = True
+
+    def note_user_activity_for_operational_budget(self, *, reason: str = 'user_activity') -> None:
+        """Reset the rest window used by bootstrap auxiliary work."""
+        import time as _time
+        self._auxiliary_work_rest_started_at = _time.monotonic()
+
+    @staticmethod
+    def _operational_process_rss_mb() -> float:
+        try:
+            import psutil  # type: ignore
+            return round(float(psutil.Process(os.getpid()).memory_info().rss) / (1024 * 1024), 1)
+        except Exception:
+            return 0.0
+
+    def _recent_watchdog_stall_ms(self) -> float:
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        if watchdog is None or not hasattr(watchdog, 'recent_stalls'):
+            return 0.0
+        try:
+            recent = list(watchdog.recent_stalls(limit=5) or [])
+            return max((float(item.get('duration_ms', 0.0) or 0.0) for item in recent), default=0.0)
+        except Exception:
+            return 0.0
+
+    def _operational_budget_for_auxiliary_work(
+        self,
+        *,
+        work_class: str,
+        source: str,
+        priority: str = 'background',
+    ) -> dict[str, Any]:
+        import time as _time
+        policy = getattr(self, 'autonomy_governance_policy', None)
+        idle_seconds = max(
+            0.0,
+            _time.monotonic() - float(getattr(self, '_auxiliary_work_rest_started_at', 0.0) or 0.0),
+        )
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        query_pending = bool(getattr(watchdog, '_query_pending', False)) if watchdog is not None else False
+        background_active = bool(
+            getattr(self, '_deferred_setup_active', False)
+            or getattr(self, '_truth_refresh_active', False)
+            or getattr(self, '_prebuild_snapshot_refresh_in_flight', False)
+        )
+        rss_mb = self._operational_process_rss_mb()
+        recent_stall_ms = self._recent_watchdog_stall_ms()
+        if policy is not None and hasattr(policy, 'evaluate_operational_budget'):
+            try:
+                budget = dict(policy.evaluate_operational_budget(
+                    work_class=work_class,
+                    source=source,
+                    priority=priority,
+                    query_pending=query_pending,
+                    rss_mb=rss_mb,
+                    recent_stall_ms=recent_stall_ms,
+                    idle_seconds=idle_seconds,
+                    background_active=background_active,
+                    confidence=0.82,
+                ))
+                self._record_operational_budget_experiment(
+                    budget,
+                    observed_summary=f'{source} -> {budget.get("decision")}:{budget.get("reason")}',
+                )
+                return budget
+            except Exception:
+                pass
+        budget = {
+            'decision': 'allow',
+            'allowed': True,
+            'reason': 'budget_unavailable_legacy_allow',
+            'work_class': work_class,
+            'priority': priority,
+            'recommended_mode': 'normal',
+            'defer_seconds': 0.0,
+            'evidence': {
+                'source': source,
+                'rss_mb': rss_mb,
+                'recent_stall_ms': recent_stall_ms,
+                'idle_seconds': round(idle_seconds, 1),
+                'query_pending': query_pending,
+                'background_active': background_active,
+            },
+            'decision_source': 'bootstrap.legacy_auxiliary_budget',
+        }
+        self._record_operational_budget_experiment(
+            budget,
+            observed_summary=f'{source} -> legacy allow',
+        )
+        return budget
+
+    def _record_operational_budget_experiment(
+        self,
+        budget: dict[str, Any],
+        *,
+        observed_summary: str = '',
+    ) -> None:
+        try:
+            record_operational_budget_experiment(
+                repository=getattr(self, 'experiment_lab_repository', None),
+                budget=budget,
+                observed_summary=observed_summary,
+                evidence_refs=['bootstrap', 'runtime_audit', 'startup_timeline'],
+                metadata={'caller': 'AppBootstrap'},
+                throttle_state=self._operational_budget_experiment_throttle,
+                throttle_seconds=60.0,
+            )
+        except Exception:
+            pass
+
+    def _schedule_auxiliary_retry(self, delay_seconds: float, callback: Any) -> None:
+        delay = max(10.0, min(float(delay_seconds or 0.0), 120.0))
+        timer = threading.Timer(delay, callback)
+        timer.daemon = True
+        timer.start()
 
     def _check_startup_followup_done(self) -> None:
         """Clear ``_startup_followup_active`` when all background phases finish.
@@ -3440,31 +3670,50 @@ class AppBootstrap:
     _PREBUILD_SNAPSHOT_RETRY_MS: int = 2000
 
     def _build_all_lazy_vms(self) -> None:
-        """Pre-build all lazy VMs during idle time (background timer chain).
+        """Skip idle VM prebuild; keep lazy pages strictly on-demand.
 
-        Each VM is constructed in its own QTimer.singleShot(0) slot to
-        yield to the event loop between constructions, keeping the main
-        thread responsive.  Errors in individual VMs are logged but do
-        NOT break the chain — the next VM is always scheduled.
+        Live Windows audits showed that constructing hidden ViewModels is
+        not passive: some pages schedule refreshes that read large SQLite /
+        JSON histories on the main thread.  Resource gates cannot make that
+        safe because the side effect happens after the VM exists.
 
-        **Resource governance (post-audit fix v3):**
-        Before building each route, reads a *cached* resource snapshot
-        (refreshed asynchronously in a background thread) and checks
-        recent UI stalls via ``UIHeartbeatWatchdog``.  If pressure is
-        high or a recent stall is detected, the prebuild chain pauses
-        and emits ``lazy_vm_prebuild_paused`` to the startup timeline.
-
-        If the snapshot is not yet available (``resource_snapshot_pending``
-        or ``resource_snapshot_unavailable``), the chain does NOT build
-        blindly — it schedules a retry via ``QTimer`` so the gate can
-        make an informed decision once the background refresh completes.
-
-        ``take_resource_snapshot()`` is NEVER called from the UI thread
-        — it can take 15-18 s on Windows (PowerShell/CIM).
-
-        Navigation-triggered construction (``_ensure_vm_for_route``)
-        is never paused — only the idle prebuild chain.
+        Navigation-triggered construction (``_ensure_vm_for_route``) stays
+        intact and never consults prebuild gates.  The user can still open
+        every section; IABV just stops doing invisible page construction
+        after startup.
         """
+        routes = list(self._ROUTE_TO_VM_ATTR.keys())
+        self._prebuild_paused = False
+        self._prebuild_paused_routes = []
+        wd = getattr(self, 'ui_heartbeat_watchdog', None)
+        if wd is not None:
+            try:
+                wd.set_dominant_phase('')
+                wd.set_startup_followup_active(self._startup_followup_active)
+            except Exception:
+                pass
+        try:
+            self._timeline.mark(
+                'lazy_vm_prebuild_skipped',
+                reason='on_demand_only_viewmodel_side_effects',
+                remaining_routes=routes,
+            )
+            self._timeline.mark(
+                'lazy_vm_prebuild_done',
+                status='skipped',
+                reason='on_demand_only_viewmodel_side_effects',
+                remaining_routes=routes,
+            )
+        except Exception:
+            pass
+        self._push_bootstrap_flags_to_watchdog()
+        self._check_startup_followup_done()
+        logger.info(
+            'lazy_vm_prebuild_skipped: on-demand only for %d routes',
+            len(routes),
+        )
+        return
+
         routes = list(self._ROUTE_TO_VM_ATTR.keys())
         self._prebuild_paused = False
         self._prebuild_paused_routes = []
@@ -4287,6 +4536,8 @@ class AppBootstrap:
         api_discovery = getattr(self, 'api_key_discovery_service', None)
         if metacog is None and api_discovery is None:
             return
+        if getattr(self, '_startup_evolution_active', False):
+            return
 
         self._startup_evolution_active = True
         self._push_bootstrap_flags_to_watchdog()
@@ -4294,6 +4545,36 @@ class AppBootstrap:
         def _run_startup_cycle() -> None:
             import time
             time.sleep(5)  # Let UI load first
+            budget = self._operational_budget_for_auxiliary_work(
+                work_class='metacognition',
+                source='startup_evolution',
+                priority='background',
+            )
+            if not bool(budget.get('allowed')):
+                reason = str(budget.get('reason') or 'deferred')
+                defer_seconds = float(budget.get('defer_seconds', 30.0) or 30.0)
+                self._timeline.mark(
+                    'startup_evolution_deferred',
+                    reason=reason,
+                    defer_seconds=round(defer_seconds, 1),
+                    budget=budget,
+                )
+                self._tracer.trace(
+                    'startup_evolution_deferred',
+                    reason=reason,
+                    defer_seconds=round(defer_seconds, 1),
+                    budget=budget,
+                )
+                logger.info(
+                    'startup_evolution: deferred (%s, retry=%.1fs)',
+                    reason,
+                    defer_seconds,
+                )
+                self._startup_evolution_active = False
+                self._push_bootstrap_flags_to_watchdog()
+                self._check_startup_followup_done()
+                self._schedule_auxiliary_retry(defer_seconds, self._schedule_startup_evolution)
+                return
             logger.info('startup_evolution: beginning background cycle')
             try:
                 # Step 0a: Detect if code was updated since last run

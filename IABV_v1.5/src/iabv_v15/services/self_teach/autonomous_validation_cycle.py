@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import json
 import os
 import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +24,9 @@ from iabv_v15.domain.models import (
 )  # noqa: F401  (ProposalValidationResult used as type hint in _maybe_publish_promotion)
 from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
 from iabv_v15.infra.persistence.storage import ArtifactStorage
+from iabv_v15.services.adaptive.autonomy_governance_policy import (
+    record_operational_budget_experiment,
+)
 from iabv_v15.services.lab.experiment_lab import ExperimentLab
 from iabv_v15.services.self_teach.sandbox_experiment_service import SandboxExperimentService
 
@@ -74,6 +78,9 @@ class AutonomousValidationCycleService:
         self._stop_event = threading.Event()
         self._wake_event = threading.Event()
         self._thread: threading.Thread | None = None
+        self._operational_budget_rest_started_at = time.monotonic()
+        self._last_operational_budget: dict[str, Any] = {}
+        self._operational_budget_experiment_throttle: dict[str, float] = {}
         self._decision_log = self._load_decision_log() or ToolEvolutionDecisionLog()
         self._auto_executed_keys: set[str] = set()
         self._current_snapshot = AutonomousValidationSnapshot(
@@ -190,6 +197,14 @@ class AutonomousValidationCycleService:
             )
         self._wake_event.set()
 
+    def note_user_activity(self, *, reason: str = 'user_activity') -> None:
+        """Reset the rest window used by periodic self-validation."""
+        with self._lock:
+            self._operational_budget_rest_started_at = time.monotonic()
+            metadata = dict(self._current_snapshot.metadata or {})
+            metadata['last_user_activity_reason'] = reason
+            self._current_snapshot = self._current_snapshot.model_copy(update={'metadata': metadata})
+
     # Ventana de decisiones recientes consideradas para detectar inercia
     # de ruta. Un valor bajo reacciona rapido a loops; uno alto ignora
     # senales debiles. 5 es suficiente para captar una rafaga de
@@ -251,12 +266,116 @@ class AutonomousValidationCycleService:
                 )
         return ''
 
+    @staticmethod
+    def _process_rss_mb() -> float:
+        try:
+            import psutil  # type: ignore
+            return round(float(psutil.Process(os.getpid()).memory_info().rss) / (1024 * 1024), 1)
+        except Exception:
+            return 0.0
+
+    @staticmethod
+    def _budget_source_for_reason(reason: str) -> str:
+        normalized = str(reason or '').strip().lower()
+        if normalized in {'manual', 'user_click', 'explicit_request'} or normalized.startswith('manual'):
+            return 'user_click'
+        return normalized or 'scheduled_validation'
+
+    def _background_heavy_active(self, world_model: Any | None) -> bool:
+        for process in getattr(world_model, 'background_processes', []) or []:
+            state = str(getattr(process, 'state', '') or '').strip().lower()
+            if state in {'cpu_heavy', 'memory_heavy'}:
+                return True
+        return False
+
+    def _operational_budget_for_validation(
+        self,
+        *,
+        reason: str,
+        environment_model: Any | None,
+        world_model: Any | None,
+    ) -> dict[str, Any]:
+        policy = self.autonomy_governance_policy
+        source = self._budget_source_for_reason(reason)
+        idle_seconds = max(0.0, time.monotonic() - float(self._operational_budget_rest_started_at or 0.0))
+        rss_mb = self._process_rss_mb()
+        if policy is not None and hasattr(policy, 'evaluate_operational_budget'):
+            try:
+                budget = dict(policy.evaluate_operational_budget(
+                    work_class='idle_self_test',
+                    source=source,
+                    priority='background',
+                    rss_mb=rss_mb,
+                    idle_seconds=idle_seconds,
+                    background_active=self._background_heavy_active(world_model),
+                    confidence=0.84,
+                ))
+                self._last_operational_budget = budget
+                self._record_operational_budget_experiment(
+                    budget,
+                    observed_summary=f'{source} -> {budget.get("decision")}:{budget.get("reason")}',
+                )
+                return budget
+            except Exception:
+                pass
+        # Fallback preserves the same safety semantics if governance is absent.
+        allowed = source == 'user_click' or idle_seconds >= 120.0
+        budget = {
+            'decision': 'allow' if allowed else 'defer',
+            'allowed': allowed,
+            'reason': 'budget_available' if allowed else 'rest_window_not_reached',
+            'work_class': 'idle_self_test',
+            'priority': 'background',
+            'recommended_mode': 'normal' if allowed else 'wait_for_idle',
+            'defer_seconds': 0.0 if allowed else round(max(0.0, 120.0 - idle_seconds), 1),
+            'evidence': {
+                'source': source,
+                'rss_mb': rss_mb,
+                'idle_seconds': round(idle_seconds, 1),
+                'background_active': self._background_heavy_active(world_model),
+                'environment_scan_status': str(getattr(environment_model, 'scan_status', '') or ''),
+            },
+            'decision_source': 'autonomous_validation_cycle.fallback_budget',
+        }
+        self._last_operational_budget = budget
+        self._record_operational_budget_experiment(
+            budget,
+            observed_summary=f'{source} -> fallback {budget.get("decision")}:{budget.get("reason")}',
+        )
+        return budget
+
+    def _record_operational_budget_experiment(
+        self,
+        budget: dict[str, Any],
+        *,
+        observed_summary: str = '',
+    ) -> None:
+        record_operational_budget_experiment(
+            repository=self.experiment_lab_repository,
+            budget=budget,
+            observed_summary=observed_summary,
+            evidence_refs=['AutonomousValidationCycleService', 'ExperimentLab'],
+            metadata={'caller': 'AutonomousValidationCycleService'},
+            throttle_state=self._operational_budget_experiment_throttle,
+            throttle_seconds=60.0,
+        )
+
     def run_once(self, *, reason: str = 'manual') -> AutonomousValidationSnapshot:
         monitor_status = self._current_tool_evolution_status()
         proposal_candidate = self._next_tool_evolution_candidate(monitor_status=monitor_status)
         environment_model = self._current_environment_model()
         world_model = self._current_world_model()
-        paused_reason = self._pause_reason(environment_model=environment_model, world_model=world_model)
+        budget = self._operational_budget_for_validation(
+            reason=reason,
+            environment_model=environment_model,
+            world_model=world_model,
+        )
+        base_metadata = dict(self._current_snapshot.metadata or {})
+        paused_reason = ''
+        if budget and not bool(budget.get('allowed')):
+            paused_reason = f"operational_budget:{budget.get('reason') or 'deferred'}"
+        if not paused_reason:
+            paused_reason = self._pause_reason(environment_model=environment_model, world_model=world_model)
         if not paused_reason and proposal_candidate is not None:
             inertia_reason = self._scope_inertia_cooldown_reason(proposal=proposal_candidate[0])
             if inertia_reason:
@@ -271,7 +390,11 @@ class AutonomousValidationCycleService:
                     reason=f'La validacion de la propuesta se aplazo porque {paused_reason}',
                     sandbox_experiment=None,
                     metrics={'priority_score': round(priority_score, 4)},
-                    metadata={'decision_source': 'tool_evolution_monitor', 'paused_reason': paused_reason},
+                    metadata={
+                        'decision_source': 'tool_evolution_monitor',
+                        'paused_reason': paused_reason,
+                        'operational_budget': budget,
+                    },
                 )
                 return self._store_snapshot(
                     AutonomousValidationSnapshot(
@@ -285,12 +408,14 @@ class AutonomousValidationCycleService:
                         last_experiment_id='',
                         unresolved_fields=[],
                         metadata={
+                            **base_metadata,
                             'reason': reason,
                             'decision_source': 'tool_evolution_monitor',
                             'proposal_key': proposal.proposal_key,
                             'proposal_kind': proposal.proposal_kind,
                             'decision': result.decision,
                             'priority_score': round(priority_score, 4),
+                            'operational_budget': budget,
                         },
                     )
                 )
@@ -305,9 +430,11 @@ class AutonomousValidationCycleService:
                     promoted_count=self._promoted_count(),
                     last_experiment_id=str(self._current_snapshot.last_experiment_id or ''),
                     metadata={
+                        **base_metadata,
                         'reason': reason,
                         'environment_scan_status': str(getattr(environment_model, 'scan_status', '') or ''),
                         'world_model_confidence': float(getattr(world_model, 'confidence', 0.0) or 0.0),
+                        'operational_budget': budget,
                     },
                 )
             )
@@ -365,6 +492,7 @@ class AutonomousValidationCycleService:
                 'decision': result.decision,
                 'winner': result.winner,
                 'priority_score': round(priority_score, 4),
+                'operational_budget': budget,
             }
             if promotion_meta:
                 snapshot_metadata['promotion_pr'] = promotion_meta
@@ -418,7 +546,11 @@ class AutonomousValidationCycleService:
                     pending_candidates=pending,
                     promoted_count=self._promoted_count(),
                     last_experiment_id=str(self._current_snapshot.last_experiment_id or ''),
-                    metadata={'reason': reason, 'auto_probes_consumed': probes_consumed},
+                    metadata={
+                        'reason': reason,
+                        'auto_probes_consumed': probes_consumed,
+                        'operational_budget': budget,
+                    },
                 )
             )
         experiment = self.sandbox_experiment_service.validate_recommendation(
@@ -443,6 +575,7 @@ class AutonomousValidationCycleService:
             'promoted_count': promoted_count,
             'last_subject_key': experiment.subject_key,
             'last_verdict': experiment.verdict.value,
+            'operational_budget': budget,
         }
         if promotion_meta:
             snapshot_metadata['promotion_pr'] = promotion_meta
@@ -473,10 +606,13 @@ class AutonomousValidationCycleService:
             self._wake_event.clear()
 
     def _safe_tick(self, *, reason: str) -> None:
+        snapshot: AutonomousValidationSnapshot | None = None
         try:
-            self.run_once(reason=reason)
+            snapshot = self.run_once(reason=reason)
         except Exception as exc:
-            self._store_error_snapshot(reason=reason, exc=exc)
+            snapshot = self._store_error_snapshot(reason=reason, exc=exc)
+        if snapshot is not None and snapshot.status in {'paused', 'deferred'} and snapshot.paused_reason:
+            return
         # PR J: despues del review de candidatos existentes, el ciclo intenta
         # auto-iniciar investigacion sobre backlog abierto. Cualquier fallo
         # queda aislado para no romper el loop de validacion.
@@ -894,6 +1030,11 @@ class AutonomousValidationCycleService:
         'local_model': ('ollama',),
         'external_account': (),
         'local_runtime': (),
+        'operational_autonomy_contract': (),
+        'operational_visual_replay': (),
+        'operational_context_hygiene': (),
+        'operational_self_testing': (),
+        'operational_cross_device_universal': (),
     }
 
     # ------------------------------------------------------------------

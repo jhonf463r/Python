@@ -846,6 +846,11 @@ class WorldModelService:
                     assistant_kind=live.assistant_kind if live is not None else '',
                     state=live.status if live is not None else 'visible',
                     detail=live.detail if live is not None else '',
+                    metadata={
+                        'hwnd': int(raw.get('hwnd') or 0),
+                        'rect': list(raw.get('rect') or []),
+                        'raw_title': title,
+                    },
                 )
             )
         return items
@@ -866,6 +871,26 @@ class WorldModelService:
             return None
         pid = wintypes.DWORD()
         self._user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        rect: list[int] = []
+        try:
+            left = ctypes.c_long()
+            top = ctypes.c_long()
+            right = ctypes.c_long()
+            bottom = ctypes.c_long()
+
+            class RECT(ctypes.Structure):
+                _fields_ = [('left', ctypes.c_long), ('top', ctypes.c_long), ('right', ctypes.c_long), ('bottom', ctypes.c_long)]
+
+            raw_rect = RECT()
+            if self._user32.GetWindowRect(hwnd, ctypes.byref(raw_rect)):
+                rect = [
+                    int(raw_rect.left),
+                    int(raw_rect.top),
+                    max(0, int(raw_rect.right) - int(raw_rect.left)),
+                    max(0, int(raw_rect.bottom) - int(raw_rect.top)),
+                ]
+        except Exception:
+            rect = []
         return WindowObservation(
             title=title,
             app_name=title.split(' - ')[0] if title else '',
@@ -873,6 +898,7 @@ class WorldModelService:
             focused=True,
             visible=True,
             state='focused',
+            metadata={'hwnd': int(hwnd), 'rect': rect},
         )
 
     def _list_windows(self) -> list[dict[str, Any]]:
@@ -894,7 +920,22 @@ class WorldModelService:
                 return True
             pid = wintypes.DWORD()
             self._user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
-            windows.append({'title': title, 'pid': int(pid.value or 0)})
+            rect: list[int] = []
+            try:
+                class RECT(ctypes.Structure):
+                    _fields_ = [('left', ctypes.c_long), ('top', ctypes.c_long), ('right', ctypes.c_long), ('bottom', ctypes.c_long)]
+
+                raw_rect = RECT()
+                if self._user32.GetWindowRect(hwnd, ctypes.byref(raw_rect)):
+                    rect = [
+                        int(raw_rect.left),
+                        int(raw_rect.top),
+                        max(0, int(raw_rect.right) - int(raw_rect.left)),
+                        max(0, int(raw_rect.bottom) - int(raw_rect.top)),
+                    ]
+            except Exception:
+                rect = []
+            windows.append({'title': title, 'pid': int(pid.value or 0), 'hwnd': int(hwnd), 'rect': rect})
             return True
 
         try:

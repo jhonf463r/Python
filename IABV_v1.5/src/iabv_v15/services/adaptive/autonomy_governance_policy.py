@@ -1,16 +1,25 @@
 ﻿from __future__ import annotations
 
+import json
+import time
 from typing import Any
 
 from iabv_v15.domain.models import (
     AdaptiveSessionStatus,
     CapabilityReadiness,
     EnvironmentSelfModel,
+    EvaluationRoute,
     ExternalStateFlag,
+    ExperimentDomain,
+    ExperimentMetric,
+    ExperimentRun,
     GoalContext,
     IssueSeverity,
+    RuntimeAdjustment,
+    RuntimeTuningProfile,
     WorldModelSnapshot,
     canonical_external_state_flags,
+    utc_now,
 )
 
 
@@ -25,13 +34,63 @@ class AutonomyGovernancePolicy:
         'critical_object_missing',
     }
 
-    def __init__(self, *, allow_parallel_comparison: bool = True) -> None:
+    def __init__(
+        self,
+        *,
+        allow_parallel_comparison: bool = True,
+        operational_budget_thresholds: dict[str, Any] | None = None,
+    ) -> None:
         # Flag que habilita el cotejo en paralelo de IAs externas sobre el mismo
         # ``SynapticRoutingDecision``. Por defecto encendido: la politica es
         # descriptiva y el cotejo no ejecuta rutas operativas, solo prepara /
         # compara consultas via ``AutonomousEvolutionService``. Los tests o el
         # bootstrap pueden apagarlo para forzar ruta IA unica.
         self.allow_parallel_comparison = bool(allow_parallel_comparison)
+        self._operational_budget_threshold_source = 'compiled_defaults'
+        self._operational_budget_thresholds = _normalize_operational_budget_thresholds(
+            operational_budget_thresholds,
+        )
+        if operational_budget_thresholds:
+            self._operational_budget_threshold_source = 'runtime_constructor'
+
+    def operational_budget_thresholds(self) -> dict[str, float]:
+        """Return the effective runtime thresholds used by the budget gate."""
+
+        return dict(self._operational_budget_thresholds)
+
+    def configure_operational_budget_thresholds(
+        self,
+        thresholds: dict[str, Any] | None,
+        *,
+        source: str = 'runtime_tuning',
+    ) -> dict[str, float]:
+        """Apply governed operational-budget thresholds to this policy instance."""
+
+        self._operational_budget_thresholds = _normalize_operational_budget_thresholds(thresholds)
+        self._operational_budget_threshold_source = str(source or 'runtime_tuning')
+        return self.operational_budget_thresholds()
+
+    def apply_runtime_tuning_profile(
+        self,
+        profile: RuntimeTuningProfile | Any | None,
+    ) -> dict[str, float]:
+        """Load operational-budget thresholds from an existing tuning profile."""
+
+        if profile is None:
+            self._operational_budget_thresholds = _normalize_operational_budget_thresholds(None)
+            self._operational_budget_threshold_source = 'compiled_defaults'
+            return self.operational_budget_thresholds()
+        metadata = dict(getattr(profile, 'metadata', {}) or {})
+        payload = metadata.get('operational_budget_thresholds') or {}
+        thresholds: dict[str, Any] = {}
+        if isinstance(payload, dict):
+            raw = payload.get('thresholds') or payload.get('recommended_thresholds') or payload
+            if isinstance(raw, dict):
+                thresholds = raw
+        return self.configure_operational_budget_thresholds(
+            thresholds,
+            source='runtime_tuning_profile',
+        )
 
     def allow_parallel_ia_comparison(self) -> tuple[bool, str | None]:
         """Gate para ``AdaptiveTaskOrchestrator._parallel_ia_comparison``.
@@ -55,6 +114,242 @@ class AutonomyGovernancePolicy:
         """
 
         return True, None
+
+    _OPERATIONAL_FOREGROUND_CLASSES = {
+        'foreground_response',
+        'interaction_lifecycle',
+        'visible_ui_update',
+        'human_approval',
+        'watchdog',
+    }
+    _OPERATIONAL_BACKGROUND_CLASSES = {
+        'autonomy_dock_refresh',
+        'ui_refresh',
+        'idle_self_test',
+        'deep_scan',
+        'metacognition',
+        'metacognition_promotion',
+        'control_post_task_refresh',
+        'tool_scan',
+        'branch_cleanup',
+    }
+    _OPERATIONAL_CRITICAL_RSS_MB = 6000.0
+    _OPERATIONAL_HIGH_RSS_MB = 2500.0
+    _OPERATIONAL_STALL_MS = 5000.0
+    _OPERATIONAL_IDLE_REST_WINDOW_S = 120.0
+    _OPERATIONAL_UI_ROUTE_STABILITY_WINDOW_S = 180.0
+    _OPERATIONAL_POST_TASK_REST_WINDOW_S = 600.0
+    _OPERATIONAL_POST_TASK_HIGH_RSS_MB = 1500.0
+    _OPERATIONAL_POST_TASK_STALL_MS = 2000.0
+
+    def evaluate_operational_budget(
+        self,
+        *,
+        work_class: str,
+        source: str = '',
+        priority: str = 'normal',
+        user_waiting: bool = False,
+        query_pending: bool = False,
+        rss_mb: float = 0.0,
+        recent_stall_ms: float = 0.0,
+        event_loop_lag_ms: float = 0.0,
+        idle_seconds: float = 0.0,
+        ui_route_stability_age_s: float | None = None,
+        active_route: str = '',
+        background_active: bool = False,
+        confidence: float = 1.0,
+    ) -> dict[str, Any]:
+        """Budget gate for routine organs that must not starve the UI.
+
+        This is the small "metabolic" rule set used by UI refreshes, idle
+        self-tests and other auxiliary work.  It does not decide user intent
+        and it does not replace the orchestrator; it only answers whether a
+        work item is allowed in the current resource/attention window.
+        """
+
+        work = str(work_class or '').strip().lower() or 'unknown'
+        src = str(source or '').strip().lower()
+        prio = str(priority or 'normal').strip().lower()
+        try:
+            rss = max(0.0, float(rss_mb or 0.0))
+        except Exception:
+            rss = 0.0
+        try:
+            stall = max(float(recent_stall_ms or 0.0), float(event_loop_lag_ms or 0.0), 0.0)
+        except Exception:
+            stall = 0.0
+        try:
+            idle = max(0.0, float(idle_seconds or 0.0))
+        except Exception:
+            idle = 0.0
+        route_age: float | None
+        try:
+            route_age = max(0.0, float(ui_route_stability_age_s)) if ui_route_stability_age_s is not None else None
+        except Exception:
+            route_age = None
+        try:
+            conf = max(0.0, min(float(confidence or 0.0), 1.0))
+        except Exception:
+            conf = 0.0
+
+        foreground = work in self._OPERATIONAL_FOREGROUND_CLASSES
+        evidence = {
+            'source': src,
+            'priority': prio,
+            'user_waiting': bool(user_waiting),
+            'query_pending': bool(query_pending),
+            'rss_mb': round(rss, 1),
+            'recent_stall_ms': round(stall, 1),
+            'idle_seconds': round(idle, 1),
+            'ui_route_stability_age_s': round(route_age, 1) if route_age is not None else None,
+            'active_route': str(active_route or '').strip(),
+            'background_active': bool(background_active),
+            'confidence': round(conf, 3),
+        }
+        thresholds = self.operational_budget_thresholds()
+        critical_rss_mb = float(thresholds.get('critical_rss_mb') or self._OPERATIONAL_CRITICAL_RSS_MB)
+        high_rss_mb = float(thresholds.get('high_rss_mb') or self._OPERATIONAL_HIGH_RSS_MB)
+        stall_ms = float(thresholds.get('stall_ms') or self._OPERATIONAL_STALL_MS)
+        idle_rest_window_s = float(thresholds.get('idle_rest_window_s') or self._OPERATIONAL_IDLE_REST_WINDOW_S)
+        ui_route_stability_window_s = float(
+            thresholds.get('ui_route_stability_window_s') or self._OPERATIONAL_UI_ROUTE_STABILITY_WINDOW_S
+        )
+        post_task_rest_window_s = float(
+            thresholds.get('post_task_rest_window_s') or self._OPERATIONAL_POST_TASK_REST_WINDOW_S
+        )
+        post_task_high_rss_mb = float(
+            thresholds.get('post_task_high_rss_mb') or self._OPERATIONAL_POST_TASK_HIGH_RSS_MB
+        )
+        post_task_stall_ms = float(
+            thresholds.get('post_task_stall_ms') or self._OPERATIONAL_POST_TASK_STALL_MS
+        )
+
+        def _budget(
+            decision: str,
+            reason: str,
+            *,
+            defer_seconds: float = 0.0,
+            recommended_mode: str = 'normal',
+        ) -> dict[str, Any]:
+            return {
+                'decision': decision,
+                'allowed': decision == 'allow',
+                'reason': reason,
+                'work_class': work,
+                'priority': prio,
+                'recommended_mode': recommended_mode,
+                'defer_seconds': round(max(0.0, defer_seconds), 1),
+                'evidence': evidence,
+                'decision_source': 'autonomy_governance_policy.operational_budget',
+                'threshold_source': self._operational_budget_threshold_source,
+                'effective_thresholds': thresholds,
+            }
+
+        if conf < 0.45 and work in {'external_action', 'destructive_action', 'branch_cleanup'}:
+            return _budget('ask_user', 'confidence_too_low_for_action')
+
+        if (user_waiting or query_pending) and not foreground:
+            return _budget('defer', 'visible_query_wait_active', defer_seconds=30.0)
+
+        if bool(background_active) and not foreground:
+            return _budget('defer', 'startup_or_background_active', defer_seconds=20.0)
+
+        post_task_background = (
+            src.startswith('post_task:')
+            and work in self._OPERATIONAL_BACKGROUND_CLASSES
+            and prio not in {'critical', 'foreground'}
+        )
+        if post_task_background:
+            if stall >= post_task_stall_ms:
+                return _budget(
+                    'defer',
+                    f'post_task_recent_ui_stall:{int(stall)}ms',
+                    defer_seconds=60.0,
+                    recommended_mode='wait_for_stable_ui',
+                )
+            if rss >= post_task_high_rss_mb:
+                return _budget(
+                    'defer',
+                    'post_task_resource_pressure_high',
+                    defer_seconds=60.0,
+                    recommended_mode='wait_for_lower_memory',
+                )
+            if idle < post_task_rest_window_s:
+                return _budget(
+                    'defer',
+                    'post_task_rest_window_not_reached',
+                    defer_seconds=post_task_rest_window_s - idle,
+                    recommended_mode='wait_for_deep_idle',
+                )
+            if route_age is not None and route_age < post_task_rest_window_s:
+                route_label = (str(active_route or '').strip().lower() or 'unknown').replace(' ', '_')[:40]
+                return _budget(
+                    'defer',
+                    f'post_task_ui_route_stabilizing:{route_label}',
+                    defer_seconds=post_task_rest_window_s - route_age,
+                    recommended_mode='wait_for_ui_route_stability',
+                )
+
+        route_stability_required = (
+            work in self._OPERATIONAL_BACKGROUND_CLASSES
+            and src != 'user_click'
+            and prio not in {'critical', 'foreground'}
+        )
+        if (
+            route_stability_required
+            and route_age is not None
+            and route_age < ui_route_stability_window_s
+        ):
+            route_label = (str(active_route or '').strip().lower() or 'unknown').replace(' ', '_')[:40]
+            return _budget(
+                'defer',
+                f'ui_route_stabilizing:{route_label}',
+                defer_seconds=ui_route_stability_window_s - route_age,
+                recommended_mode='wait_for_ui_route_stability',
+            )
+
+        if stall >= stall_ms and not foreground:
+            return _budget('defer', f'recent_ui_stall:{int(stall)}ms', defer_seconds=30.0)
+
+        if rss >= critical_rss_mb and not foreground:
+            return _budget('defer', 'resource_pressure_critical', defer_seconds=60.0)
+
+        if rss >= high_rss_mb and not foreground:
+            return _budget('defer', 'resource_pressure_high', defer_seconds=30.0)
+
+        rest_window_required = (
+            work in {
+                'autonomy_dock_refresh',
+                'ui_refresh',
+                'idle_self_test',
+                'deep_scan',
+                'metacognition',
+                'metacognition_promotion',
+                'control_post_task_refresh',
+                'tool_scan',
+            }
+            and src != 'user_click'
+            and prio not in {'critical', 'foreground'}
+        )
+        if rest_window_required and idle < idle_rest_window_s:
+            return _budget(
+                'defer',
+                'rest_window_not_reached',
+                defer_seconds=idle_rest_window_s - idle,
+                recommended_mode='wait_for_idle',
+            )
+
+        if work in {
+            'idle_self_test',
+            'deep_scan',
+            'metacognition',
+            'metacognition_promotion',
+            'control_post_task_refresh',
+            'tool_scan',
+        } and prio not in {'critical'}:
+            return _budget('allow', 'idle_rest_window_available', recommended_mode='background_idle')
+
+        return _budget('allow', 'budget_available')
 
     # --- Reglas Nivel 1 para auto-merge gobernado de PRs via GitHubApiToolAdapter.
     # El control fino lo siguen haciendo los ToolAdapters y GitHub (CI, branch
@@ -924,5 +1219,452 @@ class AutonomyGovernancePolicy:
 
         return None
 
+
+def record_operational_budget_experiment(
+    *,
+    repository: Any | None,
+    budget: dict[str, Any] | None,
+    observed_summary: str = '',
+    evidence_refs: list[str] | None = None,
+    metadata: dict[str, Any] | None = None,
+    execution_ms: int = 0,
+    throttle_state: dict[str, float] | None = None,
+    throttle_seconds: float = 60.0,
+) -> ExperimentRun | None:
+    """Persist an operational-budget decision into ExperimentLab history."""
+
+    if repository is None or not hasattr(repository, 'save_run') or not isinstance(budget, dict):
+        return None
+    decision = str(budget.get('decision') or '').strip().lower() or 'unknown'
+    reason = str(budget.get('reason') or '').strip().lower() or 'unknown'
+    work_class = str(budget.get('work_class') or 'unknown').strip().lower() or 'unknown'
+    source = str(dict(budget.get('evidence') or {}).get('source') or '').strip().lower()
+    signature = f'{work_class}:{source}:{decision}:{reason}'
+    if throttle_state is not None:
+        now = time.monotonic()
+        last = float(throttle_state.get(signature, 0.0) or 0.0)
+        if last > 0.0 and (now - last) < float(throttle_seconds or 0.0):
+            return None
+        throttle_state[signature] = now
+
+    evidence = dict(budget.get('evidence') or {})
+    confidence = _clamp_float(evidence.get('confidence'), default=0.5)
+    allowed = bool(budget.get('allowed'))
+    protective = 1.0 if decision in {'defer', 'ask_user'} and reason != 'budget_available' else 0.55
+    progress = 1.0 if allowed else 0.35 if decision == 'defer' else 0.2
+    metric = ExperimentMetric(
+        precision=confidence,
+        robustness=protective,
+        user_progress=progress,
+        execution_ms=max(0, int(execution_ms or 0)),
+        total_score=round((confidence * 0.45) + (protective * 0.35) + (progress * 0.20), 4),
+        metadata={
+            'budget_decision': decision,
+            'budget_reason': reason,
+            'work_class': work_class,
+            'allowed': allowed,
+        },
+    )
+    summary = (observed_summary or f'{work_class} -> {decision}:{reason}')[:240]
+    run = ExperimentRun(
+        domain=ExperimentDomain.ALGORITHM,
+        suite_name='operational_budget',
+        objective='Regular trabajo interno sin bloquear la experiencia visible',
+        subject_key=f'operational_budget:{work_class}',
+        comparison_scope_key='operational_budget',
+        route=EvaluationRoute.BACKGROUND,
+        assistant_kind='iabv_self',
+        config_signature='autonomy_governance_policy.operational_budget',
+        candidate_label=f'{decision}:{reason}'[:120],
+        success=decision in {'allow', 'defer', 'ask_user'},
+        expected_summary='Decidir si un organo interno puede trabajar ahora o debe esperar.',
+        observed_summary=summary,
+        metrics=metric,
+        evidence_refs=list(evidence_refs or []),
+        metadata={
+            **dict(metadata or {}),
+            'suite_name': 'operational_budget',
+            'assistant_kind': 'iabv_self',
+            'comparison_scope_key': 'operational_budget',
+            'operational_budget': budget,
+            'budget_decision': decision,
+            'budget_reason': reason,
+            'work_class': work_class,
+            'source': source,
+            'outcome_summary': summary,
+        },
+    )
+    try:
+        return repository.save_run(run)
+    except Exception:
+        return None
+
+
+_OPERATIONAL_BUDGET_THRESHOLD_BOUNDS: dict[str, tuple[float, float]] = {
+    'critical_rss_mb': (1500.0, 20000.0),
+    'high_rss_mb': (500.0, 15000.0),
+    'stall_ms': (500.0, 60000.0),
+    'idle_rest_window_s': (10.0, 1800.0),
+    'ui_route_stability_window_s': (30.0, 1800.0),
+    'post_task_rest_window_s': (60.0, 3600.0),
+    'post_task_high_rss_mb': (500.0, 15000.0),
+    'post_task_stall_ms': (500.0, 60000.0),
+}
+
+
+def _normalize_operational_budget_thresholds(
+    thresholds: dict[str, Any] | None,
+) -> dict[str, float]:
+    """Return safe operational-budget thresholds with bounded overrides."""
+
+    defaults = operational_budget_default_thresholds()
+    normalized = dict(defaults)
+    raw = dict(thresholds or {})
+    for key, (minimum, maximum) in _OPERATIONAL_BUDGET_THRESHOLD_BOUNDS.items():
+        if key not in raw:
+            continue
+        try:
+            value = float(raw.get(key))
+        except Exception:
+            continue
+        if value <= 0:
+            continue
+        normalized[key] = round(max(minimum, min(maximum, value)), 1)
+    if normalized['critical_rss_mb'] < normalized['high_rss_mb']:
+        normalized['critical_rss_mb'] = normalized['high_rss_mb']
+    return normalized
+
+
+def operational_budget_default_thresholds() -> dict[str, float]:
+    """Return the currently compiled guardrail thresholds.
+
+    The returned values are observational metadata, not mutable state.  Runtime
+    tuning may recommend different values, but applying them remains a separate
+    governed step.
+    """
+
+    return {
+        'critical_rss_mb': AutonomyGovernancePolicy._OPERATIONAL_CRITICAL_RSS_MB,
+        'high_rss_mb': AutonomyGovernancePolicy._OPERATIONAL_HIGH_RSS_MB,
+        'stall_ms': AutonomyGovernancePolicy._OPERATIONAL_STALL_MS,
+        'idle_rest_window_s': AutonomyGovernancePolicy._OPERATIONAL_IDLE_REST_WINDOW_S,
+        'ui_route_stability_window_s': AutonomyGovernancePolicy._OPERATIONAL_UI_ROUTE_STABILITY_WINDOW_S,
+        'post_task_rest_window_s': AutonomyGovernancePolicy._OPERATIONAL_POST_TASK_REST_WINDOW_S,
+        'post_task_high_rss_mb': AutonomyGovernancePolicy._OPERATIONAL_POST_TASK_HIGH_RSS_MB,
+        'post_task_stall_ms': AutonomyGovernancePolicy._OPERATIONAL_POST_TASK_STALL_MS,
+    }
+
+
+def summarize_operational_budget_calibration(
+    experiment_runs: list[ExperimentRun] | list[Any],
+    *,
+    min_sample: int = 10,
+) -> dict[str, Any]:
+    """Summarize whether operational-budget thresholds are ready to tune.
+
+    This is deliberately conservative: it converts ExperimentLab evidence into
+    a calibration recommendation, but it does not mutate thresholds.  Applying a
+    threshold change belongs to the existing runtime-tuning/governance path.
+    """
+
+    budget_runs = [
+        run for run in list(experiment_runs or [])
+        if str(getattr(run, 'suite_name', '') or '') == 'operational_budget'
+        or str(dict(getattr(run, 'metadata', {}) or {}).get('suite_name') or '') == 'operational_budget'
+    ]
+    current_thresholds = operational_budget_default_thresholds()
+    by_decision: dict[str, int] = {}
+    by_reason: dict[str, int] = {}
+    by_work_class: dict[str, int] = {}
+    score_by_decision: dict[str, list[float]] = {}
+    evidence_ranges: dict[str, dict[str, float]] = {
+        'rss_mb': {'min': 0.0, 'max': 0.0, 'avg': 0.0},
+        'recent_stall_ms': {'min': 0.0, 'max': 0.0, 'avg': 0.0},
+        'idle_seconds': {'min': 0.0, 'max': 0.0, 'avg': 0.0},
+    }
+    evidence_values: dict[str, list[float]] = {key: [] for key in evidence_ranges}
+
+    for run in budget_runs:
+        metadata = dict(getattr(run, 'metadata', {}) or {})
+        budget = dict(metadata.get('operational_budget') or {})
+        evidence = dict(budget.get('evidence') or {})
+        decision = str(metadata.get('budget_decision') or budget.get('decision') or '').strip().lower() or 'unknown'
+        reason = str(metadata.get('budget_reason') or budget.get('reason') or '').strip().lower() or 'unknown'
+        work_class = str(metadata.get('work_class') or budget.get('work_class') or '').strip().lower() or 'unknown'
+        by_decision[decision] = by_decision.get(decision, 0) + 1
+        by_reason[reason] = by_reason.get(reason, 0) + 1
+        by_work_class[work_class] = by_work_class.get(work_class, 0) + 1
+        try:
+            score = float(getattr(getattr(run, 'metrics', None), 'total_score', 0.0) or 0.0)
+        except Exception:
+            score = 0.0
+        score_by_decision.setdefault(decision, []).append(score)
+        for key in evidence_values:
+            try:
+                evidence_values[key].append(float(evidence.get(key) or 0.0))
+            except Exception:
+                pass
+
+    for key, values in evidence_values.items():
+        non_empty = [float(v) for v in values]
+        if non_empty:
+            evidence_ranges[key] = {
+                'min': round(min(non_empty), 2),
+                'max': round(max(non_empty), 2),
+                'avg': round(sum(non_empty) / len(non_empty), 2),
+            }
+
+    avg_score_by_decision = {
+        key: round(sum(values) / max(len(values), 1), 4)
+        for key, values in score_by_decision.items()
+        if values
+    }
+    total = len(budget_runs)
+    if total <= 0:
+        return {
+            'status': 'no_data',
+            'policy_version': 'operational_budget_v1',
+            'sample_count': 0,
+            'minimum_sample': int(min_sample),
+            'current_thresholds': current_thresholds,
+            'recommended_thresholds': current_thresholds,
+            'confidence': 0.0,
+            'recommendation': 'collect_operational_budget_samples',
+            'by_decision': {},
+            'by_reason': {},
+            'by_work_class': {},
+            'avg_score_by_decision': {},
+            'evidence_ranges': evidence_ranges,
+        }
+
+    confidence = round(min(0.95, max(0.1, total / max(int(min_sample), 1) * 0.45)), 3)
+    if total < int(min_sample):
+        status = 'insufficient_sample'
+        recommendation = 'collect_more_evidence_before_tuning'
+    else:
+        defer_count = int(by_decision.get('defer', 0))
+        allow_count = int(by_decision.get('allow', 0))
+        ask_count = int(by_decision.get('ask_user', 0))
+        rest_count = int(by_reason.get('rest_window_not_reached', 0))
+        stall_count = sum(
+            count for reason, count in by_reason.items()
+            if str(reason).startswith('recent_ui_stall')
+        )
+        pressure_count = int(by_reason.get('resource_pressure_high', 0)) + int(by_reason.get('resource_pressure_critical', 0))
+        if allow_count <= 0:
+            status = 'needs_allow_samples'
+            recommendation = 'collect_post_rest_allow_evidence_before_tuning'
+        elif ask_count > 0:
+            status = 'human_gate_observed'
+            recommendation = 'keep_thresholds_and_review_low_confidence_actions'
+        elif pressure_count or stall_count:
+            status = 'protective_thresholds_active'
+            recommendation = 'keep_current_thresholds_until_stalls_and_pressure_decline'
+        elif rest_count >= max(3, total // 2) and defer_count > allow_count:
+            status = 'rest_window_dominant'
+            recommendation = 'keep_idle_rest_window_and_collect_more_after_idle_samples'
+        else:
+            status = 'stable_guardrails'
+            recommendation = 'keep_current_thresholds'
+
+    return {
+        'status': status,
+        'policy_version': 'operational_budget_v1',
+        'sample_count': total,
+        'minimum_sample': int(min_sample),
+        'current_thresholds': current_thresholds,
+        'recommended_thresholds': current_thresholds,
+        'confidence': confidence,
+        'recommendation': recommendation,
+        'by_decision': by_decision,
+        'by_reason': by_reason,
+        'by_work_class': by_work_class,
+        'avg_score_by_decision': avg_score_by_decision,
+        'evidence_ranges': evidence_ranges,
+    }
+
+
+def apply_operational_budget_calibration_to_runtime_tuning(
+    *,
+    repository: Any | None,
+    calibration: dict[str, Any] | None,
+    scope_key: str = 'global',
+    recent_stall_ms: float = 0.0,
+    background_active: bool = False,
+    evidence_refs: list[str] | None = None,
+) -> dict[str, Any]:
+    """Promote a mature operational-budget calibration into runtime tuning.
+
+    This is A5: a governed, reversible application step.  It does not invent
+    thresholds; it persists the recommendation already derived from
+    ExperimentLab/OSES and lets ``AutonomyGovernancePolicy`` consume it on the
+    next evaluation.
+    """
+
+    if repository is None or not hasattr(repository, 'get') or not hasattr(repository, 'save'):
+        return {'applied': False, 'status': 'unavailable', 'reason': 'runtime_tuning_repository_missing'}
+    data = dict(calibration or {})
+    status = str(data.get('status') or '').strip().lower()
+    recommendation = str(data.get('recommendation') or '').strip() or 'keep_current_thresholds'
+    sample_count = int(data.get('sample_count') or 0)
+    minimum_sample = int(data.get('minimum_sample') or 10)
+    if sample_count < minimum_sample:
+        return {
+            'applied': False,
+            'status': status or 'insufficient_sample',
+            'reason': 'minimum_sample_not_reached',
+            'sample_count': sample_count,
+            'minimum_sample': minimum_sample,
+        }
+    if status in {'no_data', 'insufficient_sample', 'needs_allow_samples', 'human_gate_observed'}:
+        return {
+            'applied': False,
+            'status': status,
+            'reason': f'calibration_not_safe_to_apply:{status}',
+            'sample_count': sample_count,
+            'minimum_sample': minimum_sample,
+        }
+    try:
+        stall = max(0.0, float(recent_stall_ms or 0.0))
+    except Exception:
+        stall = 0.0
+    if stall >= AutonomyGovernancePolicy._OPERATIONAL_STALL_MS:
+        return {
+            'applied': False,
+            'status': status,
+            'reason': f'recent_ui_stall:{int(stall)}ms',
+            'sample_count': sample_count,
+            'minimum_sample': minimum_sample,
+        }
+    if bool(background_active):
+        return {
+            'applied': False,
+            'status': status,
+            'reason': 'background_active',
+            'sample_count': sample_count,
+            'minimum_sample': minimum_sample,
+        }
+
+    thresholds = _normalize_operational_budget_thresholds(data.get('recommended_thresholds') or {})
+    profile = repository.get(scope_key) or RuntimeTuningProfile(scope_key=scope_key)
+    metadata = dict(profile.metadata or {})
+    existing_payload = dict(metadata.get('operational_budget_thresholds') or {})
+    previous_thresholds = _normalize_operational_budget_thresholds(
+        existing_payload.get('thresholds') if isinstance(existing_payload, dict) else None
+    )
+    signature = _operational_budget_calibration_signature(data, thresholds)
+    if (
+        existing_payload
+        and previous_thresholds == thresholds
+        and str(existing_payload.get('calibration_status') or '').strip().lower() == status
+        and str(existing_payload.get('recommendation') or '').strip() == recommendation
+    ):
+        metadata['operational_budget_thresholds'] = {
+            **existing_payload,
+            'thresholds': thresholds,
+            'calibration_status': status,
+            'recommendation': recommendation,
+            'sample_count': sample_count,
+            'minimum_sample': minimum_sample,
+            'confidence': float(data.get('confidence') or 0.0),
+            'policy_version': data.get('policy_version') or 'operational_budget_v1',
+            'calibration_signature': signature,
+            'last_confirmed_at_utc': utc_now().isoformat(),
+        }
+        profile.metadata = metadata
+        profile.updated_at_utc = utc_now()
+        repository.save(profile)
+        return {
+            'applied': False,
+            'status': status,
+            'reason': 'already_effective',
+            'sample_count': sample_count,
+            'minimum_sample': minimum_sample,
+            'thresholds': thresholds,
+            'profile_id': profile.profile_id,
+        }
+    if existing_payload.get('calibration_signature') == signature:
+        return {
+            'applied': False,
+            'status': status,
+            'reason': 'already_applied',
+            'sample_count': sample_count,
+            'minimum_sample': minimum_sample,
+            'thresholds': thresholds,
+            'profile_id': profile.profile_id,
+        }
+
+    adjustment = RuntimeAdjustment(
+        target_key='autonomy_governance_policy.operational_budget.thresholds',
+        previous_value=previous_thresholds,
+        new_value=thresholds,
+        reason=(
+            f'A5 operational budget calibration: {recommendation} '
+            f'({status}, samples={sample_count}/{minimum_sample}).'
+        ),
+        evidence_refs=[
+            *(evidence_refs or []),
+            'ExperimentLab:operational_budget',
+            'OSES:operational_budget_calibration',
+        ],
+        reversible=True,
+        helped=None,
+        metadata={
+            'calibration_status': status,
+            'recommendation': recommendation,
+            'sample_count': sample_count,
+            'minimum_sample': minimum_sample,
+            'confidence': float(data.get('confidence') or 0.0),
+            'calibration_signature': signature,
+        },
+    )
+    metadata['operational_budget_thresholds'] = {
+        'thresholds': thresholds,
+        'calibration_status': status,
+        'recommendation': recommendation,
+        'sample_count': sample_count,
+        'minimum_sample': minimum_sample,
+        'confidence': float(data.get('confidence') or 0.0),
+        'policy_version': data.get('policy_version') or 'operational_budget_v1',
+        'calibration_signature': signature,
+        'applied_at_utc': utc_now().isoformat(),
+    }
+    profile.adjustments.append(adjustment)
+    profile.metadata = metadata
+    profile.updated_at_utc = utc_now()
+    repository.save(profile)
+    return {
+        'applied': True,
+        'status': status,
+        'reason': 'runtime_tuning_profile_updated',
+        'sample_count': sample_count,
+        'minimum_sample': minimum_sample,
+        'thresholds': thresholds,
+        'profile_id': profile.profile_id,
+        'adjustment_id': adjustment.adjustment_id,
+    }
+
+
+def _operational_budget_calibration_signature(
+    calibration: dict[str, Any],
+    thresholds: dict[str, float],
+) -> str:
+    payload = {
+        'policy_version': calibration.get('policy_version') or 'operational_budget_v1',
+        'status': calibration.get('status') or '',
+        'recommendation': calibration.get('recommendation') or '',
+        'sample_count': int(calibration.get('sample_count') or 0),
+        'minimum_sample': int(calibration.get('minimum_sample') or 10),
+        'thresholds': thresholds,
+    }
+    return json.dumps(payload, sort_keys=True, ensure_ascii=True)
+
+
+def _clamp_float(value: Any, *, default: float = 0.0) -> float:
+    try:
+        parsed = float(value)
+    except Exception:
+        parsed = default
+    return max(0.0, min(parsed, 1.0))
 
 

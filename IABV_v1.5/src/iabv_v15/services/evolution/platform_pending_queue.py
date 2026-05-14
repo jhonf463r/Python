@@ -270,15 +270,103 @@ class PlatformPendingQueue:
                 'El programa monitorea su propio consumo (CPU, RAM, hilos, '
                 'SQLite locks) y se auto-regula — si detecta que va a '
                 'saturarse, pausa o reduce procesos antes de congelarse. '
-                'Extiende _assess_resource_pressure y BackgroundResourceMonitor.'
+                'Extiende AutonomyGovernancePolicy, _assess_resource_pressure '
+                'y BackgroundResourceMonitor.'
             ),
             'reason': 'El usuario reporta congelamientos; el programa debe prevenirlos proactivamente.',
             'dependency_missing': '',
             'priority': 'high',
             'next_action': (
-                'Integrar AdaptiveResourceOrchestrator en bootstrap, '
-                'conectar BackgroundResourceMonitor con auto-throttle de '
-                'tareas cuando presion >= HIGH.'
+                'Aplicar evaluate_operational_budget() a cada trabajo auxiliar '
+                'pesado antes de ejecutarlo; pausar o degradar tareas cuando '
+                'hay usuario esperando, stalls recientes o presion >= HIGH.'
+            ),
+            'status': 'PENDING',
+            'category': CATEGORY_INVESTIGATION,
+        },
+        {
+            'id': 'inv_phase_a2_budgeted_idle_self_tests',
+            'title': 'Fase A2: Auto-tests periodicos con presupuesto operativo',
+            'description': (
+                'Ejecutar reexamenes, pruebas de coherencia, limpieza de '
+                'contexto y verificaciones de ramas solo durante ventanas de '
+                'descanso: usuario no esperando, RSS estable, sin stalls '
+                'recientes y confianza suficiente.'
+            ),
+            'reason': (
+                'El sistema ya detecta problemas, pero necesita decidir '
+                'cuando puede testearse a si mismo sin saturar la UI ni '
+                'romper la conversacion visible.'
+            ),
+            'dependency_missing': 'inv_phase_a_antifreeze',
+            'priority': 'high',
+            'next_action': (
+                'Conectar AutonomousValidationCycleService y OSES al nuevo '
+                'evaluate_operational_budget(work_class=idle_self_test); '
+                'registrar resultados en ExperimentLab/OSES/ControlMaster.'
+            ),
+            'status': 'PENDING',
+            'category': CATEGORY_INVESTIGATION,
+        },
+        {
+            'id': 'inv_phase_a3_budget_experiment_feedback',
+            'title': 'Fase A3: Evaluar presupuesto operativo con ExperimentLab',
+            'description': (
+                'Cada decision del presupuesto operativo queda registrada como '
+                'ExperimentRun comparable para que OSES y PortableContext puedan '
+                'aprender de defer/allow/ask_user sin depender de impresiones.'
+            ),
+            'reason': (
+                'El sistema necesita evidencia historica testeable antes de '
+                'cambiar sus propios umbrales de RAM, stalls o ventana de descanso.'
+            ),
+            'dependency_missing': 'inv_phase_a2_budgeted_idle_self_tests',
+            'priority': 'high',
+            'next_action': (
+                'Registrar outcomes de evaluate_operational_budget en ExperimentLab '
+                'y exportarlos en OSES/PortableContext.'
+            ),
+            'status': 'PENDING',
+            'category': CATEGORY_INVESTIGATION,
+        },
+        {
+            'id': 'inv_phase_a4_budget_threshold_calibration',
+            'title': 'Fase A4: Calibrar umbrales del presupuesto operativo por evidencia',
+            'description': (
+                'OSES lee los ExperimentRun del presupuesto operativo y decide si '
+                'hay muestra suficiente para conservar, ajustar o aplazar cambios '
+                'de umbral sin improvisar.'
+            ),
+            'reason': (
+                'La autonomia debe testear sus propias constantes antes de aplicar '
+                'cambios: idle_rest_window, stall_ms y umbrales de RSS.'
+            ),
+            'dependency_missing': 'inv_phase_a3_budget_experiment_feedback',
+            'priority': 'high',
+            'next_action': (
+                'Agregar resumen de calibracion a OSES/PortableContext y emitir '
+                'finding solo cuando la muestra sea suficiente.'
+            ),
+            'status': 'PENDING',
+            'category': CATEGORY_INVESTIGATION,
+        },
+        {
+            'id': 'inv_phase_a5_runtime_budget_threshold_application',
+            'title': 'Fase A5: Aplicacion gobernada de umbrales runtime',
+            'description': (
+                'Convertir recomendaciones de calibracion en ajustes runtime '
+                'reversibles usando RuntimeTuningRepository, con evidencia antes '
+                'y despues y sin tocar politica sensible a ciegas.'
+            ),
+            'reason': (
+                'A4 puede recomendar; A5 debe aplicar solo cambios seguros, '
+                'versionados y reversibles cuando haya evidencia suficiente.'
+            ),
+            'dependency_missing': 'inv_phase_a4_budget_threshold_calibration',
+            'priority': 'medium',
+            'next_action': (
+                'Definir gate para promover recommended_thresholds a RuntimeTuning '
+                'solo si OSES reporta muestra suficiente y no hay stalls recientes.'
             ),
             'status': 'PENDING',
             'category': CATEGORY_INVESTIGATION,
@@ -293,7 +381,7 @@ class PlatformPendingQueue:
                 'grabación externa.'
             ),
             'reason': 'Necesario para auditoría automática y replay guiado.',
-            'dependency_missing': 'inv_phase_a_antifreeze',
+            'dependency_missing': 'inv_phase_a2_budgeted_idle_self_tests',
             'priority': 'medium',
             'next_action': (
                 'Diseñar QML introspection layer que exponga el árbol '

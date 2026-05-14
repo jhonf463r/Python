@@ -31,6 +31,7 @@ MCP degrade explícitamente en vez de crashear.
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,7 @@ _WINDOW_REGIONS = {
     "window",
 }
 _SCREEN_REGIONS = {"screen", "primary", "desktop", ""}
+_BBOX_RE = re.compile(r"^bbox:(-?\d+),(-?\d+),(\d+),(\d+)$")
 
 
 class QtScreenshotProvider:
@@ -85,7 +87,17 @@ class QtScreenshotProvider:
         region_key = (region or "").strip().lower()
         pixmap = None
 
-        if region_key in _WINDOW_REGIONS or region_key == "":
+        if region_key.startswith("bbox:"):
+            pixmap = self._grab_bbox(app, region_key)
+            if pixmap is None or pixmap.isNull():
+                return b""
+
+        if (pixmap is None or pixmap.isNull()) and region_key.startswith("hwnd:"):
+            pixmap = self._grab_external_hwnd(app, region_key)
+            if pixmap is None or pixmap.isNull():
+                return b""
+
+        if (pixmap is None or pixmap.isNull()) and (region_key in _WINDOW_REGIONS or region_key == ""):
             pixmap = self._grab_iabv_window(app)
 
         if pixmap is None or pixmap.isNull():
@@ -158,6 +170,70 @@ class QtScreenshotProvider:
             return screen.grabWindow(wid)
         except Exception as exc:  # pragma: no cover
             logger.debug("screen.grabWindow(winId) falló: %r", exc)
+            return None
+
+    def _grab_external_hwnd(self, app: Any, region_key: str) -> Any:
+        """Capture a specific native window id when WorldModel found it."""
+        try:
+            hwnd = int(str(region_key).split(":", 1)[1].strip() or "0")
+        except Exception:
+            return None
+        if hwnd <= 0:
+            return None
+        try:
+            screen = app.primaryScreen()
+        except Exception:
+            screen = None
+        if screen is None:
+            try:
+                screens = list(app.screens() or [])
+                screen = screens[0] if screens else None
+            except Exception:
+                screen = None
+        if screen is None:
+            return None
+        try:
+            return screen.grabWindow(hwnd)
+        except Exception as exc:  # pragma: no cover
+            logger.debug("screen.grabWindow(external hwnd=%s) fallÃ³: %r", hwnd, exc)
+            return None
+
+    def _grab_bbox(self, app: Any, region_key: str) -> Any:
+        """Capture the visible desktop rectangle selected by WorldModel.
+
+        Chromium/Chrome windows often return a black pixmap when captured by
+        native hwnd on Windows. A bbox capture records the pixels visible to
+        the user, which is the evidence needed for login/security checks.
+        """
+        match = _BBOX_RE.match(region_key)
+        if not match:
+            return None
+        left, top, width, height = [int(part) for part in match.groups()]
+        if width <= 0 or height <= 0:
+            return None
+        try:
+            from PySide6.QtCore import QPoint  # type: ignore
+        except Exception:
+            QPoint = None
+        screen = None
+        if QPoint is not None:
+            try:
+                screen_at = getattr(app, "screenAt", None)
+                if callable(screen_at):
+                    screen = screen_at(QPoint(left + max(1, width // 2), top + max(1, height // 2)))
+            except Exception:
+                screen = None
+        if screen is None:
+            try:
+                screen = app.primaryScreen()
+            except Exception:
+                screen = None
+        if screen is None:
+            return None
+        try:
+            return screen.grabWindow(0, left, top, width, height)
+        except Exception as exc:  # pragma: no cover
+            logger.debug("screen.grabWindow(bbox=%s) fallo: %r", region_key, exc)
             return None
 
     def _grab_primary_screen(self, app: Any) -> Any:

@@ -22,6 +22,7 @@ from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 from iabv_v15.services.adaptive.adaptive_weight_layer import AdaptiveWeightLayer
+from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
 from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
 from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
 from iabv_v15.services.lab.experiment_lab import ExperimentLab
@@ -284,6 +285,128 @@ def test_autonomous_validation_cycle_marks_deferred_when_environment_is_not_safe
         shutil.rmtree(root, ignore_errors=True)
 
 
+def test_autonomous_validation_cycle_defers_scheduled_tick_until_rest_window() -> None:
+    root = _workspace('autonomous_validation_cycle_budget_rest')
+    try:
+        lab, repository, storage = _lab(root)
+        proposal = _proposal('budget:rest-window')
+        sandbox = _SandboxStub(
+            SandboxExperiment(
+                subject_key=proposal.subject_key,
+                sandbox_subject_key=f'sandbox:{proposal.subject_key}',
+                domain=proposal.domain,
+                candidate_route=proposal.candidate_route,
+                candidate_assistant_kind=proposal.candidate_assistant_kind,
+                candidate_config_signature=proposal.candidate_config_signature,
+                promote_to_primary=True,
+                verdict=SandboxExperimentVerdict.VALID,
+            )
+        )
+        cycle = AutonomousValidationCycleService(
+            experiment_lab=lab,
+            experiment_lab_repository=repository,
+            sandbox_experiment_service=sandbox,
+            world_model_service=_StaticService(WorldModelSnapshot()),
+            environment_self_awareness_service=_StaticService(EnvironmentSelfModel(scan_status='ready')),
+            tool_evolution_monitor=_StaticMonitor(_status(proposal)),
+            storage=storage,
+            auto_start=False,
+            autonomy_governance_policy=AutonomyGovernancePolicy(),
+        )
+
+        snapshot = cycle.run_once(reason='scheduled_validation')
+        decision_log = cycle.current_decision_log()
+
+        assert snapshot.status == 'deferred'
+        assert snapshot.paused_reason == 'operational_budget:rest_window_not_reached'
+        assert snapshot.metadata['operational_budget']['decision_source'] == (
+            'autonomy_governance_policy.operational_budget'
+        )
+        assert sandbox.calls == 0
+        assert decision_log.entries[-1].decision == 'deferred'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_safe_tick_skips_research_and_cloud_checks_when_budget_pauses() -> None:
+    root = _workspace('autonomous_validation_cycle_budget_safe_tick')
+    try:
+        lab, repository, storage = _lab(root)
+        proposal = _proposal('budget:safe-tick')
+        sandbox = _SandboxStub(
+            SandboxExperiment(
+                subject_key=proposal.subject_key,
+                sandbox_subject_key=f'sandbox:{proposal.subject_key}',
+                domain=proposal.domain,
+                candidate_route=proposal.candidate_route,
+                candidate_assistant_kind=proposal.candidate_assistant_kind,
+                candidate_config_signature=proposal.candidate_config_signature,
+                promote_to_primary=True,
+                verdict=SandboxExperimentVerdict.VALID,
+            )
+        )
+        cycle = AutonomousValidationCycleService(
+            experiment_lab=lab,
+            experiment_lab_repository=repository,
+            sandbox_experiment_service=sandbox,
+            world_model_service=_StaticService(WorldModelSnapshot()),
+            environment_self_awareness_service=_StaticService(EnvironmentSelfModel(scan_status='ready')),
+            tool_evolution_monitor=_StaticMonitor(_status(proposal)),
+            storage=storage,
+            auto_start=False,
+            autonomy_governance_policy=AutonomyGovernancePolicy(),
+        )
+        calls: list[str] = []
+        cycle._auto_research_pass = lambda reason: calls.append(f'research:{reason}')  # type: ignore[method-assign]
+        cycle._cloud_provider_health_pass = lambda: calls.append('cloud')  # type: ignore[method-assign]
+
+        cycle._safe_tick(reason='scheduled_validation')
+
+        assert cycle.current_snapshot().status == 'deferred'
+        assert cycle.current_snapshot().paused_reason == 'operational_budget:rest_window_not_reached'
+        assert calls == []
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_note_user_activity_resets_validation_rest_window() -> None:
+    root = _workspace('autonomous_validation_cycle_budget_user_activity')
+    try:
+        lab, repository, storage = _lab(root)
+        cycle = AutonomousValidationCycleService(
+            experiment_lab=lab,
+            experiment_lab_repository=repository,
+            sandbox_experiment_service=_SandboxStub(
+                SandboxExperiment(
+                    subject_key='noop',
+                    sandbox_subject_key='sandbox:noop',
+                    domain=ExperimentDomain.CODE,
+                    candidate_route=EvaluationRoute.CODE_AGENT,
+                    candidate_assistant_kind='codex',
+                    candidate_config_signature='codex-plan',
+                    promote_to_primary=False,
+                    verdict=SandboxExperimentVerdict.VALID,
+                )
+            ),
+            world_model_service=_StaticService(WorldModelSnapshot()),
+            environment_self_awareness_service=_StaticService(EnvironmentSelfModel(scan_status='ready')),
+            tool_evolution_monitor=_StaticMonitor(ToolEvolutionStatus(summary='sin propuestas', proposals=[])),
+            storage=storage,
+            auto_start=False,
+            autonomy_governance_policy=AutonomyGovernancePolicy(),
+        )
+        cycle._operational_budget_rest_started_at -= 300.0
+        cycle.note_user_activity(reason='chat_message')
+
+        snapshot = cycle.run_once(reason='scheduled_validation')
+
+        assert snapshot.status == 'paused'
+        assert snapshot.paused_reason == 'operational_budget:rest_window_not_reached'
+        assert snapshot.metadata['last_user_activity_reason'] == 'chat_message'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def test_autonomous_validation_cycle_initial_snapshot_is_bootstrapping_without_unresolved() -> None:
     root = _workspace('autonomous_validation_cycle_bootstrapping')
     try:
@@ -434,7 +557,7 @@ def test_autonomous_validation_cycle_transitions_from_bootstrapping_within_two_t
 
         cycle._safe_tick(reason='bootstrap_validation')
         after_first = cycle.current_snapshot()
-        assert after_first.status in {'idle_empty', 'validating', 'error'}
+        assert after_first.status in {'idle_empty', 'validating', 'paused', 'error'}
         assert after_first.status != 'bootstrapping'
         if after_first.status != 'error':
             assert 'UNRESOLVED:autonomous_validation_cycle' not in after_first.unresolved_fields

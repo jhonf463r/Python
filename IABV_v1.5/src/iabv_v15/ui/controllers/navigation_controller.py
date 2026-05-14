@@ -28,9 +28,22 @@ class NavigationController(QObject):
 
     @Slot(str)
     def navigate(self, route_key: str) -> None:
-        if any(route['key'] == route_key for route in self._routes) and route_key != self._current_route:
+        old_route = self._current_route
+        valid = any(route['key'] == route_key for route in self._routes)
+        if valid and route_key != self._current_route:
+            self._trace_navigation('ui_navigation_requested', from_route=old_route, to_route=route_key)
             self._current_route = route_key
             self.currentRouteChanged.emit()
+            self._trace_navigation('ui_navigation_applied', from_route=old_route, to_route=route_key)
+        elif not valid:
+            self._trace_navigation('ui_navigation_rejected', from_route=old_route, to_route=route_key, reason='unknown_route')
+
+    def _trace_navigation(self, kind: str, **data: object) -> None:
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(kind, **data)
+        except Exception:
+            pass
 
     routes = Property(list, get_routes, constant=True)
     currentRoute = Property(str, get_current_route, notify=currentRouteChanged)

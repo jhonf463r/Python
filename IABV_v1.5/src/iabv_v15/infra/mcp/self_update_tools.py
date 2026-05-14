@@ -44,6 +44,82 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
             return None  # directory traversal attempt
         return resolved
 
+    safe_git_prefixes = ('src/', 'tests/', 'scripts/', '.github/', 'docs/', 'assets/')
+    safe_git_files = {
+        'AGENTS.md',
+        'README.md',
+        'pyproject.toml',
+        'pytest.ini',
+        'requirements.txt',
+        'requirements-dev.txt',
+        '.gitignore',
+    }
+    broad_git_pathspecs = {'.', './', '*', 'all', '-A', '--all'}
+
+    def _normalize_git_path(path: str) -> str:
+        return str(path or '').strip().replace('\\', '/').lstrip('./')
+
+    def _is_broad_git_pathspec(path: str) -> bool:
+        raw = str(path or '').strip().replace('\\', '/')
+        return raw in broad_git_pathspecs or _normalize_git_path(path) in broad_git_pathspecs
+
+    def _is_safe_git_add_path(path: str) -> bool:
+        normalized = _normalize_git_path(path)
+        if not normalized or normalized.startswith('-'):
+            return False
+        if normalized in safe_git_files:
+            return True
+        return any(normalized == prefix.rstrip('/') or normalized.startswith(prefix) for prefix in safe_git_prefixes)
+
+    def _changed_safe_git_files(ws: Path) -> list[str]:
+        """Return changed source/doc files only; never stage data/cache/profile payloads."""
+        pathspecs = [
+            'src',
+            'tests',
+            'scripts',
+            '.github',
+            'docs',
+            'assets',
+            'AGENTS.md',
+            'README.md',
+            'pyproject.toml',
+            'pytest.ini',
+            'requirements.txt',
+            'requirements-dev.txt',
+            '.gitignore',
+        ]
+        result = subprocess.run(
+            ['git', 'status', '--porcelain', '--untracked-files=all', '--', *pathspecs],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            cwd=str(ws),
+        )
+        if result.returncode != 0:
+            return []
+        files: list[str] = []
+        for raw_line in result.stdout.splitlines():
+            if len(raw_line) < 4:
+                continue
+            path = raw_line[3:].strip()
+            if ' -> ' in path:
+                path = path.rsplit(' -> ', 1)[-1].strip()
+            normalized = _normalize_git_path(path)
+            if normalized and _is_safe_git_add_path(normalized):
+                files.append(normalized)
+        return sorted(set(files))
+
+    def _resolve_git_add_files(files: str, ws: Path) -> tuple[list[str], str]:
+        raw_items = [item.strip() for item in str(files or '').split(',') if item.strip()]
+        if not raw_items or any(_is_broad_git_pathspec(item) for item in raw_items):
+            resolved = _changed_safe_git_files(ws)
+            return resolved, 'safe_source_auto_scope'
+        normalized = [_normalize_git_path(item) for item in raw_items]
+        unsafe = [item for item in normalized if not _is_safe_git_add_path(item)]
+        if unsafe:
+            return [], f"unsafe_git_add_path:{','.join(unsafe[:5])}"
+        return normalized, 'explicit_safe_files'
+
     # -----------------------------------------------------------------
     # write_repo_file
     # -----------------------------------------------------------------
@@ -193,11 +269,23 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
         if len(message) > 500:
             return {"status": "error", "detail": "commit message too long (max 500 chars)"}
 
-        ws = workspace_root_fn()
+        ws = Path(workspace_root_fn())
         try:
             # git add
-            file_list = [f.strip() for f in files.split(",") if f.strip()]
-            add_cmd = ["git", "add"] + file_list
+            file_list, scope = _resolve_git_add_files(files, ws)
+            if scope.startswith('unsafe_git_add_path'):
+                return {
+                    "status": "error",
+                    "detail": f"{scope}; self-update solo puede preparar codigo/docs seguros, no data/cache/perfiles.",
+                }
+            if not file_list:
+                return {
+                    "status": "ok",
+                    "detail": "nothing safe to commit",
+                    "commit_hash": None,
+                    "git_add_scope": scope,
+                }
+            add_cmd = ["git", "add", "--"] + file_list
             add_result = subprocess.run(
                 add_cmd, capture_output=True, text=True,
                 timeout=30, cwd=str(ws),
@@ -257,6 +345,8 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
                 "branch": branch,
                 "push_output": push_output,
                 "message": message,
+                "git_add_scope": scope,
+                "files": file_list,
             }
         except subprocess.TimeoutExpired:
             return {"status": "error", "detail": "git operation timed out"}

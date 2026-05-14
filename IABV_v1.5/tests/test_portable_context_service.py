@@ -1,3 +1,4 @@
+import json
 import shutil
 from pathlib import Path
 from uuid import uuid4
@@ -24,6 +25,10 @@ from iabv_v15.domain.models import (
     ToolEvolutionDecisionLog,
     WindowObservation,
     WorldModelSnapshot,
+)
+from iabv_v15.services.adaptive.autonomy_governance_policy import (
+    AutonomyGovernancePolicy,
+    record_operational_budget_experiment,
 )
 
 
@@ -82,6 +87,16 @@ def test_portable_context_service_builds_and_persists_package_from_live_state() 
                 'config_signature': 'codex-portable',
                 'comparison_scope_key': 'iabv:portable-context',
             },
+        )
+        budget = AutonomyGovernancePolicy().evaluate_operational_budget(
+            work_class='metacognition',
+            source='startup_evolution',
+            idle_seconds=10.0,
+        )
+        record_operational_budget_experiment(
+            repository=bootstrap.experiment_lab_repository,
+            budget=budget,
+            observed_summary='startup_evolution -> defer por rest window',
         )
         bootstrap.pending_issue_repository.save(
             CodexPendingIssue(
@@ -251,6 +266,20 @@ def test_portable_context_service_builds_and_persists_package_from_live_state() 
         assert package.metadata['tool_evolution_summary']['decided_proposal_count'] >= 1
         assert package.metadata['tool_evolution_proposals'] == []
         assert package.metadata['tool_evolution_decision_summary']['winning_by_problem']['iabv:portable-context'] == 'codex'
+        assert package.metadata['operational_budget_learning']['total_runs'] >= 1
+        assert package.metadata['operational_budget_learning']['calibration']['status'] in {
+            'insufficient_sample',
+            'needs_allow_samples',
+            'stable_guardrails',
+            'rest_window_dominant',
+            'protective_thresholds_active',
+            'human_gate_observed',
+        }
+        budget_section = next(section for section in package.sections if section.section_id == 'operational_budget_learning')
+        assert budget_section.items
+        assert budget_section.items[0]['label'].startswith('metacognition:')
+        assert any(str(item.get('label') or '').startswith('calibration:') for item in budget_section.items)
+        assert budget_section.metadata['calibration']['current_thresholds']['stall_ms'] == 5000.0
         assert package.metadata['tool_evolution_validated_proposals'][0]['decision'] == 'promoted'
         tool_discovery = next(section for section in package.sections if section.section_id == 'tool_discovery')
         assert tool_discovery.metadata['promoted_signal_count'] == 1
@@ -273,6 +302,44 @@ def test_portable_context_service_builds_and_persists_package_from_live_state() 
             for item in operational_blocks.items
         )
         assert 'UNRESOLVED' in package.assistant_brief
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_portable_context_surfaces_operational_directives_from_chat_backlog() -> None:
+    root = _workspace('portable_context_operational_directive')
+    try:
+        backlog_dir = root / 'data' / 'chat_research_backlog'
+        backlog_dir.mkdir(parents=True, exist_ok=True)
+        (backlog_dir / 'sess-op.jsonl').write_text(
+            json.dumps(
+                {
+                    'schema_version': 1,
+                    'session_id': 'sess-op',
+                    'detected_at_utc': '2026-05-09T20:00:00+00:00',
+                    'kind': 'operational_self_testing',
+                    'label': 'Auto-test de algoritmos, rendimiento y razonamiento',
+                    'matched_text': 'testea los algoritmos',
+                    'research_hint': 'Usar AutonomousValidationCycle, ExperimentLab y OSES.',
+                    'raw_message': 'recuerda el organo que testea los algoritmos',
+                    'status': 'open',
+                },
+                ensure_ascii=False,
+            )
+            + '\n',
+            encoding='utf-8',
+        )
+        bootstrap = AppBootstrap(str(root))
+
+        package = bootstrap.portable_context_service.build_package()
+        intent_section = next(section for section in package.sections if section.section_id == 'user_metacognitive_intent')
+
+        directive = next(
+            item for item in intent_section.items
+            if item.get('label') == 'operational_self_testing'
+        )
+        assert directive['source'] == 'chat_research_backlog'
+        assert 'AutonomousValidationCycle' in directive['detail']
     finally:
         shutil.rmtree(root, ignore_errors=True)
 

@@ -194,8 +194,9 @@ def test_auto_research_initiates_sandbox_when_enabled_and_item_is_actionable(mon
         )
         cycle, sandbox, _repository = _build_cycle(root, data_root=data_root)
 
-        cycle._safe_tick(reason='unit_test')
+        initiated = cycle._auto_research_pass(reason='unit_test')
 
+        assert len(initiated) == 1
         assert len(sandbox.calls) == 1
         call = sandbox.calls[0]
         assert call['subject_key'].startswith('capability:hardware_gpu')
@@ -210,6 +211,36 @@ def test_auto_research_initiates_sandbox_when_enabled_and_item_is_actionable(mon
             if line.strip()
         ]
         assert lines[0]['status'] == 'in_progress'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_auto_research_accepts_operational_directive_entries(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv('IABV_AUTO_RESEARCH_ENABLED', '1')
+    root = _workspace('auto_research_operational_directive')
+    try:
+        data_root = root / 'data'
+        data_root.mkdir(parents=True, exist_ok=True)
+        _write_backlog(
+            data_root,
+            session='sess_op',
+            entries=[
+                _capability_entry(
+                    kind='operational_self_testing',
+                    matched='testea los algoritmos',
+                    detected_at='2025-04-22T10:00:00+00:00',
+                )
+            ],
+        )
+        cycle, sandbox, _repository = _build_cycle(root, data_root=data_root)
+
+        initiated = cycle._auto_research_pass(reason='unit_test')
+
+        assert len(initiated) == 1
+        assert len(sandbox.calls) == 1
+        call = sandbox.calls[0]
+        assert call['subject_key'].startswith('capability:operational_self_testing')
+        assert call['metadata']['auto_research_kind'] == 'operational_self_testing'
     finally:
         shutil.rmtree(root, ignore_errors=True)
 

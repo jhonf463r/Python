@@ -23,6 +23,11 @@ from iabv_v15.domain.models import (
     utc_now,
 )
 from iabv_v15.infra.persistence.storage import ArtifactStorage
+from iabv_v15.services.adaptive.autonomy_governance_policy import (
+    apply_operational_budget_calibration_to_runtime_tuning,
+    record_operational_budget_experiment,
+    summarize_operational_budget_calibration,
+)
 
 # Startup health thresholds (in milliseconds).  Crossing any of these emits a
 # ``startup_degradation`` finding from :meth:`_startup_health_findings`.  They
@@ -91,6 +96,7 @@ class OperationalSelfExaminationService:
         self.code_audit_trail: Any | None = None
         self.boot_profile_store: Any | None = None
         self.chat_message_repository: Any | None = None
+        self.runtime_tuning_repository: Any | None = None
         self._current_review: SelfExaminationSnapshot | None = None
         # Read-only cache for GitHub API rate-limit data.  Populated
         # externally (e.g. auto-correction scan); _account_resource_health_findings
@@ -99,6 +105,20 @@ class OperationalSelfExaminationService:
         self._gh_api_cached_at: float = 0.0
         self._GH_API_TTL: float = 60.0
         self._freeze_incident_reporter: Any | None = None
+        self.autonomy_governance_policy: Any | None = None
+        self._operational_budget_rest_started_at = time.monotonic()
+        self._last_operational_budget: dict[str, Any] = {}
+        self._operational_budget_experiment_throttle: dict[str, float] = {}
+        self._recent_operational_budget_runs: list[ExperimentRun] = []
+
+    def note_user_activity(self, *, reason: str = 'user_activity') -> None:
+        """Reset the rest window used by deferred self-examination work."""
+        self._operational_budget_rest_started_at = time.monotonic()
+        current = self._current_review
+        if current is not None:
+            metadata = dict(current.metadata or {})
+            metadata['last_user_activity_reason'] = reason
+            self._current_review = current.model_copy(update={'metadata': metadata})
 
     def current_review(
         self,
@@ -180,6 +200,221 @@ class OperationalSelfExaminationService:
         if len(active_blocks) > 3:
             return False
         return True
+
+    @staticmethod
+    def _process_rss_mb() -> float:
+        try:
+            import psutil  # type: ignore
+            return round(float(psutil.Process(os.getpid()).memory_info().rss) / (1024 * 1024), 1)
+        except Exception:
+            return 0.0
+
+    @staticmethod
+    def _background_heavy_active(world: WorldModelSnapshot | None) -> bool:
+        if world is None:
+            return False
+        for process in getattr(world, 'background_processes', []) or []:
+            state = str(getattr(process, 'state', '') or '').strip().lower()
+            if state in {'cpu_heavy', 'memory_heavy'}:
+                return True
+        return False
+
+    def _operational_budget_for_work(
+        self,
+        *,
+        work_class: str,
+        source: str,
+        priority: str,
+        world: WorldModelSnapshot | None,
+    ) -> dict[str, Any]:
+        policy = self.autonomy_governance_policy
+        idle_seconds = max(0.0, time.monotonic() - float(self._operational_budget_rest_started_at or 0.0))
+        rss_mb = self._process_rss_mb()
+        if policy is not None and hasattr(policy, 'evaluate_operational_budget'):
+            try:
+                budget = dict(policy.evaluate_operational_budget(
+                    work_class=work_class,
+                    source=source,
+                    priority=priority,
+                    rss_mb=rss_mb,
+                    idle_seconds=idle_seconds,
+                    background_active=self._background_heavy_active(world),
+                    confidence=0.82,
+                ))
+                self._last_operational_budget = budget
+                self._record_operational_budget_experiment(
+                    budget,
+                    observed_summary=f'{source} -> {budget.get("decision")}:{budget.get("reason")}',
+                )
+                return budget
+            except Exception:
+                pass
+        budget = {
+            'decision': 'allow',
+            'allowed': True,
+            'reason': 'budget_unavailable_legacy_allow',
+            'work_class': work_class,
+            'priority': priority,
+            'recommended_mode': 'normal',
+            'defer_seconds': 0.0,
+            'evidence': {
+                'source': source,
+                'rss_mb': rss_mb,
+                'idle_seconds': round(idle_seconds, 1),
+                'background_active': self._background_heavy_active(world),
+            },
+            'decision_source': 'operational_self_examination_service.legacy_budget',
+        }
+        self._last_operational_budget = budget
+        self._record_operational_budget_experiment(
+            budget,
+            observed_summary=f'{source} -> legacy allow',
+        )
+        return budget
+
+    def _record_operational_budget_experiment(
+        self,
+        budget: dict[str, Any],
+        *,
+        observed_summary: str = '',
+    ) -> ExperimentRun | None:
+        run = record_operational_budget_experiment(
+            repository=self.experiment_lab_repository,
+            budget=budget,
+            observed_summary=observed_summary,
+            evidence_refs=['OperationalSelfExaminationService', 'OSES'],
+            metadata={'caller': 'OperationalSelfExaminationService'},
+            throttle_state=self._operational_budget_experiment_throttle,
+            throttle_seconds=60.0,
+        )
+        if run is not None:
+            self._recent_operational_budget_runs.append(run)
+        return run
+
+    def _operational_budget_learning_summary(
+        self,
+        experiment_runs: list[ExperimentRun],
+    ) -> dict[str, Any]:
+        budget_runs = [
+            run for run in experiment_runs
+            if str(run.suite_name or '') == 'operational_budget'
+            or str(dict(run.metadata or {}).get('suite_name') or '') == 'operational_budget'
+        ]
+        by_decision: dict[str, int] = {}
+        by_reason: dict[str, int] = {}
+        by_work_class: dict[str, int] = {}
+        for run in budget_runs:
+            metadata = dict(run.metadata or {})
+            decision = str(metadata.get('budget_decision') or '').strip() or 'unknown'
+            reason = str(metadata.get('budget_reason') or '').strip() or 'unknown'
+            work_class = str(metadata.get('work_class') or '').strip() or 'unknown'
+            by_decision[decision] = by_decision.get(decision, 0) + 1
+            by_reason[reason] = by_reason.get(reason, 0) + 1
+            by_work_class[work_class] = by_work_class.get(work_class, 0) + 1
+        latest = []
+        for run in budget_runs[:6]:
+            metadata = dict(run.metadata or {})
+            latest.append({
+                'run_id': run.run_id,
+                'decision': str(metadata.get('budget_decision') or ''),
+                'reason': str(metadata.get('budget_reason') or ''),
+                'work_class': str(metadata.get('work_class') or ''),
+                'score': float(getattr(run.metrics, 'total_score', 0.0) or 0.0),
+                'created_at_utc': run.created_at_utc.isoformat(),
+            })
+        return {
+            'total_runs': len(budget_runs),
+            'by_decision': by_decision,
+            'by_reason': by_reason,
+            'by_work_class': by_work_class,
+            'latest': latest,
+            'calibration': summarize_operational_budget_calibration(budget_runs),
+            'active': bool(budget_runs),
+        }
+
+    def _operational_budget_calibration_findings(
+        self,
+        calibration: dict[str, Any],
+    ) -> list[SelfExaminationFinding]:
+        """Surface operational-budget calibration when evidence is actionable."""
+
+        status = str(calibration.get('status') or '').strip()
+        sample_count = int(calibration.get('sample_count') or 0)
+        minimum_sample = int(calibration.get('minimum_sample') or 10)
+        if status in {'', 'no_data', 'insufficient_sample'} or sample_count < minimum_sample:
+            return []
+        recommendation = str(calibration.get('recommendation') or 'keep_current_thresholds')
+        severity = IssueSeverity.LOW
+        if status in {'protective_thresholds_active', 'human_gate_observed'}:
+            severity = IssueSeverity.MEDIUM
+        return [
+            SelfExaminationFinding(
+                category='operational_budget_calibration',
+                severity=severity,
+                title=f'Calibracion presupuesto operativo: {status}',
+                summary=(
+                    f'{sample_count} decisiones de presupuesto operativo permiten '
+                    f'evaluar la politica actual. Decision por muestra: '
+                    f'{dict(calibration.get("by_decision") or {})}.'
+                ),
+                recommendation=recommendation,
+                confidence=float(calibration.get('confidence') or 0.0),
+                source_refs=['ExperimentLab', 'AutonomyGovernancePolicy', 'OSES'],
+                metadata=calibration,
+            )
+        ]
+
+    def _recent_operational_budget_stall_ms(self) -> float:
+        watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
+        if watchdog is None or not hasattr(watchdog, 'recent_stalls'):
+            return 0.0
+        try:
+            stalls = list(watchdog.recent_stalls(limit=5) or [])
+        except Exception:
+            return 0.0
+        values: list[float] = []
+        for stall in stalls:
+            if not isinstance(stall, dict):
+                continue
+            try:
+                values.append(float(stall.get('duration_ms') or 0.0))
+            except Exception:
+                continue
+        return max(values or [0.0])
+
+    def _apply_operational_budget_runtime_tuning(
+        self,
+        calibration: dict[str, Any],
+    ) -> dict[str, Any]:
+        """A5: persist safe operational-budget thresholds as runtime tuning."""
+
+        repo = getattr(self, 'runtime_tuning_repository', None)
+        recent_stall_ms = self._recent_operational_budget_stall_ms()
+        result = apply_operational_budget_calibration_to_runtime_tuning(
+            repository=repo,
+            calibration=calibration,
+            recent_stall_ms=recent_stall_ms,
+            evidence_refs=['OperationalSelfExaminationService.current_review'],
+        )
+        if result.get('applied') or result.get('reason') in {'already_applied', 'already_effective'}:
+            policy = getattr(self, 'autonomy_governance_policy', None)
+            if policy is not None and hasattr(policy, 'apply_runtime_tuning_profile') and repo is not None:
+                try:
+                    policy.apply_runtime_tuning_profile(repo.get('global'))
+                except Exception:
+                    pass
+            acs = getattr(self, '_autonomy_cycle_service', None)
+            queue = getattr(acs, 'queue', None)
+            if queue is not None and hasattr(queue, 'mark_status'):
+                try:
+                    from iabv_v15.domain.models import PendingTaskStatus
+                    queue.mark_status(
+                        'inv_phase_a5_runtime_budget_threshold_application',
+                        PendingTaskStatus.COMPLETED,
+                    )
+                except Exception:
+                    pass
+        return result
 
     def _deferred_deep_cognition_findings(
         self,
@@ -663,6 +898,31 @@ class OperationalSelfExaminationService:
         backlog = self._improvement_backlog()
         world = self._world_model()
         validation = self._validation_snapshot()
+        self._recent_operational_budget_runs = []
+        deep_cognition_budget = self._operational_budget_for_work(
+            work_class='deep_scan',
+            source='oses_deep_cognition',
+            priority='background',
+            world=world,
+        )
+        auto_correction_budget = self._operational_budget_for_work(
+            work_class='metacognition',
+            source='oses_auto_correction',
+            priority='background',
+            world=world,
+        )
+        operational_budget_runs_for_review = [
+            *self._recent_operational_budget_runs,
+            *experiment_runs,
+        ]
+        operational_budget_calibration = summarize_operational_budget_calibration(
+            operational_budget_runs_for_review,
+        )
+        operational_budget_runtime_application = (
+            self._apply_operational_budget_runtime_tuning(
+                operational_budget_calibration,
+            )
+        )
 
         findings: list[SelfExaminationFinding] = []
         findings.extend(self._recurring_failure_findings(recent_runs=recent_runs))
@@ -739,6 +999,9 @@ class OperationalSelfExaminationService:
         # Chat observability: detect chat persistence anomalies, reasoning
         # path imbalance and evidence tag gaps from ChatMessageRepository.
         findings.extend(self._chat_observability_findings())
+        findings.extend(self._operational_budget_calibration_findings(
+            operational_budget_calibration,
+        ))
 
         # RuntimePerformance: always runs — detects memory pressure, excessive
         # threads, slow network probes and other bottlenecks that cause the UI
@@ -763,7 +1026,7 @@ class OperationalSelfExaminationService:
         # análisis más profundos que serían costosos bajo presión normal.
         # Cross-correlación de fallos, detección de tendencias, y decay de
         # estrategias. Solo se activa cuando _is_low_load() retorna True.
-        if self._is_low_load(world):
+        if self._is_low_load(world) and bool(deep_cognition_budget.get('allowed')):
             findings.extend(self._deferred_deep_cognition_findings(
                 experiment_runs=experiment_runs,
                 recent_runs=recent_runs,
@@ -850,6 +1113,11 @@ class OperationalSelfExaminationService:
             validation=validation,
         )
         feedback_summary = self._feedback_summary(recommendation_feedback)
+        operational_budget_learning = self._operational_budget_learning_summary([
+            *self._recent_operational_budget_runs,
+            *experiment_runs,
+        ])
+        operational_budget_learning['calibration'] = operational_budget_calibration
         recommended_adjustments = self._apply_feedback_to_adjustments(
             recommended_adjustments=recommended_adjustments,
             recommendation_feedback=recommendation_feedback,
@@ -889,6 +1157,13 @@ class OperationalSelfExaminationService:
                 'recommendation_feedback': recommendation_feedback[:6],
                 'feedback_summary': feedback_summary,
                 'solution_proposals': solution_proposals[:4],
+                'operational_budget': {
+                    'deep_cognition': deep_cognition_budget,
+                    'auto_correction': auto_correction_budget,
+                },
+                'operational_budget_learning': operational_budget_learning,
+                'operational_budget_calibration': operational_budget_calibration,
+                'operational_budget_runtime_application': operational_budget_runtime_application,
             },
         )
         # Metacognitive feedback loop: convert overconfidence/underconfidence
@@ -927,7 +1202,8 @@ class OperationalSelfExaminationService:
 
         # Self-audit auto-correction loop: feed HIGH-severity findings
         # into the auto-correction engine for safe, automatic fixes.
-        self._auto_correct_from_findings(findings)
+        if bool(auto_correction_budget.get('allowed')):
+            self._auto_correct_from_findings(findings)
 
         # Close the auto-improvement loop: materialize qualifying
         # task_packet findings as persistent pending issues so the
@@ -3031,11 +3307,19 @@ class OperationalSelfExaminationService:
             sessions = sorted(per_kind_sessions[kind])
             detected_at = str(entry.get('detected_at_utc') or '').strip()
 
-            summary_parts = [
-                f'El usuario declaro "{label}"'
-                + (f' (detectado como "{matched_text}")' if matched_text else '')
-                + ' en el chat, pero el sistema aun no valido su impacto.',
-            ]
+            is_operational_directive = kind.startswith('operational_')
+            if is_operational_directive:
+                summary_parts = [
+                    f'El usuario dejo una directiva operativa "{label}"'
+                    + (f' (detectada como "{matched_text}")' if matched_text else '')
+                    + ' en el chat, pero el sistema aun no valido su cobertura con evidencia.',
+                ]
+            else:
+                summary_parts = [
+                    f'El usuario declaro "{label}"'
+                    + (f' (detectado como "{matched_text}")' if matched_text else '')
+                    + ' en el chat, pero el sistema aun no valido su impacto.',
+                ]
             if hint:
                 summary_parts.append(f'Investigacion pendiente: {hint}')
             if occurrences > 1:
@@ -3054,7 +3338,11 @@ class OperationalSelfExaminationService:
             findings.append(
                 SelfExaminationFinding(
                     category='research_gap',
-                    title=f'Capacidad declarada sin validar: {label}',
+                    title=(
+                        f'Directiva operativa sin validar: {label}'
+                        if is_operational_directive
+                        else f'Capacidad declarada sin validar: {label}'
+                    ),
                     summary=summary,
                     severity=IssueSeverity.MEDIUM,
                     confidence=0.6,

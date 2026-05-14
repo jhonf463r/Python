@@ -2089,7 +2089,7 @@ def test_control_center_viewmodel_projects_live_external_assistant_dock() -> Non
 
         viewmodel = bootstrap.control_center_viewmodel
         assert viewmodel is not None
-        viewmodel.refreshAutonomyDock()
+        viewmodel._refresh_autonomy_dock()
 
         summary = viewmodel.get_live_process_summary()
         work_items = viewmodel.get_live_work_items()
@@ -3890,6 +3890,26 @@ def test_send_chat_does_not_register_capability_without_possession_marker() -> N
 
         entries = service.list_entries(session_id=viewmodel._chat_session_id)
         assert entries == []
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_send_chat_ingests_operational_directive_even_on_local_fast_path() -> None:
+    bootstrap = _make_bootstrap('test_send_chat_operational_directive_fast_path')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        service = viewmodel.chat_capability_ingestion_service
+        assert service is not None
+
+        viewmodel.sendChat(
+            'ok procede y recuerda el organo que testea los algoritmos de rendimiento y razonamiento'
+        )
+        _drain_ui(viewmodel)
+
+        entries = service.list_entries(session_id=viewmodel._chat_session_id)
+        kinds = [entry.kind for entry in entries]
+        assert 'operational_self_testing' in kinds
     finally:
         _cleanup_bootstrap(bootstrap)
 

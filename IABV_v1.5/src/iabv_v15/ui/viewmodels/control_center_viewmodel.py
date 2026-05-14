@@ -3,10 +3,14 @@
 import atexit
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+import hashlib
+import json
 import logging
+import os
 from pathlib import Path
 import re
 import threading
+import time
 import uuid
 from typing import Any
 
@@ -39,6 +43,9 @@ from iabv_v15.infra.persistence.session_artifact_repository import SessionArtifa
 from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
 from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
 from iabv_v15.services.adaptive.assistant_preference_resolver import AssistantPreferenceResolver
+from iabv_v15.services.adaptive.autonomy_governance_policy import (
+    record_operational_budget_experiment,
+)
 from iabv_v15.services.development.development_assist_service import DevelopmentAssistService
 from iabv_v15.services.evolution.autonomy_activity_projector import AutonomyActivityProjector
 from iabv_v15.services.evolution.evolution_review_service import EvolutionReviewService
@@ -54,9 +61,27 @@ from iabv_v15.ui.qt import QObject, Property, QGuiApplication, QTimer, Signal, S
 
 
 class ControlCenterViewModel(QObject):
+    _CHAT_INLINE_TEXT_LIMIT = 3500
+    _CHAT_PREVIEW_MESSAGE_LIMIT = 8
+    _CHAT_PREVIEW_TEXT_LIMIT = 1200
+    _AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB = 2500.0
+    _AUTONOMY_DOCK_SKIP_TRACE_COOLDOWN_S = 60.0
+    _EXTERNAL_FOLLOWUP_TIMEOUT_MS = 120_000
+    _EXTERNAL_CONSULTATION_VISIBLE_TIMEOUT_MS = 75_000
+    _LOCAL_CHAT_TIMEOUT_MS = 60_000
+    _EXTERNAL_CONTEXT_ITEM_LIMIT = 700
+    _EXTERNAL_CONTEXT_PACK_LIMIT = 12000
+
     dataChanged = Signal()
+    chatChanged = Signal()
     taskResolved = Signal(str, object)
     taskFailed = Signal(str, str)
+    autonomyDockProjected = Signal(int, object)
+    autonomyDockChanged = Signal()
+    autonomyDockStatusChanged = Signal()
+    developmentPacketReady = Signal(int, str)
+    evolutionSnapshotReady = Signal(int, object)
+    agentCardsReady = Signal(int, object)
 
     # Señales evolutivas para diálogos UI (Task B)
     credentialPromptRequested = Signal(dict)  # {domain, reason, username_hint}
@@ -182,11 +207,13 @@ class ControlCenterViewModel(QObject):
         self._evolution_overview: dict[str, Any] = {}
         self._evolution_area_cards: list[dict[str, Any]] = []
         self._evolution_blockers: list[dict[str, str]] = []
+        self._evolution_snapshot_generation: int = 0
         self._agent_cards: list[dict[str, Any]] = []
+        self._agent_cards_generation: int = 0
         self._legacy_cards = self._build_legacy_cards()
         self._role_cards = [profile.model_dump(mode='json') for profile in self.role_router.role_profiles]
         self._ui_state_lock = threading.Lock()
-        self._bg_pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix='ccvm-bg')
+        self._bg_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='ccvm-bg')
         atexit.register(self._shutdown_bg_pool)
         self._chat_messages: list[dict[str, str]] = []
         self._attached_files: list[dict[str, Any]] = []
@@ -206,6 +233,7 @@ class ControlCenterViewModel(QObject):
         self._last_goal_context: dict[str, Any] = {}
         self._clipboard_notice = 'Todavia no se ha copiado nada al portapapeles.'
         self._development_packet = ''
+        self._development_packet_generation: int = 0
         self._dev_packet_last_ts: float = 0.0
         self._dev_packet_cooldown_s: float = 30.0
         self._latest_response_text = 'Todavia no hay respuesta final en esta sesion.'
@@ -216,12 +244,33 @@ class ControlCenterViewModel(QObject):
         self._assistant_guidance_mode = 'idle'
         self._assistant_guidance_text = 'Describe una tarea y te dire si me falta ensenanza, aprobacion, revision evolutiva o apoyo de Codex.'
         self._assistant_action_buttons: list[dict[str, str]] = []
+        self._external_evidence_panel: dict[str, Any] = {}
+        self._visible_external_sessions: dict[str, Any] = {}
+        self._external_visible_verification_opened_at: dict[str, float] = {}
+        self._external_browser_session_preferences: dict[str, dict[str, Any]] = {}
         self._last_adaptive_payload: dict[str, Any] = {}
         self._autonomy_activity_override: dict[str, Any] = {}
         self._live_process_summary: dict[str, Any] = {}
         self._live_work_items: list[dict[str, Any]] = []
         self._assistant_session_cards: list[dict[str, Any]] = []
         self._autonomy_timeline: list[dict[str, Any]] = []
+        self._autonomy_dock_generation: int = 0
+        self._autonomy_dock_refresh_in_flight: bool = False
+        self._autonomy_dock_last_refresh_started: float = 0.0
+        self._autonomy_dock_min_interval_s: float = 20.0
+        self._autonomy_dock_last_fingerprint: str = ''
+        self._autonomy_dock_status: str = 'idle'
+        self._autonomy_dock_last_result: str = 'idle'
+        self._autonomy_dock_last_summary: str = 'Dock de autonomia sin refresco reciente.'
+        self._autonomy_dock_last_skip_trace_key: str = ''
+        self._autonomy_dock_last_skip_trace_at: float = 0.0
+        self._autonomy_dock_rest_window_started_at: float = time.monotonic()
+        self._autonomy_dock_last_budget_decision: dict[str, Any] = {}
+        self._operational_budget_experiment_throttle: dict[str, float] = {}
+        self._interaction_pending_followup_outcome: str = ''
+        self._interaction_pending_followup_provider: str = ''
+        self._external_followup_timeout_generation: int = 0
+        self._visible_work_timeout_generation: int = 0
 
         self._adaptive_session_id = ''
         self._adaptive_status_text = 'Sin sesion adaptativa activa.'
@@ -262,6 +311,10 @@ class ControlCenterViewModel(QObject):
         }
         self.taskResolved.connect(self._apply_task_result)
         self.taskFailed.connect(self._apply_task_failure)
+        self.autonomyDockProjected.connect(self._apply_autonomy_dock_projection)
+        self.developmentPacketReady.connect(self._apply_development_packet)
+        self.evolutionSnapshotReady.connect(self._apply_evolution_snapshot)
+        self.agentCardsReady.connect(self._apply_agent_cards)
         self.bridgeChatRequested.connect(self._dispatch_bridge_chat)
         self._seed_messages()
         # Always defer heavy work to keep constructor fast and avoid
@@ -273,7 +326,7 @@ class ControlCenterViewModel(QObject):
             self._busy_label = self._startup_readiness_text(validating_local_stack=True)
         QTimer.singleShot(0, self._deferred_heavy_init)
         QTimer.singleShot(250, self._deferred_initial_refresh)
-        QTimer.singleShot(900, lambda: self._refresh_provider_health(announce=False))
+        QTimer.singleShot(900, self._deferred_provider_health_probe)
 
     def _deferred_heavy_init(self) -> None:
         """Attach lightweight listeners that need main-thread affinity.
@@ -294,13 +347,21 @@ class ControlCenterViewModel(QObject):
         self._bg_pool.shutdown(wait=False)
 
     def _deferred_initial_refresh(self) -> None:
-        """Run initial data load on background thread to keep main thread free.
+        """Keep first Control Center paint light.
 
-        Delegates to ``_refresh_all_data`` on ``_bg_pool`` so the event
-        loop stays free for lazy VM prebuild.  This eliminates the code
-        duplication that existed between refresh() and this method.
+        A full refresh scans repositories, task records and evolution
+        summaries.  Live Windows audits showed that doing that immediately
+        after navigation can starve the Qt event loop even from a worker
+        thread because of GIL and memory pressure.  The full synchronous
+        ``refresh()`` and explicit QML refresh actions still exist; initial
+        navigation only updates cache-based labels.
         """
-        self._bg_pool.submit(self._refresh_all_data)
+        if not self._working and not self._adaptive_session_id:
+            self._busy_label = self._startup_readiness_text(validating_local_stack=False)
+        # Only the visible chat/status strip changes here.  Emitting the broad
+        # dataChanged signal wakes many QML bindings on first Control Center
+        # paint and was observed to amplify route-entry memory pressure.
+        self.chatChanged.emit()
 
     def _placeholder_provider_cards(self) -> list[dict[str, Any]]:
         return [
@@ -344,13 +405,18 @@ class ControlCenterViewModel(QObject):
                 return []
             messages: list[dict[str, Any]] = []
             for row in rows:
+                raw_text = str(row['text'] or '')
+                display_text = self._chat_display_text(raw_text)
                 msg: dict[str, Any] = {
                     'role': row['role'],
                     'speaker': row['speaker'],
-                    'text': row['text'],
+                    'text': display_text,
                     'meta': row.get('meta', ''),
                     'timestamp': row.get('created_at_utc', '')[:5],
                 }
+                if display_text != raw_text:
+                    msg['textTruncated'] = True
+                    msg['fullTextChars'] = len(raw_text)
                 if row.get('evidence_tag'):
                     msg['evidenceTag'] = row['evidence_tag']
                 if row.get('reasoning_path'):
@@ -391,6 +457,19 @@ class ControlCenterViewModel(QObject):
             'idle': 'inactivo',
         }.get(status, status)
 
+    @classmethod
+    def _chat_display_text(cls, text: str) -> str:
+        """Return a UI-safe message body while preserving full text in storage."""
+        raw = str(text or '')
+        limit = int(getattr(cls, '_CHAT_INLINE_TEXT_LIMIT', 3500))
+        if len(raw) <= limit:
+            return raw
+        omitted = len(raw) - limit
+        return (
+            raw[:limit].rstrip()
+            + f"\n\n[Salida completa persistida en el historial local; se omitieron {omitted} caracteres para mantener la UI fluida.]"
+        )
+
     def _append_message(self, role: str, speaker: str, text: str, meta: str = '',
                         *, attachments: list[dict[str, Any]] | None = None,
                         code_blocks: list[dict[str, Any]] | None = None,
@@ -399,8 +478,13 @@ class ControlCenterViewModel(QObject):
                         evidence_tag: str = '',
                         reasoning_path: str = '',
                         trace_metadata: dict[str, Any] | None = None) -> None:
-        msg: dict[str, Any] = {'role': role, 'speaker': speaker, 'text': text, 'meta': meta,
+        display_text = ControlCenterViewModel._chat_display_text(text)
+        raw_text = str(text or '')
+        msg: dict[str, Any] = {'role': role, 'speaker': speaker, 'text': display_text, 'meta': meta,
                                'status': status, 'timestamp': datetime.now(timezone.utc).strftime('%H:%M')}
+        if display_text != raw_text:
+            msg['textTruncated'] = True
+            msg['fullTextChars'] = len(raw_text)
         if attachments:
             msg['attachments'] = attachments
         if code_blocks:
@@ -412,6 +496,10 @@ class ControlCenterViewModel(QObject):
         effective_reasoning_path = reasoning_path or self._last_reasoning_path
         if effective_reasoning_path:
             msg['reasoningPath'] = effective_reasoning_path
+        persist_metadata = dict(trace_metadata or {})
+        if display_text != raw_text:
+            persist_metadata.setdefault('ui_text_truncated', True)
+            persist_metadata.setdefault('full_text_chars', len(raw_text))
         with self._ui_state_lock:
             self._chat_messages.append(msg)
             self._chat_messages = self._chat_messages[-30:]
@@ -419,11 +507,15 @@ class ControlCenterViewModel(QObject):
             role=role, speaker=speaker, text=text, meta=meta,
             evidence_tag=evidence_tag,
             reasoning_path=effective_reasoning_path,
-            trace_metadata=trace_metadata,
+            trace_metadata=persist_metadata or trace_metadata,
         )
         self._last_reasoning_path = ''
         self._refresh_contextual_suggestions()
         self._validate_ui_reflects_reality()
+        chat_signal = getattr(self, 'chatChanged', None)
+        emit_chat = getattr(chat_signal, 'emit', None)
+        if callable(emit_chat):
+            emit_chat()
 
     def _persist_chat_message(
         self,
@@ -1018,7 +1110,7 @@ class ControlCenterViewModel(QObject):
             'focus': focus,
         }
 
-    def _update_evolution_snapshot(self) -> None:
+    def _build_evolution_snapshot(self) -> dict[str, Any]:
         health_snapshot = self.evolution_review_service.build_project_health().model_dump(mode='json') if self.evolution_review_service is not None else {}
         experiment_runs = self.experiment_lab_repository.list_runs(limit=12) if self.experiment_lab_repository is not None else []
         experiment_recommendations = self.experiment_lab_repository.list_recommendations(limit=3) if self.experiment_lab_repository is not None else []
@@ -1263,7 +1355,7 @@ class ControlCenterViewModel(QObject):
         else:
             overall_trend = 'sin base'
         next_help = blockers[0]['help'] if blockers else (self._assistant_action_buttons[0]['label'] if self._assistant_action_buttons else 'Seguir capturando evidencia y ejecutando tareas reales.')
-        self._evolution_overview = {
+        overview = {
             'title': 'Pulso evolutivo',
             'status': overall_status,
             'trend': overall_trend,
@@ -1282,8 +1374,53 @@ class ControlCenterViewModel(QObject):
                 {'title': 'Reutilizacion', 'value': str(reusable_patterns + reused_episodes), 'detail': 'patrones o reusos detectados'},
             ],
         }
-        self._evolution_area_cards = area_cards
-        self._evolution_blockers = blockers
+        return {
+            'overview': overview,
+            'area_cards': area_cards,
+            'blockers': blockers,
+        }
+
+    def _update_evolution_snapshot(self) -> None:
+        self._apply_evolution_snapshot(0, self._build_evolution_snapshot(), accept_any_generation=True)
+
+    def _refresh_evolution_snapshot_async(self) -> None:
+        self._evolution_snapshot_generation += 1
+        gen = self._evolution_snapshot_generation
+
+        def _bg() -> dict[str, Any]:
+            return self._build_evolution_snapshot()
+
+        def _done(fut: Any) -> None:
+            if self._evolution_snapshot_generation != gen:
+                return
+            try:
+                snapshot = fut.result()
+            except Exception:
+                logger.debug('evolution snapshot bg refresh failed', exc_info=True)
+                return
+            self.evolutionSnapshotReady.emit(gen, snapshot)
+
+        future = self._bg_pool.submit(_bg)
+        future.add_done_callback(_done)
+
+    @Slot(int, object)
+    def _apply_evolution_snapshot(
+        self,
+        gen: int,
+        snapshot: object,
+        *,
+        accept_any_generation: bool = False,
+    ) -> None:
+        if not accept_any_generation and self._evolution_snapshot_generation != gen:
+            return
+        if not isinstance(snapshot, dict):
+            return
+        self._evolution_overview = dict(snapshot.get('overview') or {})
+        self._evolution_area_cards = [dict(item) for item in (snapshot.get('area_cards') or [])]
+        self._evolution_blockers = [dict(item) for item in (snapshot.get('blockers') or [])]
+        if not accept_any_generation:
+            self.dataChanged.emit()
+
     def _assistant_tool_ids(self) -> list[str]:
         # devin_api y github_api son adapters activos (API REST) que el usuario
         # tambien entiende como "IAs con las que me conecto". Dejarlos fuera hacia
@@ -1423,9 +1560,18 @@ class ControlCenterViewModel(QObject):
         return [grouped[key] for key in order if key in grouped]
 
     def _startup_readiness_text(self, *, validating_local_stack: bool = False) -> str:
-        goal_context = self._goal_context_for_display(self._current_site_id() or None)
+        goal_context = dict(self._last_goal_context or {})
         active_title = str((goal_context.get('objective') or {}).get('title') or goal_context.get('active_title') or 'sin objetivo activo').strip() or 'sin objetivo activo'
-        assistant_cards = self._assistant_tool_cards()
+        assistant_cards = list(self._agent_cards or [])
+        if not assistant_cards:
+            assistant_cards = [
+                {
+                    'name': str(card.get('provider_name') or 'Asistente'),
+                    'status': 'listo automatico' if card.get('available') else 'no disponible',
+                }
+                for card in self._provider_cards
+                if isinstance(card, dict)
+            ]
         total = len(assistant_cards) or 1
         available_cards = [item for item in assistant_cards if item.get('status') != 'no disponible']
         automatic_cards = [item for item in assistant_cards if item.get('status') == 'listo automatico']
@@ -2457,7 +2603,9 @@ class ControlCenterViewModel(QObject):
         reply, meta, evidence_tag = self._evolution_status_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path='evolution_status')
-        self._record_chat_audit(reasoning_path='evolution_status', user_goal=message)
+        recorder = getattr(self, '_record_chat_audit', None)
+        if callable(recorder):
+            recorder(reasoning_path='evolution_status', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2470,7 +2618,9 @@ class ControlCenterViewModel(QObject):
         reply, meta, evidence_tag = self._learning_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path='learning')
-        self._record_chat_audit(reasoning_path='learning', user_goal=message)
+        recorder = getattr(self, '_record_chat_audit', None)
+        if callable(recorder):
+            recorder(reasoning_path='learning', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2483,7 +2633,9 @@ class ControlCenterViewModel(QObject):
         reply, meta = self._self_awareness_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag='observed',
                              reasoning_path='self_awareness')
-        self._record_chat_audit(reasoning_path='self_awareness', user_goal=message)
+        recorder = getattr(self, '_record_chat_audit', None)
+        if callable(recorder):
+            recorder(reasoning_path='self_awareness', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2496,7 +2648,9 @@ class ControlCenterViewModel(QObject):
         reply, meta = self._world_model_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag='observed',
                              reasoning_path='world_model')
-        self._record_chat_audit(reasoning_path='world_model', user_goal=message)
+        recorder = getattr(self, '_record_chat_audit', None)
+        if callable(recorder):
+            recorder(reasoning_path='world_model', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2999,7 +3153,9 @@ class ControlCenterViewModel(QObject):
 
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path=reasoning_path, trace_metadata=trace)
-        self._record_chat_audit(reasoning_path=reasoning_path, user_goal=message)
+        recorder = getattr(self, '_record_chat_audit', None)
+        if callable(recorder):
+            recorder(reasoning_path=reasoning_path, user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -3063,13 +3219,1325 @@ class ControlCenterViewModel(QObject):
         reply, meta, evidence_tag = self._general_chat_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path='general_chat')
-        self._record_chat_audit(reasoning_path='general_chat', user_goal=message)
+        recorder = getattr(self, '_record_chat_audit', None)
+        if callable(recorder):
+            recorder(reasoning_path='general_chat', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._working = False
         self._set_live_status('idle')
         self._busy_label = 'Respuesta lista.'
+        chat_signal = getattr(self, 'chatChanged', None)
+        emit_chat = getattr(chat_signal, 'emit', None)
+        if callable(emit_chat):
+            emit_chat()
+
+    def _is_external_consultation_diagnosis_question(self, message: str) -> bool:
+        normalized = self._normalized_command_text(message)
+        has_external_token = any(
+            token in normalized
+            for token in ('chatgpt', 'codex', 'claude', 'consulta externa', 'asistente externo')
+        )
+        external_payload = dict((getattr(self, '_last_adaptive_payload', {}) or {}).get('metadata') or {})
+        external_context_active = bool(
+            external_payload.get('external_consultation')
+            or external_payload.get('external_consultation_preflight')
+            or external_payload.get('autonomous_evolution')
+            or dict(getattr(self, '_external_evidence_panel', {}) or {}).get('visible')
+        )
+        if not has_external_token and not external_context_active:
+            return False
+        return any(
+            token in normalized
+            for token in (
+                'que paso',
+                'qué paso',
+                'que pasó',
+                'metadato',
+                'metadata',
+                'entendiendo',
+                'entendido',
+                'interpretando',
+                'por que no',
+                'por qué no',
+                'no pudo',
+                'no contesto',
+                'no contestó',
+                'navegador',
+                'ventana',
+                'visible',
+                'visual',
+                'no la veo',
+                'mostrar',
+                'donde se quedo',
+                'dónde se quedo',
+                'donde se quedó',
+                'segundo plano',
+                'tomando la informacion',
+                'tomando la información',
+                'como vamos a interactuar',
+                'cómo vamos a interactuar',
+            )
+        )
+
+    def get_external_evidence_panel(self) -> dict[str, Any]:
+        return dict(getattr(self, '_external_evidence_panel', {}) or {})
+
+    @staticmethod
+    def _external_evidence_kv_items(metadata: dict[str, Any] | list[dict[str, Any]] | None) -> list[dict[str, str]]:
+        if isinstance(metadata, list):
+            return [
+                {
+                    'key': str(item.get('key') or '')[:48],
+                    'value': str(item.get('value') or '')[:160],
+                }
+                for item in metadata[:12]
+                if isinstance(item, dict) and str(item.get('key') or '').strip()
+            ]
+        items: list[dict[str, str]] = []
+        for key, value in sorted(dict(metadata or {}).items()):
+            if isinstance(value, (dict, list)):
+                try:
+                    raw = json.dumps(value, ensure_ascii=False, sort_keys=True)
+                except Exception:
+                    raw = str(value)
+            else:
+                raw = str(value)
+            items.append({'key': str(key)[:48], 'value': raw[:160]})
+            if len(items) >= 12:
+                break
+        return items
+
+    def _set_external_evidence_panel(
+        self,
+        *,
+        title: str,
+        status: str,
+        assistant_title: str = '',
+        interaction_id: str = '',
+        phases: list[Any] | None = None,
+        metadata: dict[str, Any] | list[dict[str, Any]] | None = None,
+        visual_evidence: list[dict[str, Any]] | None = None,
+        user_help: str = '',
+        actions: list[dict[str, str]] | None = None,
+    ) -> None:
+        phase_rows: list[dict[str, str]] = []
+        for item in list(phases or [])[-8:]:
+            if isinstance(item, dict):
+                label = str(item.get('phase') or item.get('label') or '').strip()
+                detail_bits: list[str] = []
+                if item.get('detail'):
+                    detail_bits.append(str(item.get('detail') or '')[:160])
+                for key in ('selected_tool_id', 'response_verified', 'reuse_guard_active', 'available'):
+                    if key in item:
+                        detail_bits.append(f'{key}={item.get(key)}')
+                phase_rows.append({'label': label, 'detail': ', '.join(detail_bits)})
+            else:
+                phase_rows.append({'label': str(item or '').strip(), 'detail': ''})
+        phase_rows = [row for row in phase_rows if row.get('label')]
+        self._external_evidence_panel = {
+            'visible': True,
+            'title': title,
+            'status': status,
+            'assistant': assistant_title,
+            'interaction_id': interaction_id,
+            'phases': phase_rows,
+            'metadata': ControlCenterViewModel._external_evidence_kv_items(metadata),
+            'visual_evidence': [
+                {
+                    'label': str(item.get('label') or '')[:80],
+                    'path': str(item.get('path') or '')[:260],
+                    'image_url': str(item.get('image_url') or '')[:320],
+                    'detail': str(item.get('detail') or '')[:220],
+                    'permission_granted': bool(item.get('permission_granted')),
+                    'region': str(item.get('region') or '')[:32],
+                    'semantic_summary': dict(item.get('semantic_summary') or {}),
+                    'semantic_path': str(item.get('semantic_path') or '')[:260],
+                    'capture_quality': dict(item.get('capture_quality') or {}),
+                    'capture_attempts': list(item.get('capture_attempts') or [])[:4],
+                }
+                for item in list(visual_evidence or [])[-4:]
+                if isinstance(item, dict) and str(item.get('path') or item.get('image_url') or '').strip()
+            ],
+            'user_help': user_help,
+            'actions': list(actions or []),
+        }
+        chat_signal = getattr(self, 'chatChanged', None)
+        emit_chat = getattr(chat_signal, 'emit', None)
+        if callable(emit_chat):
+            emit_chat()
+
+    def _external_evidence_assistant_kind(self) -> str:
+        pending = self._pending_observation_permission_assistant()
+        if pending:
+            return pending
+        panel = dict(getattr(self, '_external_evidence_panel', {}) or {})
+        probe = ' '.join(
+            str(value or '').strip().lower()
+            for value in (
+                panel.get('assistant'),
+                panel.get('title'),
+                panel.get('status'),
+            )
+        )
+        metadata = panel.get('metadata') or []
+        if isinstance(metadata, list):
+            probe += ' ' + ' '.join(
+                f"{str(item.get('key') or '').lower()} {str(item.get('value') or '').lower()}"
+                for item in metadata
+                if isinstance(item, dict)
+            )
+        for key in ('chatgpt', 'claude', 'codex', 'ollama', 'devin', 'windsurf'):
+            if key in probe:
+                return key
+        return ''
+
+    def _observation_permission_granted(self, assistant_kind: str) -> bool:
+        assistant_kind = str(assistant_kind or '').strip().lower()
+        if not assistant_kind:
+            return False
+        world_model_service = getattr(getattr(self.adaptive_orchestrator, 'context_assembler', None), 'world_model_service', None)
+        snapshot = getattr(world_model_service, 'permission_snapshot', None)
+        if not callable(snapshot):
+            return False
+        scope = f'observe_window_content:{assistant_kind}'
+        try:
+            permissions = snapshot()
+        except Exception:
+            return False
+        for item in permissions or []:
+            payload = dict(item or {})
+            if str(payload.get('scope') or '').strip().lower() == scope:
+                return bool(payload.get('granted'))
+        return False
+
+    @staticmethod
+    def _assistant_web_url(assistant_kind: str) -> str:
+        normalized = str(assistant_kind or '').strip().lower()
+        if normalized == 'chatgpt':
+            return 'https://chatgpt.com/'
+        if normalized == 'claude':
+            return 'https://claude.ai/'
+        if normalized == 'devin':
+            return 'https://app.devin.ai/'
+        if normalized == 'codex':
+            return 'https://chatgpt.com/codex'
+        return ''
+
+    def _assistant_program_browser_profile_dir(self, assistant_kind: str) -> Path:
+        normalized = str(assistant_kind or 'external').strip().lower() or 'external'
+        workspace_root = Path(str(getattr(self.config, 'workspace_root', '') or '.'))
+        return (
+            workspace_root
+            / 'data'
+            / 'tool_teaching'
+            / 'external_assistants'
+            / f'{normalized}_program_session'
+            / 'browser_profile'
+        )
+
+    @staticmethod
+    def _is_user_browser_session_request(message: str) -> bool:
+        command = ' '.join(str(message or '').lower().strip().split())
+        if not command:
+            return False
+        browser_terms = (
+            'mi navegador',
+            'mis navegadores',
+            'navegador donde',
+            'navegadores donde',
+            'chrome donde',
+            'edge donde',
+            'perfil de chrome',
+            'perfil de edge',
+            'sesion iniciada',
+            'sesión iniciada',
+            'inicios de sesion',
+            'inicios de sesión',
+            'ya tengo sesion',
+            'ya tengo sesión',
+            'ya logueado',
+            'ya logueada',
+            'mis cuentas',
+            'mis correos',
+            'cuentas logueadas',
+        )
+        action_terms = ('usa', 'usar', 'utiliza', 'utilizar', 'abre', 'abrir', 'reusa', 'reusar', 'aprovecha', 'aprovechar')
+        return any(term in command for term in browser_terms) and any(term in command for term in action_terms)
+
+    def _assistant_for_browser_session_preference(self, message: str) -> str:
+        explicit = self._explicit_assistant_preference(message)
+        if explicit:
+            return explicit
+        panel_kind = self._external_evidence_assistant_kind()
+        if panel_kind:
+            return panel_kind
+        command = str(message or '').lower()
+        for candidate in ('chatgpt', 'claude', 'codex', 'devin'):
+            if candidate in command:
+                return candidate
+        return 'chatgpt'
+
+    def _external_browser_session_preference(self, assistant_kind: str) -> dict[str, Any]:
+        assistant_kind = str(assistant_kind or '').strip().lower()
+        if not assistant_kind:
+            return {}
+        return dict((getattr(self, '_external_browser_session_preferences', {}) or {}).get(assistant_kind) or {})
+
+    def _prefer_user_browser_for_external(self, assistant_kind: str) -> bool:
+        preference = self._external_browser_session_preference(assistant_kind)
+        mode = str(preference.get('mode') or '').strip().lower()
+        return mode in {'user_default_browser', 'user_existing_browser', 'user_existing_cdp'}
+
+    def _external_session_goal_overrides(self, assistant_kind: str) -> dict[str, Any]:
+        preference = self._external_browser_session_preference(assistant_kind)
+        if not preference:
+            return {}
+        mode = str(preference.get('mode') or '').strip().lower()
+        if mode not in {'user_default_browser', 'user_existing_browser', 'user_existing_cdp'}:
+            return {}
+        return {
+            'browser_session_mode': mode,
+            'user_browser_requested': True,
+            'background_preference_requested': bool(preference.get('background_preference_requested', False)),
+            'response_capture_mode': 'manual_pasteback',
+            'background_capture_mode': 'user_visible_browser',
+            'requires_manual_pasteback': True,
+            'session_scope': 'user_browser',
+            'session_label': 'Navegador del usuario',
+            'isolated_session_required': False,
+        }
+
+    def _handle_user_browser_session_request(self, message: str) -> bool:
+        if not ControlCenterViewModel._is_user_browser_session_request(message):
+            return False
+        assistant_kind = self._assistant_for_browser_session_preference(message)
+        assistant_title = self._assistant_display_name(assistant_kind)
+        command = ' '.join(str(message or '').lower().strip().split())
+        preference = {
+            'mode': 'user_default_browser',
+            'assistant_kind': assistant_kind,
+            'background_preference_requested': 'segundo plano' in command or 'background' in command,
+            'source': 'chat_instruction',
+            'updated_at_utc': datetime.now(timezone.utc).isoformat(),
+            'message_preview': str(message or '')[:160],
+        }
+        self._external_browser_session_preferences[assistant_kind] = preference
+        self._trace_external_followup(
+            'external_browser_session_preference_updated',
+            assistant_kind=assistant_kind,
+            mode=preference['mode'],
+            background_preference_requested=preference['background_preference_requested'],
+            message_preview=preference['message_preview'],
+        )
+        self._set_external_evidence_panel(
+            title=f'Ruta externa ajustada para {assistant_title}',
+            status='user_browser_preferred',
+            assistant_title=assistant_title,
+            interaction_id=str(getattr(self, '_active_interaction_id', '') or ''),
+            phases=[{'phase': 'browser_session_preference_updated', 'detail': 'user_default_browser'}],
+            metadata=[
+                {'key': 'browser_session_mode', 'value': 'user_default_browser'},
+                {'key': 'isolated_program_profile', 'value': 'false'},
+                {'key': 'background_preference_requested', 'value': str(preference['background_preference_requested']).lower()},
+                {'key': 'confirmed_login_state', 'value': 'UNRESOLVED'},
+            ],
+            user_help=(
+                f'Voy a priorizar tu navegador predeterminado para {assistant_title}, no el perfil aislado del programa. '
+                'No voy a asumir que una cuenta esta disponible hasta verificarlo en vivo. Si aparece login o verificacion, te mostrare esa ventana para que puedas resolverla.'
+            ),
+            actions=[
+                self._assistant_action(f'open_external_assistant_{assistant_kind}', f'Abrir {assistant_title}', 'Abrir la pagina en tu navegador predeterminado.'),
+                self._assistant_action(f'consult_{assistant_kind}', f'Consultar {assistant_title}', 'Reintentar la consulta usando esta preferencia.'),
+                self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Cruzar lo visible con los metadatos despues de abrir.'),
+            ],
+        )
+        self._append_message(
+            'assistant',
+            'IABV',
+            (
+                f'Entendido. Para {assistant_title} voy a usar tu navegador predeterminado y tus sesiones visibles antes que el perfil aislado del programa. '
+                'El estado de login queda UNRESOLVED hasta observar la pagina real.'
+            ),
+            'Preferencia de navegador actualizada.',
+            reasoning_path='external_browser_session_preference',
+            evidence_tag='observed',
+        )
         self.dataChanged.emit()
+        return True
+
+    def _open_external_assistant_for_human_verification(
+        self,
+        assistant_kind: str,
+        *,
+        reason: str = 'user_action',
+        announce: bool = True,
+    ) -> bool:
+        """Open a visible assistant window when a web security check needs a human."""
+        assistant_kind = str(assistant_kind or self._external_evidence_assistant_kind() or '').strip().lower()
+        if not assistant_kind:
+            if announce:
+                self._append_message('assistant', 'IABV', 'No se que asistente externo debo abrir para verificacion.', 'Asistente externo no identificado.')
+            return False
+        url = ControlCenterViewModel._assistant_web_url(assistant_kind)
+        if not url:
+            if announce:
+                self._append_message('assistant', 'IABV', f'No tengo URL visible configurada para {assistant_kind}.', 'Ruta visible no disponible.')
+            return False
+        assistant_title = self._assistant_display_name(assistant_kind)
+        use_user_browser = self._prefer_user_browser_for_external(assistant_kind)
+        profile_dir = self._assistant_program_browser_profile_dir(assistant_kind)
+        if not use_user_browser:
+            profile_dir.mkdir(parents=True, exist_ok=True)
+        browser_mode = 'user_default_browser_visible' if use_user_browser else 'program_profile_visible'
+        self._external_visible_verification_opened_at[assistant_kind] = time.monotonic()
+        self._set_external_evidence_panel(
+            title=f'Verificacion visible de {assistant_title}',
+            status='needs_human_verification',
+            assistant_title=assistant_title,
+            interaction_id=str(getattr(self, '_active_interaction_id', '') or ''),
+            phases=[{'phase': 'visible_verification_window_requested', 'detail': reason}],
+            metadata={
+                'assistant_kind': assistant_kind,
+                'url': url,
+                'browser_session_mode': browser_mode,
+                'browser_profile_dir': '' if use_user_browser else str(profile_dir),
+                'isolated_program_profile': not use_user_browser,
+                'reason': reason,
+                'source': 'ControlCenterViewModel._open_external_assistant_for_human_verification',
+            },
+            user_help=(
+                (
+                    f'Abro una ventana visible de {assistant_title} usando tu navegador predeterminado. '
+                    if use_user_browser
+                    else f'Abro una ventana visible de {assistant_title} usando el perfil del programa. '
+                )
+                + 'Si aparece una verificacion de seguridad, resuelvela ahi. Despues pulsa Reintentar o Capturar vista para que IABV cruce lo visible con sus metadatos.'
+            ),
+            actions=[
+                self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar lo que se ve despues de abrir la verificacion.'),
+                self._assistant_action(f'consult_{assistant_kind}', f'Reintentar {assistant_title}', 'Volver a consultar despues de resolver la verificacion.'),
+                self._assistant_action('ingest_external_response', 'Pegar respuesta', 'Ingerir manualmente una respuesta si ya aparecio.'),
+                self._assistant_action('audit_autonomy', 'Auditar ruta', 'Revisar el bloqueo operativo.'),
+            ],
+        )
+        if announce:
+            self._append_message(
+                'assistant',
+                'IABV',
+                (
+                    f'Voy a abrir una ventana visible de {assistant_title} para que puedas resolver login o verificacion de seguridad. '
+                    'Despues de resolverla, pulsa Reintentar o Capturar vista.'
+                ),
+                f'Verificacion visible de {assistant_title}.',
+                reasoning_path='external_human_verification',
+                evidence_tag='observed',
+            )
+        self.dataChanged.emit()
+
+        def _worker() -> None:
+            mode = 'unresolved'
+            error = ''
+            try:
+                if use_user_browser:
+                    import webbrowser
+
+                    opened = bool(webbrowser.open(url))
+                    mode = 'user_default_browser_visible' if opened else 'failed'
+                    if not opened:
+                        error = 'webbrowser.open returned False'
+                else:
+                    from iabv_v15.services.capture.browser_session_controller import BrowserSessionController
+
+                    controller = BrowserSessionController(user_data_dir=str(profile_dir), headless=False)
+                    controller.start()
+                    page = controller.page or controller.new_page()
+                    page.goto(url, wait_until='domcontentloaded')
+                    self._visible_external_sessions[assistant_kind] = controller
+                    mode = 'program_profile_visible'
+            except Exception as exc:
+                error = str(exc)[:240]
+                try:
+                    import webbrowser
+
+                    webbrowser.open(url)
+                    mode = 'default_browser_fallback'
+                except Exception as fallback_exc:
+                    error = f'{error}; fallback={fallback_exc}'[:240]
+                    mode = 'failed'
+            try:
+                self._trace_external_followup(
+                    'external_assistant_verification_window_opened',
+                    assistant_kind=assistant_kind,
+                    assistant_title=assistant_title,
+                    url=url,
+                    browser_session_mode=browser_mode,
+                    browser_profile_dir='' if use_user_browser else str(profile_dir),
+                    isolated_program_profile=not use_user_browser,
+                    mode=mode,
+                    error=error,
+                    reason=reason,
+                )
+            except Exception:
+                pass
+
+        threading.Thread(target=_worker, daemon=True, name=f'iabv-visible-{assistant_kind}-verification').start()
+        return True
+
+    def _release_visible_external_session(self, assistant_kind: str, *, reason: str = 'retry') -> None:
+        """Close a visible verification browser before the headless path reuses its profile."""
+        assistant_kind = str(assistant_kind or '').strip().lower()
+        if not assistant_kind:
+            return
+        sessions = getattr(self, '_visible_external_sessions', None)
+        if not isinstance(sessions, dict):
+            return
+        controller = sessions.pop(assistant_kind, None)
+        if controller is None:
+            return
+        error = ''
+        try:
+            close = getattr(controller, 'close', None)
+            if callable(close):
+                close()
+        except Exception as exc:
+            error = str(exc)[:240]
+        try:
+            self._trace_external_followup(
+                'external_assistant_verification_window_released',
+                assistant_kind=assistant_kind,
+                assistant_title=self._assistant_display_name(assistant_kind),
+                reason=reason,
+                error=error,
+            )
+        except Exception:
+            pass
+
+    @staticmethod
+    def _preflight_is_security_verification(preflight: dict[str, Any]) -> bool:
+        governance = dict(preflight.get('governance') or {})
+        reason = str(preflight.get('reason') or governance.get('reason') or '').strip().lower()
+        flags = [
+            str(item).strip().lower()
+            for item in (
+                list(governance.get('external_state_flags') or [])
+                + list(preflight.get('external_state_flags') or [])
+                + list(dict(preflight.get('world_model_summary') or {}).get('external_state_flags') or [])
+            )
+            if str(item).strip()
+        ]
+        return (
+            'browser_security_verification' in reason
+            or 'verificacion de seguridad' in reason
+            or 'verificación de seguridad' in reason
+            or 'browser_security_verification' in flags
+        )
+
+    def _should_retest_security_preflight_after_visible_verification(
+        self,
+        assistant_kind: str,
+        preflight: dict[str, Any],
+        *,
+        max_age_seconds: float = 1800.0,
+    ) -> bool:
+        """Allow one live retest after the user had a visible verification path.
+
+        The security block comes from WorldModel/history. After the user grants
+        observation and IABV opens a visible program-profile browser, the honest
+        next step is to retest the real session. This does not claim success;
+        the adapter still verifies the live browser result.
+        """
+        assistant_kind = str(assistant_kind or '').strip().lower()
+        if not assistant_kind:
+            return False
+        if not ControlCenterViewModel._preflight_is_security_verification(preflight):
+            return False
+        if not self._observation_permission_granted(assistant_kind):
+            return False
+        opened_at = float((getattr(self, '_external_visible_verification_opened_at', {}) or {}).get(assistant_kind) or 0.0)
+        has_visible_session = assistant_kind in (getattr(self, '_visible_external_sessions', {}) or {})
+        if not opened_at and not has_visible_session:
+            return False
+        if opened_at and (time.monotonic() - opened_at) > max_age_seconds:
+            return False
+        return True
+
+    @staticmethod
+    def _assistant_window_title_hints(assistant_kind: str) -> list[str]:
+        normalized = str(assistant_kind or '').strip().lower()
+        if normalized == 'chatgpt':
+            return ['chatgpt', 'chat.openai', 'openai']
+        if normalized == 'claude':
+            return ['claude', 'anthropic']
+        if normalized == 'codex':
+            return ['codex']
+        if normalized == 'devin':
+            return ['devin']
+        if normalized == 'windsurf':
+            return ['windsurf']
+        return [normalized] if normalized else []
+
+    def _target_window_for_visual_evidence(self, assistant_kind: str) -> dict[str, Any]:
+        """Return the best external target window, without guessing as success."""
+        assistant_kind = str(assistant_kind or '').strip().lower()
+        hints = [hint for hint in ControlCenterViewModel._assistant_window_title_hints(assistant_kind) if hint]
+        if not hints:
+            return {}
+        world_model_service_getter = getattr(self, '_world_model_service', None)
+        if callable(world_model_service_getter):
+            service = world_model_service_getter()
+        else:
+            service = getattr(getattr(getattr(self, 'adaptive_orchestrator', None), 'context_assembler', None), 'world_model_service', None)
+        snapshot = None
+        if service is not None:
+            try:
+                refresh = getattr(service, 'request_refresh', None)
+                snapshot = refresh(reason=f'visual_evidence_target:{assistant_kind}', full=False) if callable(refresh) else service.current_model()
+            except Exception:
+                try:
+                    snapshot = service.current_model()
+                except Exception:
+                    snapshot = None
+        windows = list(getattr(snapshot, 'active_windows', []) or [])
+        candidates: list[dict[str, Any]] = []
+        for window in windows:
+            title = str(getattr(window, 'title', '') or '')
+            app_name = str(getattr(window, 'app_name', '') or '')
+            normalized = f'{title} {app_name}'.lower()
+            if not any(hint in normalized for hint in hints):
+                continue
+            if 'iabv' in normalized and assistant_kind != 'iabv':
+                continue
+            metadata = dict(getattr(window, 'metadata', {}) or {})
+            rect = list(metadata.get('rect') or [])
+            hwnd = int(metadata.get('hwnd') or 0)
+            candidates.append(
+                {
+                    'title': title,
+                    'app_name': app_name,
+                    'assistant_kind': str(getattr(window, 'assistant_kind', '') or assistant_kind),
+                    'tool_id': str(getattr(window, 'tool_id', '') or ''),
+                    'pid': int(getattr(window, 'pid', 0) or 0),
+                    'focused': bool(getattr(window, 'focused', False)),
+                    'visible': bool(getattr(window, 'visible', True)),
+                    'hwnd': hwnd,
+                    'rect': rect,
+                }
+            )
+        candidates.sort(key=lambda item: (not bool(item.get('focused')), not bool(item.get('hwnd')), str(item.get('title') or '')))
+        return dict(candidates[0]) if candidates else {}
+
+    @staticmethod
+    def _capture_region_for_target_window(target_window: dict[str, Any]) -> str:
+        rect = list(dict(target_window or {}).get('rect') or [])
+        if len(rect) >= 4:
+            left, top, width, height = [int(value or 0) for value in rect[:4]]
+            if width > 0 and height > 0:
+                return f'bbox:{left},{top},{width},{height}'
+        hwnd = int(dict(target_window or {}).get('hwnd') or 0)
+        if hwnd > 0:
+            return f'hwnd:{hwnd}'
+        return ''
+
+    @staticmethod
+    def _capture_region_candidates_for_target_window(target_window: dict[str, Any]) -> list[dict[str, str]]:
+        """Return capture attempts ordered by visual reliability.
+
+        For external Chromium windows, native hwnd capture can be all black.
+        The visible bbox is closer to what the user sees, so it goes first
+        when WorldModel exposes a rectangle; hwnd remains as fallback evidence.
+        """
+        target = dict(target_window or {})
+        candidates: list[dict[str, str]] = []
+        rect = list(target.get('rect') or [])
+        if len(rect) >= 4:
+            left, top, width, height = [int(value or 0) for value in rect[:4]]
+            if width > 0 and height > 0:
+                candidates.append(
+                    {
+                        'region': f'bbox:{left},{top},{width},{height}',
+                        'capture_scope': 'external_target_window_bbox',
+                    }
+                )
+        hwnd = int(target.get('hwnd') or 0)
+        if hwnd > 0:
+            candidates.append({'region': f'hwnd:{hwnd}', 'capture_scope': 'external_target_window_hwnd'})
+        return candidates
+
+    @staticmethod
+    def _visual_capture_quality(screenshot_data: bytes) -> dict[str, Any]:
+        """Estimate whether a screenshot has enough visual information.
+
+        This is intentionally cheap and deterministic. It catches the common
+        Windows/Chromium failure mode where a valid PNG is completely black.
+        """
+        size_bytes = len(screenshot_data or b'')
+        if not screenshot_data:
+            return {
+                'status': 'empty',
+                'size_bytes': 0,
+                'blank_probability': 1.0,
+                'useful': False,
+                'reason': 'empty_capture',
+            }
+        try:
+            import io
+            from PIL import Image, ImageStat  # type: ignore
+
+            image = Image.open(io.BytesIO(screenshot_data)).convert('RGB')
+            width, height = image.size
+            stat = ImageStat.Stat(image)
+            extrema = image.getextrema()
+            dynamic_range = max((hi - lo) for lo, hi in extrema)
+            mean_stddev = sum(float(value) for value in stat.stddev) / 3.0
+            unique_colors = image.getcolors(maxcolors=256)
+            unique_color_count = 257 if unique_colors is None else len(unique_colors)
+            blank_probability = 0.0
+            if width <= 0 or height <= 0:
+                blank_probability = 1.0
+            elif dynamic_range <= 2 and mean_stddev <= 1.0:
+                blank_probability = 0.98
+            elif unique_color_count <= 2 and mean_stddev <= 2.0:
+                blank_probability = 0.9
+            elif size_bytes < 12000 and width * height >= 250000 and mean_stddev < 8.0:
+                blank_probability = 0.84
+            elif mean_stddev < 5.0:
+                blank_probability = 0.62
+            useful = blank_probability < 0.8
+            return {
+                'status': 'analyzed',
+                'size_bytes': size_bytes,
+                'image_width': int(width),
+                'image_height': int(height),
+                'mean_stddev': round(mean_stddev, 4),
+                'dynamic_range': int(dynamic_range),
+                'unique_color_count': int(unique_color_count),
+                'blank_probability': round(blank_probability, 4),
+                'useful': useful,
+                'reason': 'ok' if useful else 'low_information_pixels',
+            }
+        except Exception as exc:
+            return {
+                'status': 'unresolved',
+                'size_bytes': size_bytes,
+                'blank_probability': 0.0,
+                'useful': True,
+                'reason': f'quality_analysis_unavailable:{str(exc)[:80]}',
+            }
+
+    @staticmethod
+    def _visual_evidence_image_url(path: str) -> str:
+        normalized = str(path or '').replace('\\', '/')
+        if normalized.startswith('/'):
+            return f'file://{normalized}'
+        return f'file:///{normalized}'
+
+    def _visual_evidence_semantic_summary(self, entry: dict[str, Any]) -> dict[str, Any]:
+        path = str(entry.get('path') or '').strip()
+        if not path:
+            return {
+                'status': 'unavailable',
+                'state_hypothesis': 'visual_unavailable',
+                'confidence': 0.0,
+                'labels': [],
+                'unresolved_fields': ['UNRESOLVED:visual_evidence_path_missing'],
+            }
+        analyzer = getattr(self, 'universal_perception_service', None)
+        if analyzer is None or not hasattr(analyzer, 'analyze_visual_evidence'):
+            analyzer = UniversalPerceptionService()
+        try:
+            signal = analyzer.analyze_visual_evidence(
+                image_path=path,
+                assistant_kind=str(entry.get('assistant_kind') or ''),
+                permission_granted=bool(entry.get('permission_granted')),
+                source='external_evidence_panel',
+                metadata={
+                    'assistant_title': str(entry.get('assistant_kind') or ''),
+                    'target_window_found': bool(entry.get('target_window_found')),
+                    'target_window_title': str(entry.get('target_window_title') or ''),
+                    'capture_scope': str(entry.get('capture_scope') or ''),
+                    'captured_self_only': bool(entry.get('captured_self_only')),
+                },
+            )
+            payload = signal.model_dump(mode='json') if hasattr(signal, 'model_dump') else dict(signal)
+        except Exception as exc:
+            return {
+                'status': 'error',
+                'state_hypothesis': 'visual_analysis_failed',
+                'confidence': 0.0,
+                'labels': [],
+                'unresolved_fields': ['UNRESOLVED:visual_semantic_analysis_failed'],
+                'error': str(exc)[:220],
+            }
+        snapshot = dict(payload.get('visual_snapshot') or {})
+        summary = {
+            'status': 'available' if payload.get('capture_available') else 'unavailable',
+            'state_hypothesis': str(snapshot.get('state_hypothesis') or ''),
+            'confidence': float(payload.get('confidence') or 0.0),
+            'labels': list(snapshot.get('semantic_labels') or payload.get('visible_targets') or [])[:10],
+            'ocr_status': str(snapshot.get('ocr_status') or ''),
+            'ocr_text_preview': str(snapshot.get('ocr_text_preview') or '')[:300],
+            'image_width': int(snapshot.get('image_width') or 0),
+            'image_height': int(snapshot.get('image_height') or 0),
+            'blank_probability': float(snapshot.get('blank_probability') or 0.0),
+            'unresolved_fields': list(payload.get('unresolved_fields') or []),
+        }
+        try:
+            sidecar = Path(path).with_suffix('.json')
+            sidecar.write_text(
+                json.dumps(
+                    {
+                        'visual_evidence': {key: value for key, value in entry.items() if key != 'semantic_summary'},
+                        'visual_signal': payload,
+                        'semantic_summary': summary,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                    sort_keys=True,
+                ),
+                encoding='utf-8',
+            )
+            summary['semantic_path'] = str(sidecar)
+        except Exception:
+            summary.setdefault('unresolved_fields', []).append('UNRESOLVED:visual_semantic_sidecar_write_failed')
+        return summary
+
+    def _capture_visual_evidence_snapshot(
+        self,
+        *,
+        assistant_kind: str = '',
+        reason: str = 'user_requested',
+        announce: bool = True,
+    ) -> dict[str, Any]:
+        assistant_kind = str(assistant_kind or self._external_evidence_assistant_kind() or '').strip().lower()
+        permission_granted = self._observation_permission_granted(assistant_kind)
+        target_window: dict[str, Any] = {}
+        target_region = ''
+        capture_attempt_plan: list[dict[str, str]] = []
+        if assistant_kind and permission_granted:
+            target_window = ControlCenterViewModel._target_window_for_visual_evidence(self, assistant_kind)  # type: ignore[arg-type]
+            capture_attempt_plan = ControlCenterViewModel._capture_region_candidates_for_target_window(target_window)
+            target_region = capture_attempt_plan[0]['region'] if capture_attempt_plan else ''
+        target_found = bool(target_window and capture_attempt_plan)
+        if target_found:
+            region = target_region
+            capture_scope = capture_attempt_plan[0]['capture_scope']
+        else:
+            region = 'screen' if permission_granted else 'main'
+            capture_scope = 'screen_fallback_no_target' if permission_granted else 'iabv_window_only'
+            capture_attempt_plan = [{'region': region, 'capture_scope': capture_scope}]
+        target_title = str(target_window.get('title') or '').strip()
+        captured_self_only = (not permission_granted) or ('iabv' in target_title.lower() and assistant_kind != 'iabv')
+        unresolved_fields: list[str] = []
+        if assistant_kind and not permission_granted:
+            unresolved_fields.append('UNRESOLVED:external_window_content_permission_missing')
+        if assistant_kind and permission_granted and not target_found:
+            unresolved_fields.append('UNRESOLVED:external_target_window_not_found')
+
+        try:
+            from iabv_v15.infra.ui import build_ui_screenshot_provider
+
+            provider = build_ui_screenshot_provider()
+            if provider is None:
+                raise RuntimeError('screenshot_provider_unavailable')
+            screenshot_data = b''
+            capture_quality: dict[str, Any] = {}
+            capture_attempts: list[dict[str, Any]] = []
+            selected_attempt: dict[str, str] = dict(capture_attempt_plan[0] if capture_attempt_plan else {'region': region, 'capture_scope': capture_scope})
+            for attempt in capture_attempt_plan:
+                attempt_region = str(attempt.get('region') or '')
+                attempt_scope = str(attempt.get('capture_scope') or '')
+                attempt_data = provider.capture(attempt_region)
+                attempt_quality = ControlCenterViewModel._visual_capture_quality(attempt_data)
+                capture_attempts.append(
+                    {
+                        'region': attempt_region,
+                        'capture_scope': attempt_scope,
+                        'size_bytes': int(attempt_quality.get('size_bytes') or len(attempt_data or b'')),
+                        'blank_probability': float(attempt_quality.get('blank_probability') or 0.0),
+                        'useful': bool(attempt_quality.get('useful')),
+                        'reason': str(attempt_quality.get('reason') or ''),
+                    }
+                )
+                if attempt_data and (not screenshot_data or bool(attempt_quality.get('useful'))):
+                    screenshot_data = attempt_data
+                    capture_quality = attempt_quality
+                    selected_attempt = attempt
+                if screenshot_data and bool(attempt_quality.get('useful')):
+                    break
+            region = str(selected_attempt.get('region') or region)
+            capture_scope = str(selected_attempt.get('capture_scope') or capture_scope)
+            if not screenshot_data:
+                raise RuntimeError('screenshot_capture_empty')
+            if capture_quality and not bool(capture_quality.get('useful', True)):
+                unresolved_fields.append('UNRESOLVED:visual_capture_low_information')
+            evidence_dir = Path(str(getattr(self.config, 'workspace_root', '') or '.')) / 'data' / 'evolution' / 'visual_evidence'
+            evidence_dir.mkdir(parents=True, exist_ok=True)
+            stamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S_%f')
+            suffix = assistant_kind or 'iabv'
+            path = evidence_dir / f'visual_{stamp}_{suffix}.png'
+            path.write_bytes(screenshot_data)
+            if target_found:
+                label = f'Ventana objetivo: {target_title or self._assistant_display_name(assistant_kind)}'
+                target_detail = f'target={target_title or "sin titulo"}'
+            elif permission_granted:
+                label = 'Pantalla completa sin ventana objetivo'
+                target_detail = f'target=UNRESOLVED:{assistant_kind or "external"}_window_not_found'
+            else:
+                label = 'Vista IABV local'
+                target_detail = 'target=IABV local'
+            entry = {
+                'label': label,
+                'path': str(path),
+                'image_url': ControlCenterViewModel._visual_evidence_image_url(str(path)),
+                'detail': (
+                    f'region={region}; scope={capture_scope}; reason={reason}; {target_detail}; '
+                    + ('incluye ventana externa objetivo' if target_found else 'no confirma ventana externa objetivo')
+                ),
+                'permission_granted': permission_granted,
+                'assistant_kind': assistant_kind,
+                'region': region,
+                'capture_scope': capture_scope,
+                'target_window_found': target_found,
+                'target_window_title': target_title,
+                'target_window': target_window,
+                'captured_self_only': captured_self_only,
+                'size_bytes': len(screenshot_data),
+                'capture_quality': capture_quality,
+                'capture_attempts': capture_attempts,
+                'unresolved_fields': unresolved_fields,
+            }
+            status = 'ok'
+            error = ''
+        except Exception as exc:
+            entry = {
+                'label': 'Captura visual fallida',
+                'path': '',
+                'image_url': '',
+                'detail': str(exc)[:220],
+                'permission_granted': permission_granted,
+                'assistant_kind': assistant_kind,
+                'region': region,
+                'capture_scope': capture_scope,
+                'target_window_found': target_found,
+                'target_window_title': target_title,
+                'target_window': target_window,
+                'captured_self_only': captured_self_only,
+                'size_bytes': 0,
+                'capture_quality': {},
+                'capture_attempts': [],
+                'unresolved_fields': list(dict.fromkeys(unresolved_fields + ['visual_capture_failed'])),
+            }
+            status = 'error'
+            error = str(exc)[:220]
+
+        semantic_summary = self._visual_evidence_semantic_summary(entry) if entry.get('path') else {
+            'status': 'unavailable',
+            'state_hypothesis': 'visual_unavailable',
+            'confidence': 0.0,
+            'labels': [],
+            'unresolved_fields': list(entry.get('unresolved_fields') or []),
+        }
+        entry['semantic_summary'] = semantic_summary
+        if semantic_summary.get('semantic_path'):
+            entry['semantic_path'] = str(semantic_summary.get('semantic_path') or '')
+        if semantic_summary.get('state_hypothesis'):
+            entry['detail'] = (
+                str(entry.get('detail') or '')
+                + f"; state={semantic_summary.get('state_hypothesis')}; confidence={semantic_summary.get('confidence')}"
+            )[:220]
+        semantic_unresolved = [
+            str(item)
+            for item in (semantic_summary.get('unresolved_fields') or [])
+            if str(item)
+        ]
+        if semantic_unresolved:
+            entry['unresolved_fields'] = list(dict.fromkeys(list(entry.get('unresolved_fields') or []) + semantic_unresolved))
+
+        panel = dict(getattr(self, '_external_evidence_panel', {}) or {})
+        visuals = [dict(item) for item in (panel.get('visual_evidence') or []) if isinstance(item, dict)]
+        if entry.get('path'):
+            visuals.append(entry)
+        metadata_rows = [dict(item) for item in (panel.get('metadata') or []) if isinstance(item, dict)]
+        metadata_rows.extend(
+            [
+                {'key': 'visual_evidence_status', 'value': status},
+                {'key': 'visual_evidence_region', 'value': region},
+                {'key': 'visual_capture_scope', 'value': capture_scope},
+                {'key': 'visual_capture_quality', 'value': str(dict(entry.get('capture_quality') or {}).get('reason') or '')},
+                {'key': 'visual_blank_probability', 'value': str(dict(entry.get('capture_quality') or {}).get('blank_probability') or 0.0)},
+                {'key': 'visual_capture_attempts', 'value': json.dumps(entry.get('capture_attempts') or [], ensure_ascii=False)[:160]},
+                {'key': 'visual_target_window_found', 'value': str(target_found)},
+                {'key': 'visual_target_window_title', 'value': target_title or 'UNRESOLVED'},
+                {'key': 'visual_permission_granted', 'value': str(permission_granted)},
+                {'key': 'visual_semantic_state', 'value': str(semantic_summary.get('state_hypothesis') or '')},
+                {'key': 'visual_semantic_confidence', 'value': str(semantic_summary.get('confidence') or 0.0)},
+                {'key': 'visual_semantic_labels', 'value': ','.join(str(item) for item in (semantic_summary.get('labels') or [])[:5])},
+            ]
+        )
+        all_unresolved = list(dict.fromkeys(unresolved_fields + semantic_unresolved))
+        if all_unresolved:
+            metadata_rows.append({'key': 'UNRESOLVED', 'value': ','.join(all_unresolved)})
+        if error:
+            metadata_rows.append({'key': 'visual_evidence_error', 'value': error})
+        actions = [dict(item) for item in (panel.get('actions') or []) if isinstance(item, dict)]
+        action_names = {str(item.get('action') or '') for item in actions}
+        if 'approve_observation_permission' not in action_names and assistant_kind and not permission_granted:
+            actions.insert(0, self._assistant_action('approve_observation_permission', 'Permitir observacion', 'Autorizar captura de pantalla externa para cruzarla con los metadatos.'))
+        open_action = f'open_external_assistant_{assistant_kind}' if assistant_kind else ''
+        if assistant_kind and permission_granted and not target_found and open_action not in action_names:
+            actions.insert(0, self._assistant_action(open_action, f'Abrir {self._assistant_display_name(assistant_kind)}', 'Mostrar la ventana externa para resolver login/verificacion y poder capturarla.'))
+        if 'capture_visual_evidence' not in action_names:
+            actions.append(self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar una imagen de lo que IABV puede ver ahora.'))
+        self._set_external_evidence_panel(
+            title=str(panel.get('title') or 'Evidencia visual de la interaccion'),
+            status='visual_captured' if status == 'ok' else 'visual_unresolved',
+            assistant_title=str(panel.get('assistant') or self._assistant_display_name(assistant_kind) or 'IABV'),
+            interaction_id=str(panel.get('interaction_id') or getattr(self, '_active_interaction_id', '') or ''),
+            phases=list(panel.get('phases') or []) + [{'phase': 'visual_evidence_snapshot', 'permission_granted': permission_granted}],
+            metadata=metadata_rows,
+            visual_evidence=visuals,
+            user_help=(
+                'Capture la vista que IABV puede usar como evidencia. '
+                'Sin permiso explicito solo guardo la ventana de IABV. Con permiso intento capturar primero la ventana externa objetivo; si no la encuentro, marco esa brecha como UNRESOLVED.'
+            ),
+            actions=actions,
+        )
+        if assistant_kind and not permission_granted:
+            self._approval_dialog_visible = True
+            self._approval_dialog_title = f'Permiso para observar {self._assistant_display_name(assistant_kind)}'
+            self._approval_dialog_text = (
+                f'Para capturar la ventana externa de {self._assistant_display_name(assistant_kind)} necesito tu permiso. '
+                'Sin ese permiso solo guardo la ventana de IABV y marco la evidencia externa como UNRESOLVED.'
+            )
+        try:
+            self._trace_external_followup(
+                'visual_evidence_snapshot',
+                status=status,
+                assistant_kind=assistant_kind,
+                region=region,
+                capture_scope=capture_scope,
+                target_window_found=target_found,
+                target_window_title=target_title,
+                permission_granted=permission_granted,
+                path=str(entry.get('path') or ''),
+                size_bytes=int(entry.get('size_bytes') or 0),
+                capture_quality=dict(entry.get('capture_quality') or {}),
+                capture_attempts=list(entry.get('capture_attempts') or []),
+                unresolved_fields=list(entry.get('unresolved_fields') or []),
+                semantic_state=str(semantic_summary.get('state_hypothesis') or ''),
+                semantic_confidence=float(semantic_summary.get('confidence') or 0.0),
+                semantic_labels=list(semantic_summary.get('labels') or [])[:8],
+                semantic_path=str(semantic_summary.get('semantic_path') or ''),
+                reason=reason,
+            )
+        except Exception:
+            pass
+        if announce:
+            if status == 'ok':
+                detail = (
+                    'Incluye pantalla externa autorizada.' if permission_granted
+                    else 'Solo incluye la ventana IABV; la ventana externa sigue sin permiso.'
+                )
+                self._append_message(
+                    'assistant',
+                    'IABV',
+                    f'Guarde una captura visual como evidencia: {entry.get("path")}. {detail}',
+                    'Evidencia visual registrada.',
+                    evidence_tag='observed',
+                    reasoning_path='visual_evidence_snapshot',
+                )
+            else:
+                self._append_message(
+                    'assistant',
+                    'IABV',
+                    f'No pude capturar evidencia visual ahora: {entry.get("detail")}.',
+                    'Evidencia visual no disponible.',
+                    evidence_tag='unresolved',
+                    reasoning_path='visual_evidence_snapshot',
+                )
+        self.dataChanged.emit()
+        return entry
+
+    def _schedule_visible_work_timeout(self, *, reason: str, timeout_ms: int | None = None) -> None:
+        self._visible_work_timeout_generation = int(getattr(self, '_visible_work_timeout_generation', 0)) + 1
+        generation = self._visible_work_timeout_generation
+        delay_ms = int(timeout_ms or self._LOCAL_CHAT_TIMEOUT_MS)
+        if str(reason or '').startswith('external_consultation:'):
+            self._trace_external_followup(
+                'external_consultation_visible_timeout_scheduled',
+                reason=reason,
+                timeout_ms=delay_ms,
+                generation=generation,
+                interaction_id=getattr(self, '_active_interaction_id', '') or '',
+            )
+
+        def _expire() -> None:
+            self._expire_visible_work_if_stale(generation, reason=reason)
+
+        try:
+            QTimer.singleShot(delay_ms, _expire)
+        except Exception:
+            timer = threading.Timer(delay_ms / 1000.0, _expire)
+            timer.daemon = True
+            timer.start()
+
+    def _expire_visible_work_if_stale(self, generation: int, *, reason: str) -> None:
+        if generation != int(getattr(self, '_visible_work_timeout_generation', 0)):
+            return
+        if not bool(getattr(self, '_working', False)):
+            return
+        reason_text = str(reason or '')
+        is_external = reason_text.startswith('external_consultation:')
+        assistant_kind = reason_text.split(':', 1)[1].strip() if is_external and ':' in reason_text else ''
+        if is_external:
+            try:
+                provider = self._assistant_display_name(assistant_kind)
+            except Exception:
+                provider = assistant_kind or 'asistente externo'
+            outcome = 'blocked'
+            user_text = (
+                f'La consulta externa con {provider} no devolvio un resultado util dentro del tiempo visible. '
+                'Cierro "Consultando..." como bloqueado para que puedas seguir. '
+                'Queda registrada la causa y puedo continuar con la ruta local/offline disponible sin depender de creditos o internet.'
+            )
+            meta = f'Timeout externo visible: {provider}.'
+            self._trace_external_followup(
+                'external_consultation_visible_timeout',
+                reason=reason_text,
+                assistant_kind=assistant_kind,
+                provider=provider,
+                generation=generation,
+                interaction_id=getattr(self, '_active_interaction_id', '') or '',
+            )
+            self._trace_external_followup(
+                'external_consultation_blocked',
+                reason='visible_timeout',
+                assistant_kind=assistant_kind,
+                provider=provider,
+                fallback_route='local_or_ollama',
+                interaction_id=getattr(self, '_active_interaction_id', '') or '',
+            )
+        else:
+            provider = 'local'
+            outcome = 'failed'
+            user_text = (
+                'La respuesta interna se paso del tiempo limite visible. Cierro el estado Consultando para que puedas seguir interactuando; '
+                'si llega una respuesta tardia quedara como evidencia secundaria, pero no la doy por confirmada.'
+            )
+            meta = f'Timeout visible: {reason_text}.'
+        self._working = False
+        self._interaction_has_pending_followup = False
+        self._interaction_pending_followup_outcome = ''
+        self._interaction_pending_followup_provider = ''
+        self._set_live_status('idle')
+        self._busy_label = (
+            'Consulta externa bloqueada por timeout visible; la interfaz vuelve a quedar disponible.'
+            if is_external
+            else 'La consulta se pauso por timeout visible; no voy a dejar la UI en Consultando.'
+        )
+        self._clear_autonomy_activity_override()
+        if is_external:
+            try:
+                self._set_autonomy_activity_override(
+                    visible=True,
+                    title='Consulta externa bloqueada',
+                    status='blocked',
+                    stage='timeout visible',
+                    progress=1.0,
+                    detail=user_text,
+                    tool=provider,
+                    next_step='Seguir local/offline o reintentar una via externa con evidencia nueva.',
+                    human_help='Si ves una verificacion o respuesta en el navegador, puedes mostrarla o ingerirla manualmente.',
+                    learning_note='El timeout queda registrado para no dejar la UI en consultando ni fingir respuesta externa.',
+                    mode='external',
+                )
+            except Exception:
+                pass
+        self._append_message(
+            'assistant',
+            'IABV',
+            user_text,
+            meta,
+            evidence_tag='observed',
+            reasoning_path='external_visible_timeout' if is_external else 'visible_work_timeout',
+        )
+        self._record_chat_audit(
+            reasoning_path='external_visible_timeout' if is_external else 'visible_work_timeout',
+            user_goal=self._last_user_goal or '',
+            error_detail=f'timeout:{reason_text}',
+        )
+        self._resolve_active_interaction(outcome=outcome, provider=provider)
+        self.chatChanged.emit()
+
+    def _latest_external_consultation_audit_summary(self) -> dict[str, Any]:
+        audit_path = Path(str(getattr(self.config, 'logs_dir', '') or '')) / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return {'status': 'missing_audit'}
+        try:
+            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()[-500:]
+        except Exception as exc:
+            return {'status': 'read_failed', 'error': str(exc)[:120]}
+        records: list[dict[str, Any]] = []
+        for line in lines:
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue
+            if isinstance(rec, dict):
+                records.append(rec)
+        target_id = ''
+        phases: list[str] = []
+        phase_details: list[dict[str, Any]] = []
+        outcome: dict[str, Any] = {}
+        resolved: dict[str, Any] = {}
+        waits: list[str] = []
+        for rec in reversed(records):
+            kind = str(rec.get('kind') or '')
+            data = dict(rec.get('data') or {})
+            iid = str(data.get('interaction_id') or '')
+            if kind == 'external_consultation_phase' and iid:
+                target_id = iid
+                break
+        if not target_id:
+            for rec in reversed(records):
+                kind = str(rec.get('kind') or '')
+                data = dict(rec.get('data') or {})
+                iid = str(data.get('interaction_id') or '')
+                if not iid:
+                    continue
+                text = str(data.get('message_preview') or '')
+                assistant = str(data.get('assistant_kind') or data.get('provider') or data.get('assistant_title') or '').lower()
+                if self._is_external_consultation_diagnosis_question(text):
+                    continue
+                if 'chatgpt' in text.lower() or 'chatgpt' in assistant:
+                    target_id = iid
+                    break
+        for rec in reversed(records):
+            kind = str(rec.get('kind') or '')
+            data = dict(rec.get('data') or {})
+            text = str(data.get('message_preview') or '').lower()
+            assistant = str(data.get('assistant_kind') or data.get('provider') or data.get('assistant_title') or '').lower()
+            iid = str(data.get('interaction_id') or '')
+            is_external = (
+                'chatgpt' in text
+                or 'chatgpt' in assistant
+                or kind == 'external_consultation_phase'
+            )
+            if not target_id and iid and is_external:
+                target_id = iid
+            if not target_id or iid != target_id:
+                continue
+            if kind == 'external_consultation_phase':
+                phase = str(data.get('phase') or '')
+                phases.append(phase)
+                phase_details.append({
+                    'phase': phase,
+                    'assistant_kind': data.get('assistant_kind'),
+                    'selected_tool_id': data.get('selected_tool_id'),
+                    'available': data.get('available'),
+                    'reuse_guard_active': data.get('reuse_guard_active'),
+                    'response_verified': data.get('response_verified'),
+                    'rss_mb': data.get('rss_mb'),
+                })
+            elif kind == 'interaction_outcome':
+                outcome = data
+            elif kind == 'interaction_resolved':
+                resolved = data
+            elif kind in {'interaction_visible_wait_released', 'external_followup_timeout', 'external_followup_timeout_scheduled'}:
+                waits.append(kind)
+        if not target_id:
+            return {'status': 'no_external_interaction_found'}
+        phases = list(reversed([phase for phase in phases if phase]))
+        phase_details = list(reversed([item for item in phase_details if item.get('phase')]))
+        return {
+            'status': 'found',
+            'interaction_id': target_id,
+            'phases': phases[-8:],
+            'phase_details': phase_details[-8:],
+            'outcome': outcome,
+            'resolved': resolved,
+            'wait_events': list(reversed(waits[-8:])),
+        }
+
+    def _answer_external_consultation_diagnosis_question(self, message: str) -> None:
+        self._last_user_goal = message
+        summary = self._latest_external_consultation_audit_summary()
+        status = str(summary.get('status') or '')
+        if status != 'found':
+            reply = (
+                'No encontre una consulta externa reciente verificable en runtime_audit. '
+                'Eso queda como UNRESOLVED:external_consultation_audit_missing para no inventar una causa.'
+            )
+            meta = f'Auditoria externa: {status or "sin estado"}.'
+        else:
+            outcome = dict(summary.get('outcome') or {})
+            resolved = dict(summary.get('resolved') or {})
+            phases = [str(item) for item in (summary.get('phases') or []) if str(item)]
+            outcome_label = str(outcome.get('outcome') or 'sin outcome')
+            final_label = str(resolved.get('outcome') or 'sin cierre final')
+            provider = str(outcome.get('provider') or resolved.get('provider') or 'externo')
+            if 'reuse_guard_short_circuit' in phases and outcome_label in {'reused_context', 'sin outcome'}:
+                diagnosis = (
+                    f'Detecte {provider}, pero solo llegue a reuse_guard_short_circuit: '
+                    'eso significa que encontre una ruta/consulta equivalente y NO verifique que ChatGPT recibiera una consulta nueva ni que devolviera respuesta.'
+                )
+                next_step = (
+                    'La accion correcta es pedir permiso para observar la ventana externa o que pegues la respuesta si ya aparecio; '
+                    'no debo fingir que ChatGPT contesto.'
+                )
+            elif final_label == 'blocked':
+                diagnosis = f'La consulta externa cerro como blocked para {provider}; no hay respuesta externa valida.'
+                next_step = 'No hay navegador/hilo externo confirmado para este intento; debo mostrar el bloqueo y pedir tu ayuda o reintentar con evidencia nueva.'
+            else:
+                diagnosis = f'El episodio externo quedo outcome={outcome_label}, final={final_label}, provider={provider}.'
+                next_step = 'Si falta respuesta verificable, debo mantenerlo como no confirmado.'
+            reply = (
+                f'{diagnosis} Fases vistas: {", ".join(phases) or "sin fases"}. '
+                f'{next_step}'
+            )
+            meta = f'Auditado desde runtime_audit | interaction_id={summary.get("interaction_id")}.'
+            self._set_external_evidence_panel(
+                title='Evidencia de consulta externa',
+                status='blocked' if final_label == 'blocked' or 'reuse_guard_short_circuit' in phases else 'unverified',
+                assistant_title=provider,
+                interaction_id=str(summary.get('interaction_id') or ''),
+                phases=list(summary.get('phase_details') or phases),
+                metadata={
+                    'outcome': outcome_label,
+                    'final': final_label,
+                    'provider': provider,
+                    'source': 'runtime_audit.jsonl',
+                    'wait_events': list(summary.get('wait_events') or []),
+                },
+                user_help=(
+                    'Esto es lo que el programa sabe de verdad. Si no coincide con lo que ves, '
+                    'puedes permitirme observar la ventana o pegar aqui la respuesta externa.'
+                ),
+                actions=[
+                    self._assistant_action('approve_observation_permission', 'Permitir observacion', 'Verificar la ventana externa con permiso explicito.'),
+                    self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar la vista actual para comparar pantalla y audit trail.'),
+                    self._assistant_action('ingest_external_response', 'Pegar respuesta', 'Ingerir manualmente una respuesta que ya aparecio fuera de IABV.'),
+                    self._assistant_action('audit_autonomy', 'Auditar ruta', 'Revisar por que la ruta externa quedo bloqueada.'),
+                ],
+            )
+        self._clear_autonomy_activity_override()
+        self._append_message('assistant', 'IABV', reply, meta, evidence_tag='observed', reasoning_path='external_consultation_audit')
+        self._record_chat_audit(
+            reasoning_path='external_consultation_audit',
+            provider_id='runtime_audit',
+            user_goal=message,
+            metadata={'external_consultation_audit': summary},
+        )
+        self._latest_response_text = reply
+        self._latest_response_meta = meta
+        self._working = False
+        self._set_live_status('idle')
+        self._busy_label = 'Auditoria de consulta externa lista.'
+        chat_signal = getattr(self, 'chatChanged', None)
+        emit_chat = getattr(chat_signal, 'emit', None)
+        if callable(emit_chat):
+            emit_chat()
 
     def _human_hardware_notice(self, governance: dict[str, Any] | None) -> str:
         governance = dict(governance or {})
@@ -3873,6 +5341,35 @@ class ControlCenterViewModel(QObject):
         cards.extend(self._assistant_tool_cards())
         return cards
 
+    def _refresh_agent_cards_async(self) -> None:
+        self._agent_cards_generation += 1
+        gen = self._agent_cards_generation
+
+        def _bg() -> list[dict[str, str]]:
+            return self._build_agent_cards()
+
+        def _done(fut: Any) -> None:
+            if self._agent_cards_generation != gen:
+                return
+            try:
+                cards = fut.result()
+            except Exception:
+                logger.debug('agent cards bg refresh failed', exc_info=True)
+                return
+            self.agentCardsReady.emit(gen, cards)
+
+        future = self._bg_pool.submit(_bg)
+        future.add_done_callback(_done)
+
+    @Slot(int, object)
+    def _apply_agent_cards(self, gen: int, cards: object) -> None:
+        if self._agent_cards_generation != gen:
+            return
+        if not isinstance(cards, list):
+            return
+        self._agent_cards = [dict(item) for item in cards if isinstance(item, dict)]
+        self.dataChanged.emit()
+
     def _estimate_complexity(self, message: str) -> ComplexityLevel:
         text = message.lower()
         if len(message.split()) >= 24 or any(token in text for token in ['plan', 'estrategia', 'compar', 'analiza a fondo', 'pasos']):
@@ -4003,6 +5500,22 @@ class ControlCenterViewModel(QObject):
         interaction_id = getattr(self, '_active_interaction_id', None)
         if not interaction_id:
             return
+        self._resolve_interaction_by_id(
+            interaction_id,
+            outcome=outcome,
+            provider=provider,
+        )
+
+    def _resolve_interaction_by_id(
+        self,
+        interaction_id: str,
+        *,
+        outcome: str = 'resolved',
+        provider: str = '',
+    ) -> None:
+        """Resolve a specific interaction, even if another chat became active."""
+        if not interaction_id:
+            return
         is_final = outcome in self._FINAL_INTERACTION_OUTCOMES
         lifecycle = getattr(self, '_chat_interaction_lifecycle', None)
         if lifecycle is not None:
@@ -4015,13 +5528,144 @@ class ControlCenterViewModel(QObject):
             except Exception:
                 pass
         if is_final:
-            self._active_interaction_id = None
-            watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
-            if watchdog is not None:
-                watchdog.set_query_pending(False)
-                watchdog.set_active_interaction(None)
-            self._set_live_status('idle')
+            self._external_followup_timeout_generation = (
+                int(getattr(self, '_external_followup_timeout_generation', 0)) + 1
+            )
+            if getattr(self, '_active_interaction_id', None) == interaction_id:
+                self._active_interaction_id = None
+                self._interaction_pending_followup_outcome = ''
+                self._interaction_pending_followup_provider = ''
+                watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
+                if watchdog is not None:
+                    watchdog.set_query_pending(False)
+                    watchdog.set_active_interaction(None)
+                self._set_live_status('idle')
             self._promote_metacognition_after_resolution()
+
+    def _trace_external_followup(self, kind: str, **data: Any) -> None:
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(kind, **data)
+        except Exception:
+            pass
+
+    def _schedule_external_followup_timeout(
+        self,
+        *,
+        interaction_id: str,
+        outcome: str,
+        provider: str,
+    ) -> None:
+        """Arm a safety timeout for non-final external follow-up episodes."""
+        if not interaction_id:
+            return
+        self._external_followup_timeout_generation += 1
+        generation = self._external_followup_timeout_generation
+        timeout_ms = int(getattr(
+            self,
+            '_EXTERNAL_FOLLOWUP_TIMEOUT_MS',
+            ControlCenterViewModel._EXTERNAL_FOLLOWUP_TIMEOUT_MS,
+        ))
+        self._trace_external_followup(
+            'external_followup_timeout_scheduled',
+            interaction_id=interaction_id,
+            outcome=outcome,
+            provider=provider,
+            timeout_ms=timeout_ms,
+            generation=generation,
+        )
+        QTimer.singleShot(
+            timeout_ms,
+            lambda: self._expire_external_followup_if_stale(
+                interaction_id=interaction_id,
+                generation=generation,
+                outcome=outcome,
+                provider=provider,
+                timeout_ms=timeout_ms,
+            ),
+        )
+
+    def _expire_external_followup_if_stale(
+        self,
+        *,
+        interaction_id: str,
+        generation: int,
+        outcome: str,
+        provider: str,
+        timeout_ms: int,
+    ) -> None:
+        """Close a non-final external episode that never produced a final result."""
+        if generation != getattr(self, '_external_followup_timeout_generation', 0):
+            return
+        lifecycle = getattr(self, '_chat_interaction_lifecycle', None)
+        info: dict[str, Any] | None = None
+        if lifecycle is not None and hasattr(lifecycle, 'interaction_info'):
+            try:
+                info = lifecycle.interaction_info(interaction_id)
+            except Exception:
+                info = None
+        if not info:
+            return
+        is_current = getattr(self, '_active_interaction_id', None) == interaction_id
+        self._trace_external_followup(
+            'external_followup_timeout',
+            interaction_id=interaction_id,
+            previous_outcome=outcome,
+            provider=provider,
+            timeout_ms=timeout_ms,
+            was_current_interaction=is_current,
+        )
+        if is_current:
+            self._interaction_has_pending_followup = False
+            self._interaction_pending_followup_outcome = ''
+            self._interaction_pending_followup_provider = ''
+            self._release_visible_query_wait(reason=f'external_followup_timeout:{outcome}')
+            self._append_message(
+                'assistant',
+                'IABV',
+                (
+                    'No recibí una respuesta final de la consulta externa dentro '
+                    'del tiempo esperado. La dejo cerrada como bloqueada para '
+                    'que la interfaz no quede en consultando.'
+                ),
+                f'{provider or "asistente externo"} | timeout {int(timeout_ms / 1000)}s',
+                reasoning_path='external_followup_timeout',
+                evidence_tag='observed',
+                trace_metadata={'interaction_id': interaction_id, 'previous_outcome': outcome},
+            )
+            self._busy_label = 'Consulta externa cerrada por timeout; la interfaz vuelve a quedar disponible.'
+        self._resolve_interaction_by_id(
+            interaction_id,
+            outcome='blocked',
+            provider=provider,
+        )
+        if is_current:
+            self.chatChanged.emit()
+            self._refresh_autonomy_dock_async()
+
+    def _record_non_final_external_outcome(
+        self,
+        *,
+        outcome: str,
+        provider: str,
+    ) -> None:
+        """Persist a pending external outcome without leaving foreground wait stuck."""
+        pending_interaction_id = getattr(self, '_active_interaction_id', '') or ''
+        self._interaction_has_pending_followup = True
+        self._interaction_pending_followup_outcome = outcome
+        self._interaction_pending_followup_provider = provider
+        self._resolve_active_interaction(
+            outcome=outcome,
+            provider=provider,
+        )
+        self._release_visible_query_wait(
+            reason=f'external_consultation_non_final:{outcome}',
+        )
+        self._schedule_external_followup_timeout(
+            interaction_id=pending_interaction_id,
+            outcome=outcome,
+            provider=provider,
+        )
 
     @staticmethod
     def _derive_external_consultation_outcome(payload: Any) -> str:
@@ -4124,7 +5768,55 @@ class ControlCenterViewModel(QObject):
 
     def _promote_metacognition_after_resolution(self) -> None:
         """Refresh OSES and PortableContext after a resolved interaction."""
-        import threading as _thr
+        budget = self._background_work_budget_decision(
+            work_class='metacognition_promotion',
+            source='interaction_resolution',
+            confidence=0.86,
+        )
+        if not bool(budget.get('allowed')):
+            retry_scheduled = bool(getattr(self, '_metacognition_promotion_retry_scheduled', False))
+            self._trace_autonomy_dock(
+                'interaction_metacognition_promotion_deferred',
+                reason=str(budget.get('reason') or 'operational_budget_deferred'),
+                budget=budget,
+                retry_scheduled=retry_scheduled,
+                rss_mb=self._process_rss_mb(),
+            )
+            if retry_scheduled:
+                return
+            retry_after = float(budget.get('defer_seconds') or 60.0)
+            retry_after = max(30.0, min(180.0, retry_after))
+            self._metacognition_promotion_retry_scheduled = True
+
+            def _retry() -> None:
+                try:
+                    self._metacognition_promotion_retry_scheduled = False
+                    self._promote_metacognition_after_resolution()
+                except Exception:
+                    pass
+
+            timer = threading.Timer(retry_after, _retry)
+            timer.daemon = True
+            timer.start()
+            return
+
+        self._metacognition_promotion_retry_scheduled = False
+        self._trace_autonomy_dock(
+            'interaction_metacognition_promotion_recorded_only',
+            budget=budget,
+            reason='runtime_audit_durable_ui_process_promotion_disabled',
+            rss_mb=self._process_rss_mb(),
+            next_refresh='startup_truth_refresh_or_explicit_package_build',
+        )
+        if str(os.environ.get('IABV_ENABLE_UI_INTERACTION_PROMOTION') or '').strip() != '1':
+            return
+
+        self._trace_autonomy_dock(
+            'interaction_metacognition_promotion_started',
+            budget=budget,
+            rss_mb=self._process_rss_mb(),
+        )
+
         def _refresh() -> None:
             try:
                 oses = getattr(self, '_oses_ref', None)
@@ -4138,7 +5830,7 @@ class ControlCenterViewModel(QObject):
                     pcs.build_package()
             except Exception:
                 pass
-        _thr.Thread(target=_refresh, name='iabv-resolve-promote', daemon=True).start()
+        threading.Thread(target=_refresh, name='iabv-resolve-promote', daemon=True).start()
 
     def _explicit_site_hint_from_message(self, message: str) -> str | None:
         text = self._normalized_command_text(message)
@@ -4257,6 +5949,48 @@ class ControlCenterViewModel(QObject):
             force=force,
         )
 
+    def _refresh_development_packet_async(
+        self, user_goal: str | None = None, *, force: bool = False,
+    ) -> None:
+        import time as _time
+        if user_goal is not None:
+            self._last_user_goal = user_goal.strip()
+        now = _time.monotonic()
+        if not force and (now - self._dev_packet_last_ts) < self._dev_packet_cooldown_s:
+            return
+        self._dev_packet_last_ts = now
+        self._development_packet_generation += 1
+        gen = self._development_packet_generation
+        goal = self._last_user_goal
+        selected_role_title = 'Automatico' if self._auto_route_enabled else self._selected_role_title()
+
+        def _bg() -> str:
+            return self.engineering_review_service.build_codex_packet(
+                user_goal=goal,
+                selected_role_title=selected_role_title,
+                force=force,
+            )
+
+        def _done(fut: Any) -> None:
+            if self._development_packet_generation != gen:
+                return
+            try:
+                packet = str(fut.result() or '')
+            except Exception:
+                logger.debug('development packet bg refresh failed', exc_info=True)
+                return
+            self.developmentPacketReady.emit(gen, packet)
+
+        future = self._bg_pool.submit(_bg)
+        future.add_done_callback(_done)
+
+    @Slot(int, str)
+    def _apply_development_packet(self, gen: int, packet: str) -> None:
+        if self._development_packet_generation != gen:
+            return
+        self._development_packet = packet
+        self.dataChanged.emit()
+
     def _seed_development_packet(self, user_goal: str | None = None) -> None:
         if user_goal is not None:
             self._last_user_goal = user_goal.strip()
@@ -4341,8 +6075,28 @@ class ControlCenterViewModel(QObject):
             'prompt': f'La consulta con {assistant_title} ya quedo preparada. Copia la respuesta al portapapeles y dime ingerir respuesta para que la interprete y decida el siguiente paso.',
             'actions': [
                 self._assistant_action('ingest_external_response', 'Ingerir respuesta', 'Leer la respuesta desde el portapapeles y convertirla en acciones internas.'),
+                self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar evidencia visual de lo que IABV puede observar ahora.'),
                 self._assistant_action('audit_autonomy', 'Auditar autonomia', 'Comprobar si la ruta externa sigue siendo coherente.'),
                 self._assistant_action('open_evolution_center', 'Ver evolutivo', 'Revisar el caso mientras llega la respuesta externa.'),
+            ],
+        }
+
+    def _guidance_for_unverified_external_reuse(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+        reason: str,
+    ) -> dict[str, Any]:
+        return {
+            'mode': 'need_approval',
+            'title': f'Necesito verificar {assistant_title}',
+            'prompt': reason,
+            'actions': [
+                self._assistant_action('approve_observation_permission', 'Permitir observacion', f'Conceder permiso para observar la ventana de {assistant_title} y confirmar que paso.'),
+                self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar la vista actual como evidencia antes de reintentar.'),
+                self._assistant_action(f'consult_{assistant_kind}', f'Reintentar {assistant_title}', 'Volver a intentar la consulta con evidencia nueva.'),
+                self._assistant_action('audit_autonomy', 'Auditar autonomia', 'Revisar por que el sistema interpreto el estado como reutilizable.'),
             ],
         }
 
@@ -4787,11 +6541,30 @@ class ControlCenterViewModel(QObject):
             'execute': bool(self._adaptive_session_id and execution_state.get('executor_available') and not execution_state.get('simulation_only')),
             'abort': bool(self._adaptive_session_id and status not in {'aborted', 'completed'}),
         }
-        self._refresh_autonomy_dock()
+        self._refresh_autonomy_dock_async()
 
     def get_chat_messages(self) -> list[dict[str, str]]:
         with self._ui_state_lock:
             return list(self._chat_messages)
+
+    def get_chat_messages_preview(self) -> list[dict[str, Any]]:
+        """Return a small UI-facing window over the persisted chat history."""
+        limit = int(getattr(self, '_CHAT_PREVIEW_MESSAGE_LIMIT', 8))
+        text_limit = int(getattr(self, '_CHAT_PREVIEW_TEXT_LIMIT', 1200))
+        with self._ui_state_lock:
+            messages = [dict(item) for item in self._chat_messages[-limit:]]
+        for item in messages:
+            text = str(item.get('text') or '')
+            if len(text) > text_limit:
+                omitted = len(text) - text_limit
+                item['text'] = (
+                    text[:text_limit].rstrip()
+                    + f"\n\n[Vista resumida: se omitieron {omitted} caracteres. Usa busqueda o historial local para recuperar el contenido completo.]"
+                )
+                item['textTruncated'] = True
+                item['previewTextChars'] = text_limit
+                item.setdefault('fullTextChars', len(text))
+        return messages
 
     def get_provider_cards(self) -> list[dict[str, Any]]:
         return self._provider_cards
@@ -4810,6 +6583,508 @@ class ControlCenterViewModel(QObject):
 
     def get_autonomy_timeline(self) -> list[dict[str, Any]]:
         return self._autonomy_timeline
+
+    def get_autonomy_dock_status(self) -> str:
+        return self._autonomy_dock_status
+
+    def get_autonomy_dock_last_result(self) -> str:
+        return self._autonomy_dock_last_result
+
+    def get_autonomy_dock_last_summary(self) -> str:
+        return self._autonomy_dock_last_summary
+
+    @staticmethod
+    def _compact_autonomy_dock_value(value: Any, depth: int = 0, max_depth: int = 2) -> Any:
+        if value is None or isinstance(value, (bool, int, float)):
+            return value
+        if isinstance(value, str):
+            return value[:96]
+        if isinstance(value, list):
+            if depth >= max_depth:
+                return {'__len': len(value)}
+            return {
+                '__len': len(value),
+                'items': [
+                    ControlCenterViewModel._compact_autonomy_dock_value(item, depth + 1, max_depth)
+                    for item in value[:12]
+                ],
+            }
+        if isinstance(value, dict):
+            if depth >= max_depth:
+                return {'__keys': sorted(str(key) for key in value.keys())[:24]}
+            return {
+                str(key): ControlCenterViewModel._compact_autonomy_dock_value(value[key], depth + 1, max_depth)
+                for key in sorted(value.keys(), key=str)[:32]
+            }
+        return str(value)[:96]
+
+    @staticmethod
+    def _autonomy_dock_fingerprint(projected: dict[str, Any]) -> str:
+        compact = {
+            'live_process_summary': ControlCenterViewModel._compact_autonomy_dock_value(
+                projected.get('live_process_summary') or {}
+            ),
+            'live_work_items': ControlCenterViewModel._compact_autonomy_dock_value(
+                projected.get('live_work_items') or []
+            ),
+            'assistant_session_cards': ControlCenterViewModel._compact_autonomy_dock_value(
+                projected.get('assistant_session_cards') or []
+            ),
+            'autonomy_timeline': ControlCenterViewModel._compact_autonomy_dock_value(
+                projected.get('autonomy_timeline') or []
+            ),
+        }
+        raw = json.dumps(compact, sort_keys=True, default=str)
+        return hashlib.md5(raw.encode('utf-8', errors='replace')).hexdigest()[:16]
+
+    @staticmethod
+    def _process_rss_mb() -> float:
+        try:
+            import psutil  # type: ignore
+            return round(float(psutil.Process(os.getpid()).memory_info().rss) / (1024 * 1024), 1)
+        except Exception:
+            return 0.0
+
+    def _trace_autonomy_dock(self, kind: str, **data: Any) -> None:
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(kind, **data)
+        except Exception:
+            pass
+
+    def _visible_query_wait_active(self) -> bool:
+        """True while the user is still waiting for the foreground chat answer."""
+        if self._working:
+            return True
+        if getattr(self, '_active_interaction_id', None) and self._live_status in {'processing', 'streaming'}:
+            return True
+        return False
+
+    def _recent_ui_stall_ms(self) -> float:
+        watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
+        if watchdog is None:
+            return 0.0
+        recent_stalls = []
+        try:
+            recent_stalls = list(watchdog.recent_stalls(limit=3))
+        except Exception:
+            return 0.0
+        durations: list[float] = []
+        for item in recent_stalls:
+            if not isinstance(item, dict):
+                continue
+            try:
+                durations.append(float(item.get('duration_ms') or 0.0))
+            except Exception:
+                continue
+        return max(durations or [0.0])
+
+    def _ui_route_stability_budget_context(self) -> tuple[float | None, str]:
+        """Return current UI route age and label for operational-budget decisions."""
+        route_age_s: float | None = None
+        active_route = ''
+        bootstrap = getattr(self, '_bootstrap_ref', None)
+        if bootstrap is not None:
+            try:
+                active_route = str(getattr(bootstrap, '_active_ui_route', '') or '').strip()
+            except Exception:
+                active_route = ''
+            try:
+                changed_at = float(getattr(bootstrap, '_last_ui_route_change_at', 0.0) or 0.0)
+                if changed_at > 0.0:
+                    route_age_s = max(0.0, time.monotonic() - changed_at)
+            except Exception:
+                route_age_s = None
+        if not active_route:
+            nav = getattr(self, 'navigation_controller', None)
+            getter = getattr(nav, 'get_current_route', None) if nav is not None else None
+            if callable(getter):
+                try:
+                    active_route = str(getter() or '').strip()
+                except Exception:
+                    active_route = ''
+        return route_age_s, active_route
+
+    def _autonomy_dock_budget_decision(self, *, source: str, rss_mb: float) -> dict[str, Any]:
+        policy = getattr(getattr(self, 'adaptive_orchestrator', None), 'autonomy_governance_policy', None)
+        visible_wait = self._visible_query_wait_active()
+        idle_seconds = max(0.0, time.monotonic() - float(getattr(self, '_autonomy_dock_rest_window_started_at', 0.0) or 0.0))
+        recent_stall_ms = self._recent_ui_stall_ms()
+        route_age_s, active_route = ControlCenterViewModel._ui_route_stability_budget_context(self)
+
+        def _record(budget: dict[str, Any], summary: str) -> None:
+            recorder = getattr(self, '_record_operational_budget_experiment', None)
+            if not callable(recorder):
+                return
+            try:
+                recorder(budget, observed_summary=summary)
+            except Exception:
+                pass
+
+        if policy is not None and hasattr(policy, 'evaluate_operational_budget'):
+            try:
+                budget = dict(policy.evaluate_operational_budget(
+                    work_class='autonomy_dock_refresh',
+                    source=source,
+                    priority='background',
+                    user_waiting=visible_wait,
+                    query_pending=visible_wait,
+                    rss_mb=rss_mb,
+                    recent_stall_ms=recent_stall_ms,
+                    idle_seconds=idle_seconds,
+                    ui_route_stability_age_s=route_age_s,
+                    active_route=active_route,
+                    background_active=bool(getattr(self, '_provider_refreshing', False)),
+                    confidence=0.84,
+                ))
+                _record(
+                    budget,
+                    f'autonomy_dock_refresh:{source} -> {budget.get("decision")}:{budget.get("reason")}',
+                )
+                return budget
+            except Exception:
+                pass
+        if visible_wait:
+            budget = {
+                'allowed': False,
+                'decision': 'defer',
+                'reason': 'visible_query_wait_active',
+                'work_class': 'autonomy_dock_refresh',
+                'priority': 'background',
+                'evidence': {
+                    'rss_mb': rss_mb,
+                    'idle_seconds': round(idle_seconds, 1),
+                    'recent_stall_ms': recent_stall_ms,
+                    'ui_route_stability_age_s': route_age_s,
+                    'active_route': active_route,
+                },
+                'decision_source': 'control_center_viewmodel.fallback_budget',
+            }
+            _record(budget, f'autonomy_dock_refresh:{source} -> fallback defer')
+            return budget
+        rss_limit = float(getattr(
+            self,
+            '_AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB',
+            ControlCenterViewModel._AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB,
+        ))
+        if rss_mb >= rss_limit:
+            budget = {
+                'allowed': False,
+                'decision': 'defer',
+                'reason': 'resource_pressure_high',
+                'work_class': 'autonomy_dock_refresh',
+                'priority': 'background',
+                'evidence': {
+                    'rss_mb': rss_mb,
+                    'idle_seconds': round(idle_seconds, 1),
+                    'recent_stall_ms': recent_stall_ms,
+                    'ui_route_stability_age_s': route_age_s,
+                    'active_route': active_route,
+                },
+                'decision_source': 'control_center_viewmodel.fallback_budget',
+            }
+            _record(budget, f'autonomy_dock_refresh:{source} -> fallback defer')
+            return budget
+        post_task = str(source or '').strip().lower().startswith('post_task:')
+        if post_task and recent_stall_ms >= 2000.0:
+            budget = {
+                'allowed': False,
+                'decision': 'defer',
+                'reason': f'post_task_recent_ui_stall:{int(recent_stall_ms)}ms',
+                'work_class': 'autonomy_dock_refresh',
+                'priority': 'background',
+                'evidence': {
+                    'rss_mb': rss_mb,
+                    'idle_seconds': round(idle_seconds, 1),
+                    'recent_stall_ms': recent_stall_ms,
+                    'ui_route_stability_age_s': route_age_s,
+                    'active_route': active_route,
+                },
+                'decision_source': 'control_center_viewmodel.fallback_budget',
+            }
+            _record(budget, f'autonomy_dock_refresh:{source} -> fallback defer')
+            return budget
+        if post_task and rss_mb >= 1500.0:
+            budget = {
+                'allowed': False,
+                'decision': 'defer',
+                'reason': 'post_task_resource_pressure_high',
+                'work_class': 'autonomy_dock_refresh',
+                'priority': 'background',
+                'evidence': {
+                    'rss_mb': rss_mb,
+                    'idle_seconds': round(idle_seconds, 1),
+                    'recent_stall_ms': recent_stall_ms,
+                    'ui_route_stability_age_s': route_age_s,
+                    'active_route': active_route,
+                },
+                'decision_source': 'control_center_viewmodel.fallback_budget',
+            }
+            _record(budget, f'autonomy_dock_refresh:{source} -> fallback defer')
+            return budget
+        if post_task and idle_seconds < 600.0:
+            budget = {
+                'allowed': False,
+                'decision': 'defer',
+                'reason': 'post_task_rest_window_not_reached',
+                'work_class': 'autonomy_dock_refresh',
+                'priority': 'background',
+                'evidence': {
+                    'rss_mb': rss_mb,
+                    'idle_seconds': round(idle_seconds, 1),
+                    'recent_stall_ms': recent_stall_ms,
+                    'ui_route_stability_age_s': route_age_s,
+                    'active_route': active_route,
+                },
+                'decision_source': 'control_center_viewmodel.fallback_budget',
+            }
+            _record(budget, f'autonomy_dock_refresh:{source} -> fallback defer')
+            return budget
+        if source != 'user_click' and idle_seconds < 120.0:
+            budget = {
+                'allowed': False,
+                'decision': 'defer',
+                'reason': 'rest_window_not_reached',
+                'work_class': 'autonomy_dock_refresh',
+                'priority': 'background',
+                'evidence': {
+                    'rss_mb': rss_mb,
+                    'idle_seconds': round(idle_seconds, 1),
+                    'recent_stall_ms': recent_stall_ms,
+                    'ui_route_stability_age_s': route_age_s,
+                    'active_route': active_route,
+                },
+                'decision_source': 'control_center_viewmodel.fallback_budget',
+            }
+            _record(budget, f'autonomy_dock_refresh:{source} -> fallback defer')
+            return budget
+        budget = {
+            'allowed': True,
+            'decision': 'allow',
+            'reason': 'budget_available',
+            'work_class': 'autonomy_dock_refresh',
+            'priority': 'background',
+            'evidence': {
+                'rss_mb': rss_mb,
+                'idle_seconds': round(idle_seconds, 1),
+                'recent_stall_ms': recent_stall_ms,
+                'ui_route_stability_age_s': route_age_s,
+                'active_route': active_route,
+            },
+            'decision_source': 'control_center_viewmodel.fallback_budget',
+        }
+        _record(budget, f'autonomy_dock_refresh:{source} -> fallback allow')
+        return budget
+
+    def _record_operational_budget_experiment(
+        self,
+        budget: dict[str, Any],
+        *,
+        observed_summary: str = '',
+    ) -> None:
+        record_operational_budget_experiment(
+            repository=self.experiment_lab_repository,
+            budget=budget,
+            observed_summary=observed_summary,
+            evidence_refs=['ControlCenterViewModel', 'runtime_audit'],
+            metadata={'caller': 'ControlCenterViewModel'},
+            throttle_state=self._operational_budget_experiment_throttle,
+            throttle_seconds=60.0,
+        )
+
+    def _background_work_budget_decision(
+        self,
+        *,
+        work_class: str,
+        source: str,
+        confidence: float = 0.84,
+    ) -> dict[str, Any]:
+        """Apply the existing operational budget to non-foreground refreshes."""
+        rss_mb = self._process_rss_mb()
+        visible_wait = self._visible_query_wait_active()
+        idle_seconds = max(
+            0.0,
+            time.monotonic() - float(getattr(self, '_autonomy_dock_rest_window_started_at', 0.0) or 0.0),
+        )
+        recent_stall_ms = self._recent_ui_stall_ms()
+        route_age_s, active_route = ControlCenterViewModel._ui_route_stability_budget_context(self)
+        policy = getattr(getattr(self, 'adaptive_orchestrator', None), 'autonomy_governance_policy', None)
+        if policy is not None and hasattr(policy, 'evaluate_operational_budget'):
+            try:
+                budget = dict(policy.evaluate_operational_budget(
+                    work_class=work_class,
+                    source=source,
+                    priority='background',
+                    user_waiting=visible_wait,
+                    query_pending=visible_wait,
+                    rss_mb=rss_mb,
+                    recent_stall_ms=recent_stall_ms,
+                    idle_seconds=idle_seconds,
+                    ui_route_stability_age_s=route_age_s,
+                    active_route=active_route,
+                    background_active=bool(getattr(self, '_provider_refreshing', False)),
+                    confidence=confidence,
+                ))
+                self._record_operational_budget_experiment(
+                    budget,
+                    observed_summary=f'{work_class}:{source} -> {budget.get("decision")}:{budget.get("reason")}',
+                )
+                return budget
+            except Exception:
+                pass
+        if visible_wait:
+            reason = 'visible_query_wait_active'
+            allowed = False
+        elif rss_mb >= float(getattr(
+            self,
+            '_AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB',
+            ControlCenterViewModel._AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB,
+        )):
+            reason = 'resource_pressure_high'
+            allowed = False
+        elif source.startswith('post_task:') and recent_stall_ms >= 2000.0:
+            reason = f'post_task_recent_ui_stall:{int(recent_stall_ms)}ms'
+            allowed = False
+        elif source.startswith('post_task:') and rss_mb >= 1500.0:
+            reason = 'post_task_resource_pressure_high'
+            allowed = False
+        elif source.startswith('post_task:') and idle_seconds < 600.0:
+            reason = 'post_task_rest_window_not_reached'
+            allowed = False
+        elif source != 'user_click' and idle_seconds < 120.0:
+            reason = 'rest_window_not_reached'
+            allowed = False
+        else:
+            reason = 'budget_available'
+            allowed = True
+        budget = {
+            'allowed': allowed,
+            'decision': 'allow' if allowed else 'defer',
+            'reason': reason,
+            'work_class': work_class,
+            'priority': 'background',
+            'evidence': {
+                'rss_mb': rss_mb,
+                'idle_seconds': round(idle_seconds, 1),
+                'recent_stall_ms': recent_stall_ms,
+                'ui_route_stability_age_s': route_age_s,
+                'active_route': active_route,
+            },
+            'decision_source': 'control_center_viewmodel.fallback_budget',
+        }
+        self._record_operational_budget_experiment(
+            budget,
+            observed_summary=f'{work_class}:{source} -> fallback {budget["decision"]}:{reason}',
+        )
+        return budget
+
+    def _refresh_post_task_surfaces_after_result(self, task_name: str) -> None:
+        """Refresh secondary UI/metacognition surfaces only when budget allows.
+
+        Chat completion must not immediately fan out into OSES/packet/card
+        rebuilds while the user is still observing the UI.  The canonical
+        interaction audit is already durable at this point; these surfaces are
+        background projections and can wait for an idle/rest window.
+        """
+        heavy_refreshes = [
+            'progress_cards',
+            'evolution_snapshot',
+            'agent_cards',
+            'development_packet',
+        ]
+        if task_name in {'chat', 'external_consultation'}:
+            budget = self._background_work_budget_decision(
+                work_class='control_post_task_refresh',
+                source=f'post_task:{task_name}',
+                confidence=0.86,
+            )
+            if not bool(budget.get('allowed')):
+                reason = str(budget.get('reason') or 'operational_budget_deferred')
+                self._trace_autonomy_dock(
+                    'control_post_task_refresh_deferred',
+                    task_name=task_name,
+                    reason=reason,
+                    skipped_refreshes=heavy_refreshes,
+                    budget=budget,
+                    rss_mb=self._process_rss_mb(),
+                )
+                self._refresh_autonomy_dock_async(source=f'post_task:{task_name}')
+                return
+            self._trace_autonomy_dock(
+                'control_post_task_refresh_started',
+                task_name=task_name,
+                budget=budget,
+                rss_mb=self._process_rss_mb(),
+            )
+        self._update_progress_cards()
+        self._refresh_evolution_snapshot_async()
+        self._refresh_agent_cards_async()
+        self._refresh_development_packet_async()
+        self._refresh_autonomy_dock_async(source=f'post_task:{task_name}')
+
+    def _autonomy_dock_defer_reason(self, *, source: str, force: bool) -> tuple[str, float]:
+        """Return a reason to defer timer-driven dock refreshes under pressure."""
+        rss_mb = self._process_rss_mb()
+        budget = self._autonomy_dock_budget_decision(source=source, rss_mb=rss_mb)
+        self._autonomy_dock_last_budget_decision = dict(budget)
+        if bool(budget.get('allowed')):
+            return '', rss_mb
+        return str(budget.get('reason') or 'operational_budget_deferred'), rss_mb
+
+    def _trace_autonomy_dock_skip_once(
+        self,
+        *,
+        event: str,
+        source: str,
+        reason: str,
+        **data: Any,
+    ) -> None:
+        """Trace routine timer skips sparsely so telemetry cannot freeze the UI."""
+        now = time.monotonic()
+        key = f'{event}:{source}:{reason}'
+        if source == 'timer':
+            last_key = getattr(self, '_autonomy_dock_last_skip_trace_key', '')
+            last_at = float(getattr(self, '_autonomy_dock_last_skip_trace_at', 0.0) or 0.0)
+            cooldown_s = float(
+                getattr(
+                    self,
+                    '_AUTONOMY_DOCK_SKIP_TRACE_COOLDOWN_S',
+                    ControlCenterViewModel._AUTONOMY_DOCK_SKIP_TRACE_COOLDOWN_S,
+                )
+            )
+            if key == last_key and (now - last_at) < cooldown_s:
+                return
+            self._autonomy_dock_last_skip_trace_key = key
+            self._autonomy_dock_last_skip_trace_at = now
+        payload = dict(data)
+        payload.update({'source': source, 'reason': reason})
+        budget = getattr(self, '_autonomy_dock_last_budget_decision', None)
+        if isinstance(budget, dict) and budget:
+            payload.setdefault('operational_budget', budget)
+        active_interaction_id = getattr(self, '_active_interaction_id', None)
+        if active_interaction_id:
+            payload.setdefault('interaction_id', active_interaction_id)
+        self._trace_autonomy_dock(event, **payload)
+
+    def _release_visible_query_wait(self, *, reason: str) -> None:
+        """Stop marking the UI as waiting once the user already got a visible reply."""
+        watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
+        if watchdog is not None:
+            try:
+                watchdog.set_query_pending(False)
+                watchdog.set_active_interaction(None)
+            except Exception:
+                pass
+        self._set_live_status('idle')
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'interaction_visible_wait_released',
+                interaction_id=getattr(self, '_active_interaction_id', '') or '',
+                reason=reason,
+            )
+        except Exception:
+            pass
 
     def get_evolution_overview(self) -> dict[str, Any]:
         return self._evolution_overview
@@ -4961,7 +7236,7 @@ class ControlCenterViewModel(QObject):
         self._pbt_candidates = self._pbt_state.get('candidates', [])[:4]
         self._last_goal_context = self._goal_context_from_repository(self._current_site_id() or None)
         self._update_progress_cards()
-        self._update_evolution_snapshot()
+        self._refresh_evolution_snapshot_async()
         self._agent_cards = self._build_agent_cards()
         self._repo_bridge_text = self.development_assist_service.build_repo_bridge_summary()
         self._local_stack_text = self.development_assist_service.build_local_stack_summary()
@@ -5011,10 +7286,246 @@ class ControlCenterViewModel(QObject):
         self._assistant_session_cards = [dict(item) for item in (projected.get('assistant_session_cards') or [])]
         self._autonomy_timeline = [dict(item) for item in (projected.get('autonomy_timeline') or [])]
 
+    def _refresh_autonomy_dock_async(self, *, source: str = 'timer', force: bool = False) -> None:
+        """Run autonomy dock projection on ``_bg_pool`` and apply to UI."""
+        trace_hook = getattr(self, '_trace_autonomy_dock', None)
+
+        def _trace(kind: str, **data: Any) -> None:
+            if callable(trace_hook):
+                trace_hook(kind, **data)
+
+        defer_helper = getattr(self, '_autonomy_dock_defer_reason', None)
+        if callable(defer_helper):
+            defer_reason, defer_rss_mb = defer_helper(source=source, force=force)
+        else:
+            defer_reason, defer_rss_mb = '', 0.0
+        skip_once = getattr(self, '_trace_autonomy_dock_skip_once', None)
+        if defer_reason:
+            payload = {
+                'rss_mb': defer_rss_mb or self._process_rss_mb(),
+                'live_status': self._live_status,
+                'working': bool(self._working),
+                'operational_budget': dict(getattr(self, '_autonomy_dock_last_budget_decision', {}) or {}),
+            }
+            if callable(skip_once):
+                skip_once(
+                    event='control_autonomy_dock_refresh_deferred',
+                    source=source,
+                    reason=defer_reason,
+                    **payload,
+                )
+            else:
+                _trace('control_autonomy_dock_refresh_deferred', source=source, reason=defer_reason, **payload)
+            return
+        if self._autonomy_dock_refresh_in_flight:
+            if callable(skip_once):
+                skip_once(
+                    event='control_autonomy_dock_refresh_skipped',
+                    source=source,
+                    reason='in_flight',
+                )
+            else:
+                _trace('control_autonomy_dock_refresh_skipped', source=source, reason='in_flight')
+            return
+        now = time.monotonic()
+        elapsed_since_last = now - self._autonomy_dock_last_refresh_started
+        if not force and elapsed_since_last < self._autonomy_dock_min_interval_s:
+            payload = {
+                'cooldown_remaining_ms': round((self._autonomy_dock_min_interval_s - elapsed_since_last) * 1000.0, 1),
+            }
+            if callable(skip_once):
+                skip_once(
+                    event='control_autonomy_dock_refresh_skipped',
+                    source=source,
+                    reason='cooldown',
+                    **payload,
+                )
+            else:
+                _trace('control_autonomy_dock_refresh_skipped', source=source, reason='cooldown', **payload)
+            return
+        self._autonomy_dock_refresh_in_flight = True
+        self._autonomy_dock_status = 'refreshing'
+        self._autonomy_dock_last_result = 'running'
+        self._autonomy_dock_last_summary = 'Actualizando dock de autonomia...'
+        self._autonomy_dock_last_refresh_started = now
+        self._autonomy_dock_generation += 1
+        gen = self._autonomy_dock_generation
+        refresh_id = f'ccdock-{uuid.uuid4().hex[:8]}'
+        t0 = time.perf_counter()
+        self.autonomyDockStatusChanged.emit()
+        _trace(
+            'control_autonomy_dock_refresh_started',
+            refresh_id=refresh_id,
+            source=source,
+            generation=gen,
+            rss_mb=self._process_rss_mb(),
+            status_emitted_signals=['autonomyDockStatusChanged'],
+        )
+        projector = self.autonomy_activity_projector
+        if projector is None:
+            self._autonomy_dock_refresh_in_flight = False
+            self._autonomy_dock_status = 'idle'
+            self._autonomy_dock_last_result = 'unavailable'
+            self._autonomy_dock_last_summary = 'Dock de autonomia no disponible en esta sesion.'
+            self._live_process_summary = {}
+            self._live_work_items = []
+            self._assistant_session_cards = []
+            self._autonomy_timeline = []
+            self.autonomyDockStatusChanged.emit()
+            self.autonomyDockChanged.emit()
+            _trace(
+                'control_autonomy_dock_refresh_applied',
+                refresh_id=refresh_id,
+                source=source,
+                generation=gen,
+                duration_ms=round((time.perf_counter() - t0) * 1000.0, 1),
+                result='unavailable',
+                rss_mb=self._process_rss_mb(),
+                emitted_signals=['autonomyDockChanged', 'autonomyDockStatusChanged'],
+            )
+            return
+        def _bg() -> dict[str, Any] | None:
+            if self._autonomy_dock_generation != gen:
+                return None
+            watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
+            if watchdog is not None:
+                watchdog.set_dominant_phase('control_center_refresh_autonomy_dock')
+            try:
+                goal = self._goal_context_for_display(self._current_site_id() or None)
+                audit = self._latest_live_audit()
+                replay = self._latest_replay_visual_summary()
+                activity = self.get_autonomy_activity()
+                return projector.project(
+                    goal_context=goal,
+                    live_audit=audit,
+                    replay_visual_summary=replay,
+                    autonomy_activity=activity,
+                )
+            finally:
+                if watchdog is not None:
+                    watchdog.set_dominant_phase('')
+
+        def _apply(fut: Any) -> None:
+            self._autonomy_dock_refresh_in_flight = False
+            if self._autonomy_dock_generation != gen:
+                self._autonomy_dock_status = 'idle'
+                self._autonomy_dock_last_result = 'cancelled'
+                self._autonomy_dock_last_summary = 'Refresh de autonomia cancelado por una generacion mas nueva.'
+                self.autonomyDockStatusChanged.emit()
+                _trace(
+                    'control_autonomy_dock_refresh_stale',
+                    refresh_id=refresh_id,
+                    source=source,
+                    generation=gen,
+                    duration_ms=round((time.perf_counter() - t0) * 1000.0, 1),
+                    rss_mb=self._process_rss_mb(),
+                )
+                return
+            try:
+                projected = fut.result()
+            except Exception:
+                logger.debug('autonomy dock bg projection failed', exc_info=True)
+                self._autonomy_dock_status = 'failed'
+                self._autonomy_dock_last_result = 'failed'
+                self._autonomy_dock_last_summary = 'No pude actualizar el dock de autonomia.'
+                self.autonomyDockStatusChanged.emit()
+                _trace(
+                    'control_autonomy_dock_refresh_failed',
+                    refresh_id=refresh_id,
+                    source=source,
+                    generation=gen,
+                    duration_ms=round((time.perf_counter() - t0) * 1000.0, 1),
+                    rss_mb=self._process_rss_mb(),
+                )
+                return
+            if projected is None:
+                self._autonomy_dock_status = 'idle'
+                self._autonomy_dock_last_result = 'cancelled'
+                self._autonomy_dock_last_summary = 'Refresh de autonomia cancelado antes de aplicar.'
+                self.autonomyDockStatusChanged.emit()
+                _trace(
+                    'control_autonomy_dock_refresh_stale',
+                    refresh_id=refresh_id,
+                    source=source,
+                    generation=gen,
+                    duration_ms=round((time.perf_counter() - t0) * 1000.0, 1),
+                    rss_mb=self._process_rss_mb(),
+                )
+                return
+            projected['_refresh_meta'] = {
+                'refresh_id': refresh_id,
+                'source': source,
+                'generation': gen,
+                't0': t0,
+            }
+            self.autonomyDockProjected.emit(gen, projected)
+
+        future = self._bg_pool.submit(_bg)
+        future.add_done_callback(_apply)
+
+    @Slot(int, object)
+    def _apply_autonomy_dock_projection(self, gen: int, projected: object) -> None:
+        if self._autonomy_dock_generation != gen or not isinstance(projected, dict):
+            return
+        try:
+            meta = dict(projected.get('_refresh_meta') or {})
+            refresh_id = str(meta.get('refresh_id') or '')
+            source = str(meta.get('source') or 'unknown')
+            t0 = float(meta.get('t0') or time.perf_counter())
+            fingerprint = ControlCenterViewModel._autonomy_dock_fingerprint(projected)
+            changed = fingerprint != self._autonomy_dock_last_fingerprint
+            emitted_signals = ['autonomyDockStatusChanged']
+            self._autonomy_dock_status = 'idle'
+            self._autonomy_dock_last_result = 'changed' if changed else 'unchanged'
+            if changed:
+                self._live_process_summary = dict(projected.get('live_process_summary') or {})
+                self._live_work_items = [dict(item) for item in (projected.get('live_work_items') or [])]
+                self._assistant_session_cards = [dict(item) for item in (projected.get('assistant_session_cards') or [])]
+                self._autonomy_timeline = [dict(item) for item in (projected.get('autonomy_timeline') or [])]
+                self._autonomy_dock_last_fingerprint = fingerprint
+                self._autonomy_dock_last_summary = (
+                    f'Dock actualizado: {len(self._live_work_items)} trabajos, '
+                    f'{len(self._assistant_session_cards)} asistentes, '
+                    f'{len(self._autonomy_timeline)} eventos.'
+                )
+                self.autonomyDockChanged.emit()
+                emitted_signals.append('autonomyDockChanged')
+            else:
+                self._autonomy_dock_last_summary = 'Dock actualizado: sin cambios nuevos.'
+            self.autonomyDockStatusChanged.emit()
+            trace_hook = getattr(self, '_trace_autonomy_dock', None)
+            if callable(trace_hook):
+                trace_hook(
+                    'control_autonomy_dock_refresh_applied',
+                    refresh_id=refresh_id,
+                    source=source,
+                    generation=gen,
+                    duration_ms=round((time.perf_counter() - t0) * 1000.0, 1),
+                    result=self._autonomy_dock_last_result,
+                    item_counts={
+                        'live_work_items': len(projected.get('live_work_items') or []),
+                        'assistant_session_cards': len(projected.get('assistant_session_cards') or []),
+                        'autonomy_timeline': len(projected.get('autonomy_timeline') or []),
+                    },
+                    rss_mb=self._process_rss_mb(),
+                    emitted_signals=emitted_signals,
+                )
+        except Exception:
+            self._autonomy_dock_status = 'failed'
+            self._autonomy_dock_last_result = 'failed'
+            self._autonomy_dock_last_summary = 'No pude aplicar el refresh del dock de autonomia.'
+            self.autonomyDockStatusChanged.emit()
+            logger.debug('autonomy dock UI projection apply failed', exc_info=True)
+
     @Slot()
     def refreshAutonomyDock(self) -> None:
-        self._refresh_autonomy_dock()
-        self.dataChanged.emit()
+        """Non-blocking QML refresh for the autonomy dock."""
+        self._refresh_autonomy_dock_async(source='timer', force=False)
+
+    @Slot()
+    def refreshAutonomyDockFromUser(self) -> None:
+        """Manual QML refresh for the autonomy dock; bypasses cooldown."""
+        self._refresh_autonomy_dock_async(source='user_click', force=True)
 
     @Slot(str)
     def setRole(self, role: str) -> None:
@@ -5023,22 +7534,48 @@ class ControlCenterViewModel(QObject):
         if role == 'auto':
             self._auto_route_enabled = True
             self._busy_label = 'Modo automatico restaurado. La consola detectara intencion, pack y aprobaciones.'
-            self._bg_pool.submit(self._refresh_development_packet)
+            self._refresh_development_packet_async()
             self.dataChanged.emit()
             return
         if role in valid_roles:
             self._selected_role = role
             self._auto_route_enabled = False
             self._busy_label = f'Rol forzado a {self._selected_role_title()}.'
-            self._bg_pool.submit(self._refresh_development_packet)
+            self._refresh_development_packet_async()
             self.dataChanged.emit()
 
     @Slot()
     def toggleAdvanced(self) -> None:
         self._advanced_visible = not self._advanced_visible
         self.dataChanged.emit()
+        if self._advanced_visible:
+            QTimer.singleShot(0, lambda: self._refresh_provider_health(announce=False))
+
+    def _deferred_provider_health_probe(self) -> None:
+        """Avoid provider/tool scans while the first Control route is still settling."""
+        if not self._advanced_visible:
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'control_provider_health_deferred',
+                    reason='advanced_panel_collapsed',
+                )
+            except Exception:
+                pass
+            return
+        self._refresh_provider_health(announce=False)
 
     def _refresh_provider_health(self, *, announce: bool) -> None:
+        if not announce and not self._advanced_visible:
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'control_provider_health_deferred',
+                    reason='advanced_panel_collapsed',
+                )
+            except Exception:
+                pass
+            return
         if self._provider_refreshing:
             return
         self._provider_refreshing = True
@@ -5048,7 +7585,7 @@ class ControlCenterViewModel(QObject):
             except Exception:
                 startup_text = 'Consultando el stack local y los asistentes externos en segundo plano.'
             self._busy_label = 'Consultando el stack local y los asistentes externos en segundo plano.' if announce else startup_text
-            self.dataChanged.emit()
+            self.chatChanged.emit()
 
         def worker() -> None:
             try:
@@ -5378,23 +7915,97 @@ class ControlCenterViewModel(QObject):
             lines.append('Capacidades debiles:')
             for item in weak[:3]:
                 lines.append(
-                    f"- {item.get('title') or item.get('capability_id') or 'capacidad'} | {item.get('status')} | {item.get('suggested_next_step') or 'sin siguiente paso'}"
+                    self._compact_external_context_line(
+                        f"- {item.get('title') or item.get('capability_id') or 'capacidad'} | {item.get('status')} | {item.get('suggested_next_step') or 'sin siguiente paso'}"
+                    )
                 )
         outcome = payload.get('outcome') or {}
         if outcome.get('summary'):
-            lines.append(f"Outcome actual: {outcome.get('summary')}")
+            lines.append(self._compact_external_context_line(f"Outcome actual: {outcome.get('summary')}"))
         evidence_refs = payload.get('evidence_refs') or context.get('evidence_summary') or []
         if evidence_refs:
             lines.append('Evidencia textual:')
             for item in evidence_refs[:6]:
-                lines.append(f"- {item}")
+                lines.append(self._compact_external_context_line(f"- {item}"))
         if assistant_kind == 'codex':
             self._refresh_development_packet(self._last_user_goal or intent.get('title') or 'caso actual', force=True)
             lines.append('Paquete local para Codex:')
-            lines.append(self._development_packet.strip())
+            lines.append(self._compact_external_context_line(self._development_packet.strip(), limit=5000))
         else:
             lines.append('Objetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.')
-        return '\n'.join(item for item in lines if item).strip()
+        return self._limit_external_context_pack('\n'.join(item for item in lines if item).strip())
+
+    def _compact_external_context_line(self, value: Any, *, limit: int | None = None) -> str:
+        text = ' '.join(str(value or '').split())
+        max_len = int(limit or self._EXTERNAL_CONTEXT_ITEM_LIMIT)
+        if len(text) <= max_len:
+            return text
+        return text[: max_len - 18].rstrip() + ' ... [truncado]'
+
+    def _limit_external_context_pack(self, context_pack: str) -> str:
+        text = str(context_pack or '').strip()
+        if len(text) <= self._EXTERNAL_CONTEXT_PACK_LIMIT:
+            return text
+        marker = '\n\n[Contexto truncado por presupuesto operativo: el paquete completo era demasiado grande para una consulta visible segura.]'
+        return text[: self._EXTERNAL_CONTEXT_PACK_LIMIT - len(marker)].rstrip() + marker
+
+    def _trace_external_consultation_phase(self, phase: str, **payload: Any) -> None:
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'external_consultation_phase',
+                phase=phase,
+                interaction_id=self._active_interaction_id or '',
+                rss_mb=round(self._process_rss_mb(), 1),
+                **payload,
+            )
+        except Exception:
+            pass
+
+    @staticmethod
+    def _process_rss_mb() -> float:
+        try:
+            import psutil
+            return float(psutil.Process(os.getpid()).memory_info().rss) / (1024.0 * 1024.0)
+        except Exception:
+            return 0.0
+
+    def _preview_external_consultation_light(
+        self,
+        *,
+        assistant_kind: str,
+        site_id: str | None,
+        diagnostic_category: str,
+        incident_kind: str,
+    ) -> dict[str, Any]:
+        self._trace_external_consultation_phase('reuse_probe_start', assistant_kind=assistant_kind)
+        goal_overrides: dict[str, Any] = {}
+        override_getter = getattr(self, '_external_session_goal_overrides', None)
+        if callable(override_getter):
+            try:
+                goal_overrides = dict(override_getter(assistant_kind) or {})
+            except Exception:
+                goal_overrides = {}
+        preview = self.tool_teach_service.preview_external_consultation(
+            user_goal=self._last_user_goal or 'abre Wplay e inicia sesion',
+            assistant_preference=assistant_kind,
+            context_pack='IABV reuse probe: detectar si ya existe contexto o episodio equivalente antes de construir un paquete grande.',
+            site_id=site_id,
+            diagnostic_category=diagnostic_category,
+            incident_kind=incident_kind,
+            launch_dry_run=False,
+            goal_parameters=goal_overrides,
+        )
+        tool_task = dict(preview.get('tool_task') or {})
+        reuse_guard = bool(dict(tool_task.get('metadata') or {}).get('reuse_guard_active'))
+        self._trace_external_consultation_phase(
+            'reuse_probe_done',
+            assistant_kind=assistant_kind,
+            available=bool(preview.get('available')),
+            reuse_guard_active=reuse_guard,
+            selected_tool_id=str((preview.get('tool_card') or {}).get('tool_id') or tool_task.get('tool_id') or ''),
+        )
+        return preview
 
     def _execute_external_consultation_sync(self, assistant_kind: str) -> dict[str, Any]:
         if self.tool_teach_service is None:
@@ -5415,27 +8026,100 @@ class ControlCenterViewModel(QObject):
             assistant_kind=requested_assistant_kind,
         )
         if bool(preflight.get('blocked')):
-            try:
-                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-                get_runtime_tracer().trace_permission(
-                    permission_id=f'external_consultation:{requested_assistant_kind}',
-                    action='blocked',
-                    granted=False,
-                    reason=str(preflight.get('reason') or 'ruta bloqueada por gobernanza'),
-                    dialog_shown=True,
-                )
-            except Exception:
-                pass
-            return self._blocked_external_consultation_result(
-                assistant_kind=requested_assistant_kind,
-                assistant_title=assistant_title,
-                preflight=preflight,
+            retest_after_visible_verification = self._should_retest_security_preflight_after_visible_verification(
+                requested_assistant_kind,
+                preflight,
             )
+            if retest_after_visible_verification:
+                self._release_visible_external_session(
+                    requested_assistant_kind,
+                    reason='security_preflight_retest_after_visible_verification',
+                )
+                self._trace_external_consultation_phase(
+                    'security_preflight_retest_after_visible_verification',
+                    assistant_kind=requested_assistant_kind,
+                    reason=str(preflight.get('reason') or ''),
+                )
+            else:
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace_permission(
+                        permission_id=f'external_consultation:{requested_assistant_kind}',
+                        action='blocked',
+                        granted=False,
+                        reason=str(preflight.get('reason') or 'ruta bloqueada por gobernanza'),
+                        dialog_shown=True,
+                    )
+                except Exception:
+                    pass
+                return self._blocked_external_consultation_result(
+                    assistant_kind=requested_assistant_kind,
+                    assistant_title=assistant_title,
+                    preflight=preflight,
+                )
+            # Deliberately continue into the live execution path after the
+            # user-visible verification window was opened. If the challenge is
+            # still present, ToolTeach/adapter will return a fresh failed result.
         self._clear_observation_permission_artifacts()
         site_id = self._current_site_id() or None
         diagnostic_category = self._current_diagnostic_category()
         incident_kind = self._current_incident_kind()
+        light_preview = self._preview_external_consultation_light(
+            assistant_kind=assistant_kind,
+            site_id=site_id,
+            diagnostic_category=diagnostic_category,
+            incident_kind=incident_kind,
+        )
+        light_tool_card = dict(light_preview.get('tool_card') or {})
+        light_tool_task = dict(light_preview.get('tool_task') or {})
+        light_selected_tool_id = str(light_tool_card.get('tool_id') or light_tool_task.get('tool_id') or '')
+        if not bool(light_preview.get('available')):
+            assistant_title = str(light_tool_card.get('title') or self._assistant_display_name(requested_assistant_kind))
+            pending_issue_id = str((self._last_adaptive_payload or {}).get('pending_issue_id') or '')
+            extra = f' Pendiente actual: {pending_issue_id}.' if pending_issue_id else ''
+            message = f'No encontre una via externa disponible para {assistant_title}. Mantengo la guia local.{extra}'
+            self._latest_response_text = message
+            self._latest_response_meta = 'Consulta externa no disponible.'
+            self._trace_external_consultation_phase('reuse_probe_unavailable', assistant_kind=assistant_kind)
+            return {
+                'success': False,
+                'message': message,
+                'meta': 'Consulta externa no disponible.',
+                'payload': dict(self._last_adaptive_payload or {}),
+                'assistant_title': assistant_title,
+            }
+        if bool(dict(light_tool_task.get('metadata') or {}).get('reuse_guard_active')):
+            actual_assistant_kind = str(self._assistant_kind_from_tool_id(light_selected_tool_id) or requested_assistant_kind)
+            assistant_title = str(light_tool_card.get('title') or self._assistant_display_name(actual_assistant_kind))
+            if not self._observation_permission_granted(actual_assistant_kind):
+                self._trace_external_consultation_phase(
+                    'reuse_guard_short_circuit',
+                    assistant_kind=assistant_kind,
+                    selected_tool_id=light_selected_tool_id,
+                    response_verified=False,
+                )
+                return self._unverified_reuse_guard_external_result(
+                    assistant_kind=actual_assistant_kind,
+                    assistant_title=assistant_title,
+                    selected_tool_id=light_selected_tool_id,
+                    tool_task=light_tool_task,
+                )
+            self._trace_external_consultation_phase(
+                'reuse_guard_bypassed_after_observation_permission',
+                assistant_kind=assistant_kind,
+                selected_tool_id=light_selected_tool_id,
+                response_verified=False,
+            )
+        self._trace_external_consultation_phase('context_pack_build_start', assistant_kind=assistant_kind)
         context_pack = self._build_external_context_pack(assistant_kind)
+        self._trace_external_consultation_phase('context_pack_build_done', assistant_kind=assistant_kind, context_chars=len(context_pack))
+        goal_overrides: dict[str, Any] = {}
+        override_getter = getattr(self, '_external_session_goal_overrides', None)
+        if callable(override_getter):
+            try:
+                goal_overrides = dict(override_getter(assistant_kind) or {})
+            except Exception:
+                goal_overrides = {}
         preview = self.tool_teach_service.preview_external_consultation(
             user_goal=self._last_user_goal or 'abre Wplay e inicia sesion',
             assistant_preference=assistant_kind,
@@ -5444,6 +8128,7 @@ class ControlCenterViewModel(QObject):
             diagnostic_category=diagnostic_category,
             incident_kind=incident_kind,
             launch_dry_run=False,
+            goal_parameters=goal_overrides,
         )
         tool_card = dict(preview.get('tool_card') or {})
         tool_task = dict(preview.get('tool_task') or {})
@@ -5452,7 +8137,9 @@ class ControlCenterViewModel(QObject):
         requested_assistant_kind = str(assistant_kind or '').strip().lower()
         actual_assistant_kind = str(self._assistant_kind_from_tool_id(selected_tool_id) or requested_assistant_kind)
         assistant_title = str(tool_card.get('title') or self._assistant_display_name(actual_assistant_kind))
+        self._trace_external_consultation_phase('clipboard_copy_start', assistant_kind=assistant_kind, context_chars=len(context_pack))
         self._copy_text(context_pack, f'Contexto para {assistant_title} copiado al portapapeles.')
+        self._trace_external_consultation_phase('clipboard_copy_done', assistant_kind=assistant_kind, context_chars=len(context_pack))
         if not bool(preview.get('available')):
             pending_issue_id = str((self._last_adaptive_payload or {}).get('pending_issue_id') or '')
             extra = f' Pendiente actual: {pending_issue_id}.' if pending_issue_id else ''
@@ -5466,17 +8153,20 @@ class ControlCenterViewModel(QObject):
                 'payload': dict(self._last_adaptive_payload or {}),
                 'assistant_title': assistant_title,
             }
+        if bool(tool_task.get('metadata', {}).get('reuse_guard_active')) and not self._observation_permission_granted(actual_assistant_kind):
+            return self._unverified_reuse_guard_external_result(
+                assistant_kind=actual_assistant_kind,
+                assistant_title=assistant_title,
+                selected_tool_id=selected_tool_id,
+                tool_task=tool_task,
+            )
         if bool(tool_task.get('metadata', {}).get('reuse_guard_active')):
-            message = f'Ya tenia una consulta equivalente para {assistant_title}, asi que voy a reutilizar ese contexto en lugar de arrancar de cero.'
-            self._latest_response_text = message
-            self._latest_response_meta = 'Reutilizando contexto existente.'
-            return {
-                'success': True,
-                'message': message,
-                'meta': 'Reutilizando contexto existente.',
-                'payload': dict(self._last_adaptive_payload or {}),
-                'assistant_title': assistant_title,
-            }
+            self._trace_external_consultation_phase(
+                'reuse_guard_bypassed_after_observation_permission',
+                assistant_kind=assistant_kind,
+                selected_tool_id=selected_tool_id,
+                response_verified=False,
+            )
         task, result, _ = self.tool_teach_service.execute_external_consultation(
             user_goal=self._last_user_goal or 'abre Wplay e inicia sesion',
             assistant_preference=assistant_kind,
@@ -5486,6 +8176,7 @@ class ControlCenterViewModel(QObject):
             incident_kind=incident_kind,
             approved=True,
             launch_dry_run=False,
+            goal_parameters=goal_overrides,
         )
         launch_mode = str(result.execution_state.metadata.get('launch_mode') or tool_card.get('metadata', {}).get('launch_mode') or '')
         response_capture_mode = str(result.execution_state.metadata.get('response_capture_mode') or tool_card.get('metadata', {}).get('response_capture_mode') or '')
@@ -5637,12 +8328,65 @@ class ControlCenterViewModel(QObject):
         )
         self._update_adaptive_state(payload)
         reason = str(preflight.get('reason') or governance.get('reason') or '').strip()
+        security_blocked = (
+            'browser_security_verification' in reason.lower()
+            or 'verificacion de seguridad' in reason.lower()
+            or 'verificación de seguridad' in reason.lower()
+            or 'browser_security_verification' in list(governance.get('external_state_flags') or [])
+        )
+        open_action = f'open_external_assistant_{assistant_kind}'
+        panel_actions = [
+            self._assistant_action('approve_observation_permission', 'Permitir observacion', 'Verificar la ventana externa con permiso explicito.'),
+            self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar la vista actual como evidencia.'),
+            self._assistant_action(f'consult_{assistant_kind}', f'Reintentar {assistant_title}', 'Volver a evaluar la ruta si cambio el estado.'),
+            self._assistant_action('audit_autonomy', 'Auditar ruta', 'Revisar el bloqueo operativo.'),
+        ]
+        if security_blocked:
+            panel_actions.insert(0, self._assistant_action(open_action, f'Abrir {assistant_title}', 'Mostrar la pagina/verificacion para que el usuario pueda resolverla.'))
+        self._set_external_evidence_panel(
+            title='Verificacion de seguridad pendiente' if security_blocked else 'Ruta externa bloqueada antes de abrir ventana',
+            status='blocked',
+            assistant_title=assistant_title,
+            interaction_id=str(getattr(self, '_active_interaction_id', '') or ''),
+            phases=[{'phase': 'external_preflight_blocked'}],
+            metadata={
+                'reason': reason or 'preflight_blocked',
+                'approval_required': governance.get('approval_required'),
+                'block_risky_action': governance.get('block_risky_action'),
+                'external_state_flags': list(governance.get('external_state_flags') or []),
+                'source': 'AutonomyGovernancePolicy.preflight_external_assistant',
+            },
+            user_help=(
+                (
+                    f'{assistant_title} quedo bloqueado por una verificacion de seguridad. '
+                    'La accion correcta es abrir una ventana visible del perfil del programa, resolver la verificacion, y luego reintentar o capturar vista.'
+                )
+                if security_blocked
+                else (
+                    'No hay navegador confirmado en este intento: IABV bloqueo la ruta antes de abrir o usar una ventana externa. '
+                    'Si tu ves una ventana real distinta, puedes permitirme observarla para cruzar esa realidad con el audit trail.'
+                )
+            ),
+            actions=panel_actions,
+        )
+        if security_blocked:
+            self._open_external_assistant_for_human_verification(
+                assistant_kind,
+                reason='security_preflight_block',
+                announce=False,
+            )
         if approval_checkpoints:
             message = (
                 f'No voy a lanzar {assistant_title} todavia. '
                 f'{reason or f"Primero necesito tu permiso para observar esa ventana y verificar que {assistant_title} este usable."}'
             )
             meta = f'Permiso requerido para {assistant_title}.'
+        elif security_blocked:
+            message = (
+                f'{assistant_title} no pudo continuar porque el sitio activo una verificacion de seguridad. '
+                f'Estoy abriendo una ventana visible de {assistant_title}; resuelve la verificacion ahi y luego pulsa Reintentar o Capturar vista.'
+            )
+            meta = f'{assistant_title} bloqueado por verificacion de seguridad.'
         else:
             message = (
                 f'No voy a lanzar {assistant_title} porque la ruta ya aparece bloqueada antes de intentarla. '
@@ -5661,6 +8405,116 @@ class ControlCenterViewModel(QObject):
             'external_state_flags': list(governance.get('external_state_flags') or []),
         }
 
+    def _unverified_reuse_guard_external_result(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+        selected_tool_id: str,
+        tool_task: dict[str, Any],
+    ) -> dict[str, Any]:
+        reason = (
+            f'Detecte una consulta equivalente o guard anti-duplicado para {assistant_title}, '
+            'pero no tengo evidencia de que ChatGPT haya recibido una consulta nueva ni de que exista una respuesta verificable.'
+        )
+        checkpoint = {
+            'title': f'Permitir observacion de {assistant_title}',
+            'decision': 'pending',
+            'risk_level': 'medium',
+            'phase_key': 'observation_permission',
+            'detail': (
+                f'Necesito observar la ventana o sesion de {assistant_title} para confirmar si hay respuesta, '
+                'si esta en el hilo correcto o si debo reintentar.'
+            ),
+            'metadata': {
+                'assistant_kind': assistant_kind,
+                'tool_id': selected_tool_id,
+                'reuse_guard_active': True,
+                'permission_gates': [
+                    {
+                        'assistant_kind': assistant_kind,
+                        'tool_id': selected_tool_id,
+                        'reason': 'verify_unconfirmed_external_reuse',
+                    }
+                ],
+            },
+        }
+        payload = dict(self._last_adaptive_payload or {})
+        metadata = dict(payload.get('metadata') or {})
+        metadata['external_consultation'] = {
+            'status': 'blocked_external',
+            'assistant_kind': assistant_kind,
+            'actual_assistant_kind': assistant_kind,
+            'selected_tool_id': selected_tool_id,
+            'reuse_guard_active': True,
+            'response_captured': False,
+            'response_verified': False,
+            'requires_user_validation': True,
+            'reason': reason,
+            'tool_task_id': str(tool_task.get('task_id') or ''),
+        }
+        metadata['autonomous_evolution'] = dict(metadata['external_consultation'])
+        decision_context = dict(metadata.get('decision_context') or {})
+        decision_context['governance'] = {
+            'diagnostic_category': 'external_response_unverified',
+            'reason': reason,
+            'external_state_flags': ['capture_unverified'],
+            'recommended_action': 'request_user_observation_permission',
+        }
+        metadata['decision_context'] = decision_context
+        payload['metadata'] = metadata
+        payload['approval_checkpoints'] = [checkpoint]
+        payload['assistant_guidance'] = self._guidance_for_unverified_external_reuse(
+            assistant_kind=assistant_kind,
+            assistant_title=assistant_title,
+            reason=reason,
+        )
+        self._update_adaptive_state(payload)
+        self._set_external_evidence_panel(
+            title='Consulta externa no verificada',
+            status='blocked',
+            assistant_title=assistant_title,
+            interaction_id=str(getattr(self, '_active_interaction_id', '') or ''),
+            phases=[
+                {'phase': 'reuse_probe_done', 'selected_tool_id': selected_tool_id, 'reuse_guard_active': True},
+                {'phase': 'reuse_guard_short_circuit', 'selected_tool_id': selected_tool_id, 'response_verified': False},
+            ],
+            metadata={
+                'selected_tool_id': selected_tool_id,
+                'reuse_guard_active': True,
+                'response_verified': False,
+                'requires_user_validation': True,
+                'tool_task_id': str(tool_task.get('task_id') or ''),
+                'source': 'external_consultation_preflight',
+            },
+            user_help=(
+                'No abri una ventana nueva ni puedo afirmar que ChatGPT respondio. '
+                'Necesito observar la ventana existente con permiso o que pegues la respuesta externa.'
+            ),
+            actions=[
+                self._assistant_action('approve_observation_permission', 'Permitir observacion', 'Verificar la ventana externa con permiso explicito.'),
+                self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar la vista actual como evidencia.'),
+                self._assistant_action('ingest_external_response', 'Pegar respuesta', 'Ingerir manualmente una respuesta que ya aparecio fuera de IABV.'),
+                self._assistant_action('audit_autonomy', 'Auditar ruta', 'Ver detalle del bloqueo operativo.'),
+            ],
+        )
+        message = (
+            f'No puedo dar por hecha la consulta con {assistant_title}. '
+            f'{reason} Necesito tu permiso para observar esa ventana, o que pegues aqui la respuesta si ya aparecio.'
+        )
+        meta = f'Respuesta externa no verificada: {assistant_title}.'
+        self._latest_response_text = message
+        self._latest_response_meta = meta
+        self._busy_label = f'Consulta externa no verificada para {assistant_title}.'
+        return {
+            'success': False,
+            'message': message,
+            'meta': meta,
+            'payload': payload,
+            'assistant_title': assistant_title,
+            'external_state_flags': ['capture_unverified'],
+        }
+
     def _guidance_for_external_preflight_block(
         self,
         *,
@@ -5677,6 +8531,7 @@ class ControlCenterViewModel(QObject):
                 'prompt': prompt,
                 'actions': [
                     self._assistant_action('approve_observation_permission', 'Permitir observacion', 'Conceder permiso de observacion y reintentar la consulta.'),
+                    self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar la vista actual como evidencia.'),
                     self._assistant_action(f'consult_{assistant_kind}', f'Reintentar {assistant_title}', 'Volver a correr el preflight cuando cambie el estado.'),
                     self._assistant_action('audit_autonomy', 'Auditar autonomia', 'Revisar por que la ruta externa quedo bloqueada.'),
                 ],
@@ -5769,22 +8624,42 @@ class ControlCenterViewModel(QObject):
         except Exception:
             pass
         self._clear_observation_permission_artifacts()
+        visual_entry: dict[str, Any] = {}
+        try:
+            visual_entry = self._capture_visual_evidence_snapshot(
+                assistant_kind=assistant_kind,
+                reason='observation_permission_granted',
+                announce=False,
+            )
+        except Exception:
+            visual_entry = {'status': 'error', 'path': '', 'detail': 'visual_capture_exception'}
         if announce:
+            visual_path = str(visual_entry.get('path') or '').strip()
+            semantic = dict(visual_entry.get('semantic_summary') or {})
+            semantic_state = str(semantic.get('state_hypothesis') or '').strip()
+            visual_note = (
+                f' Tambien capture evidencia visual: {visual_path}.'
+                if visual_path
+                else ' Intente capturar evidencia visual, pero no quedo una imagen util.'
+            )
+            if semantic_state:
+                visual_note += f' Lectura visual: {semantic_state}.'
             self._append_message(
                 'assistant',
                 'IABV',
-                f'Registre el permiso para observar {assistant_title}. Voy a reintentar la consulta con preflight fresco.',
+                f'Registre el permiso para observar {assistant_title}.{visual_note} Voy a reintentar la consulta con esa evidencia y no repetir el bloqueo anterior.',
                 f'Permiso concedido para {assistant_title}.',
             )
         self._approval_dialog_visible = False
         self._approval_dialog_title = 'Permiso concedido'
-        self._approval_dialog_text = f'La observacion de {assistant_title} ya quedo permitida para esta sesion.'
+        self._approval_dialog_text = f'La observacion de {assistant_title} ya quedo permitida y se tomo evidencia visual para esta sesion.'
         self.dataChanged.emit()
         return self._run_external_consultation(assistant_kind, announce=False)
 
     def _run_external_consultation(self, assistant_kind: str, *, announce: bool = True) -> bool:
         assistant_title = self._assistant_display_name(assistant_kind)
         self._working = True
+        self._working_since = time.time()
         self._busy_label = f'Voy a preparar una consulta con {assistant_title}.'
         self._latest_response_text = (
             f'Consulta externa aceptada para {assistant_title}. '
@@ -5805,6 +8680,14 @@ class ControlCenterViewModel(QObject):
         )
         if announce:
             self._append_message('assistant', 'IABV', self._latest_response_text, self._latest_response_meta)
+        self._schedule_visible_work_timeout(
+            reason=f'external_consultation:{assistant_kind}',
+            timeout_ms=int(getattr(
+                self,
+                '_EXTERNAL_CONSULTATION_VISIBLE_TIMEOUT_MS',
+                ControlCenterViewModel._EXTERNAL_CONSULTATION_VISIBLE_TIMEOUT_MS,
+            )),
+        )
         self.dataChanged.emit()
 
         def worker() -> None:
@@ -5868,6 +8751,16 @@ class ControlCenterViewModel(QObject):
             return self._run_external_consultation('ollama', announce=announce)
         if action == 'approve_observation_permission':
             return self._grant_pending_observation_permission(announce=announce)
+        if action == 'capture_visual_evidence':
+            self._capture_visual_evidence_snapshot(reason='user_action', announce=announce)
+            return True
+        if action.startswith('open_external_assistant_'):
+            assistant_kind = action.replace('open_external_assistant_', '', 1).strip().lower()
+            return self._open_external_assistant_for_human_verification(
+                assistant_kind,
+                reason='user_action',
+                announce=announce,
+            )
         if action == 'run_self_test':
             self.runSelfTeach(self._last_user_goal or 'abre Wplay e inicia sesion')
             return True
@@ -5910,6 +8803,8 @@ class ControlCenterViewModel(QObject):
         """
         assistant_kind = self._pending_observation_permission_assistant()
         if not assistant_kind:
+            return False
+        if self._is_external_consultation_diagnosis_question(message):
             return False
         lower = message.lower().strip()
         affirmative_keywords = {
@@ -6797,18 +9692,77 @@ class ControlCenterViewModel(QObject):
         entry = {'name': name, 'path': path, 'size': size, 'type': file_type}
         self._attached_files.append(entry)
         self.fileAttached.emit(entry)
-        self.dataChanged.emit()
+        self.chatChanged.emit()
 
     @Slot(str)
     def detachFile(self, path: str) -> None:
         self._attached_files = [f for f in self._attached_files if f['path'] != path]
         self.fileDetached.emit(path)
-        self.dataChanged.emit()
+        self.chatChanged.emit()
 
     @Slot()
     def clearAttachedFiles(self) -> None:
         self._attached_files.clear()
-        self.dataChanged.emit()
+        self.chatChanged.emit()
+
+    @staticmethod
+    def _attachment_context_pack(attachments: list[dict[str, Any]] | None) -> str:
+        """Return bounded, UI-safe text extracted from lightweight attachments."""
+        rows: list[str] = []
+        text_suffixes = {
+            '.txt', '.md', '.markdown', '.csv', '.json', '.jsonl', '.yaml', '.yml',
+            '.py', '.js', '.ts', '.tsx', '.jsx', '.qml', '.html', '.css', '.xml',
+            '.log', '.ini', '.cfg', '.toml', '.ps1', '.bat', '.cmd',
+        }
+        total_chars = 0
+        max_total_chars = 18000
+        max_file_chars = 6000
+        for attachment in list(attachments or [])[:6]:
+            path = str(attachment.get('path') or '').strip()
+            name = str(attachment.get('name') or Path(path).name or 'archivo').strip()
+            if not path:
+                rows.append(f'- {name}: UNRESOLVED:path_missing')
+                continue
+            resolved = Path(path)
+            if not resolved.exists() or not resolved.is_file():
+                rows.append(f'- {name}: UNRESOLVED:file_not_found ({path})')
+                continue
+            suffix = resolved.suffix.lower()
+            file_size = 0
+            try:
+                file_size = resolved.stat().st_size
+            except Exception:
+                file_size = 0
+            if suffix not in text_suffixes:
+                rows.append(
+                    f'- {name}: metadata_only suffix={suffix or "none"} size={file_size} '
+                    'UNRESOLVED:binary_or_rich_document_extraction_not_enabled'
+                )
+                continue
+            remaining = max_total_chars - total_chars
+            if remaining <= 0:
+                rows.append('- attachment_context_truncated: max_total_chars_reached')
+                break
+            limit = min(max_file_chars, remaining)
+            try:
+                text = resolved.read_text(encoding='utf-8', errors='replace')[:limit]
+            except Exception as exc:
+                rows.append(f'- {name}: UNRESOLVED:read_error {type(exc).__name__}')
+                continue
+            total_chars += len(text)
+            rows.append(f'### {name} ({suffix or "text"}, {file_size} bytes)\n{text}')
+        return '\n\n'.join(rows).strip()
+
+    @staticmethod
+    def _message_with_attachment_context(message: str, attachments: list[dict[str, Any]] | None) -> str:
+        context = ControlCenterViewModel._attachment_context_pack(attachments)
+        if not context:
+            return message
+        return (
+            f'{message}\n\n'
+            '[Contexto de archivos adjuntos verificado por IABV]\n'
+            f'{context}'
+        )
 
     @Property(list, notify=dataChanged)
     def attachedFiles(self) -> list[dict[str, Any]]:
@@ -6831,7 +9785,7 @@ class ControlCenterViewModel(QObject):
         ]
         self.chatSearchResults.emit(filtered)
 
-    @Property(str, notify=dataChanged)
+    @Property(str, notify=liveStatusChanged)
     def liveStatus(self) -> str:
         with self._ui_state_lock:
             return self._live_status
@@ -6843,7 +9797,6 @@ class ControlCenterViewModel(QObject):
                 return
             self._live_status = status
         self.liveStatusChanged.emit(status)
-        self.dataChanged.emit()
         # Audible notification when processing finishes
         if previous == 'processing' and status == 'idle':
             self._play_completion_sound()
@@ -6976,6 +9929,11 @@ class ControlCenterViewModel(QObject):
         self.sendChat(text)
 
     def _try_handle_lightweight_chat(self, message: str) -> bool:
+        if self._handle_user_browser_session_request(message):
+            return True
+        if self._is_external_consultation_diagnosis_question(message):
+            self._answer_external_consultation_diagnosis_question(message)
+            return True
         if self._is_world_model_question(message):
             self._answer_world_model_question(message)
             return True
@@ -7088,8 +10046,29 @@ class ControlCenterViewModel(QObject):
         message = text.strip()
         if not message:
             return
+        self._autonomy_dock_rest_window_started_at = time.monotonic()
+        validation_cycle = getattr(self, 'autonomous_validation_cycle', None)
+        if validation_cycle is not None and hasattr(validation_cycle, 'note_user_activity'):
+            try:
+                validation_cycle.note_user_activity(reason='control_center_chat')
+            except Exception:
+                pass
+        oses = self.self_examination_service or getattr(self, '_oses_ref', None)
+        if oses is not None and hasattr(oses, 'note_user_activity'):
+            try:
+                oses.note_user_activity(reason='control_center_chat')
+            except Exception:
+                pass
+        bootstrap = getattr(self, '_bootstrap_ref', None)
+        if bootstrap is not None and hasattr(bootstrap, 'note_user_activity_for_operational_budget'):
+            try:
+                bootstrap.note_user_activity_for_operational_budget(reason='control_center_chat')
+            except Exception:
+                pass
         # --- Open canonical interaction episode ---
         self._interaction_has_pending_followup = False
+        self._interaction_pending_followup_outcome = ''
+        self._interaction_pending_followup_provider = ''
         lifecycle = getattr(self, '_chat_interaction_lifecycle', None)
         interaction_id: str | None = None
         if lifecycle is not None:
@@ -7117,7 +10096,6 @@ class ControlCenterViewModel(QObject):
         # APRENDIDO: _working puede quedar en True si worker() lanza excepcion
         # no capturada o si el signal taskFailed no se emite correctamente.
         if self._working:
-            import time
             elapsed = time.time() - getattr(self, '_working_since', 0)
             if elapsed < 60:
                 self._resolve_active_interaction(outcome='abandoned')
@@ -7131,25 +10109,54 @@ class ControlCenterViewModel(QObject):
                             attachments=user_attachments)
         if self._attached_files:
             self._attached_files.clear()
+            self.chatChanged.emit()
+        processing_message = ControlCenterViewModel._message_with_attachment_context(message, user_attachments)
         self._set_live_status('processing')
         if self._try_handle_chat_command(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
-        if self._try_resolve_pending_observation_permission(message):
+        _external_diag_checker = getattr(self, '_is_external_consultation_diagnosis_question', None)
+        if callable(_external_diag_checker) and _external_diag_checker(message):
+            self._answer_external_consultation_diagnosis_question(message)
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
+        if self._try_resolve_pending_observation_permission(message):
+            return
+        explicit_for_ingestion = ''
+        explicit_checker = getattr(self, '_explicit_assistant_preference', None)
+        if callable(explicit_checker):
+            try:
+                explicit_for_ingestion = str(explicit_checker(message) or '')
+            except Exception:
+                explicit_for_ingestion = ''
+        if not explicit_for_ingestion:
+            # Escucha pasiva de capacidades y directivas operativas declaradas
+            # en mensajes locales. Debe correr antes del chat local rapido para
+            # que "una sola ventana" o "testea tus algoritmos" no se pierdan,
+            # pero no debe contaminar aprobaciones de permiso ni el camino
+            # liviano de consulta externa explicita.
+            bg_pool = getattr(self, '_bg_pool', None)
+            submit = getattr(bg_pool, 'submit', None)
+            ingest = getattr(self, '_ingest_chat_capabilities', None)
+            if callable(submit) and callable(ingest):
+                submit(ingest, processing_message)
         if self._try_handle_lightweight_chat(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
-        # Escucha pasiva de capacidades declaradas (GPU, modelos, cuentas, runtimes).
-        # Persiste detecciones a data/chat_research_backlog/*.jsonl para que OSES
-        # y ExperimentLab las consuman despues como areas de investigacion. No
-        # modifica el ruteo; solo anota y avisa al usuario en una linea corta
-        # para que sepa que su dato quedo registrado (antes se perdian en memoria).
-        # Ingerir capabilities y actualizar packet en background (thread pool
-        # compartido — evita crear 2+ threads por mensaje).
-        self._bg_pool.submit(self._ingest_chat_capabilities, message)
-        self._bg_pool.submit(self._refresh_development_packet, message)
+        explicit_assistant = explicit_for_ingestion or self._explicit_assistant_preference(message)
+        if explicit_assistant:
+            self._last_user_goal = processing_message
+            self._interaction_has_pending_followup = True
+            self._trace_external_consultation_phase(
+                'explicit_assistant_light_path',
+                assistant_kind=explicit_assistant,
+                skipped_capability_ingestion=True,
+                skipped_development_packet=True,
+                skipped_shortcut_analysis=True,
+            )
+            self._run_external_consultation(explicit_assistant, announce=True)
+            return
+        self._refresh_development_packet_async(processing_message)
         # _chat_shortcut_analysis puede llamar a LLM — ejecutar con timeout
         # APRENDIDO: NO usar 'with ThreadPoolExecutor' en hilo de UI porque
         # pool.shutdown(wait=True) bloquea al salir del with aunque el timeout
@@ -7160,7 +10167,7 @@ class ControlCenterViewModel(QObject):
         _sa_done = threading.Event()
         def _sa_worker() -> None:
             try:
-                _sa_result.update(self._chat_shortcut_analysis(message))
+                _sa_result.update(self._chat_shortcut_analysis(processing_message))
             except Exception:
                 pass
             finally:
@@ -7175,7 +10182,7 @@ class ControlCenterViewModel(QObject):
         self._trace_chat_stall(
             elapsed_ms=_sa_elapsed_ms,
             timed_out=not _sa_completed,
-            message_summary=message[:120],
+            message_summary=processing_message[:120],
         )
         allow_chat_shortcuts = not bool(shortcut_analysis.get('mixed_actionable')) and not bool(shortcut_analysis.get('requires_clarification'))
         if allow_chat_shortcuts and self._is_world_model_question(message):
@@ -7202,16 +10209,11 @@ class ControlCenterViewModel(QObject):
             self._answer_general_chat(message)
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
-        explicit_assistant = self._explicit_assistant_preference(message)
-        if explicit_assistant:
-            self._last_user_goal = message
-            self._interaction_has_pending_followup = True
-            self._run_external_consultation(explicit_assistant, announce=True)
-            return
         import time as _time
         self._working = True
         self._working_since = _time.time()
         self._busy_label = 'Estoy entendiendo tu mensaje y preparando la mejor respuesta.'
+        self._schedule_visible_work_timeout(reason='local_chat_worker')
         self._set_autonomy_activity_override(
             visible=True,
             title='Analizando consulta',
@@ -7234,7 +10236,7 @@ class ControlCenterViewModel(QObject):
                         lifecycle.mark_phase(interaction_id, 'first_technical_response')
                     except Exception:
                         pass
-                request = self._build_request(message)
+                request = self._build_request(processing_message)
                 record = self.inference_service.infer_task(request)
                 adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
                 self.taskResolved.emit(
@@ -7393,8 +10395,8 @@ class ControlCenterViewModel(QObject):
 
     @Slot(str)
     def buildDevelopmentPacket(self, text: str) -> None:
-        self._refresh_development_packet(text, force=True)
-        self._busy_label = 'Paquete para Codex actualizado.'
+        self._refresh_development_packet_async(text, force=True)
+        self._busy_label = 'Paquete para Codex actualizandose en segundo plano.'
         self.dataChanged.emit()
 
     @Slot()
@@ -7505,7 +10507,7 @@ class ControlCenterViewModel(QObject):
         if task_name == 'provider_health':
             self._provider_refreshing = False
             self._provider_cards = list(payload)
-            self._agent_cards = self._build_agent_cards()
+            self._refresh_agent_cards_async()
             if not self._working:
                 self._busy_label = self._startup_readiness_text(validating_local_stack=False)
             self._diagnostic_text = self._build_provider_diagnostic()
@@ -7595,6 +10597,14 @@ class ControlCenterViewModel(QObject):
                 _autonomy_status = str((autonomy_result or {}).get('status') or '')
                 if _autonomy_status in {'awaiting_response', 'prepared'}:
                     self._interaction_has_pending_followup = True
+                    self._interaction_pending_followup_outcome = (
+                        'awaiting_external_response'
+                        if _autonomy_status == 'awaiting_response'
+                        else 'prepared'
+                    )
+                    self._interaction_pending_followup_provider = self._assistant_display_name(
+                        str((autonomy_result or {}).get('assistant_kind') or '')
+                    )
                 self._clear_autonomy_activity_override()
         elif task_name == 'adaptive_action':
             self._clear_autonomy_activity_override()
@@ -7661,11 +10671,14 @@ class ControlCenterViewModel(QObject):
             _ext_path = 'external_consultation' if _ext_success else 'external_blocked'
             _ext_evidence = 'observed' if _ext_success else 'inferred'
             _ext_assistant = str(external_payload.get('assistant_title') or 'external')
+            from iabv_v15.services.evolution.decision_audit_trail import DecisionOutcome
             self._append_message('assistant', 'IABV', message, meta,
                                  reasoning_path=_ext_path, evidence_tag=_ext_evidence,
                                  trace_metadata={'assistant': _ext_assistant, 'blocked': not _ext_success})
             self._record_chat_audit(
                 reasoning_path=_ext_path,
+                provider_id=_ext_assistant,
+                outcome=(DecisionOutcome.SUCCESS if _ext_success else DecisionOutcome.FAILED),
                 user_goal=self._last_user_goal or '',
                 metadata={'assistant': _ext_assistant, 'blocked': not _ext_success},
             )
@@ -7697,6 +10710,8 @@ class ControlCenterViewModel(QObject):
             self._busy_label = f"PBT actualizado en generacion {payload.get('generation', 0)}."
         if task_name != 'provider_health':
             self._working = False
+            self._visible_work_timeout_generation = int(getattr(self, '_visible_work_timeout_generation', 0)) + 1
+            self.chatChanged.emit()
         # --- Close canonical interaction episode on resolution ---
         # Do NOT close the interaction if follow-up work is still pending
         # (external consultation dispatched, autonomy awaiting_response, etc.).
@@ -7725,8 +10740,11 @@ class ControlCenterViewModel(QObject):
                 )
             else:
                 # Non-final: record the semantic outcome but keep the
-                # interaction open for eventual true resolution.
-                self._resolve_active_interaction(
+                # interaction open for eventual true resolution.  The
+                # foreground wait is released because the user already got a
+                # visible dispatch/reuse answer; otherwise the UI stays stuck
+                # in "consultando..." and background governance defers forever.
+                self._record_non_final_external_outcome(
                     outcome=_ext_outcome,
                     provider=_provider,
                 )
@@ -7740,7 +10758,18 @@ class ControlCenterViewModel(QObject):
                 _provider = ''
             self._resolve_active_interaction(outcome='resolved', provider=_provider)
         elif _has_pending_followup:
-            # Mark lifecycle phase but keep episode open
+            # Record the background follow-up but release the foreground wait:
+            # the user already received a visible answer, so UI stalls after
+            # this point must not be counted as "query pending".
+            _pending_outcome = (
+                getattr(self, '_interaction_pending_followup_outcome', '') or 'prepared'
+            )
+            _pending_provider = getattr(self, '_interaction_pending_followup_provider', '') or ''
+            self._resolve_active_interaction(
+                outcome=_pending_outcome,
+                provider=_pending_provider,
+            )
+            self._release_visible_query_wait(reason=f'background_followup:{_pending_outcome}')
             _lc = getattr(self, '_chat_interaction_lifecycle', None)
             _iid = getattr(self, '_active_interaction_id', None)
             if _iid and _lc is not None:
@@ -7763,12 +10792,7 @@ class ControlCenterViewModel(QObject):
                 outcome='resolved',
                 provider=_provider,
             )
-        self._update_progress_cards()
-        self._update_evolution_snapshot()
-        self._agent_cards = self._build_agent_cards()
-        self._refresh_development_packet()
-        self._refresh_autonomy_dock()
-        self.dataChanged.emit()
+        self._refresh_post_task_surfaces_after_result(task_name)
 
     @Slot(str, str)
     def _apply_task_failure(self, task_name: str, message: str) -> None:
@@ -7793,6 +10817,8 @@ class ControlCenterViewModel(QObject):
             self._provider_refreshing = False
         else:
             self._working = False
+            self._visible_work_timeout_generation = int(getattr(self, '_visible_work_timeout_generation', 0)) + 1
+            self.chatChanged.emit()
         # --- Close canonical interaction episode on failure ---
         self._interaction_has_pending_followup = False
         self._resolve_active_interaction(outcome='failed')
@@ -7810,9 +10836,8 @@ class ControlCenterViewModel(QObject):
             f"Detalle: {message}"
         )
         self._diagnostic_truth_state = 'observed'
-        self._refresh_development_packet()
-        self._refresh_autonomy_dock()
-        self.dataChanged.emit()
+        self._refresh_development_packet_async()
+        self._refresh_autonomy_dock_async()
 
     def _build_provider_diagnostic(self) -> str:
         goal_context = self._goal_context_for_display(self._current_site_id() or None)
@@ -7835,13 +10860,16 @@ class ControlCenterViewModel(QObject):
                 lines.append(f"- {card['name']}: {card['status']} | {card['detail']}")
         return '\n'.join(lines)
 
-    chatMessages = Property(list, get_chat_messages, notify=dataChanged)
+    chatMessages = Property(list, get_chat_messages_preview, notify=chatChanged)
     providerCards = Property(list, get_provider_cards, notify=dataChanged)
     progressCards = Property(list, get_progress_cards, notify=dataChanged)
-    liveProcessSummary = Property(dict, get_live_process_summary, notify=dataChanged)
-    liveWorkItems = Property(list, get_live_work_items, notify=dataChanged)
-    assistantSessionCards = Property(list, get_assistant_session_cards, notify=dataChanged)
-    autonomyTimeline = Property(list, get_autonomy_timeline, notify=dataChanged)
+    liveProcessSummary = Property(dict, get_live_process_summary, notify=autonomyDockChanged)
+    liveWorkItems = Property(list, get_live_work_items, notify=autonomyDockChanged)
+    assistantSessionCards = Property(list, get_assistant_session_cards, notify=autonomyDockChanged)
+    autonomyTimeline = Property(list, get_autonomy_timeline, notify=autonomyDockChanged)
+    autonomyDockStatus = Property(str, get_autonomy_dock_status, notify=autonomyDockStatusChanged)
+    autonomyDockLastResult = Property(str, get_autonomy_dock_last_result, notify=autonomyDockStatusChanged)
+    autonomyDockLastSummary = Property(str, get_autonomy_dock_last_summary, notify=autonomyDockStatusChanged)
     evolutionOverview = Property(dict, get_evolution_overview, notify=dataChanged)
     evolutionAreaCards = Property(list, get_evolution_area_cards, notify=dataChanged)
     evolutionBlockers = Property(list, get_evolution_blockers, notify=dataChanged)
@@ -7854,8 +10882,8 @@ class ControlCenterViewModel(QObject):
     autoRouteEnabled = Property(bool, get_auto_route_enabled, notify=dataChanged)
     advancedVisible = Property(bool, get_advanced_visible, notify=dataChanged)
     routingModeLabel = Property(str, get_routing_mode_label, notify=dataChanged)
-    working = Property(bool, get_working, notify=dataChanged)
-    busyLabel = Property(str, get_busy_label, notify=dataChanged)
+    working = Property(bool, get_working, notify=chatChanged)
+    busyLabel = Property(str, get_busy_label, notify=chatChanged)
     autonomyActivity = Property(dict, get_autonomy_activity, notify=dataChanged)
     strategyText = Property(str, get_strategy_text, constant=True)
     recommendationText = Property(str, get_recommendation_text, constant=True)
@@ -7865,15 +10893,16 @@ class ControlCenterViewModel(QObject):
     repoBridgeText = Property(str, get_repo_bridge_text, notify=dataChanged)
     localStackText = Property(str, get_local_stack_text, notify=dataChanged)
     developmentPacket = Property(str, get_development_packet, notify=dataChanged)
-    assistantGuidanceMode = Property(str, get_assistant_guidance_mode, notify=dataChanged)
-    assistantGuidanceText = Property(str, get_assistant_guidance_text, notify=dataChanged)
-    assistantActionButtons = Property(list, get_assistant_action_buttons, notify=dataChanged)
-    approvalDialogVisible = Property(bool, get_approval_dialog_visible, notify=dataChanged)
-    approvalDialogTitle = Property(str, get_approval_dialog_title, notify=dataChanged)
-    approvalDialogText = Property(str, get_approval_dialog_text, notify=dataChanged)
-    latestResponseText = Property(str, get_latest_response_text, notify=dataChanged)
-    latestResponseMeta = Property(str, get_latest_response_meta, notify=dataChanged)
-    clipboardNotice = Property(str, get_clipboard_notice, notify=dataChanged)
+    assistantGuidanceMode = Property(str, get_assistant_guidance_mode, notify=chatChanged)
+    assistantGuidanceText = Property(str, get_assistant_guidance_text, notify=chatChanged)
+    assistantActionButtons = Property(list, get_assistant_action_buttons, notify=chatChanged)
+    externalEvidencePanel = Property(dict, get_external_evidence_panel, notify=chatChanged)
+    approvalDialogVisible = Property(bool, get_approval_dialog_visible, notify=chatChanged)
+    approvalDialogTitle = Property(str, get_approval_dialog_title, notify=chatChanged)
+    approvalDialogText = Property(str, get_approval_dialog_text, notify=chatChanged)
+    latestResponseText = Property(str, get_latest_response_text, notify=chatChanged)
+    latestResponseMeta = Property(str, get_latest_response_meta, notify=chatChanged)
+    clipboardNotice = Property(str, get_clipboard_notice, notify=chatChanged)
     adaptiveSessionId = Property(str, get_adaptive_session_id, notify=dataChanged)
     adaptiveStatusText = Property(str, get_adaptive_status_text, notify=dataChanged)
     adaptiveIntentText = Property(str, get_adaptive_intent_text, notify=dataChanged)

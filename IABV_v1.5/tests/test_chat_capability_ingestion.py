@@ -33,6 +33,30 @@ class TestDetect:
         detections = service.detect('la GPU es una buena idea en general')
         assert detections == []
 
+    def test_detects_operational_self_testing_without_possession_marker(self, tmp_path: Path) -> None:
+        service = _make_service(tmp_path)
+        detections = service.detect(
+            'recuerda el organo que testea los algoritmos de rendimiento y razonamiento'
+        )
+        kinds = [item.kind for item in detections]
+        assert 'operational_self_testing' in kinds
+
+    def test_detects_universal_cross_device_directive(self, tmp_path: Path) -> None:
+        service = _make_service(tmp_path)
+        detections = service.detect(
+            'todo esto debe ser universal para diferentes dispositivos y sistemas operativos'
+        )
+        kinds = [item.kind for item in detections]
+        assert 'operational_cross_device_universal' in kinds
+
+    def test_detects_visual_replay_directive(self, tmp_path: Path) -> None:
+        service = _make_service(tmp_path)
+        detections = service.detect(
+            'necesito que me muestres visualmente lo que ves con etiquetas para hacer clic'
+        )
+        kinds = [item.kind for item in detections]
+        assert 'operational_visual_replay' in kinds
+
     def test_detects_local_model_mention(self, tmp_path: Path) -> None:
         service = _make_service(tmp_path)
         detections = service.detect('instale qwen3 y llama3 en mi laptop')
@@ -78,6 +102,15 @@ class TestRecord:
         target = tmp_path / 'chat_research_backlog' / 'sess-x.jsonl'
         lines = [line for line in target.read_text(encoding='utf-8').splitlines() if line.strip()]
         assert len(lines) == 2
+
+    def test_operational_directive_is_written_to_same_research_backlog(self, tmp_path: Path) -> None:
+        service = _make_service(tmp_path)
+        service.ingest('quiero una sola ventana y auto-test de algoritmos', session_id='sess-op')
+        target = tmp_path / 'chat_research_backlog' / 'sess-op.jsonl'
+        records = [json.loads(line) for line in target.read_text(encoding='utf-8').splitlines() if line.strip()]
+        kinds = {item['kind'] for item in records}
+        assert 'operational_autonomy_contract' in kinds
+        assert any(kind.startswith('operational_') for kind in kinds)
 
     def test_record_is_noop_without_detections(self, tmp_path: Path) -> None:
         service = _make_service(tmp_path)

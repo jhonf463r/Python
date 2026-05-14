@@ -725,37 +725,27 @@ class TestSnapshotPendingRetry:
 
 
 # ------------------------------------------------------------------ #
-# 12. dominant_phase is set during prebuild
+# 12. idle prebuild is on-demand only
 # ------------------------------------------------------------------ #
 
 class TestDominantPhaseDuringPrebuild:
-    """Watchdog.set_dominant_phase must be called during prebuild lifecycle."""
+    """Idle prebuild must not construct hidden ViewModels."""
 
-    def test_set_dominant_phase_called(self):
-        """_build_all_lazy_vms sets watchdog dominant_phase."""
+    def test_idle_prebuild_skips_hidden_vm_construction(self):
         bs = _make_bootstrap()
         mock_wd = MagicMock()
         bs.ui_heartbeat_watchdog = mock_wd
-        # Inject low-pressure snapshot so prebuild proceeds
-        low_snap = _make_resource_snapshot(ram_used_pct=30.0)
-        _inject_cached_snapshot(bs, low_snap, age_seconds=1.0)
+        bs._startup_followup_active = False
 
-        with patch(
-            'iabv_v15.services.intelligent_resource_manager.take_resource_snapshot',
-            return_value=low_snap,
-        ):
-            # Mock QTimer.singleShot to execute callbacks synchronously
-            with patch(
-                'iabv_v15.bootstrap.QTimer'
-            ) as MockQTimer:
-                MockQTimer.singleShot = MagicMock(side_effect=lambda ms, fn: fn())
-                bs._build_all_lazy_vms()
+        with patch.object(bs, '_ensure_vm_for_route') as ensure_mock:
+            bs._build_all_lazy_vms()
 
-        # Should have called set_dominant_phase with prebuild context
+        ensure_mock.assert_not_called()
+        phases = [call_args.args[0] for call_args in bs._timeline.mark.call_args_list]
+        assert 'lazy_vm_prebuild_skipped' in phases
+        assert 'lazy_vm_prebuild_done' in phases
         phase_calls = [c.args[0] for c in mock_wd.set_dominant_phase.call_args_list]
-        assert 'lazy_vm_prebuild' in phase_calls
-        # Should clear phase at end
-        assert '' in phase_calls
+        assert phase_calls == ['']
 
 
 # ------------------------------------------------------------------ #
@@ -919,10 +909,9 @@ class TestDominantPhaseNotStale:
                 MockQTimer.singleShot = MagicMock()  # don't execute callback
                 bs._build_all_lazy_vms()
 
-        # Verify set_dominant_phase was called with a waiting phase
+        # Idle prebuild is skipped, so no stale waiting or route phase remains.
         phase_calls = [c.args[0] for c in mock_wd.set_dominant_phase.call_args_list]
-        waiting_phases = [p for p in phase_calls if p.startswith('prebuild_waiting:')]
-        assert len(waiting_phases) >= 1
+        assert phase_calls[-1] == ''
 
     def test_phase_cleared_on_non_transient_pause(self):
         """Non-retryable pause (resource pressure) should clear phase."""

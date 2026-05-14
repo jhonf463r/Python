@@ -18,6 +18,7 @@ from iabv_v15.domain.models import (
     RoleRoute,
     RunRecord,
     RunStatus,
+    RuntimeTuningProfile,
     SandboxExperiment,
     SelfExaminationFinding,
     SelfExaminationSnapshot,
@@ -27,6 +28,12 @@ from iabv_v15.domain.models import (
     WindowObservation,
     WorldModelSnapshot,
     utc_now,
+)
+from iabv_v15.infra.persistence.storage import ArtifactStorage
+from iabv_v15.services.adaptive.autonomy_governance_policy import (
+    AutonomyGovernancePolicy,
+    record_operational_budget_experiment,
+    summarize_operational_budget_calibration,
 )
 from iabv_v15.services.evolution.operational_self_examination_service import (
     OperationalSelfExaminationService,
@@ -39,6 +46,176 @@ def _workspace(name: str) -> Path:
     root = base / f'{name}_{uuid4().hex}'
     root.mkdir(parents=True, exist_ok=True)
     return root
+
+
+class _BudgetExperimentRepo:
+    def __init__(self) -> None:
+        self.runs: list[ExperimentRun] = []
+
+    def save_run(self, run: ExperimentRun) -> ExperimentRun:
+        self.runs.append(run)
+        return run
+
+    def list_runs(self, *args, **kwargs) -> list[ExperimentRun]:
+        return list(self.runs)
+
+    def list_recommendations(self, *args, **kwargs) -> list[ExperimentRecommendation]:
+        return []
+
+
+class _RuntimeTuningRepo:
+    def __init__(self) -> None:
+        self.profile: RuntimeTuningProfile | None = None
+        self.saved: list[RuntimeTuningProfile] = []
+
+    def get(self, scope_key: str = 'global') -> RuntimeTuningProfile | None:
+        return self.profile
+
+    def save(self, profile: RuntimeTuningProfile) -> RuntimeTuningProfile:
+        self.profile = profile
+        self.saved.append(profile)
+        return profile
+
+
+def test_oses_defers_deep_cognition_and_auto_correction_until_rest_window() -> None:
+    root = _workspace('oses_operational_budget_defer')
+    try:
+        service = OperationalSelfExaminationService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'evolution')),
+        )
+        service.autonomy_governance_policy = AutonomyGovernancePolicy()
+        calls: list[str] = []
+        service._deferred_deep_cognition_findings = lambda **kwargs: calls.append('deep') or []  # type: ignore[method-assign]
+        service._deep_analysis_queue_findings = lambda **kwargs: calls.append('queue') or []  # type: ignore[method-assign]
+        service._auto_correct_from_findings = lambda findings: calls.append('auto_correct')  # type: ignore[method-assign]
+
+        review = service.build_review()
+        budget = review.metadata['operational_budget']
+
+        assert calls == []
+        assert budget['deep_cognition']['decision'] == 'defer'
+        assert budget['deep_cognition']['reason'] == 'rest_window_not_reached'
+        assert budget['auto_correction']['decision'] == 'defer'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_oses_records_operational_budget_decisions_in_experiment_lab() -> None:
+    root = _workspace('oses_operational_budget_experiment')
+    try:
+        repo = _BudgetExperimentRepo()
+        service = OperationalSelfExaminationService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'evolution')),
+            experiment_lab_repository=repo,
+        )
+        service.autonomy_governance_policy = AutonomyGovernancePolicy()
+
+        review = service.build_review()
+
+        budget_runs = [run for run in repo.runs if run.suite_name == 'operational_budget']
+        assert len(budget_runs) == 2
+        assert {run.metadata['work_class'] for run in budget_runs} == {'deep_scan', 'metacognition'}
+        assert review.metadata['operational_budget_learning']['total_runs'] == 2
+        assert review.metadata['operational_budget_learning']['by_decision']['defer'] == 2
+        calibration = review.metadata['operational_budget_calibration']
+        assert calibration['status'] == 'insufficient_sample'
+        assert calibration['sample_count'] == 2
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_oses_emits_operational_budget_calibration_finding_after_enough_evidence() -> None:
+    root = _workspace('oses_operational_budget_calibration')
+    try:
+        repo = _BudgetExperimentRepo()
+        policy = AutonomyGovernancePolicy()
+        for idx in range(10):
+            budget = policy.evaluate_operational_budget(
+                work_class='idle_self_test',
+                source=f'timer_allow_{idx}',
+                idle_seconds=180.0,
+            )
+            record_operational_budget_experiment(repository=repo, budget=budget)
+        calibration = summarize_operational_budget_calibration(repo.runs, min_sample=10)
+        service = OperationalSelfExaminationService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'evolution')),
+            experiment_lab_repository=repo,
+        )
+
+        findings = service._operational_budget_calibration_findings(calibration)
+
+        assert findings
+        assert findings[0].category == 'operational_budget_calibration'
+        assert findings[0].metadata['status'] == 'stable_guardrails'
+        assert findings[0].metadata['recommended_thresholds'] == findings[0].metadata['current_thresholds']
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_oses_applies_mature_operational_budget_calibration_to_runtime_tuning() -> None:
+    root = _workspace('oses_operational_budget_runtime_tuning')
+    try:
+        repo = _BudgetExperimentRepo()
+        runtime_repo = _RuntimeTuningRepo()
+        policy = AutonomyGovernancePolicy()
+        for idx in range(6):
+            budget = policy.evaluate_operational_budget(
+                work_class='idle_self_test',
+                source=f'timer_allow_{idx}',
+                idle_seconds=180.0,
+            )
+            record_operational_budget_experiment(repository=repo, budget=budget)
+        for idx in range(5):
+            budget = policy.evaluate_operational_budget(
+                work_class='tool_scan',
+                source=f'timer_defer_{idx}',
+                idle_seconds=15.0,
+            )
+            record_operational_budget_experiment(repository=repo, budget=budget)
+        service = OperationalSelfExaminationService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'evolution')),
+            experiment_lab_repository=repo,
+        )
+        service.autonomy_governance_policy = policy
+        service.runtime_tuning_repository = runtime_repo
+
+        review = service.build_review()
+
+        applied = review.metadata['operational_budget_runtime_application']
+        assert applied['applied'] is True
+        assert applied['reason'] == 'runtime_tuning_profile_updated'
+        assert runtime_repo.profile is not None
+        payload = runtime_repo.profile.metadata['operational_budget_thresholds']
+        assert payload['thresholds']['idle_rest_window_s'] == 120.0
+        assert policy.operational_budget_thresholds()['idle_rest_window_s'] == 120.0
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_oses_runs_deep_cognition_after_rest_window_budget_allows() -> None:
+    root = _workspace('oses_operational_budget_allow')
+    try:
+        service = OperationalSelfExaminationService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'evolution')),
+        )
+        service.autonomy_governance_policy = AutonomyGovernancePolicy()
+        service._operational_budget_rest_started_at -= 300.0
+        calls: list[str] = []
+        service._deferred_deep_cognition_findings = lambda **kwargs: calls.append('deep') or []  # type: ignore[method-assign]
+        service._deep_analysis_queue_findings = lambda **kwargs: calls.append('queue') or []  # type: ignore[method-assign]
+
+        review = service.build_review()
+        budget = review.metadata['operational_budget']
+
+        assert calls == ['deep', 'queue']
+        assert budget['deep_cognition']['decision'] == 'allow'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
 
 
 def test_operational_self_examination_service_detects_repeated_blocks_and_adjustments() -> None:
