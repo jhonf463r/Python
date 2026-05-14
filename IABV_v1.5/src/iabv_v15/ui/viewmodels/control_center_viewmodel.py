@@ -60,6 +60,12 @@ class ControlCenterViewModel(QObject):
 
     # --- Terminal dispatch states (Sub-objective A) ---
     # Every dispatch MUST end in one of these states visible to the user.
+    # --- Stale-result guard ---
+    # Each worker receives a unique dispatch_id at spawn time.  The watchdog
+    # and the worker itself check ``_active_dispatch_ids[task_name]`` before
+    # emitting any signal.  If the id no longer matches (because a new
+    # dispatch started or a timeout already fired), the emission is silently
+    # discarded and an audit log entry is written.
     _TERMINAL_DISPATCH_STATES: frozenset[str] = frozenset({
         'success',
         'blocked_by_permission',
@@ -203,6 +209,7 @@ class ControlCenterViewModel(QObject):
         self._legacy_cards = self._build_legacy_cards()
         self._role_cards = [profile.model_dump(mode='json') for profile in self.role_router.role_profiles]
         self._ui_state_lock = threading.Lock()
+        self._active_dispatch_ids: dict[str, str] = {}
         self._bg_pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix='ccvm-bg')
         atexit.register(self._shutdown_bg_pool)
         self._chat_messages: list[dict[str, str]] = []
@@ -4100,6 +4107,20 @@ class ControlCenterViewModel(QObject):
             self._set_live_status('idle')
             self._promote_metacognition_after_resolution()
 
+    # ── Dispatch-id helpers (stale-result guard) ────────────────
+    def _new_dispatch_id(self, task_name: str) -> str:
+        """Create a unique dispatch id for *task_name* and register it."""
+        import uuid
+        did = uuid.uuid4().hex
+        self._active_dispatch_ids[task_name] = did
+        return did
+
+    def _is_dispatch_active(self, task_name: str, dispatch_id: str) -> bool:
+        return self._active_dispatch_ids.get(task_name) == dispatch_id
+
+    def _invalidate_dispatch(self, task_name: str) -> None:
+        self._active_dispatch_ids.pop(task_name, None)
+
     # ── Worker timeout watchdog (Sub-objective A) ──────────────
     def _schedule_worker_timeout(
         self,
@@ -4107,18 +4128,26 @@ class ControlCenterViewModel(QObject):
         done_event: threading.Event,
         task_name: str,
         timeout_s: float,
+        dispatch_id: str = '',
     ) -> None:
         """Fire taskFailed if *done_event* is not set within *timeout_s*.
 
         Runs a lightweight daemon thread that waits on the event; if it
         times out and ``_working`` is still True, it emits ``taskFailed``
         so the UI never stays in "consultando..." indefinitely.
+
+        When *dispatch_id* is provided the watchdog also invalidates it
+        so that a late-finishing worker with the same id will be discarded.
         """
         def _watchdog() -> None:
             if done_event.wait(timeout=timeout_s):
                 return  # worker finished in time
             if not self._working:
                 return  # already resolved by other path
+            if dispatch_id and not self._is_dispatch_active(task_name, dispatch_id):
+                return  # superseded by a newer dispatch
+            if dispatch_id:
+                self._invalidate_dispatch(task_name)
             self.taskFailed.emit(
                 task_name,
                 f'La operacion ({task_name}) supero el tiempo maximo de {int(timeout_s)}s. '
@@ -5926,12 +5955,21 @@ class ControlCenterViewModel(QObject):
         self.dataChanged.emit()
 
         _ext_done = threading.Event()
+        _dispatch_id = self._new_dispatch_id('external_consultation')
 
         def worker() -> None:
             try:
                 result_payload = self._execute_external_consultation_sync(assistant_kind)
+                if not self._is_dispatch_active('external_consultation', _dispatch_id):
+                    import logging
+                    logging.getLogger(__name__).debug('external_consultation worker %s discarded (stale)', _dispatch_id[:8])
+                    return
                 self.taskResolved.emit('external_consultation', result_payload)
             except Exception as exc:
+                if not self._is_dispatch_active('external_consultation', _dispatch_id):
+                    import logging
+                    logging.getLogger(__name__).debug('external_consultation worker %s error discarded (stale)', _dispatch_id[:8])
+                    return
                 self.taskFailed.emit('external_consultation', f'No pude completar la consulta externa guiada: {exc}')
             finally:
                 _ext_done.set()
@@ -5941,6 +5979,7 @@ class ControlCenterViewModel(QObject):
             done_event=_ext_done,
             task_name='external_consultation',
             timeout_s=self._EXTERNAL_WORKER_TIMEOUT_S,
+            dispatch_id=_dispatch_id,
         )
         return True
 
@@ -7354,6 +7393,7 @@ class ControlCenterViewModel(QObject):
         self.dataChanged.emit()
 
         _worker_done = threading.Event()
+        _dispatch_id = self._new_dispatch_id('chat')
 
         def worker() -> None:
             try:
@@ -7366,6 +7406,10 @@ class ControlCenterViewModel(QObject):
                 request = self._build_request(message)
                 record = self.inference_service.infer_task(request)
                 adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
+                if not self._is_dispatch_active('chat', _dispatch_id):
+                    import logging
+                    logging.getLogger(__name__).debug('chat worker %s discarded (stale)', _dispatch_id[:8])
+                    return
                 self.taskResolved.emit(
                     'chat',
                     {
@@ -7388,6 +7432,10 @@ class ControlCenterViewModel(QObject):
                     },
                 )
             except Exception as exc:
+                if not self._is_dispatch_active('chat', _dispatch_id):
+                    import logging
+                    logging.getLogger(__name__).debug('chat worker %s error discarded (stale)', _dispatch_id[:8])
+                    return
                 self.taskFailed.emit('chat', f'No pude completar la consulta local: {exc}')
             finally:
                 _worker_done.set()
@@ -7397,6 +7445,7 @@ class ControlCenterViewModel(QObject):
             done_event=_worker_done,
             task_name='chat',
             timeout_s=self._CHAT_WORKER_TIMEOUT_S,
+            dispatch_id=_dispatch_id,
         )
 
     def _role_title_from_task(self, role: TaskRole) -> str:
