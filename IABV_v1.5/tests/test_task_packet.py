@@ -348,8 +348,10 @@ def test_packet_preserves_selected_worker_from_gate() -> None:
     packet = AdaptiveTaskOrchestrator._build_task_packet(
         session=session, decision_context=dc, perception=perception,
     )
-    assert packet['selected_worker'] == top
-    assert packet['worker_gate_summary']['top_worker'] == top
+    assert packet['selected_worker']['tool'] == 'chatgpt'
+    assert packet['selected_worker']['browser'] == 'chrome'
+    assert '***@' in packet['selected_worker']['email'], 'email must be masked'
+    assert packet['worker_gate_summary']['top_worker'] == packet['selected_worker']
     assert packet['worker_gate_summary']['ran'] is True
     assert packet['worker_gate_summary']['usable'] is True
     assert packet['worker_gate_summary']['available_count'] == 1
@@ -774,3 +776,32 @@ def test_packet_evidence_state_normalized() -> None:
         session=session, decision_context=dc, perception=perception,
     )
     assert packet['evidence_basis']['evidence_state'] in ('observed', 'inferred', 'unresolved')
+
+
+def test_packet_no_raw_email_anywhere() -> None:
+    """No raw email must survive anywhere in the serialized task_packet."""
+    import json
+    raw_email = 'user@example.com'
+    session = _minimal_session(metadata={
+        'worker_gate': {
+            'usable': True,
+            'top_worker': {'tool': 'chatgpt', 'email': raw_email},
+            'available_count': 2,
+            'recommended_account': {'tool': 'chatgpt', 'email': raw_email},
+            'approved_account': {'tool': 'chatgpt', 'email': raw_email},
+            'ranked_workers': [
+                {'tool': 'chatgpt', 'email': raw_email},
+                {'tool': 'gemini', 'email': 'alt@example.com'},
+            ],
+            'account_selection_source': 'auto_ranked',
+        },
+    })
+    dc = _minimal_decision_context()
+    perception = _minimal_perception()
+    packet = AdaptiveTaskOrchestrator._build_task_packet(
+        session=session, decision_context=dc, perception=perception,
+    )
+    serialized = json.dumps(packet)
+    assert raw_email not in serialized, f'raw email {raw_email} leaked into task_packet'
+    assert 'alt@example.com' not in serialized, 'discarded alt email leaked into task_packet'
+    assert '***@' in serialized, 'masked emails should be present'

@@ -17,13 +17,19 @@ class AdaptiveWeightLayer:
 
     def __init__(self, *, persistence_path: str | None = None) -> None:
         self._metacognitive_adjustments: dict[str, dict[str, Any]] = {}
-        workspace = os.environ.get('IABV_WORKSPACE', '')
+        _rel = Path('data') / 'evolution' / 'adaptive_weights' / 'metacognitive_adjustments.json'
         if persistence_path is not None:
             self._weights_path: Path | None = Path(persistence_path)
-        elif workspace:
-            self._weights_path = Path(workspace) / 'data' / 'evolution' / 'adaptive_weights' / 'metacognitive_adjustments.json'
         else:
-            self._weights_path = None
+            workspace = (
+                os.environ.get('IABV_WORKSPACE')
+                or os.environ.get('IABV_WORKSPACE_ROOT')
+                or ''
+            )
+            if workspace:
+                self._weights_path = Path(workspace) / _rel
+            else:
+                self._weights_path = Path.cwd() / _rel
         self._load_persisted()
 
     def apply_metacognitive_adjustment(

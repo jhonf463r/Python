@@ -141,16 +141,41 @@ def test_strategy_selector_sees_adjustment_after_reload(tmp_path: Path) -> None:
     assert layer2.get_metacognitive_adjustment('local', 'ollama') == 0.12
 
 
-def test_no_persistence_path_does_not_crash() -> None:
-    """When no persistence_path and no IABV_WORKSPACE, layer works in-memory only."""
+def test_no_persistence_path_falls_back_to_cwd() -> None:
+    """When no persistence_path and no IABV_WORKSPACE, layer falls back to Path.cwd()."""
     import os
-    old = os.environ.pop('IABV_WORKSPACE', None)
+    old_ws = os.environ.pop('IABV_WORKSPACE', None)
+    old_wr = os.environ.pop('IABV_WORKSPACE_ROOT', None)
     try:
         layer = AdaptiveWeightLayer()
+        assert layer._weights_path is not None, '_weights_path must not be None even without env vars'
         layer.apply_metacognitive_adjustment(
-            route='local', assistant_kind='test', adjustment=0.1, reason='in-memory test',
+            route='local', assistant_kind='test', adjustment=0.1, reason='fallback test',
         )
         assert layer.get_metacognitive_adjustment('local', 'test') == 0.1
     finally:
-        if old is not None:
-            os.environ['IABV_WORKSPACE'] = old
+        if old_ws is not None:
+            os.environ['IABV_WORKSPACE'] = old_ws
+        if old_wr is not None:
+            os.environ['IABV_WORKSPACE_ROOT'] = old_wr
+
+
+def test_bootstrap_wires_persistence_path() -> None:
+    """AppBootstrap must create AdaptiveWeightLayer with a non-None _weights_path."""
+    import shutil
+    from uuid import uuid4
+    from iabv_v15.bootstrap import AppBootstrap
+
+    base = Path(__file__).resolve().parents[1] / 'data' / 'test_runs'
+    base.mkdir(parents=True, exist_ok=True)
+    root = base / f'awl_bootstrap_{uuid4().hex[:8]}'
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        boot = AppBootstrap(str(root))
+        assert boot.adaptive_weight_layer._weights_path is not None, \
+            'bootstrap must set _weights_path'
+        expected_suffix = str(Path('data') / 'evolution' / 'adaptive_weights' / 'metacognitive_adjustments.json')
+        assert str(boot.adaptive_weight_layer._weights_path).endswith(expected_suffix), \
+            f'path should end with {expected_suffix}'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)

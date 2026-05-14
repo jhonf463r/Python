@@ -666,7 +666,9 @@ class AppBootstrap:
         self.tool_rollback_manager = ToolRollbackManager()
         self.algorithm_benchmark_registry = AlgorithmBenchmarkRegistry()
         self.decision_scoring_engine = DecisionScoringEngine()
-        self.adaptive_weight_layer = AdaptiveWeightLayer()
+        self.adaptive_weight_layer = AdaptiveWeightLayer(
+            persistence_path=str(Path(self.config.workspace_root) / 'data' / 'evolution' / 'adaptive_weights' / 'metacognitive_adjustments.json'),
+        )
         self.lab_strategy_selector = StrategySelector(adaptive_weight_layer=self.adaptive_weight_layer)
         # PCS v1 dependencies are created before ToolTeachService so external
         # tool selection can consume SynapticRouter hints without replacing

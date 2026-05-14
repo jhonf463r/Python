@@ -121,13 +121,21 @@ def _is_local_chat_flow(session: AdaptiveSession) -> bool:
     return False
 
 
+def _mask_email(email: str) -> str:
+    """Mask a single email address: jo***@domain.com."""
+    email = str(email or '').strip()
+    if not email or '@' not in email:
+        return email
+    local, domain = email.rsplit('@', 1)
+    return f'{local[:2]}***@{domain}'
+
+
 def _sanitize_account(account: dict[str, Any]) -> dict[str, Any]:
     """Mask raw email addresses in account dicts for portable context privacy."""
     sanitized = dict(account)
     email = str(sanitized.get('email') or '').strip()
     if email and '@' in email:
-        local, domain = email.rsplit('@', 1)
-        sanitized['email'] = f'{local[:2]}***@{domain}'
+        sanitized['email'] = _mask_email(email)
     return sanitized
 
 
@@ -159,7 +167,7 @@ def _build_tool_selection_summary(
 
     ranked = list(worker_gate.get('ranked_workers') or [])
     discarded = [
-        {'tool': str(w.get('tool', '')), 'email': str(w.get('email', '')), 'reason': 'lower_score'}
+        {'tool': str(w.get('tool', '')), 'email': _mask_email(str(w.get('email', ''))), 'reason': 'lower_score'}
         for w in ranked[1:3]
     ]
 
@@ -169,7 +177,7 @@ def _build_tool_selection_summary(
 
     return {
         'selected_tool': assistant_kind,
-        'selected_email': str(top.get('email', '')),
+        'selected_email': _mask_email(str(top.get('email', ''))),
         'reason': f'source={source}',
         'fallback_used': fallback,
         'fallback_origin': str(recommended.get('tool', '')) if fallback else '',
@@ -3544,7 +3552,7 @@ class AdaptiveTaskOrchestrator:
         evidence_basis = dict(dc_meta.get('evidence_basis') or ps_meta.get('evidence_basis') or {})
         worker_gate = dict(session.metadata.get('worker_gate') or {})
         gate_ran = 'worker_gate' in session.metadata
-        top_worker = dict(worker_gate.get('top_worker') or {}) if gate_ran else {}
+        top_worker = _sanitize_account(dict(worker_gate.get('top_worker') or {})) if gate_ran else {}
 
         trace_id = session.session_id[:8]
         comparison_scope_key = str(
@@ -3579,7 +3587,7 @@ class AdaptiveTaskOrchestrator:
                 'account_selection_source': str(worker_gate.get('account_selection_source') or 'auto_ranked'),
                 'fallback_used': bool(worker_gate.get('fallback_used', False)),
             },
-            'selected_worker': top_worker,
+            'selected_worker': top_worker,  # already sanitized above
             'account_selection': {
                 'source': str(worker_gate.get('account_selection_source') or 'auto_ranked'),
                 'fallback_used': bool(worker_gate.get('fallback_used', False)),
@@ -3700,7 +3708,7 @@ class AdaptiveTaskOrchestrator:
         if not blocked and not worker_gate.get('usable', False):
             blocked = True
             reason = str(worker_gate.get('reason') or 'No hay worker usable para esta ruta.')
-        top_worker = dict(worker_gate.get('top_worker') or {}) if worker_gate.get('usable') else {}
+        top_worker = _sanitize_account(dict(worker_gate.get('top_worker') or {})) if worker_gate.get('usable') else {}
         has_world = bool(
             world_model.tool_live_status
             or world_model.active_windows
