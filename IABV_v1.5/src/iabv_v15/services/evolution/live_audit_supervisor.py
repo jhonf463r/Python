@@ -618,6 +618,24 @@ class LiveAuditSupervisor:
             return {}
         domain = ExperimentDomain.CODE if (card is not None and card.tool_type in {ToolType.CODE_EDITOR, ToolType.CUSTOM} and 'codex' in card.tool_id) else ExperimentDomain.LANGUAGE
         route = self._route_for_mode(selected_mode, card.tool_type if card is not None else result.tool_type)
+        site_or_tool = task.site_id or (card.tool_id if card is not None else task.tool_id)
+        objective_id = str(goal_metadata.get('objective_id') or '')
+        _task_meta = dict(task.metadata or {})
+        _result_meta = dict(result.metadata or {})
+        trace_id = str(
+            _task_meta.get('trace_id')
+            or _result_meta.get('trace_id')
+            or _result_meta.get('audit_snapshot_id')
+            or task.task_id[:8]
+        )
+        comparison_scope_key = str(
+            _task_meta.get('comparison_scope_key')
+            or _result_meta.get('comparison_scope_key')
+            or f'live_audit:{site_or_tool}:{objective_id or "general"}'
+        )
+        source_trace_ids = list(dict.fromkeys(
+            [ref for ref in evidence if ref] + ([trace_id] if trace_id else [])
+        ))[:12]
         candidate = ExperimentCandidate(
             label=card.title if card is not None else task.tool_id,
             route=route,
@@ -629,15 +647,24 @@ class LiveAuditSupervisor:
                 'evidence_refs': evidence,
                 'reused_pattern': bool(task.metadata.get('reuse_guard_active')),
                 'user_progress': float(goal_metadata.get('progress') or 0.0),
+                'trace_id': trace_id,
+                'comparison_scope_key': comparison_scope_key,
+                'source_trace_ids': source_trace_ids,
             },
         )
         runs, recommendation = self.experiment_lab.run_experiment(
             domain=domain,
             objective=task.objective,
-            subject_key=str(goal_metadata.get('objective_id') or task.site_id or (card.tool_id if card is not None else task.tool_id)),
+            subject_key=str(objective_id or site_or_tool),
             expected={'text': task.expected_outcome or task.objective},
             candidates=[candidate],
-            metadata={'source': 'live_audit_tool', 'user_progress': float(goal_metadata.get('progress') or 0.0)},
+            metadata={
+                'source': 'live_audit_tool',
+                'user_progress': float(goal_metadata.get('progress') or 0.0),
+                'trace_id': trace_id,
+                'comparison_scope_key': comparison_scope_key,
+                'source_trace_ids': source_trace_ids,
+            },
         )
         run = runs[0]
         return {
@@ -657,27 +684,51 @@ class LiveAuditSupervisor:
         observed_text = str((interaction_episode.result.summary if interaction_episode.result is not None else '') or interaction_episode.objective)
         if not observed_text and not critical_objects:
             return {}
+        _ep_meta = dict(interaction_episode.metadata or {})
+        _ep_evidence = [item.path or item.ref_id for item in interaction_episode.evidence]
+        objective_id_t = str(goal_metadata.get('objective_id') or '')
+        trace_id_t = str(
+            _ep_meta.get('trace_id')
+            or _ep_meta.get('audit_snapshot_id')
+            or interaction_episode.interaction_episode_id[:8]
+        )
+        comparison_scope_key_t = str(
+            _ep_meta.get('comparison_scope_key')
+            or f'live_audit:{interaction_episode.site_id or "teaching"}:{objective_id_t or "general"}'
+        )
+        source_trace_ids_t = list(dict.fromkeys(
+            [ref for ref in _ep_evidence if ref] + ([trace_id_t] if trace_id_t else [])
+        ))[:12]
         candidate = ExperimentCandidate(
-            label=interaction_episode.metadata.get('display_name') or interaction_episode.site_id or 'teaching_session',
+            label=_ep_meta.get('display_name') or interaction_episode.site_id or 'teaching_session',
             route=EvaluationRoute.UI,
             output_text=observed_text,
             extracted_data={'recognized_text': observed_text, 'objects': critical_objects},
             execution_ms=0,
             metadata={
-                'evidence_refs': [item.path or item.ref_id for item in interaction_episode.evidence],
+                'evidence_refs': _ep_evidence,
                 'user_progress': float(goal_metadata.get('progress') or 0.0),
+                'trace_id': trace_id_t,
+                'comparison_scope_key': comparison_scope_key_t,
+                'source_trace_ids': source_trace_ids_t,
             },
         )
         runs, recommendation = self.experiment_lab.run_experiment(
             domain=ExperimentDomain.OCR,
             objective=interaction_episode.objective,
-            subject_key=str(goal_metadata.get('objective_id') or interaction_episode.site_id or 'general'),
+            subject_key=str(objective_id_t or interaction_episode.site_id or 'general'),
             expected={
-                'text': interaction_episode.metadata.get('expected_outcome') or interaction_episode.objective,
+                'text': _ep_meta.get('expected_outcome') or interaction_episode.objective,
                 'objects': critical_objects,
             },
             candidates=[candidate],
-            metadata={'source': 'live_audit_teaching', 'user_progress': float(goal_metadata.get('progress') or 0.0)},
+            metadata={
+                'source': 'live_audit_teaching',
+                'user_progress': float(goal_metadata.get('progress') or 0.0),
+                'trace_id': trace_id_t,
+                'comparison_scope_key': comparison_scope_key_t,
+                'source_trace_ids': source_trace_ids_t,
+            },
         )
         run = runs[0]
         return {

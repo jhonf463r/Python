@@ -121,6 +121,16 @@ def _is_local_chat_flow(session: AdaptiveSession) -> bool:
     return False
 
 
+def _sanitize_account(account: dict[str, Any]) -> dict[str, Any]:
+    """Mask raw email addresses in account dicts for portable context privacy."""
+    sanitized = dict(account)
+    email = str(sanitized.get('email') or '').strip()
+    if email and '@' in email:
+        local, domain = email.rsplit('@', 1)
+        sanitized['email'] = f'{local[:2]}***@{domain}'
+    return sanitized
+
+
 def _build_tool_selection_summary(
     *,
     worker_gate: dict[str, Any],
@@ -3535,6 +3545,25 @@ class AdaptiveTaskOrchestrator:
         worker_gate = dict(session.metadata.get('worker_gate') or {})
         gate_ran = 'worker_gate' in session.metadata
         top_worker = dict(worker_gate.get('top_worker') or {}) if gate_ran else {}
+
+        trace_id = session.session_id[:8]
+        comparison_scope_key = str(
+            dc_meta.get('comparison_scope_key')
+            or ps_meta.get('comparison_scope_key')
+            or f'{session.intent.intent_key}:{session.session_id[:8]}'
+        )
+        source_trace_ids = list(dict.fromkeys(
+            [str(ref) for ref in (session.evidence_refs or []) if ref]
+            + [trace_id]
+        ))[:8]
+        budget_tier = str(dc_meta.get('budget_tier') or ps_meta.get('budget_tier') or '')
+        quota_remaining = dc_meta.get('quota_remaining') or ps_meta.get('quota_remaining')
+
+        evidence_state = str(evidence_basis.get('state') or 'unresolved')
+        if evidence_state not in ('observed', 'inferred', 'unresolved'):
+            evidence_state = 'unresolved'
+        evidence_basis['evidence_state'] = evidence_state
+
         return {
             'objective': session.user_goal,
             'intent_key': session.intent.intent_key,
@@ -3554,8 +3583,8 @@ class AdaptiveTaskOrchestrator:
             'account_selection': {
                 'source': str(worker_gate.get('account_selection_source') or 'auto_ranked'),
                 'fallback_used': bool(worker_gate.get('fallback_used', False)),
-                'recommended_account': dict(worker_gate.get('recommended_account') or {}),
-                'approved_account': dict(worker_gate.get('approved_account') or {}),
+                'recommended_account': _sanitize_account(dict(worker_gate.get('recommended_account') or {})),
+                'approved_account': _sanitize_account(dict(worker_gate.get('approved_account') or {})),
                 'is_human_approved': str(worker_gate.get('account_selection_source') or '') in ('user_approved', 'user_approved_fallback'),
             },
             'evidence_basis': evidence_basis,
@@ -3573,6 +3602,11 @@ class AdaptiveTaskOrchestrator:
                 governance=governance,
                 session_metadata=dict(session.metadata or {}),
             ),
+            'trace_id': trace_id,
+            'comparison_scope_key': comparison_scope_key,
+            'source_trace_ids': source_trace_ids,
+            'budget_tier': budget_tier,
+            'quota_remaining': quota_remaining,
         }
 
     @classmethod
@@ -3682,6 +3716,7 @@ class AdaptiveTaskOrchestrator:
         wm_unresolved = list(world_model.unresolved_fields or [])
         env_unresolved = list(environment_self_model.unresolved_fields or [])
         all_unresolved = wm_unresolved + env_unresolved
+        _preflight_evidence_state = 'observed' if live_sources else 'unresolved'
         task_packet = {
             'objective': user_goal,
             'intent_key': 'general.assistance',
@@ -3697,7 +3732,8 @@ class AdaptiveTaskOrchestrator:
             },
             'selected_worker': top_worker,
             'evidence_basis': {
-                'state': 'observed' if live_sources else 'unresolved',
+                'state': _preflight_evidence_state,
+                'evidence_state': _preflight_evidence_state,
                 'live_sources': live_sources,
                 'persisted_sources': [],
                 'unresolved': all_unresolved,
@@ -3711,6 +3747,12 @@ class AdaptiveTaskOrchestrator:
             'resume_context': {},
             'has_resume_hints': False,
             'account_selection': {},
+            'tool_selection_summary': {},
+            'trace_id': '',
+            'comparison_scope_key': f'general.assistance:preflight:{normalized_assistant}',
+            'source_trace_ids': [],
+            'budget_tier': '',
+            'quota_remaining': None,
         }
         return {
             'assistant_kind': normalized_assistant,

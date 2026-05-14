@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 
 from iabv_v15.domain.models import (
     EvaluationRoute,
@@ -91,3 +92,65 @@ def test_suggest_returns_profiles_per_key() -> None:
     assert key2 in profiles
     assert profiles[key1]['success_rate'] == 1.0
     assert profiles[key2]['success_rate'] == 0.0
+
+
+# ---- GAP 2: metacognitive persistence ----
+
+
+def test_metacognitive_adjustment_persists_across_instances(tmp_path: Path) -> None:
+    """apply_metacognitive_adjustment writes to disk; a new instance reads it back."""
+    weights_file = tmp_path / 'metacognitive_adjustments.json'
+    layer1 = AdaptiveWeightLayer(persistence_path=str(weights_file))
+    layer1.apply_metacognitive_adjustment(
+        route='local', assistant_kind='ollama', adjustment=0.08, reason='test persist',
+    )
+    assert weights_file.exists(), 'weights file should be created after adjustment'
+    layer2 = AdaptiveWeightLayer(persistence_path=str(weights_file))
+    assert layer2.get_metacognitive_adjustment('local', 'ollama') == 0.08
+
+
+def test_corrupt_file_starts_empty(tmp_path: Path) -> None:
+    """A corrupt JSON file should not crash; layer starts empty and logs."""
+    weights_file = tmp_path / 'metacognitive_adjustments.json'
+    weights_file.write_text('NOT VALID JSON {{{', encoding='utf-8')
+    layer = AdaptiveWeightLayer(persistence_path=str(weights_file))
+    assert layer.get_metacognitive_adjustment('any', 'route') == 0.0
+
+
+def test_get_metacognitive_adjustment_after_reload(tmp_path: Path) -> None:
+    """After persisting and reloading, get_metacognitive_adjustment returns the stored value."""
+    weights_file = tmp_path / 'metacognitive_adjustments.json'
+    layer1 = AdaptiveWeightLayer(persistence_path=str(weights_file))
+    layer1.apply_metacognitive_adjustment(
+        route='cloud', assistant_kind='gemini', adjustment=-0.05, reason='overconfidence',
+    )
+    layer2 = AdaptiveWeightLayer(persistence_path=str(weights_file))
+    assert layer2.get_metacognitive_adjustment('cloud', 'gemini') == -0.05
+
+
+def test_strategy_selector_sees_adjustment_after_reload(tmp_path: Path) -> None:
+    """StrategySelector reading from a reloaded AdaptiveWeightLayer sees persisted adjustments."""
+    from iabv_v15.services.lab.strategy_selector import StrategySelector
+    weights_file = tmp_path / 'metacognitive_adjustments.json'
+    layer1 = AdaptiveWeightLayer(persistence_path=str(weights_file))
+    layer1.apply_metacognitive_adjustment(
+        route='local', assistant_kind='ollama', adjustment=0.12, reason='underconfidence',
+    )
+    layer2 = AdaptiveWeightLayer(persistence_path=str(weights_file))
+    selector = StrategySelector(adaptive_weight_layer=layer2)
+    assert layer2.get_metacognitive_adjustment('local', 'ollama') == 0.12
+
+
+def test_no_persistence_path_does_not_crash() -> None:
+    """When no persistence_path and no IABV_WORKSPACE, layer works in-memory only."""
+    import os
+    old = os.environ.pop('IABV_WORKSPACE', None)
+    try:
+        layer = AdaptiveWeightLayer()
+        layer.apply_metacognitive_adjustment(
+            route='local', assistant_kind='test', adjustment=0.1, reason='in-memory test',
+        )
+        assert layer.get_metacognitive_adjustment('local', 'test') == 0.1
+    finally:
+        if old is not None:
+            os.environ['IABV_WORKSPACE'] = old
