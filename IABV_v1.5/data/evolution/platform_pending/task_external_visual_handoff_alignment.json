@@ -5,8 +5,8 @@
   "category": "runtime_stability",
   "priority": "P0",
   "description": "When an external tool fails (login, captcha, permission, quota, timeout, DOM error, offscreen/minimized window, black capture), the UI shows a structured message: WHAT tool, WHAT block, WHAT evidence, WHAT human action, whether local fallback is viable.",
-  "resume_hint": "P0.4 shared reality causal handoff implemented: when user says 'it works for me', IABV explains causal difference between user's browser and IABV's controlled session. P0.3 offscreen/black capture detection remains active. Awaiting live Windows proof.",
-  "next_action": "Live Windows proof: user runs IABV, triggers ChatGPT with minimized window, says 'a mí sí me funciona', verifies causal explanation appears with Tu vista vs Vista de IABV comparison.",
+  "resume_hint": "P0.5 adds OSES learning: repeated shared_reality_handoff events generate findings (repeated_visual_mismatch, black_capture_repeated, user_needed_to_explain_same_gap, user_browser_differs). PortableContext exports compact summary. P0.4 causal handoff + P0.3 detection remain active.",
+  "next_action": "Live Windows proof: run IABV with P0.3+P0.4+P0.5 merged. Trigger ChatGPT twice with minimized window → verify OSES detects repeated_visual_mismatch pattern. Then say 'a mí sí me funciona' → verify causal explanation + OSES finding.",
   "metadata": {
     "covered_by_pr": "#377",
     "coverage_detail": "_human_external_consultation_failure classifies 7 failure types (security_verification, codex_state_missing, access_denied, session_expired, timeout, quota, generic). Each produces structured handoff with tool name, block type, evidence, human action, and local fallback mention.",
@@ -14,6 +14,7 @@
     "p02_additions": "trace_dispatch_started() emits provider and user_goal_excerpt on external_consultation spawn. Lifecycle can now be reconstructed: started(provider=ChatGPT) → terminal(blocked_by_permission). latestDispatchLifecycle exposes last result to UI.",
     "p03_additions": "_window_rect_is_captureable() detects offscreen/minimized windows (left/top <= -30000, width/height < 50px). _capture_is_low_information() detects blank captures (blank_probability >= 0.90, dynamic_range == 0, unique_color_count <= 2). _validate_visual_evidence_result() prevents treating black capture as success. _visual_handoff_message() builds structured user guidance. Runtime audit traces visual_evidence_snapshot with status=unresolved. Live evidence: user reported ChatGPT window at rect=[-32000,-32000,199,34], blank_probability=0.98, dynamic_range=0, unique_color_count=1.",
     "p04_additions": "_build_shared_reality_handoff() creates causal handoff package explaining user/IABV gap. _detect_user_mismatch_claim() identifies 'a mí sí me funciona' patterns. _build_causal_explanation() generates 'Tu vista vs Vista de IABV' comparison. _shared_reality_user_message() builds full user-facing causal message. _attach_evidence_to_handoff() exposes screenshot path. _trace_shared_reality_handoff() logs shared_reality_handoff event to RuntimeAuditTracer. Integrated into _execute_external_consultation_sync visual override flow.",
+    "p05_additions": "OSES _shared_reality_handoff_findings() reads shared_reality_handoff events from runtime_audit.jsonl. Detects 4 patterns: repeated_visual_mismatch (≥2 useless captures), user_browser_differs_from_iabv_session (≥2 isolated session events), black_capture_repeated (≥2 blank_probability≥0.8), user_needed_to_explain_same_gap (≥2 user claims). PortableContext _shared_reality_section() exports compact summary without PII. Single events do NOT generate findings — only repetition.",
     "p03_live_evidence": {
       "event": "external_assistant_verification_window_opened",
       "target_window": "ChatGPT - Google Chrome for Testing",
@@ -33,8 +34,10 @@
       "expected_message_includes": ["Tu vista", "Vista de IABV", "Chrome for Testing", "sesión aislada", "minimizada", "captura negra", "restaurar", "autorizar navegador visible"]
     },
     "remaining": [
-      "Live Windows proof with P0.4 code merged",
-      "Deep visual verification (screenshot comparison) not implemented"
+      "Live Windows proof with P0.5 code merged",
+      "Deep visual verification (screenshot comparison) not implemented",
+      "Auto-restoration of minimized windows before capture",
+      "Browser/session selector UI for user"
     ],
     "unresolved": "Live Windows proof pending — user must run IABV with P0.4, trigger external consultation with offscreen window, say 'a mí sí me funciona', verify causal explanation"
   }

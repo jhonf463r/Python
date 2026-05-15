@@ -200,6 +200,7 @@ class PortableContextService:
             self._decision_history_section(decision_history=decision_history, now=now),
             self._pending_section(pending_items=pending_items, backlog_items=backlog_items, now=now),
             self._canonical_work_queue_section(now=now),
+            self._shared_reality_section(review=self_examination, now=now),
             self._unresolved_section(unresolved=unresolved, now=now),
             self._hard_rules_section(now=now),
             self._user_identity_section(now=now),
@@ -3435,6 +3436,56 @@ class PortableContextService:
                 lines.append(f"UNRESOLVED: {', '.join(section.unresolved_fields)}")
             lines.append('')
         return '\n'.join(lines).strip()
+
+    # ── P0.5: Shared Reality compact summary ───────────────────────
+    def _shared_reality_section(
+        self,
+        *,
+        review: dict[str, Any],
+        now,
+    ) -> PortableContextSection:
+        """Export compact summary of shared reality handoff findings from OSES.
+
+        Only includes findings whose category matches the P0.5 patterns.
+        Strips PII and full file paths — keeps only pattern, frequency,
+        last assistant_kind, and recommended_action.
+        """
+        sr_categories = {
+            'repeated_visual_mismatch',
+            'user_browser_differs_from_iabv_session',
+            'black_capture_repeated',
+            'user_needed_to_explain_same_gap',
+        }
+        items: list[dict[str, Any]] = []
+        for finding in list(review.get('findings') or []):
+            cat = str(finding.get('category') or '')
+            if cat not in sr_categories:
+                continue
+            meta = dict(finding.get('metadata') or {})
+            last_case = dict(meta.get('last_case') or {})
+            items.append({
+                'label': cat,
+                'summary': str(finding.get('title') or '')[:120],
+                'frequency': meta.get('frequency', 0),
+                'last_assistant_kind': last_case.get('assistant_kind', 'unknown'),
+                'recommended_action': meta.get('recommended_action', ''),
+                'priority': meta.get('priority', 'medium'),
+            })
+        summary = (
+            f'{len(items)} patrones de mismatch visual detectados'
+            if items else
+            'Sin patrones de mismatch visual repetido'
+        )
+        return self._section(
+            section_id='shared_reality_learning',
+            title='Shared Reality Learning',
+            summary=summary,
+            items=items,
+            source_kind='oses_shared_reality',
+            source_refs=['OperationalSelfExaminationService', 'runtime_audit'],
+            confidence=0.85 if items else 0.3,
+            last_updated=now,
+        )
 
     def _section(
         self,

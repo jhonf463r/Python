@@ -5,7 +5,7 @@
   "category": "runtime_stability",
   "priority": "P0",
   "description": "Every chat/external dispatch must reach a terminal state. Timeout watchdog + dispatch_id guards prevent the UI from staying in busy/consultando indefinitely.",
-  "resume_hint": "Code-level audit passed (286 tests, 0 failures). All dispatch entrypoints instrumented. P0.4 adds shared reality handoff when visual evidence fails — lifecycle reaches terminal with causal explanation instead of silent failure. Awaiting live Windows run to mark COMPLETED.",
+  "resume_hint": "P0.5 adds OSES learning loop: repeated shared_reality_handoff events generate structured findings that feed PortableContext. Lifecycle terminal with causal explanation (P0.4) + OSES learning from repetition (P0.5). Code audit passed (286 tests). Awaiting live Windows run.",
   "next_action": "User runs IABV on Windows with P0.3+P0.4 merged, sends chat, verifies latestDispatchLifecycle shows real cycle, confirms no infinite consultando. Then mark COMPLETED.",
   "metadata": {
     "covered_by_pr": "#377",
@@ -14,6 +14,7 @@
     "p02_additions": "trace_dispatch_started() on chat, external_consultation, adaptive_action. recent_dispatch_lifecycles() correlates started→terminal with duration_ms and unresolved flag. latestDispatchLifecycle read-only Property exposed. Orphan terminals deprioritized. New unresolved dispatch visible over old correlated.",
     "p03_additions": "Visual evidence validation prevents treating black/offscreen captures as successful completion. consultation_metadata.status='visual_unresolved' when capture is invalid — lifecycle correctly reaches terminal state with actionable handoff instead of false 'success'.",
     "p04_additions": "Shared reality causal handoff: when visual evidence fails and user reports mismatch ('a mí sí me funciona'), lifecycle terminal includes causal explanation (Tu vista vs Vista de IABV), browser/profile identification, evidence path, and RuntimeAuditTracer shared_reality_handoff event. No false success, no silent failure, no infinite consultando.",
+    "p05_additions": "OSES reads shared_reality_handoff events and detects repeated patterns. If lifecycle terminals repeatedly involve visual mismatches, OSES generates findings with frequency, evidence, and recommended actions. PortableContext exports compact learning summary.",
     "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
     "p03_live_proof_result": "VISUAL_ALIGNMENT_FAILED_BLACK_CAPTURE",
     "p03_live_proof_detail": "Runtime cycle did not freeze, but visual handoff failed: ChatGPT window was offscreen (rect=[-32000,-32000,199,34]), capture was black (blank_probability=0.98), status was incorrectly reported as visual_captured. P0.3 fix: status now correctly set to visual_unresolved with guided handoff message.",
