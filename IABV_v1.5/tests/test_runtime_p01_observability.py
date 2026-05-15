@@ -372,63 +372,140 @@ class TestPlatformPendingModelValidation:
             assert task.resume_hint, f'{filename} must have resume_hint'
 
 
-# ── E. Success tracing tests ──────────────────────────────────
+# ── E. Success / blocked tracing via _apply_task_result ────────
 
-class TestSuccessTracing:
-    """_apply_task_result must emit trace_dispatch_terminal with success."""
+def _make_apply_result_stub():
+    """Build a stub VM capable of running _apply_task_result for
+    external_consultation without AppBootstrap.
 
-    def test_success_trace_emitted_on_chat_result(self) -> None:
-        vm = _make_stub_vm()
-        d_id = vm._new_dispatch_id('chat')
-        with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer') as mock_get:
-            mock_tracer = MagicMock()
-            mock_get.return_value = mock_tracer
-            vm._trace_dispatch_terminal(
-                task_name='chat',
-                dispatch_id=d_id,
-                terminal_state='success',
-                provider='ollama',
-                reason='resolved',
-                user_visible_message=True,
-            )
-            mock_tracer.trace_dispatch_terminal.assert_called_once()
-            call_kwargs = mock_tracer.trace_dispatch_terminal.call_args[1]
-            assert call_kwargs['terminal_state'] == 'success'
-            assert call_kwargs['task_name'] == 'chat'
+    Binds only the dispatch-tracing path and _apply_task_result itself.
+    Heavy sub-methods are replaced with no-ops via MagicMock.
+    """
+    import types
+    from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
 
-    def test_success_trace_emitted_on_external_consultation(self) -> None:
-        vm = _make_stub_vm()
+    stub = _make_stub_vm()
+    stub._last_user_goal = 'test goal'
+    stub._provider_refreshing = False
+    stub._provider_cards = []
+    stub._agent_cards = []
+    stub._pbt_state = {}
+    stub._pbt_candidates = []
+    stub._chat_interaction_lifecycle = None
+    stub._interaction_has_pending_followup = False
+    stub._progress_cards = []
+    stub._assistant_guidance_mode = 'auto'
+    stub._assistant_action_buttons = []
+    stub._traced_calls = []
+
+    original_trace = ControlCenterViewModel._trace_dispatch_terminal
+
+    def _capture_trace(self, **kwargs):
+        self._traced_calls.append(kwargs)
+        original_trace(self, **kwargs)
+
+    # Bind real methods for the tracing path
+    for name in ('_apply_task_result', '_should_defer_heavy_work'):
+        stub.__dict__[name] = types.MethodType(
+            getattr(ControlCenterViewModel, name), stub,
+        )
+    stub.__dict__['_trace_dispatch_terminal'] = types.MethodType(_capture_trace, stub)
+    # Static method
+    stub._derive_external_consultation_outcome = ControlCenterViewModel._derive_external_consultation_outcome
+
+    # No-op stubs for everything else _apply_task_result calls
+    _noop = lambda *a, **kw: None
+    _noop_list = lambda *a, **kw: []
+    for attr in (
+        '_clear_autonomy_activity_override', '_update_adaptive_state',
+        '_set_external_consultation_activity', '_resolve_active_interaction',
+        '_update_progress_cards', '_append_message', '_record_chat_audit',
+        '_update_evolution_snapshot', '_refresh_development_packet',
+        '_refresh_autonomy_dock', '_reset_assistant_guidance',
+        '_set_autonomy_activity_override', '_promote_metacognition_after_resolution',
+        '_set_live_status', '_collect_metrics',
+    ):
+        setattr(stub, attr, _noop)
+    stub._build_agent_cards = _noop_list
+    stub.dataChanged = MagicMock()
+    stub.taskResolved = MagicMock()
+    stub.taskFailed = MagicMock()
+    stub._FINAL_INTERACTION_OUTCOMES = ControlCenterViewModel._FINAL_INTERACTION_OUTCOMES
+    stub._TERMINAL_DISPATCH_STATES = ControlCenterViewModel._TERMINAL_DISPATCH_STATES
+    return stub
+
+
+class TestApplyTaskResultTracing:
+    """_apply_task_result must emit correct terminal_state for all scenarios."""
+
+    def test_external_blocked_permission_traces_blocked(self) -> None:
+        vm = _make_apply_result_stub()
+        vm._new_dispatch_id('external_consultation')
+        vm._apply_task_result('external_consultation', {
+            'success': False,
+            'meta': 'blocked_by_permission',
+            'assistant_title': 'ChatGPT',
+            'message': 'Access denied',
+        })
+        assert len(vm._traced_calls) == 1
+        assert vm._traced_calls[0]['terminal_state'] == 'blocked_by_permission'
+        assert 'external_consultation_blocked' in vm._traced_calls[0]['reason']
+
+    def test_external_blocked_security_traces_security(self) -> None:
+        vm = _make_apply_result_stub()
+        vm._new_dispatch_id('external_consultation')
+        vm._apply_task_result('external_consultation', {
+            'success': False,
+            'meta': 'ChatGPT: blocked_by_security_verification',
+            'assistant_title': 'ChatGPT',
+            'message': 'Security check required',
+        })
+        assert len(vm._traced_calls) == 1
+        assert vm._traced_calls[0]['terminal_state'] == 'blocked_by_security_verification'
+
+    def test_external_success_traces_success(self) -> None:
+        vm = _make_apply_result_stub()
+        vm._new_dispatch_id('external_consultation')
+        vm._apply_task_result('external_consultation', {
+            'success': True,
+            'meta': 'consulta completada',
+            'assistant_title': 'ChatGPT',
+            'message': 'Respuesta recibida',
+        })
+        assert len(vm._traced_calls) == 1
+        assert vm._traced_calls[0]['terminal_state'] == 'success'
+        assert vm._traced_calls[0]['reason'] == 'resolved'
+
+    def test_dispatch_id_invalidated_after_trace(self) -> None:
+        vm = _make_apply_result_stub()
         d_id = vm._new_dispatch_id('external_consultation')
-        with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer') as mock_get:
-            mock_tracer = MagicMock()
-            mock_get.return_value = mock_tracer
-            vm._trace_dispatch_terminal(
-                task_name='external_consultation',
-                dispatch_id=d_id,
-                terminal_state='success',
-                provider='ChatGPT',
-                reason='resolved',
-                user_visible_message=True,
-            )
-            call_kwargs = mock_tracer.trace_dispatch_terminal.call_args[1]
-            assert call_kwargs['terminal_state'] == 'success'
-            assert call_kwargs['task_name'] == 'external_consultation'
+        assert vm._is_dispatch_active('external_consultation', d_id)
+        vm._apply_task_result('external_consultation', {
+            'success': False,
+            'meta': 'blocked_by_permission',
+            'assistant_title': 'Claude',
+        })
+        assert not vm._is_dispatch_active('external_consultation', d_id)
 
-    def test_success_trace_emitted_on_adaptive_action(self) -> None:
-        vm = _make_stub_vm()
-        d_id = vm._new_dispatch_id('adaptive_action')
-        with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer') as mock_get:
-            mock_tracer = MagicMock()
-            mock_get.return_value = mock_tracer
-            vm._trace_dispatch_terminal(
-                task_name='adaptive_action',
-                dispatch_id=d_id,
-                terminal_state='success',
-                reason='resolved',
-                user_visible_message=True,
-            )
-            call_kwargs = mock_tracer.trace_dispatch_terminal.call_args[1]
-            assert call_kwargs['terminal_state'] == 'success'
+    def test_external_blocked_quota_traces_quota(self) -> None:
+        vm = _make_apply_result_stub()
+        vm._new_dispatch_id('external_consultation')
+        vm._apply_task_result('external_consultation', {
+            'success': False,
+            'meta': 'blocked_by_quota',
+            'assistant_title': 'ChatGPT',
+        })
+        assert vm._traced_calls[0]['terminal_state'] == 'blocked_by_quota'
+
+    def test_external_blocked_unknown_falls_to_failed_actionable(self) -> None:
+        vm = _make_apply_result_stub()
+        vm._new_dispatch_id('external_consultation')
+        vm._apply_task_result('external_consultation', {
+            'success': False,
+            'meta': 'some unknown error',
+            'assistant_title': 'Codex',
+        })
+        assert vm._traced_calls[0]['terminal_state'] == 'failed_with_actionable_reason'
 
 
 # ── F. Stale workers use 'cancelled' not 'stale_discarded' ────

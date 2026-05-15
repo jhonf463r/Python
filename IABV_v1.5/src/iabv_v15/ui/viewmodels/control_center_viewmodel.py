@@ -7961,26 +7961,40 @@ class ControlCenterViewModel(QObject):
             self._busy_label = f"PBT actualizado en generacion {payload.get('generation', 0)}."
         if task_name != 'provider_health':
             self._working = False
-        # --- Trace success for dispatch terminal audit ---
+        # --- Trace dispatch terminal audit ---
         if task_name in ('chat', 'external_consultation', 'adaptive_action', 'self_teach'):
-            _success_dispatch_id = self._active_dispatch_ids.get(task_name, '')
-            _success_provider = ''
+            _dispatch_id_for_trace = self._active_dispatch_ids.get(task_name, '')
+            _trace_provider = ''
             if isinstance(payload, dict):
-                _success_provider = str(
+                _trace_provider = str(
                     payload.get('provider_name')
                     or payload.get('assistant_title')
                     or payload.get('assistant_kind')
                     or '',
                 )
+            _trace_terminal = 'success'
+            _trace_reason = 'resolved'
+            if task_name == 'external_consultation' and isinstance(payload, dict) and not payload.get('success'):
+                _meta_raw = str(payload.get('meta') or '')
+                _trace_terminal = 'failed_with_actionable_reason'
+                for _candidate in (
+                    'blocked_by_permission', 'blocked_by_security_verification',
+                    'blocked_by_quota', 'timeout', 'needs_human_handoff',
+                    'failed_with_actionable_reason',
+                ):
+                    if _candidate in _meta_raw:
+                        _trace_terminal = _candidate
+                        break
+                _trace_reason = f'external_consultation_blocked: {_meta_raw[:120]}'
             self._trace_dispatch_terminal(
                 task_name=task_name,
-                dispatch_id=_success_dispatch_id,
-                terminal_state='success',
-                provider=_success_provider,
-                reason='resolved',
+                dispatch_id=_dispatch_id_for_trace,
+                terminal_state=_trace_terminal,
+                provider=_trace_provider,
+                reason=_trace_reason,
                 user_visible_message=True,
             )
-            if _success_dispatch_id:
+            if _dispatch_id_for_trace:
                 self._invalidate_dispatch(task_name)
         # --- Close canonical interaction episode on resolution ---
         # Do NOT close the interaction if follow-up work is still pending
