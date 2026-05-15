@@ -175,11 +175,61 @@ class TestAttemptSafeRemediation:
         assessment = {
             'safe_to_auto_try': True,
             'proposed_action': 'restore_window_by_hwnd',
+            'hwnd': 16319628,
         }
         result = vm._attempt_safe_remediation(assessment)
         # On Linux: Win32 not available, but no crash
         assert 'action_taken' in result
         assert isinstance(result['success'], bool)
+
+    def test_invalid_hwnd_returns_failure(self) -> None:
+        """Invalid hwnd (0 or None) must NOT attempt Win32 restore."""
+        vm = _make_vm()
+        for bad_hwnd in (0, None, -1):
+            assessment = {
+                'safe_to_auto_try': True,
+                'proposed_action': 'restore_window_by_hwnd',
+                'hwnd': bad_hwnd,
+            }
+            result = vm._attempt_safe_remediation(assessment)
+            assert result['action_taken'] == 'none'
+            assert result['success'] is False
+            assert 'hwnd' in result['detail'].lower() or 'invalid' in result['detail'].lower()
+
+    def test_mock_win32_calls_receive_correct_hwnd(self) -> None:
+        """ShowWindow and SetForegroundWindow must receive the real hwnd."""
+        vm = _make_vm()
+        test_hwnd = 16319628
+        calls: list[tuple[str, tuple[Any, ...]]] = []
+
+        class FakeUser32:
+            def ShowWindow(self, hwnd: int, cmd: int) -> int:
+                calls.append(('ShowWindow', (hwnd, cmd)))
+                return 1
+
+            def SetForegroundWindow(self, hwnd: int) -> int:
+                calls.append(('SetForegroundWindow', (hwnd,)))
+                return 1
+
+        class FakeWindll:
+            user32 = FakeUser32()
+
+        import types
+        fake_ctypes = types.ModuleType('ctypes')
+        fake_ctypes.windll = FakeWindll()  # type: ignore[attr-defined]
+
+        assessment = {
+            'safe_to_auto_try': True,
+            'proposed_action': 'restore_window_by_hwnd',
+            'hwnd': test_hwnd,
+        }
+        with patch.dict('sys.modules', {'ctypes': fake_ctypes}):
+            result = vm._attempt_safe_remediation(assessment)
+        assert result['success'] is True
+        assert result['action_taken'] == 'restore_window_by_hwnd'
+        assert len(calls) == 2
+        assert calls[0] == ('ShowWindow', (test_hwnd, 9))  # SW_RESTORE=9
+        assert calls[1] == ('SetForegroundWindow', (test_hwnd,))
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -227,6 +277,41 @@ class TestTraceVisualRemediationAttempted:
         ev_str = json.dumps(ev)
         assert 'C:\\' not in ev_str
         assert '/home/' not in ev_str
+
+    def test_capture_after_fields_are_none_without_recapture(self) -> None:
+        """Without recapture API, capture_useful_after and
+        blank_probability_after must be None."""
+        vm = _make_vm()
+        traced_events: list[dict[str, Any]] = []
+
+        def fake_trace(kind: str, **kwargs: Any) -> None:
+            traced_events.append({'kind': kind, **kwargs})
+
+        mock_tracer = MagicMock()
+        mock_tracer.trace = fake_trace
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=mock_tracer,
+        ):
+            vm._trace_visual_remediation_attempted(
+                assistant_kind='chatgpt',
+                target_window_title='ChatGPT',
+                hwnd=16319628,
+                rect=[-32000, -32000, 199, 34],
+                reason='target_window_minimized_or_offscreen',
+                proposed_action='restore_window_by_hwnd',
+                action_taken='restore_window_by_hwnd',
+                result_status='remediation_available',
+                capture_useful_before=False,
+                capture_useful_after=None,
+                blank_probability_before=0.98,
+                blank_probability_after=None,
+                unresolved=['UNRESOLVED:visual_remediation_recapture_not_available'],
+            )
+        ev = traced_events[0]
+        assert ev['capture_useful_after'] is None
+        assert ev['blank_probability_after'] is None
+        assert 'UNRESOLVED:visual_remediation_recapture_not_available' in ev['unresolved']
 
     def test_hwnd_zero_shows_present_false(self) -> None:
         vm = _make_vm()
@@ -285,6 +370,28 @@ class TestRemediationUserMessage:
         assert 'minimizada' in msg_lower or 'offscreen' in msg_lower
         assert 'otra sesion' in msg_lower or 'navegador' in msg_lower
         assert 'reintentar' in msg_lower or 'reintenta' in msg_lower
+
+    def test_success_message_mentions_recapture_needed(self) -> None:
+        vm = _make_vm()
+        assessment = {
+            'status': 'remediation_available',
+            'reason': 'target_window_minimized_or_offscreen',
+            'target_window_title': 'ChatGPT - Google Chrome for Testing',
+            'proposed_action': 'restore_window_by_hwnd',
+        }
+        remediation_result = {
+            'action_taken': 'restore_window_by_hwnd',
+            'success': True,
+            'detail': 'Win32 ShowWindow(16319628, SW_RESTORE)=1',
+        }
+        msg = vm._remediation_user_message(
+            assistant_title='ChatGPT',
+            assessment=assessment,
+            remediation_result=remediation_result,
+        )
+        msg_lower = msg.lower()
+        assert 'reintentar' in msg_lower
+        assert 'restaurar' in msg_lower or 'intente restaurar' in msg_lower
 
     def test_message_for_no_target_window(self) -> None:
         vm = _make_vm()

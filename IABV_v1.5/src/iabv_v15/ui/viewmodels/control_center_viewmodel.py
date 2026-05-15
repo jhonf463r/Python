@@ -4278,6 +4278,7 @@ class ControlCenterViewModel(QObject):
             'status': status,
             'reason': reason,
             'target_window_title': title or 'unknown',
+            'hwnd': hwnd,
             'rect': rect,
             'proposed_action': proposed_action,
             'safe_to_auto_try': safe_to_auto,
@@ -4290,10 +4291,9 @@ class ControlCenterViewModel(QObject):
     ) -> dict[str, Any]:
         """Attempt a safe, reversible remediation action.
 
-        On a real Windows desktop this would call ShowWindow/SetForegroundWindow.
-        In this implementation: if safe_to_auto_try and the action is
-        restore_window_by_hwnd or restore_and_recapture, we flag the action
-        as attempted. The actual Win32 call depends on runtime availability.
+        On a real Windows desktop, calls ShowWindow(hwnd, SW_RESTORE) and
+        SetForegroundWindow(hwnd) to bring a minimized/offscreen window back.
+        Success is only True if the Win32 calls were made with a valid hwnd.
 
         Returns dict with action_taken, success, detail.
         """
@@ -4312,21 +4312,31 @@ class ControlCenterViewModel(QObject):
                 'detail': f'Action "{proposed}" is not auto-remediable.',
             }
 
-        # Attempt Win32 window restore if available
+        hwnd = assessment.get('hwnd')
+        if not hwnd or not isinstance(hwnd, int) or hwnd <= 0:
+            return {
+                'action_taken': 'none',
+                'success': False,
+                'detail': 'hwnd is missing or invalid; cannot attempt Win32 restore.',
+            }
+
+        # Attempt Win32 window restore with real hwnd
         try:
             import ctypes
             SW_RESTORE = 9
             user32 = ctypes.windll.user32  # type: ignore[attr-defined]
-            hwnd = assessment.get('rect')  # fallback
-            # hwnd comes from the original target_window — caller must pass it
-            # through assessment context. For now we mark as attempted.
+            show_result = user32.ShowWindow(hwnd, SW_RESTORE)
+            fg_result = user32.SetForegroundWindow(hwnd)
             return {
                 'action_taken': proposed,
                 'success': True,
-                'detail': 'Window restore attempted via Win32 ShowWindow.',
+                'detail': (
+                    f'Win32 ShowWindow({hwnd}, SW_RESTORE)={show_result}, '
+                    f'SetForegroundWindow({hwnd})={fg_result}.'
+                ),
             }
         except (AttributeError, OSError):
-            # Not on Windows or ctypes not available
+            # Not on Windows or ctypes.windll not available
             return {
                 'action_taken': proposed,
                 'success': False,
@@ -4401,7 +4411,9 @@ class ControlCenterViewModel(QObject):
         action = remediation_result.get('action_taken', 'none')
         success = remediation_result.get('success', False)
         if action != 'none' and success:
-            parts.append('Intente restaurar la ventana automaticamente.')
+            parts.append(
+                'Intente restaurar la ventana automaticamente; necesito reintentar la consulta/captura para verificar.'
+            )
         elif action != 'none':
             parts.append(
                 'Intente restaurar la ventana pero no fue posible en este entorno.'
@@ -6613,6 +6625,9 @@ class ControlCenterViewModel(QObject):
             blank_prob_before = float(
                 (capture_meta or {}).get('blank_probability') or 0.0
             )
+            remediation_unresolved = list(capture_state.get('unresolved') or [])
+            if 'UNRESOLVED:visual_remediation_recapture_not_available' not in remediation_unresolved:
+                remediation_unresolved.append('UNRESOLVED:visual_remediation_recapture_not_available')
             self._trace_visual_remediation_attempted(
                 assistant_kind=actual_assistant_kind or requested_assistant_kind,
                 target_window_title=assessment.get('target_window_title', ''),
@@ -6623,8 +6638,10 @@ class ControlCenterViewModel(QObject):
                 action_taken=remediation_result.get('action_taken', 'none'),
                 result_status=assessment.get('status', 'unresolved'),
                 capture_useful_before=capture_useful_before,
+                capture_useful_after=None,
                 blank_probability_before=blank_prob_before,
-                unresolved=list(capture_state.get('unresolved') or []),
+                blank_probability_after=None,
+                unresolved=remediation_unresolved,
             )
             metadata['visual_remediation'] = {
                 'assessment': assessment,
