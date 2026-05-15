@@ -489,6 +489,8 @@ def _make_remediation_event(
     blank_probability_after: float | None = None,
     proposed_action: str = 'restore_window_by_hwnd',
     detail: str = 'Win32 ShowWindow(16319628, SW_RESTORE)=1',
+    remediation_detail_code: str = '',
+    remediation_success: bool | None = None,
     result_status: str = 'remediation_available',
     seq: int = 1,
 ) -> dict[str, Any]:
@@ -500,6 +502,8 @@ def _make_remediation_event(
         'blank_probability_after': blank_probability_after,
         'proposed_action': proposed_action,
         'detail': detail,
+        'remediation_detail_code': remediation_detail_code,
+        'remediation_success': remediation_success,
         'result_status': result_status,
         'hwnd_present': True,
         'capture_useful_before': False,
@@ -564,6 +568,30 @@ class TestOSESRepeatedWin32Unavailable:
         assert 'repeated_win32_restore_unavailable' in cats
         f = next(f for f in findings if f.category == 'repeated_win32_restore_unavailable')
         assert f.metadata['frequency'] == 2
+
+    def test_two_win32_unavailable_from_runtime_trace_code(self, tmp_path: Path) -> None:
+        """Runtime producer stores a compact detail code, not raw detail text."""
+        events = [
+            _make_remediation_event(
+                seq=1,
+                action_taken='restore_window_by_hwnd',
+                detail='',
+                remediation_detail_code='win32_api_not_available',
+                remediation_success=False,
+            ),
+            _make_remediation_event(
+                seq=2,
+                action_taken='restore_window_by_hwnd',
+                detail='',
+                remediation_detail_code='win32_api_not_available',
+                remediation_success=False,
+            ),
+        ]
+        _write_audit_events(tmp_path, events)
+        oses = _make_oses(tmp_path)
+        findings = oses._visual_remediation_findings()
+        cats = [f.category for f in findings]
+        assert 'repeated_win32_restore_unavailable' in cats
 
 
 class TestOSESRepeatedUserSelectionNeeded:

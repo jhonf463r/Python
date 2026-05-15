@@ -7999,8 +7999,14 @@ class OperationalSelfExaminationService:
         # Pattern 2: repeated_win32_restore_unavailable
         win32_unavailable = [
             e for e in events
-            if 'win32' in str(e.get('detail', '')).lower()
-            and 'not available' in str(e.get('detail', '')).lower()
+            if (
+                str(e.get('remediation_detail_code', '')).lower()
+                == 'win32_api_not_available'
+                or (
+                    'win32' in str(e.get('detail', '')).lower()
+                    and 'not available' in str(e.get('detail', '')).lower()
+                )
+            )
         ]
         if len(win32_unavailable) >= 2:
             findings.append(SelfExaminationFinding(
