@@ -833,6 +833,10 @@ class OperationalSelfExaminationService:
         # SQLite lock contention: read persisted incident from bootstrap
         findings.extend(self._sqlite_lock_contention_findings())
 
+        # P0.5: Shared Reality Learning — detect repeated visual mismatch
+        # patterns from shared_reality_handoff events in runtime_audit.jsonl.
+        findings.extend(self._shared_reality_handoff_findings())
+
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -7693,6 +7697,211 @@ class OperationalSelfExaminationService:
             logging.getLogger(__name__).debug(
                 'oses: materialize_task_packet_issues failed: %s', exc,
             )
+
+    # ── P0.5: Shared Reality Learning ──────────────────────────────
+    def _shared_reality_handoff_findings(self) -> list[SelfExaminationFinding]:
+        """Detect repeated visual-mismatch patterns from ``shared_reality_handoff``
+        events in ``runtime_audit.jsonl``.
+
+        Patterns detected:
+        - ``repeated_visual_mismatch``: ≥2 events where capture was useless
+        - ``user_browser_differs_from_iabv_session``: ≥2 events where browser
+          label indicates isolated/controlled session
+        - ``black_capture_repeated``: ≥2 events with blank_probability ≥ 0.8
+        - ``user_needed_to_explain_same_gap``: ≥2 events with a user_claim
+          (user had to tell IABV "it works for me")
+
+        A single isolated event does NOT produce a finding — only repetition
+        indicates a pattern worth surfacing.
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        audit_path = Path(str(workspace)) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+        events: list[dict[str, Any]] = []
+        try:
+            text = audit_path.read_text(encoding='utf-8', errors='replace')
+            for line in text.splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    event = json.loads(line)
+                except Exception:
+                    continue
+                if event.get('kind') != 'shared_reality_handoff':
+                    continue
+                events.append(dict(event.get('data') or event))
+                if len(events) >= 50:
+                    break
+        except Exception:
+            return []
+        if len(events) < 2:
+            return []
+        findings: list[SelfExaminationFinding] = []
+
+        # Pattern 1: repeated_visual_mismatch
+        useless_captures = [
+            e for e in events
+            if not e.get('capture_useful', True)
+        ]
+        if len(useless_captures) >= 2:
+            last = useless_captures[-1]
+            findings.append(SelfExaminationFinding(
+                category='repeated_visual_mismatch',
+                severity=IssueSeverity.HIGH,
+                title=f'Captura visual inútil repetida: {len(useless_captures)} eventos',
+                summary=(
+                    f'{len(useless_captures)} consultas externas capturaron evidencia '
+                    f'inútil (capture_useful=false). Último caso: '
+                    f'{last.get("assistant_kind", "?")} con ventana '
+                    f'"{last.get("target_window_title", "?")}".'
+                ),
+                confidence=0.9,
+                recommendation=(
+                    'Mejorar selección/restauración automática de ventana objetivo '
+                    'antes de captura. Considerar selector de ventana visible o '
+                    'restauración automática de ventanas minimizadas.'
+                ),
+                evidence_refs=[
+                    f'shared_reality_handoff_count={len(useless_captures)}',
+                ],
+                source_refs=['runtime_audit', 'shared_reality_handoff'],
+                metadata={
+                    'pattern': 'repeated_visual_mismatch',
+                    'frequency': len(useless_captures),
+                    'last_case': {
+                        'assistant_kind': last.get('assistant_kind'),
+                        'target_window_title': last.get('target_window_title'),
+                        'capture_useful': last.get('capture_useful'),
+                    },
+                    'recommended_action': 'auto_restore_or_select_window',
+                    'priority': 'high',
+                },
+            ))
+
+        # Pattern 2: user_browser_differs_from_iabv_session
+        diff_session = [
+            e for e in events
+            if any(kw in str(e.get('mismatch_reason', '')).lower()
+                   for kw in ('aislada', 'controlada', 'chrome for testing', 'sesión'))
+            or any(kw in str(e.get('browser_label', '')).lower()
+                   for kw in ('aislada', 'controlada', 'chrome for testing'))
+        ]
+        if len(diff_session) >= 2:
+            last = diff_session[-1]
+            findings.append(SelfExaminationFinding(
+                category='user_browser_differs_from_iabv_session',
+                severity=IssueSeverity.MEDIUM,
+                title=f'Diferencia navegador usuario/IABV repetida: {len(diff_session)} eventos',
+                summary=(
+                    f'En {len(diff_session)} consultas, IABV usó una sesión aislada/controlada '
+                    f'diferente al navegador del usuario. Esto genera confusión recurrente.'
+                ),
+                confidence=0.85,
+                recommendation=(
+                    'Implementar selector de sesión/navegador que permita al usuario '
+                    'indicar qué navegador usar, o detectar automáticamente el navegador '
+                    'visible del usuario.'
+                ),
+                evidence_refs=[
+                    f'browser_diff_count={len(diff_session)}',
+                ],
+                source_refs=['runtime_audit', 'shared_reality_handoff'],
+                metadata={
+                    'pattern': 'user_browser_differs_from_iabv_session',
+                    'frequency': len(diff_session),
+                    'last_case': {
+                        'assistant_kind': last.get('assistant_kind'),
+                        'mismatch_reason': last.get('mismatch_reason'),
+                    },
+                    'recommended_action': 'browser_session_selector',
+                    'priority': 'medium',
+                },
+            ))
+
+        # Pattern 3: black_capture_repeated
+        black_captures = [
+            e for e in events
+            if float(e.get('blank_probability', 0) or 0) >= 0.8
+            or (isinstance(e.get('capture_quality'), dict)
+                and float(e['capture_quality'].get('blank_probability', 0) or 0) >= 0.8)
+        ]
+        if len(black_captures) >= 2:
+            last = black_captures[-1]
+            bp = (
+                last.get('blank_probability')
+                or (last.get('capture_quality') or {}).get('blank_probability', '?')
+            )
+            findings.append(SelfExaminationFinding(
+                category='black_capture_repeated',
+                severity=IssueSeverity.HIGH,
+                title=f'Captura negra repetida: {len(black_captures)} eventos',
+                summary=(
+                    f'{len(black_captures)} capturas con blank_probability ≥ 0.8. '
+                    f'Último: blank_probability={bp}. Las capturas negras indican '
+                    f'ventanas offscreen/minimizadas no detectadas a tiempo.'
+                ),
+                confidence=0.9,
+                recommendation=(
+                    'Validar estado de ventana (rect, minimizada) ANTES de capturar. '
+                    'Si rect indica offscreen, restaurar o pedir selección antes de '
+                    'intentar captura.'
+                ),
+                evidence_refs=[
+                    f'black_capture_count={len(black_captures)}',
+                ],
+                source_refs=['runtime_audit', 'shared_reality_handoff'],
+                metadata={
+                    'pattern': 'black_capture_repeated',
+                    'frequency': len(black_captures),
+                    'last_blank_probability': bp,
+                    'recommended_action': 'pre_capture_window_validation',
+                    'priority': 'high',
+                },
+            ))
+
+        # Pattern 4: user_needed_to_explain_same_gap
+        user_explained = [
+            e for e in events
+            if e.get('user_claim') and str(e['user_claim']) not in ('', 'unknown')
+        ]
+        if len(user_explained) >= 2:
+            last = user_explained[-1]
+            findings.append(SelfExaminationFinding(
+                category='user_needed_to_explain_same_gap',
+                severity=IssueSeverity.HIGH,
+                title=f'Usuario explicó el mismo gap {len(user_explained)} veces',
+                summary=(
+                    f'El usuario tuvo que explicar la diferencia entre su vista y la de IABV '
+                    f'{len(user_explained)} veces. Último claim: '
+                    f'"{str(last.get("user_claim", ""))[:80]}". '
+                    f'IABV debería anticipar esta explicación automáticamente.'
+                ),
+                confidence=0.9,
+                recommendation=(
+                    'Mejorar la explicación proactiva antes de que el usuario pregunte. '
+                    'Incluir "Tu vista vs Vista de IABV" en el primer mensaje de fallo, '
+                    'no solo como respuesta al claim del usuario.'
+                ),
+                evidence_refs=[
+                    f'user_explain_count={len(user_explained)}',
+                ],
+                source_refs=['runtime_audit', 'shared_reality_handoff'],
+                metadata={
+                    'pattern': 'user_needed_to_explain_same_gap',
+                    'frequency': len(user_explained),
+                    'last_case': {
+                        'user_claim': last.get('user_claim'),
+                        'assistant_kind': last.get('assistant_kind'),
+                    },
+                    'recommended_action': 'proactive_causal_explanation',
+                    'priority': 'high',
+                },
+            ))
+
+        return findings
 
 
 # ---------------------------------------------------------------------------
