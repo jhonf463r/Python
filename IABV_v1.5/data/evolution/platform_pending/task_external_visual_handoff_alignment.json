@@ -5,8 +5,8 @@
   "category": "runtime_stability",
   "priority": "P0",
   "description": "When an external tool fails (login, captcha, permission, quota, timeout, DOM error, offscreen/minimized window, black capture), the UI shows a structured message: WHAT tool, WHAT block, WHAT evidence, WHAT human action, whether local fallback is viable.",
-  "resume_hint": "P0.10 wires response capture retry via AutonomousEvolutionService.reingest_existing_session() after post-remediation recapture improved the visual capture. Full chain: visual_remediation → recapture → response_proof → retry_started → retry_result. If retry captures response, success. If not, UNRESOLVED with guidance.",
-  "next_action": "Live Windows proof with P0.10 code. Verify reingest captures response from existing session after Win32 restore. Check full chain in runtime_audit.jsonl.",
+  "resume_hint": "P0.11 code audit confirmed full chain wired correctly: dispatch_started → visual_remediation_attempted → post_remediation_recapture → post_recapture_response_verification → response_capture_retry_started → response_capture_retry_result → dispatch_terminal. 134 focused tests pass. No live Windows proof yet — requires user execution on Windows.",
+  "next_action": "User must run IABV on Windows with #388 merged. Trigger external consultation to ChatGPT. Verify runtime_audit.jsonl shows the full 7-event chain. Mark LIVE_VERIFIED or report failure.",
   "metadata": {
     "covered_by_pr": "#377",
     "coverage_detail": "_human_external_consultation_failure classifies 7 failure types (security_verification, codex_state_missing, access_denied, session_expired, timeout, quota, generic). Each produces structured handoff with tool name, block type, evidence, human action, and local fallback mention.",
@@ -38,11 +38,34 @@
     "p08_additions": "_attempt_post_remediation_recapture() attempts ONE recapture after successful remediation. Gated on: remediation_success=True, hwnd valid positive int, proposed_action in (restore_window_by_hwnd, restore_and_recapture). Uses PIL ImageGrab.grab(bbox=rect) for targeted recapture. Validates with _capture_is_low_information(). Records before/after: capture_useful_after, blank_probability_after, recapture_status (improved|still_low_information|skipped|error). If recapture improves, flow continues with success=True. If still low-information, shared reality handoff maintained. Trace event includes recapture_status field. Integration wired into _execute_external_consultation_sync visual override path.",
     "p09_additions": "_build_post_recapture_response_proof() differentiates window-observable from response-captured after recapture. Returns compact metadata: target_window_title, hwnd, rect, capture_useful_before/after, response_captured, response_capture_pending, response_capture_mode, evidence_path, window_observable, status (response_captured|response_pending|response_not_captured). When recapture improved but response NOT captured: returns success=False with UNRESOLVED:window_observable_response_not_captured. _post_recapture_response_pending_message() builds user guidance naming the tool, what was restored, what's missing, and what the user should do. _trace_post_recapture_response_verification() logs post_recapture_response_verification event enabling chain: visual_remediation_attempted → post_remediation_recapture → post_recapture_response_verification.",
     "p010_additions": "_attempt_post_recapture_response_retry() wires ONE reingest via AutonomousEvolutionService.reingest_existing_session() after recapture improved but response not captured. Audit found existing API: reingest_existing_session() re-captures from the existing browser session (reingest_only=True) without re-sending the consultation. Gated on: autonomous_evolution_service available + consultation_metadata has selected_tool_id. If reingest captures response (pre_capture_ingested=True): updates response_proof.status='response_captured', allows success. If reingest fails or no response: UNRESOLVED:window_observable_response_not_captured + UNRESOLVED:post_recapture_response_retry_api_missing (when service unavailable). _trace_response_capture_retry() logs response_capture_retry_started and response_capture_retry_result events. Full chain: visual_remediation_attempted → post_remediation_recapture → post_recapture_response_verification → response_capture_retry_started → response_capture_retry_result.",
+    "p011_audit": {
+      "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
+      "environment": "Linux VM — cannot run PySide6+Win32 live proof",
+      "code_audit_result": "PASS",
+      "code_audit_detail": {
+        "full_chain_wired": true,
+        "chain_events": ["dispatch_started", "visual_remediation_attempted", "post_remediation_recapture", "post_recapture_response_verification", "response_capture_retry_started", "response_capture_retry_result", "dispatch_terminal"],
+        "reingest_api_confirmed": "AutonomousEvolutionService.reingest_existing_session() at line 275",
+        "retry_gated_on": ["autonomous_evolution_service available", "consultation_metadata has selected_tool_id"],
+        "pii_sanitization": "PureWindowsPath used for evidence_path cross-platform",
+        "focused_tests_passed": 134,
+        "regression_tests_passed": 283,
+        "failures_introduced": 0
+      },
+      "data_sources_checked": {
+        "runtime_audit_jsonl": "does not exist — tracer P0.2+ has not generated events (no live execution since #377)",
+        "iabv_v15_log": "only httpx health checks (ollama) from 2026-04-13 to 2026-04-18 — pre-dates all PRs",
+        "incident_reports": "directory does not exist",
+        "portable_context": "pre-dates PRs — no dispatch/trace data",
+        "self_examination": "pre-dates PRs — no runtime audit findings"
+      },
+      "unresolved": "UNRESOLVED:live_windows_visual_runtime_proof_missing"
+    },
     "remaining": [
-      "Live Windows proof with P0.10 code merged",
+      "Live Windows proof with all PRs merged",
       "Deep visual verification (screenshot comparison) not implemented",
       "Browser/session selector UI for user"
     ],
-    "unresolved": "Reingest retry wired via AutonomousEvolutionService. If service not available at runtime, UNRESOLVED:post_recapture_response_retry_api_missing. Live Windows proof pending."
+    "unresolved": "UNRESOLVED:live_windows_visual_runtime_proof_missing — code audit passes, 134 focused + 283 regression tests pass, but no live execution has occurred since #377. User must run IABV on Windows to generate runtime_audit.jsonl and verify full chain."
   }
 }
