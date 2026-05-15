@@ -320,10 +320,12 @@ class RuntimeAuditTracer:
         ``user_visible_message_present``, ``unresolved``,
         ``orphan_terminal``.
 
-        Priority order (newest first within each tier):
-        1. Correlated (started + terminal with dispatch_id)
-        2. Unresolved started (started without terminal)
-        3. Orphan terminals (terminal without matching started)
+        Priority order:
+        1. Lifecycles with ``dispatch_id`` (correlated *and* unresolved),
+           sorted by ``started_at`` descending — newest first regardless
+           of whether they have a terminal event.
+        2. Orphan terminals (terminal without matching started), sorted
+           by ``terminal_at`` descending.
 
         An entry is ``unresolved=True`` when a ``dispatch_started`` event
         has no matching ``dispatch_terminal`` event.
@@ -339,8 +341,7 @@ class RuntimeAuditTracer:
             key = (d.get('task_name', ''), d.get('dispatch_id', ''))
             terminal_by_key[key] = ev
 
-        correlated: list[dict[str, Any]] = []
-        unresolved: list[dict[str, Any]] = []
+        dispatched: list[dict[str, Any]] = []
         for sev in started_events:
             sd = sev.get('data', {})
             task_name = sd.get('task_name', '')
@@ -369,9 +370,7 @@ class RuntimeAuditTracer:
                 entry['provider'] = td.get('provider', '') or entry['provider']
                 entry['user_visible_message_present'] = td.get('user_visible_message_present', False)
                 entry['unresolved'] = False
-                correlated.append(entry)
-            else:
-                unresolved.append(entry)
+            dispatched.append(entry)
 
         orphans: list[dict[str, Any]] = []
         for key, tev in terminal_by_key.items():
@@ -389,12 +388,10 @@ class RuntimeAuditTracer:
                 'orphan_terminal': True,
             })
 
-        _ts_key = lambda e: e.get('started_at') or e.get('terminal_at') or ''
-        correlated.sort(key=_ts_key, reverse=True)
-        unresolved.sort(key=_ts_key, reverse=True)
-        orphans.sort(key=_ts_key, reverse=True)
+        dispatched.sort(key=lambda e: e.get('started_at', ''), reverse=True)
+        orphans.sort(key=lambda e: e.get('terminal_at', ''), reverse=True)
 
-        result = correlated + unresolved + orphans
+        result = dispatched + orphans
         return result[:limit]
 
     def summary(self) -> dict[str, Any]:

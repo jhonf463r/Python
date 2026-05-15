@@ -7121,11 +7121,11 @@ class ControlCenterViewModel(QObject):
     def latestDispatchLifecycle(self) -> dict[str, Any]:
         """Read-only summary of the most recent dispatch lifecycle.
 
-        Priority: correlated (dispatch_id + duration) > unresolved started
-        > orphan terminal.  The list from ``recent_dispatch_lifecycles``
-        is already sorted in that tier order, so the first entry with a
-        non-empty ``dispatch_id`` wins.  If none has a dispatch_id, the
-        first entry (orphan) is used as fallback.
+        ``recent_dispatch_lifecycles`` returns dispatched entries
+        (correlated and unresolved) sorted by ``started_at`` desc,
+        followed by orphan terminals.  The first entry with a non-empty
+        ``dispatch_id`` is the newest real lifecycle.  Falls back to
+        orphan only if no dispatched entry exists.
         """
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
