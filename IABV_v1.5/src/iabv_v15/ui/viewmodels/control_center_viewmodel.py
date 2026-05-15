@@ -4121,7 +4121,32 @@ class ControlCenterViewModel(QObject):
     def _invalidate_dispatch(self, task_name: str) -> None:
         self._active_dispatch_ids.pop(task_name, None)
 
-    # ── Runtime audit helper for dispatch terminal events ──────
+    # ── Runtime audit helpers for dispatch lifecycle events ─────
+    def _trace_dispatch_started(
+        self,
+        *,
+        task_name: str,
+        dispatch_id: str = '',
+        provider: str = '',
+        source: str = '',
+        user_goal_excerpt: str = '',
+        visible_busy_label: str = '',
+    ) -> None:
+        """Log a dispatch started event to RuntimeAuditTracer."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace_dispatch_started(
+                task_name=task_name,
+                dispatch_id=dispatch_id,
+                interaction_id=getattr(self, '_active_interaction_id', '') or '',
+                provider=provider,
+                source=source,
+                user_goal_excerpt=user_goal_excerpt,
+                visible_busy_label=visible_busy_label,
+            )
+        except Exception:
+            pass
+
     def _trace_dispatch_terminal(
         self,
         *,
@@ -5988,6 +6013,14 @@ class ControlCenterViewModel(QObject):
 
         _ext_done = threading.Event()
         _dispatch_id = self._new_dispatch_id('external_consultation')
+        self._trace_dispatch_started(
+            task_name='external_consultation',
+            dispatch_id=_dispatch_id,
+            provider=assistant_kind,
+            source='_run_external_consultation',
+            user_goal_excerpt=self._last_user_goal or '',
+            visible_busy_label=self._busy_label,
+        )
 
         def worker() -> None:
             try:
@@ -7084,6 +7117,38 @@ class ControlCenterViewModel(QObject):
     def contextualSuggestions(self) -> list[dict[str, Any]]:
         return list(self._contextual_suggestions)
 
+    @Property('QVariant', notify=dataChanged)
+    def latestDispatchLifecycle(self) -> dict[str, Any]:
+        """Read-only summary of the most recent dispatch lifecycle.
+
+        ``recent_dispatch_lifecycles`` returns dispatched entries
+        (correlated and unresolved) sorted by ``started_at`` desc,
+        followed by orphan terminals.  The first entry with a non-empty
+        ``dispatch_id`` is the newest real lifecycle.  Falls back to
+        orphan only if no dispatched entry exists.
+        """
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            cycles = get_runtime_tracer().recent_dispatch_lifecycles(limit=20)
+            if not cycles:
+                return {}
+            best = cycles[0]
+            for c in cycles:
+                if c.get('dispatch_id'):
+                    best = c
+                    break
+            return {
+                'task_name': best.get('task_name', ''),
+                'terminal_state': best.get('terminal_state', ''),
+                'duration_ms': best.get('duration_ms', 0.0),
+                'unresolved': best.get('unresolved', False),
+                'provider': best.get('provider', ''),
+                'dispatch_id': best.get('dispatch_id', ''),
+                'orphan_terminal': best.get('orphan_terminal', False),
+            }
+        except Exception:
+            return {}
+
     def _refresh_contextual_suggestions(self) -> None:
         suggestions: list[dict[str, Any]] = []
         if hasattr(self, '_efficiency_audit_service'):
@@ -7438,6 +7503,13 @@ class ControlCenterViewModel(QObject):
 
         _worker_done = threading.Event()
         _dispatch_id = self._new_dispatch_id('chat')
+        self._trace_dispatch_started(
+            task_name='chat',
+            dispatch_id=_dispatch_id,
+            source='sendChat',
+            user_goal_excerpt=message,
+            visible_busy_label=self._busy_label,
+        )
 
         def worker() -> None:
             try:
@@ -7515,6 +7587,12 @@ class ControlCenterViewModel(QObject):
 
         _aa_done = threading.Event()
         _dispatch_id = self._new_dispatch_id('adaptive_action')
+        self._trace_dispatch_started(
+            task_name='adaptive_action',
+            dispatch_id=_dispatch_id,
+            source=f'_run_adaptive_action:{action_name}',
+            visible_busy_label=busy_text,
+        )
 
         def worker() -> None:
             try:

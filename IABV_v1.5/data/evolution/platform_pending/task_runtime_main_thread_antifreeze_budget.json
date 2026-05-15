@@ -11,6 +11,7 @@
     "covered_by_pr": "#377",
     "coverage_detail": "_should_defer_heavy_work() gate using _assess_resource_pressure(). Fixed IssueSeverity comparison bug (str(IssueSeverity.HIGH) returns 'IssueSeverity.HIGH' not 'high'). Gate applied in both _apply_task_result and _apply_task_failure.",
     "p01_additions": "Stub tests for _should_defer_heavy_work extracted to lightweight suite (no AppBootstrap).",
+    "p02_additions": "No direct changes — antifreeze gating is orthogonal to dispatch lifecycle tracing. Pressure-gated methods (_update_evolution_snapshot etc.) are correctly skipped under load.",
     "remaining": [
       "Budget accounting for total UI-thread time per frame",
       "BackgroundResourceMonitor integration if available"

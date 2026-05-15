@@ -208,6 +208,33 @@ class RuntimeAuditTracer:
             **extra,
         )
 
+    def trace_dispatch_started(
+        self,
+        *,
+        task_name: str,
+        dispatch_id: str = '',
+        interaction_id: str = '',
+        provider: str = '',
+        source: str = '',
+        user_goal_excerpt: str = '',
+        visible_busy_label: str = '',
+    ) -> dict[str, Any]:
+        """Record a dispatch being started (worker spawned).
+
+        Paired with ``trace_dispatch_terminal`` to reconstruct full
+        lifecycle: started → terminal state.
+        """
+        return self.trace(
+            'dispatch_started',
+            task_name=task_name,
+            dispatch_id=dispatch_id[:12] if dispatch_id else '',
+            interaction_id=interaction_id,
+            provider=provider,
+            source=source,
+            user_goal_excerpt=user_goal_excerpt[:120] if user_goal_excerpt else '',
+            visible_busy_label=visible_busy_label[:120] if visible_busy_label else '',
+        )
+
     def trace_dispatch_terminal(
         self,
         *,
@@ -283,6 +310,89 @@ class RuntimeAuditTracer:
         if kind:
             source = [e for e in source if e.get('kind') == kind]
         return source[-limit:]
+
+    def recent_dispatch_lifecycles(self, limit: int = 20) -> list[dict[str, Any]]:
+        """Reconstruct recent dispatch lifecycles by correlating started/terminal events.
+
+        Returns a list of dicts sorted newest-first with keys:
+        ``task_name``, ``dispatch_id``, ``started_at``, ``terminal_at``,
+        ``duration_ms``, ``terminal_state``, ``provider``,
+        ``user_visible_message_present``, ``unresolved``,
+        ``orphan_terminal``.
+
+        Priority order:
+        1. Lifecycles with ``dispatch_id`` (correlated *and* unresolved),
+           sorted by ``started_at`` descending — newest first regardless
+           of whether they have a terminal event.
+        2. Orphan terminals (terminal without matching started), sorted
+           by ``terminal_at`` descending.
+
+        An entry is ``unresolved=True`` when a ``dispatch_started`` event
+        has no matching ``dispatch_terminal`` event.
+        An entry is ``orphan_terminal=True`` when a ``dispatch_terminal``
+        event has no matching ``dispatch_started`` event.
+        """
+        started_events = self.events(kind='dispatch_started', limit=500)
+        terminal_events = self.events(kind='dispatch_terminal', limit=500)
+
+        terminal_by_key: dict[tuple[str, str], dict[str, Any]] = {}
+        for ev in terminal_events:
+            d = ev.get('data', {})
+            key = (d.get('task_name', ''), d.get('dispatch_id', ''))
+            terminal_by_key[key] = ev
+
+        dispatched: list[dict[str, Any]] = []
+        for sev in started_events:
+            sd = sev.get('data', {})
+            task_name = sd.get('task_name', '')
+            dispatch_id = sd.get('dispatch_id', '')
+            key = (task_name, dispatch_id)
+            tev = terminal_by_key.pop(key, None)
+            started_ms = sev.get('elapsed_ms', 0.0)
+            entry: dict[str, Any] = {
+                'task_name': task_name,
+                'dispatch_id': dispatch_id,
+                'started_at': sev.get('ts', ''),
+                'terminal_at': '',
+                'duration_ms': 0.0,
+                'terminal_state': '',
+                'provider': sd.get('provider', ''),
+                'user_visible_message_present': False,
+                'unresolved': True,
+                'orphan_terminal': False,
+            }
+            if tev is not None:
+                td = tev.get('data', {})
+                terminal_ms = tev.get('elapsed_ms', 0.0)
+                entry['terminal_at'] = tev.get('ts', '')
+                entry['duration_ms'] = round(terminal_ms - started_ms, 1)
+                entry['terminal_state'] = td.get('terminal_state', '')
+                entry['provider'] = td.get('provider', '') or entry['provider']
+                entry['user_visible_message_present'] = td.get('user_visible_message_present', False)
+                entry['unresolved'] = False
+            dispatched.append(entry)
+
+        orphans: list[dict[str, Any]] = []
+        for key, tev in terminal_by_key.items():
+            td = tev.get('data', {})
+            orphans.append({
+                'task_name': td.get('task_name', ''),
+                'dispatch_id': td.get('dispatch_id', ''),
+                'started_at': '',
+                'terminal_at': tev.get('ts', ''),
+                'duration_ms': 0.0,
+                'terminal_state': td.get('terminal_state', ''),
+                'provider': td.get('provider', ''),
+                'user_visible_message_present': td.get('user_visible_message_present', False),
+                'unresolved': False,
+                'orphan_terminal': True,
+            })
+
+        dispatched.sort(key=lambda e: e.get('started_at', ''), reverse=True)
+        orphans.sort(key=lambda e: e.get('terminal_at', ''), reverse=True)
+
+        result = dispatched + orphans
+        return result[:limit]
 
     def summary(self) -> dict[str, Any]:
         """Quick summary of trace state for diagnostics."""

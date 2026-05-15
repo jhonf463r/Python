@@ -5,15 +5,16 @@
   "category": "runtime_stability",
   "priority": "P0",
   "description": "Every chat/external dispatch must reach a terminal state. Timeout watchdog + dispatch_id guards prevent the UI from staying in busy/consultando indefinitely.",
-  "resume_hint": "Live UI proof with real user interaction pending. UIBridgeService paths not yet fully audited for terminal-state coverage.",
-  "next_action": "Test on user's Windows machine with real chat interactions to confirm busy state always resolves.",
+  "resume_hint": "Live UI proof with real user interaction pending. dispatch_started→terminal correlation now reconstructible via recent_dispatch_lifecycles().",
+  "next_action": "Test on user's Windows machine with real chat interactions to confirm busy state always resolves and lifecycle is reconstructible.",
   "metadata": {
     "covered_by_pr": "#377",
     "coverage_detail": "Timeout watchdog (120s chat, 180s external), dispatch_id stale-result guards, 8 terminal states defined, _humanize_task_failure classifier, _human_external_consultation_failure structured handoff.",
-    "p01_additions": "Runtime audit trace on all terminal events (trace_dispatch_terminal). adaptive_action now guarded with dispatch_id + timeout watchdog.",
+    "p01_additions": "Runtime audit trace on all terminal events (trace_dispatch_terminal). adaptive_action now guarded with dispatch_id + timeout watchdog. external_consultation blocked derives terminal_state from payload.meta.",
+    "p02_additions": "trace_dispatch_started() on chat, external_consultation, adaptive_action. recent_dispatch_lifecycles() correlates started→terminal with duration_ms and unresolved flag. latestDispatchLifecycle read-only Property exposed.",
     "remaining": [
       "Live UI proof with real user interaction",
-      "UIBridgeService paths not yet fully audited for terminal-state coverage"
+      "UIBridgeService bridge dispatch does not create own dispatch_id (delegates to sendChat)"
     ],
     "unresolved": "User-visible UI proof pending — requires live testing on user's Windows machine"
   }
