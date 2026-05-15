@@ -345,8 +345,13 @@ class TestPlatformPendingModelValidation:
     def test_consulting_lifecycle_validates_with_correct_id(self) -> None:
         task = self._load_and_validate('runtime_consulting_lifecycle_recovery')
         assert task.id == 'runtime_consulting_lifecycle_recovery'
-        assert task.status.value == 'READY_FOR_NEXT_SLICE'
+        assert task.status.value == 'UNRESOLVED'
         assert task.metadata.get('covered_by_pr') == '#377'
+        assert task.metadata.get('verification_status') == 'CODE_VERIFIED_AWAITING_LIVE_PROOF'
+        audit = task.metadata.get('code_audit')
+        assert audit is not None
+        assert audit['tests_passed'] >= 286
+        assert audit['tests_failed'] == 0
 
     def test_antifreeze_budget_validates_with_correct_id(self) -> None:
         task = self._load_and_validate('runtime_main_thread_antifreeze_budget')
