@@ -2,13 +2,13 @@
 Freeze Root Cause + ChatGPT Security Handoff + Browser Thread Affinity.
 
 Tests:
- A. runtime_build_fingerprint emitted
+ A. runtime_build_fingerprint emitted (targeted scan, scoped dirty, budget)
  B. stale-code gate warning shown
- C. heavy refresh deferred under query_pending / resource_pressure
+ C. heavy refresh deferred under query_pending / resource_pressure / stall / consultation cooldown
  D. freeze report includes pre-stall events
  E. security verification produces terminal_state blocked_by_security_verification
- F. single retest after "ya lo hice"
- G. browser close not executed from wrong thread
+ F. single retest after "ya lo hice" — worker routes via signal, not direct UI
+ G. browser close not executed from wrong thread; close_if_owner_thread drains
 """
 
 from __future__ import annotations
@@ -68,6 +68,44 @@ class TestRuntimeBuildFingerprint:
         assert isinstance(fp['stale'], bool)
         assert isinstance(fp['missing_markers'], list)
 
+    def test_fingerprint_uses_targeted_files_not_rglob(self, tmp_path: Path) -> None:
+        """_collect_build_fingerprint should NOT use rglob in its code body."""
+        from iabv_v15.services.evolution import runtime_audit_tracer as mod
+        import inspect
+        src = inspect.getsource(mod._collect_build_fingerprint)
+        # Strip docstring; only check actual code
+        body = src.split('"""', 2)[-1] if '"""' in src else src
+        assert 'rglob' not in body
+
+    def test_fingerprint_scoped_dirty_flag(self, tmp_path: Path) -> None:
+        """Dirty check uses diff-index scoped to src/tests/AGENTS.md."""
+        from iabv_v15.services.evolution.runtime_audit_tracer import _collect_build_fingerprint
+        fp = _collect_build_fingerprint(str(tmp_path))
+        assert 'git_status' in fp
+        assert fp['git_status'] in ('clean', 'dirty', 'unknown')
+
+    def test_fingerprint_includes_elapsed_ms(self, tmp_path: Path) -> None:
+        from iabv_v15.services.evolution.runtime_audit_tracer import _collect_build_fingerprint
+        fp = _collect_build_fingerprint(str(tmp_path))
+        assert 'elapsed_ms' in fp
+        assert isinstance(fp['elapsed_ms'], float)
+
+    def test_fingerprint_slow_trace_emitted_when_over_budget(self, tracer, tmp_path: Path) -> None:
+        from iabv_v15.services.evolution import runtime_audit_tracer as mod
+        original = mod._FINGERPRINT_BUDGET_MS
+        try:
+            mod._FINGERPRINT_BUDGET_MS = 0.0
+            tracer.trace_build_fingerprint(workspace=str(tmp_path))
+            slow = tracer.events(kind='runtime_build_fingerprint_slow')
+            assert len(slow) == 1
+        finally:
+            mod._FINGERPRINT_BUDGET_MS = original
+
+    def test_current_elapsed_ms(self, tracer) -> None:
+        ms = tracer.current_elapsed_ms()
+        assert isinstance(ms, float)
+        assert ms >= 0
+
 
 # ======================================================================
 # B. Stale-Code Gate
@@ -113,46 +151,158 @@ class TestStaleCodeGate:
 class TestFreezeRootCause:
 
     def test_should_skip_dock_refresh_when_working(self) -> None:
-        """_should_skip_dock_refresh returns 'query_pending' when _working=True."""
         from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
         vm = MagicMock(spec=ControlCenterViewModel)
         vm._working = True
         vm._last_dock_refresh_ts = 0.0
+        vm._dock_budget_cooldown_until = 0.0
         vm._DOCK_REFRESH_MIN_INTERVAL_S = 1.0
         result = ControlCenterViewModel._should_skip_dock_refresh(vm)
         assert result == 'query_pending'
 
     def test_should_skip_dock_refresh_coalesced(self) -> None:
-        """_should_skip_dock_refresh returns 'coalesced' when called rapidly."""
         from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
         vm = MagicMock(spec=ControlCenterViewModel)
         vm._working = False
         vm._last_dock_refresh_ts = time.time()
+        vm._dock_budget_cooldown_until = 0.0
         vm._DOCK_REFRESH_MIN_INTERVAL_S = 1.0
         result = ControlCenterViewModel._should_skip_dock_refresh(vm)
         assert result == 'coalesced'
 
     def test_should_skip_dock_refresh_resource_pressure(self) -> None:
-        """_should_skip_dock_refresh returns 'resource_pressure' under pressure."""
         from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
         vm = MagicMock(spec=ControlCenterViewModel)
         vm._working = False
         vm._last_dock_refresh_ts = 0.0
+        vm._dock_budget_cooldown_until = 0.0
         vm._DOCK_REFRESH_MIN_INTERVAL_S = 1.0
+        vm._last_external_consultation_ts = 0.0
         vm._should_defer_heavy_work = MagicMock(return_value=True)
         result = ControlCenterViewModel._should_skip_dock_refresh(vm)
         assert result == 'resource_pressure'
 
     def test_should_not_skip_under_normal_conditions(self) -> None:
-        """_should_skip_dock_refresh returns '' when nothing is pressured."""
         from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
         vm = MagicMock(spec=ControlCenterViewModel)
         vm._working = False
         vm._last_dock_refresh_ts = 0.0
+        vm._dock_budget_cooldown_until = 0.0
         vm._DOCK_REFRESH_MIN_INTERVAL_S = 1.0
+        vm._last_external_consultation_ts = 0.0
         vm._should_defer_heavy_work = MagicMock(return_value=False)
         result = ControlCenterViewModel._should_skip_dock_refresh(vm)
         assert result == ''
+
+    def test_should_skip_after_recent_external_consultation(self) -> None:
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        vm = MagicMock(spec=ControlCenterViewModel)
+        vm._working = False
+        vm._last_dock_refresh_ts = 0.0
+        vm._dock_budget_cooldown_until = 0.0
+        vm._DOCK_REFRESH_MIN_INTERVAL_S = 1.0
+        vm._last_external_consultation_ts = time.time()
+        vm._DOCK_REFRESH_POST_CONSULTATION_COOLDOWN_S = 30.0
+        vm._should_defer_heavy_work = MagicMock(return_value=False)
+        result = ControlCenterViewModel._should_skip_dock_refresh(vm)
+        assert result == 'post_external_consultation'
+
+    def test_should_skip_during_budget_cooldown(self) -> None:
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        vm = MagicMock(spec=ControlCenterViewModel)
+        vm._working = False
+        vm._last_dock_refresh_ts = 0.0
+        vm._dock_budget_cooldown_until = time.time() + 60
+        vm._DOCK_REFRESH_MIN_INTERVAL_S = 1.0
+        result = ControlCenterViewModel._should_skip_dock_refresh(vm)
+        assert result == 'budget_cooldown'
+
+    def test_recent_heavy_stall_uses_process_elapsed(self) -> None:
+        """Stall gate compares elapsed_ms (process-relative), not epoch."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from iabv_v15.services.evolution import runtime_audit_tracer as rat_mod
+        from iabv_v15.services.evolution.runtime_audit_tracer import RuntimeAuditTracer
+        tracer = RuntimeAuditTracer()
+        tracer.trace(
+            'ui_event', event_type='ui_event_loop_stall', duration_ms=5000,
+        )
+        vm = MagicMock(spec=ControlCenterViewModel)
+        vm._working = False
+        vm._last_dock_refresh_ts = 0.0
+        vm._dock_budget_cooldown_until = 0.0
+        vm._DOCK_REFRESH_MIN_INTERVAL_S = 1.0
+        vm._last_external_consultation_ts = 0.0
+        vm._DOCK_REFRESH_POST_CONSULTATION_COOLDOWN_S = 30.0
+        vm._should_defer_heavy_work = MagicMock(return_value=False)
+        original = rat_mod.get_runtime_tracer
+        rat_mod.get_runtime_tracer = lambda: tracer
+        try:
+            result = ControlCenterViewModel._should_skip_dock_refresh(vm)
+        finally:
+            rat_mod.get_runtime_tracer = original
+        assert result == 'recent_heavy_stall'
+
+    def test_old_heavy_stall_does_not_block(self) -> None:
+        """Stall older than 30s should NOT trigger recent_heavy_stall."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from iabv_v15.services.evolution import runtime_audit_tracer as rat_mod
+        from iabv_v15.services.evolution.runtime_audit_tracer import RuntimeAuditTracer
+        tracer = RuntimeAuditTracer()
+        event = tracer.trace(
+            'ui_event', event_type='ui_event_loop_stall', duration_ms=5000,
+        )
+        # Backdate: make it look like it happened 60s ago in process time
+        now_elapsed = tracer.current_elapsed_ms()
+        event['elapsed_ms'] = now_elapsed - 60_000
+        vm = MagicMock(spec=ControlCenterViewModel)
+        vm._working = False
+        vm._last_dock_refresh_ts = 0.0
+        vm._dock_budget_cooldown_until = 0.0
+        vm._DOCK_REFRESH_MIN_INTERVAL_S = 1.0
+        vm._last_external_consultation_ts = 0.0
+        vm._DOCK_REFRESH_POST_CONSULTATION_COOLDOWN_S = 30.0
+        vm._should_defer_heavy_work = MagicMock(return_value=False)
+        original = rat_mod.get_runtime_tracer
+        rat_mod.get_runtime_tracer = lambda: tracer
+        try:
+            result = ControlCenterViewModel._should_skip_dock_refresh(vm)
+        finally:
+            rat_mod.get_runtime_tracer = original
+        assert result == ''
+
+    def test_refresh_dock_sets_budget_cooldown_on_slow_projector(self) -> None:
+        """After budget exceeded, subsequent refreshes are skipped by cooldown."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        vm = MagicMock(spec=ControlCenterViewModel)
+        vm._working = False
+        vm._last_dock_refresh_ts = 0.0
+        vm._dock_budget_cooldown_until = 0.0
+        vm._DOCK_REFRESH_MIN_INTERVAL_S = 1.0
+        vm._DOCK_REFRESH_BUDGET_MS = 0.001
+        vm._DOCK_REFRESH_BUDGET_COOLDOWN_S = 10.0
+        vm._last_external_consultation_ts = 0.0
+        vm._DOCK_REFRESH_POST_CONSULTATION_COOLDOWN_S = 30.0
+        vm._should_defer_heavy_work = MagicMock(return_value=False)
+        # Bypass _should_skip_dock_refresh so the projector actually runs
+        vm._should_skip_dock_refresh = MagicMock(return_value='')
+        def _slow_project(**kw):
+            time.sleep(0.005)
+            return {
+                'live_process_summary': {},
+                'live_work_items': [],
+                'assistant_session_cards': [],
+                'autonomy_timeline': [],
+            }
+        slow_projector = MagicMock()
+        slow_projector.project.side_effect = _slow_project
+        vm.autonomy_activity_projector = slow_projector
+        vm._goal_context_for_display = MagicMock(return_value={})
+        vm._latest_live_audit = MagicMock(return_value={})
+        vm._latest_replay_visual_summary = MagicMock(return_value={})
+        vm.get_autonomy_activity = MagicMock(return_value={})
+        vm._current_site_id = MagicMock(return_value='')
+        ControlCenterViewModel._refresh_autonomy_dock(vm)
+        assert vm._dock_budget_cooldown_until > time.time()
 
 
 # ======================================================================
@@ -250,6 +400,15 @@ class TestSecurityVerificationRetest:
         msg = vm._append_message.call_args[0][2]
         assert 'Ya hice un retest' in msg
 
+    def test_retest_worker_does_not_call_append_message(self) -> None:
+        """Worker emits taskResolved/taskFailed; never calls _append_message directly."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        import inspect
+        src = inspect.getsource(ControlCenterViewModel._try_handle_security_verification_retest)
+        worker_src = src[src.index('def _retest_worker'):]
+        assert '_append_message' not in worker_src
+        assert '_set_live_status' not in worker_src
+
 
 # ======================================================================
 # G. Browser Thread Affinity
@@ -268,6 +427,46 @@ class TestBrowserThreadAffinity:
         ctrl._context.close.assert_not_called()
         ctrl._browser.close.assert_not_called()
         ctrl._pw.stop.assert_not_called()
+
+    def test_close_from_wrong_thread_sets_close_requested(self) -> None:
+        from iabv_v15.services.capture.browser_session_controller import BrowserSessionController
+        ctrl = BrowserSessionController()
+        ctrl._owner_thread_id = -99999
+        ctrl._context = MagicMock()
+        assert ctrl._close_requested is False
+        ctrl.close()
+        assert ctrl._close_requested is True
+
+    def test_close_if_owner_thread_drains_deferred(self) -> None:
+        from iabv_v15.services.capture.browser_session_controller import BrowserSessionController
+        ctrl = BrowserSessionController()
+        ctrl._owner_thread_id = threading.current_thread().ident
+        mock_ctx = MagicMock()
+        mock_browser = MagicMock()
+        mock_pw = MagicMock()
+        ctrl._context = mock_ctx
+        ctrl._browser = mock_browser
+        ctrl._pw = mock_pw
+        ctrl._close_requested = True
+        result = ctrl.close_if_owner_thread()
+        assert result is True
+        mock_ctx.close.assert_called_once()
+        mock_browser.close.assert_called_once()
+        mock_pw.stop.assert_called_once()
+        assert ctrl._close_requested is False
+
+    def test_close_if_owner_thread_noop_without_request(self) -> None:
+        from iabv_v15.services.capture.browser_session_controller import BrowserSessionController
+        ctrl = BrowserSessionController()
+        ctrl._owner_thread_id = threading.current_thread().ident
+        assert ctrl.close_if_owner_thread() is False
+
+    def test_close_if_owner_thread_noop_from_wrong_thread(self) -> None:
+        from iabv_v15.services.capture.browser_session_controller import BrowserSessionController
+        ctrl = BrowserSessionController()
+        ctrl._owner_thread_id = -99999
+        ctrl._close_requested = True
+        assert ctrl.close_if_owner_thread() is False
 
     def test_close_from_owner_thread_proceeds(self) -> None:
         from iabv_v15.services.capture.browser_session_controller import BrowserSessionController

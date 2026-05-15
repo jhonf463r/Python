@@ -85,6 +85,7 @@ class BrowserSessionController:
         self._context: BrowserContext | None = None
         self._page: Page | None = None
         self._owner_thread_id: int | None = None
+        self._close_requested: bool = False
         if profile_config is not None:
             self.configure(profile_config)
 
@@ -258,6 +259,7 @@ class BrowserSessionController:
         current_tid = threading.current_thread().ident
         owner_tid = self._owner_thread_id
         if owner_tid is not None and current_tid != owner_tid:
+            self._close_requested = True
             logger.warning(
                 'browser_session_close called from thread %s but owned by %s — deferring',
                 current_tid, owner_tid,
@@ -272,6 +274,25 @@ class BrowserSessionController:
             except Exception:
                 pass
             return
+        self._do_close(current_tid)
+
+    def close_if_owner_thread(self) -> bool:
+        """Drain a deferred close if called from the owner thread.
+
+        Returns True if the session was closed, False otherwise.
+        """
+        if not getattr(self, '_close_requested', False):
+            return False
+        current_tid = threading.current_thread().ident
+        owner_tid = self._owner_thread_id
+        if owner_tid is not None and current_tid != owner_tid:
+            return False
+        self._do_close(current_tid)
+        return True
+
+    def _do_close(self, caller_tid: int | None) -> None:
+        """Perform the actual Playwright teardown on the owner thread."""
+        self._close_requested = False
         try:
             self._page = None
             if self._context is not None:
@@ -291,7 +312,8 @@ class BrowserSessionController:
                 get_runtime_tracer().trace(
                     'browser_session_close_unresolved',
                     error=str(exc),
-                    caller_thread=current_tid,
+                    caller_thread=caller_tid,
+                    reason='exception_during_close',
                 )
             except Exception:
                 pass

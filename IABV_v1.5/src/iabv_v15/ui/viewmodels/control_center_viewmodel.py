@@ -4175,7 +4175,12 @@ class ControlCenterViewModel(QObject):
     )
 
     def _try_handle_security_verification_retest(self, message: str) -> bool:
-        """If the user claims they completed security verification, do a single governed retest."""
+        """If the user claims they completed security verification, do a single governed retest.
+
+        The background worker only produces a result dict; UI updates are
+        routed through taskResolved/taskFailed so Qt state is never
+        touched from a non-GUI thread.
+        """
         lowered = message.strip().lower()
         if not any(p in lowered for p in self._SECURITY_RETEST_PATTERNS):
             return False
@@ -4216,6 +4221,7 @@ class ControlCenterViewModel(QObject):
             f'despues de tu confirmacion.',
             'security_retest_initiated',
         )
+        self._working = True
         self._set_live_status('processing')
         self.dataChanged.emit()
 
@@ -4224,40 +4230,23 @@ class ControlCenterViewModel(QObject):
                 result = self._execute_external_consultation_sync(
                     assistant_kind, dispatch_id=f'security_retest_{uuid.uuid4().hex[:8]}',
                 )
-                success = bool(result.get('success'))
-                detail = str(result.get('detail', '') or result.get('meta', ''))
-                if success:
-                    self._append_message(
-                        'assistant', 'IABV',
-                        f'Retest de {assistant_title} exitoso — la verificacion de seguridad ya no bloquea.',
-                        'security_retest_success',
-                    )
-                else:
-                    self._append_message(
-                        'assistant', 'IABV',
-                        f'Retest de {assistant_title} sigue bloqueado. Evidencia: {detail[:200]}. '
-                        'Queda UNRESOLVED — prueba con otro perfil de navegador o reinicia la sesion del navegador.',
-                        'security_retest_still_blocked',
-                    )
+                result_payload = {
+                    'success': bool(result.get('success')),
+                    'detail': str(result.get('detail', '') or result.get('meta', '')),
+                    'assistant_kind': assistant_kind,
+                    'assistant_title': assistant_title,
+                }
                 try:
                     from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
                     get_runtime_tracer().trace(
                         'security_verification_retest_result',
-                        success=success,
-                        assistant_kind=assistant_kind,
-                        detail=detail[:300],
+                        **result_payload,
                     )
                 except Exception:
                     pass
+                self.taskResolved.emit('security_retest', result_payload)
             except Exception as exc:
-                self._append_message(
-                    'assistant', 'IABV',
-                    f'Error en retest de {assistant_title}: {exc}. Queda UNRESOLVED.',
-                    'security_retest_error',
-                )
-            finally:
-                self._set_live_status('idle')
-                self.dataChanged.emit()
+                self.taskFailed.emit('security_retest', str(exc))
 
         self._bg_pool.submit(_retest_worker)
         return True
@@ -6610,6 +6599,8 @@ class ControlCenterViewModel(QObject):
     # ── P0.12 Refresh budget: coalesce timestamps ──
     _DOCK_REFRESH_BUDGET_MS: float = 2000.0
     _DOCK_REFRESH_MIN_INTERVAL_S: float = 1.0
+    _DOCK_REFRESH_POST_CONSULTATION_COOLDOWN_S: float = 30.0
+    _DOCK_REFRESH_BUDGET_COOLDOWN_S: float = 10.0
 
     def _should_skip_dock_refresh(self) -> str:
         """Return a non-empty reason string if dock refresh should be skipped."""
@@ -6617,18 +6608,26 @@ class ControlCenterViewModel(QObject):
         last_refresh = getattr(self, '_last_dock_refresh_ts', 0.0)
         if now - last_refresh < self._DOCK_REFRESH_MIN_INTERVAL_S:
             return 'coalesced'
+        budget_cooldown_until = getattr(self, '_dock_budget_cooldown_until', 0.0)
+        if now < budget_cooldown_until:
+            return 'budget_cooldown'
         if self._working:
             return 'query_pending'
         if self._should_defer_heavy_work():
             return 'resource_pressure'
+        last_ext = getattr(self, '_last_external_consultation_ts', 0.0)
+        if last_ext and (now - last_ext) < self._DOCK_REFRESH_POST_CONSULTATION_COOLDOWN_S:
+            return 'post_external_consultation'
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-            recent_stalls = get_runtime_tracer().events(kind='ui_event', limit=20)
+            tracer = get_runtime_tracer()
+            now_elapsed = tracer.current_elapsed_ms()
+            recent_stalls = tracer.events(kind='ui_event', limit=20)
             heavy_stalls = [
                 e for e in recent_stalls
                 if e.get('data', {}).get('event_type') == 'ui_event_loop_stall'
                 and e.get('data', {}).get('duration_ms', 0) > 2000
-                and (now * 1000 - e.get('elapsed_ms', 0)) < 30_000
+                and (now_elapsed - e.get('elapsed_ms', 0)) < 30_000
             ]
             if heavy_stalls:
                 return 'recent_heavy_stall'
@@ -6646,6 +6645,8 @@ class ControlCenterViewModel(QObject):
                     'query_pending': 'control_autonomy_dock_refresh_skipped_due_to_pressure',
                     'resource_pressure': 'control_autonomy_dock_refresh_skipped_due_to_pressure',
                     'recent_heavy_stall': 'control_autonomy_dock_refresh_deferred',
+                    'post_external_consultation': 'control_autonomy_dock_refresh_deferred',
+                    'budget_cooldown': 'control_autonomy_dock_refresh_deferred',
                 }.get(skip_reason, 'control_autonomy_dock_refresh_deferred')
                 get_runtime_tracer().trace(trace_kind, reason=skip_reason)
             except Exception:
@@ -6672,12 +6673,14 @@ class ControlCenterViewModel(QObject):
         elapsed_ms = (time.perf_counter() - t0) * 1000
         self._last_dock_refresh_ts = time.time()
         if elapsed_ms > self._DOCK_REFRESH_BUDGET_MS:
+            self._dock_budget_cooldown_until = time.time() + self._DOCK_REFRESH_BUDGET_COOLDOWN_S
             try:
                 from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
                 get_runtime_tracer().trace(
                     'control_autonomy_dock_refresh_budget_exceeded',
                     elapsed_ms=round(elapsed_ms, 1),
                     budget_ms=self._DOCK_REFRESH_BUDGET_MS,
+                    cooldown_s=self._DOCK_REFRESH_BUDGET_COOLDOWN_S,
                 )
             except Exception:
                 pass
@@ -9730,6 +9733,7 @@ class ControlCenterViewModel(QObject):
             if adaptive_payload:
                 self._maybe_run_autonomous_evolution(adaptive_payload, source='self_teach')
         elif task_name == 'external_consultation':
+            self._last_external_consultation_ts = time.time()
             self._clear_autonomy_activity_override()
             external_payload = dict(payload or {})
             adaptive_payload = dict(external_payload.get('payload') or {})
@@ -9770,6 +9774,24 @@ class ControlCenterViewModel(QObject):
         elif task_name == 'payload':
             self._append_message('assistant', 'Payload', f"Payload archivado con {payload.get('episodes')} episodios, {payload.get('artifacts')} artefactos y {payload.get('knowledge')} items de conocimiento.", Path(str(payload.get('path'))).name)
             self._busy_label = f"Payload listo: {Path(str(payload.get('path'))).name}."
+        elif task_name == 'security_retest':
+            retest_data = dict(payload) if isinstance(payload, dict) else {}
+            _rt_title = str(retest_data.get('assistant_title', 'herramienta'))
+            if retest_data.get('success'):
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Retest de {_rt_title} exitoso — la verificacion de seguridad ya no bloquea.',
+                    'security_retest_success',
+                )
+            else:
+                _rt_detail = str(retest_data.get('detail', ''))[:200]
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Retest de {_rt_title} sigue bloqueado. Evidencia: {_rt_detail}. '
+                    'Queda UNRESOLVED — prueba con otro perfil de navegador o reinicia la sesion del navegador.',
+                    'security_retest_still_blocked',
+                )
+            self._set_live_status('idle')
         elif task_name == 'pbt':
             self._pbt_state = dict(payload)
             self._pbt_candidates = list(payload.get('candidates', []))[:4]
@@ -9889,6 +9911,16 @@ class ControlCenterViewModel(QObject):
 
     @Slot(str, str)
     def _apply_task_failure(self, task_name: str, message: str) -> None:
+        if task_name == 'security_retest':
+            self._append_message(
+                'assistant', 'IABV',
+                f'Error en retest de seguridad: {message[:200]}. Queda UNRESOLVED.',
+                'security_retest_error',
+            )
+            self._working = False
+            self._set_live_status('idle')
+            self.dataChanged.emit()
+            return
         title = 'IABV' if task_name == 'chat' else task_name.upper()
         visible_message, visible_meta = self._humanize_task_failure(task_name, message)
         self._trace_dispatch_terminal(

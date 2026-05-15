@@ -77,8 +77,23 @@ def _git_cmd(args: list[str], cwd: str | Path) -> str:
         return ''
 
 
+_MARKER_FILES: tuple[str, ...] = (
+    'ui/viewmodels/control_center_viewmodel.py',
+    'services/evolution/runtime_audit_tracer.py',
+    'services/evolution/freeze_incident_reporter.py',
+    'services/capture/browser_session_controller.py',
+)
+
+_FINGERPRINT_BUDGET_MS: float = 250.0
+
+
 def _collect_build_fingerprint(workspace: str | Path = '.') -> dict[str, Any]:
-    """Collect git and feature-marker info for the running build."""
+    """Collect git and feature-marker info for the running build.
+
+    Uses targeted file reads (not rglob) and scoped dirty check
+    (src/, tests/, AGENTS.md only) to stay under 250ms budget.
+    """
+    t0 = time.perf_counter()
     ws = Path(workspace).resolve()
     src_dir = ws / 'src' / 'iabv_v15'
     if not src_dir.is_dir():
@@ -86,36 +101,52 @@ def _collect_build_fingerprint(workspace: str | Path = '.') -> dict[str, Any]:
 
     branch = _git_cmd(['rev-parse', '--abbrev-ref', 'HEAD'], ws)
     head = _git_cmd(['rev-parse', 'HEAD'], ws)
-    dirty = _git_cmd(['status', '--porcelain'], ws) != ''
+    dirty_output = _git_cmd(
+        ['diff-index', '--name-only', 'HEAD', '--', 'src/', 'tests/', 'AGENTS.md'],
+        ws,
+    )
+    if dirty_output:
+        dirty = True
+        git_status = 'dirty'
+    elif dirty_output == '' and head:
+        dirty = False
+        git_status = 'clean'
+    else:
+        dirty = False
+        git_status = 'unknown'
     origin_main = _git_cmd(['rev-parse', 'origin/main'], ws)
 
-    # Probe feature markers by searching for key strings in source files
     markers: dict[str, bool] = {}
     for marker_name, search_string in _REQUIRED_FEATURE_MARKERS.items():
         found = False
-        try:
-            for py_file in src_dir.rglob('*.py'):
-                try:
-                    content = py_file.read_text(encoding='utf-8', errors='ignore')
+        for rel_path in _MARKER_FILES:
+            try:
+                target = src_dir / rel_path
+                if target.is_file():
+                    content = target.read_text(encoding='utf-8', errors='ignore')
                     if search_string in content:
                         found = True
                         break
-                except Exception:
-                    continue
-        except Exception:
-            pass
+            except Exception:
+                continue
         markers[marker_name] = found
 
-    return {
+    elapsed_ms = (time.perf_counter() - t0) * 1000
+    result: dict[str, Any] = {
         'branch': branch,
         'head': head,
         'dirty': dirty,
+        'git_status': git_status,
         'origin_main_head': origin_main,
         'workspace': str(ws),
         'feature_markers': markers,
         'stale': not all(markers.values()),
         'missing_markers': [k for k, v in markers.items() if not v],
+        'elapsed_ms': round(elapsed_ms, 1),
     }
+    if elapsed_ms > _FINGERPRINT_BUDGET_MS:
+        result['budget_exceeded'] = True
+    return result
 
 
 class RuntimeAuditTracer:
@@ -373,7 +404,18 @@ class RuntimeAuditTracer:
         and probes for feature markers introduced in recent P0 slices.
         """
         fp = _collect_build_fingerprint(workspace or '.')
-        return self.trace('runtime_build_fingerprint', **fp)
+        event = self.trace('runtime_build_fingerprint', **fp)
+        if fp.get('budget_exceeded'):
+            self.trace(
+                'runtime_build_fingerprint_slow',
+                elapsed_ms=fp.get('elapsed_ms', 0),
+                budget_ms=_FINGERPRINT_BUDGET_MS,
+            )
+        return event
+
+    def current_elapsed_ms(self) -> float:
+        """Return milliseconds since tracer boot (process-relative)."""
+        return round((time.perf_counter() - self._t0) * 1000.0, 1)
 
     # ------------------------------------------------------------------
     # Query / export
