@@ -1,7 +1,7 @@
 ﻿from __future__ import annotations
 
 import atexit
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from datetime import datetime, timezone
 import logging
 from pathlib import Path
@@ -57,6 +57,7 @@ class ControlCenterViewModel(QObject):
     # --- Timeout constants for worker threads (Sub-objective A) ---
     _CHAT_WORKER_TIMEOUT_S: float = 120.0
     _EXTERNAL_WORKER_TIMEOUT_S: float = 180.0
+    _POST_RECAPTURE_RESPONSE_RETRY_TIMEOUT_S: float = 12.0
 
     # --- Terminal dispatch states (Sub-objective A) ---
     # Every dispatch MUST end in one of these states visible to the user.
@@ -4632,6 +4633,20 @@ class ControlCenterViewModel(QObject):
     # P0.10: post-recapture response capture retry
     # ------------------------------------------------------------------
 
+    def _compact_response_retry_reason(self, reason: Any) -> str:
+        """Keep retry reasons useful without leaking local paths or emails."""
+        text = str(reason or '').strip()
+        if not text:
+            return ''
+        text = re.sub(
+            r'[A-Za-z]:\\(?:[^\\/:*?"<>|\r\n]+\\)*([^\\/:*?"<>|\r\n]+)',
+            r'...\\\1',
+            text,
+        )
+        text = re.sub(r'/(?:[^/\s]+/)+([^/\s]+)', r'.../\1', text)
+        text = re.sub(r'[\w.+-]+@[\w.-]+', '[email]', text)
+        return text[:240]
+
     def _attempt_post_recapture_response_retry(
         self,
         *,
@@ -4658,7 +4673,8 @@ class ControlCenterViewModel(QObject):
             status='started',
             reason='',
         )
-        if self.autonomous_evolution_service is None:
+        service = getattr(self, 'autonomous_evolution_service', None)
+        if service is None:
             result = {
                 'retry_attempted': False,
                 'response_captured': False,
@@ -4691,13 +4707,41 @@ class ControlCenterViewModel(QObject):
         }
         user_goal = str(self._last_user_goal or '').strip() or f'respuesta de {assistant_title}'
 
+        executor: ThreadPoolExecutor | None = None
         try:
-            reingest = self.autonomous_evolution_service.reingest_existing_session(
+            executor = ThreadPoolExecutor(
+                max_workers=1,
+                thread_name_prefix='ccvm-response-retry',
+            )
+            future = executor.submit(
+                service.reingest_existing_session,
                 existing_consultation=existing_consultation,
                 adaptive_payload=dict(payload),
                 user_goal=user_goal,
                 source=f'post_recapture_retry_{dispatch_id}',
             )
+            reingest = future.result(
+                timeout=self._POST_RECAPTURE_RESPONSE_RETRY_TIMEOUT_S,
+            )
+        except FutureTimeoutError:
+            try:
+                future.cancel()  # type: ignore[name-defined]
+            except Exception:
+                pass
+            result = {
+                'retry_attempted': True,
+                'response_captured': False,
+                'retry_status': 'timeout',
+                'reason': 'reingest_timeout',
+            }
+            self._trace_response_capture_retry(
+                event='response_capture_retry_result',
+                assistant_kind=assistant_kind,
+                dispatch_id=dispatch_id,
+                status='timeout',
+                reason=result['reason'],
+            )
+            return result
         except Exception as exc:
             result = {
                 'retry_attempted': True,
@@ -4713,9 +4757,14 @@ class ControlCenterViewModel(QObject):
                 reason=result['reason'],
             )
             return result
+        finally:
+            if executor is not None:
+                executor.shutdown(wait=False, cancel_futures=True)
 
         captured = bool(reingest.get('pre_capture_ingested'))
-        reason = str(reingest.get('reason') or ('captured' if captured else 'no_response'))
+        reason = self._compact_response_retry_reason(
+            reingest.get('reason') or ('captured' if captured else 'no_response')
+        )
         status = 'success' if captured else 'no_response'
 
         result = {
@@ -6841,7 +6890,12 @@ class ControlCenterViewModel(QObject):
             lines.append('Objetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.')
         return '\n'.join(item for item in lines if item).strip()
 
-    def _execute_external_consultation_sync(self, assistant_kind: str) -> dict[str, Any]:
+    def _execute_external_consultation_sync(
+        self,
+        assistant_kind: str,
+        *,
+        dispatch_id: str = '',
+    ) -> dict[str, Any]:
         if self.tool_teach_service is None:
             message = 'La capa Tool Teaching externa no esta inicializada en este contexto.'
             self._latest_response_text = message
@@ -7128,7 +7182,7 @@ class ControlCenterViewModel(QObject):
                         payload=payload,
                         assistant_title=assistant_title,
                         assistant_kind=actual_assistant_kind or requested_assistant_kind,
-                        dispatch_id=dispatch_id,
+                        dispatch_id=dispatch_id or 'external_consultation_untracked',
                     )
                     if retry_result.get('response_captured'):
                         # Retry succeeded — update proof and allow success
@@ -7489,7 +7543,10 @@ class ControlCenterViewModel(QObject):
 
         def worker() -> None:
             try:
-                result_payload = self._execute_external_consultation_sync(assistant_kind)
+                result_payload = self._execute_external_consultation_sync(
+                    assistant_kind,
+                    dispatch_id=_dispatch_id,
+                )
                 if not self._is_dispatch_active('external_consultation', _dispatch_id):
                     import logging
                     logging.getLogger(__name__).debug('external_consultation worker %s discarded (stale)', _dispatch_id[:8])

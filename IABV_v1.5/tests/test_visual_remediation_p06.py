@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import time
 import types
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -1003,7 +1004,7 @@ class TestPostRecaptureResponseRetry:
     def test_retry_exception_returns_error(self) -> None:
         """When reingest raises an exception, retry_status must be error."""
         vm = self._make_vm_with_evolution_service(
-            reingest_exception=TimeoutError('connection timed out'),
+            reingest_exception=RuntimeError('connection failed'),
         )
         result = vm._attempt_post_recapture_response_retry(
             consultation_metadata={
@@ -1018,14 +1019,44 @@ class TestPostRecaptureResponseRetry:
         assert result['retry_attempted'] is True
         assert result['response_captured'] is False
         assert result['retry_status'] == 'error'
-        assert 'TimeoutError' in result['reason']
+        assert 'RuntimeError' in result['reason']
+
+    def test_retry_timeout_returns_terminal_timeout(self) -> None:
+        """A slow reingest must return timeout instead of blocking the flow."""
+        vm = _make_vm()
+        vm._POST_RECAPTURE_RESPONSE_RETRY_TIMEOUT_S = 0.01
+        mock_service = MagicMock()
+
+        def slow_reingest(**_kwargs: Any) -> dict[str, Any]:
+            time.sleep(0.2)
+            return {'pre_capture_ingested': True}
+
+        mock_service.reingest_existing_session.side_effect = slow_reingest
+        vm.autonomous_evolution_service = mock_service
+
+        result = vm._attempt_post_recapture_response_retry(
+            consultation_metadata={
+                'selected_tool_id': 'tool_chatgpt',
+                'assistant_kind': 'chatgpt',
+            },
+            payload={'metadata': {}},
+            assistant_title='ChatGPT',
+            assistant_kind='chatgpt',
+            dispatch_id='disp_timeout',
+        )
+
+        assert result['retry_attempted'] is True
+        assert result['response_captured'] is False
+        assert result['retry_status'] == 'timeout'
+        assert result['reason'] == 'reingest_timeout'
 
     def test_retry_metadata_no_pii(self) -> None:
         """Retry result must not contain PII."""
         vm = self._make_vm_with_evolution_service(
             reingest_return={
-                'pre_capture_ingested': True,
+                'pre_capture_ingested': False,
                 'pre_capture_source': 'reingest',
+                'reason': r'C:\Users\faber\AppData\Local\Temp\capture.txt faber@example.com',
             },
         )
         result = vm._attempt_post_recapture_response_retry(
@@ -1040,6 +1071,8 @@ class TestPostRecaptureResponseRetry:
         )
         result_str = json.dumps(result)
         assert 'C:\\Users' not in result_str
+        assert 'faber' not in result_str
+        assert 'faber@example.com' not in result_str
         assert '/home/' not in result_str
         assert 'password' not in result_str.lower()
 
