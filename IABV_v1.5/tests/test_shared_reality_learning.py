@@ -466,3 +466,228 @@ class TestPlatformPendingNoDuplicates:
         task = PlatformPendingTask.model_validate(data)
         assert task.id == 'runtime_consulting_lifecycle_recovery'
         assert 'p05_additions' in task.metadata
+
+    def test_external_visual_handoff_has_p07(self) -> None:
+        from iabv_v15.domain.models import PlatformPendingTask
+        path = Path(__file__).resolve().parent.parent / 'data' / 'evolution' / 'platform_pending' / 'task_external_visual_handoff_alignment.json'
+        data = json.loads(path.read_text(encoding='utf-8'))
+        task = PlatformPendingTask.model_validate(data)
+        assert 'p07_additions' in task.metadata
+
+
+# ══════════════════════════════════════════════════════════════════════
+# P0.7 — Visual Remediation Learning / OSES Feedback
+# ══════════════════════════════════════════════════════════════════════
+
+
+def _make_remediation_event(
+    *,
+    assistant_kind: str = 'chatgpt',
+    target_window_title: str = 'ChatGPT - Google Chrome for Testing',
+    action_taken: str = 'restore_window_by_hwnd',
+    capture_useful_after: bool | None = None,
+    blank_probability_after: float | None = None,
+    proposed_action: str = 'restore_window_by_hwnd',
+    detail: str = 'Win32 ShowWindow(16319628, SW_RESTORE)=1',
+    remediation_detail_code: str = '',
+    remediation_success: bool | None = None,
+    result_status: str = 'remediation_available',
+    seq: int = 1,
+) -> dict[str, Any]:
+    data: dict[str, Any] = {
+        'assistant_kind': assistant_kind,
+        'target_window_title': target_window_title,
+        'action_taken': action_taken,
+        'capture_useful_after': capture_useful_after,
+        'blank_probability_after': blank_probability_after,
+        'proposed_action': proposed_action,
+        'detail': detail,
+        'remediation_detail_code': remediation_detail_code,
+        'remediation_success': remediation_success,
+        'result_status': result_status,
+        'hwnd_present': True,
+        'capture_useful_before': False,
+        'blank_probability_before': 0.98,
+    }
+    return {
+        'ts': '2026-05-15T10:00:00.000Z',
+        'elapsed_ms': 1000.0 * seq,
+        'kind': 'visual_remediation_attempted',
+        'seq': seq,
+        'data': data,
+    }
+
+
+class TestOSESRepeatedRestoreWithoutRecapture:
+    """OSES detects repeated_restore_without_recapture when action was taken
+    but capture_useful_after is None."""
+
+    def test_two_restores_without_recapture(self, tmp_path: Path) -> None:
+        events = [
+            _make_remediation_event(seq=1),
+            _make_remediation_event(seq=2, assistant_kind='gemini'),
+        ]
+        _write_audit_events(tmp_path, events)
+        oses = _make_oses(tmp_path)
+        findings = oses._visual_remediation_findings()
+        cats = [f.category for f in findings]
+        assert 'repeated_restore_without_recapture' in cats
+        f = next(f for f in findings if f.category == 'repeated_restore_without_recapture')
+        assert f.metadata['frequency'] == 2
+        assert f.metadata['recommended_action'] == 'implement_recapture_after_restore'
+
+    def test_single_event_no_findings(self, tmp_path: Path) -> None:
+        events = [_make_remediation_event(seq=1)]
+        _write_audit_events(tmp_path, events)
+        oses = _make_oses(tmp_path)
+        findings = oses._visual_remediation_findings()
+        assert len(findings) == 0
+
+
+class TestOSESRepeatedWin32Unavailable:
+    """OSES detects repeated_win32_restore_unavailable when detail says
+    Win32 API not available."""
+
+    def test_two_win32_unavailable(self, tmp_path: Path) -> None:
+        events = [
+            _make_remediation_event(
+                seq=1,
+                action_taken='none',
+                detail='Win32 API not available (not running on Windows desktop).',
+            ),
+            _make_remediation_event(
+                seq=2,
+                action_taken='none',
+                detail='Win32 API not available (not running on Windows desktop).',
+            ),
+        ]
+        _write_audit_events(tmp_path, events)
+        oses = _make_oses(tmp_path)
+        findings = oses._visual_remediation_findings()
+        cats = [f.category for f in findings]
+        assert 'repeated_win32_restore_unavailable' in cats
+        f = next(f for f in findings if f.category == 'repeated_win32_restore_unavailable')
+        assert f.metadata['frequency'] == 2
+
+    def test_two_win32_unavailable_from_runtime_trace_code(self, tmp_path: Path) -> None:
+        """Runtime producer stores a compact detail code, not raw detail text."""
+        events = [
+            _make_remediation_event(
+                seq=1,
+                action_taken='restore_window_by_hwnd',
+                detail='',
+                remediation_detail_code='win32_api_not_available',
+                remediation_success=False,
+            ),
+            _make_remediation_event(
+                seq=2,
+                action_taken='restore_window_by_hwnd',
+                detail='',
+                remediation_detail_code='win32_api_not_available',
+                remediation_success=False,
+            ),
+        ]
+        _write_audit_events(tmp_path, events)
+        oses = _make_oses(tmp_path)
+        findings = oses._visual_remediation_findings()
+        cats = [f.category for f in findings]
+        assert 'repeated_win32_restore_unavailable' in cats
+
+
+class TestOSESRepeatedUserSelectionNeeded:
+    """OSES detects repeated_user_selection_needed when proposed_action
+    is request_user_selection."""
+
+    def test_two_user_selections(self, tmp_path: Path) -> None:
+        events = [
+            _make_remediation_event(
+                seq=1,
+                proposed_action='request_user_selection',
+                action_taken='none',
+            ),
+            _make_remediation_event(
+                seq=2,
+                proposed_action='request_user_selection',
+                action_taken='none',
+            ),
+        ]
+        _write_audit_events(tmp_path, events)
+        oses = _make_oses(tmp_path)
+        findings = oses._visual_remediation_findings()
+        cats = [f.category for f in findings]
+        assert 'repeated_user_selection_needed' in cats
+        f = next(f for f in findings if f.category == 'repeated_user_selection_needed')
+        assert f.metadata['frequency'] == 2
+
+
+class TestOSESStaleEventsNotContaminate:
+    """Log with 60 old noise events + 2 recent remediation events must
+    detect only the recent ones. last_case must point to the newest."""
+
+    def test_recent_events_not_contaminated_by_old(self, tmp_path: Path) -> None:
+        old_events = [_make_noise_event(seq=i) for i in range(1, 61)]
+        recent = [
+            _make_remediation_event(seq=100),
+            _make_remediation_event(seq=101, assistant_kind='gemini'),
+        ]
+        _write_audit_events(tmp_path, old_events + recent)
+        oses = _make_oses(tmp_path)
+        findings = oses._visual_remediation_findings()
+        cats = [f.category for f in findings]
+        assert 'repeated_restore_without_recapture' in cats
+        f = next(f for f in findings if f.category == 'repeated_restore_without_recapture')
+        assert f.metadata['last_case']['assistant_kind'] == 'gemini'
+
+
+class TestPortableContextRemediationNoPII:
+    """PortableContext exports remediation findings without PII."""
+
+    def test_remediation_section_no_hwnd_no_paths(self, tmp_path: Path) -> None:
+        review: dict[str, Any] = {
+            'findings': [
+                {
+                    'category': 'repeated_restore_without_recapture',
+                    'title': 'Restauración sin recaptura: 3 eventos',
+                    'metadata': {
+                        'pattern': 'repeated_restore_without_recapture',
+                        'frequency': 3,
+                        'last_case': {
+                            'assistant_kind': 'chatgpt',
+                            'action_taken': 'restore_window_by_hwnd',
+                        },
+                        'recommended_action': 'implement_recapture_after_restore',
+                        'priority': 'high',
+                    },
+                },
+                {
+                    'category': 'repeated_win32_restore_unavailable',
+                    'title': 'Win32 restore no disponible: 2 eventos',
+                    'metadata': {
+                        'pattern': 'repeated_win32_restore_unavailable',
+                        'frequency': 2,
+                        'recommended_action': 'environment_limitation_marker',
+                        'priority': 'medium',
+                    },
+                },
+            ],
+        }
+        storage = ArtifactStorage(root=str(tmp_path / 'data'))
+        pcs = PortableContextService(
+            workspace_root=str(tmp_path),
+            storage=storage,
+        )
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        section = pcs._shared_reality_section(review=review, now=now)
+        assert len(section.items) == 2
+        section_str = json.dumps([item for item in section.items])
+        assert 'hwnd' not in section_str.lower() or 'unknown' in section_str.lower()
+        assert 'C:\\' not in section_str
+        assert '/home/' not in section_str
+        assert section.summary
+        assert 'remediación' in section.summary.lower() or 'mismatch' in section.summary.lower()
+
+        for item in section.items:
+            assert 'label' in item
+            assert 'frequency' in item
+            assert 'recommended_action' in item

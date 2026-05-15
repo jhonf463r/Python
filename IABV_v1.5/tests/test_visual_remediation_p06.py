@@ -306,11 +306,15 @@ class TestTraceVisualRemediationAttempted:
                 capture_useful_after=None,
                 blank_probability_before=0.98,
                 blank_probability_after=None,
+                remediation_success=False,
+                remediation_detail_code='win32_api_not_available',
                 unresolved=['UNRESOLVED:visual_remediation_recapture_not_available'],
             )
         ev = traced_events[0]
         assert ev['capture_useful_after'] is None
         assert ev['blank_probability_after'] is None
+        assert ev['remediation_success'] is False
+        assert ev['remediation_detail_code'] == 'win32_api_not_available'
         assert 'UNRESOLVED:visual_remediation_recapture_not_available' in ev['unresolved']
 
     def test_hwnd_zero_shows_present_false(self) -> None:

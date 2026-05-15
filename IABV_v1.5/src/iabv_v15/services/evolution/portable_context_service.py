@@ -3444,17 +3444,23 @@ class PortableContextService:
         review: dict[str, Any],
         now,
     ) -> PortableContextSection:
-        """Export compact summary of shared reality handoff findings from OSES.
+        """Export compact summary of shared reality + visual remediation findings.
 
-        Only includes findings whose category matches the P0.5 patterns.
+        Includes P0.5 handoff patterns and P0.7 remediation patterns.
         Strips PII and full file paths — keeps only pattern, frequency,
         last assistant_kind, and recommended_action.
         """
         sr_categories = {
+            # P0.5 handoff patterns
             'repeated_visual_mismatch',
             'user_browser_differs_from_iabv_session',
             'black_capture_repeated',
             'user_needed_to_explain_same_gap',
+            # P0.7 remediation patterns
+            'repeated_restore_without_recapture',
+            'repeated_win32_restore_unavailable',
+            'repeated_user_selection_needed',
+            'repeated_restore_attempted',
         }
         items: list[dict[str, Any]] = []
         for finding in list(review.get('findings') or []):
@@ -3472,9 +3478,9 @@ class PortableContextService:
                 'priority': meta.get('priority', 'medium'),
             })
         summary = (
-            f'{len(items)} patrones de mismatch visual detectados'
+            f'{len(items)} patrones de mismatch/remediación visual detectados'
             if items else
-            'Sin patrones de mismatch visual repetido'
+            'Sin patrones de mismatch visual ni remediación repetida'
         )
         return self._section(
             section_id='shared_reality_learning',

@@ -4359,6 +4359,8 @@ class ControlCenterViewModel(QObject):
         capture_useful_after: bool | None = None,
         blank_probability_before: float = 0.0,
         blank_probability_after: float | None = None,
+        remediation_success: bool | None = None,
+        remediation_detail_code: str = '',
         unresolved: list[str] | None = None,
     ) -> None:
         """Log a visual_remediation_attempted event to RuntimeAuditTracer."""
@@ -4378,6 +4380,8 @@ class ControlCenterViewModel(QObject):
                 capture_useful_after=capture_useful_after,
                 blank_probability_before=blank_probability_before,
                 blank_probability_after=blank_probability_after,
+                remediation_success=remediation_success,
+                remediation_detail_code=remediation_detail_code,
                 unresolved=unresolved or [],
             )
         except Exception:
@@ -6628,6 +6632,13 @@ class ControlCenterViewModel(QObject):
             remediation_unresolved = list(capture_state.get('unresolved') or [])
             if 'UNRESOLVED:visual_remediation_recapture_not_available' not in remediation_unresolved:
                 remediation_unresolved.append('UNRESOLVED:visual_remediation_recapture_not_available')
+            remediation_detail = str(remediation_result.get('detail') or '')
+            remediation_detail_lower = remediation_detail.lower()
+            remediation_detail_code = (
+                'win32_api_not_available'
+                if 'win32' in remediation_detail_lower and 'not available' in remediation_detail_lower
+                else ''
+            )
             self._trace_visual_remediation_attempted(
                 assistant_kind=actual_assistant_kind or requested_assistant_kind,
                 target_window_title=assessment.get('target_window_title', ''),
@@ -6641,6 +6652,8 @@ class ControlCenterViewModel(QObject):
                 capture_useful_after=None,
                 blank_probability_before=blank_prob_before,
                 blank_probability_after=None,
+                remediation_success=bool(remediation_result.get('success', False)),
+                remediation_detail_code=remediation_detail_code,
                 unresolved=remediation_unresolved,
             )
             metadata['visual_remediation'] = {

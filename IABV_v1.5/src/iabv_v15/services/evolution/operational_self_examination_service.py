@@ -837,6 +837,10 @@ class OperationalSelfExaminationService:
         # patterns from shared_reality_handoff events in runtime_audit.jsonl.
         findings.extend(self._shared_reality_handoff_findings())
 
+        # P0.7: Visual Remediation Learning — detect patterns from
+        # visual_remediation_attempted events in runtime_audit.jsonl.
+        findings.extend(self._visual_remediation_findings())
+
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -7906,6 +7910,204 @@ class OperationalSelfExaminationService:
                     },
                     'recommended_action': 'proactive_causal_explanation',
                     'priority': 'high',
+                },
+            ))
+
+        return findings
+
+    def _visual_remediation_findings(self) -> list[SelfExaminationFinding]:
+        """Detect repeated patterns from ``visual_remediation_attempted``
+        events in ``runtime_audit.jsonl``.
+
+        Patterns detected (each requires ≥2 events):
+        - ``repeated_restore_without_recapture``: action was taken but
+          capture_useful_after is None (no recapture API).
+        - ``repeated_win32_restore_unavailable``: Win32 API not available.
+        - ``repeated_user_selection_needed``: user had to select window.
+        - ``repeated_restore_attempted``: restore was attempted — measure
+          whether subsequent consultations improved.
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        audit_path = Path(str(workspace)) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+        events: list[dict[str, Any]] = []
+        try:
+            recent_lines: deque[str] = deque(maxlen=5000)
+            with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                for line in fh:
+                    recent_lines.append(line)
+            for line in reversed(recent_lines):
+                if not line.strip():
+                    continue
+                try:
+                    event = json.loads(line)
+                except Exception:
+                    continue
+                if event.get('kind') != 'visual_remediation_attempted':
+                    continue
+                events.append(dict(event.get('data') or event))
+                if len(events) >= 50:
+                    break
+            events.reverse()
+        except Exception:
+            return []
+        if len(events) < 2:
+            return []
+        findings: list[SelfExaminationFinding] = []
+
+        # Pattern 1: repeated_restore_without_recapture
+        no_recapture = [
+            e for e in events
+            if e.get('action_taken', 'none') != 'none'
+            and e.get('capture_useful_after') is None
+        ]
+        if len(no_recapture) >= 2:
+            last = no_recapture[-1]
+            findings.append(SelfExaminationFinding(
+                category='repeated_restore_without_recapture',
+                severity=IssueSeverity.HIGH,
+                title=f'Restauración sin recaptura: {len(no_recapture)} eventos',
+                summary=(
+                    f'{len(no_recapture)} remediaciones ejecutaron restore pero '
+                    f'capture_useful_after=None (sin recaptura). '
+                    f'Último: {last.get("assistant_kind", "?")}.'
+                ),
+                confidence=0.9,
+                recommendation=(
+                    'Implementar recaptura real después de restaurar ventana, '
+                    'o reintento automático controlado de la consulta externa.'
+                ),
+                evidence_refs=[
+                    f'restore_without_recapture_count={len(no_recapture)}',
+                ],
+                source_refs=['runtime_audit', 'visual_remediation_attempted'],
+                metadata={
+                    'pattern': 'repeated_restore_without_recapture',
+                    'frequency': len(no_recapture),
+                    'last_case': {
+                        'assistant_kind': last.get('assistant_kind'),
+                        'action_taken': last.get('action_taken'),
+                    },
+                    'recommended_action': 'implement_recapture_after_restore',
+                    'priority': 'high',
+                },
+            ))
+
+        # Pattern 2: repeated_win32_restore_unavailable
+        win32_unavailable = [
+            e for e in events
+            if (
+                str(e.get('remediation_detail_code', '')).lower()
+                == 'win32_api_not_available'
+                or (
+                    'win32' in str(e.get('detail', '')).lower()
+                    and 'not available' in str(e.get('detail', '')).lower()
+                )
+            )
+        ]
+        if len(win32_unavailable) >= 2:
+            findings.append(SelfExaminationFinding(
+                category='repeated_win32_restore_unavailable',
+                severity=IssueSeverity.MEDIUM,
+                title=f'Win32 restore no disponible: {len(win32_unavailable)} eventos',
+                summary=(
+                    f'{len(win32_unavailable)} intentos de restauración fallaron '
+                    f'porque Win32 API no estaba disponible. Esto indica ejecución '
+                    f'fuera de Windows desktop.'
+                ),
+                confidence=0.85,
+                recommendation=(
+                    'Marcar limitación de entorno. La restauración automática '
+                    'solo funciona en Windows desktop. Considerar mecanismo '
+                    'alternativo para otros entornos.'
+                ),
+                evidence_refs=[
+                    f'win32_unavailable_count={len(win32_unavailable)}',
+                ],
+                source_refs=['runtime_audit', 'visual_remediation_attempted'],
+                metadata={
+                    'pattern': 'repeated_win32_restore_unavailable',
+                    'frequency': len(win32_unavailable),
+                    'recommended_action': 'environment_limitation_marker',
+                    'priority': 'medium',
+                },
+            ))
+
+        # Pattern 3: repeated_user_selection_needed
+        user_selection = [
+            e for e in events
+            if e.get('proposed_action') == 'request_user_selection'
+        ]
+        if len(user_selection) >= 2:
+            last = user_selection[-1]
+            findings.append(SelfExaminationFinding(
+                category='repeated_user_selection_needed',
+                severity=IssueSeverity.MEDIUM,
+                title=f'Selección de ventana requerida: {len(user_selection)} eventos',
+                summary=(
+                    f'{len(user_selection)} veces IABV no pudo identificar la ventana '
+                    f'objetivo y requirió selección del usuario.'
+                ),
+                confidence=0.85,
+                recommendation=(
+                    'Implementar selector visual de ventana/perfil. Permitir '
+                    'al usuario pre-configurar qué ventana usar para cada herramienta.'
+                ),
+                evidence_refs=[
+                    f'user_selection_count={len(user_selection)}',
+                ],
+                source_refs=['runtime_audit', 'visual_remediation_attempted'],
+                metadata={
+                    'pattern': 'repeated_user_selection_needed',
+                    'frequency': len(user_selection),
+                    'last_case': {
+                        'assistant_kind': last.get('assistant_kind'),
+                        'target_window_title': last.get('target_window_title'),
+                    },
+                    'recommended_action': 'visual_window_selector',
+                    'priority': 'medium',
+                },
+            ))
+
+        # Pattern 4: repeated_restore_attempted
+        restore_attempted = [
+            e for e in events
+            if e.get('action_taken') in (
+                'restore_window_by_hwnd', 'restore_and_recapture',
+            )
+        ]
+        if len(restore_attempted) >= 2:
+            last = restore_attempted[-1]
+            findings.append(SelfExaminationFinding(
+                category='repeated_restore_attempted',
+                severity=IssueSeverity.LOW,
+                title=f'Restauración intentada: {len(restore_attempted)} eventos',
+                summary=(
+                    f'{len(restore_attempted)} intentos de restaurar ventana vía Win32. '
+                    f'Medir si la siguiente consulta mejora después del restore.'
+                ),
+                confidence=0.7,
+                recommendation=(
+                    'Correlacionar resultado de restauración con éxito de la '
+                    'siguiente consulta externa. Si no mejora, ajustar estrategia.'
+                ),
+                evidence_refs=[
+                    f'restore_attempted_count={len(restore_attempted)}',
+                ],
+                source_refs=['runtime_audit', 'visual_remediation_attempted'],
+                metadata={
+                    'pattern': 'repeated_restore_attempted',
+                    'frequency': len(restore_attempted),
+                    'last_case': {
+                        'assistant_kind': last.get('assistant_kind'),
+                        'action_taken': last.get('action_taken'),
+                        'result_status': last.get('result_status'),
+                    },
+                    'recommended_action': 'measure_post_restore_improvement',
+                    'priority': 'low',
                 },
             ))
 

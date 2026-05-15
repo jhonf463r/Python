@@ -5,8 +5,8 @@
   "category": "runtime_stability",
   "priority": "P0",
   "description": "When an external tool fails (login, captcha, permission, quota, timeout, DOM error, offscreen/minimized window, black capture), the UI shows a structured message: WHAT tool, WHAT block, WHAT evidence, WHAT human action, whether local fallback is viable.",
-  "resume_hint": "P0.6 adds visual remediation: _assess_visual_remediation() classifies failed captures (minimized/offscreen/black/ambiguous), _attempt_safe_remediation() tries reversible Win32 restore, _trace_visual_remediation_attempted() logs outcome, _remediation_user_message() gives practical guidance. Wired into _execute_external_consultation_sync before shared reality handoff.",
-  "next_action": "Live Windows proof: run IABV with P0.6 merged. Trigger ChatGPT with minimized window → verify remediation assessment runs, trace event emitted, user gets practical message with retry guidance.",
+  "resume_hint": "P0.7 closes the remediation learning loop: OSES _visual_remediation_findings() reads visual_remediation_attempted events and detects 4 patterns (repeated_restore_without_recapture, repeated_win32_restore_unavailable, repeated_user_selection_needed, repeated_restore_attempted). PortableContext exports compact remediation summary. Next: recaptura real controlada.",
+  "next_action": "P0.8: implement real recapture after restore. Live Windows proof with P0.7 to verify OSES detects remediation patterns.",
   "metadata": {
     "covered_by_pr": "#377",
     "coverage_detail": "_human_external_consultation_failure classifies 7 failure types (security_verification, codex_state_missing, access_denied, session_expired, timeout, quota, generic). Each produces structured handoff with tool name, block type, evidence, human action, and local fallback mention.",
@@ -34,12 +34,13 @@
       "expected_message_includes": ["Tu vista", "Vista de IABV", "Chrome for Testing", "sesión aislada", "minimizada", "captura negra", "restaurar", "autorizar navegador visible"]
     },
     "p06_additions": "_assess_visual_remediation() classifies failed capture into: no_action_needed, remediation_available, needs_user_selection, unresolved. _attempt_safe_remediation() attempts reversible Win32 ShowWindow restore if hwnd is valid. _trace_visual_remediation_attempted() logs visual_remediation_attempted event with before/after metrics. _remediation_user_message() builds practical user-facing guidance. Wired into _execute_external_consultation_sync: runs assessment+remediation before shared reality handoff. Controlled session mismatch detection appends browser selector recommendation.",
+    "p07_additions": "OSES _visual_remediation_findings() reads visual_remediation_attempted events from runtime_audit.jsonl (tail-first, 50 most recent). Detects 4 patterns (min 2 events): repeated_restore_without_recapture (action taken but capture_useful_after=None), repeated_win32_restore_unavailable (Win32 API not available), repeated_user_selection_needed (proposed_action=request_user_selection), repeated_restore_attempted (restore was attempted, measure improvement). PortableContext _shared_reality_section() extended to include P0.7 remediation categories.",
     "remaining": [
       "Live Windows proof with P0.6 code merged",
       "Deep visual verification (screenshot comparison) not implemented",
       "Browser/session selector UI for user",
-      "P0.7: visual_remediation_outcome_learning — OSES reads remediation events to learn what works"
+      "P0.8: real recapture after restore — connect to visual capture API"
     ],
-    "unresolved": "Live Windows proof pending — user must run IABV with P0.6, trigger external consultation with offscreen window, verify remediation assessment + practical message"
+    "unresolved": "Live Windows proof pending for P0.6+P0.7. Recapture real controlada pendiente para P0.8."
   }
 }
