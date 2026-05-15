@@ -51,7 +51,21 @@ def _make_stub_vm():
         _provider_refreshing=False,
         _ui_state_lock=threading.Lock(),
         _last_adaptive_payload={},
+        _live_status='idle',
     )
+
+    # Stub methods needed by _try_handle_shared_reality_followup
+    def _set_live_status(status: str) -> None:
+        stub._live_status = status
+
+    def _append_message(role: str, speaker: str, text: str, meta: str = '',
+                        **kwargs: Any) -> None:
+        stub._chat_messages.append({
+            'role': role, 'speaker': speaker, 'text': text, 'meta': meta,
+        })
+
+    stub._set_live_status = _set_live_status
+    stub._append_message = _append_message
     # Bind methods from ControlCenterViewModel to the stub.
     # For static methods, we need to access them from __dict__ to get the
     # staticmethod descriptor, then extract __func__.
@@ -70,6 +84,7 @@ def _make_stub_vm():
         '_shared_reality_user_message',
         '_attach_evidence_to_handoff',
         '_trace_shared_reality_handoff',
+        '_try_handle_shared_reality_followup',
     ):
         raw = ControlCenterViewModel.__dict__.get(name)
         if isinstance(raw, staticmethod):
@@ -953,3 +968,125 @@ class TestHandoffPackageFields:
         )
         assert 'Chrome for Testing' in handoff['selected_browser_or_profile']
         assert 'aislada' in handoff['selected_browser_or_profile']
+
+
+# ══════════════════════════════════════════════════════════════════════
+# P0.4 — Wired followup flow tests
+# ══════════════════════════════════════════════════════════════════════
+
+def _build_payload_with_handoff() -> dict[str, Any]:
+    """Build a _last_adaptive_payload containing a shared_reality_handoff."""
+    return {
+        'metadata': {
+            'shared_reality_handoff': {
+                'user_claim': 'unknown',
+                'requested_tool': 'chatgpt',
+                'selected_tool': 'chatgpt',
+                'selected_browser_or_profile': 'Chrome for Testing (sesión aislada de IABV)',
+                'target_window_title': 'ChatGPT - Google Chrome for Testing',
+                'hwnd': 16319628,
+                'rect': [-32000, -32000, 199, 34],
+                'capture_scope': 'external_target_window_bbox',
+                'capture_useful': False,
+                'capture_quality': {
+                    'blank_probability': 0.98,
+                    'dynamic_range': 0,
+                    'unique_color_count': 1,
+                    'useful': False,
+                },
+                'mismatch_reason': (
+                    'La ventana que IABV usa está minimizada o fuera de pantalla. '
+                    'Tú probablemente ves tu navegador/sesión normal, pero IABV '
+                    'usa una sesión aislada que no está visible.'
+                ),
+                'causal_explanation': 'Tu vista vs Vista de IABV ...',
+                'user_action_needed': [
+                    'restore_target_window',
+                    'select_visible_window',
+                    'retry_capture',
+                    'authorize_visible_browser',
+                ],
+                'fallback_available': True,
+                'unresolved': [
+                    'UNRESOLVED:external_target_window_minimized_or_offscreen',
+                    'UNRESOLVED:visual_capture_low_information',
+                    'UNRESOLVED:shared_reality_mismatch_pending_live_proof',
+                ],
+                'evidence_path': 'no_disponible',
+            },
+        },
+    }
+
+
+class TestSharedRealityFollowupWiring:
+    """Tests for _try_handle_shared_reality_followup — the wired flow
+    that connects user chat messages to the shared reality handoff."""
+
+    def setup_method(self) -> None:
+        self.vm = _make_stub_vm()
+
+    def test_with_handoff_and_mismatch_claim_responds_causally(self) -> None:
+        """User says 'a mí sí me funciona' after a visual failure that
+        produced a shared_reality_handoff → IABV responds with causal
+        explanation including Tu vista / Vista de IABV."""
+        self.vm._last_adaptive_payload = _build_payload_with_handoff()
+        result = self.vm._try_handle_shared_reality_followup('a mí sí me funciona')
+        assert result is True
+        assert len(self.vm._chat_messages) == 1
+        msg = self.vm._chat_messages[0]
+        assert msg['role'] == 'assistant'
+        assert msg['speaker'] == 'IABV'
+        assert msg['meta'] == 'shared_reality_followup'
+        text_lower = msg['text'].lower()
+        assert 'chatgpt' in text_lower
+        assert any(kw in text_lower for kw in ('chrome for testing', 'sesión aislada'))
+        assert any(kw in text_lower for kw in ('minimizada', 'fuera de pantalla'))
+        assert any(kw in text_lower for kw in ('negra', 'baja información'))
+        assert any(kw in text_lower for kw in ('restaurar', 'reintentar', 'autorizar'))
+        assert 'a mí sí me funciona' in text_lower
+
+    def test_without_handoff_returns_false(self) -> None:
+        """No shared_reality_handoff in payload → returns False without
+        intercepting, allowing normal chat flow to continue."""
+        self.vm._last_adaptive_payload = {}
+        result = self.vm._try_handle_shared_reality_followup('a mí sí me funciona')
+        assert result is False
+        assert len(self.vm._chat_messages) == 0
+
+    def test_unrelated_message_with_handoff_returns_false(self) -> None:
+        """Handoff exists but user message doesn't match any mismatch
+        pattern → returns False."""
+        self.vm._last_adaptive_payload = _build_payload_with_handoff()
+        result = self.vm._try_handle_shared_reality_followup('hola, qué tal')
+        assert result is False
+        assert len(self.vm._chat_messages) == 0
+
+    def test_updates_user_claim_in_handoff(self) -> None:
+        """The handler must update user_claim in the handoff with the
+        actual user phrase that triggered the followup."""
+        self.vm._last_adaptive_payload = _build_payload_with_handoff()
+        self.vm._try_handle_shared_reality_followup('yo sí lo veo bien')
+        assert len(self.vm._chat_messages) == 1
+        text_lower = self.vm._chat_messages[0]['text'].lower()
+        assert 'yo sí lo veo' in text_lower
+
+    def test_multiple_patterns_work(self) -> None:
+        """Various mismatch patterns should all trigger the followup."""
+        patterns = [
+            'en mi navegador sí abre',
+            'por qué a mí sí y a él no',
+            'a mí me funciona bien',
+            'funciona en mi computador',
+        ]
+        for pattern in patterns:
+            vm = _make_stub_vm()
+            vm._last_adaptive_payload = _build_payload_with_handoff()
+            result = vm._try_handle_shared_reality_followup(pattern)
+            assert result is True, f'Pattern "{pattern}" should trigger followup'
+            assert len(vm._chat_messages) == 1, f'Pattern "{pattern}" should produce a message'
+
+    def test_sets_live_status_to_idle(self) -> None:
+        """After responding, the live status must be set to idle."""
+        self.vm._last_adaptive_payload = _build_payload_with_handoff()
+        self.vm._try_handle_shared_reality_followup('a mí sí me funciona')
+        assert self.vm._live_status == 'idle'

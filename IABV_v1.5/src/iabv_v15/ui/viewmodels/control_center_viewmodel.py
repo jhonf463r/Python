@@ -4132,6 +4132,29 @@ class ControlCenterViewModel(QObject):
         except Exception:
             pass
 
+    # ── P0.4 wiring: handle shared reality followup in chat ──────
+    def _try_handle_shared_reality_followup(self, message: str) -> bool:
+        """If the user says 'it works for me' and there is a recent
+        shared_reality_handoff in the adaptive payload, respond with
+        the causal explanation. Returns True if handled."""
+        claim = self._detect_user_mismatch_claim(message)
+        if not claim:
+            return False
+        payload = dict(self._last_adaptive_payload or {})
+        metadata = dict(payload.get('metadata') or {})
+        handoff = metadata.get('shared_reality_handoff')
+        if not handoff or not isinstance(handoff, dict):
+            return False
+        handoff['user_claim'] = claim
+        msg = self._shared_reality_user_message(handoff=handoff, user_claim=claim)
+        self._trace_shared_reality_handoff(handoff)
+        self._append_message(
+            'assistant', 'IABV', msg,
+            'shared_reality_followup',
+        )
+        self._set_live_status('idle')
+        return True
+
     def _external_state_notice(self, flags: list[str] | None) -> str:
         normalized = canonical_external_state_flags(flags)
         if not normalized:
@@ -7999,6 +8022,9 @@ class ControlCenterViewModel(QObject):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if self._try_resolve_pending_observation_permission(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        if self._try_handle_shared_reality_followup(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if self._try_handle_lightweight_chat(message):
