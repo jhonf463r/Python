@@ -6,13 +6,16 @@
   "priority": "P0",
   "description": "Every chat/external dispatch must reach a terminal state. Timeout watchdog + dispatch_id guards prevent the UI from staying in busy/consultando indefinitely.",
   "resume_hint": "Code-level audit passed (286 tests, 0 failures). All dispatch entrypoints instrumented. Awaiting live Windows run to mark COMPLETED.",
-  "next_action": "User runs IABV on Windows with #377+#378+#379 merged, sends chat, verifies latestDispatchLifecycle shows real cycle, confirms no infinite consultando. Then mark COMPLETED.",
+  "next_action": "User runs IABV on Windows with #377+#378+#379+P0.3 merged, sends chat, verifies latestDispatchLifecycle shows real cycle, confirms no infinite consultando. Then mark COMPLETED.",
   "metadata": {
     "covered_by_pr": "#377",
     "coverage_detail": "Timeout watchdog (120s chat, 180s external), dispatch_id stale-result guards, 8 terminal states defined, _humanize_task_failure classifier, _human_external_consultation_failure structured handoff.",
     "p01_additions": "Runtime audit trace on all terminal events (trace_dispatch_terminal). adaptive_action now guarded with dispatch_id + timeout watchdog. external_consultation blocked derives terminal_state from payload.meta.",
     "p02_additions": "trace_dispatch_started() on chat, external_consultation, adaptive_action. recent_dispatch_lifecycles() correlates started→terminal with duration_ms and unresolved flag. latestDispatchLifecycle read-only Property exposed. Orphan terminals deprioritized. New unresolved dispatch visible over old correlated.",
+    "p03_additions": "Visual evidence validation prevents treating black/offscreen captures as successful completion. consultation_metadata.status='visual_unresolved' when capture is invalid — lifecycle correctly reaches terminal state with actionable handoff instead of false 'success'.",
     "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
+    "p03_live_proof_result": "VISUAL_ALIGNMENT_FAILED_BLACK_CAPTURE",
+    "p03_live_proof_detail": "Runtime cycle did not freeze, but visual handoff failed: ChatGPT window was offscreen (rect=[-32000,-32000,199,34]), capture was black (blank_probability=0.98), status was incorrectly reported as visual_captured. P0.3 fix: status now correctly set to visual_unresolved with guided handoff message.",
     "code_audit": {
       "date": "2026-05-15",
       "auditor": "devin/runtime-live-proof-p02",
@@ -33,6 +36,6 @@
       "Live UI proof with real user interaction on Windows",
       "UIBridgeService bridge dispatch delegates to sendChat (no separate dispatch_id by design)"
     ],
-    "unresolved": "Live Windows proof pending — user must run app with #377+#378+#379 merged and send a real chat message"
+    "unresolved": "Live Windows proof pending — user must run app with #377+#378+#379+P0.3 merged and send a real chat message"
   }
 }

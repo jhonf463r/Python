@@ -3604,6 +3604,260 @@ class ControlCenterViewModel(QObject):
             busy = message
         return message, meta, busy
 
+    # ── Task A: window-rect capturability classification ────────
+    @staticmethod
+    def _window_rect_is_captureable(rect: list[int] | tuple[int, ...] | None) -> bool:
+        """Return True only if *rect* represents a visible, capturable window.
+
+        A window is NOT capturable when:
+        - rect is absent or has fewer than 4 elements,
+        - left or top are <= -30000 (offscreen / minimized on Windows),
+        - computed width or height are too small for a real page (< 50 px).
+        """
+        if not rect or not isinstance(rect, (list, tuple)) or len(rect) < 4:
+            return False
+        try:
+            left, top = int(rect[0]), int(rect[1])
+        except (TypeError, ValueError, IndexError):
+            return False
+        if left <= -30000 or top <= -30000:
+            return False
+        try:
+            right, bottom = int(rect[2]), int(rect[3])
+        except (TypeError, ValueError, IndexError):
+            return False
+        width = right - left if right > left else int(rect[2])
+        height = bottom - top if bottom > top else int(rect[3])
+        if width < 50 or height < 50:
+            return False
+        return True
+
+    @staticmethod
+    def _capture_is_low_information(capture_meta: dict[str, Any] | None) -> bool:
+        """Return True if the capture metadata indicates a black/blank image."""
+        if not capture_meta or not isinstance(capture_meta, dict):
+            return False
+        blank_prob = float(capture_meta.get('blank_probability') or 0.0)
+        if blank_prob >= 0.90:
+            return True
+        dynamic_range = capture_meta.get('dynamic_range')
+        if dynamic_range is not None and int(dynamic_range) == 0:
+            return True
+        unique_colors = capture_meta.get('unique_color_count')
+        if unique_colors is not None and int(unique_colors) <= 2:
+            return True
+        if capture_meta.get('useful') is False:
+            return True
+        return False
+
+    def _target_window_capture_state(
+        self,
+        target_window: dict[str, Any] | None,
+        capture_meta: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Classify a target window + capture result for visual evidence.
+
+        Returns a dict with:
+        - captureable: bool
+        - reason: str (why not captureable, or 'ok')
+        - low_information: bool
+        - unresolved: list[str] of UNRESOLVED tags
+        - user_message: str (actionable guidance for the user)
+        - suggested_actions: list[str]
+        """
+        result: dict[str, Any] = {
+            'captureable': True,
+            'reason': 'ok',
+            'low_information': False,
+            'unresolved': [],
+            'user_message': '',
+            'suggested_actions': [],
+        }
+        if target_window is None:
+            result['captureable'] = False
+            result['reason'] = 'no_target_window'
+            result['unresolved'] = ['UNRESOLVED:visual_capture_no_target_window']
+            result['user_message'] = 'No encontre una ventana objetivo para capturar.'
+            result['suggested_actions'] = ['select_visible_window']
+            return result
+        rect = target_window.get('rect')
+        title = str(target_window.get('title') or '').strip()
+        hwnd = target_window.get('hwnd')
+        if not self._window_rect_is_captureable(rect):
+            result['captureable'] = False
+            result['reason'] = 'target_window_minimized_or_offscreen'
+            result['unresolved'] = [
+                'UNRESOLVED:external_target_window_minimized_or_offscreen',
+                'UNRESOLVED:visual_capture_low_information',
+            ]
+            result['user_message'] = (
+                f'Encontre {title or "la ventana objetivo"}, pero esta minimizada o fuera de pantalla. '
+                f'Mi captura salio negra. Restaura esa ventana o pulsa abrir {title or "la herramienta"} y reintenta.'
+            )
+            result['suggested_actions'] = [
+                'restore_target_window',
+                'select_visible_window',
+                'retry_capture',
+            ]
+            return result
+        if capture_meta and self._capture_is_low_information(capture_meta):
+            result['low_information'] = True
+            result['unresolved'] = ['UNRESOLVED:visual_capture_low_information']
+            result['user_message'] = (
+                f'Capture la ventana de {title or "la herramienta"}, pero la imagen tiene muy poca informacion (negra o casi vacia). '
+                'Verifica que la herramienta este mostrando contenido visible y reintenta la captura.'
+            )
+            result['suggested_actions'] = [
+                'restore_target_window',
+                'retry_capture',
+            ]
+            return result
+        return result
+
+    # ── Task B+C: visual evidence validation in external consultation ──
+    def _validate_visual_evidence_result(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+        result_metadata: dict[str, Any],
+        consultation_metadata: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        """Check if external consultation visual evidence is valid.
+
+        If the target window was offscreen/minimized or capture was
+        low-information, returns a modified result dict with:
+        - status='visual_unresolved' (not visual_captured)
+        - unresolved tags
+        - user-facing guided handoff message
+
+        Returns None if the evidence is valid (no override needed).
+        """
+        target_window = result_metadata.get('target_window')
+        capture_meta = result_metadata.get('visual_evidence_snapshot') or result_metadata.get('capture_meta') or {}
+        if not target_window and not capture_meta:
+            capture_meta_from_exec = {}
+            for key in ('blank_probability', 'dynamic_range', 'unique_color_count', 'useful'):
+                if key in result_metadata:
+                    capture_meta_from_exec[key] = result_metadata[key]
+            if capture_meta_from_exec:
+                capture_meta = capture_meta_from_exec
+            else:
+                return None
+        capture_state = self._target_window_capture_state(target_window, capture_meta)
+        if capture_state['captureable'] and not capture_state['low_information']:
+            return None
+        unresolved_tags = list(capture_state.get('unresolved') or [])
+        reason = capture_state['reason']
+        user_message = capture_state['user_message']
+        suggested_actions = list(capture_state.get('suggested_actions') or [])
+        consultation_metadata['status'] = 'visual_unresolved'
+        existing_unresolved = list(consultation_metadata.get('unresolved') or [])
+        for tag in unresolved_tags:
+            if tag not in existing_unresolved:
+                existing_unresolved.append(tag)
+        consultation_metadata['unresolved'] = existing_unresolved
+        consultation_metadata['visual_capture_reason'] = reason
+        consultation_metadata['suggested_actions'] = suggested_actions
+        # Task D: trace invalid visual evidence to runtime audit
+        self._trace_visual_evidence_invalid(
+            assistant_kind=assistant_kind,
+            assistant_title=assistant_title,
+            target_window=target_window,
+            capture_meta=capture_meta,
+            reason=reason,
+            suggested_actions=suggested_actions,
+        )
+        return {
+            'visual_unresolved': True,
+            'user_message': user_message,
+            'reason': reason,
+            'unresolved': unresolved_tags,
+            'suggested_actions': suggested_actions,
+        }
+
+    # ── Task D: runtime audit trace for invalid visual evidence ─────
+    def _trace_visual_evidence_invalid(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+        target_window: dict[str, Any] | None,
+        capture_meta: dict[str, Any] | None,
+        reason: str,
+        suggested_actions: list[str] | None = None,
+    ) -> None:
+        """Log a visual_evidence_invalid event to RuntimeAuditTracer."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tw = target_window or {}
+            cm = capture_meta or {}
+            get_runtime_tracer().trace(
+                'visual_evidence_snapshot',
+                status='unresolved',
+                assistant_kind=assistant_kind,
+                assistant_title=assistant_title,
+                target_title=str(tw.get('title') or ''),
+                hwnd=tw.get('hwnd'),
+                rect=tw.get('rect'),
+                capture_scope=str(cm.get('capture_scope') or 'external_target_window_bbox'),
+                blank_probability=float(cm.get('blank_probability') or 0.0),
+                dynamic_range=cm.get('dynamic_range'),
+                unique_color_count=cm.get('unique_color_count'),
+                useful=False,
+                reason=reason,
+                next_action=', '.join(suggested_actions or ['restore_target_window', 'retry_capture']),
+            )
+        except Exception:
+            pass
+
+    # ── Task C: guided visual handoff message builder ───────────
+    def _visual_handoff_message(
+        self,
+        *,
+        assistant_title: str,
+        target_window: dict[str, Any] | None,
+        capture_state: dict[str, Any],
+        local_fallback_available: bool = True,
+    ) -> str:
+        """Build a structured handoff message when visual evidence fails.
+
+        Tells the user: what tool, what window, what coordinates/state,
+        what was actually seen, what user action is needed, and whether
+        a local fallback route exists.
+        """
+        tw = target_window or {}
+        title = str(tw.get('title') or assistant_title)
+        hwnd = tw.get('hwnd', 'desconocido')
+        rect = tw.get('rect', 'no disponible')
+        reason = capture_state.get('reason', 'unknown')
+        parts = [
+            f'Herramienta: {assistant_title}.',
+            f'Ventana objetivo: {title}.',
+            f'Coordenadas detectadas: hwnd={hwnd}, rect={rect}.',
+        ]
+        if reason == 'target_window_minimized_or_offscreen':
+            parts.append('Estado: la ventana esta minimizada o fuera de pantalla.')
+            parts.append('Lo que vi: captura negra / sin informacion visual.')
+        elif reason == 'no_target_window':
+            parts.append('Estado: no se encontro ventana objetivo.')
+            parts.append('Lo que vi: ninguna ventana coincide con la herramienta solicitada.')
+        else:
+            parts.append(f'Estado: {reason}.')
+            parts.append('Lo que vi: captura con muy poca informacion visual.')
+        actions = capture_state.get('suggested_actions') or []
+        action_labels = {
+            'restore_target_window': f'restaurar/abrir la ventana de {assistant_title}',
+            'select_visible_window': 'seleccionar una ventana visible manualmente',
+            'retry_capture': 'reintentar la captura despues de restaurar',
+        }
+        action_texts = [action_labels.get(a, a) for a in actions]
+        if action_texts:
+            parts.append(f'Accion necesaria: {"; ".join(action_texts)}.')
+        if local_fallback_available:
+            parts.append('Mientras tanto, sigo con la mejor via local disponible.')
+        return ' '.join(parts)
+
     def _external_state_notice(self, flags: list[str] | None) -> str:
         normalized = canonical_external_state_flags(flags)
         if not normalized:
@@ -5755,6 +6009,43 @@ class ControlCenterViewModel(QObject):
             'external_state_flags': external_state_flags,
             'detail': str(result.execution_state.detail or result.error_message or ''),
         }
+        # ── Task B+C: validate visual evidence before treating as success ──
+        visual_override = self._validate_visual_evidence_result(
+            assistant_kind=actual_assistant_kind or requested_assistant_kind,
+            assistant_title=assistant_title,
+            result_metadata=result_metadata,
+            consultation_metadata=consultation_metadata,
+        )
+        if visual_override is not None:
+            # Evidence is invalid: do NOT report as success
+            payload = dict(self._last_adaptive_payload or {})
+            metadata = dict(payload.get('metadata') or {})
+            metadata['external_consultation'] = dict(consultation_metadata)
+            metadata['autonomous_evolution'] = dict(consultation_metadata)
+            payload['metadata'] = metadata
+            self._update_adaptive_state(payload)
+            target_window = result_metadata.get('target_window')
+            capture_state = self._target_window_capture_state(
+                target_window,
+                result_metadata.get('visual_evidence_snapshot') or result_metadata.get('capture_meta'),
+            )
+            handoff_msg = self._visual_handoff_message(
+                assistant_title=assistant_title,
+                target_window=target_window,
+                capture_state=capture_state,
+            )
+            self._latest_response_text = handoff_msg
+            self._latest_response_meta = f'{assistant_title}: visual_unresolved'
+            self._busy_label = f'Captura visual no valida para {assistant_title}.'
+            return {
+                'success': False,
+                'message': handoff_msg,
+                'meta': f'{assistant_title}: visual_unresolved',
+                'payload': payload,
+                'assistant_title': assistant_title,
+                'external_state_flags': external_state_flags,
+                'visual_unresolved': True,
+            }
         payload = dict(self._last_adaptive_payload or {})
         metadata = dict(payload.get('metadata') or {})
         metadata['external_consultation'] = dict(consultation_metadata)
