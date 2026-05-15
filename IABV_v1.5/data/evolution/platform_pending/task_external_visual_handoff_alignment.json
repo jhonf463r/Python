@@ -5,8 +5,8 @@
   "category": "runtime_stability",
   "priority": "P0",
   "description": "When an external tool fails (login, captcha, permission, quota, timeout, DOM error, offscreen/minimized window, black capture), the UI shows a structured message: WHAT tool, WHAT block, WHAT evidence, WHAT human action, whether local fallback is viable.",
-  "resume_hint": "P0.7 closes the remediation learning loop: OSES _visual_remediation_findings() reads visual_remediation_attempted events and detects 4 patterns (repeated_restore_without_recapture, repeated_win32_restore_unavailable, repeated_user_selection_needed, repeated_restore_attempted). PortableContext exports compact remediation summary. Next: recaptura real controlada.",
-  "next_action": "P0.8: implement real recapture after restore. Live Windows proof with P0.7 to verify OSES detects remediation patterns.",
+  "resume_hint": "P0.8 implements post-remediation recapture: _attempt_post_remediation_recapture() captures ONE image after successful remediation, validates with P0.3 validators, records before/after metrics. Integration wired: if recapture improves, flow continues; if still black, shared reality handoff maintained. Next: live Windows proof.",
+  "next_action": "P0.9: live Windows proof with P0.8 code. Verify recapture after Win32 restore produces useful image. OSES should detect improved recapture patterns.",
   "metadata": {
     "covered_by_pr": "#377",
     "coverage_detail": "_human_external_consultation_failure classifies 7 failure types (security_verification, codex_state_missing, access_denied, session_expired, timeout, quota, generic). Each produces structured handoff with tool name, block type, evidence, human action, and local fallback mention.",
@@ -35,12 +35,12 @@
     },
     "p06_additions": "_assess_visual_remediation() classifies failed capture into: no_action_needed, remediation_available, needs_user_selection, unresolved. _attempt_safe_remediation() attempts reversible Win32 ShowWindow restore if hwnd is valid. _trace_visual_remediation_attempted() logs visual_remediation_attempted event with before/after metrics. _remediation_user_message() builds practical user-facing guidance. Wired into _execute_external_consultation_sync: runs assessment+remediation before shared reality handoff. Controlled session mismatch detection appends browser selector recommendation.",
     "p07_additions": "OSES _visual_remediation_findings() reads visual_remediation_attempted events from runtime_audit.jsonl (tail-first, 50 most recent). Detects 4 patterns (min 2 events): repeated_restore_without_recapture (action taken but capture_useful_after=None), repeated_win32_restore_unavailable (Win32 API not available), repeated_user_selection_needed (proposed_action=request_user_selection), repeated_restore_attempted (restore was attempted, measure improvement). PortableContext _shared_reality_section() extended to include P0.7 remediation categories.",
+    "p08_additions": "_attempt_post_remediation_recapture() attempts ONE recapture after successful remediation. Gated on: remediation_success=True, hwnd valid positive int, proposed_action in (restore_window_by_hwnd, restore_and_recapture). Uses PIL ImageGrab.grab(bbox=rect) for targeted recapture. Validates with _capture_is_low_information(). Records before/after: capture_useful_after, blank_probability_after, recapture_status (improved|still_low_information|skipped|error). If recapture improves, flow continues with success=True. If still low-information, shared reality handoff maintained. Trace event includes recapture_status field. Integration wired into _execute_external_consultation_sync visual override path.",
     "remaining": [
-      "Live Windows proof with P0.6 code merged",
+      "Live Windows proof with P0.8 code merged",
       "Deep visual verification (screenshot comparison) not implemented",
-      "Browser/session selector UI for user",
-      "P0.8: real recapture after restore — connect to visual capture API"
+      "Browser/session selector UI for user"
     ],
-    "unresolved": "Live Windows proof pending for P0.6+P0.7. Recapture real controlada pendiente para P0.8."
+    "unresolved": "Live Windows proof pending for P0.8. Recapture gated on Win32 restore success — needs real Windows to verify."
   }
 }
