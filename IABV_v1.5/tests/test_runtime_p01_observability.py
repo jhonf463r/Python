@@ -607,7 +607,7 @@ class TestDispatchLifecycleReconstruction:
         assert c['unresolved'] is True
         assert c['terminal_state'] == ''
 
-    def test_lifecycle_sorted_newest_first(self) -> None:
+    def test_lifecycle_correlated_sorted_newest_first(self) -> None:
         from iabv_v15.services.evolution.runtime_audit_tracer import RuntimeAuditTracer
         tracer = RuntimeAuditTracer()
         tracer.trace_dispatch_started(task_name='chat', dispatch_id='old1', source='s')
@@ -616,8 +616,9 @@ class TestDispatchLifecycleReconstruction:
         tracer.trace_dispatch_started(task_name='chat', dispatch_id='new2', source='s')
         tracer.trace_dispatch_terminal(task_name='chat', dispatch_id='new2', terminal_state='timeout')
         cycles = tracer.recent_dispatch_lifecycles(limit=5)
-        assert cycles[0]['dispatch_id'] == 'new2'[:12]
-        assert cycles[1]['dispatch_id'] == 'old1'[:12]
+        correlated = [c for c in cycles if not c['orphan_terminal'] and not c['unresolved']]
+        assert correlated[0]['dispatch_id'] == 'new2'[:12]
+        assert correlated[1]['dispatch_id'] == 'old1'[:12]
 
 
 class TestTraceDispatchStarted:
@@ -693,3 +694,97 @@ class TestLatestDispatchLifecycleProperty:
             assert result['task_name'] == 'chat'
             assert result['terminal_state'] == 'success'
             assert result['unresolved'] is False
+
+
+# ── H. Orphan terminal priority tests (BLOCKER 1 fix) ────────
+
+class TestOrphanTerminalPriority:
+    """Correlated lifecycle beats orphan terminal in priority."""
+
+    def test_correlated_preferred_over_orphan_terminal(self) -> None:
+        """started→terminal with dispatch_id + orphan terminal posterior:
+        recent_dispatch_lifecycles(limit=1) must return the correlated cycle."""
+        from iabv_v15.services.evolution.runtime_audit_tracer import RuntimeAuditTracer
+        tracer = RuntimeAuditTracer()
+        tracer.trace_dispatch_started(
+            task_name='chat', dispatch_id='abc123',
+            provider='ollama', source='sendChat',
+        )
+        import time; time.sleep(0.005)
+        tracer.trace_dispatch_terminal(
+            task_name='chat', dispatch_id='abc123',
+            terminal_state='timeout', provider='ollama',
+        )
+        import time; time.sleep(0.005)
+        tracer.trace_dispatch_terminal(
+            task_name='chat', dispatch_id='',
+            terminal_state='timeout',
+        )
+        cycles = tracer.recent_dispatch_lifecycles(limit=1)
+        assert len(cycles) == 1
+        c = cycles[0]
+        assert c['dispatch_id'] == 'abc123'[:12]
+        assert c['duration_ms'] > 0
+        assert c['provider'] == 'ollama'
+        assert c['orphan_terminal'] is False
+
+    def test_orphan_terminal_marked_as_orphan(self) -> None:
+        """Orphan terminal without any started: appears with orphan_terminal=True."""
+        from iabv_v15.services.evolution.runtime_audit_tracer import RuntimeAuditTracer
+        tracer = RuntimeAuditTracer()
+        tracer.trace_dispatch_terminal(
+            task_name='chat', dispatch_id='',
+            terminal_state='timeout',
+        )
+        cycles = tracer.recent_dispatch_lifecycles(limit=5)
+        assert len(cycles) == 1
+        c = cycles[0]
+        assert c['orphan_terminal'] is True
+        assert c['terminal_state'] == 'timeout'
+
+    def test_unresolved_started_not_lost(self) -> None:
+        """A started event without terminal stays unresolved=True and is not hidden."""
+        from iabv_v15.services.evolution.runtime_audit_tracer import RuntimeAuditTracer
+        tracer = RuntimeAuditTracer()
+        tracer.trace_dispatch_started(
+            task_name='chat', dispatch_id='unres01',
+            source='sendChat',
+        )
+        tracer.trace_dispatch_terminal(
+            task_name='chat', dispatch_id='',
+            terminal_state='timeout',
+        )
+        cycles = tracer.recent_dispatch_lifecycles(limit=5)
+        unresolved = [c for c in cycles if c['unresolved']]
+        orphans = [c for c in cycles if c['orphan_terminal']]
+        assert len(unresolved) == 1
+        assert unresolved[0]['dispatch_id'] == 'unres01'[:12]
+        assert len(orphans) == 1
+        assert orphans[0]['orphan_terminal'] is True
+
+    def test_latest_dispatch_lifecycle_prefers_correlated(self) -> None:
+        """latestDispatchLifecycle must pick correlated over orphan terminal."""
+        from iabv_v15.services.evolution.runtime_audit_tracer import RuntimeAuditTracer
+        tracer = RuntimeAuditTracer()
+        tracer.trace_dispatch_started(
+            task_name='chat', dispatch_id='abc123',
+            provider='ollama', source='sendChat',
+        )
+        import time; time.sleep(0.005)
+        tracer.trace_dispatch_terminal(
+            task_name='chat', dispatch_id='abc123',
+            terminal_state='timeout', provider='ollama',
+        )
+        import time; time.sleep(0.005)
+        tracer.trace_dispatch_terminal(
+            task_name='chat', dispatch_id='',
+            terminal_state='timeout',
+        )
+        with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer', return_value=tracer):
+            from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+            vm = _make_stub_vm()
+            result = ControlCenterViewModel.latestDispatchLifecycle.fget(vm)
+            assert result['dispatch_id'] == 'abc123'[:12]
+            assert result['duration_ms'] > 0
+            assert result['provider'] == 'ollama'
+            assert result['orphan_terminal'] is False

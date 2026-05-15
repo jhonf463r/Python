@@ -7119,20 +7119,32 @@ class ControlCenterViewModel(QObject):
 
     @Property('QVariant', notify=dataChanged)
     def latestDispatchLifecycle(self) -> dict[str, Any]:
-        """Read-only summary of the most recent dispatch lifecycle."""
+        """Read-only summary of the most recent dispatch lifecycle.
+
+        Priority: correlated (dispatch_id + duration) > unresolved started
+        > orphan terminal.  The list from ``recent_dispatch_lifecycles``
+        is already sorted in that tier order, so the first entry with a
+        non-empty ``dispatch_id`` wins.  If none has a dispatch_id, the
+        first entry (orphan) is used as fallback.
+        """
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-            cycles = get_runtime_tracer().recent_dispatch_lifecycles(limit=1)
+            cycles = get_runtime_tracer().recent_dispatch_lifecycles(limit=20)
             if not cycles:
                 return {}
-            c = cycles[0]
+            best = cycles[0]
+            for c in cycles:
+                if c.get('dispatch_id'):
+                    best = c
+                    break
             return {
-                'task_name': c.get('task_name', ''),
-                'terminal_state': c.get('terminal_state', ''),
-                'duration_ms': c.get('duration_ms', 0.0),
-                'unresolved': c.get('unresolved', False),
-                'provider': c.get('provider', ''),
-                'dispatch_id': c.get('dispatch_id', ''),
+                'task_name': best.get('task_name', ''),
+                'terminal_state': best.get('terminal_state', ''),
+                'duration_ms': best.get('duration_ms', 0.0),
+                'unresolved': best.get('unresolved', False),
+                'provider': best.get('provider', ''),
+                'dispatch_id': best.get('dispatch_id', ''),
+                'orphan_terminal': best.get('orphan_terminal', False),
             }
         except Exception:
             return {}

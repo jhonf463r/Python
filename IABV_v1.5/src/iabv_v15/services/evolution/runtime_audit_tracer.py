@@ -317,10 +317,18 @@ class RuntimeAuditTracer:
         Returns a list of dicts sorted newest-first with keys:
         ``task_name``, ``dispatch_id``, ``started_at``, ``terminal_at``,
         ``duration_ms``, ``terminal_state``, ``provider``,
-        ``user_visible_message_present``, ``unresolved``.
+        ``user_visible_message_present``, ``unresolved``,
+        ``orphan_terminal``.
+
+        Priority order (newest first within each tier):
+        1. Correlated (started + terminal with dispatch_id)
+        2. Unresolved started (started without terminal)
+        3. Orphan terminals (terminal without matching started)
 
         An entry is ``unresolved=True`` when a ``dispatch_started`` event
         has no matching ``dispatch_terminal`` event.
+        An entry is ``orphan_terminal=True`` when a ``dispatch_terminal``
+        event has no matching ``dispatch_started`` event.
         """
         started_events = self.events(kind='dispatch_started', limit=500)
         terminal_events = self.events(kind='dispatch_terminal', limit=500)
@@ -331,7 +339,8 @@ class RuntimeAuditTracer:
             key = (d.get('task_name', ''), d.get('dispatch_id', ''))
             terminal_by_key[key] = ev
 
-        lifecycles: list[dict[str, Any]] = []
+        correlated: list[dict[str, Any]] = []
+        unresolved: list[dict[str, Any]] = []
         for sev in started_events:
             sd = sev.get('data', {})
             task_name = sd.get('task_name', '')
@@ -349,6 +358,7 @@ class RuntimeAuditTracer:
                 'provider': sd.get('provider', ''),
                 'user_visible_message_present': False,
                 'unresolved': True,
+                'orphan_terminal': False,
             }
             if tev is not None:
                 td = tev.get('data', {})
@@ -359,12 +369,14 @@ class RuntimeAuditTracer:
                 entry['provider'] = td.get('provider', '') or entry['provider']
                 entry['user_visible_message_present'] = td.get('user_visible_message_present', False)
                 entry['unresolved'] = False
-            lifecycles.append(entry)
+                correlated.append(entry)
+            else:
+                unresolved.append(entry)
 
-        # Terminal events without a matching started (orphans from pre-P0.2)
+        orphans: list[dict[str, Any]] = []
         for key, tev in terminal_by_key.items():
             td = tev.get('data', {})
-            lifecycles.append({
+            orphans.append({
                 'task_name': td.get('task_name', ''),
                 'dispatch_id': td.get('dispatch_id', ''),
                 'started_at': '',
@@ -374,10 +386,16 @@ class RuntimeAuditTracer:
                 'provider': td.get('provider', ''),
                 'user_visible_message_present': td.get('user_visible_message_present', False),
                 'unresolved': False,
+                'orphan_terminal': True,
             })
 
-        lifecycles.sort(key=lambda e: e.get('started_at') or e.get('terminal_at') or '', reverse=True)
-        return lifecycles[:limit]
+        _ts_key = lambda e: e.get('started_at') or e.get('terminal_at') or ''
+        correlated.sort(key=_ts_key, reverse=True)
+        unresolved.sort(key=_ts_key, reverse=True)
+        orphans.sort(key=_ts_key, reverse=True)
+
+        result = correlated + unresolved + orphans
+        return result[:limit]
 
     def summary(self) -> dict[str, Any]:
         """Quick summary of trace state for diagnostics."""
