@@ -318,6 +318,27 @@ class TestOSESTailReading:
         f = next(f for f in findings if f.category == 'black_capture_repeated')
         assert f.metadata['frequency'] == 3
 
+    def test_tail_window_does_not_count_stale_handoffs(self, tmp_path: Path) -> None:
+        """Old handoffs outside the recent tail must not inflate frequency."""
+        old_handoffs = [
+            _make_handoff_event(seq=i, assistant_kind='old_tool')
+            for i in range(1, 11)
+        ]
+        noise = [
+            _make_noise_event(kind='external_query', seq=i)
+            for i in range(20, 5120)
+        ]
+        recent_handoffs = [
+            _make_handoff_event(seq=6000, assistant_kind='recent_tool'),
+            _make_handoff_event(seq=6001, assistant_kind='recent_tool'),
+        ]
+        _write_audit_events(tmp_path, old_handoffs + noise + recent_handoffs)
+        oses = _make_oses(tmp_path)
+        findings = oses._shared_reality_handoff_findings()
+        f = next(f for f in findings if f.category == 'repeated_visual_mismatch')
+        assert f.metadata['frequency'] == 2
+        assert f.metadata['last_case']['assistant_kind'] == 'recent_tool'
+
 
 class TestOSESFindingMetadata:
     """Findings must include evidence, frequency, last case,

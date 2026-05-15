@@ -4,7 +4,7 @@ import json
 import math
 import os
 import time
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -7722,12 +7722,13 @@ class OperationalSelfExaminationService:
             return []
         events: list[dict[str, Any]] = []
         try:
-            lines = audit_path.read_text(
-                encoding='utf-8', errors='replace',
-            ).splitlines()
+            recent_lines: deque[str] = deque(maxlen=5000)
+            with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                for line in fh:
+                    recent_lines.append(line)
             # Read in reverse to collect the 50 most RECENT handoff events,
             # then restore chronological order for last_case accuracy.
-            for line in reversed(lines):
+            for line in reversed(recent_lines):
                 if not line.strip():
                     continue
                 try:
