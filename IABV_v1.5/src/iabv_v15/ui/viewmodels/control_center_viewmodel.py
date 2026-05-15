@@ -5997,8 +5997,8 @@ class ControlCenterViewModel(QObject):
                     logging.getLogger(__name__).debug('external_consultation worker %s discarded (stale)', _dispatch_id[:8])
                     self._trace_dispatch_terminal(
                         task_name='external_consultation', dispatch_id=_dispatch_id,
-                        terminal_state='stale_discarded', provider=assistant_kind,
-                        reason='worker finished after dispatch invalidated',
+                        terminal_state='cancelled', provider=assistant_kind,
+                        reason='stale_discarded: worker finished after dispatch invalidated',
                         user_visible_message=False,
                     )
                     return
@@ -6009,8 +6009,8 @@ class ControlCenterViewModel(QObject):
                     logging.getLogger(__name__).debug('external_consultation worker %s error discarded (stale)', _dispatch_id[:8])
                     self._trace_dispatch_terminal(
                         task_name='external_consultation', dispatch_id=_dispatch_id,
-                        terminal_state='stale_discarded', provider=assistant_kind,
-                        reason=f'error discarded: {exc}',
+                        terminal_state='cancelled', provider=assistant_kind,
+                        reason=f'stale_discarded: error discarded: {exc}',
                         user_visible_message=False,
                     )
                     return
@@ -7455,7 +7455,7 @@ class ControlCenterViewModel(QObject):
                     logging.getLogger(__name__).debug('chat worker %s discarded (stale)', _dispatch_id[:8])
                     self._trace_dispatch_terminal(
                         task_name='chat', dispatch_id=_dispatch_id,
-                        terminal_state='stale_discarded', reason='worker finished after dispatch invalidated',
+                        terminal_state='cancelled', reason='stale_discarded: worker finished after dispatch invalidated',
                         user_visible_message=False,
                     )
                     return
@@ -7486,7 +7486,7 @@ class ControlCenterViewModel(QObject):
                     logging.getLogger(__name__).debug('chat worker %s error discarded (stale)', _dispatch_id[:8])
                     self._trace_dispatch_terminal(
                         task_name='chat', dispatch_id=_dispatch_id,
-                        terminal_state='stale_discarded', reason=f'error discarded: {exc}',
+                        terminal_state='cancelled', reason=f'stale_discarded: error discarded: {exc}',
                         user_visible_message=False,
                     )
                     return
@@ -7537,7 +7537,7 @@ class ControlCenterViewModel(QObject):
                 if not self._is_dispatch_active('adaptive_action', _dispatch_id):
                     self._trace_dispatch_terminal(
                         task_name='adaptive_action', dispatch_id=_dispatch_id,
-                        terminal_state='stale_discarded', reason='adaptive worker finished after dispatch invalidated',
+                        terminal_state='cancelled', reason='stale_discarded: adaptive worker finished after dispatch invalidated',
                         user_visible_message=False,
                     )
                     return
@@ -7546,7 +7546,7 @@ class ControlCenterViewModel(QObject):
                 if not self._is_dispatch_active('adaptive_action', _dispatch_id):
                     self._trace_dispatch_terminal(
                         task_name='adaptive_action', dispatch_id=_dispatch_id,
-                        terminal_state='stale_discarded', reason=f'adaptive error discarded: {exc}',
+                        terminal_state='cancelled', reason=f'stale_discarded: adaptive error discarded: {exc}',
                         user_visible_message=False,
                     )
                     return
@@ -7961,6 +7961,27 @@ class ControlCenterViewModel(QObject):
             self._busy_label = f"PBT actualizado en generacion {payload.get('generation', 0)}."
         if task_name != 'provider_health':
             self._working = False
+        # --- Trace success for dispatch terminal audit ---
+        if task_name in ('chat', 'external_consultation', 'adaptive_action', 'self_teach'):
+            _success_dispatch_id = self._active_dispatch_ids.get(task_name, '')
+            _success_provider = ''
+            if isinstance(payload, dict):
+                _success_provider = str(
+                    payload.get('provider_name')
+                    or payload.get('assistant_title')
+                    or payload.get('assistant_kind')
+                    or '',
+                )
+            self._trace_dispatch_terminal(
+                task_name=task_name,
+                dispatch_id=_success_dispatch_id,
+                terminal_state='success',
+                provider=_success_provider,
+                reason='resolved',
+                user_visible_message=True,
+            )
+            if _success_dispatch_id:
+                self._invalidate_dispatch(task_name)
         # --- Close canonical interaction episode on resolution ---
         # Do NOT close the interaction if follow-up work is still pending
         # (external consultation dispatched, autonomy awaiting_response, etc.).

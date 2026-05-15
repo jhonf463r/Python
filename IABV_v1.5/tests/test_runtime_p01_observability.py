@@ -172,7 +172,8 @@ class TestRuntimeAuditTracing:
         event = tracer.trace_dispatch_terminal(
             task_name='external_consultation',
             dispatch_id=long_id,
-            terminal_state='stale_discarded',
+            terminal_state='cancelled',
+            reason='stale_discarded: worker finished after dispatch invalidated',
         )
         assert len(event['data']['dispatch_id']) == 12
 
@@ -323,38 +324,134 @@ class TestPressureGatingStub:
         assert vm._should_defer_heavy_work() is False
 
 
-# ── D. Platform pending metadata tests ─────────────────────────
+# ── D. Platform pending metadata tests (model-validated) ───────
 
-class TestPlatformPendingMetadata:
-    """Platform pending task files have correct metadata after #377."""
+class TestPlatformPendingModelValidation:
+    """Platform pending task files validate with PlatformPendingTask model."""
 
-    def _load_task(self, task_id: str) -> dict:
-        import json
+    _TASK_IDS = [
+        ('runtime_consulting_lifecycle_recovery', 'runtime_consulting_lifecycle_recovery'),
+        ('runtime_main_thread_antifreeze_budget', 'runtime_main_thread_antifreeze_budget'),
+        ('external_visual_handoff_alignment', 'external_visual_handoff_alignment'),
+    ]
+
+    def _load_and_validate(self, filename: str):
         from pathlib import Path
-        path = Path(__file__).parent.parent / 'data' / 'evolution' / 'platform_pending' / f'task_{task_id}.json'
+        from iabv_v15.domain.models import PlatformPendingTask
+        path = Path(__file__).parent.parent / 'data' / 'evolution' / 'platform_pending' / f'task_{filename}.json'
         assert path.exists(), f'Missing platform_pending file: {path}'
-        return json.loads(path.read_text(encoding='utf-8'))
+        return PlatformPendingTask.model_validate_json(path.read_bytes())
 
-    def test_consulting_lifecycle_status(self) -> None:
-        task = self._load_task('runtime_consulting_lifecycle_recovery')
-        assert task['status'] == 'READY_FOR_NEXT_SLICE'
-        assert '#377' in task['metadata']['covered_by_pr']
+    def test_consulting_lifecycle_validates_with_correct_id(self) -> None:
+        task = self._load_and_validate('runtime_consulting_lifecycle_recovery')
+        assert task.id == 'runtime_consulting_lifecycle_recovery'
+        assert task.status.value == 'READY_FOR_NEXT_SLICE'
+        assert task.metadata.get('covered_by_pr') == '#377'
 
-    def test_antifreeze_budget_status(self) -> None:
-        task = self._load_task('runtime_main_thread_antifreeze_budget')
-        assert task['status'] == 'READY_FOR_NEXT_SLICE'
-        assert '#377' in task['metadata']['covered_by_pr']
+    def test_antifreeze_budget_validates_with_correct_id(self) -> None:
+        task = self._load_and_validate('runtime_main_thread_antifreeze_budget')
+        assert task.id == 'runtime_main_thread_antifreeze_budget'
+        assert task.status.value == 'READY_FOR_NEXT_SLICE'
+        assert task.metadata.get('covered_by_pr') == '#377'
 
-    def test_external_handoff_status(self) -> None:
-        task = self._load_task('external_visual_handoff_alignment')
-        assert task['status'] == 'READY_FOR_NEXT_SLICE'
-        assert '#377' in task['metadata']['covered_by_pr']
+    def test_external_handoff_validates_with_correct_id(self) -> None:
+        task = self._load_and_validate('external_visual_handoff_alignment')
+        assert task.id == 'external_visual_handoff_alignment'
+        assert task.status.value == 'READY_FOR_NEXT_SLICE'
+        assert task.metadata.get('covered_by_pr') == '#377'
 
-    def test_all_tasks_have_unresolved(self) -> None:
-        for tid in (
-            'runtime_consulting_lifecycle_recovery',
-            'runtime_main_thread_antifreeze_budget',
-            'external_visual_handoff_alignment',
-        ):
-            task = self._load_task(tid)
-            assert task.get('unresolved'), f'{tid} must have UNRESOLVED field'
+    def test_all_tasks_have_unresolved_in_metadata(self) -> None:
+        for filename, expected_id in self._TASK_IDS:
+            task = self._load_and_validate(filename)
+            assert task.id == expected_id, f'{filename}: id mismatch'
+            assert task.metadata.get('unresolved'), f'{filename} must have unresolved in metadata'
+
+    def test_all_tasks_have_resume_hint(self) -> None:
+        for filename, _ in self._TASK_IDS:
+            task = self._load_and_validate(filename)
+            assert task.resume_hint, f'{filename} must have resume_hint'
+
+
+# ── E. Success tracing tests ──────────────────────────────────
+
+class TestSuccessTracing:
+    """_apply_task_result must emit trace_dispatch_terminal with success."""
+
+    def test_success_trace_emitted_on_chat_result(self) -> None:
+        vm = _make_stub_vm()
+        d_id = vm._new_dispatch_id('chat')
+        with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer') as mock_get:
+            mock_tracer = MagicMock()
+            mock_get.return_value = mock_tracer
+            vm._trace_dispatch_terminal(
+                task_name='chat',
+                dispatch_id=d_id,
+                terminal_state='success',
+                provider='ollama',
+                reason='resolved',
+                user_visible_message=True,
+            )
+            mock_tracer.trace_dispatch_terminal.assert_called_once()
+            call_kwargs = mock_tracer.trace_dispatch_terminal.call_args[1]
+            assert call_kwargs['terminal_state'] == 'success'
+            assert call_kwargs['task_name'] == 'chat'
+
+    def test_success_trace_emitted_on_external_consultation(self) -> None:
+        vm = _make_stub_vm()
+        d_id = vm._new_dispatch_id('external_consultation')
+        with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer') as mock_get:
+            mock_tracer = MagicMock()
+            mock_get.return_value = mock_tracer
+            vm._trace_dispatch_terminal(
+                task_name='external_consultation',
+                dispatch_id=d_id,
+                terminal_state='success',
+                provider='ChatGPT',
+                reason='resolved',
+                user_visible_message=True,
+            )
+            call_kwargs = mock_tracer.trace_dispatch_terminal.call_args[1]
+            assert call_kwargs['terminal_state'] == 'success'
+            assert call_kwargs['task_name'] == 'external_consultation'
+
+    def test_success_trace_emitted_on_adaptive_action(self) -> None:
+        vm = _make_stub_vm()
+        d_id = vm._new_dispatch_id('adaptive_action')
+        with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer') as mock_get:
+            mock_tracer = MagicMock()
+            mock_get.return_value = mock_tracer
+            vm._trace_dispatch_terminal(
+                task_name='adaptive_action',
+                dispatch_id=d_id,
+                terminal_state='success',
+                reason='resolved',
+                user_visible_message=True,
+            )
+            call_kwargs = mock_tracer.trace_dispatch_terminal.call_args[1]
+            assert call_kwargs['terminal_state'] == 'success'
+
+
+# ── F. Stale workers use 'cancelled' not 'stale_discarded' ────
+
+class TestStaleWorkerUsesCancelled:
+    """All stale worker traces must use terminal_state='cancelled'."""
+
+    def test_no_stale_discarded_in_terminal_states(self) -> None:
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        assert 'stale_discarded' not in ControlCenterViewModel._TERMINAL_DISPATCH_STATES
+
+    def test_cancelled_in_terminal_states(self) -> None:
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        assert 'cancelled' in ControlCenterViewModel._TERMINAL_DISPATCH_STATES
+
+    def test_stale_dispatch_traces_cancelled(self) -> None:
+        from iabv_v15.services.evolution.runtime_audit_tracer import RuntimeAuditTracer
+        tracer = RuntimeAuditTracer()
+        event = tracer.trace_dispatch_terminal(
+            task_name='chat',
+            dispatch_id='abc123',
+            terminal_state='cancelled',
+            reason='stale_discarded: worker finished after dispatch invalidated',
+        )
+        assert event['data']['terminal_state'] == 'cancelled'
+        assert 'stale_discarded' in event['data']['reason']

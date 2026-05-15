@@ -1,18 +1,20 @@
 {
-  "task_id": "external_visual_handoff_alignment",
+  "id": "external_visual_handoff_alignment",
   "title": "Structured handoff messages when external tools fail",
   "status": "READY_FOR_NEXT_SLICE",
   "category": "runtime_stability",
   "priority": "P0",
   "description": "When an external tool fails (login, captcha, permission, quota, timeout, DOM error), the UI shows a structured message: WHAT tool, WHAT block, WHAT evidence, WHAT human action, whether local fallback is viable.",
+  "resume_hint": "Visual handoff for capture_unverified and wrong_thread states not yet implemented. Deep visual verification (screenshot-based) not implemented.",
+  "next_action": "Implement visual handoff for capture_unverified and wrong_thread edge cases.",
   "metadata": {
     "covered_by_pr": "#377",
     "coverage_detail": "_human_external_consultation_failure classifies 7 failure types (security_verification, codex_state_missing, access_denied, session_expired, timeout, quota, generic). Each produces structured handoff with tool name, block type, evidence, human action, and local fallback mention.",
-    "p01_additions": "Runtime audit trace logs blocked external tools with terminal_state and provider info."
-  },
-  "remaining": [
-    "Visual handoff for capture_unverified and wrong_thread states",
-    "Deep visual verification (screenshot-based) not implemented"
-  ],
-  "unresolved": "User-visible UI proof pending — requires live testing on user's Windows machine"
+    "p01_additions": "Runtime audit trace logs blocked external tools with terminal_state and provider info.",
+    "remaining": [
+      "Visual handoff for capture_unverified and wrong_thread states",
+      "Deep visual verification (screenshot-based) not implemented"
+    ],
+    "unresolved": "User-visible UI proof pending — requires live testing on user's Windows machine"
+  }
 }
