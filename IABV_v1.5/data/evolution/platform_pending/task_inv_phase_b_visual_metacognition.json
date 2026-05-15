@@ -5,10 +5,10 @@
   "category": "runtime_stability",
   "priority": "P0",
   "description": "IABV must detect when its own visual capture is unreliable (black image, offscreen window, low information) and NOT treat it as valid evidence. This is a metacognition capability: the system observes its own observation and classifies it.",
-  "resume_hint": "P0.3 implements the first real case: ChatGPT window offscreen (rect=[-32000,-32000,199,34]) producing blank capture (blank_probability=0.98). _window_rect_is_captureable and _capture_is_low_information now classify this. _validate_visual_evidence_result prevents false success.",
-  "next_action": "Extend visual metacognition to cover: partial occlusion, wrong window captured, resolution too low for meaningful content. Validate with more live scenarios.",
+  "resume_hint": "P0.4 adds shared reality dimension: when user says 'it works for me', IABV explains causal difference (user's browser vs IABV's controlled session). P0.3 detection (offscreen rect, blank capture) remains the foundation.",
+  "next_action": "Extend visual metacognition to cover: partial occlusion, wrong window captured, resolution too low for meaningful content. Add user/IABV mismatch as metacognition signal. Validate with more live scenarios.",
   "metadata": {
-    "covered_by_pr": "P0.3 visual alignment slice",
+    "covered_by_pr": "P0.3 visual alignment slice + P0.4 shared reality",
     "real_failure_case": {
       "event": "external_assistant_verification_window_opened",
       "target_window": "ChatGPT - Google Chrome for Testing",
@@ -18,14 +18,17 @@
       "dynamic_range": 0,
       "unique_color_count": 1,
       "useful": false,
-      "root_cause": "ControlCenterViewModel accepted offscreen/minimized window as valid target and captured black image as evidence"
+      "root_cause": "ControlCenterViewModel accepted offscreen/minimized window as valid target and captured black image as evidence",
+      "user_reaction": "a mí sí me funciona y a él no"
     },
     "p03_fix": "_window_rect_is_captureable() rejects rect with left/top <= -30000. _capture_is_low_information() rejects blank_probability >= 0.90. _validate_visual_evidence_result() sets status=visual_unresolved instead of visual_captured. Runtime audit traces visual_evidence_snapshot with status=unresolved.",
+    "p04_fix": "_build_shared_reality_handoff() creates causal package. _detect_user_mismatch_claim() identifies user's 'it works for me' signals. _build_causal_explanation() produces 'Tu vista vs Vista de IABV' comparison. This is metacognition applied to the user/system perception gap: the system knows it cannot see what the user sees and explains why.",
     "remaining": [
       "Partial occlusion detection",
       "Wrong window captured detection",
-      "Resolution too low detection"
+      "Resolution too low detection",
+      "User/IABV mismatch as active metacognition signal in OSES"
     ],
-    "unresolved": "Only offscreen/minimized and blank capture are detected. More visual metacognition scenarios need implementation."
+    "unresolved": "Only offscreen/minimized, blank capture, and user/IABV browser mismatch are detected. More visual metacognition scenarios need implementation."
   }
 }

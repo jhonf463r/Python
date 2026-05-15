@@ -1,11 +1,19 @@
-"""Focused tests for P0.3 visual evidence offscreen / black capture slice.
+"""Focused tests for P0.3 + P0.4 visual evidence and shared reality slices.
 
+P0.3:
 Task A: _window_rect_is_captureable classifies offscreen/minimized windows.
 Task B: black/low-info capture produces visual_unresolved, not visual_captured.
 Task C: user message contains guidance about minimized/offscreen/black capture.
 Task D: runtime audit traces invalid visual evidence.
 Task E: platform_pending JSONs validate with PlatformPendingTask.
 Task F: action suggestions allow restore/retry.
+
+P0.4:
+Task A: _build_shared_reality_handoff creates causal handoff package.
+Task B: _detect_user_mismatch_claim identifies user 'it works for me' signals.
+Task C: shared reality message includes causal comparison.
+Task D: evidence path exposure.
+Task E: runtime audit shared_reality_handoff event.
 
 Performance: pure-helper tests use a lightweight stub (no AppBootstrap).
 """
@@ -55,6 +63,13 @@ def _make_stub_vm():
         '_validate_visual_evidence_result',
         '_visual_handoff_message',
         '_trace_visual_evidence_invalid',
+        # P0.4 methods
+        '_build_shared_reality_handoff',
+        '_detect_user_mismatch_claim',
+        '_build_causal_explanation',
+        '_shared_reality_user_message',
+        '_attach_evidence_to_handoff',
+        '_trace_shared_reality_handoff',
     ):
         raw = ControlCenterViewModel.__dict__.get(name)
         if isinstance(raw, staticmethod):
@@ -610,3 +625,331 @@ class TestExecutionStateMetadataWiring:
         assert any(kw in msg for kw in ('restaura', 'reintenta', 'retry', 'restore')), (
             f'Message must guide user to restore/retry, got: {msg}'
         )
+
+
+# ══════════════════════════════════════════════════════════════════════
+# P0.4 — Shared Reality / Causal Handoff tests
+# ══════════════════════════════════════════════════════════════════════
+
+# -- Helpers for P0.4 tests --
+
+_LIVE_TARGET_WINDOW: dict[str, Any] = {
+    'title': 'ChatGPT - Google Chrome for Testing',
+    'hwnd': 16319628,
+    'rect': [-32000, -32000, 199, 34],
+}
+
+_LIVE_CAPTURE_META: dict[str, Any] = {
+    'blank_probability': 0.98,
+    'dynamic_range': 0,
+    'unique_color_count': 1,
+    'useful': False,
+    'capture_scope': 'external_target_window_bbox',
+}
+
+
+def _offscreen_capture_state(vm: Any) -> dict[str, Any]:
+    """Get capture_state for the live offscreen case."""
+    return vm._target_window_capture_state(_LIVE_TARGET_WINDOW, _LIVE_CAPTURE_META)
+
+
+# ── Test G.1: user says "a mí sí me funciona" + offscreen + black capture ──
+
+class TestSharedRealityMismatch:
+    """User says 'it works for me', IABV has offscreen window + black capture.
+    The message must explain the difference between browsers/sessions."""
+
+    def setup_method(self) -> None:
+        self.vm = _make_stub_vm()
+
+    def test_user_mismatch_with_offscreen_produces_causal_explanation(self) -> None:
+        capture_state = _offscreen_capture_state(self.vm)
+        handoff = self.vm._build_shared_reality_handoff(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            target_window=_LIVE_TARGET_WINDOW,
+            capture_meta=_LIVE_CAPTURE_META,
+            capture_state=capture_state,
+            user_claim='a mí sí me funciona',
+        )
+        msg = self.vm._shared_reality_user_message(
+            handoff=handoff,
+            user_claim='a mí sí me funciona',
+        )
+        msg_lower = msg.lower()
+        assert 'chatgpt' in msg_lower
+        assert any(kw in msg_lower for kw in ('chrome for testing', 'sesión aislada', 'sesión controlada'))
+        assert any(kw in msg_lower for kw in ('minimizada', 'fuera de pantalla', 'offscreen'))
+        assert any(kw in msg_lower for kw in ('negra', 'baja información'))
+        assert 'a mí sí me funciona' in msg_lower
+
+    def test_mismatch_claim_detected(self) -> None:
+        assert self.vm._detect_user_mismatch_claim('a mí sí me funciona') == 'a mí sí me funciona'
+        assert self.vm._detect_user_mismatch_claim('yo sí lo veo bien') == 'yo sí lo veo'
+        assert self.vm._detect_user_mismatch_claim('en mi navegador sí abre') == 'en mi navegador sí'
+        assert self.vm._detect_user_mismatch_claim('por qué a mí sí y a él no') == 'por qué a mí sí'
+        assert self.vm._detect_user_mismatch_claim('a mí me funciona bien') == 'a mí me funciona'
+
+    def test_no_mismatch_on_unrelated_text(self) -> None:
+        assert self.vm._detect_user_mismatch_claim('hola') == ''
+        assert self.vm._detect_user_mismatch_claim('consulta chatgpt') == ''
+        assert self.vm._detect_user_mismatch_claim('') == ''
+
+
+# ── Test G.2: message includes required fields ──
+
+class TestSharedRealityMessageContent:
+    def setup_method(self) -> None:
+        self.vm = _make_stub_vm()
+
+    def test_message_includes_tool_browser_rect_black_capture_actions(self) -> None:
+        capture_state = _offscreen_capture_state(self.vm)
+        handoff = self.vm._build_shared_reality_handoff(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            target_window=_LIVE_TARGET_WINDOW,
+            capture_meta=_LIVE_CAPTURE_META,
+            capture_state=capture_state,
+        )
+        msg = self.vm._shared_reality_user_message(handoff=handoff)
+        msg_lower = msg.lower()
+        # Tool name
+        assert 'chatgpt' in msg_lower
+        # Browser/session info
+        assert any(kw in msg_lower for kw in ('chrome for testing', 'sesión aislada', 'sesión controlada'))
+        # rect/hwnd
+        assert '16319628' in msg or 'hwnd' in msg_lower
+        assert '-32000' in msg
+        # Black capture
+        assert any(kw in msg_lower for kw in ('negra', 'baja información', 'blank_probability'))
+        # Actions
+        assert any(kw in msg_lower for kw in ('restaurar', 'reintentar', 'seleccionar', 'autorizar'))
+
+
+# ── Test G.3: missing evidence → unknown/UNRESOLVED, not invented ──
+
+class TestSharedRealityMissingEvidence:
+    def setup_method(self) -> None:
+        self.vm = _make_stub_vm()
+
+    def test_no_target_window_marks_unknown(self) -> None:
+        capture_state = self.vm._target_window_capture_state(None, None)
+        handoff = self.vm._build_shared_reality_handoff(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            target_window=None,
+            capture_meta=None,
+            capture_state=capture_state,
+        )
+        assert handoff['target_window_title'] == 'unknown'
+        assert handoff['selected_browser_or_profile'] == 'unknown'
+        assert any('UNRESOLVED' in t for t in handoff['unresolved'])
+        assert handoff['evidence_path'] == 'no_disponible'
+
+    def test_partial_evidence_fills_what_it_can(self) -> None:
+        partial_window: dict[str, Any] = {'title': 'ChatGPT', 'hwnd': 999}
+        capture_state = self.vm._target_window_capture_state(partial_window, None)
+        handoff = self.vm._build_shared_reality_handoff(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            target_window=partial_window,
+            capture_meta=None,
+            capture_state=capture_state,
+        )
+        assert handoff['target_window_title'] == 'ChatGPT'
+        assert handoff['hwnd'] == 999
+        assert handoff['rect'] is None
+
+
+# ── Test G.4: runtime audit receives shared_reality_handoff ──
+
+class TestSharedRealityAuditTrace:
+    def setup_method(self) -> None:
+        self.vm = _make_stub_vm()
+
+    def test_trace_does_not_raise(self) -> None:
+        capture_state = _offscreen_capture_state(self.vm)
+        handoff = self.vm._build_shared_reality_handoff(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            target_window=_LIVE_TARGET_WINDOW,
+            capture_meta=_LIVE_CAPTURE_META,
+            capture_state=capture_state,
+            user_claim='a mí sí me funciona',
+        )
+        # Should not raise even without a live RuntimeAuditTracer
+        self.vm._trace_shared_reality_handoff(handoff)
+
+    def test_handoff_has_required_audit_fields(self) -> None:
+        capture_state = _offscreen_capture_state(self.vm)
+        handoff = self.vm._build_shared_reality_handoff(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            target_window=_LIVE_TARGET_WINDOW,
+            capture_meta=_LIVE_CAPTURE_META,
+            capture_state=capture_state,
+            user_claim='a mí sí me funciona',
+        )
+        # Verify all fields needed by _trace_shared_reality_handoff
+        assert 'requested_tool' in handoff
+        assert 'user_claim' in handoff
+        assert 'target_window_title' in handoff
+        assert 'selected_browser_or_profile' in handoff
+        assert 'hwnd' in handoff
+        assert 'rect' in handoff
+        assert 'capture_scope' in handoff
+        assert 'capture_useful' in handoff
+        assert 'mismatch_reason' in handoff
+        assert 'causal_explanation' in handoff
+        assert 'user_action_needed' in handoff
+        assert 'unresolved' in handoff
+        assert handoff['user_claim'] == 'a mí sí me funciona'
+        assert handoff['capture_useful'] is False
+
+
+# ── Test G.5: no false success when capture_useful=false ──
+
+class TestNoFalseSuccessOnSharedReality:
+    def setup_method(self) -> None:
+        self.vm = _make_stub_vm()
+
+    def test_visual_override_still_prevents_success(self) -> None:
+        """Even with shared reality handoff, the flow must NOT report success
+        when capture is black/useless."""
+        combined = {**_LIVE_CAPTURE_META, 'target_window': _LIVE_TARGET_WINDOW}
+        consultation_metadata: dict[str, Any] = {
+            'status': 'prepared',
+            'assistant_kind': 'chatgpt',
+        }
+        override = self.vm._validate_visual_evidence_result(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            result_metadata=combined,
+            consultation_metadata=consultation_metadata,
+        )
+        assert override is not None
+        assert override['visual_unresolved'] is True
+        assert consultation_metadata['status'] == 'visual_unresolved'
+        assert consultation_metadata['status'] != 'prepared'
+        assert consultation_metadata['status'] != 'visual_captured'
+
+
+# ── Test G.6: causal explanation structure ──
+
+class TestCausalExplanation:
+    def setup_method(self) -> None:
+        self.vm = _make_stub_vm()
+
+    def test_causal_explanation_has_tu_vista_vs_iabv(self) -> None:
+        explanation = self.vm._build_causal_explanation(
+            assistant_title='ChatGPT',
+            browser_label='Chrome for Testing (sesión aislada de IABV)',
+            target_title='ChatGPT - Google Chrome for Testing',
+            reason='target_window_minimized_or_offscreen',
+            rect=[-32000, -32000, 199, 34],
+            blank_prob=0.98,
+        )
+        expl_lower = explanation.lower()
+        assert 'tu vista' in expl_lower
+        assert 'vista de iabv' in expl_lower
+        assert 'chrome for testing' in expl_lower
+        assert 'minimizada' in expl_lower or 'fuera de pantalla' in expl_lower
+        assert 'negra' in expl_lower or 'sin información' in expl_lower
+        assert 'no puedo confirmar' in expl_lower
+        assert 'restaures' in expl_lower or 'autorices' in expl_lower
+
+    def test_causal_explanation_no_target_window(self) -> None:
+        explanation = self.vm._build_causal_explanation(
+            assistant_title='ChatGPT',
+            browser_label='unknown',
+            target_title='',
+            reason='no_target_window',
+        )
+        assert 'no encontré' in explanation.lower() or 'no encontre' in explanation.lower()
+
+
+# ── Test G.7: evidence path exposure ──
+
+class TestEvidencePathExposure:
+    def setup_method(self) -> None:
+        self.vm = _make_stub_vm()
+
+    def test_evidence_path_attached_from_metadata(self) -> None:
+        capture_state = _offscreen_capture_state(self.vm)
+        handoff = self.vm._build_shared_reality_handoff(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            target_window=_LIVE_TARGET_WINDOW,
+            capture_meta=_LIVE_CAPTURE_META,
+            capture_state=capture_state,
+        )
+        result_metadata = {'screenshot_path': 'C:\\captures\\black_capture.png'}
+        updated = self.vm._attach_evidence_to_handoff(handoff, result_metadata)
+        assert updated['evidence_path'] == 'C:\\captures\\black_capture.png'
+        assert updated['evidence_metadata']['useful'] is False
+        assert updated['evidence_metadata']['reason'] == 'low_information_pixels'
+        assert updated['evidence_metadata']['description'] == 'Esto fue lo que capturé'
+
+    def test_no_evidence_path_stays_no_disponible(self) -> None:
+        capture_state = _offscreen_capture_state(self.vm)
+        handoff = self.vm._build_shared_reality_handoff(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            target_window=_LIVE_TARGET_WINDOW,
+            capture_meta=_LIVE_CAPTURE_META,
+            capture_state=capture_state,
+        )
+        result_metadata: dict[str, Any] = {}
+        updated = self.vm._attach_evidence_to_handoff(handoff, result_metadata)
+        assert updated['evidence_path'] == 'no_disponible'
+        assert 'evidence_metadata' not in updated
+
+
+# ── Test G.8: handoff package has all required fields ──
+
+class TestHandoffPackageFields:
+    def setup_method(self) -> None:
+        self.vm = _make_stub_vm()
+
+    def test_all_required_fields_present(self) -> None:
+        capture_state = _offscreen_capture_state(self.vm)
+        handoff = self.vm._build_shared_reality_handoff(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            target_window=_LIVE_TARGET_WINDOW,
+            capture_meta=_LIVE_CAPTURE_META,
+            capture_state=capture_state,
+            user_claim='a mí sí me funciona',
+            evidence_path='C:\\captures\\test.png',
+        )
+        required_fields = [
+            'user_claim', 'requested_tool', 'selected_tool',
+            'selected_browser_or_profile', 'target_window_title',
+            'hwnd', 'rect', 'capture_scope', 'capture_useful',
+            'capture_quality', 'mismatch_reason', 'causal_explanation',
+            'user_action_needed', 'fallback_available', 'unresolved',
+            'evidence_path',
+        ]
+        for field in required_fields:
+            assert field in handoff, f'Missing required field: {field}'
+        assert handoff['user_claim'] == 'a mí sí me funciona'
+        assert handoff['requested_tool'] == 'chatgpt'
+        assert handoff['capture_useful'] is False
+        assert handoff['fallback_available'] is True
+        assert 'authorize_visible_browser' in handoff['user_action_needed']
+        cq = handoff['capture_quality']
+        assert cq['blank_probability'] == 0.98
+        assert cq['dynamic_range'] == 0
+        assert cq['unique_color_count'] == 1
+
+    def test_chrome_for_testing_detected_as_isolated_session(self) -> None:
+        capture_state = _offscreen_capture_state(self.vm)
+        handoff = self.vm._build_shared_reality_handoff(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            target_window=_LIVE_TARGET_WINDOW,
+            capture_meta=_LIVE_CAPTURE_META,
+            capture_state=capture_state,
+        )
+        assert 'Chrome for Testing' in handoff['selected_browser_or_profile']
+        assert 'aislada' in handoff['selected_browser_or_profile']

@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import threading
 import uuid
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -3858,6 +3858,280 @@ class ControlCenterViewModel(QObject):
             parts.append('Mientras tanto, sigo con la mejor via local disponible.')
         return ' '.join(parts)
 
+    # ── P0.4 Task A: shared reality causal handoff package ───────
+    def _build_shared_reality_handoff(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+        target_window: dict[str, Any] | None,
+        capture_meta: dict[str, Any] | None,
+        capture_state: dict[str, Any],
+        user_claim: str = '',
+        evidence_path: str = '',
+    ) -> dict[str, Any]:
+        """Build a causal handoff package explaining the gap between what the
+        user sees and what IABV sees.
+
+        Returns a plain dict (not a new model) with all fields required for
+        the shared reality explanation.
+        """
+        tw = target_window or {}
+        cm = capture_meta or {}
+        target_title = str(tw.get('title') or '').strip()
+        hwnd = tw.get('hwnd')
+        rect = tw.get('rect')
+        capture_scope = str(cm.get('capture_scope') or 'unknown')
+        capture_useful = bool(cm.get('useful', True))
+        blank_prob = float(cm.get('blank_probability') or 0.0)
+        dynamic_range = cm.get('dynamic_range')
+        unique_colors = cm.get('unique_color_count')
+        reason = capture_state.get('reason', 'unknown')
+        browser_label = 'unknown'
+        if target_title:
+            title_lower = target_title.lower()
+            if 'chrome for testing' in title_lower:
+                browser_label = 'Chrome for Testing (sesión aislada de IABV)'
+            elif 'chrome' in title_lower:
+                browser_label = 'Google Chrome (sesión controlada)'
+            elif 'firefox' in title_lower:
+                browser_label = 'Firefox'
+            elif 'edge' in title_lower:
+                browser_label = 'Microsoft Edge'
+            else:
+                browser_label = 'navegador/sesión controlada por IABV'
+        mismatch_reason = 'unknown'
+        if reason == 'target_window_minimized_or_offscreen':
+            mismatch_reason = (
+                'La ventana que IABV usa está minimizada o fuera de pantalla. '
+                'Tú probablemente ves tu navegador/sesión normal, pero IABV '
+                'usa una sesión aislada que no está visible.'
+            )
+        elif reason == 'no_target_window':
+            mismatch_reason = (
+                'IABV no encontró la ventana objetivo. Es posible que la '
+                'herramienta esté abierta en tu navegador personal pero no en '
+                'la sesión controlada por IABV.'
+            )
+        elif reason in ('low_information_pixels', 'low_information'):
+            mismatch_reason = (
+                'La ventana de IABV está visible pero la captura tiene muy '
+                'poca información (negra o casi vacía). La herramienta puede '
+                'funcionar en tu navegador pero no en la sesión de IABV.'
+            )
+        else:
+            mismatch_reason = (
+                'IABV no pudo verificar el estado de la herramienta. '
+                'Puede funcionar en tu navegador pero no en la sesión de IABV.'
+            )
+        causal_explanation = self._build_causal_explanation(
+            assistant_title=assistant_title,
+            browser_label=browser_label,
+            target_title=target_title,
+            reason=reason,
+            rect=rect,
+            blank_prob=blank_prob,
+        )
+        user_action_needed = list(capture_state.get('suggested_actions') or [])
+        if 'authorize_visible_browser' not in user_action_needed:
+            user_action_needed.append('authorize_visible_browser')
+        unresolved_tags = list(capture_state.get('unresolved') or [])
+        if not any('shared_reality' in t for t in unresolved_tags):
+            unresolved_tags.append('UNRESOLVED:shared_reality_mismatch_pending_live_proof')
+        return {
+            'user_claim': user_claim or 'unknown',
+            'requested_tool': assistant_kind,
+            'selected_tool': assistant_kind,
+            'selected_browser_or_profile': browser_label,
+            'target_window_title': target_title or 'unknown',
+            'hwnd': hwnd,
+            'rect': rect,
+            'capture_scope': capture_scope,
+            'capture_useful': capture_useful,
+            'capture_quality': {
+                'blank_probability': blank_prob,
+                'dynamic_range': dynamic_range,
+                'unique_color_count': unique_colors,
+                'useful': capture_useful,
+            },
+            'mismatch_reason': mismatch_reason,
+            'causal_explanation': causal_explanation,
+            'user_action_needed': user_action_needed,
+            'fallback_available': True,
+            'unresolved': unresolved_tags,
+            'evidence_path': evidence_path or 'no_disponible',
+        }
+
+    # ── P0.4 Task B: detect user/IABV mismatch claims ─────────
+    _USER_MISMATCH_PATTERNS: ClassVar[list[str]] = [
+        'a mí sí me funciona',
+        'a mi si me funciona',
+        'yo sí lo veo',
+        'yo si lo veo',
+        'en mi navegador sí',
+        'en mi navegador si',
+        'por qué a mí sí',
+        'por que a mi si',
+        'a él no',
+        'a el no',
+        'a iabv no',
+        'yo lo veo bien',
+        'a mí me funciona',
+        'a mi me funciona',
+        'funciona en mi',
+        'yo sí puedo',
+        'yo si puedo',
+    ]
+
+    @staticmethod
+    def _detect_user_mismatch_claim(user_text: str) -> str:
+        """Return the matching claim phrase if the user is saying 'it works for
+        me but not for IABV', or empty string if no match."""
+        if not user_text:
+            return ''
+        normalized = ' '.join(user_text.lower().strip().split())
+        for pattern in ControlCenterViewModel._USER_MISMATCH_PATTERNS:
+            if pattern in normalized:
+                return pattern
+        return ''
+
+    # ── P0.4 Task C: causal comparative message ────────────────
+    def _build_causal_explanation(
+        self,
+        *,
+        assistant_title: str,
+        browser_label: str,
+        target_title: str,
+        reason: str,
+        rect: Any = None,
+        blank_prob: float = 0.0,
+    ) -> str:
+        """Build the 'Tu vista vs Vista de IABV' causal explanation."""
+        parts = []
+        parts.append(f'Tu vista: probablemente ves {assistant_title} funcionando en tu navegador o sesión normal.')
+        parts.append(
+            f'Vista de IABV: estoy usando {browser_label}'
+            f'{f" (ventana: {target_title})" if target_title else ""}.'
+        )
+        if reason == 'target_window_minimized_or_offscreen':
+            parts.append(
+                f'Esa ventana está minimizada o fuera de pantalla '
+                f'(coordenadas: {rect or "no disponible"}).'
+            )
+            parts.append('Mi captura salió negra / sin información visual.')
+        elif reason == 'no_target_window':
+            parts.append('No encontré la ventana objetivo en mi sesión.')
+        else:
+            if blank_prob >= 0.90:
+                parts.append(f'La captura tiene muy poca información (blank_probability={blank_prob:.2f}).')
+            else:
+                parts.append('La captura no tiene suficiente información para verificar el estado.')
+        parts.append(f'Por eso no puedo confirmar {assistant_title} desde mi sesión.')
+        parts.append(
+            'Necesito que restaures esa ventana, selecciones la ventana correcta '
+            'o autorices usar el navegador visible.'
+        )
+        return ' '.join(parts)
+
+    # ── P0.4 Task C: shared reality user message ───────────────
+    def _shared_reality_user_message(
+        self,
+        *,
+        handoff: dict[str, Any],
+        user_claim: str = '',
+    ) -> str:
+        """Build the full user-facing message for shared reality handoff.
+
+        Includes: tool, window, coordinates, what IABV saw, the difference,
+        why IABV cannot proceed, what user must do, and fallback info.
+        """
+        parts = []
+        if user_claim:
+            parts.append(f'Entiendo que a ti sí te funciona ("{user_claim}").')
+        parts.append(f'Herramienta: {handoff.get("requested_tool", "unknown")}.')
+        target = handoff.get('target_window_title', 'unknown')
+        hwnd = handoff.get('hwnd', 'desconocido')
+        rect = handoff.get('rect', 'no disponible')
+        parts.append(f'Ventana que intenté usar: {target} (hwnd={hwnd}, rect={rect}).')
+        cq = handoff.get('capture_quality') or {}
+        blank_prob = float(cq.get('blank_probability') or 0.0)
+        if blank_prob >= 0.90:
+            parts.append(f'Qué vi: captura negra / baja información (blank_probability={blank_prob:.2f}).')
+        elif not cq.get('useful', True):
+            parts.append('Qué vi: captura sin información útil.')
+        else:
+            parts.append('Qué vi: no pude verificar el estado real.')
+        parts.append(f'Diferencia probable: {handoff.get("mismatch_reason", "desconocida")}.')
+        parts.append(f'Por qué no avanzo: no puedo verificar estado real de {handoff.get("requested_tool", "la herramienta")}.')
+        actions = handoff.get('user_action_needed') or []
+        action_labels = {
+            'restore_target_window': 'restaurar/abrir la ventana objetivo',
+            'select_visible_window': 'seleccionar una ventana visible manualmente',
+            'retry_capture': 'reintentar la captura después de restaurar',
+            'authorize_visible_browser': 'autorizar que use el navegador visible en tu pantalla',
+        }
+        action_texts = [action_labels.get(a, a) for a in actions]
+        if action_texts:
+            parts.append(f'Qué necesito: {"; ".join(action_texts)}.')
+        evidence_path = handoff.get('evidence_path', '')
+        if evidence_path and evidence_path != 'no_disponible':
+            parts.append(f'Evidencia de captura: {evidence_path} (useful=false, reason={handoff.get("capture_quality", {}).get("reason", "low_information_pixels")}).')
+        if handoff.get('fallback_available'):
+            parts.append('Qué haré mientras tanto: sigo con la mejor vía local disponible.')
+        return ' '.join(parts)
+
+    # ── P0.4 Task D: evidence path exposure ────────────────────
+    def _attach_evidence_to_handoff(
+        self,
+        handoff: dict[str, Any],
+        result_metadata: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Attach screenshot evidence path to handoff if available."""
+        evidence_path = ''
+        for key in ('screenshot_path', 'capture_path', 'evidence_path', 'image_path'):
+            path_val = str(result_metadata.get(key) or '').strip()
+            if path_val:
+                evidence_path = path_val
+                break
+        if evidence_path:
+            handoff['evidence_path'] = evidence_path
+            handoff['evidence_metadata'] = {
+                'path': evidence_path,
+                'useful': False,
+                'reason': 'low_information_pixels',
+                'description': 'Esto fue lo que capturé',
+            }
+        return handoff
+
+    # ── P0.4 Task E: runtime audit trace for shared reality ────
+    def _trace_shared_reality_handoff(
+        self,
+        handoff: dict[str, Any],
+    ) -> None:
+        """Log a shared_reality_handoff event to RuntimeAuditTracer."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            cq = handoff.get('capture_quality') or {}
+            get_runtime_tracer().trace(
+                'shared_reality_handoff',
+                assistant_kind=handoff.get('requested_tool', ''),
+                user_claim=handoff.get('user_claim', 'unknown'),
+                target_window_title=handoff.get('target_window_title', ''),
+                browser_profile=handoff.get('selected_browser_or_profile', 'unknown'),
+                hwnd=handoff.get('hwnd'),
+                rect=handoff.get('rect'),
+                capture_scope=handoff.get('capture_scope', 'unknown'),
+                capture_path=handoff.get('evidence_path', 'no_disponible'),
+                capture_useful=handoff.get('capture_useful', False),
+                blank_probability=float(cq.get('blank_probability') or 0.0),
+                mismatch_reason=handoff.get('mismatch_reason', ''),
+                causal_explanation_summary=str(handoff.get('causal_explanation') or '')[:500],
+                user_action_needed=handoff.get('user_action_needed', []),
+                unresolved=handoff.get('unresolved', []),
+            )
+        except Exception:
+            pass
+
     def _external_state_notice(self, flags: list[str] | None) -> str:
         normalized = canonical_external_state_flags(flags)
         if not normalized:
@@ -6034,15 +6308,28 @@ class ControlCenterViewModel(QObject):
             payload['metadata'] = metadata
             self._update_adaptive_state(payload)
             target_window = combined_result_metadata.get('target_window')
-            capture_state = self._target_window_capture_state(
-                target_window,
-                combined_result_metadata.get('visual_evidence_snapshot') or combined_result_metadata.get('capture_meta'),
+            capture_meta = (
+                combined_result_metadata.get('visual_evidence_snapshot')
+                or combined_result_metadata.get('capture_meta')
+                or {}
             )
-            handoff_msg = self._visual_handoff_message(
+            capture_state = self._target_window_capture_state(
+                target_window, capture_meta,
+            )
+            # P0.4: build shared reality causal handoff
+            shared_handoff = self._build_shared_reality_handoff(
+                assistant_kind=actual_assistant_kind or requested_assistant_kind,
                 assistant_title=assistant_title,
                 target_window=target_window,
+                capture_meta=capture_meta,
                 capture_state=capture_state,
             )
+            self._attach_evidence_to_handoff(shared_handoff, combined_result_metadata)
+            self._trace_shared_reality_handoff(shared_handoff)
+            metadata['shared_reality_handoff'] = shared_handoff
+            payload['metadata'] = metadata
+            self._update_adaptive_state(payload)
+            handoff_msg = self._shared_reality_user_message(handoff=shared_handoff)
             self._latest_response_text = handoff_msg
             self._latest_response_meta = f'{assistant_title}: visual_unresolved'
             self._busy_label = f'Captura visual no valida para {assistant_title}.'
@@ -6054,6 +6341,7 @@ class ControlCenterViewModel(QObject):
                 'assistant_title': assistant_title,
                 'external_state_flags': external_state_flags,
                 'visual_unresolved': True,
+                'shared_reality_handoff': shared_handoff,
             }
         payload = dict(self._last_adaptive_payload or {})
         metadata = dict(payload.get('metadata') or {})
