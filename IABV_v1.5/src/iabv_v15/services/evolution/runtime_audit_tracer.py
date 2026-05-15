@@ -42,6 +42,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import subprocess
 import threading
 import time
 from datetime import datetime, timezone
@@ -49,6 +50,72 @@ from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# ------------------------------------------------------------------
+# Feature markers expected from P0 slices #381-#389
+# ------------------------------------------------------------------
+_REQUIRED_FEATURE_MARKERS: dict[str, str] = {
+    'has_post_remediation_recapture': '_attempt_post_remediation_recapture',
+    'has_post_recapture_response_retry': '_attempt_post_recapture_response_retry',
+    'has_shared_reality_handoff': 'shared_reality_handoff',
+    'has_dispatch_lifecycle_tracing': 'trace_dispatch_started',
+}
+
+
+def _git_cmd(args: list[str], cwd: str | Path) -> str:
+    """Run a git command and return stripped stdout, or '' on failure."""
+    try:
+        r = subprocess.run(
+            ['git'] + args,
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        return r.stdout.strip() if r.returncode == 0 else ''
+    except Exception:
+        return ''
+
+
+def _collect_build_fingerprint(workspace: str | Path = '.') -> dict[str, Any]:
+    """Collect git and feature-marker info for the running build."""
+    ws = Path(workspace).resolve()
+    src_dir = ws / 'src' / 'iabv_v15'
+    if not src_dir.is_dir():
+        src_dir = ws
+
+    branch = _git_cmd(['rev-parse', '--abbrev-ref', 'HEAD'], ws)
+    head = _git_cmd(['rev-parse', 'HEAD'], ws)
+    dirty = _git_cmd(['status', '--porcelain'], ws) != ''
+    origin_main = _git_cmd(['rev-parse', 'origin/main'], ws)
+
+    # Probe feature markers by searching for key strings in source files
+    markers: dict[str, bool] = {}
+    for marker_name, search_string in _REQUIRED_FEATURE_MARKERS.items():
+        found = False
+        try:
+            for py_file in src_dir.rglob('*.py'):
+                try:
+                    content = py_file.read_text(encoding='utf-8', errors='ignore')
+                    if search_string in content:
+                        found = True
+                        break
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        markers[marker_name] = found
+
+    return {
+        'branch': branch,
+        'head': head,
+        'dirty': dirty,
+        'origin_main_head': origin_main,
+        'workspace': str(ws),
+        'feature_markers': markers,
+        'stale': not all(markers.values()),
+        'missing_markers': [k for k, v in markers.items() if not v],
+    }
 
 
 class RuntimeAuditTracer:
@@ -298,6 +365,15 @@ class RuntimeAuditTracer:
             report_path=report_path,
             **extra,
         )
+
+    def trace_build_fingerprint(self, workspace: str | Path = '') -> dict[str, Any]:
+        """Record a runtime_build_fingerprint event at startup.
+
+        Collects git branch, HEAD commit, dirty flag, origin/main HEAD,
+        and probes for feature markers introduced in recent P0 slices.
+        """
+        fp = _collect_build_fingerprint(workspace or '.')
+        return self.trace('runtime_build_fingerprint', **fp)
 
     # ------------------------------------------------------------------
     # Query / export

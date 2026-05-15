@@ -197,7 +197,10 @@ class FreezeIncidentReporter:
             'cwd': os.getcwd(),
         }
 
-        # 10. Extra context
+        # 10. Runtime audit pre-stall context (P0.12)
+        report['runtime_audit_context'] = self._capture_runtime_audit_context()
+
+        # 11. Extra context
         if extra_context:
             report['extra'] = extra_context
 
@@ -637,6 +640,42 @@ class FreezeIncidentReporter:
         except Exception:
             pass
         return []
+
+    @staticmethod
+    def _capture_runtime_audit_context() -> dict[str, Any]:
+        """Capture last 20 runtime events, dispatch lifecycle, and pressure indicators."""
+        ctx: dict[str, Any] = {}
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            ctx['recent_events'] = tracer.events(limit=20)
+            lifecycles = tracer.recent_dispatch_lifecycles(limit=5)
+            ctx['latest_dispatch_lifecycle'] = lifecycles[0] if lifecycles else {}
+            # Active interaction/task from dispatch events
+            started = tracer.events(kind='dispatch_started', limit=5)
+            if started:
+                last = started[-1].get('data', {})
+                ctx['active_interaction_id'] = last.get('interaction_id', '')
+                ctx['active_task_name'] = last.get('task_name', '')
+            # Last heavy refresh budget exceeded
+            budget_exceeded = [
+                e for e in tracer.events(limit=100)
+                if e.get('kind') == 'control_autonomy_dock_refresh_budget_exceeded'
+            ]
+            ctx['last_heavy_refresh'] = budget_exceeded[-1] if budget_exceeded else {}
+            # query_pending indicator from stall events
+            stalls = [
+                e for e in tracer.events(kind='ui_event', limit=50)
+                if e.get('data', {}).get('event_type') == 'ui_event_loop_stall'
+            ]
+            ctx['recent_stall_count'] = len(stalls)
+            if stalls:
+                last_stall = stalls[-1].get('data', {})
+                ctx['last_stall_duration_ms'] = last_stall.get('duration_ms', 0)
+                ctx['last_stall_query_pending'] = last_stall.get('query_pending', False)
+        except Exception as exc:
+            ctx['error'] = str(exc)
+        return ctx
 
 
 # ======================================================================

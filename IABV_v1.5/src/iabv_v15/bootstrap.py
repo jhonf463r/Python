@@ -428,6 +428,16 @@ class AppBootstrap:
         # Configure runtime tracer with the same logs dir.
         configure_runtime_tracer(Path(self.config.logs_dir))
         self._tracer.trace('boot_start', workspace=workspace_root or '')
+        _fp_event = self._tracer.trace_build_fingerprint(workspace=workspace_root or '.')
+        _fp_data = _fp_event.get('data', {})
+        if _fp_data.get('stale'):
+            self._tracer.trace(
+                'runtime_build_stale_detected',
+                branch=_fp_data.get('branch', ''),
+                head=_fp_data.get('head', ''),
+                missing_markers=_fp_data.get('missing_markers', []),
+            )
+        self._build_stale = bool(_fp_data.get('stale'))
 
         self._services_wired = False
         self._defer_services = _defer_services

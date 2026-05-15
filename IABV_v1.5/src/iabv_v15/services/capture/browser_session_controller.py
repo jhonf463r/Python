@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -83,6 +84,7 @@ class BrowserSessionController:
         self._browser: Browser | None = None
         self._context: BrowserContext | None = None
         self._page: Page | None = None
+        self._owner_thread_id: int | None = None
         if profile_config is not None:
             self.configure(profile_config)
 
@@ -133,6 +135,7 @@ class BrowserSessionController:
         if self._pw is not None:
             return
         self._pw = sync_playwright().start()
+        self._owner_thread_id = threading.current_thread().ident
 
         if self.user_data_dir is not None:
             self.user_data_dir.mkdir(parents=True, exist_ok=True)
@@ -252,6 +255,23 @@ class BrowserSessionController:
         return restored_any
 
     def close(self) -> None:
+        current_tid = threading.current_thread().ident
+        owner_tid = self._owner_thread_id
+        if owner_tid is not None and current_tid != owner_tid:
+            logger.warning(
+                'browser_session_close called from thread %s but owned by %s — deferring',
+                current_tid, owner_tid,
+            )
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'browser_session_close_deferred',
+                    caller_thread=current_tid,
+                    owner_thread=owner_tid,
+                )
+            except Exception:
+                pass
+            return
         try:
             self._page = None
             if self._context is not None:
@@ -263,5 +283,15 @@ class BrowserSessionController:
             if self._pw is not None:
                 self._pw.stop()
                 self._pw = None
+            self._owner_thread_id = None
         except Exception as exc:
             logger.warning('Error closing browser session: %s', exc)
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'browser_session_close_unresolved',
+                    error=str(exc),
+                    caller_thread=current_tid,
+                )
+            except Exception:
+                pass
