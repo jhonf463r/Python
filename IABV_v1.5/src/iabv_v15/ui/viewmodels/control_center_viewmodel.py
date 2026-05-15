@@ -4544,6 +4544,13 @@ class ControlCenterViewModel(QObject):
         else:
             status = 'response_not_captured'
 
+        safe_evidence_path: str | None = None
+        if evidence_path:
+            try:
+                safe_evidence_path = Path(str(evidence_path)).name or 'available'
+            except Exception:
+                safe_evidence_path = 'available'
+
         return {
             'target_window_title': title,
             'hwnd': hwnd,
@@ -4553,7 +4560,7 @@ class ControlCenterViewModel(QObject):
             'response_captured': response_captured,
             'response_capture_pending': is_pending,
             'response_capture_mode': response_capture_mode,
-            'evidence_path': evidence_path or None,
+            'evidence_path': safe_evidence_path,
             'window_observable': True,
             'status': status,
         }

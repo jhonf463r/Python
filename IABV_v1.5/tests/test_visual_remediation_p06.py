@@ -849,11 +849,14 @@ class TestPostRecaptureResponseProof:
             capture_useful_before=False,
             capture_useful_after=True,
             recapture={'recapture_status': 'improved'},
+            evidence_path=r'C:\Users\faber\AppData\Local\Temp\visual_evidence.png',
         )
         proof_str = json.dumps(proof)
         assert 'C:\\Users' not in proof_str
+        assert 'faber' not in proof_str
         assert '/home/' not in proof_str
         assert 'password' not in proof_str.lower()
+        assert proof['evidence_path'] == 'visual_evidence.png'
         assert proof['status'] == 'response_pending'
 
     def test_trace_post_recapture_response_verification(self) -> None:
