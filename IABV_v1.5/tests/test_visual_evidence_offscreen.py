@@ -1090,3 +1090,22 @@ class TestSharedRealityFollowupWiring:
         self.vm._last_adaptive_payload = _build_payload_with_handoff()
         self.vm._try_handle_shared_reality_followup('a mí sí me funciona')
         assert self.vm._live_status == 'idle'
+
+    def test_updates_latest_response_and_busy_label(self) -> None:
+        """Handler must update _latest_response_text, _latest_response_meta,
+        and clear _busy_label."""
+        self.vm._last_adaptive_payload = _build_payload_with_handoff()
+        self.vm._try_handle_shared_reality_followup('a mí sí me funciona')
+        assert self.vm._latest_response_text != ''
+        assert 'chatgpt' in self.vm._latest_response_text.lower()
+        assert 'shared_reality_followup' in self.vm._latest_response_meta
+        assert self.vm._busy_label == ''
+
+    def test_preserves_original_handoff_evidence(self) -> None:
+        """The handoff copy used for the response must preserve all original
+        evidence fields (rect, hwnd, capture_quality, etc.)."""
+        self.vm._last_adaptive_payload = _build_payload_with_handoff()
+        self.vm._try_handle_shared_reality_followup('a mí sí me funciona')
+        msg_text = self.vm._chat_messages[0]['text']
+        assert '16319628' in msg_text or 'hwnd' in msg_text.lower()
+        assert '-32000' in msg_text

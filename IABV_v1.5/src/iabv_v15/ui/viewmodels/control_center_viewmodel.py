@@ -4145,9 +4145,14 @@ class ControlCenterViewModel(QObject):
         handoff = metadata.get('shared_reality_handoff')
         if not handoff or not isinstance(handoff, dict):
             return False
+        handoff = dict(handoff)
         handoff['user_claim'] = claim
         msg = self._shared_reality_user_message(handoff=handoff, user_claim=claim)
         self._trace_shared_reality_handoff(handoff)
+        tool_name = handoff.get('requested_tool', 'herramienta externa')
+        self._latest_response_text = msg
+        self._latest_response_meta = f'{tool_name}: shared_reality_followup'
+        self._busy_label = ''
         self._append_message(
             'assistant', 'IABV', msg,
             'shared_reality_followup',
