@@ -4431,19 +4431,36 @@ class ControlCenterViewModel(QObject):
                 'detail': f'ImageGrab.grab raised: {type(exc).__name__}',
             }
 
-        # Analyse the recaptured image in-memory
+        # Analyse the recaptured image in-memory without optional numerical
+        # dependencies.  ``ImageGrab`` returns a PIL image, whose histogram and
+        # extrema are enough for the same low-information gate used elsewhere.
         try:
-            import numpy as np  # type: ignore[import-untyped]
-            arr = np.array(image)
-            total_px = max(arr.size, 1)
-            blank_px = int(np.sum(arr < 5))
-            blank_probability = round(blank_px / total_px, 4)
-            dynamic_range = int(arr.max()) - int(arr.min())
-            unique_colors = int(min(len(np.unique(arr.reshape(-1, arr.shape[-1] if arr.ndim > 2 else 1), axis=0)), 99999))
+            rgb = image.convert('RGB')
+            histogram = list(rgb.histogram())
+            total_values = max(sum(histogram), 1)
+            blank_values = (
+                sum(histogram[0:5])
+                + sum(histogram[256:261])
+                + sum(histogram[512:517])
+            )
+            blank_probability = round(blank_values / total_values, 4)
+            extrema = rgb.getextrema()
+            mins = [int(pair[0]) for pair in extrema]
+            maxs = [int(pair[1]) for pair in extrema]
+            dynamic_range = max(maxs) - min(mins)
+            colors = rgb.getcolors(maxcolors=100000)
+            unique_colors = 99999 if colors is None else len(colors)
         except Exception:
-            blank_probability = 0.0
-            dynamic_range = 255
-            unique_colors = 9999
+            return {
+                'recapture_attempted': True,
+                'recapture_status': 'error',
+                'capture_useful_after': None,
+                'blank_probability_after': None,
+                'recapture_unresolved': [
+                    'UNRESOLVED:visual_remediation_recapture_analysis_failed',
+                ],
+                'detail': 'Recapture completed but image analysis failed.',
+            }
 
         recapture_meta: dict[str, Any] = {
             'blank_probability': blank_probability,
@@ -6813,64 +6830,54 @@ class ControlCenterViewModel(QObject):
             }
             payload['metadata'] = metadata
             self._update_adaptive_state(payload)
-            # P0.8: if recapture improved, allow continuing
-            if recapture_status == 'improved' and capture_useful_after:
-                self._latest_response_text = (
-                    f'La ventana fue restaurada y la recaptura mejoro. '
-                    f'Continuando con la evidencia visual de {assistant_title}.'
+            # P0.8: if recapture improved, unblock the normal consultation
+            # path below.  A useful recapture proves the visual target is now
+            # observable; it is not, by itself, a verified external answer.
+            visual_recaptured = recapture_status == 'improved' and bool(capture_useful_after)
+            if visual_recaptured:
+                consultation_metadata['visual_evidence_recovered'] = True
+                consultation_metadata['visual_recapture_status'] = recapture_status
+                metadata['external_consultation'] = dict(consultation_metadata)
+                metadata['autonomous_evolution'] = dict(consultation_metadata)
+                payload['metadata'] = metadata
+                self._update_adaptive_state(payload)
+            else:
+                # P0.4: build shared reality causal handoff
+                shared_handoff = self._build_shared_reality_handoff(
+                    assistant_kind=actual_assistant_kind or requested_assistant_kind,
+                    assistant_title=assistant_title,
+                    target_window=target_window,
+                    capture_meta=capture_meta,
+                    capture_state=capture_state,
                 )
-                self._latest_response_meta = f'{assistant_title}: visual_recaptured'
-                self._busy_label = ''
+                self._attach_evidence_to_handoff(shared_handoff, combined_result_metadata)
+                self._trace_shared_reality_handoff(shared_handoff)
+                metadata['shared_reality_handoff'] = shared_handoff
+                payload['metadata'] = metadata
+                self._update_adaptive_state(payload)
+                handoff_msg = self._remediation_user_message(
+                    assistant_title=assistant_title,
+                    assessment=assessment,
+                    remediation_result=remediation_result,
+                )
+                self._latest_response_text = handoff_msg
+                self._latest_response_meta = f'{assistant_title}: visual_unresolved'
+                self._busy_label = f'Captura visual no valida para {assistant_title}.'
                 return {
-                    'success': True,
-                    'message': self._latest_response_text,
-                    'meta': f'{assistant_title}: visual_recaptured',
+                    'success': False,
+                    'message': handoff_msg,
+                    'meta': f'{assistant_title}: visual_unresolved',
                     'payload': payload,
                     'assistant_title': assistant_title,
                     'external_state_flags': external_state_flags,
-                    'visual_unresolved': False,
+                    'visual_unresolved': True,
+                    'shared_reality_handoff': shared_handoff,
                     'visual_remediation': {
                         'assessment': assessment,
                         'result': remediation_result,
                         'recapture': recapture,
                     },
                 }
-            # P0.4: build shared reality causal handoff
-            shared_handoff = self._build_shared_reality_handoff(
-                assistant_kind=actual_assistant_kind or requested_assistant_kind,
-                assistant_title=assistant_title,
-                target_window=target_window,
-                capture_meta=capture_meta,
-                capture_state=capture_state,
-            )
-            self._attach_evidence_to_handoff(shared_handoff, combined_result_metadata)
-            self._trace_shared_reality_handoff(shared_handoff)
-            metadata['shared_reality_handoff'] = shared_handoff
-            payload['metadata'] = metadata
-            self._update_adaptive_state(payload)
-            handoff_msg = self._remediation_user_message(
-                assistant_title=assistant_title,
-                assessment=assessment,
-                remediation_result=remediation_result,
-            )
-            self._latest_response_text = handoff_msg
-            self._latest_response_meta = f'{assistant_title}: visual_unresolved'
-            self._busy_label = f'Captura visual no valida para {assistant_title}.'
-            return {
-                'success': False,
-                'message': handoff_msg,
-                'meta': f'{assistant_title}: visual_unresolved',
-                'payload': payload,
-                'assistant_title': assistant_title,
-                'external_state_flags': external_state_flags,
-                'visual_unresolved': True,
-                'shared_reality_handoff': shared_handoff,
-                'visual_remediation': {
-                    'assessment': assessment,
-                    'result': remediation_result,
-                    'recapture': recapture,
-                },
-            }
         payload = dict(self._last_adaptive_payload or {})
         metadata = dict(payload.get('metadata') or {})
         metadata['external_consultation'] = dict(consultation_metadata)
