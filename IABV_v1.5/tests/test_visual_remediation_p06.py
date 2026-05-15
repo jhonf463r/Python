@@ -723,3 +723,181 @@ class TestPlatformPendingP06:
         task = PlatformPendingTask.model_validate(data)
         assert task.id == 'external_visual_handoff_alignment'
         assert 'p08_additions' in task.metadata
+
+    def test_external_visual_handoff_alignment_has_p09(self) -> None:
+        from iabv_v15.domain.models import PlatformPendingTask
+        path = Path(__file__).resolve().parent.parent / 'data' / 'evolution' / 'platform_pending' / 'task_external_visual_handoff_alignment.json'
+        data = json.loads(path.read_text(encoding='utf-8'))
+        task = PlatformPendingTask.model_validate(data)
+        assert task.id == 'external_visual_handoff_alignment'
+        assert 'p09_additions' in task.metadata
+
+
+# ══════════════════════════════════════════════════════════════════════
+# P0.9 — Post-Recapture Response Proof tests
+# ══════════════════════════════════════════════════════════════════════
+
+class TestPostRecaptureResponseProof:
+    """P0.9: after a successful recapture, IABV must verify whether the
+    external response was actually captured — not just that the window
+    is visible."""
+
+    def test_recapture_improved_response_not_captured_no_success(self) -> None:
+        """If recapture improved but response NOT captured, the result
+        must NOT declare success."""
+        vm = _make_vm()
+        proof = vm._build_post_recapture_response_proof(
+            response_captured=False,
+            response_capture_pending=False,
+            response_capture_mode='manual_pasteback',
+            assistant_title='ChatGPT',
+            target_window=_offscreen_target_window(),
+            assessment={
+                'hwnd': 16319628,
+                'rect': [-32000, -32000, 199, 34],
+                'target_window_title': 'ChatGPT - Google Chrome for Testing',
+                'proposed_action': 'restore_window_by_hwnd',
+            },
+            capture_useful_before=False,
+            capture_useful_after=True,
+            recapture={'recapture_status': 'improved'},
+        )
+        assert proof['window_observable'] is True
+        assert proof['response_captured'] is False
+        assert proof['status'] == 'response_not_captured'
+        assert proof['target_window_title'] == 'ChatGPT - Google Chrome for Testing'
+        assert proof['hwnd'] == 16319628
+
+    def test_recapture_improved_response_captured_success(self) -> None:
+        """If recapture improved AND response captured, status must be
+        response_captured."""
+        vm = _make_vm()
+        proof = vm._build_post_recapture_response_proof(
+            response_captured=True,
+            response_capture_pending=False,
+            response_capture_mode='clipboard_capture',
+            assistant_title='ChatGPT',
+            target_window=_visible_target_window(),
+            assessment={
+                'hwnd': 12345678,
+                'rect': [100, 100, 1200, 800],
+                'target_window_title': 'ChatGPT - Google Chrome',
+                'proposed_action': 'restore_window_by_hwnd',
+            },
+            capture_useful_before=False,
+            capture_useful_after=True,
+            recapture={'recapture_status': 'improved'},
+        )
+        assert proof['window_observable'] is True
+        assert proof['response_captured'] is True
+        assert proof['status'] == 'response_captured'
+
+    def test_recapture_improved_clipboard_pending_unresolved(self) -> None:
+        """If recapture improved but response_capture_mode is clipboard and
+        response NOT captured, status is response_pending (UNRESOLVED actionable)."""
+        vm = _make_vm()
+        proof = vm._build_post_recapture_response_proof(
+            response_captured=False,
+            response_capture_pending=False,
+            response_capture_mode='clipboard_capture',
+            assistant_title='ChatGPT',
+            target_window=_visible_target_window(),
+            assessment={
+                'hwnd': 12345678,
+                'rect': [100, 100, 1200, 800],
+            },
+            capture_useful_before=False,
+            capture_useful_after=True,
+            recapture={'recapture_status': 'improved'},
+        )
+        assert proof['window_observable'] is True
+        assert proof['response_captured'] is False
+        assert proof['response_capture_pending'] is True
+        assert proof['status'] == 'response_pending'
+
+    def test_response_pending_message_guides_user(self) -> None:
+        """The pending-response guidance message must name the tool and
+        explain what the user needs to do."""
+        vm = _make_vm()
+        proof = {
+            'target_window_title': 'ChatGPT - Google Chrome for Testing',
+            'response_capture_mode': 'manual_pasteback',
+            'response_capture_pending': False,
+        }
+        msg = vm._post_recapture_response_pending_message(
+            assistant_title='ChatGPT',
+            response_proof=proof,
+        )
+        assert 'ChatGPT' in msg
+        assert 'restaurada' in msg
+        assert 'capturada' in msg or 'respuesta' in msg
+
+    def test_response_proof_metadata_no_pii(self) -> None:
+        """The response proof dict must not contain PII — no full paths,
+        no user names."""
+        vm = _make_vm()
+        proof = vm._build_post_recapture_response_proof(
+            response_captured=False,
+            response_capture_pending=True,
+            response_capture_mode='dom_capture',
+            assistant_title='ChatGPT',
+            target_window=_offscreen_target_window(),
+            assessment={
+                'hwnd': 16319628,
+                'rect': [-32000, -32000, 199, 34],
+            },
+            capture_useful_before=False,
+            capture_useful_after=True,
+            recapture={'recapture_status': 'improved'},
+            evidence_path=r'C:\Users\faber\AppData\Local\Temp\visual_evidence.png',
+        )
+        proof_str = json.dumps(proof)
+        assert 'C:\\Users' not in proof_str
+        assert 'faber' not in proof_str
+        assert '/home/' not in proof_str
+        assert 'password' not in proof_str.lower()
+        assert proof['evidence_path'] == 'visual_evidence.png'
+        assert proof['status'] == 'response_pending'
+
+    def test_trace_post_recapture_response_verification(self) -> None:
+        """RuntimeAuditTracer must receive a post_recapture_response_verification
+        event that can reconstruct the chain."""
+        vm = _make_vm()
+        traced_events: list[dict[str, Any]] = []
+
+        def fake_trace(kind: str, **kwargs: Any) -> None:
+            traced_events.append({'kind': kind, **kwargs})
+
+        mock_tracer = MagicMock()
+        mock_tracer.trace = fake_trace
+
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=mock_tracer,
+        ):
+            vm._trace_post_recapture_response_verification(
+                assistant_kind='chatgpt',
+                response_proof={
+                    'target_window_title': 'ChatGPT - Google Chrome for Testing',
+                    'hwnd': 16319628,
+                    'window_observable': True,
+                    'response_captured': False,
+                    'response_capture_pending': True,
+                    'response_capture_mode': 'clipboard_capture',
+                    'status': 'response_pending',
+                    'capture_useful_before': False,
+                    'capture_useful_after': True,
+                },
+            )
+
+        assert len(traced_events) == 1
+        ev = traced_events[0]
+        assert ev['kind'] == 'post_recapture_response_verification'
+        assert ev['assistant_kind'] == 'chatgpt'
+        assert ev['window_observable'] is True
+        assert ev['response_captured'] is False
+        assert ev['response_capture_pending'] is True
+        assert ev['status'] == 'response_pending'
+        ev_str = json.dumps(ev)
+        assert 'C:\\' not in ev_str
+        assert '/home/' not in ev_str

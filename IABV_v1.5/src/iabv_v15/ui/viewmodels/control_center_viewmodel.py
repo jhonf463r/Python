@@ -4497,6 +4497,136 @@ class ControlCenterViewModel(QObject):
             ),
         }
 
+    # ------------------------------------------------------------------
+    # P0.9: post-recapture response verification helpers
+    # ------------------------------------------------------------------
+
+    def _build_post_recapture_response_proof(
+        self,
+        *,
+        response_captured: bool,
+        response_capture_pending: bool,
+        response_capture_mode: str,
+        assistant_title: str,
+        target_window: dict[str, Any] | None,
+        assessment: dict[str, Any],
+        capture_useful_before: bool,
+        capture_useful_after: bool | None,
+        recapture: dict[str, Any],
+        evidence_path: str = '',
+    ) -> dict[str, Any]:
+        """Build compact proof dict differentiating window-observable
+        from response-captured after a post-remediation recapture.
+
+        Fields exposed:
+        - target_window_title, hwnd, rect
+        - capture_useful_before, capture_useful_after
+        - response_captured, response_capture_pending
+        - response_capture_mode
+        - evidence_path (if exists)
+        - window_observable (always True here — called only when recapture improved)
+        - status: 'response_captured' | 'response_pending' | 'response_not_captured'
+        """
+        tw = target_window or {}
+        hwnd = assessment.get('hwnd') or tw.get('hwnd')
+        rect = assessment.get('rect') or tw.get('rect')
+        title = assessment.get('target_window_title') or tw.get('title') or assistant_title
+
+        is_pending = (
+            response_capture_pending
+            or response_capture_mode in {'clipboard_capture', 'dom_capture', 'browser_dom'}
+        ) and not response_captured
+
+        if response_captured:
+            status = 'response_captured'
+        elif is_pending:
+            status = 'response_pending'
+        else:
+            status = 'response_not_captured'
+
+        safe_evidence_path: str | None = None
+        if evidence_path:
+            try:
+                safe_evidence_path = Path(str(evidence_path)).name or 'available'
+            except Exception:
+                safe_evidence_path = 'available'
+
+        return {
+            'target_window_title': title,
+            'hwnd': hwnd,
+            'rect': rect,
+            'capture_useful_before': capture_useful_before,
+            'capture_useful_after': bool(capture_useful_after),
+            'response_captured': response_captured,
+            'response_capture_pending': is_pending,
+            'response_capture_mode': response_capture_mode,
+            'evidence_path': safe_evidence_path,
+            'window_observable': True,
+            'status': status,
+        }
+
+    def _post_recapture_response_pending_message(
+        self,
+        *,
+        assistant_title: str,
+        response_proof: dict[str, Any],
+    ) -> str:
+        """Build user-facing guidance when window is observable but response
+        was NOT captured."""
+        title = response_proof.get('target_window_title') or assistant_title
+        parts: list[str] = []
+        parts.append(
+            f'La ventana de {assistant_title} fue restaurada y la captura visual mejoro.'
+        )
+        parts.append(
+            f'Sin embargo, la respuesta externa de {title} aun no fue capturada por IABV.'
+        )
+        mode = response_proof.get('response_capture_mode', '')
+        if response_proof.get('response_capture_pending'):
+            if mode in ('dom_capture', 'browser_dom'):
+                parts.append(
+                    'IABV intentara capturar la respuesta automaticamente desde la sesion aislada.'
+                )
+            elif mode == 'clipboard_capture':
+                parts.append(
+                    'IABV intentara capturar la respuesta desde el portapapeles.'
+                )
+            else:
+                parts.append(
+                    'La captura de respuesta queda pendiente.'
+                )
+        else:
+            parts.append(
+                f'Para completar: abre {title}, copia la respuesta y pegala en IABV, '
+                f'o permite que IABV reintente la captura.'
+            )
+        return ' '.join(parts)
+
+    def _trace_post_recapture_response_verification(
+        self,
+        *,
+        assistant_kind: str,
+        response_proof: dict[str, Any],
+    ) -> None:
+        """Log a post_recapture_response_verification event to RuntimeAuditTracer."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'post_recapture_response_verification',
+                assistant_kind=assistant_kind,
+                target_window_title=response_proof.get('target_window_title', ''),
+                hwnd_present=response_proof.get('hwnd') is not None and response_proof.get('hwnd') != 0,
+                window_observable=response_proof.get('window_observable', False),
+                response_captured=response_proof.get('response_captured', False),
+                response_capture_pending=response_proof.get('response_capture_pending', False),
+                response_capture_mode=response_proof.get('response_capture_mode', ''),
+                status=response_proof.get('status', ''),
+                capture_useful_before=response_proof.get('capture_useful_before', False),
+                capture_useful_after=response_proof.get('capture_useful_after', False),
+            )
+        except Exception:
+            pass
+
     def _trace_visual_remediation_attempted(
         self,
         *,
@@ -6830,17 +6960,74 @@ class ControlCenterViewModel(QObject):
             }
             payload['metadata'] = metadata
             self._update_adaptive_state(payload)
-            # P0.8: if recapture improved, unblock the normal consultation
-            # path below.  A useful recapture proves the visual target is now
-            # observable; it is not, by itself, a verified external answer.
+            # P0.8: if recapture improved, the visual target is now
+            # observable; but it is not, by itself, a verified external answer.
+            # P0.9: differentiate window-observable from response-captured.
             visual_recaptured = recapture_status == 'improved' and bool(capture_useful_after)
             if visual_recaptured:
                 consultation_metadata['visual_evidence_recovered'] = True
                 consultation_metadata['visual_recapture_status'] = recapture_status
+                # ── P0.9: verify response was actually captured ──
+                response_proof = self._build_post_recapture_response_proof(
+                    response_captured=response_captured,
+                    response_capture_pending=response_capture_pending,
+                    response_capture_mode=response_capture_mode,
+                    assistant_title=assistant_title,
+                    target_window=target_window,
+                    assessment=assessment,
+                    capture_useful_before=capture_useful_before,
+                    capture_useful_after=capture_useful_after,
+                    recapture=recapture,
+                    evidence_path=str(
+                        combined_result_metadata.get('evidence_path')
+                        or combined_result_metadata.get('screenshot_path')
+                        or ''
+                    ),
+                )
+                consultation_metadata['response_proof'] = response_proof
+                self._trace_post_recapture_response_verification(
+                    assistant_kind=actual_assistant_kind or requested_assistant_kind,
+                    response_proof=response_proof,
+                )
                 metadata['external_consultation'] = dict(consultation_metadata)
                 metadata['autonomous_evolution'] = dict(consultation_metadata)
                 payload['metadata'] = metadata
                 self._update_adaptive_state(payload)
+                if not response_proof.get('response_captured'):
+                    # Window is observable but response NOT captured.
+                    # Do NOT declare success — leave UNRESOLVED with guidance.
+                    guidance_msg = self._post_recapture_response_pending_message(
+                        assistant_title=assistant_title,
+                        response_proof=response_proof,
+                    )
+                    remediation_unresolved.append(
+                        'UNRESOLVED:window_observable_response_not_captured'
+                    )
+                    consultation_metadata['status'] = 'window_observable_response_pending'
+                    metadata['external_consultation'] = dict(consultation_metadata)
+                    payload['metadata'] = metadata
+                    self._update_adaptive_state(payload)
+                    self._latest_response_text = guidance_msg
+                    self._latest_response_meta = f'{assistant_title}: response_pending'
+                    self._busy_label = ''
+                    return {
+                        'success': False,
+                        'message': guidance_msg,
+                        'meta': f'{assistant_title}: response_pending',
+                        'payload': payload,
+                        'assistant_title': assistant_title,
+                        'external_state_flags': external_state_flags,
+                        'visual_unresolved': False,
+                        'window_observable': True,
+                        'response_captured': False,
+                        'response_capture_pending': response_proof.get('response_capture_pending', False),
+                        'response_proof': response_proof,
+                        'visual_remediation': {
+                            'assessment': assessment,
+                            'result': remediation_result,
+                            'recapture': recapture,
+                        },
+                    }
             else:
                 # P0.4: build shared reality causal handoff
                 shared_handoff = self._build_shared_reality_handoff(
