@@ -1,21 +1,38 @@
 {
   "id": "runtime_consulting_lifecycle_recovery",
   "title": "Runtime consulting lifecycle — prevent infinite 'consultando...'",
-  "status": "READY_FOR_NEXT_SLICE",
+  "status": "UNRESOLVED",
   "category": "runtime_stability",
   "priority": "P0",
   "description": "Every chat/external dispatch must reach a terminal state. Timeout watchdog + dispatch_id guards prevent the UI from staying in busy/consultando indefinitely.",
-  "resume_hint": "Live UI proof with real user interaction pending. dispatch_started→terminal correlation now reconstructible via recent_dispatch_lifecycles().",
-  "next_action": "Test on user's Windows machine with real chat interactions to confirm busy state always resolves and lifecycle is reconstructible.",
+  "resume_hint": "Code-level audit passed (286 tests, 0 failures). All dispatch entrypoints instrumented. Awaiting live Windows run to mark COMPLETED.",
+  "next_action": "User runs IABV on Windows with #377+#378+#379 merged, sends chat, verifies latestDispatchLifecycle shows real cycle, confirms no infinite consultando. Then mark COMPLETED.",
   "metadata": {
     "covered_by_pr": "#377",
     "coverage_detail": "Timeout watchdog (120s chat, 180s external), dispatch_id stale-result guards, 8 terminal states defined, _humanize_task_failure classifier, _human_external_consultation_failure structured handoff.",
     "p01_additions": "Runtime audit trace on all terminal events (trace_dispatch_terminal). adaptive_action now guarded with dispatch_id + timeout watchdog. external_consultation blocked derives terminal_state from payload.meta.",
-    "p02_additions": "trace_dispatch_started() on chat, external_consultation, adaptive_action. recent_dispatch_lifecycles() correlates started→terminal with duration_ms and unresolved flag. latestDispatchLifecycle read-only Property exposed.",
+    "p02_additions": "trace_dispatch_started() on chat, external_consultation, adaptive_action. recent_dispatch_lifecycles() correlates started→terminal with duration_ms and unresolved flag. latestDispatchLifecycle read-only Property exposed. Orphan terminals deprioritized. New unresolved dispatch visible over old correlated.",
+    "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
+    "code_audit": {
+      "date": "2026-05-15",
+      "auditor": "devin/runtime-live-proof-p02",
+      "dispatch_entrypoints_instrumented": ["chat", "external_consultation", "adaptive_action"],
+      "dispatch_entrypoints_delegated": ["bridge_chat → sendChat"],
+      "dispatch_entrypoints_fire_and_forget": ["provider_health", "self_teach", "payload", "pbt"],
+      "lifecycle_reconstruction_verified": true,
+      "orphan_terminal_handling_verified": true,
+      "unresolved_visibility_verified": true,
+      "tests_passed": 286,
+      "tests_failed": 0,
+      "runtime_audit_jsonl_exists": false,
+      "incident_reports_exist": false,
+      "freeze_reports_found": false,
+      "reason_no_live_proof": "Logs are from 2026-04-18, before #377/#378/#379. User has not yet run the app with P0.2 code on Windows."
+    },
     "remaining": [
-      "Live UI proof with real user interaction",
-      "UIBridgeService bridge dispatch does not create own dispatch_id (delegates to sendChat)"
+      "Live UI proof with real user interaction on Windows",
+      "UIBridgeService bridge dispatch delegates to sendChat (no separate dispatch_id by design)"
     ],
-    "unresolved": "User-visible UI proof pending — requires live testing on user's Windows machine"
+    "unresolved": "Live Windows proof pending — user must run app with #377+#378+#379 merged and send a real chat message"
   }
 }
