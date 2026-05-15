@@ -4160,6 +4160,274 @@ class ControlCenterViewModel(QObject):
         self._set_live_status('idle')
         return True
 
+    # ══════════════════════════════════════════════════════════════════
+    # P0.6 — Shared Reality Remediation / Window Target Recovery
+    # ══════════════════════════════════════════════════════════════════
+
+    def _assess_visual_remediation(
+        self,
+        *,
+        target_window: dict[str, Any] | None,
+        capture_meta: dict[str, Any] | None,
+        capture_state: dict[str, Any],
+        browser_profile: str = '',
+    ) -> dict[str, Any]:
+        """Evaluate whether a failed visual capture can be remediated.
+
+        Returns a dict with:
+        - status: no_action_needed | remediation_available
+                  | needs_user_selection | unresolved
+        - reason, target_window_title, rect, proposed_action,
+          safe_to_auto_try, user_message
+        """
+        tw = target_window or {}
+        cm = capture_meta or {}
+        title = str(tw.get('title') or '').strip()
+        hwnd = tw.get('hwnd')
+        rect = tw.get('rect')
+        reason = capture_state.get('reason', 'unknown')
+
+        # Visible window + useful capture → nothing to do
+        is_low_info = bool(capture_state.get('low_information'))
+        if capture_state.get('captureable') and not is_low_info:
+            return {
+                'status': 'no_action_needed',
+                'reason': 'capture_valid',
+                'target_window_title': title or 'unknown',
+                'rect': rect,
+                'proposed_action': 'none',
+                'safe_to_auto_try': False,
+                'user_message': '',
+            }
+
+        # Normalize reason: when window is captureable but image is black,
+        # the capture_state reason is 'ok' — override for remediation.
+        if is_low_info and reason == 'ok':
+            reason = 'low_information'
+
+        # Classify remediable scenarios
+        proposed_action = 'request_user_restore'
+        safe_to_auto = False
+        user_msg = ''
+
+        if reason == 'target_window_minimized_or_offscreen':
+            if hwnd and isinstance(hwnd, int) and hwnd > 0:
+                proposed_action = 'restore_window_by_hwnd'
+                safe_to_auto = True
+                user_msg = (
+                    f'La ventana "{title or "objetivo"}" esta minimizada/offscreen. '
+                    f'Intentare restaurarla automaticamente antes de recapturar.'
+                )
+            else:
+                proposed_action = 'request_user_restore'
+                safe_to_auto = False
+                user_msg = (
+                    f'La ventana objetivo esta minimizada/offscreen pero no tengo un '
+                    f'hwnd valido para restaurarla. Restaura la ventana manualmente y reintenta.'
+                )
+            status = 'remediation_available'
+
+        elif reason in ('low_information_pixels', 'low_information'):
+            blank_prob = float(cm.get('blank_probability') or 0.0)
+            if hwnd and isinstance(hwnd, int) and hwnd > 0:
+                proposed_action = 'restore_and_recapture'
+                safe_to_auto = True
+                user_msg = (
+                    f'La captura de "{title or "la ventana"}" salio negra '
+                    f'(blank_probability={blank_prob:.2f}). Intentare restaurar y recapturar.'
+                )
+            else:
+                proposed_action = 'request_user_restore'
+                safe_to_auto = False
+                user_msg = (
+                    f'La captura salio negra (blank_probability={blank_prob:.2f}) '
+                    f'y no tengo hwnd valido. Restaura la ventana y reintenta.'
+                )
+            status = 'remediation_available'
+
+        elif reason == 'no_target_window':
+            proposed_action = 'request_user_selection'
+            safe_to_auto = False
+            user_msg = (
+                'No encontre la ventana objetivo. Selecciona la ventana correcta '
+                'o permite usar tu navegador visible.'
+            )
+            status = 'needs_user_selection'
+
+        else:
+            proposed_action = 'request_user_help'
+            safe_to_auto = False
+            user_msg = (
+                f'No pude determinar el estado de la ventana (razon: {reason}). '
+                'Verifica que la herramienta este visible y reintenta.'
+            )
+            status = 'unresolved'
+
+        # Detect controlled session mismatch
+        bp = browser_profile or str(tw.get('title') or '')
+        bp_lower = bp.lower()
+        if any(kw in bp_lower for kw in ('chrome for testing', 'aislada', 'controlada')):
+            if proposed_action == 'request_user_help':
+                proposed_action = 'recommend_browser_selector'
+            user_msg += (
+                ' Tu navegador visible puede estar funcionando, pero IABV '
+                'estaba mirando otra sesion. Puedes autorizar usar tu navegador visible.'
+            )
+
+        return {
+            'status': status,
+            'reason': reason,
+            'target_window_title': title or 'unknown',
+            'hwnd': hwnd,
+            'rect': rect,
+            'proposed_action': proposed_action,
+            'safe_to_auto_try': safe_to_auto,
+            'user_message': user_msg,
+        }
+
+    def _attempt_safe_remediation(
+        self,
+        assessment: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Attempt a safe, reversible remediation action.
+
+        On a real Windows desktop, calls ShowWindow(hwnd, SW_RESTORE) and
+        SetForegroundWindow(hwnd) to bring a minimized/offscreen window back.
+        Success is only True if the Win32 calls were made with a valid hwnd.
+
+        Returns dict with action_taken, success, detail.
+        """
+        if not assessment.get('safe_to_auto_try'):
+            return {
+                'action_taken': 'none',
+                'success': False,
+                'detail': 'No safe auto-remediation available; user action required.',
+            }
+
+        proposed = assessment.get('proposed_action', '')
+        if proposed not in ('restore_window_by_hwnd', 'restore_and_recapture'):
+            return {
+                'action_taken': 'none',
+                'success': False,
+                'detail': f'Action "{proposed}" is not auto-remediable.',
+            }
+
+        hwnd = assessment.get('hwnd')
+        if not hwnd or not isinstance(hwnd, int) or hwnd <= 0:
+            return {
+                'action_taken': 'none',
+                'success': False,
+                'detail': 'hwnd is missing or invalid; cannot attempt Win32 restore.',
+            }
+
+        # Attempt Win32 window restore with real hwnd
+        try:
+            import ctypes
+            SW_RESTORE = 9
+            user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+            show_result = user32.ShowWindow(hwnd, SW_RESTORE)
+            fg_result = user32.SetForegroundWindow(hwnd)
+            return {
+                'action_taken': proposed,
+                'success': True,
+                'detail': (
+                    f'Win32 ShowWindow({hwnd}, SW_RESTORE)={show_result}, '
+                    f'SetForegroundWindow({hwnd})={fg_result}.'
+                ),
+            }
+        except (AttributeError, OSError):
+            # Not on Windows or ctypes.windll not available
+            return {
+                'action_taken': proposed,
+                'success': False,
+                'detail': 'Win32 API not available (not running on Windows desktop). '
+                          'Remediation flagged for user handoff.',
+            }
+
+    def _trace_visual_remediation_attempted(
+        self,
+        *,
+        assistant_kind: str,
+        target_window_title: str,
+        hwnd: Any,
+        rect: Any,
+        reason: str,
+        proposed_action: str,
+        action_taken: str,
+        result_status: str,
+        capture_useful_before: bool,
+        capture_useful_after: bool | None = None,
+        blank_probability_before: float = 0.0,
+        blank_probability_after: float | None = None,
+        unresolved: list[str] | None = None,
+    ) -> None:
+        """Log a visual_remediation_attempted event to RuntimeAuditTracer."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'visual_remediation_attempted',
+                assistant_kind=assistant_kind,
+                target_window_title=target_window_title,
+                hwnd_present=hwnd is not None and hwnd != 0,
+                rect=rect,
+                reason=reason,
+                proposed_action=proposed_action,
+                action_taken=action_taken,
+                result_status=result_status,
+                capture_useful_before=capture_useful_before,
+                capture_useful_after=capture_useful_after,
+                blank_probability_before=blank_probability_before,
+                blank_probability_after=blank_probability_after,
+                unresolved=unresolved or [],
+            )
+        except Exception:
+            pass
+
+    def _remediation_user_message(
+        self,
+        *,
+        assistant_title: str,
+        assessment: dict[str, Any],
+        remediation_result: dict[str, Any],
+    ) -> str:
+        """Build a practical, non-technical message for the user after
+        a remediation attempt."""
+        parts: list[str] = []
+        title = assessment.get('target_window_title', 'la herramienta')
+        parts.append(f'Yo intente capturar: {assistant_title}')
+
+        reason = assessment.get('reason', '')
+        if 'minimized' in reason or 'offscreen' in reason:
+            parts.append(
+                f'La ventana "{title}" estaba minimizada/offscreen o devolvio imagen negra.'
+            )
+        elif 'low_information' in reason:
+            parts.append(f'La captura de "{title}" salio negra o sin informacion util.')
+        elif 'no_target' in reason:
+            parts.append('No encontre la ventana objetivo.')
+        else:
+            parts.append(f'La captura de "{title}" no fue valida ({reason}).')
+
+        action = remediation_result.get('action_taken', 'none')
+        success = remediation_result.get('success', False)
+        if action != 'none' and success:
+            parts.append(
+                'Intente restaurar la ventana automaticamente; necesito reintentar la consulta/captura para verificar.'
+            )
+        elif action != 'none':
+            parts.append(
+                'Intente restaurar la ventana pero no fue posible en este entorno.'
+            )
+
+        parts.append(
+            'Tu navegador visible puede estar funcionando, pero IABV estaba mirando otra sesion.'
+        )
+        parts.append(
+            'Accion recomendada: restaura/selecciona esta ventana o permite usar tu navegador visible.'
+        )
+        parts.append('Puedo reintentar despues de eso.')
+        return '\n'.join(parts)
+
     def _external_state_notice(self, flags: list[str] | None) -> str:
         normalized = canonical_external_state_flags(flags)
         if not normalized:
@@ -6344,6 +6612,43 @@ class ControlCenterViewModel(QObject):
             capture_state = self._target_window_capture_state(
                 target_window, capture_meta,
             )
+            # ── P0.6: attempt remediation before giving up ──
+            assessment = self._assess_visual_remediation(
+                target_window=target_window,
+                capture_meta=capture_meta,
+                capture_state=capture_state,
+            )
+            remediation_result = self._attempt_safe_remediation(assessment)
+            capture_useful_before = bool(
+                (capture_meta or {}).get('useful', False)
+            )
+            blank_prob_before = float(
+                (capture_meta or {}).get('blank_probability') or 0.0
+            )
+            remediation_unresolved = list(capture_state.get('unresolved') or [])
+            if 'UNRESOLVED:visual_remediation_recapture_not_available' not in remediation_unresolved:
+                remediation_unresolved.append('UNRESOLVED:visual_remediation_recapture_not_available')
+            self._trace_visual_remediation_attempted(
+                assistant_kind=actual_assistant_kind or requested_assistant_kind,
+                target_window_title=assessment.get('target_window_title', ''),
+                hwnd=(target_window or {}).get('hwnd'),
+                rect=assessment.get('rect'),
+                reason=assessment.get('reason', ''),
+                proposed_action=assessment.get('proposed_action', ''),
+                action_taken=remediation_result.get('action_taken', 'none'),
+                result_status=assessment.get('status', 'unresolved'),
+                capture_useful_before=capture_useful_before,
+                capture_useful_after=None,
+                blank_probability_before=blank_prob_before,
+                blank_probability_after=None,
+                unresolved=remediation_unresolved,
+            )
+            metadata['visual_remediation'] = {
+                'assessment': assessment,
+                'result': remediation_result,
+            }
+            payload['metadata'] = metadata
+            self._update_adaptive_state(payload)
             # P0.4: build shared reality causal handoff
             shared_handoff = self._build_shared_reality_handoff(
                 assistant_kind=actual_assistant_kind or requested_assistant_kind,
@@ -6357,7 +6662,11 @@ class ControlCenterViewModel(QObject):
             metadata['shared_reality_handoff'] = shared_handoff
             payload['metadata'] = metadata
             self._update_adaptive_state(payload)
-            handoff_msg = self._shared_reality_user_message(handoff=shared_handoff)
+            handoff_msg = self._remediation_user_message(
+                assistant_title=assistant_title,
+                assessment=assessment,
+                remediation_result=remediation_result,
+            )
             self._latest_response_text = handoff_msg
             self._latest_response_meta = f'{assistant_title}: visual_unresolved'
             self._busy_label = f'Captura visual no valida para {assistant_title}.'
@@ -6370,6 +6679,10 @@ class ControlCenterViewModel(QObject):
                 'external_state_flags': external_state_flags,
                 'visual_unresolved': True,
                 'shared_reality_handoff': shared_handoff,
+                'visual_remediation': {
+                    'assessment': assessment,
+                    'result': remediation_result,
+                },
             }
         payload = dict(self._last_adaptive_payload or {})
         metadata = dict(payload.get('metadata') or {})
