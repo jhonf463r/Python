@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import types
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -457,6 +458,250 @@ class TestRemediationIntegration:
 
 
 # ══════════════════════════════════════════════════════════════════════
+# P0.8 — Post-Remediation Recapture
+# ══════════════════════════════════════════════════════════════════════
+
+class TestPostRemediationRecapture:
+    """_attempt_post_remediation_recapture() validates recapture scenarios."""
+
+    class _FakeImage:
+        def __init__(
+            self,
+            *,
+            blank_probability: float,
+            dynamic_range: int,
+            unique_colors: int,
+        ) -> None:
+            self.blank_probability = blank_probability
+            self.dynamic_range = dynamic_range
+            self.unique_colors = unique_colors
+
+        def convert(self, _mode: str) -> 'TestPostRemediationRecapture._FakeImage':
+            return self
+
+        def histogram(self) -> list[int]:
+            total = 300
+            blank = int(total * self.blank_probability)
+            hist = [0] * 768
+            hist[0] = blank // 3
+            hist[256] = blank // 3
+            hist[512] = blank - hist[0] - hist[256]
+            rest = total - blank
+            hist[100] = rest // 3
+            hist[356] = rest // 3
+            hist[612] = rest - hist[100] - hist[356]
+            return hist
+
+        def getextrema(self) -> tuple[tuple[int, int], tuple[int, int], tuple[int, int]]:
+            return (
+                (0, self.dynamic_range),
+                (0, self.dynamic_range),
+                (0, self.dynamic_range),
+            )
+
+        def getcolors(self, maxcolors: int = 100000) -> list[tuple[int, tuple[int, int, int]]]:
+            count = min(self.unique_colors, maxcolors)
+            return [(1, (idx % 255, idx % 255, idx % 255)) for idx in range(count)]
+
+    def test_successful_recapture_sets_capture_useful_after_true(self) -> None:
+        """When remediation succeeds and recaptured image is useful,
+        capture_useful_after must be True."""
+        vm = _make_vm()
+        assessment = {
+            'hwnd': 16319628,
+            'rect': [100, 100, 1200, 800],
+            'proposed_action': 'restore_window_by_hwnd',
+        }
+        remediation_result = {'success': True}
+
+        # Mock ImageGrab to return a colorful image without requiring numpy.
+        fake_image = self._FakeImage(
+            blank_probability=0.05,
+            dynamic_range=180,
+            unique_colors=500,
+        )
+        fake_image_grab = MagicMock()
+        fake_image_grab.grab.return_value = fake_image
+        fake_pil = types.ModuleType('PIL')
+        fake_pil.ImageGrab = fake_image_grab  # type: ignore[attr-defined]
+
+        with patch.dict('sys.modules', {'PIL': fake_pil, 'PIL.ImageGrab': fake_image_grab}):
+            result = vm._attempt_post_remediation_recapture(
+                remediation_result=remediation_result,
+                assessment=assessment,
+            )
+        assert result['recapture_attempted'] is True
+        assert result['capture_useful_after'] is True
+        assert result['recapture_status'] == 'improved'
+        assert result['blank_probability_after'] is not None
+
+    def test_black_recapture_maintains_handoff(self) -> None:
+        """When recaptured image is still black, handoff must be maintained."""
+        vm = _make_vm()
+        assessment = {
+            'hwnd': 16319628,
+            'rect': [100, 100, 1200, 800],
+            'proposed_action': 'restore_and_recapture',
+        }
+        remediation_result = {'success': True}
+
+        fake_image = self._FakeImage(
+            blank_probability=1.0,
+            dynamic_range=0,
+            unique_colors=1,
+        )
+        fake_image_grab = MagicMock()
+        fake_image_grab.grab.return_value = fake_image
+        fake_pil = types.ModuleType('PIL')
+        fake_pil.ImageGrab = fake_image_grab  # type: ignore[attr-defined]
+
+        with patch.dict('sys.modules', {'PIL': fake_pil, 'PIL.ImageGrab': fake_image_grab}):
+            result = vm._attempt_post_remediation_recapture(
+                remediation_result=remediation_result,
+                assessment=assessment,
+            )
+        assert result['recapture_attempted'] is True
+        assert result['capture_useful_after'] is False
+        assert result['recapture_status'] == 'still_low_information'
+        assert len(result['recapture_unresolved']) > 0
+
+    def test_recapture_analysis_failure_does_not_mark_improved(self) -> None:
+        """If image analysis fails after recapture, keep the state unresolved."""
+        vm = _make_vm()
+        assessment = {
+            'hwnd': 16319628,
+            'rect': [100, 100, 1200, 800],
+            'proposed_action': 'restore_window_by_hwnd',
+        }
+        remediation_result = {'success': True}
+
+        class BrokenImage:
+            def convert(self, _mode: str) -> Any:
+                raise RuntimeError('cannot analyze')
+
+        fake_image_grab = MagicMock()
+        fake_image_grab.grab.return_value = BrokenImage()
+        fake_pil = types.ModuleType('PIL')
+        fake_pil.ImageGrab = fake_image_grab  # type: ignore[attr-defined]
+
+        with patch.dict('sys.modules', {'PIL': fake_pil, 'PIL.ImageGrab': fake_image_grab}):
+            result = vm._attempt_post_remediation_recapture(
+                remediation_result=remediation_result,
+                assessment=assessment,
+            )
+
+        assert result['recapture_attempted'] is True
+        assert result['recapture_status'] == 'error'
+        assert result['capture_useful_after'] is None
+        assert any('UNRESOLVED' in item for item in result['recapture_unresolved'])
+
+    def test_no_imagegrab_leaves_unresolved(self) -> None:
+        """Without PIL ImageGrab, recapture must leave UNRESOLVED."""
+        vm = _make_vm()
+        assessment = {
+            'hwnd': 16319628,
+            'rect': [100, 100, 1200, 800],
+            'proposed_action': 'restore_window_by_hwnd',
+        }
+        remediation_result = {'success': True}
+
+        # Simulate ImportError when trying to import ImageGrab
+        original_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__
+
+        def mock_import(name: str, *args: Any, **kwargs: Any):
+            if name == 'PIL.ImageGrab' or name == 'PIL':
+                raise ImportError('mocked: no PIL')
+            return original_import(name, *args, **kwargs)
+
+        with patch('builtins.__import__', side_effect=mock_import):
+            result = vm._attempt_post_remediation_recapture(
+                remediation_result=remediation_result,
+                assessment=assessment,
+            )
+        assert result['recapture_attempted'] is False
+        assert result['recapture_status'] == 'skipped'
+        assert any('UNRESOLVED' in u for u in result.get('recapture_unresolved', []))
+
+    def test_no_recapture_if_remediation_failed(self) -> None:
+        """When remediation_success is False, recapture must be skipped."""
+        vm = _make_vm()
+        assessment = {
+            'hwnd': 16319628,
+            'rect': [100, 100, 1200, 800],
+            'proposed_action': 'restore_window_by_hwnd',
+        }
+        remediation_result = {'success': False}
+
+        result = vm._attempt_post_remediation_recapture(
+            remediation_result=remediation_result,
+            assessment=assessment,
+        )
+        assert result['recapture_attempted'] is False
+        assert result['recapture_status'] == 'skipped'
+        assert result['capture_useful_after'] is None
+
+    def test_no_recapture_if_hwnd_invalid(self) -> None:
+        """When hwnd is 0 or None, recapture must be skipped."""
+        vm = _make_vm()
+        for bad_hwnd in (0, None, -1):
+            assessment = {
+                'hwnd': bad_hwnd,
+                'rect': [100, 100, 1200, 800],
+                'proposed_action': 'restore_window_by_hwnd',
+            }
+            remediation_result = {'success': True}
+
+            result = vm._attempt_post_remediation_recapture(
+                remediation_result=remediation_result,
+                assessment=assessment,
+            )
+            assert result['recapture_attempted'] is False
+            assert result['recapture_status'] == 'skipped'
+            assert result['capture_useful_after'] is None
+
+    def test_recapture_event_no_pii(self) -> None:
+        """Recapture trace event must not export PII."""
+        vm = _make_vm()
+        traced_events: list[dict[str, Any]] = []
+
+        def fake_trace(kind: str, **kwargs: Any) -> None:
+            traced_events.append({'kind': kind, **kwargs})
+
+        mock_tracer = MagicMock()
+        mock_tracer.trace = fake_trace
+
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=mock_tracer,
+        ):
+            vm._trace_visual_remediation_attempted(
+                assistant_kind='chatgpt',
+                target_window_title='ChatGPT - Google Chrome for Testing',
+                hwnd=16319628,
+                rect=[100, 100, 1200, 800],
+                reason='target_window_minimized_or_offscreen',
+                proposed_action='restore_window_by_hwnd',
+                action_taken='restore_window_by_hwnd',
+                result_status='remediation_available',
+                capture_useful_before=False,
+                capture_useful_after=True,
+                blank_probability_before=0.98,
+                blank_probability_after=0.05,
+                remediation_success=True,
+                recapture_status='improved',
+                unresolved=[],
+            )
+        assert len(traced_events) == 1
+        ev = traced_events[0]
+        assert ev['recapture_status'] == 'improved'
+        assert ev['capture_useful_after'] is True
+        assert ev['blank_probability_after'] == 0.05
+        ev_str = json.dumps(ev)
+        assert 'C:\\' not in ev_str
+        assert '/home/' not in ev_str
+
+
+# ══════════════════════════════════════════════════════════════════════
 # platform_pending validation
 # ══════════════════════════════════════════════════════════════════════
 
@@ -470,3 +715,11 @@ class TestPlatformPendingP06:
         task = PlatformPendingTask.model_validate(data)
         assert task.id == 'external_visual_handoff_alignment'
         assert 'p06_additions' in task.metadata
+
+    def test_external_visual_handoff_alignment_has_p08(self) -> None:
+        from iabv_v15.domain.models import PlatformPendingTask
+        path = Path(__file__).resolve().parent.parent / 'data' / 'evolution' / 'platform_pending' / 'task_external_visual_handoff_alignment.json'
+        data = json.loads(path.read_text(encoding='utf-8'))
+        task = PlatformPendingTask.model_validate(data)
+        assert task.id == 'external_visual_handoff_alignment'
+        assert 'p08_additions' in task.metadata

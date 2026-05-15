@@ -4344,6 +4344,159 @@ class ControlCenterViewModel(QObject):
                           'Remediation flagged for user handoff.',
             }
 
+    def _attempt_post_remediation_recapture(
+        self,
+        *,
+        remediation_result: dict[str, Any],
+        assessment: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Attempt ONE recapture after a successful remediation.
+
+        Conditions (all must be true):
+        - remediation_result['success'] is True
+        - hwnd is a valid positive int
+        - proposed_action was restore_window_by_hwnd or restore_and_recapture
+
+        Uses PIL ImageGrab.grab(bbox=rect) if rect is available and valid,
+        otherwise falls back to full-screen grab. The captured image is
+        analysed in-memory (no disk write) for blank_probability.
+
+        Returns dict with:
+        - recapture_attempted: bool
+        - recapture_status: 'improved' | 'still_low_information' | 'skipped' | 'error'
+        - capture_useful_after: bool | None
+        - blank_probability_after: float | None
+        - recapture_unresolved: list[str]
+        - detail: str
+        """
+        noop: dict[str, Any] = {
+            'recapture_attempted': False,
+            'recapture_status': 'skipped',
+            'capture_useful_after': None,
+            'blank_probability_after': None,
+            'recapture_unresolved': [],
+            'detail': '',
+        }
+
+        if not remediation_result.get('success'):
+            noop['detail'] = 'remediation_success is False; skipping recapture.'
+            return noop
+
+        hwnd = assessment.get('hwnd')
+        if not hwnd or not isinstance(hwnd, int) or hwnd <= 0:
+            noop['detail'] = 'hwnd is missing or invalid; skipping recapture.'
+            noop['recapture_unresolved'] = [
+                'UNRESOLVED:visual_remediation_recapture_invalid_hwnd',
+            ]
+            return noop
+
+        proposed = assessment.get('proposed_action', '')
+        if proposed not in ('restore_window_by_hwnd', 'restore_and_recapture'):
+            noop['detail'] = (
+                f'proposed_action "{proposed}" does not qualify for recapture.'
+            )
+            return noop
+
+        # Attempt recapture via PIL ImageGrab
+        try:
+            from PIL import ImageGrab  # type: ignore[import-untyped]
+        except ImportError:
+            noop['detail'] = 'PIL ImageGrab not available; recapture UNRESOLVED.'
+            noop['recapture_unresolved'] = [
+                'UNRESOLVED:visual_remediation_recapture_no_imagegrab',
+            ]
+            return noop
+
+        rect = assessment.get('rect')
+        try:
+            if rect and isinstance(rect, (list, tuple)) and len(rect) >= 4:
+                left, top, right, bottom = (
+                    int(rect[0]), int(rect[1]), int(rect[2]), int(rect[3]),
+                )
+                if left > -30000 and top > -30000:
+                    image = ImageGrab.grab(bbox=(left, top, right, bottom))
+                else:
+                    image = ImageGrab.grab(all_screens=True)
+            else:
+                image = ImageGrab.grab(all_screens=True)
+        except Exception as exc:
+            return {
+                'recapture_attempted': True,
+                'recapture_status': 'error',
+                'capture_useful_after': None,
+                'blank_probability_after': None,
+                'recapture_unresolved': [
+                    'UNRESOLVED:visual_remediation_recapture_grab_failed',
+                ],
+                'detail': f'ImageGrab.grab raised: {type(exc).__name__}',
+            }
+
+        # Analyse the recaptured image in-memory without optional numerical
+        # dependencies.  ``ImageGrab`` returns a PIL image, whose histogram and
+        # extrema are enough for the same low-information gate used elsewhere.
+        try:
+            rgb = image.convert('RGB')
+            histogram = list(rgb.histogram())
+            total_values = max(sum(histogram), 1)
+            blank_values = (
+                sum(histogram[0:5])
+                + sum(histogram[256:261])
+                + sum(histogram[512:517])
+            )
+            blank_probability = round(blank_values / total_values, 4)
+            extrema = rgb.getextrema()
+            mins = [int(pair[0]) for pair in extrema]
+            maxs = [int(pair[1]) for pair in extrema]
+            dynamic_range = max(maxs) - min(mins)
+            colors = rgb.getcolors(maxcolors=100000)
+            unique_colors = 99999 if colors is None else len(colors)
+        except Exception:
+            return {
+                'recapture_attempted': True,
+                'recapture_status': 'error',
+                'capture_useful_after': None,
+                'blank_probability_after': None,
+                'recapture_unresolved': [
+                    'UNRESOLVED:visual_remediation_recapture_analysis_failed',
+                ],
+                'detail': 'Recapture completed but image analysis failed.',
+            }
+
+        recapture_meta: dict[str, Any] = {
+            'blank_probability': blank_probability,
+            'dynamic_range': dynamic_range,
+            'unique_color_count': unique_colors,
+            'useful': True,
+        }
+        is_low = self._capture_is_low_information(recapture_meta)
+        if is_low:
+            recapture_meta['useful'] = False
+            return {
+                'recapture_attempted': True,
+                'recapture_status': 'still_low_information',
+                'capture_useful_after': False,
+                'blank_probability_after': blank_probability,
+                'recapture_unresolved': [
+                    'UNRESOLVED:visual_remediation_recapture_still_low_information',
+                ],
+                'detail': (
+                    f'Recapture completed but image is still low-information '
+                    f'(blank_probability={blank_probability}).'
+                ),
+            }
+
+        return {
+            'recapture_attempted': True,
+            'recapture_status': 'improved',
+            'capture_useful_after': True,
+            'blank_probability_after': blank_probability,
+            'recapture_unresolved': [],
+            'detail': (
+                f'Recapture improved: blank_probability={blank_probability}, '
+                f'dynamic_range={dynamic_range}, unique_colors={unique_colors}.'
+            ),
+        }
+
     def _trace_visual_remediation_attempted(
         self,
         *,
@@ -4361,6 +4514,7 @@ class ControlCenterViewModel(QObject):
         blank_probability_after: float | None = None,
         remediation_success: bool | None = None,
         remediation_detail_code: str = '',
+        recapture_status: str = 'skipped',
         unresolved: list[str] | None = None,
     ) -> None:
         """Log a visual_remediation_attempted event to RuntimeAuditTracer."""
@@ -4382,6 +4536,7 @@ class ControlCenterViewModel(QObject):
                 blank_probability_after=blank_probability_after,
                 remediation_success=remediation_success,
                 remediation_detail_code=remediation_detail_code,
+                recapture_status=recapture_status,
                 unresolved=unresolved or [],
             )
         except Exception:
@@ -6630,8 +6785,6 @@ class ControlCenterViewModel(QObject):
                 (capture_meta or {}).get('blank_probability') or 0.0
             )
             remediation_unresolved = list(capture_state.get('unresolved') or [])
-            if 'UNRESOLVED:visual_remediation_recapture_not_available' not in remediation_unresolved:
-                remediation_unresolved.append('UNRESOLVED:visual_remediation_recapture_not_available')
             remediation_detail = str(remediation_result.get('detail') or '')
             remediation_detail_lower = remediation_detail.lower()
             remediation_detail_code = (
@@ -6639,6 +6792,19 @@ class ControlCenterViewModel(QObject):
                 if 'win32' in remediation_detail_lower and 'not available' in remediation_detail_lower
                 else ''
             )
+            # ── P0.8: attempt ONE post-remediation recapture ──
+            recapture = self._attempt_post_remediation_recapture(
+                remediation_result=remediation_result,
+                assessment=assessment,
+            )
+            capture_useful_after = recapture.get('capture_useful_after')
+            blank_prob_after = recapture.get('blank_probability_after')
+            recapture_status = recapture.get('recapture_status', 'skipped')
+            if recapture.get('recapture_unresolved'):
+                remediation_unresolved.extend(recapture['recapture_unresolved'])
+            if not recapture.get('recapture_attempted'):
+                if 'UNRESOLVED:visual_remediation_recapture_not_available' not in remediation_unresolved:
+                    remediation_unresolved.append('UNRESOLVED:visual_remediation_recapture_not_available')
             self._trace_visual_remediation_attempted(
                 assistant_kind=actual_assistant_kind or requested_assistant_kind,
                 target_window_title=assessment.get('target_window_title', ''),
@@ -6649,54 +6815,69 @@ class ControlCenterViewModel(QObject):
                 action_taken=remediation_result.get('action_taken', 'none'),
                 result_status=assessment.get('status', 'unresolved'),
                 capture_useful_before=capture_useful_before,
-                capture_useful_after=None,
+                capture_useful_after=capture_useful_after,
                 blank_probability_before=blank_prob_before,
-                blank_probability_after=None,
+                blank_probability_after=blank_prob_after,
                 remediation_success=bool(remediation_result.get('success', False)),
                 remediation_detail_code=remediation_detail_code,
+                recapture_status=recapture_status,
                 unresolved=remediation_unresolved,
             )
             metadata['visual_remediation'] = {
                 'assessment': assessment,
                 'result': remediation_result,
+                'recapture': recapture,
             }
             payload['metadata'] = metadata
             self._update_adaptive_state(payload)
-            # P0.4: build shared reality causal handoff
-            shared_handoff = self._build_shared_reality_handoff(
-                assistant_kind=actual_assistant_kind or requested_assistant_kind,
-                assistant_title=assistant_title,
-                target_window=target_window,
-                capture_meta=capture_meta,
-                capture_state=capture_state,
-            )
-            self._attach_evidence_to_handoff(shared_handoff, combined_result_metadata)
-            self._trace_shared_reality_handoff(shared_handoff)
-            metadata['shared_reality_handoff'] = shared_handoff
-            payload['metadata'] = metadata
-            self._update_adaptive_state(payload)
-            handoff_msg = self._remediation_user_message(
-                assistant_title=assistant_title,
-                assessment=assessment,
-                remediation_result=remediation_result,
-            )
-            self._latest_response_text = handoff_msg
-            self._latest_response_meta = f'{assistant_title}: visual_unresolved'
-            self._busy_label = f'Captura visual no valida para {assistant_title}.'
-            return {
-                'success': False,
-                'message': handoff_msg,
-                'meta': f'{assistant_title}: visual_unresolved',
-                'payload': payload,
-                'assistant_title': assistant_title,
-                'external_state_flags': external_state_flags,
-                'visual_unresolved': True,
-                'shared_reality_handoff': shared_handoff,
-                'visual_remediation': {
-                    'assessment': assessment,
-                    'result': remediation_result,
-                },
-            }
+            # P0.8: if recapture improved, unblock the normal consultation
+            # path below.  A useful recapture proves the visual target is now
+            # observable; it is not, by itself, a verified external answer.
+            visual_recaptured = recapture_status == 'improved' and bool(capture_useful_after)
+            if visual_recaptured:
+                consultation_metadata['visual_evidence_recovered'] = True
+                consultation_metadata['visual_recapture_status'] = recapture_status
+                metadata['external_consultation'] = dict(consultation_metadata)
+                metadata['autonomous_evolution'] = dict(consultation_metadata)
+                payload['metadata'] = metadata
+                self._update_adaptive_state(payload)
+            else:
+                # P0.4: build shared reality causal handoff
+                shared_handoff = self._build_shared_reality_handoff(
+                    assistant_kind=actual_assistant_kind or requested_assistant_kind,
+                    assistant_title=assistant_title,
+                    target_window=target_window,
+                    capture_meta=capture_meta,
+                    capture_state=capture_state,
+                )
+                self._attach_evidence_to_handoff(shared_handoff, combined_result_metadata)
+                self._trace_shared_reality_handoff(shared_handoff)
+                metadata['shared_reality_handoff'] = shared_handoff
+                payload['metadata'] = metadata
+                self._update_adaptive_state(payload)
+                handoff_msg = self._remediation_user_message(
+                    assistant_title=assistant_title,
+                    assessment=assessment,
+                    remediation_result=remediation_result,
+                )
+                self._latest_response_text = handoff_msg
+                self._latest_response_meta = f'{assistant_title}: visual_unresolved'
+                self._busy_label = f'Captura visual no valida para {assistant_title}.'
+                return {
+                    'success': False,
+                    'message': handoff_msg,
+                    'meta': f'{assistant_title}: visual_unresolved',
+                    'payload': payload,
+                    'assistant_title': assistant_title,
+                    'external_state_flags': external_state_flags,
+                    'visual_unresolved': True,
+                    'shared_reality_handoff': shared_handoff,
+                    'visual_remediation': {
+                        'assessment': assessment,
+                        'result': remediation_result,
+                        'recapture': recapture,
+                    },
+                }
         payload = dict(self._last_adaptive_payload or {})
         metadata = dict(payload.get('metadata') or {})
         metadata['external_consultation'] = dict(consultation_metadata)
