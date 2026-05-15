@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import time
 import types
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -22,6 +23,8 @@ def _make_vm() -> Any:
     from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
     vm = ControlCenterViewModel.__new__(ControlCenterViewModel)
     vm._last_adaptive_payload = {}
+    vm._last_user_goal = ''
+    vm.autonomous_evolution_service = None
     return vm
 
 
@@ -901,3 +904,226 @@ class TestPostRecaptureResponseProof:
         ev_str = json.dumps(ev)
         assert 'C:\\' not in ev_str
         assert '/home/' not in ev_str
+
+
+# ══════════════════════════════════════════════════════════════════════
+# P0.10 — Post-Recapture Response Capture Retry tests
+# ══════════════════════════════════════════════════════════════════════
+
+class TestPostRecaptureResponseRetry:
+    """P0.10: after a successful recapture, if response was NOT captured,
+    attempt ONE reingest via AutonomousEvolutionService before giving up."""
+
+    def _make_vm_with_evolution_service(
+        self, *, reingest_return: dict[str, Any] | None = None,
+        reingest_exception: Exception | None = None,
+    ) -> Any:
+        vm = _make_vm()
+        mock_service = MagicMock()
+        if reingest_exception is not None:
+            mock_service.reingest_existing_session.side_effect = reingest_exception
+        elif reingest_return is not None:
+            mock_service.reingest_existing_session.return_value = reingest_return
+        else:
+            mock_service.reingest_existing_session.return_value = {
+                'pre_capture_ingested': False,
+                'reason': 'no_response_text',
+            }
+        vm.autonomous_evolution_service = mock_service
+        return vm
+
+    def test_retry_exists_and_captures_response_success(self) -> None:
+        """When reingest_existing_session returns pre_capture_ingested=True,
+        the retry result must show response_captured=True."""
+        vm = self._make_vm_with_evolution_service(
+            reingest_return={
+                'pre_capture_ingested': True,
+                'pre_capture_task_id': 'task_123',
+                'pre_capture_result_id': 'result_456',
+                'pre_capture_source': 'reingest',
+            },
+        )
+        result = vm._attempt_post_recapture_response_retry(
+            consultation_metadata={
+                'selected_tool_id': 'tool_chatgpt',
+                'assistant_kind': 'chatgpt',
+                'response_capture_mode': 'clipboard_capture',
+            },
+            payload={'metadata': {}},
+            assistant_title='ChatGPT',
+            assistant_kind='chatgpt',
+            dispatch_id='disp_001',
+        )
+        assert result['retry_attempted'] is True
+        assert result['response_captured'] is True
+        assert result['retry_status'] == 'success'
+
+    def test_retry_exists_but_no_response_pending(self) -> None:
+        """When reingest_existing_session returns pre_capture_ingested=False,
+        the retry result must show response_captured=False."""
+        vm = self._make_vm_with_evolution_service(
+            reingest_return={
+                'pre_capture_ingested': False,
+                'reason': 'no_response_text',
+            },
+        )
+        result = vm._attempt_post_recapture_response_retry(
+            consultation_metadata={
+                'selected_tool_id': 'tool_chatgpt',
+                'assistant_kind': 'chatgpt',
+            },
+            payload={'metadata': {}},
+            assistant_title='ChatGPT',
+            assistant_kind='chatgpt',
+            dispatch_id='disp_002',
+        )
+        assert result['retry_attempted'] is True
+        assert result['response_captured'] is False
+        assert result['retry_status'] == 'no_response'
+
+    def test_no_evolution_service_unresolved(self) -> None:
+        """Without autonomous_evolution_service, retry must be unavailable
+        and leave UNRESOLVED."""
+        vm = _make_vm()
+        vm.autonomous_evolution_service = None
+        result = vm._attempt_post_recapture_response_retry(
+            consultation_metadata={
+                'selected_tool_id': 'tool_chatgpt',
+                'assistant_kind': 'chatgpt',
+            },
+            payload={'metadata': {}},
+            assistant_title='ChatGPT',
+            assistant_kind='chatgpt',
+            dispatch_id='disp_003',
+        )
+        assert result['retry_attempted'] is False
+        assert result['response_captured'] is False
+        assert result['retry_status'] == 'unavailable'
+        assert 'not_available' in result['reason']
+
+    def test_retry_exception_returns_error(self) -> None:
+        """When reingest raises an exception, retry_status must be error."""
+        vm = self._make_vm_with_evolution_service(
+            reingest_exception=RuntimeError('connection failed'),
+        )
+        result = vm._attempt_post_recapture_response_retry(
+            consultation_metadata={
+                'selected_tool_id': 'tool_chatgpt',
+                'assistant_kind': 'chatgpt',
+            },
+            payload={'metadata': {}},
+            assistant_title='ChatGPT',
+            assistant_kind='chatgpt',
+            dispatch_id='disp_004',
+        )
+        assert result['retry_attempted'] is True
+        assert result['response_captured'] is False
+        assert result['retry_status'] == 'error'
+        assert 'RuntimeError' in result['reason']
+
+    def test_retry_timeout_returns_terminal_timeout(self) -> None:
+        """A slow reingest must return timeout instead of blocking the flow."""
+        vm = _make_vm()
+        vm._POST_RECAPTURE_RESPONSE_RETRY_TIMEOUT_S = 0.01
+        mock_service = MagicMock()
+
+        def slow_reingest(**_kwargs: Any) -> dict[str, Any]:
+            time.sleep(0.2)
+            return {'pre_capture_ingested': True}
+
+        mock_service.reingest_existing_session.side_effect = slow_reingest
+        vm.autonomous_evolution_service = mock_service
+
+        result = vm._attempt_post_recapture_response_retry(
+            consultation_metadata={
+                'selected_tool_id': 'tool_chatgpt',
+                'assistant_kind': 'chatgpt',
+            },
+            payload={'metadata': {}},
+            assistant_title='ChatGPT',
+            assistant_kind='chatgpt',
+            dispatch_id='disp_timeout',
+        )
+
+        assert result['retry_attempted'] is True
+        assert result['response_captured'] is False
+        assert result['retry_status'] == 'timeout'
+        assert result['reason'] == 'reingest_timeout'
+
+    def test_retry_metadata_no_pii(self) -> None:
+        """Retry result must not contain PII."""
+        vm = self._make_vm_with_evolution_service(
+            reingest_return={
+                'pre_capture_ingested': False,
+                'pre_capture_source': 'reingest',
+                'reason': r'C:\Users\faber\AppData\Local\Temp\capture.txt faber@example.com',
+            },
+        )
+        result = vm._attempt_post_recapture_response_retry(
+            consultation_metadata={
+                'selected_tool_id': 'tool_chatgpt',
+                'assistant_kind': 'chatgpt',
+            },
+            payload={'metadata': {}},
+            assistant_title='ChatGPT',
+            assistant_kind='chatgpt',
+            dispatch_id='disp_005',
+        )
+        result_str = json.dumps(result)
+        assert 'C:\\Users' not in result_str
+        assert 'faber' not in result_str
+        assert 'faber@example.com' not in result_str
+        assert '/home/' not in result_str
+        assert 'password' not in result_str.lower()
+
+    def test_trace_events_reconstruct_chain(self) -> None:
+        """RuntimeAuditTracer must receive response_capture_retry_started
+        and response_capture_retry_result events."""
+        vm = self._make_vm_with_evolution_service(
+            reingest_return={
+                'pre_capture_ingested': False,
+                'reason': 'no_response_text',
+            },
+        )
+        traced_events: list[dict[str, Any]] = []
+
+        def fake_trace(kind: str, **kwargs: Any) -> None:
+            traced_events.append({'kind': kind, **kwargs})
+
+        mock_tracer = MagicMock()
+        mock_tracer.trace = fake_trace
+
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=mock_tracer,
+        ):
+            vm._attempt_post_recapture_response_retry(
+                consultation_metadata={
+                    'selected_tool_id': 'tool_chatgpt',
+                    'assistant_kind': 'chatgpt',
+                },
+                payload={'metadata': {}},
+                assistant_title='ChatGPT',
+                assistant_kind='chatgpt',
+                dispatch_id='disp_006',
+            )
+
+        kinds = [ev['kind'] for ev in traced_events]
+        assert 'response_capture_retry_started' in kinds
+        assert 'response_capture_retry_result' in kinds
+        started = [ev for ev in traced_events if ev['kind'] == 'response_capture_retry_started'][0]
+        result_ev = [ev for ev in traced_events if ev['kind'] == 'response_capture_retry_result'][0]
+        assert started['dispatch_id'] == 'disp_006'
+        assert started['assistant_kind'] == 'chatgpt'
+        assert result_ev['status'] == 'no_response'
+        ev_str = json.dumps(traced_events)
+        assert 'C:\\' not in ev_str
+        assert '/home/' not in ev_str
+
+    def test_platform_pending_has_p010(self) -> None:
+        from iabv_v15.domain.models import PlatformPendingTask
+        path = Path(__file__).resolve().parent.parent / 'data' / 'evolution' / 'platform_pending' / 'task_external_visual_handoff_alignment.json'
+        data = json.loads(path.read_text(encoding='utf-8'))
+        task = PlatformPendingTask.model_validate(data)
+        assert task.id == 'external_visual_handoff_alignment'
+        assert 'p010_additions' in task.metadata

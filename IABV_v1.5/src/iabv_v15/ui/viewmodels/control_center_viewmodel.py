@@ -1,7 +1,7 @@
 ﻿from __future__ import annotations
 
 import atexit
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from datetime import datetime, timezone
 import logging
 from pathlib import Path
@@ -57,6 +57,7 @@ class ControlCenterViewModel(QObject):
     # --- Timeout constants for worker threads (Sub-objective A) ---
     _CHAT_WORKER_TIMEOUT_S: float = 120.0
     _EXTERNAL_WORKER_TIMEOUT_S: float = 180.0
+    _POST_RECAPTURE_RESPONSE_RETRY_TIMEOUT_S: float = 12.0
 
     # --- Terminal dispatch states (Sub-objective A) ---
     # Every dispatch MUST end in one of these states visible to the user.
@@ -4547,7 +4548,8 @@ class ControlCenterViewModel(QObject):
         safe_evidence_path: str | None = None
         if evidence_path:
             try:
-                safe_evidence_path = Path(str(evidence_path)).name or 'available'
+                from pathlib import PureWindowsPath
+                safe_evidence_path = PureWindowsPath(str(evidence_path)).name or 'available'
             except Exception:
                 safe_evidence_path = 'available'
 
@@ -4623,6 +4625,181 @@ class ControlCenterViewModel(QObject):
                 status=response_proof.get('status', ''),
                 capture_useful_before=response_proof.get('capture_useful_before', False),
                 capture_useful_after=response_proof.get('capture_useful_after', False),
+            )
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------
+    # P0.10: post-recapture response capture retry
+    # ------------------------------------------------------------------
+
+    def _compact_response_retry_reason(self, reason: Any) -> str:
+        """Keep retry reasons useful without leaking local paths or emails."""
+        text = str(reason or '').strip()
+        if not text:
+            return ''
+        text = re.sub(
+            r'[A-Za-z]:\\(?:[^\\/:*?"<>|\r\n]+\\)*([^\\/:*?"<>|\r\n]+)',
+            r'...\\\1',
+            text,
+        )
+        text = re.sub(r'/(?:[^/\s]+/)+([^/\s]+)', r'.../\1', text)
+        text = re.sub(r'[\w.+-]+@[\w.-]+', '[email]', text)
+        return text[:240]
+
+    def _attempt_post_recapture_response_retry(
+        self,
+        *,
+        consultation_metadata: dict[str, Any],
+        payload: dict[str, Any],
+        assistant_title: str,
+        assistant_kind: str,
+        dispatch_id: str,
+    ) -> dict[str, Any]:
+        """Attempt ONE response capture retry via reingest_existing_session.
+
+        Uses AutonomousEvolutionService.reingest_existing_session() which
+        re-captures from the existing browser session without re-sending
+        the original consultation.  Returns a dict with:
+        - retry_attempted: bool
+        - response_captured: bool
+        - retry_status: 'success' | 'no_response' | 'error' | 'unavailable'
+        - reason: str
+        """
+        self._trace_response_capture_retry(
+            event='response_capture_retry_started',
+            assistant_kind=assistant_kind,
+            dispatch_id=dispatch_id,
+            status='started',
+            reason='',
+        )
+        service = getattr(self, 'autonomous_evolution_service', None)
+        if service is None:
+            result = {
+                'retry_attempted': False,
+                'response_captured': False,
+                'retry_status': 'unavailable',
+                'reason': 'autonomous_evolution_service_not_available',
+            }
+            self._trace_response_capture_retry(
+                event='response_capture_retry_result',
+                assistant_kind=assistant_kind,
+                dispatch_id=dispatch_id,
+                status='unavailable',
+                reason='service_not_available',
+            )
+            return result
+
+        existing_consultation = {
+            'selected_tool_id': str(consultation_metadata.get('selected_tool_id') or ''),
+            'assistant_kind': str(consultation_metadata.get('assistant_kind') or assistant_kind),
+            'response_capture_mode': str(consultation_metadata.get('response_capture_mode') or ''),
+            'session_scope': str(consultation_metadata.get('session_scope') or ''),
+            'session_label': str(consultation_metadata.get('session_label') or ''),
+            'session_profile_dir': str(consultation_metadata.get('session_profile_dir') or ''),
+            'thread_key': str(consultation_metadata.get('thread_key') or ''),
+            'thread_title': str(consultation_metadata.get('thread_title') or ''),
+            'isolated_session': bool(consultation_metadata.get('isolated_session')),
+            'site_id': str(consultation_metadata.get('site_id') or ''),
+            'diagnostic_category': str(consultation_metadata.get('diagnostic_category') or ''),
+            'incident_kind': str(consultation_metadata.get('incident_kind') or ''),
+            'pending_issue_id': str(consultation_metadata.get('pending_issue_id') or ''),
+        }
+        user_goal = str(self._last_user_goal or '').strip() or f'respuesta de {assistant_title}'
+
+        executor: ThreadPoolExecutor | None = None
+        try:
+            executor = ThreadPoolExecutor(
+                max_workers=1,
+                thread_name_prefix='ccvm-response-retry',
+            )
+            future = executor.submit(
+                service.reingest_existing_session,
+                existing_consultation=existing_consultation,
+                adaptive_payload=dict(payload),
+                user_goal=user_goal,
+                source=f'post_recapture_retry_{dispatch_id}',
+            )
+            reingest = future.result(
+                timeout=self._POST_RECAPTURE_RESPONSE_RETRY_TIMEOUT_S,
+            )
+        except FutureTimeoutError:
+            try:
+                future.cancel()  # type: ignore[name-defined]
+            except Exception:
+                pass
+            result = {
+                'retry_attempted': True,
+                'response_captured': False,
+                'retry_status': 'timeout',
+                'reason': 'reingest_timeout',
+            }
+            self._trace_response_capture_retry(
+                event='response_capture_retry_result',
+                assistant_kind=assistant_kind,
+                dispatch_id=dispatch_id,
+                status='timeout',
+                reason=result['reason'],
+            )
+            return result
+        except Exception as exc:
+            result = {
+                'retry_attempted': True,
+                'response_captured': False,
+                'retry_status': 'error',
+                'reason': f'reingest_exception: {type(exc).__name__}',
+            }
+            self._trace_response_capture_retry(
+                event='response_capture_retry_result',
+                assistant_kind=assistant_kind,
+                dispatch_id=dispatch_id,
+                status='error',
+                reason=result['reason'],
+            )
+            return result
+        finally:
+            if executor is not None:
+                executor.shutdown(wait=False, cancel_futures=True)
+
+        captured = bool(reingest.get('pre_capture_ingested'))
+        reason = self._compact_response_retry_reason(
+            reingest.get('reason') or ('captured' if captured else 'no_response')
+        )
+        status = 'success' if captured else 'no_response'
+
+        result = {
+            'retry_attempted': True,
+            'response_captured': captured,
+            'retry_status': status,
+            'reason': reason,
+        }
+        self._trace_response_capture_retry(
+            event='response_capture_retry_result',
+            assistant_kind=assistant_kind,
+            dispatch_id=dispatch_id,
+            status=status,
+            reason=reason,
+        )
+        return result
+
+    def _trace_response_capture_retry(
+        self,
+        *,
+        event: str,
+        assistant_kind: str,
+        dispatch_id: str,
+        status: str,
+        reason: str,
+    ) -> None:
+        """Log response_capture_retry_started / _result to RuntimeAuditTracer."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                event,
+                assistant_kind=assistant_kind,
+                dispatch_id=dispatch_id,
+                status=status,
+                reason=reason,
             )
         except Exception:
             pass
@@ -6713,7 +6890,12 @@ class ControlCenterViewModel(QObject):
             lines.append('Objetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.')
         return '\n'.join(item for item in lines if item).strip()
 
-    def _execute_external_consultation_sync(self, assistant_kind: str) -> dict[str, Any]:
+    def _execute_external_consultation_sync(
+        self,
+        assistant_kind: str,
+        *,
+        dispatch_id: str = '',
+    ) -> dict[str, Any]:
         if self.tool_teach_service is None:
             message = 'La capa Tool Teaching externa no esta inicializada en este contexto.'
             self._latest_response_text = message
@@ -6994,40 +7176,67 @@ class ControlCenterViewModel(QObject):
                 payload['metadata'] = metadata
                 self._update_adaptive_state(payload)
                 if not response_proof.get('response_captured'):
-                    # Window is observable but response NOT captured.
-                    # Do NOT declare success — leave UNRESOLVED with guidance.
-                    guidance_msg = self._post_recapture_response_pending_message(
+                    # ── P0.10: attempt ONE response capture retry ──
+                    retry_result = self._attempt_post_recapture_response_retry(
+                        consultation_metadata=consultation_metadata,
+                        payload=payload,
                         assistant_title=assistant_title,
-                        response_proof=response_proof,
+                        assistant_kind=actual_assistant_kind or requested_assistant_kind,
+                        dispatch_id=dispatch_id or 'external_consultation_untracked',
                     )
-                    remediation_unresolved.append(
-                        'UNRESOLVED:window_observable_response_not_captured'
-                    )
-                    consultation_metadata['status'] = 'window_observable_response_pending'
-                    metadata['external_consultation'] = dict(consultation_metadata)
-                    payload['metadata'] = metadata
-                    self._update_adaptive_state(payload)
-                    self._latest_response_text = guidance_msg
-                    self._latest_response_meta = f'{assistant_title}: response_pending'
-                    self._busy_label = ''
-                    return {
-                        'success': False,
-                        'message': guidance_msg,
-                        'meta': f'{assistant_title}: response_pending',
-                        'payload': payload,
-                        'assistant_title': assistant_title,
-                        'external_state_flags': external_state_flags,
-                        'visual_unresolved': False,
-                        'window_observable': True,
-                        'response_captured': False,
-                        'response_capture_pending': response_proof.get('response_capture_pending', False),
-                        'response_proof': response_proof,
-                        'visual_remediation': {
-                            'assessment': assessment,
-                            'result': remediation_result,
-                            'recapture': recapture,
-                        },
-                    }
+                    if retry_result.get('response_captured'):
+                        # Retry succeeded — update proof and allow success
+                        response_proof['response_captured'] = True
+                        response_proof['status'] = 'response_captured'
+                        response_proof['response_capture_retry'] = 'success'
+                        consultation_metadata['response_proof'] = response_proof
+                        consultation_metadata['response_captured'] = True
+                        consultation_metadata['status'] = 'prepared'
+                        metadata['external_consultation'] = dict(consultation_metadata)
+                        metadata['autonomous_evolution'] = dict(consultation_metadata)
+                        payload['metadata'] = metadata
+                        self._update_adaptive_state(payload)
+                        # Fall through to normal success path below
+                    else:
+                        # Retry failed or unavailable — UNRESOLVED with guidance
+                        response_proof['response_capture_retry'] = retry_result.get('retry_status', 'unavailable')
+                        consultation_metadata['response_proof'] = response_proof
+                        guidance_msg = self._post_recapture_response_pending_message(
+                            assistant_title=assistant_title,
+                            response_proof=response_proof,
+                        )
+                        remediation_unresolved.append(
+                            'UNRESOLVED:window_observable_response_not_captured'
+                        )
+                        if not retry_result.get('retry_attempted'):
+                            remediation_unresolved.append(
+                                'UNRESOLVED:post_recapture_response_retry_api_missing'
+                            )
+                        consultation_metadata['status'] = 'window_observable_response_pending'
+                        metadata['external_consultation'] = dict(consultation_metadata)
+                        payload['metadata'] = metadata
+                        self._update_adaptive_state(payload)
+                        self._latest_response_text = guidance_msg
+                        self._latest_response_meta = f'{assistant_title}: response_pending'
+                        self._busy_label = ''
+                        return {
+                            'success': False,
+                            'message': guidance_msg,
+                            'meta': f'{assistant_title}: response_pending',
+                            'payload': payload,
+                            'assistant_title': assistant_title,
+                            'external_state_flags': external_state_flags,
+                            'visual_unresolved': False,
+                            'window_observable': True,
+                            'response_captured': False,
+                            'response_capture_pending': response_proof.get('response_capture_pending', False),
+                            'response_proof': response_proof,
+                            'visual_remediation': {
+                                'assessment': assessment,
+                                'result': remediation_result,
+                                'recapture': recapture,
+                            },
+                        }
             else:
                 # P0.4: build shared reality causal handoff
                 shared_handoff = self._build_shared_reality_handoff(
@@ -7334,7 +7543,10 @@ class ControlCenterViewModel(QObject):
 
         def worker() -> None:
             try:
-                result_payload = self._execute_external_consultation_sync(assistant_kind)
+                result_payload = self._execute_external_consultation_sync(
+                    assistant_kind,
+                    dispatch_id=_dispatch_id,
+                )
                 if not self._is_dispatch_active('external_consultation', _dispatch_id):
                     import logging
                     logging.getLogger(__name__).debug('external_consultation worker %s discarded (stale)', _dispatch_id[:8])
