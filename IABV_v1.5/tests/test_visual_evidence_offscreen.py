@@ -463,7 +463,8 @@ class TestExecutionStateMetadataWiring:
         }
         result_metadata: dict[str, Any] = {}
         # Build combined dict as _execute_external_consultation_sync does:
-        combined = {**execution_state_metadata, **result_metadata}
+        # execution_state.metadata prevails on conflict
+        combined = {**result_metadata, **execution_state_metadata}
         consultation_metadata: dict[str, Any] = {
             'status': 'prepared',
             'assistant_kind': 'chatgpt',
@@ -501,8 +502,6 @@ class TestExecutionStateMetadataWiring:
             result_metadata=combined,
             consultation_metadata=consultation_metadata,
         )
-        # No target_window but capture_meta_from_exec picks up the flat keys
-        # _capture_is_low_information returns True for blank_probability >= 0.90
         assert override is not None
         assert consultation_metadata['status'] == 'visual_unresolved'
 
@@ -532,3 +531,82 @@ class TestExecutionStateMetadataWiring:
         )
         assert override is None
         assert consultation_metadata['status'] == 'prepared'
+
+    def test_execution_state_prevails_on_conflict(self) -> None:
+        """When both result.metadata and execution_state.metadata have
+        the same key, execution_state.metadata must win (live capture data)."""
+        result_metadata: dict[str, Any] = {
+            'target_window': {
+                'title': 'ChatGPT',
+                'hwnd': 12345,
+                'rect': [100, 100, 1200, 800],
+            },
+            'blank_probability': 0.05,
+            'useful': True,
+        }
+        execution_state_metadata: dict[str, Any] = {
+            'target_window': {
+                'title': 'ChatGPT - Google Chrome for Testing',
+                'hwnd': 16319628,
+                'rect': [-32000, -32000, 199, 34],
+            },
+            'blank_probability': 0.98,
+            'dynamic_range': 0,
+            'unique_color_count': 1,
+            'useful': False,
+        }
+        # execution_state.metadata prevails: same merge order as production
+        combined = {**result_metadata, **execution_state_metadata}
+        consultation_metadata: dict[str, Any] = {
+            'status': 'prepared',
+            'assistant_kind': 'chatgpt',
+        }
+        override = self.vm._validate_visual_evidence_result(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            result_metadata=combined,
+            consultation_metadata=consultation_metadata,
+        )
+        assert override is not None, (
+            'execution_state.metadata has offscreen rect and blank capture — must override'
+        )
+        assert override['visual_unresolved'] is True
+        assert override['reason'] == 'target_window_minimized_or_offscreen'
+        assert consultation_metadata['status'] == 'visual_unresolved'
+
+    def test_offscreen_user_message_contains_required_keywords(self) -> None:
+        """User message from offscreen override must contain keywords about
+        minimized/offscreen window, black capture, and retry."""
+        execution_state_metadata: dict[str, Any] = {
+            'target_window': {
+                'title': 'ChatGPT - Google Chrome for Testing',
+                'hwnd': 16319628,
+                'rect': [-32000, -32000, 199, 34],
+            },
+            'blank_probability': 0.98,
+            'dynamic_range': 0,
+            'unique_color_count': 1,
+            'useful': False,
+        }
+        combined = {**execution_state_metadata}
+        consultation_metadata: dict[str, Any] = {
+            'status': 'prepared',
+            'assistant_kind': 'chatgpt',
+        }
+        override = self.vm._validate_visual_evidence_result(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            result_metadata=combined,
+            consultation_metadata=consultation_metadata,
+        )
+        assert override is not None
+        msg = override['user_message'].lower()
+        assert any(kw in msg for kw in ('minimizada', 'fuera de pantalla', 'offscreen')), (
+            f'Message must mention minimized/offscreen window, got: {msg}'
+        )
+        assert any(kw in msg for kw in ('negra', 'black', 'baja información', 'low information')), (
+            f'Message must mention black/low-info capture, got: {msg}'
+        )
+        assert any(kw in msg for kw in ('restaura', 'reintenta', 'retry', 'restore')), (
+            f'Message must guide user to restore/retry, got: {msg}'
+        )

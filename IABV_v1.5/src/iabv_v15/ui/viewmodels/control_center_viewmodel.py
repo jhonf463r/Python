@@ -6014,9 +6014,10 @@ class ControlCenterViewModel(QObject):
         # may live in result.execution_state.metadata rather than
         # result.metadata — combine both to ensure the validator sees all
         # available evidence regardless of where the adapter stored it.
+        # execution_state.metadata prevails on conflict (live capture data).
         combined_result_metadata = {
-            **dict(result.execution_state.metadata or {}),
             **result_metadata,
+            **dict(result.execution_state.metadata or {}),
         }
         visual_override = self._validate_visual_evidence_result(
             assistant_kind=actual_assistant_kind or requested_assistant_kind,
