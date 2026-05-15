@@ -433,3 +433,102 @@ class TestValidateVisualEvidenceResult:
             consultation_metadata=consultation_metadata,
         )
         assert override is None
+
+
+# ── Test: real wiring — evidence only in execution_state.metadata ──
+
+class TestExecutionStateMetadataWiring:
+    """Reproduce the live flow: target_window and capture metrics live in
+    execution_state.metadata, NOT in result.metadata. The combined dict
+    that _execute_external_consultation_sync builds must surface them.
+    """
+
+    def setup_method(self) -> None:
+        self.vm = _make_stub_vm()
+
+    def test_offscreen_in_execution_state_metadata_produces_visual_unresolved(self) -> None:
+        """Simulates the live case: target_window + blank metrics in
+        execution_state.metadata only, result.metadata is empty."""
+        execution_state_metadata: dict[str, Any] = {
+            'target_window': {
+                'title': 'ChatGPT - Google Chrome for Testing',
+                'hwnd': 16319628,
+                'rect': [-32000, -32000, 199, 34],
+            },
+            'blank_probability': 0.98,
+            'dynamic_range': 0,
+            'unique_color_count': 1,
+            'useful': False,
+            'capture_scope': 'external_target_window_bbox',
+        }
+        result_metadata: dict[str, Any] = {}
+        # Build combined dict as _execute_external_consultation_sync does:
+        combined = {**execution_state_metadata, **result_metadata}
+        consultation_metadata: dict[str, Any] = {
+            'status': 'prepared',
+            'assistant_kind': 'chatgpt',
+        }
+        override = self.vm._validate_visual_evidence_result(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            result_metadata=combined,
+            consultation_metadata=consultation_metadata,
+        )
+        assert override is not None
+        assert override['visual_unresolved'] is True
+        assert override['reason'] == 'target_window_minimized_or_offscreen'
+        assert consultation_metadata['status'] == 'visual_unresolved'
+        assert 'UNRESOLVED:external_target_window_minimized_or_offscreen' in consultation_metadata.get('unresolved', [])
+        assert 'UNRESOLVED:visual_capture_low_information' in consultation_metadata.get('unresolved', [])
+
+    def test_black_metrics_in_execution_state_no_target_window(self) -> None:
+        """Blank probability and low-info metrics in execution_state only,
+        no target_window anywhere — should still detect via flat keys."""
+        execution_state_metadata: dict[str, Any] = {
+            'blank_probability': 0.95,
+            'dynamic_range': 0,
+            'unique_color_count': 2,
+            'useful': False,
+        }
+        combined = {**execution_state_metadata}
+        consultation_metadata: dict[str, Any] = {
+            'status': 'prepared',
+            'assistant_kind': 'chatgpt',
+        }
+        override = self.vm._validate_visual_evidence_result(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            result_metadata=combined,
+            consultation_metadata=consultation_metadata,
+        )
+        # No target_window but capture_meta_from_exec picks up the flat keys
+        # _capture_is_low_information returns True for blank_probability >= 0.90
+        assert override is not None
+        assert consultation_metadata['status'] == 'visual_unresolved'
+
+    def test_valid_capture_in_execution_state_returns_none(self) -> None:
+        """Valid evidence in execution_state.metadata should pass through."""
+        execution_state_metadata: dict[str, Any] = {
+            'target_window': {
+                'title': 'ChatGPT',
+                'hwnd': 12345,
+                'rect': [100, 100, 1200, 800],
+            },
+            'blank_probability': 0.05,
+            'dynamic_range': 200,
+            'unique_color_count': 5000,
+            'useful': True,
+        }
+        combined = {**execution_state_metadata}
+        consultation_metadata: dict[str, Any] = {
+            'status': 'prepared',
+            'assistant_kind': 'chatgpt',
+        }
+        override = self.vm._validate_visual_evidence_result(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            result_metadata=combined,
+            consultation_metadata=consultation_metadata,
+        )
+        assert override is None
+        assert consultation_metadata['status'] == 'prepared'

@@ -6010,10 +6010,18 @@ class ControlCenterViewModel(QObject):
             'detail': str(result.execution_state.detail or result.error_message or ''),
         }
         # ── Task B+C: validate visual evidence before treating as success ──
+        # The live observation data (target_window, blank_probability, etc.)
+        # may live in result.execution_state.metadata rather than
+        # result.metadata — combine both to ensure the validator sees all
+        # available evidence regardless of where the adapter stored it.
+        combined_result_metadata = {
+            **dict(result.execution_state.metadata or {}),
+            **result_metadata,
+        }
         visual_override = self._validate_visual_evidence_result(
             assistant_kind=actual_assistant_kind or requested_assistant_kind,
             assistant_title=assistant_title,
-            result_metadata=result_metadata,
+            result_metadata=combined_result_metadata,
             consultation_metadata=consultation_metadata,
         )
         if visual_override is not None:
@@ -6024,10 +6032,10 @@ class ControlCenterViewModel(QObject):
             metadata['autonomous_evolution'] = dict(consultation_metadata)
             payload['metadata'] = metadata
             self._update_adaptive_state(payload)
-            target_window = result_metadata.get('target_window')
+            target_window = combined_result_metadata.get('target_window')
             capture_state = self._target_window_capture_state(
                 target_window,
-                result_metadata.get('visual_evidence_snapshot') or result_metadata.get('capture_meta'),
+                combined_result_metadata.get('visual_evidence_snapshot') or combined_result_metadata.get('capture_meta'),
             )
             handoff_msg = self._visual_handoff_message(
                 assistant_title=assistant_title,
