@@ -34,28 +34,46 @@ def _make_handoff_event(
     mismatch_reason: str = 'ventana minimizada, sesión aislada',
     user_claim: str = '',
     browser_label: str = 'sesión aislada',
+    browser_profile: str = '',
+    selected_browser_or_profile: str = '',
     seq: int = 1,
 ) -> dict[str, Any]:
+    data: dict[str, Any] = {
+        'assistant_kind': assistant_kind,
+        'target_window_title': target_window_title,
+        'capture_useful': capture_useful,
+        'blank_probability': blank_probability,
+        'mismatch_reason': mismatch_reason,
+        'user_claim': user_claim,
+        'browser_label': browser_label,
+        'capture_quality': {
+            'blank_probability': blank_probability,
+            'dynamic_range': 0,
+            'unique_color_count': 1,
+            'useful': capture_useful,
+        },
+    }
+    if browser_profile:
+        data['browser_profile'] = browser_profile
+    if selected_browser_or_profile:
+        data['selected_browser_or_profile'] = selected_browser_or_profile
     return {
         'ts': '2026-05-15T10:00:00.000Z',
         'elapsed_ms': 1000.0 * seq,
         'kind': 'shared_reality_handoff',
         'seq': seq,
-        'data': {
-            'assistant_kind': assistant_kind,
-            'target_window_title': target_window_title,
-            'capture_useful': capture_useful,
-            'blank_probability': blank_probability,
-            'mismatch_reason': mismatch_reason,
-            'user_claim': user_claim,
-            'browser_label': browser_label,
-            'capture_quality': {
-                'blank_probability': blank_probability,
-                'dynamic_range': 0,
-                'unique_color_count': 1,
-                'useful': capture_useful,
-            },
-        },
+        'data': data,
+    }
+
+
+def _make_noise_event(*, kind: str = 'service_init', seq: int = 1) -> dict[str, Any]:
+    """Non-handoff event for padding logs."""
+    return {
+        'ts': '2026-05-15T09:00:00.000Z',
+        'elapsed_ms': 100.0 * seq,
+        'kind': kind,
+        'seq': seq,
+        'data': {'service': f'fake_service_{seq}'},
     }
 
 
@@ -204,6 +222,101 @@ class TestOSESBrowserDiffers:
         findings = oses._shared_reality_handoff_findings()
         cats = [f.category for f in findings]
         assert 'user_browser_differs_from_iabv_session' in cats
+
+    def test_detected_via_browser_profile_only(self, tmp_path: Path) -> None:
+        """Blocker fix: producer traces browser_profile, not browser_label.
+        Detection must work with browser_profile containing 'Chrome for Testing'
+        even when mismatch_reason is neutral."""
+        events = [
+            _make_handoff_event(
+                seq=1, mismatch_reason='ventana minimizada',
+                browser_label='', browser_profile='Chrome for Testing',
+            ),
+            _make_handoff_event(
+                seq=2, mismatch_reason='ventana offscreen',
+                browser_label='', browser_profile='sesión aislada de IABV',
+            ),
+        ]
+        _write_audit_events(tmp_path, events)
+        oses = _make_oses(tmp_path)
+        findings = oses._shared_reality_handoff_findings()
+        cats = [f.category for f in findings]
+        assert 'user_browser_differs_from_iabv_session' in cats
+
+    def test_detected_via_selected_browser_or_profile(self, tmp_path: Path) -> None:
+        """Also works with selected_browser_or_profile field."""
+        events = [
+            _make_handoff_event(
+                seq=1, mismatch_reason='genérico', browser_label='',
+                selected_browser_or_profile='Chrome for Testing (controlada)',
+            ),
+            _make_handoff_event(
+                seq=2, mismatch_reason='genérico', browser_label='',
+                selected_browser_or_profile='sesión controlada',
+            ),
+        ]
+        _write_audit_events(tmp_path, events)
+        oses = _make_oses(tmp_path)
+        findings = oses._shared_reality_handoff_findings()
+        cats = [f.category for f in findings]
+        assert 'user_browser_differs_from_iabv_session' in cats
+
+
+class TestOSESTailReading:
+    """OSES reads the 50 most recent events, not the oldest 50."""
+
+    def test_old_events_ignored_when_more_than_50(self, tmp_path: Path) -> None:
+        """55 old events with assistant_kind='old_tool' followed by 2 recent
+        events with assistant_kind='recent_tool'. The finding last_case must
+        reference 'recent_tool', not 'old_tool'."""
+        old_events = [
+            _make_handoff_event(seq=i, assistant_kind='old_tool')
+            for i in range(1, 56)
+        ]
+        recent_events = [
+            _make_handoff_event(seq=100, assistant_kind='recent_tool'),
+            _make_handoff_event(seq=101, assistant_kind='recent_tool'),
+        ]
+        _write_audit_events(tmp_path, old_events + recent_events)
+        oses = _make_oses(tmp_path)
+        findings = oses._shared_reality_handoff_findings()
+        f = next(f for f in findings if f.category == 'repeated_visual_mismatch')
+        # last_case must be from the recent events, not the old ones
+        assert f.metadata['last_case']['assistant_kind'] == 'recent_tool'
+
+    def test_noise_events_not_counted(self, tmp_path: Path) -> None:
+        """Hundreds of non-handoff events should not affect results.
+        Only the 2 handoff events at the end matter."""
+        noise = [_make_noise_event(seq=i) for i in range(1, 201)]
+        handoffs = [
+            _make_handoff_event(seq=300, user_claim='a mí sí me funciona'),
+            _make_handoff_event(seq=301, user_claim='yo sí lo veo'),
+        ]
+        _write_audit_events(tmp_path, noise + handoffs)
+        oses = _make_oses(tmp_path)
+        findings = oses._shared_reality_handoff_findings()
+        cats = [f.category for f in findings]
+        assert 'user_needed_to_explain_same_gap' in cats
+        f = next(f for f in findings if f.category == 'user_needed_to_explain_same_gap')
+        assert f.metadata['last_case']['user_claim'] == 'yo sí lo veo'
+
+    def test_large_log_smoke(self, tmp_path: Path) -> None:
+        """Smoke test with a large log (500 noise + 3 handoff at end).
+        Must not degrade or use stale history."""
+        noise = [_make_noise_event(kind='external_query', seq=i) for i in range(1, 501)]
+        handoffs = [
+            _make_handoff_event(seq=600, blank_probability=0.99),
+            _make_handoff_event(seq=601, blank_probability=0.95),
+            _make_handoff_event(seq=602, blank_probability=0.92,
+                                assistant_kind='gemini'),
+        ]
+        _write_audit_events(tmp_path, noise + handoffs)
+        oses = _make_oses(tmp_path)
+        findings = oses._shared_reality_handoff_findings()
+        cats = [f.category for f in findings]
+        assert 'black_capture_repeated' in cats
+        f = next(f for f in findings if f.category == 'black_capture_repeated')
+        assert f.metadata['frequency'] == 3
 
 
 class TestOSESFindingMetadata:

@@ -7722,8 +7722,12 @@ class OperationalSelfExaminationService:
             return []
         events: list[dict[str, Any]] = []
         try:
-            text = audit_path.read_text(encoding='utf-8', errors='replace')
-            for line in text.splitlines():
+            lines = audit_path.read_text(
+                encoding='utf-8', errors='replace',
+            ).splitlines()
+            # Read in reverse to collect the 50 most RECENT handoff events,
+            # then restore chronological order for last_case accuracy.
+            for line in reversed(lines):
                 if not line.strip():
                     continue
                 try:
@@ -7735,6 +7739,7 @@ class OperationalSelfExaminationService:
                 events.append(dict(event.get('data') or event))
                 if len(events) >= 50:
                     break
+            events.reverse()  # restore chronological order
         except Exception:
             return []
         if len(events) < 2:
@@ -7782,13 +7787,15 @@ class OperationalSelfExaminationService:
             ))
 
         # Pattern 2: user_browser_differs_from_iabv_session
-        diff_session = [
-            e for e in events
-            if any(kw in str(e.get('mismatch_reason', '')).lower()
-                   for kw in ('aislada', 'controlada', 'chrome for testing', 'sesión'))
-            or any(kw in str(e.get('browser_label', '')).lower()
-                   for kw in ('aislada', 'controlada', 'chrome for testing'))
-        ]
+        _BROWSER_KW = ('aislada', 'controlada', 'chrome for testing')
+        def _has_isolated_signal(e: dict[str, Any]) -> bool:
+            for field in ('mismatch_reason', 'browser_label',
+                          'browser_profile', 'selected_browser_or_profile'):
+                val = str(e.get(field, '')).lower()
+                if any(kw in val for kw in _BROWSER_KW):
+                    return True
+            return False
+        diff_session = [e for e in events if _has_isolated_signal(e)]
         if len(diff_session) >= 2:
             last = diff_session[-1]
             findings.append(SelfExaminationFinding(
