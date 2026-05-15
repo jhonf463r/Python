@@ -4121,6 +4121,32 @@ class ControlCenterViewModel(QObject):
     def _invalidate_dispatch(self, task_name: str) -> None:
         self._active_dispatch_ids.pop(task_name, None)
 
+    # ── Runtime audit helper for dispatch terminal events ──────
+    def _trace_dispatch_terminal(
+        self,
+        *,
+        task_name: str,
+        dispatch_id: str = '',
+        terminal_state: str,
+        provider: str = '',
+        reason: str = '',
+        user_visible_message: bool = True,
+    ) -> None:
+        """Log a dispatch terminal event to RuntimeAuditTracer."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace_dispatch_terminal(
+                task_name=task_name,
+                dispatch_id=dispatch_id,
+                terminal_state=terminal_state,
+                interaction_id=getattr(self, '_active_interaction_id', '') or '',
+                provider=provider,
+                reason=reason,
+                user_visible_message_present=user_visible_message,
+            )
+        except Exception:
+            pass
+
     # ── Worker timeout watchdog (Sub-objective A) ──────────────
     def _schedule_worker_timeout(
         self,
@@ -4148,6 +4174,12 @@ class ControlCenterViewModel(QObject):
                 return  # superseded by a newer dispatch
             if dispatch_id:
                 self._invalidate_dispatch(task_name)
+            self._trace_dispatch_terminal(
+                task_name=task_name,
+                dispatch_id=dispatch_id,
+                terminal_state='timeout',
+                reason=f'watchdog fired after {int(timeout_s)}s',
+            )
             self.taskFailed.emit(
                 task_name,
                 f'La operacion ({task_name}) supero el tiempo maximo de {int(timeout_s)}s. '
@@ -5963,12 +5995,24 @@ class ControlCenterViewModel(QObject):
                 if not self._is_dispatch_active('external_consultation', _dispatch_id):
                     import logging
                     logging.getLogger(__name__).debug('external_consultation worker %s discarded (stale)', _dispatch_id[:8])
+                    self._trace_dispatch_terminal(
+                        task_name='external_consultation', dispatch_id=_dispatch_id,
+                        terminal_state='cancelled', provider=assistant_kind,
+                        reason='stale_discarded: worker finished after dispatch invalidated',
+                        user_visible_message=False,
+                    )
                     return
                 self.taskResolved.emit('external_consultation', result_payload)
             except Exception as exc:
                 if not self._is_dispatch_active('external_consultation', _dispatch_id):
                     import logging
                     logging.getLogger(__name__).debug('external_consultation worker %s error discarded (stale)', _dispatch_id[:8])
+                    self._trace_dispatch_terminal(
+                        task_name='external_consultation', dispatch_id=_dispatch_id,
+                        terminal_state='cancelled', provider=assistant_kind,
+                        reason=f'stale_discarded: error discarded: {exc}',
+                        user_visible_message=False,
+                    )
                     return
                 self.taskFailed.emit('external_consultation', f'No pude completar la consulta externa guiada: {exc}')
             finally:
@@ -7409,6 +7453,11 @@ class ControlCenterViewModel(QObject):
                 if not self._is_dispatch_active('chat', _dispatch_id):
                     import logging
                     logging.getLogger(__name__).debug('chat worker %s discarded (stale)', _dispatch_id[:8])
+                    self._trace_dispatch_terminal(
+                        task_name='chat', dispatch_id=_dispatch_id,
+                        terminal_state='cancelled', reason='stale_discarded: worker finished after dispatch invalidated',
+                        user_visible_message=False,
+                    )
                     return
                 self.taskResolved.emit(
                     'chat',
@@ -7435,6 +7484,11 @@ class ControlCenterViewModel(QObject):
                 if not self._is_dispatch_active('chat', _dispatch_id):
                     import logging
                     logging.getLogger(__name__).debug('chat worker %s error discarded (stale)', _dispatch_id[:8])
+                    self._trace_dispatch_terminal(
+                        task_name='chat', dispatch_id=_dispatch_id,
+                        terminal_state='cancelled', reason=f'stale_discarded: error discarded: {exc}',
+                        user_visible_message=False,
+                    )
                     return
                 self.taskFailed.emit('chat', f'No pude completar la consulta local: {exc}')
             finally:
@@ -7459,6 +7513,9 @@ class ControlCenterViewModel(QObject):
         self._busy_label = busy_text
         self.dataChanged.emit()
 
+        _aa_done = threading.Event()
+        _dispatch_id = self._new_dispatch_id('adaptive_action')
+
         def worker() -> None:
             try:
                 if action_name == 'approve_strategy':
@@ -7477,11 +7534,33 @@ class ControlCenterViewModel(QObject):
                     raise ValueError(f'Accion adaptativa desconocida: {action_name}')
                 if session is None:
                     raise ValueError('No encontre la sesion adaptativa activa.')
+                if not self._is_dispatch_active('adaptive_action', _dispatch_id):
+                    self._trace_dispatch_terminal(
+                        task_name='adaptive_action', dispatch_id=_dispatch_id,
+                        terminal_state='cancelled', reason='stale_discarded: adaptive worker finished after dispatch invalidated',
+                        user_visible_message=False,
+                    )
+                    return
                 self.taskResolved.emit('adaptive_action', session.model_dump(mode='json'))
             except Exception as exc:
+                if not self._is_dispatch_active('adaptive_action', _dispatch_id):
+                    self._trace_dispatch_terminal(
+                        task_name='adaptive_action', dispatch_id=_dispatch_id,
+                        terminal_state='cancelled', reason=f'stale_discarded: adaptive error discarded: {exc}',
+                        user_visible_message=False,
+                    )
+                    return
                 self.taskFailed.emit('adaptive_action', f'No pude completar la accion adaptativa: {exc}')
+            finally:
+                _aa_done.set()
 
         threading.Thread(target=worker, daemon=True).start()
+        self._schedule_worker_timeout(
+            done_event=_aa_done,
+            task_name='adaptive_action',
+            timeout_s=self._CHAT_WORKER_TIMEOUT_S,
+            dispatch_id=_dispatch_id,
+        )
 
     @Slot(str)
     def applySuggestedAction(self, action: str) -> None:
@@ -7882,6 +7961,41 @@ class ControlCenterViewModel(QObject):
             self._busy_label = f"PBT actualizado en generacion {payload.get('generation', 0)}."
         if task_name != 'provider_health':
             self._working = False
+        # --- Trace dispatch terminal audit ---
+        if task_name in ('chat', 'external_consultation', 'adaptive_action', 'self_teach'):
+            _dispatch_id_for_trace = self._active_dispatch_ids.get(task_name, '')
+            _trace_provider = ''
+            if isinstance(payload, dict):
+                _trace_provider = str(
+                    payload.get('provider_name')
+                    or payload.get('assistant_title')
+                    or payload.get('assistant_kind')
+                    or '',
+                )
+            _trace_terminal = 'success'
+            _trace_reason = 'resolved'
+            if task_name == 'external_consultation' and isinstance(payload, dict) and not payload.get('success'):
+                _meta_raw = str(payload.get('meta') or '')
+                _trace_terminal = 'failed_with_actionable_reason'
+                for _candidate in (
+                    'blocked_by_permission', 'blocked_by_security_verification',
+                    'blocked_by_quota', 'timeout', 'needs_human_handoff',
+                    'failed_with_actionable_reason',
+                ):
+                    if _candidate in _meta_raw:
+                        _trace_terminal = _candidate
+                        break
+                _trace_reason = f'external_consultation_blocked: {_meta_raw[:120]}'
+            self._trace_dispatch_terminal(
+                task_name=task_name,
+                dispatch_id=_dispatch_id_for_trace,
+                terminal_state=_trace_terminal,
+                provider=_trace_provider,
+                reason=_trace_reason,
+                user_visible_message=True,
+            )
+            if _dispatch_id_for_trace:
+                self._invalidate_dispatch(task_name)
         # --- Close canonical interaction episode on resolution ---
         # Do NOT close the interaction if follow-up work is still pending
         # (external consultation dispatched, autonomy awaiting_response, etc.).
@@ -7961,6 +8075,12 @@ class ControlCenterViewModel(QObject):
     def _apply_task_failure(self, task_name: str, message: str) -> None:
         title = 'IABV' if task_name == 'chat' else task_name.upper()
         visible_message, visible_meta = self._humanize_task_failure(task_name, message)
+        self._trace_dispatch_terminal(
+            task_name=task_name,
+            terminal_state=visible_meta,
+            reason=message[:200],
+            user_visible_message=True,
+        )
         self._clear_autonomy_activity_override()
         _failure_path = f'{task_name}_failure'
         self._append_message('assistant', title, visible_message, visible_meta,
