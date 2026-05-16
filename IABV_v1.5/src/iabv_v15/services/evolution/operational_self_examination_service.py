@@ -1835,6 +1835,13 @@ class OperationalSelfExaminationService:
             f for f in high_findings
             if getattr(f, 'category', '') != 'startup_memory_spike'
         ]
+        high_findings = [
+            f for f in high_findings
+            if not (
+                getattr(f, 'category', '') == 'startup_false_ready'
+                and self._latest_timeline_contradicts_false_ready()
+            )
+        ]
         if not high_findings:
             return
         if self._should_defer_startup_false_ready_capture(high_findings):
@@ -1873,6 +1880,60 @@ class OperationalSelfExaminationService:
                 )
         except Exception:
             logger.debug('_auto_capture_startup_freeze failed', exc_info=True)
+
+    def _latest_timeline_contradicts_false_ready(self) -> bool:
+        """Return True when the latest startup timeline proves readiness.
+
+        This is a final evidence check before promoting a false-ready finding
+        into a freeze incident. If the live timeline says
+        ``shell_loader_ready`` or ``page_loader_ready`` happened before
+        ``splash_set_ready``, the finding is stale or based on incomplete
+        metadata and must not become a freeze report.
+        """
+        log_path = Path(self.workspace_root or Path.cwd()) / 'data' / 'logs' / 'startup_timeline.jsonl'
+        if not log_path.exists():
+            return False
+        events: list[dict[str, Any]] = []
+        try:
+            with log_path.open('r', encoding='utf-8') as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        events.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        continue
+        except OSError:
+            return False
+        if not events:
+            return False
+        last_run: list[dict[str, Any]] = [events[-1]]
+        for evt in reversed(events[:-1]):
+            try:
+                if float(evt.get('t_ms_from_start') or 0.0) <= float(last_run[0].get('t_ms_from_start') or 0.0):
+                    last_run.insert(0, evt)
+                else:
+                    break
+            except (TypeError, ValueError):
+                break
+        phase_to_ms: dict[str, float] = {}
+        for evt in last_run:
+            phase = str(evt.get('phase') or '')
+            if not phase:
+                continue
+            try:
+                phase_to_ms[phase] = float(evt.get('t_ms_from_start') or 0.0)
+            except (TypeError, ValueError):
+                continue
+        splash_ms = phase_to_ms.get('splash_set_ready')
+        if splash_ms is None:
+            return False
+        for proof in ('page_loader_ready', 'shell_loader_ready'):
+            proof_ms = phase_to_ms.get(proof)
+            if proof_ms is not None and proof_ms <= splash_ms:
+                return True
+        return False
 
     def _should_defer_startup_false_ready_capture(
         self,

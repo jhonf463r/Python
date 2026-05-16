@@ -295,6 +295,40 @@ class TestOsesAutoCapture:
         reports = reporter.list_reports()
         assert reports == []
 
+    def test_false_ready_not_captured_when_latest_timeline_proves_readiness(self) -> None:
+        root = _workspace()
+        log_dir = root / 'data' / 'logs'
+        log_dir.mkdir(parents=True, exist_ok=True)
+        events = [
+            {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+            {'phase': 'main_window_shown', 't_ms_from_start': 1400.0, 'rss_mb': 300.0},
+            {'phase': 'shell_loader_ready', 't_ms_from_start': 1477.0, 'rss_mb': 304.0},
+            {'phase': 'page_loader_ready', 't_ms_from_start': 1576.0, 'rss_mb': 320.0},
+            {'phase': 'splash_set_ready', 't_ms_from_start': 1580.0, 'rss_mb': 321.0},
+            {'phase': 'populate_ui_done', 't_ms_from_start': 1703.0, 'rss_mb': 345.0},
+        ]
+        with (log_dir / 'startup_timeline.jsonl').open('w', encoding='utf-8') as fh:
+            for event in events:
+                fh.write(json.dumps(event) + '\n')
+        oses = self._make_oses(root)
+        reporter = FreezeIncidentReporter(evolution_dir=str(root))
+        oses._freeze_incident_reporter = reporter
+
+        stale_finding = SelfExaminationFinding(
+            category='startup_false_ready',
+            title='Splash declaro ready antes de que el shell estuviera vivo',
+            summary='stale finding contradicted by current startup_timeline',
+            severity=IssueSeverity.HIGH,
+            confidence=0.95,
+            metadata={
+                'phase': 'startup_false_ready',
+                'reasons': ['splash_set_ready_before_shell_loader_ready'],
+            },
+        )
+        oses._auto_capture_startup_freeze([stale_finding])
+
+        assert reporter.list_reports() == []
+
     def test_defers_false_ready_missing_proof_during_startup_window(self) -> None:
         root = _workspace()
         oses = self._make_oses(root)
