@@ -1,0 +1,43 @@
+{
+  "id": "runtime_semantic_attractor_diagnostics",
+  "title": "Runtime semantic attractor diagnostics for user-visible failures",
+  "status": "UNRESOLVED",
+  "category": "metacognition",
+  "priority": "P0",
+  "description": "Convert repeated user-visible failures into concept/proximity diagnostics: user intent, dispatch lifecycle, terminal state, semantic outcome, finality, visual evidence, and user correction must be combined before choosing heavy reasoning or external retry.",
+  "resume_hint": "P0.21 implements the first narrow attractor: explicit external ChatGPT consultation + dispatch success + outcome=reused_context + is_final=false means no new ChatGPT answer was captured and the UI must not keep processing. Operational status questions now answer from runtime telemetry instead of heavy local inference.",
+  "next_action": "Generalize the P0.21 status/reuse rule into a shared metacognitive scoring helper consumed by ControlCenterViewModel and OSES: classify proximity_to_solution, missing_evidence, and next_best_action from existing metadata without creating another brain.",
+  "metadata": {
+    "created_by": "codex/p021-chatgpt-reuse-processing-fix",
+    "source_evidence": {
+      "runtime_audit": "data/logs/runtime_audit.jsonl",
+      "observed_pattern": "external_consultation dispatch_terminal=success followed by interaction_outcome outcome=reused_context is_final=false",
+      "user_visible_symptom": "UI showed processing / user perceived no ChatGPT consultation"
+    },
+    "p021_code_additions": {
+      "control_center_viewmodel": [
+        "_is_operational_status_question",
+        "_answer_operational_status_question",
+        "_should_finalize_reused_external_context",
+        "explicit external consultations pass force_new_external_consultation to ToolTeachService"
+      ],
+      "tool_teach_service": [
+        "force_new_external_consultation disables reuse_guard_active and reused pattern actions only for consultation_scope=external_assistant"
+      ],
+      "tests": [
+        "tests/test_p021_external_consultation_status.py",
+        "tests/test_tool_teach_service.py::test_tool_teach_service_force_new_external_consultation_disables_reuse_guard"
+      ]
+    },
+    "universal_algorithm_target": {
+      "concepts": ["user_intent", "tool_target", "dispatch_state", "semantic_outcome", "finality", "evidence_quality", "user_correction"],
+      "attractor_rule": "If concepts indicate the technical route completed but semantic answer is missing, report the gap and next required evidence instead of continuing heavy inference.",
+      "future_metric": "proximity_to_solution_score = evidence_present / evidence_required, with blockers labeled as missing_evidence rather than failure noise."
+    },
+    "unresolved": [
+      "Move the attractor scoring out of UI helper methods into a shared read-only metacognition utility or existing OSES path without creating a new orchestrator.",
+      "Add OSES finding when repeated reused_context non-final or operational-status followups occur.",
+      "Live Windows proof after updating runtime to P0.21."
+    ]
+  }
+}

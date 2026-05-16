@@ -4273,6 +4273,170 @@ class ControlCenterViewModel(QObject):
             pass
         return True
 
+    def _runtime_latest_dispatch_lifecycle_snapshot(self) -> dict[str, Any]:
+        try:
+            return dict(type(self).latestDispatchLifecycle.fget(self) or {})  # type: ignore[attr-defined]
+        except Exception:
+            return {}
+
+    def _runtime_build_fingerprint_snapshot(self) -> dict[str, Any]:
+        try:
+            return dict(type(self).latestRuntimeBuildFingerprint.fget(self) or {})  # type: ignore[attr-defined]
+        except Exception:
+            return {}
+
+    def _runtime_latest_interaction_event_snapshot(self) -> dict[str, Any]:
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            for event in reversed(get_runtime_tracer().events(limit=120)):
+                if event.get('kind') in {'interaction_resolved', 'interaction_outcome'}:
+                    return dict(event.get('data') or {})
+        except Exception:
+            pass
+        return {}
+
+    def _is_operational_status_question(self, message: str) -> bool:
+        """Cheaply recognize questions about IABV's live runtime state.
+
+        These must not enter the heavyweight local orchestrator. They ask
+        about what the program is doing, why the UI says processing, whether
+        ChatGPT was actually consulted, or what build is running.
+        """
+        normalized = self._normalized_command_text(message)
+        if not normalized:
+            return False
+        processing_question = any(
+            phrase in normalized
+            for phrase in (
+                'procesando activo',
+                'indicador de procesando',
+                'se queda en procesando',
+                'se quedo en procesando',
+                'se quedo procesando',
+                'sigue procesando',
+                'estas procesando',
+                'estás procesando',
+                'realmente esta procesando',
+                'realmente está procesando',
+                'te falta mucho',
+                'estas arreglando algo',
+                'estás arreglando algo',
+            )
+        )
+        version_question = any(
+            phrase in normalized
+            for phrase in (
+                'que version eres',
+                'qué version eres',
+                'qué versión eres',
+                'que versión eres',
+                'ultimo cambio',
+                'último cambio',
+                'ultima reprogramacion',
+                'última reprogramacion',
+                'ultima reprogramación',
+                'última reprogramación',
+            )
+        )
+        external_status_question = (
+            ('consulta' in normalized or 'chatgpt' in normalized)
+            and any(
+                phrase in normalized
+                for phrase in (
+                    'si puedes',
+                    'puedes hacer',
+                    'puede hacer',
+                    'si o no',
+                    'no pudo',
+                    'no pude',
+                    'por que',
+                    'por qué',
+                    'que paso',
+                    'qué paso',
+                    'que pasó',
+                    'qué pasó',
+                    'me refiero',
+                    'realmente hizo',
+                    'realmente hizo la consulta',
+                )
+            )
+        )
+        return processing_question or version_question or external_status_question
+
+    def _answer_operational_status_question(self, message: str) -> None:
+        """Answer runtime/status questions from existing telemetry only."""
+        self._last_user_goal = message
+        lifecycle = self._runtime_latest_dispatch_lifecycle_snapshot()
+        build = self._runtime_build_fingerprint_snapshot()
+        interaction = self._runtime_latest_interaction_event_snapshot()
+
+        task_name = str(lifecycle.get('task_name') or 'sin dispatch')
+        terminal = str(lifecycle.get('terminal_state') or ('pendiente' if lifecycle.get('unresolved') else 'sin terminal'))
+        duration = lifecycle.get('duration_ms', 0.0)
+        provider = str(lifecycle.get('provider') or 'n/d')
+        outcome = str(interaction.get('outcome') or 'n/d')
+        is_final = interaction.get('is_final')
+
+        lines = ['Estado operativo leido desde telemetria local:']
+        if build:
+            head = str(build.get('head') or '')[:10] or 'desconocido'
+            branch = str(build.get('branch') or 'desconocida')
+            dirty = 'dirty' if build.get('dirty') else 'clean'
+            lines.append(f'- Build: {branch}@{head} ({dirty}).')
+        else:
+            lines.append('- Build: UNRESOLVED; no encontre fingerprint runtime reciente.')
+        lines.append(
+            f'- Ultimo dispatch: {task_name} -> {terminal}; proveedor {provider}; duracion {duration or 0} ms.'
+        )
+        if interaction:
+            final_text = 'final' if is_final is True else 'no-final' if is_final is False else 'sin marca final'
+            lines.append(f'- Ultima interaccion: outcome={outcome}, {final_text}.')
+        if outcome == 'reused_context' and is_final is False:
+            lines.append(
+                '- Diagnostico: no hizo una consulta nueva a ChatGPT; reutilizo contexto equivalente '
+                'y quedo marcado como no-final. Ese era el hueco que podia dejar la UI mostrando procesamiento.'
+            )
+        elif task_name == 'external_consultation' and terminal == 'success':
+            lines.append(
+                '- La ruta externa cerro tecnicamente. Si no aparece una respuesta nueva, falta captura/ingesta de respuesta, no mas espera local.'
+            )
+        if bool(getattr(self, '_working', False)):
+            lines.append(f'- Estado visible actual: working=True, label="{getattr(self, "_busy_label", "")}".')
+        else:
+            lines.append('- Estado visible actual: no tengo trabajo local activo registrado.')
+        lines.append(
+            'Para una consulta nueva a ChatGPT, escribe la pregunta completa como: '
+            "'consulta nueva a ChatGPT: <pregunta>'."
+        )
+        reply = '\n'.join(lines)
+        meta = 'Estado operativo local | runtime_audit + dispatch_lifecycle'
+        self._latest_response_text = reply
+        self._latest_response_meta = meta
+        self._busy_label = 'Estado operativo respondido desde evidencia local.'
+        self._working = False
+        self._clear_autonomy_activity_override()
+        self._append_message(
+            'assistant',
+            'IABV',
+            reply,
+            meta,
+            reasoning_path='operational_status',
+            evidence_tag='observed',
+        )
+        self._record_chat_audit(reasoning_path='operational_status', user_goal=message)
+        self._set_live_status('idle')
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'operational_status_answered',
+                user_message=message[:240],
+                latest_dispatch=dict(lifecycle),
+                latest_interaction=dict(interaction),
+            )
+        except Exception:
+            pass
+        self.dataChanged.emit()
+
     # ── P0.12: Security verification retest handler ──
     _SECURITY_RETEST_PATTERNS: tuple[str, ...] = (
         'ya lo hice', 'ya lo hise', 'ya complete', 'a mi si me funciona',
@@ -5551,7 +5715,7 @@ class ControlCenterViewModel(QObject):
 
     # Outcomes that count as final episode closure.
     _FINAL_INTERACTION_OUTCOMES: frozenset[str] = frozenset({
-        'resolved', 'failed', 'blocked',
+        'resolved', 'failed', 'blocked', 'reused_context_resolved',
     })
 
     def _resolve_active_interaction(
@@ -5566,6 +5730,9 @@ class ControlCenterViewModel(QObject):
         ``reused_context``) record the outcome in the lifecycle but
         keep the interaction_id and watchdog state active so that the
         episode stays open until true resolution.
+
+        ``reused_context_resolved`` is terminal only for explicit external
+        consultation requests where reuse is the complete result.
 
         Terminal non-successful outcomes (``blocked``, ``failed``) close
         the episode and clear watchdog state, but ``resolved=False``.
@@ -5741,7 +5908,9 @@ class ControlCenterViewModel(QObject):
         )
         if has_response:
             return 'resolved'
-        if status in ('prepared', 'reused'):
+        if status == 'reused':
+            return 'reused_context'
+        if status == 'prepared':
             # Check message for reuse patterns
             message = str(payload.get('message') or '').lower()
             if any(kw in message for kw in ('ya ten', 'equivalente', 'reutiliz', 'reused')):
@@ -5758,6 +5927,32 @@ class ControlCenterViewModel(QObject):
         if any(kw in message for kw in ('ya ten', 'equivalente', 'reutiliz', 'reused')):
             return 'reused_context'
         return 'resolved'
+
+    @staticmethod
+    def _should_finalize_reused_external_context(payload: Any) -> bool:
+        """Return True when a reused-context external result is terminal for UI.
+
+        ``reused_context`` remains non-final in the generic lifecycle because
+        automatic flows may still be waiting for a real external response. For
+        an explicit user-triggered external consultation, however, a reuse
+        guard is the whole result: there is no worker still processing and the
+        UI must not keep showing "procesando".
+        """
+        if not isinstance(payload, dict):
+            return False
+        ext_payload = dict(payload.get('payload') or {})
+        metadata = dict(ext_payload.get('metadata') or {})
+        consultation = dict(metadata.get('external_consultation') or {})
+        meta = str(payload.get('meta') or '').lower()
+        message = str(payload.get('message') or '').lower()
+        explicit = bool(
+            consultation.get('explicit_external_consultation')
+            or consultation.get('force_new_external_consultation')
+            or 'reutilizando contexto' in meta
+            or 'reutiliz' in message
+            or 'reused' in message
+        )
+        return explicit and bool(payload.get('success'))
 
     def _set_external_consultation_activity(
         self,
@@ -5795,6 +5990,21 @@ class ControlCenterViewModel(QObject):
                 next_step='Seguire por aqui con lo que ya tenemos o puedo preparar otra via si hace falta.',
                 human_help='Si quieres, puedo intentar otra herramienta o revisar el acceso externo.',
                 learning_note='Este bloqueo queda registrado para no fingir que la consulta si se hizo.',
+                mode='external',
+            )
+            return
+        if outcome == 'reused_context':
+            self._set_autonomy_activity_override(
+                visible=True,
+                title='Consulta externa reutilizada',
+                status='resolved',
+                stage='contexto equivalente encontrado',
+                progress=1.0,
+                detail=message,
+                tool=assistant_title,
+                next_step='No hay una consulta nueva activa. Para forzar una nueva, escribe la pregunta completa.',
+                human_help='Si esperabas una respuesta nueva, formula la consulta como "consulta nueva a ChatGPT: ...".',
+                learning_note='La reutilizacion queda trazada sin dejar el indicador de procesamiento abierto.',
                 mode='external',
             )
             return
@@ -7236,6 +7446,11 @@ class ControlCenterViewModel(QObject):
         diagnostic_category = self._current_diagnostic_category()
         incident_kind = self._current_incident_kind()
         context_pack = self._build_external_context_pack(assistant_kind)
+        external_goal_parameters = {
+            'explicit_external_consultation': True,
+            'force_new_external_consultation': True,
+            'source_dispatch_id': dispatch_id or '',
+        }
         preview = self.tool_teach_service.preview_external_consultation(
             user_goal=self._last_user_goal or 'abre Wplay e inicia sesion',
             assistant_preference=assistant_kind,
@@ -7244,6 +7459,7 @@ class ControlCenterViewModel(QObject):
             diagnostic_category=diagnostic_category,
             incident_kind=incident_kind,
             launch_dry_run=False,
+            goal_parameters=external_goal_parameters,
         )
         tool_card = dict(preview.get('tool_card') or {})
         tool_task = dict(preview.get('tool_task') or {})
@@ -7270,11 +7486,23 @@ class ControlCenterViewModel(QObject):
             message = f'Ya tenia una consulta equivalente para {assistant_title}, asi que voy a reutilizar ese contexto en lugar de arrancar de cero.'
             self._latest_response_text = message
             self._latest_response_meta = 'Reutilizando contexto existente.'
+            reused_payload = dict(self._last_adaptive_payload or {})
+            reused_metadata = dict(reused_payload.get('metadata') or {})
+            reused_metadata['external_consultation'] = {
+                **dict(reused_metadata.get('external_consultation') or {}),
+                'status': 'reused',
+                'response_captured': False,
+                'reuse_guard_active': True,
+                'explicit_external_consultation': True,
+                'force_new_external_consultation': True,
+                'source_dispatch_id': dispatch_id or '',
+            }
+            reused_payload['metadata'] = reused_metadata
             return {
                 'success': True,
                 'message': message,
                 'meta': 'Reutilizando contexto existente.',
-                'payload': dict(self._last_adaptive_payload or {}),
+                'payload': reused_payload,
                 'assistant_title': assistant_title,
             }
         task, result, _ = self.tool_teach_service.execute_external_consultation(
@@ -7286,6 +7514,7 @@ class ControlCenterViewModel(QObject):
             incident_kind=incident_kind,
             approved=True,
             launch_dry_run=False,
+            goal_parameters=external_goal_parameters,
         )
         launch_mode = str(result.execution_state.metadata.get('launch_mode') or tool_card.get('metadata', {}).get('launch_mode') or '')
         response_capture_mode = str(result.execution_state.metadata.get('response_capture_mode') or tool_card.get('metadata', {}).get('response_capture_mode') or '')
@@ -9107,6 +9336,9 @@ class ControlCenterViewModel(QObject):
         self.sendChat(text)
 
     def _try_handle_lightweight_chat(self, message: str) -> bool:
+        if self._is_operational_status_question(message):
+            self._answer_operational_status_question(message)
+            return True
         if self._is_world_model_question(message):
             self._answer_world_model_question(message)
             return True
@@ -9988,7 +10220,22 @@ class ControlCenterViewModel(QObject):
                 )
             else:
                 _provider = ''
-            if _ext_outcome in self._FINAL_INTERACTION_OUTCOMES:
+            if _ext_outcome == 'reused_context' and self._should_finalize_reused_external_context(payload):
+                self._interaction_has_pending_followup = False
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'external_reused_context_finalized',
+                        provider=_provider,
+                        interaction_id=getattr(self, '_active_interaction_id', '') or '',
+                    )
+                except Exception:
+                    pass
+                self._resolve_active_interaction(
+                    outcome='reused_context_resolved',
+                    provider=_provider,
+                )
+            elif _ext_outcome in self._FINAL_INTERACTION_OUTCOMES:
                 self._interaction_has_pending_followup = False
                 self._resolve_active_interaction(
                     outcome=_ext_outcome,

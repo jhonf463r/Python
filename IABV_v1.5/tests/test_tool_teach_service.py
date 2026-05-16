@@ -423,6 +423,59 @@ def test_tool_teach_service_external_consultation_supports_direct_text_capture()
         shutil.rmtree(root, ignore_errors=True)
 
 
+def test_tool_teach_service_force_new_external_consultation_disables_reuse_guard() -> None:
+    root = _workspace('tool_teach_service_force_new_external')
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        service, repository = _service(root)
+        codex = repository.get_card('codex_installed')
+        assert codex is not None
+        repository.save_card(
+            codex.model_copy(
+                update={
+                    'metadata': {
+                        **codex.metadata,
+                        'response_capture_mode': 'direct_text',
+                        'requires_manual_pasteback': False,
+                        'direct_response_text': 'Respuesta directa de prueba para crear episodio resuelto.',
+                    }
+                }
+            )
+        )
+
+        task1, result1, _ = service.execute_external_consultation(
+            user_goal='diagnostica consulta repetida',
+            assistant_preference='codex',
+            context_pack='Contexto repetido.',
+            site_id='general',
+            approved=True,
+            launch_dry_run=True,
+        )
+        assert result1.success is True
+        assert task1.metadata['consultation_scope'] == 'external_assistant'
+
+        task2, _, _ = service.execute_external_consultation(
+            user_goal='diagnostica consulta repetida',
+            assistant_preference='codex',
+            context_pack='Contexto repetido.',
+            site_id='general',
+            approved=True,
+            launch_dry_run=True,
+            goal_parameters={
+                'explicit_external_consultation': True,
+                'force_new_external_consultation': True,
+            },
+        )
+
+        assert task2.metadata['force_new_external_consultation'] is True
+        assert task2.metadata['reuse_guard_active'] is False
+        assert task2.metadata['reused_actions_from_pattern'] is False
+        assert all(not action.metadata.get('reused_from_pattern') for action in task2.actions)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def test_tool_teach_service_external_consultation_falls_back_to_web_when_desktop_is_missing() -> None:
     root = _workspace('tool_teach_service_external_web_fallback')
     shutil.rmtree(root, ignore_errors=True)
