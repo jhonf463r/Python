@@ -39,6 +39,19 @@
       ],
       "unresolved": "UNRESOLVED:live_windows_p013_antifreeze_proof_missing"
     },
+    "p016_additions": {
+      "covered_by_branch": "iabv-auto/p016-chatgpt-timeout-followup-freeze",
+      "root_cause_evidence": "A new live freeze happened after an external timeout, not during startup/window lifecycle. The next follow-up message triggered local chat inference instead of cheap causal reconstruction from the previous failure payload.",
+      "guards_added": [
+        "external failure follow-up short-circuit before heavy chat inference",
+        "dock skip telemetry rate limit per reason"
+      ],
+      "remaining_root_algorithm_work": [
+        "central reasoning budget gate before every heavy inference path",
+        "process-isolated local inference if Python threads continue starving Qt",
+        "OSES finding for repeated follow-up-after-failure freezes"
+      ]
+    },
     "remaining": [
       "Budget accounting for total UI-thread time per frame",
       "BackgroundResourceMonitor integration if available"

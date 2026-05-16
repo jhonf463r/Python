@@ -410,7 +410,10 @@ def _make_apply_result_stub():
         original_trace(self, **kwargs)
 
     # Bind real methods for the tracing path
-    for name in ('_apply_task_result', '_should_defer_heavy_work'):
+    for name in (
+        '_apply_task_result', '_should_defer_heavy_work',
+        '_remember_external_failure', '_clear_external_failure_memory',
+    ):
         stub.__dict__[name] = types.MethodType(
             getattr(ControlCenterViewModel, name), stub,
         )

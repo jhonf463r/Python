@@ -28,6 +28,17 @@
       "required_user_visible_behavior": "If the shortcut points to a non-main stale branch, show a Windows popup and do not start the stale UI silently.",
       "unresolved": "UNRESOLVED:desktop_shortcut_points_to_stale_workspace_until_user_updates_or_runs_main"
     },
+    "p016_additions": {
+      "covered_by_branch": "iabv-auto/p016-chatgpt-timeout-followup-freeze",
+      "root_cause_evidence": "Live runtime_audit showed external_consultation reached terminal_state=timeout, then the next user follow-up asking to retry/analyze the error entered the normal chat local inference path and the UI process became non-responsive. The gap is cognitive routing: causal follow-ups about a recent tool failure must be answered from recorded evidence before heavy reasoning is allowed.",
+      "guard_added": "ControlCenterViewModel now stores the latest external failure payload and handles immediate follow-up questions with an evidence-only causal answer. This is generic for external tools, not ChatGPT-specific.",
+      "required_runtime_events": [
+        "dispatch_terminal external_consultation timeout/blocked",
+        "external_failure_followup_answered",
+        "dispatch_terminal chat success"
+      ],
+      "next_structural_step": "Move the causal-failure follow-up gate into a shared reasoning budget / metacognition layer consumed by the orchestrator, so future UI surfaces reuse the same rule without duplicating ViewModel logic."
+    },
     "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
     "p03_live_proof_result": "VISUAL_ALIGNMENT_FAILED_BLACK_CAPTURE",
     "p03_live_proof_detail": "Runtime cycle did not freeze, but visual handoff failed: ChatGPT window was offscreen (rect=[-32000,-32000,199,34]), capture was black (blank_probability=0.98), status was incorrectly reported as visual_captured. P0.3 fix: status now correctly set to visual_unresolved with guided handoff message.",

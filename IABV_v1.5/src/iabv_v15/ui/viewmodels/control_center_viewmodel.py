@@ -236,6 +236,9 @@ class ControlCenterViewModel(QObject):
         self._dev_packet_cooldown_s: float = 30.0
         self._latest_response_text = 'Todavia no hay respuesta final en esta sesion.'
         self._latest_response_meta = 'Cuando completes una consulta, aqui veras el rol detectado, el pack usado y si hubo aprobaciones.'
+        self._last_external_failure_payload: dict[str, Any] = {}
+        self._last_external_failure_ts: float = 0.0
+        self._dock_skip_last_trace: dict[str, float] = {}
         self._approval_dialog_visible = False
         self._approval_dialog_title = 'Aprobacion requerida'
         self._approval_dialog_text = 'No hay aprobaciones pendientes.'
@@ -4167,6 +4170,109 @@ class ControlCenterViewModel(QObject):
         self._set_live_status('idle')
         return True
 
+    # -- P0.16: explain recent external failure without heavy local inference --
+    _EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S: float = 600.0
+    _EXTERNAL_FAILURE_FOLLOWUP_PATTERNS: tuple[str, ...] = (
+        'intente nuevamente', 'intenta nuevamente', 'reintenta', 'reintentar',
+        'analiza bien', 'analiza el error', 'cual es el error', 'cuál es el error',
+        'que paso', 'qué paso', 'que pasó', 'qué pasó', 'por que', 'por qué',
+        'no pudo', 'no pudo hacer', 'fallo', 'falló', 'error', 'chatgpt',
+        'a mi si', 'a mi sí', 'a mí si', 'a mí sí',
+    )
+
+    def _remember_external_failure(
+        self,
+        *,
+        assistant_title: str,
+        message: str,
+        meta: str,
+        outcome: str = 'failed',
+        success: bool = False,
+    ) -> None:
+        """Keep the latest external failure as local evidence for follow-up chat.
+
+        This is not routing state. It only prevents a second heavy local
+        inference when the user immediately asks what happened after an
+        external tool timeout/block.
+        """
+        self._last_external_failure_payload = {
+            'assistant_title': str(assistant_title or 'Asistente externo'),
+            'message': str(message or '')[:1200],
+            'meta': str(meta or '')[:1200],
+            'outcome': str(outcome or 'failed'),
+            'success': bool(success),
+            'at': time.time(),
+        }
+        self._last_external_failure_ts = time.time()
+
+    def _clear_external_failure_memory(self) -> None:
+        self._last_external_failure_payload = {}
+        self._last_external_failure_ts = 0.0
+
+    def _try_handle_external_failure_followup(self, message: str) -> bool:
+        """Answer immediate follow-ups about a recent external failure cheaply.
+
+        Live evidence showed that after a ChatGPT timeout the next message
+        ("try again / analyze the error") entered normal local inference and
+        froze the UI. This guard keeps that explanation on the GUI path and
+        uses only the already recorded failure payload.
+        """
+        payload = dict(getattr(self, '_last_external_failure_payload', {}) or {})
+        last_ts = float(getattr(self, '_last_external_failure_ts', 0.0) or 0.0)
+        if not payload or not last_ts:
+            return False
+        if (time.time() - last_ts) > self._EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S:
+            return False
+        lowered = message.strip().lower()
+        if not any(pattern in lowered for pattern in self._EXTERNAL_FAILURE_FOLLOWUP_PATTERNS):
+            return False
+
+        assistant_title = str(payload.get('assistant_title') or 'Asistente externo')
+        previous_message = str(payload.get('message') or 'No hubo respuesta externa util.').strip()
+        previous_meta = str(payload.get('meta') or 'sin metadata').strip()
+        outcome = str(payload.get('outcome') or 'failed').strip()
+        summary = (
+            f"Revise el fallo reciente de {assistant_title}. No quedo sin cierre: "
+            f"el ciclo externo termino como {outcome}. "
+            f"Lo que vio IABV fue: {previous_message[:320]} "
+            f"Evidencia tecnica: {previous_meta[:260]}. "
+            "No voy a lanzar razonamiento local pesado para explicar el mismo bloqueo, "
+            "porque eso fue lo que dejo la UI congelada. "
+            "El siguiente paso correcto es reintentar solo con la ventana de ChatGPT visible y enfocada, "
+            "o completar la verificacion/captcha si aparece. Si quieres, escribe 'reintentar ChatGPT ahora' "
+            "despues de dejar esa ventana lista."
+        )
+        self._latest_response_text = summary
+        self._latest_response_meta = f'{assistant_title}: external_failure_followup'
+        self._busy_label = 'Fallo externo explicado desde evidencia reciente.'
+        self._working = False
+        self._append_message(
+            'assistant',
+            'IABV',
+            summary,
+            'external_failure_followup',
+            reasoning_path='external_failure_followup',
+            evidence_tag='observed',
+        )
+        self._set_live_status('idle')
+        self._clear_autonomy_activity_override()
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'external_failure_followup_answered',
+                assistant_title=assistant_title,
+                outcome=outcome,
+                previous_meta=previous_meta[:240],
+                user_message=message[:240],
+            )
+        except Exception:
+            pass
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+        return True
+
     # ── P0.12: Security verification retest handler ──
     _SECURITY_RETEST_PATTERNS: tuple[str, ...] = (
         'ya lo hice', 'ya lo hise', 'ya complete', 'a mi si me funciona',
@@ -6601,6 +6707,7 @@ class ControlCenterViewModel(QObject):
     _DOCK_REFRESH_MIN_INTERVAL_S: float = 1.0
     _DOCK_REFRESH_POST_CONSULTATION_COOLDOWN_S: float = 30.0
     _DOCK_REFRESH_BUDGET_COOLDOWN_S: float = 10.0
+    _DOCK_SKIP_TRACE_COOLDOWN_S: float = 15.0
 
     def _should_skip_dock_refresh(self) -> str:
         """Return a non-empty reason string if dock refresh should be skipped."""
@@ -6635,22 +6742,36 @@ class ControlCenterViewModel(QObject):
             pass
         return ''
 
+    def _should_trace_dock_skip(self, reason: str) -> bool:
+        """Rate-limit repeated skip telemetry while preserving first evidence."""
+        now = time.time()
+        last_by_reason = getattr(self, '_dock_skip_last_trace', None)
+        if not isinstance(last_by_reason, dict):
+            last_by_reason = {}
+            self._dock_skip_last_trace = last_by_reason
+        last = float(last_by_reason.get(reason, 0.0) or 0.0)
+        if now - last < self._DOCK_SKIP_TRACE_COOLDOWN_S:
+            return False
+        last_by_reason[reason] = now
+        return True
+
     def _refresh_autonomy_dock(self) -> None:
         skip_reason = self._should_skip_dock_refresh()
         if skip_reason:
-            try:
-                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-                trace_kind = {
-                    'coalesced': 'control_autonomy_dock_refresh_deferred',
-                    'query_pending': 'control_autonomy_dock_refresh_skipped_due_to_pressure',
-                    'resource_pressure': 'control_autonomy_dock_refresh_skipped_due_to_pressure',
-                    'recent_heavy_stall': 'control_autonomy_dock_refresh_deferred',
-                    'post_external_consultation': 'control_autonomy_dock_refresh_deferred',
-                    'budget_cooldown': 'control_autonomy_dock_refresh_deferred',
-                }.get(skip_reason, 'control_autonomy_dock_refresh_deferred')
-                get_runtime_tracer().trace(trace_kind, reason=skip_reason)
-            except Exception:
-                pass
+            if self._should_trace_dock_skip(skip_reason):
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    trace_kind = {
+                        'coalesced': 'control_autonomy_dock_refresh_deferred',
+                        'query_pending': 'control_autonomy_dock_refresh_skipped_due_to_pressure',
+                        'resource_pressure': 'control_autonomy_dock_refresh_skipped_due_to_pressure',
+                        'recent_heavy_stall': 'control_autonomy_dock_refresh_deferred',
+                        'post_external_consultation': 'control_autonomy_dock_refresh_deferred',
+                        'budget_cooldown': 'control_autonomy_dock_refresh_deferred',
+                    }.get(skip_reason, 'control_autonomy_dock_refresh_deferred')
+                    get_runtime_tracer().trace(trace_kind, reason=skip_reason)
+                except Exception:
+                    pass
             return
         t0 = time.perf_counter()
         projector = self.autonomy_activity_projector
@@ -9154,6 +9275,9 @@ class ControlCenterViewModel(QObject):
         if self._try_handle_security_verification_retest(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
+        if self._try_handle_external_failure_followup(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
         if self._try_handle_lightweight_chat(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
@@ -9758,6 +9882,16 @@ class ControlCenterViewModel(QObject):
             assistant_title = str(external_payload.get('assistant_title') or 'Asistente externo')
             external_notice = self._external_state_notice(list(external_payload.get('external_state_flags') or []))
             _external_consultation_outcome = self._derive_external_consultation_outcome(external_payload)
+            if _ext_success and _external_consultation_outcome != 'blocked':
+                self._clear_external_failure_memory()
+            else:
+                self._remember_external_failure(
+                    assistant_title=assistant_title,
+                    message=message,
+                    meta=meta,
+                    outcome=_external_consultation_outcome,
+                    success=_ext_success,
+                )
             self._set_external_consultation_activity(
                 external_payload=external_payload,
                 adaptive_payload=adaptive_payload,
@@ -9923,6 +10057,14 @@ class ControlCenterViewModel(QObject):
             return
         title = 'IABV' if task_name == 'chat' else task_name.upper()
         visible_message, visible_meta = self._humanize_task_failure(task_name, message)
+        if task_name == 'external_consultation':
+            self._remember_external_failure(
+                assistant_title='Asistente externo',
+                message=visible_message,
+                meta=visible_meta,
+                outcome='failed',
+                success=False,
+            )
         self._trace_dispatch_terminal(
             task_name=task_name,
             terminal_state=visible_meta,
