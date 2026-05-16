@@ -273,6 +273,28 @@ class TestOsesAutoCapture:
         reports = reporter.list_reports()
         assert len(reports) == 0
 
+    def test_does_not_promote_memory_spike_alone_to_freeze_incident(self) -> None:
+        root = _workspace()
+        oses = self._make_oses(root)
+        reporter = FreezeIncidentReporter(evolution_dir=str(root))
+        oses._freeze_incident_reporter = reporter
+
+        finding = SelfExaminationFinding(
+            category='startup_memory_spike',
+            title='RSS crecio 340MB durante startup',
+            summary='test',
+            severity=IssueSeverity.HIGH,
+            confidence=0.9,
+            metadata={
+                'phase': 'startup_rss_growth',
+                'growth_mb': 340.0,
+            },
+        )
+        oses._auto_capture_startup_freeze([finding])
+
+        reports = reporter.list_reports()
+        assert reports == []
+
     def test_defers_false_ready_missing_proof_during_startup_window(self) -> None:
         root = _workspace()
         oses = self._make_oses(root)

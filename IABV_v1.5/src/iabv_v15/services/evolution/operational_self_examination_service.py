@@ -1826,6 +1826,17 @@ class OperationalSelfExaminationService:
         ]
         if not high_findings:
             return
+        # A memory spike is an anomaly, not a freeze by itself.  Keep it as an
+        # OSES finding, but do not promote it to FreezeIncidentReporter unless
+        # another high-severity finding also proves blocking, false readiness,
+        # or a timed startup degradation.  This keeps "observed resource
+        # growth" separate from "user-visible frozen UI".
+        high_findings = [
+            f for f in high_findings
+            if getattr(f, 'category', '') != 'startup_memory_spike'
+        ]
+        if not high_findings:
+            return
         if self._should_defer_startup_false_ready_capture(high_findings):
             return
         try:
