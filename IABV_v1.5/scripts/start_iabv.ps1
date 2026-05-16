@@ -118,6 +118,11 @@ $secretsPath = Join-Path $HOME '.iabv_secrets.ps1'
 Write-Info "=== IABV v1.5 start ==="
 Write-Info "Secrets : $secretsPath"
 
+# Runtime hygiene: the repo currently tracks historical __pycache__ files.
+# Writing bytecode during normal UI/MCP startup dirties the worktree, pollutes
+# runtime_build_fingerprint, and adds avoidable IO on low-disk systems.
+$env:PYTHONDONTWRITEBYTECODE = '1'
+
 # --- Auto pull (default ON) -------------------------------------------------
 # Mantiene el workspace sincronizado con origin/main antes de arrancar el MCP,
 # para que el usuario no termine corriendo una version vieja despues de que

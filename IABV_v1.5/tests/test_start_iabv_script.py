@@ -172,6 +172,16 @@ def test_start_does_not_require_admin(start_iabv_src: str) -> None:
         assert token.lower() not in start_iabv_src.lower(), token
 
 
+def test_start_disables_runtime_bytecode_writes(start_iabv_src: str) -> None:
+    """Normal UI/MCP startup should not dirty the repo with pycache writes."""
+    assert "$env:PYTHONDONTWRITEBYTECODE = '1'" in start_iabv_src
+    env_idx = start_iabv_src.index("$env:PYTHONDONTWRITEBYTECODE = '1'")
+    ui_idx = start_iabv_src.index("if ($StartUI)")
+    bridge_idx = start_iabv_src.rindex("& powershell -ExecutionPolicy Bypass -File $bridge")
+    assert env_idx < ui_idx
+    assert env_idx < bridge_idx
+
+
 # ---------------------------------------------------------------------------
 # -AutoPull / -NoAutoPull (issue #139 / PR #141)
 # ---------------------------------------------------------------------------
