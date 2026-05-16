@@ -7950,7 +7950,48 @@ class ControlCenterViewModel(QObject):
                         user_visible_message=False,
                     )
                     return
-                self.taskFailed.emit('external_consultation', f'No pude completar la consulta externa guiada: {exc}')
+                # P0.23 Task D: detect browser_security_verification errors and
+                # convert them into a structured handoff result instead of a
+                # generic NoneType exception.
+                exc_str = str(exc).lower()
+                if 'browser_security_verification' in exc_str or (
+                    "'nonetype'" in exc_str and "'get'" in exc_str
+                ):
+                    security_result = {
+                        'success': False,
+                        'message': (
+                            'No pude consultar ChatGPT todavia. Si intente abrir la sesion, '
+                            'pero ChatGPT mostro verificacion de seguridad o una pagina no usable. '
+                            'Necesito que completes esa verificacion o selecciones el navegador/perfil correcto. '
+                            'No voy a fingir que recibi respuesta.'
+                        ),
+                        'meta': f'ChatGPT: blocked_by_security_verification (dispatch {_dispatch_id[:12]})',
+                        'terminal_state': 'blocked_by_security_verification',
+                        'assistant_title': self._assistant_display_name(assistant_kind),
+                        'assistant_kind': assistant_kind,
+                        'external_state_flags': [],
+                        'payload': {
+                            'metadata': {
+                                'external_consultation': {
+                                    'status': 'blocked_by_security_verification',
+                                    'assistant_kind': assistant_kind,
+                                    'requires_human_verification': True,
+                                    'next_action': (
+                                        'abre la sesion controlada o tu navegador y completa '
+                                        'la verificacion; luego escribe "ya lo hice"'
+                                    ),
+                                },
+                            },
+                        },
+                        'evidence_refs': [
+                            f'browser_dom_capture failed (browser_security_verification)',
+                            f'dispatch_id={_dispatch_id[:12]}',
+                            f'original_error={str(exc)[:120]}',
+                        ],
+                    }
+                    self.taskResolved.emit('external_consultation', security_result)
+                else:
+                    self.taskFailed.emit('external_consultation', f'No pude completar la consulta externa guiada: {exc}')
             finally:
                 _ext_done.set()
 
@@ -8045,6 +8086,23 @@ class ControlCenterViewModel(QObject):
             return True
         return False
 
+    # P0.23: action verbs that signal external consultation intent.
+    # When these appear alongside a known assistant target, the message
+    # must NOT be captured as operational_status — it is an action request.
+    _EXTERNAL_ACTION_VERBS_FOR_EXCLUSION: tuple[str, ...] = (
+        'haz', 'hacer', 'hazle', 'hazla',
+        'consulta', 'consultar',
+        'pregunta', 'preguntale', 'pregúntale',
+        'pidele', 'pídele',
+        'envia', 'envía', 'manda',
+        'prueba con',
+    )
+
+    _EXTERNAL_TARGETS_FOR_EXCLUSION: tuple[str, ...] = (
+        'chatgpt', 'chat gpt', 'chat-gpt', 'chatgo',
+        'codex', 'claude', 'ollama', 'devin', 'windsurf',
+    )
+
     def _is_operational_status_question(self, message: str) -> bool:
         """Detect messages that are operational status questions, not permission grants.
 
@@ -8053,8 +8111,20 @@ class ControlCenterViewModel(QObject):
         granting observation permission.  This guard prevents
         _try_resolve_pending_observation_permission() from misinterpreting
         status inquiries as affirmative permission responses.
+
+        P0.23: messages containing an action verb + external assistant target
+        (e.g. "pero a chatgpt hazla para saber si te entiende") must NOT be
+        captured here — they are explicit external consultation requests.
         """
         lower = message.lower().strip()
+
+        # P0.23: if the message has an action verb + assistant target, it is
+        # an external consultation request, NOT an operational status question.
+        has_action = any(v in lower for v in self._EXTERNAL_ACTION_VERBS_FOR_EXCLUSION)
+        has_target = any(t in lower for t in self._EXTERNAL_TARGETS_FOR_EXCLUSION)
+        if has_action and has_target:
+            return False
+
         question_markers = ('?', '¿')
         has_question = any(m in lower for m in question_markers)
 
@@ -9062,6 +9132,11 @@ class ControlCenterViewModel(QObject):
         with self._ui_state_lock:
             return self._live_status
 
+    # P0.23 Task F: threshold (seconds) above which a task result is
+    # considered "heavy" and the subsequent _set_live_status('idle')
+    # should defer its dataChanged.emit to avoid a UI stall.
+    _HEAVY_RESULT_THRESHOLD_S: float = 10.0
+
     def _set_live_status(self, status: str) -> None:
         with self._ui_state_lock:
             previous = self._live_status
@@ -9069,7 +9144,30 @@ class ControlCenterViewModel(QObject):
                 return
             self._live_status = status
         self.liveStatusChanged.emit(status)
-        self.dataChanged.emit()
+        # P0.23 Task F: if we are transitioning to idle right after a heavy
+        # task result, defer the dataChanged.emit so the main thread is not
+        # blocked for tens of seconds.
+        if status == 'idle' and getattr(self, '_heavy_result_guard_active', False):
+            self._heavy_result_guard_active = False
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace_event(
+                    'ui_status_emit_deferred',
+                    detail='dataChanged.emit deferred after heavy task result',
+                )
+            except Exception:
+                pass
+            import threading as _thr
+            def _deferred_emit() -> None:
+                import time as _time
+                _time.sleep(0.05)
+                try:
+                    self.dataChanged.emit()
+                except Exception:
+                    pass
+            _thr.Thread(target=_deferred_emit, name='iabv-deferred-emit', daemon=True).start()
+        else:
+            self.dataChanged.emit()
         # Audible notification when processing finishes
         if previous == 'processing' and status == 'idle':
             self._play_completion_sound()
@@ -10198,6 +10296,22 @@ class ControlCenterViewModel(QObject):
                 provider=_provider,
             )
         self._update_progress_cards()
+        # P0.23 Task F: activate heavy result guard when the chat task took
+        # longer than the threshold.  The guard is consumed by _set_live_status
+        # so the subsequent dataChanged.emit in _resolve_active_interaction is
+        # deferred to avoid a UI stall.
+        if task_name == 'chat':
+            _task_elapsed = time.time() - getattr(self, '_task_start_ts', time.time())
+            if _task_elapsed > self._HEAVY_RESULT_THRESHOLD_S:
+                self._heavy_result_guard_active = True
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace_event(
+                        'post_result_ui_update_coalesced',
+                        detail=f'chat result took {_task_elapsed:.1f}s, guard activated',
+                    )
+                except Exception:
+                    pass
         # Gate heavy deferred work under resource pressure (Sub-objective B).
         if not self._should_defer_heavy_work():
             self._update_evolution_snapshot()
@@ -10228,8 +10342,12 @@ class ControlCenterViewModel(QObject):
                 outcome='failed',
                 success=False,
             )
+        # P0.23 Task E: preserve the active dispatch_id so the terminal trace
+        # carries the same id that dispatch_started recorded.
+        _failure_dispatch_id = self._active_dispatch_ids.get(task_name, '')
         self._trace_dispatch_terminal(
             task_name=task_name,
+            dispatch_id=_failure_dispatch_id,
             terminal_state=visible_meta,
             reason=message[:200],
             user_visible_message=True,
