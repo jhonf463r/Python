@@ -702,32 +702,40 @@ class PortableContextService:
         if deferred_ms is not None and deferred_ms > 5000.0:
             recent_blockers.append({'phase': 'deferred_post_window', 'ms': deferred_ms})
 
-        # False-ready detection: ``splash_set_ready`` honesto debe llegar
-        # *despues* de ``shell_loader_ready``.  With phased construction,
-        # ``populate_ui_done`` arrives much later (Phase 3 VMs are deferred)
+        # False-ready detection: readiness proof is hierarchical.
+        # ``page_loader_ready`` proves the real internal page exists and is
+        # stronger than ``shell_loader_ready``.  With phased construction,
+        # ``populate_ui_done`` arrives much later (Phase 3 VMs are deferred),
         # so splash closing before populate_ui_done is EXPECTED — not a bug.
-        # The check is: did the splash close before the shell was actually
-        # ready?  Or did the fallback fire instead of the honest signal?
         false_ready = False
         false_ready_reason: list[str] = []
         splash_ms = phase_to_ms.get('splash_set_ready')
         populate_done_ms = phase_to_ms.get('populate_ui_done')
+        page_ready_ms = phase_to_ms.get('page_loader_ready')
         shell_ready_ms = phase_to_ms.get('shell_loader_ready')
         shell_ready_fallback_ms = phase_to_ms.get('shell_loader_ready_fallback')
-        if splash_ms is not None and shell_ready_ms is not None:
-            if splash_ms < shell_ready_ms:
-                false_ready = True
-                false_ready_reason.append('splash_set_ready_before_shell_loader_ready')
-        if splash_ms is not None and shell_ready_ms is None and shell_ready_fallback_ms is None:
+        readiness_proof_ms = page_ready_ms if page_ready_ms is not None else shell_ready_ms
+        readiness_proof_phase = (
+            'page_loader_ready'
+            if page_ready_ms is not None
+            else 'shell_loader_ready'
+            if shell_ready_ms is not None
+            else ''
+        )
+        if splash_ms is not None and readiness_proof_ms is not None and splash_ms < readiness_proof_ms:
             false_ready = True
-            false_ready_reason.append('splash_set_ready_without_shell_loader_ready')
-        if shell_ready_fallback_ms is not None:
+            false_ready_reason.append(f'splash_set_ready_before_{readiness_proof_phase}')
+        if splash_ms is not None and readiness_proof_ms is None and shell_ready_fallback_ms is None:
+            false_ready = True
+            false_ready_reason.append('splash_set_ready_without_readiness_proof')
+        if shell_ready_fallback_ms is not None and readiness_proof_ms is None:
             false_ready = True
             false_ready_reason.append('shell_loader_ready_fallback_used')
         if false_ready:
             recent_blockers.append({
                 'phase': 'startup_false_ready',
                 'reasons': false_ready_reason,
+                'readiness_proof_phase': readiness_proof_phase,
             })
 
         # Process-start metrics: use t_ms_from_process when available,

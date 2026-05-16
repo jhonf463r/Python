@@ -2231,23 +2231,40 @@ class OperationalSelfExaminationService:
         # ``startup_false_ready`` — detect when the splash declared readiness
         # dishonestly.  With phased construction, ``populate_ui_done``
         # arrives long after ``splash_set_ready`` (Phase 3 VMs are deferred)
-        # so ``splash < populate_done`` is EXPECTED and NOT a bug.  The real
-        # check is: did the splash close BEFORE ``shell_loader_ready``?  Or
-        # was the fallback used instead of the honest signal?
+        # so ``splash < populate_done`` is EXPECTED and NOT a bug.
+        #
+        # Readiness proof is hierarchical:
+        # 1. ``page_loader_ready`` proves the real internal page exists and is
+        #    stronger than the shell signal.
+        # 2. ``shell_loader_ready`` proves the shell loader exists.
+        # 3. fallback is a degraded proof only when no honest signal exists.
+        #
+        # Live P0.17 evidence showed page_loader_ready -> splash_set_ready but
+        # no shell_loader_ready mark. Treating that as false-ready teaches the
+        # organism the wrong failure, so the proof hierarchy must win.
         splash_ms = phase_to_ms.get('splash_set_ready')
         populate_done_ms = phase_to_ms.get('populate_ui_done')
+        page_ready_ms = phase_to_ms.get('page_loader_ready')
         shell_ready_ms = phase_to_ms.get('shell_loader_ready')
         shell_ready_fallback_ms = phase_to_ms.get('shell_loader_ready_fallback')
+        readiness_proof_ms = page_ready_ms if page_ready_ms is not None else shell_ready_ms
+        readiness_proof_phase = (
+            'page_loader_ready'
+            if page_ready_ms is not None
+            else 'shell_loader_ready'
+            if shell_ready_ms is not None
+            else ''
+        )
         false_ready_reasons: list[str] = []
-        if splash_ms is not None and shell_ready_ms is not None and splash_ms < shell_ready_ms:
-            false_ready_reasons.append('splash_set_ready_before_shell_loader_ready')
+        if splash_ms is not None and readiness_proof_ms is not None and splash_ms < readiness_proof_ms:
+            false_ready_reasons.append(f'splash_set_ready_before_{readiness_proof_phase}')
         if (
             splash_ms is not None
-            and shell_ready_ms is None
+            and readiness_proof_ms is None
             and shell_ready_fallback_ms is None
         ):
-            false_ready_reasons.append('splash_set_ready_without_shell_loader_ready')
-        if shell_ready_fallback_ms is not None:
+            false_ready_reasons.append('splash_set_ready_without_readiness_proof')
+        if shell_ready_fallback_ms is not None and readiness_proof_ms is None:
             false_ready_reasons.append('shell_loader_ready_fallback_used')
         if false_ready_reasons:
             findings.append(SelfExaminationFinding(
@@ -2279,8 +2296,10 @@ class OperationalSelfExaminationService:
                     'reasons': false_ready_reasons,
                     'splash_set_ready_ms': splash_ms,
                     'populate_ui_done_ms': populate_done_ms,
+                    'page_loader_ready_ms': page_ready_ms,
                     'shell_loader_ready_ms': shell_ready_ms,
                     'shell_loader_ready_fallback_ms': shell_ready_fallback_ms,
+                    'readiness_proof_phase': readiness_proof_phase,
                     'phases_seen': list(phase_to_ms.keys()),
                 },
             ))
