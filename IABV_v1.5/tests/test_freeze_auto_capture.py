@@ -273,6 +273,63 @@ class TestOsesAutoCapture:
         reports = reporter.list_reports()
         assert len(reports) == 0
 
+    def test_defers_false_ready_missing_proof_during_startup_window(self) -> None:
+        root = _workspace()
+        oses = self._make_oses(root)
+        reporter = FreezeIncidentReporter(evolution_dir=str(root))
+        oses._freeze_incident_reporter = reporter
+
+        finding = SelfExaminationFinding(
+            category='startup_false_ready',
+            title='Splash declaro ready antes de que el shell estuviera vivo',
+            summary='test',
+            severity=IssueSeverity.HIGH,
+            confidence=0.95,
+            metadata={
+                'phase': 'startup_false_ready',
+                'reasons': ['splash_set_ready_without_readiness_proof'],
+            },
+        )
+        tracer = MagicMock()
+        tracer.current_elapsed_ms.return_value = 30_000.0
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            oses._auto_capture_startup_freeze([finding])
+
+        reports = reporter.list_reports()
+        assert reports == []
+
+    def test_captures_false_ready_missing_proof_after_observation_window(self) -> None:
+        root = _workspace()
+        oses = self._make_oses(root)
+        reporter = FreezeIncidentReporter(evolution_dir=str(root))
+        oses._freeze_incident_reporter = reporter
+
+        finding = SelfExaminationFinding(
+            category='startup_false_ready',
+            title='Splash declaro ready antes de que el shell estuviera vivo',
+            summary='test',
+            severity=IssueSeverity.HIGH,
+            confidence=0.95,
+            metadata={
+                'phase': 'startup_false_ready',
+                'reasons': ['splash_set_ready_without_readiness_proof'],
+            },
+        )
+        tracer = MagicMock()
+        tracer.current_elapsed_ms.return_value = 130_000.0
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            oses._auto_capture_startup_freeze([finding])
+
+        reports = reporter.list_reports()
+        assert len(reports) == 1
+        assert reports[0]['trigger'] == 'auto_startup_freeze'
+
     def test_skips_when_no_reporter(self) -> None:
         root = _workspace()
         oses = self._make_oses(root)
