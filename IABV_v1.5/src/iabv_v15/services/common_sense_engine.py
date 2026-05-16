@@ -31,6 +31,31 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+def _visible_secret_browser_allowed(rule: dict[str, Any] | None = None) -> bool:
+    """Secret/token pages may steal focus only after explicit UI/user intent."""
+    rule = rule or {}
+    if os.environ.get('IABV_ALLOW_VISIBLE_SECRET_BROWSER') == '1':
+        return True
+    return bool(
+        rule.get('allow_visible_browser')
+        or rule.get('user_initiated')
+        or rule.get('ui_confirmed')
+    )
+
+
+def _trace_secret_browser_suppressed(action: str, url: str) -> None:
+    try:
+        from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+        get_runtime_tracer().trace(
+            'secret_browser_open_suppressed',
+            action=action,
+            provider_url_host=url.split('/')[2] if '://' in url else '',
+            reason='not_user_confirmed',
+        )
+    except Exception:
+        pass
+
+
 # ──────────────────────────────────────────────────────────────
 # Inference Rules — cada regla es (premisas, conclusión, acción, seguridad)
 # ──────────────────────────────────────────────────────────────
@@ -1493,13 +1518,15 @@ def _exec_trigger_token_renewal(rule: dict[str, Any]) -> dict[str, Any]:
     if not url and provider_key == 'CLOUD_PROVIDER':
         url = ' | '.join(f'{k}: {v}' for k, v in _RENEWAL_URLS.items())
     opened = False
-    if url and '|' not in url:
+    if url and '|' not in url and _visible_secret_browser_allowed(rule):
         try:
             import webbrowser
             webbrowser.open(url)
             opened = True
         except Exception:
             pass
+    elif url and '|' not in url:
+        _trace_secret_browser_suppressed('trigger_token_renewal', url)
 
     return {
         'executed': True,
@@ -1510,9 +1537,9 @@ def _exec_trigger_token_renewal(rule: dict[str, Any]) -> dict[str, Any]:
         'user_action': (
             'Token renovado en el browser — pega el nuevo token en el dialogo de IABV.'
             if opened else
-            f'Revisa tus dashboards de proveedores cloud y pega el nuevo token en IABV. ({url})'
+            f'IABV preparo el link de renovacion, pero no abrio Chrome porque falta confirmacion desde la UI. ({url})'
             if provider_key == 'CLOUD_PROVIDER' else
-            f'Abre {url} y pega el nuevo token en IABV.'
+            f'Confirma desde IABV para abrir {url}, o pega el nuevo token directamente en IABV.'
         ),
     }
 
@@ -1576,8 +1603,11 @@ def _exec_auto_provision_gemini(rule: dict[str, Any]) -> dict[str, Any]:
     opened = False
     try:
         import webbrowser
-        webbrowser.open('https://aistudio.google.com/apikey')
-        opened = True
+        if _visible_secret_browser_allowed(rule):
+            webbrowser.open('https://aistudio.google.com/apikey')
+            opened = True
+        else:
+            _trace_secret_browser_suppressed('auto_provision_gemini', 'https://aistudio.google.com/apikey')
     except Exception:
         pass
 
@@ -1645,13 +1675,15 @@ def _exec_provision_cloud_key(rule: dict[str, Any]) -> dict[str, Any]:
     )
 
     opened = False
-    if url:
+    if url and _visible_secret_browser_allowed(rule):
         try:
             import webbrowser
             webbrowser.open(url)
             opened = True
         except Exception:
             pass
+    elif url:
+        _trace_secret_browser_suppressed('provision_cloud_key', url)
 
     return {
         'executed': True,
@@ -1662,7 +1694,7 @@ def _exec_provision_cloud_key(rule: dict[str, Any]) -> dict[str, Any]:
         'user_action': (
             f'Se abrio {url} — crea la API key y pegala en el dialogo de IABV.'
             if opened else
-            f'Abre {url}, crea la API key y pegala en IABV.'
+            f'IABV preparo {url}, pero no abrio Chrome porque falta confirmacion desde la UI.'
         ),
     }
 

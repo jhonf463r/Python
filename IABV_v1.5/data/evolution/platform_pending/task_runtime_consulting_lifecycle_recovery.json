@@ -22,6 +22,12 @@
       "reason": "A live run on a stale branch/head cannot validate #381-#390 fixes and must be treated as invalid evidence, not as a functional regression.",
       "required_runtime_event": "runtime_build_fingerprint"
     },
+    "p013_stale_shortcut_policy": {
+      "covered_by_branch": "codex/p013-window-lifecycle-freeze-guard",
+      "reason": "The desktop shortcut launched scripts/IABV.vbs in a workspace on codex/control-center-live-freeze-fix while origin/main already contained #390. start_iabv.ps1 now blocks non-main stale runtime unless explicitly allowed.",
+      "required_user_visible_behavior": "If the shortcut points to a non-main stale branch, show a Windows popup and do not start the stale UI silently.",
+      "unresolved": "UNRESOLVED:desktop_shortcut_points_to_stale_workspace_until_user_updates_or_runs_main"
+    },
     "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
     "p03_live_proof_result": "VISUAL_ALIGNMENT_FAILED_BLACK_CAPTURE",
     "p03_live_proof_detail": "Runtime cycle did not freeze, but visual handoff failed: ChatGPT window was offscreen (rect=[-32000,-32000,199,34]), capture was black (blank_probability=0.98), status was incorrectly reported as visual_captured. P0.3 fix: status now correctly set to visual_unresolved with guided handoff message.",

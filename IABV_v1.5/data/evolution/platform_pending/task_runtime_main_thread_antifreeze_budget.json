@@ -19,6 +19,26 @@
       "required_events": ["runtime_build_fingerprint", "control_autonomy_dock_refresh_deferred"],
       "unresolved": "UNRESOLVED:live_windows_antifreeze_proof_missing"
     },
+    "p013_additions": {
+      "covered_by_branch": "codex/p013-window-lifecycle-freeze-guard",
+      "root_cause_evidence": "Live freeze reports showed ui_event_loop_stall with stack in bootstrap._on_window_lifecycle -> startup_timeline.mark -> logger.info, plus repeated window_activeChanged events and RSS spikes.",
+      "guards_added": [
+        "window lifecycle duplicate coalescing",
+        "window lifecycle storm cooldown",
+        "startup_timeline logger.info rate limit for window_* phases",
+        "timeline_mark_slow runtime audit event",
+        "own_window_offscreen runtime audit event",
+        "secret/API-key browser open suppression unless user-confirmed"
+      ],
+      "required_runtime_events": [
+        "runtime_build_fingerprint",
+        "window_lifecycle_storm_guarded",
+        "timeline_mark_slow",
+        "own_window_offscreen",
+        "secret_browser_open_suppressed"
+      ],
+      "unresolved": "UNRESOLVED:live_windows_p013_antifreeze_proof_missing"
+    },
     "remaining": [
       "Budget accounting for total UI-thread time per frame",
       "BackgroundResourceMonitor integration if available"

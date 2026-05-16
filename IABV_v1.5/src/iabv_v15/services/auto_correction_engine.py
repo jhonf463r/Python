@@ -261,6 +261,31 @@ def _resolve_secret_provider(name: str) -> tuple[str, str, bool]:
     return ('', f'Configurar $env:{name}', False)
 
 
+def _visible_secret_browser_allowed(context: dict[str, Any] | None = None) -> bool:
+    """Return whether a secret flow may open a visible browser tab."""
+    context = context or {}
+    if os.environ.get('IABV_ALLOW_VISIBLE_SECRET_BROWSER') == '1':
+        return True
+    return bool(
+        context.get('allow_visible_browser')
+        or context.get('user_initiated')
+        or context.get('ui_confirmed')
+    )
+
+
+def _trace_secret_browser_suppressed(name: str, url: str) -> None:
+    try:
+        from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+        get_runtime_tracer().trace(
+            'secret_browser_open_suppressed',
+            secret=name,
+            provider_url_host=url.split('/')[2] if '://' in url else '',
+            reason='not_user_confirmed',
+        )
+    except Exception:
+        pass
+
+
 def auto_provision_missing_secrets(
     context: dict[str, Any],
     *,
@@ -291,6 +316,7 @@ def auto_provision_missing_secrets(
     provisions: list[dict[str, Any]] = []
     opened_urls: list[str] = []
     auto_provisioned: list[str] = []
+    visible_browser_allowed = open_browser and _visible_secret_browser_allowed(context)
 
     # Try autonomous provisioning first when Playwright is available.
     _AUTONOMOUS_PROVIDERS: dict[str, str] = {
@@ -312,7 +338,7 @@ def auto_provision_missing_secrets(
         # Attempt autonomous provisioning for known cloud providers.
         # Tries full Playwright flow first; falls back to browser+dialog.
         autonomous_provider = _AUTONOMOUS_PROVIDERS.get(name)
-        if autonomous_provider and open_browser:
+        if autonomous_provider and visible_browser_allowed:
             try:
                 from iabv_v15.services.cloud_key_autonomous_provisioner import (
                     CloudKeyAutonomousProvisioner,
@@ -344,7 +370,7 @@ def auto_provision_missing_secrets(
             except Exception as exc:
                 logger.debug('auto_provision: autonomous failed for %s: %s', name, exc)
 
-        if open_browser and can_open and url:
+        if visible_browser_allowed and can_open and url:
             try:
                 import webbrowser
                 webbrowser.open(url)
@@ -353,6 +379,13 @@ def auto_provision_missing_secrets(
                 logger.info('auto_provision: opened browser for %s → %s', name, url)
             except Exception as exc:
                 logger.debug('auto_provision: could not open browser for %s: %s', name, exc)
+        elif open_browser and can_open and url:
+            provision['visible_browser_suppressed'] = True
+            provision['user_action'] = (
+                'IABV preparo el enlace, pero no abrio una pestana visible '
+                'porque esta accion no fue iniciada o confirmada desde la UI.'
+            )
+            _trace_secret_browser_suppressed(name, url)
 
         provisions.append(provision)
 
@@ -380,7 +413,7 @@ def auto_provision_missing_secrets(
             'Se abrieron las páginas para crear los tokens. '
             'Pega cada token en el diálogo de IABV cuando lo tengas.'
             if opened_urls else
-            'Abre los links indicados y pega los tokens en IABV.'
+            'IABV preparo los links de tokens, pero no abrio Chrome porque falta confirmacion desde la UI.'
         ),
     }
 

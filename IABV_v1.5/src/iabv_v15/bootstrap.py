@@ -4,12 +4,18 @@ import logging
 import os
 import re
 import threading
+import time
 from pathlib import Path
 import sys
 
 
 def _rss_mb() -> float:
-    """Return current RSS in MB (Linux/macOS).  Returns 0.0 on error."""
+    """Return current RSS in MB. Returns 0.0 on error."""
+    try:
+        import psutil  # type: ignore[import-not-found]
+        return float(psutil.Process().memory_info().rss) / (1024.0 * 1024.0)
+    except Exception:
+        pass
     try:
         import resource
         # ru_maxrss is in KB on Linux, bytes on macOS
@@ -396,6 +402,12 @@ class _LazyServiceRef:
 
 
 class AppBootstrap:
+    _WINDOW_LIFECYCLE_DUPLICATE_COOLDOWN_S = 0.75
+    _WINDOW_LIFECYCLE_STORM_WINDOW_S = 10.0
+    _WINDOW_LIFECYCLE_STORM_LIMIT = 12
+    _WINDOW_LIFECYCLE_STORM_COOLDOWN_S = 15.0
+    _WINDOW_LIFECYCLE_TRACE_COOLDOWN_S = 2.0
+
     def __init__(
         self,
         workspace_root: str | None = None,
@@ -438,6 +450,11 @@ class AppBootstrap:
                 missing_markers=_fp_data.get('missing_markers', []),
             )
         self._build_stale = bool(_fp_data.get('stale'))
+        self._window_lifecycle_recent: list[float] = []
+        self._window_lifecycle_last: dict[str, tuple[float, object]] = {}
+        self._window_lifecycle_storm_until = 0.0
+        self._window_lifecycle_last_guard_trace = 0.0
+        self._own_window_offscreen_last_trace = 0.0
 
         self._services_wired = False
         self._defer_services = _defer_services
@@ -2207,26 +2224,142 @@ class AppBootstrap:
         except Exception:
             pass
 
+    @staticmethod
+    def _window_lifecycle_signal_value(event_name: str, data: dict[str, object]) -> object:
+        if event_name == 'activeChanged':
+            return data.get('active')
+        if event_name == 'visibleChanged':
+            return data.get('visible')
+        if event_name == 'screenChanged':
+            return data.get('screen_name')
+        return None
+
+    def _should_mark_window_lifecycle(
+        self,
+        event_name: str,
+        data: dict[str, object],
+    ) -> tuple[bool, str]:
+        """Return whether this window lifecycle event should hit the timeline.
+
+        Window active/visible signals can fire in bursts while Windows is
+        restoring, minimizing or focus-cycling. The watchdog still receives
+        every signal, but timeline/logging work is coalesced to protect the
+        Qt main thread.
+        """
+        now = time.perf_counter()
+        recent = getattr(self, '_window_lifecycle_recent', [])
+        window_s = self._WINDOW_LIFECYCLE_STORM_WINDOW_S
+        recent = [t for t in recent if now - t <= window_s]
+        recent.append(now)
+        self._window_lifecycle_recent = recent
+
+        storm_until = float(getattr(self, '_window_lifecycle_storm_until', 0.0))
+        if now < storm_until:
+            self._trace_window_lifecycle_guard(
+                event_name,
+                reason='storm_cooldown',
+                count=len(recent),
+            )
+            return False, 'storm_cooldown'
+
+        if len(recent) > self._WINDOW_LIFECYCLE_STORM_LIMIT:
+            self._window_lifecycle_storm_until = now + self._WINDOW_LIFECYCLE_STORM_COOLDOWN_S
+            self._trace_window_lifecycle_guard(
+                event_name,
+                reason='storm_guarded',
+                count=len(recent),
+            )
+            return False, 'storm_guarded'
+
+        value = self._window_lifecycle_signal_value(event_name, data)
+        duplicate_key = event_name
+        last_by_key = getattr(self, '_window_lifecycle_last', {})
+        last_t, last_value = last_by_key.get(duplicate_key, (0.0, object()))
+        if (
+            event_name in {'activeChanged', 'visibleChanged', 'screenChanged'}
+            and value == last_value
+            and now - last_t < self._WINDOW_LIFECYCLE_DUPLICATE_COOLDOWN_S
+        ):
+            self._trace_window_lifecycle_guard(
+                event_name,
+                reason='duplicate_coalesced',
+                count=len(recent),
+            )
+            return False, 'duplicate_coalesced'
+        last_by_key[duplicate_key] = (now, value)
+        self._window_lifecycle_last = last_by_key
+        return True, ''
+
+    def _trace_window_lifecycle_guard(self, event_name: str, *, reason: str, count: int) -> None:
+        now = time.perf_counter()
+        last = float(getattr(self, '_window_lifecycle_last_guard_trace', 0.0))
+        if now - last < self._WINDOW_LIFECYCLE_TRACE_COOLDOWN_S:
+            return
+        self._window_lifecycle_last_guard_trace = now
+        try:
+            self._tracer.trace(
+                'window_lifecycle_storm_guarded',
+                event_name=event_name,
+                reason=reason,
+                recent_count=count,
+                window_s=self._WINDOW_LIFECYCLE_STORM_WINDOW_S,
+                cooldown_s=self._WINDOW_LIFECYCLE_STORM_COOLDOWN_S,
+                rss_mb=round(_rss_mb(), 1),
+            )
+        except Exception:
+            pass
+
+    def _trace_own_window_offscreen(self, rect: dict[str, int | None]) -> None:
+        now = time.perf_counter()
+        last = float(getattr(self, '_own_window_offscreen_last_trace', 0.0))
+        if now - last < 30.0:
+            return
+        self._own_window_offscreen_last_trace = now
+        try:
+            self._tracer.trace(
+                'own_window_offscreen',
+                rect=rect,
+                reason='window_rect_negative_sentinel',
+                action_hint='restore_iabv_window_before_visual_proof',
+            )
+        except Exception:
+            pass
+
     def _on_window_lifecycle(self, event_name: str, **kwargs: object) -> None:
         """Registra un evento de ciclo de vida de la ventana en el timeline."""
+        should_mark, guard_reason = self._should_mark_window_lifecycle(event_name, dict(kwargs))
         try:
-            main_win = getattr(self, '_main_win', None)
-            extra = dict(kwargs)
-            if main_win is not None:
-                try:
-                    extra['winId'] = int(main_win.winId())
-                except Exception:
-                    pass
-                try:
-                    extra['visible'] = main_win.isVisible()
-                except Exception:
-                    pass
-                try:
-                    from PySide6.QtGui import QGuiApplication as _QGA
-                    extra['top_level_windows'] = len(_QGA.topLevelWindows())
-                except Exception:
-                    pass
-            self._timeline.mark(f'window_{event_name}', **extra)
+            if should_mark:
+                main_win = getattr(self, '_main_win', None)
+                extra = dict(kwargs)
+                if guard_reason:
+                    extra['guard_reason'] = guard_reason
+                if main_win is not None:
+                    try:
+                        extra['winId'] = int(main_win.winId())
+                    except Exception:
+                        pass
+                    try:
+                        extra['visible'] = main_win.isVisible()
+                    except Exception:
+                        pass
+                    try:
+                        x = int(main_win.x()) if hasattr(main_win, 'x') else None
+                        y = int(main_win.y()) if hasattr(main_win, 'y') else None
+                        width = int(main_win.width()) if hasattr(main_win, 'width') else None
+                        height = int(main_win.height()) if hasattr(main_win, 'height') else None
+                        rect = {'left': x, 'top': y, 'width': width, 'height': height}
+                        extra['rect'] = rect
+                        if (x is not None and x <= -30000) or (y is not None and y <= -30000):
+                            self._trace_own_window_offscreen(rect)
+                    except Exception:
+                        pass
+                    try:
+                        from PySide6.QtGui import QGuiApplication as _QGA
+                        extra['top_level_windows'] = len(_QGA.topLevelWindows())
+                    except Exception:
+                        pass
+                self._timeline.mark(f'window_{event_name}', **extra)
         except Exception:
             pass
         # Propagate window visibility and activity as SEPARATE states.

@@ -38,6 +38,8 @@ logger = logging.getLogger(__name__)
 # BEFORE any heavy imports.  When available, marks include
 # ``t_ms_from_process`` — the real wall time from Python process start.
 _PROCESS_T0: float | None = None
+_MARK_SLOW_BUDGET_MS = 100.0
+_WINDOW_LOG_COOLDOWN_S = 2.0
 
 
 def _get_rss_mb() -> float:
@@ -72,6 +74,7 @@ class StartupTimeline:
     _lock: threading.Lock = field(default_factory=threading.Lock)
     _events: list[dict[str, Any]] = field(default_factory=list)
     _enabled: bool = True
+    _last_log_by_phase: dict[str, float] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         # Always instantiate the timeline; only the JSONL sink is gated
@@ -91,6 +94,7 @@ class StartupTimeline:
 
     def mark(self, phase: str, **extra: Any) -> dict[str, Any]:
         """Record one milestone. Returns the appended event dict."""
+        mark_t0 = time.perf_counter()
         now = time.perf_counter()
         elapsed_ms = (now - self._t0) * 1000.0
         event: dict[str, Any] = {
@@ -107,12 +111,17 @@ class StartupTimeline:
             self._events.append(event)
             if self._enabled and self.log_dir is not None:
                 self._append_jsonl(event)
+        mark_elapsed_ms = (time.perf_counter() - mark_t0) * 1000.0
+        if mark_elapsed_ms > _MARK_SLOW_BUDGET_MS:
+            event['mark_duration_ms'] = round(mark_elapsed_ms, 1)
+            self._trace_slow_mark(phase, mark_elapsed_ms)
         try:
-            logger.info(
-                'startup_timeline %s @ %.1fms RSS=%.1fMB%s',
-                phase, elapsed_ms, event['rss_mb'],
-                f' {extra}' if extra else '',
-            )
+            if self._should_log_phase(phase):
+                logger.info(
+                    'startup_timeline %s @ %.1fms RSS=%.1fMB%s',
+                    phase, elapsed_ms, event['rss_mb'],
+                    f' {extra}' if extra else '',
+                )
         except Exception:
             pass
         return event
@@ -132,6 +141,31 @@ class StartupTimeline:
                 fh.write(json.dumps(event, ensure_ascii=False) + '\n')
         except Exception:
             # Instrumentation must never break boot.
+            pass
+
+    def _should_log_phase(self, phase: str) -> bool:
+        """Rate-limit logger.info for high-frequency window lifecycle marks."""
+        if not phase.startswith('window_'):
+            return True
+        now = time.perf_counter()
+        last = self._last_log_by_phase.get(phase, 0.0)
+        if now - last < _WINDOW_LOG_COOLDOWN_S:
+            return False
+        self._last_log_by_phase[phase] = now
+        return True
+
+    @staticmethod
+    def _trace_slow_mark(phase: str, duration_ms: float) -> None:
+        """Emit slow timeline instrumentation without making timeline depend on it."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'timeline_mark_slow',
+                phase=phase,
+                duration_ms=round(duration_ms, 1),
+                budget_ms=_MARK_SLOW_BUDGET_MS,
+            )
+        except Exception:
             pass
 
 
