@@ -20,6 +20,7 @@ from iabv_v15.infra.persistence.storage import ArtifactStorage
 from iabv_v15.services.evolution.operational_self_examination_service import (
     STARTUP_DEFERRED_MS_DEGRADED,
     STARTUP_INIT_MS_DEGRADED,
+    STARTUP_POPULATE_UI_INCOMPLETE_MIN_MS,
     STARTUP_RUN_TO_WINDOW_MS_DEGRADED,
     OperationalSelfExaminationService,
 )
@@ -465,6 +466,48 @@ def test_oses_legacy_populate_ui_still_works() -> None:
 # --------------------------------------------------------------------------- #
 # OSES → PlatformPendingQueue bridge
 # --------------------------------------------------------------------------- #
+
+def test_oses_recent_populate_ui_incomplete_does_not_emit_false_freeze() -> None:
+    root = _workspace('oses_recent_populate_incomplete')
+    events = [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+        {'phase': 'bootstrap_init_done', 't_ms_from_start': 1500.0, 'rss_mb': 100.0},
+        {'phase': 'run_start', 't_ms_from_start': 1510.0, 'rss_mb': 100.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 3000.0, 'rss_mb': 150.0},
+        {'phase': 'populate_ui_start', 't_ms_from_start': 5000.0, 'rss_mb': 200.0},
+        {'phase': 'window_activeChanged', 't_ms_from_start': 28000.0, 'rss_mb': 330.0},
+    ]
+    _write_timeline(root, events)
+    oses = _make_oses(root)
+    findings = oses._startup_health_findings()
+
+    incomplete = [f for f in findings if f.category == 'startup_populate_ui_incomplete']
+    assert incomplete == []
+
+
+def test_oses_old_populate_ui_incomplete_still_emits_freeze() -> None:
+    root = _workspace('oses_old_populate_incomplete')
+    events = [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+        {'phase': 'bootstrap_init_done', 't_ms_from_start': 1500.0, 'rss_mb': 100.0},
+        {'phase': 'run_start', 't_ms_from_start': 1510.0, 'rss_mb': 100.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 3000.0, 'rss_mb': 150.0},
+        {'phase': 'populate_ui_start', 't_ms_from_start': 5000.0, 'rss_mb': 200.0},
+        {
+            'phase': 'watchdog_tick',
+            't_ms_from_start': 5000.0 + STARTUP_POPULATE_UI_INCOMPLETE_MIN_MS + 1.0,
+            'rss_mb': 330.0,
+        },
+    ]
+    _write_timeline(root, events)
+    oses = _make_oses(root)
+    findings = oses._startup_health_findings()
+
+    incomplete = [f for f in findings if f.category == 'startup_populate_ui_incomplete']
+    assert len(incomplete) == 1
+    assert incomplete[0].metadata['observed_ms'] > STARTUP_POPULATE_UI_INCOMPLETE_MIN_MS
+    assert incomplete[0].metadata['threshold_ms'] == STARTUP_POPULATE_UI_INCOMPLETE_MIN_MS
+
 
 def test_oses_bridge_creates_pending_task_from_critical_finding() -> None:
     """HIGH/CRITICAL findings in bridgeable categories create queue tasks."""
