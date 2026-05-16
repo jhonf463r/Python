@@ -288,7 +288,7 @@ def test_startup_health_snapshot_detects_false_ready_when_splash_before_shell_re
 
 
 def test_startup_health_snapshot_detects_false_ready_when_no_shell_loader_ready() -> None:
-    """splash declared ready but neither shell_loader_ready nor fallback ever fired."""
+    """splash declared ready but no readiness proof nor fallback ever fired."""
     root = _workspace('startup_false_ready_missing_shell')
     events = [
         {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
@@ -303,7 +303,26 @@ def test_startup_health_snapshot_detects_false_ready_when_no_shell_loader_ready(
     svc = _make_portable_service(root)
     snap = svc._startup_health_snapshot()
     assert snap['false_ready_detected'] is True
-    assert 'splash_set_ready_without_shell_loader_ready' in snap['false_ready_reasons']
+    assert 'splash_set_ready_without_readiness_proof' in snap['false_ready_reasons']
+
+
+def test_startup_health_snapshot_treats_page_loader_ready_as_honest_proof() -> None:
+    """page_loader_ready before splash proves the real page exists even if shell mark is absent."""
+    root = _workspace('startup_page_ready_proof')
+    events = [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+        {'phase': 'bootstrap_init_done', 't_ms_from_start': 1200.0, 'rss_mb': 100.0},
+        {'phase': 'run_start', 't_ms_from_start': 1210.0, 'rss_mb': 100.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 2500.0, 'rss_mb': 150.0},
+        {'phase': 'page_loader_ready', 't_ms_from_start': 2900.0, 'rss_mb': 220.0},
+        {'phase': 'splash_set_ready', 't_ms_from_start': 2910.0, 'rss_mb': 220.0},
+        {'phase': 'populate_ui_done', 't_ms_from_start': 41000.0, 'rss_mb': 320.0},
+    ]
+    _write_timeline(root, events)
+    svc = _make_portable_service(root)
+    snap = svc._startup_health_snapshot()
+    assert snap['false_ready_detected'] is False
+    assert snap['false_ready_reasons'] == []
 
 
 def test_startup_health_snapshot_flags_fallback_as_dishonest() -> None:
@@ -376,6 +395,23 @@ def test_oses_does_not_emit_false_ready_when_order_is_honest() -> None:
         {'phase': 'main_window_shown', 't_ms_from_start': 3000.0, 'rss_mb': 150.0},
         # Phased: shell_loader_ready -> splash -> populate_ui_done much later
         {'phase': 'shell_loader_ready', 't_ms_from_start': 4200.0, 'rss_mb': 240.0},
+        {'phase': 'splash_set_ready', 't_ms_from_start': 4210.0, 'rss_mb': 240.0},
+        {'phase': 'populate_ui_done', 't_ms_from_start': 120000.0, 'rss_mb': 320.0},
+    ]
+    _write_timeline(root, events)
+    oses = _make_oses(root)
+    findings = oses._startup_health_findings()
+    assert [f for f in findings if f.category == 'startup_false_ready'] == []
+
+
+def test_oses_does_not_emit_false_ready_when_page_loader_ready_precedes_splash() -> None:
+    root = _workspace('oses_page_ready_proof')
+    events = [
+        {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0, 'rss_mb': 80.0},
+        {'phase': 'bootstrap_init_done', 't_ms_from_start': 1500.0, 'rss_mb': 100.0},
+        {'phase': 'run_start', 't_ms_from_start': 1510.0, 'rss_mb': 100.0},
+        {'phase': 'main_window_shown', 't_ms_from_start': 3000.0, 'rss_mb': 150.0},
+        {'phase': 'page_loader_ready', 't_ms_from_start': 4200.0, 'rss_mb': 240.0},
         {'phase': 'splash_set_ready', 't_ms_from_start': 4210.0, 'rss_mb': 240.0},
         {'phase': 'populate_ui_done', 't_ms_from_start': 120000.0, 'rss_mb': 320.0},
     ]
