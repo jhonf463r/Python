@@ -688,6 +688,9 @@ class OperationalSelfExaminationService:
         self._auto_capture_startup_freeze(startup_findings)
         findings.extend(self._ui_heartbeat_stall_findings())
         findings.extend(self._interaction_episode_findings())
+        # P0.22: dispatch lifecycle anomaly detection — resource_pressure
+        # repeated blocks, permission-grant-then-block, orphan interaction_id.
+        findings.extend(self._dispatch_lifecycle_anomaly_findings())
         findings.extend(self._boot_profile_findings())
         findings.extend(self._chat_research_backlog_findings())
         # Cognitive meta-patterns: fijación, incubación, atractores, ensambles
@@ -2196,6 +2199,169 @@ class OperationalSelfExaminationService:
                     'source': 'runtime_audit',
                 },
             ))
+        return findings
+
+    def _dispatch_lifecycle_anomaly_findings(self) -> list[SelfExaminationFinding]:
+        """P0.22: detect consultation dispatch lifecycle anomalies.
+
+        Reads runtime_audit.jsonl and detects three patterns:
+        1. Repeated external_consultation blocked by resource_pressure.
+        2. observation_permission grant immediately followed by
+           external_consultation blocked for a non-permission reason.
+        3. dispatch_terminal with empty interaction_id after
+           dispatch_started had an interaction_id.
+        """
+        import json as _json
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        audit_path = Path(str(workspace)) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+        try:
+            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
+        except OSError:
+            return []
+
+        resource_pressure_blocks: list[dict[str, Any]] = []
+        permission_grants: list[dict[str, Any]] = []
+        started_events: dict[str, dict[str, Any]] = {}
+        orphan_interaction_pairs: list[dict[str, Any]] = []
+        grant_then_block_pairs: list[dict[str, Any]] = []
+
+        for line in lines[-500:]:
+            if not line.strip():
+                continue
+            try:
+                event = _json.loads(line)
+            except Exception:
+                continue
+            kind = event.get('kind', '')
+            data = dict(event.get('data') or {})
+
+            if kind == 'dispatch_terminal':
+                task = data.get('task_name', '')
+                reason = str(data.get('reason') or '').lower()
+                dispatch_id = data.get('dispatch_id', '')
+                terminal_iid = data.get('interaction_id', '')
+                terminal_state = data.get('terminal_state', '')
+                if task == 'external_consultation' and (
+                    'resource_pressure' in reason
+                    or 'presion de recursos' in reason
+                    or terminal_state == 'blocked_by_resource_pressure'
+                ):
+                    resource_pressure_blocks.append(data)
+                started = started_events.pop(dispatch_id, None)
+                if started and started.get('interaction_id') and not terminal_iid:
+                    orphan_interaction_pairs.append({
+                        'dispatch_id': dispatch_id,
+                        'started_interaction_id': started.get('interaction_id', ''),
+                        'terminal_interaction_id': terminal_iid,
+                    })
+            elif kind == 'dispatch_started':
+                did = data.get('dispatch_id', '')
+                if did:
+                    started_events[did] = data
+            elif kind == 'permission':
+                action = data.get('action', '')
+                if action == 'granted' and 'observation' in str(data.get('permission_id', '')).lower():
+                    permission_grants.append(data)
+
+        for grant in permission_grants:
+            grant_ts = grant.get('timestamp', '')
+            for block in resource_pressure_blocks:
+                block_ts = block.get('timestamp', '')
+                if grant_ts and block_ts and block_ts > grant_ts:
+                    grant_then_block_pairs.append({
+                        'grant': grant,
+                        'subsequent_block': block,
+                    })
+                    break
+
+        findings: list[SelfExaminationFinding] = []
+
+        if len(resource_pressure_blocks) >= 2:
+            findings.append(SelfExaminationFinding(
+                category='dispatch_lifecycle_anomaly',
+                title=f'Repeated external_consultation blocked by resource_pressure ({len(resource_pressure_blocks)}x)',
+                summary=(
+                    f'external_consultation was blocked by resource_pressure '
+                    f'{len(resource_pressure_blocks)} times in recent audit events. '
+                    f'This indicates persistent environment degradation.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.92,
+                recommendation=(
+                    'Represent resource_pressure blocks as deferred (not failed). '
+                    'Do not re-dispatch external consultation while pressure persists. '
+                    'Disambiguate user permission replies from status questions.'
+                ),
+                evidence_refs=[
+                    str(b.get('dispatch_id', ''))[:12] for b in resource_pressure_blocks[:5]
+                ],
+                source_refs=['runtime_audit'],
+                metadata={
+                    'pattern': 'repeated_resource_pressure_block',
+                    'count': len(resource_pressure_blocks),
+                },
+            ))
+
+        if grant_then_block_pairs:
+            findings.append(SelfExaminationFinding(
+                category='dispatch_lifecycle_anomaly',
+                title='Permission grant followed by non-permission block',
+                summary=(
+                    f'observation_permission was granted but the subsequent '
+                    f'external_consultation was blocked for resource_pressure '
+                    f'({len(grant_then_block_pairs)} occurrence(s)). '
+                    f'The permission grant was likely a misclassified status question.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.88,
+                recommendation=(
+                    'Disambiguate permission replies from operational status questions. '
+                    'Only grant observation_permission when an actual '
+                    'observation_permission checkpoint exists and the user sends '
+                    'an explicit permission phrase.'
+                ),
+                evidence_refs=[
+                    str(p.get('subsequent_block', {}).get('dispatch_id', ''))[:12]
+                    for p in grant_then_block_pairs[:3]
+                ],
+                source_refs=['runtime_audit'],
+                metadata={
+                    'pattern': 'grant_then_non_permission_block',
+                    'count': len(grant_then_block_pairs),
+                },
+            ))
+
+        if orphan_interaction_pairs:
+            findings.append(SelfExaminationFinding(
+                category='dispatch_lifecycle_anomaly',
+                title=f'dispatch_terminal with empty interaction_id ({len(orphan_interaction_pairs)}x)',
+                summary=(
+                    f'{len(orphan_interaction_pairs)} dispatch(es) had interaction_id '
+                    f'in dispatch_started but empty interaction_id in dispatch_terminal. '
+                    f'The local interaction was closed before the external worker finished.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.90,
+                recommendation=(
+                    'Preserve interaction correlation: do not close active_interaction '
+                    'when an external worker is still alive. Use outcome '
+                    'awaiting_external_response instead of resolved.'
+                ),
+                evidence_refs=[
+                    p.get('dispatch_id', '')[:12] for p in orphan_interaction_pairs[:5]
+                ],
+                source_refs=['runtime_audit'],
+                metadata={
+                    'pattern': 'orphan_interaction_id',
+                    'count': len(orphan_interaction_pairs),
+                    'pairs': orphan_interaction_pairs[:5],
+                },
+            ))
+
         return findings
 
     def _startup_health_findings(self) -> list[SelfExaminationFinding]:
