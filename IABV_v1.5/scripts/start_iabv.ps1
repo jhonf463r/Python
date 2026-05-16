@@ -53,7 +53,8 @@ param(
     [switch]$StartUI,
     [int]$McpPort = 8000,
     [switch]$AutoPull = $true,
-    [switch]$NoAutoPull
+    [switch]$NoAutoPull,
+    [switch]$AllowNonMain
 )
 
 if ($NoAutoPull) {
@@ -99,6 +100,15 @@ function Write-Info($msg) { if (-not $Quiet) { Write-Host $msg -ForegroundColor 
 function Write-Warn($msg) { Write-Host $msg -ForegroundColor Yellow }
 function Write-Err ($msg) { Write-Host $msg -ForegroundColor Red }
 
+function Show-StaleRuntimePopup($msg) {
+    try {
+        $ws = New-Object -ComObject WScript.Shell
+        [void]$ws.Popup($msg, 0, 'IABV runtime desactualizado', 48)
+    } catch {
+        # Console may be hidden; logging still captures the warning.
+    }
+}
+
 # Capa 2.1.1: libera el puerto del MCP antes de arrancar si quedo un zombi.
 # Importamos la utilidad compartida con iabv_bootstrap.ps1.
 . (Join-Path $PSScriptRoot '_mcp_port_utils.ps1')
@@ -123,6 +133,38 @@ if ($AutoPull) {
     if (-not $repoRoot) {
         Write-Warn "[auto-pull] No pude resolver la raiz del repo git desde $PSScriptRoot; salto pull."
     } else {
+        try {
+            & git -C $repoRoot fetch origin main | Out-Null
+        } catch {
+            Write-Warn "[auto-pull] No pude hacer fetch origin main: $_"
+        }
+        $currentBranch = (& git -C $repoRoot rev-parse --abbrev-ref HEAD 2>$null).Trim()
+        $currentHead = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
+        $originMainHead = (& git -C $repoRoot rev-parse origin/main 2>$null).Trim()
+        $allowNonMainRuntime = $AllowNonMain -or ($env:IABV_ALLOW_NON_MAIN_RUNTIME -eq '1')
+        if (
+            -not $allowNonMainRuntime -and
+            $currentBranch -and
+            $currentBranch -ne 'main' -and
+            $originMainHead -and
+            $currentHead -and
+            $originMainHead -ne $currentHead
+        ) {
+            $shortCurrent = if ($currentHead.Length -ge 8) { $currentHead.Substring(0, 8) } else { $currentHead }
+            $shortMain = if ($originMainHead.Length -ge 8) { $originMainHead.Substring(0, 8) } else { $originMainHead }
+            $msg = @"
+IABV no se inicio porque el acceso directo apunta a una rama vieja.
+
+Rama actual: $currentBranch ($shortCurrent)
+main actual : $shortMain
+
+Esto puede dejar activos bugs ya corregidos, incluyendo congelamientos y falta de runtime_build_fingerprint.
+Arranca desde main o ejecuta con -AllowNonMain solo si estas probando una rama a proposito.
+"@
+            Write-Err "[runtime-guard] $msg"
+            Show-StaleRuntimePopup $msg
+            exit 1
+        }
         Write-Info "Auto-pull : git pull --rebase=false en $repoRoot"
         $oldSha = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
         & git -C $repoRoot pull --rebase=false
