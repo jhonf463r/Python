@@ -36,6 +36,7 @@ STARTUP_DEFERRED_MS_DEGRADED = 5000.0
 # populate_ui: the interval where all ViewModels are constructed on the main
 # thread.  Windsurf live tests show 30s+ blocks here, causing "Not Responding".
 STARTUP_POPULATE_UI_MS_DEGRADED = 5000.0
+STARTUP_POPULATE_UI_INCOMPLETE_MIN_MS = 120000.0
 # RSS growth during populate_ui (in MB).  273→495 MB observed in live tests.
 STARTUP_RSS_GROWTH_MB_DEGRADED = 150.0
 
@@ -2429,35 +2430,38 @@ class OperationalSelfExaminationService:
                         },
                     ))
         elif populate_start_ms is not None and populate_done_ms_val is None:
-            findings.append(SelfExaminationFinding(
-                category='startup_populate_ui_incomplete',
-                title='populate_ui inicio pero nunca termino',
-                summary=(
-                    f'populate_ui_start llego a {populate_start_ms:.0f}ms pero '
-                    f'populate_ui_done nunca se registro. Esto indica que '
-                    f'_build_ui_objects() se congelo indefinidamente durante '
-                    f'la construccion de ViewModels. El proceso probablemente '
-                    f'quedo en estado "Not Responding" permanente.'
-                ),
-                severity=IssueSeverity.CRITICAL,
-                confidence=0.98,
-                recommendation=(
-                    'Verificar que processEvents() no se llame entre '
-                    'creaciones de ViewModels (causa tormentas de re-rendering '
-                    'QML con context properties parciales). Verificar que '
-                    'ningun constructor de ViewModel haga I/O bloqueante.'
-                ),
-                source_refs=[
-                    'data/logs/startup_timeline.jsonl',
-                    'iabv_v15.bootstrap._build_ui_objects',
-                    'iabv_v15.bootstrap._populate_ui',
-                ],
-                metadata={
-                    'phase': 'populate_ui_incomplete',
-                    'populate_ui_start_ms': round(populate_start_ms, 1),
-                    'phases_seen': list(phase_to_ms.keys()),
-                },
-            ))
+            latest_phase_ms = max(phase_to_ms.values(), default=populate_start_ms)
+            pending_ms = max(0.0, latest_phase_ms - populate_start_ms)
+            if pending_ms >= STARTUP_POPULATE_UI_INCOMPLETE_MIN_MS:
+                findings.append(SelfExaminationFinding(
+                    category='startup_populate_ui_incomplete',
+                    title='populate_ui no termino tras espera prolongada',
+                    summary=(
+                        f'populate_ui_start llego a {populate_start_ms:.0f}ms '
+                        f'y no existe populate_ui_done tras {pending_ms:.0f}ms '
+                        f'de eventos posteriores. Esto sugiere bloqueo real o '
+                        f'perdida del marcador final.'
+                    ),
+                    severity=IssueSeverity.CRITICAL,
+                    confidence=0.9,
+                    recommendation=(
+                        'Cruzar con UIHeartbeatWatchdog antes de asumir freeze '
+                        'permanente. Si no hubo stall real, corregir el marcador '
+                        'populate_ui_done en bootstrap.'
+                    ),
+                    source_refs=[
+                        'data/logs/startup_timeline.jsonl',
+                        'iabv_v15.bootstrap._build_ui_objects',
+                        'iabv_v15.bootstrap._populate_ui',
+                    ],
+                    metadata={
+                        'phase': 'populate_ui_incomplete',
+                        'populate_ui_start_ms': round(populate_start_ms, 1),
+                        'observed_ms': round(pending_ms, 1),
+                        'threshold_ms': STARTUP_POPULATE_UI_INCOMPLETE_MIN_MS,
+                        'phases_seen': list(phase_to_ms.keys()),
+                    },
+                ))
 
         # RSS growth detection during startup.  Extract RSS values from
         # events that carry them.
