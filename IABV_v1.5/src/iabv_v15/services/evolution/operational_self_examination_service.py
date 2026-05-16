@@ -1826,6 +1826,8 @@ class OperationalSelfExaminationService:
         ]
         if not high_findings:
             return
+        if self._should_defer_startup_false_ready_capture(high_findings):
+            return
         try:
             findings_meta = [
                 {
@@ -1860,6 +1862,42 @@ class OperationalSelfExaminationService:
                 )
         except Exception:
             logger.debug('_auto_capture_startup_freeze failed', exc_info=True)
+
+    def _should_defer_startup_false_ready_capture(
+        self,
+        high_findings: list[SelfExaminationFinding],
+    ) -> bool:
+        """Avoid auto-capturing missing-readiness findings before evidence settles.
+
+        A startup finding based on lack of readiness proof is provisional while
+        the current boot is still writing ``startup_timeline.jsonl``. Live P0.17
+        showed FreezeIncidentReporter firing with ``startup_timeline=[]`` even
+        though the real log later contained shell/page readiness. Ordering
+        violations can be captured immediately; missing-proof findings must wait
+        for the observation window.
+        """
+        missing_proof_categories = {
+            'splash_set_ready_without_readiness_proof',
+            'splash_set_ready_without_shell_loader_ready',
+            'shell_loader_ready_fallback_used',
+        }
+        has_provisional_false_ready = False
+        for finding in high_findings:
+            if getattr(finding, 'category', '') != 'startup_false_ready':
+                continue
+            metadata = dict(getattr(finding, 'metadata', {}) or {})
+            reasons = {str(item) for item in (metadata.get('reasons') or [])}
+            if reasons & missing_proof_categories:
+                has_provisional_false_ready = True
+                break
+        if not has_provisional_false_ready:
+            return False
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            elapsed_ms = float(get_runtime_tracer().current_elapsed_ms())
+        except Exception:
+            elapsed_ms = 0.0
+        return elapsed_ms < 120_000.0
 
     def _ui_heartbeat_stall_findings(self) -> list[SelfExaminationFinding]:
         """Emit findings from UIHeartbeatWatchdog stall history."""
