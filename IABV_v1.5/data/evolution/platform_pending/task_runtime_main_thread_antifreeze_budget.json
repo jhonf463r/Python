@@ -12,6 +12,13 @@
     "coverage_detail": "_should_defer_heavy_work() gate using _assess_resource_pressure(). Fixed IssueSeverity comparison bug (str(IssueSeverity.HIGH) returns 'IssueSeverity.HIGH' not 'high'). Gate applied in both _apply_task_result and _apply_task_failure.",
     "p01_additions": "Stub tests for _should_defer_heavy_work extracted to lightweight suite (no AppBootstrap).",
     "p02_additions": "No direct changes — antifreeze gating is orthogonal to dispatch lifecycle tracing. Pressure-gated methods (_update_evolution_snapshot etc.) are correctly skipped under load.",
+    "p012_additions": "PR #390 adds process-relative recent-stall detection, post-external-consultation dock refresh cooldown, budget cooldown after slow dock refresh, and enriched freeze reports with runtime audit context.",
+    "p012_live_proof_policy": {
+      "covered_by_pr": "#390",
+      "invalid_by_stale_build": true,
+      "required_events": ["runtime_build_fingerprint", "control_autonomy_dock_refresh_deferred"],
+      "unresolved": "UNRESOLVED:live_windows_antifreeze_proof_missing"
+    },
     "remaining": [
       "Budget accounting for total UI-thread time per frame",
       "BackgroundResourceMonitor integration if available"

@@ -86,6 +86,7 @@ class BrowserSessionController:
         self._page: Page | None = None
         self._owner_thread_id: int | None = None
         self._close_requested: bool = False
+        self._close_unresolved_reported: bool = False
         if profile_config is not None:
             self.configure(profile_config)
 
@@ -104,10 +105,14 @@ class BrowserSessionController:
 
     @property
     def context(self) -> BrowserContext | None:
+        if self.close_if_owner_thread():
+            return None
         return self._context
 
     @property
     def page(self) -> Page | None:
+        if self.close_if_owner_thread():
+            return None
         if self._page is not None:
             try:
                 if not self._page.is_closed():
@@ -133,10 +138,12 @@ class BrowserSessionController:
             self.configure(profile_config)
         if sync_playwright is None:
             raise RuntimeError('Playwright is not installed.')
+        self.close_if_owner_thread()
         if self._pw is not None:
             return
         self._pw = sync_playwright().start()
         self._owner_thread_id = threading.current_thread().ident
+        self._close_unresolved_reported = False
 
         if self.user_data_dir is not None:
             self.user_data_dir.mkdir(parents=True, exist_ok=True)
@@ -260,6 +267,7 @@ class BrowserSessionController:
         owner_tid = self._owner_thread_id
         if owner_tid is not None and current_tid != owner_tid:
             self._close_requested = True
+            self._close_unresolved_reported = False
             logger.warning(
                 'browser_session_close called from thread %s but owned by %s — deferring',
                 current_tid, owner_tid,
@@ -286,6 +294,26 @@ class BrowserSessionController:
         current_tid = threading.current_thread().ident
         owner_tid = self._owner_thread_id
         if owner_tid is not None and current_tid != owner_tid:
+            active_thread_ids = {
+                thread.ident for thread in threading.enumerate()
+                if thread.ident is not None
+            }
+            if owner_tid not in active_thread_ids and not self._close_unresolved_reported:
+                self._close_unresolved_reported = True
+                logger.warning(
+                    'browser_session_close unresolved: owner thread %s is no longer active',
+                    owner_tid,
+                )
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'browser_session_close_unresolved',
+                        caller_thread=current_tid,
+                        owner_thread=owner_tid,
+                        reason='owner_thread_unavailable',
+                    )
+                except Exception:
+                    pass
             return False
         self._do_close(current_tid)
         return True
@@ -293,6 +321,7 @@ class BrowserSessionController:
     def _do_close(self, caller_tid: int | None) -> None:
         """Perform the actual Playwright teardown on the owner thread."""
         self._close_requested = False
+        self._close_unresolved_reported = False
         try:
             self._page = None
             if self._context is not None:

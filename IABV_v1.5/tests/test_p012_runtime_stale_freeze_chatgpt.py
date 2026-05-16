@@ -148,6 +148,47 @@ class TestStaleCodeGate:
 # C. Freeze Root Cause — heavy refresh deferred under pressure
 # ======================================================================
 
+class TestPlatformPendingP012:
+
+    _PENDING_DIR = (
+        Path(__file__).resolve().parent.parent
+        / 'data' / 'evolution' / 'platform_pending'
+    )
+
+    def _load_task(self, filename: str):
+        from iabv_v15.domain.models import PlatformPendingTask
+        path = self._PENDING_DIR / filename
+        assert path.exists(), f'Missing platform pending task: {path}'
+        return PlatformPendingTask.model_validate_json(path.read_text(encoding='utf-8'))
+
+    def test_platform_pending_p012_valid_schema(self) -> None:
+        for filename in (
+            'task_runtime_consulting_lifecycle_recovery.json',
+            'task_external_visual_handoff_alignment.json',
+            'task_runtime_main_thread_antifreeze_budget.json',
+        ):
+            task = self._load_task(filename)
+            assert task.id
+            assert task.metadata.get('p012_additions')
+
+    def test_platform_pending_marks_stale_build_invalid_semantics(self) -> None:
+        task = self._load_task('task_runtime_consulting_lifecycle_recovery.json')
+        policy = task.metadata.get('p012_stale_build_policy') or {}
+        assert policy.get('covered_by_pr') == '#390'
+        assert policy.get('invalid_by_stale_build') is True
+        assert policy.get('required_runtime_event') == 'runtime_build_fingerprint'
+
+    def test_platform_pending_keeps_live_proof_unresolved_until_windows_run(self) -> None:
+        external = self._load_task('task_external_visual_handoff_alignment.json')
+        antifreeze = self._load_task('task_runtime_main_thread_antifreeze_budget.json')
+        assert external.metadata['p012_live_proof_policy']['unresolved'] == (
+            'UNRESOLVED:live_windows_chatgpt_security_retest'
+        )
+        assert antifreeze.metadata['p012_live_proof_policy']['unresolved'] == (
+            'UNRESOLVED:live_windows_antifreeze_proof_missing'
+        )
+
+
 class TestFreezeRootCause:
 
     def test_should_skip_dock_refresh_when_working(self) -> None:
@@ -454,6 +495,47 @@ class TestBrowserThreadAffinity:
         mock_browser.close.assert_called_once()
         mock_pw.stop.assert_called_once()
         assert ctrl._close_requested is False
+
+    def test_context_property_drains_deferred_close_on_owner_thread(self) -> None:
+        """A real owner-thread safe point drains deferred close before reuse."""
+        from iabv_v15.services.capture.browser_session_controller import BrowserSessionController
+        ctrl = BrowserSessionController()
+        ctrl._owner_thread_id = threading.current_thread().ident
+        mock_ctx = MagicMock()
+        mock_browser = MagicMock()
+        mock_pw = MagicMock()
+        ctrl._context = mock_ctx
+        ctrl._browser = mock_browser
+        ctrl._pw = mock_pw
+        ctrl._close_requested = True
+
+        assert ctrl.context is None
+
+        mock_ctx.close.assert_called_once()
+        mock_browser.close.assert_called_once()
+        mock_pw.stop.assert_called_once()
+        assert ctrl._close_requested is False
+        assert ctrl._owner_thread_id is None
+
+    def test_unavailable_owner_thread_marks_unresolved_once(self) -> None:
+        """If the owner thread is gone, trace unresolved without blocking UI."""
+        from iabv_v15.services.capture.browser_session_controller import BrowserSessionController
+        ctrl = BrowserSessionController()
+        ctrl._owner_thread_id = -99999
+        ctrl._close_requested = True
+        tracer = MagicMock()
+
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+            return_value=tracer,
+        ):
+            assert ctrl.close_if_owner_thread() is False
+            assert ctrl.close_if_owner_thread() is False
+
+        assert ctrl._close_unresolved_reported is True
+        tracer.trace.assert_called_once()
+        assert tracer.trace.call_args.args[0] == 'browser_session_close_unresolved'
+        assert tracer.trace.call_args.kwargs['reason'] == 'owner_thread_unavailable'
 
     def test_close_if_owner_thread_noop_without_request(self) -> None:
         from iabv_v15.services.capture.browser_session_controller import BrowserSessionController
