@@ -7638,6 +7638,23 @@ class ControlCenterViewModel(QObject):
             'external_state_flags': external_state_flags,
         }
 
+    @staticmethod
+    def _is_resource_pressure_block(preflight: dict[str, Any]) -> bool:
+        """Check if a preflight block is caused by resource pressure."""
+        governance = dict(preflight.get('governance') or {})
+        reason = str(preflight.get('reason') or governance.get('reason') or '').lower()
+        diag = str(governance.get('diagnostic_category') or '').lower()
+        resource_pressure_signals = (
+            'presion de recursos',
+            'presión de recursos',
+            'resource pressure',
+            'resource_pressure',
+            'degradar con gracia',
+        )
+        if diag in ('environment_guard', 'resource_pressure'):
+            return True
+        return any(sig in reason for sig in resource_pressure_signals)
+
     def _blocked_external_consultation_result(
         self,
         *,
@@ -7657,11 +7674,18 @@ class ControlCenterViewModel(QObject):
         decision_context['metadata'] = decision_metadata
         metadata['decision_context'] = decision_context
         metadata['world_model_summary'] = world_model_summary
+
+        # P0.22: detect resource_pressure to set correct preflight metadata.
+        is_resource_pressure = self._is_resource_pressure_block(preflight)
+
         metadata['external_consultation_preflight'] = {
             'assistant_kind': assistant_kind,
             'reason': str(preflight.get('reason') or governance.get('reason') or ''),
             'blocked': True,
             'world_model_summary': world_model_summary,
+            'block_type': 'resource_pressure' if is_resource_pressure else 'governance',
+            'requires_observation_permission': False if is_resource_pressure else bool(approval_checkpoints),
+            'retry_when_pressure_clears': is_resource_pressure,
         }
         payload['metadata'] = metadata
         payload['approval_checkpoints'] = approval_checkpoints
@@ -7673,18 +7697,31 @@ class ControlCenterViewModel(QObject):
         )
         self._update_adaptive_state(payload)
         reason = str(preflight.get('reason') or governance.get('reason') or '').strip()
-        if approval_checkpoints:
+
+        # P0.22: resource pressure gets explicit deferred message.
+        if is_resource_pressure:
+            message = (
+                f'No hice la consulta a {assistant_title}. '
+                'La bloquee antes de abrir la herramienta porque el entorno esta bajo presion de recursos. '
+                'No es problema de login ni captura. '
+                'Puedo reintentar cuando baje la presion o usar ruta local.'
+            )
+            meta = f'Consulta diferida por presion de recursos ({assistant_title}).'
+            terminal_state = 'blocked_by_resource_pressure'
+        elif approval_checkpoints:
             message = (
                 f'No voy a lanzar {assistant_title} todavia. '
                 f'{reason or f"Primero necesito tu permiso para observar esa ventana y verificar que {assistant_title} este usable."}'
             )
             meta = f'Permiso requerido para {assistant_title}.'
+            terminal_state = 'failed_with_actionable_reason'
         else:
             message = (
                 f'No voy a lanzar {assistant_title} porque la ruta ya aparece bloqueada antes de intentarla. '
                 f'{reason or "Mantengo la via local hasta que el bloqueo cambie."}'
             )
             meta = f'Ruta bloqueada para {assistant_title}.'
+            terminal_state = 'failed_with_actionable_reason'
         self._latest_response_text = message
         self._latest_response_meta = meta
         self._busy_label = reason or f'Consulta externa bloqueada para {assistant_title}.'
@@ -7695,6 +7732,8 @@ class ControlCenterViewModel(QObject):
             'payload': payload,
             'assistant_title': assistant_title,
             'external_state_flags': list(governance.get('external_state_flags') or []),
+            'terminal_state': terminal_state,
+            'block_type': 'resource_pressure' if is_resource_pressure else 'governance',
         }
 
     def _guidance_for_external_preflight_block(
@@ -7741,19 +7780,48 @@ class ControlCenterViewModel(QObject):
         }
 
     def _pending_observation_permission_assistant(self) -> str:
-        metadata = dict((self._last_adaptive_payload or {}).get('metadata') or {})
+        """Return assistant_kind only when a real observation_permission checkpoint exists.
+
+        P0.22 fix: previously this returned assistant_kind from any
+        external_consultation_preflight, even when the block was
+        resource_pressure/environment_guard — NOT observation permission.
+        Now it only returns a value when:
+        1. An approval_checkpoint with phase_key=='observation_permission' exists, OR
+        2. The preflight metadata explicitly says requires_observation_permission==True.
+        If the preflight was blocked by resource_pressure, returns '' so that
+        _try_resolve_pending_observation_permission() won't misinterpret user
+        messages as permission grants.
+        """
+        payload = dict(self._last_adaptive_payload or {})
+        metadata = dict(payload.get('metadata') or {})
         preflight = dict(metadata.get('external_consultation_preflight') or {})
-        assistant_kind = str(preflight.get('assistant_kind') or '').strip().lower()
-        if assistant_kind:
-            return assistant_kind
-        for item in (self._last_adaptive_payload or {}).get('approval_checkpoints') or []:
+
+        # Check approval_checkpoints for a real observation_permission gate.
+        for item in payload.get('approval_checkpoints') or []:
             checkpoint = dict(item or {})
+            phase_key = str(checkpoint.get('phase_key') or '').strip().lower()
+            if phase_key != 'observation_permission':
+                continue
             checkpoint_meta = dict(checkpoint.get('metadata') or {})
             gates = [dict(gate) for gate in (checkpoint_meta.get('permission_gates') or []) if isinstance(gate, dict)]
             gate = gates[0] if gates else {}
-            assistant_kind = str(gate.get('assistant_kind') or checkpoint_meta.get('assistant_kind') or '').strip().lower()
+            assistant_kind = str(
+                gate.get('assistant_kind')
+                or checkpoint_meta.get('assistant_kind')
+                or preflight.get('assistant_kind')
+                or '',
+            ).strip().lower()
             if assistant_kind:
                 return assistant_kind
+
+        # Explicit metadata flag from preflight.
+        if preflight.get('requires_observation_permission') is True:
+            assistant_kind = str(preflight.get('assistant_kind') or '').strip().lower()
+            if assistant_kind:
+                return assistant_kind
+
+        # P0.22: do NOT fall through to preflight.assistant_kind when the
+        # block reason is resource_pressure or environment_guard.
         return ''
 
     def _clear_observation_permission_artifacts(self) -> None:
@@ -7977,34 +8045,114 @@ class ControlCenterViewModel(QObject):
             return True
         return False
 
-    def _try_resolve_pending_observation_permission(self, message: str) -> bool:
-        """Auto-grant observation permission when the user sends a helpful message.
+    def _is_operational_status_question(self, message: str) -> bool:
+        """Detect messages that are operational status questions, not permission grants.
 
-        When IABV blocks an external route (e.g. ChatGPT) because it needs
-        observation permission, and the user writes something in the chat
-        indicating willingness to help (e.g. "si", "dale", "ayudame",
-        "interactua conmigo", "permite", "ok"), auto-trigger the approval
-        flow instead of ignoring the user's intent.
+        P0.22: messages like "si puedes hacer la consulta si o no?" are
+        asking whether IABV *can* perform the consultation — they are NOT
+        granting observation permission.  This guard prevents
+        _try_resolve_pending_observation_permission() from misinterpreting
+        status inquiries as affirmative permission responses.
+        """
+        lower = message.lower().strip()
+        question_markers = ('?', '¿')
+        has_question = any(m in lower for m in question_markers)
+
+        status_patterns = (
+            'puedes hacer',
+            'puedes realizar',
+            'puedes consultar',
+            'si o no',
+            'sí o no',
+            'por que no',
+            'por qué no',
+            'que paso',
+            'qué pasó',
+            'que sucedio',
+            'qué sucedió',
+            'que fallo',
+            'qué falló',
+            'funciona o no',
+            'va a funcionar',
+            'se puede o no',
+            'que esta pasando',
+            'qué está pasando',
+            'esta funcionando',
+            'está funcionando',
+            'sigue bloqueado',
+            'sigue fallando',
+            'lo vas a hacer',
+            'lo puedes hacer',
+            'lo hiciste',
+            'lo lograste',
+            'ya lo hiciste',
+        )
+        if has_question and any(p in lower for p in status_patterns):
+            return True
+        if any(p in lower for p in ('si o no', 'sí o no')):
+            return True
+        return False
+
+    def _try_resolve_pending_observation_permission(self, message: str) -> bool:
+        """Auto-grant observation permission only for explicit permission replies.
+
+        P0.22 hardened version:
+        - Rejects operational status questions ("si puedes hacer la consulta?")
+        - Only grants when a real observation_permission checkpoint exists
+          AND the user sends an explicit permission phrase.
+        - A bare "sí" only works when the last visible guidance was an
+          observation permission dialog, not a resource-pressure block.
         """
         assistant_kind = self._pending_observation_permission_assistant()
         if not assistant_kind:
             return False
+
+        if self._is_operational_status_question(message):
+            return False
+
         lower = message.lower().strip()
-        affirmative_keywords = {
+
+        # Explicit permission phrases — unambiguous observation permission grants.
+        explicit_permission_phrases = (
+            'permito observar',
+            'autoriza la captura',
+            'autorizo la captura',
+            'acepto el permiso',
+            'puedes observar',
+            'permitir observacion',
+            'permitir observación',
+            'concedo permiso',
+            'concedo el permiso',
+            'apruebo la observacion',
+            'apruebo la observación',
+            'grant observation',
+            'approve observation',
+            'allow observation',
+            'acepto observacion',
+            'acepto observación',
+        )
+        if any(phrase in lower for phrase in explicit_permission_phrases):
+            self._grant_pending_observation_permission(announce=True)
+            self._set_live_status('idle')
+            self.dataChanged.emit()
+            return True
+
+        # Short affirmatives only if guidance was explicitly a permission dialog.
+        short_affirmatives = {
             'si', 'sí', 'ok', 'dale', 'permite', 'permiso', 'aprueba',
-            'aprobar', 'adelante', 'hazlo', 'ayuda', 'ayudame', 'ayúdame',
-            'interactua', 'interactúa', 'verificar', 'verificacion',
-            'verificación', 'seguridad', 'login', 'sesion', 'sesión',
-            'credencial', 'credenciales', 'acceso', 'acepto', 'aceptar',
+            'aprobar', 'adelante', 'hazlo', 'acepto', 'aceptar',
             'grant', 'approve', 'yes', 'go', 'proceed',
         }
         tokens = set(lower.replace(',', ' ').replace('.', ' ').split())
-        if not tokens.intersection(affirmative_keywords):
-            return False
-        self._grant_pending_observation_permission(announce=True)
-        self._set_live_status('idle')
-        self.dataChanged.emit()
-        return True
+        if tokens.intersection(short_affirmatives):
+            last_guidance = str(getattr(self, '_last_guidance_action', '') or '').lower()
+            if last_guidance == 'approve_observation_permission':
+                self._grant_pending_observation_permission(announce=True)
+                self._set_live_status('idle')
+                self.dataChanged.emit()
+                return True
+
+        return False
 
     def _normalized_command_text(self, message: str) -> str:
         return ' '.join(message.lower().strip().split())
@@ -9267,13 +9415,24 @@ class ControlCenterViewModel(QObject):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if self._try_resolve_pending_observation_permission(message):
-            self._resolve_active_interaction(outcome='resolved', provider='local')
+            # P0.22: if permission grant fired _run_external_consultation(),
+            # the external worker is now alive — keep the interaction open
+            # so dispatch_terminal inherits the interaction_id.
+            if self._working:
+                self._resolve_active_interaction(outcome='awaiting_external_response', provider='local')
+            else:
+                self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if self._try_handle_shared_reality_followup(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if self._try_handle_security_verification_retest(message):
-            self._resolve_active_interaction(outcome='resolved', provider='local')
+            # P0.22: security retest spawns a background worker — keep
+            # interaction open until the worker reaches terminal state.
+            if self._working:
+                self._resolve_active_interaction(outcome='awaiting_external_response', provider='local')
+            else:
+                self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if self._try_handle_external_failure_followup(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
@@ -9948,15 +10107,19 @@ class ControlCenterViewModel(QObject):
             _trace_reason = 'resolved'
             if task_name == 'external_consultation' and isinstance(payload, dict) and not payload.get('success'):
                 _meta_raw = str(payload.get('meta') or '')
-                _trace_terminal = 'failed_with_actionable_reason'
-                for _candidate in (
-                    'blocked_by_permission', 'blocked_by_security_verification',
-                    'blocked_by_quota', 'timeout', 'needs_human_handoff',
-                    'failed_with_actionable_reason',
-                ):
-                    if _candidate in _meta_raw:
-                        _trace_terminal = _candidate
-                        break
+                # P0.22: use explicit terminal_state from result payload when available
+                # (e.g. blocked_by_resource_pressure from _blocked_external_consultation_result).
+                _trace_terminal = str(payload.get('terminal_state') or 'failed_with_actionable_reason')
+                if _trace_terminal == 'failed_with_actionable_reason':
+                    for _candidate in (
+                        'blocked_by_permission', 'blocked_by_security_verification',
+                        'blocked_by_quota', 'timeout', 'needs_human_handoff',
+                        'blocked_by_resource_pressure',
+                        'failed_with_actionable_reason',
+                    ):
+                        if _candidate in _meta_raw:
+                            _trace_terminal = _candidate
+                            break
                 _trace_reason = f'external_consultation_blocked: {_meta_raw[:120]}'
             self._trace_dispatch_terminal(
                 task_name=task_name,

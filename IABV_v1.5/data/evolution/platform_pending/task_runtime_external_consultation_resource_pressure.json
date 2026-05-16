@@ -1,0 +1,44 @@
+{
+  "id": "runtime_external_consultation_resource_pressure_p022",
+  "title": "P0.22: Consultation State Machine + Resource Pressure Deferral + Permission Reply Disambiguation",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Two critical bugs in the external consultation flow: (1) _try_resolve_pending_observation_permission() incorrectly interprets 'si' as observation permission when the block was resource_pressure, not a permission issue. (2) sendChat() closes the local interaction before the external worker finishes, leaving dispatch_terminal with empty interaction_id.",
+  "reason": "resource_pressure blocks were indistinguishable from observation_permission blocks in _pending_observation_permission_assistant(). The method returned assistant_kind from any external_consultation_preflight, regardless of block type. Combined with overly broad affirmative keyword matching, this caused status questions like 'si puedes hacer la consulta si o no?' to be misinterpreted as permission grants.",
+  "dependency_missing": "",
+  "next_action": "Validate live ChatGPT consultation after resource pressure is normal. Run IABV on Windows, trigger external consultation, verify: (1) resource_pressure block shows deferred message, (2) status questions are not intercepted as permission grants, (3) interaction_id is preserved through dispatch lifecycle.",
+  "resume_hint": "P0.22 code fix applied: _pending_observation_permission_assistant() now checks phase_key=='observation_permission', _try_resolve_pending_observation_permission() rejects status questions and requires explicit permission phrases, sendChat() preserves interaction when external worker is alive, _blocked_external_consultation_result() maps resource_pressure to blocked_by_resource_pressure terminal_state.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "root_cause": "Bug 1: _pending_observation_permission_assistant() returned assistant_kind from generic preflight metadata without checking phase_key, so resource_pressure blocks were treated as pending observation permission. Bug 2: sendChat() called _resolve_active_interaction(outcome='resolved', provider='local') immediately after _try_resolve_pending_observation_permission() returned True, even though _grant_pending_observation_permission() had already spawned an external worker via _run_external_consultation().",
+    "evidence": [
+      {
+        "dispatch_id": "70611c2efec5",
+        "event": "dispatch_started external_consultation chatgpt, blocked by resource_pressure, terminal_state=failed_with_actionable_reason",
+        "timestamp": "2026-05-16T10:03:01"
+      },
+      {
+        "dispatch_id": "ad2028481b95",
+        "event": "permission misclassification caused spurious retry, dispatch_terminal had empty interaction_id",
+        "bug": "status question 'si puedes hacer la consulta si o no?' intercepted as observation permission grant"
+      }
+    ],
+    "files_touched": [
+      "src/iabv_v15/ui/viewmodels/control_center_viewmodel.py",
+      "data/evolution/platform_pending/task_runtime_external_consultation_resource_pressure.json",
+      "tests/test_runtime_p022_consultation_state.py"
+    ],
+    "fixes_applied": {
+      "task_a": "_pending_observation_permission_assistant() now requires phase_key=='observation_permission' or requires_observation_permission==True",
+      "task_b": "_try_resolve_pending_observation_permission() rejects _is_operational_status_question(), requires explicit permission phrases or last_guidance=='approve_observation_permission' for short affirmatives",
+      "task_c": "sendChat() uses outcome='awaiting_external_response' when _working is True after permission grant, preserving interaction_id",
+      "task_d": "_blocked_external_consultation_result() detects resource_pressure via _is_resource_pressure_block() and sets terminal_state='blocked_by_resource_pressure' with explicit deferred user message"
+    },
+    "remaining": [
+      "Live Windows proof with real user interaction",
+      "OSES finding for repeated resource_pressure pattern detection (marked UNRESOLVED — P4 non-trivial)"
+    ],
+    "unresolved": "Live Windows proof pending — user must run app with P0.22 merged and verify ChatGPT consultation under normal resource pressure"
+  }
+}
