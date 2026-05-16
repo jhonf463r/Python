@@ -15,6 +15,13 @@
     "p03_additions": "Visual evidence validation prevents treating black/offscreen captures as successful completion. consultation_metadata.status='visual_unresolved' when capture is invalid — lifecycle correctly reaches terminal state with actionable handoff instead of false 'success'.",
     "p04_additions": "Shared reality causal handoff: when visual evidence fails and user reports mismatch ('a mí sí me funciona'), lifecycle terminal includes causal explanation (Tu vista vs Vista de IABV), browser/profile identification, evidence path, and RuntimeAuditTracer shared_reality_handoff event. No false success, no silent failure, no infinite consultando.",
     "p05_additions": "OSES reads shared_reality_handoff events and detects repeated patterns. If lifecycle terminals repeatedly involve visual mismatches, OSES generates findings with frequency, evidence, and recommended actions. PortableContext exports compact learning summary.",
+    "p012_additions": "PR #390 adds runtime_build_fingerprint, stale-code live-proof invalidation, post-consultation dock refresh cooldown, security-verification terminal handoff/retest, and enriched freeze context. Live proof remains blocked until the user runs Windows main with this build.",
+    "p012_stale_build_policy": {
+      "covered_by_pr": "#390",
+      "invalid_by_stale_build": true,
+      "reason": "A live run on a stale branch/head cannot validate #381-#390 fixes and must be treated as invalid evidence, not as a functional regression.",
+      "required_runtime_event": "runtime_build_fingerprint"
+    },
     "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
     "p03_live_proof_result": "VISUAL_ALIGNMENT_FAILED_BLACK_CAPTURE",
     "p03_live_proof_detail": "Runtime cycle did not freeze, but visual handoff failed: ChatGPT window was offscreen (rect=[-32000,-32000,199,34]), capture was black (blank_probability=0.98), status was incorrectly reported as visual_captured. P0.3 fix: status now correctly set to visual_unresolved with guided handoff message.",

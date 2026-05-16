@@ -42,6 +42,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import subprocess
 import threading
 import time
 from datetime import datetime, timezone
@@ -49,6 +50,103 @@ from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# ------------------------------------------------------------------
+# Feature markers expected from P0 slices #381-#389
+# ------------------------------------------------------------------
+_REQUIRED_FEATURE_MARKERS: dict[str, str] = {
+    'has_post_remediation_recapture': '_attempt_post_remediation_recapture',
+    'has_post_recapture_response_retry': '_attempt_post_recapture_response_retry',
+    'has_shared_reality_handoff': 'shared_reality_handoff',
+    'has_dispatch_lifecycle_tracing': 'trace_dispatch_started',
+}
+
+
+def _git_cmd(args: list[str], cwd: str | Path) -> str:
+    """Run a git command and return stripped stdout, or '' on failure."""
+    try:
+        r = subprocess.run(
+            ['git'] + args,
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        return r.stdout.strip() if r.returncode == 0 else ''
+    except Exception:
+        return ''
+
+
+_MARKER_FILES: tuple[str, ...] = (
+    'ui/viewmodels/control_center_viewmodel.py',
+    'services/evolution/runtime_audit_tracer.py',
+    'services/evolution/freeze_incident_reporter.py',
+    'services/capture/browser_session_controller.py',
+)
+
+_FINGERPRINT_BUDGET_MS: float = 250.0
+
+
+def _collect_build_fingerprint(workspace: str | Path = '.') -> dict[str, Any]:
+    """Collect git and feature-marker info for the running build.
+
+    Uses targeted file reads (not rglob) and scoped dirty check
+    (src/, tests/, AGENTS.md only) to stay under 250ms budget.
+    """
+    t0 = time.perf_counter()
+    ws = Path(workspace).resolve()
+    src_dir = ws / 'src' / 'iabv_v15'
+    if not src_dir.is_dir():
+        src_dir = ws
+
+    branch = _git_cmd(['rev-parse', '--abbrev-ref', 'HEAD'], ws)
+    head = _git_cmd(['rev-parse', 'HEAD'], ws)
+    dirty_output = _git_cmd(
+        ['diff-index', '--name-only', 'HEAD', '--', 'src/', 'tests/', 'AGENTS.md'],
+        ws,
+    )
+    if dirty_output:
+        dirty = True
+        git_status = 'dirty'
+    elif dirty_output == '' and head:
+        dirty = False
+        git_status = 'clean'
+    else:
+        dirty = False
+        git_status = 'unknown'
+    origin_main = _git_cmd(['rev-parse', 'origin/main'], ws)
+
+    markers: dict[str, bool] = {}
+    for marker_name, search_string in _REQUIRED_FEATURE_MARKERS.items():
+        found = False
+        for rel_path in _MARKER_FILES:
+            try:
+                target = src_dir / rel_path
+                if target.is_file():
+                    content = target.read_text(encoding='utf-8', errors='ignore')
+                    if search_string in content:
+                        found = True
+                        break
+            except Exception:
+                continue
+        markers[marker_name] = found
+
+    elapsed_ms = (time.perf_counter() - t0) * 1000
+    result: dict[str, Any] = {
+        'branch': branch,
+        'head': head,
+        'dirty': dirty,
+        'git_status': git_status,
+        'origin_main_head': origin_main,
+        'workspace': str(ws),
+        'feature_markers': markers,
+        'stale': not all(markers.values()),
+        'missing_markers': [k for k, v in markers.items() if not v],
+        'elapsed_ms': round(elapsed_ms, 1),
+    }
+    if elapsed_ms > _FINGERPRINT_BUDGET_MS:
+        result['budget_exceeded'] = True
+    return result
 
 
 class RuntimeAuditTracer:
@@ -298,6 +396,26 @@ class RuntimeAuditTracer:
             report_path=report_path,
             **extra,
         )
+
+    def trace_build_fingerprint(self, workspace: str | Path = '') -> dict[str, Any]:
+        """Record a runtime_build_fingerprint event at startup.
+
+        Collects git branch, HEAD commit, dirty flag, origin/main HEAD,
+        and probes for feature markers introduced in recent P0 slices.
+        """
+        fp = _collect_build_fingerprint(workspace or '.')
+        event = self.trace('runtime_build_fingerprint', **fp)
+        if fp.get('budget_exceeded'):
+            self.trace(
+                'runtime_build_fingerprint_slow',
+                elapsed_ms=fp.get('elapsed_ms', 0),
+                budget_ms=_FINGERPRINT_BUDGET_MS,
+            )
+        return event
+
+    def current_elapsed_ms(self) -> float:
+        """Return milliseconds since tracer boot (process-relative)."""
+        return round((time.perf_counter() - self._t0) * 1000.0, 1)
 
     # ------------------------------------------------------------------
     # Query / export

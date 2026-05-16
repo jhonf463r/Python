@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 import re
 import threading
+import time
 import uuid
 from typing import Any, ClassVar
 
@@ -3525,18 +3526,23 @@ class ControlCenterViewModel(QObject):
         # Each branch now tells the user: WHAT tool, WHAT block, WHAT evidence,
         # WHAT human action is needed, and whether local fallback is viable.
         if 'browser_security_verification' in lowered:
-            human_action = 'Abre el navegador, completa el captcha o verificacion de seguridad y vuelve a intentar.'
             message = (
                 f'Herramienta: {assistant_title}. '
-                f'Bloqueo: verificacion de seguridad del sitio. '
-                f'Evidencia: el sitio pidio captcha o challenge antes de abrir el chat. '
-                f'Accion humana: {human_action} '
-                'Mientras tanto, sigo con la mejor via local disponible.'
+                f'Bloqueo: verificacion de seguridad del sitio (captcha / challenge). '
+                f'Evidencia: la sesion headless de Playwright recibe una pagina de '
+                f'verificacion de seguridad en lugar del chat; '
+                f'tu navegador real tiene cookies y sesion activa que el browser '
+                f'aislado de IABV no comparte. '
+                f'Accion humana: abre {assistant_title} en tu navegador real, completa '
+                f'cualquier captcha o challenge de seguridad, y luego dime "ya lo hice" '
+                f'para un retest unico. Si prefieres, selecciona otra sesion/perfil de '
+                f'navegador en los ajustes de IABV. '
+                'Sigo con la mejor via local disponible.'
             )
             if external_notice:
                 message = f'{message} {external_notice}'
             meta = f'{assistant_title}: blocked_by_security_verification'
-            busy = message
+            busy = f'Verificacion de seguridad pendiente para {assistant_title}.'
         elif 'codex_state_missing' in lowered:
             human_action = 'Verifica que la extension de Codex este instalada y autenticada en este entorno.'
             message = (
@@ -4159,6 +4165,90 @@ class ControlCenterViewModel(QObject):
             'shared_reality_followup',
         )
         self._set_live_status('idle')
+        return True
+
+    # ── P0.12: Security verification retest handler ──
+    _SECURITY_RETEST_PATTERNS: tuple[str, ...] = (
+        'ya lo hice', 'ya lo hise', 'ya complete', 'a mi si me funciona',
+        'a mi me funciona', 'ya pase el captcha', 'ya verifique',
+        'ya esta listo', 'ya lo resolvi', 'done', 'i did it',
+    )
+
+    def _try_handle_security_verification_retest(self, message: str) -> bool:
+        """If the user claims they completed security verification, do a single governed retest.
+
+        The background worker only produces a result dict; UI updates are
+        routed through taskResolved/taskFailed so Qt state is never
+        touched from a non-GUI thread.
+        """
+        lowered = message.strip().lower()
+        if not any(p in lowered for p in self._SECURITY_RETEST_PATTERNS):
+            return False
+        payload = dict(self._last_adaptive_payload or {})
+        metadata = dict(payload.get('metadata') or {})
+        ext_meta = metadata.get('external_consultation') or {}
+        if not isinstance(ext_meta, dict):
+            return False
+        last_meta = str(ext_meta.get('detail') or ext_meta.get('status') or '')
+        if 'browser_security_verification' not in last_meta and ext_meta.get('status') != 'blocked_external':
+            flags = ext_meta.get('external_state_flags') or []
+            if 'capture_unverified' not in flags:
+                return False
+        if getattr(self, '_security_retest_done', False):
+            self._append_message(
+                'assistant', 'IABV',
+                'Ya hice un retest gobernado despues de tu confirmacion y sigue bloqueado. '
+                'Para intentar otra vez, selecciona otro perfil de navegador o reinicia la sesion.',
+                'security_retest_already_done',
+            )
+            self._set_live_status('idle')
+            return True
+        self._security_retest_done = True
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'security_verification_retest',
+                user_claim=message[:200],
+                assistant_kind=str(ext_meta.get('assistant_kind') or ''),
+            )
+        except Exception:
+            pass
+        assistant_kind = str(ext_meta.get('assistant_kind') or ext_meta.get('requested_assistant_kind') or 'chatgpt')
+        assistant_title = str(ext_meta.get('assistant_title', '') or self._assistant_display_name(assistant_kind))
+        self._append_message(
+            'assistant', 'IABV',
+            f'Entendido — ejecutando un solo retest gobernado de {assistant_title} '
+            f'despues de tu confirmacion.',
+            'security_retest_initiated',
+        )
+        self._working = True
+        self._set_live_status('processing')
+        self.dataChanged.emit()
+
+        def _retest_worker() -> None:
+            try:
+                result = self._execute_external_consultation_sync(
+                    assistant_kind, dispatch_id=f'security_retest_{uuid.uuid4().hex[:8]}',
+                )
+                result_payload = {
+                    'success': bool(result.get('success')),
+                    'detail': str(result.get('detail', '') or result.get('meta', '')),
+                    'assistant_kind': assistant_kind,
+                    'assistant_title': assistant_title,
+                }
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'security_verification_retest_result',
+                        **result_payload,
+                    )
+                except Exception:
+                    pass
+                self.taskResolved.emit('security_retest', result_payload)
+            except Exception as exc:
+                self.taskFailed.emit('security_retest', str(exc))
+
+        self._bg_pool.submit(_retest_worker)
         return True
 
     # ══════════════════════════════════════════════════════════════════
@@ -6464,6 +6554,7 @@ class ControlCenterViewModel(QObject):
         self._seed_development_packet()
         self._refresh_autonomy_dock()
         self._refresh_control_master()
+        self._check_stale_build_gate()
         self.dataChanged.emit()
 
     @Slot()
@@ -6486,7 +6577,82 @@ class ControlCenterViewModel(QObject):
         """
         self._bg_pool.submit(self._refresh_all_data)
 
+    def _check_stale_build_gate(self) -> None:
+        """Show a one-time warning if the build fingerprint is stale."""
+        if getattr(self, '_stale_build_warned', False):
+            return
+        fp = self.latestRuntimeBuildFingerprint
+        if not fp or not fp.get('stale'):
+            return
+        self._stale_build_warned = True
+        missing = ', '.join(fp.get('missing_markers') or [])
+        branch = fp.get('branch', '?')
+        self._append_message(
+            'assistant',
+            'IABV',
+            f'Estas probando codigo viejo (rama {branch}); '
+            'esta prueba viva no valida los fixes recientes. '
+            f'Markers faltantes: {missing}.',
+            'Stale-Code Gate: build sin features P0.8-P0.11.',
+        )
+
+    # ── P0.12 Refresh budget: coalesce timestamps ──
+    _DOCK_REFRESH_BUDGET_MS: float = 2000.0
+    _DOCK_REFRESH_MIN_INTERVAL_S: float = 1.0
+    _DOCK_REFRESH_POST_CONSULTATION_COOLDOWN_S: float = 30.0
+    _DOCK_REFRESH_BUDGET_COOLDOWN_S: float = 10.0
+
+    def _should_skip_dock_refresh(self) -> str:
+        """Return a non-empty reason string if dock refresh should be skipped."""
+        now = time.time()
+        last_refresh = getattr(self, '_last_dock_refresh_ts', 0.0)
+        if now - last_refresh < self._DOCK_REFRESH_MIN_INTERVAL_S:
+            return 'coalesced'
+        budget_cooldown_until = getattr(self, '_dock_budget_cooldown_until', 0.0)
+        if now < budget_cooldown_until:
+            return 'budget_cooldown'
+        if self._working:
+            return 'query_pending'
+        if self._should_defer_heavy_work():
+            return 'resource_pressure'
+        last_ext = getattr(self, '_last_external_consultation_ts', 0.0)
+        if last_ext and (now - last_ext) < self._DOCK_REFRESH_POST_CONSULTATION_COOLDOWN_S:
+            return 'post_external_consultation'
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            now_elapsed = tracer.current_elapsed_ms()
+            recent_stalls = tracer.events(kind='ui_event', limit=20)
+            heavy_stalls = [
+                e for e in recent_stalls
+                if e.get('data', {}).get('event_type') == 'ui_event_loop_stall'
+                and e.get('data', {}).get('duration_ms', 0) > 2000
+                and (now_elapsed - e.get('elapsed_ms', 0)) < 30_000
+            ]
+            if heavy_stalls:
+                return 'recent_heavy_stall'
+        except Exception:
+            pass
+        return ''
+
     def _refresh_autonomy_dock(self) -> None:
+        skip_reason = self._should_skip_dock_refresh()
+        if skip_reason:
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                trace_kind = {
+                    'coalesced': 'control_autonomy_dock_refresh_deferred',
+                    'query_pending': 'control_autonomy_dock_refresh_skipped_due_to_pressure',
+                    'resource_pressure': 'control_autonomy_dock_refresh_skipped_due_to_pressure',
+                    'recent_heavy_stall': 'control_autonomy_dock_refresh_deferred',
+                    'post_external_consultation': 'control_autonomy_dock_refresh_deferred',
+                    'budget_cooldown': 'control_autonomy_dock_refresh_deferred',
+                }.get(skip_reason, 'control_autonomy_dock_refresh_deferred')
+                get_runtime_tracer().trace(trace_kind, reason=skip_reason)
+            except Exception:
+                pass
+            return
+        t0 = time.perf_counter()
         projector = self.autonomy_activity_projector
         if projector is None:
             self._live_process_summary = {}
@@ -6504,6 +6670,20 @@ class ControlCenterViewModel(QObject):
         self._live_work_items = [dict(item) for item in (projected.get('live_work_items') or [])]
         self._assistant_session_cards = [dict(item) for item in (projected.get('assistant_session_cards') or [])]
         self._autonomy_timeline = [dict(item) for item in (projected.get('autonomy_timeline') or [])]
+        elapsed_ms = (time.perf_counter() - t0) * 1000
+        self._last_dock_refresh_ts = time.time()
+        if elapsed_ms > self._DOCK_REFRESH_BUDGET_MS:
+            self._dock_budget_cooldown_until = time.time() + self._DOCK_REFRESH_BUDGET_COOLDOWN_S
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'control_autonomy_dock_refresh_budget_exceeded',
+                    elapsed_ms=round(elapsed_ms, 1),
+                    budget_ms=self._DOCK_REFRESH_BUDGET_MS,
+                    cooldown_s=self._DOCK_REFRESH_BUDGET_COOLDOWN_S,
+                )
+            except Exception:
+                pass
 
     @Slot()
     def refreshAutonomyDock(self) -> None:
@@ -7287,6 +7467,15 @@ class ControlCenterViewModel(QObject):
             meta = f'Consulta con {assistant_title}.'
         else:
             meta = f'Revision con {assistant_title}.'
+        # ── P0.12 Stale-Code Gate: invalidate live proof if build is stale ──
+        _fp = self.latestRuntimeBuildFingerprint
+        _build_is_stale = bool(_fp.get('stale')) if _fp else False
+        if _build_is_stale:
+            consultation_metadata['stale_build'] = True
+            consultation_metadata['stale_missing_markers'] = _fp.get('missing_markers', [])
+            metadata['external_consultation'] = dict(consultation_metadata)
+            payload['metadata'] = metadata
+            self._update_adaptive_state(payload)
         if result.success:
             if response_captured:
                 message = f"{result.output_text or 'Respuesta externa capturada.'} Ya tengo texto util desde {assistant_title} y lo dejare listo para integrarlo de forma segura.{fallback_note}"
@@ -7296,6 +7485,8 @@ class ControlCenterViewModel(QObject):
                 message = f"{result.output_text or 'Consulta externa preparada.'} IABV la llevara en una sesion aislada del programa, usando un chat especial separado de tus chats normales y capturando la respuesta en segundo plano cuando la sesion ya este autenticada.{fallback_note}"
             else:
                 message = f"{result.output_text or 'Consulta externa preparada.'} El contexto ya esta copiado y la respuesta vuelve por pegado manual.{fallback_note}"
+            if _build_is_stale:
+                message += ' [Stale-Code Gate: esta prueba viva no valida fixes recientes — actualiza main y vuelve a probar.]'
             self._latest_response_text = message
             self._latest_response_meta = meta
             self._busy_label = f'Consulta externa lista con {assistant_title}.'
@@ -7306,6 +7497,7 @@ class ControlCenterViewModel(QObject):
                 'payload': payload,
                 'assistant_title': assistant_title,
                 'external_state_flags': external_state_flags,
+                'stale_build': _build_is_stale,
             }
         failure_detail = str(result.error_message or result.execution_state.detail or 'sin detalle').strip()
         message, failure_meta, failure_busy = self._human_external_consultation_failure(
@@ -8671,6 +8863,27 @@ class ControlCenterViewModel(QObject):
         except Exception:
             return {}
 
+    @Property('QVariant', notify=dataChanged)
+    def latestRuntimeBuildFingerprint(self) -> dict[str, Any]:
+        """Read-only build fingerprint from the last runtime_build_fingerprint event."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            fps = get_runtime_tracer().events(kind='runtime_build_fingerprint', limit=1)
+            if not fps:
+                return {}
+            data = dict(fps[-1].get('data', {}))
+            return {
+                'branch': data.get('branch', ''),
+                'head': data.get('head', ''),
+                'dirty': data.get('dirty', False),
+                'origin_main_head': data.get('origin_main_head', ''),
+                'stale': data.get('stale', False),
+                'missing_markers': data.get('missing_markers', []),
+                'feature_markers': data.get('feature_markers', {}),
+            }
+        except Exception:
+            return {}
+
     def _refresh_contextual_suggestions(self) -> None:
         suggestions: list[dict[str, Any]] = []
         if hasattr(self, '_efficiency_audit_service'):
@@ -8936,6 +9149,9 @@ class ControlCenterViewModel(QObject):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if self._try_handle_shared_reality_followup(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        if self._try_handle_security_verification_retest(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if self._try_handle_lightweight_chat(message):
@@ -9517,6 +9733,7 @@ class ControlCenterViewModel(QObject):
             if adaptive_payload:
                 self._maybe_run_autonomous_evolution(adaptive_payload, source='self_teach')
         elif task_name == 'external_consultation':
+            self._last_external_consultation_ts = time.time()
             self._clear_autonomy_activity_override()
             external_payload = dict(payload or {})
             adaptive_payload = dict(external_payload.get('payload') or {})
@@ -9557,6 +9774,24 @@ class ControlCenterViewModel(QObject):
         elif task_name == 'payload':
             self._append_message('assistant', 'Payload', f"Payload archivado con {payload.get('episodes')} episodios, {payload.get('artifacts')} artefactos y {payload.get('knowledge')} items de conocimiento.", Path(str(payload.get('path'))).name)
             self._busy_label = f"Payload listo: {Path(str(payload.get('path'))).name}."
+        elif task_name == 'security_retest':
+            retest_data = dict(payload) if isinstance(payload, dict) else {}
+            _rt_title = str(retest_data.get('assistant_title', 'herramienta'))
+            if retest_data.get('success'):
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Retest de {_rt_title} exitoso — la verificacion de seguridad ya no bloquea.',
+                    'security_retest_success',
+                )
+            else:
+                _rt_detail = str(retest_data.get('detail', ''))[:200]
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Retest de {_rt_title} sigue bloqueado. Evidencia: {_rt_detail}. '
+                    'Queda UNRESOLVED — prueba con otro perfil de navegador o reinicia la sesion del navegador.',
+                    'security_retest_still_blocked',
+                )
+            self._set_live_status('idle')
         elif task_name == 'pbt':
             self._pbt_state = dict(payload)
             self._pbt_candidates = list(payload.get('candidates', []))[:4]
@@ -9676,6 +9911,16 @@ class ControlCenterViewModel(QObject):
 
     @Slot(str, str)
     def _apply_task_failure(self, task_name: str, message: str) -> None:
+        if task_name == 'security_retest':
+            self._append_message(
+                'assistant', 'IABV',
+                f'Error en retest de seguridad: {message[:200]}. Queda UNRESOLVED.',
+                'security_retest_error',
+            )
+            self._working = False
+            self._set_live_status('idle')
+            self.dataChanged.emit()
+            return
         title = 'IABV' if task_name == 'chat' else task_name.upper()
         visible_message, visible_meta = self._humanize_task_failure(task_name, message)
         self._trace_dispatch_terminal(
