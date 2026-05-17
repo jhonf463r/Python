@@ -1,0 +1,45 @@
+{
+  "id": "runtime_external_failure_followup_governance_p027",
+  "title": "P0.27: Governed Local Fallback + External Failure Follow-up Continuity",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "After an external consultation (ChatGPT) was blocked by browser_security_verification, follow-up messages like 'pueddes solucionar eso' fell to Adaptive local orchestrator (~56s) instead of being recognized as deictic follow-ups of the external failure. The local fallback captured conversations that clearly belonged to the failed external consultation cycle.",
+  "reason": "_EXTERNAL_FAILURE_FOLLOWUP_PATTERNS did not include deictic references ('eso', 'solucionar eso', 'arregla eso') or user-browser handoff patterns ('yo veo chatgpt', 'yo veo bien la ventana'). _try_handle_external_failure_followup matched only explicit retry/error keywords but missed pronoun-based follow-ups that refer to the recent failure context.",
+  "dependency_missing": "",
+  "next_action": "Live proof on Windows: user writes 'has una consulta a chatgpt', then after block writes 'pueddes solucionar eso'. Must use external_failure_followup path, NOT local chat. If user says 'yo veo chatgpt', must trigger user_browser_manual_handoff or the existing user-browser handoff path.",
+  "resume_hint": "P0.27 code fix applied to the runtime checkout: expanded _EXTERNAL_FAILURE_FOLLOWUP_PATTERNS with deictic tokens, stores assistant_kind/terminal_state/dispatch_id in external failure memory, OSES observes external_failure_followup_misrouted_to_local, and RuntimeAuditTracer traces local_fallback_suppressed_for_external_failure.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "root_cause": "Bug: _EXTERNAL_FAILURE_FOLLOWUP_PATTERNS lacked deictic references ('eso', 'solucionar eso', 'arregla eso', 'pueddes solucionar eso'). When _last_external_failure_payload existed after a browser_security_verification block, the follow-up message 'pueddes solucionar eso' did not match any pattern and fell through to heavy local chat dispatch (~56s).",
+    "evidence": [
+      {
+        "event": "dispatch_started external_consultation chatgpt, blocked by browser_security_verification",
+        "bug": "Follow-up 'pueddes solucionar eso' not recognized as external failure follow-up"
+      },
+      {
+        "event": "dispatch_started chat after external block, provider='Adaptive local orchestrator', duration ~56s",
+        "bug": "Deictic follow-up fell to local heavy inference instead of external_failure_followup path"
+      }
+    ],
+    "files_touched": [
+      "src/iabv_v15/ui/viewmodels/control_center_viewmodel.py",
+      "src/iabv_v15/services/evolution/operational_self_examination_service.py",
+      "data/evolution/platform_pending/task_runtime_external_failure_followup_governance_p027.json",
+      "tests/test_p016_external_followup_freeze_guard.py"
+    ],
+    "fixes_applied": {
+      "task_a": "Expanded _EXTERNAL_FAILURE_FOLLOWUP_PATTERNS with deictic patterns and typo-aware 'pueddes solucionar'.",
+      "task_b": "_try_handle_external_failure_followup already runs before local dispatch in sendChat; now catches deictic follow-ups that previously fell through.",
+      "task_c": "External intent contract preserved: explicit ChatGPT requests still route to external consultation.",
+      "task_d": "Existing user-browser/profile-mismatch handoff path remains active for 'yo veo chatgpt' style follow-ups.",
+      "task_e": "RuntimeAuditTracer traces external_failure_followup_answered with followup_path and local_fallback_suppressed_for_external_failure. _remember_external_failure now stores assistant_kind, terminal_state, dispatch_id.",
+      "task_f": "OSES _external_failure_followup_misrouted_findings detects repeated external_consultation blocked -> next message local chat. Observer only; no corrections."
+    },
+    "remaining": [
+      "Live Windows proof with real user interaction and ChatGPT",
+      "Governed CDP capture from user browser still missing (UNRESOLVED)"
+    ],
+    "unresolved": "governed_cdp_user_browser_capture_missing: IABV cannot verify the user's ChatGPT browser session without CDP/observation permission. Manual handoff is the interim solution."
+  }
+}

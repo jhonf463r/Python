@@ -4181,6 +4181,15 @@ class ControlCenterViewModel(QObject):
         'a mi si', 'a mi sí', 'a mí si', 'a mí sí',
         'yo veo', 'yo si veo', 'yo sí veo', 'veo bien',
         'ventana con chatgpt', 'chatgpt abierto',
+        'solucionar eso', 'soluciona eso', 'arregla eso', 'arreglalo',
+        'ayudame con eso', 'ayúdame con eso', 'pueddes solucionar',
+        'puedes solucionar eso', 'ese problema', 'este problema',
+    )
+    _EXTERNAL_FAILURE_DEICTIC_TOKENS: tuple[str, ...] = (
+        'solucionar eso', 'soluciona eso', 'arregla eso', 'arreglalo',
+        'ayudame con eso', 'ayúdame con eso',
+        'pueddes solucionar eso', 'puedes solucionar eso',
+        'ese problema', 'este problema',
     )
     _EXTERNAL_FAILURE_SECURITY_HELP_PATTERNS: tuple[str, ...] = (
         'verificacion', 'verificación', 'seguridad', 'captcha', 'challenge',
@@ -4220,6 +4229,9 @@ class ControlCenterViewModel(QObject):
         meta: str,
         outcome: str = 'failed',
         success: bool = False,
+        assistant_kind: str = '',
+        terminal_state: str = '',
+        dispatch_id: str = '',
     ) -> None:
         """Keep the latest external failure as local evidence for follow-up chat.
 
@@ -4234,6 +4246,9 @@ class ControlCenterViewModel(QObject):
             'outcome': str(outcome or 'failed'),
             'success': bool(success),
             'at': time.time(),
+            'assistant_kind': str(assistant_kind or ''),
+            'terminal_state': str(terminal_state or ''),
+            'dispatch_id': str(dispatch_id or ''),
         }
         self._last_external_failure_ts = time.time()
 
@@ -4540,18 +4555,22 @@ class ControlCenterViewModel(QObject):
             and self._security_followup_requests_user_browser(lowered)
         )
         asks_about_failure = any(pattern in lowered for pattern in self._EXTERNAL_FAILURE_FOLLOWUP_PATTERNS)
+        is_deictic_followup = any(pattern in lowered for pattern in self._EXTERNAL_FAILURE_DEICTIC_TOKENS)
         asks_security_help = (
             is_security_verification
             and any(pattern in lowered for pattern in self._EXTERNAL_FAILURE_SECURITY_HELP_PATTERNS)
         )
-        if not asks_about_failure and not asks_security_help and not profile_mismatch:
+        if not asks_about_failure and not asks_security_help and not profile_mismatch and not is_deictic_followup:
             return False
 
         assistant_title = str(payload.get('assistant_title') or 'Asistente externo')
         previous_message = str(payload.get('message') or 'No hubo respuesta externa util.').strip()
         previous_meta = str(payload.get('meta') or 'sin metadata').strip()
         outcome = str(payload.get('outcome') or 'failed').strip()
-        assistant_kind = self._security_verification_assistant_kind(assistant_title, payload)
+        assistant_kind = str(payload.get('assistant_kind') or '').strip() or self._security_verification_assistant_kind(assistant_title, payload)
+        previous_terminal = str(payload.get('terminal_state') or '').strip()
+        previous_dispatch = str(payload.get('dispatch_id') or '').strip()
+        followup_path = 'external_failure_followup_deictic' if is_deictic_followup else 'external_failure_followup'
         open_window_result: dict[str, Any] | None = None
         if is_security_verification:
             if self._security_help_requests_visible_window(lowered) or profile_mismatch:
@@ -4623,15 +4642,15 @@ class ControlCenterViewModel(QObject):
                 "despues de dejar esa ventana lista."
             )
         self._latest_response_text = summary
-        self._latest_response_meta = f'{assistant_title}: external_failure_followup'
+        self._latest_response_meta = f'{assistant_title}: {followup_path}'
         self._busy_label = 'Fallo externo explicado desde evidencia reciente.'
         self._working = False
         self._append_message(
             'assistant',
             'IABV',
             summary,
-            'external_failure_followup',
-            reasoning_path='external_failure_followup',
+            followup_path,
+            reasoning_path=followup_path,
             evidence_tag='observed',
         )
         self._set_live_status('idle')
@@ -4644,10 +4663,23 @@ class ControlCenterViewModel(QObject):
                 outcome=outcome,
                 previous_meta=previous_meta[:240],
                 user_message=message[:240],
+                followup_path=followup_path,
+                previous_assistant_kind=assistant_kind,
+                previous_terminal_state=previous_terminal,
+                dispatch_id=previous_dispatch,
                 profile_mismatch_detected=bool(profile_mismatch),
                 browser_override_mode=str(
                     (getattr(self, '_external_consultation_browser_override', {}) or {}).get('mode') or ''
                 ),
+            )
+            get_runtime_tracer().trace(
+                'local_fallback_suppressed_for_external_failure',
+                previous_assistant_kind=assistant_kind,
+                previous_terminal_state=previous_terminal,
+                user_message_excerpt=message[:120],
+                selected_followup_path=followup_path,
+                dispatch_id=previous_dispatch,
+                interaction_id=str(getattr(self, '_active_interaction_id', '') or ''),
             )
         except Exception:
             pass
@@ -10561,6 +10593,9 @@ class ControlCenterViewModel(QObject):
                     meta=meta,
                     outcome=_external_consultation_outcome,
                     success=_ext_success,
+                    assistant_kind=str(external_payload.get('assistant_kind') or ''),
+                    terminal_state=str(external_payload.get('terminal_state') or ''),
+                    dispatch_id=str(self._active_dispatch_ids.get('external_consultation', '') or ''),
                 )
             self._set_external_consultation_activity(
                 external_payload=external_payload,
@@ -10754,6 +10789,7 @@ class ControlCenterViewModel(QObject):
                 meta=visible_meta,
                 outcome='failed',
                 success=False,
+                dispatch_id=str(self._active_dispatch_ids.get(task_name, '') or ''),
             )
         # P0.23 Task E: preserve the active dispatch_id so the terminal trace
         # carries the same id that dispatch_started recorded.

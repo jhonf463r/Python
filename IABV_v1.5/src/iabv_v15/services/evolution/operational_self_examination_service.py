@@ -850,6 +850,7 @@ class OperationalSelfExaminationService:
         # has to explain/help after a security-verification block, surface it
         # as an algorithmic continuity gap instead of a one-off UI issue.
         findings.extend(self._external_failure_context_findings())
+        findings.extend(self._external_failure_followup_misrouted_findings())
 
         findings = self._dedupe_findings(findings)
 
@@ -8249,6 +8250,97 @@ class OperationalSelfExaminationService:
                 },
             ))
         return findings
+
+    def _external_failure_followup_misrouted_findings(self) -> list[SelfExaminationFinding]:
+        """Detect blocked external consultation followed by local chat.
+
+        OSES only observes and reports. It does not dispatch, retry, or alter
+        routing. The finding exists so this exact live failure becomes part of
+        the metacognitive loop instead of remaining a one-off UI anecdote.
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        audit_path = Path(str(workspace)) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+        try:
+            recent_lines: deque[str] = deque(maxlen=1000)
+            with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                for line in fh:
+                    recent_lines.append(line)
+        except OSError:
+            return []
+
+        blocked_states = {
+            'blocked_by_resource_pressure',
+            'blocked_by_security_verification',
+            'blocked_by_permission',
+            'failed_with_actionable_reason',
+            'timeout',
+            'needs_human_handoff',
+        }
+        misroute_pairs: list[dict[str, str]] = []
+        last_external_block: dict[str, str] | None = None
+        for line in recent_lines:
+            if not line.strip():
+                continue
+            try:
+                event = json.loads(line)
+            except Exception:
+                continue
+            kind = str(event.get('kind') or '')
+            data = dict(event.get('data') or {})
+            if kind == 'dispatch_terminal':
+                task = str(data.get('task_name') or '')
+                terminal = str(data.get('terminal_state') or '')
+                if task == 'external_consultation' and terminal in blocked_states:
+                    last_external_block = {
+                        'dispatch_id': str(data.get('dispatch_id') or ''),
+                        'terminal_state': terminal,
+                        'interaction_id': str(data.get('interaction_id') or ''),
+                    }
+                continue
+            if kind != 'dispatch_started':
+                continue
+            task = str(data.get('task_name') or '')
+            if task == 'chat' and last_external_block is not None:
+                misroute_pairs.append({
+                    'external_dispatch_id': last_external_block.get('dispatch_id', ''),
+                    'external_terminal_state': last_external_block.get('terminal_state', ''),
+                    'external_interaction_id': last_external_block.get('interaction_id', ''),
+                    'local_dispatch_id': str(data.get('dispatch_id') or ''),
+                    'local_interaction_id': str(data.get('interaction_id') or ''),
+                    'user_goal_excerpt': str(data.get('user_goal_excerpt') or '')[:160],
+                })
+                last_external_block = None
+            elif task != 'chat':
+                last_external_block = None
+
+        if len(misroute_pairs) < 2:
+            return []
+        return [SelfExaminationFinding(
+            category='external_failure_followup_misrouted_to_local',
+            title=f'External consultation blocked then local chat dispatched ({len(misroute_pairs)}x)',
+            summary=(
+                f'{len(misroute_pairs)} time(s) an external_consultation was blocked or failed and '
+                'the next message fell to local chat inference instead of the external-failure follow-up path. '
+                'This wastes CPU, can freeze the UI, and loses the causal context of the blocked tool.'
+            ),
+            severity=IssueSeverity.HIGH,
+            confidence=0.90,
+            recommendation=(
+                'Keep _try_handle_external_failure_followup before local dispatch and include deictic '
+                'follow-ups such as "solucionar eso" and typo variants.'
+            ),
+            evidence_refs=[p.get('external_dispatch_id', '')[:12] for p in misroute_pairs[:5]],
+            source_refs=['runtime_audit'],
+            metadata={
+                'pattern': 'external_failure_followup_misrouted_to_local',
+                'count': len(misroute_pairs),
+                'pairs': misroute_pairs[:5],
+            },
+        )]
 
     def _shared_reality_handoff_findings(self) -> list[SelfExaminationFinding]:
         """Detect repeated visual-mismatch patterns from ``shared_reality_handoff``

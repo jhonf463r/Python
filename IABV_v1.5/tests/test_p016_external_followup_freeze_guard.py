@@ -27,6 +27,7 @@ def _followup_stub() -> SimpleNamespace:
         _autonomy_activity_override={'active': True},
         _EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S=ControlCenterViewModel._EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S,
         _EXTERNAL_FAILURE_FOLLOWUP_PATTERNS=ControlCenterViewModel._EXTERNAL_FAILURE_FOLLOWUP_PATTERNS,
+        _EXTERNAL_FAILURE_DEICTIC_TOKENS=ControlCenterViewModel._EXTERNAL_FAILURE_DEICTIC_TOKENS,
         _EXTERNAL_FAILURE_SECURITY_HELP_PATTERNS=ControlCenterViewModel._EXTERNAL_FAILURE_SECURITY_HELP_PATTERNS,
         _SECURITY_HELP_OPEN_WINDOW_PATTERNS=ControlCenterViewModel._SECURITY_HELP_OPEN_WINDOW_PATTERNS,
         _SECURITY_PROFILE_MISMATCH_PATTERNS=ControlCenterViewModel._SECURITY_PROFILE_MISMATCH_PATTERNS,
@@ -114,6 +115,33 @@ def test_security_verification_help_followup_uses_failure_memory() -> None:
     assert 'razonamiento local pesado' in vm._latest_response_text
     assert vm._latest_response_meta == 'ChatGPT: external_failure_followup'
     assert vm._open_security_verification_window.called
+
+
+def test_deictic_followup_after_security_block_does_not_dispatch_local_chat() -> None:
+    vm = _followup_stub()
+    ControlCenterViewModel._remember_external_failure(
+        vm,
+        assistant_title='ChatGPT',
+        message='ChatGPT web asistido quedo bloqueado por verificacion de seguridad.',
+        meta='ChatGPT: blocked_by_security_verification',
+        outcome='blocked',
+        success=False,
+        assistant_kind='chatgpt',
+        terminal_state='failed_with_actionable_reason',
+        dispatch_id='external-123',
+    )
+
+    handled = ControlCenterViewModel._try_handle_external_failure_followup(
+        vm,
+        'pueddes solucionar eso',
+    )
+
+    assert handled is True
+    assert vm._working is False
+    assert vm._live_status == 'idle'
+    assert vm._latest_response_meta == 'ChatGPT: external_failure_followup_deictic'
+    assert 'razonamiento local pesado' in vm._latest_response_text
+    assert vm._messages[-1][1]['reasoning_path'] == 'external_failure_followup_deictic'
 
 
 def test_security_words_do_not_trigger_without_security_failure() -> None:
