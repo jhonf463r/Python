@@ -64,6 +64,14 @@ def _make_stub_vm():
             stub.__dict__[name] = method
         else:
             stub.__dict__[name] = types.MethodType(method, stub)
+    # P0.23 class-level tuples used by _is_operational_status_question
+    for attr in (
+        '_EXTERNAL_ACTION_VERBS_FOR_EXCLUSION',
+        '_EXTERNAL_TARGETS_FOR_EXCLUSION',
+    ):
+        val = getattr(ControlCenterViewModel, attr, None)
+        if val is not None:
+            setattr(stub, attr, val)
     return stub
 
 

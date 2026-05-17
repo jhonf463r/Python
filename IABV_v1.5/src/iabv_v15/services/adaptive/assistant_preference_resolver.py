@@ -11,8 +11,15 @@ The resolver is deliberately conservative: it only returns an assistant family
 when the user expresses an explicit request to consult that assistant, and it
 returns `''` for meta questions (e.g. "sabes consultar a codex?") so the
 orchestrator does not escalate to an external tool by mistake.
+
+P0.23: Added typo-aware matching for "chat gpt", "chat-gpt", "chatgo" and
+imperative action patterns ("hazle a chatgpt", "preguntale a chatgpt",
+"pidele a chatgpt", "a chatgpt hazla") so that real external consultation
+intents are not dropped to local chat.
 """
 from __future__ import annotations
+
+import re
 
 
 class AssistantPreferenceResolver:
@@ -24,17 +31,45 @@ class AssistantPreferenceResolver:
 
     _ASSISTANT_FAMILIES: tuple[str, ...] = ('chatgpt', 'claude', 'codex', 'ollama', 'devin', 'windsurf')
 
+    # P0.23: variant spellings / typos that should map to a canonical family.
+    _ASSISTANT_ALIASES: dict[str, str] = {
+        'chat gpt': 'chatgpt',
+        'chat-gpt': 'chatgpt',
+    }
+
+    # P0.23: typos that only count when an action verb is present nearby.
+    _ASSISTANT_TYPO_ALIASES: dict[str, str] = {
+        'chatgo': 'chatgpt',
+    }
+
+    # P0.23: action verbs that confirm external consultation intent when
+    # combined with a target assistant name or typo.
+    _EXTERNAL_ACTION_VERBS: tuple[str, ...] = (
+        'haz', 'hacer', 'hazle', 'hazla',
+        'consulta', 'consultar',
+        'pregunta', 'preguntale', 'pregúntale',
+        'pidele', 'pídele',
+        'envia', 'envía', 'manda',
+        'prueba con',
+    )
+
     _META_PROMPT_PREFIXES: tuple[str, ...] = ('sabes ', 'puedes ', 'puedo ')
 
     _CONSULT_TOKENS: tuple[str, ...] = (
         'consulta',
         'consulta externa',
+        'consulta nueva',
         'consultar',
         'usa ',
         'utiliza ',
         'revisa con',
         'valida con',
         'pregunta a',
+        'preguntale a',
+        'pregúntale a',
+        'pidele a',
+        'pídele a',
+        'hazle a',
         'apoyate en',
         'ap?yate en',
         'razona con',
@@ -59,10 +94,25 @@ class AssistantPreferenceResolver:
         'respondieron',
     )
 
+    def _normalize_assistant_aliases(self, command: str) -> str:
+        """Replace known variant spellings with canonical family names."""
+        for alias, canonical in self._ASSISTANT_ALIASES.items():
+            command = command.replace(alias, canonical)
+        return command
+
+    def _resolve_typo_with_action(self, command: str) -> str:
+        """Return canonical family if a typo alias + action verb are present."""
+        for typo, canonical in self._ASSISTANT_TYPO_ALIASES.items():
+            if typo in command and any(v in command for v in self._EXTERNAL_ACTION_VERBS):
+                return canonical
+        return ''
+
     def resolve(self, message: str) -> str:
         command = ' '.join(str(message or '').lower().strip().split())
         if not command:
             return ''
+        # P0.23: normalize alias spellings before any matching.
+        command = self._normalize_assistant_aliases(command)
         if any(command.startswith(prefix) for prefix in self._META_PROMPT_PREFIXES) and any(
             token in command for token in self._ASSISTANT_FAMILIES
         ):
@@ -72,6 +122,17 @@ class AssistantPreferenceResolver:
             for assistant in self._ASSISTANT_FAMILIES:
                 if assistant in command:
                     return assistant
+        # P0.23: imperative action + target patterns like "a chatgpt hazla",
+        # "hazle a chatgpt", "preguntale a chatgpt".
+        has_action_verb = any(v in command for v in self._EXTERNAL_ACTION_VERBS)
+        if has_action_verb:
+            for assistant in self._ASSISTANT_FAMILIES:
+                if assistant in command:
+                    return assistant
+        # P0.23: typo-aware resolution (e.g. "chatgo" + action verb).
+        typo_result = self._resolve_typo_with_action(command)
+        if typo_result:
+            return typo_result
         for assistant in self._ASSISTANT_FAMILIES:
             if assistant not in command:
                 continue

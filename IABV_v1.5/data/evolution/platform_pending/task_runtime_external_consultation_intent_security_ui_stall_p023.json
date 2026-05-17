@@ -1,0 +1,56 @@
+{
+  "id": "runtime_external_consultation_intent_security_ui_stall_p023",
+  "title": "P0.23: External Consultation Intent Robustness + Security Verification Handoff + UI Stall Closure Guard",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Three critical runtime issues: (1) ChatGPT variant spellings ('chat gpt', 'chat-gpt', 'chatgo') and imperative action patterns ('hazle a chatgpt', 'a chatgpt hazla') were not recognized as external consultation intents, falling through to local chat or operational_status. (2) browser_security_verification errors during ChatGPT consultation caused NoneType.get exceptions instead of structured handoff with clear user guidance. (3) _set_live_status('idle') after heavy local chat (>10s) emitted dataChanged synchronously, blocking the main thread for 36+ seconds.",
+  "reason": "Intent detection in AssistantPreferenceResolver only matched exact canonical family names without alias normalization. _is_operational_status_question() did not exclude messages containing action verbs + assistant targets. Worker error handler did not intercept browser_security_verification errors. _apply_task_failure traced dispatch_terminal with empty dispatch_id. _set_live_status always emitted dataChanged synchronously regardless of preceding task weight.",
+  "dependency_missing": "",
+  "next_action": "Live proof on Windows with ChatGPT: user writes 'consulta nueva a ChatGPT: responde solo S si entiendes'. Must terminate in response_captured, blocked_by_security_verification with guidance, or blocked_by_resource_pressure with retry. Never local chat, operational_status, NoneType, empty dispatch_id, or UI stall >5s.",
+  "resume_hint": "P0.23 code fix applied: AssistantPreferenceResolver normalizes 'chat gpt'/'chat-gpt' aliases, resolves 'chatgo' typo with action verb, matches imperative action patterns. _is_operational_status_question excludes action verb + assistant target combos. Worker catches browser_security_verification and emits structured blocked_by_security_verification result. _apply_task_failure preserves dispatch_id from _active_dispatch_ids. _set_live_status defers dataChanged.emit when _heavy_result_guard_active after chat >10s.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "root_cause": "Bug 1: AssistantPreferenceResolver.resolve() only checked canonical _ASSISTANT_FAMILIES names, missing 'chat gpt', 'chat-gpt', 'chatgo' variants. Bug 2: _is_operational_status_question() returned True for messages containing action verbs + ChatGPT target. Bug 3: Worker except handler emitted generic taskFailed for browser_security_verification instead of structured result. Bug 4: _apply_task_failure called _trace_dispatch_terminal without dispatch_id. Bug 5: _set_live_status always called dataChanged.emit() synchronously.",
+    "evidence": [
+      {
+        "dispatch_id": "b3256f5e92c7",
+        "event": "dispatch_started external_consultation chatgpt, browser_security_verification caused NoneType.get exception, terminal_state=failed_with_actionable_reason",
+        "bug": "browser_dom_capture failed (browser_security_verification) not converted to structured handoff"
+      },
+      {
+        "interaction_id": "chat-ad90e6ba5b0e",
+        "event": "'chatgo' typo not recognized as ChatGPT target, fell to local chat 28s",
+        "bug": "AssistantPreferenceResolver did not handle typo aliases"
+      },
+      {
+        "interaction_id": "chat-8b5d861229ae",
+        "event": "action with ChatGPT captured as operational_status in 175ms instead of external_consultation",
+        "bug": "_is_operational_status_question did not exclude action verb + assistant target"
+      },
+      {
+        "interaction_id": "chat-95829a86beaf",
+        "event": "'chat gpt' separated fell to local chat 53s + ui_event_loop_stall 36506ms on closure",
+        "bug": "no alias normalization + synchronous dataChanged.emit after heavy result"
+      }
+    ],
+    "files_touched": [
+      "src/iabv_v15/services/adaptive/assistant_preference_resolver.py",
+      "src/iabv_v15/ui/viewmodels/control_center_viewmodel.py",
+      "data/evolution/platform_pending/task_runtime_external_consultation_intent_security_ui_stall_p023.json",
+      "tests/test_runtime_p023_external_intent_security_stall.py"
+    ],
+    "fixes_applied": {
+      "task_b": "AssistantPreferenceResolver: added _ASSISTANT_ALIASES for 'chat gpt'/'chat-gpt', _ASSISTANT_TYPO_ALIASES for 'chatgo' with action verb guard, _EXTERNAL_ACTION_VERBS for imperative patterns, _normalize_assistant_aliases() preprocessing, _resolve_typo_with_action() method, extended _CONSULT_TOKENS with 'consulta nueva', 'preguntale a', 'pidele a', 'hazle a'",
+      "task_c": "_is_operational_status_question() now returns False when message contains both an action verb and an assistant target from _EXTERNAL_ACTION_VERBS_FOR_EXCLUSION / _EXTERNAL_TARGETS_FOR_EXCLUSION",
+      "task_d": "Worker except handler detects browser_security_verification / NoneType.get and emits structured blocked_by_security_verification result via taskResolved instead of generic taskFailed",
+      "task_e": "_apply_task_failure reads _active_dispatch_ids[task_name] and passes it to _trace_dispatch_terminal",
+      "task_f": "_set_live_status defers dataChanged.emit to background thread when _heavy_result_guard_active; _apply_task_result activates guard when chat task exceeds _HEAVY_RESULT_THRESHOLD_S (10s); traces ui_status_emit_deferred and post_result_ui_update_coalesced"
+    },
+    "remaining": [
+      "Live Windows proof with real user interaction and ChatGPT",
+      "Verify dispatch_id appears in terminal trace under real failure conditions"
+    ],
+    "unresolved": "Live Windows proof pending — user must run app with P0.23 merged and verify ChatGPT consultation intent routing, security verification handoff, and UI stall avoidance"
+  }
+}
