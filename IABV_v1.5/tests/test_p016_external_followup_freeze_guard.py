@@ -27,6 +27,8 @@ def _followup_stub() -> SimpleNamespace:
         _autonomy_activity_override={'active': True},
         _EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S=ControlCenterViewModel._EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S,
         _EXTERNAL_FAILURE_FOLLOWUP_PATTERNS=ControlCenterViewModel._EXTERNAL_FAILURE_FOLLOWUP_PATTERNS,
+        _EXTERNAL_FAILURE_DEICTIC_TOKENS=ControlCenterViewModel._EXTERNAL_FAILURE_DEICTIC_TOKENS,
+        _USER_BROWSER_HANDOFF_PATTERNS=ControlCenterViewModel._USER_BROWSER_HANDOFF_PATTERNS,
         _append_message=lambda *args, **kwargs: messages.append((args, kwargs)),
         _set_live_status=lambda value: setattr(stub, '_live_status', value),
         _clear_autonomy_activity_override=lambda: setattr(stub, '_autonomy_activity_override', {}),
